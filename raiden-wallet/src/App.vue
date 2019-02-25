@@ -9,9 +9,7 @@
 </template>
 
 <script lang="ts">
-import Vue from 'vue';
-import Web3 from 'web3';
-import Component from 'vue-class-component';
+import { Component, Vue } from 'vue-property-decorator';
 import Loading from '@/components/Loading.vue';
 import { ProviderState } from '@/services/web3-service';
 import WalletHeader from '@/components/WalletHeader.vue';

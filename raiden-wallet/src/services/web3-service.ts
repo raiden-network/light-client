@@ -46,6 +46,18 @@ export default class Web3Service {
     return web3.utils.fromWei(balance, 'ether');
   }
 
+  async openChannel(
+    tokenAddress: string,
+    hubAddress: string,
+    depositAmount: number
+  ): Promise<void> {
+    return new Promise<void>(resolve => {
+      setTimeout(() => {
+        resolve();
+      }, 5000);
+    });
+  }
+
   private web3Instance() {
     if (this.web3 === undefined) {
       throw new Error('Web3 instance was not initialized');

@@ -18,7 +18,8 @@
     "vue-router": "^3.0.1",
     "vuetify": "^1.3.0",
     "vuex": "^3.0.1",
-    "web3": "^1.0.0-beta.46"
+    "web3": "^1.0.0-beta.46",
+    "ethereum-blockies-base64": "^1.0.2"
   },
   "devDependencies": {
     "@types/jest": "^23.1.4",
