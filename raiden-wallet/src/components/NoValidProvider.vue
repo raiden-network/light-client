@@ -1,26 +1,32 @@
 <template>
-  <v-container>
-    <v-layout align-center justify-center row fill-height class="no-wallet">
-      <v-flex xs4 md2>
-        <v-icon size="80px">warning</v-icon>
-      </v-flex>
-      <v-flex xs8 md8>
-        <h1 class="font-weight-light">
-          No valid ethereum wallet was detected! <br />
-          You can start using Raiden Wallet <br />
-          by downloading Metamask or any other compatible wallet.
-        </h1>
+  <div class="text-xs-center wrapper">
+    <v-layout align-center justify-center class="no-wallet">
+      <v-flex xs10 md10 lg8 class="mid-section">
+        <div class="font-weight-light display-1">
+          No valid ethereum wallet was detected!
+        </div>
+        <div class="subheading font-weight-medium">
+          You can start using Raiden Wallet by downloading Metamask or any other
+          compatible wallet.
+        </div>
       </v-flex>
     </v-layout>
-    <v-layout align-center justify-center row fill-height>
-      <v-flex xs6 md3 class="text-xs-center">
-        <v-img aspect-ratio="1" :src="require('../assets/metamask.svg')" />
+    <v-layout align-center justify-center>
+      <v-flex xs6 md3 class="mid-section">
+        <div>
+          <v-img
+            height="160"
+            aspect-ratio="1"
+            contain
+            :src="require('../assets/metamask.svg')"
+          />
+        </div>
         <v-btn target="_blank" href="https://metamask.io/" color="primary">
           Download Metamask
         </v-btn>
       </v-flex>
     </v-layout>
-  </v-container>
+  </div>
 </template>
 
 <script lang="ts">
@@ -31,9 +37,23 @@ export default class NoValidProvider extends Vue {}
 </script>
 
 <style lang="scss" scoped>
-$vertical-padding: 60px;
-.no-wallet {
-  padding-top: $vertical-padding;
-  padding-bottom: $vertical-padding;
+$section-vertical-padding: 60px;
+.wrapper > * {
+  margin-top: $section-vertical-padding;
+  margin-bottom: $section-vertical-padding;
+}
+
+$item-vertical-padding: 20px;
+.mid-section > * {
+  margin-top: $item-vertical-padding;
+  margin-bottom: $item-vertical-padding;
+}
+
+.no-wallet /deep/ div {
+  text-align: left;
+}
+v-img {
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>
