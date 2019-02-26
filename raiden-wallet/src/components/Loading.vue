@@ -1,21 +1,29 @@
 <template>
-  <v-container class="full-screen">
-    <v-layout align-center row justify-center>
-      <v-flex md8 xs8>
-        <div class="img-container">
-          <v-img aspect-ratio="1" :src="require('../assets/logo.svg')" />
+  <v-container fluid fill-height>
+    <v-layout align-center justify-center>
+      <v-flex lg6 md8 xs10 class="display-3">
+        <div class="loading-wrapper">
+          <div class="img-container">
+            <v-img
+              aspect-ratio="1"
+              contain
+              :src="require('../assets/logo.svg')"
+            />
+          </div>
+          <div id="text-information">
+            <div>
+              Raiden Wallet
+            </div>
+            <div class="font-weight-light loading">
+              Loading
+              <div id="wave">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+            </div>
+          </div>
         </div>
-      </v-flex>
-    </v-layout>
-    <v-layout align-center justify-center row>
-      <v-flex md8 xs8 class="display-3">Raiden Wallet</v-flex>
-    </v-layout>
-    <v-layout align-center justify-center row>
-      <v-flex md8 xs8 class="display-1 font-weight-light">
-        Loading
-        <span class="d">.</span>
-        <span class="d d-2">.</span>
-        <span class="d d-3">.</span>
       </v-flex>
     </v-layout>
   </v-container>
@@ -29,29 +37,62 @@ export default class Loading extends Vue {}
 </script>
 
 <style lang="scss" scoped>
-@keyframes dots {
-  50% {
-    transform: translateY(-0.4rem);
-  }
-  100% {
-    transform: translateY(0);
+$wave-size: 2.5rem;
+$wave-horizontal-margin: 2rem;
+div#wave {
+  text-align: center;
+  width: $wave-size;
+  height: $wave-size;
+  margin-left: $wave-horizontal-margin;
+
+  .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 3px;
+    background: #303131;
+    animation: wave 1.3s linear infinite;
+
+    &:nth-child(2) {
+      animation-delay: -1.1s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: -0.9s;
+    }
   }
 }
 
-.d {
-  animation: dots 1.5s ease-out infinite;
+$name-horizontal-margin: 2rem;
+#text-information {
+  margin-left: $name-horizontal-margin;
+  margin-right: $name-horizontal-margin;
 }
-.d-2 {
-  animation-delay: 0.5s;
-}
-.d-3 {
-  animation-delay: 1s;
+
+@keyframes wave {
+  0%,
+  60%,
+  100% {
+    transform: initial;
+  }
+
+  30% {
+    transform: translateY(-15px);
+  }
 }
 .img-container {
-  width: 120px;
-  height: 120px;
+  width: 8rem;
+  padding: 1.4rem;
 }
-.full-screen {
-  height: 100%;
+.loading {
+  font-size: 2.5rem;
+  display: flex;
+}
+
+.loading-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

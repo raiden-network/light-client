@@ -16,11 +16,11 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 @Component({})
 export default class AddressInput extends Vue {
   @Prop({ required: false })
-  label: string = '';
+  label!: string;
   @Prop({})
-  disabled: boolean = false;
+  disabled!: boolean;
   @Prop({ required: true })
-  value: string = '';
+  value!: number;
 
   readonly rules = [
     (v: string) => !!v || 'The address cannot be empty',
