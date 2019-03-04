@@ -32,6 +32,7 @@
   },
   "homepage": "https://github.com/raiden-network/light-client#readme",
   "devDependencies": {
+    "@types/redux-logger": "^3.0.7",
     "@typescript-eslint/eslint-plugin": "^1.4.2",
     "@typescript-eslint/parser": "^1.4.2",
     "eslint": "^5.14.1",
@@ -41,7 +42,11 @@
     "typescript": "^3.3.3333"
   },
   "dependencies": {
-    "ethers": "^4.0.26"
+    "ethers": "^4.0.26",
+    "redux": "^4.0.1",
+    "redux-logger": "^3.0.6",
+    "redux-observable": "^1.0.0",
+    "rxjs": "^6.4.0"
   },
   "eslintConfig": {
     "parser": "@typescript-eslint/parser",
