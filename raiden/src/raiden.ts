@@ -6,6 +6,7 @@ import { Middleware, applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware } from 'redux-observable';
 import { createLogger } from 'redux-logger';
 
+import { debounce } from 'lodash';
 import { Observable } from 'rxjs';
 
 import {
@@ -30,21 +31,42 @@ export class Raiden {
     network: Network,
     signer: Signer,
     address: string,
+    storage?: Storage,
   ) {
     this.provider = provider;
     this.network = network;
     this.signer = signer;
 
     const epicMiddleware = createEpicMiddleware();
-
     const middlewares: Middleware[] = [epicMiddleware];
+    const loadedState: RaidenState = { ...initialState, address };
+
+    if (storage) {
+      const ns = `raiden_${network.name || network.chainId}_${address}`;
+      Object.assign(
+        loadedState,
+        JSON.parse(storage.getItem(ns) || 'null'),
+      );
+      // custom middleware to set storage key=ns with latest state
+      const debouncedSetItem = debounce(
+        (ns: string, state: RaidenState): void => storage.setItem(ns, JSON.stringify(state)),
+        1000,
+        { maxWait: 5000, leading: true, trailing: false },
+      );
+      middlewares.push(store => next => action => {
+        const result = next(action);
+        debouncedSetItem(ns, store.getState());
+        return result;
+      });
+    }
+
     if (process.env.NODE_ENV === 'development') {
       middlewares.push(createLogger({ colors: false }));
     }
 
     this.store = createStore(
       raidenReducer,
-      { ...initialState, address },
+      loadedState,
       applyMiddleware(...middlewares),
     );
 
@@ -76,6 +98,7 @@ export class Raiden {
   public static async create(
     connection: AsyncSendable | string,
     account: string | number,
+    storage?: Storage,
   ): Promise<Raiden> {
     let provider: JsonRpcProvider;
     if (typeof connection === 'string') {
@@ -105,7 +128,7 @@ export class Raiden {
     }
     const address = await signer.getAddress();
 
-    return new Raiden(provider, network, signer, address);
+    return new Raiden(provider, network, signer, address, storage);
   }
 
   public get address(): string {
