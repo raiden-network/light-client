@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts">
-import Web3Utils from '@/utils/web3-utils';
+import AddressUtils from '@/utils/address-utils';
 import { Component, Prop, Vue } from 'vue-property-decorator';
 
 @Component({})
@@ -25,9 +25,9 @@ export default class AddressInput extends Vue {
   readonly rules = [
     (v: string) => !!v || 'The address cannot be empty',
     (v: string) =>
-      (v && Web3Utils.isAddress(v)) || 'A valid address is required',
+      (v && AddressUtils.isAddress(v)) || 'A valid address is required',
     (v: string) =>
-      (v && Web3Utils.checkAddressChecksum(v)) ||
+      (v && AddressUtils.checkAddressChecksum(v)) ||
       `Address ${v} is not in checksum format`
   ];
 }

@@ -8,6 +8,7 @@
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "baseUrl": ".",
@@ -15,13 +16,14 @@
       "webpack-env",
       "jest",
       "vuetify"
-
     ],
     "paths": {
       "@/*": [
         "src/*"
       ],
-      "vuex": ["typings/vuex.d.ts"]
+      "vuex": ["typings/vuex.d.ts"],
+      "rxjs": ["node_modules/rxjs"],
+      "rxjs/*": ["node_modules/rxjs/*"]
     },
     "lib": [
       "esnext",

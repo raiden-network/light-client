@@ -1,13 +1,14 @@
 import _Vue from 'vue';
-import Web3Service from '@/services/web3-service';
+import RaidenService from '@/services/raiden-service';
+import store from '@/store';
 
 export function Web3Plugin(Vue: typeof _Vue, options?: any): void {
-  Vue.prototype.$web3 = new Web3Service();
+  Vue.prototype.$raiden = new RaidenService(store);
 }
 
 declare module 'vue/types/vue' {
   // 3. Declare augmentation for Vue
   interface Vue {
-    $web3: Web3Service;
+    $raiden: RaidenService;
   }
 }

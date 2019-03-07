@@ -1,4 +1,4 @@
-import Web3Service from '@/services/web3-service';
+import RaidenService from '@/services/raiden-service';
 
 export interface RootState {
   loading: boolean;
@@ -17,6 +17,6 @@ declare global {
 
 declare module 'vue/types/vue' {
   interface Vue {
-    $web3: Web3Service;
+    $raiden: RaidenService;
   }
 }

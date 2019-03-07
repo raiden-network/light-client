@@ -74,7 +74,7 @@ export default class OpenChannel extends Vue {
 
   async openChannel() {
     this.loading = true;
-    await this.$web3.openChannel(
+    await this.$raiden.openChannel(
       this.tokenAddress,
       this.hubAddress,
       this._depositAmount

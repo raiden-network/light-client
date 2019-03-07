@@ -11,7 +11,6 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Loading from '@/components/Loading.vue';
-import { ProviderState } from '@/services/web3-service';
 import WalletHeader from '@/components/WalletHeader.vue';
 
 @Component({
@@ -30,21 +29,11 @@ export default class App extends Vue {
   }
 
   async mounted() {
-    const status = await this.$web3.detectProvider();
-    switch (status) {
-      case ProviderState.DENIED_ACCESS:
-        this.$store.commit('deniedAccess');
-        break;
-      case ProviderState.NO_PROVIDER:
-        this.$store.commit('noProvider');
-        break;
-      case ProviderState.INITIALIZED:
-        this.$store.commit('account', await this.$web3.getAccount());
-        this.$store.commit('balance', await this.$web3.getBalance());
-        break;
-    }
+    await this.$raiden.connect();
+  }
 
-    this.$store.commit('loadComplete');
+  destroyed() {
+    this.$raiden.disconnect();
   }
 }
 </script>
