@@ -20,6 +20,7 @@
 
 <p align="center">
   <a href="#getting-started">Getting Started</a> ∙
+  <a href="#example-wallet">Use the wallet</a> ∙
   <a href="#license">License</a> ∙
   <a href='#contact'>Contact</a>
 </p>
@@ -64,6 +65,8 @@ npm install npm@latest -g
 ```
 
 ### Installation
+
+### Example Wallet
 
 ## Contributing
 
