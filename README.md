@@ -93,5 +93,7 @@ Project Link: [https://github.com/raiden-network/light-client](https://github.co
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
+
+This project wouldn't be possible without the help from:
 * [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
 * [web3studio-sojourn README](https://github.com/ConsenSys/web3studio-sojourn)
