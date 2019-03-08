@@ -19,8 +19,9 @@
 </h4>
 
 <p align="center">
+  <a href='#About-the-project'>About</a> ∙
   <a href="#getting-started">Getting Started</a> ∙
-  <a href="#license">License</a> ∙
+  <a href="#license">License</a>
 </p>
 
 The Raiden Light Client is a [Raiden Network](https://raiden.network) compatible client written on JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
