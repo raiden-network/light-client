@@ -8,7 +8,7 @@
   <a href='https://raiden.network/'><img 
       width='400px' 
       alt='' 
-      src="https://user-images.githubusercontent.com/35398162/54016605-c26dae80-4183-11e9-8a19-c7ebd86bf706.png" /></a>
+      src="https://user-images.githubusercontent.com/35398162/54018222-5fcae180-4188-11e9-8758-5b6affeb3b0c.png" /></a>
   <br/>
   Raiden Light Client SDK and Wallet
   <br/>
