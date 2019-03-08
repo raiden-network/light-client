@@ -33,9 +33,11 @@ The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden
 
 ## About The Project
 
-<!-- TODO: Explain Raiden? -->
+The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, enabling near-instant, low-fee and scalable payments. It’s complementary to the Ethereum blockchain and works with any ERC20 compatible token.
 
-There is already a Raiden client available, which has been [released for mainnet in December 2018](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c). However, we want to create an easy to use SDK, which can be integrated by any JavaScript developer to make it easier to send tokens through the Raiden Network.
+There is already a Raiden client available, which has been [released for mainnet in December 2018](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c).
+
+However, we want to create an easy to use SDK, which can be integrated by any JavaScript developer to make it easier to send tokens through the Raiden Network.
 
 Here's why:
 * You should be able to interact with the Raiden Network easily with your dApp.
@@ -55,6 +57,11 @@ To build a solid architecture we have are using the following main frameworks:
 To get a local copy up and running follow these simple example steps.
 
 ### Learn about Raiden
+
+If you haven't used Raiden yet, you can
+* Look at the [documentation](https://raiden-network.readthedocs.io/en/stable/index.html)
+* Learn about it watching [Youtube videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
+* Read the posts on [Medium](https://medium.com/@raiden_network)
 
 ### Prerequisites
 
