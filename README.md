@@ -1,3 +1,33 @@
+<!-- PROJECT SHIELDS -->
+
+<!-- Gitter Badge -->
+<!-- CI-Status Badge -->
+
+<h2 align="center">
+  <br/>
+  <a href='https://raiden.network/'><img 
+      width='400px' 
+      alt='' 
+      src="https://user-images.githubusercontent.com/35398162/54016605-c26dae80-4183-11e9-8a19-c7ebd86bf706.png" /></a>
+  <br/>
+  Raiden Light Client SDK and Wallet
+  <br/>
+</h2>
+
+<h4 align="center">
+  A JavaScript SDK and wallet to make fast, cheap, scalable token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>
+</h4>
+
+<p align="center">
+  <a href="#getting-started">Getting Started</a> ∙
+  <a href="#license">License</a> ∙
+  <a href="#devkit">DevKit</a> ∙
+  <a href="#description">Description</a> ∙
+</p>
+
+Raiden Light Client is a [Raiden Network](https://raiden.network) compatible client written on JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
+
+
 # Raiden Light Client
 
 Repository for Raiden Light Client implementation
