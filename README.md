@@ -32,15 +32,14 @@ The Raiden Wallet is a reference implementation of the Raiden Light Client, whic
 
 ## About The Project
 
-<!-- Explain Raiden? -->
+<!-- TODO: Explain Raiden? -->
 
-There is already a Raiden client available, which has been [released for mainnet in December 2018](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c). However, we want create an easy to use Light Client SDK, which can be integrated by any JavaScript developer to make it easier to send tokens through the Raiden Network.
+There is already a Raiden client available, which has been [released for mainnet in December 2018](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c). However, we want to create an easy to use SDK, which can be integrated by any JavaScript developer to make it easier to send tokens through the Raiden Network.
 
-Here's why:.
+Here's why:
 * You should be able to interact with the Raiden Network easily with your dApp.
 * We want you to be enable your users to make token transfers using their consumer wallets like imToken or Metamask.
 * It should be possible to send tokens using low end devices.
-
 
 ## Built With
 To build a solid architecture we have are using the following main frameworks:
