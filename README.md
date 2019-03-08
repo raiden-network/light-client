@@ -40,14 +40,51 @@ Here's why:.
 * It should be possible to send tokens using low end devices.
 
 
-## raiden-sdk
+## Built With
+To build a solid architecture we have are using the following main frameworks:
+* [TypeScript](https://www.typescriptlang.org/)
+* [Redux](https://redux.js.org/)
+* [Vue.js](https://vuejs.org/)
 
-Module and main class may be called only Raiden, contains the logic for interacting with Raiden network from a web3.js-compatible interface/account through off-chain communication channels such as [Matrix.org](https://matrix.org) rooms on [Raiden Matrix Federation](https://github.com/raiden-network/raiden-transport) servers and sending payments through it.
+## Architecture
 
-## raiden-wallet
 
-First demo web-dapp using raiden-sdk to create a wallet-like interface to connect and operate a Raiden Network light-client account.
+## Getting Started
 
-# License
+To get a local copy up and running follow these simple example steps.
+
+### Prerequisites
+
+This is an example of how to list things you need to use the software and how to install them.
+* npm
+```sh
+npm install npm@latest -g
+```
+
+### Installation
+
+## Contributing
+
+Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
 
 Distributed under the [MIT License](./LICENSE).
+
+<!-- CONTACT -->
+## Contact
+
+[Raiden Network](https://raiden.network/) - [@raiden_network](https://twitter.com/raiden_network) - contact@raiden.network - [Gitter](https://gitter.im/raiden-network/raiden)
+
+Project Link: [https://github.com/raiden-network/light-client](https://github.com/raiden-network/light-client)
+
+<!-- ACKNOWLEDGEMENTS -->
+## Acknowledgements
+* [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
+* [web3studio-sojourn README](https://github.com/ConsenSys/web3studio-sojourn)
