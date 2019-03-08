@@ -80,10 +80,12 @@ Contributions are what make the open source community such an amazing place to b
 
 Distributed under the [MIT License](./LICENSE).
 
-<!-- CONTACT -->
 ## Contact
 
-[Raiden Network](https://raiden.network/) - [@raiden_network](https://twitter.com/raiden_network) - contact@raiden.network - [Gitter](https://gitter.im/raiden-network/raiden)
+Dev Chat: [Gitter](https://gitter.im/raiden-network/raiden)
+Twitter: [@raiden_network](https://twitter.com/raiden_network)
+Website: [Raiden Network](https://raiden.network/)
+Mail: contact@raiden.network 
 
 Project Link: [https://github.com/raiden-network/light-client](https://github.com/raiden-network/light-client)
 
