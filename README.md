@@ -21,16 +21,17 @@
 <p align="center">
   <a href="#getting-started">Getting Started</a> ∙
   <a href="#license">License</a> ∙
-  <a href="#devkit">DevKit</a> ∙
-  <a href="#description">Description</a> ∙
 </p>
 
 The Raiden Light Client is a [Raiden Network](https://raiden.network) compatible client written on JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
 The Raiden Wallet is a reference implementation of the Raiden Light Client, which can be used with web3 wallets like Metamask (Desktop) or imWallet (mobile).
 
+<!-- TODO: Maybe add a table of contens -->
 
 ## About The Project
+
+<!-- Explain Raiden? -->
 
 There is already a Raiden client available, which has been [released for mainnet in December 2018](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c). However, we want create an easy to use Light Client SDK, which can be integrated by any JavaScript developer to make it easier to send tokens through the Raiden Network.
 
@@ -48,10 +49,11 @@ To build a solid architecture we have are using the following main frameworks:
 
 ## Architecture
 
-
 ## Getting Started
 
 To get a local copy up and running follow these simple example steps.
+
+### Learn about Raiden
 
 ### Prerequisites
 
