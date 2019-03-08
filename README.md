@@ -39,7 +39,7 @@ There is already a Raiden client available, which has been [released for mainnet
 
 However, we want to create an easy to use SDK, which can be integrated by any JavaScript developer to make it easier to send tokens through the Raiden Network.
 
-Here's why:
+Here's why
 * You should be able to interact with the Raiden Network easily with your dApp.
 * We want you to be enable your users to make token transfers using their consumer wallets like imToken or Metamask.
 * It should be possible to send tokens using low end devices.
