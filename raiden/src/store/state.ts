@@ -1,9 +1,30 @@
+export const enum ChannelState {
+  opening = 'opening',
+  open = 'open',
+  closing = 'closing',
+  closed = 'closed',
+  settling = 'settling',
+  settled = 'settled',
+}
+
+export interface Channel {
+  state: ChannelState;
+  deposit: number;
+  id?: number;
+  settleTimeout?: number;
+  openBlock?: number;
+}
+
 export interface RaidenState {
-  blockNumber: number,
-  address: string,
+  address: string;
+  blockNumber: number;
+  tokenNetworks: { [tokenNetworkAddress: string]: { [partnerAddress: string]: Channel } };
+  token2tokenNetwork: { [tokenAddress: string]: string };
 }
 
 export const initialState: RaidenState = {
-  blockNumber: 0,
   address: '',
-}
+  blockNumber: 0,
+  tokenNetworks: {},
+  token2tokenNetwork: {},
+};
