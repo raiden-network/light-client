@@ -1,1 +1,2 @@
-export { Raiden } from './raiden';
+export * from './raiden';
+export * from './types';
