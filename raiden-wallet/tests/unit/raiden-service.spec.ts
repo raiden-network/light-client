@@ -5,7 +5,6 @@ import { RootState } from '@/types';
 import flushPromises from 'flush-promises';
 import { Raiden } from 'raiden';
 import Vue from 'vue';
-import { of } from 'rxjs/observable/of';
 
 Vue.use(Vuex);
 
@@ -67,24 +66,6 @@ describe('RaidenService', () => {
     expect(store.commit).toBeCalledTimes(2);
     expect(store.commit).toBeCalledWith('noProvider');
     expect(store.commit).toBeCalledWith('loadComplete');
-  });
-
-  it('should start the state monitoring when connected', async () => {
-    providerMock.mockResolvedValue({});
-    factory.mockResolvedValue({
-      state$: of({
-        address: '123'
-      })
-    });
-
-    raidenService.disconnect();
-
-    await raidenService.connect();
-    await flushPromises();
-
-    raidenService.disconnect();
-
-    expect(store.commit).toBeCalledWith('account', '123');
   });
 
   it('should throw an error when attempting to open a channel before connecting', async () => {

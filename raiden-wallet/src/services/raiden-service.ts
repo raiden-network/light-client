@@ -28,14 +28,10 @@ export default class RaidenService {
       if (!provider) {
         this.store.commit('noProvider');
       } else {
-        this._raiden = await Raiden.create(provider, 0);
+        this._raiden = await Raiden.create(provider, 0, window.localStorage);
 
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
-
-        this.subscription = this._raiden.state$.subscribe(value => {
-          this.store.commit('account', value.address);
-        });
       }
     } catch (e) {
       this.store.commit('deniedAccess');
@@ -59,7 +55,18 @@ export default class RaidenService {
     return '0';
   }
 
-  openChannel(tokenAddress: string, hubAddress: string, depositAmount: number) {
-    this.raiden.openChannel(tokenAddress, hubAddress, depositAmount);
+  async openChannel(
+    tokenAddress: string,
+    hubAddress: string,
+    depositAmount: number
+  ): Promise<boolean> {
+    let success = false;
+    try {
+      await this.raiden.openChannel(tokenAddress, hubAddress, depositAmount);
+      success = true;
+    } catch (e) {
+      success = false;
+    }
+    return success;
   }
 }

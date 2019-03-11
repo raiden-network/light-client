@@ -56,7 +56,7 @@ import AddressInput from '@/components/AddressInput.vue';
 export default class OpenChannel extends Vue {
   private _depositAmount: number = 0;
 
-  tokenAddress: string = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
+  tokenAddress: string = '0xd0A1E359811322d97991E03f863a0C30C2cF029C';
   hubAddress: string = '0x82641569b2062B545431cF6D7F0A418582865ba7';
 
   get depositAmount(): string {
@@ -74,11 +74,15 @@ export default class OpenChannel extends Vue {
 
   async openChannel() {
     this.loading = true;
-    await this.$raiden.openChannel(
+    const success = await this.$raiden.openChannel(
       this.tokenAddress,
       this.hubAddress,
       this._depositAmount
     );
+
+    if (success) {
+      this.$router.push({ name: 'send', params: { token: this.tokenAddress } });
+    }
     this.loading = false;
   }
 }
