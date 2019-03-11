@@ -35,7 +35,7 @@ The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden
 
 The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, enabling near-instant, low-fee and scalable payments. It’s complementary to the Ethereum blockchain and works with any ERC20 compatible token.
 
-There is already a Raiden client available, which has been [released for mainnet in December 2018](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c).
+There is already a [Raiden client](https://github.com/raiden-network/raiden) available, which has been [released for mainnet in December 2018](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c).
 
 However, we want to create an easy to use SDK, which can be integrated by any JavaScript developer to make it easier to send tokens through the Raiden Network.
 
