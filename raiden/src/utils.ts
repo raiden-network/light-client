@@ -2,7 +2,7 @@ import { Contract, EventFilter, Event } from 'ethers';
 import { Provider, JsonRpcProvider, Listener } from 'ethers/providers'
 import { flatten } from 'lodash';
 
-import { Observable, fromEventPattern, merge, from, defer, of } from 'rxjs';
+import { Observable, fromEventPattern, merge, from } from 'rxjs';
 import {
   filter,
   first,
@@ -40,7 +40,7 @@ export function fromEthersEvent<T>(
  * It also checks if there's already an stream for given filters, and return a completed/empty
  * Observable then, to avoid dupicate-processing events
  *
- * @param tokenNetwork  TokenNetwork contract connected to a provider
+ * @param tokenNetworkContract  TokenNetwork contract connected to a provider
  * @param filters  array of OR filters from tokenNetwork
  * @param fromBlock$  Observable of a past blockNumber since when to fetch past events
  * @param lastSeenBlock$  Observable of latest seen block, to be used as toBlock of pastEvents.
@@ -49,15 +49,15 @@ export function fromEthersEvent<T>(
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getEventsStream<T extends any[]>(
-  tokenNetwork: TokenNetwork,
+  tokenNetworkContract: TokenNetwork,
   filters: EventFilter[],
   fromBlock$?: Observable<number>,
   lastSeenBlock$?: Observable<number>,
 ): Observable<T> {
-  const provider = tokenNetwork.provider as JsonRpcProvider;
+  const provider = tokenNetworkContract.provider as JsonRpcProvider;
   // filters for channels opened by and with us
   const newEvents$: Observable<T> = merge(
-    ...filters.map(filter => fromEthersEvent(tokenNetwork, filter, (...args) => args as T))
+    ...filters.map(filter => fromEthersEvent(tokenNetworkContract, filter, (...args) => args as T))
   );
 
   let pastEvents$: Observable<T> | undefined = undefined;
@@ -84,7 +84,7 @@ export function getEventsStream<T extends any[]>(
       map(log => {
         // parse log into [...args, event: Event] array,
         // the same that contract.on events/callbacks
-        const parsed = tokenNetwork.interface.parseLog(log);
+        const parsed = tokenNetworkContract.interface.parseLog(log);
         if (!parsed) return;
         const args = parsed.values
         // not all parameters quite needed right now, but let's comply with the interface
@@ -105,12 +105,7 @@ export function getEventsStream<T extends any[]>(
     );
   }
 
-  // at subscription time, if there's a listener for filter[0], return a completed observable
-  // else if pastEvents$, return merge streams of past and newEvents$
+  // if pastEvents$, return merge streams of past and newEvents$
   // else return the stream of newEvents$ from Contract.on EventListener
-  return defer(() =>
-    tokenNetwork.listenerCount(filters[0])
-    ? of<T>()  // completed/empty observable as return
-    : (pastEvents$ ? merge(pastEvents$, newEvents$) : newEvents$)
-  );
+  return pastEvents$ ? merge(pastEvents$, newEvents$) : newEvents$;
 }

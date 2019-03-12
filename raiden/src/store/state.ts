@@ -9,7 +9,8 @@ export const enum ChannelState {
 
 export interface Channel {
   state: ChannelState;
-  deposit: number;
+  totalDeposit: number;
+  partnerDeposit: number;
   id?: number;
   settleTimeout?: number;
   openBlock?: number;
