@@ -7,7 +7,8 @@ describe('store', () => {
       defaultAccount: '',
       accountBalance: '0.0',
       providerDetected: true,
-      userDenied: false
+      userDenied: false,
+      channels: {}
     });
   });
 

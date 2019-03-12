@@ -32,6 +32,10 @@ export default class RaidenService {
 
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
+
+        this.subscription = this._raiden.channels$.subscribe(value => {
+          this.store.commit('updateChannels', value);
+        });
       }
     } catch (e) {
       this.store.commit('deniedAccess');

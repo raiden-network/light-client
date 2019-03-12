@@ -25,7 +25,8 @@ describe('App.vue', () => {
         defaultAccount: '',
         accountBalance: '0.0',
         providerDetected: true,
-        userDenied: false
+        userDenied: false,
+        channels: {}
       }
     });
     store.commit = jest.fn();

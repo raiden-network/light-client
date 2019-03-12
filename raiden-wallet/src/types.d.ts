@@ -1,4 +1,5 @@
 import RaidenService from '@/services/raiden-service';
+import { RaidenChannels } from 'raiden';
 
 export interface RootState {
   loading: boolean;
@@ -6,6 +7,7 @@ export interface RootState {
   accountBalance: string;
   providerDetected: boolean;
   userDenied: boolean;
+  channels: RaidenChannels;
 }
 
 declare global {

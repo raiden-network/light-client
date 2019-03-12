@@ -1,16 +1,18 @@
 import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState } from '@/types';
+import { RaidenChannels } from 'raiden';
 
 Vue.use(Vuex);
 
-let store: StoreOptions<RootState> = {
+const store: StoreOptions<RootState> = {
   state: {
     loading: true,
     defaultAccount: '',
     accountBalance: '0.0',
     providerDetected: true,
-    userDenied: false
+    userDenied: false,
+    channels: {}
   },
   mutations: {
     noProvider(state: RootState) {
@@ -27,6 +29,9 @@ let store: StoreOptions<RootState> = {
     },
     balance(state: RootState, balance: string) {
       state.accountBalance = balance;
+    },
+    updateChannels(state: RootState, channels: RaidenChannels) {
+      state.channels = channels;
     }
   },
   actions: {}
