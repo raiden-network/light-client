@@ -12,7 +12,7 @@ import {
   withLatestFrom,
 } from 'rxjs/operators';
 
-import { TokenNetwork } from './contracts/TokenNetwork';
+import { TokenNetwork } from '../contracts/TokenNetwork';
 
 
 /**

@@ -11,9 +11,9 @@ import { Observable, Subject, BehaviorSubject } from 'rxjs';
 import { first, filter } from 'rxjs/operators';
 
 import { ContractsInfo, RaidenContracts, RaidenEpicDeps } from './types';
-import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
-import { TokenNetwork } from './contracts/TokenNetwork';
-import { Token } from './contracts/Token';
+import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
+import { TokenNetwork } from '../contracts/TokenNetwork';
+import { Token } from '../contracts/Token';
 
 import TokenNetworkRegistryAbi from './abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from './abi/TokenNetwork.json';

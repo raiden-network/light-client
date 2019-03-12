@@ -3,14 +3,15 @@
   "version": "0.0.1",
   "description": "Raiden Light Client library and utilities",
   "main": "dist/index.js",
+  "typescript:main": "src/index.ts",
   "types": "dist/index.d.ts",
   "scripts": {
     "start": "npm run contracts && tsc -p src/ -w",
     "build": "npm run contracts && tsc -p src/",
     "test": "NODE_ENV=development ts-node test/test.ts",
     "lint": "eslint src/**.ts test/**.ts",
-    "clean": "rimraf dist/ src/contracts/",
-    "contracts": "typechain --target=ethers 'src/abi/*.json' --outDir src/contracts",
+    "clean": "rimraf dist/ contracts/",
+    "contracts": "typechain --target=ethers 'src/abi/*.json' --outDir contracts",
     "postinstall": "npm run contracts"
   },
   "repository": {
