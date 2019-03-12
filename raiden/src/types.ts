@@ -6,7 +6,8 @@ import { Network } from 'ethers/utils';
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
 import { Token } from '../contracts/Token';
-import { RaidenState, RaidenActions } from './store';
+import { RaidenState, RaidenActions, Channel } from './store';
+export { ChannelState } from './store';
 
 interface Info {
   address: string;
@@ -35,4 +36,16 @@ export interface RaidenEpicDeps {
   registryContract: TokenNetworkRegistry;
   getTokenNetworkContract: (address: string) => TokenNetwork;
   getTokenContract: (address: string) => Token;
+}
+
+export interface RaidenChannel extends Channel {
+  token: string;
+  tokenNetwork: string;
+  partner: string;
+}
+
+export interface RaidenChannels {
+  [ token: string ]: {
+    [ partner: string ]: RaidenChannel
+  }
 }
