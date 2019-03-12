@@ -13,9 +13,11 @@ import { first, filter } from 'rxjs/operators';
 import { ContractsInfo, RaidenContracts, RaidenEpicDeps } from './types';
 import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
 import { TokenNetwork } from './contracts/TokenNetwork';
+import { Token } from './contracts/Token';
 
 import TokenNetworkRegistryAbi from './abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from './abi/TokenNetwork.json';
+import TokenAbi from './abi/Token.json';
 
 import mainnetDeploy from './deployment/deployment_mainnet.json';
 import ropstenDeploy from './deployment/deployment_ropsten.json';
@@ -27,16 +29,20 @@ import {
   initialState,
   RaidenActions,
   RaidenActionType,
+  raidenEpics,
+  raidenReducer,
 
   TokenMonitoredAction,
   TokenMonitorActionFailed,
   ChannelOpenedAction,
   ChannelOpenActionFailed,
+  ChannelDepositedAction,
+  ChannelDepositActionFailed,
 
-  channelOpen,
+  raidenInit,
   tokenMonitor,
-  raidenEpics,
-  raidenReducer,
+  channelOpen,
+  channelDeposit,
 } from './store';
 
 
@@ -136,6 +142,7 @@ export class Raiden {
         contractsInfo,
         registryContract: this.contracts.registry,
         getTokenNetworkContract: this.getTokenNetworkContract.bind(this),
+        getTokenContract: this.getTokenContract.bind(this),
       },
     });
 
@@ -148,15 +155,18 @@ export class Raiden {
     epicMiddleware.run(raidenEpics);
     loadedState = this.store.getState();
 
-    // start listening events flow for all previously monitored tokens
-    for (const token in loadedState.token2tokenNetwork) {
-      this.monitorToken(token);
-    }
-
     // use next from latest known blockNumber as start block when polling
     this.provider.resetEventsBlock(loadedState.blockNumber + 1);
 
-    console.log('polling', this.provider.polling, this.provider.pollingInterval, this.provider.blockNumber);
+    // initialize epics, this will start monitoring previous token networks and open channels
+    this.store.dispatch(raidenInit());
+
+    console.log(
+      'polling',
+      this.provider.polling,
+      this.provider.pollingInterval,
+      this.provider.blockNumber,
+    );
   }
 
   /**
@@ -244,7 +254,7 @@ export class Raiden {
   }
 
   /**
-   * Create a TokenNetwork contract linked to this.provider for given tokenNetwork address
+   * Create a TokenNetwork contract linked to this.signer for given tokenNetwork address
    * Caches the result and returns the same contract instance again for the same address on this
    * @param address  TokenNetwork contract address (not token address!)
    * @return  TokenNetwork Contract instance
@@ -255,6 +265,20 @@ export class Raiden {
         address, TokenNetworkAbi, this.signer,
       ) as TokenNetwork;
     return this.contracts.tokenNetworks[address];
+  }
+
+  /**
+   * Create a Token contract linked to this.signer for given token address
+   * Caches the result and returns the same contract instance again for the same address on this
+   * @param address  Token contract address
+   * @return  Token Contract instance
+   */
+  private getTokenContract(address: string): Token {
+    if (!(address in this.contracts.tokens))
+      this.contracts.tokens[address] = new Contract(
+        address, TokenAbi, this.signer,
+      ) as Token;
+    return this.contracts.tokens[address];
   }
 
   /**
@@ -285,17 +309,15 @@ export class Raiden {
   }
 
   /**
-   * Open a channel on the tokenNetwork for given token address with partner and deposit tokens
+   * Open a channel on the tokenNetwork for given token address with partner
    * @param token  Token address on currently configured token network registry
    * @param partner  Partner address
-   * @param deposit  Number of tokens to deposit on channel after it is created
    * @param settleTimeout  openChannel parameter, defaults to 500
    * @returns  txHash of channelOpen call, iff it succeeded
    */
   public async openChannel(
     token: string,
     partner: string,
-    deposit: number,
     settleTimeout: number = 500,
   ): Promise<string> {
     const state = this.state;
@@ -315,7 +337,40 @@ export class Raiden {
         action.txHash ? resolve(action.txHash) : reject(action.error)
       )
     );
-    this.store.dispatch(channelOpen(tokenNetwork, partner, deposit, settleTimeout));
+    this.store.dispatch(channelOpen(tokenNetwork, partner, settleTimeout));
+    return promise;
+  }
+
+  /**
+   * Deposit tokens on channel between us and partner on tokenNetwork for token
+   * @param token  Token address on currently configured token network registry
+   * @param partner  Partner address
+   * @param deposit  Number of tokens to deposit on channel
+   * @returns  txHash of setTotalDeposit call, iff it succeeded
+   */
+  public async depositChannel(
+    token: string,
+    partner: string,
+    deposit: number,
+  ): Promise<string> {
+    const state = this.state;
+    const tokenNetwork = (token in state.token2tokenNetwork)
+      ? state.token2tokenNetwork[token]
+      : await this.monitorToken(token);
+    const promise: Promise<string> = new Promise((resolve, reject) =>
+      // wait for the corresponding success or error TokenMonitorAction
+      this.action$.pipe(
+        ofType<RaidenActions, ChannelDepositedAction | ChannelDepositActionFailed>(
+          RaidenActionType.CHANNEL_DEPOSITED,
+          RaidenActionType.CHANNEL_DEPOSIT_FAILED,
+        ),
+        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+        first(),
+      ).subscribe(action =>
+        action.txHash ? resolve(action.txHash) : reject(action.error)
+      )
+    );
+    this.store.dispatch(channelDeposit(tokenNetwork, partner, deposit));
     return promise;
   }
 }

@@ -34,4 +34,5 @@ export interface RaidenEpicDeps {
   contractsInfo: ContractsInfo;
   registryContract: TokenNetworkRegistry;
   getTokenNetworkContract: (address: string) => TokenNetwork;
+  getTokenContract: (address: string) => Token;
 }

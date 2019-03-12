@@ -21,6 +21,17 @@ export function raidenReducer(
     case RaidenActionType.NEW_BLOCK:
       return { ...state, blockNumber: action.blockNumber };
 
+    case RaidenActionType.TOKEN_MONITORED:
+      // action.first should be true, but not required,
+      // actual check is if token is in state.token2tokenNetwork
+      if (action.token in state.token2tokenNetwork)
+        return state;
+      return set(
+        cloneDeep(state),
+        ['token2tokenNetwork', action.token],
+        action.tokenNetwork,
+      );
+
     case RaidenActionType.CHANNEL_OPEN:
       path = ['tokenNetworks', action.tokenNetwork, action.partner];
       if (get(state, path))  // there's already a channel with partner
@@ -28,14 +39,14 @@ export function raidenReducer(
       return set(
         cloneDeep(state),
         path,
-        { state: ChannelState.opening, deposit: action.deposit },
+        { state: ChannelState.opening, totalDeposit: 0, partnerDeposit: 0 },
       );
 
     case RaidenActionType.CHANNEL_OPENED:
       path = ['tokenNetworks', action.tokenNetwork, action.partner];
       channel = {
-        deposit: 0,
-        ...get(state, path), // if not found, undefined is noop
+        totalDeposit: 0,
+        partnerDeposit: 0,
         state: ChannelState.open,
         id: action.id,
         settleTimeout: action.settleTimeout,
@@ -52,16 +63,18 @@ export function raidenReducer(
       unset(newState, path);
       return newState;
 
-    case RaidenActionType.TOKEN_MONITORED:
-      // action.first should be true, but not required,
-      // actual check is if token is in state.token2tokenNetwork
-      if (action.token in state.token2tokenNetwork)
+    case RaidenActionType.CHANNEL_DEPOSITED:
+      path = ['tokenNetworks', action.tokenNetwork, action.partner];
+      channel = cloneDeep(get(state, path));
+      if (!channel || channel.state !== ChannelState.open || channel.id !== action.id)
         return state;
-      return set(
-        cloneDeep(state),
-        ['token2tokenNetwork', action.token],
-        action.tokenNetwork,
-      );
+      if (action.participant === state.address)
+        channel.totalDeposit = action.totalDeposit
+      else if (action.participant === action.partner)
+        channel.partnerDeposit = action.totalDeposit
+      else  // shouldn't happen, deposit from neither us or partner
+        return state;
+      return set(cloneDeep(state), path, channel);
 
     default:
       return state;
