@@ -37,6 +37,7 @@
     "ethers": "^4.0.27",
     "raiden": "file:../raiden",
     "register-service-worker": "^1.6.2",
+    "rxjs": "^6.4.0",
     "vue": "^2.6.8",
     "vue-class-component": "^7.0.1",
     "vue-property-decorator": "^8.0.0",

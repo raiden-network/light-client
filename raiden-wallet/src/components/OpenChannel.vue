@@ -43,12 +43,19 @@
         </v-btn>
       </v-flex>
     </v-layout>
+    <v-snackbar v-model="snackbar" bottom multi-line>
+      {{ error }}
+      <v-btn color="pink" flat @click="snackbar = false">
+        Close
+      </v-btn>
+    </v-snackbar>
   </v-form>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
+import { DepositFailed, OpenChannelFailed } from '@/services/raiden-service';
 
 @Component({
   components: { AddressInput }
@@ -57,7 +64,10 @@ export default class OpenChannel extends Vue {
   private _depositAmount: number = 0;
 
   tokenAddress: string = '0xd0A1E359811322d97991E03f863a0C30C2cF029C';
-  hubAddress: string = '0x82641569b2062B545431cF6D7F0A418582865ba7';
+  hubAddress: string = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
+
+  snackbar: boolean = false;
+  error: string = '';
 
   get depositAmount(): string {
     if (!this._depositAmount) {
@@ -65,6 +75,7 @@ export default class OpenChannel extends Vue {
     }
     return this._depositAmount.toString();
   }
+
   set depositAmount(value: string) {
     this._depositAmount = parseFloat(value) || 0;
   }
@@ -74,14 +85,30 @@ export default class OpenChannel extends Vue {
 
   async openChannel() {
     this.loading = true;
-    const success = await this.$raiden.openChannel(
-      this.tokenAddress,
-      this.hubAddress,
-      this._depositAmount
-    );
+    try {
+      const success = await this.$raiden.openChannel(
+        this.tokenAddress,
+        this.hubAddress,
+        this._depositAmount
+      );
 
-    if (success) {
-      this.$router.push({ name: 'send', params: { token: this.tokenAddress } });
+      if (success) {
+        this.$router.push({
+          name: 'send',
+          params: { token: this.tokenAddress }
+        });
+      }
+    } catch (e) {
+      this.error = '';
+      if (e instanceof OpenChannelFailed) {
+        this.error = 'Channel open failed.';
+      } else if (e instanceof DepositFailed) {
+        this.error = 'Could not deposit to the channel.';
+      }
+
+      if (this.error) {
+        this.snackbar = true;
+      }
     }
     this.loading = false;
   }

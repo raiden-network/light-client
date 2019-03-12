@@ -62,11 +62,21 @@ export default class RaidenService {
   ): Promise<boolean> {
     let success = false;
     try {
-      await this.raiden.openChannel(tokenAddress, hubAddress, depositAmount);
-      success = true;
+      await this.raiden.openChannel(tokenAddress, hubAddress);
     } catch (e) {
-      success = false;
+      throw new OpenChannelFailed(e);
     }
+
+    try {
+      await this.raiden.depositChannel(tokenAddress, hubAddress, depositAmount);
+    } catch (e) {
+      throw new DepositFailed(e);
+    }
+
     return success;
   }
 }
+
+export class OpenChannelFailed extends Error {}
+
+export class DepositFailed extends Error {}
