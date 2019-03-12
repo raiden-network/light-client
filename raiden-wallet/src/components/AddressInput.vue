@@ -2,9 +2,10 @@
   <div>
     <v-label v-if="label">{{ label }}</v-label>
     <v-text-field
-      v-model="value"
-      :rules="rules"
       :disabled="disabled"
+      :rules="rules"
+      v-bind:value="value"
+      v-on:input="$emit('input', $event)"
     ></v-text-field>
   </div>
 </template>
@@ -27,7 +28,9 @@ export default class AddressInput extends Vue {
     (v: string) =>
       (v && AddressUtils.isAddress(v)) || 'A valid address is required',
     (v: string) =>
-      (v && AddressUtils.checkAddressChecksum(v)) ||
+      (v &&
+        AddressUtils.isAddress(v) &&
+        AddressUtils.checkAddressChecksum(v)) ||
       `Address ${v} is not in checksum format`
   ];
 }

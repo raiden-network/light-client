@@ -6,6 +6,10 @@ export default class AddressUtils {
   }
 
   static checkAddressChecksum(address: string) {
-    return address === utils.getAddress(address);
+    try {
+      return address === utils.getAddress(address);
+    } catch (e) {
+      return false;
+    }
   }
 }
