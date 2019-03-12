@@ -3,9 +3,9 @@ import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers'
 import { Network } from 'ethers/utils';
 
-import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
-import { TokenNetwork } from './contracts/TokenNetwork';
-import { Token } from './contracts/Token';
+import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
+import { TokenNetwork } from '../contracts/TokenNetwork';
+import { Token } from '../contracts/Token';
 import { RaidenState, RaidenActions } from './store';
 
 interface Info {
