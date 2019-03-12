@@ -6,11 +6,10 @@ import { Middleware, applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, ofType } from 'redux-observable';
 import { createLogger } from 'redux-logger';
 
-import { debounce } from 'lodash';
+import { debounce, findKey, transform } from 'lodash';
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
-import { first, filter } from 'rxjs/operators';
+import { first, filter, map } from 'rxjs/operators';
 
-import { ContractsInfo, RaidenContracts, RaidenEpicDeps } from './types';
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
 import { Token } from '../contracts/Token';
@@ -24,6 +23,7 @@ import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 
+import { ContractsInfo, RaidenContracts, RaidenEpicDeps, RaidenChannels } from './types';
 import {
   RaidenState,
   initialState,
@@ -54,8 +54,9 @@ export class Raiden {
   private readonly contractsInfo: ContractsInfo;
   private contracts: RaidenContracts;
 
+  private readonly action$: Observable<RaidenActions>;
   public readonly state$: Observable<RaidenState>;
-  public readonly action$: Observable<RaidenActions>;
+  public readonly channels$: Observable<RaidenChannels>;
 
   public constructor(
     provider: JsonRpcProvider,
@@ -115,15 +116,30 @@ export class Raiden {
       loadedState = storageOrState;
     }
 
+    if (process.env.NODE_ENV === 'development') {
+      middlewares.push(createLogger({ colors: false }));
+    }
+
     const state$ = new BehaviorSubject<RaidenState>(loadedState);
     this.state$ = state$;
 
     const action$ = new Subject<RaidenActions>();
     this.action$ = action$;
 
-    if (process.env.NODE_ENV === 'development') {
-      middlewares.push(createLogger({ colors: false }));
-    }
+    this.channels$ = state$.pipe(
+      map(state => transform(  // transform state.tokenNetworks to token-partner-raidenChannel map
+        state.tokenNetworks,
+        (result, partner2channel, tokenNetwork) => {
+          const token = findKey(state.token2tokenNetwork, tn => tn === tokenNetwork);
+          if (!token) return;  // shouldn't happen, token mapping is always bi-direction
+          result[token] = transform(  // transform Channel to RaidenChannel, with more info
+            partner2channel,
+            (partner2raidenChannel, channel, partner) =>
+              partner2raidenChannel[partner] = { ...channel, token, tokenNetwork, partner }
+          )
+        }
+      )),
+    )
 
     // minimum blockNumber of contracts deployment as start scan block
     const epicMiddleware = createEpicMiddleware<
