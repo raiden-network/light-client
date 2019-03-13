@@ -1,4 +1,10 @@
-export const enum ChannelState {
+import * as t from 'io-ts';
+import { ThrowReporter } from "io-ts/lib/ThrowReporter";
+
+import { createEnumType, BigNumberType } from './types';
+
+
+export enum ChannelState {
   opening = 'opening',
   open = 'open',
   closing = 'closing',
@@ -7,21 +13,59 @@ export const enum ChannelState {
   settled = 'settled',
 }
 
-export interface Channel {
+const ChannelStateType = createEnumType<ChannelState>(ChannelState, 'ChannelState');
+
+
+export const ChannelType = t.intersection([
+  t.type({
+    state: ChannelStateType,
+    totalDeposit: BigNumberType,
+    partnerDeposit: BigNumberType,
+  }),
+  t.partial({
+    id: t.number,
+    settleTimeout: t.number,
+    openBlock: t.number,
+  }),
+]);
+
+export type Channel = t.TypeOf<typeof ChannelType>;
+
+/*export interface Channel {
   state: ChannelState;
   totalDeposit: number;
   partnerDeposit: number;
   id?: number;
   settleTimeout?: number;
   openBlock?: number;
+}*/
+
+export const RaidenStateType = t.type({
+  address: t.string,
+  blockNumber: t.number,
+  tokenNetworks: t.record(t.string, t.record(t.string, ChannelType)),
+  token2tokenNetwork: t.record(t.string, t.string),
+});
+
+export type RaidenState = t.TypeOf<typeof RaidenStateType>;
+
+export function encodeRaidenState(state: RaidenState): string {
+  return JSON.stringify(RaidenStateType.encode(state), undefined, 2);
 }
 
+export function decodeRaidenState(data: unknown): RaidenState {
+  const validationResult = RaidenStateType.decode(data);
+  ThrowReporter.report(validationResult);  // throws if decode failed
+  return validationResult.value as RaidenState;
+}
+
+/*
 export interface RaidenState {
   address: string;
   blockNumber: number;
   tokenNetworks: { [tokenNetworkAddress: string]: { [partnerAddress: string]: Channel } };
   token2tokenNetwork: { [tokenAddress: string]: string };
-}
+}*/
 
 export const initialState: RaidenState = {
   address: '',

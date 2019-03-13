@@ -1,4 +1,5 @@
 import { AnyAction } from 'redux';
+import { BigNumber } from './types'
 
 export const enum RaidenActionType {
   INIT = 'raidenInit',
@@ -87,7 +88,7 @@ export interface ChannelDepositAction extends RaidenAction {
   type: RaidenActionType.CHANNEL_DEPOSIT;
   tokenNetwork: string;
   partner: string;
-  deposit: number;
+  deposit: BigNumber;
 }
 
 export interface ChannelDepositedAction extends RaidenAction {
@@ -96,7 +97,7 @@ export interface ChannelDepositedAction extends RaidenAction {
   partner: string;
   id: number;
   participant: string;
-  totalDeposit: number;
+  totalDeposit: BigNumber;
   txHash: string;
 }
 
@@ -172,7 +173,7 @@ export const channelMonitor = (
 export const channelDeposit = (
   tokenNetwork: string,
   partner: string,
-  deposit: number,
+  deposit: BigNumber,
 ): ChannelDepositAction =>
   ({ type: RaidenActionType.CHANNEL_DEPOSIT, tokenNetwork, partner, deposit });
 
@@ -181,7 +182,7 @@ export const channelDeposited = (
   partner: string,
   id: number,
   participant: string,
-  totalDeposit: number,
+  totalDeposit: BigNumber,
   txHash: string,
 ): ChannelDepositedAction =>
   ({
