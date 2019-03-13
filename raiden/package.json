@@ -9,7 +9,7 @@
     "start": "npm run contracts && tsc -p src/ -w",
     "build": "npm run contracts && tsc -p src/",
     "test": "NODE_ENV=development ts-node test/test.ts",
-    "lint": "eslint src/**.ts test/**.ts",
+    "lint": "eslint src/**/*.ts test/**/*.ts",
     "clean": "rimraf dist/ contracts/",
     "contracts": "typechain --target=ethers 'src/abi/*.json' --outDir contracts",
     "postinstall": "npm run contracts"
@@ -42,7 +42,9 @@
     "@typescript-eslint/parser": "^1.4.2",
     "eslint": "^5.15.1",
     "eslint-config-prettier": "^4.1.0",
+    "eslint-plugin-prettier": "^3.0.1",
     "node-localstorage": "^1.3.1",
+    "prettier": "^1.16.4",
     "rimraf": "^2.6.3",
     "ts-node": "^8.0.3",
     "typechain": "^0.3.11",
@@ -78,8 +80,15 @@
     "rules": {},
     "extends": [
       "plugin:@typescript-eslint/recommended",
-      "prettier",
-      "prettier/@typescript-eslint"
+      "prettier/@typescript-eslint",
+      "plugin:prettier/recommended"
     ]
+  },
+  "prettier": {
+    "semi": true,
+    "trailingComma": "all",
+    "singleQuote": true,
+    "printWidth": 99,
+    "tabWidth": 2
   }
 }

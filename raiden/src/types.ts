@@ -1,6 +1,6 @@
 import { Subject } from 'rxjs';
 import { Signer } from 'ethers';
-import { JsonRpcProvider } from 'ethers/providers'
+import { JsonRpcProvider } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
@@ -45,7 +45,7 @@ export interface RaidenChannel extends Channel {
 }
 
 export interface RaidenChannels {
-  [ token: string ]: {
-    [ partner: string ]: RaidenChannel
-  }
+  [token: string]: {
+    [partner: string]: RaidenChannel;
+  };
 }

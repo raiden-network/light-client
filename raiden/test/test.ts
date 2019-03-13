@@ -10,7 +10,6 @@ const testNode = 'http://geth.ropsten.ethnodes.brainbot.com:8545',
 
 const token = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
 
-
 async function dummyTest(): Promise<void> {
   const localStorage = new LocalStorage('./.localstorage');
   let pk = testPK;
@@ -24,8 +23,10 @@ async function dummyTest(): Promise<void> {
 
   const blockNumber = await raiden.getBlockNumber();
   const balance = await raiden.getBalance();
-  console.log(`Connected to node ${testNode} with account ${raiden.address}, ` +
-    `current blockNumber: ${blockNumber}, balance: ${formatEther(balance)}`);
+  console.log(
+    `Connected to node ${testNode} with account ${raiden.address}, ` +
+      `current blockNumber: ${blockNumber}, balance: ${formatEther(balance)}`,
+  );
 
   await new Promise(resolve => setTimeout(resolve, 10e3));
   console.log('monitorToken', await raiden.monitorToken(token));

@@ -1,19 +1,11 @@
 import { Contract, EventFilter, Event } from 'ethers';
-import { Provider, JsonRpcProvider, Listener } from 'ethers/providers'
+import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
 import { flatten } from 'lodash';
 
 import { Observable, fromEventPattern, merge, from } from 'rxjs';
-import {
-  filter,
-  first,
-  map,
-  mergeAll,
-  switchMap,
-  withLatestFrom,
-} from 'rxjs/operators';
+import { filter, first, map, mergeAll, switchMap, withLatestFrom } from 'rxjs/operators';
 
 import { TokenNetwork } from '../contracts/TokenNetwork';
-
 
 /**
  * Like rxjs' fromEvent, but event can be an EventFilter
@@ -29,7 +21,6 @@ export function fromEthersEvent<T>(
     resultSelector,
   ) as Observable<T>;
 }
-
 
 /**
  * getEventsStream returns a stream of T-type tuples (arrays) from TokenNetwork's
@@ -57,7 +48,9 @@ export function getEventsStream<T extends any[]>(
   const provider = tokenNetworkContract.provider as JsonRpcProvider;
   // filters for channels opened by and with us
   const newEvents$: Observable<T> = merge(
-    ...filters.map(filter => fromEthersEvent(tokenNetworkContract, filter, (...args) => args as T))
+    ...filters.map(filter =>
+      fromEthersEvent(tokenNetworkContract, filter, (...args) => args as T),
+    ),
   );
 
   let pastEvents$: Observable<T> | undefined = undefined;
@@ -69,18 +62,13 @@ export function getEventsStream<T extends any[]>(
       first(),
       switchMap(async ([fromBlock, toBlock]) => {
         const logs = await Promise.all(
-          filters.map(filter =>
-            provider.getLogs({ ...filter, fromBlock, toBlock })),
+          filters.map(filter => provider.getLogs({ ...filter, fromBlock, toBlock })),
         );
         // flatten array of each getLogs query response and sort them
         // emit log array elements as separate logs into stream
-        return from(
-          flatten(logs).sort((a, b) =>
-            (a.blockNumber || 0) - (b.blockNumber || 0)
-          )
-        );
+        return from(flatten(logs).sort((a, b) => (a.blockNumber || 0) - (b.blockNumber || 0)));
       }),
-      mergeAll(),  // async return above will be a Promise of an Observable, so unpack inner$
+      mergeAll(), // async return above will be a Promise of an Observable, so unpack inner$
       map(log => {
         // parse log into [...args, event: Event] array,
         // the same that contract.on events/callbacks
@@ -95,8 +83,7 @@ export function getEventsStream<T extends any[]>(
           removeListener: () => {},
           getBlock: () => provider.getBlock(log.blockHash || ''),
           getTransaction: () => provider.getTransaction(log.transactionHash || ''),
-          getTransactionReceipt: () =>
-            provider.getTransactionReceipt(log.transactionHash || ''),
+          getTransactionReceipt: () => provider.getTransactionReceipt(log.transactionHash || ''),
           decode: () => parsed,
         };
         return [...args, event];
