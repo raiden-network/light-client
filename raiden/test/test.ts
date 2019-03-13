@@ -8,6 +8,8 @@ import { Raiden } from '..';
 const testNode = 'http://geth.ropsten.ethnodes.brainbot.com:8545',
   testPK = '0x0123456789012345678901234567890123456789012345678901234567890123';
 
+const token = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
+
 
 async function dummyTest(): Promise<void> {
   const localStorage = new LocalStorage('./.localstorage');
@@ -26,7 +28,9 @@ async function dummyTest(): Promise<void> {
     `current blockNumber: ${blockNumber}, balance: ${formatEther(balance)}`);
 
   await new Promise(resolve => setTimeout(resolve, 10e3));
-  console.log('monitorToken', await raiden.monitorToken('0xc778417E063141139Fce010982780140Aa0cD5Ab'));
+  console.log('monitorToken', await raiden.monitorToken(token));
+  console.log('tokenBalance', await raiden.getTokenBalance(token));
+
   //console.log('depositChannel', await raiden.depositChannel('0xc778417E063141139Fce010982780140Aa0cD5Ab', '0x3333333333333333333333333333333333333333', 123));
 
   /*try {

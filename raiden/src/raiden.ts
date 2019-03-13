@@ -302,11 +302,22 @@ export class Raiden {
     if (!(token in this.state.token2tokenNetwork))
       throw new Error(`token "${token}" not monitored`);
     const tokenContract = this.getTokenContract(token);
+
+    async function getDecimals(): Promise<number> {
+      try {
+        let decimals = bigNumberify(await tokenContract.functions.decimals());
+        if (!decimals) throw 'no decimals';
+        return decimals.toNumber();
+      } catch (err) {
+        return 18;
+      }
+    }
     const [ balance, decimals ] = await Promise.all([
       tokenContract.functions.balanceOf(address || this.address),
-      tokenContract.functions.decimals(),
+      getDecimals(),
+      ,
     ]);
-    return { balance, decimals: decimals.toNumber() };
+    return { balance, decimals };
   }
 
   /**
