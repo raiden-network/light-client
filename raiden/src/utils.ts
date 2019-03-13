@@ -86,7 +86,7 @@ export function getEventsStream<T extends any[]>(
         // the same that contract.on events/callbacks
         const parsed = tokenNetworkContract.interface.parseLog(log);
         if (!parsed) return;
-        const args = parsed.values
+        const args = Array.prototype.slice.call(parsed.values);
         // not all parameters quite needed right now, but let's comply with the interface
         const event: Event = {
           ...log,

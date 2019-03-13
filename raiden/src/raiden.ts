@@ -26,11 +26,15 @@ import kovanDeploy from './deployment/deployment_kovan.json';
 import { ContractsInfo, RaidenContracts, RaidenEpicDeps, RaidenChannels } from './types';
 import {
   RaidenState,
+  RaidenStateType,
   initialState,
-  RaidenActions,
-  RaidenActionType,
+  encodeRaidenState,
+  decodeRaidenState,
+
   raidenEpics,
   raidenReducer,
+  RaidenActions,
+  RaidenActionType,
 
   TokenMonitoredAction,
   TokenMonitorActionFailed,
@@ -44,6 +48,7 @@ import {
   channelOpen,
   channelDeposit,
 } from './store';
+import { BigNumber, bigNumberify } from './store/types';
 
 
 export class Raiden {
@@ -64,7 +69,7 @@ export class Raiden {
     signer: Signer,
     address: string,
     contractsInfo: ContractsInfo,
-    storageOrState?: Storage | RaidenState,
+    storageOrState?: Storage | RaidenState | unknown,
   ) {
     this.provider = provider;
     this.network = network;
@@ -90,20 +95,24 @@ export class Raiden {
     };
 
     // type guard
-    function isRaidenState(storageOrState: Storage | RaidenState): storageOrState is RaidenState {
-      return (storageOrState as RaidenState).address !== undefined;
+    function isStorage(storageOrState: unknown): storageOrState is Storage {
+      return storageOrState && typeof (storageOrState as Storage).getItem === 'function';
     }
 
-    if (storageOrState && !isRaidenState(storageOrState)) {
+    if (storageOrState && isStorage(storageOrState)) {
       const ns = `raiden_${network.name || network.chainId}_${address}`;
-      Object.assign(
+      const loaded = Object.assign(
+        {},
         loadedState,
         JSON.parse(storageOrState.getItem(ns) || 'null'),
       );
+
+      loadedState = decodeRaidenState(loaded);
+
       // custom middleware to set storage key=ns with latest state
       const debouncedSetItem = debounce(
         (ns: string, state: RaidenState): void =>
-          storageOrState.setItem(ns, JSON.stringify(state, undefined, 2)),
+          storageOrState.setItem(ns, encodeRaidenState(state)),
         1000,
         { maxWait: 5000 },
       );
@@ -112,8 +121,10 @@ export class Raiden {
         debouncedSetItem(ns, store.getState());
         return result;
       });
-    } else if (storageOrState) {
+    } else if (storageOrState && RaidenStateType.is(storageOrState)) {
       loadedState = storageOrState;
+    } else if (storageOrState /* type(storageOrState) === unknown */) {
+      loadedState = decodeRaidenState(storageOrState);
     }
 
     if (process.env.NODE_ENV === 'development') {
@@ -270,6 +281,35 @@ export class Raiden {
   }
 
   /**
+   * Get ETH balance for given address or self
+   * @param address  Optional target address. If omitted, gets own balance
+   * @returns  BigNumber of ETH balance
+   */
+  public getBalance(address?: string): Promise<BigNumber> {
+    return this.provider.getBalance(address || this.address);
+  }
+
+  /**
+   * Get token balance and token decimals for given address or self
+   * @param token  Token address to fetch balance. Must be one of the monitored tokens.
+   * @param address  Optional target address. If omitted, gets own balance
+   * @returns  Object containing properties 'balance' in wei as BigNumber and 'decimals' as number
+   */
+  public async getTokenBalance(
+    token: string,
+    address?: string,
+  ): Promise<{ balance: BigNumber, decimals: number }> {
+    if (!(token in this.state.token2tokenNetwork))
+      throw new Error(`token "${token}" not monitored`);
+    const tokenContract = this.getTokenContract(token);
+    const [ balance, decimals ] = await Promise.all([
+      tokenContract.functions.balanceOf(address || this.address),
+      tokenContract.functions.decimals(),
+    ]);
+    return { balance, decimals: decimals.toNumber() };
+  }
+
+  /**
    * Create a TokenNetwork contract linked to this.signer for given tokenNetwork address
    * Caches the result and returns the same contract instance again for the same address on this
    * @param address  TokenNetwork contract address (not token address!)
@@ -367,7 +407,7 @@ export class Raiden {
   public async depositChannel(
     token: string,
     partner: string,
-    deposit: number,
+    deposit: BigNumber | number,
   ): Promise<string> {
     const state = this.state;
     const tokenNetwork = (token in state.token2tokenNetwork)
@@ -386,7 +426,7 @@ export class Raiden {
         action.txHash ? resolve(action.txHash) : reject(action.error)
       )
     );
-    this.store.dispatch(channelDeposit(tokenNetwork, partner, deposit));
+    this.store.dispatch(channelDeposit(tokenNetwork, partner, bigNumberify(deposit)));
     return promise;
   }
 }

@@ -16,6 +16,7 @@ import { AddressZero } from 'ethers/constants';
 
 import { fromEthersEvent, getEventsStream } from '../utils';
 import { RaidenEpicDeps } from '../types';
+import { BigNumber } from './types';
 import { RaidenState, Channel, ChannelState } from './state';
 import {
   RaidenActionType,
@@ -107,7 +108,7 @@ const raidenInitializationEpic = (
         mergeMap(([tokenNetwork, obj]) =>
           from(Object.entries(obj)).pipe(
             filter(([, channel]) =>
-              channel.state !== ChannelState.open && channel.id !== undefined),
+              channel.state === ChannelState.open && channel.id !== undefined),
             // typescript doesn't understand above filter guarantees id below will be set
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             map(([partner, channel]) => channelMonitor(tokenNetwork, partner, channel.id!)),
@@ -189,7 +190,7 @@ const tokenMonitoredEventsEpic = (
 
       // type of elements emitted by getEventsStream (past and new events coming from contract)
       // [channelId, partner1, partner2, settleTimeout, Event]
-      type ChannelOpenedEvent = [number, string, string, number, Event];
+      type ChannelOpenedEvent = [BigNumber, string, string, BigNumber, Event];
 
       const filters = [
         tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
@@ -212,8 +213,8 @@ const tokenMonitoredEventsEpic = (
             channelOpened(
               tokenNetworkContract.address,
               address === p1 ? p2 : p1,
-              id,
-              settleTimeout,
+              id.toNumber(),
+              settleTimeout.toNumber(),
               event.blockNumber || 0,  // these parameters should always be set in event
               event.transactionHash || '',
             )
@@ -319,7 +320,7 @@ const channelMonitorEventsEpic = (
 
       // type of elements emitted by getEventsStream (past and new events coming from contract)
       // [channelId, participant, totalDeposit, Event]
-      type ChannelNewDepositEvent = [number, string, number, Event];
+      type ChannelNewDepositEvent = [BigNumber, string, BigNumber, Event];
 
       const filters = [
         tokenNetworkContract.filters.ChannelNewDeposit(action.id, null, null),
@@ -340,7 +341,7 @@ const channelMonitorEventsEpic = (
             channelDeposited(
               action.tokenNetwork,
               action.partner,
-              id,
+              id.toNumber(),
               participant,
               totalDeposit,
               event.transactionHash || '', // should always be defined
@@ -377,34 +378,38 @@ const channelDepositEpic = (
       const tokenContract = getTokenContract(token);
       const tokenNetworkContract = getTokenNetworkContract(action.tokenNetwork);
       const channel: Channel = get(state.tokenNetworks, [action.tokenNetwork, action.partner]);
-      if (!channel || channel.state !== ChannelState.open) {
+      if (!channel || channel.state !== ChannelState.open || channel.id === undefined) {
         const error = new Error(`channel for "${action.tokenNetwork}" and "${action.partner}" `+
           `not found or not in 'open' state`);
         return of(channelDepositFailed(action.tokenNetwork, action.partner, error))
       }
+      const channelId = channel.id;
 
       return from(
-        tokenContract.functions.approve(action.tokenNetwork, action.deposit)  // send approve transaction
+        // send approve transaction
+        tokenContract.functions.approve(action.tokenNetwork, action.deposit)
       ).pipe(
+        tap(tx => console.log(`sent approve tx "${tx.hash}" to "${token}"`)),
         mergeMap(async (tx) => ({ receipt: await tx.wait(), tx })),
         map(({receipt, tx}) => {
           if (!receipt.status)
             throw new Error(`token "${token}" approve transaction "${tx.hash}" failed`);
           return tx.hash;
         }),
+        tap(txHash => console.log(`approve tx "${txHash}" successfuly mined!`)),
+      ).pipe(
         withLatestFrom(state$),
         mergeMap(([, state]) =>
           // send setTotalDeposit transaction
           tokenNetworkContract.functions.setTotalDeposit(
-            action.id,
+            channelId,
             address,
-            get(
-              state.tokenNetworks,
-              [action.tokenNetwork, action.partner, 'totalDeposit'],
-            ) + action.deposit,
+            state.tokenNetworks[action.tokenNetwork][action.partner]
+              .totalDeposit.add(action.deposit),
             action.partner,
           )
         ),
+        tap(tx => console.log(`sent setTotalDeposit tx "${tx.hash}" to "${action.tokenNetwork}"`)),
         mergeMap(async (tx) => ({ receipt: await tx.wait(), tx })),
         map(({receipt, tx}) => {
           if (!receipt.status)
@@ -412,6 +417,7 @@ const channelDepositEpic = (
               `transaction "${tx.hash}" failed`);
           return tx.hash;
         }),
+        tap(txHash => console.log(`setTotalDeposit tx "${txHash}" successfuly mined!`)),
         // if succeeded, return a empty/completed observable
         // actual ChannelDepositedAction will be detected and handled by channelMonitorEventsEpic
         // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError

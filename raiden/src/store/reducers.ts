@@ -1,4 +1,5 @@
 import { cloneDeep, get, set, unset } from 'lodash';
+import { bigNumberify } from './types';
 import {
   RaidenState,
   initialState,
@@ -45,8 +46,8 @@ export function raidenReducer(
     case RaidenActionType.CHANNEL_OPENED:
       path = ['tokenNetworks', action.tokenNetwork, action.partner];
       channel = {
-        totalDeposit: 0,
-        partnerDeposit: 0,
+        totalDeposit: bigNumberify(0),
+        partnerDeposit: bigNumberify(0),
         state: ChannelState.open,
         id: action.id,
         settleTimeout: action.settleTimeout,
