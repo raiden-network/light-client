@@ -4,7 +4,6 @@ export { BigNumber, bigNumberify } from 'ethers/utils';
 
 const StringOrNumber = t.union([t.string, t.number]);
 
-
 export const BigNumberType = new t.Type<BigNumber, string>(
   'BigNumber',
   (u): u is BigNumber => u instanceof BigNumber,
@@ -31,8 +30,8 @@ export class EnumType<A> extends t.Type<A> {
       (u): u is A => Object.values(this.enumObject).some(v => v === u),
       (u, c) => (this.is(u) ? t.success(u) : t.failure(u, c)),
       t.identity,
-    )
-    this.enumObject = e
+    );
+    this.enumObject = e;
   }
 }
 

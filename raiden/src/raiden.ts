@@ -30,26 +30,22 @@ import {
   initialState,
   encodeRaidenState,
   decodeRaidenState,
-
   raidenEpics,
   raidenReducer,
   RaidenActions,
   RaidenActionType,
-
   TokenMonitoredAction,
   TokenMonitorActionFailed,
   ChannelOpenedAction,
   ChannelOpenActionFailed,
   ChannelDepositedAction,
   ChannelDepositActionFailed,
-
   raidenInit,
   tokenMonitor,
   channelOpen,
   channelDeposit,
 } from './store';
 import { BigNumber, bigNumberify } from './store/types';
-
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
@@ -84,7 +80,7 @@ export class Raiden {
       ) as TokenNetworkRegistry,
       tokenNetworks: {},
       tokens: {},
-    }
+    };
 
     const middlewares: Middleware[] = [];
     // use TokenNetworkRegistry deployment block as initial blockNumber, or 0
@@ -138,19 +134,23 @@ export class Raiden {
     this.action$ = action$;
 
     this.channels$ = state$.pipe(
-      map(state => transform(  // transform state.tokenNetworks to token-partner-raidenChannel map
-        state.tokenNetworks,
-        (result, partner2channel, tokenNetwork) => {
-          const token = findKey(state.token2tokenNetwork, tn => tn === tokenNetwork);
-          if (!token) return;  // shouldn't happen, token mapping is always bi-direction
-          result[token] = transform(  // transform Channel to RaidenChannel, with more info
-            partner2channel,
-            (partner2raidenChannel, channel, partner) =>
-              partner2raidenChannel[partner] = { ...channel, token, tokenNetwork, partner }
-          )
-        }
-      )),
-    )
+      map(state =>
+        transform(
+          // transform state.tokenNetworks to token-partner-raidenChannel map
+          state.tokenNetworks,
+          (result, partner2channel, tokenNetwork) => {
+            const token = findKey(state.token2tokenNetwork, tn => tn === tokenNetwork);
+            if (!token) return; // shouldn't happen, token mapping is always bi-direction
+            result[token] = transform(
+              // transform Channel to RaidenChannel, with more info
+              partner2channel,
+              (partner2raidenChannel, channel, partner) =>
+                (partner2raidenChannel[partner] = { ...channel, token, tokenNetwork, partner }),
+            );
+          },
+        ),
+      ),
+    );
 
     // minimum blockNumber of contracts deployment as start scan block
     const epicMiddleware = createEpicMiddleware<
@@ -250,17 +250,20 @@ export class Raiden {
 
     let signer: Signer;
     if (typeof account === 'string') {
-      if (account.length === 42) {  // address
+      if (account.length === 42) {
+        // address
         const accounts = await provider.listAccounts();
         if (accounts.indexOf(account) < 0)
           throw new Error(`Account "${account}" not found in provider, got=${accounts}`);
         signer = provider.getSigner(account);
-      } else if (account.length === 66) {  // private key
+      } else if (account.length === 66) {
+        // private key
         signer = new Wallet(account, provider);
       } else {
         throw new Error('String account must be either a 0x-encoded address or private key');
       }
-    } else /* if (typeof account === 'number') */ {  // index of account in provider
+    } /* if (typeof account === 'number') */ else {
+      // index of account in provider
       signer = provider.getSigner(account);
     }
     const address = await signer.getAddress();
@@ -277,7 +280,7 @@ export class Raiden {
   }
 
   public async getBlockNumber(): Promise<number> {
-    return this.provider.blockNumber || await this.provider.getBlockNumber();
+    return this.provider.blockNumber || (await this.provider.getBlockNumber());
   }
 
   /**
@@ -298,7 +301,7 @@ export class Raiden {
   public async getTokenBalance(
     token: string,
     address?: string,
-  ): Promise<{ balance: BigNumber, decimals: number }> {
+  ): Promise<{ balance: BigNumber; decimals: number }> {
     if (!(token in this.state.token2tokenNetwork))
       throw new Error(`token "${token}" not monitored`);
     const tokenContract = this.getTokenContract(token);
@@ -312,7 +315,7 @@ export class Raiden {
         return 18;
       }
     }
-    const [ balance, decimals ] = await Promise.all([
+    const [balance, decimals] = await Promise.all([
       tokenContract.functions.balanceOf(address || this.address),
       getDecimals(),
       ,
@@ -329,7 +332,9 @@ export class Raiden {
   private getTokenNetworkContract(address: string): TokenNetwork {
     if (!(address in this.contracts.tokenNetworks))
       this.contracts.tokenNetworks[address] = new Contract(
-        address, TokenNetworkAbi, this.signer,
+        address,
+        TokenNetworkAbi,
+        this.signer,
       ) as TokenNetwork;
     return this.contracts.tokenNetworks[address];
   }
@@ -342,9 +347,7 @@ export class Raiden {
    */
   private getTokenContract(address: string): Token {
     if (!(address in this.contracts.tokens))
-      this.contracts.tokens[address] = new Contract(
-        address, TokenAbi, this.signer,
-      ) as Token;
+      this.contracts.tokens[address] = new Contract(address, TokenAbi, this.signer) as Token;
     return this.contracts.tokens[address];
   }
 
@@ -360,16 +363,18 @@ export class Raiden {
   public monitorToken(address: string): Promise<string> {
     const promise: Promise<string> = new Promise((resolve, reject) =>
       // wait for the corresponding success or error TokenMonitorAction
-      this.action$.pipe(
-        ofType<RaidenActions, TokenMonitoredAction | TokenMonitorActionFailed>(
-          RaidenActionType.TOKEN_MONITORED,
-          RaidenActionType.TOKEN_MONITOR_FAILED,
+      this.action$
+        .pipe(
+          ofType<RaidenActions, TokenMonitoredAction | TokenMonitorActionFailed>(
+            RaidenActionType.TOKEN_MONITORED,
+            RaidenActionType.TOKEN_MONITOR_FAILED,
+          ),
+          filter(action => action.token === address),
+          first(),
+        )
+        .subscribe(action =>
+          action.tokenNetwork ? resolve(action.tokenNetwork) : reject(action.error),
         ),
-        filter(action => action.token === address),
-        first(),
-      ).subscribe(action =>
-        action.tokenNetwork ? resolve(action.tokenNetwork) : reject(action.error)
-      )
     );
     this.store.dispatch(tokenMonitor(address));
     return promise;
@@ -388,21 +393,22 @@ export class Raiden {
     settleTimeout: number = 500,
   ): Promise<string> {
     const state = this.state;
-    const tokenNetwork = (token in state.token2tokenNetwork)
-      ? state.token2tokenNetwork[token]
-      : await this.monitorToken(token);
+    const tokenNetwork =
+      token in state.token2tokenNetwork
+        ? state.token2tokenNetwork[token]
+        : await this.monitorToken(token);
     const promise: Promise<string> = new Promise((resolve, reject) =>
       // wait for the corresponding success or error TokenMonitorAction
-      this.action$.pipe(
-        ofType<RaidenActions, ChannelOpenedAction | ChannelOpenActionFailed>(
-          RaidenActionType.CHANNEL_OPENED,
-          RaidenActionType.CHANNEL_OPEN_FAILED,
-        ),
-        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
-        first(),
-      ).subscribe(action =>
-        action.txHash ? resolve(action.txHash) : reject(action.error)
-      )
+      this.action$
+        .pipe(
+          ofType<RaidenActions, ChannelOpenedAction | ChannelOpenActionFailed>(
+            RaidenActionType.CHANNEL_OPENED,
+            RaidenActionType.CHANNEL_OPEN_FAILED,
+          ),
+          filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+          first(),
+        )
+        .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
     );
     this.store.dispatch(channelOpen(tokenNetwork, partner, settleTimeout));
     return promise;
@@ -421,21 +427,22 @@ export class Raiden {
     deposit: BigNumber | number,
   ): Promise<string> {
     const state = this.state;
-    const tokenNetwork = (token in state.token2tokenNetwork)
-      ? state.token2tokenNetwork[token]
-      : await this.monitorToken(token);
+    const tokenNetwork =
+      token in state.token2tokenNetwork
+        ? state.token2tokenNetwork[token]
+        : await this.monitorToken(token);
     const promise: Promise<string> = new Promise((resolve, reject) =>
       // wait for the corresponding success or error TokenMonitorAction
-      this.action$.pipe(
-        ofType<RaidenActions, ChannelDepositedAction | ChannelDepositActionFailed>(
-          RaidenActionType.CHANNEL_DEPOSITED,
-          RaidenActionType.CHANNEL_DEPOSIT_FAILED,
-        ),
-        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
-        first(),
-      ).subscribe(action =>
-        action.txHash ? resolve(action.txHash) : reject(action.error)
-      )
+      this.action$
+        .pipe(
+          ofType<RaidenActions, ChannelDepositedAction | ChannelDepositActionFailed>(
+            RaidenActionType.CHANNEL_DEPOSITED,
+            RaidenActionType.CHANNEL_DEPOSIT_FAILED,
+          ),
+          filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+          first(),
+        )
+        .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
     );
     this.store.dispatch(channelDeposit(tokenNetwork, partner, bigNumberify(deposit)));
     return promise;

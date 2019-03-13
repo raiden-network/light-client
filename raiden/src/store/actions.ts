@@ -1,5 +1,5 @@
 import { AnyAction } from 'redux';
-import { BigNumber } from './types'
+import { BigNumber } from './types';
 
 export const enum RaidenActionType {
   INIT = 'raidenInit',
@@ -28,7 +28,7 @@ export interface RaidenActionFailed extends RaidenAction {
 }
 
 export interface RaidenInitAction extends RaidenAction {
-  type: RaidenActionType.INIT,
+  type: RaidenActionType.INIT;
 }
 
 export interface NewBlockAction extends RaidenAction {
@@ -45,7 +45,7 @@ export interface TokenMonitoredAction extends RaidenAction {
   type: RaidenActionType.TOKEN_MONITORED;
   token: string;
   tokenNetwork: string;
-  first: boolean;  // first time monitoring this token, i.e. just started monitoring
+  first: boolean; // first time monitoring this token, i.e. just started monitoring
 }
 
 export interface TokenMonitorActionFailed extends RaidenActionFailed {
@@ -111,31 +111,45 @@ export interface ChannelDepositActionFailed extends RaidenActionFailed {
 // action factories:
 // =================
 
-export const raidenInit = (): RaidenInitAction =>
-  ({ type: RaidenActionType.INIT });
+export const raidenInit = (): RaidenInitAction => ({ type: RaidenActionType.INIT });
 
-export const newBlock = (blockNumber: number): NewBlockAction =>
-  ({ type: RaidenActionType.NEW_BLOCK, blockNumber });
+export const newBlock = (blockNumber: number): NewBlockAction => ({
+  type: RaidenActionType.NEW_BLOCK,
+  blockNumber,
+});
 
-export const tokenMonitor = (token: string): TokenMonitorAction =>
-  ({ type: RaidenActionType.TOKEN_MONITOR, token });
+export const tokenMonitor = (token: string): TokenMonitorAction => ({
+  type: RaidenActionType.TOKEN_MONITOR,
+  token,
+});
 
 export const tokenMonitored = (
   token: string,
   tokenNetwork: string,
   first: boolean = false,
-): TokenMonitoredAction =>
-  ({ type: RaidenActionType.TOKEN_MONITORED, token, tokenNetwork, first });
+): TokenMonitoredAction => ({
+  type: RaidenActionType.TOKEN_MONITORED,
+  token,
+  tokenNetwork,
+  first,
+});
 
-export const tokenMonitorFailed = (token: string, error: Error): TokenMonitorActionFailed =>
-  ({ type: RaidenActionType.TOKEN_MONITOR_FAILED, token, error });
+export const tokenMonitorFailed = (token: string, error: Error): TokenMonitorActionFailed => ({
+  type: RaidenActionType.TOKEN_MONITOR_FAILED,
+  token,
+  error,
+});
 
 export const channelOpen = (
   tokenNetwork: string,
   partner: string,
   settleTimeout: number,
-): ChannelOpenAction =>
-  ({ type: RaidenActionType.CHANNEL_OPEN, tokenNetwork, partner, settleTimeout });
+): ChannelOpenAction => ({
+  type: RaidenActionType.CHANNEL_OPEN,
+  tokenNetwork,
+  partner,
+  settleTimeout,
+});
 
 export const channelOpened = (
   tokenNetwork: string,
@@ -144,38 +158,50 @@ export const channelOpened = (
   settleTimeout: number,
   openBlock: number,
   txHash: string,
-): ChannelOpenedAction =>
-  ({
-    type: RaidenActionType.CHANNEL_OPENED,
-    tokenNetwork,
-    partner,
-    id,
-    settleTimeout,
-    openBlock,
-    txHash,
-  });
+): ChannelOpenedAction => ({
+  type: RaidenActionType.CHANNEL_OPENED,
+  tokenNetwork,
+  partner,
+  id,
+  settleTimeout,
+  openBlock,
+  txHash,
+});
 
 export const channelOpenFailed = (
   tokenNetwork: string,
   partner: string,
   error: Error,
-): ChannelOpenActionFailed =>
-  ({ type: RaidenActionType.CHANNEL_OPEN_FAILED, tokenNetwork, partner, error });
+): ChannelOpenActionFailed => ({
+  type: RaidenActionType.CHANNEL_OPEN_FAILED,
+  tokenNetwork,
+  partner,
+  error,
+});
 
 export const channelMonitor = (
   tokenNetwork: string,
   partner: string,
   id: number,
   fromBlock?: number,
-): ChannelMonitorAction =>
-  ({ type: RaidenActionType.CHANNEL_MONITOR, tokenNetwork, partner, id, fromBlock });
+): ChannelMonitorAction => ({
+  type: RaidenActionType.CHANNEL_MONITOR,
+  tokenNetwork,
+  partner,
+  id,
+  fromBlock,
+});
 
 export const channelDeposit = (
   tokenNetwork: string,
   partner: string,
   deposit: BigNumber,
-): ChannelDepositAction =>
-  ({ type: RaidenActionType.CHANNEL_DEPOSIT, tokenNetwork, partner, deposit });
+): ChannelDepositAction => ({
+  type: RaidenActionType.CHANNEL_DEPOSIT,
+  tokenNetwork,
+  partner,
+  deposit,
+});
 
 export const channelDeposited = (
   tokenNetwork: string,
@@ -184,34 +210,37 @@ export const channelDeposited = (
   participant: string,
   totalDeposit: BigNumber,
   txHash: string,
-): ChannelDepositedAction =>
-  ({
-    type: RaidenActionType.CHANNEL_DEPOSITED,
-    tokenNetwork,
-    partner,
-    id,
-    participant,
-    totalDeposit,
-    txHash,
-  });
+): ChannelDepositedAction => ({
+  type: RaidenActionType.CHANNEL_DEPOSITED,
+  tokenNetwork,
+  partner,
+  id,
+  participant,
+  totalDeposit,
+  txHash,
+});
 
 export const channelDepositFailed = (
   tokenNetwork: string,
   partner: string,
   error: Error,
-): ChannelDepositActionFailed =>
-  ({ type: RaidenActionType.CHANNEL_DEPOSIT_FAILED, tokenNetwork, partner, error });
+): ChannelDepositActionFailed => ({
+  type: RaidenActionType.CHANNEL_DEPOSIT_FAILED,
+  tokenNetwork,
+  partner,
+  error,
+});
 
 export type RaidenActions =
-  RaidenInitAction |
-  NewBlockAction |
-  TokenMonitorAction |
-  TokenMonitoredAction |
-  TokenMonitorActionFailed |
-  ChannelOpenAction |
-  ChannelOpenedAction |
-  ChannelOpenActionFailed |
-  ChannelMonitorAction |
-  ChannelDepositAction |
-  ChannelDepositedAction |
-  ChannelDepositActionFailed ;
+  | RaidenInitAction
+  | NewBlockAction
+  | TokenMonitorAction
+  | TokenMonitoredAction
+  | TokenMonitorActionFailed
+  | ChannelOpenAction
+  | ChannelOpenedAction
+  | ChannelOpenActionFailed
+  | ChannelMonitorAction
+  | ChannelDepositAction
+  | ChannelDepositedAction
+  | ChannelDepositActionFailed;

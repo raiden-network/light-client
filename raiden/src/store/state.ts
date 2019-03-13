@@ -1,8 +1,7 @@
 import * as t from 'io-ts';
-import { ThrowReporter } from "io-ts/lib/ThrowReporter";
+import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
 import { createEnumType, BigNumberType } from './types';
-
 
 export enum ChannelState {
   opening = 'opening',
@@ -14,7 +13,6 @@ export enum ChannelState {
 }
 
 const ChannelStateType = createEnumType<ChannelState>(ChannelState, 'ChannelState');
-
 
 export const ChannelType = t.intersection([
   t.type({
@@ -55,7 +53,7 @@ export function encodeRaidenState(state: RaidenState): string {
 
 export function decodeRaidenState(data: unknown): RaidenState {
   const validationResult = RaidenStateType.decode(data);
-  ThrowReporter.report(validationResult);  // throws if decode failed
+  ThrowReporter.report(validationResult); // throws if decode failed
   return validationResult.value as RaidenState;
 }
 
