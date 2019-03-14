@@ -308,9 +308,9 @@ export class Raiden {
 
     async function getDecimals(): Promise<number> {
       try {
-        let decimals = bigNumberify(await tokenContract.functions.decimals());
+        let decimals = await tokenContract.functions.decimals();
         if (!decimals) throw 'no decimals';
-        return decimals.toNumber();
+        return decimals;
       } catch (err) {
         return 18;
       }
@@ -318,7 +318,6 @@ export class Raiden {
     const [balance, decimals] = await Promise.all([
       tokenContract.functions.balanceOf(address || this.address),
       getDecimals(),
-      ,
     ]);
     return { balance, decimals };
   }
