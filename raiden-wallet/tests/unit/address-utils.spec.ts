@@ -27,12 +27,7 @@ describe('AddressUtils', function() {
     ).toBe(true);
   });
 
-  it('should ', function() {
-    try {
-      AddressUtils.checkAddressChecksum('5');
-      fail('Previous method call should have failed');
-    } catch (e) {
-      expect(e.message).toContain('invalid address');
-    }
+  it('should return false if the input is not an address', function() {
+    expect(AddressUtils.checkAddressChecksum('5')).toBe(false);
   });
 });

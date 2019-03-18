@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <fieldset>
     <v-label v-if="label">{{ label }}</v-label>
     <v-text-field
       :disabled="disabled"
@@ -7,7 +7,7 @@
       v-bind:value="value"
       v-on:input="$emit('input', $event)"
     ></v-text-field>
-  </div>
+  </fieldset>
 </template>
 
 <script lang="ts">

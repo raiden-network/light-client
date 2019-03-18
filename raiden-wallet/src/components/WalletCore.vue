@@ -1,14 +1,11 @@
 <template>
-  <OpenChannel></OpenChannel>
+  <div></div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import OpenChannel from '@/components/OpenChannel.vue';
 
-@Component({
-  components: { OpenChannel }
-})
+@Component({})
 export default class WalletCore extends Vue {}
 </script>
 

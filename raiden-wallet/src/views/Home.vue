@@ -27,5 +27,11 @@ export default class Home extends Vue {
   get userDenied(): boolean {
     return this.$store.state.userDenied;
   }
+
+  mounted() {
+    if (this.providerDetected && !this.userDenied) {
+      this.$router.push({ name: 'connect' });
+    }
+  }
 }
 </script>

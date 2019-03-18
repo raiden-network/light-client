@@ -5,6 +5,7 @@ import { RootState } from '@/types';
 import flushPromises from 'flush-promises';
 import { Raiden } from 'raiden';
 import Vue from 'vue';
+import { BigNumber } from 'ethers/utils';
 
 Vue.use(Vuex);
 
@@ -70,7 +71,7 @@ describe('RaidenService', () => {
 
   it('should throw an error when attempting to open a channel before connecting', async () => {
     try {
-      await raidenService.openChannel('0xaddr', '0xhub', 10);
+      await raidenService.openChannel('0xaddr', '0xhub', new BigNumber(5000));
       fail('function was supposed to throw an exception');
     } catch (e) {
       expect(e.message).toContain('Raiden instance was not initialized');

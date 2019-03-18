@@ -22,9 +22,14 @@ export default new Router({
       component: () => import('./views/About.vue')
     },
     {
-      path: '/send/:token',
+      path: '/send/:token/:partner',
       name: 'send',
       component: () => import('./views/SendTokens.vue')
+    },
+    {
+      path: '/connect/:token?/:partner?',
+      name: 'connect',
+      component: () => import('./views/Connect.vue')
     }
   ]
 });

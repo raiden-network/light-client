@@ -17,3 +17,10 @@ Vue.filter('truncate', function(value: string) {
 Vue.filter('decimals', function(value: string, decimals: number = 3) {
   return parseFloat(value).toFixed(decimals);
 });
+
+Vue.filter('upper', function(value: string) {
+  if (!value) {
+    return '';
+  }
+  return value.toLocaleUpperCase();
+});

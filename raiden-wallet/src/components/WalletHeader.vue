@@ -46,12 +46,9 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import OpenChannel from '@/components/OpenChannel.vue';
 import { RootState } from '@/types';
 
-@Component({
-  components: { OpenChannel }
-})
+@Component({})
 export default class WalletHeader extends Vue {
   get loading(): boolean {
     return this.$store.state.loading;

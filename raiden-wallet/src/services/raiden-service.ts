@@ -3,6 +3,9 @@ import { Store } from 'vuex';
 import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { Subscription } from 'rxjs';
+import { BalanceUtils } from '@/utils/balance-utils';
+import { Token } from '@/model/token';
+import { BigNumber } from 'ethers/utils';
 
 export default class RaidenService {
   private _raiden?: Raiden;
@@ -36,8 +39,12 @@ export default class RaidenService {
         this.subscription = this._raiden.channels$.subscribe(value => {
           this.store.commit('updateChannels', value);
         });
+        await this._raiden.monitorToken(
+          '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
+        );
       }
     } catch (e) {
+      console.error(e);
       this.store.commit('deniedAccess');
     }
 
@@ -56,13 +63,31 @@ export default class RaidenService {
   }
 
   async getBalance(): Promise<string> {
-    return '0';
+    const balance = await this.raiden.getBalance();
+    return BalanceUtils.toEth(balance);
+  }
+
+  async getToken(tokenAddress: string): Promise<Token | null> {
+    try {
+      const tokenBalance = await this.raiden.getTokenBalance(tokenAddress);
+      const balance = tokenBalance.balance;
+      const decimals = tokenBalance.decimals;
+      return {
+        balance: balance,
+        decimals: decimals,
+        units: BalanceUtils.toUnits(balance, decimals),
+        address: tokenAddress
+      };
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
   }
 
   async openChannel(
     tokenAddress: string,
     hubAddress: string,
-    depositAmount: number
+    depositAmount: BigNumber
   ): Promise<boolean> {
     let success = false;
     try {
