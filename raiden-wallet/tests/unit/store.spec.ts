@@ -41,4 +41,15 @@ describe('store', () => {
     store.commit('deniedAccess');
     expect(store.state.userDenied).toBe(true);
   });
+
+  it('should change the channel state after an updateChannel mutation', function() {
+    expect(store.state.channels).toEqual({});
+    const payload = {
+      '0xcontract': {
+        '0xtoken': []
+      }
+    };
+    store.commit('updateChannels', payload);
+    expect(store.state.channels).toEqual(payload);
+  });
 });

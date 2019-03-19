@@ -100,7 +100,7 @@ export default class Deposit extends Vue {
       if (success) {
         this.$router.push({
           name: 'send',
-          params: { token: this.token }
+          params: { token: this.token, partner: this.partner }
         });
       }
     } catch (e) {

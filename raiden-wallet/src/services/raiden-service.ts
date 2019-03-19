@@ -65,8 +65,9 @@ export default class RaidenService {
   }
 
   async getToken(tokenAddress: string): Promise<Token | null> {
+    const raiden = this.raiden;
     try {
-      const tokenBalance = await this.raiden.getTokenBalance(tokenAddress);
+      const tokenBalance = await raiden.getTokenBalance(tokenAddress);
       const balance = tokenBalance.balance;
       const decimals = tokenBalance.decimals;
       return {
@@ -86,20 +87,20 @@ export default class RaidenService {
     hubAddress: string,
     depositAmount: BigNumber
   ): Promise<boolean> {
-    let success = false;
+    const raiden = this.raiden;
     try {
-      await this.raiden.openChannel(tokenAddress, hubAddress);
+      await raiden.openChannel(tokenAddress, hubAddress);
     } catch (e) {
       throw new OpenChannelFailed(e);
     }
 
     try {
-      await this.raiden.depositChannel(tokenAddress, hubAddress, depositAmount);
+      await raiden.depositChannel(tokenAddress, hubAddress, depositAmount);
     } catch (e) {
       throw new DepositFailed(e);
     }
 
-    return success;
+    return true;
   }
 
   async monitorToken(token: string) {

@@ -1,4 +1,7 @@
-import RaidenService, { OpenChannelFailed } from '@/services/raiden-service';
+import RaidenService, {
+  DepositFailed,
+  OpenChannelFailed
+} from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
 import { RootState } from '@/types';
@@ -6,7 +9,7 @@ import flushPromises from 'flush-promises';
 import { Raiden } from 'raiden';
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
-import { EMPTY } from 'rxjs';
+import { BehaviorSubject, EMPTY } from 'rxjs';
 
 Vue.use(Vuex);
 
@@ -41,7 +44,9 @@ describe('RaidenService', () => {
   it('should return the account after raiden is initialized', async () => {
     providerMock.mockResolvedValue({});
     factory.mockResolvedValue({
-      address: '123'
+      address: '123',
+      getBalance: jest.fn().mockResolvedValue(new BigNumber(0)),
+      channels$: EMPTY
     });
     await raidenService.connect();
     await flushPromises();
@@ -128,5 +133,92 @@ describe('RaidenService', () => {
     } catch (e) {
       expect(e).toBeInstanceOf(OpenChannelFailed);
     }
+  });
+
+  it('should throw an exception when the deposit fails', async function() {
+    providerMock.mockResolvedValue({});
+    const raidenMock = {
+      channels$: EMPTY,
+      getBalance: jest.fn().mockResolvedValue(new BigNumber(0)),
+      openChannel: jest.fn().mockResolvedValue('0xtxhash'),
+      depositChannel: jest.fn().mockRejectedValue('failed')
+    };
+
+    factory.mockResolvedValue(raidenMock);
+    await raidenService.connect();
+    await flushPromises();
+
+    const depositAmount = new BigNumber(100);
+    try {
+      await raidenService.openChannel('0xtoken', '0xpartner', depositAmount);
+      fail('This path should be no-op');
+    } catch (e) {
+      expect(e).toBeInstanceOf(DepositFailed);
+    }
+    expect(raidenMock.openChannel).toBeCalledTimes(1);
+    expect(raidenMock.openChannel).toBeCalledWith('0xtoken', '0xpartner');
+  });
+
+  it('should return null from getTokenBalance if there is an exception', async function() {
+    providerMock.mockResolvedValue({});
+    const raidenMock = {
+      channels$: EMPTY,
+      getBalance: jest.fn().mockResolvedValue(new BigNumber(0)),
+      getTokenBalance: jest.fn().mockRejectedValue('reject')
+    };
+
+    factory.mockResolvedValue(raidenMock);
+    await raidenService.connect();
+    await flushPromises();
+
+    const result = await raidenService.getToken('0xtoken');
+    expect(result).toBeNull();
+    expect(raidenMock.getTokenBalance).toHaveBeenCalledTimes(1);
+    expect(raidenMock.getTokenBalance).toHaveBeenCalledWith('0xtoken');
+  });
+
+  it('should return a token object from getTokenBalance if everything is good', async function() {
+    providerMock.mockResolvedValue({});
+    const balance = new BigNumber('1000000000000000000');
+    const raidenMock = {
+      channels$: EMPTY,
+      getBalance: jest.fn().mockResolvedValue(new BigNumber(0)),
+      getTokenBalance: jest.fn().mockResolvedValue({
+        balance: balance,
+        decimals: 18
+      })
+    };
+
+    factory.mockResolvedValue(raidenMock);
+    await raidenService.connect();
+    await flushPromises();
+
+    const result = await raidenService.getToken('0xtoken');
+    expect(result).toBeDefined();
+    expect(result!!.decimals).toBe(18);
+    expect(result!!.address).toBe('0xtoken');
+    expect(result!!.units).toBe('1.0');
+    expect(result!!.balance).toBe(balance);
+    expect(raidenMock.getTokenBalance).toHaveBeenCalledTimes(1);
+    expect(raidenMock.getTokenBalance).toHaveBeenCalledWith('0xtoken');
+  });
+
+  it('should start updating channels in store on connect', async function() {
+    raidenService.disconnect();
+    providerMock.mockResolvedValue({});
+    const stub = new BehaviorSubject({});
+    const raidenMock = {
+      channels$: stub,
+      getBalance: jest.fn().mockResolvedValue(new BigNumber(0))
+    };
+
+    factory.mockResolvedValue(raidenMock);
+    stub.next({});
+    await raidenService.connect();
+    await flushPromises();
+
+    expect(store.commit).toHaveBeenNthCalledWith(3, 'updateChannels', {});
+    expect(store.commit).toHaveBeenCalledTimes(4);
+    raidenService.disconnect();
   });
 });
