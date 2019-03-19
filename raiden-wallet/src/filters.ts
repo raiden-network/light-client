@@ -1,15 +1,15 @@
 import Vue from 'vue';
 
-Vue.filter('truncate', function(value: string) {
-  const toShow = 12;
+Vue.filter('truncate', function(value: string, width: number = 12) {
   const separator = '...';
-  if (value.length <= toShow) {
+  if (value.length <= width) {
     return value;
   } else {
+    const substWidth = Math.floor(width / 2);
     return (
-      value.substr(0, toShow / 2) +
+      value.substr(0, substWidth) +
       separator +
-      value.substr(value.length - toShow / 2)
+      value.substr(value.length - substWidth)
     );
   }
 });
