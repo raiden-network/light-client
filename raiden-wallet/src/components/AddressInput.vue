@@ -4,8 +4,8 @@
     <v-text-field
       :disabled="disabled"
       :rules="rules"
-      v-bind:value="value"
-      v-on:input="$emit('input', $event)"
+      :value="value"
+      @input="$emit('input', $event)"
     ></v-text-field>
   </fieldset>
 </template>
