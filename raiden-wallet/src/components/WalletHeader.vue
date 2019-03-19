@@ -3,7 +3,7 @@
     class="header"
     justify-center
     align-center
-    v-if="!loading && account"
+    v-if="!loading && defaultAccount"
   >
     <v-flex lg6 md8 xs12>
       <div id="header-content">
@@ -19,13 +19,15 @@
         </div>
         <div>
           <div class="headline">Raiden Wallet</div>
-          <div class="font-weight-light">{{ account | truncate }}</div>
+          <div class="font-weight-light">{{ defaultAccount | truncate }}</div>
         </div>
         <v-spacer></v-spacer>
         <div>
           <div class="subheading">Balance</div>
           <div id="balance">
-            <span class="font-weight-light">{{ balance | decimals }}</span>
+            <span class="font-weight-light">{{
+              accountBalance | decimals
+            }}</span>
             <sup>ETHER</sup>
           </div>
         </div>
@@ -46,24 +48,18 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { RootState } from '@/types';
+import { mapState } from 'vuex';
 
-@Component({})
+@Component({
+  computed: mapState(['loading', 'defaultAccount', 'accountBalance'])
+})
 export default class WalletHeader extends Vue {
-  get loading(): boolean {
-    return this.$store.state.loading;
-  }
-
-  get account(): string {
-    return this.$store.state.defaultAccount;
-  }
+  defaultAccount!: string;
+  loading!: boolean;
+  accountBalance!: string;
 
   get blockie(): string {
-    return this.$identicon.getIdenticon(this.account);
-  }
-
-  get balance(): string {
-    return (this.$store.state as RootState).accountBalance;
+    return this.$identicon.getIdenticon(this.defaultAccount);
   }
 }
 </script>

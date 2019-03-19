@@ -10,23 +10,20 @@
 import { Component, Vue } from 'vue-property-decorator';
 import WalletCore from '@/components/WalletCore.vue';
 import NoValidProvider from '@/components/NoValidProvider.vue';
-import UserDenied from '@/components/UserDenied.vue'; // @ is an alias to /src
+import UserDenied from '@/components/UserDenied.vue';
+import { mapState } from 'vuex';
 
 @Component({
   components: {
     UserDenied,
     WalletCore,
     NoValidProvider
-  }
+  },
+  computed: mapState(['providerDetected', 'userDenied'])
 })
 export default class Home extends Vue {
-  get providerDetected(): boolean {
-    return this.$store.state.providerDetected;
-  }
-
-  get userDenied(): boolean {
-    return this.$store.state.userDenied;
-  }
+  providerDetected!: boolean;
+  userDenied!: boolean;
 
   mounted() {
     if (this.providerDetected && !this.userDenied) {

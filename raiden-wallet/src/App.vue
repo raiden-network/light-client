@@ -12,8 +12,10 @@
 import { Component, Vue } from 'vue-property-decorator';
 import Loading from '@/components/Loading.vue';
 import WalletHeader from '@/components/WalletHeader.vue';
+import { mapState } from 'vuex';
 
 @Component({
+  computed: mapState(['loading']),
   components: { WalletHeader, Loading }
 })
 export default class App extends Vue {
@@ -22,10 +24,6 @@ export default class App extends Vue {
   constructor() {
     super();
     this.name = 'Raiden Wallet';
-  }
-
-  get loading(): boolean {
-    return this.$store.state.loading;
   }
 
   async mounted() {
