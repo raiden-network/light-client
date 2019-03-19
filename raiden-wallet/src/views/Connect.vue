@@ -4,7 +4,6 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Route } from 'vue-router';
 import AddressUtils from '@/utils/address-utils';
 import Deposit from '@/components/Deposit.vue';
 import { Token } from '@/model/token';
@@ -34,6 +33,8 @@ export default class Connect extends Vue {
         name: 'connect',
         params: { token: this.token, partner: this.partner }
       });
+    } else {
+      await this.$raiden.monitorToken(this.token);
     }
   }
 }

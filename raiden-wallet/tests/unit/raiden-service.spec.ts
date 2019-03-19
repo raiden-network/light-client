@@ -1,4 +1,4 @@
-import RaidenService from '@/services/raiden-service';
+import RaidenService, { OpenChannelFailed } from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
 import { RootState } from '@/types';
@@ -6,6 +6,7 @@ import flushPromises from 'flush-promises';
 import { Raiden } from 'raiden';
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
+import { EMPTY } from 'rxjs';
 
 Vue.use(Vuex);
 
@@ -75,6 +76,57 @@ describe('RaidenService', () => {
       fail('function was supposed to throw an exception');
     } catch (e) {
       expect(e.message).toContain('Raiden instance was not initialized');
+    }
+  });
+
+  it('should return true when channel open and deposit are successful', async function() {
+    providerMock.mockResolvedValue({});
+    const raidenMock = {
+      channels$: EMPTY,
+      getBalance: jest.fn().mockResolvedValue(new BigNumber(0)),
+      openChannel: jest.fn().mockResolvedValue('0xtxhash'),
+      depositChannel: jest.fn().mockResolvedValue('0xtxhash')
+    };
+    factory.mockResolvedValue(raidenMock);
+    await raidenService.connect();
+    await flushPromises();
+
+    const depositAmount = new BigNumber(100);
+    const result = await raidenService.openChannel(
+      '0xtoken',
+      '0xpartner',
+      depositAmount
+    );
+    expect(result).toBe(true);
+    expect(raidenMock.openChannel).toBeCalledTimes(1);
+    expect(raidenMock.openChannel).toBeCalledWith('0xtoken', '0xpartner');
+    expect(raidenMock.depositChannel).toBeCalledTimes(1);
+    expect(raidenMock.depositChannel).toBeCalledWith(
+      '0xtoken',
+      '0xpartner',
+      depositAmount
+    );
+  });
+
+  it('should throw an exception when channel open fails', async function() {
+    providerMock.mockResolvedValue({});
+    const raidenMock = {
+      channels$: EMPTY,
+      getBalance: jest.fn().mockResolvedValue(new BigNumber(0)),
+      openChannel: jest.fn().mockRejectedValue('failed'),
+      depositChannel: jest.fn().mockResolvedValue('0xtxhash')
+    };
+
+    factory.mockResolvedValue(raidenMock);
+    await raidenService.connect();
+    await flushPromises();
+
+    const depositAmount = new BigNumber(100);
+    try {
+      await raidenService.openChannel('0xtoken', '0xpartner', depositAmount);
+      fail('This path should be no-op');
+    } catch (e) {
+      expect(e).toBeInstanceOf(OpenChannelFailed);
     }
   });
 });
