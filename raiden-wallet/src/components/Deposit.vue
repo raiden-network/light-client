@@ -1,51 +1,62 @@
 <template>
-  <v-form v-model="valid">
-    <v-layout align-center justify-center row>
-      <v-flex xs10 md6 lg4>
-        <h1 class="display-3 text-capitalize">Deposit</h1>
-      </v-flex>
-    </v-layout>
+  <div id="container">
+    <v-form v-model="valid">
+      <v-layout align-center justify-center row>
+        <v-flex xs10 md6 lg4>
+          <h1 class="display-3 text-capitalize">Deposit</h1>
+        </v-flex>
+      </v-layout>
 
-    <v-layout align-center justify-center row>
-      <v-flex xs10 md6 lg4>
-        <h3>Token</h3>
-        <p>{{ token }}</p>
-      </v-flex>
-    </v-layout>
+      <v-layout align-center justify-center row>
+        <v-flex xs10 md6 lg4>
+          <h3>Token</h3>
+          <p>{{ token }}</p>
+        </v-flex>
+      </v-layout>
 
-    <v-layout align-center justify-center row>
-      <v-flex xs10 md6 lg4>
-        <h3>Hub</h3>
-        <p>{{ partner }}</p>
-      </v-flex>
-    </v-layout>
+      <v-layout align-center justify-center row>
+        <v-flex xs10 md6 lg4>
+          <h3>Hub</h3>
+          <p>{{ partner }}</p>
+        </v-flex>
+      </v-layout>
 
-    <v-layout align-center justify-center row fill-height>
-      <v-flex xs10 md6 lg4>
-        <amount-input
-          :token="tokenInfo"
-          v-model="deposit"
-          limit
-          label="Amount"
-        ></amount-input>
-      </v-flex>
-    </v-layout>
+      <v-layout align-center justify-center row fill-height>
+        <v-flex xs10 md6 lg4>
+          <amount-input
+            :token="tokenInfo"
+            v-model="deposit"
+            limit
+            label="Amount"
+          ></amount-input>
+        </v-flex>
+      </v-layout>
 
-    <v-layout align-center justify-center class="section">
-      <v-flex xs8 md5 lg3 class="text-xs-center">
-        <v-btn
-          :disabled="!valid"
-          :loading="loading"
-          color="green"
-          large
-          @click="openChannel()"
-        >
-          <v-icon left dark>check_circle</v-icon>
-          Open
-        </v-btn>
-      </v-flex>
-    </v-layout>
-  </v-form>
+      <v-layout align-center justify-center class="section">
+        <v-flex xs8 md5 lg3 class="text-xs-center">
+          <v-btn
+            :disabled="!valid"
+            :loading="loading"
+            color="green"
+            large
+            @click="openChannel()"
+          >
+            <v-icon left dark>check_circle</v-icon>
+            Open
+          </v-btn>
+        </v-flex>
+      </v-layout>
+    </v-form>
+    <div id="overlay" v-if="loading">
+      <v-progress-circular
+        :size="70"
+        :width="7"
+        color="blue"
+        indeterminate
+      ></v-progress-circular>
+      <p id="message">Channel is opening...</p>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -117,5 +128,31 @@ form {
 
 form:first-child {
   margin-top: 20px;
+}
+
+#container {
+  height: 100%;
+}
+
+#overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9000;
+}
+
+#message {
+  color: white;
+  font-size: 2rem;
+  margin-top: 2rem;
 }
 </style>
