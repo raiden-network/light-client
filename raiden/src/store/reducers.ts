@@ -24,8 +24,8 @@ export function raidenReducer(
       if (get(state, path)) return state; // there's already a channel with partner
       return set(cloneDeep(state), path, {
         state: ChannelState.opening,
-        totalDeposit: 0,
-        partnerDeposit: 0,
+        totalDeposit: bigNumberify(0),
+        partnerDeposit: bigNumberify(0),
       });
 
     case RaidenActionType.CHANNEL_OPENED:
