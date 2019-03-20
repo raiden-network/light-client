@@ -25,6 +25,12 @@
   <a href='#contact'>Contact</a>
 </p>
 
+<p align="center">
+  <a href="https://gitter.im/raiden-network/raiden">
+    <img src="https://badges.gitter.im/gitterHQ/gitter.png" alt="Gitter Raiden Badge">
+  </a> 
+</p>
+
 The Raiden Light Client is a [Raiden Network](https://raiden.network) compatible client written on JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
 The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden Light Client, which can be used with web3 wallets like Metamask (Desktop) or imWallet (mobile).
