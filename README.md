@@ -20,7 +20,6 @@
 
 <p align="center">
   <a href="#getting-started">Getting Started</a> ∙
-  <a href="#example-wallet">Use the wallet</a> ∙
   <a href="#license">License</a> ∙
   <a href='#contact'>Contact</a>
 </p>
@@ -31,11 +30,9 @@
   </a> 
 </p>
 
-The Raiden Light Client is a [Raiden Network](https://raiden.network) compatible client written on JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
+The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written on JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
-The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden Light Client, which can be used with web3 wallets like Metamask (Desktop) or imWallet (mobile).
-
-<!-- TODO: Maybe add a table of contens -->
+The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like Metamask (Desktop) or imWallet (mobile).
 
 ## About The Project
 
@@ -58,8 +55,6 @@ To build a solid architecture we have are using the following main frameworks:
 
 ## Architecture
 
-This project is split in two parts:
-
 ### Raiden Light Client SDK
 
 This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and Raiden Network.
@@ -68,15 +63,15 @@ Its target audience is blockchain and dApp developers looking into interacting w
 
 The main entry point of the SDK is the `Raiden` class, which exposes an `async`/promise-based public API to fetch state, events and perform every action provided by the SDK on the blockchain and Raiden Network.
 
-Internally, the SDK architecture is a Redux-powered state machine, where every blockchain event, user request and off-chain messages from other Raiden nodes and service providers follows an unified flow as actions on this state machine. These actions always produce deterministic changes to the state and may cause other actions to be emitted as well. Asynchronous operations are handled by a pipeline of [redux-observable](https://redux-observable.js.org) Epics, an [RxJs](https://rxjs.dev/) async extension for Redux which unleash the power, versatility and correctness of Observables to Redux actions processing. These epics interact with the blockchain through [ethers.js](https://github.com/ethers-io/ethers.js) providers, signers and contracts, allowing seamless integration with different web3 providers, such as [Metamask](https://metamask.io/). Redux state is optionally persisted on `localStorage` or emitted to be persisted by user somewhere else. Tests are implemented with [Jest](https://jestjs.io).
+Internally, the SDK architecture is a Redux-powered state machine, where every blockchain event, user request and off-chain message from other Raiden nodes and service providers follows an unified flow as actions on this state machine. These actions produce deterministic changes to the state and may cause other actions to be emitted as well. Asynchronous operations are handled by a pipeline of [redux-observable](https://redux-observable.js.org) epics, an [RxJs](https://rxjs.dev/) async extension for Redux which unleashes the power, versatility and correctness of observables to Redux actions processing. These epics interact with the blockchain through [ethers.js](https://github.com/ethers-io/ethers.js) providers, signers and contracts, allowing seamless integration with different web3 providers, such as [Metamask](https://metamask.io/). Redux state is optionally persisted on `localStorage` or emitted to be persisted somewhere else. Tests are implemented with [Jest](https://jestjs.io).
 
 External off-chain communication with the Raiden Network is provided by a dedicated federation of community-provided [matrix.org](https://matrix.org) homeservers, accessed through [matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk).
 
 ### Raiden Wallet
 
-Raiden Wallet is the demo and first dApp user of the SDK. It's a wallet-like web single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and [vuetify](https://vuetifyjs.com) as UI framework which uses Material Design as design guideline.
+The Raiden Wallet is the demo and first dApp user of the SDK. It's a wallet-like web single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and [vuetify](https://vuetifyjs.com) as UI framework which uses Material Design as the design guideline.
 
-### Overview:
+### Architecture diagram
 
 ```
             +-------------------+
@@ -151,7 +146,7 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 # }
 ```
 
-### Example Wallet
+### Wallet Installation
 
 ```bash
 git clone https://github.com/raiden-network/light-client.git
