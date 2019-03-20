@@ -145,15 +145,63 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 # }
 ```
 
-
 ### Example Wallet
 
-```
+```bash
 git clone https://github.com/raiden-network/light-client.git
 cd light-client/raiden-wallet
+```
+
+In order to use the wallet you first have to run `sync-sdk.sh`, which is located in the `raiden-wallet` directory.
+The script builds the sdk and syncs the module with the `node_modules` of the wallet application. And installs the
+required dependencies.
+
+```bash
+./sync-sdk.sh
+```
+
+ If for you have problems executing the script you to follow the setup manually.
+
+ #### Build the Raiden SDK
+
+ First you need to build the sdk. For this you have to go to the `raiden` directory and run the following commands.
+
+```bash
+cd ../raiden
 npm install
+npm run build
+```
+
+#### Install the Wallet Dependencies
+
+Then you need to install the wallet app dependencies.
+
+```bash
+cd ../raiden-wallet
+npm install
+```
+
+This will also create a symbolic link in `raiden-wallet/node_modules/raiden` to `raiden`.
+
+Due to the way webpack loads it's module dependencies this will not work, so another setup is required.
+You have to delete the symbolic link and copy the contents of `raiden` to `raiden-wallet/node_modules/raiden`.
+
+```bash
+rm -rf ./node_modules/raiden
+rsync --stats -aAvX ../raiden/* node_modules/raiden
+```
+
+#### Running the Wallet
+
+To start the development server you have to run the following command.
+
+```bash
 npm run serve
 ```
+
+After the development server starts you have to navigate to `http://localhost:8080`, in order to use the
+Raiden Wallet. The wallet application requires either MetaMask to be installed on your browser or some other
+web3 provider (e.g. Wallet apps with dApp support).
 
 ## Contributing
 
