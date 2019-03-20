@@ -1,0 +1,159 @@
+version: 2.1
+
+var_1: &docker_image circleci/node:10.13.0-browsers
+var_2: &sdk_cache_key raiden-{{ .Branch }}-{{ checksum "package-lock.json" }}
+var_3: &wallet_cache_key raiden-wallet-{{ .Branch }}-{{ checksum "package-lock.json" }}
+var_4: &raiden_working_dir ~/src/raiden
+var_5: &wallet_working_dir ~/src/raiden-wallet
+
+anchor_1: &sdk_package_lock_key
+  key: *sdk_cache_key
+
+anchor_2: &attach_options
+  at: .
+  
+anchor_3: &wallet_package_lock_key
+  key: *wallet_cache_key
+
+executors:
+  base-executor:
+    working_directory: ~/src
+    docker:
+      - image: *docker_image
+
+jobs:
+  install_sdk:
+    executor: base-executor
+    working_directory: *raiden_working_dir
+    steps:
+      - checkout
+      - restore_cache: *sdk_package_lock_key
+      - run: npm ci
+      - save_cache:
+          <<: *sdk_package_lock_key
+          paths:
+            - "node_modules"
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./*
+
+  install_wallet:
+    executor: base-executor
+    working_directory: *wallet_working_dir
+    steps:
+      - checkout
+      - restore_cache: *wallet_package_lock_key
+      - run: npm ci
+      - run: ./sync-sdk.sh
+      - save_cache:
+          <<: *wallet_package_lock_key
+          paths:
+            - "node_modules"
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./*
+
+  lint_sdk:
+    executor: base-executor
+    working_directory: *raiden_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run: npm run lint
+
+  lint_wallet:
+    executor: base-executor
+    working_directory: *wallet_working_dir
+    steps:
+    - attach_workspace: *attach_options
+    - run: npm run lint:check
+
+  test_sdk:
+    executor: base-executor
+    working_directory: *raiden_working_dir
+    steps:
+      - attach_workspace: *attach_options    
+      - run: 
+          name: Run unit tests
+          command: npm run test -- --ci --runInBand --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
+      - store_test_results:
+           path: reports/junit
+      - store_artifacts:
+           path: reports/junit
+      - run:
+          name: "Install codecov"
+          command: npm install codecov
+      - run:
+          name: "Upload coverage"
+          command: node_modules/codecov/bin/codecov -F raiden
+
+  test_wallet:
+    executor: base-executor
+    working_directory: *wallet_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run: 
+          name: Run unit tests
+          command: npm run test:unit -- --ci --runInBand --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
+      - store_test_results:
+           path: reports/junit
+      - store_artifacts:
+           path: reports/junit
+      - run:
+          name: "Install codecov"
+          command: npm install codecov
+      - run:
+          name: "Upload coverage"
+          command: node_modules/codecov/bin/codecov -F raiden-wallet
+
+  build_sdk:
+    executor: base-executor
+    working_directory: *raiden_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run: npm run build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./raiden/dist
+
+  build_wallet:
+    executor: base-executor
+    working_directory: *raiden_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run: npm run build
+
+workflows:
+  version: 2
+  default_workflow:
+    jobs:
+      - install_sdk
+      - install_wallet:
+          requires:
+            - build_sdk
+      - lint_sdk:
+          requires:
+            - install_sdk
+      - lint_wallet:
+          requires:
+            - install_wallet
+      - build_sdk:
+          requires:
+            - install_sdk
+      - build_wallet:
+          requires:
+            - install_wallet
+      - test_sdk:
+          requires:
+            - lint_sdk
+            - build_sdk
+      - test_wallet:
+          requires:
+            - lint_wallet
+            - build_wallet
