@@ -1,5 +1,5 @@
 export * from './types';
 export * from './state';
-export * from './epics';
 export * from './actions';
-export * from './reducers';
+export { raidenReducer } from './reducers';
+export { raidenEpics } from './epics';
