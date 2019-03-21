@@ -4,6 +4,7 @@
     "./**/*.ts"
   ],
   "types": [
-    "node"
+    "node",
+    "./types.d.ts"
   ]
 }
