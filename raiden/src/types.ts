@@ -16,7 +16,6 @@ interface Info {
 
 export interface ContractsInfo {
   TokenNetworkRegistry: Info;
-  SecretRegistry: Info;
 }
 
 export interface RaidenContracts {

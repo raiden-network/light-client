@@ -46,7 +46,7 @@ import {
 /**
  * This epic simply pipes all states to stateOutput$ subject injected as dependency
  */
-const stateOutputEpic = (
+export const stateOutputEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { stateOutput$ }: RaidenEpicDeps,
@@ -63,7 +63,7 @@ const stateOutputEpic = (
 /**
  * This epic simply pipes all actions to actionOutput$ subject injected as dependency
  */
-const actionOutputEpic = (
+export const actionOutputEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { actionOutput$ }: RaidenEpicDeps,
@@ -83,7 +83,7 @@ const actionOutputEpic = (
  * - monitoring TokenNetworks
  * - monitoring open Channels
  */
-const raidenInitializationEpic = (
+export const raidenInitializationEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
@@ -134,7 +134,7 @@ const raidenInitializationEpic = (
  *      completes immediatelly (to avoid double-register events), and then just the success
  *      TokenMonitoredAction is emitted as a reply to this request
  */
-const tokenMonitorEpic = (
+export const tokenMonitorEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { registryContract }: RaidenEpicDeps,
@@ -168,7 +168,7 @@ const tokenMonitorEpic = (
  * subscribe to events and emit respective actions to the stream. Currently:
  * - ChannelOpened events with us or by us
  */
-const tokenMonitoredEventsEpic = (
+export const tokenMonitoredEventsEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { address, getTokenNetworkContract, contractsInfo }: RaidenEpicDeps,
@@ -222,7 +222,7 @@ const tokenMonitoredEventsEpic = (
  * will instead be detected and fired by tokenMonitoredEpic. If anything detectable goes wrong,
  * fires a ChannnelOpenActionFailed instead
  */
-const channelOpenEpic = (
+export const channelOpenEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
@@ -269,7 +269,7 @@ const channelOpenEpic = (
 /**
  * When we see a new ChannelOpenedAction event, starts monitoring channel
  */
-const channelOpenedEpic = (
+export const channelOpenedEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
 ): Observable<ChannelMonitorAction> =>
@@ -299,7 +299,7 @@ const channelOpenedEpic = (
  * Currently monitored events:
  * - ChannelNewDeposit, fires a ChannelDepositedAction
  */
-const channelMonitorEventsEpic = (
+export const channelMonitorEventsEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
@@ -350,7 +350,7 @@ const channelMonitorEventsEpic = (
  * channelMonitorEventsEpic. If anything detectable goes wrong, fires a ChannelDepositActionFailed
  * instead
  */
-const channelDepositEpic = (
+export const channelDepositEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { address, getTokenContract, getTokenNetworkContract }: RaidenEpicDeps,
