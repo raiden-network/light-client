@@ -1,4 +1,4 @@
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 
 import { Network } from 'ethers/utils';
 import { JsonRpcProvider, JsonRpcSigner } from 'ethers/providers';
@@ -8,7 +8,7 @@ import { TokenNetwork } from '../../contracts/TokenNetwork';
 import { Token } from '../../contracts/Token';
 
 import { RaidenEpicDeps } from 'raiden/types';
-import { RaidenState } from 'raiden/store/state';
+import { RaidenState, initialState } from 'raiden/store/state';
 import { RaidenActions } from 'raiden/store/actions';
 
 export function raidenEpicDeps(): {
@@ -71,7 +71,7 @@ export function raidenEpicDeps(): {
   };
 
   const depsMock: RaidenEpicDeps = {
-    stateOutput$: new Subject<RaidenState>(),
+    stateOutput$: new BehaviorSubject<RaidenState>(initialState),
     actionOutput$: new Subject<RaidenActions>(),
     address: '0xmyaddress',
     network,
