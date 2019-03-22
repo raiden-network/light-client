@@ -11,16 +11,45 @@ import {
   tokenMonitor,
   tokenMonitored,
 } from 'raiden/store/actions';
-import { tokenMonitorEpic } from 'raiden/store/epics';
+import { stateOutputEpic, actionOutputEpic, tokenMonitorEpic } from 'raiden/store/epics';
 
 import { raidenEpicDeps } from './mocks';
 
 describe('raidenEpics', () => {
   // mocks for all RaidenEpicDeps properties
-  const { depsMock, registryFunctions } = raidenEpicDeps();
+  let { depsMock, registryFunctions } = raidenEpicDeps();
 
   afterEach(() => {
-    jest.clearAllMocks();
+    ({ depsMock, registryFunctions } = raidenEpicDeps());
+  });
+
+  test('stateOutputEpic', async () => {
+    const outputPromise = depsMock.stateOutput$.toPromise();
+    const epicPromise = stateOutputEpic(
+      ActionsObservable.of<RaidenActions>(),
+      of<RaidenState>({ ...initialState, blockNumber: 999 }),
+      depsMock,
+    ).toPromise();
+
+    // stateOutputEpic is an state sink and doesn't emit any action
+    await expect(epicPromise).resolves.toBeUndefined();
+    // stateOutput$ completes (because state$ completed) and last value was our last emitted state
+    await expect(outputPromise).resolves.toMatchObject({ blockNumber: 999 });
+  });
+
+  test('actionOutputEpic', async () => {
+    const action = tokenMonitor('0xtoken'); // a random action
+    const outputPromise = depsMock.actionOutput$.toPromise();
+    const epicPromise = actionOutputEpic(
+      ActionsObservable.of<RaidenActions>(action),
+      of<RaidenState>(initialState),
+      depsMock,
+    ).toPromise();
+
+    // actionOutputEpic is an action sink and doesn't emit any action
+    await expect(epicPromise).resolves.toBeUndefined();
+    // actionOutput$ completes (because action$ completed) and last value was our random action
+    await expect(outputPromise).resolves.toBe(action);
   });
 
   test('tokenMonitorEpic succeeds first', async () => {
