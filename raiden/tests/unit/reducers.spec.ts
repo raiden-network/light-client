@@ -94,8 +94,7 @@ describe('raidenReducer', () => {
     });
 
     test('channelOpenFailed', () => {
-      let newState = raidenReducer(state, channelOpen(tokenNetwork, partner, settleTimeout));
-      expect(newState).toEqual({
+      state = {
         ...state,
         tokenNetworks: {
           [tokenNetwork]: {
@@ -106,10 +105,10 @@ describe('raidenReducer', () => {
             },
           },
         },
-      });
+      };
       const error = new Error('could not open channel');
-      newState = raidenReducer(state, channelOpenFailed(tokenNetwork, partner, error));
-      expect(get(newState, ['tokenNetworks', tokenNetwork, partner])).toBeUndefined();
+      const newState = raidenReducer(state, channelOpenFailed(tokenNetwork, partner, error));
+      expect(get(newState, ['tokenNetworks', tokenNetwork])).toEqual({});
     });
   });
 

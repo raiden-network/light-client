@@ -4,11 +4,12 @@ export { BigNumber, bigNumberify } from 'ethers/utils';
 
 const StringOrNumber = t.union([t.string, t.number]);
 
+const bigNumberGuard = (u: unknown): u is BigNumber => u instanceof BigNumber;
 export const BigNumberType = new t.Type<BigNumber, string>(
   'BigNumber',
-  (u): u is BigNumber => u instanceof BigNumber,
+  bigNumberGuard,
   (u, c) => {
-    if (u instanceof BigNumber) return t.success(u);
+    if (bigNumberGuard(u)) return t.success(u);
     return StringOrNumber.validate(u, c).chain(s => {
       try {
         return t.success(bigNumberify(s));
