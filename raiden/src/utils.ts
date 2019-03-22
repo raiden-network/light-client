@@ -2,7 +2,7 @@ import { Contract, EventFilter, Event } from 'ethers';
 import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
 import { flatten, sortBy } from 'lodash';
 
-import { Observable, fromEventPattern, merge, from } from 'rxjs';
+import { Observable, fromEventPattern, merge, from, EMPTY } from 'rxjs';
 import { filter, first, map, mergeAll, switchMap, withLatestFrom, mergeMap } from 'rxjs/operators';
 
 /**
@@ -47,10 +47,8 @@ export function getEventsStream<T extends any[]>(
     mergeMap(filter => fromEthersEvent(contract, filter, (...args) => args as T)),
   );
 
-  let pastEvents$: Observable<T> | undefined = undefined;
+  let pastEvents$: Observable<T> = EMPTY;
   if (fromBlock$ && lastSeenBlock$) {
-    // use state$ again instead of state to get the latest state.blockNumber
-    // at subscription time
     pastEvents$ = fromBlock$.pipe(
       withLatestFrom(lastSeenBlock$),
       first(),
@@ -86,7 +84,5 @@ export function getEventsStream<T extends any[]>(
     );
   }
 
-  // if pastEvents$, return merge streams of past and newEvents$
-  // else return the stream of newEvents$ from Contract.on EventListener
-  return pastEvents$ ? merge(pastEvents$, newEvents$) : newEvents$;
+  return merge(pastEvents$, newEvents$);
 }

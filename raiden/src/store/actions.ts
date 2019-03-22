@@ -179,7 +179,7 @@ export const channelOpenFailed = (
   error,
 });
 
-export const channelMonitor = (
+export const channelMonitored = (
   tokenNetwork: string,
   partner: string,
   id: number,

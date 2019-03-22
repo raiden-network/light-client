@@ -2,7 +2,7 @@ import {
   RaidenActionType,
   channelDeposit,
   channelDepositFailed,
-  channelMonitor,
+  channelMonitored,
   tokenMonitor,
   tokenMonitorFailed,
 } from 'raiden/store';
@@ -32,7 +32,7 @@ describe('action factories not tested in reducers.spec.ts', () => {
       partner = '0xpartner',
       id = 12,
       fromBlock = 5123;
-    expect(channelMonitor(tokenNetwork, partner, id, fromBlock)).toEqual({
+    expect(channelMonitored(tokenNetwork, partner, id, fromBlock)).toEqual({
       type: RaidenActionType.CHANNEL_MONITOR,
       tokenNetwork,
       partner,

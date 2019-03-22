@@ -1,11 +1,12 @@
 import { combineEpics, ofType, ActionsObservable } from 'redux-observable';
-import { Observable, defer, from, of, merge } from 'rxjs';
+import { Observable, defer, from, of, merge, EMPTY } from 'rxjs';
 import {
   catchError,
   filter,
   ignoreElements,
   map,
   mergeMap,
+  mergeMapTo,
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -38,7 +39,7 @@ import {
   tokenMonitorFailed,
   channelOpened,
   channelOpenFailed,
-  channelMonitor,
+  channelMonitored,
   channelDeposited,
   channelDepositFailed,
 } from './actions';
@@ -108,7 +109,7 @@ export const raidenInitializationEpic = (
               ),
               // typescript doesn't understand above filter guarantees id below will be set
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              map(([partner, channel]) => channelMonitor(tokenNetwork, partner, channel.id!)),
+              map(([partner, channel]) => channelMonitored(tokenNetwork, partner, channel.id!)),
             ),
           ),
         ),
@@ -168,7 +169,7 @@ export const tokenMonitorEpic = (
  * subscribe to events and emit respective actions to the stream. Currently:
  * - ChannelOpened events with us or by us
  */
-export const tokenMonitoredEventsEpic = (
+export const tokenMonitoredEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { address, getTokenNetworkContract, contractsInfo }: RaidenEpicDeps,
@@ -190,7 +191,7 @@ export const tokenMonitoredEventsEpic = (
       // at subscription time, if there's already a filter, skip (return completed observable)
       return defer(() =>
         tokenNetworkContract.listenerCount(filters[0])
-          ? of<ChannelOpenedAction>() // completed/empty observable as return
+          ? EMPTY // completed/empty observable as return
           : getEventsStream<ChannelOpenedEvent>(
               tokenNetworkContract,
               filters,
@@ -260,7 +261,7 @@ export const channelOpenEpic = (
         // actual ChannelOpenedAction will be detected and handled by tokenMonitoredEpic
         // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
         // will then emit the channelOpenFailed action instead
-        mergeMap(() => of<ChannelOpenedAction>()),
+        mergeMapTo(EMPTY),
         catchError(error => of(channelOpenFailed(action.tokenNetwork, action.partner, error))),
       );
     }),
@@ -282,7 +283,7 @@ export const channelOpenedEpic = (
       return channel && channel.state === ChannelState.open;
     }),
     map(([action]) =>
-      channelMonitor(
+      channelMonitored(
         action.tokenNetwork,
         action.partner,
         action.id,
@@ -299,7 +300,7 @@ export const channelOpenedEpic = (
  * Currently monitored events:
  * - ChannelNewDeposit, fires a ChannelDepositedAction
  */
-export const channelMonitorEventsEpic = (
+export const channelMonitoredEpic = (
   action$: ActionsObservable<RaidenActions>,
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
@@ -318,11 +319,11 @@ export const channelMonitorEventsEpic = (
       // at subscription time, if there's already a filter, skip (return completed observable)
       return defer(() =>
         tokenNetworkContract.listenerCount(filters[0])
-          ? of<ChannelDepositedAction>() // completed/empty observable as return
+          ? EMPTY // completed/empty observable as return
           : getEventsStream<ChannelNewDepositEvent>(
               tokenNetworkContract,
               filters,
-              // if channelMonitor triggered by ChannelOpenedAction,
+              // if channelMonitored triggered by ChannelOpenedAction,
               // fetch Channel's pastEvents since channelOpened blockNumber as fromBlock$
               action.fromBlock ? of(action.fromBlock) : undefined,
               action.fromBlock ? state$.pipe(map(state => state.blockNumber)) : undefined,
@@ -422,7 +423,7 @@ export const channelDepositEpic = (
           // actual ChannelDepositedAction will be detected and handled by channelMonitorEventsEpic
           // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
           // will then emit the channelDepositFailed action instead
-          mergeMap(() => of<ChannelDepositedAction>()),
+          mergeMapTo(EMPTY),
           catchError(error =>
             of(channelDepositFailed(action.tokenNetwork, action.partner, error)),
           ),
@@ -435,9 +436,9 @@ export const raidenEpics = combineEpics<RaidenActions, RaidenActions, RaidenStat
   stateOutputEpic,
   actionOutputEpic,
   tokenMonitorEpic,
-  tokenMonitoredEventsEpic,
+  tokenMonitoredEpic,
   channelOpenEpic,
   channelOpenedEpic,
-  channelMonitorEventsEpic,
+  channelMonitoredEpic,
   channelDepositEpic,
 );
