@@ -45,7 +45,7 @@ describe('RaidenState codecs', () => {
     // property of wrong type
     expect(() => decodeRaidenState({ address: 123 })).toThrow('Invalid value 123');
 
-    // invalid deep enum value
+    // invalid deep enum value and BigNumber
     expect(() =>
       decodeRaidenState({
         address: '0xaddress',
@@ -54,7 +54,7 @@ describe('RaidenState codecs', () => {
           '0xtokenNetwork': {
             '0xpartner': {
               state: 'unknownstate',
-              totalDeposit: '200',
+              totalDeposit: 'invalidBigNumber',
               partnerDeposit: '210',
             },
           },
