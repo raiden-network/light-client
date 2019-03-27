@@ -85,9 +85,7 @@ describe('raidenEpics', () => {
   test('tokenMonitorEpic fails', async () => {
     const action$ = of<RaidenActions>(tokenMonitor('0xtoken')),
       state$ = of<RaidenState>(initialState);
-    const mockFunction = (depsMock.registryContract.functions
-      .token_to_token_networks as unknown) as jest.MockInstance<Promise<string>, [string]>;
-    mockFunction.mockResolvedValueOnce(AddressZero);
+    depsMock.registryContract.functions.token_to_token_networks.mockResolvedValueOnce(AddressZero);
 
     const result = await tokenMonitorEpic(action$, state$, depsMock).toPromise();
     expect(result).toMatchObject({
