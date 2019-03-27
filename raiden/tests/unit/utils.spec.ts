@@ -1,16 +1,13 @@
 import { first } from 'rxjs/operators';
-import { JsonRpcProvider } from 'ethers/providers';
 
 import { fromEthersEvent } from 'raiden/utils';
+import { raidenEpicDeps } from './mocks';
 
 describe('fromEthersEvent', () => {
-  const provider = new JsonRpcProvider();
-  const onSpy = jest.spyOn(provider, 'on');
-  const removeListenerSpy = jest.spyOn(provider, 'removeListener');
+  const { provider } = raidenEpicDeps(); // deep-destructure mocks
 
   afterEach(() => {
-    onSpy.mockClear();
-    removeListenerSpy.mockClear();
+    jest.clearAllMocks();
   });
 
   test('event registered and emitted', async () => {
@@ -22,7 +19,7 @@ describe('fromEthersEvent', () => {
     const blockNumber = await promise;
 
     expect(blockNumber).toBe(1337);
-    expect(onSpy).toHaveBeenCalledTimes(1);
-    expect(removeListenerSpy).toHaveBeenCalledTimes(1);
+    expect(provider.on).toHaveBeenCalledTimes(1);
+    expect(provider.removeListener).toHaveBeenCalledTimes(1);
   });
 });
