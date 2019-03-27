@@ -1,4 +1,4 @@
-import { combineEpics, ofType, ActionsObservable } from 'redux-observable';
+import { combineEpics, ofType } from 'redux-observable';
 import { Observable, defer, from, of, merge, EMPTY } from 'rxjs';
 import {
   catchError,
@@ -48,7 +48,7 @@ import {
  * This epic simply pipes all states to stateOutput$ subject injected as dependency
  */
 export const stateOutputEpic = (
-  action$: ActionsObservable<RaidenActions>,
+  action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { stateOutput$ }: RaidenEpicDeps,
 ): Observable<RaidenActions> =>
@@ -65,7 +65,7 @@ export const stateOutputEpic = (
  * This epic simply pipes all actions to actionOutput$ subject injected as dependency
  */
 export const actionOutputEpic = (
-  action$: ActionsObservable<RaidenActions>,
+  action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { actionOutput$ }: RaidenEpicDeps,
 ): Observable<RaidenActions> =>
@@ -85,7 +85,7 @@ export const actionOutputEpic = (
  * - monitoring open Channels
  */
 export const raidenInitializationEpic = (
-  action$: ActionsObservable<RaidenActions>,
+  action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
 ): Observable<NewBlockAction | TokenMonitoredAction | ChannelMonitorAction> =>
@@ -136,7 +136,7 @@ export const raidenInitializationEpic = (
  *      TokenMonitoredAction is emitted as a reply to this request
  */
 export const tokenMonitorEpic = (
-  action$: ActionsObservable<RaidenActions>,
+  action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { registryContract }: RaidenEpicDeps,
 ): Observable<TokenMonitoredAction | TokenMonitorActionFailed> =>
@@ -170,7 +170,7 @@ export const tokenMonitorEpic = (
  * - ChannelOpened events with us or by us
  */
 export const tokenMonitoredEpic = (
-  action$: ActionsObservable<RaidenActions>,
+  action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { address, getTokenNetworkContract, contractsInfo }: RaidenEpicDeps,
 ): Observable<ChannelOpenedAction> =>
@@ -224,7 +224,7 @@ export const tokenMonitoredEpic = (
  * fires a ChannnelOpenActionFailed instead
  */
 export const channelOpenEpic = (
-  action$: ActionsObservable<RaidenActions>,
+  action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<ChannelOpenedAction | ChannelOpenActionFailed> =>
@@ -271,7 +271,7 @@ export const channelOpenEpic = (
  * When we see a new ChannelOpenedAction event, starts monitoring channel
  */
 export const channelOpenedEpic = (
-  action$: ActionsObservable<RaidenActions>,
+  action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
 ): Observable<ChannelMonitorAction> =>
   action$.pipe(
@@ -301,7 +301,7 @@ export const channelOpenedEpic = (
  * - ChannelNewDeposit, fires a ChannelDepositedAction
  */
 export const channelMonitoredEpic = (
-  action$: ActionsObservable<RaidenActions>,
+  action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<ChannelDepositedAction> =>
@@ -352,7 +352,7 @@ export const channelMonitoredEpic = (
  * instead
  */
 export const channelDepositEpic = (
-  action$: ActionsObservable<RaidenActions>,
+  action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { address, getTokenContract, getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<ChannelDepositedAction | ChannelDepositActionFailed> =>
@@ -378,10 +378,8 @@ export const channelDepositEpic = (
       }
       const channelId = channel.id;
 
-      return from(
-        // send approve transaction
-        tokenContract.functions.approve(action.tokenNetwork, action.deposit),
-      )
+      // send approve transaction
+      return from(tokenContract.functions.approve(action.tokenNetwork, action.deposit))
         .pipe(
           tap(tx => console.log(`sent approve tx "${tx.hash}" to "${token}"`)),
           mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
