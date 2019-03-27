@@ -1,32 +1,41 @@
-import { of } from 'rxjs';
-
-import { ActionsObservable } from 'redux-observable';
+import { merge, of } from 'rxjs';
+import { tap, ignoreElements } from 'rxjs/operators';
+import { marbles } from 'rxjs-marbles/jest';
 
 import { AddressZero } from 'ethers/constants';
 
-import { RaidenState, initialState } from 'raiden/store/state';
+import { RaidenState, ChannelState, initialState } from 'raiden/store/state';
+import { bigNumberify } from 'raiden/store/types';
 import {
   RaidenActions,
   RaidenActionType,
   tokenMonitor,
   tokenMonitored,
+  raidenInit,
+  channelMonitored,
+  newBlock,
 } from 'raiden/store/actions';
-import { stateOutputEpic, actionOutputEpic, tokenMonitorEpic } from 'raiden/store/epics';
+import {
+  stateOutputEpic,
+  actionOutputEpic,
+  raidenInitializationEpic,
+  tokenMonitorEpic,
+} from 'raiden/store/epics';
 
 import { raidenEpicDeps } from './mocks';
 
 describe('raidenEpics', () => {
   // mocks for all RaidenEpicDeps properties
-  let { depsMock, registryFunctions } = raidenEpicDeps();
+  let depsMock = raidenEpicDeps();
 
   afterEach(() => {
-    ({ depsMock, registryFunctions } = raidenEpicDeps());
+    depsMock = raidenEpicDeps();
   });
 
   test('stateOutputEpic', async () => {
     const outputPromise = depsMock.stateOutput$.toPromise();
     const epicPromise = stateOutputEpic(
-      ActionsObservable.of<RaidenActions>(),
+      of<RaidenActions>(),
       of<RaidenState>({ ...initialState, blockNumber: 999 }),
       depsMock,
     ).toPromise();
@@ -41,7 +50,7 @@ describe('raidenEpics', () => {
     const action = tokenMonitor('0xtoken'); // a random action
     const outputPromise = depsMock.actionOutput$.toPromise();
     const epicPromise = actionOutputEpic(
-      ActionsObservable.of<RaidenActions>(action),
+      of<RaidenActions>(action),
       of<RaidenState>(initialState),
       depsMock,
     ).toPromise();
@@ -53,7 +62,7 @@ describe('raidenEpics', () => {
   });
 
   test('tokenMonitorEpic succeeds first', async () => {
-    const action$ = ActionsObservable.of<RaidenActions>(tokenMonitor('0xtoken')),
+    const action$ = of<RaidenActions>(tokenMonitor('0xtoken')),
       state$ = of<RaidenState>(initialState);
 
     // toPromise will ensure observable completes and resolve to last emitted value
@@ -62,7 +71,7 @@ describe('raidenEpics', () => {
   });
 
   test('tokenMonitorEpic succeeds already monitored', async () => {
-    const action$ = ActionsObservable.of<RaidenActions>(tokenMonitor('0xtoken')),
+    const action$ = of<RaidenActions>(tokenMonitor('0xtoken')),
       state$ = of<RaidenState>({
         ...initialState,
         token2tokenNetwork: { '0xtoken': '0xtokenNetwork' },
@@ -74,9 +83,11 @@ describe('raidenEpics', () => {
   });
 
   test('tokenMonitorEpic fails', async () => {
-    const action$ = ActionsObservable.of<RaidenActions>(tokenMonitor('0xtoken')),
+    const action$ = of<RaidenActions>(tokenMonitor('0xtoken')),
       state$ = of<RaidenState>(initialState);
-    registryFunctions.token_to_token_networks.mockResolvedValueOnce(AddressZero);
+    const mockFunction = (depsMock.registryContract.functions
+      .token_to_token_networks as unknown) as jest.MockInstance<Promise<string>, [string]>;
+    mockFunction.mockResolvedValueOnce(AddressZero);
 
     const result = await tokenMonitorEpic(action$, state$, depsMock).toPromise();
     expect(result).toMatchObject({
@@ -85,4 +96,45 @@ describe('raidenEpics', () => {
     });
     expect(result.error).toBeInstanceOf(Error);
   });
+
+  test(
+    'raidenInitializationEpic',
+    marbles(m => {
+      const state: RaidenState = {
+        address: '0xaddress',
+        blockNumber: 123,
+        tokenNetworks: {
+          '0xtokenNetwork': {
+            '0xpartner': {
+              state: ChannelState.open,
+              totalDeposit: bigNumberify(200),
+              partnerDeposit: bigNumberify(210),
+              id: 17,
+              settleTimeout: 500,
+              openBlock: 119,
+            },
+          },
+        },
+        token2tokenNetwork: { '0xtoken': '0xtokenNetwork' },
+      };
+      /* this test requires mocked provider, or else emit is called with setTimeout and doesn't run
+       * before the return of the function.
+       */
+      const action$ = m.cold('---a--|', { a: raidenInit() }),
+        state$ = m.cold('--s---|', { s: state }),
+        emitBlock$ = m.cold('----------b--|').pipe(
+          tap(() => depsMock.provider.emit('block', 124)),
+          ignoreElements(),
+        );
+      m.expect(
+        merge(emitBlock$, raidenInitializationEpic(action$, state$, depsMock)),
+      ).toBeObservable(
+        m.cold('---(tc)---b-', {
+          t: tokenMonitored('0xtoken', '0xtokenNetwork', false),
+          c: channelMonitored('0xtokenNetwork', '0xpartner', 17),
+          b: newBlock(124),
+        }),
+      );
+    }),
+  );
 });
