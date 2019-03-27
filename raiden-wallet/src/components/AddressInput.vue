@@ -21,7 +21,7 @@ export default class AddressInput extends Vue {
   @Prop({})
   disabled!: boolean;
   @Prop({ required: true })
-  value!: number;
+  value!: string;
 
   readonly rules = [
     (v: string) => !!v || 'The address cannot be empty',
