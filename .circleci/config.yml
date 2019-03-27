@@ -10,7 +10,7 @@ anchor_1: &sdk_package_lock_key
   key: *sdk_cache_key
 
 anchor_2: &attach_options
-  at: .
+  at: ~/src/
   
 anchor_3: &wallet_package_lock_key
   key: *wallet_cache_key
@@ -22,11 +22,21 @@ executors:
       - image: *docker_image
 
 jobs:
+  checkout: 
+    executor: base-executor
+    working_directory: ~/src
+    steps:
+      - checkout
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./*
+
   install_sdk:
     executor: base-executor
     working_directory: *raiden_working_dir
     steps:
-      - checkout
+      - attach_workspace: *attach_options
       - restore_cache: *sdk_package_lock_key
       - run: npm ci
       - save_cache:
@@ -34,7 +44,7 @@ jobs:
           paths:
             - "node_modules"
       - persist_to_workspace:
-          root: .
+          root: ~/src
           paths:
             - ./*
 
@@ -42,16 +52,20 @@ jobs:
     executor: base-executor
     working_directory: *wallet_working_dir
     steps:
-      - checkout
+      - attach_workspace: *attach_options
       - restore_cache: *wallet_package_lock_key
-      - run: npm ci
-      - run: ./sync-sdk.sh
+      - run: 
+          name: Install Rsync
+          command: sudo apt install rsync
+      - run:
+          name: Synchronise the sdk module
+          command: ./sync-sdk.sh
       - save_cache:
           <<: *wallet_package_lock_key
           paths:
             - "node_modules"
       - persist_to_workspace:
-          root: .
+          root: ~/src
           paths:
             - ./*
 
@@ -88,7 +102,7 @@ jobs:
           command: npm install codecov
       - run:
           name: "Upload coverage"
-          command: node_modules/codecov/bin/codecov -F raiden
+          command: node_modules/codecov/bin/codecov -c -F sdk
 
   test_wallet:
     executor: base-executor
@@ -109,7 +123,7 @@ jobs:
           command: npm install codecov
       - run:
           name: "Upload coverage"
-          command: node_modules/codecov/bin/codecov -F raiden-wallet
+          command: node_modules/codecov/bin/codecov -c -F wallet
 
   build_sdk:
     executor: base-executor
@@ -117,10 +131,6 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - run: npm run build
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./raiden/dist
 
   build_wallet:
     executor: base-executor
@@ -133,10 +143,13 @@ workflows:
   version: 2
   default_workflow:
     jobs:
-      - install_sdk
+      - checkout
+      - install_sdk:
+          requires:
+            - checkout
       - install_wallet:
           requires:
-            - build_sdk
+            - checkout
       - lint_sdk:
           requires:
             - install_sdk
