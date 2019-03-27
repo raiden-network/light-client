@@ -4,7 +4,7 @@ import { fromEthersEvent } from 'raiden/utils';
 import { raidenEpicDeps } from './mocks';
 
 describe('fromEthersEvent', () => {
-  const { provider } = raidenEpicDeps(); // deep-destructure mocks
+  const { provider } = raidenEpicDeps();
 
   afterEach(() => {
     jest.clearAllMocks();
