@@ -1,4 +1,5 @@
 import ganache, { GanacheServerOptions } from 'ganache-cli';
+import memdown from 'memdown';
 import { Web3Provider } from 'ethers/providers';
 
 export class TestProvider extends Web3Provider {
@@ -8,6 +9,7 @@ export class TestProvider extends Web3Provider {
         total_accounts: 3, // eslint-disable-line
         default_balance_ether: 5, // eslint-disable-line
         seed: 'testrpc_provider',
+        db: memdown(),
         ...opts,
       }),
     );
