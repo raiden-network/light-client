@@ -1,25 +1,16 @@
-import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
+import { mount, Wrapper } from '@vue/test-utils';
 import AddressInput from '@/components/AddressInput.vue';
+import Vue from 'vue';
 import Vuetify from 'vuetify';
+import { mockInput } from '../utils/interaction-utils';
 
-function mockInput(
-  wrapper: Wrapper<AddressInput>,
-  value: string = '',
-  selector: string = 'input'
-) {
-  const input = wrapper.find(selector);
-  (input.element as HTMLInputElement).value = value;
-  input.trigger('input');
-}
+Vue.use(Vuetify);
 
 describe('AddressInput', function() {
   let wrapper: Wrapper<AddressInput>;
 
   beforeEach(() => {
-    const localVue = createLocalVue();
-    localVue.use(Vuetify, {});
     wrapper = mount(AddressInput, {
-      localVue,
       propsData: {
         value: ''
       }
