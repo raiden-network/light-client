@@ -1,7 +1,8 @@
 <!-- PROJECT SHIELDS -->
 
 <!-- Gitter Badge -->
-<!-- CI-Status Badge -->
+[![CircleCI](https://circleci.com/gh/raiden-network/light-client/tree/master.svg?style=svg)](https://circleci.com/gh/raiden-network/light-client/tree/master)
+[![codecov](https://codecov.io/gh/raiden-network/light-client/branch/master/graph/badge.svg?token=QzmREKozOH)](https://codecov.io/gh/raiden-network/light-client)
 
 <h2 align="center">
   <br/>
