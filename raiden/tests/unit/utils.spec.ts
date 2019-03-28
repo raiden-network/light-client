@@ -1,11 +1,39 @@
 import { of } from 'rxjs';
 import { first, take, toArray } from 'rxjs/operators';
 
+import { EventFilter } from 'ethers';
 import { Log } from 'ethers/providers/abstract-provider';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 
 import { fromEthersEvent, getEventsStream } from 'raiden/utils';
 import { raidenEpicDeps } from './mocks';
+
+function makeLog({
+  filter,
+  args,
+  ...opts
+}: {
+  filter: EventFilter;
+  args: [string, any][]; // eslint-disable-line @typescript-eslint/no-explicit-any
+} & Partial<Log>): Log {
+  const blockNumber = opts.blockNumber || 1337;
+  return {
+    blockNumber: blockNumber,
+    blockHash: `0xblockHash${blockNumber}`,
+    transactionIndex: 1,
+    removed: false,
+    transactionLogIndex: 1,
+    address: filter.address!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    data: '0x',
+    transactionHash: `0xtxHash${blockNumber}`,
+    logIndex: 1,
+    ...opts,
+    topics: [
+      filter.topics![0], // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      ...args.map(([type, value]) => defaultAbiCoder.encode([type], [value])),
+    ],
+  };
+}
 
 describe('fromEthersEvent', () => {
   let { provider } = raidenEpicDeps();
@@ -46,22 +74,7 @@ describe('getEventsStream', () => {
 
     const tokenAddr = '0x0000000000000000000000000000000000000001',
       tokenNetworkAddr = '0x0000000000000000000000000000000000000002';
-    const log: Log = {
-      blockNumber: 1337,
-      blockHash: '0xblockHash',
-      transactionIndex: 1,
-      removed: false,
-      transactionLogIndex: 1,
-      address: registryContract.address,
-      data: '0x',
-      topics: [
-        filter.topics![0], // eslint-disable-line @typescript-eslint/no-non-null-assertion
-        defaultAbiCoder.encode(['address'], [tokenAddr]),
-        defaultAbiCoder.encode(['address'], [tokenNetworkAddr]),
-      ],
-      transactionHash: '0xtxHash',
-      logIndex: 1,
-    };
+    const log = makeLog({ filter, args: [['address', tokenAddr], ['address', tokenNetworkAddr]] });
     provider.emit(filter, log);
 
     const event = await promise;
@@ -82,22 +95,11 @@ describe('getEventsStream', () => {
     const pastTokenAddr = '0x0000000000000000000000000000000000000003',
       pastTokenNetworkAddr = '0x0000000000000000000000000000000000000004';
 
-    const pastLog: Log = {
+    const pastLog = makeLog({
       blockNumber: 999,
-      blockHash: '0xpastBlockHash',
-      transactionIndex: 1,
-      removed: false,
-      transactionLogIndex: 1,
-      address: registryContract.address,
-      data: '0x',
-      topics: [
-        filter.topics![0], // eslint-disable-line @typescript-eslint/no-non-null-assertion
-        defaultAbiCoder.encode(['address'], [pastTokenAddr]),
-        defaultAbiCoder.encode(['address'], [pastTokenNetworkAddr]),
-      ],
-      transactionHash: '0xpastTxHash',
-      logIndex: 1,
-    };
+      filter,
+      args: [['address', pastTokenAddr], ['address', pastTokenNetworkAddr]],
+    });
 
     provider.getLogs.mockResolvedValueOnce([pastLog]);
 
@@ -115,22 +117,7 @@ describe('getEventsStream', () => {
 
     const tokenAddr = '0x0000000000000000000000000000000000000001',
       tokenNetworkAddr = '0x0000000000000000000000000000000000000002';
-    const log: Log = {
-      blockNumber: 1337,
-      blockHash: '0xblockHash',
-      transactionIndex: 1,
-      removed: false,
-      transactionLogIndex: 1,
-      address: registryContract.address,
-      data: '0x',
-      topics: [
-        filter.topics![0], // eslint-disable-line @typescript-eslint/no-non-null-assertion
-        defaultAbiCoder.encode(['address'], [tokenAddr]),
-        defaultAbiCoder.encode(['address'], [tokenNetworkAddr]),
-      ],
-      transactionHash: '0xtxHash',
-      logIndex: 1,
-    };
+    const log = makeLog({ filter, args: [['address', tokenAddr], ['address', tokenNetworkAddr]] });
     provider.emit(filter, log);
 
     const events = await promise;
