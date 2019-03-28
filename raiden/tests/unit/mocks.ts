@@ -18,8 +18,9 @@ jest.mock('ethers/utils/properties', () => ({
 
 jest.mock('ethers/providers');
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
+import { Log } from 'ethers/providers/abstract-provider';
 import { Network } from 'ethers/utils';
-import { Contract } from 'ethers/contract';
+import { Contract, EventFilter } from 'ethers/contract';
 import { Wallet } from 'ethers/wallet';
 
 import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
@@ -62,7 +63,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     const listeners = new Map<EventType, Set<Listener>>();
     function getEventTag(event: EventType): string {
       if (typeof event === 'string') return event;
-      else if (Array.isArray(event)) return `filter::${event.join('_')}`;
+      else if (Array.isArray(event)) return `filter::${event.join('|')}`;
       else return `filter:${event.address}:${(event.topics || []).join('|')}`;
     }
     jest.spyOn(target, 'on').mockImplementation((event: EventType, callback: Listener) => {
@@ -149,7 +150,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     contractsInfo: {
       TokenNetworkRegistry: {
         address: registryContract.address,
-        block_number: 120, // eslint-disable-line
+        block_number: 100, // eslint-disable-line
       },
     },
     provider,
@@ -157,5 +158,22 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     registryContract,
     getTokenNetworkContract,
     getTokenContract,
+  };
+}
+
+export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<Log>): Log {
+  const blockNumber = opts.blockNumber || 1337;
+  return {
+    blockNumber: blockNumber,
+    blockHash: `0xblockHash${blockNumber}`,
+    transactionIndex: 1,
+    removed: false,
+    transactionLogIndex: 1,
+    data: '0x',
+    transactionHash: `0xtxHash${blockNumber}`,
+    logIndex: 1,
+    ...opts,
+    address: filter.address!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    topics: filter.topics!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
   };
 }
