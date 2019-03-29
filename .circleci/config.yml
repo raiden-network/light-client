@@ -98,11 +98,8 @@ jobs:
       - store_artifacts:
            path: reports/junit
       - run:
-          name: "Install codecov"
-          command: npm install codecov
-      - run:
           name: "Upload coverage"
-          command: node_modules/codecov/bin/codecov -F sdk
+          command: cd .. && bash <(curl -s https://codecov.io/bash)  -F sdk 
 
   test_wallet:
     executor: base-executor
@@ -119,11 +116,8 @@ jobs:
       - store_artifacts:
            path: reports/junit
       - run:
-          name: "Install codecov"
-          command: npm install codecov
-      - run:
           name: "Upload coverage"
-          command: node_modules/codecov/bin/codecov -F wallet
+          command: cd .. && bash <(curl -s https://codecov.io/bash) -F wallet 
 
   build_sdk:
     executor: base-executor
