@@ -102,7 +102,7 @@ jobs:
           command: npm install codecov
       - run:
           name: "Upload coverage"
-          command: node_modules/codecov/bin/codecov -c -F sdk
+          command: node_modules/codecov/bin/codecov -F sdk
 
   test_wallet:
     executor: base-executor
@@ -123,7 +123,7 @@ jobs:
           command: npm install codecov
       - run:
           name: "Upload coverage"
-          command: node_modules/codecov/bin/codecov -c -F wallet
+          command: node_modules/codecov/bin/codecov -F wallet
 
   build_sdk:
     executor: base-executor
