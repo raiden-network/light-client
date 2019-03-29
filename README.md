@@ -1,9 +1,5 @@
 <!-- PROJECT SHIELDS -->
 
-<!-- Gitter Badge -->
-[![CircleCI](https://circleci.com/gh/raiden-network/light-client/tree/master.svg?style=svg)](https://circleci.com/gh/raiden-network/light-client/tree/master)
-[![codecov](https://codecov.io/gh/raiden-network/light-client/branch/master/graph/badge.svg?token=QzmREKozOH)](https://codecov.io/gh/raiden-network/light-client)
-
 <h2 align="center">
   <br/>
   <a href='https://raiden.network/'><img 
@@ -26,9 +22,18 @@
 </p>
 
 <p align="center">
+  <a href="https://circleci.com/gh/raiden-network/light-client">
+   <img src="https://circleci.com/gh/raiden-network/light-client.svg?style=svg&circle-token=2586ec4e7d610d2a114e4a833fa44ef6c00d9e97" alt="CircleCI Badge">
+  </a>
+  <a href="https://codecov.io/gh/raiden-network/light-client">
+    <img src="https://codecov.io/gh/raiden-network/light-client/branch/master/graph/badge.svg?token=QzmREKozOH" alt="Codecov Badge">
+  </a>
+  <a href="https://github.com/prettier/prettier">
+    <img src="https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square" alt="code style: prettier">
+  </a>
   <a href="https://gitter.im/raiden-network/raiden">
     <img src="https://badges.gitter.im/gitterHQ/gitter.png" alt="Gitter Raiden Badge">
-  </a> 
+  </a>
 </p>
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written on JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
