@@ -7,6 +7,7 @@ import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 
 import { RaidenState, ChannelState, initialState } from 'raiden/store/state';
 import { bigNumberify } from 'raiden/store/types';
+import { raidenReducer } from 'raiden/store/reducers';
 import {
   RaidenActions,
   RaidenActionType,
@@ -120,10 +121,9 @@ describe('raidenEpics', () => {
 
     test('succeeds already monitored', async () => {
       const action$ = of<RaidenActions>(tokenMonitor('0xtoken')),
-        state$ = of<RaidenState>({
-          ...state,
-          token2tokenNetwork: { '0xtoken': '0xtokenNetwork' },
-        });
+        state$ = of<RaidenState>(
+          raidenReducer(state, tokenMonitored('0xtoken', '0xtokenNetwork', true)),
+        );
 
       // toPromise will ensure observable completes and resolve to last emitted value
       const result = await tokenMonitorEpic(action$, state$, depsMock).toPromise();
@@ -153,8 +153,10 @@ describe('raidenEpics', () => {
     const tokenNetworkContract = depsMock.getTokenNetworkContract(tokenNetwork);
 
     test('first tokenMonitored with past$ ChannelOpened event', async () => {
-      const action$ = of<RaidenActions>(tokenMonitored(token, tokenNetwork, true)),
-        state$ = of<RaidenState>({ ...state, token2tokenNetwork: { [token]: tokenNetwork } });
+      const action = tokenMonitored(token, tokenNetwork, true),
+        curState = raidenReducer(state, action);
+      const action$ = of<RaidenActions>(action),
+        state$ = of<RaidenState>(curState);
 
       const partner = '0x0000000000000000000000000000000000000018';
       depsMock.provider.getLogs.mockResolvedValueOnce([
@@ -181,8 +183,10 @@ describe('raidenEpics', () => {
     });
 
     test('already tokenMonitored with new$ ChannelOpened event', async () => {
-      const action$ = of<RaidenActions>(tokenMonitored(token, tokenNetwork, false)),
-        state$ = of<RaidenState>({ ...state, token2tokenNetwork: { [token]: tokenNetwork } });
+      const action = tokenMonitored(token, tokenNetwork, false),
+        curState = raidenReducer(state, action);
+      const action$ = of<RaidenActions>(action),
+        state$ = of<RaidenState>(curState);
 
       const partner = '0x0000000000000000000000000000000000000018';
 
@@ -214,10 +218,12 @@ describe('raidenEpics', () => {
 
     test("ensure multiple tokenMonitored don't produce duplicated events", async () => {
       const multiple = 16;
+      const action = tokenMonitored(token, tokenNetwork, false),
+        curState = raidenReducer(state, action);
       const action$ = from(
           [...Array(multiple).keys()].map(() => tokenMonitored(token, tokenNetwork, false)),
         ),
-        state$ = of<RaidenState>({ ...state, token2tokenNetwork: { [token]: tokenNetwork } });
+        state$ = of<RaidenState>(curState);
 
       const partner = '0x0000000000000000000000000000000000000018';
       const listenerCountSpy = jest.spyOn(tokenNetworkContract, 'listenerCount');
