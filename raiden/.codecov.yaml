@@ -1,0 +1,16 @@
+coverage:
+  status: 
+    project: 
+      default: off
+      wallet:
+        flags: wallet
+      sdk:
+        flags: sdk
+
+flags:
+  wallet:
+    paths: 
+      - raiden-wallet/
+  sdk:
+    paths:
+      - raiden/ 
