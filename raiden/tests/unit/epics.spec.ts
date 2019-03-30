@@ -4,6 +4,7 @@ import { marbles } from 'rxjs-marbles/jest';
 
 import { AddressZero } from 'ethers/constants';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
+import { ContractTransaction, ContractReceipt } from 'ethers/contract';
 
 import { RaidenState, ChannelState, initialState } from 'raiden/store/state';
 import { bigNumberify } from 'raiden/store/types';
@@ -15,6 +16,8 @@ import {
   tokenMonitored,
   raidenInit,
   channelMonitored,
+  channelOpen,
+  channelOpened,
   newBlock,
 } from 'raiden/store/actions';
 import {
@@ -23,6 +26,8 @@ import {
   raidenInitializationEpic,
   tokenMonitorEpic,
   tokenMonitoredEpic,
+  channelOpenEpic,
+  channelOpenedEpic,
 } from 'raiden/store/epics';
 
 import { raidenEpicDeps, makeLog } from './mocks';
@@ -266,6 +271,130 @@ describe('raidenEpics', () => {
       });
 
       listenerCountSpy.mockRestore();
+    });
+  });
+
+  describe('chanelOpenEpic', () => {
+    const tokenNetwork = '0x0000000000000000000000000000000000000002',
+      partner = '0x0000000000000000000000000000000000000018';
+    const tokenNetworkContract = depsMock.getTokenNetworkContract(tokenNetwork);
+
+    test('fails if channel.state !== opening', async () => {
+      // there's a channel already opened in state
+      const action = channelOpen(tokenNetwork, partner, 500),
+        curState = raidenReducer(
+          state,
+          channelOpened(tokenNetwork, partner, 17, 500, 125, '0xtxHash'),
+        );
+      const action$ = of<RaidenActions>(action),
+        state$ = of<RaidenState>(curState);
+
+      const result = await channelOpenEpic(action$, state$, depsMock).toPromise();
+
+      expect(result).toMatchObject({
+        type: RaidenActionType.CHANNEL_OPEN_FAILED,
+        tokenNetwork,
+        partner,
+      });
+      expect(result.error).toBeInstanceOf(Error);
+    });
+
+    test('tx fails', async () => {
+      // there's a channel already opened in state
+      const action = channelOpen(tokenNetwork, partner, 500),
+        curState = raidenReducer(state, action);
+      const action$ = of<RaidenActions>(action),
+        state$ = of<RaidenState>(curState);
+
+      const receipt: ContractReceipt = { byzantium: true, status: 0 };
+      const tx: ContractTransaction = {
+        hash: '0xtxHash',
+        confirmations: 1,
+        nonce: 1,
+        gasLimit: bigNumberify(1e6),
+        gasPrice: bigNumberify(2e10),
+        value: bigNumberify(0),
+        data: '0x',
+        chainId: depsMock.network.chainId,
+        from: depsMock.address,
+        wait: jest.fn().mockResolvedValue(receipt),
+      };
+      tokenNetworkContract.functions.openChannel.mockResolvedValue(tx);
+
+      const result = await channelOpenEpic(action$, state$, depsMock).toPromise();
+
+      expect(result).toMatchObject({
+        type: RaidenActionType.CHANNEL_OPEN_FAILED,
+        tokenNetwork,
+        partner,
+      });
+      expect(result.error).toBeInstanceOf(Error);
+    });
+
+    test('success', async () => {
+      // there's a channel already opened in state
+      const action = channelOpen(tokenNetwork, partner, 500),
+        curState = raidenReducer(state, action);
+      const action$ = of<RaidenActions>(action),
+        state$ = of<RaidenState>(curState);
+
+      const receipt: ContractReceipt = { byzantium: true, status: 1 };
+      const tx: ContractTransaction = {
+        hash: '0xtxHash',
+        confirmations: 1,
+        nonce: 1,
+        gasLimit: bigNumberify(1e6),
+        gasPrice: bigNumberify(2e10),
+        value: bigNumberify(0),
+        data: '0x',
+        chainId: depsMock.network.chainId,
+        from: depsMock.address,
+        wait: jest.fn().mockResolvedValue(receipt),
+      };
+      tokenNetworkContract.functions.openChannel.mockResolvedValue(tx);
+
+      const result = await channelOpenEpic(action$, state$, depsMock).toPromise();
+
+      // result is undefined on success as the respective channelOpenedAction is emitted by the
+      // tokenMonitoredEpic, which monitors the blockchain for ChannelOpened events
+      expect(result).toBeUndefined();
+      expect(tokenNetworkContract.functions.openChannel).toHaveBeenCalledTimes(1);
+      expect(tx.wait).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('channelOpenedEpic', () => {
+    const tokenNetwork = '0x0000000000000000000000000000000000000002',
+      partner = '0x0000000000000000000000000000000000000018';
+
+    test("filter out if channel isn't in 'open' state", async () => {
+      // channel.state is 'opening'
+      const curState = raidenReducer(state, channelOpen(tokenNetwork, partner, 500));
+      const action$ = of<RaidenActions>(
+          channelOpened(tokenNetwork, partner, 17, 500, 125, '0xtxHash'),
+        ),
+        state$ = of<RaidenState>(curState);
+
+      const result = await channelOpenedEpic(action$, state$).toPromise();
+      expect(result).toBeUndefined();
+    });
+
+    test('channelOpened triggers channel monitoring', async () => {
+      // channel.state is 'opening'
+      const action = channelOpened(tokenNetwork, partner, 17, 500, 125, '0xtxHash'),
+        curState = raidenReducer(state, action);
+      const action$ = of<RaidenActions>(action),
+        state$ = of<RaidenState>(curState);
+
+      const result = await channelOpenedEpic(action$, state$).toPromise();
+      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        type: RaidenActionType.CHANNEL_MONITORED,
+        tokenNetwork,
+        partner,
+        id: 17,
+        fromBlock: 125,
+      });
     });
   });
 });

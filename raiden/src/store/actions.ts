@@ -10,7 +10,7 @@ export const enum RaidenActionType {
   CHANNEL_OPEN = 'channelOpen',
   CHANNEL_OPENED = 'channelOpened',
   CHANNEL_OPEN_FAILED = 'channelOpenFailed',
-  CHANNEL_MONITOR = 'channelMonitor',
+  CHANNEL_MONITORED = 'channelMonitored',
   CHANNEL_DEPOSIT = 'channelDeposit',
   CHANNEL_DEPOSITED = 'channelDeposited',
   CHANNEL_DEPOSIT_FAILED = 'channelDepositFailed',
@@ -76,8 +76,8 @@ export interface ChannelOpenActionFailed extends RaidenActionFailed {
   partner: string;
 }
 
-export interface ChannelMonitorAction extends RaidenAction {
-  type: RaidenActionType.CHANNEL_MONITOR;
+export interface ChannelMonitoredAction extends RaidenAction {
+  type: RaidenActionType.CHANNEL_MONITORED;
   tokenNetwork: string;
   partner: string;
   id: number;
@@ -184,8 +184,8 @@ export const channelMonitored = (
   partner: string,
   id: number,
   fromBlock?: number,
-): ChannelMonitorAction => ({
-  type: RaidenActionType.CHANNEL_MONITOR,
+): ChannelMonitoredAction => ({
+  type: RaidenActionType.CHANNEL_MONITORED,
   tokenNetwork,
   partner,
   id,
@@ -240,7 +240,7 @@ export type RaidenActions =
   | ChannelOpenAction
   | ChannelOpenedAction
   | ChannelOpenActionFailed
-  | ChannelMonitorAction
+  | ChannelMonitoredAction
   | ChannelDepositAction
   | ChannelDepositedAction
   | ChannelDepositActionFailed;

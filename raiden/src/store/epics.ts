@@ -30,7 +30,7 @@ import {
   ChannelOpenAction,
   ChannelOpenedAction,
   ChannelOpenActionFailed,
-  ChannelMonitorAction,
+  ChannelMonitoredAction,
   ChannelDepositAction,
   ChannelDepositedAction,
   ChannelDepositActionFailed,
@@ -88,7 +88,7 @@ export const raidenInitializationEpic = (
   action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
-): Observable<NewBlockAction | TokenMonitoredAction | ChannelMonitorAction> =>
+): Observable<NewBlockAction | TokenMonitoredAction | ChannelMonitoredAction> =>
   action$.pipe(
     ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
     withLatestFrom(state$),
@@ -273,7 +273,7 @@ export const channelOpenEpic = (
 export const channelOpenedEpic = (
   action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
-): Observable<ChannelMonitorAction> =>
+): Observable<ChannelMonitoredAction> =>
   action$.pipe(
     ofType<RaidenActions, ChannelOpenedAction>(RaidenActionType.CHANNEL_OPENED),
     withLatestFrom(state$),
@@ -306,7 +306,7 @@ export const channelMonitoredEpic = (
   { getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<ChannelDepositedAction> =>
   action$.pipe(
-    ofType<RaidenActions, ChannelMonitorAction>(RaidenActionType.CHANNEL_MONITOR),
+    ofType<RaidenActions, ChannelMonitoredAction>(RaidenActionType.CHANNEL_MONITORED),
     mergeMap(action => {
       const tokenNetworkContract = getTokenNetworkContract(action.tokenNetwork);
 
