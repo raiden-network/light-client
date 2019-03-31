@@ -40,6 +40,13 @@ describe('raidenEpics', () => {
     address: depsMock.address,
     blockNumber: 125,
   };
+  const token = '0x0000000000000000000000000000000000010001',
+    tokenNetwork = '0x0000000000000000000000000000000000020001',
+    partner = '0x0000000000000000000000000000000000000020';
+  depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async _token =>
+    _token === token ? tokenNetwork : AddressZero,
+  );
+  const tokenNetworkContract = depsMock.getTokenNetworkContract(tokenNetwork);
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -60,7 +67,7 @@ describe('raidenEpics', () => {
   });
 
   test('actionOutputEpic', async () => {
-    const action = tokenMonitor('0xtoken'); // a random action
+    const action = tokenMonitor(token); // a random action
     const outputPromise = depsMock.actionOutput$.toPromise();
     const epicPromise = actionOutputEpic(
       of<RaidenActions>(action),
@@ -80,8 +87,8 @@ describe('raidenEpics', () => {
       const curState: RaidenState = {
         ...state,
         tokenNetworks: {
-          '0xtokenNetwork': {
-            '0xpartner': {
+          [tokenNetwork]: {
+            [partner]: {
               state: ChannelState.open,
               totalDeposit: bigNumberify(200),
               partnerDeposit: bigNumberify(210),
@@ -91,7 +98,7 @@ describe('raidenEpics', () => {
             },
           },
         },
-        token2tokenNetwork: { '0xtoken': '0xtokenNetwork' },
+        token2tokenNetwork: { [token]: tokenNetwork },
       };
       /* this test requires mocked provider, or else emit is called with setTimeout and doesn't run
        * before the return of the function.
@@ -106,8 +113,8 @@ describe('raidenEpics', () => {
         merge(emitBlock$, raidenInitializationEpic(action$, state$, depsMock)),
       ).toBeObservable(
         m.cold('---(tc)---b-', {
-          t: tokenMonitored('0xtoken', '0xtokenNetwork', false),
-          c: channelMonitored('0xtokenNetwork', '0xpartner', 17),
+          t: tokenMonitored(token, tokenNetwork, false),
+          c: channelMonitored(tokenNetwork, partner, 17),
           b: newBlock(127),
         }),
       );
@@ -116,27 +123,25 @@ describe('raidenEpics', () => {
 
   describe('tokenMonitorEpic', () => {
     test('succeeds first', async () => {
-      const action$ = of<RaidenActions>(tokenMonitor('0xtoken')),
+      const action$ = of<RaidenActions>(tokenMonitor(token)),
         state$ = of<RaidenState>(state);
 
       // toPromise will ensure observable completes and resolve to last emitted value
       const result = await tokenMonitorEpic(action$, state$, depsMock).toPromise();
-      expect(result).toEqual(tokenMonitored('0xtoken', '0xtokenNetwork', true));
+      expect(result).toEqual(tokenMonitored(token, tokenNetwork, true));
     });
 
     test('succeeds already monitored', async () => {
-      const action$ = of<RaidenActions>(tokenMonitor('0xtoken')),
-        state$ = of<RaidenState>(
-          raidenReducer(state, tokenMonitored('0xtoken', '0xtokenNetwork', true)),
-        );
+      const action$ = of<RaidenActions>(tokenMonitor(token)),
+        state$ = of<RaidenState>(raidenReducer(state, tokenMonitored(token, tokenNetwork, true)));
 
       // toPromise will ensure observable completes and resolve to last emitted value
       const result = await tokenMonitorEpic(action$, state$, depsMock).toPromise();
-      expect(result).toEqual(tokenMonitored('0xtoken', '0xtokenNetwork', false));
+      expect(result).toEqual(tokenMonitored(token, tokenNetwork, false));
     });
 
     test('fails', async () => {
-      const action$ = of<RaidenActions>(tokenMonitor('0xtoken')),
+      const action$ = of<RaidenActions>(tokenMonitor(token)),
         state$ = of<RaidenState>(state);
       depsMock.registryContract.functions.token_to_token_networks.mockResolvedValueOnce(
         AddressZero,
@@ -145,17 +150,14 @@ describe('raidenEpics', () => {
       const result = await tokenMonitorEpic(action$, state$, depsMock).toPromise();
       expect(result).toMatchObject({
         type: RaidenActionType.TOKEN_MONITOR_FAILED,
-        token: '0xtoken',
+        token,
       });
       expect(result.error).toBeInstanceOf(Error);
     });
   });
 
   describe('tokenMonitoredEpic', () => {
-    const token = '0x0000000000000000000000000000000000000001',
-      tokenNetwork = '0x0000000000000000000000000000000000000002';
     const settleTimeoutEncoded = defaultAbiCoder.encode(['uint256'], [500]);
-    const tokenNetworkContract = depsMock.getTokenNetworkContract(tokenNetwork);
 
     test('first tokenMonitored with past$ ChannelOpened event', async () => {
       const action = tokenMonitored(token, tokenNetwork, true),
@@ -163,7 +165,6 @@ describe('raidenEpics', () => {
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
 
-      const partner = '0x0000000000000000000000000000000000000018';
       depsMock.provider.getLogs.mockResolvedValueOnce([
         makeLog({
           blockNumber: 121,
@@ -192,8 +193,6 @@ describe('raidenEpics', () => {
         curState = raidenReducer(state, action);
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
-
-      const partner = '0x0000000000000000000000000000000000000018';
 
       const promise = tokenMonitoredEpic(action$, state$, depsMock)
         .pipe(first())
@@ -230,7 +229,6 @@ describe('raidenEpics', () => {
         ),
         state$ = of<RaidenState>(curState);
 
-      const partner = '0x0000000000000000000000000000000000000018';
       const listenerCountSpy = jest.spyOn(tokenNetworkContract, 'listenerCount');
 
       const promise = tokenMonitoredEpic(action$, state$, depsMock)
@@ -275,10 +273,6 @@ describe('raidenEpics', () => {
   });
 
   describe('chanelOpenEpic', () => {
-    const tokenNetwork = '0x0000000000000000000000000000000000000002',
-      partner = '0x0000000000000000000000000000000000000018';
-    const tokenNetworkContract = depsMock.getTokenNetworkContract(tokenNetwork);
-
     test('fails if channel.state !== opening', async () => {
       // there's a channel already opened in state
       const action = channelOpen(tokenNetwork, partner, 500),
@@ -364,9 +358,6 @@ describe('raidenEpics', () => {
   });
 
   describe('channelOpenedEpic', () => {
-    const tokenNetwork = '0x0000000000000000000000000000000000000002',
-      partner = '0x0000000000000000000000000000000000000018';
-
     test("filter out if channel isn't in 'open' state", async () => {
       // channel.state is 'opening'
       const curState = raidenReducer(state, channelOpen(tokenNetwork, partner, 500));
