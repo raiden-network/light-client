@@ -3,8 +3,7 @@ import AmountInput from '@/components/AmountInput.vue';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { mockInput } from '../utils/interaction-utils';
-import { Token } from '@/model/token';
-import { ethers } from 'ethers';
+import { TestData } from '../data/mock-data';
 
 Vue.use(Vuetify);
 
@@ -47,24 +46,12 @@ describe('AmountInput.vue', function() {
   });
 
   describe('limited', function() {
-    const units = '1.2';
-    const balance = ethers.utils.parseUnits(units, 5);
-
-    const token: Token = {
-      address: '0xtoken',
-      decimals: 5,
-      balance: balance,
-      units: units,
-      name: 'TestToken',
-      symbol: 'TTT'
-    };
-
     beforeEach(() => {
       wrapper = mount(AmountInput, {
         propsData: {
           label: 'Has Label',
           limit: true,
-          token: token
+          token: TestData.token
         }
       });
     });
