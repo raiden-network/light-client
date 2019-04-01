@@ -199,6 +199,7 @@ export class Raiden {
   /**
    * Async helper factory to make a Raiden instance from more common parameters.
    * @param connection
+   * - a JsonRpcProvider instance
    * - a Metamask's web3.currentProvider object or
    * - a hostname or remote json-rpc connection string
    * @param account
@@ -215,7 +216,7 @@ export class Raiden {
    * parameters ahead of construction time, and avoid partial initialization then
    **/
   public static async create(
-    connection: AsyncSendable | string,
+    connection: JsonRpcProvider | AsyncSendable | string,
     account: string | number,
     storageOrState?: Storage | RaidenState,
     contracts?: ContractsInfo,
@@ -223,6 +224,8 @@ export class Raiden {
     let provider: JsonRpcProvider;
     if (typeof connection === 'string') {
       provider = new JsonRpcProvider(connection);
+    } else if (connection instanceof JsonRpcProvider) {
+      provider = connection;
     } else {
       provider = new Web3Provider(connection);
     }

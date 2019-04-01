@@ -6,8 +6,8 @@ export class TestProvider extends Web3Provider {
   public constructor(opts?: GanacheServerOptions) {
     super(
       ganache.provider({
-        total_accounts: 3, // eslint-disable-line
-        default_balance_ether: 5, // eslint-disable-line
+        total_accounts: 3, // eslint-disable-line @typescript-eslint/camelcase
+        default_balance_ether: 5, // eslint-disable-line @typescript-eslint/camelcase
         seed: 'testrpc_provider',
         db: memdown(),
         ...opts,
