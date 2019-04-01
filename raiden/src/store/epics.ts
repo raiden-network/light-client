@@ -54,9 +54,9 @@ export const stateOutputEpic = (
 ): Observable<RaidenActions> =>
   state$.pipe(
     tap(
-      value => stateOutput$.next(value),
-      err => stateOutput$.error(err),
-      () => stateOutput$.complete(),
+      stateOutput$.next.bind(stateOutput$),
+      stateOutput$.error.bind(stateOutput$),
+      stateOutput$.complete.bind(stateOutput$),
     ),
     ignoreElements(),
   );
@@ -71,9 +71,9 @@ export const actionOutputEpic = (
 ): Observable<RaidenActions> =>
   action$.pipe(
     tap(
-      value => actionOutput$.next(value),
-      err => actionOutput$.error(err),
-      () => actionOutput$.complete(),
+      actionOutput$.next.bind(actionOutput$),
+      actionOutput$.error.bind(actionOutput$),
+      actionOutput$.complete.bind(actionOutput$),
     ),
     ignoreElements(),
   );
