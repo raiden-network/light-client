@@ -1,6 +1,6 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network } from 'ethers/utils';
+import { Network, ParamType } from 'ethers/utils';
 
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, ofType } from 'redux-observable';
@@ -75,7 +75,7 @@ export class Raiden {
     this.contracts = {
       registry: new Contract(
         contractsInfo.TokenNetworkRegistry.address,
-        TokenNetworkRegistryAbi,
+        TokenNetworkRegistryAbi as ParamType[],
         this.signer,
       ) as TokenNetworkRegistry,
       tokenNetworks: {},
@@ -332,7 +332,7 @@ export class Raiden {
     if (!(address in this.contracts.tokenNetworks))
       this.contracts.tokenNetworks[address] = new Contract(
         address,
-        TokenNetworkAbi,
+        TokenNetworkAbi as ParamType[],
         this.signer,
       ) as TokenNetwork;
     return this.contracts.tokenNetworks[address];
@@ -346,7 +346,11 @@ export class Raiden {
    */
   private getTokenContract(address: string): Token {
     if (!(address in this.contracts.tokens))
-      this.contracts.tokens[address] = new Contract(address, TokenAbi, this.signer) as Token;
+      this.contracts.tokens[address] = new Contract(
+        address,
+        TokenAbi as ParamType[],
+        this.signer,
+      ) as Token;
     return this.contracts.tokens[address];
   }
 
