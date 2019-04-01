@@ -33,7 +33,7 @@ describe('action factories not tested in reducers.spec.ts', () => {
       id = 12,
       fromBlock = 5123;
     expect(channelMonitored(tokenNetwork, partner, id, fromBlock)).toEqual({
-      type: RaidenActionType.CHANNEL_MONITOR,
+      type: RaidenActionType.CHANNEL_MONITORED,
       tokenNetwork,
       partner,
       id,

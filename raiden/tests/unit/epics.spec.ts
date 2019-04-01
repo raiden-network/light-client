@@ -1,6 +1,7 @@
 import { merge, of, from, timer } from 'rxjs';
 import { first, tap, ignoreElements, takeUntil, toArray } from 'rxjs/operators';
 import { marbles } from 'rxjs-marbles/jest';
+import { range } from 'lodash';
 
 import { AddressZero } from 'ethers/constants';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
@@ -28,6 +29,7 @@ import {
   tokenMonitoredEpic,
   channelOpenEpic,
   channelOpenedEpic,
+  channelMonitoredEpic,
 } from 'raiden/store/epics';
 
 import { raidenEpicDeps, makeLog } from './mocks';
@@ -47,6 +49,8 @@ describe('raidenEpics', () => {
     _token === token ? tokenNetwork : AddressZero,
   );
   const tokenNetworkContract = depsMock.getTokenNetworkContract(tokenNetwork);
+  const settleTimeout = 500,
+    channelId = 17;
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -92,8 +96,8 @@ describe('raidenEpics', () => {
               state: ChannelState.open,
               totalDeposit: bigNumberify(200),
               partnerDeposit: bigNumberify(210),
-              id: 17,
-              settleTimeout: 500,
+              id: channelId,
+              settleTimeout,
               openBlock: 121,
             },
           },
@@ -114,7 +118,7 @@ describe('raidenEpics', () => {
       ).toBeObservable(
         m.cold('---(tc)---b-', {
           t: tokenMonitored(token, tokenNetwork, false),
-          c: channelMonitored(tokenNetwork, partner, 17),
+          c: channelMonitored(tokenNetwork, partner, channelId),
           b: newBlock(127),
         }),
       );
@@ -157,7 +161,7 @@ describe('raidenEpics', () => {
   });
 
   describe('tokenMonitoredEpic', () => {
-    const settleTimeoutEncoded = defaultAbiCoder.encode(['uint256'], [500]);
+    const settleTimeoutEncoded = defaultAbiCoder.encode(['uint256'], [settleTimeout]);
 
     test('first tokenMonitored with past$ ChannelOpened event', async () => {
       const action = tokenMonitored(token, tokenNetwork, true),
@@ -168,7 +172,12 @@ describe('raidenEpics', () => {
       depsMock.provider.getLogs.mockResolvedValueOnce([
         makeLog({
           blockNumber: 121,
-          filter: tokenNetworkContract.filters.ChannelOpened(17, depsMock.address, partner, null),
+          filter: tokenNetworkContract.filters.ChannelOpened(
+            channelId,
+            depsMock.address,
+            partner,
+            null,
+          ),
           data: settleTimeoutEncoded, // non-indexed settleTimeout = 500 goes in data
         }),
       ]);
@@ -182,8 +191,8 @@ describe('raidenEpics', () => {
         type: RaidenActionType.CHANNEL_OPENED,
         tokenNetwork,
         partner,
-        id: 17,
-        settleTimeout: 500,
+        id: channelId,
+        settleTimeout,
         openBlock: 121,
       });
     });
@@ -202,7 +211,12 @@ describe('raidenEpics', () => {
         tokenNetworkContract.filters.ChannelOpened(null, depsMock.address, null, null),
         makeLog({
           blockNumber: 125,
-          filter: tokenNetworkContract.filters.ChannelOpened(17, depsMock.address, partner, null),
+          filter: tokenNetworkContract.filters.ChannelOpened(
+            channelId,
+            depsMock.address,
+            partner,
+            null,
+          ),
           data: settleTimeoutEncoded, // non-indexed settleTimeout = 500 goes in data
         }),
       );
@@ -214,8 +228,8 @@ describe('raidenEpics', () => {
         type: RaidenActionType.CHANNEL_OPENED,
         tokenNetwork,
         partner,
-        id: 17,
-        settleTimeout: 500,
+        id: channelId,
+        settleTimeout,
         openBlock: 125,
       });
     });
@@ -224,9 +238,7 @@ describe('raidenEpics', () => {
       const multiple = 16;
       const action = tokenMonitored(token, tokenNetwork, false),
         curState = raidenReducer(state, action);
-      const action$ = from(
-          [...Array(multiple).keys()].map(() => tokenMonitored(token, tokenNetwork, false)),
-        ),
+      const action$ = from(range(multiple).map(() => tokenMonitored(token, tokenNetwork, false))),
         state$ = of<RaidenState>(curState);
 
       const listenerCountSpy = jest.spyOn(tokenNetworkContract, 'listenerCount');
@@ -244,7 +256,12 @@ describe('raidenEpics', () => {
         tokenNetworkContract.filters.ChannelOpened(null, depsMock.address, null, null),
         makeLog({
           blockNumber: 125,
-          filter: tokenNetworkContract.filters.ChannelOpened(17, depsMock.address, partner, null),
+          filter: tokenNetworkContract.filters.ChannelOpened(
+            channelId,
+            depsMock.address,
+            partner,
+            null,
+          ),
           data: settleTimeoutEncoded, // non-indexed settleTimeout = 500 goes in data
         }),
       );
@@ -263,8 +280,8 @@ describe('raidenEpics', () => {
         type: RaidenActionType.CHANNEL_OPENED,
         tokenNetwork,
         partner,
-        id: 17,
-        settleTimeout: 500,
+        id: channelId,
+        settleTimeout,
         openBlock: 125,
       });
 
@@ -275,10 +292,10 @@ describe('raidenEpics', () => {
   describe('chanelOpenEpic', () => {
     test('fails if channel.state !== opening', async () => {
       // there's a channel already opened in state
-      const action = channelOpen(tokenNetwork, partner, 500),
+      const action = channelOpen(tokenNetwork, partner, settleTimeout),
         curState = raidenReducer(
           state,
-          channelOpened(tokenNetwork, partner, 17, 500, 125, '0xtxHash'),
+          channelOpened(tokenNetwork, partner, channelId, settleTimeout, 125, '0xtxHash'),
         );
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
@@ -295,7 +312,7 @@ describe('raidenEpics', () => {
 
     test('tx fails', async () => {
       // there's a channel already opened in state
-      const action = channelOpen(tokenNetwork, partner, 500),
+      const action = channelOpen(tokenNetwork, partner, settleTimeout),
         curState = raidenReducer(state, action);
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
@@ -327,7 +344,7 @@ describe('raidenEpics', () => {
 
     test('success', async () => {
       // there's a channel already opened in state
-      const action = channelOpen(tokenNetwork, partner, 500),
+      const action = channelOpen(tokenNetwork, partner, settleTimeout),
         curState = raidenReducer(state, action);
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
@@ -360,9 +377,9 @@ describe('raidenEpics', () => {
   describe('channelOpenedEpic', () => {
     test("filter out if channel isn't in 'open' state", async () => {
       // channel.state is 'opening'
-      const curState = raidenReducer(state, channelOpen(tokenNetwork, partner, 500));
+      const curState = raidenReducer(state, channelOpen(tokenNetwork, partner, settleTimeout));
       const action$ = of<RaidenActions>(
-          channelOpened(tokenNetwork, partner, 17, 500, 125, '0xtxHash'),
+          channelOpened(tokenNetwork, partner, channelId, settleTimeout, 125, '0xtxHash'),
         ),
         state$ = of<RaidenState>(curState);
 
@@ -372,7 +389,14 @@ describe('raidenEpics', () => {
 
     test('channelOpened triggers channel monitoring', async () => {
       // channel.state is 'opening'
-      const action = channelOpened(tokenNetwork, partner, 17, 500, 125, '0xtxHash'),
+      const action = channelOpened(
+          tokenNetwork,
+          partner,
+          channelId,
+          settleTimeout,
+          125,
+          '0xtxHash',
+        ),
         curState = raidenReducer(state, action);
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
@@ -383,9 +407,143 @@ describe('raidenEpics', () => {
         type: RaidenActionType.CHANNEL_MONITORED,
         tokenNetwork,
         partner,
-        id: 17,
+        id: channelId,
         fromBlock: 125,
       });
+    });
+  });
+
+  describe('channelMonitoredEpic', () => {
+    const deposit = bigNumberify(1023),
+      depositEncoded = defaultAbiCoder.encode(['uint256'], [deposit]),
+      openBlock = 121;
+
+    test('first channelMonitored with past$ own ChannelNewDeposit event', async () => {
+      const action = channelMonitored(tokenNetwork, partner, channelId, openBlock),
+        curState = raidenReducer(
+          state,
+          channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
+        );
+      const action$ = of<RaidenActions>(action),
+        state$ = of<RaidenState>(curState);
+
+      depsMock.provider.getLogs.mockResolvedValueOnce([
+        makeLog({
+          blockNumber: 123,
+          filter: tokenNetworkContract.filters.ChannelNewDeposit(
+            channelId,
+            depsMock.address,
+            null,
+          ),
+          data: depositEncoded, // non-indexed total_deposit = 1023 goes in data
+        }),
+      ]);
+
+      const result = await channelMonitoredEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        type: RaidenActionType.CHANNEL_DEPOSITED,
+        tokenNetwork,
+        partner,
+        id: channelId,
+        participant: depsMock.address,
+        totalDeposit: deposit,
+      });
+    });
+
+    test('already channelMonitored with new$ partner ChannelNewDeposit event', async () => {
+      const action = channelMonitored(tokenNetwork, partner, channelId),
+        curState = raidenReducer(
+          state,
+          channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
+        );
+      const action$ = of<RaidenActions>(action),
+        state$ = of<RaidenState>(curState);
+
+      const promise = channelMonitoredEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      depsMock.provider.emit(
+        tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
+        makeLog({
+          blockNumber: 125,
+          filter: tokenNetworkContract.filters.ChannelNewDeposit(channelId, partner, null),
+          data: depositEncoded, // non-indexed total_deposit = 1023 goes in data
+        }),
+      );
+
+      const result = await promise;
+
+      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        type: RaidenActionType.CHANNEL_DEPOSITED,
+        tokenNetwork,
+        partner,
+        id: channelId,
+        participant: partner,
+        totalDeposit: deposit,
+      });
+    });
+
+    test("ensure multiple channelMonitored don't produce duplicated events", async () => {
+      const multiple = 16;
+      const curState = raidenReducer(
+        state,
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
+      );
+      const action$ = from(
+          range(multiple).map(() => channelMonitored(tokenNetwork, partner, channelId)),
+        ),
+        state$ = of<RaidenState>(curState);
+
+      const listenerCountSpy = jest.spyOn(tokenNetworkContract, 'listenerCount');
+
+      const promise = channelMonitoredEpic(action$, state$, depsMock)
+        .pipe(
+          // wait a little and then complete observable, so it doesn't keep listening forever
+          takeUntil(timer(100)),
+          toArray(), // aggregate all emitted values in this period in a single array
+        )
+        .toPromise();
+
+      // even though multiple channelMonitored events were fired, blockchain fires a single event
+      depsMock.provider.emit(
+        tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
+        makeLog({
+          blockNumber: 125,
+          filter: tokenNetworkContract.filters.ChannelNewDeposit(
+            channelId,
+            depsMock.address,
+            null,
+          ),
+          data: depositEncoded, // non-indexed total_deposit = 1023 goes in data
+        }),
+      );
+
+      const result = await promise;
+      // expect tokenNetworkContract.listenerCount to have been checked multiple times
+      expect(listenerCountSpy).toHaveBeenCalledTimes(multiple);
+      // but only one listener is registered
+      expect(listenerCountSpy.mock.results[listenerCountSpy.mock.calls.length - 1]).toMatchObject({
+        type: 'return',
+        value: 1,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        type: RaidenActionType.CHANNEL_DEPOSITED,
+        tokenNetwork,
+        partner,
+        id: channelId,
+        participant: depsMock.address,
+        totalDeposit: deposit,
+      });
+
+      listenerCountSpy.mockRestore();
     });
   });
 });
