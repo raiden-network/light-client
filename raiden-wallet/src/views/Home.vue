@@ -24,11 +24,5 @@ import { mapState } from 'vuex';
 export default class Home extends Vue {
   providerDetected!: boolean;
   userDenied!: boolean;
-
-  mounted() {
-    if (this.providerDetected && !this.userDenied) {
-      this.$router.push({ name: 'connect' });
-    }
-  }
 }
 </script>

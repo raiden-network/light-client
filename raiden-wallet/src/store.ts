@@ -2,18 +2,25 @@ import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState } from '@/types';
 import { RaidenChannels } from 'raiden';
+import * as _ from 'lodash';
 
 Vue.use(Vuex);
 
+const _defaultState: RootState = {
+  loading: true,
+  defaultAccount: '',
+  accountBalance: '0.0',
+  providerDetected: true,
+  userDenied: false,
+  channels: {}
+};
+
+export function defaultState(): RootState {
+  return _.clone(_defaultState);
+}
+
 const store: StoreOptions<RootState> = {
-  state: {
-    loading: true,
-    defaultAccount: '',
-    accountBalance: '0.0',
-    providerDetected: true,
-    userDenied: false,
-    channels: {}
-  },
+  state: defaultState(),
   mutations: {
     noProvider(state: RootState) {
       state.providerDetected = false;
@@ -34,7 +41,20 @@ const store: StoreOptions<RootState> = {
       state.channels = channels;
     }
   },
-  actions: {}
+  actions: {},
+  getters: {
+    connections: function(state): RaidenChannels[] {
+      return _.chain(state.channels)
+        .flatMap()
+        .map(values => {
+          return _.chain(values)
+            .flatMap()
+            .head()
+            .value();
+        })
+        .value();
+    }
+  }
 };
 
 export default new Vuex.Store(store);

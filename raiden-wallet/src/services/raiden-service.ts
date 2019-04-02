@@ -1,4 +1,4 @@
-import { Raiden } from 'raiden';
+import { Raiden, RaidenChannel } from 'raiden';
 import { Store } from 'vuex';
 import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
@@ -105,6 +105,12 @@ export default class RaidenService {
 
   async monitorToken(token: string) {
     await this.raiden.monitorToken(token);
+  }
+
+  async closeChannel(channel: RaidenChannel) {
+    await new Promise(resolve => {
+      setTimeout(() => resolve(), 2000);
+    });
   }
 }
 

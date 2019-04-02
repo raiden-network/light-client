@@ -1,15 +1,9 @@
-import store from '@/store';
+import store, { defaultState } from '@/store';
+import { TestData } from './data/mock-data';
 
 describe('store', () => {
   beforeEach(() => {
-    store.replaceState({
-      loading: true,
-      defaultAccount: '',
-      accountBalance: '0.0',
-      providerDetected: true,
-      userDenied: false,
-      channels: {}
-    });
+    store.replaceState(defaultState());
   });
 
   it('should change the loading state after a loadComplete mutation', function() {
@@ -44,12 +38,13 @@ describe('store', () => {
 
   it('should change the channel state after an updateChannel mutation', function() {
     expect(store.state.channels).toEqual({});
-    const payload = {
-      '0xcontract': {
-        '0xtoken': []
-      }
-    };
-    store.commit('updateChannels', payload);
-    expect(store.state.channels).toEqual(payload);
+    store.commit('updateChannels', TestData.mockChannels);
+    expect(store.state.channels).toEqual(TestData.mockChannels);
+  });
+
+  it('should return a list of open channels and connections', function() {
+    store.commit('updateChannels', TestData.mockChannels);
+    const element = TestData.mockChannel1;
+    expect(store.getters.connections).toEqual([element]);
   });
 });
