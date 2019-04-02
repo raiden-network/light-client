@@ -16,12 +16,12 @@ export default class Connect extends Vue {
   partner: string = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
   tokenInfo: Token | null = null;
 
-  private async loadTokenInfo(next: string) {
-    if (next && !AddressUtils.isAddress(next)) {
+  private async loadTokenInfo(tokenAddress: string) {
+    if (tokenAddress && !AddressUtils.isAddress(tokenAddress)) {
       return null;
     }
 
-    return this.$raiden.getToken(next);
+    return this.$raiden.getToken(tokenAddress);
   }
 
   async mounted() {

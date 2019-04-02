@@ -35,6 +35,7 @@
       <v-layout align-center justify-center class="section">
         <v-flex xs8 md5 lg3 class="text-xs-center">
           <v-btn
+            id="open-channel"
             :disabled="!valid"
             :loading="loading"
             color="green"
@@ -82,7 +83,7 @@ export default class Deposit extends Vue {
   valid: boolean = false;
   loading: boolean = false;
   snackbar: boolean = false;
-  error?: string;
+  error: string = '';
 
   async openChannel() {
     this.loading = true;
