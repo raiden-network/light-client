@@ -403,6 +403,7 @@ export const channelDepositEpic = (
                 action.deposit,
               ),
               action.partner,
+              { gasLimit: 100e3 },
             ),
           ),
           tap(tx =>

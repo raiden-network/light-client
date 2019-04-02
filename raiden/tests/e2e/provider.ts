@@ -74,7 +74,6 @@ export class TestProvider extends Web3Provider {
     await Promise.all(txs);
 
     const tx = await registryContract.functions.createERC20TokenNetwork(tokenContract.address, {
-      gasPrice: 1,
       gasLimit: 6e6,
     });
     await tx.wait();
