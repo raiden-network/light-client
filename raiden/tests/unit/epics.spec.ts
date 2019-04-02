@@ -14,6 +14,7 @@ import {
   RaidenActions,
   RaidenActionType,
   raidenInit,
+  raidenShutdown,
   newBlock,
   tokenMonitor,
   tokenMonitored,
@@ -26,7 +27,7 @@ import {
 import {
   stateOutputEpic,
   actionOutputEpic,
-  raidenInitializationEpic,
+  raidenEpics,
   tokenMonitorEpic,
   tokenMonitoredEpic,
   channelOpenEpic,
@@ -99,7 +100,7 @@ describe('raidenEpics', () => {
   });
 
   test(
-    'raidenInitializationEpic',
+    'raidenInitializationEpic & raidenShutdown',
     marbles(m => {
       const newState = applyActions([
         tokenMonitored(token, tokenNetwork, true),
@@ -124,16 +125,14 @@ describe('raidenEpics', () => {
       /* this test requires mocked provider, or else emit is called with setTimeout and doesn't run
        * before the return of the function.
        */
-      const action$ = m.cold('---a--|', { a: raidenInit() }),
+      const action$ = m.cold('---a------d|', { a: raidenInit(), d: raidenShutdown() }),
         state$ = m.cold('--s---|', { s: newState }),
-        emitBlock$ = m.cold('----------b--|').pipe(
+        emitBlock$ = m.cold('----------b-|').pipe(
           tap(() => depsMock.provider.emit('block', 127)),
           ignoreElements(),
         );
-      m.expect(
-        merge(emitBlock$, raidenInitializationEpic(action$, state$, depsMock)),
-      ).toBeObservable(
-        m.cold('---(tc)---b-', {
+      m.expect(merge(emitBlock$, raidenEpics(action$, state$, depsMock))).toBeObservable(
+        m.cold('---(tc)---b-|', {
           t: tokenMonitored(token, tokenNetwork, false),
           c: channelMonitored(tokenNetwork, partner, channelId),
           b: newBlock(127),

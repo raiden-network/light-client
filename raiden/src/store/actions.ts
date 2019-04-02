@@ -3,6 +3,7 @@ import { BigNumber } from './types';
 
 export const enum RaidenActionType {
   INIT = 'raidenInit',
+  SHUTDOWN = 'raidenShutdown',
   NEW_BLOCK = 'newBlock',
   TOKEN_MONITOR = 'tokenMonitor',
   TOKEN_MONITORED = 'tokenMonitored',
@@ -29,6 +30,10 @@ export interface RaidenActionFailed extends RaidenAction {
 
 export interface RaidenInitAction extends RaidenAction {
   type: RaidenActionType.INIT;
+}
+
+export interface RaidenShutdownAction extends RaidenAction {
+  type: RaidenActionType.SHUTDOWN;
 }
 
 export interface NewBlockAction extends RaidenAction {
@@ -112,6 +117,8 @@ export interface ChannelDepositActionFailed extends RaidenActionFailed {
 // =================
 
 export const raidenInit = (): RaidenInitAction => ({ type: RaidenActionType.INIT });
+
+export const raidenShutdown = (): RaidenShutdownAction => ({ type: RaidenActionType.SHUTDOWN });
 
 export const newBlock = (blockNumber: number): NewBlockAction => ({
   type: RaidenActionType.NEW_BLOCK,
@@ -233,6 +240,7 @@ export const channelDepositFailed = (
 
 export type RaidenActions =
   | RaidenInitAction
+  | RaidenShutdownAction
   | NewBlockAction
   | TokenMonitorAction
   | TokenMonitoredAction

@@ -41,6 +41,7 @@ import {
   ChannelDepositedAction,
   ChannelDepositActionFailed,
   raidenInit,
+  raidenShutdown,
   tokenMonitor,
   channelOpen,
   channelDeposit,
@@ -272,6 +273,13 @@ export class Raiden {
     const address = await signer.getAddress();
 
     return new Raiden(provider, network, signer, address, contracts, storageOrState);
+  }
+
+  /**
+   * Triggers all epics to be unsubscribed
+   */
+  public stop(): void {
+    this.store.dispatch(raidenShutdown());
   }
 
   private get state(): RaidenState {
