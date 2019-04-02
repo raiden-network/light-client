@@ -286,10 +286,7 @@ describe('raidenEpics', () => {
       // expect tokenNetworkContract.listenerCount to have been checked multiple times
       expect(listenerCountSpy).toHaveBeenCalledTimes(multiple);
       // but only one listener is registered
-      expect(listenerCountSpy.mock.results[listenerCountSpy.mock.calls.length - 1]).toMatchObject({
-        type: 'return',
-        value: 1,
-      });
+      expect(listenerCountSpy).toHaveLastReturnedWith(1);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
@@ -544,10 +541,7 @@ describe('raidenEpics', () => {
       // expect tokenNetworkContract.listenerCount to have been checked multiple times
       expect(listenerCountSpy).toHaveBeenCalledTimes(multiple);
       // but only one listener is registered
-      expect(listenerCountSpy.mock.results[listenerCountSpy.mock.calls.length - 1]).toMatchObject({
-        type: 'return',
-        value: 1,
-      });
+      expect(listenerCountSpy).toHaveLastReturnedWith(1);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
@@ -742,6 +736,7 @@ describe('raidenEpics', () => {
         depsMock.address,
         deposit.add(330),
         partner,
+        expect.anything(),
       );
       expect(setTotalDepositTx.wait).toHaveBeenCalledTimes(1);
     });

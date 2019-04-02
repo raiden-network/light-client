@@ -188,13 +188,6 @@ export class Raiden {
 
     // initialize epics, this will start monitoring previous token networks and open channels
     this.store.dispatch(raidenInit());
-
-    console.log(
-      'polling',
-      this.provider.polling,
-      this.provider.pollingInterval,
-      this.provider.blockNumber,
-    );
   }
 
   /**
