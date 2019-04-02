@@ -1,4 +1,4 @@
-import { combineEpics, ofType } from 'redux-observable';
+import { ofType } from 'redux-observable';
 import { Observable, defer, from, of, merge, EMPTY } from 'rxjs';
 import {
   catchError,
@@ -7,6 +7,7 @@ import {
   map,
   mergeMap,
   mergeMapTo,
+  takeUntil,
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -42,6 +43,7 @@ import {
   channelMonitored,
   channelDeposited,
   channelDepositFailed,
+  RaidenShutdownAction,
 } from './actions';
 
 /**
@@ -429,14 +431,33 @@ export const channelDepositEpic = (
     }),
   );
 
-export const raidenEpics = combineEpics<RaidenActions, RaidenActions, RaidenState, RaidenEpicDeps>(
-  raidenInitializationEpic,
-  stateOutputEpic,
-  actionOutputEpic,
-  tokenMonitorEpic,
-  tokenMonitoredEpic,
-  channelOpenEpic,
-  channelOpenedEpic,
-  channelMonitoredEpic,
-  channelDepositEpic,
-);
+export const raidenEpics = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+  deps: RaidenEpicDeps,
+): Observable<RaidenActions> => {
+  const shutdownNotification = action$.pipe(
+    ofType<RaidenActions, RaidenShutdownAction>(RaidenActionType.SHUTDOWN),
+  );
+  // like combineEpics, but completes action$ and state$ when shutdownNotification fires
+  return from([
+    raidenInitializationEpic,
+    stateOutputEpic,
+    actionOutputEpic,
+    tokenMonitorEpic,
+    tokenMonitoredEpic,
+    channelOpenEpic,
+    channelOpenedEpic,
+    channelMonitoredEpic,
+    channelDepositEpic,
+  ]).pipe(
+    mergeMap(epic =>
+      epic(
+        action$.pipe(takeUntil(shutdownNotification)),
+        state$.pipe(takeUntil(shutdownNotification)),
+        deps,
+      ),
+    ),
+    takeUntil(shutdownNotification),
+  );
+};
