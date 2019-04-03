@@ -221,4 +221,21 @@ describe('RaidenService', () => {
     expect(store.commit).toHaveBeenCalledTimes(4);
     raidenService.disconnect();
   });
+
+  it('should start monitoring the token', async function() {
+    const monitorToken = jest.fn().mockResolvedValue(null);
+    providerMock.mockResolvedValue({});
+    factory.mockResolvedValue({
+      address: '123',
+      getBalance: jest.fn().mockResolvedValue(new BigNumber(0)),
+      channels$: EMPTY,
+      monitorToken: monitorToken
+    });
+
+    await raidenService.connect();
+    await flushPromises();
+    await raidenService.monitorToken('0xtoken');
+    expect(monitorToken).toHaveBeenCalledWith('0xtoken');
+    expect(monitorToken).toHaveBeenCalledTimes(1);
+  });
 });

@@ -16,7 +16,12 @@
             </v-list-tile-sub-title>
           </v-list-tile-content>
           <v-list-tile-action>
-            <v-btn icon ripple @click="confirmClose(connection)">
+            <v-btn
+              :id="'close-' + connection.id"
+              icon
+              ripple
+              @click="confirmClose(connection)"
+            >
               <v-icon color="grey lighten-1">close</v-icon>
             </v-btn>
           </v-list-tile-action>
