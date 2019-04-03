@@ -2,9 +2,11 @@ import { first } from 'rxjs/operators';
 import { parseEther, parseUnits, bigNumberify } from 'ethers/utils';
 
 import { TestProvider } from './provider';
+import { MockStorage } from './mocks';
 
 import { Raiden } from 'raiden/raiden';
-import { ContractsInfo, RaidenContracts, ChannelState } from 'raiden/types';
+import { initialState } from 'raiden/store';
+import { ContractsInfo, RaidenContracts, ChannelState, Storage } from 'raiden/types';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -12,6 +14,7 @@ describe('Raiden', () => {
   let info: ContractsInfo;
   let snapId: number | undefined;
   let raiden: Raiden;
+  let storage: jest.Mocked<Storage>;
   let token: string, tokenNetwork: string;
   let partner: string;
 
@@ -28,37 +31,79 @@ describe('Raiden', () => {
   beforeEach(async () => {
     if (snapId !== undefined) await provider.revert(snapId);
     snapId = await provider.snapshot();
-    raiden = await Raiden.create(provider, 0, undefined, info);
+    storage = new MockStorage();
+    raiden = await Raiden.create(provider, 0, storage, info);
   });
 
   afterEach(() => {
     raiden.stop();
   });
 
+  test('create from other params and RaidenState', async () => {
+    expect.assertions(4);
+
+    // token address not found as an account in provider
+    await expect(Raiden.create(provider, token, storage, info)).rejects.toThrow(
+      /Account.*not found in provider/i,
+    );
+
+    // neither account index, address nor private key
+    await expect(Raiden.create(provider, '0x1234', storage, info)).rejects.toThrow(
+      /account must be either.*address or private key/i,
+    );
+
+    // from hex-encoded private key, initial state but invalid address on state
+    expect(
+      Raiden.create(
+        provider,
+        '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        {
+          ...initialState,
+          address: token,
+        },
+        info,
+      ),
+    ).rejects.toThrow(/Mismatch between provided account and loaded state/i);
+
+    // success when using address of account on provider and initial state
+    const raiden1 = await Raiden.create(
+      provider,
+      accounts[1],
+      {
+        ...initialState,
+        address: accounts[1],
+      },
+      info,
+    );
+    expect(raiden1).toBeInstanceOf(Raiden);
+    raiden1.stop();
+  });
+
   test('address', () => {
+    expect.assertions(1);
     expect(raiden.address).toBe(accounts[0]);
   });
 
   test('getBlockNumber', async () => {
+    expect.assertions(1);
     await expect(raiden.getBlockNumber()).resolves.toBeGreaterThanOrEqual(
       info.TokenNetworkRegistry.block_number,
     );
   });
 
-  test('monitorToken', async () => {
-    await expect(raiden.monitorToken(token)).resolves.toBe(tokenNetwork);
-  });
-
   test('getBalance', async () => {
+    expect.assertions(1);
     await expect(raiden.getBalance()).resolves.toEqual(parseEther('5'));
   });
 
   describe('getTokenBalance', () => {
     test('non-monitored token', async () => {
+      expect.assertions(1);
       await expect(raiden.getTokenBalance(token)).rejects.toThrow();
     });
 
     test('success', async () => {
+      expect.assertions(1);
       await raiden.monitorToken(token);
       await expect(raiden.getTokenBalance(token)).resolves.toEqual({
         balance: parseUnits('1000', 18),
@@ -67,13 +112,28 @@ describe('Raiden', () => {
     });
   });
 
+  describe('monitorToken', () => {
+    test('fail', async () => {
+      expect.assertions(1);
+      await expect(raiden.monitorToken(tokenNetwork)).rejects.toThrow();
+    });
+
+    test('success', async () => {
+      expect.assertions(1);
+      await expect(raiden.monitorToken(token)).resolves.toBe(tokenNetwork);
+    });
+  });
+
   describe('openChannel', () => {
     test('tx fail', async () => {
+      expect.assertions(1);
+      await raiden.monitorToken(token);
       // settleTimeout < min of 500
       await expect(raiden.openChannel(token, partner, 499)).rejects.toThrow();
     });
 
     test('success', async () => {
+      expect.assertions(2);
       await expect(raiden.openChannel(token, partner, 500)).resolves.toMatch(/^0x/);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
         [token]: {
@@ -95,6 +155,7 @@ describe('Raiden', () => {
     });
 
     test('tx fail', async () => {
+      expect.assertions(1);
       // deposit bigger than balance (1k tokens)
       await expect(
         raiden.depositChannel(token, partner, parseUnits('2000', 18)),
@@ -102,6 +163,7 @@ describe('Raiden', () => {
     });
 
     test('success', async () => {
+      expect.assertions(2);
       await expect(raiden.depositChannel(token, partner, 100)).resolves.toMatch(/^0x/);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
         [token]: {
