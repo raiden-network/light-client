@@ -64,13 +64,13 @@ export class Raiden {
     provider: JsonRpcProvider,
     network: Network,
     signer: Signer,
-    address: string,
     contractsInfo: ContractsInfo,
-    storageOrState?: Storage | RaidenState | unknown,
+    state: RaidenState,
   ) {
     this.provider = provider;
     this.network = network;
     this.signer = signer;
+    const address = state.address;
 
     this.contractsInfo = contractsInfo;
     this.contracts = {
@@ -84,51 +84,12 @@ export class Raiden {
     };
 
     const middlewares: Middleware[] = [];
-    // use TokenNetworkRegistry deployment block as initial blockNumber, or 0
-    let loadedState: RaidenState = {
-      ...initialState,
-      blockNumber: contractsInfo.TokenNetworkRegistry.block_number || 0,
-      address,
-    };
-
-    // type guard
-    function isStorage(storageOrState: unknown): storageOrState is Storage {
-      return storageOrState && typeof (storageOrState as Storage).getItem === 'function';
-    }
-
-    if (storageOrState && isStorage(storageOrState)) {
-      const ns = `raiden_${network.name || network.chainId}_${address}`;
-      const loaded = Object.assign(
-        {},
-        loadedState,
-        JSON.parse(storageOrState.getItem(ns) || 'null'),
-      );
-
-      loadedState = decodeRaidenState(loaded);
-
-      // custom middleware to set storage key=ns with latest state
-      const debouncedSetItem = debounce(
-        (ns: string, state: RaidenState): void =>
-          storageOrState.setItem(ns, encodeRaidenState(state)),
-        1000,
-        { maxWait: 5000 },
-      );
-      middlewares.push(store => next => action => {
-        const result = next(action);
-        debouncedSetItem(ns, store.getState());
-        return result;
-      });
-    } else if (storageOrState && RaidenStateType.is(storageOrState)) {
-      loadedState = storageOrState;
-    } else if (storageOrState /* type(storageOrState) === unknown */) {
-      loadedState = decodeRaidenState(storageOrState);
-    }
 
     if (process.env.NODE_ENV === 'development') {
       middlewares.push(createLogger({ colors: false }));
     }
 
-    const state$ = new BehaviorSubject<RaidenState>(loadedState);
+    const state$ = new BehaviorSubject<RaidenState>(state);
     this.state$ = state$;
 
     const action$ = new Subject<RaidenActions>();
@@ -176,15 +137,15 @@ export class Raiden {
 
     this.store = createStore(
       raidenReducer,
-      loadedState,
+      state,
       applyMiddleware(...middlewares, epicMiddleware),
     );
 
     epicMiddleware.run(raidenEpics);
-    loadedState = this.store.getState();
+    state = this.store.getState();
 
     // use next from latest known blockNumber as start block when polling
-    this.provider.resetEventsBlock(loadedState.blockNumber + 1);
+    this.provider.resetEventsBlock(state.blockNumber + 1);
 
     // initialize epics, this will start monitoring previous token networks and open channels
     this.store.dispatch(raidenInit());
@@ -265,7 +226,53 @@ export class Raiden {
     }
     const address = await signer.getAddress();
 
-    return new Raiden(provider, network, signer, address, contracts, storageOrState);
+    // use TokenNetworkRegistry deployment block as initial blockNumber, or 0
+    let loadedState: RaidenState = {
+      ...initialState,
+      blockNumber: contracts.TokenNetworkRegistry.block_number || 0,
+      address,
+    };
+
+    // type guard
+    function isStorage(storageOrState: unknown): storageOrState is Storage {
+      return storageOrState && typeof (storageOrState as Storage).getItem === 'function';
+    }
+
+    let onState: ((state: RaidenState) => void) | undefined = undefined;
+
+    if (storageOrState && isStorage(storageOrState)) {
+      const ns = `raiden_${network.name || network.chainId}_${
+        contracts.TokenNetworkRegistry.address
+      }_${address}`;
+      const loaded = Object.assign(
+        {},
+        loadedState,
+        JSON.parse((await storageOrState.getItem(ns)) || 'null'),
+      );
+
+      loadedState = decodeRaidenState(loaded);
+
+      // custom middleware to set storage key=ns with latest state
+      onState = debounce(
+        (state: RaidenState): void => storageOrState.setItem(ns, encodeRaidenState(state)),
+        1000,
+        { maxWait: 5000 },
+      );
+    } else if (storageOrState && RaidenStateType.is(storageOrState)) {
+      loadedState = storageOrState;
+    } else if (storageOrState /* typeof storageOrState === unknown */) {
+      loadedState = decodeRaidenState(storageOrState);
+    }
+    if (address !== loadedState.address)
+      throw new Error(
+        `Mismatch between provided account and loaded state: "${address}" !== "${
+          loadedState.address
+        }"`,
+      );
+
+    const raiden = new Raiden(provider, network, signer, contracts, loadedState);
+    if (onState) raiden.state$.subscribe(onState);
+    return raiden;
   }
 
   /**
