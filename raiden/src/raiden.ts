@@ -23,7 +23,7 @@ import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 
-import { ContractsInfo, RaidenContracts, RaidenEpicDeps, RaidenChannels } from './types';
+import { ContractsInfo, RaidenContracts, RaidenEpicDeps, RaidenChannels, Storage } from './types';
 import {
   RaidenState,
   RaidenStateType,
@@ -252,9 +252,11 @@ export class Raiden {
 
       loadedState = decodeRaidenState(loaded);
 
-      // custom middleware to set storage key=ns with latest state
+      // to be subscribed on raiden.state$
       onState = debounce(
-        (state: RaidenState): void => storageOrState.setItem(ns, encodeRaidenState(state)),
+        (state: RaidenState): void => {
+          storageOrState.setItem(ns, encodeRaidenState(state));
+        },
         1000,
         { maxWait: 5000 },
       );

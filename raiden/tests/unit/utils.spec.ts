@@ -1,6 +1,8 @@
 import { of } from 'rxjs';
 import { first, take, toArray } from 'rxjs/operators';
 
+import { Event } from 'ethers/contract';
+
 import { fromEthersEvent, getEventsStream } from 'raiden/utils';
 import { raidenEpicDeps, makeLog } from './mocks';
 
