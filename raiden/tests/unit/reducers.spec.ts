@@ -1,4 +1,4 @@
-import { cloneDeep, get, set } from 'lodash';
+import { cloneDeep } from 'lodash';
 import {
   RaidenState,
   initialState,
@@ -76,39 +76,25 @@ describe('raidenReducer', () => {
         state,
         channelOpened(tokenNetwork, partner, id, settleTimeout, openBlock, txHash),
       );
-      expect(newState).toEqual({
-        ...state,
-        tokenNetworks: {
-          [tokenNetwork]: {
-            [partner]: {
-              state: ChannelState.open,
-              totalDeposit: bigNumberify(0),
-              partnerDeposit: bigNumberify(0),
-              id,
-              settleTimeout,
-              openBlock,
-            },
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: {
+          [partner]: {
+            state: ChannelState.open,
+            totalDeposit: bigNumberify(0),
+            partnerDeposit: bigNumberify(0),
+            id,
+            settleTimeout,
+            openBlock,
           },
         },
       });
     });
 
     test('channelOpenFailed', () => {
-      state = {
-        ...state,
-        tokenNetworks: {
-          [tokenNetwork]: {
-            [partner]: {
-              state: ChannelState.opening,
-              totalDeposit: bigNumberify(0),
-              partnerDeposit: bigNumberify(0),
-            },
-          },
-        },
-      };
+      state = raidenReducer(state, channelOpen(tokenNetwork, partner, 500));
       const error = new Error('could not open channel');
       const newState = raidenReducer(state, channelOpenFailed(tokenNetwork, partner, error));
-      expect(get(newState, ['tokenNetworks', tokenNetwork])).toEqual({});
+      expect(newState.tokenNetworks[tokenNetwork][partner]).toBeUndefined();
     });
   });
 
@@ -120,14 +106,10 @@ describe('raidenReducer', () => {
       openBlock = 5123;
 
     beforeEach(() => {
-      set(state, ['tokenNetworks', tokenNetwork, partner], {
-        state: ChannelState.open,
-        totalDeposit: bigNumberify(0),
-        partnerDeposit: bigNumberify(0),
-        id,
-        settleTimeout,
-        openBlock,
-      });
+      state = raidenReducer(
+        state,
+        channelOpened(tokenNetwork, partner, id, settleTimeout, openBlock, '0xopenTxHash'),
+      );
     });
 
     test('channel not in open state', () => {
@@ -165,20 +147,15 @@ describe('raidenReducer', () => {
       const deposit = bigNumberify(25);
       const newState = raidenReducer(
         state,
-        channelDeposited(tokenNetwork, partner, id, address, deposit, '0xdeposittxhash'),
+        channelDeposited(tokenNetwork, partner, id, address, deposit, '0xdepositTxHash'),
       );
-      expect(newState).toEqual({
-        ...state,
-        tokenNetworks: {
-          [tokenNetwork]: {
-            [partner]: {
-              state: ChannelState.open,
-              totalDeposit: deposit, // our total deposit was updated
-              partnerDeposit: bigNumberify(0),
-              id,
-              settleTimeout,
-              openBlock,
-            },
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: {
+          [partner]: {
+            state: ChannelState.open,
+            totalDeposit: deposit, // our total deposit was updated
+            partnerDeposit: bigNumberify(0),
+            id,
           },
         },
       });
@@ -190,18 +167,13 @@ describe('raidenReducer', () => {
         state,
         channelDeposited(tokenNetwork, partner, id, partner, deposit, '0xdeposittxhash'),
       );
-      expect(newState).toEqual({
-        ...state,
-        tokenNetworks: {
-          [tokenNetwork]: {
-            [partner]: {
-              state: ChannelState.open,
-              totalDeposit: bigNumberify(0),
-              partnerDeposit: deposit, // partner's total deposit was updated
-              id,
-              settleTimeout,
-              openBlock,
-            },
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: {
+          [partner]: {
+            state: ChannelState.open,
+            totalDeposit: bigNumberify(0),
+            partnerDeposit: deposit, // partner's total deposit was updated
+            id,
           },
         },
       });
