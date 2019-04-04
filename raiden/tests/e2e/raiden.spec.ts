@@ -1,5 +1,6 @@
-import { first } from 'rxjs/operators';
+import { first, filter } from 'rxjs/operators';
 import { parseEther, parseUnits, bigNumberify } from 'ethers/utils';
+import { get } from 'lodash';
 
 import { TestProvider } from './provider';
 import { MockStorage } from './mocks';
@@ -141,8 +142,9 @@ describe('Raiden', () => {
             token,
             tokenNetwork,
             partner,
-            state: 'open',
+            state: ChannelState.open,
             totalDeposit: bigNumberify(0),
+            partnerDeposit: bigNumberify(0),
           },
         },
       });
@@ -163,8 +165,9 @@ describe('Raiden', () => {
     });
 
     test('success', async () => {
-      expect.assertions(2);
+      expect.assertions(3);
       await expect(raiden.depositChannel(token, partner, 100)).resolves.toMatch(/^0x/);
+      await expect(raiden.depositChannel(token, partner, 200)).resolves.toMatch(/^0x/);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
         [token]: {
           [partner]: {
@@ -172,7 +175,45 @@ describe('Raiden', () => {
             tokenNetwork,
             partner,
             state: ChannelState.open,
-            totalDeposit: bigNumberify(100),
+            totalDeposit: bigNumberify(300),
+          },
+        },
+      });
+    });
+  });
+
+  describe('raiden can fetch past events', () => {
+    let raiden1: Raiden;
+
+    beforeEach(async () => {
+      await raiden.openChannel(token, partner, 500);
+      await raiden.depositChannel(token, partner, 200);
+      raiden1 = await Raiden.create(provider, partner, undefined, info);
+    });
+
+    afterEach(() => {
+      raiden1.stop();
+    });
+
+    test('partner instance fetches events fired before instantiation', async () => {
+      raiden1.monitorToken(token);
+      await expect(
+        raiden1.channels$
+          .pipe(
+            filter(
+              channels => get(channels, [token, raiden.address, 'state']) === ChannelState.open,
+            ),
+            filter(channels => !!get(channels, [token, raiden.address, 'partnerDeposit'])),
+            filter(channels => get(channels, [token, raiden.address, 'partnerDeposit']).gt(0)),
+            first(),
+          )
+          .toPromise(), // resolves on first emitted value which passes all filters above
+      ).resolves.toMatchObject({
+        [token]: {
+          [raiden.address]: {
+            state: ChannelState.open,
+            totalDeposit: bigNumberify(0),
+            partnerDeposit: bigNumberify(200),
           },
         },
       });
