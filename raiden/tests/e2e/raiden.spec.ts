@@ -219,4 +219,33 @@ describe('Raiden', () => {
       });
     });
   });
+
+  describe('closeChannel', () => {
+    beforeEach(async () => {
+      await raiden.openChannel(token, partner, 500);
+      await raiden.depositChannel(token, partner, 200);
+    });
+
+    test('no channel with address', async () => {
+      expect.assertions(1);
+      // there's no channel with partner=token
+      await expect(raiden.closeChannel(token, token)).rejects.toThrow();
+    });
+
+    test('success', async () => {
+      expect.assertions(3);
+      await expect(raiden.closeChannel(token, partner)).resolves.toMatch(/^0x/);
+      await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
+        [token]: {
+          [partner]: {
+            token,
+            tokenNetwork,
+            partner,
+            state: ChannelState.closed,
+            closeBlock: expect.any(Number),
+          },
+        },
+      });
+    });
+  });
 });
