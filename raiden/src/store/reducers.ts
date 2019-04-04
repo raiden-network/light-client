@@ -58,6 +58,23 @@ export function raidenReducer(
       else return state; // shouldn't happen, deposit from neither us or partner
       return set(cloneDeep(state), path, channel);
 
+    case RaidenActionType.CHANNEL_CLOSE:
+      path = ['tokenNetworks', action.tokenNetwork, action.partner, 'state'];
+      if (get(state, path) !== ChannelState.open) return state;
+      return set(cloneDeep(state), path, ChannelState.closing);
+
+    case RaidenActionType.CHANNEL_CLOSED:
+      path = ['tokenNetworks', action.tokenNetwork, action.partner];
+      channel = cloneDeep(get(state, path));
+      if (
+        !channel ||
+        !(channel.state === ChannelState.open || channel.state === ChannelState.closing) ||
+        channel.id !== action.id
+      )
+        return state;
+      Object.assign(channel, { state: ChannelState.closed, closeBlock: action.closeBlock });
+      return set(cloneDeep(state), path, channel);
+
     default:
       return state;
   }
