@@ -1,5 +1,6 @@
 import store, { defaultState } from '@/store';
 import { TestData } from './data/mock-data';
+import { createEmptyTokenModel } from '@/model/token';
 
 describe('store', () => {
   beforeEach(() => {
@@ -42,9 +43,11 @@ describe('store', () => {
     expect(store.state.channels).toEqual(TestData.mockChannels);
   });
 
-  it('should return a list of open channels and connections', function() {
+  it('should return a list of open channels and tokens', function() {
     store.commit('updateChannels', TestData.mockChannels);
-    const element = TestData.mockChannel1;
-    expect(store.getters.connections).toEqual([element]);
+    const model = createEmptyTokenModel();
+    model.address = TestData.mockChannel1.token;
+    model.open = 2;
+    expect(store.getters.tokens).toEqual([model]);
   });
 });

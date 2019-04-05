@@ -1,22 +1,27 @@
-jest.mock('@/services/raiden-service');
-
+import { addElemWithDataAppToBody } from '../utils/dialog';
 import store from '@/store';
 import Vue from 'vue';
 import Vuex, { Store } from 'vuex';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
-import TokenNetworks from '@/components/TokenNetworks.vue';
+import Tokens from '@/components/Tokens.vue';
 import { TestData } from '../data/mock-data';
 import VueRouter from 'vue-router';
 import RaidenService from '@/services/raiden-service';
+import { createEmptyTokenModel } from '../../../src/model/token';
+
+jest.mock('@/services/raiden-service');
+
 import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
 Vue.use(VueRouter);
 
-describe('TokenNetworks.vue', function() {
-  let wrapper: Wrapper<TokenNetworks>;
+describe('Tokens.vue', function() {
+  addElemWithDataAppToBody();
+
+  let wrapper: Wrapper<Tokens>;
   let mockRouter: VueRouter;
   let raiden: Mocked<RaidenService>;
 
@@ -30,11 +35,14 @@ describe('TokenNetworks.vue', function() {
         }
       ]
     });
+    const tokenModel = createEmptyTokenModel();
+    tokenModel.open = 2;
+    tokenModel.address = TestData.mockChannel1.token;
     const getters = {
-      connections: jest.fn().mockReturnValue([TestData.mockChannel1])
+      tokens: jest.fn().mockReturnValue([tokenModel])
     };
 
-    wrapper = mount(TokenNetworks, {
+    wrapper = mount(Tokens, {
       store: new Store({
         getters
       }),
@@ -63,22 +71,26 @@ describe('TokenNetworks.vue', function() {
   });
 
   it('should close the channel when confirmed', function() {
-    raiden.closeChannel = jest.fn().mockReturnValue(null);
+    raiden.leaveNetwork = jest.fn().mockReturnValue(null);
     expect(wrapper.vm.$data.displayModal).toBe(false);
-    wrapper.find('#close-278').trigger('click');
+    wrapper.find('#overflow-0').trigger('click');
+    wrapper.find('#leave-0').trigger('click');
     expect(wrapper.vm.$data.displayModal).toBe(true);
     wrapper.find('#confirm').trigger('click');
     expect(wrapper.vm.$data.displayModal).toBe(false);
-    expect(raiden.closeChannel).toHaveBeenCalledTimes(1);
-    expect(raiden.closeChannel).toHaveBeenCalledWith(TestData.mockChannel1);
+    expect(raiden.leaveNetwork).toHaveBeenCalledTimes(1);
+    expect(raiden.leaveNetwork).toHaveBeenCalledWith(
+      TestData.mockChannel1.token
+    );
   });
 
   it('should dismiss the dialog when cancel is pressed', function() {
-    raiden.closeChannel = jest.fn().mockReturnValue(null);
-    wrapper.find('#close-278').trigger('click');
+    raiden.leaveNetwork = jest.fn().mockReturnValue(null);
+    wrapper.find('#overflow-0').trigger('click');
+    wrapper.find('#leave-0').trigger('click');
     expect(wrapper.vm.$data.displayModal).toBe(true);
     wrapper.find('#cancel').trigger('click');
     expect(wrapper.vm.$data.displayModal).toBe(false);
-    expect(raiden.closeChannel).toHaveBeenCalledTimes(0);
+    expect(raiden.leaveNetwork).toHaveBeenCalledTimes(0);
   });
 });

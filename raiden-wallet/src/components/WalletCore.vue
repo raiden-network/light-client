@@ -4,10 +4,10 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import TokenNetworks from '@/components/TokenNetworks.vue';
+import Tokens from '@/components/Tokens.vue';
 
 @Component({
-  components: { TokenNetworks }
+  components: { TokenNetworks: Tokens }
 })
 export default class WalletCore extends Vue {}
 </script>

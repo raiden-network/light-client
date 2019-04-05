@@ -1,8 +1,13 @@
 import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState } from '@/types';
-import { RaidenChannels } from 'raiden';
+import { RaidenChannel, RaidenChannels } from 'raiden';
 import * as _ from 'lodash';
+import {
+  createEmptyTokenModel,
+  AccTokenModel,
+  TokenModel
+} from '@/model/token';
 
 Vue.use(Vuex);
 
@@ -43,16 +48,19 @@ const store: StoreOptions<RootState> = {
   },
   actions: {},
   getters: {
-    connections: function(state): RaidenChannels[] {
-      return _.chain(state.channels)
-        .flatMap()
-        .map(values => {
-          return _.chain(values)
-            .flatMap()
-            .head()
-            .value();
-        })
-        .value();
+    tokens: function(state): TokenModel[] {
+      const reducer = (
+        acc: AccTokenModel,
+        channel: RaidenChannel
+      ): AccTokenModel => {
+        acc.address = channel.token;
+        acc[channel.state] += 1;
+        return acc;
+      };
+
+      return _.map(_.flatMap(state.channels), tokenChannels =>
+        _.reduce(tokenChannels, reducer, createEmptyTokenModel())
+      );
     }
   }
 };
