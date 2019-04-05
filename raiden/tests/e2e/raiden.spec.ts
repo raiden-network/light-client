@@ -1,4 +1,5 @@
 import { first, filter } from 'rxjs/operators';
+import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify } from 'ethers/utils';
 import { get } from 'lodash';
 
@@ -143,8 +144,8 @@ describe('Raiden', () => {
             tokenNetwork,
             partner,
             state: ChannelState.open,
-            totalDeposit: bigNumberify(0),
-            partnerDeposit: bigNumberify(0),
+            totalDeposit: Zero,
+            partnerDeposit: Zero,
           },
         },
       });
@@ -212,7 +213,7 @@ describe('Raiden', () => {
         [token]: {
           [raiden.address]: {
             state: ChannelState.open,
-            totalDeposit: bigNumberify(0),
+            totalDeposit: Zero,
             partnerDeposit: bigNumberify(200),
           },
         },

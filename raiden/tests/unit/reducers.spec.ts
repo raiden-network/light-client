@@ -1,4 +1,7 @@
 import { cloneDeep } from 'lodash';
+import { Zero } from 'ethers/constants';
+import { bigNumberify } from 'ethers/utils';
+
 import {
   RaidenState,
   initialState,
@@ -15,7 +18,6 @@ import {
   raidenInit,
   tokenMonitored,
 } from 'raiden/store';
-import { bigNumberify } from 'raiden/store/types';
 
 describe('raidenReducer', () => {
   let state: RaidenState;
@@ -64,8 +66,8 @@ describe('raidenReducer', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.opening,
-            totalDeposit: bigNumberify(0),
-            partnerDeposit: bigNumberify(0),
+            totalDeposit: Zero,
+            partnerDeposit: Zero,
           },
         },
       });
@@ -80,8 +82,8 @@ describe('raidenReducer', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
-            totalDeposit: bigNumberify(0),
-            partnerDeposit: bigNumberify(0),
+            totalDeposit: Zero,
+            partnerDeposit: Zero,
             id: channelId,
             settleTimeout,
             openBlock,
@@ -150,7 +152,7 @@ describe('raidenReducer', () => {
           [partner]: {
             state: ChannelState.open,
             totalDeposit: deposit, // our total deposit was updated
-            partnerDeposit: bigNumberify(0),
+            partnerDeposit: Zero,
             id: channelId,
           },
         },
@@ -167,7 +169,7 @@ describe('raidenReducer', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
-            totalDeposit: bigNumberify(0),
+            totalDeposit: Zero,
             partnerDeposit: deposit, // partner's total deposit was updated
             id: channelId,
           },

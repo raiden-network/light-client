@@ -1,5 +1,6 @@
 import { cloneDeep, get, set, unset } from 'lodash';
-import { bigNumberify } from './types';
+import { Zero } from 'ethers/constants';
+
 import { RaidenState, initialState, ChannelState, Channel } from './state';
 import { RaidenActions, RaidenActionType } from './actions';
 
@@ -24,15 +25,15 @@ export function raidenReducer(
       if (get(state, path)) return state; // there's already a channel with partner
       return set(cloneDeep(state), path, {
         state: ChannelState.opening,
-        totalDeposit: bigNumberify(0),
-        partnerDeposit: bigNumberify(0),
+        totalDeposit: Zero,
+        partnerDeposit: Zero,
       });
 
     case RaidenActionType.CHANNEL_OPENED:
       path = ['tokenNetworks', action.tokenNetwork, action.partner];
       channel = {
-        totalDeposit: bigNumberify(0),
-        partnerDeposit: bigNumberify(0),
+        totalDeposit: Zero,
+        partnerDeposit: Zero,
         state: ChannelState.open,
         id: action.id,
         settleTimeout: action.settleTimeout,

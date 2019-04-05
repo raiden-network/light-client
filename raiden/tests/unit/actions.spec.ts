@@ -1,3 +1,4 @@
+import { bigNumberify } from 'ethers/utils';
 import {
   RaidenActionType,
   channelDeposit,
@@ -6,7 +7,6 @@ import {
   tokenMonitor,
   tokenMonitorFailed,
 } from 'raiden/store';
-import { bigNumberify } from 'raiden/store/types';
 
 describe('action factories not tested in reducers.spec.ts', () => {
   test('tokenMonitor', () => {

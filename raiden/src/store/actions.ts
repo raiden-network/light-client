@@ -1,5 +1,5 @@
 import { AnyAction } from 'redux';
-import { BigNumber } from './types';
+import { BigNumber } from 'ethers/utils';
 
 export enum RaidenActionType {
   INIT = 'raidenInit',

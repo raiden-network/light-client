@@ -3,12 +3,12 @@ import { first, tap, ignoreElements, takeUntil, toArray } from 'rxjs/operators';
 import { marbles } from 'rxjs-marbles/jest';
 import { range } from 'lodash';
 
-import { AddressZero } from 'ethers/constants';
+import { AddressZero, Zero } from 'ethers/constants';
+import { bigNumberify } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { ContractTransaction } from 'ethers/contract';
 
 import { RaidenState, initialState } from 'raiden/store/state';
-import { bigNumberify } from 'raiden/store/types';
 import { raidenReducer } from 'raiden/store/reducers';
 import {
   RaidenActions,
@@ -329,7 +329,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -361,7 +361,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -428,14 +428,16 @@ describe('raidenEpics', () => {
       closeBlock = 124;
 
     test('first channelMonitored with past$ own ChannelNewDeposit event', async () => {
-      const action = channelMonitored(tokenNetwork, partner, channelId, openBlock),
-        curState = [
-          tokenMonitored(token, tokenNetwork, true),
-          channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
-        ].reduce(raidenReducer, state);
-      const action$ = of<RaidenActions>(action),
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(
+          channelMonitored(tokenNetwork, partner, channelId, openBlock),
+        ),
         state$ = of<RaidenState>(curState);
 
+      depsMock.provider.getLogs.mockResolvedValue([]);
       depsMock.provider.getLogs.mockResolvedValueOnce([
         makeLog({
           blockNumber: 123,
@@ -636,7 +638,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -669,7 +671,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -683,7 +685,7 @@ describe('raidenEpics', () => {
         nonce: 2,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -725,7 +727,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -739,7 +741,7 @@ describe('raidenEpics', () => {
         nonce: 2,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -769,7 +771,7 @@ describe('raidenEpics', () => {
   describe('chanelCloseEpic', () => {
     const openBlock = 121;
 
-    test('fails if there is no token for tokenNetwork', async () => {
+    test('fails if there is no open channel with partner on tokenNetwork', async () => {
       // there's a channel already opened in state
       const action$ = of<RaidenActions>(channelClose(tokenNetwork, partner)),
         state$ = of<RaidenState>(state);
@@ -786,13 +788,12 @@ describe('raidenEpics', () => {
 
     test('fails if channel.state !== "open"|"closing"', async () => {
       // there's a channel already opened in state
-      const action = channelClose(tokenNetwork, partner),
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
         // channel is in 'opening' state
-        curState = [
-          tokenMonitored(token, tokenNetwork, true),
-          channelOpen(tokenNetwork, partner, settleTimeout),
-        ].reduce(raidenReducer, state);
-      const action$ = of<RaidenActions>(action),
+        channelOpen(tokenNetwork, partner, settleTimeout),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(channelClose(tokenNetwork, partner)),
         state$ = of<RaidenState>(curState);
 
       await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
@@ -820,7 +821,7 @@ describe('raidenEpics', () => {
         nonce: 2,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -853,7 +854,7 @@ describe('raidenEpics', () => {
         nonce: 3,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,

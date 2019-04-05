@@ -1,6 +1,6 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, ParamType } from 'ethers/utils';
+import { Network, ParamType, BigNumber, bigNumberify } from 'ethers/utils';
 
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, ofType } from 'redux-observable';
@@ -46,7 +46,6 @@ import {
   channelOpen,
   channelDeposit,
 } from './store';
-import { BigNumber, bigNumberify } from './store/types';
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
