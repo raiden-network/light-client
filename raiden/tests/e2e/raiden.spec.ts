@@ -234,7 +234,7 @@ describe('Raiden', () => {
     });
 
     test('success', async () => {
-      expect.assertions(3);
+      expect.assertions(2);
       await expect(raiden.closeChannel(token, partner)).resolves.toMatch(/^0x/);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
         [token]: {

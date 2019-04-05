@@ -40,11 +40,14 @@ import {
   ChannelOpenActionFailed,
   ChannelDepositedAction,
   ChannelDepositActionFailed,
+  ChannelClosedAction,
+  ChannelCloseActionFailed,
   raidenInit,
   raidenShutdown,
   tokenMonitor,
   channelOpen,
   channelDeposit,
+  channelClose,
 } from './store';
 
 export class Raiden {
@@ -442,10 +445,8 @@ export class Raiden {
     deposit: BigNumber | number,
   ): Promise<string> {
     const state = this.state;
-    const tokenNetwork =
-      token in state.token2tokenNetwork
-        ? state.token2tokenNetwork[token]
-        : await this.monitorToken(token);
+    const tokenNetwork = state.token2tokenNetwork[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
     const promise: Promise<string> = new Promise((resolve, reject) =>
       // wait for the corresponding success or error TokenMonitorAction
       this.action$
@@ -460,6 +461,33 @@ export class Raiden {
         .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
     );
     this.store.dispatch(channelDeposit(tokenNetwork, partner, bigNumberify(deposit)));
+    return promise;
+  }
+
+  /**
+   * Close channel between us and partner on tokenNetwork for token
+   * @param token  Token address on currently configured token network registry
+   * @param partner  Partner address
+   * @returns  txHash of closeChannel call, iff it succeeded
+   */
+  public async closeChannel(token: string, partner: string): Promise<string> {
+    const state = this.state;
+    const tokenNetwork = state.token2tokenNetwork[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
+    const promise: Promise<string> = new Promise((resolve, reject) =>
+      // wait for the corresponding success or error TokenMonitorAction
+      this.action$
+        .pipe(
+          ofType<RaidenActions, ChannelClosedAction | ChannelCloseActionFailed>(
+            RaidenActionType.CHANNEL_CLOSED,
+            RaidenActionType.CHANNEL_CLOSE_FAILED,
+          ),
+          filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+          first(),
+        )
+        .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
+    );
+    this.store.dispatch(channelClose(tokenNetwork, partner));
     return promise;
   }
 }
