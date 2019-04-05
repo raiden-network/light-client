@@ -88,7 +88,7 @@ export class Raiden {
     const middlewares: Middleware[] = [];
 
     if (process.env.NODE_ENV === 'development') {
-      middlewares.push(createLogger({ colors: false }));
+      middlewares.push(createLogger({ level: 'debug' }));
     }
 
     const state$ = new BehaviorSubject<RaidenState>(state);
@@ -175,7 +175,7 @@ export class Raiden {
   public static async create(
     connection: JsonRpcProvider | AsyncSendable | string,
     account: string | number,
-    storageOrState?: Storage | RaidenState,
+    storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
   ): Promise<Raiden> {
     let provider: JsonRpcProvider;

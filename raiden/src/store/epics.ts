@@ -116,7 +116,6 @@ export const raidenInitializationEpic = (
                 ([, channel]) => channel.state === ChannelState.open && channel.id !== undefined,
               ),
               // typescript doesn't understand above filter guarantees id below will be set
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               map(([partner, channel]) => channelMonitored(tokenNetwork, partner, channel.id!)),
             ),
           ),

@@ -52,6 +52,7 @@ export function encodeRaidenState(state: RaidenState): string {
 }
 
 export function decodeRaidenState(data: unknown): RaidenState {
+  if (typeof data === 'string') data = JSON.parse(data);
   const validationResult = RaidenStateType.decode(data);
   ThrowReporter.report(validationResult); // throws if decode failed
   return validationResult.value as RaidenState;

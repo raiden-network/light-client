@@ -54,15 +54,12 @@ describe('Raiden', () => {
       /account must be either.*address or private key/i,
     );
 
-    // from hex-encoded private key, initial state but invalid address on state
+    // from hex-encoded private key, initial unknown state (decodable) but invalid address inside
     expect(
       Raiden.create(
         provider,
         '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        {
-          ...initialState,
-          address: token,
-        },
+        JSON.stringify({ ...initialState, address: token }),
         info,
       ),
     ).rejects.toThrow(/Mismatch between provided account and loaded state/i);
@@ -71,10 +68,7 @@ describe('Raiden', () => {
     const raiden1 = await Raiden.create(
       provider,
       accounts[1],
-      {
-        ...initialState,
-        address: accounts[1],
-      },
+      { ...initialState, address: accounts[1] },
       info,
     );
     expect(raiden1).toBeInstanceOf(Raiden);
@@ -134,9 +128,9 @@ describe('Raiden', () => {
       await expect(raiden.openChannel(token, partner, 499)).rejects.toThrow();
     });
 
-    test('success', async () => {
+    test('success with default settleTimeout=500', async () => {
       expect.assertions(2);
-      await expect(raiden.openChannel(token, partner, 500)).resolves.toMatch(/^0x/);
+      await expect(raiden.openChannel(token, partner)).resolves.toMatch(/^0x/);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
         [token]: {
           [partner]: {
@@ -146,6 +140,7 @@ describe('Raiden', () => {
             state: ChannelState.open,
             totalDeposit: Zero,
             partnerDeposit: Zero,
+            settleTimeout: 500,
           },
         },
       });
@@ -154,7 +149,15 @@ describe('Raiden', () => {
 
   describe('depositChannel', () => {
     beforeEach(async () => {
-      await raiden.openChannel(token, partner, 500);
+      await raiden.openChannel(token, partner);
+    });
+
+    test('unknown token network', async () => {
+      expect.assertions(1);
+      // token=partner
+      await expect(
+        raiden.depositChannel(partner, partner, parseUnits('100', 18)),
+      ).rejects.toThrow();
     });
 
     test('tx fail', async () => {
@@ -187,7 +190,7 @@ describe('Raiden', () => {
     let raiden1: Raiden;
 
     beforeEach(async () => {
-      await raiden.openChannel(token, partner, 500);
+      await raiden.openChannel(token, partner);
       await raiden.depositChannel(token, partner, 200);
       raiden1 = await Raiden.create(provider, partner, undefined, info);
     });
@@ -223,8 +226,14 @@ describe('Raiden', () => {
 
   describe('closeChannel', () => {
     beforeEach(async () => {
-      await raiden.openChannel(token, partner, 500);
+      await raiden.openChannel(token, partner);
       await raiden.depositChannel(token, partner, 200);
+    });
+
+    test('unknown token network', async () => {
+      expect.assertions(1);
+      // token=partner
+      await expect(raiden.closeChannel(partner, partner)).rejects.toThrow();
     });
 
     test('no channel with address', async () => {

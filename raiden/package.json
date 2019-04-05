@@ -87,7 +87,9 @@
       "ecmaVersion": 2018,
       "sourceType": "module"
     },
-    "rules": {},
+    "rules": {
+      "@typescript-eslint/no-non-null-assertion": "off"
+    },
     "extends": [
       "plugin:@typescript-eslint/recommended",
       "prettier/@typescript-eslint",

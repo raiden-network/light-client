@@ -109,10 +109,20 @@ describe('getEventsStream', () => {
 
     expect(events[0][0]).toBe(pastTokenAddr);
     expect(events[0][1]).toBe(pastTokenNetworkAddr);
-    expect(events[0][2]).toMatchObject({
+    const pastEvent = events[0][2];
+    expect(pastEvent).toMatchObject({
       address: registryContract.address,
       blockNumber: 999,
       args: { '0': pastTokenAddr, '1': pastTokenNetworkAddr, length: 2 },
     });
+    pastEvent.removeListener();
+
+    pastEvent.getBlock();
+    pastEvent.getTransaction();
+    pastEvent.getTransactionReceipt();
+
+    expect(provider.getBlock).toHaveBeenCalledWith(pastLog.blockHash);
+    expect(provider.getTransaction).toHaveBeenCalledWith(pastLog.transactionHash);
+    expect(provider.getTransactionReceipt).toHaveBeenCalledWith(pastLog.transactionHash);
   });
 });

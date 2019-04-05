@@ -75,10 +75,10 @@ export function getEventsStream<T extends any[]>(
           ...parsed,
           args,
           removeListener: () => {},
-          getBlock: () => provider.getBlock(log.blockHash || ''),
-          getTransaction: () => provider.getTransaction(log.transactionHash || ''),
-          getTransactionReceipt: () => provider.getTransactionReceipt(log.transactionHash || ''),
-          decode: () => parsed,
+          getBlock: () => provider.getBlock(log.blockHash!),
+          getTransaction: () => provider.getTransaction(log.transactionHash!),
+          getTransactionReceipt: () => provider.getTransactionReceipt(log.transactionHash!),
+          decode: undefined,
         };
         return [...args, event];
       }),
