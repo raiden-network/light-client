@@ -41,7 +41,7 @@ contain:
 If you have some coding abilities and would like to contribute to the actual
 codebase of Raiden then you can open a Pull Request(PR) against the repository.
 
-If you are interested in contributing make sure that there is an issue about it. Express interest, by picking the issue so that core developers know that you are working on then issue.
+If you are interested in contributing make sure that there is an issue about it. Express interest, by picking the issue so that core developers know that you are working on the issue.
 
 All PRs should be:
 
