@@ -1,4 +1,7 @@
-import { cloneDeep, get, set } from 'lodash';
+import { cloneDeep } from 'lodash';
+import { Zero } from 'ethers/constants';
+import { bigNumberify } from 'ethers/utils';
+
 import {
   RaidenState,
   initialState,
@@ -8,23 +11,32 @@ import {
   channelOpened,
   channelOpenFailed,
   channelDeposited,
+  channelClose,
+  channelClosed,
+  channelCloseFailed,
   newBlock,
   raidenInit,
   tokenMonitored,
 } from 'raiden/store';
-import { bigNumberify } from 'raiden/store/types';
 
 describe('raidenReducer', () => {
   let state: RaidenState;
-  const address = '0xmyaddress';
+  const address = '0xmyAddress',
+    token = '0xtoken',
+    tokenNetwork = '0xtokenNetwork',
+    partner = '0xpartner',
+    channelId = 17,
+    settleTimeout = 500,
+    openBlock = 5123,
+    closeBlock = 5999;
 
   beforeEach(() => {
     state = cloneDeep({ ...initialState, address, blockNumber: 1337 });
   });
 
   test('newBlock', () => {
-    const newState = raidenReducer(state, newBlock(1338));
-    expect(newState).toEqual({ ...state, blockNumber: 1338 });
+    const newState = raidenReducer(state, newBlock(state.blockNumber + 1));
+    expect(newState).toMatchObject({ blockNumber: state.blockNumber + 1 });
   });
 
   test('unhandled state change returns same object', () => {
@@ -33,11 +45,9 @@ describe('raidenReducer', () => {
   });
 
   describe('tokenMonitored', () => {
-    const token = '0xtoken',
-      tokenNetwork = '0xtokennetwork';
     test('new tokenMonitored', () => {
       const newState = raidenReducer(state, tokenMonitored(token, tokenNetwork, true));
-      expect(newState).toEqual({ ...state, token2tokenNetwork: { [token]: tokenNetwork } });
+      expect(newState).toMatchObject({ token2tokenNetwork: { [token]: tokenNetwork } });
     });
 
     test('already monitored token', () => {
@@ -48,24 +58,16 @@ describe('raidenReducer', () => {
   });
 
   describe('channelOpen', () => {
-    const tokenNetwork = '0xtokennetwork',
-      partner = '0xpartner',
-      id = 12,
-      settleTimeout = 500,
-      openBlock = 5123,
-      txHash = '0xtxhash';
+    const txHash = '0xtxhash';
 
     test('new channelOpen', () => {
       const newState = raidenReducer(state, channelOpen(tokenNetwork, partner, settleTimeout));
-      expect(newState).toEqual({
-        ...state,
-        tokenNetworks: {
-          [tokenNetwork]: {
-            [partner]: {
-              state: ChannelState.opening,
-              totalDeposit: bigNumberify(0),
-              partnerDeposit: bigNumberify(0),
-            },
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: {
+          [partner]: {
+            state: ChannelState.opening,
+            totalDeposit: Zero,
+            partnerDeposit: Zero,
           },
         },
       });
@@ -74,60 +76,38 @@ describe('raidenReducer', () => {
     test('channelOpened', () => {
       const newState = raidenReducer(
         state,
-        channelOpened(tokenNetwork, partner, id, settleTimeout, openBlock, txHash),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, txHash),
       );
-      expect(newState).toEqual({
-        ...state,
-        tokenNetworks: {
-          [tokenNetwork]: {
-            [partner]: {
-              state: ChannelState.open,
-              totalDeposit: bigNumberify(0),
-              partnerDeposit: bigNumberify(0),
-              id,
-              settleTimeout,
-              openBlock,
-            },
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: {
+          [partner]: {
+            state: ChannelState.open,
+            totalDeposit: Zero,
+            partnerDeposit: Zero,
+            id: channelId,
+            settleTimeout,
+            openBlock,
           },
         },
       });
     });
 
     test('channelOpenFailed', () => {
-      state = {
-        ...state,
-        tokenNetworks: {
-          [tokenNetwork]: {
-            [partner]: {
-              state: ChannelState.opening,
-              totalDeposit: bigNumberify(0),
-              partnerDeposit: bigNumberify(0),
-            },
-          },
-        },
-      };
       const error = new Error('could not open channel');
-      const newState = raidenReducer(state, channelOpenFailed(tokenNetwork, partner, error));
-      expect(get(newState, ['tokenNetworks', tokenNetwork])).toEqual({});
+      const newState = [
+        channelOpen(tokenNetwork, partner, settleTimeout),
+        channelOpenFailed(tokenNetwork, partner, error),
+      ].reduce(raidenReducer, state);
+      expect(newState.tokenNetworks[tokenNetwork][partner]).toBeUndefined();
     });
   });
 
   describe('channelDeposited', () => {
-    const tokenNetwork = '0xtokennetwork',
-      partner = '0xpartner',
-      id = 12,
-      settleTimeout = 500,
-      openBlock = 5123;
-
     beforeEach(() => {
-      set(state, ['tokenNetworks', tokenNetwork, partner], {
-        state: ChannelState.open,
-        totalDeposit: bigNumberify(0),
-        partnerDeposit: bigNumberify(0),
-        id,
-        settleTimeout,
-        openBlock,
-      });
+      state = raidenReducer(
+        state,
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+      );
     });
 
     test('channel not in open state', () => {
@@ -137,7 +117,7 @@ describe('raidenReducer', () => {
         channelDeposited(
           tokenNetwork,
           partner,
-          id,
+          channelId,
           state.address,
           bigNumberify(23),
           '0xdeposittxhash',
@@ -152,7 +132,7 @@ describe('raidenReducer', () => {
         channelDeposited(
           tokenNetwork,
           partner,
-          id,
+          channelId,
           '0xunknown',
           bigNumberify(24),
           '0xdeposittxhash',
@@ -165,20 +145,15 @@ describe('raidenReducer', () => {
       const deposit = bigNumberify(25);
       const newState = raidenReducer(
         state,
-        channelDeposited(tokenNetwork, partner, id, address, deposit, '0xdeposittxhash'),
+        channelDeposited(tokenNetwork, partner, channelId, address, deposit, '0xdepositTxHash'),
       );
-      expect(newState).toEqual({
-        ...state,
-        tokenNetworks: {
-          [tokenNetwork]: {
-            [partner]: {
-              state: ChannelState.open,
-              totalDeposit: deposit, // our total deposit was updated
-              partnerDeposit: bigNumberify(0),
-              id,
-              settleTimeout,
-              openBlock,
-            },
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: {
+          [partner]: {
+            state: ChannelState.open,
+            totalDeposit: deposit, // our total deposit was updated
+            partnerDeposit: Zero,
+            id: channelId,
           },
         },
       });
@@ -188,23 +163,97 @@ describe('raidenReducer', () => {
       const deposit = bigNumberify(26);
       const newState = raidenReducer(
         state,
-        channelDeposited(tokenNetwork, partner, id, partner, deposit, '0xdeposittxhash'),
+        channelDeposited(tokenNetwork, partner, channelId, partner, deposit, '0xdeposittxhash'),
       );
-      expect(newState).toEqual({
-        ...state,
-        tokenNetworks: {
-          [tokenNetwork]: {
-            [partner]: {
-              state: ChannelState.open,
-              totalDeposit: bigNumberify(0),
-              partnerDeposit: deposit, // partner's total deposit was updated
-              id,
-              settleTimeout,
-              openBlock,
-            },
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: {
+          [partner]: {
+            state: ChannelState.open,
+            totalDeposit: Zero,
+            partnerDeposit: deposit, // partner's total deposit was updated
+            id: channelId,
           },
         },
       });
+    });
+  });
+
+  describe('channelClose', () => {
+    beforeEach(() => {
+      // channel in open state
+      state = raidenReducer(
+        state,
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+      );
+    });
+
+    test('channel not in open state', () => {
+      state.tokenNetworks[tokenNetwork][partner].state = ChannelState.closed;
+      const newState = raidenReducer(state, channelClose(tokenNetwork, partner));
+      expect(newState).toBe(state);
+    });
+
+    test('unknown channel', () => {
+      const newState = raidenReducer(state, channelClose(tokenNetwork, token));
+      expect(newState).toBe(state);
+    });
+
+    test('channelClose puts channel in closing state', () => {
+      const newState = raidenReducer(state, channelClose(tokenNetwork, partner));
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: { [partner]: { state: ChannelState.closing, id: channelId } },
+      });
+    });
+  });
+
+  describe('channelClosed', () => {
+    beforeEach(() => {
+      // channel in open state
+      state = raidenReducer(
+        state,
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+      );
+    });
+
+    test('unknown channel', () => {
+      const newState = raidenReducer(
+        state,
+        channelClosed(tokenNetwork, partner, channelId + 1, address, closeBlock, '0xcloseTxHash'),
+      );
+      expect(newState).toBe(state);
+    });
+
+    test('channelClosed puts channel in closed state', () => {
+      const newState = raidenReducer(
+        state,
+        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
+      );
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: { [partner]: { state: ChannelState.closed, id: channelId, closeBlock } },
+      });
+    });
+  });
+
+  describe('channelCloseFailed', () => {
+    beforeEach(() => {
+      // channel in closing state
+      state = [
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+        channelClose(tokenNetwork, partner),
+      ].reduce(raidenReducer, state);
+    });
+
+    test('unknown channel', () => {
+      const newState = raidenReducer(state, channelClose(tokenNetwork, token));
+      expect(newState).toBe(state);
+    });
+
+    test("channelCloseFailed doesn't mutate state", () => {
+      const newState = raidenReducer(
+        state,
+        channelCloseFailed(tokenNetwork, partner, new Error('channelClose failed')),
+      );
+      expect(newState).toBe(state);
     });
   });
 });

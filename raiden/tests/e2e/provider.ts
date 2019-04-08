@@ -1,5 +1,7 @@
 import ganache, { GanacheServerOptions } from 'ganache-cli';
 import memdown from 'memdown';
+import { range } from 'lodash';
+import asyncPool from 'tiny-async-pool';
 
 import { Web3Provider } from 'ethers/providers';
 import { ContractFactory, Contract } from 'ethers/contract';
@@ -19,6 +21,7 @@ export class TestProvider extends Web3Provider {
         default_balance_ether: 5, // eslint-disable-line @typescript-eslint/camelcase
         seed: 'testrpc_provider',
         db: memdown(),
+        // logger: console,
         ...opts,
       }),
     );
@@ -33,10 +36,20 @@ export class TestProvider extends Web3Provider {
     return this.send('evm_revert', id);
   }
 
-  public async mine(count: number = 1): Promise<void> {
-    for (let i = 0; i < count; i++) {
-      await this.send('evm_mine', null);
-    }
+  public async mine(count: number = 1): Promise<number> {
+    const blockNumber = await this.getBlockNumber();
+    console.debug(`mining ${count} blocks after blockNumber=${blockNumber}`);
+    const promise = new Promise(resolve => {
+      const cb = (b: number): void => {
+        if (b < blockNumber + count) return;
+        this.removeListener('block', cb);
+        resolve();
+      };
+      this.on('block', cb);
+    });
+    await asyncPool(10, range(count), () => this.send('evm_mine', null));
+    await promise;
+    return this.blockNumber;
   }
 
   public async deployRaidenContracts(): Promise<[ContractsInfo, RaidenContracts]> {

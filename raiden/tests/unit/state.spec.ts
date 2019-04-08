@@ -1,10 +1,10 @@
+import { bigNumberify } from 'ethers/utils';
 import {
   RaidenState,
   ChannelState,
   encodeRaidenState,
   decodeRaidenState,
 } from 'raiden/store/state';
-import { bigNumberify } from 'raiden/store/types';
 
 describe('RaidenState codecs', () => {
   test('encodeRaidenState', () => {

@@ -173,7 +173,7 @@ export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<L
     transactionHash: `0xtxHash${blockNumber}`,
     logIndex: 1,
     ...opts,
-    address: filter.address!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    topics: filter.topics!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    address: filter.address!,
+    topics: filter.topics!,
   };
 }

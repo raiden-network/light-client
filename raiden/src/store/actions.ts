@@ -1,7 +1,7 @@
 import { AnyAction } from 'redux';
-import { BigNumber } from './types';
+import { BigNumber } from 'ethers/utils';
 
-export const enum RaidenActionType {
+export enum RaidenActionType {
   INIT = 'raidenInit',
   SHUTDOWN = 'raidenShutdown',
   NEW_BLOCK = 'newBlock',
@@ -15,6 +15,9 @@ export const enum RaidenActionType {
   CHANNEL_DEPOSIT = 'channelDeposit',
   CHANNEL_DEPOSITED = 'channelDeposited',
   CHANNEL_DEPOSIT_FAILED = 'channelDepositFailed',
+  CHANNEL_CLOSE = 'channelClose',
+  CHANNEL_CLOSED = 'channelClosed',
+  CHANNEL_CLOSE_FAILED = 'channelCloseFailed',
 }
 
 // actions:
@@ -108,6 +111,29 @@ export interface ChannelDepositedAction extends RaidenAction {
 
 export interface ChannelDepositActionFailed extends RaidenActionFailed {
   type: RaidenActionType.CHANNEL_DEPOSIT_FAILED;
+  tokenNetwork: string;
+  partner: string;
+  error: Error;
+}
+
+export interface ChannelCloseAction extends RaidenAction {
+  type: RaidenActionType.CHANNEL_CLOSE;
+  tokenNetwork: string;
+  partner: string;
+}
+
+export interface ChannelClosedAction extends RaidenAction {
+  type: RaidenActionType.CHANNEL_CLOSED;
+  tokenNetwork: string;
+  partner: string;
+  id: number;
+  participant: string;
+  closeBlock: number;
+  txHash: string;
+}
+
+export interface ChannelCloseActionFailed extends RaidenActionFailed {
+  type: RaidenActionType.CHANNEL_CLOSE_FAILED;
   tokenNetwork: string;
   partner: string;
   error: Error;
@@ -238,6 +264,40 @@ export const channelDepositFailed = (
   error,
 });
 
+export const channelClose = (tokenNetwork: string, partner: string): ChannelCloseAction => ({
+  type: RaidenActionType.CHANNEL_CLOSE,
+  tokenNetwork,
+  partner,
+});
+
+export const channelClosed = (
+  tokenNetwork: string,
+  partner: string,
+  id: number,
+  participant: string,
+  closeBlock: number,
+  txHash: string,
+): ChannelClosedAction => ({
+  type: RaidenActionType.CHANNEL_CLOSED,
+  tokenNetwork,
+  partner,
+  id,
+  participant,
+  closeBlock,
+  txHash,
+});
+
+export const channelCloseFailed = (
+  tokenNetwork: string,
+  partner: string,
+  error: Error,
+): ChannelCloseActionFailed => ({
+  type: RaidenActionType.CHANNEL_CLOSE_FAILED,
+  tokenNetwork,
+  partner,
+  error,
+});
+
 export type RaidenActions =
   | RaidenInitAction
   | RaidenShutdownAction
@@ -251,4 +311,7 @@ export type RaidenActions =
   | ChannelMonitoredAction
   | ChannelDepositAction
   | ChannelDepositedAction
-  | ChannelDepositActionFailed;
+  | ChannelDepositActionFailed
+  | ChannelCloseAction
+  | ChannelClosedAction
+  | ChannelCloseActionFailed;

@@ -2,7 +2,7 @@ import { Contract, EventFilter, Event } from 'ethers';
 import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
 import { flatten, sortBy } from 'lodash';
 
-import { Observable, fromEventPattern, merge, from, EMPTY } from 'rxjs';
+import { Observable, fromEventPattern, merge, from, of, defer, EMPTY } from 'rxjs';
 import { filter, first, map, mergeAll, switchMap, withLatestFrom, mergeMap } from 'rxjs/operators';
 
 /**
@@ -50,7 +50,9 @@ export function getEventsStream<T extends any[]>(
   let pastEvents$: Observable<T> = EMPTY;
   if (fromBlock$ && lastSeenBlock$) {
     pastEvents$ = fromBlock$.pipe(
-      withLatestFrom(lastSeenBlock$),
+      withLatestFrom(
+        defer(() => (provider.blockNumber ? of(provider.blockNumber) : lastSeenBlock$)),
+      ),
       first(),
       switchMap(async ([fromBlock, toBlock]) => {
         const logs = await Promise.all(
@@ -73,10 +75,10 @@ export function getEventsStream<T extends any[]>(
           ...parsed,
           args,
           removeListener: () => {},
-          getBlock: () => provider.getBlock(log.blockHash || ''),
-          getTransaction: () => provider.getTransaction(log.transactionHash || ''),
-          getTransactionReceipt: () => provider.getTransactionReceipt(log.transactionHash || ''),
-          decode: () => parsed,
+          getBlock: () => provider.getBlock(log.blockHash!),
+          getTransaction: () => provider.getTransaction(log.transactionHash!),
+          getTransactionReceipt: () => provider.getTransactionReceipt(log.transactionHash!),
+          decode: undefined,
         };
         return [...args, event];
       }),

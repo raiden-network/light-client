@@ -1,5 +1,6 @@
 import { cloneDeep, get, set, unset } from 'lodash';
-import { bigNumberify } from './types';
+import { Zero } from 'ethers/constants';
+
 import { RaidenState, initialState, ChannelState, Channel } from './state';
 import { RaidenActions, RaidenActionType } from './actions';
 
@@ -24,15 +25,15 @@ export function raidenReducer(
       if (get(state, path)) return state; // there's already a channel with partner
       return set(cloneDeep(state), path, {
         state: ChannelState.opening,
-        totalDeposit: bigNumberify(0),
-        partnerDeposit: bigNumberify(0),
+        totalDeposit: Zero,
+        partnerDeposit: Zero,
       });
 
     case RaidenActionType.CHANNEL_OPENED:
       path = ['tokenNetworks', action.tokenNetwork, action.partner];
       channel = {
-        totalDeposit: bigNumberify(0),
-        partnerDeposit: bigNumberify(0),
+        totalDeposit: Zero,
+        partnerDeposit: Zero,
         state: ChannelState.open,
         id: action.id,
         settleTimeout: action.settleTimeout,
@@ -56,6 +57,23 @@ export function raidenReducer(
       if (action.participant === state.address) channel.totalDeposit = action.totalDeposit;
       else if (action.participant === action.partner) channel.partnerDeposit = action.totalDeposit;
       else return state; // shouldn't happen, deposit from neither us or partner
+      return set(cloneDeep(state), path, channel);
+
+    case RaidenActionType.CHANNEL_CLOSE:
+      path = ['tokenNetworks', action.tokenNetwork, action.partner, 'state'];
+      if (get(state, path) !== ChannelState.open) return state;
+      return set(cloneDeep(state), path, ChannelState.closing);
+
+    case RaidenActionType.CHANNEL_CLOSED:
+      path = ['tokenNetworks', action.tokenNetwork, action.partner];
+      channel = cloneDeep(get(state, path));
+      if (
+        !channel ||
+        !(channel.state === ChannelState.open || channel.state === ChannelState.closing) ||
+        channel.id !== action.id
+      )
+        return state;
+      Object.assign(channel, { state: ChannelState.closed, closeBlock: action.closeBlock });
       return set(cloneDeep(state), path, channel);
 
     default:

@@ -1,6 +1,5 @@
 import * as t from 'io-ts';
 import { BigNumber, bigNumberify } from 'ethers/utils';
-export { BigNumber, bigNumberify } from 'ethers/utils';
 
 const StringOrNumber = t.union([t.string, t.number]);
 

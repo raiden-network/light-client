@@ -1,6 +1,6 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, ParamType } from 'ethers/utils';
+import { Network, ParamType, BigNumber, bigNumberify } from 'ethers/utils';
 
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, ofType } from 'redux-observable';
@@ -40,13 +40,15 @@ import {
   ChannelOpenActionFailed,
   ChannelDepositedAction,
   ChannelDepositActionFailed,
+  ChannelClosedAction,
+  ChannelCloseActionFailed,
   raidenInit,
   raidenShutdown,
   tokenMonitor,
   channelOpen,
   channelDeposit,
+  channelClose,
 } from './store';
-import { BigNumber, bigNumberify } from './store/types';
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
@@ -86,7 +88,7 @@ export class Raiden {
     const middlewares: Middleware[] = [];
 
     if (process.env.NODE_ENV === 'development') {
-      middlewares.push(createLogger({ colors: false }));
+      middlewares.push(createLogger({ level: 'debug' }));
     }
 
     const state$ = new BehaviorSubject<RaidenState>(state);
@@ -173,7 +175,7 @@ export class Raiden {
   public static async create(
     connection: JsonRpcProvider | AsyncSendable | string,
     account: string | number,
-    storageOrState?: Storage | RaidenState,
+    storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
   ): Promise<Raiden> {
     let provider: JsonRpcProvider;
@@ -443,10 +445,8 @@ export class Raiden {
     deposit: BigNumber | number,
   ): Promise<string> {
     const state = this.state;
-    const tokenNetwork =
-      token in state.token2tokenNetwork
-        ? state.token2tokenNetwork[token]
-        : await this.monitorToken(token);
+    const tokenNetwork = state.token2tokenNetwork[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
     const promise: Promise<string> = new Promise((resolve, reject) =>
       // wait for the corresponding success or error TokenMonitorAction
       this.action$
@@ -461,6 +461,33 @@ export class Raiden {
         .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
     );
     this.store.dispatch(channelDeposit(tokenNetwork, partner, bigNumberify(deposit)));
+    return promise;
+  }
+
+  /**
+   * Close channel between us and partner on tokenNetwork for token
+   * @param token  Token address on currently configured token network registry
+   * @param partner  Partner address
+   * @returns  txHash of closeChannel call, iff it succeeded
+   */
+  public async closeChannel(token: string, partner: string): Promise<string> {
+    const state = this.state;
+    const tokenNetwork = state.token2tokenNetwork[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
+    const promise: Promise<string> = new Promise((resolve, reject) =>
+      // wait for the corresponding success or error TokenMonitorAction
+      this.action$
+        .pipe(
+          ofType<RaidenActions, ChannelClosedAction | ChannelCloseActionFailed>(
+            RaidenActionType.CHANNEL_CLOSED,
+            RaidenActionType.CHANNEL_CLOSE_FAILED,
+          ),
+          filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+          first(),
+        )
+        .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
+    );
+    this.store.dispatch(channelClose(tokenNetwork, partner));
     return promise;
   }
 }

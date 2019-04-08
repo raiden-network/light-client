@@ -3,12 +3,12 @@ import { first, tap, ignoreElements, takeUntil, toArray } from 'rxjs/operators';
 import { marbles } from 'rxjs-marbles/jest';
 import { range } from 'lodash';
 
-import { AddressZero } from 'ethers/constants';
+import { AddressZero, Zero } from 'ethers/constants';
+import { bigNumberify } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { ContractTransaction } from 'ethers/contract';
 
 import { RaidenState, initialState } from 'raiden/store/state';
-import { bigNumberify } from 'raiden/store/types';
 import { raidenReducer } from 'raiden/store/reducers';
 import {
   RaidenActions,
@@ -23,6 +23,7 @@ import {
   channelOpened,
   channelDeposit,
   channelDeposited,
+  channelClose,
 } from 'raiden/store/actions';
 import {
   stateOutputEpic,
@@ -34,6 +35,7 @@ import {
   channelOpenedEpic,
   channelMonitoredEpic,
   channelDepositEpic,
+  channelCloseEpic,
 } from 'raiden/store/epics';
 
 import { raidenEpicDeps, makeLog } from './mocks';
@@ -46,14 +48,6 @@ describe('raidenEpics', () => {
     address: depsMock.address,
     blockNumber: 125,
   };
-
-  function applyActions(actions: RaidenActions[]): RaidenState {
-    let newState = state;
-    for (const action of actions) {
-      newState = raidenReducer(newState, action);
-    }
-    return newState;
-  }
 
   const token = '0x0000000000000000000000000000000000010001',
     tokenNetwork = '0x0000000000000000000000000000000000020001',
@@ -102,7 +96,7 @@ describe('raidenEpics', () => {
   test(
     'raidenInitializationEpic & raidenShutdown',
     marbles(m => {
-      const newState = applyActions([
+      const newState = [
         tokenMonitored(token, tokenNetwork, true),
         channelOpened(tokenNetwork, partner, channelId, settleTimeout, 121, '0xopenTxHash'),
         channelDeposited(
@@ -121,7 +115,7 @@ describe('raidenEpics', () => {
           bigNumberify(200),
           '0xpartnerDepositTxHash',
         ),
-      ]);
+      ].reduce(raidenReducer, state);
       /* this test requires mocked provider, or else emit is called with setTimeout and doesn't run
        * before the return of the function.
        */
@@ -147,17 +141,19 @@ describe('raidenEpics', () => {
         state$ = of<RaidenState>(state);
 
       // toPromise will ensure observable completes and resolve to last emitted value
-      const result = await tokenMonitorEpic(action$, state$, depsMock).toPromise();
-      expect(result).toEqual(tokenMonitored(token, tokenNetwork, true));
+      await expect(tokenMonitorEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        tokenMonitored(token, tokenNetwork, true),
+      );
     });
 
     test('succeeds already monitored', async () => {
       const action$ = of<RaidenActions>(tokenMonitor(token)),
-        state$ = of<RaidenState>(applyActions([tokenMonitored(token, tokenNetwork, true)]));
+        state$ = of<RaidenState>(raidenReducer(state, tokenMonitored(token, tokenNetwork, true)));
 
       // toPromise will ensure observable completes and resolve to last emitted value
-      const result = await tokenMonitorEpic(action$, state$, depsMock).toPromise();
-      expect(result).toEqual(tokenMonitored(token, tokenNetwork, false));
+      await expect(tokenMonitorEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        tokenMonitored(token, tokenNetwork, false),
+      );
     });
 
     test('fails', async () => {
@@ -167,12 +163,13 @@ describe('raidenEpics', () => {
         AddressZero,
       );
 
-      const result = await tokenMonitorEpic(action$, state$, depsMock).toPromise();
-      expect(result).toMatchObject({
-        type: RaidenActionType.TOKEN_MONITOR_FAILED,
-        token,
-      });
-      expect(result.error).toBeInstanceOf(Error);
+      await expect(tokenMonitorEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
+        {
+          type: RaidenActionType.TOKEN_MONITOR_FAILED,
+          token,
+          error: expect.any(Error),
+        },
+      );
     });
   });
 
@@ -181,7 +178,7 @@ describe('raidenEpics', () => {
 
     test('first tokenMonitored with past$ ChannelOpened event', async () => {
       const action = tokenMonitored(token, tokenNetwork, true),
-        curState = applyActions([action]);
+        curState = raidenReducer(state, action);
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
 
@@ -198,12 +195,11 @@ describe('raidenEpics', () => {
         }),
       ]);
 
-      const result = await tokenMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
-
-      expect(result).toBeDefined();
-      expect(result).toMatchObject({
+      await expect(
+        tokenMonitoredEpic(action$, state$, depsMock)
+          .pipe(first())
+          .toPromise(),
+      ).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_OPENED,
         tokenNetwork,
         partner,
@@ -215,7 +211,7 @@ describe('raidenEpics', () => {
 
     test('already tokenMonitored with new$ ChannelOpened event', async () => {
       const action = tokenMonitored(token, tokenNetwork, false),
-        curState = applyActions([action]);
+        curState = raidenReducer(state, action);
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
 
@@ -237,10 +233,7 @@ describe('raidenEpics', () => {
         }),
       );
 
-      const result = await promise;
-
-      expect(result).toBeDefined();
-      expect(result).toMatchObject({
+      await expect(promise).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_OPENED,
         tokenNetwork,
         partner,
@@ -253,7 +246,7 @@ describe('raidenEpics', () => {
     test("ensure multiple tokenMonitored don't produce duplicated events", async () => {
       const multiple = 16;
       const action = tokenMonitored(token, tokenNetwork, false),
-        curState = applyActions([action]);
+        curState = raidenReducer(state, action);
       const action$ = from(range(multiple).map(() => tokenMonitored(token, tokenNetwork, false))),
         state$ = of<RaidenState>(curState);
 
@@ -283,11 +276,6 @@ describe('raidenEpics', () => {
       );
 
       const result = await promise;
-      // expect tokenNetworkContract.listenerCount to have been checked multiple times
-      expect(listenerCountSpy).toHaveBeenCalledTimes(multiple);
-      // but only one listener is registered
-      expect(listenerCountSpy).toHaveLastReturnedWith(1);
-
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         type: RaidenActionType.CHANNEL_OPENED,
@@ -298,6 +286,11 @@ describe('raidenEpics', () => {
         openBlock: 125,
       });
 
+      // expect tokenNetworkContract.listenerCount to have been checked multiple times
+      expect(listenerCountSpy).toHaveBeenCalledTimes(multiple);
+      // but only one listener is registered
+      expect(listenerCountSpy).toHaveLastReturnedWith(1);
+
       listenerCountSpy.mockRestore();
     });
   });
@@ -306,26 +299,27 @@ describe('raidenEpics', () => {
     test('fails if channel.state !== opening', async () => {
       // there's a channel already opened in state
       const action = channelOpen(tokenNetwork, partner, settleTimeout),
-        curState = applyActions([
+        curState = [
           tokenMonitored(token, tokenNetwork, true),
           channelOpened(tokenNetwork, partner, channelId, settleTimeout, 125, '0xtxHash'),
-        ]);
+        ].reduce(raidenReducer, state);
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
 
-      const result = await channelOpenEpic(action$, state$, depsMock).toPromise();
-
-      expect(result).toMatchObject({
+      await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_OPEN_FAILED,
         tokenNetwork,
         partner,
+        error: expect.any(Error),
       });
-      expect(result.error).toBeInstanceOf(Error);
     });
 
     test('tx fails', async () => {
       const action = channelOpen(tokenNetwork, partner, settleTimeout),
-        curState = applyActions([tokenMonitored(token, tokenNetwork, true), action]);
+        curState = [tokenMonitored(token, tokenNetwork, true), action].reduce(
+          raidenReducer,
+          state,
+        );
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
 
@@ -335,7 +329,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -343,20 +337,21 @@ describe('raidenEpics', () => {
       };
       tokenNetworkContract.functions.openChannel.mockResolvedValueOnce(tx);
 
-      const result = await channelOpenEpic(action$, state$, depsMock).toPromise();
-
-      expect(result).toMatchObject({
+      await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_OPEN_FAILED,
         tokenNetwork,
         partner,
+        error: expect.any(Error),
       });
-      expect(result.error).toBeInstanceOf(Error);
     });
 
     test('success', async () => {
       // there's a channel already opened in state
       const action = channelOpen(tokenNetwork, partner, settleTimeout),
-        curState = applyActions([tokenMonitored(token, tokenNetwork, true), action]);
+        curState = [tokenMonitored(token, tokenNetwork, true), action].reduce(
+          raidenReducer,
+          state,
+        );
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
 
@@ -366,7 +361,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -374,11 +369,11 @@ describe('raidenEpics', () => {
       };
       tokenNetworkContract.functions.openChannel.mockResolvedValueOnce(tx);
 
-      const result = await channelOpenEpic(action$, state$, depsMock).toPromise();
-
       // result is undefined on success as the respective channelOpenedAction is emitted by the
       // tokenMonitoredEpic, which monitors the blockchain for ChannelOpened events
-      expect(result).toBeUndefined();
+      await expect(
+        channelOpenEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toBeUndefined();
       expect(tokenNetworkContract.functions.openChannel).toHaveBeenCalledTimes(1);
       expect(tx.wait).toHaveBeenCalledTimes(1);
     });
@@ -387,17 +382,16 @@ describe('raidenEpics', () => {
   describe('channelOpenedEpic', () => {
     test("filter out if channel isn't in 'open' state", async () => {
       // channel.state is 'opening'
-      const curState = applyActions([
+      const curState = [
         tokenMonitored(token, tokenNetwork, true),
         channelOpen(tokenNetwork, partner, settleTimeout),
-      ]);
+      ].reduce(raidenReducer, state);
       const action$ = of<RaidenActions>(
           channelOpened(tokenNetwork, partner, channelId, settleTimeout, 125, '0xtxHash'),
         ),
         state$ = of<RaidenState>(curState);
 
-      const result = await channelOpenedEpic(action$, state$).toPromise();
-      expect(result).toBeUndefined();
+      await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toBeUndefined();
     });
 
     test('channelOpened triggers channel monitoring', async () => {
@@ -410,13 +404,14 @@ describe('raidenEpics', () => {
           125,
           '0xtxHash',
         ),
-        curState = applyActions([tokenMonitored(token, tokenNetwork, true), action]);
+        curState = [tokenMonitored(token, tokenNetwork, true), action].reduce(
+          raidenReducer,
+          state,
+        );
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
 
-      const result = await channelOpenedEpic(action$, state$).toPromise();
-      expect(result).toBeDefined();
-      expect(result).toMatchObject({
+      await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_MONITORED,
         tokenNetwork,
         partner,
@@ -429,17 +424,20 @@ describe('raidenEpics', () => {
   describe('channelMonitoredEpic', () => {
     const deposit = bigNumberify(1023),
       depositEncoded = defaultAbiCoder.encode(['uint256'], [deposit]),
-      openBlock = 121;
+      openBlock = 121,
+      closeBlock = 124;
 
     test('first channelMonitored with past$ own ChannelNewDeposit event', async () => {
-      const action = channelMonitored(tokenNetwork, partner, channelId, openBlock),
-        curState = applyActions([
-          tokenMonitored(token, tokenNetwork, true),
-          channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
-        ]);
-      const action$ = of<RaidenActions>(action),
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(
+          channelMonitored(tokenNetwork, partner, channelId, openBlock),
+        ),
         state$ = of<RaidenState>(curState);
 
+      depsMock.provider.getLogs.mockResolvedValue([]);
       depsMock.provider.getLogs.mockResolvedValueOnce([
         makeLog({
           blockNumber: 123,
@@ -452,12 +450,11 @@ describe('raidenEpics', () => {
         }),
       ]);
 
-      const result = await channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
-
-      expect(result).toBeDefined();
-      expect(result).toMatchObject({
+      await expect(
+        channelMonitoredEpic(action$, state$, depsMock)
+          .pipe(first())
+          .toPromise(),
+      ).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_DEPOSITED,
         tokenNetwork,
         partner,
@@ -469,10 +466,10 @@ describe('raidenEpics', () => {
 
     test('already channelMonitored with new$ partner ChannelNewDeposit event', async () => {
       const action = channelMonitored(tokenNetwork, partner, channelId),
-        curState = applyActions([
+        curState = [
           tokenMonitored(token, tokenNetwork, true),
           channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
-        ]);
+        ].reduce(raidenReducer, state);
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
 
@@ -489,10 +486,7 @@ describe('raidenEpics', () => {
         }),
       );
 
-      const result = await promise;
-
-      expect(result).toBeDefined();
-      expect(result).toMatchObject({
+      await expect(promise).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_DEPOSITED,
         tokenNetwork,
         partner,
@@ -504,10 +498,10 @@ describe('raidenEpics', () => {
 
     test("ensure multiple channelMonitored don't produce duplicated events", async () => {
       const multiple = 16;
-      const curState = applyActions([
+      const curState = [
         tokenMonitored(token, tokenNetwork, true),
         channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
-      ]);
+      ].reduce(raidenReducer, state);
       const action$ = from(
           range(multiple).map(() => channelMonitored(tokenNetwork, partner, channelId)),
         ),
@@ -538,11 +532,6 @@ describe('raidenEpics', () => {
       );
 
       const result = await promise;
-      // expect tokenNetworkContract.listenerCount to have been checked multiple times
-      expect(listenerCountSpy).toHaveBeenCalledTimes(multiple);
-      // but only one listener is registered
-      expect(listenerCountSpy).toHaveLastReturnedWith(1);
-
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         type: RaidenActionType.CHANNEL_DEPOSITED,
@@ -553,7 +542,44 @@ describe('raidenEpics', () => {
         totalDeposit: deposit,
       });
 
+      // expect tokenNetworkContract.listenerCount to have been checked multiple times
+      expect(listenerCountSpy).toHaveBeenCalledTimes(multiple);
+      // but only one listener is registered
+      expect(listenerCountSpy).toHaveLastReturnedWith(1);
+
       listenerCountSpy.mockRestore();
+    });
+
+    test('new$ partner ChannelClosed event', async () => {
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(channelMonitored(tokenNetwork, partner, channelId)),
+        state$ = of<RaidenState>(curState);
+
+      const promise = channelMonitoredEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      depsMock.provider.emit(
+        tokenNetworkContract.filters.ChannelClosed(channelId, null, null),
+        makeLog({
+          blockNumber: closeBlock,
+          transactionHash: '0xcloseTxHash',
+          filter: tokenNetworkContract.filters.ChannelClosed(channelId, partner, 11),
+        }),
+      );
+
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.CHANNEL_CLOSED,
+        tokenNetwork,
+        partner,
+        id: channelId,
+        participant: partner,
+        closeBlock,
+        txHash: '0xcloseTxHash',
+      });
     });
   });
 
@@ -566,43 +592,43 @@ describe('raidenEpics', () => {
       const action$ = of<RaidenActions>(channelDeposit(tokenNetwork, partner, deposit)),
         state$ = of<RaidenState>(state);
 
-      const result = await channelDepositEpic(action$, state$, depsMock).toPromise();
-
-      expect(result).toMatchObject({
+      await expect(
+        channelDepositEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_DEPOSIT_FAILED,
         tokenNetwork,
         partner,
+        error: expect.any(Error),
       });
-      expect(result.error).toBeInstanceOf(Error);
     });
 
     test('fails if channel.state !== "open"', async () => {
       // there's a channel already opened in state
       const action = channelDeposit(tokenNetwork, partner, deposit),
         // channel is in 'opening' state
-        curState = applyActions([
+        curState = [
           tokenMonitored(token, tokenNetwork, true),
           channelOpen(tokenNetwork, partner, settleTimeout),
-        ]);
+        ].reduce(raidenReducer, state);
       const action$ = of<RaidenActions>(action),
         state$ = of<RaidenState>(curState);
 
-      const result = await channelDepositEpic(action$, state$, depsMock).toPromise();
-
-      expect(result).toMatchObject({
+      await expect(
+        channelDepositEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_DEPOSIT_FAILED,
         tokenNetwork,
         partner,
+        error: expect.any(Error),
       });
-      expect(result.error).toBeInstanceOf(Error);
     });
 
     test('approve tx fails', async () => {
       // there's a channel already opened in state
-      const curState = applyActions([
+      const curState = [
         tokenMonitored(token, tokenNetwork, true),
         channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
-      ]);
+      ].reduce(raidenReducer, state);
       const action$ = of<RaidenActions>(channelDeposit(tokenNetwork, partner, deposit)),
         state$ = of<RaidenState>(curState);
 
@@ -612,7 +638,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -620,22 +646,22 @@ describe('raidenEpics', () => {
       };
       tokenContract.functions.approve.mockResolvedValueOnce(approveTx);
 
-      const result = await channelDepositEpic(action$, state$, depsMock).toPromise();
-
-      expect(result).toMatchObject({
+      await expect(
+        channelDepositEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_DEPOSIT_FAILED,
         tokenNetwork,
         partner,
+        error: expect.any(Error),
       });
-      expect(result.error).toBeInstanceOf(Error);
     });
 
     test('setTotalDeposit tx fails', async () => {
       // there's a channel already opened in state
-      const curState = applyActions([
+      const curState = [
         tokenMonitored(token, tokenNetwork, true),
         channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
-      ]);
+      ].reduce(raidenReducer, state);
       const action$ = of<RaidenActions>(channelDeposit(tokenNetwork, partner, deposit)),
         state$ = of<RaidenState>(curState);
 
@@ -645,7 +671,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -659,7 +685,7 @@ describe('raidenEpics', () => {
         nonce: 2,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -667,19 +693,19 @@ describe('raidenEpics', () => {
       };
       tokenNetworkContract.functions.setTotalDeposit.mockResolvedValueOnce(setTotalDeposiTx);
 
-      const result = await channelDepositEpic(action$, state$, depsMock).toPromise();
-
-      expect(result).toMatchObject({
+      await expect(
+        channelDepositEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
         type: RaidenActionType.CHANNEL_DEPOSIT_FAILED,
         tokenNetwork,
         partner,
+        error: expect.any(Error),
       });
-      expect(result.error).toBeInstanceOf(Error);
     });
 
     test('success', async () => {
       // there's a channel already opened in state
-      let curState = applyActions([
+      let curState = [
         tokenMonitored(token, tokenNetwork, true),
         channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
         // own initial deposit of 330
@@ -691,7 +717,7 @@ describe('raidenEpics', () => {
           bigNumberify(330),
           '0xinitialDepositTxHash',
         ),
-      ]);
+      ].reduce(raidenReducer, state);
       const action$ = of<RaidenActions>(channelDeposit(tokenNetwork, partner, deposit)),
         state$ = of<RaidenState>(curState);
 
@@ -701,7 +727,7 @@ describe('raidenEpics', () => {
         nonce: 1,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -715,7 +741,7 @@ describe('raidenEpics', () => {
         nonce: 2,
         gasLimit: bigNumberify(1e6),
         gasPrice: bigNumberify(2e10),
-        value: bigNumberify(0),
+        value: Zero,
         data: '0x',
         chainId: depsMock.network.chainId,
         from: depsMock.address,
@@ -723,11 +749,11 @@ describe('raidenEpics', () => {
       };
       tokenNetworkContract.functions.setTotalDeposit.mockResolvedValueOnce(setTotalDepositTx);
 
-      const result = await channelDepositEpic(action$, state$, depsMock).toPromise();
-
       // result is undefined on success as the respective channelDepositedAction is emitted by the
       // channelMonitoredEpic, which monitors the blockchain for ChannelNewDeposit events
-      expect(result).toBeUndefined();
+      await expect(
+        channelDepositEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toBeUndefined();
       expect(tokenContract.functions.approve).toHaveBeenCalledTimes(1);
       expect(approveTx.wait).toHaveBeenCalledTimes(1);
       expect(tokenNetworkContract.functions.setTotalDeposit).toHaveBeenCalledTimes(1);
@@ -739,6 +765,118 @@ describe('raidenEpics', () => {
         expect.anything(),
       );
       expect(setTotalDepositTx.wait).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('chanelCloseEpic', () => {
+    const openBlock = 121;
+
+    test('fails if there is no open channel with partner on tokenNetwork', async () => {
+      // there's a channel already opened in state
+      const action$ = of<RaidenActions>(channelClose(tokenNetwork, partner)),
+        state$ = of<RaidenState>(state);
+
+      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
+        {
+          type: RaidenActionType.CHANNEL_CLOSE_FAILED,
+          tokenNetwork,
+          partner,
+          error: expect.any(Error),
+        },
+      );
+    });
+
+    test('fails if channel.state !== "open"|"closing"', async () => {
+      // there's a channel already opened in state
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        // channel is in 'opening' state
+        channelOpen(tokenNetwork, partner, settleTimeout),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(channelClose(tokenNetwork, partner)),
+        state$ = of<RaidenState>(curState);
+
+      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
+        {
+          type: RaidenActionType.CHANNEL_CLOSE_FAILED,
+          tokenNetwork,
+          partner,
+          error: expect.any(Error),
+        },
+      );
+    });
+
+    test('closeChannel tx fails', async () => {
+      // there's a channel already opened in state
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(channelClose(tokenNetwork, partner)),
+        state$ = of<RaidenState>(curState);
+
+      const closeTx: ContractTransaction = {
+        hash: '0xcloseTxHash',
+        confirmations: 1,
+        nonce: 2,
+        gasLimit: bigNumberify(1e6),
+        gasPrice: bigNumberify(2e10),
+        value: Zero,
+        data: '0x',
+        chainId: depsMock.network.chainId,
+        from: depsMock.address,
+        wait: jest.fn().mockResolvedValue({ byzantium: true, status: 0 }),
+      };
+      tokenNetworkContract.functions.closeChannel.mockResolvedValueOnce(closeTx);
+
+      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
+        {
+          type: RaidenActionType.CHANNEL_CLOSE_FAILED,
+          tokenNetwork,
+          partner,
+          error: expect.any(Error),
+        },
+      );
+    });
+
+    test('success', async () => {
+      // there's a channel already opened in state
+      let curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(channelClose(tokenNetwork, partner)),
+        state$ = of<RaidenState>(curState);
+
+      const closeTx: ContractTransaction = {
+        hash: '0xcloseTxHash',
+        confirmations: 1,
+        nonce: 3,
+        gasLimit: bigNumberify(1e6),
+        gasPrice: bigNumberify(2e10),
+        value: Zero,
+        data: '0x',
+        chainId: depsMock.network.chainId,
+        from: depsMock.address,
+        wait: jest.fn().mockResolvedValue({ byzantium: true, status: 1 }),
+      };
+      tokenNetworkContract.functions.closeChannel.mockResolvedValueOnce(closeTx);
+
+      // result is undefined on success as the respective channelClosedAction is emitted by the
+      // channelMonitoredEpic, which monitors the blockchain for channel events
+      await expect(
+        channelCloseEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toBeUndefined();
+      expect(tokenNetworkContract.functions.closeChannel).toHaveBeenCalledTimes(1);
+      expect(tokenNetworkContract.functions.closeChannel).toHaveBeenCalledWith(
+        channelId,
+        partner,
+        expect.anything(), // balance_hash
+        expect.anything(), // nonce
+        expect.anything(), // additional_hash
+        expect.anything(), // signature
+      );
+      expect(closeTx.wait).toHaveBeenCalledTimes(1);
     });
   });
 });
