@@ -228,6 +228,34 @@ For consistency reason the [shorthand](https://vuejs.org/v2/guide/syntax.html#Sh
 <a @click="doSomething"> ... </a>
 ```
 
+##### Vue components
+
+When using custom vue components in templates make sure to use the kebab case name of the components.
+
+Don't do this:
+
+```html
+<template>
+  <v-container>
+    <NoValidProvider v-if="!providerDetected" />
+    <UserDenied v-else-if="userDenied" />
+    <WalletCore v-else />
+  </v-container>
+</template>
+```
+
+The for consistensy you should use:
+
+```html
+<template>
+  <v-container>
+    <no-valid-provider v-if="!providerDetected" />
+    <user-denied v-else-if="userDenied" />
+    <wallet-core v-else />
+  </v-container>
+</template>
+```
+
 ### Workflow
 
 When developing a feature, or a bug fix you should always start by writing a
