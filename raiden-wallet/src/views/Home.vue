@@ -1,8 +1,8 @@
 <template>
   <v-container>
-    <NoValidProvider v-if="!providerDetected" />
-    <UserDenied v-else-if="userDenied" />
-    <WalletCore v-else />
+    <no-valid-provider v-if="!providerDetected" />
+    <user-denied v-else-if="userDenied" />
+    <wallet-core v-else />
   </v-container>
 </template>
 
