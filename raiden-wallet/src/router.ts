@@ -15,6 +15,10 @@ export default new Router({
       component: Home
     },
     {
+      path: '*',
+      redirect: '/'
+    },
+    {
       path: '/about',
       name: 'about',
       // route level code-splitting
@@ -31,6 +35,11 @@ export default new Router({
       path: '/connect/:token?/:partner?',
       name: 'connect',
       component: () => import('./views/Connect.vue')
+    },
+    {
+      path: '/channels/:token',
+      name: 'channels',
+      component: () => import('./views/Channels.vue')
     }
   ]
 });

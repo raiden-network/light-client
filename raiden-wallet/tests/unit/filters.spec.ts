@@ -1,4 +1,5 @@
 import Filters from '@/filters';
+import { BigNumber } from 'ethers/utils';
 
 describe('filters', function() {
   describe('truncate', function() {
@@ -26,6 +27,26 @@ describe('filters', function() {
 
     it('should return the text to uppercase', function() {
       expect(Filters.upper('aaaa')).toEqual('AAAA');
+    });
+  });
+
+  describe('displayFormat', function() {
+    it('should display a smaller icon if the amount is less than 0.00001', function() {
+      expect(Filters.displayFormat(new BigNumber(10 ** 3), 18)).toEqual(
+        '<0.00001'
+      );
+    });
+
+    it('should display the amount cutoff at 5 decimal points', function() {
+      expect(
+        Filters.displayFormat(new BigNumber(1111110100000000), 18)
+      ).toEqual('0.00111');
+    });
+
+    it('should return the number formatted as it is if not enough decimals', function() {
+      expect(
+        Filters.displayFormat(new BigNumber('11100000000000000000'), 18)
+      ).toEqual('11.1');
     });
   });
 });

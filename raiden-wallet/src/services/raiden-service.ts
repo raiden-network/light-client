@@ -83,19 +83,19 @@ export default class RaidenService {
   }
 
   async openChannel(
-    tokenAddress: string,
-    hubAddress: string,
-    depositAmount: BigNumber
+    token: string,
+    partner: string,
+    amount: BigNumber
   ): Promise<boolean> {
     const raiden = this.raiden;
     try {
-      await raiden.openChannel(tokenAddress, hubAddress);
+      await raiden.openChannel(token, partner);
     } catch (e) {
       throw new OpenChannelFailed(e);
     }
 
     try {
-      await raiden.depositChannel(tokenAddress, hubAddress, depositAmount);
+      await raiden.depositChannel(token, partner, amount);
     } catch (e) {
       throw new DepositFailed(e);
     }
@@ -112,7 +112,25 @@ export default class RaidenService {
       setTimeout(() => resolve(), 2000);
     });
   }
+
+  async closeChannel(token: string, partner: string) {
+    try {
+      await this.raiden.closeChannel(token, partner);
+    } catch (e) {
+      throw new CloseChannelFailed(e);
+    }
+  }
+
+  async deposit(token: string, partner: string, amount: BigNumber) {
+    try {
+      await this.raiden.depositChannel(token, partner, amount);
+    } catch (e) {
+      throw new DepositFailed(e);
+    }
+  }
 }
+
+export class CloseChannelFailed extends Error {}
 
 export class OpenChannelFailed extends Error {}
 

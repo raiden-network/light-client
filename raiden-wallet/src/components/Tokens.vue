@@ -22,7 +22,7 @@
                 >
                   <v-list-tile-title>Leave Network</v-list-tile-title>
                 </v-list-tile>
-                <v-list-tile>
+                <v-list-tile :to="'/channels/' + token.address">
                   <v-list-tile-title>View Channels</v-list-tile-title>
                 </v-list-tile>
               </v-list>
@@ -32,7 +32,7 @@
       </template>
     </v-list>
     <confirmation-dialog
-      :display="displayModal"
+      :display="closeModal"
       @confirm="leaveConfirmed()"
       @cancel="leaveCancelled()"
     >

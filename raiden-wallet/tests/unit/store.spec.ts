@@ -50,4 +50,16 @@ describe('store', () => {
     model.open = 2;
     expect(store.getters.tokens).toEqual([model]);
   });
+
+  it('should return an empty list if token is not found', function() {
+    store.commit('updateChannels', TestData.mockChannels);
+    expect(store.getters.channels('0xNoAddress')).toEqual([]);
+  });
+
+  it('should return two channels for token', function() {
+    store.commit('updateChannels', TestData.mockChannels);
+    expect(
+      store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
+    ).toEqual([TestData.mockChannel1, TestData.mockChannel2]);
+  });
 });

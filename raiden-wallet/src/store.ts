@@ -48,7 +48,7 @@ const store: StoreOptions<RootState> = {
   },
   actions: {},
   getters: {
-    tokens: function(state): TokenModel[] {
+    tokens: function(state: RootState): TokenModel[] {
       const reducer = (
         acc: AccTokenModel,
         channel: RaidenChannel
@@ -61,6 +61,14 @@ const store: StoreOptions<RootState> = {
       return _.map(_.flatMap(state.channels), tokenChannels =>
         _.reduce(tokenChannels, reducer, createEmptyTokenModel())
       );
+    },
+    channels: (state: RootState) => (tokenAddress: string) => {
+      let channels: RaidenChannel[] = [];
+      const tokenChannels = state.channels[tokenAddress];
+      if (tokenChannels) {
+        channels = _.flatMap(tokenChannels);
+      }
+      return channels;
     }
   }
 };

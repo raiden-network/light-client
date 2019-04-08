@@ -1,7 +1,8 @@
 /* istanbul ignore file */
 import Vue from 'vue';
-import './plugins/vuetify';
-import './filters';
+import '@/plugins/vuetify';
+import '@/plugins/class-component.hooks';
+import '@/filters';
 import App from './App.vue';
 import router from './router';
 import store from './store';
