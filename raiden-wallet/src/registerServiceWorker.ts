@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+/* istanbul ignore file */
 
 import { register } from 'register-service-worker';
 
