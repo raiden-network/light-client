@@ -1,8 +1,10 @@
 <template>
-  <channel-list
-    :channels="channels($route.params.token)"
-    :token-address="$route.params.token"
-  ></channel-list>
+  <v-container>
+    <channel-list
+      :channels="channels($route.params.token)"
+      :token-address="$route.params.token"
+    ></channel-list>
+  </v-container>
 </template>
 
 <script lang="ts">

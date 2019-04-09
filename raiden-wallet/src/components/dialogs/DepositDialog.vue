@@ -27,16 +27,13 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { RaidenChannel } from 'raiden';
 import AmountInput from '@/components/AmountInput.vue';
-import { Token } from '@/model/token';
+import { Token } from '@/model/types';
 
 @Component({
   components: { AmountInput }
 })
 export default class DepositDialog extends Vue {
-  @Prop()
-  channel!: RaidenChannel;
   @Prop({ required: true })
   display!: boolean;
   @Prop({ required: true })

@@ -1,4 +1,4 @@
-import { Token } from '@/model/token';
+import { Token } from '@/model/types';
 import { ethers } from 'ethers';
 import { BigNumber } from 'ethers/utils';
 import { ChannelState, RaidenChannel, RaidenChannels } from 'raiden';
@@ -36,6 +36,8 @@ export class TestData {
     tokenNetwork: '0x111157460c0F41EfD9107239B7864c062aA8B978',
     totalDeposit: new BigNumber(10 ** 8)
   };
+
+  static mockChannelArray = [TestData.mockChannel1, TestData.mockChannel2];
 
   static mockChannels: RaidenChannels = {
     '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {

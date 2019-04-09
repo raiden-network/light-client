@@ -1,8 +1,8 @@
 import { Wrapper } from '@vue/test-utils';
-import AddressInput from '@/components/AddressInput.vue';
+import { Vue } from 'vue-property-decorator';
 
 export function mockInput(
-  wrapper: Wrapper<AddressInput>,
+  wrapper: Wrapper<Vue>,
   value: string = '',
   selector: string = 'input'
 ) {

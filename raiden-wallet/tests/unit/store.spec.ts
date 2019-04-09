@@ -1,6 +1,6 @@
 import store, { defaultState } from '@/store';
 import { TestData } from './data/mock-data';
-import { createEmptyTokenModel } from '@/model/token';
+import { createEmptyTokenModel } from '@/model/types';
 
 describe('store', () => {
   beforeEach(() => {

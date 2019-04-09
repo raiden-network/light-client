@@ -8,7 +8,7 @@ import Tokens from '@/components/Tokens.vue';
 import { TestData } from '../data/mock-data';
 import VueRouter from 'vue-router';
 import RaidenService from '@/services/raiden-service';
-import { createEmptyTokenModel } from '../../../src/model/token';
+import { createEmptyTokenModel } from '@/model/types';
 
 jest.mock('@/services/raiden-service');
 
@@ -72,12 +72,12 @@ describe('Tokens.vue', function() {
 
   it('should close the channel when confirmed', function() {
     raiden.leaveNetwork = jest.fn().mockReturnValue(null);
-    expect(wrapper.vm.$data.displayModal).toBe(false);
+    expect(wrapper.vm.$data.leaveModalVisible).toBe(false);
     wrapper.find('#overflow-0').trigger('click');
     wrapper.find('#leave-0').trigger('click');
-    expect(wrapper.vm.$data.displayModal).toBe(true);
+    expect(wrapper.vm.$data.leaveModalVisible).toBe(true);
     wrapper.find('#confirm').trigger('click');
-    expect(wrapper.vm.$data.displayModal).toBe(false);
+    expect(wrapper.vm.$data.leaveModalVisible).toBe(false);
     expect(raiden.leaveNetwork).toHaveBeenCalledTimes(1);
     expect(raiden.leaveNetwork).toHaveBeenCalledWith(
       TestData.mockChannel1.token
@@ -88,9 +88,9 @@ describe('Tokens.vue', function() {
     raiden.leaveNetwork = jest.fn().mockReturnValue(null);
     wrapper.find('#overflow-0').trigger('click');
     wrapper.find('#leave-0').trigger('click');
-    expect(wrapper.vm.$data.displayModal).toBe(true);
+    expect(wrapper.vm.$data.leaveModalVisible).toBe(true);
     wrapper.find('#cancel').trigger('click');
-    expect(wrapper.vm.$data.displayModal).toBe(false);
+    expect(wrapper.vm.$data.leaveModalVisible).toBe(false);
     expect(raiden.leaveNetwork).toHaveBeenCalledTimes(0);
   });
 });

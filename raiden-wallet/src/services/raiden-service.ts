@@ -1,10 +1,10 @@
-import { Raiden } from 'raiden';
+import { Raiden, RaidenChannel } from 'raiden';
 import { Store } from 'vuex';
 import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { Subscription } from 'rxjs';
 import { BalanceUtils } from '@/utils/balance-utils';
-import { Token } from '@/model/token';
+import { LeaveNetworkResult, Progress, Token } from '@/model/types';
 import { BigNumber } from 'ethers/utils';
 
 export default class RaidenService {
@@ -94,11 +94,7 @@ export default class RaidenService {
       throw new OpenChannelFailed(e);
     }
 
-    try {
-      await raiden.depositChannel(token, partner, amount);
-    } catch (e) {
-      throw new DepositFailed(e);
-    }
+    await this.deposit(token, partner, amount);
 
     return true;
   }
@@ -107,10 +103,35 @@ export default class RaidenService {
     await this.raiden.monitorToken(token);
   }
 
-  async leaveNetwork(address: string) {
-    await new Promise(resolve => {
-      setTimeout(() => resolve(), 2000);
-    });
+  async leaveNetwork(
+    address: string,
+    progress?: (progress: Progress) => void
+  ): Promise<LeaveNetworkResult> {
+    const channels: RaidenChannel[] = this.store.getters.channels(address);
+    const result = {
+      closed: 0,
+      failed: 0
+    };
+
+    const total = channels.length;
+    for (let i = 0; i < total; i++) {
+      if (progress) {
+        progress({
+          current: i + 1,
+          total: total
+        });
+      }
+
+      const channel = channels[i];
+      try {
+        await this.closeChannel(channel.token, channel.partner);
+        result.closed += 1;
+      } catch (e) {
+        result.failed += 1;
+      }
+    }
+
+    return result;
   }
 
   async closeChannel(token: string, partner: string) {

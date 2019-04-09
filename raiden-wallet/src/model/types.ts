@@ -1,4 +1,5 @@
 import { BigNumberish } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 export interface Token {
   readonly balance: BigNumberish;
@@ -29,14 +30,33 @@ export interface TokenModel extends AccTokenModel {
   readonly settled: number;
 }
 
-export function createEmptyTokenModel(): AccTokenModel {
-  return {
-    address: '',
-    opening: 0,
-    open: 0,
-    closing: 0,
-    closed: 0,
-    settling: 0,
-    settled: 0
-  };
+export interface LeaveNetworkResult {
+  readonly closed: number;
+  readonly failed: number;
 }
+
+export interface Progress {
+  readonly current: number;
+  readonly total: number;
+}
+
+export const createEmptyTokenModel = (): AccTokenModel => ({
+  address: '',
+  opening: 0,
+  open: 0,
+  closing: 0,
+  closed: 0,
+  settling: 0,
+  settled: 0
+});
+
+/**
+ * A placeholder token used on the views while awaiting for the actual
+ * token information to load.
+ */
+export const TokenPlaceholder: Token = {
+  balance: Zero,
+  decimals: 18,
+  units: '0.0',
+  address: ''
+};

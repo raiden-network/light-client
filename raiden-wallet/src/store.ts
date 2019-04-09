@@ -7,7 +7,7 @@ import {
   createEmptyTokenModel,
   AccTokenModel,
   TokenModel
-} from '@/model/token';
+} from '@/model/types';
 
 Vue.use(Vuex);
 

@@ -1,5 +1,5 @@
 <template>
-  <div id="container">
+  <v-container id="container">
     <v-layout align-center justify-center row>
       <v-flex xs10 md6 lg4>
         <h1 class="display-3 text-capitalize">Send Tokens</h1>
@@ -8,7 +8,7 @@
     <v-layout align-center justify-center row>
       <v-flex xs10 md6 lg4>
         <h3>Token</h3>
-        <p>{{ token }}</p>
+        <p>{{ types }}</p>
       </v-flex>
     </v-layout>
 
@@ -18,7 +18,7 @@
         <p>{{ partner }}</p>
       </v-flex>
     </v-layout>
-  </div>
+  </v-container>
 </template>
 
 <script lang="ts">

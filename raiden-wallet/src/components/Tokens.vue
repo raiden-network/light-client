@@ -32,7 +32,7 @@
       </template>
     </v-list>
     <confirmation-dialog
-      :display="closeModal"
+      :display="leaveModalVisible"
       @confirm="leaveConfirmed()"
       @cancel="leaveCancelled()"
     >
@@ -40,10 +40,14 @@
         Confirm channel close
       </template>
       <div v-if="selectedToken">
-        Are you sure you want to close the channel with hub
-        {{ selectedToken.partner }} for token {{ selectedToken.token }}?
+        Are you sure you want to close all your channels for token
+        {{ selectedToken.address }}?
       </div>
     </confirmation-dialog>
+    <progress-overlay
+      :display="loading"
+      message="Closing channels"
+    ></progress-overlay>
   </div>
 </template>
 
@@ -51,29 +55,40 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
-import { TokenModel } from '@/model/token';
+import { TokenModel } from '@/model/types';
+import ProgressOverlay from '@/components/ProgressOverlay.vue';
 
 @Component({
-  components: { ConfirmationDialog },
+  components: { ProgressOverlay, ConfirmationDialog },
   computed: mapGetters(['tokens'])
 })
 export default class Tokens extends Vue {
   tokens!: TokenModel[];
   selectedToken: TokenModel | null = null;
-  displayModal: boolean = false;
+  leaveModalVisible: boolean = false;
+
+  loading: boolean = false;
+
+  private dismissModal() {
+    this.leaveModalVisible = false;
+    this.selectedToken = null;
+  }
 
   leaveNetwork(token: TokenModel) {
     this.selectedToken = token;
-    this.displayModal = true;
+    this.leaveModalVisible = true;
   }
 
   async leaveConfirmed() {
-    this.displayModal = false;
-    await this.$raiden.leaveNetwork(this.selectedToken!.address);
+    const address = this.selectedToken!.address;
+    this.dismissModal();
+    this.loading = true;
+    await this.$raiden.leaveNetwork(address);
+    this.loading = false;
   }
 
   leaveCancelled() {
-    this.displayModal = false;
+    this.dismissModal();
   }
 }
 </script>

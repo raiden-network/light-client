@@ -24,7 +24,7 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { Token } from '@/model/token';
+import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({})

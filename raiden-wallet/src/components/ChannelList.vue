@@ -2,7 +2,7 @@
   <div>
     <v-list three-line>
       <template v-for="(channel, index) in channels">
-        <v-list-tile :key="channel.partner" class="connection">
+        <v-list-tile :key="channel.partner" class="channel">
           <v-list-tile-avatar>
             <img :src="blocky(channel.partner)" alt="Partner address blocky" />
           </v-list-tile-avatar>
@@ -33,7 +33,11 @@
                 >
                   <v-list-tile-title>Deposit</v-list-tile-title>
                 </v-list-tile>
-                <v-list-tile :id="'close-' + index" @click="close(channel)">
+                <v-list-tile
+                  v-if="channel.state === 'open'"
+                  :id="'close-' + index"
+                  @click="close(channel)"
+                >
                   <v-list-tile-title>Close</v-list-tile-title>
                 </v-list-tile>
               </v-list>
@@ -43,7 +47,7 @@
       </template>
     </v-list>
     <confirmation-dialog
-      :display="closeModal"
+      :display="closeModalVisible"
       @confirm="closeConfirmed()"
       @cancel="closeCancelled()"
     >
@@ -56,18 +60,13 @@
       </div>
     </confirmation-dialog>
     <deposit-dialog
-      :display="depositModal"
+      :display="depositModalVisible"
       :channel="selectedChannel"
       :token="token"
       @confirm="depositConfirmed($event)"
       @cancel="depositCancelled()"
     ></deposit-dialog>
-    <v-snackbar
-      :multi-line="mode === 'multi-line'"
-      :timeout="3000"
-      bottom
-      v-model="snackbar"
-    >
+    <v-snackbar :multi-line="true" :timeout="3000" bottom v-model="snackbar">
       {{ message }}
       <v-btn color="primary" flat @click="snackbar = false">
         Close
@@ -81,7 +80,7 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import { RaidenChannel } from 'raiden';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import DepositDialog from '@/components/dialogs/DepositDialog.vue';
-import { Token } from '@/model/token';
+import { Token, TokenPlaceholder } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({
@@ -93,10 +92,10 @@ export default class ChannelList extends Vue {
   @Prop({ required: true })
   tokenAddress!: string;
 
-  token: Token | null = null;
+  token: Token | null = TokenPlaceholder;
   selectedChannel: RaidenChannel | null = null;
-  closeModal: boolean = false;
-  depositModal: boolean = false;
+  closeModalVisible: boolean = false;
+  depositModalVisible: boolean = false;
   message: string = '';
   snackbar: boolean = false;
 
@@ -109,7 +108,7 @@ export default class ChannelList extends Vue {
   }
 
   closeCancelled() {
-    this.closeModal = false;
+    this.closeModalVisible = false;
   }
 
   async closeConfirmed() {
@@ -119,7 +118,7 @@ export default class ChannelList extends Vue {
     this.dismissCloseModal();
     try {
       await this.$raiden.closeChannel(token, partner);
-      this.message = 'Channel successful';
+      this.message = 'Channel close successful';
       this.snackbar = true;
     } catch (e) {
       this.message = 'Channel close failed';
@@ -128,13 +127,13 @@ export default class ChannelList extends Vue {
   }
 
   private dismissCloseModal() {
-    this.closeModal = false;
+    this.closeModalVisible = false;
     this.selectedChannel = null;
   }
 
   close(channel: RaidenChannel) {
     this.selectedChannel = channel;
-    this.closeModal = true;
+    this.closeModalVisible = true;
   }
 
   depositCancelled() {
@@ -142,7 +141,7 @@ export default class ChannelList extends Vue {
   }
 
   private dismissDepositModal() {
-    this.depositModal = false;
+    this.depositModalVisible = false;
     this.selectedChannel = null;
   }
 
@@ -167,7 +166,7 @@ export default class ChannelList extends Vue {
 
   deposit(channel: RaidenChannel) {
     this.selectedChannel = channel;
-    this.depositModal = true;
+    this.depositModalVisible = true;
   }
 }
 </script>
