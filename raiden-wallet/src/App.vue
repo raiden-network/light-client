@@ -41,11 +41,15 @@ export default class App extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import 'main';
 #wallet-wrapper {
   margin-top: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
+  @include respond-to(handheld) {
+    margin-top: 0;
+  }
 }
 
 #wallet {
@@ -53,6 +57,10 @@ export default class App extends Vue {
   width: 620px;
   border-radius: 14px;
   background-color: #1e1e1e;
+  @include respond-to(handheld) {
+    width: 320px;
+    border-radius: 0;
+  }
 }
 
 .application {
