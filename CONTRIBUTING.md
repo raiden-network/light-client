@@ -168,15 +168,13 @@ Code should be documented.
 
 The code style is enforced by [prettier](https://prettier.io/) which means that in most of the cases you don't actually need to do anything more than running the appropriate task.
 
-#### SDK
-
-#### Wallet
-
-To fix any codestyle issues in the wallet you just have to run:
+To fix any fixable codestyle issue in either SDK or Wallet, you may just run the following command on the respective folder:
 
 ```bash
 npm run lint
 ```
+
+Linting plugins available for modern IDEs are also useful in early spotting any mistakes and help keep the code quality level.
 
 ##### HTML formating
 
