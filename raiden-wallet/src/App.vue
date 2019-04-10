@@ -1,10 +1,14 @@
 <template>
-  <v-app>
-    <wallet-header></wallet-header>
-    <v-content>
-      <loading v-if="loading"></loading>
-      <router-view v-else></router-view>
-    </v-content>
+  <v-app dark>
+    <loading v-if="loading"></loading>
+    <div id="wallet-wrapper" v-else>
+      <div id="wallet">
+        <wallet-header></wallet-header>
+        <v-content>
+          <router-view></router-view>
+        </v-content>
+      </div>
+    </div>
   </v-app>
 </template>
 
@@ -35,3 +39,23 @@ export default class App extends Vue {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+#wallet-wrapper {
+  margin-top: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#wallet {
+  height: 884px;
+  width: 620px;
+  border-radius: 14px;
+  background-color: #1e1e1e;
+}
+
+.application {
+  background: linear-gradient(90deg, #313030 0%, #000000 100%);
+}
+</style>
