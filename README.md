@@ -12,7 +12,7 @@
 </h2>
 
 <h4 align="center">
-  A JavaScript SDK and wallet to make fast, cheap, scalable token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
+  JavaScript SDK and wallet to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
 </h4>
 
 <p align="center">
@@ -38,23 +38,26 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written on JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
-The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like Metamask (Desktop) or imWallet (mobile).
+The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
 ## About The Project
 
 The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, enabling near-instant, low-fee and scalable payments. It’s complementary to the Ethereum blockchain and works with any ERC20 compatible token.
 
-There is already a [Raiden client](https://github.com/raiden-network/raiden) available, which has been [released for mainnet in December 2018](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c).
+The Raiden client code is available [here](https://github.com/raiden-network/raiden) and has been [released for mainnet](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c) with a limited alpha release of the Raiden Network in December 2018.
 
-However, we want to create an easy to use SDK, which can be integrated by any JavaScript developer to make it easier to send tokens through the Raiden Network.
+The goal of the Raiden Light Client SDK is to provide an easy-to-use framework, which can be integrated by any JavaScript developer. The SDK will simplify the process of embedding and using the Raiden Network for token transfers in decentralized applications
 
-Here's why
+With the SDK we want to make your life as a dApp dev easier:
+
 * You should be able to interact with the Raiden Network easily with your dApp.
-* We want you to be enable your users to make token transfers using their consumer wallets like imToken or Metamask.
-* It should be possible to send tokens using low end devices.
+* We want to help you to enable your users to make token transfers using their consumer wallets like imToken or Metamask.
+* It should be possible to send tokens using low end devices, which would not be capable of running a full Raiden node.
 
 ## Built With
-To build a solid architecture we have are using the following main frameworks:
+
+To build a solid architecture we are using the following main frameworks:
+
 * [TypeScript](https://www.typescriptlang.org/)
 * [Redux](https://redux.js.org/)
 * [Vue.js](https://vuejs.org/)
@@ -63,7 +66,7 @@ To build a solid architecture we have are using the following main frameworks:
 
 ### Raiden Light Client SDK
 
-This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and Raiden Network.
+This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and the Raiden Network.
 
 Its target audience is blockchain and dApp developers looking into interacting with and performing payments through the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows it to reach the majority of current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other future languages and environments.
 
@@ -109,10 +112,12 @@ The Raiden Wallet is the demo and first dApp user of the SDK. It's a wallet-like
 
 ### Learn about Raiden
 
-If you haven't used Raiden yet, you can
+If you didn't use Raiden before, you can
+
+* Checkout the [developer portal](http://developer.raiden.network)
 * Look at the [documentation](https://raiden-network.readthedocs.io/en/stable/index.html)
-* Learn about it watching [Youtube videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
-* Read the posts on [Medium](https://medium.com/@raiden_network)
+* Learn more by watching explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
+* Read the blog posts on [Medium](https://medium.com/@raiden_network)
 
 ### Prerequisites
 
@@ -120,9 +125,10 @@ To run the code in this repository, you must have Node.js 10+ on your computer a
 
 ### SDK Installation
 
-```
+```bash
 npm install <raiden_npm_package>
 ```
+
 Then in your JavaScript or TypeScript project:
 
 ```typescript
@@ -167,9 +173,9 @@ required dependencies.
 ./sync-sdk.sh
 ```
 
- If for you have problems executing the script you to follow the setup manually.
+ If you have problems executing the script we recommend you to follow the setup manually.
 
- #### Build the Raiden SDK
+#### Build the Raiden SDK
 
  First you need to build the sdk. For this you have to go to the `raiden` directory and run the following commands.
 
@@ -212,9 +218,9 @@ web3 provider (e.g. Wallet apps with dApp support).
 
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-For more information you can check the [Contribution Guide](./CONTRIBUTING.md)
+Also have a look at the [Raiden Light Client Development Guide](./CONTRIBUTING.md) for more info.
 
 ## License
 
