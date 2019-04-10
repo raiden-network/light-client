@@ -13,12 +13,18 @@
       @mousedown="valueUpdated('mousedown', $event)"
       @mouseup="valueUpdated('mouseup', $event)"
       @select="valueUpdated('select', $event)"
-      class="dense-inputs"
+      background-color="transparent"
+      flat
       id="amount"
-      outline
-      placeholder="0.0"
+      placeholder="0.00"
+      solo
     >
     </v-text-field>
+    <span class="token-symbol">TKN</span>
+    <div class="status-icon-wrapper">
+      <v-icon class="status-icon" large>check_circle</v-icon>
+      <v-icon class="status-icon" large>error</v-icon>
+    </div>
   </fieldset>
 </template>
 
@@ -30,17 +36,17 @@ import { BalanceUtils } from '@/utils/balance-utils';
 @Component({})
 export default class AmountInput extends Vue {
   @Prop({ required: false })
-  label!: string;
+  label?: string;
   @Prop({})
   disabled!: boolean;
-  @Prop({ default: '0.0' })
+  @Prop({ default: '0.00' })
   value!: string;
   @Prop()
   token?: Token;
   @Prop({ default: false, type: Boolean })
   limit!: boolean;
 
-  amount: string = '0.0';
+  amount: string = '0.00';
   private static numericRegex = /^\d*[.,]?\d*$/;
 
   readonly rules = [
@@ -70,7 +76,7 @@ export default class AmountInput extends Vue {
     );
   }
 
-  private oldValue: string = '0.0';
+  private oldValue: string = '0.00';
   private oldSelectionStart: number | null = 0;
   private oldSelectionEnd: number | null = 0;
 
@@ -99,22 +105,67 @@ export default class AmountInput extends Vue {
 
 <style scoped lang="scss">
 #token-amount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 60px;
+  padding-bottom: 60px;
   border: 0;
+  margin-left: 76px;
 }
 
 $header-vertical-margin: 5rem;
 
 #token-amount /deep/ input {
-  font-size: 60px;
-  padding: 10px;
-  width: 100%;
-  color: #666;
-  border-radius: 7px 7px 7px 7px;
-  max-height: 80px;
-  font-weight: 300;
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 47px;
+  text-align: center;
+  max-height: 50px;
 }
 #token-amount /deep/ input:focus {
   outline: 0;
+}
+
+#token-amount /deep/ .v-text-field__details {
+  height: 36px;
+  padding-top: 4px;
+}
+
+#token-amount /deep/ .v-messages {
+  color: white !important;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 21px;
+  text-align: center;
+}
+
+.push-right {
+  width: 36px;
+}
+
+.token-symbol {
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 19px;
+  margin-top: -35px;
+  margin-right: 20px;
+}
+
+.status-icon-wrapper {
+  margin-top: -20px;
+  padding: 8px;
+}
+
+.status-icon {
+  color: #323232;
+  background: white;
+  border-radius: 50%;
+  line-height: 28px;
+  width: 28px;
 }
 
 .section {

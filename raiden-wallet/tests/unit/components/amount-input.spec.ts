@@ -21,7 +21,7 @@ describe('AmountInput.vue', function() {
 
     it('should show no validation messages', () => {
       const messages = wrapper.find('.v-messages__message');
-      expect(wrapper.props().value).toEqual('0.0');
+      expect(wrapper.props().value).toEqual('0.00');
       expect(messages.exists()).toBe(false);
     });
 

@@ -2,48 +2,51 @@
   <div id="container">
     <v-form v-model="valid">
       <v-layout align-center justify-center row>
-        <v-flex xs10 md6 lg4>
-          <h1 class="display-3 text-capitalize">Deposit</h1>
+        <v-flex xs10 md10 lg10>
+          <div class="screen-title">Open Channel</div>
         </v-flex>
       </v-layout>
 
       <v-layout align-center justify-center row>
-        <v-flex xs10 md6 lg4>
-          <h3>Token</h3>
-          <p>{{ token }}</p>
-        </v-flex>
-      </v-layout>
-
-      <v-layout align-center justify-center row>
-        <v-flex xs10 md6 lg4>
-          <h3>Hub</h3>
-          <p>{{ partner }}</p>
-        </v-flex>
-      </v-layout>
-
-      <v-layout align-center justify-center row fill-height>
-        <v-flex xs10 md6 lg4>
+        <v-flex xs10 md10 lg10>
           <amount-input
             :token="tokenInfo"
             v-model="deposit"
             limit
-            label="Amount"
           ></amount-input>
         </v-flex>
       </v-layout>
 
+      <v-layout align-center justify-center row>
+        <div class="divider"></div>
+      </v-layout>
+
+      <v-layout align-center justify-center row>
+        <v-flex xs10 md10 lg10 class="information">
+          <div class="information-label text-xs-left">Token</div>
+          <div class="information-description text-xs-left">{{ token }}</div>
+        </v-flex>
+      </v-layout>
+
+      <v-layout align-center justify-center row>
+        <v-flex xs10 md10 lg10 class="information">
+          <div class="information-label text-xs-left">Hub</div>
+          <div class="information-description text-xs-left">{{ partner }}</div>
+        </v-flex>
+      </v-layout>
+
       <v-layout align-center justify-center class="section">
-        <v-flex xs8 md5 lg3 class="text-xs-center">
+        <v-flex xs10 md10 lg10 class="text-xs-center">
           <v-btn
+            class="text-capitalize"
+            depressed
             id="open-channel"
             :disabled="!valid"
             :loading="loading"
-            color="green"
             large
             @click="openChannel()"
           >
-            <v-icon left dark>check_circle</v-icon>
-            Open
+            Make Deposit
           </v-btn>
         </v-flex>
       </v-layout>
@@ -74,7 +77,7 @@ export default class Deposit extends Vue {
   @Prop({ required: true })
   tokenInfo!: Token;
 
-  deposit: string = '0.0';
+  deposit: string = '0.00';
 
   valid: boolean = false;
   loading: boolean = false;
@@ -126,5 +129,52 @@ form:first-child {
 
 #container {
   height: 100%;
+}
+
+.screen-title {
+  margin-top: 30px;
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 24px;
+  line-height: 28px;
+  text-align: center;
+}
+
+.divider {
+  box-sizing: border-box;
+  height: 1px;
+  width: 500px;
+  border: 1px solid #696969;
+}
+
+.information {
+  padding-bottom: 34px;
+  padding-top: 34px;
+  .information-label {
+    color: #ffffff;
+    font-family: Roboto, sans-serif;
+    font-size: 24px;
+    line-height: 28px;
+    text-align: center;
+  }
+  .information-description {
+    margin-top: 12px;
+    color: #ffffff;
+    font-family: Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 19px;
+  }
+}
+
+#open-channel {
+  margin-top: 130px;
+  height: 40px;
+  width: 250px;
+  border-radius: 29px;
+  background-color: #000000 !important;
+}
+
+#open-channel:hover {
+  background-color: #0e0e0e !important;
 }
 </style>
