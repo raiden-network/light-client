@@ -158,13 +158,15 @@ export default class Deposit extends Vue {
   private navigateToSelectPaymentTarget() {
     this.$router.push({
       name: 'send',
-      params: { token: this.token, partner: this.partner }
+      params: { token: this.token }
     });
   }
 }
 </script>
 
 <style scoped lang="scss">
+@import '../scss/input-screen';
+
 form {
   height: 50vh;
   min-height: 500px;
@@ -176,41 +178,6 @@ form:first-child {
 
 #container {
   height: 100%;
-}
-
-.screen-title {
-  margin-top: 30px;
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 24px;
-  line-height: 28px;
-  text-align: center;
-}
-
-.divider {
-  box-sizing: border-box;
-  height: 1px;
-  width: 500px;
-  border: 1px solid #696969;
-}
-
-.information {
-  padding-bottom: 34px;
-  padding-top: 34px;
-  .information-label {
-    color: #ffffff;
-    font-family: Roboto, sans-serif;
-    font-size: 24px;
-    line-height: 28px;
-    text-align: center;
-  }
-  .information-description {
-    margin-top: 12px;
-    color: #ffffff;
-    font-family: Roboto, sans-serif;
-    font-size: 16px;
-    line-height: 19px;
-  }
 }
 
 #open-channel {

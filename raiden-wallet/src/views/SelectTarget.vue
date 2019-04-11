@@ -1,21 +1,19 @@
 <template>
   <v-container id="container">
     <v-layout align-center justify-center row>
-      <v-flex xs10 md6 lg4>
-        <h1 class="display-3 text-capitalize">Send Tokens</h1>
-      </v-flex>
-    </v-layout>
-    <v-layout align-center justify-center row>
-      <v-flex xs10 md6 lg4>
-        <h3>Token</h3>
-        <p>{{ types }}</p>
+      <v-flex xs10 md10 lg10>
+        <div class="screen-title">Select Payment Target</div>
       </v-flex>
     </v-layout>
 
     <v-layout align-center justify-center row>
-      <v-flex xs10 md6 lg4>
-        <h3>Hub</h3>
-        <p>{{ partner }}</p>
+      <div class="divider"></div>
+    </v-layout>
+
+    <v-layout align-center justify-center row>
+      <v-flex xs10 md10 lg10 class="information">
+        <div class="information-label text-xs-left">Token</div>
+        <div class="information-description text-xs-left">{{ token }}</div>
       </v-flex>
     </v-layout>
   </v-container>
@@ -32,8 +30,7 @@ export default class SendTokens extends Vue {
   mounted() {
     let route = this.$router.currentRoute;
     let params = route.params;
-    if (params.token && params.partner) {
-      this.partner = params.partner;
+    if (params.token) {
       this.token = params.token;
     }
   }
@@ -41,6 +38,7 @@ export default class SendTokens extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '../scss/input-screen';
 #container {
   height: 50vh;
   min-height: 500px;
