@@ -127,6 +127,33 @@ describe('RaidenService', () => {
     expect(progress).toHaveBeenCalledTimes(2);
   });
 
+  it('should return true and open channel open but skip deposit if balance is zero', async function() {
+    providerMock.mockResolvedValue({});
+    const openChannel = jest.fn().mockResolvedValue('0xtxhash');
+    const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
+    const raidenMock = mockRaiden({
+      openChannel: openChannel,
+      depositChannel: depositChannel
+    });
+    factory.mockResolvedValue(raidenMock);
+    await raidenService.connect();
+    await flushPromises();
+
+    const progress = jest.fn();
+
+    const result = await raidenService.openChannel(
+      '0xtoken',
+      '0xpartner',
+      Zero,
+      progress
+    );
+    expect(result).toBe(true);
+    expect(openChannel).toBeCalledTimes(1);
+    expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
+    expect(depositChannel).toBeCalledTimes(0);
+    expect(progress).toHaveBeenCalledTimes(2);
+  });
+
   it('should throw an exception when channel open fails', async function() {
     expect.assertions(1);
     providerMock.mockResolvedValue({});

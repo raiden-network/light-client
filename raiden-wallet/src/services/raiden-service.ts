@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { LeaveNetworkResult, Progress, Token } from '@/model/types';
 import { BigNumber } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 export default class RaidenService {
   private _raiden?: Raiden;
@@ -107,7 +108,10 @@ export default class RaidenService {
     }
 
     progressUpdater(2, 3);
-    await this.deposit(token, partner, amount);
+
+    if (amount.gt(Zero)) {
+      await this.deposit(token, partner, amount);
+    }
 
     return true;
   }

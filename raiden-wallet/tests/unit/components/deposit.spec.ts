@@ -1,3 +1,5 @@
+import { mockInput } from '../utils/interaction-utils';
+
 jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
 jest.useFakeTimers();
@@ -65,6 +67,7 @@ describe('Deposit.vue', function() {
 
   it('should had an error if deposit failed', async function() {
     service.openChannel = jest.fn().mockRejectedValue(new DepositFailed());
+    mockInput(wrapper, '0.0001');
     button.trigger('click');
     const deposit = wrapper.vm;
     await flushPromises();
