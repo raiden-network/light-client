@@ -5,6 +5,7 @@
         <div class="loading-wrapper">
           <div class="img-container">
             <v-img
+              id="logo"
               aspect-ratio="1"
               contain
               :src="require('../assets/logo.svg')"
@@ -37,6 +38,10 @@ export default class Loading extends Vue {}
 </script>
 
 <style lang="scss" scoped>
+#logo {
+  filter: invert(100%);
+}
+
 $wave-size: 2.5rem;
 $wave-horizontal-margin: 2rem;
 div#wave {
