@@ -3,7 +3,7 @@ import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { createLocalVue, shallowMount, Wrapper } from '@vue/test-utils';
-import SendTokens from '@/views/SendTokens.vue';
+import SendTokens from '@/views/SelectTarget.vue';
 import VueRouter, { Route } from 'vue-router';
 
 jest.mock('vue-router');
@@ -12,7 +12,7 @@ import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 
-describe('SendTokens.vue', function() {
+describe('SelectTarget.vue', function() {
   let wrapper: Wrapper<SendTokens>;
   let router: Mocked<VueRouter>;
 
@@ -38,13 +38,11 @@ describe('SendTokens.vue', function() {
   it('should populate the data properties on mount', async function() {
     const route = stub<Route>();
     route.params = {
-      token: '0xtoken',
-      partner: '0xpartner'
+      token: '0xtoken'
     };
     router.currentRoute = route;
     wrapper = vueFactory(router);
     await flushPromises();
     expect(wrapper.vm.$data.token).toEqual('0xtoken');
-    expect(wrapper.vm.$data.partner).toEqual('0xpartner');
   });
 });

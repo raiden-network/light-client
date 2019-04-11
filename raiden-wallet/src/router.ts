@@ -29,7 +29,7 @@ export default new Router({
     {
       path: '/send/:token/:partner',
       name: 'send',
-      component: () => import('./views/SendTokens.vue')
+      component: () => import('./views/SelectTarget.vue')
     },
     {
       path: '/connect/:token?/:partner?',
