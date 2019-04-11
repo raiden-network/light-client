@@ -38,6 +38,8 @@ import {
   ChannelCloseAction,
   ChannelClosedAction,
   ChannelCloseActionFailed,
+  ChannelSettleableAction,
+  RaidenShutdownAction,
   newBlock,
   tokenMonitored,
   tokenMonitorFailed,
@@ -48,7 +50,7 @@ import {
   channelDepositFailed,
   channelClosed,
   channelCloseFailed,
-  RaidenShutdownAction,
+  channelSettleable,
 } from './actions';
 import { SignatureZero } from '../constants';
 
@@ -122,6 +124,33 @@ export const raidenInitializationEpic = (
         ),
       ),
     ),
+  );
+
+/**
+ * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable
+ */
+export const newBlockEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+): Observable<ChannelSettleableAction> =>
+  action$.pipe(
+    ofType<RaidenActions, NewBlockAction>(RaidenActionType.NEW_BLOCK),
+    withLatestFrom(state$),
+    mergeMap(function*([{ blockNumber }, state]) {
+      for (const tokenNetwork in state.tokenNetworks) {
+        for (const partner in state.tokenNetworks[tokenNetwork]) {
+          const channel = state.tokenNetworks[tokenNetwork][partner];
+          if (
+            channel.state === ChannelState.closed &&
+            channel.settleTimeout && // closed channels always have settleTimeout & closeBlock set
+            channel.closeBlock &&
+            blockNumber > channel.closeBlock + channel.settleTimeout
+          ) {
+            yield channelSettleable(tokenNetwork, partner, blockNumber);
+          }
+        }
+      }
+    }),
   );
 
 /*
@@ -536,6 +565,7 @@ export const raidenEpics = (
     raidenInitializationEpic,
     stateOutputEpic,
     actionOutputEpic,
+    newBlockEpic,
     tokenMonitorEpic,
     tokenMonitoredEpic,
     channelOpenEpic,

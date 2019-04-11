@@ -18,6 +18,7 @@ export enum RaidenActionType {
   CHANNEL_CLOSE = 'channelClose',
   CHANNEL_CLOSED = 'channelClosed',
   CHANNEL_CLOSE_FAILED = 'channelCloseFailed',
+  CHANNEL_SETTLEABLE = 'channelSettleable',
 }
 
 // actions:
@@ -137,6 +138,13 @@ export interface ChannelCloseActionFailed extends RaidenActionFailed {
   tokenNetwork: string;
   partner: string;
   error: Error;
+}
+
+export interface ChannelSettleableAction extends RaidenAction {
+  type: RaidenActionType.CHANNEL_SETTLEABLE;
+  tokenNetwork: string;
+  partner: string;
+  settleableBlock: number;
 }
 
 // action factories:
@@ -298,6 +306,17 @@ export const channelCloseFailed = (
   error,
 });
 
+export const channelSettleable = (
+  tokenNetwork: string,
+  partner: string,
+  settleableBlock: number,
+): ChannelSettleableAction => ({
+  type: RaidenActionType.CHANNEL_SETTLEABLE,
+  tokenNetwork,
+  partner,
+  settleableBlock,
+});
+
 export type RaidenActions =
   | RaidenInitAction
   | RaidenShutdownAction
@@ -314,4 +333,5 @@ export type RaidenActions =
   | ChannelDepositActionFailed
   | ChannelCloseAction
   | ChannelClosedAction
-  | ChannelCloseActionFailed;
+  | ChannelCloseActionFailed
+  | ChannelSettleableAction;
