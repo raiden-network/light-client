@@ -531,7 +531,7 @@ export const raidenEpics = (
   const shutdownNotification = action$.pipe(
     ofType<RaidenActions, RaidenShutdownAction>(RaidenActionType.SHUTDOWN),
   );
-  // like combineEpics, but completes action$ and state$ when shutdownNotification fires
+  // like combineEpics, but completes action$, state$ and output$ when shutdownNotification emits
   return from([
     raidenInitializationEpic,
     stateOutputEpic,

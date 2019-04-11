@@ -14,6 +14,7 @@ import {
   channelClose,
   channelClosed,
   channelCloseFailed,
+  channelSettleable,
   newBlock,
   raidenInit,
   tokenMonitored,
@@ -254,6 +255,35 @@ describe('raidenReducer', () => {
         channelCloseFailed(tokenNetwork, partner, new Error('channelClose failed')),
       );
       expect(newState).toBe(state);
+    });
+  });
+
+  describe('channelSettleable', () => {
+    beforeEach(() => {
+      // channel in closing state
+      state = [
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
+        newBlock(closeBlock + settleTimeout + 1),
+      ].reduce(raidenReducer, state);
+    });
+
+    test('unknown channel', () => {
+      const newState = raidenReducer(
+        state,
+        channelSettleable(tokenNetwork, token, closeBlock + settleTimeout + 1),
+      );
+      expect(newState).toBe(state);
+    });
+
+    test('channel.state becomes "settleable" `settleTimeout` blocks after closeBlock', () => {
+      const newState = raidenReducer(
+        state,
+        channelSettleable(tokenNetwork, partner, closeBlock + settleTimeout + 1),
+      );
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: { [partner]: { state: ChannelState.settleable, id: channelId } },
+      });
     });
   });
 });

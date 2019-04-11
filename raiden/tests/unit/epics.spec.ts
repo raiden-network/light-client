@@ -24,11 +24,14 @@ import {
   channelDeposit,
   channelDeposited,
   channelClose,
+  channelClosed,
+  channelSettleable,
 } from 'raiden/store/actions';
 import {
   stateOutputEpic,
   actionOutputEpic,
   raidenEpics,
+  newBlockEpic,
   tokenMonitorEpic,
   tokenMonitoredEpic,
   channelOpenEpic,
@@ -130,6 +133,37 @@ describe('raidenEpics', () => {
           t: tokenMonitored(token, tokenNetwork, false),
           c: channelMonitored(tokenNetwork, partner, channelId),
           b: newBlock(127),
+        }),
+      );
+    }),
+  );
+
+  test(
+    'newBlockEpic',
+    marbles(m => {
+      const closeBlock = 125;
+      // state contains one channel in closed state
+      const newState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, 121, '0xopenTxHash'),
+        channelClosed(
+          tokenNetwork,
+          partner,
+          channelId,
+          depsMock.address,
+          closeBlock,
+          '0xcloseTxHash',
+        ),
+      ].reduce(raidenReducer, state);
+      /* first newBlock bigger than settleTimeout causes a channelSettleable to be emitted */
+      const action$ = m.cold('---b-B-|', {
+          b: newBlock(closeBlock + settleTimeout - 1),
+          B: newBlock(closeBlock + settleTimeout + 4),
+        }),
+        state$ = m.cold('--s-|', { s: newState });
+      m.expect(newBlockEpic(action$, state$)).toBeObservable(
+        m.cold('-----S-|', {
+          S: channelSettleable(tokenNetwork, partner, closeBlock + settleTimeout + 4),
         }),
       );
     }),
