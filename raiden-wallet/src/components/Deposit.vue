@@ -1,6 +1,6 @@
 <template>
   <div id="container">
-    <v-form v-model="valid">
+    <v-form autocomplete="off" v-model="valid">
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10>
           <div class="screen-title">Open Channel</div>
@@ -167,7 +167,7 @@ form:first-child {
 }
 
 #open-channel {
-  margin-top: 130px;
+  margin-top: 105px;
   height: 40px;
   width: 250px;
   border-radius: 29px;
