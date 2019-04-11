@@ -111,6 +111,11 @@ export default class AmountInput extends Vue {
 </script>
 
 <style scoped lang="scss">
+@import '../main';
+
+$header-vertical-margin: 5rem;
+$header-vertical-margin-mobile: 2rem;
+
 #token-amount {
   display: flex;
   align-items: center;
@@ -119,9 +124,14 @@ export default class AmountInput extends Vue {
   padding-bottom: 60px;
   border: 0;
   margin-left: 76px;
-}
 
-$header-vertical-margin: 5rem;
+  @include respond-to(handhelds) {
+    padding-top: 30px;
+    padding-bottom: 30px;
+    border: 0;
+    margin-left: 76px;
+  }
+}
 
 #token-amount /deep/ input {
   color: #ffffff;
@@ -149,10 +159,6 @@ $header-vertical-margin: 5rem;
   text-align: center;
 }
 
-.push-right {
-  width: 36px;
-}
-
 .token-symbol {
   color: #ffffff;
   font-family: Roboto, sans-serif;
@@ -178,5 +184,9 @@ $header-vertical-margin: 5rem;
 .section {
   margin-top: $header-vertical-margin;
   margin-bottom: $header-vertical-margin;
+  @include respond-to(handhelds) {
+    margin-top: $header-vertical-margin-mobile;
+    margin-bottom: $header-vertical-margin-mobile;
+  }
 }
 </style>

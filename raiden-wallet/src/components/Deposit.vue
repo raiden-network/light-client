@@ -166,14 +166,22 @@ export default class Deposit extends Vue {
 
 <style scoped lang="scss">
 @import '../scss/input-screen';
+@import '../main';
 
 form {
   height: 50vh;
   min-height: 500px;
+  @include respond-to(handhelds) {
+    height: 100%;
+    min-height: 100%;
+  }
 }
 
 form:first-child {
   margin-top: 20px;
+  @include respond-to(handhelds) {
+    margin-top: 10px;
+  }
 }
 
 #container {
@@ -186,6 +194,9 @@ form:first-child {
   width: 250px;
   border-radius: 29px;
   background-color: #000000 !important;
+  @include respond-to(handhelds) {
+    margin-top: 18px;
+  }
 }
 
 #open-channel:hover {

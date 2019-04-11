@@ -59,6 +59,8 @@ export default class WalletHeader extends Vue {
 </script>
 
 <style scoped lang="scss">
+@import '../main';
+
 .blockie {
   border-radius: 50%;
   box-sizing: border-box;
@@ -100,6 +102,10 @@ export default class WalletHeader extends Vue {
   border-radius: 14px;
   background-color: #141414;
   box-shadow: 5px 5px 15px 0 rgba(0, 0, 0, 0.3);
+  @include respond-to(handhelds) {
+    width: 100%;
+    border-radius: 0;
+  }
 }
 
 $row-horizontal-padding: 34px;
