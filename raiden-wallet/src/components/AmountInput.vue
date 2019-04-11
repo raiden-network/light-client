@@ -17,13 +17,14 @@
       flat
       id="amount"
       placeholder="0.00"
+      ref="input"
       solo
     >
     </v-text-field>
     <span class="token-symbol">TKN</span>
     <div class="status-icon-wrapper">
-      <v-icon class="status-icon" large>check_circle</v-icon>
-      <v-icon class="status-icon" large>error</v-icon>
+      <v-icon class="status-icon" v-if="!valid" large>error</v-icon>
+      <v-icon class="status-icon" v-else large>check_circle</v-icon>
     </div>
   </fieldset>
 </template>
@@ -46,6 +47,7 @@ export default class AmountInput extends Vue {
   @Prop({ default: false, type: Boolean })
   limit!: boolean;
 
+  valid: boolean = true;
   amount: string = '0.00';
   private static numericRegex = /^\d*[.,]?\d*$/;
 
@@ -87,6 +89,11 @@ export default class AmountInput extends Vue {
   valueUpdated(eventName: string, event: Event) {
     const target = event.target as HTMLInputElement;
     const value = target.value;
+
+    if (this.$refs.input) {
+      const input = this.$refs.input as any;
+      this.valid = input.valid;
+    }
 
     if (AmountInput.numericRegex.test(value)) {
       this.$emit(eventName, value);
@@ -151,12 +158,12 @@ $header-vertical-margin: 5rem;
   font-family: Roboto, sans-serif;
   font-size: 16px;
   line-height: 19px;
-  margin-top: -35px;
+  margin-top: -65px;
   margin-right: 20px;
 }
 
 .status-icon-wrapper {
-  margin-top: -20px;
+  margin-top: -40px;
   padding: 8px;
 }
 
