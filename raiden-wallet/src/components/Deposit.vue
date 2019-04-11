@@ -68,6 +68,7 @@ import { DepositFailed, OpenChannelFailed } from '@/services/raiden-service';
 import { StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
+import { Zero } from 'ethers/constants';
 
 @Component({
   components: { ProgressOverlay, AmountInput }
@@ -87,7 +88,9 @@ export default class Deposit extends Vue {
   snackbar: boolean = false;
   error: string = '';
 
-  readonly steps: StepDescription[] = [
+  steps: StepDescription[] = [];
+
+  protected readonly allSteps: StepDescription[] = [
     {
       title: 'Opening new Channel',
       description: 'Your channel is being opened.'
@@ -113,11 +116,19 @@ export default class Deposit extends Vue {
   async openChannel() {
     this.loading = true;
     const tokenInfo = this.tokenInfo;
+    const depositAmount = BalanceUtils.parse(this.deposit, tokenInfo.decimals);
+
+    if (depositAmount.eq(Zero)) {
+      this.steps = [this.allSteps[0]];
+    } else {
+      this.steps = this.allSteps;
+    }
+
     try {
       const success = await this.$raiden.openChannel(
         this.token,
         this.partner,
-        BalanceUtils.parse(this.deposit, tokenInfo.decimals),
+        depositAmount,
         progress => (this.current = progress.current - 1)
       );
 
