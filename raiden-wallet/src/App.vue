@@ -64,6 +64,6 @@ export default class App extends Vue {
 }
 
 .application {
-  background: linear-gradient(90deg, #313030 0%, #000000 100%);
+  background: $background-gradient;
 }
 </style>

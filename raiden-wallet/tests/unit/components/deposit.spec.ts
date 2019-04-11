@@ -1,5 +1,6 @@
 jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
+jest.useFakeTimers();
 
 import VueRouter from 'vue-router';
 import flushPromises from 'flush-promises';
@@ -78,6 +79,7 @@ describe('Deposit.vue', function() {
     service.openChannel = jest.fn().mockResolvedValue(true);
     button.trigger('click');
     await flushPromises();
+    jest.runAllTimers();
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(loading).toHaveBeenCalledTimes(2);
   });

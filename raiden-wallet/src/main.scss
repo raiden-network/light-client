@@ -1,6 +1,8 @@
 $break-small: 320px;
 $break-large: 1024px;
 
+$background-gradient: linear-gradient(90deg, #313030 0%, #000000 100%);
+
 @mixin respond-to($media) {
   @if $media == handhelds {
     @media only screen and (max-width: $break-small) { @content; }

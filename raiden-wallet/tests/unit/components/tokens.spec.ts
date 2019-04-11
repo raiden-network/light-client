@@ -46,6 +46,10 @@ describe('Tokens.vue', function() {
       store: new Store({
         getters
       }),
+      propsData: {
+        current: 0,
+        steps: []
+      },
       router: mockRouter,
       mocks: {
         $raiden: raiden

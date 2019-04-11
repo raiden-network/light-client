@@ -53,7 +53,10 @@
     </v-form>
     <progress-overlay
       :display="loading"
-      message="Channel is opening..."
+      :steps="steps"
+      :done-step="doneStep"
+      :current="current"
+      :done="done"
     ></progress-overlay>
   </div>
 </template>
@@ -62,7 +65,7 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import AmountInput from './AmountInput.vue';
 import { DepositFailed, OpenChannelFailed } from '@/services/raiden-service';
-import { Token } from '@/model/types';
+import { StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
 
@@ -84,6 +87,29 @@ export default class Deposit extends Vue {
   snackbar: boolean = false;
   error: string = '';
 
+  readonly steps: StepDescription[] = [
+    {
+      title: 'Opening new Channel',
+      description: 'Your channel is being opened.'
+    },
+    {
+      title: 'Transferring funds to token network',
+      description: 'Your funds are being deposited to the token network'
+    },
+    {
+      title: 'Depositing funds to the channel',
+      description: 'Your funds are being deposited to the channel'
+    }
+  ];
+
+  readonly doneStep: StepDescription = {
+    title: 'Channel open complete',
+    description:
+      'Your channel was opened successfully.<br/> You may now select a payment target'
+  };
+  current = 0;
+  done = false;
+
   async openChannel() {
     this.loading = true;
     const tokenInfo = this.tokenInfo;
@@ -91,14 +117,16 @@ export default class Deposit extends Vue {
       const success = await this.$raiden.openChannel(
         this.token,
         this.partner,
-        BalanceUtils.parse(this.deposit, tokenInfo.decimals)
+        BalanceUtils.parse(this.deposit, tokenInfo.decimals),
+        progress => (this.current = progress.current - 1)
       );
 
       if (success) {
-        this.$router.push({
-          name: 'send',
-          params: { token: this.token, partner: this.partner }
-        });
+        this.done = true;
+        setTimeout(() => {
+          this.loading = false;
+          this.navigateToSelectPaymentTarget();
+        }, 2000);
       }
     } catch (e) {
       this.error = '';
@@ -111,8 +139,16 @@ export default class Deposit extends Vue {
       if (this.error) {
         this.snackbar = true;
       }
+      this.done = false;
+      this.loading = false;
     }
-    this.loading = false;
+  }
+
+  private navigateToSelectPaymentTarget() {
+    this.$router.push({
+      name: 'send',
+      params: { token: this.token, partner: this.partner }
+    });
   }
 }
 </script>
