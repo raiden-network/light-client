@@ -90,6 +90,11 @@ export default class ProgressOverlay extends Vue {
   border-radius: 14px;
   background-color: #141414;
   box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
+  @include respond-to(handhelds) {
+    height: 100vh;
+    width: 100%;
+    border-radius: 0;
+  }
 }
 
 .card-content {

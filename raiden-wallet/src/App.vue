@@ -47,7 +47,7 @@ export default class App extends Vue {
   display: flex;
   align-items: center;
   justify-content: center;
-  @include respond-to(handheld) {
+  @include respond-to(handhelds) {
     margin-top: 0;
   }
 }
@@ -57,8 +57,9 @@ export default class App extends Vue {
   width: 620px;
   border-radius: 14px;
   background-color: #1e1e1e;
-  @include respond-to(handheld) {
-    width: 320px;
+  @include respond-to(handhelds) {
+    height: 100vh;
+    width: 100%;
     border-radius: 0;
   }
 }

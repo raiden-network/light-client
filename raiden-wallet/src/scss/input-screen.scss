@@ -1,3 +1,5 @@
+@import '../main';
+
 .screen-title {
   margin-top: 30px;
   color: #ffffff;
@@ -5,6 +7,9 @@
   font-size: 24px;
   line-height: 28px;
   text-align: center;
+  @include respond-to(handhelds) {
+    margin-top: 20px;
+  }
 }
 
 .divider {
@@ -30,5 +35,11 @@
     font-family: Roboto, sans-serif;
     font-size: 16px;
     line-height: 19px;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+  }
+  @include respond-to(handhelds) {
+    padding-bottom: 20px;
+    padding-top: 20px;
   }
 }
