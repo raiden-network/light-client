@@ -44,10 +44,7 @@
         {{ selectedToken.address }}?
       </div>
     </confirmation-dialog>
-    <progress-overlay
-      :display="loading"
-      message="Closing channels"
-    ></progress-overlay>
+    <progress-overlay :display="loading" :steps="steps"></progress-overlay>
   </div>
 </template>
 
@@ -55,7 +52,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
-import { TokenModel } from '@/model/types';
+import { StepDescription, TokenModel } from '@/model/types';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
 
 @Component({
@@ -68,6 +65,12 @@ export default class Tokens extends Vue {
   leaveModalVisible: boolean = false;
 
   loading: boolean = false;
+  steps: StepDescription[] = [
+    {
+      title: 'Leaving network',
+      description: 'Closing the channels'
+    }
+  ];
 
   private dismissModal() {
     this.leaveModalVisible = false;

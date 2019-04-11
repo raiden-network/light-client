@@ -40,6 +40,11 @@ export interface Progress {
   readonly total: number;
 }
 
+export interface StepDescription {
+  readonly title: string;
+  readonly description: string;
+}
+
 export const createEmptyTokenModel = (): AccTokenModel => ({
   address: '',
   opening: 0,

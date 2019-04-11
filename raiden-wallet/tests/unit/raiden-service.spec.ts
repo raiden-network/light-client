@@ -105,11 +105,14 @@ describe('RaidenService', () => {
     await raidenService.connect();
     await flushPromises();
 
+    const progress = jest.fn();
+
     const depositAmount = new BigNumber(100);
     const result = await raidenService.openChannel(
       '0xtoken',
       '0xpartner',
-      depositAmount
+      depositAmount,
+      progress
     );
     expect(result).toBe(true);
     expect(openChannel).toBeCalledTimes(1);
@@ -120,6 +123,8 @@ describe('RaidenService', () => {
       '0xpartner',
       depositAmount
     );
+
+    expect(progress).toHaveBeenCalledTimes(2);
   });
 
   it('should throw an exception when channel open fails', async function() {

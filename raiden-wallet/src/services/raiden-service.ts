@@ -85,15 +85,28 @@ export default class RaidenService {
   async openChannel(
     token: string,
     partner: string,
-    amount: BigNumber
+    amount: BigNumber,
+    progress?: (progress: Progress) => void
   ): Promise<boolean> {
+    const progressUpdater = (current: number, total: number) => {
+      if (progress) {
+        progress({
+          current,
+          total
+        });
+      }
+    };
+
     const raiden = this.raiden;
+    progressUpdater(1, 3);
+
     try {
       await raiden.openChannel(token, partner);
     } catch (e) {
       throw new OpenChannelFailed(e);
     }
 
+    progressUpdater(2, 3);
     await this.deposit(token, partner, amount);
 
     return true;
