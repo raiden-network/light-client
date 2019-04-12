@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash';
+import { cloneDeep, get } from 'lodash';
 import { Zero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
 
@@ -15,6 +15,9 @@ import {
   channelClosed,
   channelCloseFailed,
   channelSettleable,
+  channelSettle,
+  channelSettled,
+  channelSettleFailed,
   newBlock,
   raidenInit,
   tokenMonitored,
@@ -29,7 +32,8 @@ describe('raidenReducer', () => {
     channelId = 17,
     settleTimeout = 500,
     openBlock = 5123,
-    closeBlock = 5999;
+    closeBlock = 5999,
+    settleBlock = closeBlock + settleTimeout + 1;
 
   beforeEach(() => {
     state = cloneDeep({ ...initialState, address, blockNumber: 1337 });
@@ -260,30 +264,149 @@ describe('raidenReducer', () => {
 
   describe('channelSettleable', () => {
     beforeEach(() => {
-      // channel in closing state
+      // channel in "open" state
       state = [
         channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
-        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
-        newBlock(closeBlock + settleTimeout + 1),
       ].reduce(raidenReducer, state);
     });
 
     test('unknown channel', () => {
-      const newState = raidenReducer(
+      state = [
+        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
+        newBlock(settleBlock),
+      ].reduce(raidenReducer, state);
+      const newState = [channelSettleable(tokenNetwork, token, settleBlock)].reduce(
+        raidenReducer,
         state,
-        channelSettleable(tokenNetwork, token, closeBlock + settleTimeout + 1),
+      );
+      expect(newState).toBe(state);
+    });
+
+    test('channel not in "closed" state', () => {
+      state = [newBlock(settleBlock)].reduce(raidenReducer, state);
+      const newState = [channelSettleable(tokenNetwork, token, settleBlock)].reduce(
+        raidenReducer,
+        state,
       );
       expect(newState).toBe(state);
     });
 
     test('channel.state becomes "settleable" `settleTimeout` blocks after closeBlock', () => {
-      const newState = raidenReducer(
-        state,
-        channelSettleable(tokenNetwork, partner, closeBlock + settleTimeout + 1),
-      );
+      const newState = [
+        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
+        newBlock(settleBlock),
+        channelSettleable(tokenNetwork, partner, settleBlock),
+      ].reduce(raidenReducer, state);
       expect(newState.tokenNetworks).toMatchObject({
         [tokenNetwork]: { [partner]: { state: ChannelState.settleable, id: channelId } },
       });
+    });
+  });
+
+  describe('channelSettle & channelSettleFailed', () => {
+    beforeEach(() => {
+      // channel in "closed" state
+      state = [
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
+        newBlock(settleBlock),
+      ].reduce(raidenReducer, state);
+    });
+
+    test('unknown channel', () => {
+      state = [channelSettleable(tokenNetwork, partner, settleBlock)].reduce(raidenReducer, state);
+      const newState = [
+        channelSettle(tokenNetwork, token), // no channel with partner=token
+      ].reduce(raidenReducer, state);
+      expect(newState).toBe(state);
+    });
+
+    test('channel not in "settleable" state', () => {
+      // still in "closed" state
+      const newState = [channelSettle(tokenNetwork, partner)].reduce(raidenReducer, state);
+      expect(newState).toBe(state);
+    });
+
+    test('channel.state becomes "settling" after "channelSettle"', () => {
+      const newState = [
+        channelSettleable(tokenNetwork, partner, settleBlock), // state=settleable
+        channelSettle(tokenNetwork, partner),
+      ].reduce(raidenReducer, state);
+      expect(newState.tokenNetworks).toMatchObject({
+        [tokenNetwork]: { [partner]: { state: ChannelState.settling, id: channelId } },
+      });
+    });
+
+    test("channelSettleFailed doesn't change state", () => {
+      const newState = [
+        channelSettleable(tokenNetwork, token, settleBlock), // state=settleable
+        channelSettle(tokenNetwork, partner),
+      ].reduce(raidenReducer, state);
+      const error = new Error('settle tx failed');
+      const newState2 = raidenReducer(state, channelSettleFailed(tokenNetwork, partner, error));
+      expect(newState2).toBe(newState);
+    });
+  });
+
+  describe('channelSettled', () => {
+    beforeEach(() => {
+      // channel starts in "opened" state
+      state = [
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+      ].reduce(raidenReducer, state);
+    });
+
+    test('unknown channel', () => {
+      state = [
+        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
+        newBlock(settleBlock),
+      ].reduce(raidenReducer, state);
+      const newState = [
+        // no channel with partner=token
+        channelSettled(tokenNetwork, token, channelId, settleBlock, '0xsettleTxHash'),
+      ].reduce(raidenReducer, state);
+      expect(newState).toBe(state);
+    });
+
+    test('channel not in "closed|settleable|settling" state', () => {
+      // still in "opened" state
+      const newState = [
+        channelSettled(tokenNetwork, partner, channelId, settleBlock, '0xsettleTxHash'),
+      ].reduce(raidenReducer, state);
+      expect(newState).toBe(state);
+    });
+
+    test('success: "closed" => gone', () => {
+      const newState = [
+        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
+        newBlock(settleBlock),
+        channelSettled(tokenNetwork, partner, channelId, settleBlock, '0xsettleTxHash'),
+      ].reduce(raidenReducer, state);
+      expect(get(newState.tokenNetworks, [tokenNetwork, partner])).toBeUndefined();
+    });
+
+    test('success: "settleable" => gone', () => {
+      const newState = [
+        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
+        newBlock(settleBlock),
+        channelSettleable(tokenNetwork, token, settleBlock), // state=settleable
+        newBlock(settleBlock + 1),
+        channelSettled(tokenNetwork, partner, channelId, settleBlock + 1, '0xsettleTxHash'),
+      ].reduce(raidenReducer, state);
+      expect(get(newState.tokenNetworks, [tokenNetwork, partner])).toBeUndefined();
+    });
+
+    test('success: "settling" => gone', () => {
+      const newState = [
+        channelClosed(tokenNetwork, partner, channelId, address, closeBlock, '0xcloseTxHash'),
+        newBlock(settleBlock),
+        channelSettleable(tokenNetwork, token, settleBlock),
+        newBlock(settleBlock + 1),
+        channelSettle(tokenNetwork, token), // state=settling
+        newBlock(settleBlock + 2),
+        channelSettled(tokenNetwork, partner, channelId, settleBlock + 2, '0xsettleTxHash'),
+      ].reduce(raidenReducer, state);
+      expect(get(newState.tokenNetworks, [tokenNetwork, partner])).toBeUndefined();
     });
   });
 });
