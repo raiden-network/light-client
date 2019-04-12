@@ -42,12 +42,15 @@ import {
   ChannelDepositActionFailed,
   ChannelClosedAction,
   ChannelCloseActionFailed,
+  ChannelSettledAction,
+  ChannelSettleActionFailed,
   raidenInit,
   raidenShutdown,
   tokenMonitor,
   channelOpen,
   channelDeposit,
   channelClose,
+  channelSettle,
 } from './store';
 
 export class Raiden {
@@ -448,7 +451,7 @@ export class Raiden {
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
     const promise: Promise<string> = new Promise((resolve, reject) =>
-      // wait for the corresponding success or error TokenMonitorAction
+      // wait for the corresponding success or error
       this.action$
         .pipe(
           ofType<RaidenActions, ChannelDepositedAction | ChannelDepositActionFailed>(
@@ -466,6 +469,12 @@ export class Raiden {
 
   /**
    * Close channel between us and partner on tokenNetwork for token
+   * This method will fail if called on a channel not in 'opened' or 'closing' state.
+   * When calling this method on an 'opened' channel, its state becomes 'closing', and from there
+   * on, no payments can be performed on the channel. If for any reason the closeChannel
+   * transaction fails, channel's state stays as 'closing', and this method can be called again
+   * to retry sending 'closeChannel' transaction. After it's successful, channel becomes 'closed',
+   * and can be settled after 'settleTimeout' blocks (when it then becomes 'settleable').
    * @param token  Token address on currently configured token network registry
    * @param partner  Partner address
    * @returns  txHash of closeChannel call, iff it succeeded
@@ -475,7 +484,7 @@ export class Raiden {
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
     const promise: Promise<string> = new Promise((resolve, reject) =>
-      // wait for the corresponding success or error TokenMonitorAction
+      // wait for the corresponding success or error action
       this.action$
         .pipe(
           ofType<RaidenActions, ChannelClosedAction | ChannelCloseActionFailed>(
@@ -488,6 +497,38 @@ export class Raiden {
         .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
     );
     this.store.dispatch(channelClose(tokenNetwork, partner));
+    return promise;
+  }
+
+  /**
+   * Settle channel between us and partner on tokenNetwork for token
+   * This method will fail if called on a channel not in 'settleable' or 'settling' state.
+   * Channel becomes 'settleable' settleTimeout blocks after closed (detected automatically
+   * while Raiden Light Client is running or later on restart). When calling it, channel state
+   * becomes 'settling'. If for any reason transaction fails, it'll stay on this state, and this
+   * method can be called again to re-send a settleChannel transaction.
+   * @param token  Token address on currently configured token network registry
+   * @param partner  Partner address
+   * @returns  txHash of settleChannel call, iff it succeeded
+   */
+  public async settleChannel(token: string, partner: string): Promise<string> {
+    const state = this.state;
+    const tokenNetwork = state.token2tokenNetwork[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
+    const promise: Promise<string> = new Promise((resolve, reject) =>
+      // wait for the corresponding success or error action
+      this.action$
+        .pipe(
+          ofType<RaidenActions, ChannelSettledAction | ChannelSettleActionFailed>(
+            RaidenActionType.CHANNEL_SETTLED,
+            RaidenActionType.CHANNEL_SETTLE_FAILED,
+          ),
+          filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+          first(),
+        )
+        .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
+    );
+    this.store.dispatch(channelSettle(tokenNetwork, partner));
     return promise;
   }
 }

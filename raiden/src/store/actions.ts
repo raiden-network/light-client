@@ -19,6 +19,9 @@ export enum RaidenActionType {
   CHANNEL_CLOSED = 'channelClosed',
   CHANNEL_CLOSE_FAILED = 'channelCloseFailed',
   CHANNEL_SETTLEABLE = 'channelSettleable',
+  CHANNEL_SETTLE = 'channelSettle',
+  CHANNEL_SETTLED = 'channelSettled',
+  CHANNEL_SETTLE_FAILED = 'channelSettleFailed',
 }
 
 // actions:
@@ -145,6 +148,28 @@ export interface ChannelSettleableAction extends RaidenAction {
   tokenNetwork: string;
   partner: string;
   settleableBlock: number;
+}
+
+export interface ChannelSettleAction extends RaidenAction {
+  type: RaidenActionType.CHANNEL_SETTLE;
+  tokenNetwork: string;
+  partner: string;
+}
+
+export interface ChannelSettledAction extends RaidenAction {
+  type: RaidenActionType.CHANNEL_SETTLED;
+  tokenNetwork: string;
+  partner: string;
+  id: number;
+  settleBlock: number;
+  txHash: string;
+}
+
+export interface ChannelSettleActionFailed extends RaidenAction {
+  type: RaidenActionType.CHANNEL_SETTLE_FAILED;
+  tokenNetwork: string;
+  partner: string;
+  error: Error;
 }
 
 // action factories:
@@ -317,6 +342,38 @@ export const channelSettleable = (
   settleableBlock,
 });
 
+export const channelSettle = (tokenNetwork: string, partner: string): ChannelSettleAction => ({
+  type: RaidenActionType.CHANNEL_SETTLE,
+  tokenNetwork,
+  partner,
+});
+
+export const channelSettled = (
+  tokenNetwork: string,
+  partner: string,
+  id: number,
+  settleBlock: number,
+  txHash: string,
+): ChannelSettledAction => ({
+  type: RaidenActionType.CHANNEL_SETTLED,
+  tokenNetwork,
+  partner,
+  id,
+  settleBlock,
+  txHash,
+});
+
+export const channelSettleFailed = (
+  tokenNetwork: string,
+  partner: string,
+  error: Error,
+): ChannelSettleActionFailed => ({
+  type: RaidenActionType.CHANNEL_SETTLE_FAILED,
+  tokenNetwork,
+  partner,
+  error,
+});
+
 export type RaidenActions =
   | RaidenInitAction
   | RaidenShutdownAction
@@ -334,4 +391,7 @@ export type RaidenActions =
   | ChannelCloseAction
   | ChannelClosedAction
   | ChannelCloseActionFailed
-  | ChannelSettleableAction;
+  | ChannelSettleableAction
+  | ChannelSettleAction
+  | ChannelSettledAction
+  | ChannelSettleActionFailed;
