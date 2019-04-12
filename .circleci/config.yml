@@ -128,10 +128,21 @@ jobs:
 
   build_wallet:
     executor: base-executor
-    working_directory: *raiden_working_dir
+    working_directory: *wallet_working_dir
     steps:
       - attach_workspace: *attach_options
       - run: npm run build
+      - persist_to_workspace:
+          root: ~/src
+          paths:
+            - ./*
+
+  deploy_gh_pages:
+    executor: base-executor
+    working_directory: *wallet_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run: ./deploy.sh
 
 workflows:
   version: 2
@@ -164,3 +175,11 @@ workflows:
           requires:
             - lint_wallet
             - build_wallet
+      - deploy_gh_pages:
+          requires:
+            - test_wallet
+          filters:
+            branches:
+              only:
+                - master
+          
