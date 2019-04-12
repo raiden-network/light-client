@@ -44,6 +44,8 @@ fi
 
 mv ../dist/* ./
 
+echo 'wallet.raiden.network' >> CNAME
+
 # stage any changes and new files
 git add -A
 # now commit, ignoring branch gh-pages doesn't seem to work, so trying skip
