@@ -1,16 +1,18 @@
+/* istanbul ignore file */
 import Vue from 'vue';
-import './plugins/vuetify';
-import './filters';
+import '@/plugins/vuetify';
+import '@/plugins/class-component.hooks';
+import '@/filters';
 import App from './App.vue';
 import router from './router';
 import store from './store';
 import './registerServiceWorker';
-import { Web3Plugin } from '@/plugins/raiden';
+import { RaidenPlugin } from '@/plugins/raiden';
 import { IdenticonPlugin } from '@/plugins/identicon-plugin';
 
 Vue.config.productionTip = false;
 
-Vue.use(Web3Plugin);
+Vue.use(RaidenPlugin);
 Vue.use(IdenticonPlugin);
 
 new Vue({

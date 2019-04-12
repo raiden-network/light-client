@@ -1,12 +1,13 @@
-import flushPromises from 'flush-promises';
 import RaidenService from '@/services/raiden-service';
 import Vue from 'vue';
 import Vuex, { Store } from 'vuex';
 import Vuetify from 'vuetify';
 import { createLocalVue, shallowMount, Wrapper } from '@vue/test-utils';
 import Home from '@/views/Home.vue';
-import VueRouter from 'vue-router';
 import { RootState } from '@/types';
+import WalletCore from '@/components/WalletCore.vue';
+import { defaultState } from '@/store';
+import NoValidProvider from '@/components/NoValidProvider.vue';
 
 jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
@@ -17,30 +18,20 @@ Vue.use(Vuetify);
 
 describe('Home.vue', function() {
   let wrapper: Wrapper<Home>;
-  let router: Mocked<VueRouter>;
   let service: Mocked<RaidenService>;
+  let store: Store<RootState>;
 
   function vueFactory(
-    router: VueRouter,
     service: RaidenService,
+    store: Store<RootState>,
     data: {} = {}
   ): Wrapper<Home> {
     const localVue = createLocalVue();
     localVue.use(Vuex);
     return shallowMount(Home, {
       localVue,
-      store: new Store<RootState>({
-        state: {
-          loading: true,
-          defaultAccount: '',
-          accountBalance: '0.0',
-          providerDetected: true,
-          userDenied: false,
-          channels: {}
-        }
-      }),
+      store: store,
       mocks: {
-        $router: router,
         $raiden: service
       },
       propsData: data
@@ -48,16 +39,35 @@ describe('Home.vue', function() {
   }
 
   beforeEach(() => {
-    router = new VueRouter() as Mocked<VueRouter>;
+    store = new Store<RootState>({
+      state: defaultState(),
+      mutations: {
+        failed(state: RootState) {
+          state.providerDetected = false;
+        },
+        denied(state: RootState) {
+          state.userDenied = true;
+        }
+      }
+    });
+    wrapper = vueFactory(service, store);
   });
 
   afterEach(() => {
     jest.resetAllMocks();
   });
 
-  it('should redirect to connect if everything is ok', async function() {
-    wrapper = vueFactory(router, service);
-    await flushPromises();
-    expect(router.push).toHaveBeenCalledTimes(1);
+  it('should display wallet core if everything is ok', function() {
+    expect(wrapper.find(WalletCore)).toBeTruthy();
+  });
+
+  it('should display no provider if no provider detected', function() {
+    store.commit('failed');
+    expect(wrapper.find(NoValidProvider)).toBeTruthy();
+  });
+
+  it('should display a user denied message if user denied the provider connection', function() {
+    store.commit('denied');
+    expect(wrapper.find(NoValidProvider)).toBeTruthy();
   });
 });

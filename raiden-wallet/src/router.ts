@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import Vue from 'vue';
 import Router from 'vue-router';
 import Home from './views/Home.vue';
@@ -12,6 +13,10 @@ export default new Router({
       path: '/',
       name: 'home',
       component: Home
+    },
+    {
+      path: '*',
+      redirect: '/'
     },
     {
       path: '/about',
@@ -30,6 +35,11 @@ export default new Router({
       path: '/connect/:token?/:partner?',
       name: 'connect',
       component: () => import('./views/Connect.vue')
+    },
+    {
+      path: '/channels/:token',
+      name: 'channels',
+      component: () => import('./views/Channels.vue')
     }
   ]
 });

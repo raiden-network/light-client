@@ -1,41 +1,44 @@
 <template>
-  <deposit :token="token" :partner="partner" :tokenInfo="tokenInfo"></deposit>
+  <v-container>
+    <deposit :token="token" :partner="partner" :tokenInfo="tokenInfo"></deposit>
+  </v-container>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import AddressUtils from '@/utils/address-utils';
 import Deposit from '@/components/Deposit.vue';
-import { Token } from '@/model/token';
+import { Token, TokenPlaceholder } from '@/model/types';
 
 @Component({
   components: { Deposit }
 })
 export default class Connect extends Vue {
-  token: string = '0xd0A1E359811322d97991E03f863a0C30C2cF029C';
-  partner: string = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
-  tokenInfo: Token | null = null;
+  token: string = '';
+  partner: string = '';
+  tokenInfo: Token | null = TokenPlaceholder;
 
-  private async loadTokenInfo(tokenAddress: string) {
-    if (tokenAddress && !AddressUtils.isAddress(tokenAddress)) {
-      return null;
-    }
-
-    return this.$raiden.getToken(tokenAddress);
-  }
-
-  async mounted() {
-    this.tokenInfo = await this.loadTokenInfo(this.token);
-    let route = this.$router.currentRoute;
-    let params = route.params;
+  async created() {
+    const route = this.$router.currentRoute;
+    const params = route.params;
     if (!params.token || !params.partner) {
       this.$router.push({
         name: 'connect',
-        params: { token: this.token, partner: this.partner }
+        params: {
+          token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+          partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
+        }
       });
-    } else {
-      await this.$raiden.monitorToken(this.token);
     }
+  }
+
+  async mounted() {
+    const route = this.$router.currentRoute;
+    const params = route.params;
+    this.token = params.token;
+    this.partner = params.partner;
+
+    this.tokenInfo = await this.$raiden.getToken(this.token);
+    await this.$raiden.monitorToken(this.token);
   }
 }
 </script>

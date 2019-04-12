@@ -48,15 +48,10 @@
         </v-flex>
       </v-layout>
     </v-form>
-    <div id="overlay" v-if="loading">
-      <v-progress-circular
-        :size="70"
-        :width="7"
-        color="blue"
-        indeterminate
-      ></v-progress-circular>
-      <p id="message">Channel is opening...</p>
-    </div>
+    <progress-overlay
+      :display="loading"
+      message="Channel is opening..."
+    ></progress-overlay>
   </div>
 </template>
 
@@ -64,19 +59,20 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import AmountInput from './AmountInput.vue';
 import { DepositFailed, OpenChannelFailed } from '@/services/raiden-service';
-import { Token } from '@/model/token';
+import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
+import ProgressOverlay from '@/components/ProgressOverlay.vue';
 
 @Component({
-  components: { AmountInput }
+  components: { ProgressOverlay, AmountInput }
 })
 export default class Deposit extends Vue {
   @Prop({ required: true })
   token!: string;
   @Prop({ required: true })
   partner!: string;
-  @Prop()
-  tokenInfo?: Token;
+  @Prop({ required: true })
+  tokenInfo!: Token;
 
   deposit: string = '0.0';
 
@@ -88,9 +84,6 @@ export default class Deposit extends Vue {
   async openChannel() {
     this.loading = true;
     const tokenInfo = this.tokenInfo;
-    if (!tokenInfo) {
-      throw new Error('no token info');
-    }
     try {
       const success = await this.$raiden.openChannel(
         this.token,
@@ -133,27 +126,5 @@ form:first-child {
 
 #container {
   height: 100%;
-}
-
-#overlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 9000;
-}
-
-#message {
-  color: white;
-  font-size: 2rem;
-  margin-top: 2rem;
 }
 </style>

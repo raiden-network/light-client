@@ -1,6 +1,6 @@
 import { BigNumber } from 'ethers/utils';
 import { utils } from 'ethers';
-import { Token } from '@/model/token';
+import { Token } from '@/model/types';
 
 export class BalanceUtils {
   static toEth(wei: BigNumber): string {

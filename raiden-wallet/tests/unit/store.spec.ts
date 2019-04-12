@@ -1,15 +1,10 @@
-import store from '@/store';
+import store, { defaultState } from '@/store';
+import { TestData } from './data/mock-data';
+import { createEmptyTokenModel } from '@/model/types';
 
 describe('store', () => {
   beforeEach(() => {
-    store.replaceState({
-      loading: true,
-      defaultAccount: '',
-      accountBalance: '0.0',
-      providerDetected: true,
-      userDenied: false,
-      channels: {}
-    });
+    store.replaceState(defaultState());
   });
 
   it('should change the loading state after a loadComplete mutation', function() {
@@ -44,12 +39,27 @@ describe('store', () => {
 
   it('should change the channel state after an updateChannel mutation', function() {
     expect(store.state.channels).toEqual({});
-    const payload = {
-      '0xcontract': {
-        '0xtoken': []
-      }
-    };
-    store.commit('updateChannels', payload);
-    expect(store.state.channels).toEqual(payload);
+    store.commit('updateChannels', TestData.mockChannels);
+    expect(store.state.channels).toEqual(TestData.mockChannels);
+  });
+
+  it('should return a list of open channels and tokens', function() {
+    store.commit('updateChannels', TestData.mockChannels);
+    const model = createEmptyTokenModel();
+    model.address = TestData.mockChannel1.token;
+    model.open = 2;
+    expect(store.getters.tokens).toEqual([model]);
+  });
+
+  it('should return an empty list if token is not found', function() {
+    store.commit('updateChannels', TestData.mockChannels);
+    expect(store.getters.channels('0xNoAddress')).toEqual([]);
+  });
+
+  it('should return two channels for token', function() {
+    store.commit('updateChannels', TestData.mockChannels);
+    expect(
+      store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
+    ).toEqual([TestData.mockChannel1, TestData.mockChannel2]);
   });
 });
