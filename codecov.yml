@@ -4,12 +4,20 @@ coverage:
   precision: 2
 
   status: 
+    patch:
+      default:
+        target: 85%
+        threshold: 1.00%
     project: 
       default: off
       wallet:
         flags: wallet
+        target: 85%
+        threshold: 1.00%
       sdk:
         flags: sdk
+        target: 85%
+        threshold: 1.00%
   
 flags:
   wallet:
