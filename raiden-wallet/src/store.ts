@@ -54,7 +54,7 @@ const store: StoreOptions<RootState> = {
         channel: RaidenChannel
       ): AccTokenModel => {
         acc.address = channel.token;
-        acc[channel.state] += 1;
+        (acc[channel.state] as number) += 1;
         return acc;
       };
 
