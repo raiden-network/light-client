@@ -42,7 +42,7 @@ else
     git checkout --orphan gh-pages
 fi
 
-mv ../dist ./
+mv ../dist/* ./
 
 # stage any changes and new files
 git add -A
