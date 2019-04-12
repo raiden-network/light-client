@@ -90,6 +90,7 @@ export default class AmountInput extends Vue {
     const target = event.target as HTMLInputElement;
     const value = target.value;
 
+    /* istanbul ignore else */
     if (this.$refs.input) {
       const input = this.$refs.input as any;
       this.valid = input.valid;
