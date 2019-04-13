@@ -1,6 +1,6 @@
 import { first, filter } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
-import { parseEther, parseUnits, bigNumberify } from 'ethers/utils';
+import { parseEther, parseUnits, bigNumberify, BigNumber } from 'ethers/utils';
 import { get } from 'lodash';
 
 import { TestProvider } from './provider';
@@ -101,9 +101,24 @@ describe('Raiden', () => {
     test('success', async () => {
       expect.assertions(1);
       await raiden.monitorToken(token);
-      await expect(raiden.getTokenBalance(token)).resolves.toEqual({
-        balance: parseUnits('1000', 18),
+      await expect(raiden.getTokenBalance(token)).resolves.toEqual(parseUnits('1000', 18));
+    });
+  });
+
+  describe('getTokenInfo', () => {
+    test('non-monitored token', async () => {
+      expect.assertions(1);
+      await expect(raiden.getTokenInfo(token)).rejects.toThrow();
+    });
+
+    test('success', async () => {
+      expect.assertions(1);
+      await raiden.monitorToken(token);
+      await expect(raiden.getTokenInfo(token)).resolves.toEqual({
+        totalSupply: expect.any(BigNumber),
         decimals: 18,
+        name: 'TestToken',
+        symbol: 'TKN',
       });
     });
   });

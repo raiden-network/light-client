@@ -6,7 +6,7 @@ import { Middleware, applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, ofType } from 'redux-observable';
 import { createLogger } from 'redux-logger';
 
-import { debounce, findKey, transform } from 'lodash';
+import { debounce, findKey, transform, constant } from 'lodash';
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
 import { first, filter, map } from 'rxjs/operators';
 
@@ -23,7 +23,14 @@ import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 
-import { ContractsInfo, RaidenContracts, RaidenEpicDeps, RaidenChannels, Storage } from './types';
+import {
+  ContractsInfo,
+  RaidenContracts,
+  RaidenEpicDeps,
+  RaidenChannels,
+  Storage,
+  TokenInfo,
+} from './types';
 import {
   RaidenState,
   RaidenStateType,
@@ -60,6 +67,7 @@ export class Raiden {
   private readonly store: Store<RaidenState, RaidenActions>;
   private readonly contractsInfo: ContractsInfo;
   private contracts: RaidenContracts;
+  private readonly tokenInfo: { [token: string]: TokenInfo } = {};
 
   private readonly action$: Observable<RaidenActions>;
   public readonly state$: Observable<RaidenState>;
@@ -314,30 +322,37 @@ export class Raiden {
    * Get token balance and token decimals for given address or self
    * @param token  Token address to fetch balance. Must be one of the monitored tokens.
    * @param address  Optional target address. If omitted, gets own balance
-   * @returns  Object containing properties 'balance' in wei as BigNumber and 'decimals' as number
+   * @returns  BigNumber containing address's token balance
    */
-  public async getTokenBalance(
-    token: string,
-    address?: string,
-  ): Promise<{ balance: BigNumber; decimals: number }> {
+  public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
     if (!(token in this.state.token2tokenNetwork))
       throw new Error(`token "${token}" not monitored`);
     const tokenContract = this.getTokenContract(token);
 
-    async function getDecimals(): Promise<number> {
-      try {
-        let decimals = await tokenContract.functions.decimals();
-        if (!decimals) throw 'no decimals';
-        return decimals;
-      } catch (err) {
-        return 18;
-      }
+    return tokenContract.functions.balanceOf(address || this.address);
+  }
+
+  /**
+   * Get token information: totalSupply, decimals, name and symbol
+   * Rejects only if 'token' contract doesn't define totalSupply and decimals methods.
+   * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
+   * very common and defined on most token contracts.
+   */
+  public async getTokenInfo(token: string): Promise<TokenInfo> {
+    /* tokenInfo isn't in state as it isn't relevant for being preserved, it's merely a cache */
+    if (!(token in this.state.token2tokenNetwork))
+      throw new Error(`token "${token}" not monitored`);
+    if (!(token in this.tokenInfo)) {
+      const tokenContract = this.getTokenContract(token);
+      const [totalSupply, decimals, name, symbol] = await Promise.all([
+        tokenContract.functions.totalSupply(),
+        tokenContract.functions.decimals(),
+        tokenContract.functions.name().catch(constant(undefined)),
+        tokenContract.functions.symbol().catch(constant(undefined)),
+      ]);
+      this.tokenInfo[token] = { totalSupply, decimals, name, symbol };
     }
-    const [balance, decimals] = await Promise.all([
-      tokenContract.functions.balanceOf(address || this.address),
-      getDecimals(),
-    ]);
-    return { balance, decimals };
+    return this.tokenInfo[token];
   }
 
   /**
