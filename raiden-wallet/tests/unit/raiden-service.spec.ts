@@ -258,22 +258,6 @@ describe('RaidenService', () => {
     raidenService.disconnect();
   });
 
-  it('should start monitoring the token', async function() {
-    const monitorToken = jest.fn().mockResolvedValue(null);
-    providerMock.mockResolvedValue({});
-    factory.mockResolvedValue(
-      mockRaiden({
-        monitorToken: monitorToken
-      })
-    );
-
-    await raidenService.connect();
-    await flushPromises();
-    await raidenService.monitorToken('0xtoken');
-    expect(monitorToken).toHaveBeenCalledWith('0xtoken');
-    expect(monitorToken).toHaveBeenCalledTimes(1);
-  });
-
   it('should resolve successfully on channel close', async function() {
     const closeChannel = jest.fn().mockResolvedValue('0xthash');
     providerMock.mockResolvedValue({});

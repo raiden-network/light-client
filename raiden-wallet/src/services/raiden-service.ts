@@ -117,10 +117,6 @@ export default class RaidenService {
     return true;
   }
 
-  async monitorToken(token: string) {
-    await this.raiden.monitorToken(token);
-  }
-
   async leaveNetwork(
     address: string,
     progress?: (progress: Progress) => void
