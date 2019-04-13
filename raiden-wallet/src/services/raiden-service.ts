@@ -66,11 +66,12 @@ export default class RaidenService {
   }
 
   async getToken(tokenAddress: string): Promise<Token | null> {
+    const raiden = this.raiden;
     try {
       // TODO: also destruct name, symbol from getTokenInfo resolved value
       const [balance, { decimals }] = await Promise.all([
-        this.raiden.getTokenBalance(tokenAddress),
-        this.raiden.getTokenInfo(tokenAddress),
+        raiden.getTokenBalance(tokenAddress),
+        raiden.getTokenInfo(tokenAddress),
       ]);
       return {
         balance: balance,
