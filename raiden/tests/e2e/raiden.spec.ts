@@ -35,6 +35,8 @@ describe('Raiden', () => {
     snapId = await provider.snapshot();
     storage = new MockStorage();
     raiden = await Raiden.create(provider, 0, storage, info);
+    // wait token register to be fetched
+    await raiden.getTokenList();
   });
 
   afterEach(() => {
@@ -95,12 +97,11 @@ describe('Raiden', () => {
   describe('getTokenBalance', () => {
     test('non-monitored token', async () => {
       expect.assertions(1);
-      await expect(raiden.getTokenBalance(token)).rejects.toThrow();
+      await expect(raiden.getTokenBalance(partner)).rejects.toThrow();
     });
 
     test('success', async () => {
       expect.assertions(1);
-      await raiden.monitorToken(token);
       await expect(raiden.getTokenBalance(token)).resolves.toEqual(parseUnits('1000', 18));
     });
   });
@@ -108,12 +109,11 @@ describe('Raiden', () => {
   describe('getTokenInfo', () => {
     test('non-monitored token', async () => {
       expect.assertions(1);
-      await expect(raiden.getTokenInfo(token)).rejects.toThrow();
+      await expect(raiden.getTokenInfo(partner)).rejects.toThrow();
     });
 
     test('success', async () => {
       expect.assertions(1);
-      await raiden.monitorToken(token);
       await expect(raiden.getTokenInfo(token)).resolves.toEqual({
         totalSupply: expect.any(BigNumber),
         decimals: 18,
@@ -123,22 +123,9 @@ describe('Raiden', () => {
     });
   });
 
-  describe('monitorToken', () => {
-    test('fail', async () => {
-      expect.assertions(1);
-      await expect(raiden.monitorToken(tokenNetwork)).rejects.toThrow();
-    });
-
-    test('success', async () => {
-      expect.assertions(1);
-      await expect(raiden.monitorToken(token)).resolves.toBe(tokenNetwork);
-    });
-  });
-
   describe('openChannel', () => {
     test('tx fail', async () => {
       expect.assertions(1);
-      await raiden.monitorToken(token);
       // settleTimeout < min of 500
       await expect(raiden.openChannel(token, partner, 499)).rejects.toThrow();
     });
@@ -215,7 +202,6 @@ describe('Raiden', () => {
     });
 
     test('partner instance fetches events fired before instantiation', async () => {
-      raiden1.monitorToken(token);
       await expect(
         raiden1.channels$
           .pipe(

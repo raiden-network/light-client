@@ -11,10 +11,10 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
-import { get, findKey } from 'lodash';
+import { get, findKey, isEmpty } from 'lodash';
 
 import { Event } from 'ethers/contract';
-import { AddressZero, HashZero, Zero } from 'ethers/constants';
+import { HashZero, Zero } from 'ethers/constants';
 import { BigNumber } from 'ethers/utils';
 
 import { fromEthersEvent, getEventsStream } from '../utils';
@@ -25,9 +25,7 @@ import {
   RaidenActions,
   RaidenInitAction,
   NewBlockAction,
-  TokenMonitorAction,
   TokenMonitoredAction,
-  TokenMonitorActionFailed,
   ChannelOpenAction,
   ChannelOpenedAction,
   ChannelOpenActionFailed,
@@ -45,7 +43,6 @@ import {
   RaidenShutdownAction,
   newBlock,
   tokenMonitored,
-  tokenMonitorFailed,
   channelOpened,
   channelOpenFailed,
   channelMonitored,
@@ -102,7 +99,7 @@ export const actionOutputEpic = (
 export const raidenInitializationEpic = (
   action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
-  { provider }: RaidenEpicDeps,
+  { provider, registryContract, contractsInfo }: RaidenEpicDeps,
 ): Observable<NewBlockAction | TokenMonitoredAction | ChannelMonitoredAction> =>
   action$.pipe(
     ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
@@ -111,7 +108,22 @@ export const raidenInitializationEpic = (
       merge(
         // newBlock events
         fromEthersEvent<number>(provider, 'block').pipe(map(newBlock)),
-        // monitor tokens
+        // monitor old (in case of empty token2tokenNetwork) and new registered tokens
+        // and starts monitoring every registered token
+        getEventsStream<[string, string, Event]>(
+          registryContract,
+          [registryContract.filters.TokenNetworkCreated(null, null)],
+          isEmpty(state.token2tokenNetwork)
+            ? of(contractsInfo.TokenNetworkRegistry.block_number)
+            : undefined,
+          isEmpty(state.token2tokenNetwork) ? of(state.blockNumber) : undefined,
+        ).pipe(
+          withLatestFrom(state$),
+          map(([[token, tokenNetwork], state]) =>
+            tokenMonitored(token, tokenNetwork, !(token in state.token2tokenNetwork)),
+          ),
+        ),
+        // monitor previously monitored tokens
         from(Object.entries(state.token2tokenNetwork)).pipe(
           map(([token, tokenNetwork]) => tokenMonitored(token, tokenNetwork)),
         ),
@@ -158,55 +170,9 @@ export const newBlockEpic = (
     }),
   );
 
-/*
- * This TokenMonitorAction request can happen in 3 cases:
- * - First time ever for this token, so the token isn't in the state mapping:
- *      Fetch the tokenNetwork from registry contract and return a success TokenMonitoredAction
- *      response, with `first=true` property. This will also set the state mapping.
- *      Besides this, also merge a stream of past events fetched since registry deployment up to
- *      provider.resetEventsBlock-1, plus stream of new events since provider.resetEventsBlock
- *      up to latest.
- *      If this request fails, an error TokenMonitorActionFailed is emitted instead.
- * - First time on this session, but already requested in the past (already in the state mapping)
- *      Then, return the success TokenMonitoredAction from state, plus register and merge
- *      the stream of new events since provider.resetEventsBlock (past events were already handled
- *      on above case)
- * - Already seen in this session:
- *      In this case, we already registered to the stream of events, the one returned here
- *      completes immediatelly (to avoid double-register events), and then just the success
- *      TokenMonitoredAction is emitted as a reply to this request
- */
-export const tokenMonitorEpic = (
-  action$: Observable<RaidenActions>,
-  state$: Observable<RaidenState>,
-  { registryContract }: RaidenEpicDeps,
-): Observable<TokenMonitoredAction | TokenMonitorActionFailed> =>
-  action$.pipe(
-    ofType<RaidenActions, TokenMonitorAction>(RaidenActionType.TOKEN_MONITOR),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
-      // if tokenNetwork already in state mapping, use it
-      if (action.token in state.token2tokenNetwork) {
-        return of(tokenMonitored(action.token, state.token2tokenNetwork[action.token]));
-      } else {
-        // call contract's method to fetch tokenNetwork for token
-        return from(registryContract.functions.token_to_token_networks(action.token)).pipe(
-          map(address => {
-            if (!address || address === AddressZero)
-              throw new Error(`No valid tokenNetwork for ${action.token}`);
-            return tokenMonitored(action.token, address, /*first=*/ true);
-          }),
-          catchError(error => of(tokenMonitorFailed(action.token, error))),
-        );
-      }
-    }),
-  );
-
 /**
- * Monitor a token network for events
- * When this actions goes through (be it because of raidenInit call of previously monitored
- * tokenNetwork, or because client wants to interact with a new token network through
- * TokenMonitorAction), iff we're not yet subscribed to events on this token network,
+ * Starts monitoring a token network for events
+ * When this action goes through (because a former or new token registry event was deteceted),
  * subscribe to events and emit respective actions to the stream. Currently:
  * - ChannelOpened events with us or by us
  */
@@ -664,7 +630,6 @@ export const raidenEpics = (
     stateOutputEpic,
     actionOutputEpic,
     newBlockEpic,
-    tokenMonitorEpic,
     tokenMonitoredEpic,
     channelOpenEpic,
     channelOpenedEpic,

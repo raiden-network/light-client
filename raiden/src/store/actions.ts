@@ -5,9 +5,7 @@ export enum RaidenActionType {
   INIT = 'raidenInit',
   SHUTDOWN = 'raidenShutdown',
   NEW_BLOCK = 'newBlock',
-  TOKEN_MONITOR = 'tokenMonitor',
   TOKEN_MONITORED = 'tokenMonitored',
-  TOKEN_MONITOR_FAILED = 'tokenMonitorFailed',
   CHANNEL_OPEN = 'channelOpen',
   CHANNEL_OPENED = 'channelOpened',
   CHANNEL_OPEN_FAILED = 'channelOpenFailed',
@@ -48,21 +46,11 @@ export interface NewBlockAction extends RaidenAction {
   blockNumber: number;
 }
 
-export interface TokenMonitorAction extends RaidenAction {
-  type: RaidenActionType.TOKEN_MONITOR;
-  token: string;
-}
-
 export interface TokenMonitoredAction extends RaidenAction {
   type: RaidenActionType.TOKEN_MONITORED;
   token: string;
   tokenNetwork: string;
   first: boolean; // first time monitoring this token, i.e. just started monitoring
-}
-
-export interface TokenMonitorActionFailed extends RaidenActionFailed {
-  type: RaidenActionType.TOKEN_MONITOR_FAILED;
-  token: string;
 }
 
 export interface ChannelOpenAction extends RaidenAction {
@@ -184,11 +172,6 @@ export const newBlock = (blockNumber: number): NewBlockAction => ({
   blockNumber,
 });
 
-export const tokenMonitor = (token: string): TokenMonitorAction => ({
-  type: RaidenActionType.TOKEN_MONITOR,
-  token,
-});
-
 export const tokenMonitored = (
   token: string,
   tokenNetwork: string,
@@ -198,12 +181,6 @@ export const tokenMonitored = (
   token,
   tokenNetwork,
   first,
-});
-
-export const tokenMonitorFailed = (token: string, error: Error): TokenMonitorActionFailed => ({
-  type: RaidenActionType.TOKEN_MONITOR_FAILED,
-  token,
-  error,
 });
 
 export const channelOpen = (
@@ -378,9 +355,7 @@ export type RaidenActions =
   | RaidenInitAction
   | RaidenShutdownAction
   | NewBlockAction
-  | TokenMonitorAction
   | TokenMonitoredAction
-  | TokenMonitorActionFailed
   | ChannelOpenAction
   | ChannelOpenedAction
   | ChannelOpenActionFailed
