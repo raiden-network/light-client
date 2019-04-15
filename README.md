@@ -158,6 +158,8 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 # }
 ```
 
+You can find more detailed information on how to use the SDK [here](./raiden/README.md).
+
 ### Wallet Installation
 
 ```bash
