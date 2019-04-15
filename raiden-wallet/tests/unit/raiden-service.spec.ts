@@ -93,7 +93,7 @@ describe('RaidenService', () => {
     ).rejects.toThrowError('Raiden instance was not initialized');
   });
 
-  it('should return true when channel open and deposit are successful', async function() {
+  it('should resolve when channel open and deposit are successful', async function() {
     providerMock.mockResolvedValue({});
     const openChannel = jest.fn().mockResolvedValue('0xtxhash');
     const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
@@ -108,13 +108,9 @@ describe('RaidenService', () => {
     const progress = jest.fn();
 
     const depositAmount = new BigNumber(100);
-    const result = await raidenService.openChannel(
-      '0xtoken',
-      '0xpartner',
-      depositAmount,
-      progress
-    );
-    expect(result).toBe(true);
+    await expect(
+      raidenService.openChannel('0xtoken', '0xpartner', depositAmount, progress)
+    ).resolves.toBeUndefined();
     expect(openChannel).toBeCalledTimes(1);
     expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
     expect(depositChannel).toBeCalledTimes(1);
@@ -141,13 +137,9 @@ describe('RaidenService', () => {
 
     const progress = jest.fn();
 
-    const result = await raidenService.openChannel(
-      '0xtoken',
-      '0xpartner',
-      Zero,
-      progress
-    );
-    expect(result).toBe(true);
+    await expect(
+      raidenService.openChannel('0xtoken', '0xpartner', Zero, progress)
+    ).resolves.toBeUndefined();
     expect(openChannel).toBeCalledTimes(1);
     expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
     expect(depositChannel).toBeCalledTimes(0);

@@ -81,7 +81,7 @@ describe('Deposit.vue', function() {
     const deposit = wrapper.vm;
     const loading = jest.spyOn(deposit.$data, 'loading', 'set');
     router.push = jest.fn().mockResolvedValue(null);
-    service.openChannel = jest.fn().mockResolvedValue(true);
+    service.openChannel = jest.fn().mockResolvedValue(null);
     button.trigger('click');
     await flushPromises();
     jest.runAllTimers();

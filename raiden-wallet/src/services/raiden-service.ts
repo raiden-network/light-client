@@ -90,7 +90,7 @@ export default class RaidenService {
     partner: string,
     amount: BigNumber,
     progress?: (progress: Progress) => void
-  ): Promise<boolean> {
+  ): Promise<void> {
     const progressUpdater = (current: number, total: number) => {
       if (progress) {
         progress({
@@ -114,8 +114,6 @@ export default class RaidenService {
     if (amount.gt(Zero)) {
       await this.deposit(token, partner, amount);
     }
-
-    return true;
   }
 
   async leaveNetwork(
