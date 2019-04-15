@@ -40,6 +40,27 @@
                 >
                   <v-list-tile-title>Close</v-list-tile-title>
                 </v-list-tile>
+                <v-list-tile
+                  v-if="
+                    channel.state === 'settleable' ||
+                      channel.state === 'settling'
+                  "
+                  :id="'settle-' + index"
+                  @click="settle(channel)"
+                >
+                  <v-list-tile-title>Settle</v-list-tile-title>
+                </v-list-tile>
+
+                <v-list-tile
+                  v-if="
+                    channel.state !== 'settleable' &&
+                      channel.state !== 'settling' &&
+                      channel.state !== 'open'
+                  "
+                  :id="'no-action-' + index"
+                >
+                  <v-list-tile-title>No Actions Available</v-list-tile-title>
+                </v-list-tile>
               </v-list>
             </v-menu>
           </v-list-tile-action>
@@ -56,6 +77,20 @@
       </template>
       <div v-if="selectedChannel">
         Are you sure you want to close the channel with hub
+        {{ selectedChannel.partner }} for token {{ selectedChannel.token }}?
+      </div>
+    </confirmation-dialog>
+
+    <confirmation-dialog
+      :display="settleModalVisible"
+      @confirm="settleConfirmed()"
+      @cancel="settleCancelled()"
+    >
+      <template v-slot:title>
+        Confirm channel settle
+      </template>
+      <div v-if="selectedChannel">
+        Are you sure you want to settle the channel with hub
         {{ selectedChannel.partner }} for token {{ selectedChannel.token }}?
       </div>
     </confirmation-dialog>
@@ -96,6 +131,7 @@ export default class ChannelList extends Vue {
   selectedChannel: RaidenChannel | null = null;
   closeModalVisible: boolean = false;
   depositModalVisible: boolean = false;
+  settleModalVisible: boolean = false;
   message: string = '';
   snackbar: boolean = false;
 
@@ -118,12 +154,16 @@ export default class ChannelList extends Vue {
     this.dismissCloseModal();
     try {
       await this.$raiden.closeChannel(token, partner);
-      this.message = 'Channel close successful';
-      this.snackbar = true;
+      this.showMessage('Channel close successful');
     } catch (e) {
-      this.message = 'Channel close failed';
-      this.snackbar = true;
+      this.showMessage('Channel close failed');
+      console.error(e);
     }
+  }
+
+  private showMessage(message: string) {
+    this.message = message;
+    this.snackbar = true;
   }
 
   private dismissCloseModal() {
@@ -146,9 +186,7 @@ export default class ChannelList extends Vue {
   }
 
   async depositConfirmed(deposit: string) {
-    const channel = this.selectedChannel!;
-    const token = channel.token;
-    const partner = channel.partner;
+    const { token, partner } = this.selectedChannel!;
     this.dismissDepositModal();
     try {
       await this.$raiden.deposit(
@@ -156,17 +194,42 @@ export default class ChannelList extends Vue {
         partner,
         BalanceUtils.parse(deposit, this.token!.decimals)
       );
-      this.message = 'Deposit was successful';
-      this.snackbar = true;
+      this.showMessage('Deposit was successful');
     } catch (e) {
-      this.message = 'Deposit failed';
-      this.snackbar = true;
+      this.showMessage('Deposit failed');
+      console.error(e);
     }
   }
 
   deposit(channel: RaidenChannel) {
     this.selectedChannel = channel;
     this.depositModalVisible = true;
+  }
+
+  private dismissSettleModal() {
+    this.settleModalVisible = false;
+    this.selectedChannel = null;
+  }
+
+  settleCancelled() {
+    this.dismissSettleModal();
+  }
+
+  async settleConfirmed() {
+    const { token, partner } = this.selectedChannel!;
+    this.dismissSettleModal();
+    try {
+      await this.$raiden.settleChannel(token, partner);
+      this.showMessage('Channel settle was successful');
+    } catch (e) {
+      this.showMessage('Channel settle failed');
+      console.error(e);
+    }
+  }
+
+  settle(channel: RaidenChannel) {
+    this.selectedChannel = channel;
+    this.settleModalVisible = true;
   }
 }
 </script>

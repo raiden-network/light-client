@@ -46,8 +46,9 @@ describe('store', () => {
   it('should return a list of open channels and tokens', function() {
     store.commit('updateChannels', TestData.mockChannels);
     const model = createEmptyTokenModel();
-    model.address = TestData.mockChannel1.token;
-    model.open = 2;
+    model.address = TestData.openChannel.token;
+    model.open = 1;
+    model.settling = 1;
     expect(store.getters.tokens).toEqual([model]);
   });
 
@@ -60,6 +61,6 @@ describe('store', () => {
     store.commit('updateChannels', TestData.mockChannels);
     expect(
       store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
-    ).toEqual([TestData.mockChannel1, TestData.mockChannel2]);
+    ).toEqual([TestData.openChannel, TestData.settlingChannel]);
   });
 });

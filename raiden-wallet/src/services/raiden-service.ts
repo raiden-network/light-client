@@ -106,7 +106,7 @@ export default class RaidenService {
     try {
       await raiden.openChannel(token, partner);
     } catch (e) {
-      throw new OpenChannelFailed(e);
+      throw new ChannelOpenFailed(e);
     }
 
     progressUpdater(2, 3);
@@ -153,7 +153,7 @@ export default class RaidenService {
     try {
       await this.raiden.closeChannel(token, partner);
     } catch (e) {
-      throw new CloseChannelFailed(e);
+      throw new ChannelCloseFailed(e);
     }
   }
 
@@ -161,13 +161,23 @@ export default class RaidenService {
     try {
       await this.raiden.depositChannel(token, partner, amount);
     } catch (e) {
-      throw new DepositFailed(e);
+      throw new ChannelDepositFailed(e);
+    }
+  }
+
+  async settleChannel(token: string, partner: string) {
+    try {
+      await this.raiden.settleChannel(token, partner);
+    } catch (e) {
+      throw new ChannelSettleFailed(e);
     }
   }
 }
 
-export class CloseChannelFailed extends Error {}
+export class ChannelSettleFailed extends Error {}
 
-export class OpenChannelFailed extends Error {}
+export class ChannelCloseFailed extends Error {}
 
-export class DepositFailed extends Error {}
+export class ChannelOpenFailed extends Error {}
+
+export class ChannelDepositFailed extends Error {}

@@ -2,9 +2,10 @@ jest.mock('vuex');
 
 import { TestData } from './data/mock-data';
 import RaidenService, {
-  CloseChannelFailed,
-  DepositFailed,
-  OpenChannelFailed
+  ChannelCloseFailed,
+  ChannelDepositFailed,
+  ChannelOpenFailed,
+  ChannelSettleFailed
 } from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
@@ -170,7 +171,7 @@ describe('RaidenService', () => {
     const depositAmount = new BigNumber(100);
     await expect(
       raidenService.openChannel('0xtoken', '0xpartner', depositAmount)
-    ).rejects.toBeInstanceOf(OpenChannelFailed);
+    ).rejects.toBeInstanceOf(ChannelOpenFailed);
   });
 
   it('should throw an exception when the deposit fails', async function() {
@@ -190,7 +191,7 @@ describe('RaidenService', () => {
     const depositAmount = new BigNumber(100);
     await expect(
       raidenService.openChannel('0xtoken', '0xpartner', depositAmount)
-    ).rejects.toBeInstanceOf(DepositFailed);
+    ).rejects.toBeInstanceOf(ChannelDepositFailed);
     expect(openChannel).toBeCalledTimes(1);
     expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
   });
@@ -295,7 +296,7 @@ describe('RaidenService', () => {
 
     await expect(
       raidenService.closeChannel('0xtoken', '0xpartner')
-    ).rejects.toBeInstanceOf(CloseChannelFailed);
+    ).rejects.toBeInstanceOf(ChannelCloseFailed);
     expect(closeChannel).toHaveBeenCalledTimes(1);
     expect(closeChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
   });
@@ -339,7 +340,7 @@ describe('RaidenService', () => {
     const depositAmount = new BigNumber(6000);
     await expect(
       raidenService.deposit('0xtoken', '0xpartner', depositAmount)
-    ).rejects.toBeInstanceOf(DepositFailed);
+    ).rejects.toBeInstanceOf(ChannelDepositFailed);
     expect(depositChannel).toHaveBeenCalledTimes(1);
     expect(depositChannel).toHaveBeenCalledWith(
       '0xtoken',
@@ -348,13 +349,52 @@ describe('RaidenService', () => {
     );
   });
 
+  describe('settleChannel', function() {
+    it('should resolve when settle succeeds', async function() {
+      const settleChannel = jest.fn().mockResolvedValue('txhash');
+      providerMock.mockResolvedValue({});
+      factory.mockResolvedValue(
+        mockRaiden({
+          settleChannel: settleChannel
+        })
+      );
+
+      await raidenService.connect();
+      await flushPromises();
+
+      await expect(raidenService.settleChannel('0xtoken', '0xpartner'))
+        .resolves;
+      expect(settleChannel).toHaveBeenCalledTimes(1);
+      expect(settleChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
+    });
+
+    it('should throw if the settle fails', async function() {
+      const settleChannel = jest.fn().mockRejectedValue('txfailed');
+      providerMock.mockResolvedValue({});
+      factory.mockResolvedValue(
+        mockRaiden({
+          settleChannel: settleChannel
+        })
+      );
+
+      await raidenService.connect();
+      await flushPromises();
+
+      await expect(
+        raidenService.settleChannel('0xtoken', '0xpartner')
+      ).rejects.toBeInstanceOf(ChannelSettleFailed);
+      expect(settleChannel).toHaveBeenCalledTimes(1);
+      expect(settleChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
+    });
+  });
+
   describe('leaveNetwork', function() {
     beforeEach(() => {
       Object.defineProperty(store, 'getters', {
         get: jest.fn().mockReturnValue({
           channels: jest
             .fn()
-            .mockReturnValue([TestData.mockChannel1, TestData.mockChannel2])
+            .mockReturnValue([TestData.openChannel, TestData.settlingChannel])
         })
       });
 

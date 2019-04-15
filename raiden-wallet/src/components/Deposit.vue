@@ -64,7 +64,10 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import AmountInput from './AmountInput.vue';
-import { DepositFailed, OpenChannelFailed } from '@/services/raiden-service';
+import {
+  ChannelDepositFailed,
+  ChannelOpenFailed
+} from '@/services/raiden-service';
 import { StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
@@ -143,9 +146,9 @@ export default class Deposit extends Vue {
       }
     } catch (e) {
       this.error = '';
-      if (e instanceof OpenChannelFailed) {
+      if (e instanceof ChannelOpenFailed) {
         this.error = 'Channel open failed.';
-      } else if (e instanceof DepositFailed) {
+      } else if (e instanceof ChannelDepositFailed) {
         this.error = 'Could not deposit to the channel.';
       }
 
