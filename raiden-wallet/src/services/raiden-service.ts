@@ -71,7 +71,7 @@ export default class RaidenService {
       // TODO: also destruct name, symbol from getTokenInfo resolved value
       const [balance, { decimals }] = await Promise.all([
         raiden.getTokenBalance(tokenAddress),
-        raiden.getTokenInfo(tokenAddress),
+        raiden.getTokenInfo(tokenAddress)
       ]);
       return {
         balance: balance,
