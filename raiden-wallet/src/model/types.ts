@@ -18,6 +18,8 @@ export interface AccTokenModel {
   closed: number;
   settling: number;
   settled: number;
+
+  [index: string]: number | string;
 }
 
 export interface TokenModel extends AccTokenModel {

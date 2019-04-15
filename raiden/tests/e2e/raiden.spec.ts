@@ -258,4 +258,56 @@ describe('Raiden', () => {
       });
     });
   });
+
+  describe('settleChannel', () => {
+    beforeEach(async () => {
+      await raiden.openChannel(token, partner);
+      await provider.mine();
+      await raiden.closeChannel(token, partner);
+    });
+
+    test('unknown token network', async () => {
+      expect.assertions(1);
+      // token=partner
+      await expect(raiden.settleChannel(partner, partner)).rejects.toThrow();
+    });
+
+    test('no channel with address', async () => {
+      expect.assertions(1);
+      // there's no channel with partner=token
+      await expect(raiden.settleChannel(token, token)).rejects.toThrow();
+    });
+
+    test('channel not settleable yet', async () => {
+      expect.assertions(1);
+      // there's no channel with partner=token
+      await expect(raiden.settleChannel(token, partner)).rejects.toThrow();
+    });
+
+    test('success', async () => {
+      expect.assertions(3);
+      await provider.mine(501);
+      await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
+        [token]: {
+          [partner]: {
+            token,
+            tokenNetwork,
+            partner,
+            state: ChannelState.settleable,
+            closeBlock: expect.any(Number),
+          },
+        },
+      });
+      await expect(raiden.settleChannel(token, partner)).resolves.toMatch(/^0x/);
+      await expect(raiden.channels$.pipe(first()).toPromise()).resolves.not.toMatchObject({
+        [token]: {
+          [partner]: {
+            token,
+            tokenNetwork,
+            partner,
+          },
+        },
+      });
+    });
+  });
 });

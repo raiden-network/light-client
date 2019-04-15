@@ -14,7 +14,7 @@ import {
 import { get, findKey } from 'lodash';
 
 import { Event } from 'ethers/contract';
-import { AddressZero, HashZero } from 'ethers/constants';
+import { AddressZero, HashZero, Zero } from 'ethers/constants';
 import { BigNumber } from 'ethers/utils';
 
 import { fromEthersEvent, getEventsStream } from '../utils';
@@ -38,6 +38,11 @@ import {
   ChannelCloseAction,
   ChannelClosedAction,
   ChannelCloseActionFailed,
+  ChannelSettleableAction,
+  ChannelSettleAction,
+  ChannelSettledAction,
+  ChannelSettleActionFailed,
+  RaidenShutdownAction,
   newBlock,
   tokenMonitored,
   tokenMonitorFailed,
@@ -48,7 +53,9 @@ import {
   channelDepositFailed,
   channelClosed,
   channelCloseFailed,
-  RaidenShutdownAction,
+  channelSettleable,
+  channelSettled,
+  channelSettleFailed,
 } from './actions';
 import { SignatureZero } from '../constants';
 
@@ -122,6 +129,33 @@ export const raidenInitializationEpic = (
         ),
       ),
     ),
+  );
+
+/**
+ * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable
+ */
+export const newBlockEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+): Observable<ChannelSettleableAction> =>
+  action$.pipe(
+    ofType<RaidenActions, NewBlockAction>(RaidenActionType.NEW_BLOCK),
+    withLatestFrom(state$),
+    mergeMap(function*([{ blockNumber }, state]) {
+      for (const tokenNetwork in state.tokenNetworks) {
+        for (const partner in state.tokenNetworks[tokenNetwork]) {
+          const channel = state.tokenNetworks[tokenNetwork][partner];
+          if (
+            channel.state === ChannelState.closed &&
+            channel.settleTimeout && // closed channels always have settleTimeout & closeBlock set
+            channel.closeBlock &&
+            blockNumber > channel.closeBlock + channel.settleTimeout
+          ) {
+            yield channelSettleable(tokenNetwork, partner, blockNumber);
+          }
+        }
+      }
+    }),
   );
 
 /*
@@ -214,8 +248,8 @@ export const tokenMonitoredEpic = (
                   address === p1 ? p2 : p1,
                   id.toNumber(),
                   settleTimeout.toNumber(),
-                  event.blockNumber || 0, // these parameters should always be set in event
-                  event.transactionHash || '',
+                  event.blockNumber!,
+                  event.transactionHash!,
                 ),
               ),
             ),
@@ -311,7 +345,7 @@ export const channelMonitoredEpic = (
   action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
-): Observable<ChannelDepositedAction | ChannelClosedAction> =>
+): Observable<ChannelDepositedAction | ChannelClosedAction | ChannelSettledAction> =>
   action$.pipe(
     ofType<RaidenActions, ChannelMonitoredAction>(RaidenActionType.CHANNEL_MONITORED),
     mergeMap(action => {
@@ -322,9 +356,18 @@ export const channelMonitoredEpic = (
       type ChannelNewDepositEvent = [BigNumber, string, BigNumber, Event];
       // [channelId, participant, nonce, Event]
       type ChannelClosedEvent = [BigNumber, string, BigNumber, Event];
+      // [channelId, participant, nonce, Event]
+      type ChannelSettledEvent = [BigNumber, BigNumber, BigNumber, Event];
 
       const depositFilter = tokenNetworkContract.filters.ChannelNewDeposit(action.id, null, null),
-        closedFilter = tokenNetworkContract.filters.ChannelClosed(action.id, null, null);
+        closedFilter = tokenNetworkContract.filters.ChannelClosed(action.id, null, null),
+        settledFilter = tokenNetworkContract.filters.ChannelSettled(action.id, null, null);
+
+      // observable that emits iff this channel was settled and therefore was removed from state
+      const unsubscribeChannelNotification = action$.pipe(
+        ofType<RaidenActions, ChannelSettledAction>(RaidenActionType.CHANNEL_SETTLED),
+        filter(settled => settled.id === action.id),
+      );
 
       // at subscription time, if there's already a filter, skip (return completed observable)
       return defer(() =>
@@ -346,7 +389,7 @@ export const channelMonitoredEpic = (
                     id.toNumber(),
                     participant,
                     totalDeposit,
-                    event.transactionHash || '', // should always be defined
+                    event.transactionHash!,
                   ),
                 ),
               ),
@@ -362,12 +405,28 @@ export const channelMonitoredEpic = (
                     action.partner,
                     id.toNumber(),
                     participant,
-                    event.blockNumber || 0, // these parameters should always be set in event
-                    event.transactionHash || '',
+                    event.blockNumber!,
+                    event.transactionHash!,
                   ),
                 ),
               ),
-            ),
+              getEventsStream<ChannelSettledEvent>(
+                tokenNetworkContract,
+                [settledFilter],
+                action.fromBlock ? of(action.fromBlock) : undefined,
+                action.fromBlock ? state$.pipe(map(state => state.blockNumber)) : undefined,
+              ).pipe(
+                map(([id, , , event]) =>
+                  channelSettled(
+                    action.tokenNetwork,
+                    action.partner,
+                    id.toNumber(),
+                    event.blockNumber!,
+                    event.transactionHash!,
+                  ),
+                ),
+              ),
+            ).pipe(takeUntil(unsubscribeChannelNotification)),
       );
     }),
   );
@@ -491,7 +550,7 @@ export const channelCloseEpic = (
       }
       const channelId = channel.id;
 
-      // send approve transaction
+      // send closeChannel transaction
       return from(
         tokenNetworkContract.functions.closeChannel(
           channelId,
@@ -523,6 +582,74 @@ export const channelCloseEpic = (
     }),
   );
 
+/**
+ * A ChannelSettle action requested by user
+ * Needs to be called on an settleable or settling (for retries) channel.
+ * If tx goes through successfuly, stop as ChannelSettled success action will instead be
+ * detected and reacted by channelMonitoredEpic. If anything detectable goes wrong, fires a
+ * ChannelSettleActionFailed instead
+ */
+export const channelSettleEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+  { address, getTokenNetworkContract }: RaidenEpicDeps,
+): Observable<ChannelSettleActionFailed> =>
+  action$.pipe(
+    ofType<RaidenActions, ChannelSettleAction>(RaidenActionType.CHANNEL_SETTLE),
+    withLatestFrom(state$),
+    mergeMap(([action, state]) => {
+      const tokenNetworkContract = getTokenNetworkContract(action.tokenNetwork);
+      const channel: Channel = get(state.tokenNetworks, [action.tokenNetwork, action.partner]);
+      if (
+        !channel ||
+        !(channel.state === ChannelState.settleable || channel.state === ChannelState.settling) ||
+        !channel.id
+      ) {
+        const error = new Error(
+          `channel for "${action.tokenNetwork}" and "${
+            action.partner
+          }" not found or not in 'settleable' or 'settling' state`,
+        );
+        return of(channelSettleFailed(action.tokenNetwork, action.partner, error));
+      }
+      const channelId = channel.id;
+
+      // send settleChannel transaction
+      return from(
+        tokenNetworkContract.functions.settleChannel(
+          channelId,
+          address,
+          Zero,
+          Zero,
+          HashZero,
+          action.partner,
+          Zero,
+          Zero,
+          HashZero,
+        ),
+      ).pipe(
+        tap(tx => console.log(`sent settleChannel tx "${tx.hash}" to "${action.tokenNetwork}"`)),
+        mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
+        map(({ receipt, tx }) => {
+          if (!receipt.status)
+            throw new Error(
+              `tokenNetwork "${action.tokenNetwork}" settleChannel transaction "${
+                tx.hash
+              }" failed`,
+            );
+          console.log(`settleChannel tx "${tx.hash}" successfuly mined!`);
+          return tx.hash;
+        }),
+        // if succeeded, return a empty/completed observable
+        // actual ChannelSettledAction will be detected and handled by channelMonitoredEpic
+        // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
+        // will then emit the channelSettleFailed action instead
+        mergeMapTo(EMPTY),
+        catchError(error => of(channelSettleFailed(action.tokenNetwork, action.partner, error))),
+      );
+    }),
+  );
+
 export const raidenEpics = (
   action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
@@ -531,11 +658,12 @@ export const raidenEpics = (
   const shutdownNotification = action$.pipe(
     ofType<RaidenActions, RaidenShutdownAction>(RaidenActionType.SHUTDOWN),
   );
-  // like combineEpics, but completes action$ and state$ when shutdownNotification fires
+  // like combineEpics, but completes action$, state$ and output$ when shutdownNotification emits
   return from([
     raidenInitializationEpic,
     stateOutputEpic,
     actionOutputEpic,
+    newBlockEpic,
     tokenMonitorEpic,
     tokenMonitoredEpic,
     channelOpenEpic,
@@ -543,6 +671,7 @@ export const raidenEpics = (
     channelMonitoredEpic,
     channelDepositEpic,
     channelCloseEpic,
+    channelSettleEpic,
   ]).pipe(
     mergeMap(epic =>
       epic(

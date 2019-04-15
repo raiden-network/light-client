@@ -88,7 +88,8 @@
       "sourceType": "module"
     },
     "rules": {
-      "@typescript-eslint/no-non-null-assertion": "off"
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "@typescript-eslint/explicit-function-return-type": "off"
     },
     "extends": [
       "plugin:@typescript-eslint/recommended",
