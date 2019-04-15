@@ -38,7 +38,6 @@ export default class Connect extends Vue {
     this.partner = params.partner;
 
     this.tokenInfo = await this.$raiden.getToken(this.token);
-    await this.$raiden.monitorToken(this.token);
   }
 }
 </script>

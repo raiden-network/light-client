@@ -16,7 +16,6 @@ import {
   raidenInit,
   raidenShutdown,
   newBlock,
-  tokenMonitor,
   tokenMonitored,
   channelMonitored,
   channelOpen,
@@ -27,14 +26,12 @@ import {
   channelClosed,
   channelSettleable,
   channelSettle,
-  channelSettled,
 } from 'raiden/store/actions';
 import {
   stateOutputEpic,
   actionOutputEpic,
   raidenEpics,
   newBlockEpic,
-  tokenMonitorEpic,
   tokenMonitoredEpic,
   channelOpenEpic,
   channelOpenedEpic,
@@ -85,7 +82,7 @@ describe('raidenEpics', () => {
   });
 
   test('actionOutputEpic', async () => {
-    const action = tokenMonitor(token); // a random action
+    const action = newBlock(123); // a random action
     const outputPromise = depsMock.actionOutput$.toPromise();
     const epicPromise = actionOutputEpic(
       of<RaidenActions>(action),
@@ -171,44 +168,6 @@ describe('raidenEpics', () => {
       );
     }),
   );
-
-  describe('tokenMonitorEpic', () => {
-    test('succeeds first', async () => {
-      const action$ = of<RaidenActions>(tokenMonitor(token)),
-        state$ = of<RaidenState>(state);
-
-      // toPromise will ensure observable completes and resolve to last emitted value
-      await expect(tokenMonitorEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
-        tokenMonitored(token, tokenNetwork, true),
-      );
-    });
-
-    test('succeeds already monitored', async () => {
-      const action$ = of<RaidenActions>(tokenMonitor(token)),
-        state$ = of<RaidenState>(raidenReducer(state, tokenMonitored(token, tokenNetwork, true)));
-
-      // toPromise will ensure observable completes and resolve to last emitted value
-      await expect(tokenMonitorEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
-        tokenMonitored(token, tokenNetwork, false),
-      );
-    });
-
-    test('fails', async () => {
-      const action$ = of<RaidenActions>(tokenMonitor(token)),
-        state$ = of<RaidenState>(state);
-      depsMock.registryContract.functions.token_to_token_networks.mockResolvedValueOnce(
-        AddressZero,
-      );
-
-      await expect(tokenMonitorEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
-        {
-          type: RaidenActionType.TOKEN_MONITOR_FAILED,
-          token,
-          error: expect.any(Error),
-        },
-      );
-    });
-  });
 
   describe('tokenMonitoredEpic', () => {
     const settleTimeoutEncoded = defaultAbiCoder.encode(['uint256'], [settleTimeout]);

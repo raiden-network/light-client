@@ -68,9 +68,11 @@ export default class RaidenService {
   async getToken(tokenAddress: string): Promise<Token | null> {
     const raiden = this.raiden;
     try {
-      const tokenBalance = await raiden.getTokenBalance(tokenAddress);
-      const balance = tokenBalance.balance;
-      const decimals = tokenBalance.decimals;
+      // TODO: also destruct name, symbol from getTokenInfo resolved value
+      const [balance, { decimals }] = await Promise.all([
+        raiden.getTokenBalance(tokenAddress),
+        raiden.getTokenInfo(tokenAddress)
+      ]);
       return {
         balance: balance,
         decimals: decimals,
@@ -114,10 +116,6 @@ export default class RaidenService {
     }
 
     return true;
-  }
-
-  async monitorToken(token: string) {
-    await this.raiden.monitorToken(token);
   }
 
   async leaveNetwork(

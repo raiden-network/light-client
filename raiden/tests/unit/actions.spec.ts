@@ -4,29 +4,9 @@ import {
   channelDeposit,
   channelDepositFailed,
   channelMonitored,
-  tokenMonitor,
-  tokenMonitorFailed,
 } from 'raiden/store';
 
 describe('action factories not tested in reducers.spec.ts', () => {
-  test('tokenMonitor', () => {
-    const token = '0xtoken';
-    expect(tokenMonitor(token)).toEqual({
-      type: RaidenActionType.TOKEN_MONITOR,
-      token,
-    });
-  });
-
-  test('tokenMonitorFailed', () => {
-    const token = '0xtoken',
-      error = new Error('tokenNetwork not found');
-    expect(tokenMonitorFailed(token, error)).toEqual({
-      type: RaidenActionType.TOKEN_MONITOR_FAILED,
-      token,
-      error,
-    });
-  });
-
   test('channelMonitor', () => {
     const tokenNetwork = '0xtokenNetwork',
       partner = '0xpartner',

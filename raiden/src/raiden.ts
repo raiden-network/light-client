@@ -6,7 +6,7 @@ import { Middleware, applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, ofType } from 'redux-observable';
 import { createLogger } from 'redux-logger';
 
-import { debounce, findKey, transform } from 'lodash';
+import { debounce, findKey, transform, constant, isEmpty } from 'lodash';
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
 import { first, filter, map } from 'rxjs/operators';
 
@@ -23,7 +23,14 @@ import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 
-import { ContractsInfo, RaidenContracts, RaidenEpicDeps, RaidenChannels, Storage } from './types';
+import {
+  ContractsInfo,
+  RaidenContracts,
+  RaidenEpicDeps,
+  RaidenChannels,
+  Storage,
+  TokenInfo,
+} from './types';
 import {
   RaidenState,
   RaidenStateType,
@@ -35,7 +42,6 @@ import {
   RaidenActions,
   RaidenActionType,
   TokenMonitoredAction,
-  TokenMonitorActionFailed,
   ChannelOpenedAction,
   ChannelOpenActionFailed,
   ChannelDepositedAction,
@@ -46,7 +52,6 @@ import {
   ChannelSettleActionFailed,
   raidenInit,
   raidenShutdown,
-  tokenMonitor,
   channelOpen,
   channelDeposit,
   channelClose,
@@ -60,6 +65,7 @@ export class Raiden {
   private readonly store: Store<RaidenState, RaidenActions>;
   private readonly contractsInfo: ContractsInfo;
   private contracts: RaidenContracts;
+  private readonly tokenInfo: { [token: string]: TokenInfo } = {};
 
   private readonly action$: Observable<RaidenActions>;
   public readonly state$: Observable<RaidenState>;
@@ -314,30 +320,56 @@ export class Raiden {
    * Get token balance and token decimals for given address or self
    * @param token  Token address to fetch balance. Must be one of the monitored tokens.
    * @param address  Optional target address. If omitted, gets own balance
-   * @returns  Object containing properties 'balance' in wei as BigNumber and 'decimals' as number
+   * @returns  BigNumber containing address's token balance
    */
-  public async getTokenBalance(
-    token: string,
-    address?: string,
-  ): Promise<{ balance: BigNumber; decimals: number }> {
+  public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
     if (!(token in this.state.token2tokenNetwork))
       throw new Error(`token "${token}" not monitored`);
     const tokenContract = this.getTokenContract(token);
 
-    async function getDecimals(): Promise<number> {
-      try {
-        let decimals = await tokenContract.functions.decimals();
-        if (!decimals) throw 'no decimals';
-        return decimals;
-      } catch (err) {
-        return 18;
-      }
+    return tokenContract.functions.balanceOf(address || this.address);
+  }
+
+  /**
+   * Get token information: totalSupply, decimals, name and symbol
+   * Rejects only if 'token' contract doesn't define totalSupply and decimals methods.
+   * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
+   * very common and defined on most token contracts.
+   * @param token address to fetch info from
+   * @returns TokenInfo
+   */
+  public async getTokenInfo(token: string): Promise<TokenInfo> {
+    /* tokenInfo isn't in state as it isn't relevant for being preserved, it's merely a cache */
+    if (!(token in this.state.token2tokenNetwork))
+      throw new Error(`token "${token}" not monitored`);
+    if (!(token in this.tokenInfo)) {
+      const tokenContract = this.getTokenContract(token);
+      const [totalSupply, decimals, name, symbol] = await Promise.all([
+        tokenContract.functions.totalSupply(),
+        tokenContract.functions.decimals(),
+        tokenContract.functions.name().catch(constant(undefined)),
+        tokenContract.functions.symbol().catch(constant(undefined)),
+      ]);
+      this.tokenInfo[token] = { totalSupply, decimals, name, symbol };
     }
-    const [balance, decimals] = await Promise.all([
-      tokenContract.functions.balanceOf(address || this.address),
-      getDecimals(),
-    ]);
-    return { balance, decimals };
+    return this.tokenInfo[token];
+  }
+
+  /**
+   * Returns a list of all token addresses registered as token networks in registry
+   */
+  public async getTokenList(): Promise<string[]> {
+    // here we assume there'll be at least one token registered on a registry
+    // so, if the list is empty (e.g. on first init), raidenInitializationEpic is still fetching
+    // the TokenNetworkCreated events from registry, so we wait until some token is found
+    if (isEmpty(this.state.token2tokenNetwork))
+      await this.action$
+        .pipe(
+          ofType<RaidenActions, TokenMonitoredAction>(RaidenActionType.TOKEN_MONITORED),
+          first(),
+        )
+        .toPromise();
+    return Object.keys(this.state.token2tokenNetwork);
   }
 
   /**
@@ -373,35 +405,6 @@ export class Raiden {
   }
 
   /**
-   * A TokenMonitorAction request is one with only 'token' property set
-   * This request will ensure token goes into state.token2tokenNetwork mapping
-   * and we register listeners for events on this tokenNetwork, if there's a valid tokenNetwork
-   * for given token, or fail otherwise.
-   * In any case, it'll finally reply with either TokenMonitoredAction or TokenMonitorActionFailed
-   * @param address  Token address
-   * @return  Promise<string> to tokenNetwork contract address
-   */
-  public monitorToken(address: string): Promise<string> {
-    const promise: Promise<string> = new Promise((resolve, reject) =>
-      // wait for the corresponding success or error TokenMonitorAction
-      this.action$
-        .pipe(
-          ofType<RaidenActions, TokenMonitoredAction | TokenMonitorActionFailed>(
-            RaidenActionType.TOKEN_MONITORED,
-            RaidenActionType.TOKEN_MONITOR_FAILED,
-          ),
-          filter(action => action.token === address),
-          first(),
-        )
-        .subscribe(action =>
-          action.tokenNetwork ? resolve(action.tokenNetwork) : reject(action.error),
-        ),
-    );
-    this.store.dispatch(tokenMonitor(address));
-    return promise;
-  }
-
-  /**
    * Open a channel on the tokenNetwork for given token address with partner
    * @param token  Token address on currently configured token network registry
    * @param partner  Partner address
@@ -414,10 +417,8 @@ export class Raiden {
     settleTimeout: number = 500,
   ): Promise<string> {
     const state = this.state;
-    const tokenNetwork =
-      token in state.token2tokenNetwork
-        ? state.token2tokenNetwork[token]
-        : await this.monitorToken(token);
+    const tokenNetwork = state.token2tokenNetwork[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
     const promise: Promise<string> = new Promise((resolve, reject) =>
       // wait for the corresponding success or error TokenMonitorAction
       this.action$
