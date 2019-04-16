@@ -19,7 +19,7 @@
               contain
               aspect-ratio="1"
               class="blockie"
-              :src="blockie"
+              :src="blockie(defaultAccount)"
             ></v-img>
           </div>
         </div>
@@ -41,20 +41,17 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Mixins, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
+import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({
   computed: mapState(['loading', 'defaultAccount', 'accountBalance'])
 })
-export default class WalletHeader extends Vue {
+export default class WalletHeader extends Mixins(BlockieMixin) {
   defaultAccount!: string;
   loading!: boolean;
   accountBalance!: string;
-
-  get blockie(): string {
-    return this.$identicon.getIdenticon(this.defaultAccount);
-  }
 }
 </script>
 

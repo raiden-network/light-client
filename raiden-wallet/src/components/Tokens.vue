@@ -4,7 +4,7 @@
       <template v-for="(token, index) in tokens">
         <v-list-tile :key="token.token" class="connection">
           <v-list-tile-avatar>
-            <img :src="blocky(token.address)" alt="Partner address blocky" />
+            <img :src="blockie(token.address)" alt="Partner address blocky" />
           </v-list-tile-avatar>
           <v-list-tile-content>
             <v-list-tile-title> {{ token.symbol }} </v-list-tile-title>
@@ -56,17 +56,18 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Mixins, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import { StepDescription, TokenModel } from '@/model/types';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
+import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({
   components: { ProgressOverlay, ConfirmationDialog },
   computed: mapGetters(['tokens'])
 })
-export default class Tokens extends Vue {
+export default class Tokens extends Mixins(BlockieMixin) {
   tokens!: TokenModel[];
   selectedToken: TokenModel | null = null;
   leaveModalVisible: boolean = false;
@@ -78,10 +79,6 @@ export default class Tokens extends Vue {
       description: 'Closing the channels'
     }
   ];
-
-  blocky(partner: string) {
-    return this.$identicon.getIdenticon(partner);
-  }
 
   private dismissModal() {
     this.leaveModalVisible = false;
