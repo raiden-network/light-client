@@ -35,7 +35,8 @@ describe('Deposit.vue', function() {
       propsData: {
         token: '0xtoken',
         partner: '0xpartner',
-        tokenInfo: TestData.token
+        tokenInfo: TestData.token,
+        current: 0
       },
       mocks: {
         $raiden: service,
@@ -75,6 +76,16 @@ describe('Deposit.vue', function() {
     await flushPromises();
     expect(deposit.$data.snackbar).toBe(true);
     expect(deposit.$data.error).toBe('Could not deposit to the channel.');
+  });
+
+  it('should show an error if any error happens during channel opening', async function() {
+    service.openChannel = jest.fn().mockRejectedValue(new Error('unknown'));
+    mockInput(wrapper, '0.0001');
+    button.trigger('click');
+    const deposit = wrapper.vm;
+    await flushPromises();
+    expect(deposit.$data.snackbar).toBe(true);
+    expect(deposit.$data.error).toBe('unknown');
   });
 
   it('should navigate to send on success', async function() {

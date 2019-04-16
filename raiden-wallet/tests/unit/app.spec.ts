@@ -26,7 +26,8 @@ describe('App.vue', () => {
         accountBalance: '0.0',
         providerDetected: true,
         userDenied: false,
-        channels: {}
+        channels: {},
+        tokens: {}
       }
     });
     store.commit = jest.fn();

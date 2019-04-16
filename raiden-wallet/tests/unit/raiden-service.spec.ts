@@ -9,7 +9,7 @@ import RaidenService, {
 } from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
-import { RootState } from '@/types';
+import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
 import { Raiden } from 'raiden';
 import Vue from 'vue';
@@ -437,6 +437,75 @@ describe('RaidenService', () => {
       expect(progress).toHaveBeenCalledTimes(2);
       expect(progress).toHaveBeenNthCalledWith(1, { current: 1, total: 2 });
       expect(progress).toHaveBeenLastCalledWith({ current: 2, total: 2 });
+    });
+  });
+
+  describe('token caching', function() {
+    const mockToken1 = '0xtoken1';
+    const mockToken2 = '0xtoken2';
+
+    const mockTokenInfo = (address: string) => ({
+      totalSupply: Zero,
+      decimals: 18,
+      name: address,
+      symbol: address.replace('0x', '').toLocaleUpperCase()
+    });
+
+    const tokens: Tokens = {};
+    tokens[mockToken1] = mockTokenInfo(mockToken1);
+    tokens[mockToken2] = mockTokenInfo(mockToken2);
+
+    beforeEach(() => {
+      store.commit = jest.fn();
+
+      const getTokenList = jest
+        .fn()
+        .mockResolvedValue([mockToken1, mockToken2]);
+      const getTokenInfo = jest.fn().mockImplementation(mockTokenInfo);
+      providerMock.mockResolvedValue({});
+      factory.mockResolvedValue(
+        mockRaiden({
+          getTokenList,
+          getTokenInfo
+        })
+      );
+    });
+
+    test('fetch should skip already cached tokens', async () => {
+      // @ts-ignore
+      store.state = {
+        tokens: tokens
+      };
+
+      await raidenService.connect();
+      await flushPromises();
+
+      await expect(raidenService.fetchTokens()).resolves.toBeUndefined();
+
+      expect(store.commit).toHaveBeenCalledTimes(3);
+
+      expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
+      expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
+      expect(store.commit).toHaveBeenNthCalledWith(3, 'loadComplete');
+    });
+
+    test('fetch should fetch contracts that are not cached', async () => {
+      // @ts-ignore
+      store.state = {
+        tokens: {}
+      };
+
+      await raidenService.connect();
+      await flushPromises();
+
+      await expect(raidenService.fetchTokens()).resolves.toBeUndefined();
+
+      expect(store.commit).toHaveBeenCalledTimes(4);
+
+      expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
+      expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
+      expect(store.commit).toHaveBeenNthCalledWith(3, 'loadComplete');
+      expect(store.commit).toHaveBeenNthCalledWith(4, 'updateTokens', tokens);
     });
   });
 });

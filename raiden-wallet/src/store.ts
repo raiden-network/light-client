@@ -1,13 +1,9 @@
 import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
-import { RootState } from '@/types';
+import { RootState, Tokens } from '@/types';
 import { RaidenChannel, RaidenChannels } from 'raiden';
 import * as _ from 'lodash';
-import {
-  createEmptyTokenModel,
-  AccTokenModel,
-  TokenModel
-} from '@/model/types';
+import { emptyTokenModel, AccTokenModel, TokenModel } from '@/model/types';
 
 Vue.use(Vuex);
 
@@ -17,7 +13,8 @@ const _defaultState: RootState = {
   accountBalance: '0.0',
   providerDetected: true,
   userDenied: false,
-  channels: {}
+  channels: {},
+  tokens: {}
 };
 
 export function defaultState(): RootState {
@@ -44,6 +41,9 @@ const store: StoreOptions<RootState> = {
     },
     updateChannels(state: RootState, channels: RaidenChannels) {
       state.channels = channels;
+    },
+    updateTokens(state: RootState, tokens: Tokens) {
+      state.tokens = tokens;
     }
   },
   actions: {},
@@ -58,9 +58,16 @@ const store: StoreOptions<RootState> = {
         return acc;
       };
 
-      return _.map(_.flatMap(state.channels), tokenChannels =>
-        _.reduce(tokenChannels, reducer, createEmptyTokenModel())
-      );
+      return _.map(_.flatMap(state.channels), tokenChannels => {
+        const model = _.reduce(tokenChannels, reducer, emptyTokenModel());
+        const tokenInfo = state.tokens[model.address];
+        if (tokenInfo) {
+          model.name = tokenInfo.name || '';
+          model.symbol = tokenInfo.symbol || '';
+        }
+
+        return model;
+      });
     },
     channels: (state: RootState) => (tokenAddress: string) => {
       let channels: RaidenChannel[] = [];

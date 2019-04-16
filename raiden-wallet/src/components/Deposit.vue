@@ -38,7 +38,7 @@
       <v-layout align-center justify-center class="section">
         <v-flex xs10 md10 lg10 class="text-xs-center">
           <v-btn
-            class="text-capitalize"
+            class="text-capitalize confirm-button"
             depressed
             id="open-channel"
             :disabled="!valid"
@@ -119,7 +119,6 @@ export default class Deposit extends Vue {
   done = false;
 
   async openChannel() {
-    this.loading = true;
     const tokenInfo = this.tokenInfo;
     const depositAmount = BalanceUtils.parse(this.deposit, tokenInfo.decimals);
 
@@ -128,6 +127,8 @@ export default class Deposit extends Vue {
     } else {
       this.steps = this.allSteps;
     }
+
+    this.loading = true;
 
     try {
       await this.$raiden.openChannel(
@@ -189,20 +190,5 @@ form:first-child {
 
 #container {
   height: 100%;
-}
-
-#open-channel {
-  margin-top: 105px;
-  height: 40px;
-  width: 250px;
-  border-radius: 29px;
-  background-color: #000000 !important;
-  @include respond-to(handhelds) {
-    margin-top: 18px;
-  }
-}
-
-#open-channel:hover {
-  background-color: #0e0e0e !important;
 }
 </style>

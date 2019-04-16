@@ -32,6 +32,7 @@ export default class App extends Vue {
 
   async mounted() {
     await this.$raiden.connect();
+    await this.$raiden.fetchTokens();
   }
 
   destroyed() {

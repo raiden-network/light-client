@@ -1,5 +1,7 @@
 import RaidenService from '@/services/raiden-service';
-import { RaidenChannels } from 'raiden';
+import { RaidenChannels, TokenInfo } from 'raiden';
+
+export type Tokens = { [token: string]: TokenInfo };
 
 export interface RootState {
   loading: boolean;
@@ -8,6 +10,7 @@ export interface RootState {
   providerDetected: boolean;
   userDenied: boolean;
   channels: RaidenChannels;
+  tokens: Tokens;
 }
 
 declare global {

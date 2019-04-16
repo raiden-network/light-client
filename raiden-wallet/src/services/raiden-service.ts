@@ -170,6 +170,30 @@ export default class RaidenService {
       throw new ChannelSettleFailed(e);
     }
   }
+
+  async fetchTokens() {
+    const cache = this.store.state.tokens;
+    let updateEntries = 0;
+    let tokens: string[];
+    try {
+      tokens = await this.raiden.getTokenList();
+    } catch (e) {
+      tokens = [];
+    }
+
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      if (cache.hasOwnProperty(token)) {
+        continue;
+      }
+      cache[token] = await this.raiden.getTokenInfo(token);
+      updateEntries += 1;
+    }
+
+    if (updateEntries > 0) {
+      this.store.commit('updateTokens', cache);
+    }
+  }
 }
 
 export class ChannelSettleFailed extends Error {}
