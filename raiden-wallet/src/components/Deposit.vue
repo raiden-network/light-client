@@ -92,23 +92,23 @@ export default class Deposit extends Vue {
 
   protected readonly allSteps: StepDescription[] = [
     {
-      title: 'Opening new Channel',
-      description: 'Your channel is being opened.'
+      title: 'Opening a new Channel',
+      description: 'Please do not close the browser and confirm the transaction with MetaMask.'
     },
     {
-      title: 'Transferring funds to token network',
-      description: 'Your funds are being deposited to the token network'
+      title: 'Transferring tokens to the network and deposit into the channel',
+      description: 'Please do not close the browser and confirm two (2) transactions with MetaMask.'
     },
     {
-      title: 'Depositing funds to the channel',
-      description: 'Your funds are being deposited to the channel'
+      title: 'Not implemented - split title above, when done',
+      description: 'Not implemented - split description above, when done'
     }
   ];
 
   readonly doneStep: StepDescription = {
-    title: 'Channel open complete',
+    title: 'New Channel opened',
     description:
-      'Your channel was opened successfully.<br/> You may now select a payment target'
+      ': A new channel has been opened successfully.<br/>You may now select a payment target.'
   };
   current = 0;
   done = false;
