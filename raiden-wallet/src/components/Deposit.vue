@@ -108,7 +108,7 @@ export default class Deposit extends Vue {
   readonly doneStep: StepDescription = {
     title: 'New Channel opened',
     description:
-      ': A new channel has been opened successfully.<br/>You may now select a payment target.'
+      'A new channel has been opened successfully.<br/>You may now select a payment target.'
   };
   current = 0;
   done = false;
