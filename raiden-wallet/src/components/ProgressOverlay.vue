@@ -34,8 +34,7 @@
         <p id="message" class="step-description">
           <span v-if="done" v-html="doneStep.description"> </span>
           <span v-else>
-            {{ steps[current].description }}<br />
-            Please do not close your browser.
+            {{ steps[current].description }}
           </span>
         </p>
       </div>
