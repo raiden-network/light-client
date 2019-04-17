@@ -93,11 +93,13 @@ export default class Deposit extends Vue {
   protected readonly allSteps: StepDescription[] = [
     {
       title: 'Opening a new Channel',
-      description: 'Please do not close the browser and confirm the transaction with MetaMask.'
+      description:
+        'Please do not close the browser and confirm the transaction with MetaMask.'
     },
     {
       title: 'Transferring tokens to the network and deposit into the channel',
-      description: 'Please do not close the browser and confirm two (2) transactions with MetaMask.'
+      description:
+        'Please do not close the browser and confirm two (2) transactions with MetaMask.'
     },
     {
       title: 'Not implemented - split title above, when done',
