@@ -62,6 +62,26 @@ Once you got your `raiden` instance, the public API should be pretty straightfor
 
 Channels are mostly specified through the first two parameters: `token` and `partner` addresses, as Raiden contracts currently limit the number of channels in open at any given time to some specific partner to 1.
 
+### Connecting to a Raiden test network
+
+Connecting to a Raiden test network is automatically done by the Light Client SDK. The SDK will automatically connect to the proper Raiden network based on the detected network id on your web3 provider.
+
+The SDK provides out of the box support for the deployed networks on Ropsten, Rinkeby, Kovan, and Mainnet.
+
+If you want you can also use the Light Client SDK to connect to networks that are not officially supported.
+
+To connect for example on a privately deployed Raiden network,
+you can initialize the SDK as usual, and pass the Contract Info as the fourth parameter of the create function.
+
+```typescript
+import { Raiden } from 'raiden';
+
+# async factory
+const raiden = await Raiden.create(web3.currentProvider, 0, localStorage, contractInfo);
+```
+
+Contract info is a JSON file that is generated when you deploy [raiden-contracts](https://github.com/raiden-network/raiden-contracts).
+
 ### Subscribing to channel$ observable and opening your first channel
 
 To connect to the Raiden Network, you simply make a transaction to open a channel on-chain with a given partner on a registered token network. You can also specify a `settleTimeout`, which will be the number of blocks you and your partner will need to wait after closing a channel to be able to settle it and actually get the due tokens back. `settleTimeout` defaults to `500`
@@ -161,8 +181,7 @@ Once channel is settled, it's gone from state, and the cycle can restart.
 
 ### Other methods
 
-There's a couple of more public methods exposed through main Raiden Light Client API. It aims to provide all necessary blockchain interaction methods and events related to Raiden, so you don't need to worry about web3 and Raiden contracts directly. Also, we're working on exposing more events and informational methods to the world, so stay tuned and keep an eye out for the main public API file: [raiden.ts]('./src/raiden.ts'). It's very easy to understand and docstrings are all over the place.
-
+There's a couple of more public methods exposed through main Raiden Light Client API. It aims to provide all necessary blockchain interaction methods and events related to Raiden, so you don't need to worry about web3 and Raiden contracts directly. Also, we're working on exposing more events and informational methods to the world, so stay tuned and keep an eye out for the main public API file: [raiden.ts](./src/raiden.ts). It's very easy to understand and docstrings are all over the place.
 
 ## Contributing
 
