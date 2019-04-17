@@ -73,8 +73,31 @@ export function raidenReducer(
         channel.id !== action.id
       )
         return state;
-      Object.assign(channel, { state: ChannelState.closed, closeBlock: action.closeBlock });
+      channel.state = ChannelState.closed;
+      channel.closeBlock = action.closeBlock;
       return set(cloneDeep(state), path, channel);
+
+    case RaidenActionType.CHANNEL_SETTLEABLE:
+      path = ['tokenNetworks', action.tokenNetwork, action.partner, 'state'];
+      if (get(state, path) !== ChannelState.closed) return state;
+      return set(cloneDeep(state), path, ChannelState.settleable);
+
+    case RaidenActionType.CHANNEL_SETTLE:
+      path = ['tokenNetworks', action.tokenNetwork, action.partner, 'state'];
+      if (get(state, path) !== ChannelState.settleable) return state;
+      return set(cloneDeep(state), path, ChannelState.settling);
+
+    case RaidenActionType.CHANNEL_SETTLED:
+      path = ['tokenNetworks', action.tokenNetwork, action.partner, 'state'];
+      if (
+        ![ChannelState.closed, ChannelState.settleable, ChannelState.settling].includes(
+          get(state, path),
+        )
+      )
+        return state;
+      state = cloneDeep(state);
+      delete state.tokenNetworks[action.tokenNetwork][action.partner];
+      return state;
 
     default:
       return state;

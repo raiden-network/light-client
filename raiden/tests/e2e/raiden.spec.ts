@@ -1,6 +1,6 @@
 import { first, filter } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
-import { parseEther, parseUnits, bigNumberify } from 'ethers/utils';
+import { parseEther, parseUnits, bigNumberify, BigNumber } from 'ethers/utils';
 import { get } from 'lodash';
 
 import { TestProvider } from './provider';
@@ -35,6 +35,8 @@ describe('Raiden', () => {
     snapId = await provider.snapshot();
     storage = new MockStorage();
     raiden = await Raiden.create(provider, 0, storage, info);
+    // wait token register to be fetched
+    await raiden.getTokenList();
   });
 
   afterEach(() => {
@@ -95,35 +97,35 @@ describe('Raiden', () => {
   describe('getTokenBalance', () => {
     test('non-monitored token', async () => {
       expect.assertions(1);
-      await expect(raiden.getTokenBalance(token)).rejects.toThrow();
+      await expect(raiden.getTokenBalance(partner)).rejects.toThrow();
     });
 
     test('success', async () => {
       expect.assertions(1);
-      await raiden.monitorToken(token);
-      await expect(raiden.getTokenBalance(token)).resolves.toEqual({
-        balance: parseUnits('1000', 18),
-        decimals: 18,
-      });
+      await expect(raiden.getTokenBalance(token)).resolves.toEqual(parseUnits('1000', 18));
     });
   });
 
-  describe('monitorToken', () => {
-    test('fail', async () => {
+  describe('getTokenInfo', () => {
+    test('non-monitored token', async () => {
       expect.assertions(1);
-      await expect(raiden.monitorToken(tokenNetwork)).rejects.toThrow();
+      await expect(raiden.getTokenInfo(partner)).rejects.toThrow();
     });
 
     test('success', async () => {
       expect.assertions(1);
-      await expect(raiden.monitorToken(token)).resolves.toBe(tokenNetwork);
+      await expect(raiden.getTokenInfo(token)).resolves.toEqual({
+        totalSupply: expect.any(BigNumber),
+        decimals: 18,
+        name: 'TestToken',
+        symbol: 'TKN',
+      });
     });
   });
 
   describe('openChannel', () => {
     test('tx fail', async () => {
       expect.assertions(1);
-      await raiden.monitorToken(token);
       // settleTimeout < min of 500
       await expect(raiden.openChannel(token, partner, 499)).rejects.toThrow();
     });
@@ -200,7 +202,6 @@ describe('Raiden', () => {
     });
 
     test('partner instance fetches events fired before instantiation', async () => {
-      raiden1.monitorToken(token);
       await expect(
         raiden1.channels$
           .pipe(
@@ -253,6 +254,58 @@ describe('Raiden', () => {
             partner,
             state: ChannelState.closed,
             closeBlock: expect.any(Number),
+          },
+        },
+      });
+    });
+  });
+
+  describe('settleChannel', () => {
+    beforeEach(async () => {
+      await raiden.openChannel(token, partner);
+      await provider.mine();
+      await raiden.closeChannel(token, partner);
+    });
+
+    test('unknown token network', async () => {
+      expect.assertions(1);
+      // token=partner
+      await expect(raiden.settleChannel(partner, partner)).rejects.toThrow();
+    });
+
+    test('no channel with address', async () => {
+      expect.assertions(1);
+      // there's no channel with partner=token
+      await expect(raiden.settleChannel(token, token)).rejects.toThrow();
+    });
+
+    test('channel not settleable yet', async () => {
+      expect.assertions(1);
+      // there's no channel with partner=token
+      await expect(raiden.settleChannel(token, partner)).rejects.toThrow();
+    });
+
+    test('success', async () => {
+      expect.assertions(3);
+      await provider.mine(501);
+      await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
+        [token]: {
+          [partner]: {
+            token,
+            tokenNetwork,
+            partner,
+            state: ChannelState.settleable,
+            closeBlock: expect.any(Number),
+          },
+        },
+      });
+      await expect(raiden.settleChannel(token, partner)).resolves.toMatch(/^0x/);
+      await expect(raiden.channels$.pipe(first()).toPromise()).resolves.not.toMatchObject({
+        [token]: {
+          [partner]: {
+            token,
+            tokenNetwork,
+            partner,
           },
         },
       });

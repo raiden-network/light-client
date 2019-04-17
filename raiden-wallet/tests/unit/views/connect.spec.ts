@@ -39,7 +39,6 @@ describe('Connect.vue', function() {
     router = new VueRouter() as Mocked<VueRouter>;
     service = new RaidenService(store) as Mocked<RaidenService>;
     service.getToken = jest.fn().mockResolvedValue(TestData.token);
-    service.monitorToken = jest.fn().mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -56,8 +55,6 @@ describe('Connect.vue', function() {
     wrapper = vueFactory(router, service);
     wrapper.vm.$data.token = '0xtoken';
     await flushPromises();
-    expect(service.monitorToken).toHaveBeenCalledTimes(1);
-    expect(service.monitorToken).toHaveBeenCalledWith('0xtoken');
   });
 
   it('should redirect to pre filled connect', async function() {

@@ -1,3 +1,5 @@
+jest.mock('vuex');
+
 import { TestData } from './data/mock-data';
 import RaidenService, {
   CloseChannelFailed,
@@ -13,9 +15,6 @@ import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
 import { BehaviorSubject, EMPTY } from 'rxjs';
 import { Zero } from 'ethers/constants';
-
-jest.mock('vuex');
-
 import Mocked = jest.Mocked;
 
 Vue.use(Vuex);
@@ -201,7 +200,8 @@ describe('RaidenService', () => {
     const raidenMock = {
       channels$: EMPTY,
       getBalance: jest.fn().mockResolvedValue(Zero),
-      getTokenBalance: jest.fn().mockRejectedValue('reject')
+      getTokenBalance: jest.fn().mockRejectedValue('reject'),
+      getTokenInfo: jest.fn().mockRejectedValue('reject')
     };
 
     factory.mockResolvedValue(raidenMock);
@@ -212,17 +212,20 @@ describe('RaidenService', () => {
     expect(result).toBeNull();
     expect(raidenMock.getTokenBalance).toHaveBeenCalledTimes(1);
     expect(raidenMock.getTokenBalance).toHaveBeenCalledWith('0xtoken');
+    expect(raidenMock.getTokenInfo).toHaveBeenCalledTimes(1);
+    expect(raidenMock.getTokenInfo).toHaveBeenCalledWith('0xtoken');
   });
 
   it('should return a token object from getTokenBalance if everything is good', async function() {
     providerMock.mockResolvedValue({});
     const balance = new BigNumber('1000000000000000000');
-    const tokenBalance = jest.fn().mockResolvedValue({
-      balance: balance,
+    const tokenBalance = jest.fn().mockResolvedValue(balance);
+    const tokenInfo = jest.fn().mockResolvedValue({
       decimals: 18
     });
     const raidenMock = mockRaiden({
-      getTokenBalance: tokenBalance
+      getTokenBalance: tokenBalance,
+      getTokenInfo: tokenInfo
     });
 
     factory.mockResolvedValue(raidenMock);
@@ -237,6 +240,8 @@ describe('RaidenService', () => {
     expect(result!!.balance).toBe(balance);
     expect(tokenBalance).toHaveBeenCalledTimes(1);
     expect(tokenBalance).toHaveBeenCalledWith('0xtoken');
+    expect(tokenInfo).toHaveBeenCalledTimes(1);
+    expect(tokenInfo).toHaveBeenCalledWith('0xtoken');
   });
 
   it('should start updating channels in store on connect', async function() {
@@ -256,22 +261,6 @@ describe('RaidenService', () => {
     expect(store.commit).toHaveBeenNthCalledWith(3, 'updateChannels', {});
     expect(store.commit).toHaveBeenCalledTimes(4);
     raidenService.disconnect();
-  });
-
-  it('should start monitoring the token', async function() {
-    const monitorToken = jest.fn().mockResolvedValue(null);
-    providerMock.mockResolvedValue({});
-    factory.mockResolvedValue(
-      mockRaiden({
-        monitorToken: monitorToken
-      })
-    );
-
-    await raidenService.connect();
-    await flushPromises();
-    await raidenService.monitorToken('0xtoken');
-    expect(monitorToken).toHaveBeenCalledWith('0xtoken');
-    expect(monitorToken).toHaveBeenCalledTimes(1);
   });
 
   it('should resolve successfully on channel close', async function() {

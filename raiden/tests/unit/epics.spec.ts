@@ -16,7 +16,6 @@ import {
   raidenInit,
   raidenShutdown,
   newBlock,
-  tokenMonitor,
   tokenMonitored,
   channelMonitored,
   channelOpen,
@@ -24,18 +23,22 @@ import {
   channelDeposit,
   channelDeposited,
   channelClose,
+  channelClosed,
+  channelSettleable,
+  channelSettle,
 } from 'raiden/store/actions';
 import {
   stateOutputEpic,
   actionOutputEpic,
   raidenEpics,
-  tokenMonitorEpic,
+  newBlockEpic,
   tokenMonitoredEpic,
   channelOpenEpic,
   channelOpenedEpic,
   channelMonitoredEpic,
   channelDepositEpic,
   channelCloseEpic,
+  channelSettleEpic,
 } from 'raiden/store/epics';
 
 import { raidenEpicDeps, makeLog } from './mocks';
@@ -79,7 +82,7 @@ describe('raidenEpics', () => {
   });
 
   test('actionOutputEpic', async () => {
-    const action = tokenMonitor(token); // a random action
+    const action = newBlock(123); // a random action
     const outputPromise = depsMock.actionOutput$.toPromise();
     const epicPromise = actionOutputEpic(
       of<RaidenActions>(action),
@@ -135,43 +138,36 @@ describe('raidenEpics', () => {
     }),
   );
 
-  describe('tokenMonitorEpic', () => {
-    test('succeeds first', async () => {
-      const action$ = of<RaidenActions>(tokenMonitor(token)),
-        state$ = of<RaidenState>(state);
-
-      // toPromise will ensure observable completes and resolve to last emitted value
-      await expect(tokenMonitorEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+  test(
+    'newBlockEpic',
+    marbles(m => {
+      const closeBlock = 125;
+      // state contains one channel in closed state
+      const newState = [
         tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, 121, '0xopenTxHash'),
+        channelClosed(
+          tokenNetwork,
+          partner,
+          channelId,
+          depsMock.address,
+          closeBlock,
+          '0xcloseTxHash',
+        ),
+      ].reduce(raidenReducer, state);
+      /* first newBlock bigger than settleTimeout causes a channelSettleable to be emitted */
+      const action$ = m.cold('---b-B-|', {
+          b: newBlock(closeBlock + settleTimeout - 1),
+          B: newBlock(closeBlock + settleTimeout + 4),
+        }),
+        state$ = m.cold('--s-|', { s: newState });
+      m.expect(newBlockEpic(action$, state$)).toBeObservable(
+        m.cold('-----S-|', {
+          S: channelSettleable(tokenNetwork, partner, closeBlock + settleTimeout + 4),
+        }),
       );
-    });
-
-    test('succeeds already monitored', async () => {
-      const action$ = of<RaidenActions>(tokenMonitor(token)),
-        state$ = of<RaidenState>(raidenReducer(state, tokenMonitored(token, tokenNetwork, true)));
-
-      // toPromise will ensure observable completes and resolve to last emitted value
-      await expect(tokenMonitorEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
-        tokenMonitored(token, tokenNetwork, false),
-      );
-    });
-
-    test('fails', async () => {
-      const action$ = of<RaidenActions>(tokenMonitor(token)),
-        state$ = of<RaidenState>(state);
-      depsMock.registryContract.functions.token_to_token_networks.mockResolvedValueOnce(
-        AddressZero,
-      );
-
-      await expect(tokenMonitorEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
-        {
-          type: RaidenActionType.TOKEN_MONITOR_FAILED,
-          token,
-          error: expect.any(Error),
-        },
-      );
-    });
-  });
+    }),
+  );
 
   describe('tokenMonitoredEpic', () => {
     const settleTimeoutEncoded = defaultAbiCoder.encode(['uint256'], [settleTimeout]);
@@ -425,7 +421,9 @@ describe('raidenEpics', () => {
     const deposit = bigNumberify(1023),
       depositEncoded = defaultAbiCoder.encode(['uint256'], [deposit]),
       openBlock = 121,
-      closeBlock = 124;
+      closeBlock = 124,
+      settleBlock = closeBlock + settleTimeout + 1,
+      settleAmountsEncoded = defaultAbiCoder.encode(['uint256', 'uint256'], [Zero, Zero]);
 
     test('first channelMonitored with past$ own ChannelNewDeposit event', async () => {
       const curState = [
@@ -553,7 +551,7 @@ describe('raidenEpics', () => {
     test('new$ partner ChannelClosed event', async () => {
       const curState = [
         tokenMonitored(token, tokenNetwork, true),
-        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xtxHash'),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenActions>(channelMonitored(tokenNetwork, partner, channelId)),
         state$ = of<RaidenState>(curState);
@@ -580,6 +578,99 @@ describe('raidenEpics', () => {
         closeBlock,
         txHash: '0xcloseTxHash',
       });
+    });
+
+    test('new$ ChannelSettled event', async () => {
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+        channelClosed(
+          tokenNetwork,
+          partner,
+          channelId,
+          depsMock.address,
+          closeBlock,
+          '0xcloseTxHash',
+        ), // channel is in "closed" state already
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(channelMonitored(tokenNetwork, partner, channelId)),
+        state$ = of<RaidenState>(curState);
+
+      expect(depsMock.provider.removeListener).not.toHaveBeenCalled();
+      const promise = channelMonitoredEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      expect(
+        tokenNetworkContract.listenerCount(
+          tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
+        ),
+      ).toBe(1);
+
+      expect(
+        tokenNetworkContract.listenerCount(
+          tokenNetworkContract.filters.ChannelClosed(channelId, null, null),
+        ),
+      ).toBe(1);
+
+      expect(
+        tokenNetworkContract.listenerCount(
+          tokenNetworkContract.filters.ChannelSettled(channelId, null, null),
+        ),
+      ).toBe(1);
+
+      depsMock.provider.emit(
+        tokenNetworkContract.filters.ChannelSettled(channelId, null, null),
+        makeLog({
+          blockNumber: settleBlock,
+          transactionHash: '0xsettleTxHash',
+          filter: tokenNetworkContract.filters.ChannelSettled(channelId, null, null),
+          data: settleAmountsEncoded, // participants amounts aren't indexed, so they go in data
+        }),
+      );
+
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.CHANNEL_SETTLED,
+        tokenNetwork,
+        partner,
+        id: channelId,
+        settleBlock,
+        txHash: '0xsettleTxHash',
+      });
+
+      // ensure ChannelSettledAction completed channel monitoring and unsubscribed from events
+      expect(depsMock.provider.removeListener).toHaveBeenCalledWith(
+        tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
+        expect.anything(),
+      );
+
+      expect(depsMock.provider.removeListener).toHaveBeenCalledWith(
+        tokenNetworkContract.filters.ChannelClosed(channelId, null, null),
+        expect.anything(),
+      );
+
+      expect(depsMock.provider.removeListener).toHaveBeenCalledWith(
+        tokenNetworkContract.filters.ChannelSettled(channelId, null, null),
+        expect.anything(),
+      );
+
+      expect(
+        tokenNetworkContract.listenerCount(
+          tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
+        ),
+      ).toBe(0);
+
+      expect(
+        tokenNetworkContract.listenerCount(
+          tokenNetworkContract.filters.ChannelClosed(channelId, null, null),
+        ),
+      ).toBe(0);
+
+      expect(
+        tokenNetworkContract.listenerCount(
+          tokenNetworkContract.filters.ChannelSettled(channelId, null, null),
+        ),
+      ).toBe(0);
     });
   });
 
@@ -877,6 +968,153 @@ describe('raidenEpics', () => {
         expect.anything(), // signature
       );
       expect(closeTx.wait).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('chanelSettleEpic', () => {
+    const openBlock = 121,
+      closeBlock = 125,
+      settleBlock = closeBlock + settleTimeout + 1;
+
+    test('fails if there is no channel with partner on tokenNetwork', async () => {
+      // there's a channel already opened in state
+      const action$ = of<RaidenActions>(channelSettle(tokenNetwork, partner)),
+        state$ = of<RaidenState>(state);
+
+      await expect(
+        channelSettleEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.CHANNEL_SETTLE_FAILED,
+        tokenNetwork,
+        partner,
+        error: expect.any(Error),
+      });
+    });
+
+    test('fails if channel.state !== "settleable|settling"', async () => {
+      // there's a channel in closed state, but not yet settleable
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+        newBlock(closeBlock),
+        channelClosed(
+          tokenNetwork,
+          partner,
+          channelId,
+          depsMock.address,
+          closeBlock,
+          '0xcloseTxHash',
+        ),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(channelSettle(tokenNetwork, partner)),
+        state$ = of<RaidenState>(curState);
+
+      await expect(
+        channelSettleEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.CHANNEL_SETTLE_FAILED,
+        tokenNetwork,
+        partner,
+        error: expect.any(Error),
+      });
+    });
+
+    test('settleChannel tx fails', async () => {
+      // there's a channel with partner in closed state and current block >= settleBlock
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+        newBlock(closeBlock),
+        channelClosed(
+          tokenNetwork,
+          partner,
+          channelId,
+          depsMock.address,
+          closeBlock,
+          '0xcloseTxHash',
+        ),
+        newBlock(settleBlock),
+        channelSettleable(tokenNetwork, partner, settleBlock),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(channelSettle(tokenNetwork, partner)),
+        state$ = of<RaidenState>(curState);
+
+      const settleTx: ContractTransaction = {
+        hash: '0xsettleTxHash',
+        confirmations: 1,
+        nonce: 2,
+        gasLimit: bigNumberify(1e6),
+        gasPrice: bigNumberify(2e10),
+        value: Zero,
+        data: '0x',
+        chainId: depsMock.network.chainId,
+        from: depsMock.address,
+        wait: jest.fn().mockResolvedValue({ byzantium: true, status: 0 }),
+      };
+      tokenNetworkContract.functions.settleChannel.mockResolvedValueOnce(settleTx);
+
+      await expect(
+        channelSettleEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.CHANNEL_SETTLE_FAILED,
+        tokenNetwork,
+        partner,
+        error: expect.any(Error),
+      });
+    });
+
+    test('success', async () => {
+      // there's a channel with partner in closed state and current block >= settleBlock
+      const curState = [
+        tokenMonitored(token, tokenNetwork, true),
+        channelOpened(tokenNetwork, partner, channelId, settleTimeout, openBlock, '0xopenTxHash'),
+        newBlock(closeBlock),
+        channelClosed(
+          tokenNetwork,
+          partner,
+          channelId,
+          depsMock.address,
+          closeBlock,
+          '0xcloseTxHash',
+        ),
+        newBlock(settleBlock),
+        channelSettleable(tokenNetwork, partner, settleBlock),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenActions>(channelSettle(tokenNetwork, partner)),
+        state$ = of<RaidenState>(curState);
+
+      const settleTx: ContractTransaction = {
+        hash: '0xsettleTxHash',
+        confirmations: 1,
+        nonce: 2,
+        gasLimit: bigNumberify(1e6),
+        gasPrice: bigNumberify(2e10),
+        value: Zero,
+        data: '0x',
+        chainId: depsMock.network.chainId,
+        from: depsMock.address,
+        wait: jest.fn().mockResolvedValue({ byzantium: true, status: 1 }),
+      };
+      tokenNetworkContract.functions.settleChannel.mockResolvedValueOnce(settleTx);
+
+      // result is undefined on success as the respective ChannelSettledAction is emitted by the
+      // channelMonitoredEpic, which monitors the blockchain for channel events
+      await expect(
+        channelSettleEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toBeUndefined();
+      expect(tokenNetworkContract.functions.settleChannel).toHaveBeenCalledTimes(1);
+      expect(tokenNetworkContract.functions.settleChannel).toHaveBeenCalledWith(
+        channelId,
+        depsMock.address,
+        expect.anything(), // self transfered amount
+        expect.anything(), // self locked amount
+        expect.anything(), // self locksroot
+        partner,
+        expect.anything(), // partner transfered amount
+        expect.anything(), // partner locked amount
+        expect.anything(), // partner locksroot
+      );
+      expect(settleTx.wait).toHaveBeenCalledTimes(1);
     });
   });
 });

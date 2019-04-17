@@ -1,7 +1,7 @@
 import { Subject } from 'rxjs';
 import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
-import { Network } from 'ethers/utils';
+import { Network, BigNumber } from 'ethers/utils';
 
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
@@ -54,4 +54,11 @@ export interface Storage {
   getItem(key: string): string | null | Promise<string | null>;
   setItem(key: string, value: string): void | Promise<void>;
   removeItem(key: string): void | Promise<void>;
+}
+
+export interface TokenInfo {
+  totalSupply: BigNumber;
+  decimals: number;
+  name?: string;
+  symbol?: string;
 }

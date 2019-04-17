@@ -8,6 +8,7 @@ export enum ChannelState {
   open = 'open',
   closing = 'closing',
   closed = 'closed',
+  settleable = 'settleable',
   settling = 'settling',
   settled = 'settled',
 }
@@ -24,6 +25,7 @@ export const ChannelType = t.intersection([
     id: t.number,
     settleTimeout: t.number,
     openBlock: t.number,
+    closeBlock: t.number,
   }),
 ]);
 
@@ -36,6 +38,7 @@ export type Channel = t.TypeOf<typeof ChannelType>;
   id?: number;
   settleTimeout?: number;
   openBlock?: number;
+  closeBlock?: number;
 }*/
 
 export const RaidenStateType = t.type({
