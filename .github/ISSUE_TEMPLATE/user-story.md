@@ -12,5 +12,3 @@ assignees: ''
 ## Acceptance criteria
 
 ## Tasks
-
-## Story Points
