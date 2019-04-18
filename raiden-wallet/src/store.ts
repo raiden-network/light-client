@@ -1,9 +1,16 @@
 import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState, Tokens } from '@/types';
-import { RaidenChannel, RaidenChannels } from 'raiden';
+import { RaidenChannel, RaidenChannels, TokenInfo } from 'raiden';
 import * as _ from 'lodash';
-import { emptyTokenModel, AccTokenModel, TokenModel } from '@/model/types';
+import {
+  emptyTokenModel,
+  AccTokenModel,
+  TokenModel,
+  Token
+} from '@/model/types';
+import { BigNumberish } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 Vue.use(Vuex);
 
@@ -68,6 +75,24 @@ const store: StoreOptions<RootState> = {
 
         return model;
       });
+    },
+    allTokens: (state: RootState): Token[] => {
+      return _.reduce(
+        state.tokens,
+        (result: Token[], value: TokenInfo, key: string) => {
+          const model: Token = {
+            address: key,
+            balance: Zero,
+            decimals: value.decimals,
+            units: '',
+            symbol: value.symbol,
+            name: value.name
+          };
+          result.push(model);
+          return result;
+        },
+        []
+      );
     },
     channels: (state: RootState) => (tokenAddress: string) => {
       let channels: RaidenChannel[] = [];

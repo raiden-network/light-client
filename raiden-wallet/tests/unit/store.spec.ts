@@ -107,4 +107,24 @@ describe('store', () => {
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.getters.tokens).toEqual([model('Test Token', 'TTT')]);
   });
+
+  test('return the cached tokens as an array', function() {
+    const tokens = testTokens(
+      '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+      'Test Token',
+      'TTT'
+    );
+
+    store.commit('updateTokens', tokens);
+    expect(store.getters.allTokens).toEqual([
+      {
+        address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+        balance: Zero,
+        decimals: 18,
+        units: '',
+        symbol: 'TTT',
+        name: 'Test Token'
+      }
+    ]);
+  });
 });
