@@ -1,10 +1,10 @@
 <template>
   <v-app dark>
     <loading v-if="loading || !initialized"></loading>
-    <div id="wallet-wrapper" v-else>
+    <div id="wallet-wrapper" class="fill-height" v-else>
       <div id="wallet">
         <wallet-header></wallet-header>
-        <v-content>
+        <v-content class="fill-height">
           <router-view></router-view>
         </v-content>
       </div>
@@ -48,7 +48,7 @@ export default class App extends Vue {
 #wallet-wrapper {
   margin-top: 70px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   @include respond-to(handhelds) {
     margin-top: 0;
