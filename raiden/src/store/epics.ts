@@ -332,7 +332,9 @@ export const channelMonitoredEpic = (
       // observable that emits iff this channel was settled and therefore was removed from state
       const unsubscribeChannelNotification = action$.pipe(
         ofType<RaidenActions, ChannelSettledAction>(RaidenActionType.CHANNEL_SETTLED),
-        filter(settled => settled.id === action.id),
+        filter(
+          settled => settled.tokenNetwork === action.tokenNetwork && settled.id === action.id,
+        ),
       );
 
       // at subscription time, if there's already a filter, skip (return completed observable)
