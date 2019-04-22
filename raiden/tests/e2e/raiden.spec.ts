@@ -300,14 +300,8 @@ describe('Raiden', () => {
         },
       });
       await expect(raiden.settleChannel(token, partner)).resolves.toMatch(/^0x/);
-      await expect(raiden.channels$.pipe(first()).toPromise()).resolves.not.toMatchObject({
-        [token]: {
-          [partner]: {
-            token,
-            tokenNetwork,
-            partner,
-          },
-        },
+      await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toEqual({
+        [token]: {},
       });
     });
   });

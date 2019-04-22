@@ -118,6 +118,12 @@ describe('raidenEpics', () => {
           bigNumberify(200),
           '0xpartnerDepositTxHash',
         ),
+        newBlock(128),
+        channelClosed(tokenNetwork, partner, channelId, partner, 128, '0xcloseTxHash'),
+        newBlock(629),
+        channelSettleable(tokenNetwork, partner, 629),
+        newBlock(633),
+        channelSettle(tokenNetwork, partner), // channel is left in 'settling' state
       ].reduce(raidenReducer, state);
       /* this test requires mocked provider, or else emit is called with setTimeout and doesn't run
        * before the return of the function.
@@ -125,14 +131,15 @@ describe('raidenEpics', () => {
       const action$ = m.cold('---a------d|', { a: raidenInit(), d: raidenShutdown() }),
         state$ = m.cold('--s---|', { s: newState }),
         emitBlock$ = m.cold('----------b-|').pipe(
-          tap(() => depsMock.provider.emit('block', 127)),
+          tap(() => depsMock.provider.emit('block', 634)),
           ignoreElements(),
         );
       m.expect(merge(emitBlock$, raidenEpics(action$, state$, depsMock))).toBeObservable(
         m.cold('---(tc)---b-|', {
           t: tokenMonitored(token, tokenNetwork, false),
+          // ensure channelMonitored is emitted by raidenInit even for 'settling' channel
           c: channelMonitored(tokenNetwork, partner, channelId),
-          b: newBlock(127),
+          b: newBlock(634),
         }),
       );
     }),
