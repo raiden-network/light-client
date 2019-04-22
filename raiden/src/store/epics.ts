@@ -127,13 +127,11 @@ export const raidenInitializationEpic = (
         from(Object.entries(state.token2tokenNetwork)).pipe(
           map(([token, tokenNetwork]) => tokenMonitored(token, tokenNetwork)),
         ),
-        // monitor open channels
+        // monitor all on-chain channels (which have ids)
         from(Object.entries(state.tokenNetworks)).pipe(
           mergeMap(([tokenNetwork, obj]) =>
             from(Object.entries(obj)).pipe(
-              filter(
-                ([, channel]) => channel.state === ChannelState.open && channel.id !== undefined,
-              ),
+              filter(([, channel]) => channel.id !== undefined),
               // typescript doesn't understand above filter guarantees id below will be set
               map(([partner, channel]) => channelMonitored(tokenNetwork, partner, channel.id!)),
             ),
