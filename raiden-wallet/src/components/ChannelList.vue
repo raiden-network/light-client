@@ -4,7 +4,7 @@
       <template v-for="(channel, index) in channels">
         <v-list-tile :key="channel.partner" class="channel">
           <v-list-tile-avatar>
-            <img :src="blocky(channel.partner)" alt="Partner address blocky" />
+            <img :src="blockie(channel.partner)" alt="Partner address blocky" />
           </v-list-tile-avatar>
           <v-list-tile-content>
             <v-list-tile-title>
@@ -111,17 +111,18 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Mixins } from 'vue-property-decorator';
 import { RaidenChannel } from 'raiden';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import DepositDialog from '@/components/dialogs/DepositDialog.vue';
 import { Token, TokenPlaceholder } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
+import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({
   components: { DepositDialog, ConfirmationDialog }
 })
-export default class ChannelList extends Vue {
+export default class ChannelList extends Mixins(BlockieMixin) {
   @Prop({ required: true })
   channels!: RaidenChannel[];
   @Prop({ required: true })
@@ -137,10 +138,6 @@ export default class ChannelList extends Vue {
 
   async created() {
     this.token = await this.$raiden.getToken(this.tokenAddress);
-  }
-
-  blocky(partner: string) {
-    return this.$identicon.getIdenticon(partner);
   }
 
   closeCancelled() {

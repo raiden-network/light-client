@@ -1,6 +1,6 @@
 <template>
   <v-app dark>
-    <loading v-if="loading"></loading>
+    <loading v-if="loading || !initialized"></loading>
     <div id="wallet-wrapper" v-else>
       <div id="wallet">
         <wallet-header></wallet-header>
@@ -24,14 +24,17 @@ import { mapState } from 'vuex';
 })
 export default class App extends Vue {
   name: string;
+  initialized: boolean = false;
 
   constructor() {
     super();
     this.name = 'Raiden Wallet';
   }
 
-  async mounted() {
+  async created() {
     await this.$raiden.connect();
+    await this.$raiden.fetchTokens();
+    this.initialized = true;
   }
 
   destroyed() {

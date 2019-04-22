@@ -1,8 +1,31 @@
 import store, { defaultState } from '@/store';
 import { TestData } from './data/mock-data';
-import { createEmptyTokenModel } from '@/model/types';
+import { emptyTokenModel } from '@/model/types';
+import { Tokens } from '@/types';
+import { Zero } from 'ethers/constants';
 
 describe('store', () => {
+  const testTokens = (token: string, name?: string, symbol?: string) => {
+    const tokens: Tokens = {};
+    tokens[token] = {
+      totalSupply: Zero,
+      decimals: 18,
+      name,
+      symbol
+    };
+    return tokens;
+  };
+
+  const model = (name?: string, symbol?: string) => {
+    const model = emptyTokenModel();
+    model.address = TestData.openChannel.token;
+    model.open = 1;
+    model.settling = 1;
+    model.name = name || '';
+    model.symbol = symbol || '';
+    return model;
+  };
+
   beforeEach(() => {
     store.replaceState(defaultState());
   });
@@ -45,11 +68,7 @@ describe('store', () => {
 
   it('should return a list of open channels and tokens', function() {
     store.commit('updateChannels', TestData.mockChannels);
-    const model = createEmptyTokenModel();
-    model.address = TestData.openChannel.token;
-    model.open = 1;
-    model.settling = 1;
-    expect(store.getters.tokens).toEqual([model]);
+    expect(store.getters.tokens).toEqual([model()]);
   });
 
   it('should return an empty list if token is not found', function() {
@@ -62,5 +81,30 @@ describe('store', () => {
     expect(
       store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
     ).toEqual([TestData.openChannel, TestData.settlingChannel]);
+  });
+
+  it('should change the tokens state when a updateTokens mutation is committed', function() {
+    const tokens = testTokens('0xtoken');
+    store.commit('updateTokens', tokens);
+    expect(store.state.tokens).toEqual(tokens);
+  });
+
+  it('should have empty strings if name and symbol are undefined', function() {
+    const tokens = testTokens('0xd0A1E359811322d97991E03f863a0C30C2cF029C');
+    store.commit('updateTokens', tokens);
+    store.commit('updateChannels', TestData.mockChannels);
+    expect(store.getters.tokens).toEqual([model()]);
+  });
+
+  it('should have name and symbol information', function() {
+    const tokens = testTokens(
+      '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+      'Test Token',
+      'TTT'
+    );
+
+    store.commit('updateTokens', tokens);
+    store.commit('updateChannels', TestData.mockChannels);
+    expect(store.getters.tokens).toEqual([model('Test Token', 'TTT')]);
   });
 });

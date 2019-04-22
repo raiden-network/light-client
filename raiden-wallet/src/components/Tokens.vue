@@ -1,11 +1,17 @@
 <template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
   <div>
-    <v-btn to="/connect" color="primary">Connect</v-btn>
     <v-list three-line>
       <template v-for="(token, index) in tokens">
         <v-list-tile :key="token.token" class="connection">
+          <v-list-tile-avatar>
+            <img :src="blockie(token.address)" alt="Partner address blocky" />
+          </v-list-tile-avatar>
           <v-list-tile-content>
-            <v-list-tile-title> Token: {{ token.address }} </v-list-tile-title>
+            <v-list-tile-title> {{ token.symbol }} </v-list-tile-title>
+            <v-list-tile-sub-title class="text--primary">
+              {{ token.name }}
+            </v-list-tile-sub-title>
+            <v-list-tile-sub-title> {{ token.address }} </v-list-tile-sub-title>
           </v-list-tile-content>
           <v-list-tile-action>
             <v-menu bottom left>
@@ -31,6 +37,7 @@
         </v-list-tile>
       </template>
     </v-list>
+    <v-btn to="/connect" color="primary">Connect</v-btn>
     <confirmation-dialog
       :display="leaveModalVisible"
       @confirm="leaveConfirmed()"
@@ -49,17 +56,18 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Mixins, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import { StepDescription, TokenModel } from '@/model/types';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
+import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({
   components: { ProgressOverlay, ConfirmationDialog },
   computed: mapGetters(['tokens'])
 })
-export default class Tokens extends Vue {
+export default class Tokens extends Mixins(BlockieMixin) {
   tokens!: TokenModel[];
   selectedToken: TokenModel | null = null;
   leaveModalVisible: boolean = false;

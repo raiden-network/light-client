@@ -11,6 +11,8 @@ export interface Token {
 }
 
 export interface AccTokenModel {
+  name: string;
+  symbol: string;
   address: string;
   opening: number;
   open: number;
@@ -23,6 +25,8 @@ export interface AccTokenModel {
 }
 
 export interface TokenModel extends AccTokenModel {
+  readonly name: string;
+  readonly symbol: string;
   readonly address: string;
   readonly opening: number;
   readonly open: number;
@@ -47,7 +51,9 @@ export interface StepDescription {
   readonly description: string;
 }
 
-export const createEmptyTokenModel = (): AccTokenModel => ({
+export const emptyTokenModel = (): AccTokenModel => ({
+  name: '',
+  symbol: '',
   address: '',
   opening: 0,
   open: 0,

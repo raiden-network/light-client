@@ -8,7 +8,7 @@ import Tokens from '@/components/Tokens.vue';
 import { TestData } from '../data/mock-data';
 import VueRouter from 'vue-router';
 import RaidenService from '@/services/raiden-service';
-import { createEmptyTokenModel } from '@/model/types';
+import { emptyTokenModel } from '@/model/types';
 
 jest.mock('@/services/raiden-service');
 
@@ -35,7 +35,7 @@ describe('Tokens.vue', function() {
         }
       ]
     });
-    const tokenModel = createEmptyTokenModel();
+    const tokenModel = emptyTokenModel();
     tokenModel.open = 2;
     tokenModel.address = TestData.openChannel.token;
     const getters = {
@@ -52,7 +52,10 @@ describe('Tokens.vue', function() {
       },
       router: mockRouter,
       mocks: {
-        $raiden: raiden
+        $raiden: raiden,
+        $identicon: {
+          getIdenticon: jest.fn()
+        }
       },
       stubs: {
         ConfirmationDialog: `

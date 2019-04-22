@@ -43,3 +43,18 @@
     padding-top: 20px;
   }
 }
+
+.confirm-button {
+  margin-top: 105px;
+  height: 40px;
+  width: 250px;
+  border-radius: 29px;
+  background-color: #000000 !important;
+  @include respond-to(handhelds) {
+    margin-top: 18px;
+  }
+}
+
+.confirm-button:hover {
+  background-color: #0e0e0e !important;
+}
