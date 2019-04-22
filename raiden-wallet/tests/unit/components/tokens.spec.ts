@@ -37,7 +37,7 @@ describe('Tokens.vue', function() {
     });
     const tokenModel = createEmptyTokenModel();
     tokenModel.open = 2;
-    tokenModel.address = TestData.mockChannel1.token;
+    tokenModel.address = TestData.openChannel.token;
     const getters = {
       tokens: jest.fn().mockReturnValue([tokenModel])
     };
@@ -84,7 +84,7 @@ describe('Tokens.vue', function() {
     expect(wrapper.vm.$data.leaveModalVisible).toBe(false);
     expect(raiden.leaveNetwork).toHaveBeenCalledTimes(1);
     expect(raiden.leaveNetwork).toHaveBeenCalledWith(
-      TestData.mockChannel1.token
+      TestData.openChannel.token
     );
   });
 

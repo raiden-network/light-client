@@ -64,7 +64,10 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import AmountInput from './AmountInput.vue';
-import { DepositFailed, OpenChannelFailed } from '@/services/raiden-service';
+import {
+  ChannelDepositFailed,
+  ChannelOpenFailed
+} from '@/services/raiden-service';
 import { StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
@@ -127,31 +130,29 @@ export default class Deposit extends Vue {
     }
 
     try {
-      const success = await this.$raiden.openChannel(
+      await this.$raiden.openChannel(
         this.token,
         this.partner,
         depositAmount,
         progress => (this.current = progress.current - 1)
       );
 
-      if (success) {
-        this.done = true;
-        setTimeout(() => {
-          this.loading = false;
-          this.navigateToSelectPaymentTarget();
-        }, 2000);
-      }
+      this.done = true;
+      setTimeout(() => {
+        this.loading = false;
+        this.navigateToSelectPaymentTarget();
+      }, 2000);
     } catch (e) {
       this.error = '';
-      if (e instanceof OpenChannelFailed) {
+      if (e instanceof ChannelOpenFailed) {
         this.error = 'Channel open failed.';
-      } else if (e instanceof DepositFailed) {
+      } else if (e instanceof ChannelDepositFailed) {
         this.error = 'Could not deposit to the channel.';
+      } else {
+        this.error = e.message;
       }
 
-      if (this.error) {
-        this.snackbar = true;
-      }
+      this.snackbar = true;
       this.done = false;
       this.loading = false;
     }

@@ -12,8 +12,8 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { TestData } from '../data/mock-data';
 import RaidenService, {
-  DepositFailed,
-  OpenChannelFailed
+  ChannelDepositFailed,
+  ChannelOpenFailed
 } from '@/services/raiden-service';
 import store from '@/store';
 import Mocked = jest.Mocked;
@@ -57,7 +57,7 @@ describe('Deposit.vue', function() {
   });
 
   it('should show an error if channel opening failed', async function() {
-    service.openChannel = jest.fn().mockRejectedValue(new OpenChannelFailed());
+    service.openChannel = jest.fn().mockRejectedValue(new ChannelOpenFailed());
     button.trigger('click');
     const deposit = wrapper.vm;
     await flushPromises();
@@ -66,7 +66,9 @@ describe('Deposit.vue', function() {
   });
 
   it('should had an error if deposit failed', async function() {
-    service.openChannel = jest.fn().mockRejectedValue(new DepositFailed());
+    service.openChannel = jest
+      .fn()
+      .mockRejectedValue(new ChannelDepositFailed());
     mockInput(wrapper, '0.0001');
     button.trigger('click');
     const deposit = wrapper.vm;
@@ -79,7 +81,7 @@ describe('Deposit.vue', function() {
     const deposit = wrapper.vm;
     const loading = jest.spyOn(deposit.$data, 'loading', 'set');
     router.push = jest.fn().mockResolvedValue(null);
-    service.openChannel = jest.fn().mockResolvedValue(true);
+    service.openChannel = jest.fn().mockResolvedValue(null);
     button.trigger('click');
     await flushPromises();
     jest.runAllTimers();
