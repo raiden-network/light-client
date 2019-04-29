@@ -1,10 +1,10 @@
 <template>
   <v-app dark>
     <loading v-if="loading || !initialized"></loading>
-    <div id="wallet-wrapper" class="fill-height" v-else>
+    <div id="wallet-wrapper" v-else>
       <div id="wallet">
         <wallet-header></wallet-header>
-        <v-content class="fill-height">
+        <v-content class="wallet-content">
           <router-view></router-view>
         </v-content>
       </div>
@@ -47,6 +47,7 @@ export default class App extends Vue {
 @import 'main';
 #wallet-wrapper {
   margin-top: 70px;
+  margin-bottom: 70px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -56,7 +57,7 @@ export default class App extends Vue {
 }
 
 #wallet {
-  height: 884px;
+  min-height: 884px;
   width: 620px;
   border-radius: 14px;
   background-color: #1e1e1e;
@@ -65,6 +66,10 @@ export default class App extends Vue {
     width: 100%;
     border-radius: 0;
   }
+}
+
+.wallet-content {
+  height: 100%;
 }
 
 .application {
