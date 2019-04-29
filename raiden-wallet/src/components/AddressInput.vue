@@ -1,26 +1,38 @@
 <template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
   <fieldset>
     <v-combobox
-      id="address-input"
-      :clearable="true"
       :filter="filter"
       :hide-no-data="!search"
-      :items="tokens"
+      :item-text="item => item.address || ''"
+      :item-value="item => item.address || ''"
+      :items="filteredTokens"
       :label="label"
       :rules="rules"
       :search-input.sync="search"
       :value="value"
-      :item-text="item => item.address"
-      @input="valueChanged($event)"
+      :error-messages="errorMessages"
+      @change="valueChanged($event)"
+      clearable
+      hide-selected
+      ref="address"
+      id="address-input"
     >
       <template v-slot:prepend-inner>
         <img
-          class="selection-blockie"
-          v-if="address"
-          :src="blockie(address)"
+          :src="blockie(value)"
           alt="Selected token address blockie"
+          class="selection-blockie"
+          v-if="value && isChecksumAddress(value)"
         />
-        <v-icon v-else>cancel</v-icon>
+        <div v-else-if="timeout">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+          ></v-progress-circular>
+        </div>
+        <div v-else>
+          <v-icon>cancel</v-icon>
+        </div>
       </template>
       <template v-slot:item="{ index, item }">
         <v-list-tile-avatar>
@@ -49,25 +61,67 @@ import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import _ from 'lodash';
+import DataFilters from '@/utils/data-filters';
+import { ValidationRule } from '@/types';
 
 @Component({})
 export default class AddressInput extends Mixins(BlockieMixin) {
-  label: string = '';
+  private timeout: number = 0;
+  private readonly baseRules: ValidationRule[] = [
+    (v: string) => !!v || 'The address cannot be empty',
+    (v: string) => (v && this.isAddress(v)) || 'A valid address is required',
+    (v: string) =>
+      (v && this.isChecksumAddress(v)) ||
+      `Address ${v} is not in checksum format`
+  ];
+
+  private readonly tokenModeRules: ValidationRule[] = [
+    (v: string) =>
+      (v && this.tokens.findIndex(value1 => value1.address === v) > -1) ||
+      `This address does not belong to one of the available tokens`
+  ];
+
   @Prop({})
   disabled!: boolean;
   @Prop({ required: true })
   value!: string;
-  @Prop({ required: false, default: [] })
+  @Prop({ required: false, default: () => [] })
   tokens!: Token[];
+  @Prop({ required: false, default: false })
+  ens!: boolean;
+  @Prop({ required: false, default: true })
+  tokenMode!: boolean;
 
-  address: string = '';
+  label: string = '';
   search: string = '';
+  errorMessages: string[] = [];
 
-  private static isAddress(address: string | Token): boolean {
+  get rules(): ValidationRule[] {
+    if (this.tokenMode) {
+      return _.concat(this.baseRules, this.tokenModeRules);
+    } else {
+      return this.baseRules;
+    }
+  }
+
+  get filteredTokens(): Token[] {
+    if (!this.search) {
+      return this.tokens;
+    } else {
+      return this.tokens.filter(value1 => this.filter(value1, this.search));
+    }
+  }
+
+  // noinspection JSUnusedLocalSymbols
+  @Emit()
+  public input(value?: string) {}
+
+  isAddress(address: string | Token): boolean {
     return AddressUtils.isAddress(this.extractAddress(address));
   }
 
-  private static extractAddress(address: string | Token) {
+  // noinspection JSMethodCanBeStatic
+  extractAddress(address: string | Token) {
     let tokenAddress: string;
 
     if (_.isObject(address)) {
@@ -78,7 +132,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     return tokenAddress;
   }
 
-  private static isChecksumAddress(address: string | Token): boolean {
+  isChecksumAddress(address: string | Token): boolean {
     const tokenAddress = this.extractAddress(address);
     return (
       AddressUtils.isAddress(tokenAddress) &&
@@ -86,35 +140,59 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     );
   }
 
-  readonly rules = [
-    (v: string) => !!v || 'The address cannot be empty',
-    (v: string) =>
-      (v && AddressInput.isAddress(v)) || 'A valid address is required',
-    (v: string) =>
-      (v && AddressInput.isChecksumAddress(v)) ||
-      `Address ${v} is not in checksum format`
-  ];
-
-  filter(item: Token, queryText: string) {
-    return (
-      _.startsWith(item.symbol, queryText) ||
-      item.address.indexOf(queryText) > -1 ||
-      (item.name && item.name.indexOf(queryText) > -1)
-    );
+  // noinspection JSMethodCanBeStatic
+  filter(item: Token, queryText: string): boolean {
+    return DataFilters.filterToken(item, queryText);
   }
 
-  @Emit()
-  public input(value: string) {}
-
-  valueChanged(value?: string | Token) {
-    let actualValue: string = '';
-    if (typeof value === 'string') {
-      actualValue = value;
-    } else if (typeof value === 'object' && value !== null) {
-      actualValue = value.address;
+  valueChanged(model?: string | Token) {
+    this.errorMessages = [];
+    let address: string | undefined = undefined;
+    if (typeof model === 'string') {
+      address = model;
+      this.resolveEnsAddress(address);
+    } else if (model && typeof model === 'object') {
+      address = model.address;
+      this.search = model.address;
     }
-    this.input(actualValue);
-    this.address = actualValue;
+    this.label = '';
+    this.input(address);
+  }
+
+  private resolveEnsAddress(address: string) {
+    if (
+      this.ens &&
+      !AddressUtils.isAddressLike(address) &&
+      AddressUtils.isDomain(address)
+    ) {
+      const parent = this;
+      if (this.timeout) {
+        clearTimeout(this.timeout);
+        this.timeout = 0;
+      }
+
+      this.timeout = setTimeout(() => {
+        this.$raiden
+          .ensResolve(address)
+          .then(resolvedAddress => {
+            if (resolvedAddress) {
+              parent.label = address as string;
+              parent.search = resolvedAddress;
+              parent.input(resolvedAddress);
+              this.errorMessages = [];
+            } else {
+              this.errorMessages.push(
+                `Could not resolve an address for ${address}`
+              );
+            }
+            this.timeout = 0;
+          })
+          .catch(e => {
+            console.log(e);
+            this.timeout = 0;
+          });
+      }, 800);
+    }
   }
 }
 </script>

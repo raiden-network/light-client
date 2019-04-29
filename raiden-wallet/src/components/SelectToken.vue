@@ -51,7 +51,14 @@ export default class SelectToken extends Vue {
   token: string = '';
   valid: boolean = false;
   allTokens!: Token[];
-  selectToken() {}
+  selectToken() {
+    this.$router.push({
+      name: 'connect',
+      params: {
+        token: this.token
+      }
+    });
+  }
 }
 </script>
 

@@ -3,6 +3,8 @@ import { RaidenChannels, TokenInfo } from 'raiden';
 
 export type Tokens = { [token: string]: TokenInfo };
 
+export type ValidationRule = (v: string) => true | string;
+
 export interface RootState {
   loading: boolean;
   defaultAccount: string;
