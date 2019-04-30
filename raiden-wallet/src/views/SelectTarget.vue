@@ -1,5 +1,5 @@
 <template>
-  <v-container id="container">
+  <div class="content-host">
     <v-layout align-center justify-center row>
       <v-flex xs10 md10 lg10>
         <div class="screen-title">Select Payment Target</div>
@@ -16,7 +16,7 @@
         <div class="information-description text-xs-left">{{ token }}</div>
       </v-flex>
     </v-layout>
-  </v-container>
+  </div>
 </template>
 
 <script lang="ts">
@@ -39,8 +39,4 @@ export default class SendTokens extends Vue {
 
 <style lang="scss" scoped>
 @import '../scss/input-screen';
-#container {
-  height: 50vh;
-  min-height: 500px;
-}
 </style>

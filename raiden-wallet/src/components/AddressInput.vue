@@ -198,6 +198,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 </script>
 
 <style lang="scss" scoped>
+@import '../main';
+
 .selection-blockie {
   border-radius: 50%;
   box-sizing: border-box;
@@ -205,5 +207,48 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   width: 28px;
   border: 1px solid #979797;
   background-color: #d8d8d8;
+}
+
+.address-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 60px;
+  padding-bottom: 60px;
+  border: 0;
+
+  @include respond-to(handhelds) {
+    padding-top: 30px;
+    padding-bottom: 30px;
+    border: 0;
+  }
+}
+
+.address-input /deep/ input {
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 38px;
+  text-align: center;
+  max-height: 40px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.address-input /deep/ input:focus {
+  outline: 0;
+}
+
+.address-input /deep/ .v-text-field__details {
+  height: 36px;
+  padding-top: 4px;
+}
+
+.address-input /deep/ .v-messages {
+  color: white !important;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 21px;
+  text-align: center;
 }
 </style>

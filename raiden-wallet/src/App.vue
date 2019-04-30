@@ -4,8 +4,10 @@
     <div id="wallet-wrapper" v-else>
       <div id="wallet">
         <wallet-header></wallet-header>
-        <v-content class="wallet-content">
-          <router-view></router-view>
+        <v-content>
+          <v-container fluid fill-height>
+            <router-view></router-view>
+          </v-container>
         </v-content>
       </div>
     </div>
@@ -57,7 +59,7 @@ export default class App extends Vue {
 }
 
 #wallet {
-  min-height: 884px;
+  height: 80vh;
   width: 620px;
   border-radius: 14px;
   background-color: #1e1e1e;
@@ -68,8 +70,14 @@ export default class App extends Vue {
   }
 }
 
-.wallet-content {
-  height: 100%;
+.v-content {
+  height: calc(100% - 120px);
+  margin-bottom: auto;
+}
+
+.container {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .application {

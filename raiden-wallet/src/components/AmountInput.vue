@@ -21,7 +21,7 @@
       solo
     >
     </v-text-field>
-    <span class="token-symbol">TKN</span>
+    <span class="token-symbol">{{ token.symbol || 'TKN' }}</span>
     <div class="status-icon-wrapper">
       <v-icon class="status-icon" v-if="!valid" large>error</v-icon>
       <v-icon class="status-icon" v-else large>check_circle</v-icon>

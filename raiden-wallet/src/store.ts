@@ -9,7 +9,6 @@ import {
   TokenModel,
   Token
 } from '@/model/types';
-import { BigNumberish } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 Vue.use(Vuex);
@@ -50,7 +49,7 @@ const store: StoreOptions<RootState> = {
       state.channels = channels;
     },
     updateTokens(state: RootState, tokens: Tokens) {
-      state.tokens = tokens;
+      state.tokens = Object.assign({}, tokens);
     }
   },
   actions: {},

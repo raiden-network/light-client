@@ -7,7 +7,7 @@ jest.useFakeTimers();
 import VueRouter from 'vue-router';
 import flushPromises from 'flush-promises';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
-import Deposit from '@/components/Deposit.vue';
+import Deposit from '@/views/Deposit.vue';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { TestData } from '../data/mock-data';

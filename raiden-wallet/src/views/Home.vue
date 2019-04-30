@@ -1,9 +1,9 @@
 <template>
-  <v-container>
+  <div class="content-host">
     <no-valid-provider v-if="!providerDetected" />
     <user-denied v-else-if="userDenied" />
     <wallet-core v-else />
-  </v-container>
+  </div>
 </template>
 
 <script lang="ts">
@@ -26,3 +26,7 @@ export default class Home extends Vue {
   userDenied!: boolean;
 }
 </script>
+
+<style scoped lang="scss">
+@import '../main';
+</style>
