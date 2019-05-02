@@ -20,12 +20,16 @@
       ref="input"
       solo
     >
+      <div class="prepend-placeholder" slot="prepend"></div>
+      <div class="status-icon-wrapper" slot="append-outer">
+        <v-icon class="status-icon" v-if="!valid" large>error</v-icon>
+        <v-icon class="status-icon" v-else large>check_circle</v-icon>
+      </div>
+
+      <span class="token-symbol" slot="append">{{
+        token.symbol || 'TKN'
+      }}</span>
     </v-text-field>
-    <span class="token-symbol">{{ token.symbol || 'TKN' }}</span>
-    <div class="status-icon-wrapper">
-      <v-icon class="status-icon" v-if="!valid" large>error</v-icon>
-      <v-icon class="status-icon" v-else large>check_circle</v-icon>
-    </div>
   </fieldset>
 </template>
 
@@ -124,13 +128,11 @@ $header-vertical-margin-mobile: 2rem;
   padding-top: 60px;
   padding-bottom: 60px;
   border: 0;
-  margin-left: 76px;
 
   @include respond-to(handhelds) {
     padding-top: 30px;
     padding-bottom: 30px;
     border: 0;
-    margin-left: 76px;
   }
 }
 
@@ -164,13 +166,11 @@ $header-vertical-margin-mobile: 2rem;
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 16px;
-  line-height: 19px;
-  margin-top: -65px;
-  margin-right: 20px;
+  line-height: 20px;
+  margin-top: -20px;
 }
 
 .status-icon-wrapper {
-  margin-top: -40px;
   padding: 8px;
 }
 
@@ -189,5 +189,9 @@ $header-vertical-margin-mobile: 2rem;
     margin-top: $header-vertical-margin-mobile;
     margin-bottom: $header-vertical-margin-mobile;
   }
+}
+
+.prepend-placeholder {
+  width: 44px;
 }
 </style>
