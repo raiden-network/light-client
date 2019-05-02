@@ -22,6 +22,12 @@ export enum RaidenActionType {
   CHANNEL_SETTLE_FAILED = 'channelSettleFailed',
 }
 
+export enum ShutdownReason {
+  STOP = 'raidenStopped',
+  ACCOUNT_CHANGED = 'providerAccountChanged',
+  NETWORK_CHANGED = 'providerNetworkChanged',
+}
+
 // actions:
 // ========
 
@@ -39,6 +45,7 @@ export interface RaidenInitAction extends RaidenAction {
 
 export interface RaidenShutdownAction extends RaidenAction {
   type: RaidenActionType.SHUTDOWN;
+  reason: ShutdownReason | Error;
 }
 
 export interface NewBlockAction extends RaidenAction {
@@ -165,7 +172,10 @@ export interface ChannelSettleActionFailed extends RaidenAction {
 
 export const raidenInit = (): RaidenInitAction => ({ type: RaidenActionType.INIT });
 
-export const raidenShutdown = (): RaidenShutdownAction => ({ type: RaidenActionType.SHUTDOWN });
+export const raidenShutdown = (reason: ShutdownReason | Error): RaidenShutdownAction => ({
+  type: RaidenActionType.SHUTDOWN,
+  reason,
+});
 
 export const newBlock = (blockNumber: number): NewBlockAction => ({
   type: RaidenActionType.NEW_BLOCK,
@@ -370,3 +380,10 @@ export type RaidenActions =
   | ChannelSettleAction
   | ChannelSettledAction
   | ChannelSettleActionFailed;
+
+export const RaidenEventType: (RaidenActionType.SHUTDOWN | RaidenActionType.NEW_BLOCK)[] = [
+  RaidenActionType.SHUTDOWN,
+  RaidenActionType.NEW_BLOCK,
+];
+
+export type RaidenEvents = RaidenShutdownAction | NewBlockAction;

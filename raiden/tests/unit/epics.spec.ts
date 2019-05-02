@@ -15,6 +15,7 @@ import {
   RaidenActionType,
   raidenInit,
   raidenShutdown,
+  ShutdownReason,
   newBlock,
   tokenMonitored,
   channelMonitored,
@@ -128,7 +129,10 @@ describe('raidenEpics', () => {
       /* this test requires mocked provider, or else emit is called with setTimeout and doesn't run
        * before the return of the function.
        */
-      const action$ = m.cold('---a------d|', { a: raidenInit(), d: raidenShutdown() }),
+      const action$ = m.cold('---a------d|', {
+          a: raidenInit(),
+          d: raidenShutdown(ShutdownReason.STOP),
+        }),
         state$ = m.cold('--s---|', { s: newState }),
         emitBlock$ = m.cold('----------b-|').pipe(
           tap(() => depsMock.provider.emit('block', 634)),

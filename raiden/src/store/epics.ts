@@ -41,6 +41,7 @@ import {
   ChannelSettledAction,
   ChannelSettleActionFailed,
   RaidenShutdownAction,
+  raidenShutdown,
   newBlock,
   tokenMonitored,
   channelOpened,
@@ -646,5 +647,6 @@ export const raidenEpics = (
       ),
     ),
     takeUntil(shutdownNotification),
+    catchError(err => of(raidenShutdown(err))),
   );
 };

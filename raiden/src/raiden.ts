@@ -41,6 +41,7 @@ import {
   raidenReducer,
   RaidenActions,
   RaidenActionType,
+  ShutdownReason,
   TokenMonitoredAction,
   ChannelOpenedAction,
   ChannelOpenActionFailed,
@@ -56,11 +57,13 @@ import {
   channelDeposit,
   channelClose,
   channelSettle,
+  RaidenEvents,
+  RaidenEventType,
 } from './store';
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
-  private readonly network: Network;
+  public readonly network: Network;
   private readonly signer: Signer;
   private readonly store: Store<RaidenState, RaidenActions>;
   private readonly contractsInfo: ContractsInfo;
@@ -68,8 +71,19 @@ export class Raiden {
   private readonly tokenInfo: { [token: string]: TokenInfo } = {};
 
   private readonly action$: Observable<RaidenActions>;
+  /**
+   * state$ is exposed only so user can listen to state changes and persist them somewhere else,
+   * in case they didn't use the Storage overload for the storageOrState argument of `create`.
+   * Format/content of the emitted objects are subject to changes and not part of the public API
+   */
   public readonly state$: Observable<RaidenState>;
   public readonly channels$: Observable<RaidenChannels>;
+  /**
+   * A subset ot RaidenActions exposed as public events.
+   * The interface of the objects emitted by this Observable are expected not to change internally,
+   * but more/new events may be added over time.
+   */
+  public readonly events$: Observable<RaidenEvents>;
 
   public constructor(
     provider: JsonRpcProvider,
@@ -124,6 +138,8 @@ export class Raiden {
         ),
       ),
     );
+
+    this.events$ = action$.pipe(ofType<RaidenActions, RaidenEvents>(...RaidenEventType));
 
     // minimum blockNumber of contracts deployment as start scan block
     const epicMiddleware = createEpicMiddleware<
@@ -292,7 +308,7 @@ export class Raiden {
    * Triggers all epics to be unsubscribed
    */
   public stop(): void {
-    this.store.dispatch(raidenShutdown());
+    this.store.dispatch(raidenShutdown(ShutdownReason.STOP));
   }
 
   private get state(): RaidenState {
