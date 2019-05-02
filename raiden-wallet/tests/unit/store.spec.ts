@@ -8,7 +8,9 @@ describe('store', () => {
   const testTokens = (token: string, name?: string, symbol?: string) => {
     const tokens: Tokens = {};
     tokens[token] = {
-      totalSupply: Zero,
+      address: token,
+      balance: Zero,
+      units: '',
       decimals: 18,
       name,
       symbol

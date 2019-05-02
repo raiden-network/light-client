@@ -14,7 +14,8 @@ describe('AmountInput.vue', function() {
     beforeEach(() => {
       wrapper = mount(AmountInput, {
         propsData: {
-          label: 'Has Label'
+          label: 'Has Label',
+          token: TestData.token
         }
       });
     });

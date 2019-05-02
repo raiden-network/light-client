@@ -80,7 +80,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       AddressUtils.isAddress(value) &&
       !AddressUtils.checkAddressChecksum(value)
     ) {
-      this.errorMessages.push(`The address is not in a checksum format`);
+      this.errorMessages.push(`The address is not in checksum format`);
     } else if (AddressUtils.checkAddressChecksum(value)) {
       this.input(value);
     } else if (
@@ -111,11 +111,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
             this.errorMessages = [];
           } else {
             this.errorMessages.push(`Could not resolve an address for ${url}`);
+            this.input(undefined);
           }
           this.timeout = 0;
         })
         .catch(e => {
           console.log(e);
+          this.errorMessages.push(`Could not resolve an address for ${url}`);
+          this.input(undefined);
           this.timeout = 0;
         });
     }, 800);

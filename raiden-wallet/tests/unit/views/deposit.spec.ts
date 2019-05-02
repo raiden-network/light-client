@@ -1,10 +1,10 @@
-import { mockInput } from '../utils/interaction-utils';
-
 jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
 jest.useFakeTimers();
 
+import { Store } from 'vuex';
 import VueRouter from 'vue-router';
+import { mockInput } from '../utils/interaction-utils';
 import flushPromises from 'flush-promises';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
 import Deposit from '@/views/Deposit.vue';
@@ -17,6 +17,7 @@ import RaidenService, {
 } from '@/services/raiden-service';
 import store from '@/store';
 import Mocked = jest.Mocked;
+import NavigationMixin from '@/mixins/navigation-mixin';
 
 Vue.use(Vuetify);
 
@@ -29,25 +30,42 @@ describe('Deposit.vue', function() {
   beforeAll(async () => {
     service = new RaidenService(store) as Mocked<RaidenService>;
     router = new VueRouter() as Mocked<VueRouter>;
+    router.currentRoute = {
+      path: '',
+      fullPath: '',
+      matched: [],
+      hash: '',
+      params: {
+        token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
+        partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
+      },
+      query: {}
+    };
+
+    const getters = {
+      token: jest.fn().mockReturnValue(TestData.token)
+    };
     const localVue = createLocalVue();
     wrapper = mount(Deposit, {
       localVue,
+      store: new Store({
+        getters
+      }),
       propsData: {
-        token: '0xtoken',
-        partner: '0xpartner',
-        tokenInfo: TestData.token,
         current: 0
       },
+      mixins: [NavigationMixin],
       mocks: {
         $raiden: service,
         $router: router
       }
     });
+    await flushPromises();
     button = wrapper.find('#open-channel');
     await wrapper.vm.$nextTick();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
   });
 
@@ -95,7 +113,6 @@ describe('Deposit.vue', function() {
     service.openChannel = jest.fn().mockResolvedValue(null);
     button.trigger('click');
     await flushPromises();
-    jest.runAllTimers();
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(loading).toHaveBeenCalledTimes(2);
   });

@@ -6,7 +6,5 @@ export function mockInput(
   value: string = '',
   selector: string = 'input'
 ) {
-  const input = wrapper.find(selector);
-  (input.element as HTMLInputElement).value = value;
-  input.trigger('input');
+  wrapper.find(selector).setValue(value);
 }
