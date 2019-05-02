@@ -10,10 +10,8 @@
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10>
           <address-input
-            :ens="true"
             class="address-input"
             v-model="partner"
-            :tokenMode="false"
           ></address-input>
         </v-flex>
       </v-layout>
