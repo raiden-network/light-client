@@ -93,6 +93,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   Object.assign(provider, { network });
   jest.spyOn(provider, 'getNetwork').mockImplementation(async () => network);
   jest.spyOn(provider, 'resolveName').mockImplementation(async addressOrName => addressOrName);
+  jest.spyOn(provider, 'getLogs').mockResolvedValue([]);
+  jest.spyOn(provider, 'listAccounts').mockResolvedValue([]);
   mockEthersEventEmitter(provider);
 
   const signer = new Wallet(
