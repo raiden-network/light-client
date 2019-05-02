@@ -205,8 +205,11 @@ export default class RaidenService {
       if (cache.hasOwnProperty(token)) {
         continue;
       }
-      cache[token] = await this.raiden.getTokenInfo(token);
-      updateEntries += 1;
+      const retrievedToken = await this.getToken(token);
+      if (retrievedToken) {
+        cache[token] = retrievedToken;
+        updateEntries += 1;
+      }
     }
 
     if (updateEntries > 0) {

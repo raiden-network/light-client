@@ -177,7 +177,10 @@ export default class Deposit extends Mixins(NavigationMixin) {
       this.partner = partnerAddress;
     }
 
-    const token = await this.$raiden.getToken(tokenAddress);
+    let token = this.$store.getters.token(tokenAddress);
+    if (!token) {
+      token = await this.$raiden.getToken(tokenAddress);
+    }
 
     if (!token) {
       this.navigateToHome();

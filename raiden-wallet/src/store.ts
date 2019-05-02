@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState, Tokens } from '@/types';
-import { RaidenChannel, RaidenChannels, TokenInfo } from 'raiden';
+import { RaidenChannel, RaidenChannels } from 'raiden';
 import * as _ from 'lodash';
 import {
   emptyTokenModel,
@@ -9,7 +9,6 @@ import {
   TokenModel,
   Token
 } from '@/model/types';
-import { Zero } from 'ethers/constants';
 
 Vue.use(Vuex);
 
@@ -78,12 +77,12 @@ const store: StoreOptions<RootState> = {
     allTokens: (state: RootState): Token[] => {
       return _.reduce(
         state.tokens,
-        (result: Token[], value: TokenInfo, key: string) => {
+        (result: Token[], value: Token, key: string) => {
           const model: Token = {
             address: key,
-            balance: Zero,
+            balance: value.balance,
             decimals: value.decimals,
-            units: '',
+            units: value.units,
             symbol: value.symbol,
             name: value.name
           };
@@ -100,6 +99,13 @@ const store: StoreOptions<RootState> = {
         channels = _.flatMap(tokenChannels);
       }
       return channels;
+    },
+    token: (state: RootState) => (tokenAddress: string) => {
+      if (state.tokens.hasOwnProperty(tokenAddress)) {
+        return state.tokens[tokenAddress];
+      } else {
+        return null;
+      }
     }
   }
 };

@@ -80,7 +80,10 @@ export default class SelectHub extends Mixins(NavigationMixin) {
       return;
     }
 
-    const token = await this.$raiden.getToken(tokenAddress);
+    let token = this.$store.getters.token(tokenAddress);
+    if (!token) {
+      token = await this.$raiden.getToken(tokenAddress);
+    }
 
     if (!token) {
       this.navigateToHome();
