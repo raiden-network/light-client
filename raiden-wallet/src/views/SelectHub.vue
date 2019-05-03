@@ -72,8 +72,7 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   }
 
   async created() {
-    const route = this.$router.currentRoute;
-    const params = route.params;
+    const params = this.$route.params;
     const tokenAddress = params.token;
     if (!AddressUtils.checkAddressChecksum(tokenAddress)) {
       this.navigateToHome();
