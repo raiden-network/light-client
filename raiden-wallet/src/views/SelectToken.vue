@@ -53,8 +53,6 @@ import BlockieMixin from '@/mixins/blockie-mixin';
   computed: mapGetters(['allTokens'])
 })
 export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
-  token: string = '';
-  valid: boolean = false;
   allTokens!: Token[];
 }
 </script>
