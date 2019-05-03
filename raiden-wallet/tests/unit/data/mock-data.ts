@@ -76,7 +76,7 @@ export class TestData {
     }
   };
 
-  static mockRoute(params: {}): Route {
+  static mockRoute(params: {} = {}): Route {
     return {
       path: '',
       fullPath: '',
