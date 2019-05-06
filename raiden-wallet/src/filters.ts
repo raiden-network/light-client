@@ -2,6 +2,7 @@ import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
 import { BalanceUtils } from '@/utils/balance-utils';
 import _ from 'lodash';
+import { Filter } from 'ethers/providers';
 
 export default class Filters {
   static truncate(value: string, width: number = 12) {
@@ -42,9 +43,14 @@ export default class Filters {
       }
     }
   }
+
+  static capitalizeFirst(value: string): string {
+    return value.charAt(0).toLocaleUpperCase() + value.substr(1);
+  }
 }
 
 Vue.filter('truncate', Filters.truncate);
 Vue.filter('decimals', Filters.decimals);
 Vue.filter('upper', Filters.upper);
 Vue.filter('displayFormat', Filters.displayFormat);
+Vue.filter('capitalizeFirst', Filters.capitalizeFirst);

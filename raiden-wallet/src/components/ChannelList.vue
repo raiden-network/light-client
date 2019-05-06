@@ -2,77 +2,67 @@
   <div class="content-host">
     <v-layout justify-center row class="list-container">
       <v-flex xs12 md12 lg12>
-        <v-list three-line>
-          <template v-for="(channel, index) in channels">
-            <v-list-tile :key="channel.partner" class="channel">
-              <v-list-tile-avatar>
-                <img
-                  :src="$blockie(channel.partner)"
-                  alt="Partner address blocky"
-                />
-              </v-list-tile-avatar>
-              <v-list-tile-content>
-                <v-list-tile-title>
-                  Partner: {{ channel.partner }}
-                </v-list-tile-title>
-                <v-list-tile-sub-title>
+        <v-list class="channel-list">
+          <v-list-group
+            :id="'channel-' + channel.id"
+            :key="channel.partner"
+            class="channel"
+            no-action
+            v-for="(channel, index) in channels"
+          >
+            <template v-slot:activator>
+              <v-list-tile>
+                <v-list-tile-avatar class="list-blockie">
+                  <img
+                    :src="$blockie(channel.partner)"
+                    alt="Partner address blocky"
+                  />
+                </v-list-tile-avatar>
+                <v-list-tile-content>
+                  <v-list-tile-title class="partner-address">
+                    {{ channel.partner }}
+                  </v-list-tile-title>
+                  <v-list-tile-sub-title class="state-info">
+                    Deposit
+                    {{ channel.totalDeposit | displayFormat(token.decimals) }} |
+                    State: {{ channel.state | capitalizeFirst }}
+                  </v-list-tile-sub-title>
+                </v-list-tile-content>
+              </v-list-tile>
+            </template>
+            <div :id="'expanded-area-' + index" class="expanded-area">
+              <channel-life-cycle :state="channel.state"></channel-life-cycle>
+              <v-layout justify-space-around row>
+                <v-btn
+                  :disabled="channel.state !== 'open'"
+                  :id="'deposit-' + index"
+                  @click="deposit(channel)"
+                  class="action-button text-capitalize"
+                >
                   Deposit
-                  {{ channel.totalDeposit | displayFormat(token.decimals) }}
-                </v-list-tile-sub-title>
-                <v-list-tile-sub-title>
-                  State: {{ channel.state }}
-                </v-list-tile-sub-title>
-              </v-list-tile-content>
-              <v-list-tile-action>
-                <v-menu bottom left>
-                  <template v-slot:activator="{ on }">
-                    <v-btn icon v-on="on" :id="'overflow-' + index">
-                      <v-icon>more_vert</v-icon>
-                    </v-btn>
-                  </template>
-                  <v-list>
-                    <v-list-tile
-                      :id="'deposit-' + index"
-                      @click="deposit(channel)"
-                      v-if="channel.state === 'open'"
-                    >
-                      <v-list-tile-title>Deposit</v-list-tile-title>
-                    </v-list-tile>
-                    <v-list-tile
-                      v-if="channel.state === 'open'"
-                      :id="'close-' + index"
-                      @click="close(channel)"
-                    >
-                      <v-list-tile-title>Close</v-list-tile-title>
-                    </v-list-tile>
-                    <v-list-tile
-                      v-if="
-                        channel.state === 'settleable' ||
-                          channel.state === 'settling'
-                      "
-                      :id="'settle-' + index"
-                      @click="settle(channel)"
-                    >
-                      <v-list-tile-title>Settle</v-list-tile-title>
-                    </v-list-tile>
-
-                    <v-list-tile
-                      v-if="
-                        channel.state !== 'settleable' &&
-                          channel.state !== 'settling' &&
-                          channel.state !== 'open'
-                      "
-                      :id="'no-action-' + index"
-                    >
-                      <v-list-tile-title
-                        >No Actions Available</v-list-tile-title
-                      >
-                    </v-list-tile>
-                  </v-list>
-                </v-menu>
-              </v-list-tile-action>
-            </v-list-tile>
-          </template>
+                </v-btn>
+                <v-btn
+                  :disabled="channel.state !== 'open'"
+                  :id="'close-' + index"
+                  @click="close(channel)"
+                  class="action-button text-capitalize"
+                >
+                  Close
+                </v-btn>
+                <v-btn
+                  class="action-button text-capitalize"
+                  :disabled="
+                    channel.state !== 'settleable' &&
+                      channel.state !== 'settling'
+                  "
+                  :id="'settle-' + index"
+                  @click="settle(channel)"
+                >
+                  Settle
+                </v-btn>
+              </v-layout>
+            </div>
+          </v-list-group>
         </v-list>
       </v-flex>
     </v-layout>
@@ -121,16 +111,17 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Mixins } from 'vue-property-decorator';
+import { Component, Mixins, Prop } from 'vue-property-decorator';
 import { RaidenChannel } from 'raiden';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import DepositDialog from '@/components/dialogs/DepositDialog.vue';
 import { Token, TokenPlaceholder } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
 
 @Component({
-  components: { DepositDialog, ConfirmationDialog }
+  components: { ChannelLifeCycle, DepositDialog, ConfirmationDialog }
 })
 export default class ChannelList extends Mixins(BlockieMixin) {
   @Prop({ required: true })
@@ -243,4 +234,39 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
 <style lang="scss" scoped>
 @import '../main';
+
+.channel {
+  background-color: #141414;
+  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
+}
+
+.channel .partner-address {
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.channel .state-info {
+  color: #696969 !important;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.channel-list {
+  background-color: transparent !important;
+}
+
+.channel-list /deep/ .v-list__tile {
+  height: 105px;
+}
+
+.action-button {
+  width: 135px;
+  border-radius: 29px;
+  background-color: #000000;
+}
+
+.expanded-area {
+  background-color: #323232;
+  padding: 25px;
+}
 </style>
