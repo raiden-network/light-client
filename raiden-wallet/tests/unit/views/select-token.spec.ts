@@ -38,6 +38,6 @@ describe('SelectToken.vue', function() {
   });
 
   test('renders', () => {
-    expect(wrapper.findAll('.connection').length).toEqual(1);
+    expect(wrapper.findAll('.token').length).toEqual(1);
   });
 });

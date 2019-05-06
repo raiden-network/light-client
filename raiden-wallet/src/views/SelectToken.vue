@@ -13,7 +13,7 @@
             <v-list-tile
               :key="token.address"
               @click="navigateToSelectHub(token.address)"
-              class="connection"
+              class="token"
             >
               <v-list-tile-avatar>
                 <img
@@ -64,7 +64,7 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
   background-color: transparent !important;
 }
 
-.connection {
+.token {
   background-color: rgba(0, 0, 0, 0.25);
   box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
 }
