@@ -13,8 +13,10 @@
     "baseUrl": ".",
     "paths": {
       "raiden/*": ["src/*"]
-    }
-  },
-  "types": [
-  ]
+    },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./@types"
+    ]
+  }
 }
