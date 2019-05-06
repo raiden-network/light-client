@@ -85,6 +85,11 @@ export class Raiden {
    */
   public readonly events$: Observable<RaidenEvents>;
 
+  /**
+   * Expose ether's Provider.resolveName for ENS support
+   */
+  public readonly resolveName: (name: string) => Promise<string>;
+
   public constructor(
     provider: JsonRpcProvider,
     network: Network,
@@ -173,6 +178,8 @@ export class Raiden {
 
     // use next from latest known blockNumber as start block when polling
     this.provider.resetEventsBlock(state.blockNumber + 1);
+
+    this.resolveName = provider.resolveName.bind(provider);
 
     // initialize epics, this will start monitoring previous token networks and open channels
     this.store.dispatch(raidenInit());
