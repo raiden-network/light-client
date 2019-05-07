@@ -11,6 +11,19 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
+## Table of Contents
+- [About The Project](#about-the-project)
+- [Getting Started](#getting-started)
+  * [Connecting to a Raiden test network](#connecting-to-a-raiden-test-network)
+  * [Subscribing to channel$ observable and opening your first channel](#subscribing-to-channel--observable-and-opening-your-first-channel)
+  * [Funding a channel](#funding-a-channel)
+  * [Paying through a channel](#paying-through-a-channel)
+  * [Closing a channel](#closing-a-channel)
+  * [Settling a channel](#settling-a-channel)
+  * [Other methods](#other-methods)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## About The Project
 
 The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, enabling near-instant, low-fee and scalable payments. It’s complementary to the Ethereum blockchain and works with any ERC20 compatible token.

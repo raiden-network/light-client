@@ -17,7 +17,6 @@
 
 <p align="center">
   <a href="#getting-started">Getting Started</a> ∙
-  <a href="#license">License</a> ∙
   <a href='#contact'>Contact</a>
 </p>
 
@@ -40,6 +39,30 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 
 The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
+> **INFO:** The Light Client SDK and Wallet are work in progress and currently cannot be used to make token transfers.
+
+You can test the wallet by accessing https://wallet.raiden.network/.
+
+## Table of Contents
+- [About The Project](#about-the-project)
+- [Architecture](#architecture)
+  * [Raiden Light Client SDK](#raiden-light-client-sdk)
+  * [Raiden Wallet](#raiden-wallet)
+  * [Architecture diagram](#architecture-diagram)
+- [Getting Started](#getting-started)
+  * [Learn about Raiden](#learn-about-raiden)
+  * [Test the wallet](#test-the-wallet)
+  * [Prerequisites](#prerequisites)
+  * [SDK Installation](#sdk-installation)
+  * [Wallet Installation](#wallet-installation)
+    + [Build the Raiden SDK](#build-the-raiden-sdk)
+    + [Install the Wallet Dependencies](#install-the-wallet-dependencies)
+    + [Running the Wallet locally](#running-the-wallet-locally)
+- [Roadmap and Timeline](#roadmap-and-timeline)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+
 ## About The Project
 
 The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, enabling near-instant, low-fee and scalable payments. It’s complementary to the Ethereum blockchain and works with any ERC20 compatible token.
@@ -54,17 +77,9 @@ With the SDK we want to make your life as a dApp dev easier:
 * We want to help you to enable your users to make token transfers using their consumer wallets like imToken or Metamask.
 * It should be possible to send tokens using low end devices, which would not be capable of running a full Raiden node.
 
-## Built With
-
-To build a solid architecture we are using the following main frameworks:
-
-* [TypeScript](https://www.typescriptlang.org/)
-* [Redux](https://redux.js.org/)
-* [Vue.js](https://vuejs.org/)
-
 ## Architecture
 
-### Raiden Light Client SDK
+### [Raiden Light Client SDK](./raiden/README.md)
 
 This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and the Raiden Network.
 
@@ -115,6 +130,11 @@ If you didn't use Raiden before, you can
 * Learn more by watching explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
 * Read the blog posts on [Medium](https://medium.com/@raiden_network)
 
+### Test the wallet
+You can test the wallet by accessing https://wallet.raiden.network/. After each merge to master a new version is getting deployed there.
+
+> **INFO:** The wallet is work in progress and currently cannot be used to make token transfers.
+
 ### Prerequisites
 
 To run the code in this repository, you must have Node.js 10+ on your computer and a web3-enabled browser (e.g. Firefox with Metamask extension), as well as some ETH on the account.
@@ -154,7 +174,7 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 # }
 ```
 
-You can find more detailed information on how to use the SDK [here](./raiden/README.md).
+You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden/README.md).
 
 ### Wallet Installation
 
@@ -171,7 +191,7 @@ required dependencies.
 ./sync-sdk.sh
 ```
 
- If you have problems executing the script we recommend you to follow the setup manually.
+If you have problems executing the script we recommend you to follow the setup manually.
 
 #### Build the Raiden SDK
 
@@ -202,7 +222,7 @@ rm -rf ./node_modules/raiden
 rsync --stats -aAvX ../raiden/* node_modules/raiden
 ```
 
-#### Running the Wallet
+#### Running the Wallet locally
 
 To start the development server you have to run the following command.
 
@@ -213,6 +233,9 @@ npm run serve
 After the development server starts you have to navigate to `http://localhost:8080`, in order to use the
 Raiden Wallet. The wallet application requires either MetaMask to be installed on your browser or some other
 web3 provider (e.g. Wallet apps with dApp support).
+
+## Roadmap and Timeline
+We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1). We are currently working towards milestone 0, where the SDK and Wallet are able to send payments, but will not be able to receive payments.
 
 ## Contributing
 
@@ -235,10 +258,3 @@ Website: [Raiden Network](https://raiden.network/)
 Mail: contact@raiden.network 
 
 Project Link: [https://github.com/raiden-network/light-client](https://github.com/raiden-network/light-client)
-
-<!-- ACKNOWLEDGEMENTS -->
-## Acknowledgements
-
-This project wouldn't be possible without the help from:
-* [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
-* [web3studio-sojourn README](https://github.com/ConsenSys/web3studio-sojourn)
