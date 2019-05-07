@@ -15,6 +15,7 @@ import {
   RaidenActionType,
   raidenInit,
   raidenShutdown,
+  ShutdownReason,
   newBlock,
   tokenMonitored,
   channelMonitored,
@@ -31,6 +32,7 @@ import {
   stateOutputEpic,
   actionOutputEpic,
   raidenEpics,
+  raidenInitializationEpic,
   newBlockEpic,
   tokenMonitoredEpic,
   channelOpenEpic,
@@ -96,54 +98,100 @@ describe('raidenEpics', () => {
     await expect(outputPromise).resolves.toBe(action);
   });
 
-  test(
-    'raidenInitializationEpic & raidenShutdown',
-    marbles(m => {
-      const newState = [
-        tokenMonitored(token, tokenNetwork, true),
-        channelOpened(tokenNetwork, partner, channelId, settleTimeout, 121, '0xopenTxHash'),
-        channelDeposited(
-          tokenNetwork,
-          partner,
-          channelId,
-          depsMock.address,
-          bigNumberify(200),
-          '0xownDepositTxHash',
-        ),
-        channelDeposited(
-          tokenNetwork,
-          partner,
-          channelId,
-          partner,
-          bigNumberify(200),
-          '0xpartnerDepositTxHash',
-        ),
-        newBlock(128),
-        channelClosed(tokenNetwork, partner, channelId, partner, 128, '0xcloseTxHash'),
-        newBlock(629),
-        channelSettleable(tokenNetwork, partner, 629),
-        newBlock(633),
-        channelSettle(tokenNetwork, partner), // channel is left in 'settling' state
-      ].reduce(raidenReducer, state);
-      /* this test requires mocked provider, or else emit is called with setTimeout and doesn't run
-       * before the return of the function.
-       */
-      const action$ = m.cold('---a------d|', { a: raidenInit(), d: raidenShutdown() }),
-        state$ = m.cold('--s---|', { s: newState }),
-        emitBlock$ = m.cold('----------b-|').pipe(
-          tap(() => depsMock.provider.emit('block', 634)),
-          ignoreElements(),
+  describe('raidenInitializationEpic & raidenShutdown', () => {
+    test(
+      'init newBlock, tokenMonitored, channelMonitored events',
+      marbles(m => {
+        const newState = [
+          tokenMonitored(token, tokenNetwork, true),
+          channelOpened(tokenNetwork, partner, channelId, settleTimeout, 121, '0xopenTxHash'),
+          channelDeposited(
+            tokenNetwork,
+            partner,
+            channelId,
+            depsMock.address,
+            bigNumberify(200),
+            '0xownDepositTxHash',
+          ),
+          channelDeposited(
+            tokenNetwork,
+            partner,
+            channelId,
+            partner,
+            bigNumberify(200),
+            '0xpartnerDepositTxHash',
+          ),
+          newBlock(128),
+          channelClosed(tokenNetwork, partner, channelId, partner, 128, '0xcloseTxHash'),
+          newBlock(629),
+          channelSettleable(tokenNetwork, partner, 629),
+          newBlock(633),
+          channelSettle(tokenNetwork, partner), // channel is left in 'settling' state
+        ].reduce(raidenReducer, state);
+        /* this test requires mocked provider, or else emit is called with setTimeout and doesn't run
+         * before the return of the function.
+         */
+        const action$ = m.cold('---a------d|', {
+            a: raidenInit(),
+            d: raidenShutdown(ShutdownReason.STOP),
+          }),
+          state$ = m.cold('--s---|', { s: newState }),
+          emitBlock$ = m.cold('----------b-|').pipe(
+            tap(() => depsMock.provider.emit('block', 634)),
+            ignoreElements(),
+          );
+        m.expect(merge(emitBlock$, raidenEpics(action$, state$, depsMock))).toBeObservable(
+          m.cold('---(tc)---b-|', {
+            t: tokenMonitored(token, tokenNetwork, false),
+            // ensure channelMonitored is emitted by raidenInit even for 'settling' channel
+            c: channelMonitored(tokenNetwork, partner, channelId),
+            b: newBlock(634),
+          }),
         );
-      m.expect(merge(emitBlock$, raidenEpics(action$, state$, depsMock))).toBeObservable(
-        m.cold('---(tc)---b-|', {
-          t: tokenMonitored(token, tokenNetwork, false),
-          // ensure channelMonitored is emitted by raidenInit even for 'settling' channel
-          c: channelMonitored(tokenNetwork, partner, channelId),
-          b: newBlock(634),
-        }),
+      }),
+    );
+
+    test('ShutdownReason.ACCOUNT_CHANGED', async () => {
+      const action$ = of(raidenInit()),
+        state$ = of(state);
+
+      depsMock.provider.listAccounts.mockResolvedValue([]);
+      // listAccounts first return array with address, then empty
+      depsMock.provider.listAccounts.mockResolvedValueOnce([depsMock.address]);
+
+      await expect(
+        raidenInitializationEpic(action$, state$, depsMock)
+          .pipe(first())
+          .toPromise(),
+      ).resolves.toEqual(raidenShutdown(ShutdownReason.ACCOUNT_CHANGED));
+    });
+
+    test('ShutdownReason.NETWORK_CHANGED', async () => {
+      const action$ = of(raidenInit()),
+        state$ = of(state);
+
+      depsMock.provider.getNetwork.mockResolvedValueOnce({ chainId: 899, name: 'unknown' });
+
+      await expect(
+        raidenInitializationEpic(action$, state$, depsMock)
+          .pipe(first())
+          .toPromise(),
+      ).resolves.toEqual(raidenShutdown(ShutdownReason.NETWORK_CHANGED));
+    });
+
+    test('unexpected exception triggers shutdown', async () => {
+      const action$ = of(raidenInit()),
+        state$ = of(state);
+
+      const error = new Error('connection lost');
+      depsMock.provider.listAccounts.mockRejectedValueOnce(error);
+
+      // whole raidenEpics completes upon raidenShutdown, with it as last emitted value
+      await expect(raidenEpics(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        raidenShutdown(error),
       );
-    }),
-  );
+    });
+  });
 
   test(
     'newBlockEpic',
@@ -442,7 +490,6 @@ describe('raidenEpics', () => {
         ),
         state$ = of<RaidenState>(curState);
 
-      depsMock.provider.getLogs.mockResolvedValue([]);
       depsMock.provider.getLogs.mockResolvedValueOnce([
         makeLog({
           blockNumber: 123,

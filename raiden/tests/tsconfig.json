@@ -2,9 +2,5 @@
   "extends": "../tsconfig.json",
   "include": [
     "./**/*.ts"
-  ],
-  "types": [
-    "node",
-    "./types.d.ts"
   ]
 }

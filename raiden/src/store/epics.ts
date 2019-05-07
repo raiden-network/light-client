@@ -1,5 +1,5 @@
 import { ofType } from 'redux-observable';
-import { Observable, defer, from, of, merge, EMPTY } from 'rxjs';
+import { Observable, defer, from, of, merge, interval, EMPTY } from 'rxjs';
 import {
   catchError,
   filter,
@@ -41,6 +41,8 @@ import {
   ChannelSettledAction,
   ChannelSettleActionFailed,
   RaidenShutdownAction,
+  ShutdownReason,
+  raidenShutdown,
   newBlock,
   tokenMonitored,
   channelOpened,
@@ -99,8 +101,10 @@ export const actionOutputEpic = (
 export const raidenInitializationEpic = (
   action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
-  { provider, registryContract, contractsInfo }: RaidenEpicDeps,
-): Observable<NewBlockAction | TokenMonitoredAction | ChannelMonitoredAction> =>
+  { address, network, provider, registryContract, contractsInfo }: RaidenEpicDeps,
+): Observable<
+  NewBlockAction | TokenMonitoredAction | ChannelMonitoredAction | RaidenShutdownAction
+> =>
   action$.pipe(
     ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
     withLatestFrom(state$),
@@ -134,6 +138,41 @@ export const raidenInitializationEpic = (
               filter(([, channel]) => channel.id !== undefined),
               // typescript doesn't understand above filter guarantees id below will be set
               map(([partner, channel]) => channelMonitored(tokenNetwork, partner, channel.id!)),
+            ),
+          ),
+        ),
+        // at init time, check if our address is in provider's accounts list
+        // if not, it means Signer is a local Wallet or another non-provider-side account
+        // if yes, poll accounts every 1s and monitors if address is still there
+        // also, every 1s poll current provider network and monitors if it's the same
+        // if any check fails, emits RaidenShutdownAction, nothing otherwise
+        // Poll reason from: https://github.com/MetaMask/faq/blob/master/DEVELOPERS.md
+        from(provider.listAccounts()).pipe(
+          // first/init-time check
+          map(accounts => accounts.includes(address)),
+          mergeMap(isProviderAccount =>
+            interval(provider.pollingInterval).pipe(
+              mergeMap(() =>
+                merge(
+                  isProviderAccount // if isProviderAccount, also polls and monitors accounts list
+                    ? from(provider.listAccounts()).pipe(
+                        mergeMap(accounts =>
+                          !accounts.includes(address)
+                            ? of(raidenShutdown(ShutdownReason.ACCOUNT_CHANGED))
+                            : EMPTY,
+                        ),
+                      )
+                    : EMPTY,
+                  from(provider.getNetwork()).pipe(
+                    // unconditionally monitors network changes
+                    mergeMap(curNetwork =>
+                      curNetwork.chainId !== network.chainId
+                        ? of(raidenShutdown(ShutdownReason.NETWORK_CHANGED))
+                        : EMPTY,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -646,5 +685,6 @@ export const raidenEpics = (
       ),
     ),
     takeUntil(shutdownNotification),
+    catchError(err => of(raidenShutdown(err))),
   );
 };
