@@ -8,7 +8,11 @@
     >
       <v-flex lg12 md12 xs12>
         <div id="header-content">
-          <div class="navigation-button"></div>
+          <div class="navigation-button">
+            <v-btn v-if="canGoBack" flat icon @click="onBackClicked()">
+              <v-icon>arrow_back</v-icon>
+            </v-btn>
+          </div>
           <v-spacer></v-spacer>
           <div class="raiden-wallet">Raiden Wallet</div>
           <v-spacer></v-spacer>
@@ -19,7 +23,7 @@
               contain
               aspect-ratio="1"
               class="blockie"
-              :src="blockie(defaultAccount)"
+              :src="$blockie(defaultAccount)"
             ></v-img>
           </div>
         </div>
@@ -28,7 +32,12 @@
     <v-layout class="row-2" align-center>
       <v-flex lg6 md6 xs6>
         <div class="address text-xs-left">
-          {{ defaultAccount | truncate }}
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on }">
+              <span v-on="on"> {{ defaultAccount | truncate }}</span>
+            </template>
+            <span>{{ defaultAccount }}</span>
+          </v-tooltip>
         </div>
       </v-flex>
       <v-flex lg6 md6 xs6>
@@ -41,17 +50,26 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Vue } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import { RouteNames } from '@/route-names';
+import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({
   computed: mapState(['loading', 'defaultAccount', 'accountBalance'])
 })
-export default class WalletHeader extends Mixins(BlockieMixin) {
+export default class WalletHeader extends Mixins(
+  BlockieMixin,
+  NavigationMixin
+) {
   defaultAccount!: string;
   loading!: boolean;
   accountBalance!: string;
+
+  get canGoBack(): boolean {
+    return this.$route.name !== RouteNames.HOME;
+  }
 }
 </script>
 
@@ -67,6 +85,10 @@ export default class WalletHeader extends Mixins(BlockieMixin) {
   background-color: #d8d8d8;
 }
 .navigation-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   width: 36px;
   height: 36px;
 }

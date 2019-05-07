@@ -1,43 +1,62 @@
 <template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
-  <div>
-    <v-list three-line>
-      <template v-for="(token, index) in tokens">
-        <v-list-tile :key="token.token" class="connection">
-          <v-list-tile-avatar>
-            <img :src="blockie(token.address)" alt="Partner address blocky" />
-          </v-list-tile-avatar>
-          <v-list-tile-content>
-            <v-list-tile-title> {{ token.symbol }} </v-list-tile-title>
-            <v-list-tile-sub-title class="text--primary">
-              {{ token.name }}
-            </v-list-tile-sub-title>
-            <v-list-tile-sub-title> {{ token.address }} </v-list-tile-sub-title>
-          </v-list-tile-content>
-          <v-list-tile-action>
-            <v-menu bottom left>
-              <template v-slot:activator="{ on }">
-                <v-btn icon v-on="on" :id="'overflow-' + index">
-                  <v-icon>more_vert</v-icon>
-                </v-btn>
-              </template>
+  <div class="content-host">
+    <v-layout justify-center row class="list-container">
+      <v-flex xs12 md12 lg12>
+        <v-list two-line>
+          <template v-for="(token, index) in tokens">
+            <v-list-tile :key="token.token" class="connection">
+              <v-list-tile-avatar>
+                <img
+                  :src="$blockie(token.address)"
+                  alt="Partner address blocky"
+                />
+              </v-list-tile-avatar>
+              <v-list-tile-content>
+                <v-list-tile-title>
+                  {{ token.symbol }} | {{ token.name }}
+                </v-list-tile-title>
+                <v-list-tile-sub-title>
+                  {{ token.address }}
+                </v-list-tile-sub-title>
+              </v-list-tile-content>
+              <v-list-tile-action>
+                <v-menu bottom left>
+                  <template v-slot:activator="{ on }">
+                    <v-btn icon v-on="on" :id="'overflow-' + index">
+                      <v-icon>more_vert</v-icon>
+                    </v-btn>
+                  </template>
 
-              <v-list>
-                <v-list-tile
-                  @click="leaveNetwork(token)"
-                  :id="'leave-' + index"
-                >
-                  <v-list-tile-title>Leave Network</v-list-tile-title>
-                </v-list-tile>
-                <v-list-tile :to="'/channels/' + token.address">
-                  <v-list-tile-title>View Channels</v-list-tile-title>
-                </v-list-tile>
-              </v-list>
-            </v-menu>
-          </v-list-tile-action>
-        </v-list-tile>
-      </template>
-    </v-list>
-    <v-btn to="/connect" color="primary">Connect</v-btn>
+                  <v-list>
+                    <v-list-tile
+                      @click="leaveNetwork(token)"
+                      :id="'leave-' + index"
+                    >
+                      <v-list-tile-title>Leave Network</v-list-tile-title>
+                    </v-list-tile>
+                    <v-list-tile :to="'/channels/' + token.address">
+                      <v-list-tile-title>View Channels</v-list-tile-title>
+                    </v-list-tile>
+                  </v-list>
+                </v-menu>
+              </v-list-tile-action>
+            </v-list-tile>
+          </template>
+        </v-list>
+      </v-flex>
+    </v-layout>
+
+    <v-layout align-center justify-center class="section">
+      <v-flex xs10 md10 lg10 class="text-xs-center">
+        <v-btn
+          to="/connect"
+          large
+          class="text-capitalize confirm-button"
+          depressed
+          >Connect</v-btn
+        >
+      </v-flex>
+    </v-layout>
     <confirmation-dialog
       :display="leaveModalVisible"
       @confirm="leaveConfirmed()"
@@ -56,7 +75,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Vue } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import { StepDescription, TokenModel } from '@/model/types';
@@ -104,4 +123,7 @@ export default class Tokens extends Mixins(BlockieMixin) {
 }
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+@import '../main';
+@import '../scss/button';
+</style>

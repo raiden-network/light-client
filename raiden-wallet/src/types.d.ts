@@ -1,7 +1,10 @@
 import RaidenService from '@/services/raiden-service';
-import { RaidenChannels, TokenInfo } from 'raiden';
+import { RaidenChannels } from 'raiden';
+import { Token } from '@/model/types';
 
-export type Tokens = { [token: string]: TokenInfo };
+export type Tokens = { [token: string]: Token };
+
+export type ValidationRule = (v: string) => true | string;
 
 export interface RootState {
   loading: boolean;

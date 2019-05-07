@@ -26,6 +26,14 @@ export default class RaidenService {
     this.store = store;
   }
 
+  async ensResolve(name: string): Promise<string> {
+    try {
+      return await this.raiden.resolveName(name);
+    } catch (e) {
+      throw new EnsResolveFailed(e);
+    }
+  }
+
   async connect() {
     try {
       const provider = await Web3Provider.provider();
@@ -68,12 +76,13 @@ export default class RaidenService {
   async getToken(tokenAddress: string): Promise<Token | null> {
     const raiden = this.raiden;
     try {
-      // TODO: also destruct name, symbol from getTokenInfo resolved value
-      const [balance, { decimals }] = await Promise.all([
+      const [balance, { decimals, symbol, name }] = await Promise.all([
         raiden.getTokenBalance(tokenAddress),
         raiden.getTokenInfo(tokenAddress)
       ]);
       return {
+        name: name,
+        symbol: symbol,
         balance: balance,
         decimals: decimals,
         units: BalanceUtils.toUnits(balance, decimals),
@@ -183,11 +192,14 @@ export default class RaidenService {
 
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i];
-      if (cache.hasOwnProperty(token)) {
+      if (token in cache) {
         continue;
       }
-      cache[token] = await this.raiden.getTokenInfo(token);
-      updateEntries += 1;
+      const retrievedToken = await this.getToken(token);
+      if (retrievedToken) {
+        cache[token] = retrievedToken;
+        updateEntries += 1;
+      }
     }
 
     if (updateEntries > 0) {
@@ -203,3 +215,5 @@ export class ChannelCloseFailed extends Error {}
 export class ChannelOpenFailed extends Error {}
 
 export class ChannelDepositFailed extends Error {}
+
+export class EnsResolveFailed extends Error {}

@@ -1,10 +1,10 @@
 <template>
-  <v-container>
+  <div class="content-host">
     <channel-list
       :channels="channels($route.params.token)"
       :token-address="$route.params.token"
     ></channel-list>
-  </v-container>
+  </div>
 </template>
 
 <script lang="ts">

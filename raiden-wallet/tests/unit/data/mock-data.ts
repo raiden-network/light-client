@@ -2,6 +2,7 @@ import { Token } from '@/model/types';
 import { ethers } from 'ethers';
 import { BigNumber } from 'ethers/utils';
 import { ChannelState, RaidenChannel, RaidenChannels } from 'raiden';
+import { Route } from 'vue-router';
 
 export class TestData {
   static token: Token = {
@@ -74,4 +75,15 @@ export class TestData {
       '0x82641569b2062B545431cF6D7F0A418582865ba7': TestData.settlingChannel
     }
   };
+
+  static mockRoute(params: {} = {}): Route {
+    return {
+      path: '',
+      fullPath: '',
+      matched: [],
+      hash: '',
+      params,
+      query: {}
+    };
+  }
 }

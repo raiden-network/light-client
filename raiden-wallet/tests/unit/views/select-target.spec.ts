@@ -9,6 +9,7 @@ import VueRouter, { Route } from 'vue-router';
 jest.mock('vue-router');
 
 import Mocked = jest.Mocked;
+import { TestData } from '../data/mock-data';
 
 Vue.use(Vuetify);
 
@@ -21,7 +22,11 @@ describe('SelectTarget.vue', function() {
     return shallowMount(SendTokens, {
       localVue,
       mocks: {
-        $router: router
+        $router: router,
+        $route: TestData.mockRoute({
+          token: '0xtoken',
+          partner: '0xpartner'
+        })
       },
       propsData: data
     });

@@ -1,5 +1,5 @@
 <template>
-  <div id="container">
+  <div class="content-host">
     <v-form autocomplete="off" v-model="valid">
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10>
@@ -9,11 +9,7 @@
 
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10>
-          <amount-input
-            :token="tokenInfo"
-            v-model="deposit"
-            limit
-          ></amount-input>
+          <amount-input :token="token" v-model="deposit" limit></amount-input>
         </v-flex>
       </v-layout>
 
@@ -24,7 +20,13 @@
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10 class="information">
           <div class="information-label text-xs-left">Token</div>
-          <div class="information-description text-xs-left">{{ token }}</div>
+          <div class="information-description text-xs-left">
+            <span class="font-weight-medium">{{ token.symbol }}</span>
+            · {{ token.name }}
+          </div>
+          <div class="text--secondary">
+            {{ token.address }}
+          </div>
         </v-flex>
       </v-layout>
 
@@ -62,27 +64,25 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
-import AmountInput from './AmountInput.vue';
+import { Component, Mixins } from 'vue-property-decorator';
+import AmountInput from '../components/AmountInput.vue';
 import {
   ChannelDepositFailed,
   ChannelOpenFailed
 } from '@/services/raiden-service';
-import { StepDescription, Token } from '@/model/types';
+import { StepDescription, Token, TokenPlaceholder } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
 import { Zero } from 'ethers/constants';
+import AddressUtils from '@/utils/address-utils';
+import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({
   components: { ProgressOverlay, AmountInput }
 })
-export default class Deposit extends Vue {
-  @Prop({ required: true })
-  token!: string;
-  @Prop({ required: true })
-  partner!: string;
-  @Prop({ required: true })
-  tokenInfo!: Token;
+export default class Deposit extends Mixins(NavigationMixin) {
+  partner: string = '';
+  token: Token = TokenPlaceholder;
 
   deposit: string = '0.00';
 
@@ -119,8 +119,8 @@ export default class Deposit extends Vue {
   done = false;
 
   async openChannel() {
-    const tokenInfo = this.tokenInfo;
-    const depositAmount = BalanceUtils.parse(this.deposit, tokenInfo.decimals);
+    const token = this.token;
+    const depositAmount = BalanceUtils.parse(this.deposit, token.decimals);
 
     if (depositAmount.eq(Zero)) {
       this.steps = [this.allSteps[0]];
@@ -132,7 +132,7 @@ export default class Deposit extends Vue {
 
     try {
       await this.$raiden.openChannel(
-        this.token,
+        token.address,
         this.partner,
         depositAmount,
         progress => (this.current = progress.current - 1)
@@ -141,7 +141,7 @@ export default class Deposit extends Vue {
       this.done = true;
       setTimeout(() => {
         this.loading = false;
-        this.navigateToSelectPaymentTarget();
+        this.navigateToSelectPaymentTarget(this.token.address);
       }, 2000);
     } catch (e) {
       this.error = '';
@@ -159,36 +159,35 @@ export default class Deposit extends Vue {
     }
   }
 
-  private navigateToSelectPaymentTarget() {
-    this.$router.push({
-      name: 'send',
-      params: { token: this.token }
-    });
+  async created() {
+    const { token, partner } = this.$route.params;
+
+    if (!AddressUtils.checkAddressChecksum(token)) {
+      this.navigateToHome();
+      return;
+    }
+
+    if (!AddressUtils.checkAddressChecksum(partner)) {
+      this.navigateToTokenSelect();
+      return;
+    } else {
+      this.partner = partner;
+    }
+
+    let tokenInfo = this.$store.getters.token(token);
+    if (!tokenInfo) {
+      tokenInfo = await this.$raiden.getToken(token);
+    }
+
+    if (!tokenInfo) {
+      this.navigateToHome();
+    } else {
+      this.token = tokenInfo;
+    }
   }
 }
 </script>
 
 <style scoped lang="scss">
 @import '../scss/input-screen';
-@import '../main';
-
-form {
-  height: 50vh;
-  min-height: 500px;
-  @include respond-to(handhelds) {
-    height: 100%;
-    min-height: 100%;
-  }
-}
-
-form:first-child {
-  margin-top: 20px;
-  @include respond-to(handhelds) {
-    margin-top: 10px;
-  }
-}
-
-#container {
-  height: 100%;
-}
 </style>

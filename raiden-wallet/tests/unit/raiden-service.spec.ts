@@ -25,13 +25,18 @@ describe('RaidenService', () => {
   let store: Mocked<Store<RootState>>;
   let providerMock: jest.Mock<any, any>;
   let factory: jest.Mock<any, any>;
+  const mockProvider = {
+    send: jest.fn(),
+    sendAsync: jest.fn()
+  };
 
   const mockRaiden = (extras: {} = {}) =>
     Object.assign(
       {
         address: '123',
         getBalance: jest.fn().mockResolvedValue(Zero),
-        channels$: EMPTY
+        channels$: EMPTY,
+        getTokenBalance: jest.fn().mockResolvedValue(Zero)
       },
       extras
     );
@@ -57,7 +62,7 @@ describe('RaidenService', () => {
   });
 
   it('should return the account after raiden is initialized', async () => {
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden());
     await raidenService.connect();
     await flushPromises();
@@ -94,7 +99,7 @@ describe('RaidenService', () => {
   });
 
   it('should resolve when channel open and deposit are successful', async function() {
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockResolvedValue('0xtxhash');
     const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
     const raidenMock = mockRaiden({
@@ -124,7 +129,7 @@ describe('RaidenService', () => {
   });
 
   it('should return true and open channel open but skip deposit if balance is zero', async function() {
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockResolvedValue('0xtxhash');
     const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
     const raidenMock = mockRaiden({
@@ -148,7 +153,7 @@ describe('RaidenService', () => {
 
   it('should throw an exception when channel open fails', async function() {
     expect.assertions(1);
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockRejectedValue('failed');
     const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
     const raidenMock = mockRaiden({
@@ -168,7 +173,7 @@ describe('RaidenService', () => {
 
   it('should throw an exception when the deposit fails', async function() {
     expect.assertions(3);
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockResolvedValue('0xtxhash');
     const depositChannel = jest.fn().mockRejectedValue('failed');
     const raidenMock = mockRaiden({
@@ -189,7 +194,7 @@ describe('RaidenService', () => {
   });
 
   it('should return null from getTokenBalance if there is an exception', async function() {
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     const raidenMock = {
       channels$: EMPTY,
       getBalance: jest.fn().mockResolvedValue(Zero),
@@ -210,7 +215,7 @@ describe('RaidenService', () => {
   });
 
   it('should return a token object from getTokenBalance if everything is good', async function() {
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     const balance = new BigNumber('1000000000000000000');
     const tokenBalance = jest.fn().mockResolvedValue(balance);
     const tokenInfo = jest.fn().mockResolvedValue({
@@ -239,7 +244,10 @@ describe('RaidenService', () => {
 
   it('should start updating channels in store on connect', async function() {
     raidenService.disconnect();
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue({
+      send: jest.fn(),
+      sendAsync: jest.fn()
+    });
     const stub = new BehaviorSubject({});
     const raidenMock = {
       channels$: stub,
@@ -258,7 +266,7 @@ describe('RaidenService', () => {
 
   it('should resolve successfully on channel close', async function() {
     const closeChannel = jest.fn().mockResolvedValue('0xthash');
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(
       mockRaiden({
         closeChannel: closeChannel
@@ -276,7 +284,7 @@ describe('RaidenService', () => {
   it('should throw an exception if close fails', async function() {
     expect.assertions(3);
     const closeChannel = jest.fn().mockRejectedValue(new Error('txfailed'));
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(
       mockRaiden({
         closeChannel: closeChannel
@@ -296,7 +304,7 @@ describe('RaidenService', () => {
   it('should successfully resolve if deposit is successful', async function() {
     expect.assertions(2);
     const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(
       mockRaiden({
         depositChannel: depositChannel
@@ -319,7 +327,7 @@ describe('RaidenService', () => {
   it('should throw if deposit failed', async function() {
     expect.assertions(3);
     const depositChannel = jest.fn().mockRejectedValue('txfailed');
-    providerMock.mockResolvedValue({});
+    providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(
       mockRaiden({
         depositChannel: depositChannel
@@ -344,7 +352,7 @@ describe('RaidenService', () => {
   describe('settleChannel', function() {
     it('should resolve when settle succeeds', async function() {
       const settleChannel = jest.fn().mockResolvedValue('txhash');
-      providerMock.mockResolvedValue({});
+      providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(
         mockRaiden({
           settleChannel: settleChannel
@@ -362,7 +370,7 @@ describe('RaidenService', () => {
 
     it('should throw if the settle fails', async function() {
       const settleChannel = jest.fn().mockRejectedValue('txfailed');
-      providerMock.mockResolvedValue({});
+      providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(
         mockRaiden({
           settleChannel: settleChannel
@@ -390,7 +398,7 @@ describe('RaidenService', () => {
         })
       });
 
-      providerMock.mockResolvedValue({});
+      providerMock.mockResolvedValue(mockProvider);
     });
 
     it('should attempt to close the channels but it will fail and return the result', async function() {
@@ -444,16 +452,18 @@ describe('RaidenService', () => {
     const mockToken1 = '0xtoken1';
     const mockToken2 = '0xtoken2';
 
-    const mockTokenInfo = (address: string) => ({
-      totalSupply: Zero,
+    const mockToken = (address: string) => ({
+      address: address,
+      balance: Zero,
+      units: '0.0',
       decimals: 18,
       name: address,
       symbol: address.replace('0x', '').toLocaleUpperCase()
     });
 
     const tokens: Tokens = {};
-    tokens[mockToken1] = mockTokenInfo(mockToken1);
-    tokens[mockToken2] = mockTokenInfo(mockToken2);
+    tokens[mockToken1] = mockToken(mockToken1);
+    tokens[mockToken2] = mockToken(mockToken2);
 
     beforeEach(() => {
       store.commit = jest.fn();
@@ -461,8 +471,8 @@ describe('RaidenService', () => {
       const getTokenList = jest
         .fn()
         .mockResolvedValue([mockToken1, mockToken2]);
-      const getTokenInfo = jest.fn().mockImplementation(mockTokenInfo);
-      providerMock.mockResolvedValue({});
+      const getTokenInfo = jest.fn().mockImplementation(mockToken);
+      providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(
         mockRaiden({
           getTokenList,
