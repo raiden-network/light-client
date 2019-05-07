@@ -13,7 +13,6 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 
 ## Table of Contents
 - [About The Project](#about-the-project)
-  * [Architecture diagram](#architecture-diagram)
 - [Getting Started](#getting-started)
   * [Connecting to a Raiden test network](#connecting-to-a-raiden-test-network)
   * [Subscribing to channel$ observable and opening your first channel](#subscribing-to-channel--observable-and-opening-your-first-channel)
