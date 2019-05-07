@@ -160,32 +160,29 @@ export default class Deposit extends Mixins(NavigationMixin) {
   }
 
   async created() {
-    const route = this.$router.currentRoute;
-    const params = route.params;
-    const tokenAddress = params.token;
-    const partnerAddress = params.partner;
+    const { token, partner } = this.$route.params;
 
-    if (!AddressUtils.checkAddressChecksum(tokenAddress)) {
+    if (!AddressUtils.checkAddressChecksum(token)) {
       this.navigateToHome();
       return;
     }
 
-    if (!AddressUtils.checkAddressChecksum(partnerAddress)) {
+    if (!AddressUtils.checkAddressChecksum(partner)) {
       this.navigateToTokenSelect();
       return;
     } else {
-      this.partner = partnerAddress;
+      this.partner = partner;
     }
 
-    let token = this.$store.getters.token(tokenAddress);
-    if (!token) {
-      token = await this.$raiden.getToken(tokenAddress);
+    let tokenInfo = this.$store.getters.token(token);
+    if (!tokenInfo) {
+      tokenInfo = await this.$raiden.getToken(token);
     }
 
-    if (!token) {
+    if (!tokenInfo) {
       this.navigateToHome();
     } else {
-      this.token = token;
+      this.token = tokenInfo;
     }
   }
 }

@@ -101,7 +101,7 @@ const store: StoreOptions<RootState> = {
       return channels;
     },
     token: (state: RootState) => (tokenAddress: string) => {
-      if (state.tokens.hasOwnProperty(tokenAddress)) {
+      if (tokenAddress in state.tokens) {
         return state.tokens[tokenAddress];
       } else {
         return null;

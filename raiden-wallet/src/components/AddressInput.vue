@@ -13,7 +13,7 @@
     >
       <template v-slot:prepend-inner>
         <img
-          :src="blockie(value)"
+          :src="$blockie(value)"
           alt="Selected token address blockie"
           class="selection-blockie"
           v-if="value && isChecksumAddress(value)"

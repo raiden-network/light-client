@@ -36,7 +36,6 @@ describe('Deposit.vue', function() {
     shallow: boolean = false,
     token: any = TestData.token
   ): Wrapper<Deposit> {
-    router.currentRoute = TestData.mockRoute(routeParams);
     const localVue = createLocalVue();
     const options = {
       localVue,
@@ -51,7 +50,8 @@ describe('Deposit.vue', function() {
       mixins: [NavigationMixin],
       mocks: {
         $raiden: service,
-        $router: router
+        $router: router,
+        $route: TestData.mockRoute(routeParams)
       }
     };
 
@@ -169,7 +169,6 @@ describe('Deposit.vue', function() {
 
     test('token was could not be found', async () => {
       service.getToken = jest.fn().mockResolvedValue(null);
-      router.currentRoute = TestData.mockRoute();
       wrapper = createWrapper(
         {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',

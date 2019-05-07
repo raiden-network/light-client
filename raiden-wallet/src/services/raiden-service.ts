@@ -192,7 +192,7 @@ export default class RaidenService {
 
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i];
-      if (cache.hasOwnProperty(token)) {
+      if (token in cache) {
         continue;
       }
       const retrievedToken = await this.getToken(token);

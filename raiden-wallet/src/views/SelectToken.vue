@@ -17,7 +17,7 @@
             >
               <v-list-tile-avatar>
                 <img
-                  :src="blockie(token.address)"
+                  :src="$blockie(token.address)"
                   alt="Partner address blockie"
                 />
               </v-list-tile-avatar>

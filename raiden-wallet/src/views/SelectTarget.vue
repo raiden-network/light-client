@@ -27,12 +27,10 @@ export default class SendTokens extends Vue {
   partner: string = '';
   token: string = '';
 
-  mounted() {
-    let route = this.$router.currentRoute;
-    let params = route.params;
-    if (params.token) {
-      this.token = params.token;
-    }
+  created() {
+    const { token, partner } = this.$route.params;
+    this.partner = partner;
+    this.token = token;
   }
 }
 </script>

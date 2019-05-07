@@ -9,7 +9,7 @@
       <v-flex lg12 md12 xs12>
         <div id="header-content">
           <div class="navigation-button">
-            <v-btn v-if="isBack" flat icon @click="onBackClicked()">
+            <v-btn v-if="canGoBack" flat icon @click="onBackClicked()">
               <v-icon>arrow_back</v-icon>
             </v-btn>
           </div>
@@ -23,7 +23,7 @@
               contain
               aspect-ratio="1"
               class="blockie"
-              :src="blockie(defaultAccount)"
+              :src="$blockie(defaultAccount)"
             ></v-img>
           </div>
         </div>
@@ -50,11 +50,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Watch } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import { RouteNames } from '@/route-names';
-import { Route } from 'vue-router';
 import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({
@@ -68,11 +67,8 @@ export default class WalletHeader extends Mixins(
   loading!: boolean;
   accountBalance!: string;
 
-  isBack = false;
-
-  @Watch('$route', { immediate: true, deep: true })
-  onUrlChange(route: Route) {
-    this.isBack = route.name !== RouteNames.HOME;
+  get canGoBack(): boolean {
+    return this.$route.name !== RouteNames.HOME;
   }
 }
 </script>

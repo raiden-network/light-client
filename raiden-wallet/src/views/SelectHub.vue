@@ -72,22 +72,21 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   }
 
   async created() {
-    const params = this.$route.params;
-    const tokenAddress = params.token;
-    if (!AddressUtils.checkAddressChecksum(tokenAddress)) {
+    const { token } = this.$route.params;
+    if (!AddressUtils.checkAddressChecksum(token)) {
       this.navigateToHome();
       return;
     }
 
-    let token = this.$store.getters.token(tokenAddress);
-    if (!token) {
-      token = await this.$raiden.getToken(tokenAddress);
+    let tokenInfo = this.$store.getters.token(token);
+    if (!tokenInfo) {
+      tokenInfo = await this.$raiden.getToken(token);
     }
 
-    if (!token) {
+    if (!tokenInfo) {
       this.navigateToHome();
     } else {
-      this.token = token;
+      this.token = tokenInfo;
     }
   }
 }

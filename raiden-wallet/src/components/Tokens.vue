@@ -7,7 +7,7 @@
             <v-list-tile :key="token.token" class="connection">
               <v-list-tile-avatar>
                 <img
-                  :src="blockie(token.address)"
+                  :src="$blockie(token.address)"
                   alt="Partner address blocky"
                 />
               </v-list-tile-avatar>

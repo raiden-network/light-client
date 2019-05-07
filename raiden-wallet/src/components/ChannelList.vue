@@ -7,7 +7,7 @@
             <v-list-tile :key="channel.partner" class="channel">
               <v-list-tile-avatar>
                 <img
-                  :src="blockie(channel.partner)"
+                  :src="$blockie(channel.partner)"
                   alt="Partner address blocky"
                 />
               </v-list-tile-avatar>

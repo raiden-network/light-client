@@ -44,19 +44,13 @@ export default class NavigationMixin extends Vue {
   onBackClicked() {
     switch (this.$route.name) {
       case RouteNames.ABOUT:
-        this.navigateToHome();
-        break;
       case RouteNames.SELECT_TARGET:
-        this.navigateToHome();
-        break;
+      case RouteNames.CHANNELS:
       case RouteNames.SELECT_TOKEN:
         this.navigateToHome();
         break;
       case RouteNames.SELECT_HUB:
         this.navigateToTokenSelect();
-        break;
-      case RouteNames.CHANNELS:
-        this.navigateToHome();
         break;
       case RouteNames.DEPOSIT:
         this.navigateToSelectHub(this.$route.params.token);
