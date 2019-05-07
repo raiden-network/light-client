@@ -7,13 +7,11 @@ import { BalanceUtils } from '@/utils/balance-utils';
 import { LeaveNetworkResult, Progress, Token } from '@/model/types';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
-import { ethers } from 'ethers';
 
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
   private subscription?: Subscription;
-  private _web3Provider?: ethers.providers.Web3Provider;
 
   private get raiden(): Raiden {
     if (this._raiden === undefined) {
@@ -23,13 +21,6 @@ export default class RaidenService {
     }
   }
 
-  private get web3Provider(): ethers.providers.Web3Provider {
-    if (!this._web3Provider) {
-      throw new Error('web3 provider was not initialized');
-    }
-    return this._web3Provider;
-  }
-
   constructor(store: Store<RootState>) {
     this._raiden = undefined;
     this.store = store;
@@ -37,7 +28,7 @@ export default class RaidenService {
 
   async ensResolve(name: string): Promise<string> {
     try {
-      return await this.web3Provider.resolveName(name);
+      return await this.raiden.resolveName(name);
     } catch (e) {
       throw new EnsResolveFailed(e);
     }
@@ -50,7 +41,6 @@ export default class RaidenService {
         this.store.commit('noProvider');
       } else {
         this._raiden = await Raiden.create(provider, 0, window.localStorage);
-        this._web3Provider = new ethers.providers.Web3Provider(provider);
 
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
