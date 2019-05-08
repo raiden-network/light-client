@@ -63,6 +63,7 @@
     "typescript": "^3.4.5"
   },
   "dependencies": {
+    "cross-fetch": "^3.0.2",
     "ethers": "^4.0.27",
     "io-ts": "^1.8.5",
     "lodash": "^4.17.11",

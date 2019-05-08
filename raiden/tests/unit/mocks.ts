@@ -1,5 +1,3 @@
-import { BehaviorSubject, Subject } from 'rxjs';
-
 // ethers's contracts use a lot defineReadOnly which doesn't allow us to mock
 // functions and properties. Mock it here so we can mock later
 jest.mock('ethers/utils/properties', () => ({
@@ -23,6 +21,9 @@ jest.mock('raiden/utils', () => ({
   ...jest.requireActual('raiden/utils'),
   getNetwork: jest.fn((provider: JsonRpcProvider): Promise<Network> => provider.getNetwork()),
 }));
+
+import { BehaviorSubject, Subject, AsyncSubject } from 'rxjs';
+import { MatrixClient } from 'matrix-js-sdk';
 
 jest.mock('ethers/providers');
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
@@ -155,6 +156,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   return {
     stateOutput$: new BehaviorSubject<RaidenState>(initialState),
     actionOutput$: new Subject<RaidenActions>(),
+    matrix$: new AsyncSubject<MatrixClient>(),
     address,
     network,
     contractsInfo: {

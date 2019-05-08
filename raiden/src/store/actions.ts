@@ -1,5 +1,6 @@
 import { AnyAction } from 'redux';
 import { BigNumber } from 'ethers/utils';
+import { RaidenMatrix } from './state';
 
 export enum RaidenActionType {
   INIT = 'raidenInit',
@@ -20,6 +21,7 @@ export enum RaidenActionType {
   CHANNEL_SETTLE = 'channelSettle',
   CHANNEL_SETTLED = 'channelSettled',
   CHANNEL_SETTLE_FAILED = 'channelSettleFailed',
+  MATRIX_SETUP = 'matrixSetup',
 }
 
 export enum ShutdownReason {
@@ -165,6 +167,11 @@ export interface ChannelSettleActionFailed extends RaidenAction {
   tokenNetwork: string;
   partner: string;
   error: Error;
+}
+
+export interface MatrixSetupAction extends RaidenAction {
+  type: RaidenActionType.MATRIX_SETUP;
+  setup: RaidenMatrix;
 }
 
 // action factories:
@@ -361,6 +368,11 @@ export const channelSettleFailed = (
   error,
 });
 
+export const matrixSetup = (setup: RaidenMatrix): MatrixSetupAction => ({
+  type: RaidenActionType.MATRIX_SETUP,
+  setup,
+});
+
 export type RaidenActions =
   | RaidenInitAction
   | RaidenShutdownAction
@@ -379,7 +391,8 @@ export type RaidenActions =
   | ChannelSettleableAction
   | ChannelSettleAction
   | ChannelSettledAction
-  | ChannelSettleActionFailed;
+  | ChannelSettleActionFailed
+  | MatrixSetupAction;
 
 export const RaidenEventType: (RaidenActionType.SHUTDOWN | RaidenActionType.NEW_BLOCK)[] = [
   RaidenActionType.SHUTDOWN,
