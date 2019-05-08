@@ -72,7 +72,7 @@ describe('Tokens.vue', function() {
   });
 
   it('should display one connection entry', function() {
-    const connections = wrapper.findAll('.connection');
+    const connections = wrapper.findAll('.token');
     expect(connections.exists()).toBeTruthy();
     expect(connections.length).toBe(1);
   });
@@ -80,7 +80,7 @@ describe('Tokens.vue', function() {
   it('should close the channel when confirmed', function() {
     raiden.leaveNetwork = jest.fn().mockReturnValue(null);
     expect(wrapper.vm.$data.leaveModalVisible).toBe(false);
-    wrapper.find('#overflow-0').trigger('click');
+    wrapper.find('#token-0').trigger('click');
     wrapper.find('#leave-0').trigger('click');
     expect(wrapper.vm.$data.leaveModalVisible).toBe(true);
     wrapper.find('#confirm').trigger('click');
@@ -93,7 +93,7 @@ describe('Tokens.vue', function() {
 
   it('should dismiss the dialog when cancel is pressed', function() {
     raiden.leaveNetwork = jest.fn().mockReturnValue(null);
-    wrapper.find('#overflow-0').trigger('click');
+    wrapper.find('#token-0').trigger('click');
     wrapper.find('#leave-0').trigger('click');
     expect(wrapper.vm.$data.leaveModalVisible).toBe(true);
     wrapper.find('#cancel').trigger('click');

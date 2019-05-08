@@ -2,46 +2,48 @@
   <div class="content-host">
     <v-layout justify-center row class="list-container">
       <v-flex xs12 md12 lg12>
-        <v-list two-line>
-          <template v-for="(token, index) in tokens">
-            <v-list-tile :key="token.token" class="connection">
-              <v-list-tile-avatar>
-                <img
-                  :src="$blockie(token.address)"
-                  alt="Partner address blocky"
-                />
-              </v-list-tile-avatar>
-              <v-list-tile-content>
-                <v-list-tile-title>
-                  {{ token.symbol }} | {{ token.name }}
-                </v-list-tile-title>
-                <v-list-tile-sub-title>
-                  {{ token.address }}
-                </v-list-tile-sub-title>
-              </v-list-tile-content>
-              <v-list-tile-action>
-                <v-menu bottom left>
-                  <template v-slot:activator="{ on }">
-                    <v-btn icon v-on="on" :id="'overflow-' + index">
-                      <v-icon>more_vert</v-icon>
-                    </v-btn>
-                  </template>
-
-                  <v-list>
-                    <v-list-tile
-                      @click="leaveNetwork(token)"
-                      :id="'leave-' + index"
-                    >
-                      <v-list-tile-title>Leave Network</v-list-tile-title>
-                    </v-list-tile>
-                    <v-list-tile :to="'/channels/' + token.address">
-                      <v-list-tile-title>View Channels</v-list-tile-title>
-                    </v-list-tile>
-                  </v-list>
-                </v-menu>
-              </v-list-tile-action>
-            </v-list-tile>
-          </template>
+        <v-list class="token-list">
+          <v-list-group
+            v-for="(token, index) in tokens"
+            :id="'token-' + index"
+            :key="token.token"
+            class="token"
+            no-action
+          >
+            <template v-slot:activator>
+              <v-list-tile>
+                <v-list-tile-avatar class="list-blockie">
+                  <img
+                    :src="$blockie(token.address)"
+                    alt="Partner address blocky"
+                  />
+                </v-list-tile-avatar>
+                <v-list-tile-content>
+                  <v-list-tile-title class="token-info">
+                    {{ token.symbol }} | {{ token.name }}
+                  </v-list-tile-title>
+                  <v-list-tile-sub-title class="token-address">
+                    {{ token.address }}
+                  </v-list-tile-sub-title>
+                </v-list-tile-content>
+              </v-list-tile>
+            </template>
+            <div :id="'expanded-area-' + index" class="expanded-area">
+              <v-layout justify-center row>
+                <v-btn
+                  @click="leaveNetwork(token)"
+                  :id="'leave-' + index"
+                  class="text-capitalize action-button leave"
+                  >Leave Network</v-btn
+                >
+                <v-btn
+                  class="text-capitalize action-button"
+                  :to="'/channels/' + token.address"
+                  >View Channels</v-btn
+                >
+              </v-layout>
+            </div>
+          </v-list-group>
         </v-list>
       </v-flex>
     </v-layout>
@@ -126,4 +128,51 @@ export default class Tokens extends Mixins(BlockieMixin) {
 <style lang="scss" scoped>
 @import '../main';
 @import '../scss/button';
+
+.token {
+  background-color: #141414;
+  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
+}
+
+.token-list {
+  margin-top: 105px;
+  background-color: transparent !important;
+}
+
+.token-list /deep/ .v-avatar {
+  padding-left: 30px;
+  padding-right: 30px;
+}
+
+.token-list /deep/ .v-list__tile {
+  height: 105px;
+}
+
+.token-info {
+  font-weight: bold;
+  line-height: 20px;
+  font-size: 16px;
+}
+
+.token-address {
+  color: #696969 !important;
+  line-height: 20px;
+  font-size: 16px;
+}
+
+.expanded-area {
+  background-color: #323232;
+  padding: 25px;
+}
+
+.action-button.leave {
+  border: 2px solid #050505;
+  background-color: transparent !important;
+}
+
+.action-button {
+  border-radius: 29px;
+  margin-right: 25px;
+  margin-left: 25px;
+}
 </style>
