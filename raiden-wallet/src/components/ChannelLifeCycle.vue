@@ -34,7 +34,7 @@ export default class ChannelLifeCycle extends Vue {
     ) {
       currentStep = 2;
     } else if (
-      this.state == ChannelState.settleable ||
+      this.state === ChannelState.settleable ||
       this.state === ChannelState.settling
     ) {
       currentStep = 3;
