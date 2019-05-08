@@ -129,4 +129,30 @@ describe('store', () => {
       }
     ]);
   });
+
+  test('return null if a token is not cached', () => {
+    expect(
+      store.getters.token('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
+    ).toBeNull();
+  });
+
+  test('return the token if it is cached', () => {
+    const tokens = testTokens(
+      '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+      'Test Token',
+      'TTT'
+    );
+
+    store.commit('updateTokens', tokens);
+    expect(
+      store.getters.token('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
+    ).toEqual({
+      address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+      balance: Zero,
+      decimals: 18,
+      units: '',
+      symbol: 'TTT',
+      name: 'Test Token'
+    });
+  });
 });

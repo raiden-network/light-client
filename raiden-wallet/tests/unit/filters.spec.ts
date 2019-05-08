@@ -49,4 +49,10 @@ describe('filters', function() {
       ).toEqual('11.1');
     });
   });
+
+  describe('capitalizeFirst', function() {
+    it('should capitalize the first letter', function() {
+      expect(Filters.capitalizeFirst('test')).toEqual('Test');
+    });
+  });
 });
