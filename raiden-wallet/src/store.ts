@@ -2,13 +2,16 @@ import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import { RaidenChannel, RaidenChannels } from 'raiden';
-import * as _ from 'lodash';
 import {
   emptyTokenModel,
   AccTokenModel,
   TokenModel,
   Token
 } from '@/model/types';
+import map from 'lodash/map';
+import flatMap from 'lodash/flatMap';
+import clone from 'lodash/clone';
+import reduce from 'lodash/reduce';
 
 Vue.use(Vuex);
 
@@ -23,7 +26,7 @@ const _defaultState: RootState = {
 };
 
 export function defaultState(): RootState {
-  return _.clone(_defaultState);
+  return clone(_defaultState);
 }
 
 const store: StoreOptions<RootState> = {
@@ -63,8 +66,8 @@ const store: StoreOptions<RootState> = {
         return acc;
       };
 
-      return _.map(_.flatMap(state.channels), tokenChannels => {
-        const model = _.reduce(tokenChannels, reducer, emptyTokenModel());
+      return map(flatMap(state.channels), tokenChannels => {
+        const model = reduce(tokenChannels, reducer, emptyTokenModel());
         const tokenInfo = state.tokens[model.address];
         if (tokenInfo) {
           model.name = tokenInfo.name || '';
@@ -75,7 +78,7 @@ const store: StoreOptions<RootState> = {
       });
     },
     allTokens: (state: RootState): Token[] => {
-      return _.reduce(
+      return reduce(
         state.tokens,
         (result: Token[], value: Token, key: string) => {
           const model: Token = {
@@ -96,7 +99,7 @@ const store: StoreOptions<RootState> = {
       let channels: RaidenChannel[] = [];
       const tokenChannels = state.channels[tokenAddress];
       if (tokenChannels) {
-        channels = _.flatMap(tokenChannels);
+        channels = flatMap(tokenChannels);
       }
       return channels;
     },
