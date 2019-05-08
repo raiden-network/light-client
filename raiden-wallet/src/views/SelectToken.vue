@@ -8,27 +8,24 @@
 
     <v-layout justify-center row class="list-container">
       <v-flex xs12 md12 lg12>
-        <v-list two-line>
+        <v-list class="token-list">
           <template v-for="token in allTokens">
             <v-list-tile
               :key="token.address"
               @click="navigateToSelectHub(token.address)"
               class="token"
             >
-              <v-list-tile-avatar>
+              <v-list-tile-avatar class="list-blockie">
                 <img
                   :src="$blockie(token.address)"
                   alt="Partner address blockie"
                 />
               </v-list-tile-avatar>
               <v-list-tile-content>
-                <v-list-tile-title>
-                  <span class="font-weight-medium">
-                    {{ token.symbol }}
-                  </span>
-                  | {{ token.name }}
+                <v-list-tile-title class="token-info">
+                  {{ token.symbol }} | {{ token.name }}
                 </v-list-tile-title>
-                <v-list-tile-sub-title>
+                <v-list-tile-sub-title class="token-address">
                   {{ token.address }}
                 </v-list-tile-sub-title>
               </v-list-tile-content>
@@ -60,12 +57,28 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 <style lang="scss" scoped>
 @import '../scss/input-screen';
 
-.theme--dark.v-list {
+.token-list {
   background-color: transparent !important;
+}
+
+.token-list /deep/ .v-list__tile {
+  height: 105px;
 }
 
 .token {
   background-color: rgba(0, 0, 0, 0.25);
   box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
+}
+
+.token-info {
+  font-weight: bold;
+  line-height: 20px;
+  font-size: 16px;
+}
+
+.token-address {
+  color: #696969 !important;
+  line-height: 20px;
+  font-size: 16px;
 }
 </style>
