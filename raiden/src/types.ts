@@ -1,7 +1,8 @@
-import { Subject } from 'rxjs';
+import { Subject, AsyncSubject } from 'rxjs';
 import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber } from 'ethers/utils';
+import { MatrixClient } from 'matrix-js-sdk';
 
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
@@ -27,6 +28,7 @@ export interface RaidenContracts {
 export interface RaidenEpicDeps {
   stateOutput$: Subject<RaidenState>;
   actionOutput$: Subject<RaidenActions>;
+  matrix$: AsyncSubject<MatrixClient>;
   provider: JsonRpcProvider;
   network: Network;
   signer: Signer;

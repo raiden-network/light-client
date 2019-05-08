@@ -71,6 +71,9 @@ declare module 'matrix-js-sdk' {
 
     public _http: any;
 
+    public deviceId: string | null;
+    public credentials: { userId: string | null };
+
     private _requestTokenFromEndpoint(endpoint: string, params: object): Promise<string>;
 
     public startClient(opts: StartClientOpts | number): void; // backwards compat with historyLen
@@ -90,7 +93,13 @@ declare module 'matrix-js-sdk' {
       bindThreepids?: { email?: string; msisdn?: string },
       guestAccessToken?: string,
       callback?: requestCallback,
-    ): Promise<any>;
+    ): Promise<{ user_id: string; access_token: string; device_id: string }>;
+
+    public joinRoom(
+      roomIdOrAlias: string,
+      opts?: { syncRoom?: boolean; inviteSignUrl?: string; viaServers?: string[] },
+      callback?: requestCallback,
+    ): Promise<Room>;
 
     public setDisplayName(name: string, callback?: requestCallback): Promise<any>;
 

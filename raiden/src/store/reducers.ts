@@ -99,6 +99,9 @@ export function raidenReducer(
       delete state.tokenNetworks[action.tokenNetwork][action.partner];
       return state;
 
+    case RaidenActionType.MATRIX_SETUP:
+      return set(cloneDeep(state), ['transport', 'matrix'], action.setup);
+
     default:
       return state;
   }

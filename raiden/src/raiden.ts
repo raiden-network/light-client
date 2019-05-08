@@ -2,12 +2,14 @@ import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, ParamType, BigNumber, bigNumberify } from 'ethers/utils';
 
+import { MatrixClient } from 'matrix-js-sdk';
+
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, ofType } from 'redux-observable';
 import { createLogger } from 'redux-logger';
 
 import { debounce, findKey, transform, constant, isEmpty } from 'lodash';
-import { Observable, Subject, BehaviorSubject } from 'rxjs';
+import { Observable, Subject, BehaviorSubject, AsyncSubject } from 'rxjs';
 import { first, filter, map } from 'rxjs/operators';
 
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
@@ -125,6 +127,8 @@ export class Raiden {
     const action$ = new Subject<RaidenActions>();
     this.action$ = action$;
 
+    const matrix$ = new AsyncSubject<MatrixClient>();
+
     this.channels$ = state$.pipe(
       map(state =>
         transform(
@@ -156,6 +160,7 @@ export class Raiden {
       dependencies: {
         stateOutput$: state$,
         actionOutput$: action$,
+        matrix$,
         provider,
         network,
         signer,

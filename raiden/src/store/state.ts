@@ -41,12 +41,29 @@ export type Channel = t.TypeOf<typeof ChannelType>;
   closeBlock?: number;
 }*/
 
-export const RaidenStateType = t.type({
-  address: t.string,
-  blockNumber: t.number,
-  tokenNetworks: t.record(t.string, t.record(t.string, ChannelType)),
-  token2tokenNetwork: t.record(t.string, t.string),
+const RaidenMatrixType = t.type({
+  server: t.string,
+  userId: t.string,
+  accessToken: t.string,
+  deviceId: t.string,
+  displayName: t.string,
 });
+
+export type RaidenMatrix = t.TypeOf<typeof RaidenMatrixType>;
+
+export const RaidenStateType = t.intersection([
+  t.type({
+    address: t.string,
+    blockNumber: t.number,
+    tokenNetworks: t.record(t.string, t.record(t.string, ChannelType)),
+    token2tokenNetwork: t.record(t.string, t.string),
+  }),
+  t.partial({
+    transport: t.partial({
+      matrix: RaidenMatrixType,
+    }),
+  }),
+]);
 
 export type RaidenState = t.TypeOf<typeof RaidenStateType>;
 
