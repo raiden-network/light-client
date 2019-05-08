@@ -31,55 +31,57 @@
               </v-list-tile>
             </template>
             <div :id="'expanded-area-' + index" class="expanded-area">
-              <channel-life-cycle :state="channel.state"></channel-life-cycle>
-              <v-layout justify-space-around row>
-                <v-btn
-                  :disabled="channel.state !== 'open'"
-                  :id="'deposit-' + index"
-                  @click="deposit(channel)"
-                  class="action-button text-capitalize"
+              <div
+                class="area-content"
+                v-if="visibleCloseModal !== `channel-${channel.id}`"
+              >
+                <channel-life-cycle :state="channel.state"></channel-life-cycle>
+                <v-layout justify-space-around row>
+                  <v-btn
+                    :disabled="channel.state !== 'open'"
+                    :id="'deposit-' + index"
+                    @click="deposit(channel)"
+                    class="action-button text-capitalize"
+                  >
+                    Deposit
+                  </v-btn>
+                  <v-btn
+                    :disabled="
+                      channel.state !== 'open' && channel.state !== 'closing'
+                    "
+                    :id="'close-' + index"
+                    @click="close(channel)"
+                    class="action-button text-capitalize"
+                  >
+                    Close
+                  </v-btn>
+                  <v-btn
+                    class="action-button text-capitalize"
+                    :disabled="
+                      channel.state !== 'settleable' &&
+                        channel.state !== 'settling'
+                    "
+                    :id="'settle-' + index"
+                    @click="settle(channel)"
+                  >
+                    Settle
+                  </v-btn>
+                </v-layout>
+              </div>
+              <div v-else>
+                <in-place-confirmation
+                  @cancel="closeCancelled()"
+                  @confirm="closeConfirmed()"
                 >
-                  Deposit
-                </v-btn>
-                <v-btn
-                  :disabled="channel.state !== 'open'"
-                  :id="'close-' + index"
-                  @click="close(channel)"
-                  class="action-button text-capitalize"
-                >
-                  Close
-                </v-btn>
-                <v-btn
-                  class="action-button text-capitalize"
-                  :disabled="
-                    channel.state !== 'settleable' &&
-                      channel.state !== 'settling'
-                  "
-                  :id="'settle-' + index"
-                  @click="settle(channel)"
-                >
-                  Settle
-                </v-btn>
-              </v-layout>
+                  Are you sure you want to close this channel? <br />
+                  This action cannot be undone.
+                </in-place-confirmation>
+              </div>
             </div>
           </v-list-group>
         </v-list>
       </v-flex>
     </v-layout>
-
-    <confirmation-dialog
-      :display="closeModalVisible"
-      @confirm="closeConfirmed()"
-      @cancel="closeCancelled()"
-    >
-      <template v-slot:title>
-        Confirm channel close
-      </template>
-      <div v-if="selectedChannel">
-        Are you sure you want to close the channel with hub
-        {{ selectedChannel.partner }} for token {{ selectedChannel.token }}?
-      </div>
-    </confirmation-dialog>
 
     <confirmation-dialog
       :display="settleModalVisible"
@@ -119,9 +121,15 @@ import { Token, TokenPlaceholder } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
+import InPlaceConfirmation from '@/components/InPlaceConfirmation.vue';
 
 @Component({
-  components: { ChannelLifeCycle, DepositDialog, ConfirmationDialog }
+  components: {
+    InPlaceConfirmation,
+    ChannelLifeCycle,
+    DepositDialog,
+    ConfirmationDialog
+  }
 })
 export default class ChannelList extends Mixins(BlockieMixin) {
   @Prop({ required: true })
@@ -131,7 +139,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   token: Token | null = TokenPlaceholder;
   selectedChannel: RaidenChannel | null = null;
-  closeModalVisible: boolean = false;
+  visibleCloseModal: string = '';
   depositModalVisible: boolean = false;
   settleModalVisible: boolean = false;
   message: string = '';
@@ -142,7 +150,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
 
   closeCancelled() {
-    this.closeModalVisible = false;
+    this.visibleCloseModal = '';
   }
 
   async closeConfirmed() {
@@ -155,7 +163,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       this.showMessage('Channel close successful');
     } catch (e) {
       this.showMessage('Channel close failed');
-      console.error(e);
     }
   }
 
@@ -165,13 +172,13 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
 
   private dismissCloseModal() {
-    this.closeModalVisible = false;
+    this.visibleCloseModal = '';
     this.selectedChannel = null;
   }
 
   close(channel: RaidenChannel) {
     this.selectedChannel = channel;
-    this.closeModalVisible = true;
+    this.visibleCloseModal = `channel-${channel.id}`;
   }
 
   depositCancelled() {
@@ -195,7 +202,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       this.showMessage('Deposit was successful');
     } catch (e) {
       this.showMessage('Deposit failed');
-      console.error(e);
     }
   }
 
@@ -221,7 +227,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       this.showMessage('Channel settle was successful');
     } catch (e) {
       this.showMessage('Channel settle failed');
-      console.error(e);
     }
   }
 
@@ -267,6 +272,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
 .expanded-area {
   background-color: #323232;
-  padding: 25px;
+  height: 210px;
+  .area-content {
+    padding: 25px;
+  }
 }
 </style>
