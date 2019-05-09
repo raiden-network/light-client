@@ -78,19 +78,24 @@
               <div v-else>
                 <div class="modal-body">
                   <v-layout class="modal-text" row align-center justify-center>
-                    <v-flex>
+                    <v-flex class="modal-description">
                       Are you sure you want to close this channel? <br />
                       This action cannot be undone.
                     </v-flex>
                   </v-layout>
                   <v-layout row align-end justify-center class="action-buttons">
                     <v-btn
+                      :id="'cancel-' + channel.id"
                       @click="closeCancelled()"
                       class="text-capitalize cancel-button"
                     >
                       Cancel
                     </v-btn>
-                    <v-btn @click="closeConfirmed()" class="text-capitalize">
+                    <v-btn
+                      :id="'confirm-' + channel.id"
+                      @click="closeConfirmed()"
+                      class="text-capitalize"
+                    >
                       Close
                     </v-btn>
                   </v-layout>
@@ -299,9 +304,13 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
 .modal-body {
   height: 210px;
-  padding: 40px;
+  padding: 25px;
   background-color: #e4e4e4;
   box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
+}
+
+.modal-description {
+  padding-top: 10px;
 }
 
 .modal-text > * {

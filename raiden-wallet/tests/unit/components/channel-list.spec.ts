@@ -50,11 +50,6 @@ describe('ChannelList.vue', function() {
         $identicon: $identicon
       },
       stubs: {
-        InPlaceConfirmation: `
-        <div>
-            <button id="confirm" @click="$emit('confirm')"></button>
-            <button id="cancel" @click="$emit('cancel')"></button>
-        </div>`,
         ConfirmationDialog: `
         <div>
             <button id="confirm" @click="$emit('confirm')"></button>
@@ -105,7 +100,7 @@ describe('ChannelList.vue', function() {
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
       expect(wrapper.vm.$data.visibleCloseModal).toBe('channel-278');
-      wrapper.find('#confirm').trigger('click');
+      wrapper.find('#confirm-278').trigger('click');
 
       expect(wrapper.vm.$data.visibleCloseModal).toBe('');
       await flushPromises();
@@ -120,7 +115,7 @@ describe('ChannelList.vue', function() {
       raiden.closeChannel = jest.fn().mockReturnValue(null);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      wrapper.find('#confirm').trigger('click');
+      wrapper.find('#confirm-278').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Channel close successful');
@@ -132,7 +127,7 @@ describe('ChannelList.vue', function() {
         .mockRejectedValue(new ChannelCloseFailed());
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      wrapper.find('#confirm').trigger('click');
+      wrapper.find('#confirm-278').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Channel close failed');
@@ -143,7 +138,7 @@ describe('ChannelList.vue', function() {
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
       expect(wrapper.vm.$data.visibleCloseModal).toBe('channel-278');
-      wrapper.find('#cancel').trigger('click');
+      wrapper.find('#cancel-278').trigger('click');
       expect(wrapper.vm.$data.visibleCloseModal).toBe('');
       expect(raiden.closeChannel).toHaveBeenCalledTimes(0);
     });
