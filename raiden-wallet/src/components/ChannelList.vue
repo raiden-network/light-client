@@ -1,6 +1,13 @@
 <template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
   <div class="content-host">
     <v-layout justify-center row class="list-container">
+      <Transition name="fade-transition" mode="out-in">
+        <div
+          v-show="visibleCloseModal"
+          class="overlay"
+          @click="closeCancelled()"
+        ></div>
+      </Transition>
       <v-flex xs12 md12 lg12>
         <v-list class="channel-list">
           <v-list-group
@@ -69,13 +76,25 @@
                 </v-layout>
               </div>
               <div v-else>
-                <in-place-confirmation
-                  @cancel="closeCancelled()"
-                  @confirm="closeConfirmed()"
-                >
-                  Are you sure you want to close this channel? <br />
-                  This action cannot be undone.
-                </in-place-confirmation>
+                <div class="modal-body">
+                  <v-layout class="modal-text" row align-center justify-center>
+                    <v-flex>
+                      Are you sure you want to close this channel? <br />
+                      This action cannot be undone.
+                    </v-flex>
+                  </v-layout>
+                  <v-layout row align-end justify-center class="action-buttons">
+                    <v-btn
+                      @click="closeCancelled()"
+                      class="text-capitalize cancel-button"
+                    >
+                      Cancel
+                    </v-btn>
+                    <v-btn @click="closeConfirmed()" class="text-capitalize">
+                      Close
+                    </v-btn>
+                  </v-layout>
+                </div>
               </div>
             </div>
           </v-list-group>
@@ -121,11 +140,9 @@ import { Token, TokenPlaceholder } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
-import InPlaceConfirmation from '@/components/InPlaceConfirmation.vue';
 
 @Component({
   components: {
-    InPlaceConfirmation,
     ChannelLifeCycle,
     DepositDialog,
     ConfirmationDialog
@@ -276,5 +293,49 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   .area-content {
     padding: 25px;
   }
+  position: relative;
+  z-index: 20;
+}
+
+.modal-body {
+  height: 210px;
+  padding: 40px;
+  background-color: #e4e4e4;
+  box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
+}
+
+.modal-text > * {
+  height: 100px;
+  color: #050505;
+  font-size: 16px;
+  line-height: 21px;
+  text-align: center;
+}
+
+.action-buttons button {
+  width: 125px;
+  height: 40px;
+  font-size: 16px;
+  line-height: 21px;
+  text-align: center;
+  border-radius: 29px;
+  margin-left: 25px;
+  margin-right: 25px;
+}
+
+.cancel-button {
+  background-color: transparent !important;
+  border: 2px solid #050505;
+  color: #050505;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(30, 30, 30, 0.75);
+  z-index: 10;
 }
 </style>
