@@ -32,7 +32,10 @@ export default class Filters {
 
   static displayFormat(amount: BigNumber, decimals: number): string {
     const units = BalanceUtils.toUnits(amount, decimals);
-    if (parseFloat(units) < 0.00001) {
+    const deposit = parseFloat(units);
+    if (deposit === 0) {
+      return '0.0';
+    } else if (deposit < 0.00001) {
       return '<0.00001';
     } else {
       const splitted = split(units, '.');

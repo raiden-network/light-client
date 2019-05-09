@@ -1,5 +1,6 @@
 import Filters from '@/filters';
 import { BigNumber } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 describe('filters', function() {
   describe('truncate', function() {
@@ -47,6 +48,10 @@ describe('filters', function() {
       expect(
         Filters.displayFormat(new BigNumber('11100000000000000000'), 18)
       ).toEqual('11.1');
+    });
+
+    test('display zero if deposit is zero', () => {
+      expect(Filters.displayFormat(Zero, 18)).toEqual('0.0');
     });
   });
 
