@@ -50,11 +50,6 @@ describe('ChannelList.vue', function() {
         $identicon: $identicon
       },
       stubs: {
-        ConfirmationDialog: `
-        <div>
-            <button id="confirm" @click="$emit('confirm')"></button>
-            <button id="cancel" @click="$emit('cancel')"></button>
-        </div>`,
         DepositDialog: `
         <div>
             <button id="deposit-confirm" @click="$emit('confirm', '1.0')"></button>
@@ -96,13 +91,13 @@ describe('ChannelList.vue', function() {
   describe('closing a channel', function() {
     it('should close the channel when confirmed', async function() {
       raiden.closeChannel = jest.fn().mockReturnValue(null);
-      expect(wrapper.vm.$data.visibleCloseModal).toBe('');
+      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('');
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      expect(wrapper.vm.$data.visibleCloseModal).toBe('channel-278');
+      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('channel-278');
       wrapper.find('#confirm-278').trigger('click');
 
-      expect(wrapper.vm.$data.visibleCloseModal).toBe('');
+      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('');
       await flushPromises();
       expect(raiden.closeChannel).toHaveBeenCalledTimes(1);
       expect(raiden.closeChannel).toHaveBeenCalledWith(
@@ -137,10 +132,18 @@ describe('ChannelList.vue', function() {
       raiden.closeChannel = jest.fn().mockReturnValue(null);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      expect(wrapper.vm.$data.visibleCloseModal).toBe('channel-278');
+      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('channel-278');
       wrapper.find('#cancel-278').trigger('click');
-      expect(wrapper.vm.$data.visibleCloseModal).toBe('');
+      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('');
       expect(raiden.closeChannel).toHaveBeenCalledTimes(0);
+    });
+
+    test('dismiss the confirmation when overlay is pressed', function() {
+      wrapper.find('#channel-278').trigger('click');
+      wrapper.find('#close-0').trigger('click');
+      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('channel-278');
+      wrapper.find('.overlay').trigger('click');
+      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('');
     });
   });
 
@@ -201,13 +204,13 @@ describe('ChannelList.vue', function() {
     it('should settle the channel when confirmed', async function() {
       raiden.settleChannel = jest.fn().mockReturnValue('thxhash');
       const $data = wrapper.vm.$data;
-      expect($data.settleModalVisible).toBe(false);
+      expect($data.visibleSettleConfirmation).toBe('');
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
-      expect($data.settleModalVisible).toBe(true);
-      wrapper.find('#confirm').trigger('click');
+      expect($data.visibleSettleConfirmation).toBe('channel-280');
+      wrapper.find('#confirm-280').trigger('click');
 
-      expect($data.settleModalVisible).toBe(false);
+      expect($data.visibleSettleConfirmation).toBe('');
       expect($data.selectedChannel).toBeNull();
 
       await flushPromises();
@@ -222,7 +225,7 @@ describe('ChannelList.vue', function() {
       raiden.settleChannel = jest.fn().mockReturnValue('thxhash');
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
-      wrapper.find('#confirm').trigger('click');
+      wrapper.find('#confirm-280').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Channel settle was successful');
@@ -234,7 +237,7 @@ describe('ChannelList.vue', function() {
         .mockRejectedValue(new ChannelSettleFailed());
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
-      wrapper.find('#confirm').trigger('click');
+      wrapper.find('#confirm-280').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Channel settle failed');
@@ -246,10 +249,18 @@ describe('ChannelList.vue', function() {
         .mockRejectedValue(new ChannelSettleFailed());
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
-      expect(wrapper.vm.$data.settleModalVisible).toBe(true);
-      wrapper.find('#cancel').trigger('click');
-      expect(wrapper.vm.$data.settleModalVisible).toBe(false);
+      expect(wrapper.vm.$data.visibleSettleConfirmation).toBe('channel-280');
+      wrapper.find('#cancel-280').trigger('click');
+      expect(wrapper.vm.$data.visibleSettleConfirmation).toBe('');
       expect(raiden.settleChannel).toHaveBeenCalledTimes(0);
+    });
+
+    test('clicking on the overlay should dismiss the confirmation', () => {
+      wrapper.find('#channel-280').trigger('click');
+      wrapper.find('#settle-2').trigger('click');
+      expect(wrapper.vm.$data.visibleSettleConfirmation).toBe('channel-280');
+      wrapper.find('.overlay').trigger('click');
+      expect(wrapper.vm.$data.visibleSettleConfirmation).toBe('');
     });
   });
 });
