@@ -128,11 +128,6 @@ If you didn't use Raiden before, you can
 * Learn more by watching explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
 * Read the blog posts on [Medium](https://medium.com/@raiden_network)
 
-### Test the wallet
-You can test the wallet by accessing https://wallet.raiden.network/. After each merge to master a new version is getting deployed there.
-
-> **INFO:** The wallet is work in progress and currently cannot be used to make token transfers.
-
 ### Prerequisites
 
 To run the code in this repository, you must have Node.js 10+ on your computer and a web3-enabled browser (e.g. Firefox with Metamask extension), as well as some ETH on the account.
