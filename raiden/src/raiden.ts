@@ -18,7 +18,7 @@ import TokenNetworkRegistryAbi from './abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from './abi/TokenNetwork.json';
 import TokenAbi from './abi/Token.json';
 
-import mainnetDeploy from './deployment/deployment_mainnet.json';
+// import mainnetDeploy from './deployment/deployment_mainnet.json';
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
@@ -223,9 +223,9 @@ export class Raiden {
     // if no ContractsInfo, try to populate from defaults
     if (!contracts) {
       switch (network.name) {
-        case 'homestead':
-          contracts = mainnetDeploy.contracts;
-          break;
+        // case 'homestead':
+        //   contracts = mainnetDeploy.contracts;
+        //   break;
         case 'rinkeby':
           contracts = rinkebyDeploy.contracts;
           break;
@@ -236,7 +236,11 @@ export class Raiden {
           contracts = kovanDeploy.contracts;
           break;
         default:
-          throw new Error('No contracts deploy info provided nor recognized network');
+          throw new Error(
+            `No deploy info provided nor recognized network: {name: "${network.name}", chainId: ${
+              network.chainId
+            }}`,
+          );
       }
     }
 
