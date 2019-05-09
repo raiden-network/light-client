@@ -3,9 +3,9 @@
     <v-layout justify-center row class="list-container">
       <Transition name="fade-transition" mode="out-in">
         <div
-          v-show="visibleCloseModal"
+          v-show="visibleCloseConfirmation || visibleSettleConfirmation"
           class="overlay"
-          @click="closeCancelled()"
+          @click="closeConfirmation()"
         ></div>
       </Transition>
       <v-flex xs12 md12 lg12>
@@ -38,10 +38,32 @@
               </v-list-tile>
             </template>
             <div :id="'expanded-area-' + index" class="expanded-area">
+              <div v-if="visibleCloseConfirmation === `channel-${channel.id}`">
+                <confirmation
+                  :identifier="channel.id"
+                  @confirm="closeConfirmed()"
+                  @cancel="closeCancelled()"
+                >
+                  Are you sure you want to close this channel? <br />
+                  This action cannot be undone.
+                </confirmation>
+              </div>
               <div
-                v-if="visibleCloseModal !== `channel-${channel.id}`"
-                class="area-content"
+                v-else-if="
+                  visibleSettleConfirmation === `channel-${channel.id}`
+                "
               >
+                <confirmation
+                  :identifier="channel.id"
+                  @confirm="settleConfirmed()"
+                  @cancel="settleCancelled()"
+                >
+                  Are you sure you want to settle the channel with hub
+                  {{ selectedChannel.partner }} for token
+                  {{ selectedChannel.token }}?
+                </confirmation>
+              </div>
+              <div v-else class="area-content">
                 <channel-life-cycle :state="channel.state"></channel-life-cycle>
                 <v-layout justify-space-around row>
                   <v-btn
@@ -75,51 +97,12 @@
                   </v-btn>
                 </v-layout>
               </div>
-              <div v-else>
-                <div class="modal-body">
-                  <v-layout class="modal-text" row align-center justify-center>
-                    <v-flex class="modal-description">
-                      Are you sure you want to close this channel? <br />
-                      This action cannot be undone.
-                    </v-flex>
-                  </v-layout>
-                  <v-layout row align-end justify-center class="action-buttons">
-                    <v-btn
-                      :id="'cancel-' + channel.id"
-                      class="text-capitalize cancel-button"
-                      @click="closeCancelled()"
-                    >
-                      Cancel
-                    </v-btn>
-                    <v-btn
-                      :id="'confirm-' + channel.id"
-                      class="text-capitalize"
-                      @click="closeConfirmed()"
-                    >
-                      Close
-                    </v-btn>
-                  </v-layout>
-                </div>
-              </div>
             </div>
           </v-list-group>
         </v-list>
       </v-flex>
     </v-layout>
 
-    <confirmation-dialog
-      :display="settleModalVisible"
-      @confirm="settleConfirmed()"
-      @cancel="settleCancelled()"
-    >
-      <template v-slot:title>
-        Confirm channel settle
-      </template>
-      <div v-if="selectedChannel">
-        Are you sure you want to settle the channel with hub
-        {{ selectedChannel.partner }} for token {{ selectedChannel.token }}?
-      </div>
-    </confirmation-dialog>
     <deposit-dialog
       :display="depositModalVisible"
       :channel="selectedChannel"
@@ -139,18 +122,18 @@
 <script lang="ts">
 import { Component, Mixins, Prop } from 'vue-property-decorator';
 import { RaidenChannel } from 'raiden';
-import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import DepositDialog from '@/components/dialogs/DepositDialog.vue';
 import { Token, TokenPlaceholder } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
+import Confirmation from '@/components/Confirmation.vue';
 
 @Component({
   components: {
+    Confirmation,
     ChannelLifeCycle,
-    DepositDialog,
-    ConfirmationDialog
+    DepositDialog
   }
 })
 export default class ChannelList extends Mixins(BlockieMixin) {
@@ -161,9 +144,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   token: Token | null = TokenPlaceholder;
   selectedChannel: RaidenChannel | null = null;
-  visibleCloseModal: string = '';
+  visibleCloseConfirmation: string = '';
+  visibleSettleConfirmation: string = '';
   depositModalVisible: boolean = false;
-  settleModalVisible: boolean = false;
   message: string = '';
   snackbar: boolean = false;
 
@@ -172,7 +155,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
 
   closeCancelled() {
-    this.visibleCloseModal = '';
+    this.visibleCloseConfirmation = '';
   }
 
   async closeConfirmed() {
@@ -194,13 +177,13 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
 
   private dismissCloseModal() {
-    this.visibleCloseModal = '';
+    this.visibleCloseConfirmation = '';
     this.selectedChannel = null;
   }
 
   close(channel: RaidenChannel) {
     this.selectedChannel = channel;
-    this.visibleCloseModal = `channel-${channel.id}`;
+    this.visibleCloseConfirmation = `channel-${channel.id}`;
   }
 
   depositCancelled() {
@@ -233,7 +216,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
 
   private dismissSettleModal() {
-    this.settleModalVisible = false;
+    this.visibleSettleConfirmation = '';
     this.selectedChannel = null;
   }
 
@@ -254,7 +237,12 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   settle(channel: RaidenChannel) {
     this.selectedChannel = channel;
-    this.settleModalVisible = true;
+    this.visibleSettleConfirmation = `channel-${channel.id}`;
+  }
+
+  closeConfirmation() {
+    this.visibleSettleConfirmation = '';
+    this.visibleCloseConfirmation = '';
   }
 }
 </script>
@@ -300,42 +288,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
   position: relative;
   z-index: 20;
-}
-
-.modal-body {
-  height: 210px;
-  padding: 25px;
-  background-color: #e4e4e4;
-  box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
-}
-
-.modal-description {
-  padding-top: 10px;
-}
-
-.modal-text > * {
-  height: 100px;
-  color: #050505;
-  font-size: 16px;
-  line-height: 21px;
-  text-align: center;
-}
-
-.action-buttons button {
-  width: 125px;
-  height: 40px;
-  font-size: 16px;
-  line-height: 21px;
-  text-align: center;
-  border-radius: 29px;
-  margin-left: 25px;
-  margin-right: 25px;
-}
-
-.cancel-button {
-  background-color: transparent !important;
-  border: 2px solid #050505;
-  color: #050505;
 }
 
 .overlay {
