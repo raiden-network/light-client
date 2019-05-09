@@ -31,9 +31,9 @@
             <div :id="'expanded-area-' + index" class="expanded-area">
               <v-layout justify-center row>
                 <v-btn
-                  @click="leaveNetwork(token)"
                   :id="'leave-' + index"
                   class="text-capitalize action-button leave"
+                  @click="leaveNetwork(token)"
                   >Leave Network</v-btn
                 >
                 <v-btn

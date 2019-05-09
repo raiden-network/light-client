@@ -1,10 +1,16 @@
 <template>
   <fieldset id="token-amount">
     <v-text-field
+      id="amount"
+      ref="input"
       :disabled="disabled"
       :label="label"
       :rules="rules"
       :value="amount"
+      background-color="transparent"
+      flat
+      placeholder="0.00"
+      solo
       @contextmenu="valueUpdated('contextmenu', $event)"
       @drop="valueUpdated('drop', $event)"
       @input.native="valueUpdated('input', $event)"
@@ -13,20 +19,14 @@
       @mousedown="valueUpdated('mousedown', $event)"
       @mouseup="valueUpdated('mouseup', $event)"
       @select="valueUpdated('select', $event)"
-      background-color="transparent"
-      flat
-      id="amount"
-      placeholder="0.00"
-      ref="input"
-      solo
     >
-      <div class="prepend-placeholder" slot="prepend"></div>
-      <div class="status-icon-wrapper" slot="append-outer">
-        <v-icon class="status-icon" v-if="!valid" large>error</v-icon>
-        <v-icon class="status-icon" v-else large>check_circle</v-icon>
+      <div slot="prepend" class="prepend-placeholder"></div>
+      <div slot="append-outer" class="status-icon-wrapper">
+        <v-icon v-if="!valid" class="status-icon" large>error</v-icon>
+        <v-icon v-else class="status-icon" large>check_circle</v-icon>
       </div>
 
-      <span class="token-symbol" slot="append">{{
+      <span slot="append" class="token-symbol">{{
         token.symbol || 'TKN'
       }}</span>
     </v-text-field>

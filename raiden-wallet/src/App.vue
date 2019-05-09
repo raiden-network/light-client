@@ -1,7 +1,7 @@
 <template>
   <v-app dark>
     <loading v-if="loading || !initialized"></loading>
-    <div id="wallet-wrapper" v-else>
+    <div v-else id="wallet-wrapper">
       <div id="wallet">
         <wallet-header></wallet-header>
         <v-content>

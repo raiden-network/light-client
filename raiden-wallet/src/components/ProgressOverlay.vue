@@ -1,17 +1,17 @@
 <template>
-  <div id="overlay" v-if="display">
+  <div v-if="display" id="overlay">
     <div id="card">
-      <div class="steps" v-if="done">
+      <div v-if="done" class="steps">
         <div class="active step">Done</div>
       </div>
-      <div class="steps" v-else-if="steps.length > 1">
+      <div v-else-if="steps.length > 1" class="steps">
         <div
           v-for="(_, index) in steps"
+          :key="index"
           class="step"
           :class="{
             active: current === index
           }"
-          :key="index"
         >
           Step {{ index + 1 }}
         </div>

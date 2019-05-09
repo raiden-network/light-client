@@ -1,6 +1,6 @@
 <template>
   <div class="content-host">
-    <v-form autocomplete="off" v-model="valid">
+    <v-form v-model="valid" autocomplete="off">
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10>
           <div class="screen-title">Select Hub</div>
@@ -10,8 +10,8 @@
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10>
           <address-input
-            class="address-input"
             v-model="partner"
+            class="address-input"
           ></address-input>
         </v-flex>
       </v-layout>
@@ -36,9 +36,9 @@
       <v-layout align-center justify-center class="section">
         <v-flex xs10 md10 lg10 class="text-xs-center">
           <v-btn
+            id="select-hub"
             class="text-capitalize confirm-button"
             depressed
-            id="select-hub"
             :disabled="!valid"
             large
             @click="selectHub()"

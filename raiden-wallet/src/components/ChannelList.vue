@@ -11,11 +11,11 @@
       <v-flex xs12 md12 lg12>
         <v-list class="channel-list">
           <v-list-group
+            v-for="(channel, index) in channels"
             :id="'channel-' + channel.id"
             :key="channel.partner"
             class="channel"
             no-action
-            v-for="(channel, index) in channels"
           >
             <template v-slot:activator>
               <v-list-tile>
@@ -39,36 +39,36 @@
             </template>
             <div :id="'expanded-area-' + index" class="expanded-area">
               <div
-                class="area-content"
                 v-if="visibleCloseModal !== `channel-${channel.id}`"
+                class="area-content"
               >
                 <channel-life-cycle :state="channel.state"></channel-life-cycle>
                 <v-layout justify-space-around row>
                   <v-btn
-                    :disabled="channel.state !== 'open'"
                     :id="'deposit-' + index"
-                    @click="deposit(channel)"
+                    :disabled="channel.state !== 'open'"
                     class="action-button text-capitalize"
+                    @click="deposit(channel)"
                   >
                     Deposit
                   </v-btn>
                   <v-btn
+                    :id="'close-' + index"
                     :disabled="
                       channel.state !== 'open' && channel.state !== 'closing'
                     "
-                    :id="'close-' + index"
-                    @click="close(channel)"
                     class="action-button text-capitalize"
+                    @click="close(channel)"
                   >
                     Close
                   </v-btn>
                   <v-btn
+                    :id="'settle-' + index"
                     class="action-button text-capitalize"
                     :disabled="
                       channel.state !== 'settleable' &&
                         channel.state !== 'settling'
                     "
-                    :id="'settle-' + index"
                     @click="settle(channel)"
                   >
                     Settle
@@ -86,15 +86,15 @@
                   <v-layout row align-end justify-center class="action-buttons">
                     <v-btn
                       :id="'cancel-' + channel.id"
-                      @click="closeCancelled()"
                       class="text-capitalize cancel-button"
+                      @click="closeCancelled()"
                     >
                       Cancel
                     </v-btn>
                     <v-btn
                       :id="'confirm-' + channel.id"
-                      @click="closeConfirmed()"
                       class="text-capitalize"
+                      @click="closeConfirmed()"
                     >
                       Close
                     </v-btn>
@@ -127,7 +127,7 @@
       @confirm="depositConfirmed($event)"
       @cancel="depositCancelled()"
     ></deposit-dialog>
-    <v-snackbar :multi-line="true" :timeout="3000" bottom v-model="snackbar">
+    <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
       {{ message }}
       <v-btn color="primary" flat @click="snackbar = false">
         Close

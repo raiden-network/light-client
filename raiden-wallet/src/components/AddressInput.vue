@@ -1,22 +1,22 @@
 <template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
   <fieldset>
     <v-text-field
+      id="address-input"
+      ref="address"
       :label="label"
       :rules="rules"
       :value="internalValue"
       :error-messages="errorMessages"
-      @input="valueChanged($event)"
       clearable
       hide-selected
-      ref="address"
-      id="address-input"
+      @input="valueChanged($event)"
     >
       <template v-slot:prepend-inner>
         <img
+          v-if="value && isChecksumAddress(value)"
           :src="$blockie(value)"
           alt="Selected token address blockie"
           class="selection-blockie"
-          v-if="value && isChecksumAddress(value)"
         />
         <div v-else-if="timeout">
           <v-progress-circular
