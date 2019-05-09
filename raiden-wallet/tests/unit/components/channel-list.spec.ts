@@ -96,13 +96,13 @@ describe('ChannelList.vue', function() {
   describe('closing a channel', function() {
     it('should close the channel when confirmed', async function() {
       raiden.closeChannel = jest.fn().mockReturnValue(null);
-      expect(wrapper.vm.$data.closeModalVisible).toBe(false);
+      expect(wrapper.vm.$data.visibleCloseModal).toBe('');
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      expect(wrapper.vm.$data.closeModalVisible).toBe(true);
-      wrapper.find('#confirm').trigger('click');
+      expect(wrapper.vm.$data.visibleCloseModal).toBe('channel-278');
+      wrapper.find('#confirm-278').trigger('click');
 
-      expect(wrapper.vm.$data.closeModalVisible).toBe(false);
+      expect(wrapper.vm.$data.visibleCloseModal).toBe('');
       await flushPromises();
       expect(raiden.closeChannel).toHaveBeenCalledTimes(1);
       expect(raiden.closeChannel).toHaveBeenCalledWith(
@@ -115,7 +115,7 @@ describe('ChannelList.vue', function() {
       raiden.closeChannel = jest.fn().mockReturnValue(null);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      wrapper.find('#confirm').trigger('click');
+      wrapper.find('#confirm-278').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Channel close successful');
@@ -127,7 +127,7 @@ describe('ChannelList.vue', function() {
         .mockRejectedValue(new ChannelCloseFailed());
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      wrapper.find('#confirm').trigger('click');
+      wrapper.find('#confirm-278').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Channel close failed');
@@ -137,9 +137,9 @@ describe('ChannelList.vue', function() {
       raiden.closeChannel = jest.fn().mockReturnValue(null);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      expect(wrapper.vm.$data.closeModalVisible).toBe(true);
-      wrapper.find('#cancel').trigger('click');
-      expect(wrapper.vm.$data.closeModalVisible).toBe(false);
+      expect(wrapper.vm.$data.visibleCloseModal).toBe('channel-278');
+      wrapper.find('#cancel-278').trigger('click');
+      expect(wrapper.vm.$data.visibleCloseModal).toBe('');
       expect(raiden.closeChannel).toHaveBeenCalledTimes(0);
     });
   });
@@ -205,10 +205,7 @@ describe('ChannelList.vue', function() {
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
       expect($data.settleModalVisible).toBe(true);
-      wrapper
-        .findAll('#confirm')
-        .at(1)
-        .trigger('click');
+      wrapper.find('#confirm').trigger('click');
 
       expect($data.settleModalVisible).toBe(false);
       expect($data.selectedChannel).toBeNull();
@@ -225,10 +222,7 @@ describe('ChannelList.vue', function() {
       raiden.settleChannel = jest.fn().mockReturnValue('thxhash');
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
-      wrapper
-        .findAll('#confirm')
-        .at(1)
-        .trigger('click');
+      wrapper.find('#confirm').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Channel settle was successful');
@@ -240,10 +234,7 @@ describe('ChannelList.vue', function() {
         .mockRejectedValue(new ChannelSettleFailed());
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
-      wrapper
-        .findAll('#confirm')
-        .at(1)
-        .trigger('click');
+      wrapper.find('#confirm').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Channel settle failed');
@@ -256,10 +247,7 @@ describe('ChannelList.vue', function() {
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
       expect(wrapper.vm.$data.settleModalVisible).toBe(true);
-      wrapper
-        .findAll('#cancel')
-        .at(1)
-        .trigger('click');
+      wrapper.find('#cancel').trigger('click');
       expect(wrapper.vm.$data.settleModalVisible).toBe(false);
       expect(raiden.settleChannel).toHaveBeenCalledTimes(0);
     });

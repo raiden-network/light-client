@@ -1,6 +1,13 @@
 <template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
   <div class="content-host">
     <v-layout justify-center row class="list-container">
+      <Transition name="fade-transition" mode="out-in">
+        <div
+          v-show="visibleCloseModal"
+          class="overlay"
+          @click="closeCancelled()"
+        ></div>
+      </Transition>
       <v-flex xs12 md12 lg12>
         <v-list class="channel-list">
           <v-list-group
@@ -31,55 +38,74 @@
               </v-list-tile>
             </template>
             <div :id="'expanded-area-' + index" class="expanded-area">
-              <channel-life-cycle :state="channel.state"></channel-life-cycle>
-              <v-layout justify-space-around row>
-                <v-btn
-                  :disabled="channel.state !== 'open'"
-                  :id="'deposit-' + index"
-                  @click="deposit(channel)"
-                  class="action-button text-capitalize"
-                >
-                  Deposit
-                </v-btn>
-                <v-btn
-                  :disabled="channel.state !== 'open'"
-                  :id="'close-' + index"
-                  @click="close(channel)"
-                  class="action-button text-capitalize"
-                >
-                  Close
-                </v-btn>
-                <v-btn
-                  class="action-button text-capitalize"
-                  :disabled="
-                    channel.state !== 'settleable' &&
-                      channel.state !== 'settling'
-                  "
-                  :id="'settle-' + index"
-                  @click="settle(channel)"
-                >
-                  Settle
-                </v-btn>
-              </v-layout>
+              <div
+                class="area-content"
+                v-if="visibleCloseModal !== `channel-${channel.id}`"
+              >
+                <channel-life-cycle :state="channel.state"></channel-life-cycle>
+                <v-layout justify-space-around row>
+                  <v-btn
+                    :disabled="channel.state !== 'open'"
+                    :id="'deposit-' + index"
+                    @click="deposit(channel)"
+                    class="action-button text-capitalize"
+                  >
+                    Deposit
+                  </v-btn>
+                  <v-btn
+                    :disabled="
+                      channel.state !== 'open' && channel.state !== 'closing'
+                    "
+                    :id="'close-' + index"
+                    @click="close(channel)"
+                    class="action-button text-capitalize"
+                  >
+                    Close
+                  </v-btn>
+                  <v-btn
+                    class="action-button text-capitalize"
+                    :disabled="
+                      channel.state !== 'settleable' &&
+                        channel.state !== 'settling'
+                    "
+                    :id="'settle-' + index"
+                    @click="settle(channel)"
+                  >
+                    Settle
+                  </v-btn>
+                </v-layout>
+              </div>
+              <div v-else>
+                <div class="modal-body">
+                  <v-layout class="modal-text" row align-center justify-center>
+                    <v-flex class="modal-description">
+                      Are you sure you want to close this channel? <br />
+                      This action cannot be undone.
+                    </v-flex>
+                  </v-layout>
+                  <v-layout row align-end justify-center class="action-buttons">
+                    <v-btn
+                      :id="'cancel-' + channel.id"
+                      @click="closeCancelled()"
+                      class="text-capitalize cancel-button"
+                    >
+                      Cancel
+                    </v-btn>
+                    <v-btn
+                      :id="'confirm-' + channel.id"
+                      @click="closeConfirmed()"
+                      class="text-capitalize"
+                    >
+                      Close
+                    </v-btn>
+                  </v-layout>
+                </div>
+              </div>
             </div>
           </v-list-group>
         </v-list>
       </v-flex>
     </v-layout>
-
-    <confirmation-dialog
-      :display="closeModalVisible"
-      @confirm="closeConfirmed()"
-      @cancel="closeCancelled()"
-    >
-      <template v-slot:title>
-        Confirm channel close
-      </template>
-      <div v-if="selectedChannel">
-        Are you sure you want to close the channel with hub
-        {{ selectedChannel.partner }} for token {{ selectedChannel.token }}?
-      </div>
-    </confirmation-dialog>
 
     <confirmation-dialog
       :display="settleModalVisible"
@@ -121,7 +147,11 @@ import BlockieMixin from '@/mixins/blockie-mixin';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
 
 @Component({
-  components: { ChannelLifeCycle, DepositDialog, ConfirmationDialog }
+  components: {
+    ChannelLifeCycle,
+    DepositDialog,
+    ConfirmationDialog
+  }
 })
 export default class ChannelList extends Mixins(BlockieMixin) {
   @Prop({ required: true })
@@ -131,7 +161,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   token: Token | null = TokenPlaceholder;
   selectedChannel: RaidenChannel | null = null;
-  closeModalVisible: boolean = false;
+  visibleCloseModal: string = '';
   depositModalVisible: boolean = false;
   settleModalVisible: boolean = false;
   message: string = '';
@@ -142,7 +172,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
 
   closeCancelled() {
-    this.closeModalVisible = false;
+    this.visibleCloseModal = '';
   }
 
   async closeConfirmed() {
@@ -155,7 +185,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       this.showMessage('Channel close successful');
     } catch (e) {
       this.showMessage('Channel close failed');
-      console.error(e);
     }
   }
 
@@ -165,13 +194,13 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
 
   private dismissCloseModal() {
-    this.closeModalVisible = false;
+    this.visibleCloseModal = '';
     this.selectedChannel = null;
   }
 
   close(channel: RaidenChannel) {
     this.selectedChannel = channel;
-    this.closeModalVisible = true;
+    this.visibleCloseModal = `channel-${channel.id}`;
   }
 
   depositCancelled() {
@@ -195,7 +224,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       this.showMessage('Deposit was successful');
     } catch (e) {
       this.showMessage('Deposit failed');
-      console.error(e);
     }
   }
 
@@ -221,7 +249,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       this.showMessage('Channel settle was successful');
     } catch (e) {
       this.showMessage('Channel settle failed');
-      console.error(e);
     }
   }
 
@@ -267,6 +294,57 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
 .expanded-area {
   background-color: #323232;
+  height: 210px;
+  .area-content {
+    padding: 25px;
+  }
+  position: relative;
+  z-index: 20;
+}
+
+.modal-body {
+  height: 210px;
   padding: 25px;
+  background-color: #e4e4e4;
+  box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
+}
+
+.modal-description {
+  padding-top: 10px;
+}
+
+.modal-text > * {
+  height: 100px;
+  color: #050505;
+  font-size: 16px;
+  line-height: 21px;
+  text-align: center;
+}
+
+.action-buttons button {
+  width: 125px;
+  height: 40px;
+  font-size: 16px;
+  line-height: 21px;
+  text-align: center;
+  border-radius: 29px;
+  margin-left: 25px;
+  margin-right: 25px;
+}
+
+.cancel-button {
+  background-color: transparent !important;
+  border: 2px solid #050505;
+  color: #050505;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(30, 30, 30, 0.75);
+  z-index: 10;
 }
 </style>
