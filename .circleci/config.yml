@@ -137,16 +137,6 @@ jobs:
           paths:
             - ./*
 
-  deploy_gh_pages:
-    executor: base-executor
-    working_directory: *wallet_working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - add_ssh_keys:
-          fingerprints:
-            - "ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3"
-      - run: ./deploy.sh
-
 workflows:
   version: 2
   default_workflow:
@@ -178,11 +168,4 @@ workflows:
           requires:
             - lint_wallet
             - build_wallet
-      - deploy_gh_pages:
-          requires:
-            - test_wallet
-          filters:
-            branches:
-              only:
-                - master
           
