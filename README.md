@@ -41,8 +41,6 @@ The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden
 
 > **INFO:** The Light Client SDK and Wallet are work in progress and currently cannot be used to make token transfers.
 
-You can test the wallet by accessing https://wallet.raiden.network/.
-
 ## Table of Contents
 - [About The Project](#about-the-project)
 - [Architecture](#architecture)
