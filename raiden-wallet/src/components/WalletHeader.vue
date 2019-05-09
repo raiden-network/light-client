@@ -1,10 +1,10 @@
 <template>
   <div>
     <v-layout
+      v-if="!loading && defaultAccount"
       class="header"
       justify-center
       align-center
-      v-if="!loading && defaultAccount"
     >
       <v-flex lg12 md12 xs12>
         <div id="header-content">

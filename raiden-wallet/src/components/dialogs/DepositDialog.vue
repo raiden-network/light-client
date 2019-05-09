@@ -5,10 +5,10 @@
         <v-card-title class="headline">Deposit</v-card-title>
         <v-card-text>
           <amount-input
+            v-model="deposit"
             :token="token"
             label="Amount"
             limit
-            v-model="deposit"
           ></amount-input>
         </v-card-text>
         <v-card-actions>

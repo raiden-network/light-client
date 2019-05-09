@@ -12,8 +12,8 @@
           <template v-for="token in allTokens">
             <v-list-tile
               :key="token.address"
-              @click="navigateToSelectHub(token.address)"
               class="token"
+              @click="navigateToSelectHub(token.address)"
             >
               <v-list-tile-avatar class="list-blockie">
                 <img

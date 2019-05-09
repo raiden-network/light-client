@@ -1,6 +1,6 @@
 <template>
   <div class="content-host">
-    <v-form autocomplete="off" v-model="valid">
+    <v-form v-model="valid" autocomplete="off">
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10>
           <div class="screen-title">Open Channel</div>
@@ -9,7 +9,7 @@
 
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10>
-          <amount-input :token="token" v-model="deposit" limit></amount-input>
+          <amount-input v-model="deposit" :token="token" limit></amount-input>
         </v-flex>
       </v-layout>
 
@@ -40,9 +40,9 @@
       <v-layout align-center justify-center class="section">
         <v-flex xs10 md10 lg10 class="text-xs-center">
           <v-btn
+            id="open-channel"
             class="text-capitalize confirm-button"
             depressed
-            id="open-channel"
             :disabled="!valid"
             :loading="loading"
             large
