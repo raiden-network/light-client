@@ -41,13 +41,15 @@ export type Channel = t.TypeOf<typeof ChannelType>;
   closeBlock?: number;
 }*/
 
-const RaidenMatrixType = t.type({
-  server: t.string,
-  userId: t.string,
-  accessToken: t.string,
-  deviceId: t.string,
-  displayName: t.string,
-});
+const RaidenMatrixType = t.intersection([
+  t.type({ server: t.string }),
+  t.partial({
+    userId: t.string,
+    accessToken: t.string,
+    deviceId: t.string,
+    displayName: t.string,
+  }),
+]);
 
 export type RaidenMatrix = t.TypeOf<typeof RaidenMatrixType>;
 

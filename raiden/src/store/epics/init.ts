@@ -5,7 +5,7 @@ import { get, isEmpty, sortBy } from 'lodash';
 import fetch from 'cross-fetch';
 
 import { Event } from 'ethers/contract';
-import { createClient } from 'matrix-js-sdk';
+import { MatrixClient, createClient } from 'matrix-js-sdk';
 
 import {
   fromEthersEvent,
@@ -164,38 +164,36 @@ export const initMatrixEpic = (
   action$.pipe(
     ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
     withLatestFrom(state$),
-    mergeMap(
-      ([, state]): Observable<Partial<RaidenMatrix>> => {
-        const setup: RaidenMatrix | undefined = get(state, ['transport', 'matrix']);
-        if (setup) {
-          // use server from state
-          return of(setup);
-        } else {
-          const knownServersUrl =
-            MATRIX_KNOWN_SERVERS_URL[network.name] || MATRIX_KNOWN_SERVERS_URL.default;
-          // fetch servers list and use the one with shortest http round trip time (rtt)
-          return from(fetch(knownServersUrl)).pipe(
-            mergeMap(response => response.text()),
-            mergeMap(text => from(yamlListToArray(text))),
-            mergeMap(server => matrixRTT(server)),
-            toArray(),
-            map(rtts => sortBy(rtts, ['rtt'])),
-            map(rtts => {
-              if (!rtts[0] || !rtts[0].rtt)
-                throw new Error(`Could not contact any matrix servers: ${rtts}`);
-              return rtts[0].server;
-            }),
-            map(server => ({ server })),
-          );
-        }
-      },
-    ),
-    mergeMap(setup => {
-      let server: string = setup.server!,
-        userId: string | undefined = setup.userId,
-        accessToken: string | undefined = setup.accessToken,
-        deviceId: string | undefined = setup.deviceId,
-        displayName: string | undefined = setup.displayName;
+    mergeMap(function([, state]): Observable<RaidenMatrix> {
+      const setup: RaidenMatrix | undefined = get(state, ['transport', 'matrix']);
+      if (setup) {
+        // use server from state
+        return of(setup);
+      } else {
+        const knownServersUrl =
+          MATRIX_KNOWN_SERVERS_URL[network.name] || MATRIX_KNOWN_SERVERS_URL.default;
+        // fetch servers list and use the one with shortest http round trip time (rtt)
+        return from(fetch(knownServersUrl)).pipe(
+          mergeMap(response => response.text()),
+          mergeMap(text => from(yamlListToArray(text))),
+          mergeMap(server => matrixRTT(server)),
+          toArray(),
+          map(rtts => sortBy(rtts, ['rtt'])),
+          map(rtts => {
+            if (!rtts[0] || !rtts[0].rtt)
+              throw new Error(`Could not contact any matrix servers: ${rtts}`);
+            return rtts[0].server;
+          }),
+          map(server => ({ server })),
+        );
+      }
+    }),
+    mergeMap(function(setup): Observable<{ matrix: MatrixClient; setup: Required<RaidenMatrix> }> {
+      let server = setup.server,
+        userId = setup.userId,
+        accessToken = setup.accessToken,
+        deviceId = setup.deviceId,
+        displayName = setup.displayName;
       if (userId && accessToken && deviceId && displayName) {
         // if matrixSetup was already issued before, and credentials are already in state
         const matrix = createClient({

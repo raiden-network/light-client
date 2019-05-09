@@ -368,7 +368,7 @@ export const channelSettleFailed = (
   error,
 });
 
-export const matrixSetup = (setup: RaidenMatrix): MatrixSetupAction => ({
+export const matrixSetup = (setup: Required<RaidenMatrix>): MatrixSetupAction => ({
   type: RaidenActionType.MATRIX_SETUP,
   setup,
 });
