@@ -10,8 +10,8 @@ coverage:
         threshold: 1.00%
     project: 
       default: off
-      wallet:
-        flags: wallet
+      dapp:
+        flags: dapp
         target: 85%
         threshold: 1.00%
       sdk:
@@ -20,9 +20,9 @@ coverage:
         threshold: 1.00%
   
 flags:
-  wallet:
+  dapp:
     paths: 
-      - raiden-wallet/
+      - raiden-dapp/
   sdk:
     paths:
       - raiden/ 
