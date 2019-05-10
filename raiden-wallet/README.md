@@ -1,4 +1,4 @@
-# raiden-wallet
+# raiden-dapp
 
 ## Project setup
 ```
