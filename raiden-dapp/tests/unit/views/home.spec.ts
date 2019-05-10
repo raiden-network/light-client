@@ -5,7 +5,7 @@ import Vuetify from 'vuetify';
 import { createLocalVue, shallowMount, Wrapper } from '@vue/test-utils';
 import Home from '@/views/Home.vue';
 import { RootState } from '@/types';
-import WalletCore from '@/components/WalletCore.vue';
+import AppCore from '@/components/AppCore.vue';
 import { defaultState } from '@/store';
 import NoValidProvider from '@/components/NoValidProvider.vue';
 
@@ -57,8 +57,8 @@ describe('Home.vue', function() {
     jest.resetAllMocks();
   });
 
-  it('should display wallet core if everything is ok', function() {
-    expect(wrapper.find(WalletCore)).toBeTruthy();
+  it('should display app core if everything is ok', function() {
+    expect(wrapper.find(AppCore)).toBeTruthy();
   });
 
   it('should display no provider if no provider detected', function() {

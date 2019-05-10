@@ -2,13 +2,13 @@
   <div class="content-host">
     <no-valid-provider v-if="!providerDetected" />
     <user-denied v-else-if="userDenied" />
-    <wallet-core v-else />
+    <app-core v-else />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import WalletCore from '@/components/WalletCore.vue';
+import AppCore from '@/components/AppCore.vue';
 import NoValidProvider from '@/components/NoValidProvider.vue';
 import UserDenied from '@/components/UserDenied.vue';
 import { mapState } from 'vuex';
@@ -16,7 +16,7 @@ import { mapState } from 'vuex';
 @Component({
   components: {
     UserDenied,
-    WalletCore,
+    AppCore,
     NoValidProvider
   },
   computed: mapState(['providerDetected', 'userDenied'])

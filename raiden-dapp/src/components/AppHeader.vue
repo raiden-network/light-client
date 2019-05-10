@@ -14,7 +14,7 @@
             </v-btn>
           </div>
           <v-spacer></v-spacer>
-          <div class="raiden-wallet">Raiden Wallet</div>
+          <div class="header-title">Raiden dApp</div>
           <v-spacer></v-spacer>
           <div>
             <v-img
@@ -59,10 +59,7 @@ import NavigationMixin from '@/mixins/navigation-mixin';
 @Component({
   computed: mapState(['loading', 'defaultAccount', 'accountBalance'])
 })
-export default class WalletHeader extends Mixins(
-  BlockieMixin,
-  NavigationMixin
-) {
+export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
   defaultAccount!: string;
   loading!: boolean;
   accountBalance!: string;
@@ -93,7 +90,7 @@ export default class WalletHeader extends Mixins(
   height: 36px;
 }
 
-.raiden-wallet {
+.header-title {
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 24px;

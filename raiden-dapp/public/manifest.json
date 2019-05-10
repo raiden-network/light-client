@@ -1,6 +1,6 @@
 {
-  "name": "raiden-wallet",
-  "short_name": "raiden-wallet",
+  "name": "raiden-dapp",
+  "short_name": "raiden-dapp",
   "icons": [
     {
       "src": "./img/icons/android-chrome-192x192.png",
