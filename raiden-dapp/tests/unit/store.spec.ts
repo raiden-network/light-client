@@ -155,4 +155,14 @@ describe('store', () => {
       name: 'Test Token'
     });
   });
+
+  test('chain without a name returns chain id', () => {
+    store.commit('network', { name: '', chainId: 89 });
+    expect(store.getters.network).toEqual('Chain 89');
+  });
+
+  test('chain with a name returns chain id', () => {
+    store.commit('network', { name: 'Testnet', chainId: 89 });
+    expect(store.getters.network).toEqual('Testnet');
+  });
 });

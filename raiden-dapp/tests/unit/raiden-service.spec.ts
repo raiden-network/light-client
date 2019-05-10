@@ -260,7 +260,7 @@ describe('RaidenService', () => {
     await flushPromises();
 
     expect(store.commit).toHaveBeenNthCalledWith(3, 'updateChannels', {});
-    expect(store.commit).toHaveBeenCalledTimes(4);
+    expect(store.commit).toHaveBeenCalledTimes(5);
     raidenService.disconnect();
   });
 
@@ -492,11 +492,11 @@ describe('RaidenService', () => {
 
       await expect(raidenService.fetchTokens()).resolves.toBeUndefined();
 
-      expect(store.commit).toHaveBeenCalledTimes(3);
+      expect(store.commit).toHaveBeenCalledTimes(4);
 
       expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
       expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
-      expect(store.commit).toHaveBeenNthCalledWith(3, 'loadComplete');
+      expect(store.commit).toHaveBeenLastCalledWith('loadComplete');
     });
 
     test('fetch should fetch contracts that are not cached', async () => {
@@ -510,12 +510,12 @@ describe('RaidenService', () => {
 
       await expect(raidenService.fetchTokens()).resolves.toBeUndefined();
 
-      expect(store.commit).toHaveBeenCalledTimes(4);
+      expect(store.commit).toHaveBeenCalledTimes(5);
 
       expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
       expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
-      expect(store.commit).toHaveBeenNthCalledWith(3, 'loadComplete');
-      expect(store.commit).toHaveBeenNthCalledWith(4, 'updateTokens', tokens);
+      expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
+      expect(store.commit).toHaveBeenNthCalledWith(5, 'updateTokens', tokens);
     });
   });
 });

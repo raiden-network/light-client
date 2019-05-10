@@ -14,7 +14,10 @@
             </v-btn>
           </div>
           <v-spacer></v-spacer>
-          <div class="header-title">Raiden dApp</div>
+          <v-layout column align-center justify-center>
+            <div class="header-title">Raiden dApp</div>
+            <div class="network">{{ network }}</div>
+          </v-layout>
           <v-spacer></v-spacer>
           <div>
             <v-img
@@ -51,18 +54,22 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { mapState } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import { RouteNames } from '@/route-names';
 import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({
-  computed: mapState(['loading', 'defaultAccount', 'accountBalance'])
+  computed: {
+    ...mapState(['loading', 'defaultAccount', 'accountBalance']),
+    ...mapGetters(['network'])
+  }
 })
 export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
   defaultAccount!: string;
   loading!: boolean;
   accountBalance!: string;
+  network!: string;
 
   get canGoBack(): boolean {
     return this.$route.name !== RouteNames.HOME;
@@ -122,6 +129,11 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
     width: 100%;
     border-radius: 0;
   }
+}
+
+.network {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 $row-horizontal-padding: 34px;

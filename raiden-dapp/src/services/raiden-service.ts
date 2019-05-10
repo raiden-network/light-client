@@ -40,14 +40,17 @@ export default class RaidenService {
       if (!provider) {
         this.store.commit('noProvider');
       } else {
-        this._raiden = await Raiden.create(provider, 0, window.localStorage);
+        const raiden = await Raiden.create(provider, 0, window.localStorage);
+        this._raiden = raiden;
 
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
 
-        this.subscription = this._raiden.channels$.subscribe(value => {
+        this.subscription = raiden.channels$.subscribe(value => {
           this.store.commit('updateChannels', value);
         });
+
+        this.store.commit('network', raiden.network);
       }
     } catch (e) {
       console.error(e);

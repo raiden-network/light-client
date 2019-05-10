@@ -3,15 +3,17 @@ import Vuex, { StoreOptions } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import { RaidenChannel, RaidenChannels } from 'raiden';
 import {
-  emptyTokenModel,
   AccTokenModel,
-  TokenModel,
-  Token
+  emptyTokenModel,
+  PlaceHolderNetwork,
+  Token,
+  TokenModel
 } from '@/model/types';
 import map from 'lodash/map';
 import flatMap from 'lodash/flatMap';
 import clone from 'lodash/clone';
 import reduce from 'lodash/reduce';
+import { Network } from 'ethers/utils';
 
 Vue.use(Vuex);
 
@@ -22,7 +24,8 @@ const _defaultState: RootState = {
   providerDetected: true,
   userDenied: false,
   channels: {},
-  tokens: {}
+  tokens: {},
+  network: PlaceHolderNetwork
 };
 
 export function defaultState(): RootState {
@@ -52,6 +55,9 @@ const store: StoreOptions<RootState> = {
     },
     updateTokens(state: RootState, tokens: Tokens) {
       state.tokens = Object.assign({}, tokens);
+    },
+    network(state: RootState, network: Network) {
+      state.network = network;
     }
   },
   actions: {},
@@ -109,6 +115,9 @@ const store: StoreOptions<RootState> = {
       } else {
         return null;
       }
+    },
+    network: (state: RootState) => {
+      return state.network.name || `Chain ${state.network.chainId}`;
     }
   }
 };
