@@ -13,7 +13,7 @@
           </div>
           <div id="text-information">
             <div>
-              Raiden Wallet
+              Raiden dApp
             </div>
             <div class="font-weight-light loading">
               Loading

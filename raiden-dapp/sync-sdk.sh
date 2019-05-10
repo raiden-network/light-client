@@ -4,7 +4,7 @@ cd ../raiden
 rm -rf ./dist
 npm install
 npm run build
-cd ../raiden-wallet
+cd ../raiden-dapp
 if [[ "$CI" ]]
 then
     echo 'Installing SDK dependencies'

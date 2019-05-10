@@ -1,9 +1,9 @@
 <template>
   <v-app dark>
     <loading v-if="loading || !initialized"></loading>
-    <div v-else id="wallet-wrapper">
-      <div id="wallet">
-        <wallet-header></wallet-header>
+    <div v-else id="application-wrapper">
+      <div id="application-content">
+        <app-header></app-header>
         <v-content>
           <v-container fluid fill-height>
             <router-view></router-view>
@@ -17,12 +17,12 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Loading from '@/components/Loading.vue';
-import WalletHeader from '@/components/WalletHeader.vue';
+import AppHeader from '@/components/AppHeader.vue';
 import { mapState } from 'vuex';
 
 @Component({
   computed: mapState(['loading']),
-  components: { WalletHeader, Loading }
+  components: { AppHeader, Loading }
 })
 export default class App extends Vue {
   name: string;
@@ -30,7 +30,7 @@ export default class App extends Vue {
 
   constructor() {
     super();
-    this.name = 'Raiden Wallet';
+    this.name = 'Raiden dApp';
   }
 
   async created() {
@@ -47,7 +47,7 @@ export default class App extends Vue {
 
 <style lang="scss" scoped>
 @import 'main';
-#wallet-wrapper {
+#application-wrapper {
   margin-top: 70px;
   margin-bottom: 70px;
   display: flex;
@@ -58,7 +58,7 @@ export default class App extends Vue {
   }
 }
 
-#wallet {
+#application-content {
   height: 80vh;
   width: 620px;
   border-radius: 14px;
