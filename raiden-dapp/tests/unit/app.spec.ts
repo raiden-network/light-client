@@ -7,6 +7,7 @@ import { RootState } from '@/types';
 import Vuetify from 'vuetify';
 import VueRouter from 'vue-router';
 import flushPromises from 'flush-promises';
+import { PlaceHolderNetwork } from '@/model/types';
 
 jest.mock('@/services/raiden-service');
 
@@ -27,7 +28,8 @@ describe('App.vue', () => {
         providerDetected: true,
         userDenied: false,
         channels: {},
-        tokens: {}
+        tokens: {},
+        network: PlaceHolderNetwork
       }
     });
     store.commit = jest.fn();

@@ -1,4 +1,4 @@
-import { BigNumberish } from 'ethers/utils';
+import { BigNumberish, Network } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 export interface Token {
@@ -72,4 +72,9 @@ export const TokenPlaceholder: Token = {
   decimals: 18,
   units: '0.0',
   address: ''
+};
+
+export const PlaceHolderNetwork: Network = {
+  name: '',
+  chainId: -1
 };
