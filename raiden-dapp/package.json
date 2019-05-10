@@ -1,7 +1,7 @@
 {
   "name": "raiden-dapp",
   "version": "0.1.0",
-  "description": "A dApp that showcases the raiden light client sdk functionality",
+  "description": "A dApp that showcases the Raiden Light Client sdk functionality",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
