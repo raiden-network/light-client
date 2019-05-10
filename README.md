@@ -7,12 +7,12 @@
       alt='' 
       src="https://user-images.githubusercontent.com/35398162/54018436-ee3f6300-4188-11e9-9b4e-0666c44cda53.png" /></a>
   <br/>
-  Raiden Light Client SDK and Wallet
+  Raiden Light Client SDK and dApp
   <br/>
 </h2>
 
 <h4 align="center">
-  JavaScript SDK and wallet to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
+  JavaScript SDK and dApp to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
 </h4>
 
 <p align="center">
@@ -37,25 +37,25 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
-The [Raiden Wallet](#example-wallet) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
+The [Raiden dApp](#example-dApp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
-> **INFO:** The Light Client SDK and Wallet are work in progress and currently cannot be used to make token transfers.
+> **INFO:** The Light Client SDK and dApp are work in progress and currently cannot be used to make token transfers on the Ethereum Mainnet.
 
 ## Table of Contents
 - [About The Project](#about-the-project)
 - [Architecture](#architecture)
   * [Raiden Light Client SDK](#raiden-light-client-sdk)
-  * [Raiden Wallet](#raiden-wallet)
+  * [Raiden dApp](#raiden-dapp)
   * [Architecture diagram](#architecture-diagram)
 - [Getting Started](#getting-started)
   * [Learn about Raiden](#learn-about-raiden)
-  * [Test the wallet](#test-the-wallet)
+  * [Test the dApp](#test-the-dapp)
   * [Prerequisites](#prerequisites)
   * [SDK Installation](#sdk-installation)
-  * [Wallet Installation](#wallet-installation)
+  * [dApp Installation](#dapp-installation)
     + [Build the Raiden SDK](#build-the-raiden-sdk)
-    + [Install the Wallet Dependencies](#install-the-wallet-dependencies)
-    + [Running the Wallet locally](#running-the-wallet-locally)
+    + [Install the dApp Dependencies](#install-the-dapp-dependencies)
+    + [Running the dApp locally](#running-the-dapp-locally)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
 - [License](#license)
@@ -85,16 +85,16 @@ Its target audience is blockchain and dApp developers looking into interacting w
 
 Look at the [Raiden Light Client SDK folder of this repository](./raiden/README.md) for more information.
 
-### Raiden Wallet
+### Raiden dApp
 
-The Raiden Wallet is the demo and first dApp user of the SDK. It's a wallet-like web single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and [vuetify](https://vuetifyjs.com) as UI framework which uses Material Design as the design guideline.
+The Raiden dApp is the demo and first dApp user of the SDK. It's a single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and [vuetify](https://vuetifyjs.com) as UI framework which uses Material Design as the design guideline.
 
 ### Architecture diagram
 
 ```
             +-------------------+
             |                   |
-            |   Raiden Wallet   |
+            |   Raiden dApp   |
             |                   |
             |  vue/vuex/vuetify |
             |                   |
@@ -169,16 +169,14 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 
 You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden/README.md).
 
-### Wallet Installation
+### dApp Installation
 
 ```bash
 git clone https://github.com/raiden-network/light-client.git
-cd light-client/raiden-wallet
+cd light-client/raiden-dapp
 ```
 
-In order to use the wallet you first have to run `sync-sdk.sh`, which is located in the `raiden-wallet` directory.
-The script builds the sdk and syncs the module with the `node_modules` of the wallet application. And installs the
-required dependencies.
+In order to use the dApp you first have to run `sync-sdk.sh`, which is located in the `raiden-dapp` directory. The script builds the sdk and syncs the module with the `node_modules` of the wallet application. And installs the required dependencies.
 
 ```bash
 ./sync-sdk.sh
@@ -196,12 +194,12 @@ npm install
 npm run build
 ```
 
-#### Install the Wallet Dependencies
+#### Install the dApp Dependencies
 
 Then you need to install the wallet app dependencies.
 
 ```bash
-cd ../raiden-wallet
+cd ../raiden-dapp
 npm install
 ```
 
@@ -215,7 +213,7 @@ rm -rf ./node_modules/raiden
 rsync --stats -aAvX ../raiden/* node_modules/raiden
 ```
 
-#### Running the Wallet locally
+#### Running the dApp locally
 
 To start the development server you have to run the following command.
 
@@ -223,12 +221,10 @@ To start the development server you have to run the following command.
 npm run serve
 ```
 
-After the development server starts you have to navigate to `http://localhost:8080`, in order to use the
-Raiden Wallet. The wallet application requires either MetaMask to be installed on your browser or some other
-web3 provider (e.g. Wallet apps with dApp support).
+After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp. It requires either MetaMask to be installed on your browser or some other web3 provider (e.g. Wallet apps with dApp support).
 
 ## Roadmap and Timeline
-We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1). We are currently working towards milestone 0, where the SDK and Wallet are able to send payments, but will not be able to receive payments.
+We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1). We are currently working towards milestone 0, where the SDK and dApp are able to send payments, but will not be able to receive payments.
 
 ## Contributing
 
