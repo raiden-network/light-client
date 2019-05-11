@@ -37,6 +37,7 @@
   },
   "homepage": "https://github.com/raiden-network/light-client#readme",
   "devDependencies": {
+    "@types/events": "^3.0.0",
     "@types/jest": "^24.0.12",
     "@types/lodash": "^4.14.123",
     "@types/memdown": "^3.0.0",
