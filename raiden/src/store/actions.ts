@@ -22,6 +22,9 @@ export enum RaidenActionType {
   CHANNEL_SETTLED = 'channelSettled',
   CHANNEL_SETTLE_FAILED = 'channelSettleFailed',
   MATRIX_SETUP = 'matrixSetup',
+  MATRIX_REQUEST_MONITOR_PRESENCE = 'matrixRequestMonitorPresence',
+  MATRIX_PRESENCE_UPDATE = 'matrixPresenceUpdate',
+  MATRIX_REQUEST_MONITOR_PRESENCE_FAILED = 'matrixRequestMonitorPresenceFailed',
 }
 
 export enum ShutdownReason {
@@ -114,7 +117,6 @@ export interface ChannelDepositActionFailed extends RaidenActionFailed {
   type: RaidenActionType.CHANNEL_DEPOSIT_FAILED;
   tokenNetwork: string;
   partner: string;
-  error: Error;
 }
 
 export interface ChannelCloseAction extends RaidenAction {
@@ -137,7 +139,6 @@ export interface ChannelCloseActionFailed extends RaidenActionFailed {
   type: RaidenActionType.CHANNEL_CLOSE_FAILED;
   tokenNetwork: string;
   partner: string;
-  error: Error;
 }
 
 export interface ChannelSettleableAction extends RaidenAction {
@@ -162,16 +163,33 @@ export interface ChannelSettledAction extends RaidenAction {
   txHash: string;
 }
 
-export interface ChannelSettleActionFailed extends RaidenAction {
+export interface ChannelSettleActionFailed extends RaidenActionFailed {
   type: RaidenActionType.CHANNEL_SETTLE_FAILED;
   tokenNetwork: string;
   partner: string;
-  error: Error;
 }
 
 export interface MatrixSetupAction extends RaidenAction {
   type: RaidenActionType.MATRIX_SETUP;
   setup: RaidenMatrix;
+}
+
+export interface MatrixRequestMonitorPresenceAction extends RaidenAction {
+  type: RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE;
+  address: string;
+}
+
+export interface MatrixPresenceUpdateAction extends RaidenAction {
+  type: RaidenActionType.MATRIX_PRESENCE_UPDATE;
+  address: string;
+  userId: string;
+  available: boolean;
+  ts: number;
+}
+
+export interface MatrixRequestMonitorPresenceActionFailed extends RaidenActionFailed {
+  type: RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED;
+  address: string;
 }
 
 // action factories:
@@ -373,6 +391,35 @@ export const matrixSetup = (setup: Required<RaidenMatrix>): MatrixSetupAction =>
   setup,
 });
 
+export const matrixRequestMonitorPresence = (
+  address: string,
+): MatrixRequestMonitorPresenceAction => ({
+  type: RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE,
+  address,
+});
+
+export const matrixPresenceUpdate = (
+  address: string,
+  userId: string,
+  available: boolean,
+  ts?: number,
+): MatrixPresenceUpdateAction => ({
+  type: RaidenActionType.MATRIX_PRESENCE_UPDATE,
+  address,
+  userId,
+  available,
+  ts: ts || Date.now(),
+});
+
+export const matrixRequestMonitorPresenceFailed = (
+  address: string,
+  error: Error,
+): MatrixRequestMonitorPresenceActionFailed => ({
+  type: RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED,
+  address,
+  error,
+});
+
 export type RaidenActions =
   | RaidenInitAction
   | RaidenShutdownAction
@@ -392,7 +439,10 @@ export type RaidenActions =
   | ChannelSettleAction
   | ChannelSettledAction
   | ChannelSettleActionFailed
-  | MatrixSetupAction;
+  | MatrixSetupAction
+  | MatrixRequestMonitorPresenceAction
+  | MatrixPresenceUpdateAction
+  | MatrixRequestMonitorPresenceActionFailed;
 
 export const RaidenEventType: (RaidenActionType.SHUTDOWN | RaidenActionType.NEW_BLOCK)[] = [
   RaidenActionType.SHUTDOWN,

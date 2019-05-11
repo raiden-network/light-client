@@ -1,6 +1,15 @@
 import { ofType } from 'redux-observable';
 import { Observable, from, of, merge, interval, EMPTY, throwError } from 'rxjs';
-import { catchError, map, mapTo, mergeMap, tap, toArray, withLatestFrom } from 'rxjs/operators';
+import {
+  catchError,
+  map,
+  mapTo,
+  mergeMap,
+  tap,
+  toArray,
+  withLatestFrom,
+  startWith,
+} from 'rxjs/operators';
 import { get, isEmpty, sortBy } from 'lodash';
 import fetch from 'cross-fetch';
 
@@ -72,7 +81,7 @@ export const initMonitorRegistryEpic = (
             : undefined,
           isEmpty(state.token2tokenNetwork) ? of(state.blockNumber) : undefined,
         ).pipe(
-          withLatestFrom(state$),
+          withLatestFrom(state$.pipe(startWith(state))),
           map(([[token, tokenNetwork], state]) =>
             tokenMonitored(token, tokenNetwork, !(token in state.token2tokenNetwork)),
           ),

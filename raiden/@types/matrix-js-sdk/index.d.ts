@@ -4,6 +4,8 @@
 // Adapted from definitions by: Will Hunt <will@half-shot.uk>
 
 declare module 'matrix-js-sdk' {
+  import { EventEmitter } from 'events';
+
   // export declare class Matrix {
   //   //class IndexedDBStoreBackend {
   // }
@@ -27,6 +29,17 @@ declare module 'matrix-js-sdk' {
   export interface UserProfile {
     displayname?: string;
     avatar_url?: string;
+  }
+
+  export interface User {
+    userId: string;
+    displayName?: string;
+    avatarUrl?: string;
+    presence?: string;
+    presenceStatusMsg?: string;
+    lastActiveAgo?: number;
+    lastPresenceTs?: number;
+    currentlyActive?: boolean;
   }
 
   export interface EventContext {
@@ -66,7 +79,7 @@ declare module 'matrix-js-sdk' {
     disablePresence?: boolean; // default: false
   }
 
-  export class MatrixClient {
+  export class MatrixClient extends EventEmitter {
     public constructor(opts: MatrixClientOpts);
 
     public _http: any;
@@ -104,7 +117,6 @@ declare module 'matrix-js-sdk' {
     public setDisplayName(name: string, callback?: requestCallback): Promise<any>;
 
     public acceptGroupInvite(groupId: string, opts: object): Promise<object> | MatrixError;
-    public addListener(event: string, listener: any): void;
     public addPushRule(
       scope: string,
       kind: string,
@@ -239,7 +251,7 @@ declare module 'matrix-js-sdk' {
       userId: string,
       info: string,
       callback?: requestCallback,
-    ): Promise<any> | MatrixError | void;
+    ): Promise<UserProfile>;
     public getPublicisedGroups(userIds: string[]): Promise<object> | MatrixError;
     public getPushActionsForEvent(event: MatrixEvent): object;
     public getPushers(callback?: requestCallback): Promise<object[]> | MatrixError | void;
@@ -461,7 +473,7 @@ declare module 'matrix-js-sdk' {
     sender: string;
     room_id: string;
     event_id: string;
-    content: object;
+    content: any;
     state_key?: string;
     redacts?: string;
     type: string;
