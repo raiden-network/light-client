@@ -16,13 +16,15 @@ import { MatrixClient, Event, User } from 'matrix-js-sdk';
 
 import { RaidenEpicDeps } from '../../types';
 import { RaidenState } from '../state';
+import { getUserPresence } from '../../utils';
 import {
   RaidenActionType,
   RaidenActions,
   MatrixRequestMonitorPresenceAction,
-  // MatrixRequestMonitorPresenceActionFailed,
+  MatrixRequestMonitorPresenceActionFailed,
   MatrixPresenceUpdateAction,
   matrixPresenceUpdate,
+  matrixRequestMonitorPresenceFailed,
 } from '../actions';
 
 interface Presences {
@@ -31,6 +33,9 @@ interface Presences {
 
 /**
  * Helper to map/get an aggregated Presences observable from action$ bus
+ * Known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
+ * @param action$ Observable
+ * @returns Observable of aggregated Presences from subscription to now
  */
 const getPresences$ = (action$: Observable<RaidenActions>): Observable<Presences> =>
   action$.pipe(
@@ -46,10 +51,100 @@ const getPresences$ = (action$: Observable<RaidenActions>): Observable<Presences
     startWith<Presences>({}),
   );
 
+// unavailable just means the user didn't do anything over a certain amount of time, but they're
+// still there, so we consider the user as available then
 const AVAILABLE = ['online', 'unavailable'];
+const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
+
+/**
+ * Handles MatrixRequestMonitorPresenceAction and emits a MatrixPresenceUpdateAction
+ * If presence is already known, emits it, else fetch from user profile
+ * Even if the presence stays the same, we emit a MatrixPresenceUpdateAction, as this may be a
+ * request being waited by a promise or something like that
+ * IOW: every request should be followed by a presence update or a failed action, but presence
+ * updates may happen later without new requests (e.g. when the user goes offline)
+ */
+export const matrixMonitorPresenceEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+  { matrix$ }: RaidenEpicDeps,
+): Observable<MatrixPresenceUpdateAction | MatrixRequestMonitorPresenceActionFailed> =>
+  action$.pipe(
+    ofType<RaidenActions, MatrixRequestMonitorPresenceAction>(
+      RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE,
+    ),
+    // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
+    mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
+    withLatestFrom(getPresences$(action$)),
+    mergeMap(([{ action, matrix }, presences]) => {
+      if (action.address in presences)
+        // we already monitored/saw this user's presence
+        return of(presences[action.address]);
+
+      for (const user of matrix.getUsers()) {
+        if (!user.userId.includes(action.address.toLowerCase())) continue;
+        if (!user.displayName) continue;
+        if (!user.presence) continue;
+        let recovered: string;
+        try {
+          const match = userRe.exec(user.userId);
+          if (!match || getAddress(match[1]) !== action.address) continue;
+          recovered = verifyMessage(user.userId, user.displayName);
+          if (!recovered || recovered !== action.address) continue;
+        } catch (err) {
+          continue;
+        }
+        // IFF we see a cached/stored user (matrix.getUsers), with displayName and presence already
+        // populated, which displayName signature verifies to our address of interest,
+        // then construct and return the MatrixPresenceUpdateAction from the stored data
+        return of(matrixPresenceUpdate(recovered, user.userId, AVAILABLE.includes(user.presence)));
+      }
+
+      // if anything failed up to here, go the slow path: searchUserDirectory + getUserPresence
+      return from(
+        // search user directory for any user containing the address of interest in its userId
+        matrix.searchUserDirectory({ term: action.address.toLowerCase() }),
+      ).pipe(
+        // for every result matches, verify displayName signature is address of interest
+        map(({ results }) => {
+          for (const user of results) {
+            if (!user.display_name) continue;
+            try {
+              const match = userRe.exec(user.user_id);
+              if (!match || getAddress(match[1]) !== action.address) continue;
+              const recovered = verifyMessage(user.user_id, user.display_name);
+              if (!recovered || recovered !== action.address) continue;
+            } catch (err) {
+              continue;
+            }
+            return user.user_id;
+          }
+          // if no valid user could be found, throw an error to be handled below
+          throw new Error(
+            `Could not find any user with valid signature for ${action.address} in ${results}`,
+          );
+        }),
+        mergeMap(userId =>
+          // for the one matched/verified user, get its presence through dedicated API
+          // it's required because, as the user events could already have been handled and
+          // filtered out by matrixPresenceUpdateEpic because it wasn't yet a user-of-interest,
+          // we could have missed presence updates, then we need to fetch it here directly,
+          // and from now on, that other epic will monitor its updates
+          from(getUserPresence(matrix, userId)).pipe(
+            map(({ presence }) =>
+              matrixPresenceUpdate(action.address, userId, AVAILABLE.includes(presence)),
+            ),
+          ),
+        ),
+        catchError(err => of(matrixRequestMonitorPresenceFailed(action.address, err))),
+      );
+    }),
+  );
 
 /**
  * Monitor peers matrix presence from User.presence events
+ * We aggregate all users of interest (i.e. for which a monitor request was emitted at some point)
+ * and emit presence updates for any presence change happening to a user validating to this address
  */
 export const matrixPresenceUpdateEpic = (
   action$: Observable<RaidenActions>,
@@ -68,7 +163,7 @@ export const matrixPresenceUpdateEpic = (
     // parse peer address from userId
     map(({ event, user, matrix }) => {
       const userId: string = event.sender || user.userId,
-        match = /^@(0x[0-9a-f]{40})[.:]/i.exec(userId),
+        match = userRe.exec(userId),
         peerAddress = match && match[1];
       // getAddress will convert any valid address into checksummed-format
       return { event, user, matrix, userId, peerAddress: peerAddress && getAddress(peerAddress) };
@@ -88,7 +183,7 @@ export const matrixPresenceUpdateEpic = (
         ),
         startWith(new Set<string>()),
       ),
-      // known presences as { address: { userId, available } } mapping
+      // known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
       getPresences$(action$),
     ),
     // filter out events from users we don't care about

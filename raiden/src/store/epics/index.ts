@@ -11,10 +11,15 @@ import {
   initMonitorProviderEpic,
   initMonitorChannelsEpic,
   initMonitorRegistryEpic,
+  initMatrixEpic,
 } from './init';
 import { stateOutputEpic, actionOutputEpic } from './output';
 import { newBlockEpic } from './block';
-import { tokenMonitoredEpic, channelMonitoredEpic } from './monitor';
+import {
+  tokenMonitoredEpic,
+  channelMonitoredEpic,
+  channelMatrixMonitorPresenceEpic,
+} from './monitor';
 import {
   channelOpenEpic,
   channelOpenedEpic,
@@ -22,6 +27,7 @@ import {
   channelCloseEpic,
   channelSettleEpic,
 } from './channel';
+import { matrixMonitorPresenceEpic, matrixPresenceUpdateEpic } from './matrix';
 
 export const raidenEpics = (
   action$: Observable<RaidenActions>,
@@ -39,6 +45,7 @@ export const raidenEpics = (
     initMonitorProviderEpic,
     initMonitorRegistryEpic,
     initMonitorChannelsEpic,
+    initMatrixEpic,
     stateOutputEpic,
     actionOutputEpic,
     newBlockEpic,
@@ -49,6 +56,9 @@ export const raidenEpics = (
     channelDepositEpic,
     channelCloseEpic,
     channelSettleEpic,
+    channelMatrixMonitorPresenceEpic,
+    matrixMonitorPresenceEpic,
+    matrixPresenceUpdateEpic,
   ]).pipe(
     mergeMap(epic => epic(limitedAction$, limitedState$, deps)),
     catchError(err => of(raidenShutdown(err))),

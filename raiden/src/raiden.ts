@@ -61,6 +61,9 @@ import {
   channelSettle,
   RaidenEvents,
   RaidenEventType,
+  matrixRequestMonitorPresence,
+  MatrixPresenceUpdateAction,
+  MatrixRequestMonitorPresenceActionFailed,
 } from './store';
 
 export class Raiden {
@@ -560,6 +563,38 @@ export class Raiden {
         .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
     );
     this.store.dispatch(channelSettle(tokenNetwork, partner));
+    return promise;
+  }
+
+  /**
+   * Returns object describing address's users availability on transport
+   * After calling this method, any further presence update to valid transport peers of this
+   * address will trigger a corresponding MatrixPresenceUpdateAction on events$
+   * @param address checksummed address to be monitored
+   * @returns Promise to object describing availability and last event timestamp
+   */
+  public async getAvailability(
+    address: string,
+  ): Promise<{ userId: string; available: boolean; ts: number }> {
+    const promise = this.action$
+      .pipe(
+        ofType<
+          RaidenActions,
+          MatrixPresenceUpdateAction | MatrixRequestMonitorPresenceActionFailed
+        >(
+          RaidenActionType.MATRIX_PRESENCE_UPDATE,
+          RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED,
+        ),
+        filter(action => action.address === address),
+        first(),
+        map(action => {
+          if (action.available !== undefined)
+            return { userId: action.userId, available: action.available, ts: action.ts };
+          else throw action.error;
+        }),
+      )
+      .toPromise();
+    this.store.dispatch(matrixRequestMonitorPresence(address));
     return promise;
   }
 }

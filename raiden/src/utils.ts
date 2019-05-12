@@ -3,7 +3,10 @@ import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 import { getNetwork as parseNetwork } from 'ethers/utils/networks';
 import { flatten, sortBy } from 'lodash';
+
 import fetch from 'cross-fetch';
+import { MatrixClient } from 'matrix-js-sdk';
+import { encodeUri } from 'matrix-js-sdk/utils';
 
 import { Observable, fromEventPattern, merge, from, of, defer, EMPTY } from 'rxjs';
 import { filter, first, map, mergeAll, switchMap, withLatestFrom, mergeMap } from 'rxjs/operators';
@@ -152,4 +155,23 @@ export async function matrixRTT(server: string): Promise<{ server: string; rtt: 
 export function getServerName(server: string): string | null {
   const match = /^(?:\w*:?\/\/)?([^/#?&]+)/.exec(server);
   return match && match[1];
+}
+
+/**
+ * MatrixClient doesn't expose this API, but it does exist, so we create it here
+ * @param matrix an already setup and started MatrixClient
+ * @param userId to fetch status/presence from
+ * @returns Promise to object containing status data
+ */
+export function getUserPresence(
+  matrix: MatrixClient,
+  userId: string,
+): Promise<{
+  presence: string;
+  last_active_ago?: number;
+  status_msg?: string;
+  currently_active?: boolean;
+}> {
+  const path = encodeUri('/presence/$userId/status', { $userId: userId });
+  return matrix._http.authedRequest(undefined, 'GET', path);
 }
