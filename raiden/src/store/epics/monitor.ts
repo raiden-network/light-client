@@ -21,6 +21,8 @@ import {
   channelDeposited,
   channelClosed,
   channelSettled,
+  MatrixRequestMonitorPresenceAction,
+  matrixRequestMonitorPresence,
 } from '../actions';
 
 /**
@@ -174,4 +176,15 @@ export const channelMonitoredEpic = (
             ).pipe(takeUntil(unsubscribeChannelNotification)),
       );
     }),
+  );
+
+/**
+ * Channel monitoring triggers matrix presence monitoring for partner
+ */
+export const channelMatrixMonitorPresenceEpic = (
+  action$: Observable<RaidenActions>,
+): Observable<MatrixRequestMonitorPresenceAction> =>
+  action$.pipe(
+    ofType<RaidenActions, ChannelMonitoredAction>(RaidenActionType.CHANNEL_MONITORED),
+    map(action => matrixRequestMonitorPresence(action.partner)),
   );

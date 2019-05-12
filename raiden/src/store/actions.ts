@@ -444,9 +444,13 @@ export type RaidenActions =
   | MatrixPresenceUpdateAction
   | MatrixRequestMonitorPresenceActionFailed;
 
-export const RaidenEventType: (RaidenActionType.SHUTDOWN | RaidenActionType.NEW_BLOCK)[] = [
+export const RaidenEventType: (
+  | RaidenActionType.SHUTDOWN
+  | RaidenActionType.NEW_BLOCK
+  | RaidenActionType.MATRIX_PRESENCE_UPDATE)[] = [
   RaidenActionType.SHUTDOWN,
   RaidenActionType.NEW_BLOCK,
+  RaidenActionType.MATRIX_PRESENCE_UPDATE,
 ];
 
-export type RaidenEvents = RaidenShutdownAction | NewBlockAction;
+export type RaidenEvents = RaidenShutdownAction | NewBlockAction | MatrixPresenceUpdateAction;

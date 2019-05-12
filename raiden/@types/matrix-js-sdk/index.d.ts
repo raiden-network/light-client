@@ -116,6 +116,17 @@ declare module 'matrix-js-sdk' {
 
     public setDisplayName(name: string, callback?: requestCallback): Promise<any>;
 
+    public searchUserDirectory(opts: {
+      term: string;
+      limit?: number;
+    }): Promise<{
+      limited: boolean;
+      results: { user_id: string; display_name?: string; avatar_url?: string }[];
+    }>;
+
+    public getUser(userId: string): User | null;
+    public getUsers(): User[];
+
     public acceptGroupInvite(groupId: string, opts: object): Promise<object> | MatrixError;
     public addPushRule(
       scope: string,
@@ -721,4 +732,8 @@ declare module 'matrix-js-sdk' {
   }
 
   */
+}
+
+declare module 'matrix-js-sdk/utils' {
+  export function encodeUri(pathTemplate: string, variables: { [fragment: string]: any }): string;
 }
