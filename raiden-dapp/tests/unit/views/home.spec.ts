@@ -1,3 +1,6 @@
+jest.mock('@/services/raiden-service');
+jest.mock('vue-router');
+
 import RaidenService from '@/services/raiden-service';
 import Vue from 'vue';
 import Vuex, { Store } from 'vuex';
@@ -8,9 +11,7 @@ import { RootState } from '@/types';
 import AppCore from '@/components/AppCore.vue';
 import { defaultState } from '@/store';
 import NoValidProvider from '@/components/NoValidProvider.vue';
-
-jest.mock('@/services/raiden-service');
-jest.mock('vue-router');
+import { DeniedReason } from '@/model/types';
 
 import Mocked = jest.Mocked;
 
@@ -46,7 +47,7 @@ describe('Home.vue', function() {
           state.providerDetected = false;
         },
         denied(state: RootState) {
-          state.userDenied = true;
+          state.accessDenied = DeniedReason.UNSUPPORTED_NETWORK;
         }
       }
     });

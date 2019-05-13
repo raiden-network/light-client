@@ -4,9 +4,15 @@ import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { Subscription } from 'rxjs';
 import { BalanceUtils } from '@/utils/balance-utils';
-import { LeaveNetworkResult, Progress, Token } from '@/model/types';
+import {
+  DeniedReason,
+  LeaveNetworkResult,
+  Progress,
+  Token
+} from '@/model/types';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
+import startsWith from 'lodash/startsWith';
 
 export default class RaidenService {
   private _raiden?: Raiden;
@@ -53,8 +59,13 @@ export default class RaidenService {
         this.store.commit('network', raiden.network);
       }
     } catch (e) {
-      console.error(e);
-      this.store.commit('deniedAccess');
+      let deniedReason: DeniedReason;
+      if (startsWith(e.message, 'No deploy info provided')) {
+        deniedReason = DeniedReason.UNSUPPORTED_NETWORK;
+      } else {
+        deniedReason = DeniedReason.USER_DENIED;
+      }
+      this.store.commit('accessDenied', deniedReason);
     }
 
     this.store.commit('loadComplete');

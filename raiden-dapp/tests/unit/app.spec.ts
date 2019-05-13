@@ -1,3 +1,5 @@
+jest.mock('@/services/raiden-service');
+
 import { shallowMount } from '@vue/test-utils';
 import App from '@/App.vue';
 import RaidenService from '@/services/raiden-service';
@@ -7,9 +9,7 @@ import { RootState } from '@/types';
 import Vuetify from 'vuetify';
 import VueRouter from 'vue-router';
 import flushPromises from 'flush-promises';
-import { PlaceHolderNetwork } from '@/model/types';
-
-jest.mock('@/services/raiden-service');
+import { defaultState } from '@/store';
 
 Vue.use(Vuex);
 Vue.use(Vuetify);
@@ -21,16 +21,7 @@ describe('App.vue', () => {
 
   beforeEach(() => {
     store = new Store({
-      state: {
-        loading: true,
-        defaultAccount: '',
-        accountBalance: '0.0',
-        providerDetected: true,
-        userDenied: false,
-        channels: {},
-        tokens: {},
-        network: PlaceHolderNetwork
-      }
+      state: defaultState()
     });
     store.commit = jest.fn();
     $raiden = new RaidenService(store);
@@ -45,6 +36,8 @@ describe('App.vue', () => {
         $raiden: $raiden
       }
     });
+
+    await (wrapper.vm as any).connect();
 
     await flushPromises();
     wrapper.vm.$destroy();

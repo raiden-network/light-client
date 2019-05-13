@@ -1,6 +1,6 @@
 import RaidenService from '@/services/raiden-service';
 import { RaidenChannels } from 'raiden';
-import { Token } from '@/model/types';
+import { DeniedReason, Token } from '@/model/types';
 import { Network } from 'ethers/utils';
 
 export type Tokens = { [token: string]: Token };
@@ -12,7 +12,7 @@ export interface RootState {
   defaultAccount: string;
   accountBalance: string;
   providerDetected: boolean;
-  userDenied: boolean;
+  accessDenied: DeniedReason;
   channels: RaidenChannels;
   tokens: Tokens;
   network: Network;

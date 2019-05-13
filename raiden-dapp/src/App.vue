@@ -1,6 +1,6 @@
 <template>
   <v-app dark>
-    <loading v-if="loading || !initialized"></loading>
+    <loading v-if="loading || !initialized" @connect="connect()"></loading>
     <div v-else id="application-wrapper">
       <div id="application-content">
         <app-header></app-header>
@@ -33,7 +33,7 @@ export default class App extends Vue {
     this.name = 'Raiden dApp';
   }
 
-  async created() {
+  async connect() {
     await this.$raiden.connect();
     await this.$raiden.fetchTokens();
     this.initialized = true;

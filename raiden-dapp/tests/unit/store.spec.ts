@@ -1,6 +1,6 @@
 import store, { defaultState } from '@/store';
 import { TestData } from './data/mock-data';
-import { emptyTokenModel } from '@/model/types';
+import { DeniedReason, emptyTokenModel } from '@/model/types';
 import { Tokens } from '@/types';
 import { Zero } from 'ethers/constants';
 
@@ -56,10 +56,10 @@ describe('store', () => {
     expect(store.state.defaultAccount).toBe('test');
   });
 
-  it('should change the userDenied state after an deniedAccess mutation', function() {
-    expect(store.state.userDenied).toBe(false);
-    store.commit('deniedAccess');
-    expect(store.state.userDenied).toBe(true);
+  it('should change the accessDenied state after an accessDenied mutation', function() {
+    expect(store.state.accessDenied).toBe(DeniedReason.UNDEFINED);
+    store.commit('accessDenied', DeniedReason.USER_DENIED);
+    expect(store.state.accessDenied).toBe(DeniedReason.USER_DENIED);
   });
 
   it('should change the channel state after an updateChannel mutation', function() {

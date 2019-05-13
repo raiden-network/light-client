@@ -1,7 +1,7 @@
 <template>
   <div class="content-host">
     <no-valid-provider v-if="!providerDetected" />
-    <user-denied v-else-if="userDenied" />
+    <no-access-screen v-else-if="accessDenied" :reason="accessDenied" />
     <app-core v-else />
   </div>
 </template>
@@ -10,20 +10,21 @@
 import { Component, Vue } from 'vue-property-decorator';
 import AppCore from '@/components/AppCore.vue';
 import NoValidProvider from '@/components/NoValidProvider.vue';
-import UserDenied from '@/components/UserDenied.vue';
+import NoAccessScreen from '@/components/NoAccessScreen.vue';
 import { mapState } from 'vuex';
+import { DeniedReason } from '@/model/types';
 
 @Component({
   components: {
-    UserDenied,
+    NoAccessScreen,
     AppCore,
     NoValidProvider
   },
-  computed: mapState(['providerDetected', 'userDenied'])
+  computed: mapState(['providerDetected', 'accessDenied'])
 })
 export default class Home extends Vue {
   providerDetected!: boolean;
-  userDenied!: boolean;
+  accessDenied!: DeniedReason;
 }
 </script>
 

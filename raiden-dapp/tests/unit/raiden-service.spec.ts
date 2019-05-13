@@ -1,5 +1,6 @@
 jest.mock('vuex');
 
+import { DeniedReason } from '@/model/types';
 import { TestData } from './data/mock-data';
 import RaidenService, {
   ChannelCloseFailed,
@@ -76,7 +77,29 @@ describe('RaidenService', () => {
     await flushPromises();
 
     expect(store.commit).toBeCalledTimes(2);
-    expect(store.commit).toBeCalledWith('deniedAccess');
+    expect(store.commit).toBeCalledWith(
+      'accessDenied',
+      DeniedReason.USER_DENIED
+    );
+    expect(store.commit).toBeCalledWith('loadComplete');
+  });
+
+  test('commit a deniedAccess when the connect method throws on invalid network', async () => {
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockRejectedValue(
+      new Error(
+        'No deploy info provided nor recognized network: {name: "homestead", chainId: 1}'
+      )
+    );
+
+    await raidenService.connect();
+    await flushPromises();
+
+    expect(store.commit).toBeCalledTimes(2);
+    expect(store.commit).toBeCalledWith(
+      'accessDenied',
+      DeniedReason.UNSUPPORTED_NETWORK
+    );
     expect(store.commit).toBeCalledWith('loadComplete');
   });
 

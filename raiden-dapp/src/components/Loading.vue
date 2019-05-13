@@ -1,8 +1,8 @@
 <template>
   <v-container fluid fill-height>
-    <v-layout align-center justify-center>
-      <v-flex lg6 md8 xs10 class="display-3">
-        <div class="loading-wrapper">
+    <v-layout align-center justify-center row>
+      <v-flex lg6 md8 xs10>
+        <div class="loading-wrapper display-3">
           <div class="img-container">
             <v-img
               id="logo"
@@ -15,15 +15,18 @@
             <div>
               Raiden dApp
             </div>
-            <div class="font-weight-light loading">
-              Loading
-              <div id="wave">
-                <span class="dot"></span>
-                <span class="dot"></span>
-                <span class="dot"></span>
-              </div>
-            </div>
           </div>
+        </div>
+        <div class="font-weight-light text-xs-center disclaimer">
+          The Raiden dApp is a reference implementation of the Raiden Light
+          Client SDK.<br />
+          It is work in progress and can just be used on the Ethereum Testnets.
+        </div>
+        <div class="connect-button">
+          <v-btn v-if="injectedProvider" @click="connect()">Connect</v-btn>
+          <span v-else class="no-provider">
+            No web3 provider was detected
+          </span>
         </div>
       </v-flex>
     </v-layout>
@@ -31,42 +34,23 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Emit, Vue } from 'vue-property-decorator';
+import { Web3Provider } from '@/services/web3-provider';
 
 @Component({})
-export default class Loading extends Vue {}
+export default class Loading extends Vue {
+  get injectedProvider(): boolean {
+    return Web3Provider.injectedWeb3Available();
+  }
+
+  @Emit()
+  connect() {}
+}
 </script>
 
 <style lang="scss" scoped>
 #logo {
   filter: invert(100%);
-}
-
-$wave-size: 2.5rem;
-$wave-horizontal-margin: 2rem;
-div#wave {
-  text-align: center;
-  width: $wave-size;
-  height: $wave-size;
-  margin-left: $wave-horizontal-margin;
-
-  .dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    margin-right: 3px;
-    background: #303131;
-    animation: wave 1.3s linear infinite;
-
-    &:nth-child(2) {
-      animation-delay: -1.1s;
-    }
-
-    &:nth-child(3) {
-      animation-delay: -0.9s;
-    }
-  }
 }
 
 $name-horizontal-margin: 2rem;
@@ -75,17 +59,6 @@ $name-horizontal-margin: 2rem;
   margin-right: $name-horizontal-margin;
 }
 
-@keyframes wave {
-  0%,
-  60%,
-  100% {
-    transform: initial;
-  }
-
-  30% {
-    transform: translateY(-15px);
-  }
-}
 .img-container {
   width: 8rem;
   padding: 1.4rem;
@@ -99,5 +72,29 @@ $name-horizontal-margin: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.disclaimer {
+  margin-top: 60px;
+  font-size: 16px;
+}
+
+.connect-button {
+  display: flex;
+  margin-top: 80px;
+  align-items: center;
+  justify-content: center;
+
+  button {
+    height: 40px;
+    width: 250px;
+    border-radius: 29px;
+    background-color: #000000 !important;
+  }
+}
+
+.no-provider {
+  font-weight: 500;
+  font-size: 24px;
 }
 </style>
