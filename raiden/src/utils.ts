@@ -1,5 +1,7 @@
 import { Contract, EventFilter, Event } from 'ethers';
 import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
+import { Network } from 'ethers/utils';
+import { getNetwork as parseNetwork } from 'ethers/utils/networks';
 import { flatten, sortBy } from 'lodash';
 
 import { Observable, fromEventPattern, merge, from, of, defer, EMPTY } from 'rxjs';
@@ -87,4 +89,13 @@ export function getEventsStream<T extends any[]>(
   }
 
   return merge(pastEvents$, newEvents$);
+}
+
+/**
+ * Like Provider.getNetwork, but fetches every time instead of using cached property
+ * @param provider Provider to fetch data from
+ * @returns Promise to Network
+ */
+export async function getNetwork(provider: JsonRpcProvider): Promise<Network> {
+  return parseNetwork(parseInt(await provider.send('net_version', [])));
 }

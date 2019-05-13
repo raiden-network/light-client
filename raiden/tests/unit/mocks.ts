@@ -16,6 +16,14 @@ jest.mock('ethers/utils/properties', () => ({
   ),
 }));
 
+// raiden/utils.getNetwork has the same functionality as provider.getNetwork
+// but fetches everytime instead of just returning a cached property
+// On mocked tests, we unify both again, so we can just mock provider.getNetwork in-place
+jest.mock('raiden/utils', () => ({
+  ...jest.requireActual('raiden/utils'),
+  getNetwork: jest.fn((provider: JsonRpcProvider): Promise<Network> => provider.getNetwork()),
+}));
+
 jest.mock('ethers/providers');
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
 import { Log } from 'ethers/providers/abstract-provider';
