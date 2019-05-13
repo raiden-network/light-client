@@ -1,5 +1,7 @@
 # raiden-dapp
 
+> **INFO:** The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and currently cannot be used to make token transfers on the Ethereum Mainnet.
+
 ## Project setup
 ```
 npm install
