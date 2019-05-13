@@ -28,20 +28,19 @@ import {
   channelSettleable,
   channelSettle,
 } from 'raiden/store/actions';
+
+import { raidenEpics } from 'raiden/store/epics';
+import { initMonitorProviderEpic } from 'raiden/store/epics/init';
+import { stateOutputEpic, actionOutputEpic } from 'raiden/store/epics/output';
+import { newBlockEpic } from 'raiden/store/epics/block';
+import { tokenMonitoredEpic, channelMonitoredEpic } from 'raiden/store/epics/monitor';
 import {
-  stateOutputEpic,
-  actionOutputEpic,
-  raidenEpics,
-  raidenInitializationEpic,
-  newBlockEpic,
-  tokenMonitoredEpic,
   channelOpenEpic,
   channelOpenedEpic,
-  channelMonitoredEpic,
   channelDepositEpic,
   channelCloseEpic,
   channelSettleEpic,
-} from 'raiden/store/epics';
+} from 'raiden/store/epics/channel';
 
 import { raidenEpicDeps, makeLog } from './mocks';
 
@@ -98,7 +97,7 @@ describe('raidenEpics', () => {
     await expect(outputPromise).resolves.toBe(action);
   });
 
-  describe('raidenInitializationEpic & raidenShutdown', () => {
+  describe('raiden initialization & shutdown', () => {
     test(
       'init newBlock, tokenMonitored, channelMonitored events',
       marbles(m => {
@@ -160,7 +159,7 @@ describe('raidenEpics', () => {
       depsMock.provider.listAccounts.mockResolvedValueOnce([depsMock.address]);
 
       await expect(
-        raidenInitializationEpic(action$, state$, depsMock)
+        initMonitorProviderEpic(action$, state$, depsMock)
           .pipe(first())
           .toPromise(),
       ).resolves.toEqual(raidenShutdown(ShutdownReason.ACCOUNT_CHANGED));
@@ -173,7 +172,7 @@ describe('raidenEpics', () => {
       depsMock.provider.getNetwork.mockResolvedValueOnce({ chainId: 899, name: 'unknown' });
 
       await expect(
-        raidenInitializationEpic(action$, state$, depsMock)
+        initMonitorProviderEpic(action$, state$, depsMock)
           .pipe(first())
           .toPromise(),
       ).resolves.toEqual(raidenShutdown(ShutdownReason.NETWORK_CHANGED));
