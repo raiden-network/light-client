@@ -11,4 +11,6 @@ export class Web3Provider {
 
     return provider;
   }
+
+  static injectedWeb3Available = (): boolean => window.ethereum || window.web3;
 }

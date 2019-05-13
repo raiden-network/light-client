@@ -3,6 +3,7 @@ import Vuex, { StoreOptions } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import { RaidenChannel, RaidenChannels } from 'raiden';
 import {
+  DeniedReason,
   AccTokenModel,
   emptyTokenModel,
   PlaceHolderNetwork,
@@ -22,7 +23,7 @@ const _defaultState: RootState = {
   defaultAccount: '',
   accountBalance: '0.0',
   providerDetected: true,
-  userDenied: false,
+  accessDenied: DeniedReason.UNDEFINED,
   channels: {},
   tokens: {},
   network: PlaceHolderNetwork
@@ -38,8 +39,8 @@ const store: StoreOptions<RootState> = {
     noProvider(state: RootState) {
       state.providerDetected = false;
     },
-    deniedAccess(state: RootState) {
-      state.userDenied = true;
+    accessDenied(state: RootState, reason: DeniedReason) {
+      state.accessDenied = reason;
     },
     account(state: RootState, account: string) {
       state.defaultAccount = account;

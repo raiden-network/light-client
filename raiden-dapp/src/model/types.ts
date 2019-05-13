@@ -78,3 +78,9 @@ export const PlaceHolderNetwork: Network = {
   name: '',
   chainId: -1
 };
+
+export enum DeniedReason {
+  UNDEFINED,
+  USER_DENIED,
+  UNSUPPORTED_NETWORK
+}
