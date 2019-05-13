@@ -37,9 +37,9 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
-The [Raiden dApp](#example-dApp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
+The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
-> **INFO:** The Light Client SDK and dApp are work in progress and currently cannot be used to make token transfers on the Ethereum Mainnet.
+> **INFO:** The Light Client SDK and dApp are **work in progress**, don't work for token transfers yet and currently can only be used on the Ethereum **Testnets**.
 
 ## Table of Contents
 - [About The Project](#about-the-project)
@@ -49,7 +49,6 @@ The [Raiden dApp](#example-dApp) is a reference implementation of the Raiden Lig
   * [Architecture diagram](#architecture-diagram)
 - [Getting Started](#getting-started)
   * [Learn about Raiden](#learn-about-raiden)
-  * [Test the dApp](#test-the-dapp)
   * [Prerequisites](#prerequisites)
   * [SDK Installation](#sdk-installation)
   * [dApp Installation](#dapp-installation)

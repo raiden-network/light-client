@@ -11,6 +11,8 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
+> **INFO:** The Light Client SDK is **work in progress**, doesn't work for token transfers yet and currently can only be used on the Ethereum **Testnets**.
+
 ## Table of Contents
 - [About The Project](#about-the-project)
 - [Getting Started](#getting-started)
