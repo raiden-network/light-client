@@ -1,11 +1,6 @@
 <template>
-  <div>
-    <v-layout
-      v-if="!loading && defaultAccount"
-      class="header"
-      justify-center
-      align-center
-    >
+  <div v-if="!loading && defaultAccount">
+    <v-layout class="header" justify-center align-center>
       <v-flex lg12 md12 xs12>
         <div id="header-content">
           <div class="navigation-button">
