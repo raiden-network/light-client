@@ -49,7 +49,6 @@ The [Raiden dApp](#example-dApp) is a reference implementation of the Raiden Lig
   * [Architecture diagram](#architecture-diagram)
 - [Getting Started](#getting-started)
   * [Learn about Raiden](#learn-about-raiden)
-  * [Test the dApp](#test-the-dapp)
   * [Prerequisites](#prerequisites)
   * [SDK Installation](#sdk-installation)
   * [dApp Installation](#dapp-installation)
