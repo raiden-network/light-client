@@ -9,6 +9,10 @@ export class Web3Provider {
       provider = window.web3.currentProvider;
     }
 
+    if (provider && provider.isMetaMask) {
+      provider.autoRefreshOnNetworkChange = false;
+    }
+
     return provider;
   }
 
