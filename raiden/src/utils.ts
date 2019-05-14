@@ -1,3 +1,4 @@
+/// <reference path="../typings/matrix-js-sdk/index.d.ts" />
 import { Contract, EventFilter, Event } from 'ethers';
 import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
 import { Network } from 'ethers/utils';
@@ -6,7 +7,7 @@ import { flatten, sortBy } from 'lodash';
 
 import fetch from 'cross-fetch';
 import { MatrixClient } from 'matrix-js-sdk';
-import { encodeUri } from 'matrix-js-sdk/utils';
+import { encodeUri } from 'matrix-js-sdk/lib/utils';
 
 import { Observable, fromEventPattern, merge, from, of, defer, EMPTY } from 'rxjs';
 import { filter, first, map, mergeAll, switchMap, withLatestFrom, mergeMap } from 'rxjs/operators';
