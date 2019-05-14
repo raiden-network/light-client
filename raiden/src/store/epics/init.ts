@@ -5,7 +5,7 @@ import { isEmpty } from 'lodash';
 
 import { Event } from 'ethers/contract';
 
-import { fromEthersEvent, getEventsStream } from '../../utils';
+import { fromEthersEvent, getEventsStream, getNetwork } from '../../utils';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenState } from '../state';
 import {
@@ -128,7 +128,7 @@ export const initMonitorProviderEpic = (
                 )
               : EMPTY,
             // unconditionally monitors network changes
-            from(provider.getNetwork()).pipe(
+            from(getNetwork(provider)).pipe(
               mergeMap(curNetwork =>
                 curNetwork.chainId !== network.chainId
                   ? of(raidenShutdown(ShutdownReason.NETWORK_CHANGED))

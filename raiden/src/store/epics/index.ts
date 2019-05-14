@@ -1,6 +1,6 @@
 import { ofType } from 'redux-observable';
 import { Observable, from, of } from 'rxjs';
-import { catchError, mergeMap, takeUntil } from 'rxjs/operators';
+import { catchError, mergeMap, takeWhile, takeUntil } from 'rxjs/operators';
 
 import { RaidenEpicDeps } from '../../types';
 import { RaidenState } from '../state';
@@ -29,8 +29,10 @@ export const raidenEpics = (
   deps: RaidenEpicDeps,
 ): Observable<RaidenActions> => {
   const shutdownNotification = action$.pipe(
-    ofType<RaidenActions, RaidenShutdownAction>(RaidenActionType.SHUTDOWN),
-  );
+      ofType<RaidenActions, RaidenShutdownAction>(RaidenActionType.SHUTDOWN),
+    ),
+    limitedAction$ = action$.pipe(takeWhile(a => a.type !== RaidenActionType.SHUTDOWN, true)),
+    limitedState$ = state$.pipe(takeUntil(shutdownNotification));
   // like combineEpics, but completes action$, state$ and output$ when shutdownNotification emits
   return from([
     initNewBlockEpic,
@@ -48,14 +50,8 @@ export const raidenEpics = (
     channelCloseEpic,
     channelSettleEpic,
   ]).pipe(
-    mergeMap(epic =>
-      epic(
-        action$.pipe(takeUntil(shutdownNotification)),
-        state$.pipe(takeUntil(shutdownNotification)),
-        deps,
-      ),
-    ),
-    takeUntil(shutdownNotification),
+    mergeMap(epic => epic(limitedAction$, limitedState$, deps)),
     catchError(err => of(raidenShutdown(err))),
+    takeUntil(shutdownNotification),
   );
 };
