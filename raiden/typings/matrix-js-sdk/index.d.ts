@@ -734,6 +734,6 @@ declare module 'matrix-js-sdk' {
   */
 }
 
-declare module 'matrix-js-sdk/utils' {
+declare module 'matrix-js-sdk/lib/utils' {
   export function encodeUri(pathTemplate: string, variables: { [fragment: string]: any }): string;
 }

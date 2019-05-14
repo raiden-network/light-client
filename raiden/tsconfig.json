@@ -14,9 +14,6 @@
     "paths": {
       "raiden/*": ["src/*"]
     },
-    "typeRoots": [
-      "./node_modules/@types",
-      "./@types"
-    ]
+    "typeRoots": ["typings", "node_modules/@types"]
   }
 }
