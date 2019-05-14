@@ -1,4 +1,4 @@
-import { Raiden, RaidenChannel } from 'raiden';
+import { Raiden, RaidenActionType, RaidenChannel } from 'raiden';
 import { Store } from 'vuex';
 import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
@@ -52,9 +52,18 @@ export default class RaidenService {
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
 
-        this.subscription = raiden.channels$.subscribe(value => {
-          this.store.commit('updateChannels', value);
+        this.subscription = raiden.events$.subscribe(value => {
+          if (value.type === RaidenActionType.SHUTDOWN) {
+            this.store.commit('reset');
+            raiden.stop();
+          }
         });
+
+        this.subscription.add(
+          raiden.channels$.subscribe(value => {
+            this.store.commit('updateChannels', value);
+          })
+        );
 
         this.store.commit('network', raiden.network);
       }

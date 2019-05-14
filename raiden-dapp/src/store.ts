@@ -59,6 +59,9 @@ const store: StoreOptions<RootState> = {
     },
     network(state: RootState, network: Network) {
       state.network = network;
+    },
+    reset(state: RootState) {
+      Object.assign(state, defaultState());
     }
   },
   actions: {},

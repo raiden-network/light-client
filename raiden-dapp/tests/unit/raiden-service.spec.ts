@@ -274,7 +274,8 @@ describe('RaidenService', () => {
     const stub = new BehaviorSubject({});
     const raidenMock = {
       channels$: stub,
-      getBalance: jest.fn().mockResolvedValue(Zero)
+      getBalance: jest.fn().mockResolvedValue(Zero),
+      events$: new BehaviorSubject({})
     };
 
     factory.mockResolvedValue(raidenMock);
@@ -540,5 +541,29 @@ describe('RaidenService', () => {
       expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
       expect(store.commit).toHaveBeenNthCalledWith(5, 'updateTokens', tokens);
     });
+  });
+
+  test('shutdown and stop raiden', async function() {
+    providerMock.mockResolvedValue({
+      send: jest.fn(),
+      sendAsync: jest.fn()
+    });
+    const subject = new BehaviorSubject({});
+    const raidenMock = {
+      channels$: new BehaviorSubject({}),
+      getBalance: jest.fn().mockResolvedValue(Zero),
+      events$: subject,
+      stop: jest.fn().mockReturnValue(null)
+    };
+
+    factory.mockResolvedValue(raidenMock);
+    await raidenService.connect();
+    await flushPromises();
+    subject.next({ type: 'raidenShutdown', reason: 'providerNetworkChanged' });
+    await flushPromises();
+
+    expect(store.commit).toHaveBeenCalledTimes(6);
+    expect(store.commit).toHaveBeenLastCalledWith('reset');
+    expect(raidenMock.stop).toHaveBeenCalledTimes(1);
   });
 });
