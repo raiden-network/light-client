@@ -7,7 +7,7 @@ import { TestProvider } from './provider';
 import { MockStorage } from './mocks';
 
 import { Raiden } from 'raiden/raiden';
-import { initialState } from 'raiden/store';
+import { initialState, RaidenActionType, ShutdownReason } from 'raiden/store';
 import { ContractsInfo, RaidenContracts, ChannelState, Storage } from 'raiden/types';
 
 describe('Raiden', () => {
@@ -302,6 +302,27 @@ describe('Raiden', () => {
       await expect(raiden.settleChannel(token, partner)).resolves.toMatch(/^0x/);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toEqual({
         [token]: {},
+      });
+    });
+  });
+
+  describe('events$', () => {
+    test('stop shutdown', async () => {
+      const promise = raiden.events$.toPromise();
+      raiden.stop();
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.SHUTDOWN,
+        reason: ShutdownReason.STOP,
+      });
+    });
+
+    test('newBlock', async () => {
+      await provider.mine(5);
+      const promise = raiden.events$.pipe(first()).toPromise();
+      await provider.mine(10);
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.NEW_BLOCK,
+        blockNumber: expect.any(Number),
       });
     });
   });
