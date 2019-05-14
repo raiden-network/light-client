@@ -266,7 +266,6 @@ describe('RaidenService', () => {
   });
 
   it('should start updating channels in store on connect', async function() {
-    raidenService.disconnect();
     providerMock.mockResolvedValue({
       send: jest.fn(),
       sendAsync: jest.fn()
@@ -275,7 +274,8 @@ describe('RaidenService', () => {
     const raidenMock = {
       channels$: stub,
       getBalance: jest.fn().mockResolvedValue(Zero),
-      events$: new BehaviorSubject({})
+      events$: new BehaviorSubject({}),
+      stop: jest.fn().mockReturnValue(null)
     };
 
     factory.mockResolvedValue(raidenMock);
@@ -286,6 +286,7 @@ describe('RaidenService', () => {
     expect(store.commit).toHaveBeenNthCalledWith(3, 'updateChannels', {});
     expect(store.commit).toHaveBeenCalledTimes(5);
     raidenService.disconnect();
+    expect(raidenMock.stop).toHaveBeenCalledTimes(1);
   });
 
   it('should resolve successfully on channel close', async function() {

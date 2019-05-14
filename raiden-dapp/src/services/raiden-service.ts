@@ -13,11 +13,11 @@ import {
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import startsWith from 'lodash/startsWith';
+import { filter } from 'rxjs/internal/operators';
 
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
-  private subscription?: Subscription;
 
   private get raiden(): Raiden {
     if (this._raiden === undefined) {
@@ -52,18 +52,13 @@ export default class RaidenService {
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
 
-        this.subscription = raiden.events$.subscribe(value => {
-          if (value.type === RaidenActionType.SHUTDOWN) {
-            this.store.commit('reset');
-            this.subscription!.unsubscribe();
-          }
-        });
+        raiden.events$
+          .pipe(filter(value => value.type === RaidenActionType.SHUTDOWN))
+          .subscribe(() => this.store.commit('reset'));
 
-        this.subscription.add(
-          raiden.channels$.subscribe(value => {
-            this.store.commit('updateChannels', value);
-          })
-        );
+        raiden.channels$.subscribe(value => {
+          this.store.commit('updateChannels', value);
+        });
 
         this.store.commit('network', raiden.network);
       }
@@ -81,10 +76,7 @@ export default class RaidenService {
   }
 
   disconnect() {
-    if (!this.subscription) {
-      return;
-    }
-    this.subscription.unsubscribe();
+    this.raiden.stop();
   }
 
   async getAccount(): Promise<string> {
