@@ -165,4 +165,11 @@ describe('store', () => {
     store.commit('network', { name: 'Testnet', chainId: 89 });
     expect(store.getters.network).toEqual('Testnet');
   });
+
+  test('state should reset when reset mutation is commited', () => {
+    store.commit('loadComplete', false);
+    expect(store.state.loading).toBe(false);
+    store.commit('reset');
+    expect(store.state.loading).toBe(true);
+  });
 });

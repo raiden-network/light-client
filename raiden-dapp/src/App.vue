@@ -48,6 +48,7 @@ export default class App extends Vue {
 <style lang="scss" scoped>
 @import 'main';
 #application-wrapper {
+  height: 100%;
   margin-top: 70px;
   margin-bottom: 70px;
   display: flex;
@@ -59,7 +60,7 @@ export default class App extends Vue {
 }
 
 #application-content {
-  height: 80vh;
+  height: 100%;
   width: 620px;
   border-radius: 14px;
   background-color: #1e1e1e;

@@ -1,4 +1,4 @@
-import { Raiden, RaidenChannel } from 'raiden';
+import { Raiden, RaidenActionType, RaidenChannel } from 'raiden';
 import { Store } from 'vuex';
 import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
@@ -13,11 +13,11 @@ import {
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import startsWith from 'lodash/startsWith';
+import { filter } from 'rxjs/internal/operators';
 
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
-  private subscription?: Subscription;
 
   private get raiden(): Raiden {
     if (this._raiden === undefined) {
@@ -52,7 +52,11 @@ export default class RaidenService {
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
 
-        this.subscription = raiden.channels$.subscribe(value => {
+        raiden.events$
+          .pipe(filter(value => value.type === RaidenActionType.SHUTDOWN))
+          .subscribe(() => this.store.commit('reset'));
+
+        raiden.channels$.subscribe(value => {
           this.store.commit('updateChannels', value);
         });
 
@@ -72,10 +76,7 @@ export default class RaidenService {
   }
 
   disconnect() {
-    if (!this.subscription) {
-      return;
-    }
-    this.subscription.unsubscribe();
+    this.raiden.stop();
   }
 
   async getAccount(): Promise<string> {
