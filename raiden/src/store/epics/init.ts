@@ -193,7 +193,7 @@ export const initMatrixEpic = (
               throw new Error(`Could not contact any matrix servers: ${rtts}`);
             return rtts[0].server;
           }),
-          map(server => ({ server })),
+          map(server => ({ server: server.includes('://') ? server : `https://${server}` })),
         );
       }
     }),
@@ -251,8 +251,6 @@ export const initMatrixEpic = (
             // set vars for later MatrixSetupAction
             accessToken = result.access_token;
             deviceId = result.device_id;
-            // start client
-            matrix.startClient({ initialSyncLimit: 0 });
           }),
           // displayName must be signature of full userId for our messages to be accepted
           mergeMap(() => signer.signMessage(userId!)),
@@ -270,10 +268,16 @@ export const initMatrixEpic = (
       }
     }),
     mergeMap(({ matrix, setup }) =>
-      // ensure displayName is set even on restarts
-      from(matrix.setDisplayName(setup.displayName)).pipe(
+      // start client
+      from(matrix.startClient({ initialSyncLimit: 0 })).pipe(
+        // ensure displayName is set even on restarts
+        mergeMap(() => matrix.setDisplayName(setup.displayName)),
         // ensure we joined discovery room
-        mergeMap(() => matrix.joinRoom(`raiden_${network.name || network.chainId}_discovery`)),
+        mergeMap(() =>
+          matrix.joinRoom(
+            `#raiden_${network.name || network.chainId}_discovery:${getServerName(setup.server)}`,
+          ),
+        ),
         mapTo({ matrix, setup }),
       ),
     ),
