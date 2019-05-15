@@ -9,7 +9,10 @@ import {
   scan,
   startWith,
   switchMap,
+  tap,
+  toArray,
 } from 'rxjs/operators';
+import { minBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { MatrixClient, Event, User } from 'matrix-js-sdk';
@@ -107,6 +110,7 @@ export const matrixMonitorPresenceEpic = (
       ).pipe(
         // for every result matches, verify displayName signature is address of interest
         map(({ results }) => {
+          const validUsers: string[] = [];
           for (const user of results) {
             if (!user.display_name) continue;
             try {
@@ -117,24 +121,32 @@ export const matrixMonitorPresenceEpic = (
             } catch (err) {
               continue;
             }
-            return user.user_id;
+            validUsers.push(user.user_id);
           }
-          // if no valid user could be found, throw an error to be handled below
-          throw new Error(
-            `Could not find any user with valid signature for ${action.address} in ${results}`,
-          );
+          if (!validUsers.length)
+            // if no valid user could be found, throw an error to be handled below
+            throw new Error(
+              `Could not find any user with valid signature for ${action.address} in ${results}`,
+            );
+          else return validUsers;
         }),
+        mergeMap(userIds => from(userIds)),
         mergeMap(userId =>
-          // for the one matched/verified user, get its presence through dedicated API
-          // it's required because, as the user events could already have been handled and
-          // filtered out by matrixPresenceUpdateEpic because it wasn't yet a user-of-interest,
-          // we could have missed presence updates, then we need to fetch it here directly,
-          // and from now on, that other epic will monitor its updates
-          from(getUserPresence(matrix, userId)).pipe(
-            map(({ presence }) =>
-              matrixPresenceUpdate(action.address, userId, AVAILABLE.includes(presence)),
-            ),
+          getUserPresence(matrix, userId).then(presence =>
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            Object.assign(presence, { user_id: userId }),
           ),
+        ),
+        toArray(),
+        // for all matched/verified users, get its presence through dedicated API
+        // it's required because, as the user events could already have been handled and
+        // filtered out by matrixPresenceUpdateEpic because it wasn't yet a user-of-interest,
+        // we could have missed presence updates, then we need to fetch it here directly,
+        // and from now on, that other epic will monitor its updates, and sort by most recently
+        // seen user
+        map(presences => minBy(presences, 'last_active_ago')!),
+        map(({ presence, user_id: userId }) =>
+          matrixPresenceUpdate(action.address, userId, AVAILABLE.includes(presence)),
         ),
         catchError(err => of(matrixRequestMonitorPresenceFailed(action.address, err))),
       );
@@ -152,6 +164,7 @@ export const matrixPresenceUpdateEpic = (
   { matrix$ }: RaidenEpicDeps,
 ): Observable<MatrixPresenceUpdateAction> =>
   matrix$.pipe(
+    tap(matrix => console.warn('MATRIX', matrix)),
     // when matrix finishes initialization, register to matrix presence events
     switchMap(matrix =>
       fromEvent<{ event: Event; user: User; matrix: MatrixClient }>(

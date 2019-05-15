@@ -89,7 +89,7 @@ declare module 'matrix-js-sdk' {
 
     private _requestTokenFromEndpoint(endpoint: string, params: object): Promise<string>;
 
-    public startClient(opts: StartClientOpts | number): void; // backwards compat with historyLen
+    public startClient(opts: StartClientOpts | number): Promise<any>; // backwards compat with historyLen
 
     // base-apis interface
     public loginWithPassword(

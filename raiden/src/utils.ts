@@ -134,7 +134,7 @@ export function yamlListToArray(yml: string): string[] {
  */
 export async function matrixRTT(server: string): Promise<{ server: string; rtt: number }> {
   let url = server;
-  if (!url.startsWith('http')) {
+  if (!url.includes('://')) {
     url = `https://${url}`;
   }
   url += `/_matrix/client/versions`;
