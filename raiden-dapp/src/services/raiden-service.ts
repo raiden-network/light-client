@@ -2,7 +2,6 @@ import { Raiden, RaidenActionType, RaidenChannel } from 'raiden';
 import { Store } from 'vuex';
 import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
-import { Subscription } from 'rxjs';
 import { BalanceUtils } from '@/utils/balance-utils';
 import {
   DeniedReason,
@@ -25,6 +24,20 @@ export default class RaidenService {
     } else {
       return this._raiden;
     }
+  }
+
+  private async updateTokenBalances() {
+    const cachedTokens = this.store.state.tokens;
+    for (let address in cachedTokens) {
+      const token = cachedTokens[address];
+      const balance = await this.raiden.getTokenBalance(address);
+      cachedTokens[address] = Object.assign({}, token, {
+        balance: balance,
+        units: BalanceUtils.toUnits(balance, token.decimals)
+      });
+    }
+
+    this.store.commit('updateTokens', cachedTokens);
   }
 
   constructor(store: Store<RootState>) {
@@ -55,6 +68,10 @@ export default class RaidenService {
         raiden.events$
           .pipe(filter(value => value.type === RaidenActionType.SHUTDOWN))
           .subscribe(() => this.store.commit('reset'));
+
+        raiden.events$
+          .pipe(filter(value => value.type === RaidenActionType.NEW_BLOCK))
+          .subscribe(async () => await this.updateTokenBalances());
 
         raiden.channels$.subscribe(value => {
           this.store.commit('updateChannels', value);
