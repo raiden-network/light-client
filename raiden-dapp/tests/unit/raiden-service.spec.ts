@@ -12,12 +12,13 @@ import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
-import { Raiden } from 'raiden';
+import { Raiden, RaidenActionType } from 'raiden';
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
 import { BehaviorSubject, EMPTY } from 'rxjs';
 import { Zero } from 'ethers/constants';
 import Mocked = jest.Mocked;
+import anything = jasmine.anything;
 
 Vue.use(Vuex);
 
@@ -542,6 +543,38 @@ describe('RaidenService', () => {
       expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
       expect(store.commit).toHaveBeenNthCalledWith(5, 'updateTokens', tokens);
     });
+
+    test('check token balances on a new block', async () => {
+      // @ts-ignore
+      store.state = {
+        tokens: tokens
+      };
+
+      providerMock.mockResolvedValue({
+        send: jest.fn(),
+        sendAsync: jest.fn()
+      });
+      const subject = new BehaviorSubject({});
+      const raidenMock = {
+        channels$: new BehaviorSubject({}),
+        getBalance: jest.fn().mockResolvedValue(Zero),
+        getTokenBalance: jest.fn().mockResolvedValue(new BigNumber(1)),
+        events$: subject,
+        stop: jest.fn().mockReturnValue(null)
+      };
+
+      factory.mockResolvedValue(raidenMock);
+      await raidenService.connect();
+      await flushPromises();
+      subject.next({ type: RaidenActionType.NEW_BLOCK });
+      await flushPromises();
+
+      expect(store.commit).toHaveBeenLastCalledWith('updateTokens', anything());
+      const payload = store.commit.mock.calls[5][1] as Tokens;
+      const firstToken = payload[mockToken1];
+      expect(firstToken.balance.toString()).toEqual('1');
+      expect(firstToken.units).toEqual('0.000000000000000001');
+    });
   });
 
   test('shutdown and stop raiden', async function() {
@@ -560,7 +593,7 @@ describe('RaidenService', () => {
     factory.mockResolvedValue(raidenMock);
     await raidenService.connect();
     await flushPromises();
-    subject.next({ type: 'raidenShutdown', reason: 'providerNetworkChanged' });
+    subject.next({ type: RaidenActionType.SHUTDOWN });
     await flushPromises();
 
     expect(store.commit).toHaveBeenCalledTimes(6);
