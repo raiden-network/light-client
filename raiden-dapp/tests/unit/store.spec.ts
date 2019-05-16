@@ -58,8 +58,8 @@ describe('store', () => {
 
   it('should change the accessDenied state after an accessDenied mutation', function() {
     expect(store.state.accessDenied).toBe(DeniedReason.UNDEFINED);
-    store.commit('accessDenied', DeniedReason.USER_DENIED);
-    expect(store.state.accessDenied).toBe(DeniedReason.USER_DENIED);
+    store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
+    expect(store.state.accessDenied).toBe(DeniedReason.NO_ACCOUNT);
   });
 
   it('should change the channel state after an updateChannel mutation', function() {

@@ -80,11 +80,12 @@ export default class RaidenService {
         this.store.commit('network', raiden.network);
       }
     } catch (e) {
+      console.log(e);
       let deniedReason: DeniedReason;
       if (startsWith(e.message, 'No deploy info provided')) {
         deniedReason = DeniedReason.UNSUPPORTED_NETWORK;
       } else {
-        deniedReason = DeniedReason.USER_DENIED;
+        deniedReason = DeniedReason.NO_ACCOUNT;
       }
       this.store.commit('accessDenied', deniedReason);
     }

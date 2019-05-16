@@ -10,7 +10,6 @@ import Home from '@/views/Home.vue';
 import { RootState } from '@/types';
 import AppCore from '@/components/AppCore.vue';
 import { defaultState } from '@/store';
-import NoValidProvider from '@/components/NoValidProvider.vue';
 import { DeniedReason } from '@/model/types';
 
 import Mocked = jest.Mocked;
@@ -60,15 +59,5 @@ describe('Home.vue', function() {
 
   it('should display app core if everything is ok', function() {
     expect(wrapper.find(AppCore)).toBeTruthy();
-  });
-
-  it('should display no provider if no provider detected', function() {
-    store.commit('failed');
-    expect(wrapper.find(NoValidProvider)).toBeTruthy();
-  });
-
-  it('should display a user denied message if user denied the provider connection', function() {
-    store.commit('denied');
-    expect(wrapper.find(NoValidProvider)).toBeTruthy();
   });
 });

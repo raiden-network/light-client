@@ -28,6 +28,11 @@
             No web3 provider was detected
           </span>
         </div>
+        <no-access-message
+          v-if="accessDenied"
+          class="error-message"
+          :reason="accessDenied"
+        ></no-access-message>
       </v-flex>
     </v-layout>
   </v-container>
@@ -36,9 +41,18 @@
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
 import { Web3Provider } from '@/services/web3-provider';
+import { DeniedReason } from '@/model/types';
+import { mapState } from 'vuex';
+import NoAccessMessage from '@/components/NoAccessMessage.vue';
 
-@Component({})
+@Component({
+  components: {
+    NoAccessMessage
+  },
+  computed: mapState(['accessDenied'])
+})
 export default class Loading extends Vue {
+  accessDenied!: DeniedReason;
   get injectedProvider(): boolean {
     return Web3Provider.injectedWeb3Available();
   }
@@ -91,6 +105,10 @@ $name-horizontal-margin: 2rem;
     border-radius: 29px;
     background-color: #000000 !important;
   }
+}
+
+.error-message {
+  margin-top: 40px;
 }
 
 .no-provider {
