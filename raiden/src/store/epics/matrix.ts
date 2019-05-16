@@ -15,7 +15,7 @@ import {
 import { minBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
-import { MatrixClient, Event, User } from 'matrix-js-sdk';
+import { MatrixEvent, User } from 'matrix-js-sdk';
 
 import { RaidenEpicDeps } from '../../types';
 import { RaidenState } from '../state';
@@ -84,6 +84,7 @@ export const matrixMonitorPresenceEpic = (
         // we already monitored/saw this user's presence
         return of(presences[action.address]);
 
+      const validUsers: User[] = [];
       for (const user of matrix.getUsers()) {
         if (!user.userId.includes(action.address.toLowerCase())) continue;
         if (!user.displayName) continue;
@@ -97,10 +98,16 @@ export const matrixMonitorPresenceEpic = (
         } catch (err) {
           continue;
         }
-        // IFF we see a cached/stored user (matrix.getUsers), with displayName and presence already
-        // populated, which displayName signature verifies to our address of interest,
-        // then construct and return the MatrixPresenceUpdateAction from the stored data
-        return of(matrixPresenceUpdate(recovered, user.userId, AVAILABLE.includes(user.presence)));
+        validUsers.push(user);
+      }
+      // IFF we see a cached/stored user (matrix.getUsers), with displayName and presence already
+      // populated, which displayName signature verifies to our address of interest,
+      // then construct and return the MatrixPresenceUpdateAction from the stored data
+      if (validUsers.length > 0) {
+        const user = minBy(validUsers, 'lastPresenceTs')!;
+        return of(
+          matrixPresenceUpdate(action.address, user.userId, AVAILABLE.includes(user.presence!)),
+        );
       }
 
       // if anything failed up to here, go the slow path: searchUserDirectory + getUserPresence
@@ -123,7 +130,7 @@ export const matrixMonitorPresenceEpic = (
             }
             validUsers.push(user.user_id);
           }
-          if (!validUsers.length)
+          if (validUsers.length === 0)
             // if no valid user could be found, throw an error to be handled below
             throw new Error(
               `Could not find any user with valid signature for ${action.address} in ${results}`,
@@ -167,24 +174,24 @@ export const matrixPresenceUpdateEpic = (
     tap(matrix => console.warn('MATRIX', matrix)),
     // when matrix finishes initialization, register to matrix presence events
     switchMap(matrix =>
-      fromEvent<{ event: Event; user: User; matrix: MatrixClient }>(
-        matrix,
-        'User.presence',
-        (event, user) => ({ event, user, matrix }),
-      ),
+      // matrix's 'User.presence' sometimes fail to fire, but generic 'event' is always fired,
+      // and User (retrieved via matrix.getUser) is up-to-date before 'event' emits
+      fromEvent<MatrixEvent>(matrix, 'event').pipe(map(event => ({ event, matrix }))),
     ),
+    filter(({ event }) => event.getType() === 'm.presence'),
     // parse peer address from userId
-    map(({ event, user, matrix }) => {
-      const userId: string = event.sender || user.userId,
-        match = userRe.exec(userId),
+    map(({ event, matrix }) => {
+      // as 'event' is emitted after user is (created and) updated, getUser always returns it
+      const user = matrix.getUser(event.getSender())!,
+        match = userRe.exec(user.userId),
         peerAddress = match && match[1];
       // getAddress will convert any valid address into checksummed-format
-      return { event, user, matrix, userId, peerAddress: peerAddress && getAddress(peerAddress) };
+      return { user, matrix, peerAddress: peerAddress && getAddress(peerAddress) };
     }),
     // filter out events without userId in the right format (startWith hex-address)
-    filter(({ userId, peerAddress }) => !!(userId && peerAddress)),
+    filter(({ user, peerAddress }) => !!(user.presence && peerAddress)),
     withLatestFrom(
-      // observable of all users whose presence monitoring was requested since init
+      // observable of all addresses whose presence monitoring was requested since init
       action$.pipe(
         ofType<RaidenActions, MatrixRequestMonitorPresenceAction>(
           RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE,
@@ -202,10 +209,11 @@ export const matrixPresenceUpdateEpic = (
     // filter out events from users we don't care about
     // i.e.: presence monitoring never requested
     filter(([{ peerAddress }, toMonitor]) => toMonitor.has(peerAddress!)),
-    mergeMap(([{ event, user, matrix, userId, peerAddress }, , presences]) => {
+    mergeMap(([{ user, matrix, peerAddress }, , presences]) => {
       // first filter can't tell typescript this property will always be set!
-      const address = peerAddress!,
-        presence = event.content.presence || user.presence,
+      const userId = user.userId,
+        address = peerAddress!,
+        presence = user.presence!,
         available = AVAILABLE.includes(presence);
 
       if (
@@ -216,10 +224,8 @@ export const matrixPresenceUpdateEpic = (
         // even if signature verification passes, this wouldn't change presence, so return early
         return EMPTY;
 
-      // fetch profile info if event or user doesn't contain a displayName
-      const displayName$: Observable<string | undefined> = event.content.displayname
-        ? of(event.content.displayname)
-        : user.displayName
+      // fetch profile info if user doesn't contain a displayName
+      const displayName$: Observable<string | undefined> = user.displayName
         ? of(user.displayName)
         : from(matrix.getProfileInfo(userId, 'displayname')).pipe(
             map(profile => profile.displayname),
@@ -238,7 +244,7 @@ export const matrixPresenceUpdateEpic = (
             );
           return recovered;
         }),
-        map(address => matrixPresenceUpdate(address, userId, available)),
+        map(address => matrixPresenceUpdate(address, userId, available, user.lastPresenceTs)),
       );
     }),
     catchError(err => (console.log('Error validating presence event, ignoring', err), EMPTY)),
