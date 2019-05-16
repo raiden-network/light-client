@@ -452,19 +452,20 @@ export class Raiden {
     const state = this.state;
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
-    const promise: Promise<string> = new Promise((resolve, reject) =>
-      // wait for the corresponding success or error TokenMonitorAction
-      this.action$
-        .pipe(
-          ofType<RaidenActions, ChannelOpenedAction | ChannelOpenActionFailed>(
-            RaidenActionType.CHANNEL_OPENED,
-            RaidenActionType.CHANNEL_OPEN_FAILED,
-          ),
-          filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
-          first(),
-        )
-        .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
-    );
+    const promise = this.action$
+      .pipe(
+        ofType<RaidenActions, ChannelOpenedAction | ChannelOpenActionFailed>(
+          RaidenActionType.CHANNEL_OPENED,
+          RaidenActionType.CHANNEL_OPEN_FAILED,
+        ),
+        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+        first(),
+        map(action => {
+          if (action.type === RaidenActionType.CHANNEL_OPEN_FAILED) throw action.error;
+          return action.txHash;
+        }),
+      )
+      .toPromise();
     this.store.dispatch(channelOpen(tokenNetwork, partner, settleTimeout));
     return promise;
   }
@@ -484,19 +485,20 @@ export class Raiden {
     const state = this.state;
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
-    const promise: Promise<string> = new Promise((resolve, reject) =>
-      // wait for the corresponding success or error
-      this.action$
-        .pipe(
-          ofType<RaidenActions, ChannelDepositedAction | ChannelDepositActionFailed>(
-            RaidenActionType.CHANNEL_DEPOSITED,
-            RaidenActionType.CHANNEL_DEPOSIT_FAILED,
-          ),
-          filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
-          first(),
-        )
-        .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
-    );
+    const promise = this.action$
+      .pipe(
+        ofType<RaidenActions, ChannelDepositedAction | ChannelDepositActionFailed>(
+          RaidenActionType.CHANNEL_DEPOSITED,
+          RaidenActionType.CHANNEL_DEPOSIT_FAILED,
+        ),
+        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+        first(),
+        map(action => {
+          if (action.type === RaidenActionType.CHANNEL_DEPOSIT_FAILED) throw action.error;
+          return action.txHash;
+        }),
+      )
+      .toPromise();
     this.store.dispatch(channelDeposit(tokenNetwork, partner, bigNumberify(deposit)));
     return promise;
   }
@@ -517,19 +519,20 @@ export class Raiden {
     const state = this.state;
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
-    const promise: Promise<string> = new Promise((resolve, reject) =>
-      // wait for the corresponding success or error action
-      this.action$
-        .pipe(
-          ofType<RaidenActions, ChannelClosedAction | ChannelCloseActionFailed>(
-            RaidenActionType.CHANNEL_CLOSED,
-            RaidenActionType.CHANNEL_CLOSE_FAILED,
-          ),
-          filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
-          first(),
-        )
-        .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
-    );
+    const promise = this.action$
+      .pipe(
+        ofType<RaidenActions, ChannelClosedAction | ChannelCloseActionFailed>(
+          RaidenActionType.CHANNEL_CLOSED,
+          RaidenActionType.CHANNEL_CLOSE_FAILED,
+        ),
+        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+        first(),
+        map(action => {
+          if (action.type === RaidenActionType.CHANNEL_CLOSE_FAILED) throw action.error;
+          return action.txHash;
+        }),
+      )
+      .toPromise();
     this.store.dispatch(channelClose(tokenNetwork, partner));
     return promise;
   }
@@ -549,19 +552,21 @@ export class Raiden {
     const state = this.state;
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
-    const promise: Promise<string> = new Promise((resolve, reject) =>
-      // wait for the corresponding success or error action
-      this.action$
-        .pipe(
-          ofType<RaidenActions, ChannelSettledAction | ChannelSettleActionFailed>(
-            RaidenActionType.CHANNEL_SETTLED,
-            RaidenActionType.CHANNEL_SETTLE_FAILED,
-          ),
-          filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
-          first(),
-        )
-        .subscribe(action => (action.txHash ? resolve(action.txHash) : reject(action.error))),
-    );
+    // wait for the corresponding success or error action
+    const promise = this.action$
+      .pipe(
+        ofType<RaidenActions, ChannelSettledAction | ChannelSettleActionFailed>(
+          RaidenActionType.CHANNEL_SETTLED,
+          RaidenActionType.CHANNEL_SETTLE_FAILED,
+        ),
+        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
+        first(),
+        map(action => {
+          if (action.type === RaidenActionType.CHANNEL_SETTLE_FAILED) throw action.error;
+          return action.txHash;
+        }),
+      )
+      .toPromise();
     this.store.dispatch(channelSettle(tokenNetwork, partner));
     return promise;
   }
@@ -588,9 +593,9 @@ export class Raiden {
         filter(action => action.address === address),
         first(),
         map(action => {
-          if (action.available !== undefined)
-            return { userId: action.userId, available: action.available, ts: action.ts };
-          else throw action.error;
+          if (action.type === RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED)
+            throw action.error;
+          return { userId: action.userId, available: action.available, ts: action.ts };
         }),
       )
       .toPromise();
