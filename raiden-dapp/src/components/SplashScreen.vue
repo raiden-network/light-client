@@ -28,11 +28,13 @@
             No web3 provider was detected
           </span>
         </div>
-        <no-access-message
-          v-if="accessDenied"
-          class="error-message"
-          :reason="accessDenied"
-        ></no-access-message>
+        <div class="message-container">
+          <no-access-message
+            v-if="accessDenied"
+            class="error-message"
+            :reason="accessDenied"
+          ></no-access-message>
+        </div>
       </v-flex>
     </v-layout>
   </v-container>
@@ -107,8 +109,9 @@ $name-horizontal-margin: 2rem;
   }
 }
 
-.error-message {
+.message-container {
   margin-top: 40px;
+  height: 35px;
 }
 
 .no-provider {

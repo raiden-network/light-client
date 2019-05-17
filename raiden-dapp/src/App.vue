@@ -1,4 +1,3 @@
-import { DeniedReason } from './model/types';
 <template>
   <v-app dark>
     <splash-screen v-if="inaccessible" @connect="connect()"></splash-screen>
@@ -46,6 +45,8 @@ export default class App extends Vue {
   }
 
   async connect() {
+    this.initialized = false;
+    this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
     await this.$raiden.connect();
     await this.$raiden.fetchTokens();
     this.initialized = true;
