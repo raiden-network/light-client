@@ -21,6 +21,7 @@ import TokenAbi from './abi/Token.json';
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
+import goerliDeploy from './deployment/deployment_goerli.json';
 
 import {
   ContractsInfo,
@@ -230,6 +231,9 @@ export class Raiden {
           break;
         case 'kovan':
           contracts = kovanDeploy.contracts;
+          break;
+        case 'goerli':
+          contracts = goerliDeploy.contracts;
           break;
         default:
           throw new Error(
