@@ -3,7 +3,7 @@ jest.mock('vue-router');
 jest.useFakeTimers();
 
 import { Store } from 'vuex';
-import VueRouter from 'vue-router';
+import VueRouter, { NavigationGuard } from 'vue-router';
 import { mockInput } from '../utils/interaction-utils';
 import flushPromises from 'flush-promises';
 import { createLocalVue, mount, shallowMount, Wrapper } from '@vue/test-utils';
@@ -182,6 +182,53 @@ describe('Deposit.vue', function() {
       expect(router.push).toHaveBeenCalledTimes(1);
       const args = router.push.mock.calls[0][0] as any;
       expect(args.name).toEqual(RouteNames.HOME);
+    });
+  });
+
+  describe('navigation guard', () => {
+    let beforeRouteLeave: NavigationGuard;
+    beforeEach(() => {
+      wrapper = createWrapper(
+        {
+          token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
+          partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
+        },
+        true
+      );
+      const vm = wrapper.vm as any;
+      beforeRouteLeave = vm.beforeRouteLeave as NavigationGuard;
+    });
+
+    test('wont block if not loading', () => {
+      const next = jest.fn();
+      const mockRoute = TestData.mockRoute();
+      beforeRouteLeave(mockRoute, mockRoute, next);
+      expect(next).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    test('requests user action and allow navigation on confirm', () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const next = jest.fn();
+      const mockRoute = TestData.mockRoute();
+      wrapper.setData({
+        loading: true
+      });
+      beforeRouteLeave(mockRoute, mockRoute, next);
+      expect(next).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    test('requests user action and block navigation on cancel', () => {
+      window.confirm = jest.fn().mockReturnValue(false);
+      const next = jest.fn();
+      const mockRoute = TestData.mockRoute();
+      wrapper.setData({
+        loading: true
+      });
+      beforeRouteLeave(mockRoute, mockRoute, next);
+      expect(next).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(false);
     });
   });
 });

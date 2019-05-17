@@ -7,6 +7,7 @@ import App from './App.vue';
 import router from './router';
 import store from './store';
 import './registerServiceWorker';
+import './class-component-hooks';
 import { RaidenPlugin } from '@/plugins/raiden';
 import { IdenticonPlugin } from '@/plugins/identicon-plugin';
 
