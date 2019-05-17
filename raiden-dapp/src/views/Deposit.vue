@@ -76,6 +76,7 @@ import ProgressOverlay from '@/components/ProgressOverlay.vue';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
+import { Route } from 'vue-router';
 
 @Component({
   components: { ProgressOverlay, AmountInput }
@@ -117,6 +118,22 @@ export default class Deposit extends Mixins(NavigationMixin) {
   };
   current = 0;
   done = false;
+
+  beforeRouteLeave(to: Route, from: Route, next: any) {
+    if (!this.loading) {
+      next();
+    } else {
+      if (
+        window.confirm(
+          'Channel opening is in progress, are you sure you want to leave?'
+        )
+      ) {
+        next();
+      } else {
+        next(false);
+      }
+    }
+  }
 
   async openChannel() {
     const token = this.token;
