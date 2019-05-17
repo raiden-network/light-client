@@ -38,6 +38,7 @@ describe('RaidenService', () => {
         address: '123',
         getBalance: jest.fn().mockResolvedValue(Zero),
         channels$: EMPTY,
+        events$: EMPTY,
         getTokenBalance: jest.fn().mockResolvedValue(Zero)
       },
       extras
@@ -80,7 +81,7 @@ describe('RaidenService', () => {
     expect(store.commit).toBeCalledTimes(2);
     expect(store.commit).toBeCalledWith(
       'accessDenied',
-      DeniedReason.USER_DENIED
+      DeniedReason.NO_ACCOUNT
     );
     expect(store.commit).toBeCalledWith('loadComplete');
   });

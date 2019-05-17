@@ -1,6 +1,6 @@
 <template>
   <v-app dark>
-    <loading v-if="loading || !initialized" @connect="connect()"></loading>
+    <splash-screen v-if="inaccessible" @connect="connect()"></splash-screen>
     <div v-else id="application-wrapper">
       <div id="application-content">
         <app-header></app-header>
@@ -16,24 +16,37 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import Loading from '@/components/Loading.vue';
+import SplashScreen from '@/components/SplashScreen.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import { mapState } from 'vuex';
+import { DeniedReason } from '@/model/types';
 
 @Component({
-  computed: mapState(['loading']),
-  components: { AppHeader, Loading }
+  computed: mapState(['loading', 'accessDenied']),
+  components: { AppHeader, SplashScreen }
 })
 export default class App extends Vue {
   name: string;
   initialized: boolean = false;
+  accessDenied!: DeniedReason;
+  loading!: boolean;
 
   constructor() {
     super();
     this.name = 'Raiden dApp';
   }
 
+  get inaccessible() {
+    return (
+      !this.initialized ||
+      this.loading ||
+      this.accessDenied !== DeniedReason.UNDEFINED
+    );
+  }
+
   async connect() {
+    this.initialized = false;
+    this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
     await this.$raiden.connect();
     await this.$raiden.fetchTokens();
     this.initialized = true;
