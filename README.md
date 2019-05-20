@@ -81,21 +81,6 @@ With the SDK we want to make your life as a dApp dev easier:
 * We want to help you to enable your users to make token transfers using their consumer wallets like imToken or Metamask.
 * It should be possible to send tokens using low end devices, which would not be capable of running a full Raiden node.
 
-<center>
-<img 
-      width='750px' 
-      alt='' 
-      src="(https://user-images.githubusercontent.com/35398162/58000662-b6825f00-7ad9-11e9-9174-67bf67765365.png)/>
-</center>
-
-The goal of the Raiden dApp is a reference implementation of the Raiden Light Client SDK. It showcases how the Light Client SDK can be used.
-
-Withe the dApp we want to help you getting started easily with the Light Client SDK:
-
-* Using the app  should help you quickly understanding the core concepts of Raiden
-* You can look at the code to understand how your dApp could interact with the Light Client SDK
-* Fork the dApp to start quickly with your own Raiden project
-
 ## Architecture
 
 ### [Raiden Light Client SDK](./raiden/README.md)
