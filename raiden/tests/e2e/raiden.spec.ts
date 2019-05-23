@@ -3,12 +3,24 @@ import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber } from 'ethers/utils';
 import { get } from 'lodash';
 
+jest.mock('cross-fetch');
+import fetch from 'cross-fetch';
+
+jest.mock('raiden/utils', () => ({
+  ...jest.requireActual('raiden/utils'),
+  matrixRTT: jest.fn(async (server: string) => ({ server, rtt: Math.random() })),
+}));
+
 import { TestProvider } from './provider';
-import { MockStorage } from './mocks';
+import { MockStorage, MockMatrixRequestFn } from './mocks';
+
+import { request } from 'matrix-js-sdk';
 
 import { Raiden } from 'raiden/raiden';
 import { initialState, RaidenActionType, ShutdownReason } from 'raiden/store';
 import { ContractsInfo, RaidenContracts, ChannelState, Storage } from 'raiden/types';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -20,8 +32,16 @@ describe('Raiden', () => {
   let token: string, tokenNetwork: string;
   let partner: string;
 
+  let httpBackend: MockMatrixRequestFn;
+  let matrixServer = 'matrix.raiden.test';
+
   beforeAll(async () => {
     jest.setTimeout(15e3);
+
+    (fetch as jest.Mock).mockResolvedValue({
+      text: jest.fn(async () => `- ${matrixServer}`),
+    });
+
     let contracts: RaidenContracts;
     [info, contracts] = await provider.deployRaidenContracts();
     token = Object.keys(contracts.tokens)[0];
@@ -34,6 +54,11 @@ describe('Raiden', () => {
     if (snapId !== undefined) await provider.revert(snapId);
     snapId = await provider.snapshot();
     storage = new MockStorage();
+
+    // setup matrix mock http backend
+    httpBackend = new MockMatrixRequestFn(matrixServer);
+    request(httpBackend.requestFn.bind(httpBackend));
+
     raiden = await Raiden.create(provider, 0, storage, info);
     // wait token register to be fetched
     await raiden.getTokenList();
@@ -41,6 +66,7 @@ describe('Raiden', () => {
 
   afterEach(() => {
     raiden.stop();
+    httpBackend.stop();
   });
 
   test('create from other params and RaidenState', async () => {

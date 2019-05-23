@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
+import { requestCallback, RequestOpts } from 'matrix-js-sdk';
+
 import { Storage } from 'raiden/types';
 
 export const MockStorage: jest.Mock<
@@ -16,3 +19,111 @@ export const MockStorage: jest.Mock<
     }),
   };
 });
+
+export class MockMatrixRequestFn {
+  public constructor(server: string) {
+    this.endpoints['/login'] = (opts, callback) =>
+      this.respond(callback, 403, { errcode: 'M_FORBIDDEN', error: 'Invalid password' });
+    this.endpoints['/register'] = (opts, callback) => {
+      let body = opts.body;
+      if (typeof body === 'string') body = JSON.parse(body);
+      const username = body.username;
+      return this.respond(callback, 200, {
+        user_id: `@${username}:${server}`,
+        access_token: `${username}_access_token`,
+        device_id: `${username}_device_id`,
+      });
+    };
+    let i = 0;
+    this.endpoints['/sync'] = (opts, callback) =>
+      this.respond(callback, 200, { next_batch: `batch_${i++}`, rooms: {}, presence: {} }, 3e3);
+    this.endpoints['/pushrules'] = (opts, callback) => this.respond(callback, 200, {});
+    this.endpoints['/filter'] = (opts, callback) =>
+      this.respond(callback, 200, { filter_id: 'a filter id' });
+
+    const displayNames: { [userId: string]: string } = {};
+    this.endpoints['/displayname'] = (opts, callback) => {
+      const match = /\profile\/([^/]+)/i.exec(opts.uri),
+        userId = match && match[1];
+      if (opts.method === 'PUT') {
+        const body = JSON.parse(opts.body),
+          displayName = body['displayname'];
+        if (!userId || !displayName) return this.respond(callback, 400, {});
+        displayNames[userId] = displayName;
+        return this.respond(callback, 200, {});
+      } else {
+        if (userId && userId in displayNames)
+          return this.respond(callback, 200, { displayname: displayNames[userId] });
+        return this.respond(callback, 404, {});
+      }
+    };
+    this.endpoints['/search'] = (opts, callback) => {
+      const term = JSON.parse(opts.body)['search_term'];
+      return this.respond(callback, 200, {
+        results: Object.entries(displayNames)
+          .filter(([userId]) => userId.includes(term))
+          .map(([user_id, display_name]) => ({ user_id, display_name })),
+      });
+    };
+
+    this.endpoints['/join'] = (opts, callback) => this.respond(callback, 200, {});
+    this.endpoints['/versions'] = (opts, callback) => this.respond(callback, 200, {});
+  }
+
+  public requestFn(opts: RequestOpts, callback: requestCallback): any {
+    if (this.stopped) {
+      callback(new Error('stopped!'));
+      return;
+    }
+    for (const part in this.endpoints) {
+      if (opts.uri.includes(part)) {
+        const cancel = this.endpoints[part](opts, callback);
+        if (cancel) return { abort: cancel };
+        else return;
+      }
+    }
+    callback(new Error(`Endpoint not found! ${opts.method} ${opts.uri}`));
+  }
+
+  public respond(
+    callback: requestCallback,
+    code: number,
+    data: any,
+    timeout?: number,
+  ): () => void {
+    let body: string, type: string;
+    if (typeof data === 'string') {
+      body = data;
+      type = 'plain/text';
+    } else {
+      body = JSON.stringify(data);
+      type = 'application/json';
+    }
+
+    let timeoutId: NodeJS.Timeout;
+    let cancel = () => {
+      clearTimeout(timeoutId);
+      callback(new Error('cancelled!'));
+    };
+    timeoutId = setTimeout(() => {
+      callback(undefined, { statusCode: code, headers: { 'content-type': type } }, body);
+      const idx = this.cancelations.indexOf(cancel);
+      if (idx >= 0) this.cancelations.splice(idx, 1);
+    }, timeout || 0);
+    this.cancelations.push(cancel);
+    return cancel;
+  }
+
+  public stop(): void {
+    this.stopped = true;
+    for (const cancel of this.cancelations) {
+      cancel();
+    }
+  }
+
+  private cancelations: (() => void)[] = [];
+  private stopped = false;
+  public endpoints: {
+    [path: string]: (opts: RequestOpts, callback: requestCallback) => () => void;
+  } = {};
+}

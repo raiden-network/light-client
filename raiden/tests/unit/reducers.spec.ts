@@ -21,6 +21,7 @@ import {
   newBlock,
   raidenInit,
   tokenMonitored,
+  matrixSetup,
 } from 'raiden/store';
 
 describe('raidenReducer', () => {
@@ -407,6 +408,18 @@ describe('raidenReducer', () => {
         channelSettled(tokenNetwork, partner, channelId, settleBlock + 2, '0xsettleTxHash'),
       ].reduce(raidenReducer, state);
       expect(get(newState.tokenNetworks, [tokenNetwork, partner])).toBeUndefined();
+    });
+
+    test('matrixSetup', () => {
+      const setup = {
+        server: 'http://matrix.raiden.tld',
+        userId: '@0xmyaddress:matrix.raiden.tld',
+        accessToken: 'access_token_123',
+        deviceId: 'mydevice',
+        displayName: '0xuserIdSignature',
+      };
+      const newState = [matrixSetup(setup)].reduce(raidenReducer, state);
+      expect(get(newState, ['transport', 'matrix'])).toBe(setup);
     });
   });
 });
