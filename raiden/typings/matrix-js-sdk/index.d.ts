@@ -90,6 +90,7 @@ declare module 'matrix-js-sdk' {
     private _requestTokenFromEndpoint(endpoint: string, params: object): Promise<string>;
 
     public startClient(opts: StartClientOpts | number): Promise<any>; // backwards compat with historyLen
+    public stopClient(): void;
 
     // base-apis interface
     public loginWithPassword(
@@ -390,9 +391,20 @@ declare module 'matrix-js-sdk' {
     cryptoStore?: ICryptoStore;
   }
 
-  export interface RequestOpts {}
+  export interface RequestOpts {
+    uri: string;
+    method: string;
+    withCredentials?: boolean;
+    qs?: any;
+    qsStringifyOptions?: any;
+    useQuerystring?: boolean;
+    body?: any;
+    json?: boolean;
+    timeout?: number;
+    headers?: any;
+  }
 
-  export type requestCallback = (err: Error, response: any, body: any) => void;
+  export type requestCallback = (err?: Error, response?: any, body?: any) => void;
   export type requestFunction = (opts: RequestOpts, callback: requestCallback) => void;
   //export type MatrixSchedulerProcessFunction = (Event: Models.MatrixEvent)=> Promise<void>;
 
@@ -732,6 +744,8 @@ declare module 'matrix-js-sdk' {
   }
 
   */
+
+  export function request(r: requestFunction): void;
 }
 
 declare module 'matrix-js-sdk/lib/utils' {
