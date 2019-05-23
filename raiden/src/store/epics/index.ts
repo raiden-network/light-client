@@ -27,7 +27,7 @@ import {
   channelCloseEpic,
   channelSettleEpic,
 } from './channel';
-import { matrixMonitorPresenceEpic, matrixPresenceUpdateEpic } from './matrix';
+import { matrixShutdownEpic, matrixMonitorPresenceEpic, matrixPresenceUpdateEpic } from './matrix';
 
 export const raidenEpics = (
   action$: Observable<RaidenActions>,
@@ -57,6 +57,7 @@ export const raidenEpics = (
     channelCloseEpic,
     channelSettleEpic,
     channelMatrixMonitorPresenceEpic,
+    matrixShutdownEpic,
     matrixMonitorPresenceEpic,
     matrixPresenceUpdateEpic,
   ]).pipe(
