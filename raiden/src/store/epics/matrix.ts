@@ -3,6 +3,7 @@ import { Observable, from, of, EMPTY, fromEvent } from 'rxjs';
 import {
   catchError,
   filter,
+  ignoreElements,
   map,
   mergeMap,
   withLatestFrom,
@@ -58,6 +59,19 @@ const getPresences$ = (action$: Observable<RaidenActions>): Observable<Presences
 // still there, so we consider the user as available then
 const AVAILABLE = ['online', 'unavailable'];
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
+
+/**
+ * Calls matrix.stopClient when raiden is shutting down, i.e. action$ completes
+ */
+export const matrixShutdownEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+  { matrix$ }: RaidenEpicDeps,
+): Observable<RaidenActions> =>
+  matrix$.pipe(
+    tap(matrix => action$.subscribe(undefined, undefined, () => matrix.stopClient())),
+    ignoreElements(),
+  );
 
 /**
  * Handles MatrixRequestMonitorPresenceAction and emits a MatrixPresenceUpdateAction
@@ -171,7 +185,6 @@ export const matrixPresenceUpdateEpic = (
   { matrix$ }: RaidenEpicDeps,
 ): Observable<MatrixPresenceUpdateAction> =>
   matrix$.pipe(
-    tap(matrix => console.warn('MATRIX', matrix)),
     // when matrix finishes initialization, register to matrix presence events
     switchMap(matrix =>
       // matrix's 'User.presence' sometimes fail to fire, but generic 'event' is always fired,
