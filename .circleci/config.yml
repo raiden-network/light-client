@@ -54,12 +54,6 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - restore_cache: *dapp_package_lock_key
-      - run: 
-          name: Install Rsync
-          command: sudo apt install rsync
-      - run:
-          name: Synchronise the sdk module
-          command: ./sync-sdk.sh
       - save_cache:
           <<: *dapp_package_lock_key
           paths:

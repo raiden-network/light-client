@@ -182,14 +182,6 @@ git clone https://github.com/raiden-network/light-client.git
 cd light-client/raiden-dapp
 ```
 
-In order to use the dApp you first have to run `sync-sdk.sh`, which is located in the `raiden-dapp` directory. The script builds the sdk and syncs the module with the `node_modules` of the wallet application. And installs the required dependencies.
-
-```bash
-./sync-sdk.sh
-```
-
-If you have problems executing the script we recommend you to follow the setup manually.
-
 #### Build the Raiden SDK
 
  First you need to build the sdk. For this you have to go to the `raiden` directory and run the following commands.
@@ -209,15 +201,7 @@ cd ../raiden-dapp
 npm install
 ```
 
-This will also create a symbolic link in `raiden-wallet/node_modules/raiden` to `raiden`.
-
-Due to the way webpack loads it's module dependencies this will not work, so another setup is required.
-You have to delete the symbolic link and copy the contents of `raiden` to `raiden-wallet/node_modules/raiden`.
-
-```bash
-rm -rf ./node_modules/raiden
-rsync --stats -aAvX ../raiden/* node_modules/raiden
-```
+This will also create a symbolic link in `raiden-dapp/node_modules/raiden` to `raiden`.
 
 #### Running the dApp locally
 
