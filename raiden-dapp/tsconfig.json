@@ -23,7 +23,8 @@
       ],
       "vuex": ["typings/vuex.d.ts"],
       "rxjs": ["node_modules/rxjs"],
-      "rxjs/*": ["node_modules/rxjs/*"]
+      "rxjs/*": ["node_modules/rxjs/*"],
+      "ethers/*": ["node_modules/ethers/*"]
     },
     "lib": [
       "esnext",

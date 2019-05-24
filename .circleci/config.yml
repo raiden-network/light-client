@@ -38,7 +38,7 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - restore_cache: *sdk_package_lock_key
-      - run: npm ci
+      - run: npm install
       - save_cache:
           <<: *sdk_package_lock_key
           paths:
@@ -54,12 +54,10 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - restore_cache: *dapp_package_lock_key
-      - run: 
-          name: Install Rsync
-          command: sudo apt install rsync
-      - run:
-          name: Synchronise the sdk module
-          command: ./sync-sdk.sh
+      - run: cd ../raiden && sudo npm link
+      - run: npm link raiden
+      - run: npm install --save raiden
+      - run: npm install
       - save_cache:
           <<: *dapp_package_lock_key
           paths:

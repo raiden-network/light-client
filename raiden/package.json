@@ -2,17 +2,19 @@
   "name": "raiden",
   "version": "0.0.1",
   "description": "Raiden Light Client library and utilities",
-  "main": "dist/index.js",
+  "main": "dist:cjs/index.js",
+  "module": "dist/index.js",
+  "esnext": "dist/index.js",
   "typescript:main": "src/index.ts",
   "types": "dist/index.d.ts",
   "scripts": {
-    "start": "npm run contracts && tsc -p src/ -w",
-    "build": "npm run contracts && tsc -p src/",
-    "test": "NODE_ENV=development jest",
+    "start": "npm run contracts && tsc -p src -w",
+    "build": "npm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json",
+    "test": "npm run build && NODE_ENV=development jest",
     "lint": "eslint src/**/*.ts tests/**/*.ts",
-    "clean": "rimraf dist/ contracts/ .coverage/",
+    "clean": "rimraf dist/ dist:cjs/ contracts/ .coverage/",
     "contracts": "typechain --target=ethers 'src/abi/*.json' --outDir contracts",
-    "postinstall": "npm run contracts"
+    "postinstall": "npm run build"
   },
   "repository": {
     "type": "git",
