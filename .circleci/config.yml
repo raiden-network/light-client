@@ -54,6 +54,9 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - restore_cache: *dapp_package_lock_key
+      - run: cd ../raiden && sudo npm link
+      - run: npm link raiden
+      - run: npm install --save raiden
       - run: npm install
       - save_cache:
           <<: *dapp_package_lock_key
