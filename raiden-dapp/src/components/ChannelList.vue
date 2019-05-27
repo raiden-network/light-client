@@ -3,7 +3,11 @@
     <v-layout justify-center row class="list-container">
       <Transition name="fade-transition" mode="out-in">
         <div
-          v-show="visibleCloseConfirmation || visibleSettleConfirmation"
+          v-show="
+            visibleCloseConfirmation ||
+              visibleSettleConfirmation ||
+              visibleDeposit
+          "
           class="overlay"
           @click="closeConfirmation()"
         ></div>
@@ -63,6 +67,14 @@
                   {{ selectedChannel.token }}?
                 </confirmation>
               </div>
+              <div v-else-if="visibleDeposit === `channel-${channel.id}`">
+                <channel-deposit
+                  :identifier="channel.id"
+                  :token="token"
+                  @confirm="depositConfirmed($event)"
+                  @cancel="depositCancelled()"
+                ></channel-deposit>
+              </div>
               <div v-else class="area-content">
                 <channel-life-cycle :state="channel.state"></channel-life-cycle>
                 <v-layout justify-space-around row>
@@ -102,14 +114,6 @@
         </v-list>
       </v-flex>
     </v-layout>
-
-    <deposit-dialog
-      :display="depositModalVisible"
-      :channel="selectedChannel"
-      :token="token"
-      @confirm="depositConfirmed($event)"
-      @cancel="depositCancelled()"
-    ></deposit-dialog>
     <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
       {{ message }}
       <v-btn color="primary" flat @click="snackbar = false">
@@ -122,18 +126,18 @@
 <script lang="ts">
 import { Component, Mixins, Prop } from 'vue-property-decorator';
 import { RaidenChannel } from 'raiden';
-import DepositDialog from '@/components/dialogs/DepositDialog.vue';
+import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import { Token, TokenPlaceholder } from '@/model/types';
-import { BalanceUtils } from '@/utils/balance-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
 import Confirmation from '@/components/Confirmation.vue';
+import { BigNumber } from 'ethers/utils';
 
 @Component({
   components: {
     Confirmation,
     ChannelLifeCycle,
-    DepositDialog
+    ChannelDeposit
   }
 })
 export default class ChannelList extends Mixins(BlockieMixin) {
@@ -146,7 +150,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   selectedChannel: RaidenChannel | null = null;
   visibleCloseConfirmation: string = '';
   visibleSettleConfirmation: string = '';
-  depositModalVisible: boolean = false;
+  visibleDeposit: string = '';
   message: string = '';
   snackbar: boolean = false;
 
@@ -191,19 +195,15 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
 
   private dismissDepositModal() {
-    this.depositModalVisible = false;
+    this.visibleDeposit = '';
     this.selectedChannel = null;
   }
 
-  async depositConfirmed(deposit: string) {
+  async depositConfirmed(deposit: BigNumber) {
     const { token, partner } = this.selectedChannel!;
     this.dismissDepositModal();
     try {
-      await this.$raiden.deposit(
-        token,
-        partner,
-        BalanceUtils.parse(deposit, this.token!.decimals)
-      );
+      await this.$raiden.deposit(token, partner, deposit);
       this.showMessage('Deposit was successful');
     } catch (e) {
       this.showMessage('Deposit failed');
@@ -212,7 +212,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   deposit(channel: RaidenChannel) {
     this.selectedChannel = channel;
-    this.depositModalVisible = true;
+    this.visibleDeposit = `channel-${channel.id}`;
   }
 
   private dismissSettleModal() {
@@ -282,7 +282,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
 .expanded-area {
   background-color: #323232;
-  height: 210px;
+  height: 250px;
   .area-content {
     padding: 25px;
   }

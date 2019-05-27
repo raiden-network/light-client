@@ -19,6 +19,7 @@ import RaidenService, {
 import Filters from '@/filters';
 import flushPromises from 'flush-promises';
 import { BigNumber } from 'ethers/utils';
+import { mockInput } from '../utils/interaction-utils';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -48,14 +49,6 @@ describe('ChannelList.vue', function() {
       mocks: {
         $raiden: raiden,
         $identicon: $identicon
-      },
-      stubs: {
-        DepositDialog: `
-        <div>
-            <button id="deposit-confirm" @click="$emit('confirm', '1.0')"></button>
-            <button id="deposit-cancel" @click="$emit('cancel')"></button>
-        </div>
-        `
       }
     });
   });
@@ -148,16 +141,33 @@ describe('ChannelList.vue', function() {
   });
 
   describe('depositing in a channel', function() {
-    it('should deposit to the channel when confirmed', async function() {
-      raiden.deposit = jest.fn().mockReturnValue(null);
+    test('depositing 0.0 should just dismiss', async () => {
+      raiden.deposit = jest.fn().mockResolvedValue(null);
       const $data = wrapper.vm.$data;
-      expect($data.depositModalVisible).toBe(false);
+      expect($data.visibleDeposit).toBe('');
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
-      expect($data.depositModalVisible).toBe(true);
-      wrapper.find('#deposit-confirm').trigger('click');
+      expect($data.visibleDeposit).toBe('channel-278');
+      wrapper.find('#confirm-278').trigger('click');
 
-      expect($data.depositModalVisible).toBe(false);
+      expect($data.visibleDeposit).toBe('');
+      expect($data.selectedChannel).toBeNull();
+
+      await flushPromises();
+      expect(raiden.deposit).toHaveBeenCalledTimes(0);
+    });
+
+    it('should deposit to the channel when confirmed', async function() {
+      raiden.deposit = jest.fn().mockResolvedValue(null);
+      const $data = wrapper.vm.$data;
+      expect($data.visibleDeposit).toBe('');
+      wrapper.find('#channel-278').trigger('click');
+      wrapper.find('#deposit-0').trigger('click');
+      expect($data.visibleDeposit).toBe('channel-278');
+      mockInput(wrapper, '0.5');
+      wrapper.find('#confirm-278').trigger('click');
+
+      expect($data.visibleDeposit).toBe('');
       expect($data.selectedChannel).toBeNull();
 
       await flushPromises();
@@ -165,15 +175,16 @@ describe('ChannelList.vue', function() {
       expect(raiden.deposit).toHaveBeenCalledWith(
         TestData.openChannel.token,
         TestData.openChannel.partner,
-        new BigNumber(10 ** 5)
+        new BigNumber(0.5 * 10 ** 5)
       );
     });
 
     it('should show a success message on deposit success', async function() {
-      raiden.deposit = jest.fn().mockReturnValue(null);
+      raiden.deposit = jest.fn().mockResolvedValue(null);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
-      wrapper.find('#deposit-confirm').trigger('click');
+      mockInput(wrapper, '0.5');
+      wrapper.find('#confirm-278').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Deposit was successful');
@@ -183,19 +194,20 @@ describe('ChannelList.vue', function() {
       raiden.deposit = jest.fn().mockRejectedValue(new ChannelDepositFailed());
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
-      wrapper.find('#deposit-confirm').trigger('click');
+      mockInput(wrapper, '0.5');
+      wrapper.find('#confirm-278').trigger('click');
       await flushPromises();
       expect(wrapper.vm.$data.snackbar).toBe(true);
       expect(wrapper.vm.$data.message).toBe('Deposit failed');
     });
 
     it('should dismiss the dialog when cancel is pressed', function() {
-      raiden.deposit = jest.fn().mockReturnValue(null);
+      raiden.deposit = jest.fn().mockResolvedValue(null);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
-      expect(wrapper.vm.$data.depositModalVisible).toBe(true);
-      wrapper.find('#deposit-cancel').trigger('click');
-      expect(wrapper.vm.$data.depositModalVisible).toBe(false);
+      expect(wrapper.vm.$data.visibleDeposit).toBe('channel-278');
+      wrapper.find('#cancel-278').trigger('click');
+      expect(wrapper.vm.$data.visibleDeposit).toBe('');
       expect(raiden.deposit).toHaveBeenCalledTimes(0);
     });
   });
