@@ -183,14 +183,22 @@ export const initMatrixEpic = (
           MATRIX_KNOWN_SERVERS_URL[network.name] || MATRIX_KNOWN_SERVERS_URL.default;
         // fetch servers list and use the one with shortest http round trip time (rtt)
         return from(fetch(knownServersUrl)).pipe(
-          mergeMap(response => response.text()),
+          mergeMap(response => {
+            if (!response.ok)
+              return throwError(
+                new Error(
+                  `Could not fetch server list from "${knownServersUrl}" => ${response.status}`,
+                ),
+              );
+            return response.text();
+          }),
           mergeMap(text => from(yamlListToArray(text))),
           mergeMap(server => matrixRTT(server)),
           toArray(),
           map(rtts => sortBy(rtts, ['rtt'])),
           map(rtts => {
-            if (!rtts[0] || !rtts[0].rtt)
-              throw new Error(`Could not contact any matrix servers: ${rtts}`);
+            if (!rtts[0] || typeof rtts[0].rtt !== 'number' || isNaN(rtts[0].rtt))
+              throw new Error(`Could not contact any matrix servers: ${JSON.stringify(rtts)}`);
             return rtts[0].server;
           }),
           map(server => ({ server: server.includes('://') ? server : `https://${server}` })),
