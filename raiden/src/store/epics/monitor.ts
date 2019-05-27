@@ -1,6 +1,6 @@
 import { ofType } from 'redux-observable';
 import { Observable, defer, of, merge, EMPTY } from 'rxjs';
-import { filter, map, mergeMap, takeUntil } from 'rxjs/operators';
+import { filter, map, mergeMap, takeWhile } from 'rxjs/operators';
 
 import { Event } from 'ethers/contract';
 import { BigNumber } from 'ethers/utils';
@@ -108,14 +108,6 @@ export const channelMonitoredEpic = (
         closedFilter = tokenNetworkContract.filters.ChannelClosed(action.id, null, null),
         settledFilter = tokenNetworkContract.filters.ChannelSettled(action.id, null, null);
 
-      // observable that emits iff this channel was settled and therefore was removed from state
-      const unsubscribeChannelNotification = action$.pipe(
-        ofType<RaidenActions, ChannelSettledAction>(RaidenActionType.CHANNEL_SETTLED),
-        filter(
-          settled => settled.tokenNetwork === action.tokenNetwork && settled.id === action.id,
-        ),
-      );
-
       // at subscription time, if there's already a filter, skip (return completed observable)
       return defer(() =>
         tokenNetworkContract.listenerCount(depositFilter)
@@ -173,7 +165,7 @@ export const channelMonitoredEpic = (
                   ),
                 ),
               ),
-            ).pipe(takeUntil(unsubscribeChannelNotification)),
+            ).pipe(takeWhile(a => a.type !== RaidenActionType.CHANNEL_SETTLED, true)),
       );
     }),
   );

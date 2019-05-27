@@ -100,7 +100,6 @@ export const matrixMonitorPresenceEpic = (
 
       const validUsers: User[] = [];
       for (const user of matrix.getUsers()) {
-        if (!user.userId.includes(action.address.toLowerCase())) continue;
         if (!user.displayName) continue;
         if (!user.presence) continue;
         let recovered: string;
@@ -147,7 +146,9 @@ export const matrixMonitorPresenceEpic = (
           if (validUsers.length === 0)
             // if no valid user could be found, throw an error to be handled below
             throw new Error(
-              `Could not find any user with valid signature for ${action.address} in ${results}`,
+              `Could not find any user with valid signature for ${
+                action.address
+              } in ${JSON.stringify(results)}`,
             );
           else return validUsers;
         }),
