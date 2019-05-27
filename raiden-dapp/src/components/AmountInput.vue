@@ -137,6 +137,10 @@ $header-vertical-margin-mobile: 2rem;
 
 $dark_color: #050505;
 $light_color: #ffffff;
+$dark_border: #fbfbfb;
+$light_border: #050505;
+$dark_background: #1e1e1e;
+$light_background: #e4e4e4;
 
 .light {
   color: $dark_color !important;
@@ -144,8 +148,19 @@ $light_color: #ffffff;
   /deep/ input {
     color: $dark_color !important;
   }
+
   /deep/ .v-messages {
     color: $dark_color !important;
+  }
+
+  .invalid /deep/ .v-messages {
+    border-color: $light_border;
+    background-color: $light_background;
+  }
+
+  .invalid /deep/ .v-messages:after {
+    border-color: $light_border;
+    background-color: $light_background;
   }
 }
 
@@ -159,12 +174,21 @@ $light_color: #ffffff;
   /deep/ .v-messages {
     color: $light_color !important;
   }
+
+  .invalid /deep/ .v-messages {
+    border-color: $dark_border;
+    background-color: $dark_background;
+  }
+
+  .invalid /deep/ .v-messages:after {
+    border-color: $dark_border;
+    background-color: $dark_background;
+  }
 }
 
 .invalid /deep/ .v-messages {
-  border: 1px solid #050505 !important;
+  border: 1px solid !important;
   border-radius: 5px;
-  background-color: #e4e4e4;
 }
 
 .invalid /deep/ .v-messages:after {
@@ -176,7 +200,6 @@ $light_color: #ffffff;
   left: 50%;
   bottom: 90%;
   display: inline-block;
-  background-color: #e4e4e4;
   padding: 3px;
   transform: rotate(-135deg);
   -webkit-transform: rotate(-135deg);
