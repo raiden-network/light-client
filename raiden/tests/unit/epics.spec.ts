@@ -1,12 +1,21 @@
-import { merge, of, from, timer } from 'rxjs';
+/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
+import { raidenEpicDeps, makeLog, makeMatrix } from './mocks';
+
+import { merge, of, from, timer, EMPTY, AsyncSubject } from 'rxjs';
 import { first, tap, ignoreElements, takeUntil, toArray } from 'rxjs/operators';
 import { marbles } from 'rxjs-marbles/jest';
 import { range } from 'lodash';
 
 import { AddressZero, Zero } from 'ethers/constants';
-import { bigNumberify } from 'ethers/utils';
+import { bigNumberify, verifyMessage } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { ContractTransaction } from 'ethers/contract';
+
+jest.mock('matrix-js-sdk');
+import { createClient } from 'matrix-js-sdk';
+
+jest.mock('cross-fetch');
+import fetch from 'cross-fetch';
 
 import { RaidenState, initialState } from 'raiden/store/state';
 import { raidenReducer } from 'raiden/store/reducers';
@@ -27,13 +36,20 @@ import {
   channelClosed,
   channelSettleable,
   channelSettle,
+  channelSettled,
+  matrixRequestMonitorPresence,
+  matrixPresenceUpdate,
 } from 'raiden/store/actions';
 
 import { raidenEpics } from 'raiden/store/epics';
-import { initMonitorProviderEpic } from 'raiden/store/epics/init';
+import { initMonitorProviderEpic, initMatrixEpic } from 'raiden/store/epics/init';
 import { stateOutputEpic, actionOutputEpic } from 'raiden/store/epics/output';
 import { newBlockEpic } from 'raiden/store/epics/block';
-import { tokenMonitoredEpic, channelMonitoredEpic } from 'raiden/store/epics/monitor';
+import {
+  tokenMonitoredEpic,
+  channelMonitoredEpic,
+  channelMatrixMonitorPresenceEpic,
+} from 'raiden/store/epics/monitor';
 import {
   channelOpenEpic,
   channelOpenedEpic,
@@ -41,8 +57,11 @@ import {
   channelCloseEpic,
   channelSettleEpic,
 } from 'raiden/store/epics/channel';
-
-import { raidenEpicDeps, makeLog } from './mocks';
+import {
+  matrixShutdownEpic,
+  matrixMonitorPresenceEpic,
+  matrixPresenceUpdateEpic,
+} from 'raiden/store/epics/matrix';
 
 describe('raidenEpics', () => {
   // mocks for all RaidenEpicDeps properties
@@ -63,6 +82,23 @@ describe('raidenEpics', () => {
     tokenContract = depsMock.getTokenContract(token);
   const settleTimeout = 500,
     channelId = 17;
+
+  const matrixServer = 'matrix.raiden.test',
+    userId = `@${depsMock.address.toLowerCase()}:${matrixServer}`,
+    accessToken = 'access_token',
+    deviceId = 'device_id',
+    displayName = 'display_name',
+    partnerUserId = `@${partner.toLowerCase()}:${matrixServer}`;
+
+  const matrix = makeMatrix(matrixServer);
+
+  (createClient as jest.Mock).mockReturnValue(matrix);
+
+  (fetch as jest.Mock).mockResolvedValue({
+    ok: true,
+    status: 200,
+    text: jest.fn(async () => `- ${matrixServer}`),
+  });
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -127,6 +163,7 @@ describe('raidenEpics', () => {
           newBlock(633),
           channelSettle(tokenNetwork, partner), // channel is left in 'settling' state
         ].reduce(raidenReducer, state);
+
         /* this test requires mocked provider, or else emit is called with setTimeout and doesn't run
          * before the return of the function.
          */
@@ -189,6 +226,84 @@ describe('raidenEpics', () => {
       await expect(raidenEpics(action$, state$, depsMock).toPromise()).resolves.toEqual(
         raidenShutdown(error),
       );
+    });
+
+    test('matrix stored setup', async () => {
+      const action$ = of(raidenInit()),
+        state$ = of({
+          ...state,
+          transport: {
+            matrix: {
+              server: matrixServer,
+              userId,
+              accessToken,
+              deviceId,
+              displayName,
+            },
+          },
+        });
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
+        type: RaidenActionType.MATRIX_SETUP,
+        setup: {
+          server: matrixServer,
+          userId,
+          accessToken: expect.any(String),
+          deviceId: expect.any(String),
+          displayName: expect.any(String),
+        },
+      });
+    });
+
+    test('matrix fetch servers list', async () => {
+      const action$ = of(raidenInit()),
+        state$ = of(state);
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
+        type: RaidenActionType.MATRIX_SETUP,
+        setup: {
+          server: `https://${matrixServer}`,
+          userId,
+          accessToken: expect.any(String),
+          deviceId: expect.any(String),
+          displayName: expect.any(String),
+        },
+      });
+    });
+
+    test('matrix throws if can not fetch servers list', async () => {
+      expect.assertions(2);
+      const action$ = of(raidenInit()),
+        state$ = of(state);
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: jest.fn(async () => ''),
+      });
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).rejects.toThrow(
+        'Could not fetch server list',
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('matrix throws if can not contact any server from list', async () => {
+      expect.assertions(2);
+      const action$ = of(raidenInit()),
+        state$ = of(state);
+      // mock*Once is a stack. this 'fetch' will be for the servers list
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: jest.fn(async () => `- ${matrixServer}`),
+      });
+      // and this one for matrixRTT. 404 will reject it
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: jest.fn(async () => ''),
+      });
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).rejects.toThrow(
+        'Could not contact any matrix servers',
+      );
+      expect(fetch).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -651,7 +766,7 @@ describe('raidenEpics', () => {
 
       expect(depsMock.provider.removeListener).not.toHaveBeenCalled();
       const promise = channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
+        .pipe(takeUntil(timer(100)))
         .toPromise();
 
       expect(
@@ -682,14 +797,9 @@ describe('raidenEpics', () => {
         }),
       );
 
-      await expect(promise).resolves.toMatchObject({
-        type: RaidenActionType.CHANNEL_SETTLED,
-        tokenNetwork,
-        partner,
-        id: channelId,
-        settleBlock,
-        txHash: '0xsettleTxHash',
-      });
+      await expect(promise).resolves.toEqual(
+        channelSettled(tokenNetwork, partner, channelId, settleBlock, '0xsettleTxHash'),
+      );
 
       // ensure ChannelSettledAction completed channel monitoring and unsubscribed from events
       expect(depsMock.provider.removeListener).toHaveBeenCalledWith(
@@ -727,7 +837,15 @@ describe('raidenEpics', () => {
     });
   });
 
-  describe('chanelDepositEpic', () => {
+  describe('channelMatrixMonitorPresenceEpic', () => {
+    test('channelMonitored triggers matrixRequestMonitorPresence', async () => {
+      const action$ = of<RaidenActions>(channelMonitored(tokenNetwork, partner, channelId));
+      const promise = channelMatrixMonitorPresenceEpic(action$).toPromise();
+      await expect(promise).resolves.toEqual(matrixRequestMonitorPresence(partner));
+    });
+  });
+
+  describe('channelDepositEpic', () => {
     const deposit = bigNumberify(1023),
       openBlock = 121;
 
@@ -1168,6 +1286,307 @@ describe('raidenEpics', () => {
         expect.anything(), // partner locksroot
       );
       expect(settleTx.wait).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('matrixShutdownEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('stopClient called on action$ completion', async () => {
+      expect.assertions(3);
+      expect(matrix.stopClient).not.toHaveBeenCalled();
+      await expect(
+        matrixShutdownEpic(EMPTY, EMPTY, depsMock).toPromise(),
+      ).resolves.toBeUndefined();
+      expect(matrix.stopClient).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('matrixMonitorPresenceEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('fails when users does not have displayName', async () => {
+      expect.assertions(1);
+      const action$ = of(matrixRequestMonitorPresence(partner)),
+        state$ = of(state);
+
+      matrix.getUsers.mockImplementationOnce(() => [
+        {
+          userId: partnerUserId,
+          displayName: undefined,
+          presence: 'online',
+          lastPresenceTs: 123,
+        },
+      ]);
+      matrix.searchUserDirectory.mockImplementationOnce(async () => ({
+        limited: false,
+        results: [{ user_id: partnerUserId }],
+      }));
+
+      await expect(
+        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED,
+        address: partner,
+        error: expect.any(Error),
+      });
+    });
+
+    test('fails when users does not have valid addresses', async () => {
+      expect.assertions(1);
+      const action$ = of(matrixRequestMonitorPresence(partner)),
+        state$ = of(state);
+
+      matrix.getUsers.mockImplementationOnce(() => [
+        {
+          userId: `@${token}:${matrixServer}`,
+          displayName: 'display_name',
+          presence: 'online',
+          lastPresenceTs: 123,
+        },
+      ]);
+      matrix.searchUserDirectory.mockImplementationOnce(async () => ({
+        limited: false,
+        results: [{ user_id: `@invalidUser:${matrixServer}`, display_name: 'display_name' }],
+      }));
+
+      await expect(
+        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED,
+        address: partner,
+        error: expect.any(Error),
+      });
+    });
+
+    test('fails when users does not have presence or unknown address', async () => {
+      expect.assertions(1);
+      const action$ = of(matrixRequestMonitorPresence(partner)),
+        state$ = of(state);
+
+      matrix.getUsers.mockImplementationOnce(() => [
+        {
+          userId: partnerUserId,
+          displayName: 'display_name',
+          presence: undefined,
+          lastPresenceTs: 123,
+        },
+      ]);
+      (verifyMessage as jest.Mock).mockReturnValueOnce(token);
+      matrix.searchUserDirectory.mockImplementationOnce(async () => ({
+        limited: false,
+        results: [{ user_id: partnerUserId, display_name: 'display_name' }],
+      }));
+
+      await expect(
+        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED,
+        address: partner,
+        error: expect.any(Error),
+      });
+    });
+
+    test('fails when verifyMessage throws', async () => {
+      expect.assertions(1);
+      const action$ = of(matrixRequestMonitorPresence(partner)),
+        state$ = of(state);
+
+      matrix.getUsers.mockImplementationOnce(() => [
+        {
+          userId: partnerUserId,
+          displayName: 'display_name',
+          presence: 'online',
+          lastPresenceTs: 123,
+        },
+      ]);
+      matrix.searchUserDirectory.mockImplementationOnce(async () => ({
+        limited: false,
+        results: [{ user_id: partnerUserId, display_name: 'display_name' }],
+      }));
+      (verifyMessage as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('invalid signature');
+      });
+      (verifyMessage as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('invalid signature');
+      });
+
+      await expect(
+        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED,
+        address: partner,
+        error: expect.any(Error),
+      });
+    });
+
+    test('success with previously monitored user', async () => {
+      expect.assertions(1);
+      const action$ = of(
+          matrixPresenceUpdate(partner, partnerUserId, true),
+          matrixRequestMonitorPresence(partner),
+        ),
+        state$ = of(state);
+      await expect(
+        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_PRESENCE_UPDATE,
+        address: partner,
+        userId: partnerUserId,
+        available: true,
+        ts: expect.any(Number),
+      });
+    });
+
+    test('success with matrix cached user', async () => {
+      expect.assertions(1);
+      const action$ = of(matrixRequestMonitorPresence(partner)),
+        state$ = of(state);
+      matrix.getUsers.mockImplementationOnce(() => [
+        {
+          userId: partnerUserId,
+          displayName: 'partner_display_name',
+          presence: 'online',
+          lastPresenceTs: 123,
+        },
+      ]);
+      await expect(
+        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_PRESENCE_UPDATE,
+        address: partner,
+        userId: partnerUserId,
+        available: true,
+        ts: expect.any(Number),
+      });
+    });
+
+    test('success with searchUserDirectory and getUserPresence', async () => {
+      expect.assertions(1);
+      const action$ = of(matrixRequestMonitorPresence(partner)),
+        state$ = of(state);
+      await expect(
+        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_PRESENCE_UPDATE,
+        address: partner,
+        userId: partnerUserId,
+        available: true,
+        ts: expect.any(Number),
+      });
+    });
+  });
+
+  describe('matrixPresenceUpdateEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('success presence update', async () => {
+      expect.assertions(1);
+      const action$ = of(
+          matrixRequestMonitorPresence(partner),
+          matrixPresenceUpdate(partner, partnerUserId, true, 123),
+        ),
+        state$ = of(state);
+
+      const promise = matrixPresenceUpdateEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      matrix.emit('event', {
+        getType: () => 'm.presence',
+        getSender: () => partnerUserId,
+      });
+
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_PRESENCE_UPDATE,
+        address: partner,
+        userId: partnerUserId,
+        available: false,
+        ts: expect.any(Number),
+      });
+    });
+
+    test('update without changing availability does not emit', async () => {
+      expect.assertions(1);
+      const action$ = of(
+          matrixRequestMonitorPresence(partner),
+          matrixPresenceUpdate(partner, partnerUserId, true, 123),
+        ),
+        state$ = of(state);
+
+      matrix.getUser.mockImplementationOnce(userId => ({ userId, presence: 'unavailable' }));
+
+      const promise = matrixPresenceUpdateEpic(action$, state$, depsMock)
+        .pipe(takeUntil(timer(50)))
+        .toPromise();
+
+      matrix.emit('event', {
+        getType: () => 'm.presence',
+        getSender: () => partnerUserId,
+      });
+
+      await expect(promise).resolves.toBeUndefined();
+    });
+
+    test('cached displayName but invalid signature', async () => {
+      expect.assertions(1);
+      const action$ = of(
+          matrixRequestMonitorPresence(partner),
+          matrixPresenceUpdate(partner, partnerUserId, true, 123),
+        ),
+        state$ = of(state);
+
+      matrix.getUser.mockImplementationOnce(userId => ({
+        userId,
+        presence: 'offline',
+        displayName: `partner_display_name`,
+      }));
+      (verifyMessage as jest.Mock).mockReturnValueOnce(token);
+
+      const promise = matrixPresenceUpdateEpic(action$, state$, depsMock)
+        .pipe(takeUntil(timer(50)))
+        .toPromise();
+
+      matrix.emit('event', {
+        getType: () => 'm.presence',
+        getSender: () => partnerUserId,
+      });
+
+      await expect(promise).resolves.toBeUndefined();
+    });
+
+    test('getProfileInfo error', async () => {
+      expect.assertions(1);
+      const action$ = of(
+          matrixRequestMonitorPresence(partner),
+          matrixPresenceUpdate(partner, partnerUserId, true, 123),
+        ),
+        state$ = of(state);
+
+      matrix.getProfileInfo.mockRejectedValueOnce(new Error('could not get user profile'));
+
+      const promise = matrixPresenceUpdateEpic(action$, state$, depsMock)
+        .pipe(takeUntil(timer(50)))
+        .toPromise();
+
+      matrix.emit('event', {
+        getType: () => 'm.presence',
+        getSender: () => partnerUserId,
+      });
+
+      await expect(promise).resolves.toBeUndefined();
     });
   });
 });

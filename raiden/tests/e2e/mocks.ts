@@ -43,8 +43,8 @@ export class MockMatrixRequestFn {
 
     const displayNames: { [userId: string]: string } = {};
     this.endpoints['/displayname'] = (opts, callback) => {
-      const match = /\profile\/([^/]+)/i.exec(opts.uri),
-        userId = match && match[1];
+      const match = /\/profile\/([^/]+)/i.exec(opts.uri),
+        userId = match && match[1] && decodeURIComponent(match[1]);
       if (opts.method === 'PUT') {
         const body = JSON.parse(opts.body),
           displayName = body['displayname'];
@@ -64,6 +64,17 @@ export class MockMatrixRequestFn {
           .filter(([userId]) => userId.includes(term))
           .map(([user_id, display_name]) => ({ user_id, display_name })),
       });
+    };
+    this.endpoints['/status'] = (opts, callback) => {
+      const match = /\/presence\/([^/]+)/i.exec(opts.uri),
+        userId = match && match[1] && decodeURIComponent(match[1]);
+      if (userId && userId in displayNames)
+        return this.respond(callback, 200, {
+          presence: 'online',
+          last_active_ago: 123,
+          currently_active: true,
+        });
+      return this.respond(callback, 404, {});
     };
 
     this.endpoints['/join'] = (opts, callback) => this.respond(callback, 200, {});

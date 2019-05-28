@@ -6,11 +6,6 @@ import { get } from 'lodash';
 jest.mock('cross-fetch');
 import fetch from 'cross-fetch';
 
-jest.mock('raiden/utils', () => ({
-  ...jest.requireActual('raiden/utils'),
-  matrixRTT: jest.fn(async (server: string) => ({ server, rtt: Math.random() })),
-}));
-
 import { TestProvider } from './provider';
 import { MockStorage, MockMatrixRequestFn } from './mocks';
 
@@ -39,6 +34,8 @@ describe('Raiden', () => {
     jest.setTimeout(15e3);
 
     (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
       text: jest.fn(async () => `- ${matrixServer}`),
     });
 
@@ -343,6 +340,7 @@ describe('Raiden', () => {
     });
 
     test('newBlock', async () => {
+      expect.assertions(1);
       await provider.mine(5);
       const promise = raiden.events$.pipe(first()).toPromise();
       await provider.mine(10);
@@ -350,6 +348,35 @@ describe('Raiden', () => {
         type: RaidenActionType.NEW_BLOCK,
         blockNumber: expect.any(Number),
       });
+    });
+  });
+
+  describe('matrix', () => {
+    test('getAvailability', async () => {
+      expect.assertions(3);
+
+      await expect(raiden.getAvailability(partner)).rejects.toThrow(
+        'Could not find any user with valid signature for',
+      );
+
+      // success when using address of account on provider and initial state
+      const raiden1 = await Raiden.create(
+        provider,
+        accounts[2],
+        { ...initialState, address: accounts[2] },
+        info,
+      );
+      expect(raiden1).toBeInstanceOf(Raiden);
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      await expect(raiden.getAvailability(accounts[2])).resolves.toMatchObject({
+        userId: `@${accounts[2].toLowerCase()}:${matrixServer}`,
+        available: true,
+        ts: expect.any(Number),
+      });
+
+      raiden1.stop();
     });
   });
 });
