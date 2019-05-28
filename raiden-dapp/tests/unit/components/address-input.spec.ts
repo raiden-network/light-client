@@ -104,7 +104,7 @@ describe('AddressInput', function() {
       jest.runAllTimers();
       await flushPromises();
 
-      expect(wrapper.vm.$data.label).toEqual(
+      expect(wrapper.vm.$data.hint).toEqual(
         '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
       );
       expect(wrapper.emitted().input).toBeTruthy();
@@ -123,7 +123,7 @@ describe('AddressInput', function() {
       jest.runAllTimers();
       await flushPromises();
 
-      expect(wrapper.vm.$data.label).toEqual('');
+      expect(wrapper.vm.$data.hint).toEqual('');
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual([undefined]);
 
@@ -143,7 +143,7 @@ describe('AddressInput', function() {
       jest.runAllTimers();
       await flushPromises();
 
-      expect(wrapper.vm.$data.label).toEqual('');
+      expect(wrapper.vm.$data.hint).toEqual('');
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual([undefined]);
 

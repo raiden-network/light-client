@@ -3,12 +3,6 @@
     <v-form v-model="valid" autocomplete="off">
       <v-layout align-center justify-center row>
         <v-flex xs10 md10 lg10>
-          <div class="screen-title">Select Hub</div>
-        </v-flex>
-      </v-layout>
-
-      <v-layout align-center justify-center row>
-        <v-flex xs10 md10 lg10>
           <address-input
             v-model="partner"
             class="address-input"
@@ -16,18 +10,19 @@
         </v-flex>
       </v-layout>
 
-      <v-layout align-center justify-center row>
+      <div class="divider-container">
         <div class="divider"></div>
-      </v-layout>
+      </div>
 
-      <v-layout align-center justify-center row>
-        <v-flex xs10 md10 lg10 class="information">
-          <div class="information-label text-xs-left">Token</div>
-          <div class="information-description text-xs-left">
-            <span class="font-weight-medium">{{ token.symbol }}</span>
-            · {{ token.name }}
+      <v-layout align-start justify-center row>
+        <v-flex xs2 class="information">
+          <div class="information-label">Token</div>
+        </v-flex>
+        <v-flex xs8>
+          <div class="information-description">
+            {{ token.symbol }} | {{ token.name }}
           </div>
-          <div class="text--secondary">
+          <div>
             {{ token.address }}
           </div>
         </v-flex>
