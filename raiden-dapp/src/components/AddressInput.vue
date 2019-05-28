@@ -3,30 +3,37 @@
     <v-text-field
       id="address-input"
       ref="address"
-      :label="label"
-      :rules="rules"
+      :hint="hint"
       :value="internalValue"
       :error-messages="errorMessages"
+      :class="{ invalid: !valid, 'hint-visible': hint.length > 0 }"
+      persistent-hint
+      placeholder="Enter an address or ens name..."
       clearable
       hide-selected
+      @blur="checkValidity()"
       @input="valueChanged($event)"
     >
+      <template v-slot:append>
+        <div class="status-icon-wrapper">
+          <v-icon v-if="!valid" class="status-icon" large>error</v-icon>
+        </div>
+      </template>
       <template v-slot:prepend-inner>
         <img
           v-if="value && isChecksumAddress(value)"
           :src="$blockie(value)"
           alt="Selected token address blockie"
-          class="selection-blockie"
+          class="selection-blockie prepend"
         />
         <div v-else-if="timeout">
           <v-progress-circular
+            class="prepend"
             indeterminate
             color="primary"
           ></v-progress-circular>
         </div>
-        <div v-else>
-          <v-icon>cancel</v-icon>
-        </div>
+        <div v-else></div>
       </template>
     </v-text-field>
   </fieldset>
@@ -36,14 +43,10 @@
 import AddressUtils from '@/utils/address-utils';
 import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
 import BlockieMixin from '@/mixins/blockie-mixin';
-import { ValidationRule } from '@/types';
 
 @Component({})
 export default class AddressInput extends Mixins(BlockieMixin) {
   private timeout: number = 0;
-  readonly rules: ValidationRule[] = [
-    (v: string) => !!v || 'The address cannot be empty'
-  ];
 
   @Prop({})
   disabled!: boolean;
@@ -51,7 +54,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   value!: string;
 
   internalValue?: string;
-  label: string = '';
+  valid: boolean = true;
+  hint: string = '';
   errorMessages: string[] = [];
 
   created() {
@@ -72,10 +76,11 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   valueChanged(value?: string) {
     this.errorMessages = [];
-    this.label = '';
+    this.hint = '';
 
     if (!value) {
       this.input(value);
+      this.errorMessages.push('The address cannot be empty');
     } else if (
       AddressUtils.isAddress(value) &&
       !AddressUtils.checkAddressChecksum(value)
@@ -93,6 +98,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         `The input doesn't seem like a valid address or ens name`
       );
     }
+
+    this.checkValidity();
+  }
+
+  private checkValidity() {
+    if (this.$refs.address) {
+      this.valid = this.errorMessages.length === 0;
+    }
   }
 
   private resolveEnsAddress(url: string) {
@@ -106,12 +119,13 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         .ensResolve(url)
         .then(resolvedAddress => {
           if (resolvedAddress) {
-            this.label = resolvedAddress;
+            this.hint = resolvedAddress;
             this.input(resolvedAddress);
             this.errorMessages = [];
           } else {
             this.errorMessages.push(`Could not resolve an address for ${url}`);
             this.input(undefined);
+            this.checkValidity();
           }
           this.timeout = 0;
         })
@@ -119,6 +133,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           console.log(e);
           this.errorMessages.push(`Could not resolve an address for ${url}`);
           this.input(undefined);
+          this.checkValidity();
           this.timeout = 0;
         });
     }, 800);
@@ -138,12 +153,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   background-color: #d8d8d8;
 }
 
+.prepend {
+  margin-right: 12px;
+}
+
 .address-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 60px;
-  padding-bottom: 60px;
   border: 0;
 
   @include respond-to(handhelds) {
@@ -153,24 +170,20 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 }
 
+.address-input /deep/ .v-text-field__details {
+  padding-top: 8px;
+}
+
 .address-input /deep/ input {
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 30px;
   font-weight: 500;
   line-height: 38px;
-  text-align: center;
   max-height: 40px;
-  padding-left: 6px;
-  padding-right: 6px;
 }
 .address-input /deep/ input:focus {
   outline: 0;
-}
-
-.address-input /deep/ .v-text-field__details {
-  height: 36px;
-  padding-top: 4px;
 }
 
 .address-input /deep/ .v-messages {
@@ -179,5 +192,74 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   font-size: 16px;
   line-height: 21px;
   text-align: center;
+}
+
+.address-input /deep/ .v-messages {
+  border: 1px solid transparent;
+  font-family: Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+  margin-top: 10px;
+
+  .v-messages__wrapper {
+    height: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+$dark_border: #fbfbfb;
+$dark_background: #1e1e1e;
+
+.invalid /deep/ .v-messages {
+  border-color: $dark_border;
+  background-color: $dark_background;
+  border: 1px solid !important;
+  border-radius: 5px;
+}
+
+.invalid /deep/ .v-messages:after {
+  content: ' ';
+  border: solid;
+  border-radius: 1px;
+  border-width: 0 1px 1px 0;
+  position: absolute;
+  left: 50%;
+  bottom: 90%;
+  display: inline-block;
+  padding: 3px;
+  transform: rotate(-135deg);
+  -webkit-transform: rotate(-135deg);
+  border-color: $dark_border;
+  background-color: $dark_background;
+}
+
+.hint-visible /deep/ .v-messages {
+  color: #696969 !important;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 19px;
+  margin-top: 4px;
+  margin-bottom: 14px;
+}
+
+.hint-visible /deep/ .v-text-field__details {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.status-icon-wrapper {
+  margin-left: 12px;
+}
+
+.status-icon {
+  color: #323232;
+  background: white;
+  border-radius: 50%;
+  line-height: 18px;
+  width: 19px;
 }
 </style>

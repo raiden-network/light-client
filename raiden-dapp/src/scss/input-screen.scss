@@ -15,23 +15,31 @@
   }
 }
 
+.divider-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
 .divider {
   box-sizing: border-box;
   height: 1px;
-  width: 500px;
-  border: 1px solid #696969;
+  width: 520px;
+  border: 1px solid #ffffff;
 }
 
 .information {
   .information-label {
     color: #ffffff;
     font-family: Roboto, sans-serif;
-    font-size: 24px;
-    line-height: 28px;
-    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 19px;
   }
   .information-description {
-    margin-top: 12px;
     color: #ffffff;
     font-family: Roboto, sans-serif;
     font-size: 16px;
