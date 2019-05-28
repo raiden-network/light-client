@@ -114,6 +114,7 @@ declare module 'matrix-js-sdk' {
       opts?: { syncRoom?: boolean; inviteSignUrl?: string; viaServers?: string[] },
       callback?: requestCallback,
     ): Promise<Room>;
+    public leave(roomId: string, callback?: requestCallback): Promise<{}>;
 
     public setDisplayName(name: string, callback?: requestCallback): Promise<any>;
 
@@ -125,8 +126,17 @@ declare module 'matrix-js-sdk' {
       results: { user_id: string; display_name?: string; avatar_url?: string }[];
     }>;
 
+    public getUserId(): string | null;
     public getUser(userId: string): User | null;
     public getUsers(): User[];
+    public sendEvent(
+      roomId: string,
+      eventType: string,
+      content: any,
+      txnId: string,
+      callback?: requestCallback,
+    ): Promise<{ event_id: string }>;
+    public invite(roomId: string, userId: string, callback?: requestCallback): Promise<{}>;
 
     public acceptGroupInvite(groupId: string, opts: object): Promise<object> | MatrixError;
     public addPushRule(
@@ -190,7 +200,7 @@ declare module 'matrix-js-sdk' {
         topic?: string;
       },
       callback?: requestCallback,
-    ): Promise<{ room_id: string; room_alias?: string }> | MatrixError | void;
+    ): Promise<{ room_id: string; room_alias?: string }>;
     public deactivateAccount(auth?: object, callback?: requestCallback): Promise<object>;
     public deleteAlias(
       alias: string,
@@ -583,22 +593,29 @@ declare module 'matrix-js-sdk' {
   }
   /*
 
-      /!* models/room.js *!/
-      */
-  export interface Room {
+  /!* models/room.js *!/
+  */
+  export class Room {
+    public roomId: string;
+    public getMember(userId: string): RoomMember | null;
+    public getJoinedMembers(): RoomMember[];
+  }
+
+  /* models/room-member.js*/
+  export interface RoomMember {
     roomId: string;
+    userId: string;
+    name: string;
+    membership: string | null;
+    user: User | null;
+  }
+
+  /* models/room-state.js */
+  export interface RoomState {
+    roomId: string;
+    members: { [userId: string]: RoomMember };
   }
   /*
-
-      /!* models/room-member.js*!/
-      export class RoomMember {
-
-      }
-
-      /!* models/room-state.js *!/
-      export class RoomState {
-
-      }
 
       /!* models/user.js*!/
       export class User {

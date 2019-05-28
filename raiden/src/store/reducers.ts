@@ -105,6 +105,13 @@ export function raidenReducer(
       set(state, ['transport', 'matrix', 'setup'], action.setup);
       return state;
 
+    case RaidenActionType.MATRIX_ROOM:
+      path = ['transport', 'matrix', 'address2rooms', action.address];
+      return set(cloneDeep(state), path, [
+        action.room,
+        ...(get(state, path, []) as string[]).filter(room => room !== action.room),
+      ]);
+
     default:
       return state;
   }

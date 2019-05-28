@@ -27,7 +27,16 @@ import {
   channelCloseEpic,
   channelSettleEpic,
 } from './channel';
-import { matrixShutdownEpic, matrixMonitorPresenceEpic, matrixPresenceUpdateEpic } from './matrix';
+import {
+  matrixStartEpic,
+  matrixShutdownEpic,
+  matrixMonitorPresenceEpic,
+  matrixPresenceUpdateEpic,
+  matrixCreateRoomEpic,
+  matrixInviteEpic,
+  matrixHandleInvitesEpic,
+  matrixMessageSendEpic,
+} from './matrix';
 
 export const raidenEpics = (
   action$: Observable<RaidenActions>,
@@ -57,9 +66,14 @@ export const raidenEpics = (
     channelCloseEpic,
     channelSettleEpic,
     channelMatrixMonitorPresenceEpic,
+    matrixStartEpic,
     matrixShutdownEpic,
     matrixMonitorPresenceEpic,
     matrixPresenceUpdateEpic,
+    matrixCreateRoomEpic,
+    matrixInviteEpic,
+    matrixHandleInvitesEpic,
+    matrixMessageSendEpic,
   ]).pipe(
     mergeMap(epic => epic(limitedAction$, limitedState$, deps)),
     catchError(err => of(raidenShutdown(err))),

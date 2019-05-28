@@ -267,10 +267,8 @@ export const initMatrixEpic = (
       }
     }),
     mergeMap(({ matrix, server, setup }) =>
-      // start client
-      from(matrix.startClient({ initialSyncLimit: 0 })).pipe(
-        // ensure displayName is set even on restarts
-        mergeMap(() => matrix.setDisplayName(setup.displayName)),
+      // ensure displayName is set even on restarts
+      from(matrix.setDisplayName(setup.displayName)).pipe(
         // ensure we joined discovery room
         mergeMap(() =>
           matrix.joinRoom(

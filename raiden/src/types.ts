@@ -1,5 +1,5 @@
 /// <reference path="../typings/matrix-js-sdk/index.d.ts" />
-import { Subject, AsyncSubject } from 'rxjs';
+import { Subject, BehaviorSubject, AsyncSubject } from 'rxjs';
 import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber } from 'ethers/utils';
@@ -27,7 +27,7 @@ export interface RaidenContracts {
 }
 
 export interface RaidenEpicDeps {
-  stateOutput$: Subject<RaidenState>;
+  stateOutput$: BehaviorSubject<RaidenState>;
   actionOutput$: Subject<RaidenActions>;
   matrix$: AsyncSubject<MatrixClient>;
   provider: JsonRpcProvider;
