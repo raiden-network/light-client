@@ -411,15 +411,16 @@ describe('raidenReducer', () => {
     });
 
     test('matrixSetup', () => {
-      const setup = {
-        server: 'http://matrix.raiden.tld',
-        userId: '@0xmyaddress:matrix.raiden.tld',
-        accessToken: 'access_token_123',
-        deviceId: 'mydevice',
-        displayName: '0xuserIdSignature',
-      };
-      const newState = [matrixSetup(setup)].reduce(raidenReducer, state);
-      expect(get(newState, ['transport', 'matrix'])).toBe(setup);
+      const server = 'http://matrix.raiden.tld',
+        setup = {
+          userId: '@0xmyaddress:matrix.raiden.tld',
+          accessToken: 'access_token_123',
+          deviceId: 'mydevice',
+          displayName: '0xuserIdSignature',
+        };
+      const newState = [matrixSetup(server, setup)].reduce(raidenReducer, state);
+      expect(get(newState, ['transport', 'matrix', 'server'])).toBe(server);
+      expect(get(newState, ['transport', 'matrix', 'setup'])).toBe(setup);
     });
   });
 });

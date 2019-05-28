@@ -235,17 +235,19 @@ describe('raidenEpics', () => {
           transport: {
             matrix: {
               server: matrixServer,
-              userId,
-              accessToken,
-              deviceId,
-              displayName,
+              setup: {
+                userId,
+                accessToken,
+                deviceId,
+                displayName,
+              },
             },
           },
         });
       await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
         type: RaidenActionType.MATRIX_SETUP,
+        server: matrixServer,
         setup: {
-          server: matrixServer,
           userId,
           accessToken: expect.any(String),
           deviceId: expect.any(String),
@@ -259,8 +261,8 @@ describe('raidenEpics', () => {
         state$ = of(state);
       await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
         type: RaidenActionType.MATRIX_SETUP,
+        server: `https://${matrixServer}`,
         setup: {
-          server: `https://${matrixServer}`,
           userId,
           accessToken: expect.any(String),
           deviceId: expect.any(String),

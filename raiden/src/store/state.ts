@@ -41,17 +41,14 @@ export type Channel = t.TypeOf<typeof ChannelType>;
   closeBlock?: number;
 }*/
 
-const RaidenMatrixType = t.intersection([
-  t.type({ server: t.string }),
-  t.partial({
-    userId: t.string,
-    accessToken: t.string,
-    deviceId: t.string,
-    displayName: t.string,
-  }),
-]);
+const RaidenMatrixSetupType = t.type({
+  userId: t.string,
+  accessToken: t.string,
+  deviceId: t.string,
+  displayName: t.string,
+});
 
-export type RaidenMatrix = t.TypeOf<typeof RaidenMatrixType>;
+export type RaidenMatrixSetup = t.TypeOf<typeof RaidenMatrixSetupType>;
 
 export const RaidenStateType = t.intersection([
   t.type({
@@ -62,7 +59,14 @@ export const RaidenStateType = t.intersection([
   }),
   t.partial({
     transport: t.partial({
-      matrix: RaidenMatrixType,
+      matrix: t.intersection([
+        t.type({
+          server: t.string,
+        }),
+        t.partial({
+          setup: RaidenMatrixSetupType,
+        }),
+      ]),
     }),
   }),
 ]);
