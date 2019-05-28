@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
+
 // ethers's contracts use a lot defineReadOnly which doesn't allow us to mock
 // functions and properties. Mock it here so we can mock later
 jest.mock('ethers/utils/properties', () => ({
@@ -13,6 +15,18 @@ jest.mock('ethers/utils/properties', () => ({
       }),
   ),
 }));
+//
+// ethers utils mock to always validate matrix userIds
+jest.mock('ethers/utils', () => ({
+  ...jest.requireActual('ethers/utils'),
+  verifyMessage: jest.fn(
+    (msg: string): string => {
+      const { getAddress, AddressZero } = jest.requireActual('ethers/utils');
+      const match = /^@(0x[0-9a-f]{40})[.:]/i.exec(msg);
+      return match && match[1] ? getAddress(match[1]) : AddressZero;
+    },
+  ),
+}));
 
 // raiden/utils.getNetwork has the same functionality as provider.getNetwork
 // but fetches everytime instead of just returning a cached property
@@ -24,6 +38,7 @@ jest.mock('raiden/utils', () => ({
 
 import { BehaviorSubject, Subject, AsyncSubject } from 'rxjs';
 import { MatrixClient } from 'matrix-js-sdk';
+import { EventEmitter } from 'events';
 
 jest.mock('ethers/providers');
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
@@ -188,4 +203,35 @@ export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<L
     address: filter.address!,
     topics: filter.topics!,
   };
+}
+
+/* Returns a mocked MatrixClient */
+export function makeMatrix(server: string): jest.Mocked<MatrixClient> {
+  return Object.assign(new EventEmitter(), {
+    startClient: jest.fn(async () => true),
+    stopClient: jest.fn(() => true),
+    setDisplayName: jest.fn(async () => true),
+    joinRoom: jest.fn(async () => true),
+    loginWithPassword: jest.fn().mockRejectedValue(new Error('invalid password')),
+    register: jest.fn(async userName => ({
+      user_id: `@${userName}:${server}`,
+      device_id: `${userName}_device_id`,
+      access_token: `${userName}_access_token`,
+    })),
+    searchUserDirectory: jest.fn(async ({ term }) => ({
+      results: [{ user_id: `@${term}:${server}`, display_name: `${term}_display_name` }],
+    })),
+    getUsers: jest.fn(() => []),
+    getUser: jest.fn(userId => ({ userId, presence: 'offline' })),
+    getProfileInfo: jest.fn(async userId => ({ displayname: `${userId}_display_name` })),
+    _http: {
+      opts: {},
+      // mock request done by raiden/utils::getUserPresence
+      authedRequest: jest.fn(async () => ({
+        user_id: 'user_id',
+        last_active_ago: 1,
+        presence: 'online',
+      })),
+    },
+  });
 }
