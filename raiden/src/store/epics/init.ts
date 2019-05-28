@@ -26,7 +26,7 @@ import {
 } from '../../utils';
 import { RaidenEpicDeps } from '../../types';
 import { MATRIX_KNOWN_SERVERS_URL } from '../../constants';
-import { RaidenState, RaidenMatrix } from '../state';
+import { RaidenState, RaidenMatrixSetup } from '../state';
 import {
   RaidenActionType,
   RaidenActions,
@@ -173,11 +173,12 @@ export const initMatrixEpic = (
   action$.pipe(
     ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
     withLatestFrom(state$),
-    mergeMap(function([, state]): Observable<RaidenMatrix> {
-      const setup: RaidenMatrix | undefined = get(state, ['transport', 'matrix']);
-      if (setup) {
-        // use server from state
-        return of(setup);
+    mergeMap(function([, state]) {
+      const server: string | undefined = get(state, ['transport', 'matrix', 'server']),
+        setup: RaidenMatrixSetup | undefined = get(state, ['transport', 'matrix', 'setup']);
+      if (server) {
+        // use server from state/settings
+        return of({ server, setup });
       } else {
         const knownServersUrl =
           MATRIX_KNOWN_SERVERS_URL[network.name] || MATRIX_KNOWN_SERVERS_URL.default;
@@ -201,17 +202,19 @@ export const initMatrixEpic = (
               throw new Error(`Could not contact any matrix servers: ${JSON.stringify(rtts)}`);
             return rtts[0].server;
           }),
-          map(server => ({ server: server.includes('://') ? server : `https://${server}` })),
+          map(server => ({
+            server: server.includes('://') ? server : `https://${server}`,
+            setup: undefined,
+          })),
         );
       }
     }),
-    mergeMap(function(setup): Observable<{ matrix: MatrixClient; setup: Required<RaidenMatrix> }> {
-      let server = setup.server,
-        userId = setup.userId,
-        accessToken = setup.accessToken,
-        deviceId = setup.deviceId,
-        displayName = setup.displayName;
-      if (userId && accessToken && deviceId && displayName) {
+    mergeMap(function({
+      server,
+      setup,
+    }): Observable<{ matrix: MatrixClient; server: string; setup: RaidenMatrixSetup }> {
+      let { userId, accessToken, deviceId }: Partial<RaidenMatrixSetup> = setup || {};
+      if (setup) {
         // if matrixSetup was already issued before, and credentials are already in state
         const matrix = createClient({
           baseUrl: server,
@@ -219,7 +222,7 @@ export const initMatrixEpic = (
           accessToken,
           deviceId,
         });
-        return of({ matrix, setup: { server, userId, accessToken, deviceId, displayName } });
+        return of({ matrix, server, setup });
       } else {
         const serverName = getServerName(server);
         if (!serverName) return throwError(new Error(`Could not get serverName from "${server}"`));
@@ -232,18 +235,6 @@ export const initMatrixEpic = (
           mergeMap(password =>
             from(matrix.loginWithPassword(userName, password)).pipe(
               catchError(() => from(matrix.register(userName, password))),
-              mergeMap(result =>
-                // assert returned userId is the expected one
-                result.user_id === userId
-                  ? of(result)
-                  : throwError(
-                      new Error(
-                        `Invalid login or register user_id: expected "${userId}", got "${
-                          result.user_id
-                        }"`,
-                      ),
-                    ),
-              ),
             ),
           ),
           tap(result => {
@@ -264,8 +255,8 @@ export const initMatrixEpic = (
           mergeMap(() => signer.signMessage(userId!)),
           map(signedUserId => ({
             matrix,
+            server,
             setup: {
-              server,
               userId: userId!,
               accessToken: accessToken!,
               deviceId: deviceId!,
@@ -275,7 +266,7 @@ export const initMatrixEpic = (
         );
       }
     }),
-    mergeMap(({ matrix, setup }) =>
+    mergeMap(({ matrix, server, setup }) =>
       // start client
       from(matrix.startClient({ initialSyncLimit: 0 })).pipe(
         // ensure displayName is set even on restarts
@@ -283,10 +274,10 @@ export const initMatrixEpic = (
         // ensure we joined discovery room
         mergeMap(() =>
           matrix.joinRoom(
-            `#raiden_${network.name || network.chainId}_discovery:${getServerName(setup.server)}`,
+            `#raiden_${network.name || network.chainId}_discovery:${getServerName(server)}`,
           ),
         ),
-        mapTo({ matrix, setup }),
+        mapTo({ matrix, server, setup }),
       ),
     ),
     tap(({ matrix }) => {
@@ -294,5 +285,5 @@ export const initMatrixEpic = (
       matrix$.next(matrix);
       matrix$.complete();
     }),
-    map(({ setup }) => matrixSetup(setup)),
+    map(({ server, setup }) => matrixSetup(server, setup)),
   );

@@ -100,7 +100,10 @@ export function raidenReducer(
       return state;
 
     case RaidenActionType.MATRIX_SETUP:
-      return set(cloneDeep(state), ['transport', 'matrix'], action.setup);
+      state = cloneDeep(state);
+      set(state, ['transport', 'matrix', 'server'], action.server);
+      set(state, ['transport', 'matrix', 'setup'], action.setup);
+      return state;
 
     default:
       return state;

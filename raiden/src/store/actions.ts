@@ -1,6 +1,6 @@
 import { AnyAction } from 'redux';
 import { BigNumber } from 'ethers/utils';
-import { RaidenMatrix } from './state';
+import { RaidenMatrixSetup } from './state';
 
 export enum RaidenActionType {
   INIT = 'raidenInit',
@@ -171,7 +171,8 @@ export interface ChannelSettleActionFailed extends RaidenActionFailed {
 
 export interface MatrixSetupAction extends RaidenAction {
   type: RaidenActionType.MATRIX_SETUP;
-  setup: RaidenMatrix;
+  server: string;
+  setup: RaidenMatrixSetup;
 }
 
 export interface MatrixRequestMonitorPresenceAction extends RaidenAction {
@@ -386,8 +387,9 @@ export const channelSettleFailed = (
   error,
 });
 
-export const matrixSetup = (setup: Required<RaidenMatrix>): MatrixSetupAction => ({
+export const matrixSetup = (server: string, setup: RaidenMatrixSetup): MatrixSetupAction => ({
   type: RaidenActionType.MATRIX_SETUP,
+  server,
   setup,
 });
 
