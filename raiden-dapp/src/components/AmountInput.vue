@@ -1,13 +1,19 @@
 <template>
-  <fieldset id="token-amount">
+  <fieldset id="token-amount" :class="{ light, dark: !light, padded }">
     <v-text-field
       id="amount"
       ref="input"
+      :class="{ light, invalid: !valid }"
       :disabled="disabled"
       :label="label"
       :rules="rules"
       :value="amount"
       background-color="transparent"
+      autocomplete="off"
+      hint="Enter the amount you wish to deposit and confirm."
+      persistent-hint
+      :light="light"
+      :dark="!light"
       flat
       placeholder="0.00"
       solo
@@ -25,11 +31,10 @@
         <v-icon v-if="!valid" class="status-icon" large>error</v-icon>
         <v-icon v-else class="status-icon" large>check_circle</v-icon>
       </div>
-
-      <span slot="append" class="token-symbol">{{
-        token.symbol || 'TKN'
-      }}</span>
     </v-text-field>
+    <span class="token-symbol" :class="{ light }">{{
+      token.symbol || 'TKN'
+    }}</span>
   </fieldset>
 </template>
 
@@ -50,6 +55,10 @@ export default class AmountInput extends Vue {
   token?: Token;
   @Prop({ default: false, type: Boolean })
   limit!: boolean;
+  @Prop({ default: false, type: Boolean })
+  light!: boolean;
+  @Prop({ default: false, type: Boolean })
+  padded!: boolean;
 
   valid: boolean = true;
   amount: string = '0.00';
@@ -121,12 +130,86 @@ export default class AmountInput extends Vue {
 $header-vertical-margin: 5rem;
 $header-vertical-margin-mobile: 2rem;
 
+.padded {
+  padding-top: 60px;
+  padding-bottom: 60px;
+}
+
+$dark_color: #050505;
+$light_color: #ffffff;
+$dark_border: #fbfbfb;
+$light_border: #050505;
+$dark_background: #1e1e1e;
+$light_background: #e4e4e4;
+
+.light {
+  color: $dark_color !important;
+
+  /deep/ input {
+    color: $dark_color !important;
+  }
+
+  /deep/ .v-messages {
+    color: $dark_color !important;
+  }
+
+  .invalid /deep/ .v-messages {
+    border-color: $light_border;
+    background-color: $light_background;
+  }
+
+  .invalid /deep/ .v-messages:after {
+    border-color: $light_border;
+    background-color: $light_background;
+  }
+}
+
+.dark {
+  color: $light_color !important;
+
+  /deep/ input {
+    color: $light_color !important;
+  }
+
+  /deep/ .v-messages {
+    color: $light_color !important;
+  }
+
+  .invalid /deep/ .v-messages {
+    border-color: $dark_border;
+    background-color: $dark_background;
+  }
+
+  .invalid /deep/ .v-messages:after {
+    border-color: $dark_border;
+    background-color: $dark_background;
+  }
+}
+
+.invalid /deep/ .v-messages {
+  border: 1px solid !important;
+  border-radius: 5px;
+}
+
+.invalid /deep/ .v-messages:after {
+  content: ' ';
+  border: solid #050505;
+  border-radius: 1px;
+  border-width: 0 1px 1px 0;
+  position: absolute;
+  left: 50%;
+  bottom: 90%;
+  display: inline-block;
+  padding: 3px;
+  transform: rotate(-135deg);
+  -webkit-transform: rotate(-135deg);
+}
+
 #token-amount {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 60px;
-  padding-bottom: 60px;
+  flex-direction: column;
   border: 0;
 
   @include respond-to(handhelds) {
@@ -137,7 +220,6 @@ $header-vertical-margin-mobile: 2rem;
 }
 
 #token-amount /deep/ input {
-  color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 40px;
   font-weight: 500;
@@ -150,24 +232,36 @@ $header-vertical-margin-mobile: 2rem;
 }
 
 #token-amount /deep/ .v-text-field__details {
-  height: 36px;
-  padding-top: 4px;
+  padding-top: 8px;
+  margin-top: 16px;
 }
 
 #token-amount /deep/ .v-messages {
-  color: white !important;
+  border: 1px solid transparent;
   font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 21px;
+  font-size: 13px;
+  line-height: 18px;
   text-align: center;
+  margin-top: 10px;
+
+  .v-messages__wrapper {
+    height: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+#token-amount /deep/ .v-messages:after {
+  padding: 3px;
 }
 
 .token-symbol {
-  color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 16px;
   line-height: 20px;
-  margin-top: -20px;
+  margin-top: -70px;
 }
 
 .status-icon-wrapper {
