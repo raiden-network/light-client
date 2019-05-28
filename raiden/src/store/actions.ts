@@ -25,6 +25,8 @@ export enum RaidenActionType {
   MATRIX_REQUEST_MONITOR_PRESENCE = 'matrixRequestMonitorPresence',
   MATRIX_PRESENCE_UPDATE = 'matrixPresenceUpdate',
   MATRIX_REQUEST_MONITOR_PRESENCE_FAILED = 'matrixRequestMonitorPresenceFailed',
+  MATRIX_ROOM = 'matrixRoom',
+  MESSAGE_SEND = 'messageSend',
 }
 
 export enum ShutdownReason {
@@ -191,6 +193,18 @@ export interface MatrixPresenceUpdateAction extends RaidenAction {
 export interface MatrixRequestMonitorPresenceActionFailed extends RaidenActionFailed {
   type: RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED;
   address: string;
+}
+
+export interface MatrixRoomAction extends RaidenAction {
+  type: RaidenActionType.MATRIX_ROOM;
+  address: string;
+  room: string;
+}
+
+export interface MessageSendAction extends RaidenAction {
+  type: RaidenActionType.MESSAGE_SEND;
+  address: string;
+  message: string;
 }
 
 // action factories:
@@ -422,6 +436,18 @@ export const matrixRequestMonitorPresenceFailed = (
   error,
 });
 
+export const matrixRoom = (address: string, room: string): MatrixRoomAction => ({
+  type: RaidenActionType.MATRIX_ROOM,
+  address,
+  room,
+});
+
+export const messageSend = (address: string, message: string): MessageSendAction => ({
+  type: RaidenActionType.MESSAGE_SEND,
+  address,
+  message,
+});
+
 export type RaidenActions =
   | RaidenInitAction
   | RaidenShutdownAction
@@ -444,7 +470,9 @@ export type RaidenActions =
   | MatrixSetupAction
   | MatrixRequestMonitorPresenceAction
   | MatrixPresenceUpdateAction
-  | MatrixRequestMonitorPresenceActionFailed;
+  | MatrixRequestMonitorPresenceActionFailed
+  | MatrixRoomAction
+  | MessageSendAction;
 
 export const RaidenEventType: (
   | RaidenActionType.SHUTDOWN

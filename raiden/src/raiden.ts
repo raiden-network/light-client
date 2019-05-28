@@ -64,6 +64,7 @@ import {
   matrixRequestMonitorPresence,
   MatrixPresenceUpdateAction,
   MatrixRequestMonitorPresenceActionFailed,
+  messageSend,
 } from './store';
 
 export class Raiden {
@@ -601,6 +602,13 @@ export class Raiden {
       .toPromise();
     this.store.dispatch(matrixRequestMonitorPresence(address));
     return promise;
+  }
+
+  /**
+   * Temporary interface to test MessageSendAction
+   */
+  public sendMessage(address: string, message: string): void {
+    this.store.dispatch(messageSend(address, message));
   }
 }
 
