@@ -60,6 +60,12 @@
       :current="current"
       :done="done"
     ></progress-overlay>
+    <error-screen
+      title="Something went wrong"
+      :description="error"
+      button-label="Dismiss"
+      @dismiss="error = ''"
+    ></error-screen>
   </div>
 </template>
 
@@ -77,9 +83,10 @@ import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { Route } from 'vue-router';
+import ErrorScreen from '@/components/ErrorScreen.vue';
 
 @Component({
-  components: { ProgressOverlay, AmountInput }
+  components: { ErrorScreen, ProgressOverlay, AmountInput }
 })
 export default class Deposit extends Mixins(NavigationMixin) {
   partner: string = '';
@@ -89,7 +96,6 @@ export default class Deposit extends Mixins(NavigationMixin) {
 
   valid: boolean = false;
   loading: boolean = false;
-  snackbar: boolean = false;
   error: string = '';
 
   steps: StepDescription[] = [];
@@ -170,7 +176,6 @@ export default class Deposit extends Mixins(NavigationMixin) {
         this.error = e.message;
       }
 
-      this.snackbar = true;
       this.done = false;
       this.loading = false;
     }

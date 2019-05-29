@@ -99,7 +99,6 @@ describe('Deposit.vue', function() {
       button.trigger('click');
       const deposit = wrapper.vm;
       await flushPromises();
-      expect(deposit.$data.snackbar).toBe(true);
       expect(deposit.$data.error).toBe('Channel open failed.');
     });
 
@@ -111,7 +110,6 @@ describe('Deposit.vue', function() {
       button.trigger('click');
       const deposit = wrapper.vm;
       await flushPromises();
-      expect(deposit.$data.snackbar).toBe(true);
       expect(deposit.$data.error).toBe('Could not deposit to the channel.');
     });
 
@@ -121,7 +119,6 @@ describe('Deposit.vue', function() {
       button.trigger('click');
       const deposit = wrapper.vm;
       await flushPromises();
-      expect(deposit.$data.snackbar).toBe(true);
       expect(deposit.$data.error).toBe('unknown');
     });
 
