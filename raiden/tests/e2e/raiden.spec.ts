@@ -31,7 +31,7 @@ describe('Raiden', () => {
   let matrixServer = 'matrix.raiden.test';
 
   beforeAll(async () => {
-    jest.setTimeout(15e3);
+    jest.setTimeout(10e3);
 
     (fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -326,7 +326,7 @@ describe('Raiden', () => {
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toEqual({
         [token]: {},
       });
-    });
+    }, 60e3);
   });
 
   describe('events$', () => {
