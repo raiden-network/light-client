@@ -596,6 +596,7 @@ declare module 'matrix-js-sdk' {
   /!* models/room.js *!/
   */
   export class Room {
+    public name: string;
     public roomId: string;
     public getMember(userId: string): RoomMember | null;
     public getJoinedMembers(): RoomMember[];

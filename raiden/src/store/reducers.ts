@@ -1,4 +1,4 @@
-import { cloneDeep, get, set, unset } from 'lodash';
+import { cloneDeep, get, isEmpty, set, unset } from 'lodash';
 import { Zero } from 'ethers/constants';
 
 import { RaidenState, initialState, ChannelState, Channel } from './state';
@@ -109,8 +109,17 @@ export function raidenReducer(
       path = ['transport', 'matrix', 'address2rooms', action.address];
       return set(cloneDeep(state), path, [
         action.room,
-        ...(get(state, path, []) as string[]).filter(room => room !== action.room),
+        ...(get(state, path, []) as string[]).filter(room => room !== action.roomId),
       ]);
+
+    case RaidenActionType.MATRIX_ROOM_LEAVE:
+      path = ['transport', 'matrix', 'address2rooms', action.address];
+      state = cloneDeep(state);
+      set(state, path, (get(state, path, []) as string[]).filter(r => r !== action.roomId));
+      if (isEmpty(get(state, path, []))) {
+        unset(state, path);
+      }
+      return state;
 
     default:
       return state;

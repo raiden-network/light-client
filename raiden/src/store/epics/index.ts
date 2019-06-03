@@ -35,6 +35,9 @@ import {
   matrixCreateRoomEpic,
   matrixInviteEpic,
   matrixHandleInvitesEpic,
+  matrixLeaveExcessRoomsEpic,
+  matrixLeaveUnknownRoomsEpic,
+  matrixCleanLeftRoomsEpic,
   matrixMessageSendEpic,
 } from './matrix';
 
@@ -73,6 +76,9 @@ export const raidenEpics = (
     matrixCreateRoomEpic,
     matrixInviteEpic,
     matrixHandleInvitesEpic,
+    matrixLeaveExcessRoomsEpic,
+    matrixLeaveUnknownRoomsEpic,
+    matrixCleanLeftRoomsEpic,
     matrixMessageSendEpic,
   ]).pipe(
     mergeMap(epic => epic(limitedAction$, limitedState$, deps)),
