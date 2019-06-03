@@ -3,6 +3,7 @@ import { Observable, combineLatest, from, of, EMPTY, fromEvent, timer, ReplaySub
 import {
   catchError,
   concatMap,
+  delay,
   distinctUntilChanged,
   filter,
   groupBy,
@@ -37,7 +38,9 @@ import {
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,
   matrixRoom,
+  matrixRoomLeave,
   MatrixRoomAction,
+  MatrixRoomLeaveAction,
   MessageSendAction,
 } from '../actions';
 
@@ -430,6 +433,106 @@ export const matrixHandleInvitesEpic = (
         map(() => matrixRoom(senderPresence.address, member.roomId)),
       ),
     ),
+  );
+
+/**
+ * Leave any excess room for a partner when creating or joining a new one.
+ * Excess rooms are the ones behind a given threshold (currently 3) in the address's rooms queue
+ */
+export const matrixLeaveExcessRoomsEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+  { matrix$ }: RaidenEpicDeps,
+): Observable<MatrixRoomLeaveAction> =>
+  action$.pipe(
+    // act whenever a new room is added to the address queue in state
+    ofType<RaidenActions, MatrixRoomAction>(RaidenActionType.MATRIX_ROOM),
+    // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
+    mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
+    withLatestFrom(state$),
+    mergeMap(([{ action, matrix }, state]) => {
+      const THRESHOLD = 3;
+      const rooms = state.transport!.matrix!.address2rooms![action.address];
+      return from(rooms.filter((r, i) => i >= THRESHOLD)).pipe(
+        mergeMap(roomId => matrix.leave(roomId).then(() => roomId)),
+        map(roomId => matrixRoomLeave(action.address, roomId)),
+      );
+    }),
+  );
+
+/**
+ * Leave any room which is neither discovery/global nor known to state as a peer room
+ */
+export const matrixLeaveUnknownRoomsEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+  { matrix$, network }: RaidenEpicDeps,
+): Observable<RaidenActions> =>
+  matrix$.pipe(
+    // when matrix finishes initialization, register to matrix Room events
+    switchMap(matrix =>
+      fromEvent<Room>(matrix, 'Room').pipe(map(room => ({ matrix, roomId: room.roomId }))),
+    ),
+    delay(30e3), // this room may become known later for some reason, so wait a little
+    withLatestFrom(state$),
+    // filter for leave events to us
+    filter(([{ matrix, roomId }, state]) => {
+      const room = matrix.getRoom(roomId);
+      if (!room) return false; // room already gone while waiting
+      if (room.name && room.name.match(`#raiden_${network.name || network.chainId}_discovery:`))
+        return false;
+      const address2rooms: { [address: string]: string[] } = get(
+        state,
+        ['transport', 'matrix', 'address2rooms'],
+        {},
+      );
+      for (const address in address2rooms) {
+        for (const roomId of address2rooms[address]) {
+          if (roomId === room.roomId) return false;
+        }
+      }
+      return true;
+    }),
+    mergeMap(([{ matrix, roomId }]) => matrix.leave(roomId)),
+    ignoreElements(),
+  );
+
+/**
+ * If we leave a room for any reason (eg. a kick event), purge it from state
+ * Notice excess rooms left by matrixLeaveExcessRoomsEpic are cleaned before the matrix event is
+ * detected, and then no MatrixRoomLeaveAction is emitted for them by this epic.
+ */
+export const matrixCleanLeftRoomsEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+  { matrix$ }: RaidenEpicDeps,
+): Observable<MatrixRoomLeaveAction> =>
+  matrix$.pipe(
+    // when matrix finishes initialization, register to matrix invite events
+    switchMap(matrix =>
+      fromEvent<{ room: Room; membership: string; matrix: MatrixClient }>(
+        matrix,
+        'Room.myMembership',
+        (room, membership) => ({ room, membership, matrix }),
+      ),
+    ),
+    // filter for leave events to us
+    filter(({ membership }) => membership === 'leave'),
+    withLatestFrom(state$),
+    mergeMap(function*([{ room }, state]) {
+      const address2rooms: { [address: string]: string[] } = get(
+        state,
+        ['transport', 'matrix', 'address2rooms'],
+        {},
+      );
+      for (const address in address2rooms) {
+        for (const roomId of address2rooms[address]) {
+          if (roomId === room.roomId) {
+            yield matrixRoomLeave(address, roomId);
+          }
+        }
+      }
+    }),
   );
 
 export const matrixMessageSendEpic = (

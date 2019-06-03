@@ -26,6 +26,7 @@ export enum RaidenActionType {
   MATRIX_PRESENCE_UPDATE = 'matrixPresenceUpdate',
   MATRIX_REQUEST_MONITOR_PRESENCE_FAILED = 'matrixRequestMonitorPresenceFailed',
   MATRIX_ROOM = 'matrixRoom',
+  MATRIX_ROOM_LEAVE = 'matrixRoomLeave',
   MESSAGE_SEND = 'messageSend',
 }
 
@@ -198,7 +199,13 @@ export interface MatrixRequestMonitorPresenceActionFailed extends RaidenActionFa
 export interface MatrixRoomAction extends RaidenAction {
   type: RaidenActionType.MATRIX_ROOM;
   address: string;
-  room: string;
+  roomId: string;
+}
+
+export interface MatrixRoomLeaveAction extends RaidenAction {
+  type: RaidenActionType.MATRIX_ROOM_LEAVE;
+  address: string;
+  roomId: string;
 }
 
 export interface MessageSendAction extends RaidenAction {
@@ -436,10 +443,16 @@ export const matrixRequestMonitorPresenceFailed = (
   error,
 });
 
-export const matrixRoom = (address: string, room: string): MatrixRoomAction => ({
+export const matrixRoom = (address: string, roomId: string): MatrixRoomAction => ({
   type: RaidenActionType.MATRIX_ROOM,
   address,
-  room,
+  roomId,
+});
+
+export const matrixRoomLeave = (address: string, roomId: string): MatrixRoomLeaveAction => ({
+  type: RaidenActionType.MATRIX_ROOM_LEAVE,
+  address,
+  roomId,
 });
 
 export const messageSend = (address: string, message: string): MessageSendAction => ({
@@ -472,6 +485,7 @@ export type RaidenActions =
   | MatrixPresenceUpdateAction
   | MatrixRequestMonitorPresenceActionFailed
   | MatrixRoomAction
+  | MatrixRoomLeaveAction
   | MessageSendAction;
 
 export const RaidenEventType: (
