@@ -37,11 +37,13 @@ import {
   MatrixPresenceUpdateAction,
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,
-  matrixRoom,
-  matrixRoomLeave,
   MatrixRoomAction,
+  matrixRoom,
   MatrixRoomLeaveAction,
+  matrixRoomLeave,
   MessageSendAction,
+  MessageReceivedAction,
+  messageReceived,
 } from '../actions';
 
 interface Presences {
@@ -461,7 +463,8 @@ export const matrixLeaveExcessRoomsEpic = (
   );
 
 /**
- * Leave any room which is neither discovery/global nor known to state as a peer room
+ * Leave any room which is neither discovery/global nor known to state as a room for a user of
+ * interest
  */
 export const matrixLeaveUnknownRoomsEpic = (
   action$: Observable<RaidenActions>,
@@ -535,6 +538,9 @@ export const matrixCleanLeftRoomsEpic = (
     }),
   );
 
+/**
+ * Handles a MessageSendAction and send its message to the first room on queue for address
+ */
 export const matrixMessageSendEpic = (
   action$: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
@@ -624,4 +630,89 @@ export const matrixMessageSendEpic = (
         ignoreElements(),
       ),
     ),
+  );
+
+/**
+ * Subscribe to matrix messages and emits MessageReceivedAction upon receiving a valid message from
+ * an user of interest (one valid signature from an address we monitor) in a room we have for them
+ */
+export const matrixMessageReceivedEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+  { matrix$ }: RaidenEpicDeps,
+): Observable<MessageReceivedAction> =>
+  combineLatest(getPresences$(action$), state$).pipe(
+    // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
+    // but working inside concatMap, called only at outer emit and subscription delayed
+    multicast(new ReplaySubject<[Presences, RaidenState]>(1), presencesStateReplay$ =>
+      // actual output observable, gets/wait for the user to be in a room, and then sendMessage
+      matrix$.pipe(
+        // when matrix finishes initialization, register to matrix invite events
+        switchMap(matrix =>
+          fromEvent<{ event: MatrixEvent; room: Room; matrix: MatrixClient }>(
+            matrix,
+            'Room.timeline',
+            (event, room) => ({ matrix, event, room }),
+          ),
+        ),
+        // filter for text messages from other users
+        filter(
+          ({ event, matrix }) =>
+            event.getType() === 'm.room.message' &&
+            event.getSender() !== matrix.getUserId() &&
+            event.event.content.msgtype === 'm.text',
+        ),
+        mergeMap(({ event, room }) =>
+          presencesStateReplay$.pipe(
+            filter(([presences, state]) => {
+              const presence = find(presences, ['userId', event.getSender()]);
+              if (!presence) return false;
+              const rooms: string[] = get(
+                state,
+                ['transport', 'matrix', 'address2rooms', presence.address],
+                [],
+              );
+              if (!rooms.includes(room.roomId)) return false;
+              return true;
+            }),
+            take(1),
+            // take up to an arbitrary timeout to presence status for the sender
+            // AND the room in which this message was sent to be in sender's address room queue
+            takeUntil(timer(30e3)),
+            map(([presences]) => {
+              const presence = find(presences, ['userId', event.getSender()])!;
+              return messageReceived(
+                presence.address,
+                event.event.content.body,
+                event.event.origin_server_ts,
+                presence.userId,
+                room.roomId,
+              );
+            }),
+          ),
+        ),
+      ),
+    ),
+  );
+
+/**
+ * If matrix received a message from user in a room we have with them, but not the first on queue,
+ * update queue so this room goes to the front and will be used as send message room from now on
+ */
+export const matrixMessageReceivedUpdateRoomEpic = (
+  action$: Observable<RaidenActions>,
+  state$: Observable<RaidenState>,
+): Observable<MatrixRoomAction> =>
+  action$.pipe(
+    ofType<RaidenActions, MessageReceivedAction>(RaidenActionType.MESSAGE_RECEIVED),
+    withLatestFrom(state$),
+    filter(([action, state]) => {
+      const rooms: string[] = get(
+        state,
+        ['transport', 'matrix', 'address2rooms', action.address],
+        [],
+      );
+      return !!action.roomId && rooms.includes(action.roomId) && rooms[0] !== action.roomId;
+    }),
+    map(([action]) => matrixRoom(action.address, action.roomId!)),
   );
