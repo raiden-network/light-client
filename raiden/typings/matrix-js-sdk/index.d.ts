@@ -510,6 +510,7 @@ declare module 'matrix-js-sdk' {
     state_key?: string;
     redacts?: string;
     type: string;
+    origin_server_ts?: number;
   }
 
   interface MapStringString {

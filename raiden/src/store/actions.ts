@@ -28,6 +28,7 @@ export enum RaidenActionType {
   MATRIX_ROOM = 'matrixRoom',
   MATRIX_ROOM_LEAVE = 'matrixRoomLeave',
   MESSAGE_SEND = 'messageSend',
+  MESSAGE_RECEIVED = 'messageReceived',
 }
 
 export enum ShutdownReason {
@@ -212,6 +213,15 @@ export interface MessageSendAction extends RaidenAction {
   type: RaidenActionType.MESSAGE_SEND;
   address: string;
   message: string;
+}
+
+export interface MessageReceivedAction extends RaidenAction {
+  type: RaidenActionType.MESSAGE_RECEIVED;
+  address: string;
+  message: string;
+  ts: number;
+  userId?: string;
+  roomId?: string;
 }
 
 // action factories:
@@ -461,6 +471,21 @@ export const messageSend = (address: string, message: string): MessageSendAction
   message,
 });
 
+export const messageReceived = (
+  address: string,
+  message: string,
+  ts?: number,
+  userId?: string,
+  roomId?: string,
+): MessageReceivedAction => ({
+  type: RaidenActionType.MESSAGE_RECEIVED,
+  address,
+  message,
+  ts: ts || Date.now(),
+  userId,
+  roomId,
+});
+
 export type RaidenActions =
   | RaidenInitAction
   | RaidenShutdownAction
@@ -486,7 +511,8 @@ export type RaidenActions =
   | MatrixRequestMonitorPresenceActionFailed
   | MatrixRoomAction
   | MatrixRoomLeaveAction
-  | MessageSendAction;
+  | MessageSendAction
+  | MessageReceivedAction;
 
 export const RaidenEventType: (
   | RaidenActionType.SHUTDOWN
