@@ -72,7 +72,6 @@ export class Raiden {
   public readonly network: Network;
   private readonly signer: Signer;
   private readonly store: Store<RaidenState, RaidenActions>;
-  private readonly contractsInfo: ContractsInfo;
   private contracts: RaidenContracts;
   private readonly tokenInfo: { [token: string]: TokenInfo } = {};
 
@@ -108,7 +107,6 @@ export class Raiden {
     this.signer = signer;
     const address = state.address;
 
-    this.contractsInfo = contractsInfo;
     this.contracts = {
       registry: new Contract(
         contractsInfo.TokenNetworkRegistry.address,
@@ -283,7 +281,8 @@ export class Raiden {
       return storageOrState && typeof (storageOrState as Storage).getItem === 'function';
     }
 
-    let onState: ((state: RaidenState) => void) | undefined = undefined;
+    let onState: ((state: RaidenState) => void) | undefined = undefined,
+      onStateComplete: (() => void) | undefined = undefined;
 
     if (storageOrState && isStorage(storageOrState)) {
       const ns = `raiden_${network.name || network.chainId}_${
@@ -298,13 +297,15 @@ export class Raiden {
       loadedState = decodeRaidenState(loaded);
 
       // to be subscribed on raiden.state$
-      onState = debounce(
+      const debouncedState = debounce(
         (state: RaidenState): void => {
           storageOrState.setItem(ns, encodeRaidenState(state));
         },
         1000,
         { maxWait: 5000 },
       );
+      onState = debouncedState;
+      onStateComplete = () => debouncedState.flush();
     } else if (storageOrState && RaidenStateType.is(storageOrState)) {
       loadedState = storageOrState;
     } else if (storageOrState /* typeof storageOrState === unknown */) {
@@ -318,7 +319,7 @@ export class Raiden {
       );
 
     const raiden = new Raiden(provider, network, signer, contracts, loadedState);
-    if (onState) raiden.state$.subscribe(onState);
+    if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
 
