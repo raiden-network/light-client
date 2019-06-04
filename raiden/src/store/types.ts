@@ -35,10 +35,6 @@ export class EnumType<A> extends t.Type<A> {
   }
 }
 
-// simple helper function
-export const createEnumType = <T>(e: object, name?: string): EnumType<T> =>
-  new EnumType<T>(e, name);
-
 export interface ChannelId {
   tokenNetwork: string;
   partner: string;

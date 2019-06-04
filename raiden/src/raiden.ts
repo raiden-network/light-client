@@ -37,7 +37,6 @@ import {
 import { ShutdownReason } from './constants';
 import {
   RaidenState,
-  RaidenStateType,
   initialState,
   encodeRaidenState,
   decodeRaidenState,
@@ -308,7 +307,7 @@ export class Raiden {
       );
       onState = debouncedState;
       onStateComplete = () => debouncedState.flush();
-    } else if (storageOrState && RaidenStateType.is(storageOrState)) {
+    } else if (storageOrState && RaidenState.is(storageOrState)) {
       loadedState = storageOrState;
     } else if (storageOrState /* typeof storageOrState === unknown */) {
       loadedState = decodeRaidenState(storageOrState);
