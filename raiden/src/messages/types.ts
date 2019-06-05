@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import * as t from 'io-ts';
 // import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
-import { Address, BigNumberType, Hash, PositiveInt, Secret, Signature } from '../store/types';
+import { Address, BigNumberC, Hash, PositiveInt, Secret, Signature } from '../store/types';
 
 // types
 
@@ -37,7 +37,7 @@ export const SecretRequest = t.intersection([
     type: t.literal('SecretRequest'),
     payment_identifier: t.Int,
     secrethash: Hash,
-    amount: BigNumberType,
+    amount: BigNumberC,
     expiration: PositiveInt,
   }),
   SignedRetrieableMessage,
@@ -57,8 +57,8 @@ const EnvelopeMessage = t.intersection([
   t.type({
     chain_id: PositiveInt,
     nonce: PositiveInt,
-    transferred_amount: BigNumberType,
-    locked_amount: BigNumberType,
+    transferred_amount: BigNumberC,
+    locked_amount: BigNumberC,
     locksroot: Hash,
     channel_identifier: PositiveInt,
     token_network_address: Address,
@@ -67,7 +67,7 @@ const EnvelopeMessage = t.intersection([
 ]);
 
 const Lock = t.type({
-  amount: BigNumberType,
+  amount: BigNumberC,
   expiration: PositiveInt,
   secrethash: Hash,
 });

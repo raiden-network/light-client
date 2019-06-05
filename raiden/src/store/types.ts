@@ -1,14 +1,14 @@
 import * as t from 'io-ts';
-import { BigNumber, bigNumberify } from 'ethers/utils';
+import { BigNumber, bigNumberify, getAddress } from 'ethers/utils';
 
 const StringOrNumber = t.union([t.string, t.number]);
 
-const bigNumberGuard = (u: unknown): u is BigNumber => u instanceof BigNumber;
-export const BigNumberType = new t.Type<BigNumber, string>(
+const isBigNumber = (u: unknown): u is BigNumber => u instanceof BigNumber;
+export const BigNumberC = new t.Type<BigNumber, string>(
   'BigNumber',
-  bigNumberGuard,
+  isBigNumber,
   (u, c) => {
-    if (bigNumberGuard(u)) return t.success(u);
+    if (isBigNumber(u)) return t.success(u);
     return StringOrNumber.validate(u, c).chain(s => {
       try {
         return t.success(bigNumberify(s));
@@ -42,20 +42,22 @@ export interface ChannelId {
 
 /**
  * Helper type to declare and validate an arbitrary or variable-sized hex bytestring
- * Like a branded codec, but allows custom/per size sub-types
+ * Like a branded codec, but allows custom/per-size sub-types
+ * @param size Required number of bytes. Pass undefined or zero to have a variable-sized type
+ * @param name Optional type name.
  */
-export class HexBytes<S extends number | undefined = undefined> extends t.Type<string> {
+export class HexBytes<S extends number | undefined> extends t.Type<string> {
   public readonly _tag: 'HexString' = 'HexString';
   public size: S;
-  private regex = /^0x[0-9a-f]*$/i;
-  public constructor(name?: string, size?: S) {
+  private regex = /^0x([0-9a-f]{2})*$/i;
+  public constructor(size: S, name?: string) {
     super(
       name || (size ? `HexString<${size}>` : 'HexString'),
       (u): u is string => typeof u === 'string' && !!u.match(this.regex),
       (u, c) => (this.is(u) ? t.success(u) : t.failure(u, c)),
       t.identity,
     );
-    this.size = (size as unknown) as S;
+    this.size = size;
     if (typeof size === 'number' && size > 0) {
       this.regex = new RegExp(`^0x[0-9a-f]{${size * 2}}$`, 'i');
     }
@@ -77,15 +79,31 @@ export type Positive = t.TypeOf<typeof Positive>;
 export const PositiveInt = t.intersection([t.Int, Positive]);
 export type PositiveInt = t.TypeOf<typeof PositiveInt>;
 
-export const Signature = new HexBytes('Signature', 65);
+export const Signature = new HexBytes(65, 'Signature');
 export type Signature = t.TypeOf<typeof Signature>;
 
-export const Hash = new HexBytes('Hash', 32);
+export const Hash = new HexBytes(32, 'Hash');
 export type Hash = t.TypeOf<typeof Hash>;
 
-export const Secret = new HexBytes();
+export const Secret = new HexBytes(undefined, 'Secret');
 export type Secret = t.TypeOf<typeof Secret>;
 
-// TODO?: validate checksum
-export const Address = new HexBytes('Address', 20);
+export const PrivateKey = new HexBytes(32, 'PrivateKey');
+export type PrivateKey = t.TypeOf<typeof PrivateKey>;
+
+const isAddress = (u: unknown): u is string => {
+  try {
+    return typeof u === 'string' && getAddress(u) === u;
+  } catch (e) {}
+  return false;
+};
+/**
+ * Validate a string is a checksummed address
+ */
+export const Address = new t.Type<string>(
+  'Address',
+  isAddress,
+  (u, c) => (isAddress(u) ? t.success(u) : t.failure(u, c)),
+  t.identity,
+);
 export type Address = t.TypeOf<typeof Address>;

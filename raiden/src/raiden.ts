@@ -35,6 +35,7 @@ import {
   TokenInfo,
 } from './types';
 import { ShutdownReason } from './constants';
+import { Address, PrivateKey } from './store/types';
 import {
   RaidenState,
   initialState,
@@ -252,19 +253,20 @@ export class Raiden {
 
     let signer: Signer;
     if (typeof account === 'string') {
-      if (account.length === 42) {
+      if (Address.is(account)) {
         // address
         const accounts = await provider.listAccounts();
         if (accounts.indexOf(account) < 0)
           throw new Error(`Account "${account}" not found in provider, got=${accounts}`);
         signer = provider.getSigner(account);
-      } else if (account.length === 66) {
+      } else if (PrivateKey.is(account)) {
         // private key
         signer = new Wallet(account, provider);
       } else {
         throw new Error('String account must be either a 0x-encoded address or private key');
       }
-    } /* if (typeof account === 'number') */ else {
+    } else {
+      // if (typeof account === 'number')
       // index of account in provider
       signer = provider.getSigner(account);
     }

@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
-import { EnumType, BigNumberType } from './types';
+import { EnumType, BigNumberC } from './types';
 
 // types
 
@@ -15,13 +15,13 @@ export enum ChannelState {
   settled = 'settled',
 }
 
-const ChannelStateType = new EnumType<ChannelState>(ChannelState, 'ChannelState');
+const ChannelStateC = new EnumType<ChannelState>(ChannelState, 'ChannelState');
 
 export const Channel = t.intersection([
   t.type({
-    state: ChannelStateType,
-    totalDeposit: BigNumberType,
-    partnerDeposit: BigNumberType,
+    state: ChannelStateC,
+    totalDeposit: BigNumberC,
+    partnerDeposit: BigNumberC,
   }),
   t.partial({
     id: t.number,
