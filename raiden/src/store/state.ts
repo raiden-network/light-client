@@ -1,37 +1,9 @@
 import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
-import { EnumType, BigNumberC } from './types';
+import { Channel } from '../channels/state';
 
 // types
-
-export enum ChannelState {
-  opening = 'opening',
-  open = 'open',
-  closing = 'closing',
-  closed = 'closed',
-  settleable = 'settleable',
-  settling = 'settling',
-  settled = 'settled',
-}
-
-const ChannelStateC = new EnumType<ChannelState>(ChannelState, 'ChannelState');
-
-export const Channel = t.intersection([
-  t.type({
-    state: ChannelStateC,
-    totalDeposit: BigNumberC,
-    partnerDeposit: BigNumberC,
-  }),
-  t.partial({
-    id: t.number,
-    settleTimeout: t.number,
-    openBlock: t.number,
-    closeBlock: t.number,
-  }),
-]);
-
-export type Channel = t.TypeOf<typeof Channel>;
 
 const RaidenMatrixSetup = t.type({
   userId: t.string,

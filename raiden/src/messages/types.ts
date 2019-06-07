@@ -8,6 +8,7 @@
 import * as t from 'io-ts';
 // import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { Address, BigNumberC, Hash, PositiveInt, Secret, Signature } from '../store/types';
+import { Lock } from '../channels/types';
 
 // types
 
@@ -79,13 +80,6 @@ const EnvelopeMessage = t.intersection([
   }),
   SignedRetrieableMessage,
 ]);
-
-// a lock representing a locked amount in a channel
-const Lock = t.type({
-  amount: BigNumberC,
-  expiration: PositiveInt,
-  secrethash: Hash,
-});
 
 // base for locked and refund transfer, they differentiate on the type tag
 const LockedTransferBase = t.intersection([
