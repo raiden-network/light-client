@@ -2,7 +2,7 @@ import { cloneDeep, get } from 'lodash';
 import { Zero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
 
-import { RaidenState, initialState, raidenReducer, ChannelState } from 'raiden/store';
+import { RaidenState, initialState, raidenReducer } from 'raiden/store';
 import {
   newBlock,
   raidenInit,
@@ -22,6 +22,7 @@ import {
   matrixRoom,
   matrixRoomLeave,
 } from 'raiden/store/actions';
+import { ChannelState } from 'raiden/channels';
 
 describe('raidenReducer', () => {
   let state: RaidenState;
@@ -74,8 +75,8 @@ describe('raidenReducer', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.opening,
-            totalDeposit: Zero,
-            partnerDeposit: Zero,
+            own: { deposit: Zero },
+            partner: { deposit: Zero },
           },
         },
       });
@@ -93,8 +94,8 @@ describe('raidenReducer', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
-            totalDeposit: Zero,
-            partnerDeposit: Zero,
+            own: { deposit: Zero },
+            partner: { deposit: Zero },
             id: channelId,
             settleTimeout,
             openBlock,
@@ -175,8 +176,8 @@ describe('raidenReducer', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
-            totalDeposit: deposit, // our total deposit was updated
-            partnerDeposit: Zero,
+            own: { deposit: deposit }, // our total deposit was updated
+            partner: { deposit: Zero },
             id: channelId,
           },
         },
@@ -201,8 +202,8 @@ describe('raidenReducer', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
-            totalDeposit: Zero,
-            partnerDeposit: deposit, // partner's total deposit was updated
+            own: { deposit: Zero },
+            partner: { deposit: deposit }, // partner's total deposit was updated
             id: channelId,
           },
         },

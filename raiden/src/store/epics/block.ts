@@ -3,7 +3,8 @@ import { filter, mergeMap, withLatestFrom } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
 
 import { RaidenAction } from '../';
-import { RaidenState, ChannelState } from '../state';
+import { ChannelState } from '../../channels';
+import { RaidenState } from '../state';
 import { channelSettleable, newBlock } from '../actions';
 
 /**

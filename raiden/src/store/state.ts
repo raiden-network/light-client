@@ -1,7 +1,8 @@
 import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
-import { Channel } from '../channels/state';
+import { Address } from './types';
+import { Channel } from '../channels';
 
 // types
 
@@ -16,10 +17,10 @@ export type RaidenMatrixSetup = t.TypeOf<typeof RaidenMatrixSetup>;
 
 export const RaidenState = t.intersection([
   t.type({
-    address: t.string,
+    address: Address,
     blockNumber: t.number,
-    tokenNetworks: t.record(t.string, t.record(t.string, Channel)),
-    token2tokenNetwork: t.record(t.string, t.string),
+    tokenNetworks: t.record(Address, t.record(Address, Channel)),
+    token2tokenNetwork: t.record(Address, Address),
   }),
   t.partial({
     transport: t.partial({
@@ -39,7 +40,7 @@ export const RaidenState = t.intersection([
 export type RaidenState = t.TypeOf<typeof RaidenState>;
 
 // helpers, utils & constants
-
+// TODO: replace JSON functions with BigNumber-aware ones
 export function encodeRaidenState(state: RaidenState): string {
   return JSON.stringify(RaidenState.encode(state), undefined, 2);
 }

@@ -14,7 +14,7 @@ export enum ChannelState {
 
 export const ChannelStateC = new EnumType<ChannelState>(ChannelState, 'ChannelState');
 
-// Represents a Hash Time Locked amount in a channel
+// Represents a HashTime-Locked amount in a channel
 export const Lock = t.type({
   amount: BigNumberC,
   expiration: PositiveInt,

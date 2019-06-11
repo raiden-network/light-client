@@ -3,7 +3,6 @@ import { cloneDeep, get, isEmpty, set, unset } from 'lodash';
 import { Zero } from 'ethers/constants';
 
 import { RaidenAction } from './';
-import { RaidenState, initialState, ChannelState, Channel } from './state';
 import {
   newBlock,
   tokenMonitored,
@@ -20,9 +19,11 @@ import {
   matrixRoom,
   matrixRoomLeave,
 } from './actions';
+import { RaidenState, initialState } from './state';
+import { ChannelState, Channel } from '../channels';
 
 export function raidenReducer(
-  state: RaidenState = initialState,
+  state: Readonly<RaidenState> = initialState,
   action: RaidenAction,
 ): RaidenState {
   let channel: Channel;
@@ -46,16 +47,16 @@ export function raidenReducer(
       if (get(state, path)) return state; // there's already a channel with partner
       return set(cloneDeep(state), path, {
         state: ChannelState.opening,
-        totalDeposit: Zero,
-        partnerDeposit: Zero,
+        own: { deposit: Zero },
+        partner: { deposit: Zero },
       });
 
     case getType(channelOpened):
       path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner];
       channel = {
-        totalDeposit: Zero,
-        partnerDeposit: Zero,
         state: ChannelState.open,
+        own: { deposit: Zero },
+        partner: { deposit: Zero },
         id: action.payload.id,
         settleTimeout: action.payload.settleTimeout,
         openBlock: action.payload.openBlock,
@@ -76,9 +77,9 @@ export function raidenReducer(
       if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
         return state;
       if (action.payload.participant === state.address)
-        channel.totalDeposit = action.payload.totalDeposit;
+        channel.own.deposit = action.payload.totalDeposit;
       else if (action.payload.participant === action.meta.partner)
-        channel.partnerDeposit = action.payload.totalDeposit;
+        channel.partner.deposit = action.payload.totalDeposit;
       else return state; // shouldn't happen, deposit from neither us or partner
       return set(cloneDeep(state), path, channel);
 
