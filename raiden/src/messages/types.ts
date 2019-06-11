@@ -4,8 +4,8 @@
  * They include BigNumber strings validation, enum validation (if needed), Address checksum
  * validation, etc, and converting everything to its respective object, where needed.
  */
-
 import * as t from 'io-ts';
+
 // import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import {
   Address,
@@ -33,10 +33,11 @@ export const MessageTypeC = new EnumType<MessageType>(MessageType, 'MessageType'
 
 // Mixin for all tagged messages
 export const Message = t.type({ type: MessageTypeC });
-export type Message = t.TypeOf<typeof Message>;
 
-// Mixin for a message that contains a signature
-export const SignedMessage = t.type({
+// Mixin for a message that may contain a signature
+// The partial here is for messages that we've created and are about to sign, but messages coming
+// from peers must always have it, and signature should be validated elsewhere
+export const SignedMessage = t.partial({
   signature: Signature,
 });
 
@@ -162,7 +163,7 @@ export const LockExpired = t.intersection([
 ]);
 export type LockExpired = t.TypeOf<typeof LockExpired>;
 
-export type Messages =
+export type Message =
   | Delivered
   | Processed
   | SecretRequest
