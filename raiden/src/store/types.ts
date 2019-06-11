@@ -79,6 +79,9 @@ export type Positive = t.TypeOf<typeof Positive>;
 export const PositiveInt = t.intersection([t.Int, Positive]);
 export type PositiveInt = t.TypeOf<typeof PositiveInt>;
 
+export const Bytes = new HexBytes(undefined, 'Bytes');
+export type Bytes = t.TypeOf<typeof Bytes>;
+
 export const Signature = new HexBytes(65, 'Signature');
 export type Signature = t.TypeOf<typeof Signature>;
 
