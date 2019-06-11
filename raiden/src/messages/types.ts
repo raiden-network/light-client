@@ -43,7 +43,7 @@ export const SignedMessage = t.partial({
 
 // Mixin of a message that contains an identifier and should be ack'ed with a respective Delivered
 const RetrieableMessage = t.type({
-  message_identifier: t.Int,
+  message_identifier: PositiveInt,
 });
 
 // Mixin for both Signed and Retrieable Messages
@@ -53,7 +53,7 @@ const SignedRetrieableMessage = t.intersection([RetrieableMessage, SignedMessage
 export const Delivered = t.intersection([
   t.type({
     type: t.literal(MessageType.DELIVERED),
-    delivered_message_identifier: t.Int,
+    delivered_message_identifier: PositiveInt,
   }),
   SignedMessage,
   Message,
@@ -73,7 +73,7 @@ export type Processed = t.TypeOf<typeof Processed>;
 export const SecretRequest = t.intersection([
   t.type({
     type: t.literal(MessageType.SECRET_REQUEST),
-    payment_identifier: t.Int,
+    payment_identifier: PositiveInt,
     secrethash: Hash,
     amount: BigNumberC,
     expiration: PositiveInt,
@@ -97,7 +97,7 @@ export const EnvelopeMessage = t.intersection([
   t.type({
     chain_id: PositiveInt,
     token_network_address: Address,
-    channel_identifier: t.Int,
+    channel_identifier: PositiveInt,
     nonce: PositiveInt,
     transferred_amount: BigNumberC,
     locked_amount: BigNumberC,
@@ -110,7 +110,7 @@ export type EnvelopeMessage = t.TypeOf<typeof EnvelopeMessage>;
 // base for locked and refund transfer, they differentiate only on the type tag
 const LockedTransferBase = t.intersection([
   t.type({
-    payment_identifier: t.Int,
+    payment_identifier: PositiveInt,
     token: Address,
     recipient: Address,
     lock: Lock,
@@ -145,7 +145,7 @@ export type RefundTransfer = t.TypeOf<typeof RefundTransfer>;
 export const Unlock = t.intersection([
   t.type({
     type: t.literal(MessageType.UNLOCK),
-    payment_identifier: t.Int,
+    payment_identifier: PositiveInt,
     secret: Secret,
   }),
   EnvelopeMessage,

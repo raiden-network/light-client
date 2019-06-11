@@ -29,6 +29,7 @@ function encode(data: number | Arrayish | BigNumber, length: number): Uint8Array
   let bytes: Uint8Array;
   if (typeof data === 'number') data = bigNumberify(data);
   if (BigNumberC.is(data)) {
+    if (data.lt(0)) throw new Error('Number is negative');
     bytes = arrayify(data);
     if (bytes.length > length) throw new Error('Number too large');
     bytes = padZeros(bytes, length);
