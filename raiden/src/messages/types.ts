@@ -116,7 +116,7 @@ const LockedTransferBase = t.intersection([
     lock: Lock,
     target: Address,
     initiator: Address,
-    // fee: PositiveInt,
+    fee: PositiveInt,
   }),
   EnvelopeMessage,
 ]);

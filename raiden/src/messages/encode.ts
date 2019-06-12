@@ -1,8 +1,9 @@
 // import * as t from 'io-ts';
-import { BigNumber, bigNumberify } from 'ethers/utils';
+import { BigNumber, bigNumberify, keccak256 } from 'ethers/utils';
 import { Arrayish, arrayify, concat, hexlify, isArrayish, padZeros } from 'ethers/utils/bytes';
+import { HashZero } from 'ethers/constants';
 
-import { BigNumberC, Bytes } from '../store/types';
+import { BigNumberC, Bytes, Hash } from '../store/types';
 import { Message, MessageType } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
@@ -46,10 +47,15 @@ function encode(data: number | Arrayish | BigNumber, length: number): Uint8Array
 /**
  * Pack a message in a hex-string format, **without** signature
  * This packed hex-byte-array can then be used for signing.
+ * On Raiden python client, this is the output of `_data_to_sign` method of the messages, as the
+ * actual packed encoding was once used for binary transport protocols, but nowadays is used only
+ * for generating data to be signed, which is the purpose of our implementation.
+ *
  * @param message Message to be packed
  * @returns HexBytes hex-encoded string data representing message in binary format
  */
 export function packMessage(message: Message): Bytes {
+  let messageHash: Hash, balanceHash: Hash;
   switch (message.type) {
     case MessageType.DELIVERED:
       return hexlify(
@@ -57,6 +63,62 @@ export function packMessage(message: Message): Bytes {
           encode(CMDIDs[message.type], 1),
           encode(0, 3), // pad(3)
           encode(message.delivered_message_identifier, 8),
+        ]),
+      );
+    case MessageType.PROCESSED:
+      return hexlify(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3), // pad(3)
+          encode(message.message_identifier, 8),
+        ]),
+      );
+    case MessageType.LOCKED_TRANSFER:
+      // hash of packed representation of the whole message
+      messageHash = keccak256(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3), // pad(3)
+          encode(message.nonce, 8),
+          encode(message.chain_id, 32),
+          encode(message.message_identifier, 8),
+          encode(message.payment_identifier, 8),
+          encode(message.lock.expiration, 32),
+          encode(message.token_network_address, 20),
+          encode(message.token, 20),
+          encode(message.channel_identifier, 32),
+          encode(message.recipient, 20),
+          encode(message.target, 20),
+          encode(message.initiator, 20),
+          encode(message.locksroot, 32),
+          encode(message.lock.secrethash, 32),
+          encode(message.transferred_amount, 32),
+          encode(message.locked_amount, 32),
+          encode(message.lock.amount, 32),
+          encode(message.fee, 32),
+        ]),
+      );
+      balanceHash =
+        message.transferred_amount.eq(0) &&
+        message.locked_amount.eq(0) &&
+        message.locksroot === HashZero
+          ? HashZero
+          : keccak256(
+              concat([
+                encode(message.transferred_amount, 32),
+                encode(message.locked_amount, 32),
+                encode(message.locksroot, 32),
+              ]),
+            );
+      return hexlify(
+        concat([
+          encode(message.token_network_address, 20),
+          encode(message.chain_id, 32),
+          encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
+          encode(message.channel_identifier, 32),
+          encode(balanceHash, 32), // balance hash
+          encode(message.nonce, 32),
+          encode(messageHash, 32), // additional hash
         ]),
       );
     default:
