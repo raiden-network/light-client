@@ -91,7 +91,7 @@ const getPresences$ = (
  */
 export const matrixStartEpic = (
   action$: Observable<RaidenActions>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
 ): Observable<RaidenActions> =>
   action$.pipe(
@@ -107,7 +107,7 @@ export const matrixStartEpic = (
  */
 export const matrixShutdownEpic = (
   action$: Observable<RaidenActions>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
 ): Observable<RaidenActions> =>
   matrix$.pipe(
@@ -125,7 +125,7 @@ export const matrixShutdownEpic = (
  */
 export const matrixMonitorPresenceEpic = (
   action$: Observable<RaidenActions>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
 ): Observable<MatrixPresenceUpdateAction | MatrixRequestMonitorPresenceActionFailed> =>
   action$.pipe(
@@ -224,7 +224,7 @@ export const matrixMonitorPresenceEpic = (
  */
 export const matrixPresenceUpdateEpic = (
   action$: Observable<RaidenActions>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
 ): Observable<MatrixPresenceUpdateAction> =>
   matrix$.pipe(
@@ -389,7 +389,7 @@ export const matrixInviteEpic = (
  */
 export const matrixHandleInvitesEpic = (
   action$: Observable<RaidenActions>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
 ): Observable<MatrixRoomAction> =>
   matrix$.pipe(
@@ -455,7 +455,7 @@ export const matrixLeaveExcessRoomsEpic = (
     mergeMap(([{ action, matrix }, state]) => {
       const THRESHOLD = 3;
       const rooms = state.transport!.matrix!.address2rooms![action.address];
-      return from(rooms.filter((r, i) => i >= THRESHOLD)).pipe(
+      return from(rooms.filter(({}, i) => i >= THRESHOLD)).pipe(
         mergeMap(roomId => matrix.leave(roomId).then(() => roomId)),
         map(roomId => matrixRoomLeave(action.address, roomId)),
       );
@@ -467,7 +467,7 @@ export const matrixLeaveExcessRoomsEpic = (
  * interest
  */
 export const matrixLeaveUnknownRoomsEpic = (
-  action$: Observable<RaidenActions>,
+  {  }: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { matrix$, network }: RaidenEpicDeps,
 ): Observable<RaidenActions> =>
@@ -506,7 +506,7 @@ export const matrixLeaveUnknownRoomsEpic = (
  * detected, and then no MatrixRoomLeaveAction is emitted for them by this epic.
  */
 export const matrixCleanLeftRoomsEpic = (
-  action$: Observable<RaidenActions>,
+  {  }: Observable<RaidenActions>,
   state$: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
 ): Observable<MatrixRoomLeaveAction> =>
@@ -598,7 +598,7 @@ export const matrixMessageSendEpic = (
                   return fromEvent<RoomMember>(
                     matrix,
                     'RoomMember.membership',
-                    (event: MatrixEvent, member: RoomMember) => member,
+                    ({  }: MatrixEvent, member: RoomMember) => member,
                   ).pipe(
                     // use up-to-date presences again, which may have been updated while
                     // waiting for member join event (e.g. user roamed and was re-invited)

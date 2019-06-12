@@ -108,7 +108,7 @@ export function raidenReducer(
     case RaidenActionType.MATRIX_ROOM:
       path = ['transport', 'matrix', 'address2rooms', action.address];
       return set(cloneDeep(state), path, [
-        action.room,
+        action.roomId,
         ...(get(state, path, []) as string[]).filter(room => room !== action.roomId),
       ]);
 
