@@ -367,19 +367,21 @@ export const matrixInviteEpic = (
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
     withLatestFrom(state$),
     mergeMap(([{ action, matrix }, state]) => {
-      let roomId: string | undefined = get(state, [
+      const roomId: string | undefined = get(state, [
         'transport',
         'matrix',
         'address2rooms',
         action.address,
         0,
       ]);
-      if (!roomId) return EMPTY;
-      const room = matrix.getRoom(roomId);
-      if (!room) return EMPTY;
-      const member = room.getMember(action.userId);
-      if (member) return EMPTY;
-      return from(matrix.invite(roomId, action.userId));
+      if (roomId) {
+        const room = matrix.getRoom(roomId);
+        if (room) {
+          const member = room.getMember(action.userId);
+          if (!member) return from(matrix.invite(roomId, action.userId));
+        }
+      }
+      return EMPTY;
     }),
     ignoreElements(),
   );
@@ -647,7 +649,7 @@ export const matrixMessageReceivedEpic = (
     multicast(new ReplaySubject<[Presences, RaidenState]>(1), presencesStateReplay$ =>
       // actual output observable, gets/wait for the user to be in a room, and then sendMessage
       matrix$.pipe(
-        // when matrix finishes initialization, register to matrix invite events
+        // when matrix finishes initialization, register to matrix timeline events
         switchMap(matrix =>
           fromEvent<{ event: MatrixEvent; room: Room; matrix: MatrixClient }>(
             matrix,

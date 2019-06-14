@@ -22,6 +22,8 @@ import {
   raidenInit,
   tokenMonitored,
   matrixSetup,
+  matrixRoom,
+  matrixRoomLeave,
 } from 'raiden/store';
 
 describe('raidenReducer', () => {
@@ -409,7 +411,9 @@ describe('raidenReducer', () => {
       ].reduce(raidenReducer, state);
       expect(get(newState.tokenNetworks, [tokenNetwork, partner])).toBeUndefined();
     });
+  });
 
+  describe('matrix', () => {
     test('matrixSetup', () => {
       const server = 'http://matrix.raiden.tld',
         setup = {
@@ -421,6 +425,37 @@ describe('raidenReducer', () => {
       const newState = [matrixSetup(server, setup)].reduce(raidenReducer, state);
       expect(get(newState, ['transport', 'matrix', 'server'])).toBe(server);
       expect(get(newState, ['transport', 'matrix', 'setup'])).toBe(setup);
+    });
+
+    test('matrixRoom', () => {
+      const roomId = '!roomId:matrix.raiden.test',
+        newRoomId = '!newRoomId:matrix.raiden.test';
+
+      let newState = [matrixRoom(partner, roomId)].reduce(raidenReducer, state);
+      expect(get(newState, ['transport', 'matrix', 'address2rooms', partner])).toEqual([roomId]);
+
+      // new room goes to the front
+      newState = [matrixRoom(partner, newRoomId)].reduce(raidenReducer, newState);
+      expect(get(newState, ['transport', 'matrix', 'address2rooms', partner])).toEqual([
+        newRoomId,
+        roomId,
+      ]);
+
+      // old room is brought back to the front
+      newState = [matrixRoom(partner, roomId)].reduce(raidenReducer, newState);
+      expect(get(newState, ['transport', 'matrix', 'address2rooms', partner])).toEqual([
+        roomId,
+        newRoomId,
+      ]);
+    });
+
+    test('matrixRoomLeave', () => {
+      const roomId = '!roomId:matrix.raiden.test';
+      const newState = [matrixRoom(partner, roomId), matrixRoomLeave(partner, roomId)].reduce(
+        raidenReducer,
+        state,
+      );
+      expect(get(newState, ['transport', 'matrix', 'address2rooms', partner])).toBeUndefined();
     });
   });
 });

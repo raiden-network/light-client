@@ -206,24 +206,35 @@ export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<L
 }
 
 /* Returns a mocked MatrixClient */
-export function makeMatrix(server: string): jest.Mocked<MatrixClient> {
+export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixClient> {
   return Object.assign(new EventEmitter(), {
     startClient: jest.fn(async () => true),
     stopClient: jest.fn(() => true),
     setDisplayName: jest.fn(async () => true),
     joinRoom: jest.fn(async () => true),
     loginWithPassword: jest.fn().mockRejectedValue(new Error('invalid password')),
-    register: jest.fn(async userName => ({
-      user_id: `@${userName}:${server}`,
-      device_id: `${userName}_device_id`,
-      access_token: `${userName}_access_token`,
-    })),
+    register: jest.fn(async userName => {
+      userId = `@${userName}:${server}`;
+      return {
+        user_id: userId,
+        device_id: `${userName}_device_id`,
+        access_token: `${userName}_access_token`,
+      };
+    }),
     searchUserDirectory: jest.fn(async ({ term }) => ({
       results: [{ user_id: `@${term}:${server}`, display_name: `${term}_display_name` }],
     })),
+    getUserId: jest.fn(() => userId),
     getUsers: jest.fn(() => []),
     getUser: jest.fn(userId => ({ userId, presence: 'offline' })),
     getProfileInfo: jest.fn(async userId => ({ displayname: `${userId}_display_name` })),
+    createRoom: jest.fn(async ({ visibility, invite }) => ({
+      room_id: `!roomId_${visibility || 'public'}_with_${(invite || []).join('_')}:${server}`,
+    })),
+    getRoom: jest.fn(roomId => ({ roomId, getMember: jest.fn() })),
+    invite: jest.fn(async () => true),
+    leave: jest.fn(async () => true),
+    sendEvent: jest.fn(async () => true),
     _http: {
       opts: {},
       // mock request done by raiden/utils::getUserPresence

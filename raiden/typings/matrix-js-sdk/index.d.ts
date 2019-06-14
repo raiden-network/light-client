@@ -226,7 +226,6 @@ declare module 'matrix-js-sdk' {
       callback?: requestCallback,
       userIds?: string[],
     ): Promise<any> | MatrixError | void; // TODO
-    public emit(event: string, listener: any): boolean;
     public exportRoomKeys(): Promise<any>;
     public forget(
       roomId: string,

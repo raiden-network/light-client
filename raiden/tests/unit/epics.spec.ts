@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
 import { raidenEpicDeps, makeLog, makeMatrix } from './mocks';
 
-import { merge, of, from, timer, EMPTY, AsyncSubject } from 'rxjs';
+import { AsyncSubject, BehaviorSubject, merge, of, from, timer, EMPTY, Subject } from 'rxjs';
 import { first, tap, ignoreElements, takeUntil, toArray } from 'rxjs/operators';
-import { marbles } from 'rxjs-marbles/jest';
+import { marbles, fakeSchedulers } from 'rxjs-marbles/jest';
 import { range } from 'lodash';
 
 import { AddressZero, Zero } from 'ethers/constants';
@@ -39,6 +39,10 @@ import {
   channelSettled,
   matrixRequestMonitorPresence,
   matrixPresenceUpdate,
+  matrixRoom,
+  messageSend,
+  messageReceived,
+  matrixSetup,
 } from 'raiden/store/actions';
 
 import { raidenEpics } from 'raiden/store/epics';
@@ -61,6 +65,16 @@ import {
   matrixShutdownEpic,
   matrixMonitorPresenceEpic,
   matrixPresenceUpdateEpic,
+  matrixCreateRoomEpic,
+  matrixInviteEpic,
+  matrixHandleInvitesEpic,
+  matrixLeaveExcessRoomsEpic,
+  matrixLeaveUnknownRoomsEpic,
+  matrixCleanLeftRoomsEpic,
+  matrixMessageSendEpic,
+  matrixMessageReceivedEpic,
+  matrixMessageReceivedUpdateRoomEpic,
+  matrixStartEpic,
 } from 'raiden/store/epics/matrix';
 
 describe('raidenEpics', () => {
@@ -90,7 +104,7 @@ describe('raidenEpics', () => {
     displayName = 'display_name',
     partnerUserId = `@${partner.toLowerCase()}:${matrixServer}`;
 
-  const matrix = makeMatrix(matrixServer);
+  const matrix = makeMatrix(userId, matrixServer);
 
   (createClient as jest.Mock).mockReturnValue(matrix);
 
@@ -1291,6 +1305,30 @@ describe('raidenEpics', () => {
     });
   });
 
+  describe('matrixStartEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('startClient called on MATRIX_SETUP', async () => {
+      expect.assertions(4);
+      expect(matrix.startClient).not.toHaveBeenCalled();
+      await expect(
+        matrixStartEpic(
+          of(matrixSetup(matrixServer, { userId, accessToken, deviceId, displayName })),
+          EMPTY,
+          depsMock,
+        ).toPromise(),
+      ).resolves.toBeUndefined();
+      expect(matrix.startClient).toHaveBeenCalledTimes(1);
+      expect(matrix.startClient).toHaveBeenCalledWith(
+        expect.objectContaining({ initialSyncLimit: 0 }),
+      );
+    });
+  });
+
   describe('matrixShutdownEpic', () => {
     beforeEach(() => {
       depsMock.matrix$ = new AsyncSubject();
@@ -1589,6 +1627,476 @@ describe('raidenEpics', () => {
       });
 
       await expect(promise).resolves.toBeUndefined();
+    });
+  });
+
+  describe('matrixCreateRoomEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('success: concurrent messages create single room', async () => {
+      expect.assertions(2);
+      const action$ = of(
+          messageSend(partner, 'message1'),
+          messageSend(partner, 'message2'),
+          messageSend(partner, 'message3'),
+          messageSend(partner, 'message4'),
+          messageSend(partner, 'message5'),
+          matrixPresenceUpdate(partner, partnerUserId, true, 123),
+        ),
+        state$ = new BehaviorSubject(state);
+
+      const promise = matrixCreateRoomEpic(action$, state$, depsMock)
+        .pipe(
+          // update state with action, to ensure serial handling knows about already created room
+          tap(action => state$.next(raidenReducer(state, action))),
+          takeUntil(timer(50)),
+        )
+        .toPromise();
+
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_ROOM,
+        address: partner,
+        roomId: expect.stringMatching(new RegExp(`^!.*:${matrixServer}$`)),
+      });
+      // ensure multiple concurrent messages only create a single room
+      expect(matrix.createRoom).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('matrixInviteEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('do not invite if there is no room for user', async () => {
+      expect.assertions(2);
+      const action$ = of(matrixPresenceUpdate(partner, partnerUserId, true, 123)),
+        state$ = of(state);
+
+      const promise = matrixInviteEpic(action$, state$, depsMock).toPromise();
+
+      await expect(promise).resolves.toBeUndefined();
+      expect(matrix.invite).not.toHaveBeenCalled();
+    });
+
+    test('invite if there is room for user', async () => {
+      expect.assertions(3);
+      const action$ = of(matrixPresenceUpdate(partner, partnerUserId, true, 123)),
+        roomId = `!roomId_for_partner:${matrixServer}`,
+        state$ = of(raidenReducer(state, matrixRoom(partner, roomId)));
+
+      const promise = matrixInviteEpic(action$, state$, depsMock).toPromise();
+
+      await expect(promise).resolves.toBeUndefined();
+      expect(matrix.invite).toHaveBeenCalledTimes(1);
+      expect(matrix.invite).toHaveBeenCalledWith(roomId, partnerUserId);
+    });
+  });
+
+  describe('matrixHandleInvitesEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('accept & join from previous presence', async () => {
+      expect.assertions(3);
+      const action$ = of(matrixPresenceUpdate(partner, partnerUserId, true, 123)),
+        state$ = of(state),
+        roomId = `!roomId_for_partner:${matrixServer}`;
+
+      const promise = matrixHandleInvitesEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      matrix.emit(
+        'RoomMember.membership',
+        { getSender: () => partnerUserId },
+        { roomId, userId, membership: 'invite' },
+      );
+
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_ROOM,
+        address: partner,
+        roomId,
+      });
+      expect(matrix.joinRoom).toHaveBeenCalledTimes(1);
+      expect(matrix.joinRoom).toHaveBeenCalledWith(
+        roomId,
+        expect.objectContaining({ syncRoom: true }),
+      );
+    });
+
+    test('accept & join from late presence', async () => {
+      expect.assertions(3);
+      const action$ = new Subject<RaidenActions>(),
+        state$ = of(state),
+        roomId = `!roomId_for_partner:${matrixServer}`;
+
+      const promise = matrixHandleInvitesEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      matrix.emit(
+        'RoomMember.membership',
+        { getSender: () => partnerUserId },
+        { roomId, userId, membership: 'invite' },
+      );
+
+      action$.next(matrixPresenceUpdate(partner, partnerUserId, true, 123));
+
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_ROOM,
+        address: partner,
+        roomId,
+      });
+      expect(matrix.joinRoom).toHaveBeenCalledTimes(1);
+      expect(matrix.joinRoom).toHaveBeenCalledWith(
+        roomId,
+        expect.objectContaining({ syncRoom: true }),
+      );
+    });
+
+    test('do not accept invites from non-monitored peers', async () => {
+      expect.assertions(2);
+      const action$ = of<RaidenActions>(),
+        state$ = of(state),
+        roomId = `!roomId_for_partner:${matrixServer}`;
+
+      const promise = matrixHandleInvitesEpic(action$, state$, depsMock)
+        .pipe(
+          first(),
+          takeUntil(timer(100)),
+        )
+        .toPromise();
+
+      matrix.emit(
+        'RoomMember.membership',
+        { getSender: () => partnerUserId },
+        { roomId, userId, membership: 'invite' },
+      );
+
+      await expect(promise).resolves.toBeUndefined();
+      expect(matrix.joinRoom).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('matrixLeaveExcessRoomsEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('leave rooms behind threshold', async () => {
+      expect.assertions(3);
+      const roomId = `!backRoomId_for_partner:${matrixServer}`,
+        action = matrixRoom(partner, `!frontRoomId_for_partner:${matrixServer}`),
+        action$ = of(action),
+        state$ = of(
+          [
+            matrixRoom(partner, roomId),
+            matrixRoom(partner, `!roomId2:${matrixServer}`),
+            matrixRoom(partner, `!roomId3:${matrixServer}`),
+            action,
+          ].reduce(raidenReducer, state),
+        );
+
+      const promise = matrixLeaveExcessRoomsEpic(action$, state$, depsMock).toPromise();
+
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_ROOM_LEAVE,
+        address: partner,
+        roomId,
+      });
+      expect(matrix.leave).toHaveBeenCalledTimes(1);
+      expect(matrix.leave).toHaveBeenCalledWith(roomId);
+    });
+  });
+
+  describe('matrixLeaveUnknownRoomsEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+
+      jest.useFakeTimers();
+    });
+
+    test(
+      'leave unknown rooms',
+      fakeSchedulers(advance => {
+        expect.assertions(3);
+        const roomId = `!unknownRoomId:${matrixServer}`,
+          state$ = of(state);
+
+        const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
+
+        matrix.emit('Room', { roomId });
+
+        advance(1e3);
+
+        // we should wait a little before leaving rooms
+        expect(matrix.leave).not.toHaveBeenCalled();
+
+        advance(60e3);
+
+        expect(matrix.leave).toHaveBeenCalledTimes(1);
+        expect(matrix.leave).toHaveBeenCalledWith(roomId);
+
+        sub.unsubscribe();
+      }),
+    );
+
+    test(
+      'do not leave discovery room',
+      fakeSchedulers(advance => {
+        expect.assertions(2);
+
+        const roomId = `!discoveryRoomId:${matrixServer}`,
+          state$ = of(state);
+
+        matrix.getRoom.mockReturnValueOnce({
+          roomId,
+          name: `#raiden_${depsMock.network.name}_discovery:${matrixServer}`,
+          getMember: jest.fn(),
+          getJoinedMembers: jest.fn(() => []),
+        });
+
+        const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
+
+        matrix.emit('Room', { roomId });
+
+        advance(1e3);
+
+        // we should wait a little before leaving rooms
+        expect(matrix.leave).not.toHaveBeenCalled();
+
+        advance(60e3);
+
+        // even after some time, discovery room isn't left
+        expect(matrix.leave).not.toHaveBeenCalled();
+
+        sub.unsubscribe();
+      }),
+    );
+
+    test(
+      'do not leave peers rooms',
+      fakeSchedulers(advance => {
+        expect.assertions(2);
+
+        const roomId = `!partnerRoomId:${matrixServer}`,
+          state$ = of(raidenReducer(state, matrixRoom(partner, roomId)));
+
+        const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
+
+        matrix.emit('Room', { roomId });
+
+        advance(1e3);
+
+        // we should wait a little before leaving rooms
+        expect(matrix.leave).not.toHaveBeenCalled();
+
+        advance(60e3);
+
+        // even after some time, partner's room isn't left
+        expect(matrix.leave).not.toHaveBeenCalled();
+
+        sub.unsubscribe();
+      }),
+    );
+  });
+
+  describe('matrixCleanLeftRoomsEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('clean left rooms', async () => {
+      expect.assertions(1);
+
+      const roomId = `!partnerRoomId:${matrixServer}`,
+        state$ = of(raidenReducer(state, matrixRoom(partner, roomId)));
+
+      const promise = matrixCleanLeftRoomsEpic(EMPTY, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      matrix.emit('Room.myMembership', { roomId }, 'leave');
+
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.MATRIX_ROOM_LEAVE,
+        address: partner,
+        roomId,
+      });
+    });
+  });
+
+  describe('matrixMessageSendEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('send: all needed objects in place', async () => {
+      expect.assertions(2);
+
+      const roomId = `!roomId_for_partner:${matrixServer}`,
+        message = 'test message',
+        action$ = of(
+          matrixPresenceUpdate(partner, partnerUserId, true, 123),
+          messageSend(partner, message),
+        ),
+        state$ = of([matrixRoom(partner, roomId)].reduce(raidenReducer, state));
+
+      matrix.getRoom.mockReturnValueOnce({
+        roomId,
+        name: roomId,
+        getMember: jest.fn(userId => ({
+          roomId,
+          userId,
+          name: userId,
+          membership: 'join',
+          user: null,
+        })),
+        getJoinedMembers: jest.fn(() => []),
+      });
+
+      const sub = matrixMessageSendEpic(action$, state$, depsMock).subscribe();
+
+      expect(matrix.sendEvent).toHaveBeenCalledTimes(1);
+      expect(matrix.sendEvent).toHaveBeenCalledWith(
+        roomId,
+        'm.room.message',
+        expect.objectContaining({ body: message, msgtype: 'm.text' }),
+        expect.anything(),
+      );
+
+      sub.unsubscribe();
+    });
+
+    test('send: Room appears late, user joins late', async () => {
+      expect.assertions(3);
+
+      const roomId = `!roomId_for_partner:${matrixServer}`,
+        message = 'test message',
+        action$ = of(
+          matrixPresenceUpdate(partner, partnerUserId, true, 123),
+          messageSend(partner, message),
+        ),
+        state$ = of([matrixRoom(partner, roomId)].reduce(raidenReducer, state));
+
+      matrix.getRoom.mockReturnValueOnce(null);
+
+      const sub = matrixMessageSendEpic(action$, state$, depsMock).subscribe();
+
+      expect(matrix.sendEvent).not.toHaveBeenCalled();
+
+      // a wild Room appears
+      matrix.emit('Room', {
+        roomId,
+        name: roomId,
+        getMember: jest.fn(),
+        getJoinedMembers: jest.fn(),
+      });
+
+      // user joins later
+      matrix.emit(
+        'RoomMember.membership',
+        {},
+        { roomId, userId: partnerUserId, name: partnerUserId, membership: 'join' },
+      );
+
+      expect(matrix.sendEvent).toHaveBeenCalledTimes(1);
+      expect(matrix.sendEvent).toHaveBeenCalledWith(
+        roomId,
+        'm.room.message',
+        expect.objectContaining({ body: message, msgtype: 'm.text' }),
+        expect.anything(),
+      );
+
+      sub.unsubscribe();
+    });
+  });
+
+  describe('matrixMessageReceivedEpic', () => {
+    beforeEach(() => {
+      depsMock.matrix$ = new AsyncSubject();
+      depsMock.matrix$.next(matrix);
+      depsMock.matrix$.complete();
+    });
+
+    test('receive: late presence and late room', async () => {
+      expect.assertions(1);
+
+      const roomId = `!roomId_for_partner:${matrixServer}`,
+        message = 'test message',
+        action$ = new Subject<RaidenActions>(),
+        state$ = new BehaviorSubject<RaidenState>(state);
+
+      const promise = matrixMessageReceivedEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      matrix.emit(
+        'Room.timeline',
+        {
+          getType: () => 'm.room.message',
+          getSender: () => partnerUserId,
+          event: {
+            content: { msgtype: 'm.text', body: message },
+            origin_server_ts: 123,
+          },
+        },
+        { roomId },
+      );
+
+      // actions sees presence update for patner only later
+      action$.next(matrixPresenceUpdate(partner, partnerUserId, true, 123));
+      // state includes room for partner only later
+      state$.next([matrixRoom(partner, roomId)].reduce(raidenReducer, state));
+
+      // then it resolves
+      await expect(promise).resolves.toMatchObject({
+        type: RaidenActionType.MESSAGE_RECEIVED,
+        address: partner,
+        message,
+        ts: expect.any(Number),
+        userId: partnerUserId,
+        roomId,
+      });
+    });
+  });
+
+  describe('matrixMessageReceivedUpdateRoomEpic', () => {
+    test('messageReceived on second room emits matrixRoom', async () => {
+      expect.assertions(1);
+
+      const roomId = `!roomId_for_partner:${matrixServer}`,
+        action$ = of(messageReceived(partner, 'test message', 123, partnerUserId, roomId)),
+        state$ = of(
+          [
+            matrixRoom(partner, roomId),
+            // newRoom becomes first 'choice', roomId goes second
+            matrixRoom(partner, `!newRoomId_for_partner:${matrixServer}`),
+          ].reduce(raidenReducer, state),
+        );
+
+      const promise = matrixMessageReceivedUpdateRoomEpic(action$, state$).toPromise();
+
+      // then it resolves
+      await expect(promise).resolves.toEqual(matrixRoom(partner, roomId));
     });
   });
 });
