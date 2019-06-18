@@ -1,4 +1,3 @@
-import { ofType } from 'redux-observable';
 import { Observable, from, of, EMPTY } from 'rxjs';
 import {
   catchError,
@@ -9,30 +8,25 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
+import { isActionOf, ActionType } from 'typesafe-actions';
 import { get, findKey } from 'lodash';
 
 import { HashZero, Zero } from 'ethers/constants';
 
 import { RaidenEpicDeps } from '../../types';
+import { RaidenAction } from '../';
 import { RaidenState, Channel, ChannelState } from '../state';
 import {
-  RaidenActionType,
-  RaidenActions,
-  ChannelOpenAction,
-  ChannelOpenedAction,
-  ChannelOpenActionFailed,
-  ChannelMonitoredAction,
-  ChannelDepositAction,
-  ChannelDepositActionFailed,
-  ChannelCloseAction,
-  ChannelCloseActionFailed,
-  ChannelSettleAction,
-  ChannelSettleActionFailed,
   channelOpenFailed,
   channelMonitored,
   channelDepositFailed,
   channelCloseFailed,
   channelSettleFailed,
+  channelOpen,
+  channelOpened,
+  channelDeposit,
+  channelClose,
+  channelSettle,
 } from '../actions';
 import { SignatureZero } from '../../constants';
 
@@ -44,33 +38,33 @@ import { SignatureZero } from '../../constants';
  * fires a ChannnelOpenActionFailed instead
  */
 export const channelOpenEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
-): Observable<ChannelOpenActionFailed> =>
+): Observable<ActionType<typeof channelOpenFailed>> =>
   action$.pipe(
-    ofType<RaidenActions, ChannelOpenAction>(RaidenActionType.CHANNEL_OPEN),
+    filter(isActionOf(channelOpen)),
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
-      const tokenNetwork = getTokenNetworkContract(action.tokenNetwork);
+      const tokenNetwork = getTokenNetworkContract(action.meta.tokenNetwork);
       const channelState = get(state.tokenNetworks, [
-        action.tokenNetwork,
-        action.partner,
+        action.meta.tokenNetwork,
+        action.meta.partner,
         'state',
       ]);
       // proceed only if channel is in 'opening' state, set by this action
       if (channelState !== ChannelState.opening)
         return of(
-          channelOpenFailed(
-            action.tokenNetwork,
-            action.partner,
-            new Error(`Invalid channel state: ${channelState}`),
-          ),
+          channelOpenFailed(new Error(`Invalid channel state: ${channelState}`), action.meta),
         );
 
       // send openChannel transaction !!!
       return from(
-        tokenNetwork.functions.openChannel(state.address, action.partner, action.settleTimeout),
+        tokenNetwork.functions.openChannel(
+          state.address,
+          action.meta.partner,
+          action.payload.settleTimeout,
+        ),
       ).pipe(
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
         map(({ receipt, tx }) => {
@@ -82,7 +76,7 @@ export const channelOpenEpic = (
         // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
         // will then emit the channelOpenFailed action instead
         mergeMapTo(EMPTY),
-        catchError(error => of(channelOpenFailed(action.tokenNetwork, action.partner, error))),
+        catchError(error => of(channelOpenFailed(error, action.meta))),
       );
     }),
   );
@@ -91,23 +85,27 @@ export const channelOpenEpic = (
  * When we see a new ChannelOpenedAction event, starts monitoring channel
  */
 export const channelOpenedEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ChannelMonitoredAction> =>
+): Observable<ActionType<typeof channelMonitored>> =>
   action$.pipe(
-    ofType<RaidenActions, ChannelOpenedAction>(RaidenActionType.CHANNEL_OPENED),
+    filter(isActionOf(channelOpened)),
     withLatestFrom(state$),
     // proceed only if channel is in 'open' state and a deposit is required
     filter(([action, state]) => {
-      const channel: Channel = get(state.tokenNetworks, [action.tokenNetwork, action.partner]);
-      return channel && channel.state === ChannelState.open;
+      const channel: Channel | undefined = get(state.tokenNetworks, [
+        action.meta.tokenNetwork,
+        action.meta.partner,
+      ]);
+      return !!channel && channel.state === ChannelState.open;
     }),
     map(([action]) =>
       channelMonitored(
-        action.tokenNetwork,
-        action.partner,
-        action.id,
-        action.openBlock, // fetch past events as well, if needed
+        {
+          id: action.payload.id,
+          fromBlock: action.payload.openBlock, // fetch past events as well, if needed
+        },
+        action.meta,
       ),
     ),
   );
@@ -121,34 +119,39 @@ export const channelOpenedEpic = (
  * instead
  */
 export const channelDepositEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { address, getTokenContract, getTokenNetworkContract }: RaidenEpicDeps,
-): Observable<ChannelDepositActionFailed> =>
+): Observable<ActionType<typeof channelDepositFailed>> =>
   action$.pipe(
-    ofType<RaidenActions, ChannelDepositAction>(RaidenActionType.CHANNEL_DEPOSIT),
+    filter(isActionOf(channelDeposit)),
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
-      const token = findKey(state.token2tokenNetwork, tn => tn === action.tokenNetwork);
+      const token = findKey(state.token2tokenNetwork, tn => tn === action.meta.tokenNetwork);
       if (!token) {
-        const error = new Error(`token for tokenNetwork "${action.tokenNetwork}" not found`);
-        return of(channelDepositFailed(action.tokenNetwork, action.partner, error));
+        const error = new Error(`token for tokenNetwork "${action.meta.tokenNetwork}" not found`);
+        return of(channelDepositFailed(error, action.meta));
       }
       const tokenContract = getTokenContract(token);
-      const tokenNetworkContract = getTokenNetworkContract(action.tokenNetwork);
-      const channel: Channel = get(state.tokenNetworks, [action.tokenNetwork, action.partner]);
+      const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
+      const channel: Channel = get(state.tokenNetworks, [
+        action.meta.tokenNetwork,
+        action.meta.partner,
+      ]);
       if (!channel || channel.state !== ChannelState.open || channel.id === undefined) {
         const error = new Error(
-          `channel for "${action.tokenNetwork}" and "${
-            action.partner
+          `channel for "${action.meta.tokenNetwork}" and "${
+            action.meta.partner
           }" not found or not in 'open' state`,
         );
-        return of(channelDepositFailed(action.tokenNetwork, action.partner, error));
+        return of(channelDepositFailed(error, action.meta));
       }
       const channelId = channel.id;
 
       // send approve transaction
-      return from(tokenContract.functions.approve(action.tokenNetwork, action.deposit))
+      return from(
+        tokenContract.functions.approve(action.meta.tokenNetwork, action.payload.deposit),
+      )
         .pipe(
           tap(tx => console.log(`sent approve tx "${tx.hash}" to "${token}"`)),
           mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
@@ -166,21 +169,21 @@ export const channelDepositEpic = (
             tokenNetworkContract.functions.setTotalDeposit(
               channelId,
               address,
-              state.tokenNetworks[action.tokenNetwork][action.partner].totalDeposit.add(
-                action.deposit,
+              state.tokenNetworks[action.meta.tokenNetwork][action.meta.partner].totalDeposit.add(
+                action.payload.deposit,
               ),
-              action.partner,
+              action.meta.partner,
               { gasLimit: 100e3 },
             ),
           ),
           tap(tx =>
-            console.log(`sent setTotalDeposit tx "${tx.hash}" to "${action.tokenNetwork}"`),
+            console.log(`sent setTotalDeposit tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
           ),
           mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
           map(({ receipt, tx }) => {
             if (!receipt.status)
               throw new Error(
-                `tokenNetwork "${action.tokenNetwork}" setTotalDeposit transaction "${
+                `tokenNetwork "${action.meta.tokenNetwork}" setTotalDeposit transaction "${
                   tx.hash
                 }" failed`,
               );
@@ -192,9 +195,7 @@ export const channelDepositEpic = (
           // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
           // will then emit the channelDepositFailed action instead
           mergeMapTo(EMPTY),
-          catchError(error =>
-            of(channelDepositFailed(action.tokenNetwork, action.partner, error)),
-          ),
+          catchError(error => of(channelDepositFailed(error, action.meta))),
         );
     }),
   );
@@ -207,27 +208,30 @@ export const channelDepositEpic = (
  * ChannelCloseActionFailed instead
  */
 export const channelCloseEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
-): Observable<ChannelCloseActionFailed> =>
+): Observable<ActionType<typeof channelCloseFailed>> =>
   action$.pipe(
-    ofType<RaidenActions, ChannelCloseAction>(RaidenActionType.CHANNEL_CLOSE),
+    filter(isActionOf(channelClose)),
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
-      const tokenNetworkContract = getTokenNetworkContract(action.tokenNetwork);
-      const channel: Channel = get(state.tokenNetworks, [action.tokenNetwork, action.partner]);
+      const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
+      const channel: Channel = get(state.tokenNetworks, [
+        action.meta.tokenNetwork,
+        action.meta.partner,
+      ]);
       if (
         !channel ||
         !(channel.state === ChannelState.open || channel.state === ChannelState.closing) ||
         !channel.id
       ) {
         const error = new Error(
-          `channel for "${action.tokenNetwork}" and "${
-            action.partner
+          `channel for "${action.meta.tokenNetwork}" and "${
+            action.meta.partner
           }" not found or not in 'open' or 'closing' state`,
         );
-        return of(channelCloseFailed(action.tokenNetwork, action.partner, error));
+        return of(channelCloseFailed(error, action.meta));
       }
       const channelId = channel.id;
 
@@ -235,20 +239,23 @@ export const channelCloseEpic = (
       return from(
         tokenNetworkContract.functions.closeChannel(
           channelId,
-          action.partner,
+          action.meta.partner,
           HashZero,
           0,
           HashZero,
-          // FIXME: https://github.com/ethereum-ts/TypeChain/issues/123
-          (SignatureZero as unknown) as string[],
+          SignatureZero,
         ),
       ).pipe(
-        tap(tx => console.log(`sent closeChannel tx "${tx.hash}" to "${action.tokenNetwork}"`)),
+        tap(tx =>
+          console.log(`sent closeChannel tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
+        ),
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
         map(({ receipt, tx }) => {
           if (!receipt.status)
             throw new Error(
-              `tokenNetwork "${action.tokenNetwork}" closeChannel transaction "${tx.hash}" failed`,
+              `tokenNetwork "${action.meta.tokenNetwork}" closeChannel transaction "${
+                tx.hash
+              }" failed`,
             );
           console.log(`closeChannel tx "${tx.hash}" successfuly mined!`);
           return tx.hash;
@@ -258,7 +265,7 @@ export const channelCloseEpic = (
         // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
         // will then emit the channelCloseFailed action instead
         mergeMapTo(EMPTY),
-        catchError(error => of(channelCloseFailed(action.tokenNetwork, action.partner, error))),
+        catchError(error => of(channelCloseFailed(error, action.meta))),
       );
     }),
   );
@@ -271,27 +278,30 @@ export const channelCloseEpic = (
  * ChannelSettleActionFailed instead
  */
 export const channelSettleEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { address, getTokenNetworkContract }: RaidenEpicDeps,
-): Observable<ChannelSettleActionFailed> =>
+): Observable<ActionType<typeof channelSettleFailed>> =>
   action$.pipe(
-    ofType<RaidenActions, ChannelSettleAction>(RaidenActionType.CHANNEL_SETTLE),
+    filter(isActionOf(channelSettle)),
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
-      const tokenNetworkContract = getTokenNetworkContract(action.tokenNetwork);
-      const channel: Channel = get(state.tokenNetworks, [action.tokenNetwork, action.partner]);
+      const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
+      const channel: Channel | undefined = get(state.tokenNetworks, [
+        action.meta.tokenNetwork,
+        action.meta.partner,
+      ]);
       if (
         !channel ||
         !(channel.state === ChannelState.settleable || channel.state === ChannelState.settling) ||
         !channel.id
       ) {
         const error = new Error(
-          `channel for "${action.tokenNetwork}" and "${
-            action.partner
+          `channel for "${action.meta.tokenNetwork}" and "${
+            action.meta.partner
           }" not found or not in 'settleable' or 'settling' state`,
         );
-        return of(channelSettleFailed(action.tokenNetwork, action.partner, error));
+        return of(channelSettleFailed(error, action.meta));
       }
       const channelId = channel.id;
 
@@ -303,18 +313,20 @@ export const channelSettleEpic = (
           Zero,
           Zero,
           HashZero,
-          action.partner,
+          action.meta.partner,
           Zero,
           Zero,
           HashZero,
         ),
       ).pipe(
-        tap(tx => console.log(`sent settleChannel tx "${tx.hash}" to "${action.tokenNetwork}"`)),
+        tap(tx =>
+          console.log(`sent settleChannel tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
+        ),
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
         map(({ receipt, tx }) => {
           if (!receipt.status)
             throw new Error(
-              `tokenNetwork "${action.tokenNetwork}" settleChannel transaction "${
+              `tokenNetwork "${action.meta.tokenNetwork}" settleChannel transaction "${
                 tx.hash
               }" failed`,
             );
@@ -326,7 +338,7 @@ export const channelSettleEpic = (
         // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
         // will then emit the channelSettleFailed action instead
         mergeMapTo(EMPTY),
-        catchError(error => of(channelSettleFailed(action.tokenNetwork, action.partner, error))),
+        catchError(error => of(channelSettleFailed(error, action.meta))),
       );
     }),
   );

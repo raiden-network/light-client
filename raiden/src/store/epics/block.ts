@@ -1,27 +1,27 @@
-import { ofType } from 'redux-observable';
 import { Observable } from 'rxjs';
-import { mergeMap, withLatestFrom } from 'rxjs/operators';
+import { filter, mergeMap, withLatestFrom } from 'rxjs/operators';
+import { ActionType, isActionOf } from 'typesafe-actions';
 
+import { RaidenAction } from '../';
 import { RaidenState, ChannelState } from '../state';
-import {
-  RaidenActionType,
-  RaidenActions,
-  NewBlockAction,
-  ChannelSettleableAction,
-  channelSettleable,
-} from '../actions';
+import { channelSettleable, newBlock } from '../actions';
 
 /**
  * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable
  */
 export const newBlockEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ChannelSettleableAction> =>
+): Observable<ActionType<typeof channelSettleable>> =>
   action$.pipe(
-    ofType<RaidenActions, NewBlockAction>(RaidenActionType.NEW_BLOCK),
+    filter(isActionOf(newBlock)),
     withLatestFrom(state$),
-    mergeMap(function*([{ blockNumber }, state]) {
+    mergeMap(function*([
+      {
+        payload: { blockNumber },
+      },
+      state,
+    ]) {
       for (const tokenNetwork in state.tokenNetworks) {
         for (const partner in state.tokenNetworks[tokenNetwork]) {
           const channel = state.tokenNetworks[tokenNetwork][partner];
@@ -31,7 +31,7 @@ export const newBlockEpic = (
             channel.closeBlock &&
             blockNumber > channel.closeBlock + channel.settleTimeout
           ) {
-            yield channelSettleable(tokenNetwork, partner, blockNumber);
+            yield channelSettleable({ settleableBlock: blockNumber }, { tokenNetwork, partner });
           }
         }
       }

@@ -5,7 +5,8 @@ import { Network, ParamType, BigNumber, bigNumberify } from 'ethers/utils';
 import { MatrixClient } from 'matrix-js-sdk';
 
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
-import { createEpicMiddleware, ofType } from 'redux-observable';
+import { createEpicMiddleware } from 'redux-observable';
+import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
 import { debounce, findKey, transform, constant, isEmpty } from 'lodash';
@@ -33,6 +34,7 @@ import {
   Storage,
   TokenInfo,
 } from './types';
+import { ShutdownReason } from './constants';
 import {
   RaidenState,
   RaidenStateType,
@@ -41,41 +43,41 @@ import {
   decodeRaidenState,
   raidenEpics,
   raidenReducer,
-  RaidenActions,
-  RaidenActionType,
-  ShutdownReason,
-  TokenMonitoredAction,
-  ChannelOpenedAction,
-  ChannelOpenActionFailed,
-  ChannelDepositedAction,
-  ChannelDepositActionFailed,
-  ChannelClosedAction,
-  ChannelCloseActionFailed,
-  ChannelSettledAction,
-  ChannelSettleActionFailed,
+  RaidenAction,
+  RaidenEvents,
+  RaidenEvent,
+} from './store';
+import {
   raidenInit,
   raidenShutdown,
+  tokenMonitored,
+  channelOpened,
+  channelOpenFailed,
   channelOpen,
+  channelDeposited,
+  channelDepositFailed,
   channelDeposit,
+  channelClosed,
+  channelCloseFailed,
   channelClose,
+  channelSettled,
+  channelSettleFailed,
   channelSettle,
-  RaidenEvents,
-  RaidenEventType,
+  matrixPresenceUpdate,
+  matrixRequestMonitorPresenceFailed,
   matrixRequestMonitorPresence,
-  MatrixPresenceUpdateAction,
-  MatrixRequestMonitorPresenceActionFailed,
   messageSend,
-} from './store';
+} from './store/actions';
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
   public readonly network: Network;
   private readonly signer: Signer;
-  private readonly store: Store<RaidenState, RaidenActions>;
+  private readonly store: Store<RaidenState, RaidenAction>;
   private contracts: RaidenContracts;
   private readonly tokenInfo: { [token: string]: TokenInfo } = {};
 
-  private readonly action$: Observable<RaidenActions>;
+  private readonly action$: Observable<RaidenAction>;
   /**
    * state$ is exposed only so user can listen to state changes and persist them somewhere else,
    * in case they didn't use the Storage overload for the storageOrState argument of `create`.
@@ -88,7 +90,7 @@ export class Raiden {
    * The interface of the objects emitted by this Observable are expected not to change internally,
    * but more/new events may be added over time.
    */
-  public readonly events$: Observable<RaidenEvents>;
+  public readonly events$: Observable<RaidenEvent>;
 
   /**
    * Expose ether's Provider.resolveName for ENS support
@@ -126,7 +128,7 @@ export class Raiden {
     const state$ = new BehaviorSubject<RaidenState>(state);
     this.state$ = state$;
 
-    const action$ = new Subject<RaidenActions>();
+    const action$ = new Subject<RaidenAction>();
     this.action$ = action$;
 
     const matrix$ = new AsyncSubject<MatrixClient>();
@@ -150,12 +152,12 @@ export class Raiden {
       ),
     );
 
-    this.events$ = action$.pipe(ofType<RaidenActions, RaidenEvents>(...RaidenEventType));
+    this.events$ = action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
 
     // minimum blockNumber of contracts deployment as start scan block
     const epicMiddleware = createEpicMiddleware<
-      RaidenActions,
-      RaidenActions,
+      RaidenAction,
+      RaidenAction,
       RaidenState,
       RaidenEpicDeps
     >({
@@ -327,7 +329,7 @@ export class Raiden {
    * Triggers all epics to be unsubscribed
    */
   public stop(): void {
-    this.store.dispatch(raidenShutdown(ShutdownReason.STOP));
+    this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
   }
 
   private get state(): RaidenState {
@@ -400,7 +402,7 @@ export class Raiden {
     if (isEmpty(this.state.token2tokenNetwork))
       await this.action$
         .pipe(
-          ofType<RaidenActions, TokenMonitoredAction>(RaidenActionType.TOKEN_MONITORED),
+          filter(isActionOf(tokenMonitored)),
           first(),
         )
         .toPromise();
@@ -456,19 +458,18 @@ export class Raiden {
     if (!tokenNetwork) throw new Error('Unknown token network');
     const promise = this.action$
       .pipe(
-        ofType<RaidenActions, ChannelOpenedAction | ChannelOpenActionFailed>(
-          RaidenActionType.CHANNEL_OPENED,
-          RaidenActionType.CHANNEL_OPEN_FAILED,
+        filter(isActionOf([channelOpened, channelOpenFailed])),
+        filter(
+          action => action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
         ),
-        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
         first(),
         map(action => {
-          if (action.type === RaidenActionType.CHANNEL_OPEN_FAILED) throw action.error;
-          return action.txHash;
+          if (isActionOf(channelOpenFailed, action)) throw action.payload;
+          return action.payload.txHash;
         }),
       )
       .toPromise();
-    this.store.dispatch(channelOpen(tokenNetwork, partner, settleTimeout));
+    this.store.dispatch(channelOpen({ settleTimeout }, { tokenNetwork, partner }));
     return promise;
   }
 
@@ -489,19 +490,20 @@ export class Raiden {
     if (!tokenNetwork) throw new Error('Unknown token network');
     const promise = this.action$
       .pipe(
-        ofType<RaidenActions, ChannelDepositedAction | ChannelDepositActionFailed>(
-          RaidenActionType.CHANNEL_DEPOSITED,
-          RaidenActionType.CHANNEL_DEPOSIT_FAILED,
+        filter(isActionOf([channelDeposited, channelDepositFailed])),
+        filter(
+          action => action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
         ),
-        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
         first(),
         map(action => {
-          if (action.type === RaidenActionType.CHANNEL_DEPOSIT_FAILED) throw action.error;
-          return action.txHash;
+          if (isActionOf(channelDepositFailed, action)) throw action.payload;
+          return action.payload.txHash;
         }),
       )
       .toPromise();
-    this.store.dispatch(channelDeposit(tokenNetwork, partner, bigNumberify(deposit)));
+    this.store.dispatch(
+      channelDeposit({ deposit: bigNumberify(deposit) }, { tokenNetwork, partner }),
+    );
     return promise;
   }
 
@@ -523,19 +525,18 @@ export class Raiden {
     if (!tokenNetwork) throw new Error('Unknown token network');
     const promise = this.action$
       .pipe(
-        ofType<RaidenActions, ChannelClosedAction | ChannelCloseActionFailed>(
-          RaidenActionType.CHANNEL_CLOSED,
-          RaidenActionType.CHANNEL_CLOSE_FAILED,
+        filter(isActionOf([channelClosed, channelCloseFailed])),
+        filter(
+          action => action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
         ),
-        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
         first(),
         map(action => {
-          if (action.type === RaidenActionType.CHANNEL_CLOSE_FAILED) throw action.error;
-          return action.txHash;
+          if (isActionOf(channelCloseFailed, action)) throw action.payload;
+          return action.payload.txHash;
         }),
       )
       .toPromise();
-    this.store.dispatch(channelClose(tokenNetwork, partner));
+    this.store.dispatch(channelClose(undefined, { tokenNetwork, partner }));
     return promise;
   }
 
@@ -557,19 +558,18 @@ export class Raiden {
     // wait for the corresponding success or error action
     const promise = this.action$
       .pipe(
-        ofType<RaidenActions, ChannelSettledAction | ChannelSettleActionFailed>(
-          RaidenActionType.CHANNEL_SETTLED,
-          RaidenActionType.CHANNEL_SETTLE_FAILED,
+        filter(isActionOf([channelSettled, channelSettleFailed])),
+        filter(
+          action => action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
         ),
-        filter(action => action.tokenNetwork === tokenNetwork && action.partner === partner),
         first(),
         map(action => {
-          if (action.type === RaidenActionType.CHANNEL_SETTLE_FAILED) throw action.error;
-          return action.txHash;
+          if (isActionOf(channelSettleFailed, action)) throw action.payload;
+          return action.payload.txHash;
         }),
       )
       .toPromise();
-    this.store.dispatch(channelSettle(tokenNetwork, partner));
+    this.store.dispatch(channelSettle(undefined, { tokenNetwork, partner }));
     return promise;
   }
 
@@ -585,23 +585,16 @@ export class Raiden {
   ): Promise<{ userId: string; available: boolean; ts: number }> {
     const promise = this.action$
       .pipe(
-        ofType<
-          RaidenActions,
-          MatrixPresenceUpdateAction | MatrixRequestMonitorPresenceActionFailed
-        >(
-          RaidenActionType.MATRIX_PRESENCE_UPDATE,
-          RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED,
-        ),
-        filter(action => action.address === address),
+        filter(isActionOf([matrixPresenceUpdate, matrixRequestMonitorPresenceFailed])),
+        filter(action => action.meta.address === address),
         first(),
         map(action => {
-          if (action.type === RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE_FAILED)
-            throw action.error;
-          return { userId: action.userId, available: action.available, ts: action.ts };
+          if (isActionOf(matrixRequestMonitorPresenceFailed, action)) throw action.payload;
+          return action.payload;
         }),
       )
       .toPromise();
-    this.store.dispatch(matrixRequestMonitorPresence(address));
+    this.store.dispatch(matrixRequestMonitorPresence(undefined, { address }));
     return promise;
   }
 
@@ -609,7 +602,7 @@ export class Raiden {
    * Temporary interface to test MessageSendAction
    */
   public sendMessage(address: string, message: string): void {
-    this.store.dispatch(messageSend(address, message));
+    this.store.dispatch(messageSend({ message }, { address }));
   }
 }
 

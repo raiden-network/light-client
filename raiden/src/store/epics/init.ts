@@ -1,7 +1,7 @@
-import { ofType } from 'redux-observable';
 import { Observable, from, of, merge, interval, EMPTY, throwError } from 'rxjs';
 import {
   catchError,
+  filter,
   map,
   mapTo,
   mergeMap,
@@ -10,6 +10,7 @@ import {
   withLatestFrom,
   startWith,
 } from 'rxjs/operators';
+import { isActionOf, ActionType } from 'typesafe-actions';
 import { get, isEmpty, sortBy } from 'lodash';
 import fetch from 'cross-fetch';
 
@@ -25,22 +26,15 @@ import {
   getServerName,
 } from '../../utils';
 import { RaidenEpicDeps } from '../../types';
-import { MATRIX_KNOWN_SERVERS_URL } from '../../constants';
+import { MATRIX_KNOWN_SERVERS_URL, ShutdownReason } from '../../constants';
+import { RaidenAction } from '../';
 import { RaidenState, RaidenMatrixSetup } from '../state';
 import {
-  RaidenActionType,
-  RaidenActions,
-  RaidenInitAction,
-  NewBlockAction,
-  TokenMonitoredAction,
-  ChannelMonitoredAction,
-  MatrixSetupAction,
-  RaidenShutdownAction,
-  ShutdownReason,
-  raidenShutdown,
   newBlock,
+  raidenInit,
   tokenMonitored,
   channelMonitored,
+  raidenShutdown,
   matrixSetup,
 } from '../actions';
 
@@ -48,26 +42,26 @@ import {
  * Register for new block events and emit NewBlockActions for new blocks
  */
 export const initNewBlockEpic = (
-  action$: Observable<RaidenActions>,
-  state$: Observable<RaidenState>,
+  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
-): Observable<NewBlockAction> =>
+): Observable<ActionType<typeof newBlock>> =>
   action$.pipe(
-    ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
+    filter(isActionOf(raidenInit)),
     mergeMap(() => fromEthersEvent<number>(provider, 'block')),
-    map(newBlock),
+    map(blockNumber => newBlock({ blockNumber })),
   );
 
 /**
  * Monitor registry for token networks and monitor them
  */
 export const initMonitorRegistryEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { registryContract, contractsInfo }: RaidenEpicDeps,
-): Observable<TokenMonitoredAction> =>
+): Observable<ActionType<typeof tokenMonitored>> =>
   action$.pipe(
-    ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
+    filter(isActionOf(raidenInit)),
     withLatestFrom(state$),
     mergeMap(([, state]) =>
       merge(
@@ -83,12 +77,16 @@ export const initMonitorRegistryEpic = (
         ).pipe(
           withLatestFrom(state$.pipe(startWith(state))),
           map(([[token, tokenNetwork], state]) =>
-            tokenMonitored(token, tokenNetwork, !(token in state.token2tokenNetwork)),
+            tokenMonitored({
+              token,
+              tokenNetwork,
+              first: !(token in state.token2tokenNetwork),
+            }),
           ),
         ),
         // monitor previously monitored tokens
         from(Object.entries(state.token2tokenNetwork)).pipe(
-          map(([token, tokenNetwork]) => tokenMonitored(token, tokenNetwork)),
+          map(([token, tokenNetwork]) => tokenMonitored({ token, tokenNetwork })),
         ),
       ),
     ),
@@ -98,17 +96,17 @@ export const initMonitorRegistryEpic = (
  * Monitor channels previously already on state
  */
 export const initMonitorChannelsEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ChannelMonitoredAction> =>
+): Observable<ActionType<typeof channelMonitored>> =>
   action$.pipe(
-    ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
+    filter(isActionOf(raidenInit)),
     withLatestFrom(state$),
     mergeMap(function*([, state]) {
       for (const [tokenNetwork, obj] of Object.entries(state.tokenNetworks)) {
         for (const [partner, channel] of Object.entries(obj)) {
           if (channel.id !== undefined) {
-            yield channelMonitored(tokenNetwork, partner, channel.id);
+            yield channelMonitored({ id: channel.id }, { tokenNetwork, partner });
           }
         }
       }
@@ -119,12 +117,12 @@ export const initMonitorChannelsEpic = (
  * Monitor provider to ensure account continues to be available and network stays the same
  */
 export const initMonitorProviderEpic = (
-  action$: Observable<RaidenActions>,
-  state$: Observable<RaidenState>,
+  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenState>,
   { address, network, provider }: RaidenEpicDeps,
-): Observable<RaidenShutdownAction> =>
+): Observable<ActionType<typeof raidenShutdown>> =>
   action$.pipe(
-    ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
+    filter(isActionOf(raidenInit)),
     mergeMap(() => provider.listAccounts()),
     // at init time, check if our address is in provider's accounts list
     // if not, it means Signer is a local Wallet or another non-provider-side account
@@ -143,7 +141,7 @@ export const initMonitorProviderEpic = (
               ? from(provider.listAccounts()).pipe(
                   mergeMap(accounts =>
                     !accounts.includes(address)
-                      ? of(raidenShutdown(ShutdownReason.ACCOUNT_CHANGED))
+                      ? of(raidenShutdown({ reason: ShutdownReason.ACCOUNT_CHANGED }))
                       : EMPTY,
                   ),
                 )
@@ -152,7 +150,7 @@ export const initMonitorProviderEpic = (
             from(getNetwork(provider)).pipe(
               mergeMap(curNetwork =>
                 curNetwork.chainId !== network.chainId
-                  ? of(raidenShutdown(ShutdownReason.NETWORK_CHANGED))
+                  ? of(raidenShutdown({ reason: ShutdownReason.NETWORK_CHANGED }))
                   : EMPTY,
               ),
             ),
@@ -166,12 +164,12 @@ export const initMonitorProviderEpic = (
  * Initialize matrix transport
  */
 export const initMatrixEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { address, network, signer, matrix$ }: RaidenEpicDeps,
-): Observable<MatrixSetupAction> =>
+): Observable<ActionType<typeof matrixSetup>> =>
   action$.pipe(
-    ofType<RaidenActions, RaidenInitAction>(RaidenActionType.INIT),
+    filter(isActionOf(raidenInit)),
     withLatestFrom(state$),
     mergeMap(function([, state]) {
       const server: string | undefined = get(state, ['transport', 'matrix', 'server']),
@@ -283,5 +281,5 @@ export const initMatrixEpic = (
       matrix$.next(matrix);
       matrix$.complete();
     }),
-    map(({ server, setup }) => matrixSetup(server, setup)),
+    map(({ server, setup }) => matrixSetup({ server, setup })),
   );
