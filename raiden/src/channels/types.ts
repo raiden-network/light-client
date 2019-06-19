@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 
-import { BigNumberC, EnumType, Hash, PositiveInt } from '../store/types';
+import { BigNumberC, EnumType, Hash, PositiveInt } from '../utils/types';
 
 export enum ChannelState {
   opening = 'opening',

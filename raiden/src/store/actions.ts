@@ -1,9 +1,15 @@
 import { BigNumber } from 'ethers/utils';
 import { createStandardAction } from 'typesafe-actions';
 
-import { RaidenMatrixSetup } from './state';
-import { ChannelId } from './types';
 import { ShutdownReason } from '../constants';
+import { RaidenMatrixSetup } from './state';
+
+// interfaces need to be exported, and we need/want to support `import * as RaidenActions`
+// eslint-disable-next-line @typescript-eslint/prefer-interface
+type ChannelId = {
+  tokenNetwork: string;
+  partner: string;
+};
 
 // actions-creators
 // ========

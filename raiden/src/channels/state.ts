@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 
-import { Address, BigNumberC, Hash, PositiveInt, Signature } from '../store/types';
+import { Address, BigNumberC, Hash, PositiveInt, Signature } from '../utils/types';
 import { ChannelStateC, Lock } from './types';
 
 /**

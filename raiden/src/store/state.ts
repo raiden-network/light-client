@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
-import { Address } from './types';
+import { Address } from '../utils/types';
 import { Channel } from '../channels';
 
 // types

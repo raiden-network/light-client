@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
 import { requestCallback, RequestOpts } from 'matrix-js-sdk';
 
-import { Storage } from 'raiden/types';
+import { Storage } from 'raiden/utils/types';
 
 export const MockStorage: jest.Mock<
   jest.Mocked<Storage>,
@@ -22,7 +22,7 @@ export const MockStorage: jest.Mock<
 
 export class MockMatrixRequestFn {
   public constructor(server: string) {
-    this.endpoints['/login'] = (opts, callback) =>
+    this.endpoints['/login'] = ({}, callback) =>
       this.respond(callback, 403, { errcode: 'M_FORBIDDEN', error: 'Invalid password' });
     this.endpoints['/register'] = (opts, callback) => {
       let body = opts.body;
@@ -35,10 +35,10 @@ export class MockMatrixRequestFn {
       });
     };
     let i = 0;
-    this.endpoints['/sync'] = (opts, callback) =>
+    this.endpoints['/sync'] = ({}, callback) =>
       this.respond(callback, 200, { next_batch: `batch_${i++}`, rooms: {}, presence: {} }, 3e3);
-    this.endpoints['/pushrules'] = (opts, callback) => this.respond(callback, 200, {});
-    this.endpoints['/filter'] = (opts, callback) =>
+    this.endpoints['/pushrules'] = ({}, callback) => this.respond(callback, 200, {});
+    this.endpoints['/filter'] = ({}, callback) =>
       this.respond(callback, 200, { filter_id: 'a filter id' });
 
     const displayNames: { [userId: string]: string } = {};
@@ -77,8 +77,8 @@ export class MockMatrixRequestFn {
       return this.respond(callback, 404, {});
     };
 
-    this.endpoints['/join'] = (opts, callback) => this.respond(callback, 200, {});
-    this.endpoints['/versions'] = (opts, callback) => this.respond(callback, 200, {});
+    this.endpoints['/join'] = ({}, callback) => this.respond(callback, 200, {});
+    this.endpoints['/versions'] = ({}, callback) => this.respond(callback, 200, {});
   }
 
   public requestFn(opts: RequestOpts, callback: requestCallback): any {

@@ -2,8 +2,10 @@ import { of } from 'rxjs';
 import { first, take, toArray } from 'rxjs/operators';
 
 import { Event } from 'ethers/contract';
+import { bigNumberify, BigNumber } from 'ethers/utils';
 
-import { fromEthersEvent, getEventsStream } from 'raiden/utils';
+import { fromEthersEvent, getEventsStream } from 'raiden/utils/ethers';
+import { BigNumberC, Bytes, Positive, PositiveInt } from 'raiden/utils/types';
 import { raidenEpicDeps, makeLog } from './mocks';
 
 describe('fromEthersEvent', () => {
@@ -124,5 +126,33 @@ describe('getEventsStream', () => {
     expect(provider.getBlock).toHaveBeenCalledWith(pastLog.blockHash);
     expect(provider.getTransaction).toHaveBeenCalledWith(pastLog.transactionHash);
     expect(provider.getTransactionReceipt).toHaveBeenCalledWith(pastLog.transactionHash);
+  });
+});
+
+describe('types', () => {
+  test('HexBytes & Bytes', () => {
+    const b = '0xdeadbeef';
+    const B = Bytes.encode(b);
+    expect(Bytes.is(B)).toBe(true);
+    expect(B).toBe(b);
+    const result = Bytes.decode(B);
+    expect(result.isRight()).toBe(true);
+    expect(result.value).toBe(b);
+  });
+
+  test('Positive & PositiveInt', () => {
+    expect(PositiveInt.is(1)).toBe(true);
+    expect(PositiveInt.is(-1)).toBe(false);
+    expect(PositiveInt.is(1.5)).toBe(false);
+    expect(Positive.is(1.5)).toBe(true);
+  });
+
+  test('BigNumberC', () => {
+    const b = bigNumberify(16);
+    expect(BigNumberC.is(b)).toBe(true);
+    expect(BigNumberC.encode(b)).toBe('16');
+    const result = BigNumberC.decode(b);
+    expect(result.isRight()).toBe(true);
+    expect(result.value).toBeInstanceOf(BigNumber);
   });
 });

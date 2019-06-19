@@ -17,14 +17,8 @@ import fetch from 'cross-fetch';
 import { Event } from 'ethers/contract';
 import { MatrixClient, createClient } from 'matrix-js-sdk';
 
-import {
-  fromEthersEvent,
-  getEventsStream,
-  getNetwork,
-  yamlListToArray,
-  matrixRTT,
-  getServerName,
-} from '../../utils';
+import { fromEthersEvent, getEventsStream, getNetwork } from '../../utils/ethers';
+import { yamlListToArray, matrixRTT, getServerName } from '../../utils/matrix';
 import { RaidenEpicDeps } from '../../types';
 import { MATRIX_KNOWN_SERVERS_URL, ShutdownReason } from '../../constants';
 import { RaidenAction } from '../';

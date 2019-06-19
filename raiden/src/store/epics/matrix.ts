@@ -28,7 +28,7 @@ import { MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../';
 import { RaidenState } from '../state';
-import { getUserPresence } from '../../utils';
+import { getUserPresence } from '../../utils/matrix';
 import {
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,

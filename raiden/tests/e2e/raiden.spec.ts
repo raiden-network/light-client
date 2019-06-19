@@ -16,7 +16,9 @@ import { Raiden } from 'raiden/raiden';
 import { ShutdownReason } from 'raiden/constants';
 import { initialState } from 'raiden/store';
 import { raidenShutdown, newBlock } from 'raiden/store/actions';
-import { ContractsInfo, RaidenContracts, ChannelState, Storage } from 'raiden/types';
+import { ChannelState } from 'raiden/channels';
+import { Storage } from 'raiden/utils/types';
+import { ContractsInfo, RaidenContracts } from 'raiden/types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 

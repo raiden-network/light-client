@@ -10,7 +10,6 @@ import { TokenNetwork } from '../contracts/TokenNetwork';
 import { Token } from '../contracts/Token';
 import { RaidenState, RaidenAction } from './store';
 import { ChannelState } from './channels';
-export { ChannelState } from './channels';
 
 interface Info {
   address: string;
@@ -59,13 +58,6 @@ export interface RaidenChannels {
   [token: string]: {
     [partner: string]: RaidenChannel;
   };
-}
-
-// subset of dom' Storage/localStorage interface which supports async/await
-export interface Storage {
-  getItem(key: string): string | null | Promise<string | null>;
-  setItem(key: string, value: string): void | Promise<void>;
-  removeItem(key: string): void | Promise<void>;
 }
 
 export interface TokenInfo {

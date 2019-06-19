@@ -1,9 +1,10 @@
+/* istanbul ignore file */
 // import * as t from 'io-ts';
 import { BigNumber, bigNumberify, keccak256 } from 'ethers/utils';
 import { Arrayish, arrayify, concat, hexlify, isArrayish, padZeros } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
-import { BigNumberC, Bytes, Hash } from '../store/types';
+import { BigNumberC, Bytes, Hash } from '../utils/types';
 import { Message, MessageType } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {

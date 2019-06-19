@@ -15,7 +15,7 @@ jest.mock('ethers/utils/properties', () => ({
       }),
   ),
 }));
-//
+
 // ethers utils mock to always validate matrix userIds
 jest.mock('ethers/utils', () => ({
   ...jest.requireActual('ethers/utils'),
@@ -31,8 +31,8 @@ jest.mock('ethers/utils', () => ({
 // raiden/utils.getNetwork has the same functionality as provider.getNetwork
 // but fetches everytime instead of just returning a cached property
 // On mocked tests, we unify both again, so we can just mock provider.getNetwork in-place
-jest.mock('raiden/utils', () => ({
-  ...jest.requireActual('raiden/utils'),
+jest.mock('raiden/utils/matrix', () => ({
+  ...jest.requireActual('raiden/utils/matrix'),
   getNetwork: jest.fn((provider: JsonRpcProvider): Promise<Network> => provider.getNetwork()),
 }));
 

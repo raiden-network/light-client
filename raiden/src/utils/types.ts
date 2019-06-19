@@ -1,9 +1,19 @@
 import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress } from 'ethers/utils';
 
+/* A Subset of DOM's Storage/localStorage interface which supports async/await */
+export interface Storage {
+  getItem(key: string): string | null | Promise<string | null>;
+  setItem(key: string, value: string): void | Promise<void>;
+  removeItem(key: string): void | Promise<void>;
+}
+
 const StringOrNumber = t.union([t.string, t.number]);
 
 const isBigNumber = (u: unknown): u is BigNumber => u instanceof BigNumber;
+/**
+ * Codec of ethers.utils.BigNumber objects, to/from Decimal string
+ */
 export const BigNumberC = new t.Type<BigNumber, string>(
   'BigNumber',
   isBigNumber,
@@ -20,7 +30,9 @@ export const BigNumberC = new t.Type<BigNumber, string>(
   a => a.toString(),
 );
 
-// EnumType Class
+/**
+ * Creates a NEW codec for a specific [non-const] enum object
+ */
 export class EnumType<A> extends t.Type<A> {
   public readonly _tag: 'EnumType' = 'EnumType';
   public enumObject!: object;
@@ -33,11 +45,6 @@ export class EnumType<A> extends t.Type<A> {
     );
     this.enumObject = e;
   }
-}
-
-export interface ChannelId {
-  tokenNetwork: string;
-  partner: string;
 }
 
 /**
@@ -79,7 +86,7 @@ export type Positive = t.TypeOf<typeof Positive>;
 export const PositiveInt = t.intersection([t.Int, Positive]);
 export type PositiveInt = t.TypeOf<typeof PositiveInt>;
 
-export const Bytes = new HexBytes(undefined, 'Bytes');
+export const Bytes = new HexBytes(undefined);
 export type Bytes = t.TypeOf<typeof Bytes>;
 
 export const Signature = new HexBytes(65, 'Signature');

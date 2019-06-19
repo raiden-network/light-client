@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 /* eslint-disable @typescript-eslint/camelcase */
 /**
  * These io-ts codecs validate and decode JSON Raiden messages
@@ -15,7 +16,7 @@ import {
   PositiveInt,
   Secret,
   Signature,
-} from '../store/types';
+} from '../utils/types';
 import { Lock } from '../channels';
 
 // types

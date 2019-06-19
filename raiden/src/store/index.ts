@@ -2,7 +2,6 @@ import { pick } from 'lodash';
 import { ActionType, getType } from 'typesafe-actions';
 import * as RaidenActions from './actions';
 
-export * from './types';
 export * from './state';
 export { raidenReducer } from './reducers';
 export { raidenEpics } from './epics';

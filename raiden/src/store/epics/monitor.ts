@@ -6,7 +6,7 @@ import { negate } from 'lodash';
 import { Event } from 'ethers/contract';
 import { BigNumber } from 'ethers/utils';
 
-import { getEventsStream } from '../../utils';
+import { getEventsStream } from '../../utils/ethers';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../';
 import { RaidenState } from '../state';

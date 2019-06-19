@@ -32,11 +32,10 @@ import {
   RaidenContracts,
   RaidenEpicDeps,
   RaidenChannels,
-  Storage,
   TokenInfo,
 } from './types';
 import { ShutdownReason } from './constants';
-import { Address, PrivateKey } from './store/types';
+import { Address, PrivateKey, Storage } from './utils/types';
 import {
   RaidenState,
   initialState,
