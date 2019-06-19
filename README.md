@@ -198,7 +198,7 @@ Then you need to install the wallet app dependencies.
 
 ```bash
 cd ../raiden-dapp
-npm install
+npm install --save raiden
 ```
 
 This will also create a symbolic link in `raiden-dapp/node_modules/raiden` to `raiden`.
