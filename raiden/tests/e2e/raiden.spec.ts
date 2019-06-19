@@ -1,6 +1,7 @@
 import { first, filter } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber } from 'ethers/utils';
+import { getType } from 'typesafe-actions';
 import { get } from 'lodash';
 
 jest.mock('cross-fetch');
@@ -12,7 +13,9 @@ import { MockStorage, MockMatrixRequestFn } from './mocks';
 import { request } from 'matrix-js-sdk';
 
 import { Raiden } from 'raiden/raiden';
-import { initialState, RaidenActionType, ShutdownReason } from 'raiden/store';
+import { ShutdownReason } from 'raiden/constants';
+import { initialState } from 'raiden/store';
+import { raidenShutdown, newBlock } from 'raiden/store/actions';
 import { ContractsInfo, RaidenContracts, ChannelState, Storage } from 'raiden/types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -334,8 +337,8 @@ describe('Raiden', () => {
       const promise = raiden.events$.toPromise();
       raiden.stop();
       await expect(promise).resolves.toMatchObject({
-        type: RaidenActionType.SHUTDOWN,
-        reason: ShutdownReason.STOP,
+        type: getType(raidenShutdown),
+        payload: { reason: ShutdownReason.STOP },
       });
     });
 
@@ -345,8 +348,8 @@ describe('Raiden', () => {
       const promise = raiden.events$.pipe(first()).toPromise();
       await provider.mine(10);
       await expect(promise).resolves.toMatchObject({
-        type: RaidenActionType.NEW_BLOCK,
-        blockNumber: expect.any(Number),
+        type: getType(newBlock),
+        payload: { blockNumber: expect.any(Number) },
       });
     });
   });

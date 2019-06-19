@@ -1,10 +1,12 @@
-import { ofType } from 'redux-observable';
 import { Observable, from, of } from 'rxjs';
-import { catchError, mergeMap, takeWhile, takeUntil } from 'rxjs/operators';
+import { catchError, filter, mergeMap, takeWhile, takeUntil } from 'rxjs/operators';
+import { isActionOf } from 'typesafe-actions';
+import { negate } from 'lodash';
 
 import { RaidenEpicDeps } from '../../types';
 import { RaidenState } from '../state';
-import { RaidenActionType, RaidenActions, RaidenShutdownAction, raidenShutdown } from '../actions';
+import { RaidenAction } from '../';
+import { raidenShutdown } from '../actions';
 
 import {
   initNewBlockEpic,
@@ -44,16 +46,16 @@ import {
 } from './matrix';
 
 export const raidenEpics = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<RaidenActions> => {
-  const shutdownNotification = action$.pipe(
-      ofType<RaidenActions, RaidenShutdownAction>(RaidenActionType.SHUTDOWN),
+): Observable<RaidenAction> => {
+  const shutdownNotification = action$.pipe(filter(isActionOf(raidenShutdown))),
+    limitedAction$ = action$.pipe(
+      takeWhile<RaidenAction>(negate(isActionOf(raidenShutdown)), true),
     ),
-    limitedAction$ = action$.pipe(takeWhile(a => a.type !== RaidenActionType.SHUTDOWN, true)),
     limitedState$ = state$.pipe(takeUntil(shutdownNotification));
-  // like combineEpics, but completes action$, state$ and output$ when shutdownNotification emits
+  // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
   return from([
     initNewBlockEpic,
     initMonitorProviderEpic,
@@ -86,7 +88,7 @@ export const raidenEpics = (
     matrixMessageReceivedUpdateRoomEpic,
   ]).pipe(
     mergeMap(epic => epic(limitedAction$, limitedState$, deps)),
-    catchError(err => of(raidenShutdown(err))),
+    catchError(err => of(raidenShutdown({ reason: err }))),
     takeUntil(shutdownNotification),
   );
 };

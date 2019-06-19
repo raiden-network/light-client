@@ -1,4 +1,3 @@
-import { ofType } from 'redux-observable';
 import { Observable, combineLatest, from, of, EMPTY, fromEvent, timer, ReplaySubject } from 'rxjs';
 import {
   catchError,
@@ -20,34 +19,29 @@ import {
   tap,
   toArray,
 } from 'rxjs/operators';
+import { isActionOf, ActionType } from 'typesafe-actions';
 import { get, find, minBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
 
 import { RaidenEpicDeps } from '../../types';
+import { RaidenAction } from '../';
 import { RaidenState } from '../state';
 import { getUserPresence } from '../../utils';
 import {
-  RaidenActionType,
-  RaidenActions,
-  MatrixSetupAction,
-  MatrixRequestMonitorPresenceAction,
-  MatrixRequestMonitorPresenceActionFailed,
-  MatrixPresenceUpdateAction,
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,
-  MatrixRoomAction,
   matrixRoom,
-  MatrixRoomLeaveAction,
   matrixRoomLeave,
-  MessageSendAction,
-  MessageReceivedAction,
   messageReceived,
+  matrixSetup,
+  matrixRequestMonitorPresence,
+  messageSend,
 } from '../actions';
 
 interface Presences {
-  [address: string]: MatrixPresenceUpdateAction;
+  [address: string]: ActionType<typeof matrixPresenceUpdate>;
 }
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
@@ -67,16 +61,16 @@ const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
  * @returns Observable of aggregated Presences from subscription to now
  */
 const getPresences$ = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   first: Presences = {},
 ): Observable<Presences> =>
   action$.pipe(
-    ofType<RaidenActions, MatrixPresenceUpdateAction>(RaidenActionType.MATRIX_PRESENCE_UPDATE),
+    filter(isActionOf(matrixPresenceUpdate)),
     scan(
       // scan all presence update actions and populate/output a per-address mapping
-      (presences: Presences, update: MatrixPresenceUpdateAction) => ({
+      (presences, update) => ({
         ...presences,
-        [update.address]: update,
+        [update.meta.address]: update,
       }),
       first,
     ),
@@ -90,12 +84,12 @@ const getPresences$ = (
  * losing one-shot events, like invitations.
  */
 export const matrixStartEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<RaidenActions> =>
+): Observable<RaidenAction> =>
   action$.pipe(
-    ofType<RaidenActions, MatrixSetupAction>(RaidenActionType.MATRIX_SETUP),
+    filter(isActionOf(matrixSetup)),
     switchMap(() => matrix$),
     tap(matrix => console.log('MATRIX client', matrix)),
     mergeMap(matrix => matrix.startClient({ initialSyncLimit: 0 })),
@@ -106,10 +100,10 @@ export const matrixStartEpic = (
  * Calls matrix.stopClient when raiden is shutting down, i.e. action$ completes
  */
 export const matrixShutdownEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<RaidenActions> =>
+): Observable<RaidenAction> =>
   matrix$.pipe(
     tap(matrix => action$.subscribe(undefined, undefined, () => matrix.stopClient())),
     ignoreElements(),
@@ -124,21 +118,21 @@ export const matrixShutdownEpic = (
  * updates may happen later without new requests (e.g. when the user goes offline)
  */
 export const matrixMonitorPresenceEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<MatrixPresenceUpdateAction | MatrixRequestMonitorPresenceActionFailed> =>
+): Observable<
+  ActionType<typeof matrixPresenceUpdate | typeof matrixRequestMonitorPresenceFailed>
+> =>
   action$.pipe(
-    ofType<RaidenActions, MatrixRequestMonitorPresenceAction>(
-      RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE,
-    ),
+    filter(isActionOf(matrixRequestMonitorPresence)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
     withLatestFrom(getPresences$(action$)),
     mergeMap(([{ action, matrix }, presences]) => {
-      if (action.address in presences)
+      if (action.meta.address in presences)
         // we already monitored/saw this user's presence
-        return of(presences[action.address]);
+        return of(presences[action.meta.address]);
 
       const validUsers: User[] = [];
       for (const user of matrix.getUsers()) {
@@ -147,9 +141,9 @@ export const matrixMonitorPresenceEpic = (
         let recovered: string;
         try {
           const match = userRe.exec(user.userId);
-          if (!match || getAddress(match[1]) !== action.address) continue;
+          if (!match || getAddress(match[1]) !== action.meta.address) continue;
           recovered = verifyMessage(user.userId, user.displayName);
-          if (!recovered || recovered !== action.address) continue;
+          if (!recovered || recovered !== action.meta.address) continue;
         } catch (err) {
           continue;
         }
@@ -161,14 +155,17 @@ export const matrixMonitorPresenceEpic = (
       if (validUsers.length > 0) {
         const user = minBy(validUsers, 'lastPresenceTs')!;
         return of(
-          matrixPresenceUpdate(action.address, user.userId, AVAILABLE.includes(user.presence!)),
+          matrixPresenceUpdate(
+            { userId: user.userId, available: AVAILABLE.includes(user.presence!) },
+            action.meta,
+          ),
         );
       }
 
       // if anything failed up to here, go the slow path: searchUserDirectory + getUserPresence
       return from(
         // search user directory for any user containing the address of interest in its userId
-        matrix.searchUserDirectory({ term: action.address.toLowerCase() }),
+        matrix.searchUserDirectory({ term: action.meta.address.toLowerCase() }),
       ).pipe(
         // for every result matches, verify displayName signature is address of interest
         map(({ results }) => {
@@ -177,9 +174,9 @@ export const matrixMonitorPresenceEpic = (
             if (!user.display_name) continue;
             try {
               const match = userRe.exec(user.user_id);
-              if (!match || getAddress(match[1]) !== action.address) continue;
+              if (!match || getAddress(match[1]) !== action.meta.address) continue;
               const recovered = verifyMessage(user.user_id, user.display_name);
-              if (!recovered || recovered !== action.address) continue;
+              if (!recovered || recovered !== action.meta.address) continue;
             } catch (err) {
               continue;
             }
@@ -189,7 +186,7 @@ export const matrixMonitorPresenceEpic = (
             // if no valid user could be found, throw an error to be handled below
             throw new Error(
               `Could not find any user with valid signature for ${
-                action.address
+                action.meta.address
               } in ${JSON.stringify(results)}`,
             );
           else return validUsers;
@@ -210,9 +207,15 @@ export const matrixMonitorPresenceEpic = (
         // seen user
         map(presences => minBy(presences, 'last_active_ago')!),
         map(({ presence, user_id: userId }) =>
-          matrixPresenceUpdate(action.address, userId, AVAILABLE.includes(presence)),
+          matrixPresenceUpdate(
+            {
+              userId,
+              available: AVAILABLE.includes(presence),
+            },
+            action.meta,
+          ),
         ),
-        catchError(err => of(matrixRequestMonitorPresenceFailed(action.address, err))),
+        catchError(err => of(matrixRequestMonitorPresenceFailed(err, action.meta))),
       );
     }),
   );
@@ -223,10 +226,10 @@ export const matrixMonitorPresenceEpic = (
  * and emit presence updates for any presence change happening to a user validating to this address
  */
 export const matrixPresenceUpdateEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<MatrixPresenceUpdateAction> =>
+): Observable<ActionType<typeof matrixPresenceUpdate>> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix presence events
     switchMap(matrix =>
@@ -249,14 +252,8 @@ export const matrixPresenceUpdateEpic = (
     withLatestFrom(
       // observable of all addresses whose presence monitoring was requested since init
       action$.pipe(
-        ofType<RaidenActions, MatrixRequestMonitorPresenceAction>(
-          RaidenActionType.MATRIX_REQUEST_MONITOR_PRESENCE,
-        ),
-        scan(
-          (toMonitor: Set<string>, request: MatrixRequestMonitorPresenceAction) =>
-            toMonitor.add(request.address),
-          new Set<string>(),
-        ),
+        filter(isActionOf(matrixRequestMonitorPresence)),
+        scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<string>()),
         startWith(new Set<string>()),
       ),
       // known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
@@ -274,8 +271,8 @@ export const matrixPresenceUpdateEpic = (
 
       if (
         address in presences &&
-        presences[address].userId === userId &&
-        presences[address].available === available
+        presences[address].payload.userId === userId &&
+        presences[address].payload.available === available
       )
         // even if signature verification passes, this wouldn't change presence, so return early
         return EMPTY;
@@ -300,7 +297,9 @@ export const matrixPresenceUpdateEpic = (
             );
           return recovered;
         }),
-        map(address => matrixPresenceUpdate(address, userId, available, user.lastPresenceTs)),
+        map(address =>
+          matrixPresenceUpdate({ userId, available, ts: user.lastPresenceTs }, { address }),
+        ),
       );
     }),
     catchError(err => (console.log('Error validating presence event, ignoring', err), EMPTY)),
@@ -311,17 +310,17 @@ export const matrixPresenceUpdateEpic = (
  * Requires address to have its presence monitored.
  */
 export const matrixCreateRoomEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<MatrixRoomAction> =>
+): Observable<ActionType<typeof matrixRoom>> =>
   combineLatest(getPresences$(action$), state$).pipe(
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
     // but working inside concatMap, which is called only at outer next and subscribe delayed
     multicast(new ReplaySubject<[Presences, RaidenState]>(1), presencesStateReplay$ =>
       // actual output observable, handles MessageSendAction serially and create room if needed
       action$.pipe(
-        ofType<RaidenActions, MessageSendAction>(RaidenActionType.MESSAGE_SEND),
+        filter(isActionOf(messageSend)),
         // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
         mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
         // concatMap is used to prevent bursts of messages for a given address (eg. on startup)
@@ -330,22 +329,22 @@ export const matrixCreateRoomEpic = (
           // presencesStateReplay$+take(1) acts like withLatestFrom with cached result
           presencesStateReplay$.pipe(
             // wait for user to be monitored
-            filter(([presences]) => action.address in presences),
+            filter(([presences]) => action.meta.address in presences),
             take(1),
             // if there's already a room state for address and it's present in matrix, skip
             filter(
               ([, state]) =>
-                !get(state, ['transport', 'matrix', 'address2rooms', action.address, 0]),
+                !get(state, ['transport', 'matrix', 'address2rooms', action.meta.address, 0]),
             ),
             // else, create a room, invite known user and dispatch the respective MatrixRoomAction
             // to store it in state
             mergeMap(([presences]) =>
               matrix.createRoom({
                 visibility: 'private',
-                invite: [presences[action.address].userId],
+                invite: [presences[action.meta.address].payload.userId],
               }),
             ),
-            map(({ room_id: roomId }) => matrixRoom(action.address, roomId)),
+            map(({ room_id: roomId }) => matrixRoom({ roomId }, action.meta)),
           ),
         ),
       ),
@@ -356,13 +355,13 @@ export const matrixCreateRoomEpic = (
  * Invites users coming online to rooms we may have with them
  */
 export const matrixInviteEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<RaidenActions> =>
+): Observable<RaidenAction> =>
   action$.pipe(
-    ofType<RaidenActions, MatrixPresenceUpdateAction>(RaidenActionType.MATRIX_PRESENCE_UPDATE),
-    filter(action => action.available),
+    filter(isActionOf(matrixPresenceUpdate)),
+    filter(action => action.payload.available),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
     withLatestFrom(state$),
@@ -371,14 +370,14 @@ export const matrixInviteEpic = (
         'transport',
         'matrix',
         'address2rooms',
-        action.address,
+        action.meta.address,
         0,
       ]);
       if (roomId) {
         const room = matrix.getRoom(roomId);
         if (room) {
-          const member = room.getMember(action.userId);
-          if (!member) return from(matrix.invite(roomId, action.userId));
+          const member = room.getMember(action.payload.userId);
+          if (!member) return from(matrix.invite(roomId, action.payload.userId));
         }
       }
       return EMPTY;
@@ -390,10 +389,10 @@ export const matrixInviteEpic = (
  * Handle invites sent to us and accepts them iff sent by a monitored user
  */
 export const matrixHandleInvitesEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   {  }: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<MatrixRoomAction> =>
+): Observable<ActionType<typeof matrixRoom>> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix invite events
     switchMap(matrix =>
@@ -411,16 +410,14 @@ export const matrixHandleInvitesEpic = (
     withLatestFrom(getPresences$(action$)),
     mergeMap(([{ event, member, matrix }, presences]) => {
       const sender = event.getSender(),
-        cachedPresence = find(presences, p => p.userId === sender),
+        cachedPresence = find(presences, p => p.payload.userId === sender),
         senderPresence$ = cachedPresence
           ? of(cachedPresence)
           : action$.pipe(
               // as these membership events can come up quite early, we delay continue processing
               // them a while, to see if the sender is of interest to us (presence monitored)
-              ofType<RaidenActions, MatrixPresenceUpdateAction>(
-                RaidenActionType.MATRIX_PRESENCE_UPDATE,
-              ),
-              filter(a => a.userId === sender),
+              filter(isActionOf(matrixPresenceUpdate)),
+              filter(a => a.payload.userId === sender),
               take(1),
               // Don't wait more than some arbitrary time for this sender presence update to show
               // up; completes without emitting anything otherwise, ending this pipeline.
@@ -434,7 +431,7 @@ export const matrixHandleInvitesEpic = (
     mergeMap(({ matrix, member, senderPresence }) =>
       // join room and emit MatrixRoomAction to make it default/first option for sender address
       from(matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
-        map(() => matrixRoom(senderPresence.address, member.roomId)),
+        map(() => matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
       ),
     ),
   );
@@ -444,22 +441,22 @@ export const matrixHandleInvitesEpic = (
  * Excess rooms are the ones behind a given threshold (currently 3) in the address's rooms queue
  */
 export const matrixLeaveExcessRoomsEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<MatrixRoomLeaveAction> =>
+): Observable<ActionType<typeof matrixRoomLeave>> =>
   action$.pipe(
     // act whenever a new room is added to the address queue in state
-    ofType<RaidenActions, MatrixRoomAction>(RaidenActionType.MATRIX_ROOM),
+    filter(isActionOf(matrixRoom)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
     withLatestFrom(state$),
     mergeMap(([{ action, matrix }, state]) => {
       const THRESHOLD = 3;
-      const rooms = state.transport!.matrix!.address2rooms![action.address];
+      const rooms = state.transport!.matrix!.address2rooms![action.meta.address];
       return from(rooms.filter(({}, i) => i >= THRESHOLD)).pipe(
         mergeMap(roomId => matrix.leave(roomId).then(() => roomId)),
-        map(roomId => matrixRoomLeave(action.address, roomId)),
+        map(roomId => matrixRoomLeave({ roomId }, action.meta)),
       );
     }),
   );
@@ -469,10 +466,10 @@ export const matrixLeaveExcessRoomsEpic = (
  * interest
  */
 export const matrixLeaveUnknownRoomsEpic = (
-  {  }: Observable<RaidenActions>,
+  {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$, network }: RaidenEpicDeps,
-): Observable<RaidenActions> =>
+): Observable<RaidenAction> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix Room events
     switchMap(matrix =>
@@ -508,10 +505,10 @@ export const matrixLeaveUnknownRoomsEpic = (
  * detected, and then no MatrixRoomLeaveAction is emitted for them by this epic.
  */
 export const matrixCleanLeftRoomsEpic = (
-  {  }: Observable<RaidenActions>,
+  {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<MatrixRoomLeaveAction> =>
+): Observable<ActionType<typeof matrixRoomLeave>> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix invite events
     switchMap(matrix =>
@@ -533,7 +530,7 @@ export const matrixCleanLeftRoomsEpic = (
       for (const address in address2rooms) {
         for (const roomId of address2rooms[address]) {
           if (roomId === room.roomId) {
-            yield matrixRoomLeave(address, roomId);
+            yield matrixRoomLeave({ roomId }, { address });
           }
         }
       }
@@ -544,20 +541,20 @@ export const matrixCleanLeftRoomsEpic = (
  * Handles a MessageSendAction and send its message to the first room on queue for address
  */
 export const matrixMessageSendEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<RaidenActions> =>
+): Observable<RaidenAction> =>
   combineLatest(getPresences$(action$), state$).pipe(
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
     // but working inside concatMap, called only at outer emit and subscription delayed
     multicast(new ReplaySubject<[Presences, RaidenState]>(1), presencesStateReplay$ =>
       // actual output observable, gets/wait for the user to be in a room, and then sendMessage
       action$.pipe(
-        ofType<RaidenActions, MessageSendAction>(RaidenActionType.MESSAGE_SEND),
+        filter(isActionOf(messageSend)),
         // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
         mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
-        groupBy(({ action }) => action.address),
+        groupBy(({ action }) => action.meta.address),
         // merge all inner/grouped observables, so different user's "queues" can be parallel
         mergeMap(grouped$ =>
           // per-user "queue"
@@ -570,11 +567,13 @@ export const matrixMessageSendEpic = (
                 // ReplaySubject ensures it happens immediatelly if all conditions are satisfied
                 filter(
                   ([presences, state]) =>
-                    action.address in presences &&
-                    presences[action.address].available &&
-                    get(state, ['transport', 'matrix', 'address2rooms', action.address, 0]),
+                    action.meta.address in presences &&
+                    presences[action.meta.address].payload.available &&
+                    get(state, ['transport', 'matrix', 'address2rooms', action.meta.address, 0]),
                 ),
-                map(([, state]) => state.transport!.matrix!.address2rooms![action.address][0]),
+                map(
+                  ([, state]) => state.transport!.matrix!.address2rooms![action.meta.address][0],
+                ),
                 distinctUntilChanged(),
                 // get/wait room object for roomId
                 switchMap(roomId => {
@@ -592,7 +591,7 @@ export const matrixMessageSendEpic = (
                 // get room member for partner userId
                 mergeMap(([room, [presences]]) => {
                   // get latest known userId for address at this point in time
-                  const userId = presences[action.address].userId;
+                  const userId = presences[action.meta.address].payload.userId;
                   const member = room.getMember(userId);
                   // if it's already present in room, return its membership
                   if (member && member.membership === 'join') return of(member);
@@ -608,7 +607,7 @@ export const matrixMessageSendEpic = (
                     filter(
                       ([member, [presences]]) =>
                         member.roomId === room.roomId &&
-                        member.userId === presences[action.address].userId &&
+                        member.userId === presences[action.meta.address].payload.userId &&
                         member.membership === 'join',
                     ),
                     take(1),
@@ -621,7 +620,7 @@ export const matrixMessageSendEpic = (
                   matrix.sendEvent(
                     member.roomId,
                     'm.room.message',
-                    { body: action.message, msgtype: 'm.text' },
+                    { body: action.payload.message, msgtype: 'm.text' },
                     '',
                   ),
                 ),
@@ -639,10 +638,10 @@ export const matrixMessageSendEpic = (
  * an user of interest (one valid signature from an address we monitor) in a room we have for them
  */
 export const matrixMessageReceivedEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<MessageReceivedAction> =>
+): Observable<ActionType<typeof messageReceived>> =>
   combineLatest(getPresences$(action$), state$).pipe(
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
     // but working inside concatMap, called only at outer emit and subscription delayed
@@ -667,11 +666,11 @@ export const matrixMessageReceivedEpic = (
         mergeMap(({ event, room }) =>
           presencesStateReplay$.pipe(
             filter(([presences, state]) => {
-              const presence = find(presences, ['userId', event.getSender()]);
+              const presence = find(presences, ['payload.userId', event.getSender()]);
               if (!presence) return false;
               const rooms: string[] = get(
                 state,
-                ['transport', 'matrix', 'address2rooms', presence.address],
+                ['transport', 'matrix', 'address2rooms', presence.meta.address],
                 [],
               );
               if (!rooms.includes(room.roomId)) return false;
@@ -682,13 +681,15 @@ export const matrixMessageReceivedEpic = (
             // AND the room in which this message was sent to be in sender's address room queue
             takeUntil(timer(30e3)),
             map(([presences]) => {
-              const presence = find(presences, ['userId', event.getSender()])!;
+              const presence = find(presences, ['payload.userId', event.getSender()])!;
               return messageReceived(
-                presence.address,
-                event.event.content.body,
-                event.event.origin_server_ts,
-                presence.userId,
-                room.roomId,
+                {
+                  message: event.event.content.body,
+                  ts: event.event.origin_server_ts,
+                  userId: presence.payload.userId,
+                  roomId: room.roomId,
+                },
+                presence.meta,
               );
             }),
           ),
@@ -702,19 +703,23 @@ export const matrixMessageReceivedEpic = (
  * update queue so this room goes to the front and will be used as send message room from now on
  */
 export const matrixMessageReceivedUpdateRoomEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<MatrixRoomAction> =>
+): Observable<ActionType<typeof matrixRoom>> =>
   action$.pipe(
-    ofType<RaidenActions, MessageReceivedAction>(RaidenActionType.MESSAGE_RECEIVED),
+    filter(isActionOf(messageReceived)),
     withLatestFrom(state$),
     filter(([action, state]) => {
       const rooms: string[] = get(
         state,
-        ['transport', 'matrix', 'address2rooms', action.address],
+        ['transport', 'matrix', 'address2rooms', action.meta.address],
         [],
       );
-      return !!action.roomId && rooms.includes(action.roomId) && rooms[0] !== action.roomId;
+      return (
+        !!action.payload.roomId &&
+        rooms.includes(action.payload.roomId) &&
+        rooms[0] !== action.payload.roomId
+      );
     }),
-    map(([action]) => matrixRoom(action.address, action.roomId!)),
+    map(([action]) => matrixRoom({ roomId: action.payload.roomId! }, action.meta)),
   );

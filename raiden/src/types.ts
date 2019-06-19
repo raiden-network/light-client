@@ -8,7 +8,7 @@ import { MatrixClient } from 'matrix-js-sdk';
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
 import { Token } from '../contracts/Token';
-import { RaidenState, RaidenActions, Channel } from './store';
+import { RaidenState, RaidenAction, Channel } from './store';
 export { ChannelState } from './store';
 
 interface Info {
@@ -28,7 +28,7 @@ export interface RaidenContracts {
 
 export interface RaidenEpicDeps {
   stateOutput$: BehaviorSubject<RaidenState>;
-  actionOutput$: Subject<RaidenActions>;
+  actionOutput$: Subject<RaidenAction>;
   matrix$: AsyncSubject<MatrixClient>;
   provider: JsonRpcProvider;
   network: Network;

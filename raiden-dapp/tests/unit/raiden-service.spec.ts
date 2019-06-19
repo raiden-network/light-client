@@ -12,7 +12,7 @@ import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
-import { Raiden, RaidenActionType } from 'raiden';
+import { Raiden } from 'raiden';
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
 import { BehaviorSubject, EMPTY } from 'rxjs';
@@ -567,7 +567,7 @@ describe('RaidenService', () => {
       factory.mockResolvedValue(raidenMock);
       await raidenService.connect();
       await flushPromises();
-      subject.next({ type: RaidenActionType.NEW_BLOCK });
+      subject.next({ type: 'newBlock' });
       await flushPromises();
 
       expect(store.commit).toHaveBeenLastCalledWith('updateTokens', anything());
@@ -594,7 +594,7 @@ describe('RaidenService', () => {
     factory.mockResolvedValue(raidenMock);
     await raidenService.connect();
     await flushPromises();
-    subject.next({ type: RaidenActionType.SHUTDOWN });
+    subject.next({ type: 'raidenShutdown' });
     await flushPromises();
 
     expect(store.commit).toHaveBeenCalledTimes(6);

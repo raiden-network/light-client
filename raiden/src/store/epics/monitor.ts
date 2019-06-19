@@ -1,28 +1,23 @@
-import { ofType } from 'redux-observable';
 import { Observable, defer, of, merge, EMPTY } from 'rxjs';
 import { filter, map, mergeMap, takeWhile } from 'rxjs/operators';
+import { isActionOf, ActionType } from 'typesafe-actions';
+import { negate } from 'lodash';
 
 import { Event } from 'ethers/contract';
 import { BigNumber } from 'ethers/utils';
 
 import { getEventsStream } from '../../utils';
 import { RaidenEpicDeps } from '../../types';
+import { RaidenAction } from '../';
 import { RaidenState } from '../state';
 import {
-  RaidenActionType,
-  RaidenActions,
-  TokenMonitoredAction,
-  ChannelOpenedAction,
-  ChannelMonitoredAction,
-  ChannelDepositedAction,
-  ChannelClosedAction,
-  ChannelSettledAction,
   channelOpened,
   channelDeposited,
   channelClosed,
   channelSettled,
-  MatrixRequestMonitorPresenceAction,
+  tokenMonitored,
   matrixRequestMonitorPresence,
+  channelMonitored,
 } from '../actions';
 
 /**
@@ -32,14 +27,14 @@ import {
  * - ChannelOpened events with us or by us
  */
 export const tokenMonitoredEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { address, getTokenNetworkContract, contractsInfo }: RaidenEpicDeps,
-): Observable<ChannelOpenedAction> =>
+): Observable<ActionType<typeof channelOpened>> =>
   action$.pipe(
-    ofType<RaidenActions, TokenMonitoredAction>(RaidenActionType.TOKEN_MONITORED),
+    filter(isActionOf(tokenMonitored)),
     mergeMap(action => {
-      const tokenNetworkContract = getTokenNetworkContract(action.tokenNetwork);
+      const tokenNetworkContract = getTokenNetworkContract(action.payload.tokenNetwork);
 
       // type of elements emitted by getEventsStream (past and new events coming from contract)
       // [channelId, partner1, partner2, settleTimeout, Event]
@@ -59,18 +54,24 @@ export const tokenMonitoredEpic = (
               filters,
               // if first time monitoring this token network,
               // fetch TokenNetwork's pastEvents since registry deployment as fromBlock$
-              action.first ? of(contractsInfo.TokenNetworkRegistry.block_number) : undefined,
-              action.first ? state$.pipe(map(state => state.blockNumber)) : undefined,
+              action.payload.first
+                ? of(contractsInfo.TokenNetworkRegistry.block_number)
+                : undefined,
+              action.payload.first ? state$.pipe(map(state => state.blockNumber)) : undefined,
             ).pipe(
               filter(([, p1, p2]) => p1 === address || p2 === address),
               map(([id, p1, p2, settleTimeout, event]) =>
                 channelOpened(
-                  tokenNetworkContract.address,
-                  address === p1 ? p2 : p1,
-                  id.toNumber(),
-                  settleTimeout.toNumber(),
-                  event.blockNumber!,
-                  event.transactionHash!,
+                  {
+                    id: id.toNumber(),
+                    settleTimeout: settleTimeout.toNumber(),
+                    openBlock: event.blockNumber!,
+                    txHash: event.transactionHash!,
+                  },
+                  {
+                    tokenNetwork: tokenNetworkContract.address,
+                    partner: address === p1 ? p2 : p1,
+                  },
                 ),
               ),
             ),
@@ -87,14 +88,17 @@ export const tokenMonitoredEpic = (
  * - ChannelNewDeposit, fires a ChannelDepositedAction
  */
 export const channelMonitoredEpic = (
-  action$: Observable<RaidenActions>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
-): Observable<ChannelDepositedAction | ChannelClosedAction | ChannelSettledAction> =>
+): Observable<
+  ActionType<typeof channelDeposited | typeof channelClosed | typeof channelSettled>
+> =>
   action$.pipe(
-    ofType<RaidenActions, ChannelMonitoredAction>(RaidenActionType.CHANNEL_MONITORED),
+    filter(isActionOf(channelMonitored)),
+    // TODO: replace mergeMap+defer+listenerCount with groupBy+exhaustMap for concurrency control
     mergeMap(action => {
-      const tokenNetworkContract = getTokenNetworkContract(action.tokenNetwork);
+      const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
 
       // type of elements emitted by getEventsStream (past and new events coming from contract)
       // [channelId, participant, totalDeposit, Event]
@@ -104,9 +108,17 @@ export const channelMonitoredEpic = (
       // [channelId, participant, nonce, Event]
       type ChannelSettledEvent = [BigNumber, BigNumber, BigNumber, Event];
 
-      const depositFilter = tokenNetworkContract.filters.ChannelNewDeposit(action.id, null, null),
-        closedFilter = tokenNetworkContract.filters.ChannelClosed(action.id, null, null),
-        settledFilter = tokenNetworkContract.filters.ChannelSettled(action.id, null, null);
+      // TODO: instead of one filter for each event, optimize to one filter per channel
+      // it requires ethers to support OR filters for topics:
+      // https://github.com/ethers-io/ethers.js/issues/437
+      // can we hook to provider.on directly and decoding the events ourselves?
+      const depositFilter = tokenNetworkContract.filters.ChannelNewDeposit(
+          action.payload.id,
+          null,
+          null,
+        ),
+        closedFilter = tokenNetworkContract.filters.ChannelClosed(action.payload.id, null, null),
+        settledFilter = tokenNetworkContract.filters.ChannelSettled(action.payload.id, null, null);
 
       // at subscription time, if there's already a filter, skip (return completed observable)
       return defer(() =>
@@ -118,54 +130,68 @@ export const channelMonitoredEpic = (
                 [depositFilter],
                 // if channelMonitored triggered by ChannelOpenedAction,
                 // fetch Channel's pastEvents since channelOpened blockNumber as fromBlock$
-                action.fromBlock ? of(action.fromBlock) : undefined,
-                action.fromBlock ? state$.pipe(map(state => state.blockNumber)) : undefined,
+                action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+                action.payload.fromBlock
+                  ? state$.pipe(map(state => state.blockNumber))
+                  : undefined,
               ).pipe(
                 map(([id, participant, totalDeposit, event]) =>
                   channelDeposited(
-                    action.tokenNetwork,
-                    action.partner,
-                    id.toNumber(),
-                    participant,
-                    totalDeposit,
-                    event.transactionHash!,
+                    {
+                      id: id.toNumber(),
+                      participant,
+                      totalDeposit,
+                      txHash: event.transactionHash!,
+                    },
+                    action.meta,
                   ),
                 ),
               ),
               getEventsStream<ChannelClosedEvent>(
                 tokenNetworkContract,
                 [closedFilter],
-                action.fromBlock ? of(action.fromBlock) : undefined,
-                action.fromBlock ? state$.pipe(map(state => state.blockNumber)) : undefined,
+                action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+                action.payload.fromBlock
+                  ? state$.pipe(map(state => state.blockNumber))
+                  : undefined,
               ).pipe(
                 map(([id, participant, , event]) =>
                   channelClosed(
-                    action.tokenNetwork,
-                    action.partner,
-                    id.toNumber(),
-                    participant,
-                    event.blockNumber!,
-                    event.transactionHash!,
+                    {
+                      id: id.toNumber(),
+                      participant,
+                      closeBlock: event.blockNumber!,
+                      txHash: event.transactionHash!,
+                    },
+                    action.meta,
                   ),
                 ),
               ),
               getEventsStream<ChannelSettledEvent>(
                 tokenNetworkContract,
                 [settledFilter],
-                action.fromBlock ? of(action.fromBlock) : undefined,
-                action.fromBlock ? state$.pipe(map(state => state.blockNumber)) : undefined,
+                action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+                action.payload.fromBlock
+                  ? state$.pipe(map(state => state.blockNumber))
+                  : undefined,
               ).pipe(
                 map(([id, , , event]) =>
                   channelSettled(
-                    action.tokenNetwork,
-                    action.partner,
-                    id.toNumber(),
-                    event.blockNumber!,
-                    event.transactionHash!,
+                    {
+                      id: id.toNumber(),
+                      settleBlock: event.blockNumber!,
+                      txHash: event.transactionHash!,
+                    },
+                    action.meta,
                   ),
                 ),
               ),
-            ).pipe(takeWhile(a => a.type !== RaidenActionType.CHANNEL_SETTLED, true)),
+            ).pipe(
+              // takeWhile tends to broad input to simple TypedAction. We need to narrow it by hand
+              takeWhile<
+                ActionType<typeof channelDeposited | typeof channelClosed | typeof channelSettled>
+              >(negate(isActionOf(channelSettled)), true),
+            ),
       );
     }),
   );
@@ -174,9 +200,9 @@ export const channelMonitoredEpic = (
  * Channel monitoring triggers matrix presence monitoring for partner
  */
 export const channelMatrixMonitorPresenceEpic = (
-  action$: Observable<RaidenActions>,
-): Observable<MatrixRequestMonitorPresenceAction> =>
+  action$: Observable<RaidenAction>,
+): Observable<ActionType<typeof matrixRequestMonitorPresence>> =>
   action$.pipe(
-    ofType<RaidenActions, ChannelMonitoredAction>(RaidenActionType.CHANNEL_MONITORED),
-    map(action => matrixRequestMonitorPresence(action.partner)),
+    filter(isActionOf(channelMonitored)),
+    map(action => matrixRequestMonitorPresence(undefined, { address: action.meta.partner })),
   );
