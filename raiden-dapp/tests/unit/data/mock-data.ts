@@ -1,6 +1,7 @@
 import { Token } from '@/model/types';
 import { ethers } from 'ethers';
 import { BigNumber } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 import { ChannelState, RaidenChannel, RaidenChannels } from 'raiden';
 import { Route } from 'vue-router';
 
@@ -23,7 +24,8 @@ export class TestData {
     state: ChannelState.open,
     token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
     tokenNetwork: '0x111157460c0F41EfD9107239B7864c062aA8B978',
-    totalDeposit: new BigNumber(10 ** 8)
+    ownDeposit: new BigNumber(10 ** 8),
+    balance: Zero
   };
 
   static settlingChannel: RaidenChannel = {
@@ -35,7 +37,8 @@ export class TestData {
     state: ChannelState.settling,
     token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
     tokenNetwork: '0x111157460c0F41EfD9107239B7864c062aA8B978',
-    totalDeposit: new BigNumber(10 ** 8)
+    ownDeposit: new BigNumber(10 ** 8),
+    balance: Zero
   };
 
   static settlableChannel: RaidenChannel = {
@@ -47,7 +50,8 @@ export class TestData {
     state: ChannelState.settleable,
     token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
     tokenNetwork: '0x111157460c0F41EfD9107239B7864c062aA8B978',
-    totalDeposit: new BigNumber(10 ** 8)
+    ownDeposit: new BigNumber(10 ** 8),
+    balance: Zero
   };
 
   static closedChannel: RaidenChannel = {
@@ -59,7 +63,8 @@ export class TestData {
     state: ChannelState.closed,
     token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
     tokenNetwork: '0x111157460c0F41EfD9107239B7864c062aA8B978',
-    totalDeposit: new BigNumber(10 ** 8)
+    ownDeposit: new BigNumber(10 ** 8),
+    balance: Zero
   };
 
   static mockChannelArray = [

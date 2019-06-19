@@ -166,7 +166,7 @@ describe('Raiden', () => {
             tokenNetwork,
             partner,
             state: ChannelState.open,
-            totalDeposit: Zero,
+            ownDeposit: Zero,
             partnerDeposit: Zero,
             settleTimeout: 500,
           },
@@ -207,7 +207,7 @@ describe('Raiden', () => {
             tokenNetwork,
             partner,
             state: ChannelState.open,
-            totalDeposit: bigNumberify(300),
+            ownDeposit: bigNumberify(300),
           },
         },
       });
@@ -243,7 +243,7 @@ describe('Raiden', () => {
         [token]: {
           [raiden.address]: {
             state: ChannelState.open,
-            totalDeposit: Zero,
+            ownDeposit: Zero,
             partnerDeposit: bigNumberify(200),
           },
         },

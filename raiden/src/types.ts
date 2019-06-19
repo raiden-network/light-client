@@ -8,8 +8,9 @@ import { MatrixClient } from 'matrix-js-sdk';
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
 import { Token } from '../contracts/Token';
-import { RaidenState, RaidenAction, Channel } from './store';
-export { ChannelState } from './store';
+import { RaidenState, RaidenAction } from './store';
+import { ChannelState } from './channels';
+export { ChannelState } from './channels';
 
 interface Info {
   address: string;
@@ -40,10 +41,18 @@ export interface RaidenEpicDeps {
   getTokenContract: (address: string) => Token;
 }
 
-export interface RaidenChannel extends Channel {
+export interface RaidenChannel {
   token: string;
   tokenNetwork: string;
   partner: string;
+  state: ChannelState;
+  ownDeposit: BigNumber;
+  partnerDeposit: BigNumber;
+  balance: BigNumber;
+  id?: number;
+  settleTimeout?: number;
+  openBlock?: number;
+  closeBlock?: number;
 }
 
 export interface RaidenChannels {

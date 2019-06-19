@@ -35,7 +35,7 @@
                   </v-list-tile-title>
                   <v-list-tile-sub-title class="state-info">
                     Deposit
-                    {{ channel.totalDeposit | displayFormat(token.decimals) }} |
+                    {{ channel.ownDeposit | displayFormat(token.decimals) }} |
                     State: {{ channel.state | capitalizeFirst }}
                   </v-list-tile-sub-title>
                 </v-list-tile-content>

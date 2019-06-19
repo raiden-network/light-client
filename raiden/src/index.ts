@@ -1,5 +1,6 @@
 /* istanbul ignore file */
-export { RaidenState, ChannelState, RaidenEvent } from './store';
+export { RaidenState, RaidenEvent } from './store';
+export { ChannelState } from './channels';
 export { ShutdownReason } from './constants';
 export * from './types';
 export * from './raiden';

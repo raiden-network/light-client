@@ -1,6 +1,7 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, ParamType, BigNumber, bigNumberify } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
 
@@ -145,7 +146,31 @@ export class Raiden {
               // transform Channel to RaidenChannel, with more info
               partner2channel,
               (partner2raidenChannel, channel, partner) =>
-                (partner2raidenChannel[partner] = { ...channel, token, tokenNetwork, partner }),
+                (partner2raidenChannel[partner] = {
+                  token,
+                  tokenNetwork,
+                  partner,
+                  state: channel.state,
+                  id: channel.id,
+                  settleTimeout: channel.settleTimeout,
+                  openBlock: channel.openBlock,
+                  closeBlock: channel.closeBlock,
+                  ownDeposit: channel.own.deposit,
+                  partnerDeposit: channel.partner.deposit,
+                  // balance is difference between is partner's and own transfered+locked amounts
+                  balance: (channel.partner.balanceProof
+                    ? channel.partner.balanceProof.transferredAmount.add(
+                        channel.partner.balanceProof.lockedAmount,
+                      )
+                    : Zero
+                  ).sub(
+                    channel.own.balanceProof
+                      ? channel.own.balanceProof.transferredAmount.add(
+                          channel.own.balanceProof.lockedAmount,
+                        )
+                      : Zero,
+                  ),
+                }),
             );
           },
         ),
