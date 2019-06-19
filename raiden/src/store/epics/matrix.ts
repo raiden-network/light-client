@@ -666,7 +666,7 @@ export const matrixMessageReceivedEpic = (
         mergeMap(({ event, room }) =>
           presencesStateReplay$.pipe(
             filter(([presences, state]) => {
-              const presence = find(presences, ['userId', event.getSender()]);
+              const presence = find(presences, ['payload.userId', event.getSender()]);
               if (!presence) return false;
               const rooms: string[] = get(
                 state,
@@ -681,7 +681,7 @@ export const matrixMessageReceivedEpic = (
             // AND the room in which this message was sent to be in sender's address room queue
             takeUntil(timer(30e3)),
             map(([presences]) => {
-              const presence = find(presences, ['userId', event.getSender()])!;
+              const presence = find(presences, ['payload.userId', event.getSender()])!;
               return messageReceived(
                 {
                   message: event.event.content.body,

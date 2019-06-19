@@ -56,8 +56,8 @@ import TokenNetworkAbi from 'raiden/abi/TokenNetwork.json';
 import TokenAbi from 'raiden/abi/Token.json';
 
 import { RaidenEpicDeps } from 'raiden/types';
+import { RaidenAction } from 'raiden/store';
 import { RaidenState, initialState } from 'raiden/store/state';
-import { RaidenActions } from 'raiden/store/actions';
 
 type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -170,7 +170,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
 
   return {
     stateOutput$: new BehaviorSubject<RaidenState>(initialState),
-    actionOutput$: new Subject<RaidenActions>(),
+    actionOutput$: new Subject<RaidenAction>(),
     matrix$: new AsyncSubject<MatrixClient>(),
     address,
     network,
