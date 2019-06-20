@@ -35,7 +35,7 @@ import {
   TokenInfo,
 } from './types';
 import { ShutdownReason } from './constants';
-import { Address, PrivateKey, Storage } from './utils/types';
+import { Address, PrivateKey, Storage, Hash } from './utils/types';
 import {
   RaidenState,
   initialState,
@@ -95,7 +95,7 @@ export class Raiden {
   /**
    * Expose ether's Provider.resolveName for ENS support
    */
-  public readonly resolveName: (name: string) => Promise<string>;
+  public readonly resolveName: (name: string) => Promise<Address>;
 
   public constructor(
     provider: JsonRpcProvider,
@@ -239,7 +239,7 @@ export class Raiden {
    **/
   public static async create(
     connection: JsonRpcProvider | AsyncSendable | string,
-    account: string | number,
+    account: Address | PrivateKey | number,
     storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
   ): Promise<Raiden> {
@@ -276,23 +276,20 @@ export class Raiden {
     }
 
     let signer: Signer;
-    if (typeof account === 'string') {
-      if (Address.is(account)) {
-        // address
-        const accounts = await provider.listAccounts();
-        if (accounts.indexOf(account) < 0)
-          throw new Error(`Account "${account}" not found in provider, got=${accounts}`);
-        signer = provider.getSigner(account);
-      } else if (PrivateKey.is(account)) {
-        // private key
-        signer = new Wallet(account, provider);
-      } else {
-        throw new Error('String account must be either a 0x-encoded address or private key');
-      }
-    } else {
-      // if (typeof account === 'number')
+    if (typeof account === 'number') {
       // index of account in provider
       signer = provider.getSigner(account);
+    } else if (Address.is(account)) {
+      // address
+      const accounts = await provider.listAccounts();
+      if (!accounts.includes(account))
+        throw new Error(`Account "${account}" not found in provider, got=${accounts}`);
+      signer = provider.getSigner(account);
+    } else if (PrivateKey.is(account)) {
+      // private key
+      signer = new Wallet(account, provider);
+    } else {
+      throw new Error('String account must be either a 0x-encoded address or private key');
     }
     const address = await signer.getAddress();
 
@@ -361,7 +358,7 @@ export class Raiden {
     return this.store.getState();
   }
 
-  public get address(): string {
+  public get address(): Address {
     return this.state.address;
   }
 
@@ -374,7 +371,7 @@ export class Raiden {
    * @param address  Optional target address. If omitted, gets own balance
    * @returns  BigNumber of ETH balance
    */
-  public getBalance(address?: string): Promise<BigNumber> {
+  public getBalance(address?: Address): Promise<BigNumber> {
     return this.provider.getBalance(address || this.address);
   }
 
@@ -384,7 +381,7 @@ export class Raiden {
    * @param address  Optional target address. If omitted, gets own balance
    * @returns  BigNumber containing address's token balance
    */
-  public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
+  public async getTokenBalance(token: Address, address?: Address): Promise<BigNumber> {
     if (!(token in this.state.token2tokenNetwork))
       throw new Error(`token "${token}" not monitored`);
     const tokenContract = this.getTokenContract(token);
@@ -400,7 +397,7 @@ export class Raiden {
    * @param token address to fetch info from
    * @returns TokenInfo
    */
-  public async getTokenInfo(token: string): Promise<TokenInfo> {
+  public async getTokenInfo(token: Address): Promise<TokenInfo> {
     /* tokenInfo isn't in state as it isn't relevant for being preserved, it's merely a cache */
     if (!(token in this.state.token2tokenNetwork))
       throw new Error(`token "${token}" not monitored`);
@@ -420,7 +417,7 @@ export class Raiden {
   /**
    * Returns a list of all token addresses registered as token networks in registry
    */
-  public async getTokenList(): Promise<string[]> {
+  public async getTokenList(): Promise<Address[]> {
     // here we assume there'll be at least one token registered on a registry
     // so, if the list is empty (e.g. on first init), raidenInitializationEpic is still fetching
     // the TokenNetworkCreated events from registry, so we wait until some token is found
@@ -440,7 +437,7 @@ export class Raiden {
    * @param address  TokenNetwork contract address (not token address!)
    * @return  TokenNetwork Contract instance
    */
-  private getTokenNetworkContract(address: string): TokenNetwork {
+  private getTokenNetworkContract(address: Address): TokenNetwork {
     if (!(address in this.contracts.tokenNetworks))
       this.contracts.tokenNetworks[address] = new Contract(
         address,
@@ -456,7 +453,7 @@ export class Raiden {
    * @param address  Token contract address
    * @return  Token Contract instance
    */
-  private getTokenContract(address: string): Token {
+  private getTokenContract(address: Address): Token {
     if (!(address in this.contracts.tokens))
       this.contracts.tokens[address] = new Contract(
         address,
@@ -474,10 +471,10 @@ export class Raiden {
    * @returns  txHash of channelOpen call, iff it succeeded
    */
   public async openChannel(
-    token: string,
-    partner: string,
+    token: Address,
+    partner: Address,
     settleTimeout: number = 500,
-  ): Promise<string> {
+  ): Promise<Hash> {
     const state = this.state;
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -506,10 +503,10 @@ export class Raiden {
    * @returns  txHash of setTotalDeposit call, iff it succeeded
    */
   public async depositChannel(
-    token: string,
-    partner: string,
+    token: Address,
+    partner: Address,
     deposit: BigNumber | number,
-  ): Promise<string> {
+  ): Promise<Hash> {
     const state = this.state;
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -544,7 +541,7 @@ export class Raiden {
    * @param partner  Partner address
    * @returns  txHash of closeChannel call, iff it succeeded
    */
-  public async closeChannel(token: string, partner: string): Promise<string> {
+  public async closeChannel(token: Address, partner: Address): Promise<Hash> {
     const state = this.state;
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -576,7 +573,7 @@ export class Raiden {
    * @param partner  Partner address
    * @returns  txHash of settleChannel call, iff it succeeded
    */
-  public async settleChannel(token: string, partner: string): Promise<string> {
+  public async settleChannel(token: Address, partner: Address): Promise<Hash> {
     const state = this.state;
     const tokenNetwork = state.token2tokenNetwork[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -606,7 +603,7 @@ export class Raiden {
    * @returns Promise to object describing availability and last event timestamp
    */
   public async getAvailability(
-    address: string,
+    address: Address,
   ): Promise<{ userId: string; available: boolean; ts: number }> {
     const promise = this.action$
       .pipe(
@@ -626,7 +623,7 @@ export class Raiden {
   /**
    * Temporary interface to test MessageSendAction
    */
-  public sendMessage(address: string, message: string): void {
+  public sendMessage(address: Address, message: string): void {
     this.store.dispatch(messageSend({ message }, { address }));
   }
 }

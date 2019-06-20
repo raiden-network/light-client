@@ -2,13 +2,14 @@ import { BigNumber } from 'ethers/utils';
 import { createStandardAction } from 'typesafe-actions';
 
 import { ShutdownReason } from '../constants';
+import { Address, Hash } from '../utils/types';
 import { RaidenMatrixSetup } from './state';
 
 // interfaces need to be exported, and we need/want to support `import * as RaidenActions`
 // eslint-disable-next-line @typescript-eslint/prefer-interface
 type ChannelId = {
-  tokenNetwork: string;
-  partner: string;
+  tokenNetwork: Address;
+  partner: Address;
 };
 
 // actions-creators
@@ -28,8 +29,8 @@ export const tokenMonitored = createStandardAction('tokenMonitored').map(
     tokenNetwork,
     first = false,
   }: {
-    token: string;
-    tokenNetwork: string;
+    token: Address;
+    tokenNetwork: Address;
     first?: boolean;
   }) => ({
     payload: { token, tokenNetwork, first },
@@ -49,7 +50,7 @@ export const channelOpen = createStandardAction('channelOpen')<
 
 /* A channel is detected on-chain. Also works as 'success' for channelOpen action */
 export const channelOpened = createStandardAction('channelOpened')<
-  { id: number; settleTimeout: number; openBlock: number; txHash: string },
+  { id: number; settleTimeout: number; openBlock: number; txHash: Hash },
   ChannelId
 >();
 
@@ -72,7 +73,7 @@ export const channelDeposit = createStandardAction('channelDeposit')<
 
 /* A deposit is detected on-chain. Also works as 'success' for channelDeposit action */
 export const channelDeposited = createStandardAction('channelDeposited')<
-  { id: number; participant: string; totalDeposit: BigNumber; txHash: string },
+  { id: number; participant: Address; totalDeposit: BigNumber; txHash: Hash },
   ChannelId
 >();
 
@@ -86,7 +87,7 @@ export const channelClose = createStandardAction('channelClose')<undefined, Chan
 
 /* A close channel event is detected on-chain. Also works as 'success' for channelClose action */
 export const channelClosed = createStandardAction('channelClosed')<
-  { id: number; participant: string; closeBlock: number; txHash: string },
+  { id: number; participant: Address; closeBlock: number; txHash: Hash },
   ChannelId
 >();
 
@@ -106,7 +107,7 @@ export const channelSettle = createStandardAction('channelSettle')<undefined, Ch
 
 /* A settle channel event is detected on-chain. Also works as 'success' for channelSettle action */
 export const channelSettled = createStandardAction('channelSettled')<
-  { id: number; settleBlock: number; txHash: string },
+  { id: number; settleBlock: number; txHash: Hash },
   ChannelId
 >();
 
@@ -124,10 +125,9 @@ export const matrixSetup = createStandardAction('matrixSetup')<{
 /* Request matrix to start monitoring presence updates for meta.address */
 export const matrixRequestMonitorPresence = createStandardAction('matrixRequestMonitorPresence')<
   undefined,
-  { address: string }
+  { address: Address }
 >();
 
-// TODO: declare all { address: string } as { address: Address }
 /**
  * Monitored user meta.address presence updated.
  * First event for this address also works as 'success' for matrixRequestMonitorPresence
@@ -135,31 +135,31 @@ export const matrixRequestMonitorPresence = createStandardAction('matrixRequestM
 export const matrixPresenceUpdate = createStandardAction('matrixPresenceUpdate').map(
   (
     { userId, available, ts }: { userId: string; available: boolean; ts?: number },
-    meta: { address: string },
+    meta: { address: Address },
   ) => ({ payload: { userId, available, ts: ts || Date.now() }, meta }),
 );
 
 /* A matrixRequestMonitorPresence request action (with meta.address) failed with payload=Error */
 export const matrixRequestMonitorPresenceFailed = createStandardAction(
   'matrixRequestMonitorPresenceFailed',
-).map((payload: Error, meta: { address: string }) => ({ payload, error: true, meta }));
+).map((payload: Error, meta: { address: Address }) => ({ payload, error: true, meta }));
 
 /* payload.roomId must go front on meta.address's room queue */
 export const matrixRoom = createStandardAction('matrixRoom')<
   { roomId: string },
-  { address: string }
+  { address: Address }
 >();
 
 /* payload.roomId must be excluded from meta.address room queue, if present */
 export const matrixRoomLeave = createStandardAction('matrixRoomLeave')<
   { roomId: string },
-  { address: string }
+  { address: Address }
 >();
 
 /* One-shot send payload.message to meta.address user in transport */
 export const messageSend = createStandardAction('messageSend')<
   { message: string },
-  { address: string }
+  { address: Address }
 >();
 
 /**
@@ -179,6 +179,6 @@ export const messageReceived = createStandardAction('messageReceived').map(
       userId?: string;
       roomId?: string;
     },
-    meta: { address: string },
+    meta: { address: Address },
   ) => ({ payload: { message, ts: ts || Date.now(), userId, roomId }, meta }),
 );

@@ -17,6 +17,7 @@ import fetch from 'cross-fetch';
 import { Event } from 'ethers/contract';
 import { MatrixClient, createClient } from 'matrix-js-sdk';
 
+import { Address } from '../../utils/types';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../../utils/ethers';
 import { yamlListToArray, matrixRTT, getServerName } from '../../utils/matrix';
 import { RaidenEpicDeps } from '../../types';
@@ -61,7 +62,7 @@ export const initMonitorRegistryEpic = (
       merge(
         // monitor old (in case of empty token2tokenNetwork) and new registered tokens
         // and starts monitoring every registered token
-        getEventsStream<[string, string, Event]>(
+        getEventsStream<[Address, Address, Event]>(
           registryContract,
           [registryContract.filters.TokenNetworkCreated(null, null)],
           isEmpty(state.token2tokenNetwork)

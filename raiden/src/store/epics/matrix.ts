@@ -25,6 +25,7 @@ import { get, find, minBy } from 'lodash';
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
 
+import { Address } from '../../utils/types';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../';
 import { RaidenState } from '../state';
@@ -138,7 +139,7 @@ export const matrixMonitorPresenceEpic = (
       for (const user of matrix.getUsers()) {
         if (!user.displayName) continue;
         if (!user.presence) continue;
-        let recovered: string;
+        let recovered: Address;
         try {
           const match = userRe.exec(user.userId);
           if (!match || getAddress(match[1]) !== action.meta.address) continue;
@@ -253,8 +254,8 @@ export const matrixPresenceUpdateEpic = (
       // observable of all addresses whose presence monitoring was requested since init
       action$.pipe(
         filter(isActionOf(matrixRequestMonitorPresence)),
-        scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<string>()),
-        startWith(new Set<string>()),
+        scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<Address>()),
+        startWith(new Set<Address>()),
       ),
       // known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
       getPresences$(action$),

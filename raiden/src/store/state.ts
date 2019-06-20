@@ -30,7 +30,7 @@ export const RaidenState = t.intersection([
         }),
         t.partial({
           setup: RaidenMatrixSetup,
-          address2rooms: t.record(t.string, t.array(t.string)),
+          address2rooms: t.record(Address, t.array(t.string)),
         }),
       ]),
     }),

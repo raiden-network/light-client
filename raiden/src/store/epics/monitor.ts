@@ -6,6 +6,7 @@ import { negate } from 'lodash';
 import { Event } from 'ethers/contract';
 import { BigNumber } from 'ethers/utils';
 
+import { Address } from '../../utils/types';
 import { getEventsStream } from '../../utils/ethers';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../';
@@ -38,7 +39,7 @@ export const tokenMonitoredEpic = (
 
       // type of elements emitted by getEventsStream (past and new events coming from contract)
       // [channelId, partner1, partner2, settleTimeout, Event]
-      type ChannelOpenedEvent = [BigNumber, string, string, BigNumber, Event];
+      type ChannelOpenedEvent = [BigNumber, Address, Address, BigNumber, Event];
 
       const filters = [
         tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
@@ -102,10 +103,10 @@ export const channelMonitoredEpic = (
 
       // type of elements emitted by getEventsStream (past and new events coming from contract)
       // [channelId, participant, totalDeposit, Event]
-      type ChannelNewDepositEvent = [BigNumber, string, BigNumber, Event];
+      type ChannelNewDepositEvent = [BigNumber, Address, BigNumber, Event];
       // [channelId, participant, nonce, Event]
-      type ChannelClosedEvent = [BigNumber, string, BigNumber, Event];
-      // [channelId, participant, nonce, Event]
+      type ChannelClosedEvent = [BigNumber, Address, BigNumber, Event];
+      // [channelId, participant1amount, participant2amount, Event]
       type ChannelSettledEvent = [BigNumber, BigNumber, BigNumber, Event];
 
       // TODO: instead of one filter for each event, optimize to one filter per channel
