@@ -11,6 +11,11 @@
         </v-content>
       </div>
     </div>
+    <div class="policy">
+      <a href="https://raiden.network/privacy.html" target="_blank">
+        Privacy Policy, Disclaimer & Imprint
+      </a>
+    </div>
   </v-app>
 </template>
 
@@ -96,5 +101,16 @@ export default class App extends Vue {
 
 .application {
   background: $background-gradient;
+}
+
+.policy {
+  font-size: 12px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 8px;
+  a {
+    color: white;
+  }
 }
 </style>
