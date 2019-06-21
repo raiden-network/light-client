@@ -19,12 +19,11 @@ jest.mock('cross-fetch');
 import fetch from 'cross-fetch';
 
 import { ShutdownReason } from 'raiden/constants';
-import { RaidenAction } from 'raiden/store';
+import { RaidenAction } from 'raiden/actions';
 import { RaidenState, initialState } from 'raiden/store/state';
 import { raidenReducer } from 'raiden/store/reducers';
+import { raidenInit, raidenShutdown } from 'raiden/store/actions';
 import {
-  raidenInit,
-  raidenShutdown,
   newBlock,
   tokenMonitored,
   channelMonitored,
@@ -37,19 +36,20 @@ import {
   channelSettleable,
   channelSettle,
   channelSettled,
-  matrixRequestMonitorPresence,
-  matrixPresenceUpdate,
-  matrixRoom,
-  messageSend,
-  messageReceived,
-  matrixSetup,
   channelOpenFailed,
   channelDepositFailed,
   channelCloseFailed,
   channelSettleFailed,
+} from 'raiden/channels/actions';
+import {
+  matrixRequestMonitorPresence,
+  matrixPresenceUpdate,
+  matrixRoom,
+  matrixSetup,
   matrixRequestMonitorPresenceFailed,
   matrixRoomLeave,
-} from 'raiden/store/actions';
+} from 'raiden/transport/actions';
+import { messageSend, messageReceived } from 'raiden/messages/actions';
 
 import { raidenEpics } from 'raiden/store/epics';
 import { initMonitorProviderEpic, initMatrixEpic } from 'raiden/store/epics/init';

@@ -27,7 +27,7 @@ import { MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk
 
 import { Address } from '../../utils/types';
 import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../';
+import { RaidenAction } from '../../actions';
 import { RaidenState } from '../state';
 import { getUserPresence } from '../../utils/matrix';
 import {
@@ -35,11 +35,10 @@ import {
   matrixRequestMonitorPresenceFailed,
   matrixRoom,
   matrixRoomLeave,
-  messageReceived,
   matrixSetup,
   matrixRequestMonitorPresence,
-  messageSend,
-} from '../actions';
+} from '../../transport/actions';
+import { messageSend, messageReceived } from '../../messages/actions';
 
 interface Presences {
   [address: string]: ActionType<typeof matrixPresenceUpdate>;

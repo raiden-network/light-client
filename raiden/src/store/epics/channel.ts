@@ -14,7 +14,7 @@ import { get, findKey } from 'lodash';
 import { HashZero, Zero } from 'ethers/constants';
 
 import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../';
+import { RaidenAction } from '../../actions';
 import { Channel, ChannelState } from '../../channels';
 import { RaidenState } from '../state';
 import {
@@ -28,7 +28,7 @@ import {
   channelDeposit,
   channelClose,
   channelSettle,
-} from '../actions';
+} from '../../channels/actions';
 import { SignatureZero } from '../../constants';
 
 /**

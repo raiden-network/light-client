@@ -3,9 +3,9 @@ import { Zero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
 
 import { RaidenState, initialState, raidenReducer } from 'raiden/store';
+import { raidenInit } from 'raiden/store/actions';
 import {
   newBlock,
-  raidenInit,
   tokenMonitored,
   channelOpen,
   channelOpened,
@@ -18,10 +18,8 @@ import {
   channelSettle,
   channelSettleFailed,
   channelSettled,
-  matrixSetup,
-  matrixRoom,
-  matrixRoomLeave,
-} from 'raiden/store/actions';
+} from 'raiden/channels/actions';
+import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden/transport/actions';
 import { ChannelState } from 'raiden/channels';
 
 describe('raidenReducer', () => {

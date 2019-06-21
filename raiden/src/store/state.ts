@@ -3,17 +3,9 @@ import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
 import { Address } from '../utils/types';
 import { Channel } from '../channels';
+import { RaidenMatrixSetup } from '../transport/state';
 
 // types
-
-const RaidenMatrixSetup = t.type({
-  userId: t.string,
-  accessToken: t.string,
-  deviceId: t.string,
-  displayName: t.string,
-});
-
-export type RaidenMatrixSetup = t.TypeOf<typeof RaidenMatrixSetup>;
 
 export const RaidenState = t.intersection([
   t.type({

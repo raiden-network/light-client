@@ -2,10 +2,10 @@ import { Observable } from 'rxjs';
 import { filter, mergeMap, withLatestFrom } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
 
-import { RaidenAction } from '../';
+import { RaidenAction } from '../../actions';
 import { ChannelState } from '../../channels';
 import { RaidenState } from '../state';
-import { channelSettleable, newBlock } from '../actions';
+import { channelSettleable, newBlock } from '../../channels/actions';
 
 /**
  * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable

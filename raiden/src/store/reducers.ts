@@ -2,7 +2,7 @@ import { getType } from 'typesafe-actions';
 import { cloneDeep, get, isEmpty, set, unset } from 'lodash';
 import { Zero } from 'ethers/constants';
 
-import { RaidenAction } from './';
+import { RaidenAction } from '../actions';
 import {
   newBlock,
   tokenMonitored,
@@ -15,12 +15,10 @@ import {
   channelSettleable,
   channelSettle,
   channelSettled,
-  matrixSetup,
-  matrixRoom,
-  matrixRoomLeave,
-} from './actions';
-import { RaidenState, initialState } from './state';
+} from '../channels/actions';
+import { matrixSetup, matrixRoom, matrixRoomLeave } from '../transport/actions';
 import { ChannelState, Channel } from '../channels';
+import { RaidenState, initialState } from './state';
 
 export function raidenReducer(
   state: Readonly<RaidenState> = initialState,

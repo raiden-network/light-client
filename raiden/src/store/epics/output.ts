@@ -1,7 +1,7 @@
 import { Observable, EMPTY } from 'rxjs';
 
 import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../';
+import { RaidenAction } from '../../actions';
 import { RaidenState } from '../state';
 
 /**

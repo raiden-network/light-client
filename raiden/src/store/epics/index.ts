@@ -4,8 +4,8 @@ import { isActionOf } from 'typesafe-actions';
 import { negate } from 'lodash';
 
 import { RaidenEpicDeps } from '../../types';
+import { RaidenAction } from '../../actions';
 import { RaidenState } from '../state';
-import { RaidenAction } from '../';
 import { raidenShutdown } from '../actions';
 
 import {

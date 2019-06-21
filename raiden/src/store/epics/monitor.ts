@@ -9,7 +9,7 @@ import { BigNumber } from 'ethers/utils';
 import { Address } from '../../utils/types';
 import { getEventsStream } from '../../utils/ethers';
 import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../';
+import { RaidenAction } from '../../actions';
 import { RaidenState } from '../state';
 import {
   channelOpened,
@@ -17,9 +17,9 @@ import {
   channelClosed,
   channelSettled,
   tokenMonitored,
-  matrixRequestMonitorPresence,
   channelMonitored,
-} from '../actions';
+} from '../../channels/actions';
+import { matrixRequestMonitorPresence } from '../../transport/actions';
 
 /**
  * Starts monitoring a token network for events

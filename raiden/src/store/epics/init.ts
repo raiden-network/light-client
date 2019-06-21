@@ -22,16 +22,12 @@ import { fromEthersEvent, getEventsStream, getNetwork } from '../../utils/ethers
 import { yamlListToArray, matrixRTT, getServerName } from '../../utils/matrix';
 import { RaidenEpicDeps } from '../../types';
 import { MATRIX_KNOWN_SERVERS_URL, ShutdownReason } from '../../constants';
-import { RaidenAction } from '../';
-import { RaidenState, RaidenMatrixSetup } from '../state';
-import {
-  newBlock,
-  raidenInit,
-  tokenMonitored,
-  channelMonitored,
-  raidenShutdown,
-  matrixSetup,
-} from '../actions';
+import { RaidenAction } from '../../actions';
+import { RaidenMatrixSetup } from '../../transport/state';
+import { RaidenState } from '../state';
+import { raidenInit, raidenShutdown } from '../actions';
+import { newBlock, tokenMonitored, channelMonitored } from '../../channels/actions';
+import { matrixSetup } from '../../transport/actions';
 
 /**
  * Register for new block events and emit NewBlockActions for new blocks

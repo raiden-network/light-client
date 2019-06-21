@@ -43,13 +43,10 @@ import {
   decodeRaidenState,
   raidenEpics,
   raidenReducer,
-  RaidenAction,
-  RaidenEvents,
-  RaidenEvent,
 } from './store';
+import { RaidenAction, RaidenEvents, RaidenEvent } from './actions';
+import { raidenInit, raidenShutdown } from './store/actions';
 import {
-  raidenInit,
-  raidenShutdown,
   tokenMonitored,
   channelOpened,
   channelOpenFailed,
@@ -63,11 +60,13 @@ import {
   channelSettled,
   channelSettleFailed,
   channelSettle,
+} from './channels/actions';
+import {
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,
   matrixRequestMonitorPresence,
-  messageSend,
-} from './store/actions';
+} from './transport/actions';
+import { messageSend } from './messages/actions';
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
