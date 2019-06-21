@@ -41,9 +41,9 @@ import {
   initialState,
   encodeRaidenState,
   decodeRaidenState,
-  raidenEpics,
   raidenReducer,
 } from './store';
+import { raidenRootEpic } from './epics';
 import { RaidenAction, RaidenEvents, RaidenEvent } from './actions';
 import { raidenInit, raidenShutdown } from './store/actions';
 import {
@@ -205,7 +205,7 @@ export class Raiden {
       applyMiddleware(...middlewares, epicMiddleware),
     );
 
-    epicMiddleware.run(raidenEpics);
+    epicMiddleware.run(raidenRootEpic);
     state = this.store.getState();
 
     // use next from latest known blockNumber as start block when polling

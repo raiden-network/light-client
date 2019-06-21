@@ -1,4 +1,14 @@
-import { Observable, combineLatest, from, of, EMPTY, fromEvent, timer, ReplaySubject } from 'rxjs';
+import {
+  Observable,
+  combineLatest,
+  from,
+  of,
+  EMPTY,
+  fromEvent,
+  timer,
+  ReplaySubject,
+  throwError,
+} from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -18,18 +28,24 @@ import {
   takeUntil,
   tap,
   toArray,
+  mapTo,
 } from 'rxjs/operators';
 import { isActionOf, ActionType } from 'typesafe-actions';
-import { get, find, minBy } from 'lodash';
+import { find, get, minBy, sortBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
-import { MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
+import { createClient, MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
+import fetch from 'cross-fetch';
 
-import { Address } from '../../utils/types';
-import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../../actions';
-import { RaidenState } from '../state';
-import { getUserPresence } from '../../utils/matrix';
+import { Address } from '../utils/types';
+import { RaidenEpicDeps } from '../types';
+import { RaidenAction } from '../actions';
+import { MATRIX_KNOWN_SERVERS_URL } from '../constants';
+import { channelMonitored } from '../channels/actions';
+import { messageSend, messageReceived } from '../messages/actions';
+import { RaidenState } from '../store/state';
+import { raidenInit } from '../store/actions';
+import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
 import {
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,
@@ -37,8 +53,8 @@ import {
   matrixRoomLeave,
   matrixSetup,
   matrixRequestMonitorPresence,
-} from '../../transport/actions';
-import { messageSend, messageReceived } from '../../messages/actions';
+} from './actions';
+import { RaidenMatrixSetup } from './state';
 
 interface Presences {
   [address: string]: ActionType<typeof matrixPresenceUpdate>;
@@ -75,6 +91,130 @@ const getPresences$ = (
       first,
     ),
     startWith(first),
+  );
+
+/**
+ * Initialize matrix transport
+ */
+export const initMatrixEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { address, network, signer, matrix$ }: RaidenEpicDeps,
+): Observable<ActionType<typeof matrixSetup>> =>
+  action$.pipe(
+    filter(isActionOf(raidenInit)),
+    withLatestFrom(state$),
+    mergeMap(function([, state]) {
+      const server: string | undefined = get(state, ['transport', 'matrix', 'server']),
+        setup: RaidenMatrixSetup | undefined = get(state, ['transport', 'matrix', 'setup']);
+      if (server) {
+        // use server from state/settings
+        return of({ server, setup });
+      } else {
+        const knownServersUrl =
+          MATRIX_KNOWN_SERVERS_URL[network.name] || MATRIX_KNOWN_SERVERS_URL.default;
+        // fetch servers list and use the one with shortest http round trip time (rtt)
+        return from(fetch(knownServersUrl)).pipe(
+          mergeMap(response => {
+            if (!response.ok)
+              return throwError(
+                new Error(
+                  `Could not fetch server list from "${knownServersUrl}" => ${response.status}`,
+                ),
+              );
+            return response.text();
+          }),
+          mergeMap(text => from(yamlListToArray(text))),
+          mergeMap(server => matrixRTT(server)),
+          toArray(),
+          map(rtts => sortBy(rtts, ['rtt'])),
+          map(rtts => {
+            if (!rtts[0] || typeof rtts[0].rtt !== 'number' || isNaN(rtts[0].rtt))
+              throw new Error(`Could not contact any matrix servers: ${JSON.stringify(rtts)}`);
+            return rtts[0].server;
+          }),
+          map(server => ({
+            server: server.includes('://') ? server : `https://${server}`,
+            setup: undefined,
+          })),
+        );
+      }
+    }),
+    mergeMap(function({
+      server,
+      setup,
+    }): Observable<{ matrix: MatrixClient; server: string; setup: RaidenMatrixSetup }> {
+      let { userId, accessToken, deviceId }: Partial<RaidenMatrixSetup> = setup || {};
+      if (setup) {
+        // if matrixSetup was already issued before, and credentials are already in state
+        const matrix = createClient({
+          baseUrl: server,
+          userId,
+          accessToken,
+          deviceId,
+        });
+        return of({ matrix, server, setup });
+      } else {
+        const serverName = getServerName(server);
+        if (!serverName) return throwError(new Error(`Could not get serverName from "${server}"`));
+        const matrix = createClient({ baseUrl: server });
+        const userName = address.toLowerCase();
+        userId = `@${userName}:${serverName}`;
+
+        // create password as signature of serverName, then try login or register
+        return from(signer.signMessage(serverName)).pipe(
+          mergeMap(password =>
+            from(matrix.loginWithPassword(userName, password)).pipe(
+              catchError(() => from(matrix.register(userName, password))),
+            ),
+          ),
+          tap(result => {
+            // matrix.register implementation doesn't set returned credentials
+            // which would require an unnecessary additional login request if we didn't
+            // set it here, and login doesn't set deviceId, so we set all credential
+            // parameters again here after successful login or register
+            matrix.deviceId = result.device_id;
+            matrix._http.opts.accessToken = result.access_token;
+            matrix.credentials = {
+              userId: result.user_id,
+            };
+            // set vars for later MatrixSetupAction
+            accessToken = result.access_token;
+            deviceId = result.device_id;
+          }),
+          // displayName must be signature of full userId for our messages to be accepted
+          mergeMap(() => signer.signMessage(userId!)),
+          map(signedUserId => ({
+            matrix,
+            server,
+            setup: {
+              userId: userId!,
+              accessToken: accessToken!,
+              deviceId: deviceId!,
+              displayName: signedUserId,
+            },
+          })),
+        );
+      }
+    }),
+    mergeMap(({ matrix, server, setup }) =>
+      // ensure displayName is set even on restarts
+      from(matrix.setDisplayName(setup.displayName)).pipe(
+        // ensure we joined discovery room
+        mergeMap(() =>
+          matrix.joinRoom(
+            `#raiden_${network.name || network.chainId}_discovery:${getServerName(server)}`,
+          ),
+        ),
+        mapTo({ matrix, server, setup }),
+      ),
+    ),
+    tap(({ matrix }) => {
+      // like Promise.resolve for AsyncSubjects
+      matrix$.next(matrix);
+      matrix$.complete();
+    }),
+    map(({ server, setup }) => matrixSetup({ server, setup })),
   );
 
 /**
@@ -722,4 +862,15 @@ export const matrixMessageReceivedUpdateRoomEpic = (
       );
     }),
     map(([action]) => matrixRoom({ roomId: action.payload.roomId! }, action.meta)),
+  );
+
+/**
+ * Channel monitoring triggers matrix presence monitoring for partner
+ */
+export const matrixMonitorChannelPresenceEpic = (
+  action$: Observable<RaidenAction>,
+): Observable<ActionType<typeof matrixRequestMonitorPresence>> =>
+  action$.pipe(
+    filter(isActionOf(channelMonitored)),
+    map(action => matrixRequestMonitorPresence(undefined, { address: action.meta.partner })),
   );

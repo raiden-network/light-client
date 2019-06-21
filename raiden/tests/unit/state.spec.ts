@@ -1,4 +1,5 @@
 import { bigNumberify } from 'ethers/utils';
+
 import { ChannelState } from 'raiden/channels';
 import { RaidenState, encodeRaidenState, decodeRaidenState } from 'raiden/store/state';
 

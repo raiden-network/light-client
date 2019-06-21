@@ -51,23 +51,21 @@ import {
 } from 'raiden/transport/actions';
 import { messageSend, messageReceived } from 'raiden/messages/actions';
 
-import { raidenEpics } from 'raiden/store/epics';
-import { initMonitorProviderEpic, initMatrixEpic } from 'raiden/store/epics/init';
-import { stateOutputEpic, actionOutputEpic } from 'raiden/store/epics/output';
-import { newBlockEpic } from 'raiden/store/epics/block';
+import { raidenRootEpic } from 'raiden/epics';
 import {
-  tokenMonitoredEpic,
-  channelMonitoredEpic,
-  channelMatrixMonitorPresenceEpic,
-} from 'raiden/store/epics/monitor';
-import {
+  initMonitorProviderEpic,
   channelOpenEpic,
   channelOpenedEpic,
   channelDepositEpic,
   channelCloseEpic,
   channelSettleEpic,
-} from 'raiden/store/epics/channel';
+  channelMonitoredEpic,
+  channelSettleableEpic,
+  tokenMonitoredEpic,
+} from 'raiden/channels/epics';
 import {
+  initMatrixEpic,
+  matrixMonitorChannelPresenceEpic,
   matrixShutdownEpic,
   matrixMonitorPresenceEpic,
   matrixPresenceUpdateEpic,
@@ -81,9 +79,10 @@ import {
   matrixMessageReceivedEpic,
   matrixMessageReceivedUpdateRoomEpic,
   matrixStartEpic,
-} from 'raiden/store/epics/matrix';
+} from 'raiden/transport/epics';
+import { stateOutputEpic, actionOutputEpic } from 'raiden/store/epics';
 
-describe('raidenEpics', () => {
+describe('raidenRootEpic', () => {
   // mocks for all RaidenEpicDeps properties
   const depsMock = raidenEpicDeps();
   const state: RaidenState = {
@@ -205,7 +204,7 @@ describe('raidenEpics', () => {
             tap(() => depsMock.provider.emit('block', 634)),
             ignoreElements(),
           );
-        m.expect(merge(emitBlock$, raidenEpics(action$, state$, depsMock))).toBeObservable(
+        m.expect(merge(emitBlock$, raidenRootEpic(action$, state$, depsMock))).toBeObservable(
           m.cold('---(tc)---b-|', {
             t: tokenMonitored({ token, tokenNetwork, first: false }),
             // ensure channelMonitored is emitted by raidenInit even for 'settling' channel
@@ -251,8 +250,8 @@ describe('raidenEpics', () => {
       const error = new Error('connection lost');
       depsMock.provider.listAccounts.mockRejectedValueOnce(error);
 
-      // whole raidenEpics completes upon raidenShutdown, with it as last emitted value
-      await expect(raidenEpics(action$, state$, depsMock).toPromise()).resolves.toEqual(
+      // whole raidenRootEpic completes upon raidenShutdown, with it as last emitted value
+      await expect(raidenRootEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
         raidenShutdown({ reason: error }),
       );
     });
@@ -343,7 +342,7 @@ describe('raidenEpics', () => {
   });
 
   test(
-    'newBlockEpic',
+    'channelSettleableEpic',
     marbles(m => {
       const closeBlock = 125;
       // state contains one channel in closed state
@@ -369,7 +368,7 @@ describe('raidenEpics', () => {
           B: newBlock({ blockNumber: closeBlock + settleTimeout + 4 }),
         }),
         state$ = m.cold('--s-|', { s: newState });
-      m.expect(newBlockEpic(action$, state$)).toBeObservable(
+      m.expect(channelSettleableEpic(action$, state$)).toBeObservable(
         m.cold('-----S-|', {
           S: channelSettleable(
             { settleableBlock: closeBlock + settleTimeout + 4 },
@@ -879,12 +878,12 @@ describe('raidenEpics', () => {
     });
   });
 
-  describe('channelMatrixMonitorPresenceEpic', () => {
+  describe('matrixMonitorChannelPresenceEpic', () => {
     test('channelMonitored triggers matrixRequestMonitorPresence', async () => {
       const action$ = of<RaidenAction>(
         channelMonitored({ id: channelId }, { tokenNetwork, partner }),
       );
-      const promise = channelMatrixMonitorPresenceEpic(action$).toPromise();
+      const promise = matrixMonitorChannelPresenceEpic(action$).toPromise();
       await expect(promise).resolves.toEqual(
         matrixRequestMonitorPresence(undefined, { address: partner }),
       );
