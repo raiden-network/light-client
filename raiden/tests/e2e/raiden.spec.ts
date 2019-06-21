@@ -16,7 +16,9 @@ import { Raiden } from 'raiden/raiden';
 import { ShutdownReason } from 'raiden/constants';
 import { initialState } from 'raiden/store';
 import { raidenShutdown, newBlock } from 'raiden/store/actions';
-import { ContractsInfo, RaidenContracts, ChannelState, Storage } from 'raiden/types';
+import { ChannelState } from 'raiden/channels';
+import { Storage } from 'raiden/utils/types';
+import { ContractsInfo, RaidenContracts } from 'raiden/types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
@@ -166,7 +168,7 @@ describe('Raiden', () => {
             tokenNetwork,
             partner,
             state: ChannelState.open,
-            totalDeposit: Zero,
+            ownDeposit: Zero,
             partnerDeposit: Zero,
             settleTimeout: 500,
           },
@@ -207,7 +209,7 @@ describe('Raiden', () => {
             tokenNetwork,
             partner,
             state: ChannelState.open,
-            totalDeposit: bigNumberify(300),
+            ownDeposit: bigNumberify(300),
           },
         },
       });
@@ -243,7 +245,7 @@ describe('Raiden', () => {
         [token]: {
           [raiden.address]: {
             state: ChannelState.open,
-            totalDeposit: Zero,
+            ownDeposit: Zero,
             partnerDeposit: bigNumberify(200),
           },
         },

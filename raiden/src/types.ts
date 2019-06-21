@@ -1,4 +1,5 @@
 /// <reference path="../typings/matrix-js-sdk/index.d.ts" />
+
 import { Subject, BehaviorSubject, AsyncSubject } from 'rxjs';
 import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
@@ -8,11 +9,13 @@ import { MatrixClient } from 'matrix-js-sdk';
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
 import { Token } from '../contracts/Token';
-import { RaidenState, RaidenAction, Channel } from './store';
-export { ChannelState } from './store';
+
+import { RaidenState, RaidenAction } from './store';
+import { ChannelState } from './channels';
+import { Address } from './utils/types';
 
 interface Info {
-  address: string;
+  address: Address;
   block_number: number;
 }
 
@@ -33,30 +36,31 @@ export interface RaidenEpicDeps {
   provider: JsonRpcProvider;
   network: Network;
   signer: Signer;
-  address: string;
+  address: Address;
   contractsInfo: ContractsInfo;
   registryContract: TokenNetworkRegistry;
-  getTokenNetworkContract: (address: string) => TokenNetwork;
-  getTokenContract: (address: string) => Token;
+  getTokenNetworkContract: (address: Address) => TokenNetwork;
+  getTokenContract: (address: Address) => Token;
 }
 
-export interface RaidenChannel extends Channel {
-  token: string;
-  tokenNetwork: string;
-  partner: string;
+export interface RaidenChannel {
+  token: Address;
+  tokenNetwork: Address;
+  partner: Address;
+  state: ChannelState;
+  ownDeposit: BigNumber;
+  partnerDeposit: BigNumber;
+  balance: BigNumber;
+  id?: number;
+  settleTimeout?: number;
+  openBlock?: number;
+  closeBlock?: number;
 }
 
 export interface RaidenChannels {
   [token: string]: {
     [partner: string]: RaidenChannel;
   };
-}
-
-// subset of dom' Storage/localStorage interface which supports async/await
-export interface Storage {
-  getItem(key: string): string | null | Promise<string | null>;
-  setItem(key: string, value: string): void | Promise<void>;
-  removeItem(key: string): void | Promise<void>;
 }
 
 export interface TokenInfo {

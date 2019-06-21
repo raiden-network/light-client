@@ -1,61 +1,26 @@
 import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
-import { createEnumType, BigNumberType } from './types';
+import { Address } from '../utils/types';
+import { Channel } from '../channels';
 
-export enum ChannelState {
-  opening = 'opening',
-  open = 'open',
-  closing = 'closing',
-  closed = 'closed',
-  settleable = 'settleable',
-  settling = 'settling',
-  settled = 'settled',
-}
+// types
 
-const ChannelStateType = createEnumType<ChannelState>(ChannelState, 'ChannelState');
-
-export const ChannelType = t.intersection([
-  t.type({
-    state: ChannelStateType,
-    totalDeposit: BigNumberType,
-    partnerDeposit: BigNumberType,
-  }),
-  t.partial({
-    id: t.number,
-    settleTimeout: t.number,
-    openBlock: t.number,
-    closeBlock: t.number,
-  }),
-]);
-
-export type Channel = t.TypeOf<typeof ChannelType>;
-
-/*export interface Channel {
-  state: ChannelState;
-  totalDeposit: number;
-  partnerDeposit: number;
-  id?: number;
-  settleTimeout?: number;
-  openBlock?: number;
-  closeBlock?: number;
-}*/
-
-const RaidenMatrixSetupType = t.type({
+const RaidenMatrixSetup = t.type({
   userId: t.string,
   accessToken: t.string,
   deviceId: t.string,
   displayName: t.string,
 });
 
-export type RaidenMatrixSetup = t.TypeOf<typeof RaidenMatrixSetupType>;
+export type RaidenMatrixSetup = t.TypeOf<typeof RaidenMatrixSetup>;
 
-export const RaidenStateType = t.intersection([
+export const RaidenState = t.intersection([
   t.type({
-    address: t.string,
+    address: Address,
     blockNumber: t.number,
-    tokenNetworks: t.record(t.string, t.record(t.string, ChannelType)),
-    token2tokenNetwork: t.record(t.string, t.string),
+    tokenNetworks: t.record(Address, t.record(Address, Channel)),
+    token2tokenNetwork: t.record(Address, Address),
   }),
   t.partial({
     transport: t.partial({
@@ -64,36 +29,30 @@ export const RaidenStateType = t.intersection([
           server: t.string,
         }),
         t.partial({
-          setup: RaidenMatrixSetupType,
-          address2rooms: t.record(t.string, t.array(t.string)),
+          setup: RaidenMatrixSetup,
+          address2rooms: t.record(Address, t.array(t.string)),
         }),
       ]),
     }),
   }),
 ]);
 
-export type RaidenState = t.TypeOf<typeof RaidenStateType>;
+export type RaidenState = t.TypeOf<typeof RaidenState>;
 
+// helpers, utils & constants
+// TODO: replace JSON functions with BigNumber-aware ones
 export function encodeRaidenState(state: RaidenState): string {
-  return JSON.stringify(RaidenStateType.encode(state), undefined, 2);
+  return JSON.stringify(RaidenState.encode(state), undefined, 2);
 }
 
 export function decodeRaidenState(data: unknown): RaidenState {
   if (typeof data === 'string') data = JSON.parse(data);
-  const validationResult = RaidenStateType.decode(data);
+  const validationResult = RaidenState.decode(data);
   ThrowReporter.report(validationResult); // throws if decode failed
   return validationResult.value as RaidenState;
 }
 
-/*
-export interface RaidenState {
-  address: string;
-  blockNumber: number;
-  tokenNetworks: { [tokenNetworkAddress: string]: { [partnerAddress: string]: Channel } };
-  token2tokenNetwork: { [tokenAddress: string]: string };
-}*/
-
-export const initialState: RaidenState = {
+export const initialState: Readonly<RaidenState> = {
   address: '',
   blockNumber: 0,
   tokenNetworks: {},

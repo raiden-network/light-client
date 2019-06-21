@@ -15,7 +15,8 @@ import { HashZero, Zero } from 'ethers/constants';
 
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../';
-import { RaidenState, Channel, ChannelState } from '../state';
+import { Channel, ChannelState } from '../../channels';
+import { RaidenState } from '../state';
 import {
   channelOpenFailed,
   channelMonitored,
@@ -169,7 +170,7 @@ export const channelDepositEpic = (
             tokenNetworkContract.functions.setTotalDeposit(
               channelId,
               address,
-              state.tokenNetworks[action.meta.tokenNetwork][action.meta.partner].totalDeposit.add(
+              state.tokenNetworks[action.meta.tokenNetwork][action.meta.partner].own.deposit.add(
                 action.payload.deposit,
               ),
               action.meta.partner,
