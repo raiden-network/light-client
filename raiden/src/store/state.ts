@@ -11,8 +11,8 @@ export const RaidenState = t.intersection([
   t.type({
     address: Address,
     blockNumber: t.number,
-    tokenNetworks: t.record(Address, t.record(Address, Channel)),
-    token2tokenNetwork: t.record(Address, Address),
+    channels: t.record(Address, t.record(Address, Channel)),
+    tokens: t.record(Address, Address),
   }),
   t.partial({
     transport: t.partial({
@@ -22,7 +22,7 @@ export const RaidenState = t.intersection([
         }),
         t.partial({
           setup: RaidenMatrixSetup,
-          address2rooms: t.record(Address, t.array(t.string)),
+          rooms: t.record(Address, t.array(t.string)),
         }),
       ]),
     }),
@@ -47,6 +47,6 @@ export function decodeRaidenState(data: unknown): RaidenState {
 export const initialState: Readonly<RaidenState> = {
   address: '',
   blockNumber: 0,
-  tokenNetworks: {},
-  token2tokenNetwork: {},
+  channels: {},
+  tokens: {},
 };

@@ -71,27 +71,25 @@ export const initMonitorRegistryEpic = (
     withLatestFrom(state$),
     mergeMap(([, state]) =>
       merge(
-        // monitor old (in case of empty token2tokenNetwork) and new registered tokens
+        // monitor old (in case of empty tokens) and new registered tokens
         // and starts monitoring every registered token
         getEventsStream<[Address, Address, Event]>(
           registryContract,
           [registryContract.filters.TokenNetworkCreated(null, null)],
-          isEmpty(state.token2tokenNetwork)
-            ? of(contractsInfo.TokenNetworkRegistry.block_number)
-            : undefined,
-          isEmpty(state.token2tokenNetwork) ? of(state.blockNumber) : undefined,
+          isEmpty(state.tokens) ? of(contractsInfo.TokenNetworkRegistry.block_number) : undefined,
+          isEmpty(state.tokens) ? of(state.blockNumber) : undefined,
         ).pipe(
           withLatestFrom(state$.pipe(startWith(state))),
           map(([[token, tokenNetwork], state]) =>
             tokenMonitored({
               token,
               tokenNetwork,
-              first: !(token in state.token2tokenNetwork),
+              first: !(token in state.tokens),
             }),
           ),
         ),
         // monitor previously monitored tokens
-        from(Object.entries(state.token2tokenNetwork)).pipe(
+        from(Object.entries(state.tokens)).pipe(
           map(([token, tokenNetwork]) => tokenMonitored({ token, tokenNetwork })),
         ),
       ),
@@ -109,7 +107,7 @@ export const initMonitorChannelsEpic = (
     filter(isActionOf(raidenInit)),
     withLatestFrom(state$),
     mergeMap(function*([, state]) {
-      for (const [tokenNetwork, obj] of Object.entries(state.tokenNetworks)) {
+      for (const [tokenNetwork, obj] of Object.entries(state.channels)) {
         for (const [partner, channel] of Object.entries(obj)) {
           if (channel.id !== undefined) {
             yield channelMonitored({ id: channel.id }, { tokenNetwork, partner });
@@ -360,7 +358,7 @@ export const channelOpenEpic = (
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
       const tokenNetwork = getTokenNetworkContract(action.meta.tokenNetwork);
-      const channelState = get(state.tokenNetworks, [
+      const channelState = get(state.channels, [
         action.meta.tokenNetwork,
         action.meta.partner,
         'state',
@@ -406,7 +404,7 @@ export const channelOpenedEpic = (
     withLatestFrom(state$),
     // proceed only if channel is in 'open' state and a deposit is required
     filter(([action, state]) => {
-      const channel: Channel | undefined = get(state.tokenNetworks, [
+      const channel: Channel | undefined = get(state.channels, [
         action.meta.tokenNetwork,
         action.meta.partner,
       ]);
@@ -440,14 +438,14 @@ export const channelDepositEpic = (
     filter(isActionOf(channelDeposit)),
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
-      const token = findKey(state.token2tokenNetwork, tn => tn === action.meta.tokenNetwork);
+      const token = findKey(state.tokens, tn => tn === action.meta.tokenNetwork);
       if (!token) {
         const error = new Error(`token for tokenNetwork "${action.meta.tokenNetwork}" not found`);
         return of(channelDepositFailed(error, action.meta));
       }
       const tokenContract = getTokenContract(token);
       const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
-      const channel: Channel = get(state.tokenNetworks, [
+      const channel: Channel = get(state.channels, [
         action.meta.tokenNetwork,
         action.meta.partner,
       ]);
@@ -482,7 +480,7 @@ export const channelDepositEpic = (
             tokenNetworkContract.functions.setTotalDeposit(
               channelId,
               address,
-              state.tokenNetworks[action.meta.tokenNetwork][action.meta.partner].own.deposit.add(
+              state.channels[action.meta.tokenNetwork][action.meta.partner].own.deposit.add(
                 action.payload.deposit,
               ),
               action.meta.partner,
@@ -530,7 +528,7 @@ export const channelCloseEpic = (
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
       const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
-      const channel: Channel = get(state.tokenNetworks, [
+      const channel: Channel = get(state.channels, [
         action.meta.tokenNetwork,
         action.meta.partner,
       ]);
@@ -600,7 +598,7 @@ export const channelSettleEpic = (
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
       const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
-      const channel: Channel | undefined = get(state.tokenNetworks, [
+      const channel: Channel | undefined = get(state.channels, [
         action.meta.tokenNetwork,
         action.meta.partner,
       ]);
@@ -672,9 +670,9 @@ export const channelSettleableEpic = (
       },
       state,
     ]) {
-      for (const tokenNetwork in state.tokenNetworks) {
-        for (const partner in state.tokenNetworks[tokenNetwork]) {
-          const channel = state.tokenNetworks[tokenNetwork][partner];
+      for (const tokenNetwork in state.channels) {
+        for (const partner in state.channels[tokenNetwork]) {
+          const channel = state.channels[tokenNetwork][partner];
           if (
             channel.state === ChannelState.closed &&
             channel.settleTimeout && // closed channels always have settleTimeout & closeBlock set

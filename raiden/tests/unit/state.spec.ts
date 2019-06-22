@@ -13,7 +13,7 @@ describe('RaidenState codecs', () => {
     const state: RaidenState = {
       address,
       blockNumber: 123,
-      tokenNetworks: {
+      channels: {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
@@ -22,12 +22,12 @@ describe('RaidenState codecs', () => {
           },
         },
       },
-      token2tokenNetwork: { [token]: tokenNetwork },
+      tokens: { [token]: tokenNetwork },
     };
     expect(JSON.parse(encodeRaidenState(state))).toEqual({
       address,
       blockNumber: 123,
-      tokenNetworks: {
+      channels: {
         [tokenNetwork]: {
           [partner]: {
             state: 'open',
@@ -36,7 +36,7 @@ describe('RaidenState codecs', () => {
           },
         },
       },
-      token2tokenNetwork: { [token]: tokenNetwork },
+      tokens: { [token]: tokenNetwork },
     });
   });
 
@@ -52,7 +52,7 @@ describe('RaidenState codecs', () => {
       decodeRaidenState({
         address,
         blockNumber: 123,
-        tokenNetworks: {
+        channels: {
           [tokenNetwork]: {
             [partner]: {
               state: 'unknownstate',
@@ -61,7 +61,7 @@ describe('RaidenState codecs', () => {
             },
           },
         },
-        token2tokenNetwork: {},
+        tokens: {},
       }),
     ).toThrow('Invalid value "unknownstate"');
 
@@ -70,7 +70,7 @@ describe('RaidenState codecs', () => {
       decodeRaidenState({
         address,
         blockNumber: 123,
-        tokenNetworks: {
+        channels: {
           [tokenNetwork]: {
             [partner]: {
               state: 'open',
@@ -79,12 +79,12 @@ describe('RaidenState codecs', () => {
             },
           },
         },
-        token2tokenNetwork: { [token]: tokenNetwork },
+        tokens: { [token]: tokenNetwork },
       }),
     ).toEqual({
       address,
       blockNumber: 123,
-      tokenNetworks: {
+      channels: {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
@@ -93,7 +93,7 @@ describe('RaidenState codecs', () => {
           },
         },
       },
-      token2tokenNetwork: { [token]: tokenNetwork },
+      tokens: { [token]: tokenNetwork },
     });
   });
 });

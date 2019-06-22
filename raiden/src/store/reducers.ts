@@ -32,16 +32,12 @@ export function raidenReducer(
 
     case getType(tokenMonitored):
       // action.first should be true, but not required,
-      // actual check is if token is in state.token2tokenNetwork
-      if (action.payload.token in state.token2tokenNetwork) return state;
-      return set(
-        cloneDeep(state),
-        ['token2tokenNetwork', action.payload.token],
-        action.payload.tokenNetwork,
-      );
+      // actual check is if token is in state.tokens
+      if (action.payload.token in state.tokens) return state;
+      return set(cloneDeep(state), ['tokens', action.payload.token], action.payload.tokenNetwork);
 
     case getType(channelOpen):
-      path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner];
+      path = ['channels', action.meta.tokenNetwork, action.meta.partner];
       if (get(state, path)) return state; // there's already a channel with partner
       return set(cloneDeep(state), path, {
         state: ChannelState.opening,
@@ -50,7 +46,7 @@ export function raidenReducer(
       });
 
     case getType(channelOpened):
-      path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner];
+      path = ['channels', action.meta.tokenNetwork, action.meta.partner];
       channel = {
         state: ChannelState.open,
         own: { deposit: Zero },
@@ -63,14 +59,14 @@ export function raidenReducer(
       return set(cloneDeep(state), path, channel);
 
     case getType(channelOpenFailed):
-      path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner];
+      path = ['channels', action.meta.tokenNetwork, action.meta.partner];
       if (get(state, [...path, 'state']) !== ChannelState.opening) return state;
       const newState = cloneDeep(state);
       unset(newState, path);
       return newState;
 
     case getType(channelDeposited):
-      path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner];
+      path = ['channels', action.meta.tokenNetwork, action.meta.partner];
       channel = cloneDeep(get(state, path));
       if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
         return state;
@@ -82,12 +78,12 @@ export function raidenReducer(
       return set(cloneDeep(state), path, channel);
 
     case getType(channelClose):
-      path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner, 'state'];
+      path = ['channels', action.meta.tokenNetwork, action.meta.partner, 'state'];
       if (get(state, path) !== ChannelState.open) return state;
       return set(cloneDeep(state), path, ChannelState.closing);
 
     case getType(channelClosed):
-      path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner];
+      path = ['channels', action.meta.tokenNetwork, action.meta.partner];
       channel = cloneDeep(get(state, path));
       if (
         !channel ||
@@ -100,17 +96,17 @@ export function raidenReducer(
       return set(cloneDeep(state), path, channel);
 
     case getType(channelSettleable):
-      path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner, 'state'];
+      path = ['channels', action.meta.tokenNetwork, action.meta.partner, 'state'];
       if (get(state, path) !== ChannelState.closed) return state;
       return set(cloneDeep(state), path, ChannelState.settleable);
 
     case getType(channelSettle):
-      path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner, 'state'];
+      path = ['channels', action.meta.tokenNetwork, action.meta.partner, 'state'];
       if (get(state, path) !== ChannelState.settleable) return state;
       return set(cloneDeep(state), path, ChannelState.settling);
 
     case getType(channelSettled):
-      path = ['tokenNetworks', action.meta.tokenNetwork, action.meta.partner, 'state'];
+      path = ['channels', action.meta.tokenNetwork, action.meta.partner, 'state'];
       if (
         ![ChannelState.closed, ChannelState.settleable, ChannelState.settling].includes(
           get(state, path),
@@ -118,7 +114,7 @@ export function raidenReducer(
       )
         return state;
       state = cloneDeep(state);
-      delete state.tokenNetworks[action.meta.tokenNetwork][action.meta.partner];
+      delete state.channels[action.meta.tokenNetwork][action.meta.partner];
       return state;
 
     case getType(matrixSetup):
@@ -128,14 +124,14 @@ export function raidenReducer(
       return state;
 
     case getType(matrixRoom):
-      path = ['transport', 'matrix', 'address2rooms', action.meta.address];
+      path = ['transport', 'matrix', 'rooms', action.meta.address];
       return set(cloneDeep(state), path, [
         action.payload.roomId,
         ...(get(state, path, []) as string[]).filter(room => room !== action.payload.roomId),
       ]);
 
     case getType(matrixRoomLeave):
-      path = ['transport', 'matrix', 'address2rooms', action.meta.address];
+      path = ['transport', 'matrix', 'rooms', action.meta.address];
       state = set(
         cloneDeep(state),
         path,

@@ -473,8 +473,7 @@ export const matrixCreateRoomEpic = (
             take(1),
             // if there's already a room state for address and it's present in matrix, skip
             filter(
-              ([, state]) =>
-                !get(state, ['transport', 'matrix', 'address2rooms', action.meta.address, 0]),
+              ([, state]) => !get(state, ['transport', 'matrix', 'rooms', action.meta.address, 0]),
             ),
             // else, create a room, invite known user and dispatch the respective MatrixRoomAction
             // to store it in state
@@ -509,7 +508,7 @@ export const matrixInviteEpic = (
       const roomId: string | undefined = get(state, [
         'transport',
         'matrix',
-        'address2rooms',
+        'rooms',
         action.meta.address,
         0,
       ]);
@@ -593,7 +592,7 @@ export const matrixLeaveExcessRoomsEpic = (
     withLatestFrom(state$),
     mergeMap(([{ action, matrix }, state]) => {
       const THRESHOLD = 3;
-      const rooms = state.transport!.matrix!.address2rooms![action.meta.address];
+      const rooms = state.transport!.matrix!.rooms![action.meta.address];
       return from(rooms.filter(({}, i) => i >= THRESHOLD)).pipe(
         mergeMap(roomId => matrix.leave(roomId).then(() => roomId)),
         map(roomId => matrixRoomLeave({ roomId }, action.meta)),
@@ -623,13 +622,13 @@ export const matrixLeaveUnknownRoomsEpic = (
       if (!room) return false; // room already gone while waiting
       if (room.name && room.name.match(`#raiden_${network.name || network.chainId}_discovery:`))
         return false;
-      const address2rooms: { [address: string]: string[] } = get(
+      const rooms: { [address: string]: string[] } = get(
         state,
-        ['transport', 'matrix', 'address2rooms'],
+        ['transport', 'matrix', 'rooms'],
         {},
       );
-      for (const address in address2rooms) {
-        for (const roomId of address2rooms[address]) {
+      for (const address in rooms) {
+        for (const roomId of rooms[address]) {
           if (roomId === room.roomId) return false;
         }
       }
@@ -662,13 +661,13 @@ export const matrixCleanLeftRoomsEpic = (
     filter(({ membership }) => membership === 'leave'),
     withLatestFrom(state$),
     mergeMap(function*([{ room }, state]) {
-      const address2rooms: { [address: string]: string[] } = get(
+      const rooms: { [address: string]: string[] } = get(
         state,
-        ['transport', 'matrix', 'address2rooms'],
+        ['transport', 'matrix', 'rooms'],
         {},
       );
-      for (const address in address2rooms) {
-        for (const roomId of address2rooms[address]) {
+      for (const address in rooms) {
+        for (const roomId of rooms[address]) {
           if (roomId === room.roomId) {
             yield matrixRoomLeave({ roomId }, { address });
           }
@@ -709,11 +708,9 @@ export const matrixMessageSendEpic = (
                   ([presences, state]) =>
                     action.meta.address in presences &&
                     presences[action.meta.address].payload.available &&
-                    get(state, ['transport', 'matrix', 'address2rooms', action.meta.address, 0]),
+                    get(state, ['transport', 'matrix', 'rooms', action.meta.address, 0]),
                 ),
-                map(
-                  ([, state]) => state.transport!.matrix!.address2rooms![action.meta.address][0],
-                ),
+                map(([, state]) => state.transport!.matrix!.rooms![action.meta.address][0]),
                 distinctUntilChanged(),
                 // get/wait room object for roomId
                 switchMap(roomId => {
@@ -810,7 +807,7 @@ export const matrixMessageReceivedEpic = (
               if (!presence) return false;
               const rooms: string[] = get(
                 state,
-                ['transport', 'matrix', 'address2rooms', presence.meta.address],
+                ['transport', 'matrix', 'rooms', presence.meta.address],
                 [],
               );
               if (!rooms.includes(room.roomId)) return false;
@@ -852,7 +849,7 @@ export const matrixMessageReceivedUpdateRoomEpic = (
     filter(([action, state]) => {
       const rooms: string[] = get(
         state,
-        ['transport', 'matrix', 'address2rooms', action.meta.address],
+        ['transport', 'matrix', 'rooms', action.meta.address],
         [],
       );
       return (
