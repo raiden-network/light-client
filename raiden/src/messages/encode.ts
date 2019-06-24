@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 // import * as t from 'io-ts';
 import { BigNumber, bigNumberify, keccak256 } from 'ethers/utils';
 import { Arrayish, arrayify, concat, hexlify, isArrayish, padZeros } from 'ethers/utils/bytes';
@@ -25,9 +24,10 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
  *      - number|BigNumber: Encoded in the big-endian byte-order and left-zero-padded to length
  *      - string: Must be hex-encoded string of length bytes
  *      - number[] Must be of exactly of length size (left/right-pad it before if needed)
- * @returns Uint8Array byte-array of lenght, suitable to be concatenated or hexlified
+ * @param length The expected length of the byte array
+ * @returns Uint8Array byte-array of length, suitable to be concatenated or hexlified
  */
-function encode(data: number | Arrayish | BigNumber, length: number): Uint8Array {
+function encode(data: number | string | Arrayish | BigNumber, length: number): Uint8Array {
   let bytes: Uint8Array;
   if (typeof data === 'number') data = bigNumberify(data);
   if (BigNumberC.is(data)) {
@@ -35,7 +35,7 @@ function encode(data: number | Arrayish | BigNumber, length: number): Uint8Array
     bytes = arrayify(data);
     if (bytes.length > length) throw new Error('Number too large');
     bytes = padZeros(bytes, length);
-  } else if (isArrayish(data)) {
+  } else if (typeof data === 'string' || isArrayish(data)) {
     bytes = arrayify(data);
     if (bytes.length !== length)
       throw new Error('Uint8Array or hex string must be of exact length');
