@@ -1,11 +1,14 @@
 import { Observable, EMPTY } from 'rxjs';
 
-import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../';
-import { RaidenState } from '../state';
+import { RaidenEpicDeps } from '../types';
+import { RaidenAction } from '../actions';
+import { RaidenState } from './state';
 
 /**
  * This epic simply pipes all states to stateOutput$ subject injected as dependency
+ * As the observable output is passed directly to a subject, the subject will mirror obervable's
+ * behavior, including automatically completing or erroring the subscription according to the
+ * observable.
  */
 export const stateOutputEpic = (
   {  }: Observable<RaidenAction>,
@@ -15,6 +18,7 @@ export const stateOutputEpic = (
 
 /**
  * This epic simply pipes all actions to actionOutput$ subject injected as dependency
+ * The same as state, but with actions
  */
 export const actionOutputEpic = (
   action$: Observable<RaidenAction>,

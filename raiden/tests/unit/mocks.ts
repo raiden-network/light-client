@@ -56,7 +56,7 @@ import TokenNetworkAbi from 'raiden/abi/TokenNetwork.json';
 import TokenAbi from 'raiden/abi/Token.json';
 
 import { RaidenEpicDeps } from 'raiden/types';
-import { RaidenAction } from 'raiden/store';
+import { RaidenAction } from 'raiden/actions';
 import { RaidenState, initialState } from 'raiden/store/state';
 
 type MockedContract<T extends Contract> = jest.Mocked<T> & {

@@ -2,40 +2,28 @@ import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
 import { Address } from '../utils/types';
-import { Channel } from '../channels';
+import { Channels } from '../channels';
+import { RaidenMatrixSetup } from '../transport/state';
 
 // types
 
-const RaidenMatrixSetup = t.type({
-  userId: t.string,
-  accessToken: t.string,
-  deviceId: t.string,
-  displayName: t.string,
+export const RaidenState = t.type({
+  address: Address,
+  blockNumber: t.number,
+  channels: Channels,
+  tokens: t.record(Address, Address),
+  transport: t.partial({
+    matrix: t.intersection([
+      t.type({
+        server: t.string,
+      }),
+      t.partial({
+        setup: RaidenMatrixSetup,
+        rooms: t.record(Address, t.array(t.string)),
+      }),
+    ]),
+  }),
 });
-
-export type RaidenMatrixSetup = t.TypeOf<typeof RaidenMatrixSetup>;
-
-export const RaidenState = t.intersection([
-  t.type({
-    address: Address,
-    blockNumber: t.number,
-    tokenNetworks: t.record(Address, t.record(Address, Channel)),
-    token2tokenNetwork: t.record(Address, Address),
-  }),
-  t.partial({
-    transport: t.partial({
-      matrix: t.intersection([
-        t.type({
-          server: t.string,
-        }),
-        t.partial({
-          setup: RaidenMatrixSetup,
-          address2rooms: t.record(Address, t.array(t.string)),
-        }),
-      ]),
-    }),
-  }),
-]);
 
 export type RaidenState = t.TypeOf<typeof RaidenState>;
 
@@ -55,6 +43,7 @@ export function decodeRaidenState(data: unknown): RaidenState {
 export const initialState: Readonly<RaidenState> = {
   address: '',
   blockNumber: 0,
-  tokenNetworks: {},
-  token2tokenNetwork: {},
+  channels: {},
+  tokens: {},
+  transport: {},
 };

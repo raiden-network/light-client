@@ -2,10 +2,11 @@ import { cloneDeep, get } from 'lodash';
 import { Zero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
 
-import { RaidenState, initialState, raidenReducer } from 'raiden/store';
+import { raidenReducer } from 'raiden/reducer';
+import { RaidenState, initialState } from 'raiden/store';
+import { raidenInit } from 'raiden/store/actions';
 import {
   newBlock,
-  raidenInit,
   tokenMonitored,
   channelOpen,
   channelOpened,
@@ -18,10 +19,8 @@ import {
   channelSettle,
   channelSettleFailed,
   channelSettled,
-  matrixSetup,
-  matrixRoom,
-  matrixRoomLeave,
-} from 'raiden/store/actions';
+} from 'raiden/channels/actions';
+import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden/transport/actions';
 import { ChannelState } from 'raiden/channels';
 
 describe('raidenReducer', () => {
@@ -47,19 +46,19 @@ describe('raidenReducer', () => {
 
   test('unhandled state change returns same object', () => {
     const newState = raidenReducer(state, raidenInit());
-    expect(newState).toBe(state);
+    expect(newState).toEqual(state);
   });
 
   describe('tokenMonitored', () => {
     test('new tokenMonitored', () => {
       const newState = raidenReducer(state, tokenMonitored({ token, tokenNetwork, first: true }));
-      expect(newState).toMatchObject({ token2tokenNetwork: { [token]: tokenNetwork } });
+      expect(newState).toMatchObject({ tokens: { [token]: tokenNetwork } });
     });
 
     test('already monitored token', () => {
-      state.token2tokenNetwork[token] = tokenNetwork;
+      state.tokens[token] = tokenNetwork;
       const newState = raidenReducer(state, tokenMonitored({ token, tokenNetwork, first: true }));
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
   });
 
@@ -71,7 +70,7 @@ describe('raidenReducer', () => {
         state,
         channelOpen({ settleTimeout }, { tokenNetwork, partner }),
       );
-      expect(newState.tokenNetworks).toMatchObject({
+      expect(newState.channels).toMatchObject({
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.opening,
@@ -90,7 +89,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState.tokenNetworks).toMatchObject({
+      expect(newState.channels).toMatchObject({
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
@@ -110,7 +109,7 @@ describe('raidenReducer', () => {
         channelOpen({ settleTimeout }, { tokenNetwork, partner }),
         channelOpenFailed(error, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      expect(newState.tokenNetworks[tokenNetwork][partner]).toBeUndefined();
+      expect(newState.channels[tokenNetwork][partner]).toBeUndefined();
     });
   });
 
@@ -126,7 +125,7 @@ describe('raidenReducer', () => {
     });
 
     test('channel not in open state', () => {
-      state.tokenNetworks[tokenNetwork][partner].state = ChannelState.closed;
+      state.channels[tokenNetwork][partner].state = ChannelState.closed;
       const newState = raidenReducer(
         state,
         channelDeposited(
@@ -139,7 +138,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('participant unknown', () => {
@@ -155,7 +154,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('own deposit successful', () => {
@@ -172,7 +171,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState.tokenNetworks).toMatchObject({
+      expect(newState.channels).toMatchObject({
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
@@ -198,7 +197,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState.tokenNetworks).toMatchObject({
+      expect(newState.channels).toMatchObject({
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
@@ -224,9 +223,9 @@ describe('raidenReducer', () => {
     });
 
     test('channel not in open state', () => {
-      state.tokenNetworks[tokenNetwork][partner].state = ChannelState.closed;
+      state.channels[tokenNetwork][partner].state = ChannelState.closed;
       const newState = raidenReducer(state, channelClose(undefined, { tokenNetwork, partner }));
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('unknown channel', () => {
@@ -234,12 +233,12 @@ describe('raidenReducer', () => {
         state,
         channelClose(undefined, { tokenNetwork, partner: token }),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channelClose puts channel in closing state', () => {
       const newState = raidenReducer(state, channelClose(undefined, { tokenNetwork, partner }));
-      expect(newState.tokenNetworks).toMatchObject({
+      expect(newState.channels).toMatchObject({
         [tokenNetwork]: { [partner]: { state: ChannelState.closing, id: channelId } },
       });
     });
@@ -265,7 +264,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channelClosed puts channel in closed state', () => {
@@ -276,7 +275,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState.tokenNetworks).toMatchObject({
+      expect(newState.channels).toMatchObject({
         [tokenNetwork]: { [partner]: { state: ChannelState.closed, id: channelId, closeBlock } },
       });
     });
@@ -299,7 +298,7 @@ describe('raidenReducer', () => {
         state,
         channelClose(undefined, { tokenNetwork, partner: token }),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test("channelCloseFailed doesn't mutate state", () => {
@@ -307,7 +306,7 @@ describe('raidenReducer', () => {
         state,
         channelCloseFailed(new Error('channelClose failed'), { tokenNetwork, partner }),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
   });
 
@@ -333,7 +332,7 @@ describe('raidenReducer', () => {
       const newState = [
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner: token }),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel not in "closed" state', () => {
@@ -341,7 +340,7 @@ describe('raidenReducer', () => {
       const newState = [
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel.state becomes "settleable" `settleTimeout` blocks after closeBlock', () => {
@@ -353,7 +352,7 @@ describe('raidenReducer', () => {
         newBlock({ blockNumber: settleBlock }),
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      expect(newState.tokenNetworks).toMatchObject({
+      expect(newState.channels).toMatchObject({
         [tokenNetwork]: { [partner]: { state: ChannelState.settleable, id: channelId } },
       });
     });
@@ -383,7 +382,7 @@ describe('raidenReducer', () => {
         // no channel with partner=token
         channelSettle(undefined, { tokenNetwork, partner: token }),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel not in "settleable" state', () => {
@@ -392,7 +391,7 @@ describe('raidenReducer', () => {
         raidenReducer,
         state,
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel.state becomes "settling" after "channelSettle"', () => {
@@ -400,7 +399,7 @@ describe('raidenReducer', () => {
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
         channelSettle(undefined, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      expect(newState.tokenNetworks).toMatchObject({
+      expect(newState.channels).toMatchObject({
         [tokenNetwork]: { [partner]: { state: ChannelState.settling, id: channelId } },
       });
     });
@@ -415,7 +414,7 @@ describe('raidenReducer', () => {
         newState,
         channelSettleFailed(error, { tokenNetwork, partner }),
       );
-      expect(newState2).toBe(newState);
+      expect(newState2).toEqual(newState);
     });
   });
 
@@ -445,7 +444,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner: token },
         ),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel not in "closed|settleable|settling" state', () => {
@@ -456,7 +455,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('success: "closed" => gone', () => {
@@ -471,7 +470,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      expect(get(newState.tokenNetworks, [tokenNetwork, partner])).toBeUndefined();
+      expect(get(newState.channels, [tokenNetwork, partner])).toBeUndefined();
     });
 
     test('success: "settleable" => gone', () => {
@@ -488,7 +487,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      expect(get(newState.tokenNetworks, [tokenNetwork, partner])).toBeUndefined();
+      expect(get(newState.channels, [tokenNetwork, partner])).toBeUndefined();
     });
 
     test('success: "settling" => gone', () => {
@@ -507,7 +506,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      expect(get(newState.tokenNetworks, [tokenNetwork, partner])).toBeUndefined();
+      expect(get(newState.channels, [tokenNetwork, partner])).toBeUndefined();
     });
   });
 
@@ -522,7 +521,7 @@ describe('raidenReducer', () => {
         };
       const newState = [matrixSetup({ server, setup })].reduce(raidenReducer, state);
       expect(get(newState, ['transport', 'matrix', 'server'])).toBe(server);
-      expect(get(newState, ['transport', 'matrix', 'setup'])).toBe(setup);
+      expect(get(newState, ['transport', 'matrix', 'setup'])).toEqual(setup);
     });
 
     test('matrixRoom', () => {
@@ -530,21 +529,21 @@ describe('raidenReducer', () => {
         newRoomId = '!newRoomId:matrix.raiden.test';
 
       let newState = [matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, state);
-      expect(get(newState, ['transport', 'matrix', 'address2rooms', partner])).toEqual([roomId]);
+      expect(get(newState, ['transport', 'matrix', 'rooms', partner])).toEqual([roomId]);
 
       // new room goes to the front
       newState = [matrixRoom({ roomId: newRoomId }, { address: partner })].reduce(
         raidenReducer,
         newState,
       );
-      expect(get(newState, ['transport', 'matrix', 'address2rooms', partner])).toEqual([
+      expect(get(newState, ['transport', 'matrix', 'rooms', partner])).toEqual([
         newRoomId,
         roomId,
       ]);
 
       // old room is brought back to the front
       newState = [matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, newState);
-      expect(get(newState, ['transport', 'matrix', 'address2rooms', partner])).toEqual([
+      expect(get(newState, ['transport', 'matrix', 'rooms', partner])).toEqual([
         roomId,
         newRoomId,
       ]);
@@ -556,7 +555,7 @@ describe('raidenReducer', () => {
         matrixRoom({ roomId }, { address: partner }),
         matrixRoomLeave({ roomId }, { address: partner }),
       ].reduce(raidenReducer, state);
-      expect(get(newState, ['transport', 'matrix', 'address2rooms', partner])).toBeUndefined();
+      expect(get(newState, ['transport', 'matrix', 'rooms', partner])).toBeUndefined();
     });
   });
 });

@@ -36,20 +36,12 @@ import {
 } from './types';
 import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Storage, Hash } from './utils/types';
+import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './store';
+import { raidenReducer } from './reducer';
+import { raidenRootEpic } from './epics';
+import { RaidenAction, RaidenEvents, RaidenEvent } from './actions';
+import { raidenInit, raidenShutdown } from './store/actions';
 import {
-  RaidenState,
-  initialState,
-  encodeRaidenState,
-  decodeRaidenState,
-  raidenEpics,
-  raidenReducer,
-  RaidenAction,
-  RaidenEvents,
-  RaidenEvent,
-} from './store';
-import {
-  raidenInit,
-  raidenShutdown,
   tokenMonitored,
   channelOpened,
   channelOpenFailed,
@@ -63,11 +55,13 @@ import {
   channelSettled,
   channelSettleFailed,
   channelSettle,
+} from './channels/actions';
+import {
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,
   matrixRequestMonitorPresence,
-  messageSend,
-} from './store/actions';
+} from './transport/actions';
+import { messageSend } from './messages/actions';
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
@@ -136,10 +130,10 @@ export class Raiden {
     this.channels$ = state$.pipe(
       map(state =>
         transform(
-          // transform state.tokenNetworks to token-partner-raidenChannel map
-          state.tokenNetworks,
+          // transform state.channels to token-partner-raidenChannel map
+          state.channels,
           (result, partner2channel, tokenNetwork) => {
-            const token = findKey(state.token2tokenNetwork, tn => tn === tokenNetwork);
+            const token = findKey(state.tokens, tn => tn === tokenNetwork);
             if (!token) return; // shouldn't happen, token mapping is always bi-direction
             result[token] = transform(
               // transform Channel to RaidenChannel, with more info
@@ -206,7 +200,7 @@ export class Raiden {
       applyMiddleware(...middlewares, epicMiddleware),
     );
 
-    epicMiddleware.run(raidenEpics);
+    epicMiddleware.run(raidenRootEpic);
     state = this.store.getState();
 
     // use next from latest known blockNumber as start block when polling
@@ -382,8 +376,7 @@ export class Raiden {
    * @returns  BigNumber containing address's token balance
    */
   public async getTokenBalance(token: Address, address?: Address): Promise<BigNumber> {
-    if (!(token in this.state.token2tokenNetwork))
-      throw new Error(`token "${token}" not monitored`);
+    if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
     const tokenContract = this.getTokenContract(token);
 
     return tokenContract.functions.balanceOf(address || this.address);
@@ -399,8 +392,7 @@ export class Raiden {
    */
   public async getTokenInfo(token: Address): Promise<TokenInfo> {
     /* tokenInfo isn't in state as it isn't relevant for being preserved, it's merely a cache */
-    if (!(token in this.state.token2tokenNetwork))
-      throw new Error(`token "${token}" not monitored`);
+    if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
     if (!(token in this.tokenInfo)) {
       const tokenContract = this.getTokenContract(token);
       const [totalSupply, decimals, name, symbol] = await Promise.all([
@@ -421,14 +413,14 @@ export class Raiden {
     // here we assume there'll be at least one token registered on a registry
     // so, if the list is empty (e.g. on first init), raidenInitializationEpic is still fetching
     // the TokenNetworkCreated events from registry, so we wait until some token is found
-    if (isEmpty(this.state.token2tokenNetwork))
+    if (isEmpty(this.state.tokens))
       await this.action$
         .pipe(
           filter(isActionOf(tokenMonitored)),
           first(),
         )
         .toPromise();
-    return Object.keys(this.state.token2tokenNetwork);
+    return Object.keys(this.state.tokens);
   }
 
   /**
@@ -476,7 +468,7 @@ export class Raiden {
     settleTimeout: number = 500,
   ): Promise<Hash> {
     const state = this.state;
-    const tokenNetwork = state.token2tokenNetwork[token];
+    const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
     const promise = this.action$
       .pipe(
@@ -508,7 +500,7 @@ export class Raiden {
     deposit: BigNumber | number,
   ): Promise<Hash> {
     const state = this.state;
-    const tokenNetwork = state.token2tokenNetwork[token];
+    const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
     const promise = this.action$
       .pipe(
@@ -543,7 +535,7 @@ export class Raiden {
    */
   public async closeChannel(token: Address, partner: Address): Promise<Hash> {
     const state = this.state;
-    const tokenNetwork = state.token2tokenNetwork[token];
+    const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
     const promise = this.action$
       .pipe(
@@ -575,7 +567,7 @@ export class Raiden {
    */
   public async settleChannel(token: Address, partner: Address): Promise<Hash> {
     const state = this.state;
-    const tokenNetwork = state.token2tokenNetwork[token];
+    const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
     // wait for the corresponding success or error action
     const promise = this.action$

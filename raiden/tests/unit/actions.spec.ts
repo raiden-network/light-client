@@ -1,5 +1,6 @@
 import { bigNumberify } from 'ethers/utils';
-import { channelDeposit, channelDepositFailed, channelMonitored } from 'raiden/store/actions';
+
+import { channelDeposit, channelDepositFailed, channelMonitored } from 'raiden/channels/actions';
 
 describe('action factories not tested in reducers.spec.ts', () => {
   test('channelMonitor', () => {
