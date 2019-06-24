@@ -20,7 +20,7 @@ import {
 } from './actions';
 import { Channel, Channels } from './state';
 import { ChannelState } from './types';
-import { RaidenState, initialState } from '../store/state';
+import { initialState } from '../store/state';
 
 // state.blockNumber specific reducer, handles only newBlock action
 const blockNumber = (state: number = initialState.blockNumber, action: RaidenAction) => {
