@@ -36,13 +36,8 @@ import {
 } from './types';
 import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Storage, Hash } from './utils/types';
-import {
-  RaidenState,
-  initialState,
-  encodeRaidenState,
-  decodeRaidenState,
-  raidenReducer,
-} from './store';
+import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './store';
+import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import { RaidenAction, RaidenEvents, RaidenEvent } from './actions';
 import { raidenInit, raidenShutdown } from './store/actions';

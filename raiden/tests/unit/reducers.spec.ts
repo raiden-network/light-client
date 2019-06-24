@@ -2,7 +2,8 @@ import { cloneDeep, get } from 'lodash';
 import { Zero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
 
-import { RaidenState, initialState, raidenReducer } from 'raiden/store';
+import { raidenReducer } from 'raiden/reducer';
+import { RaidenState, initialState } from 'raiden/store';
 import { raidenInit } from 'raiden/store/actions';
 import {
   newBlock,
@@ -45,7 +46,7 @@ describe('raidenReducer', () => {
 
   test('unhandled state change returns same object', () => {
     const newState = raidenReducer(state, raidenInit());
-    expect(newState).toBe(state);
+    expect(newState).toEqual(state);
   });
 
   describe('tokenMonitored', () => {
@@ -57,7 +58,7 @@ describe('raidenReducer', () => {
     test('already monitored token', () => {
       state.tokens[token] = tokenNetwork;
       const newState = raidenReducer(state, tokenMonitored({ token, tokenNetwork, first: true }));
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
   });
 
@@ -137,7 +138,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('participant unknown', () => {
@@ -153,7 +154,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('own deposit successful', () => {
@@ -224,7 +225,7 @@ describe('raidenReducer', () => {
     test('channel not in open state', () => {
       state.channels[tokenNetwork][partner].state = ChannelState.closed;
       const newState = raidenReducer(state, channelClose(undefined, { tokenNetwork, partner }));
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('unknown channel', () => {
@@ -232,7 +233,7 @@ describe('raidenReducer', () => {
         state,
         channelClose(undefined, { tokenNetwork, partner: token }),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channelClose puts channel in closing state', () => {
@@ -263,7 +264,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channelClosed puts channel in closed state', () => {
@@ -297,7 +298,7 @@ describe('raidenReducer', () => {
         state,
         channelClose(undefined, { tokenNetwork, partner: token }),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test("channelCloseFailed doesn't mutate state", () => {
@@ -305,7 +306,7 @@ describe('raidenReducer', () => {
         state,
         channelCloseFailed(new Error('channelClose failed'), { tokenNetwork, partner }),
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
   });
 
@@ -331,7 +332,7 @@ describe('raidenReducer', () => {
       const newState = [
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner: token }),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel not in "closed" state', () => {
@@ -339,7 +340,7 @@ describe('raidenReducer', () => {
       const newState = [
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel.state becomes "settleable" `settleTimeout` blocks after closeBlock', () => {
@@ -381,7 +382,7 @@ describe('raidenReducer', () => {
         // no channel with partner=token
         channelSettle(undefined, { tokenNetwork, partner: token }),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel not in "settleable" state', () => {
@@ -390,7 +391,7 @@ describe('raidenReducer', () => {
         raidenReducer,
         state,
       );
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel.state becomes "settling" after "channelSettle"', () => {
@@ -413,7 +414,7 @@ describe('raidenReducer', () => {
         newState,
         channelSettleFailed(error, { tokenNetwork, partner }),
       );
-      expect(newState2).toBe(newState);
+      expect(newState2).toEqual(newState);
     });
   });
 
@@ -443,7 +444,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner: token },
         ),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('channel not in "closed|settleable|settling" state', () => {
@@ -454,7 +455,7 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      expect(newState).toBe(state);
+      expect(newState).toEqual(state);
     });
 
     test('success: "closed" => gone', () => {
@@ -520,7 +521,7 @@ describe('raidenReducer', () => {
         };
       const newState = [matrixSetup({ server, setup })].reduce(raidenReducer, state);
       expect(get(newState, ['transport', 'matrix', 'server'])).toBe(server);
-      expect(get(newState, ['transport', 'matrix', 'setup'])).toBe(setup);
+      expect(get(newState, ['transport', 'matrix', 'setup'])).toEqual(setup);
     });
 
     test('matrixRoom', () => {

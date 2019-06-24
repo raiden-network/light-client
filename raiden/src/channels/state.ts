@@ -53,3 +53,11 @@ export const Channel = t.intersection([
   }),
 ]);
 export type Channel = t.TypeOf<typeof Channel>;
+
+/**
+ * Channels is a mapping from tokenNetwork -> partner -> Channel
+ * As in: { [tokenNetwork: Address]: { [partner: Address]: Channel } }
+ * It's used as codec and type for 'channels' key in RaidenState
+ */
+export const Channels = t.record(Address, t.record(Address, Channel));
+export type Channels = t.TypeOf<typeof Channels>;
