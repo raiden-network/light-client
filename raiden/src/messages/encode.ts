@@ -123,6 +123,46 @@ export function packMessage(message: Message): Bytes {
           encode(messageHash, 32), // additional hash
         ]),
       );
+    case MessageType.UNLOCK:
+      messageHash = keccak256(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3),
+          encode(message.chain_id, 32),
+          encode(message.message_identifier, 8),
+          encode(message.payment_identifier, 8),
+          encode(message.token_network_address, 20),
+          encode(message.secret, 32),
+          encode(message.nonce, 8),
+          encode(message.channel_identifier, 32),
+          encode(message.transferred_amount, 32),
+          encode(message.locked_amount, 32),
+          encode(message.locksroot, 32),
+        ]),
+      );
+      balanceHash =
+        message.transferred_amount.eq(0) &&
+        message.locked_amount.eq(0) &&
+        message.locksroot === HashZero
+          ? HashZero
+          : keccak256(
+              concat([
+                encode(message.transferred_amount, 32),
+                encode(message.locked_amount, 32),
+                encode(message.locksroot, 32),
+              ]),
+            );
+      return hexlify(
+        concat([
+          encode(message.token_network_address, 20),
+          encode(message.chain_id, 32),
+          encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
+          encode(message.channel_identifier, 32),
+          encode(balanceHash, 32), // balance hash
+          encode(message.nonce, 32),
+          encode(messageHash, 32), // additional hash
+        ]),
+      );
     default:
       // place-holder error for type safety while this function isn't fully implemented
       throw new Error('Non-encodable message');
