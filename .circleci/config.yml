@@ -11,7 +11,7 @@ anchor_1: &sdk_package_lock_key
 
 anchor_2: &attach_options
   at: ~/src/
-  
+
 anchor_3: &dapp_package_lock_key
   key: *dapp_cache_key
 
@@ -22,7 +22,7 @@ executors:
       - image: *docker_image
 
 jobs:
-  checkout: 
+  checkout:
     executor: base-executor
     working_directory: ~/src
     steps:
@@ -78,44 +78,44 @@ jobs:
     executor: base-executor
     working_directory: *dapp_working_dir
     steps:
-    - attach_workspace: *attach_options
-    - run: npm run lint:check
+      - attach_workspace: *attach_options
+      - run: npm run lint:check
 
   test_sdk:
     executor: base-executor
     working_directory: *raiden_working_dir
     steps:
-      - attach_workspace: *attach_options    
-      - run: 
+      - attach_workspace: *attach_options
+      - run:
           name: Run unit tests
           command: npm run test -- --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
       - store_test_results:
-           path: reports/junit
+          path: reports/junit
       - store_artifacts:
-           path: reports/junit
+          path: reports/junit
       - run:
           name: "Upload coverage"
-          command: cd .. && bash <(curl -s https://codecov.io/bash)  -F sdk 
+          command: cd .. && bash <(curl -s https://codecov.io/bash)  -F sdk
 
   test_dapp:
     executor: base-executor
     working_directory: *dapp_working_dir
     steps:
       - attach_workspace: *attach_options
-      - run: 
+      - run:
           name: Run unit tests
           command: npm run test:unit -- --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
       - store_test_results:
-           path: reports/junit
+          path: reports/junit
       - store_artifacts:
-           path: reports/junit
+          path: reports/junit
       - run:
           name: "Upload coverage"
-          command: cd .. && bash <(curl -s https://codecov.io/bash) -F dapp 
+          command: cd .. && bash <(curl -s https://codecov.io/bash) -F dapp
 
   build_sdk:
     executor: base-executor
@@ -134,6 +134,16 @@ jobs:
           root: ~/src
           paths:
             - ./*
+
+  deploy_gh_pages:
+    executor: base-executor
+    working_directory: *dapp_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - add_ssh_keys:
+          fingerprints:
+            - "ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3"
+      - run: ./deploy.sh
 
 workflows:
   version: 2
@@ -166,4 +176,10 @@ workflows:
           requires:
             - lint_dapp
             - build_dapp
-          
+      - deploy_gh_pages:
+          requires:
+            - test_dapp
+          filters:
+            branches:
+              only:
+                - master
