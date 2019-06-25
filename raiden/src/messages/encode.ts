@@ -75,6 +75,7 @@ export function packMessage(message: Message): Bytes {
         ]),
       );
     case MessageType.LOCKED_TRANSFER:
+    case MessageType.REFUND_TRANSFER:
       // hash of packed representation of the whole message
       messageHash = keccak256(
         concat([
