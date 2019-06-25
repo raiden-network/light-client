@@ -3,7 +3,7 @@ import { BigNumber, bigNumberify, keccak256 } from 'ethers/utils';
 import { Arrayish, arrayify, concat, hexlify, isArrayish, padZeros } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
-import { BigNumberC, Bytes, Hash } from '../utils/types';
+import { BigNumberC, HexString, Hash } from '../utils/types';
 import { EnvelopeMessage, Message, MessageType } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
@@ -45,10 +45,10 @@ function encode(data: number | string | Arrayish | BigNumber, length: number): U
   return bytes;
 }
 
-function createBalanceHash(message: EnvelopeMessage) {
-  return message.transferred_amount.eq(0) &&
-    message.locked_amount.eq(0) &&
-    message.locksroot === HashZero
+function createBalanceHash(message: EnvelopeMessage): Hash {
+  return (message.transferred_amount.eq(0) &&
+  message.locked_amount.eq(0) &&
+  message.locksroot === HashZero
     ? HashZero
     : keccak256(
         concat([
@@ -56,10 +56,14 @@ function createBalanceHash(message: EnvelopeMessage) {
           encode(message.locked_amount, 32),
           encode(message.locksroot, 32),
         ]),
-      );
+      )) as Hash;
 }
 
-function packBalanceProof(message: EnvelopeMessage, balanceHash: Hash, messageHash: Hash) {
+function packBalanceProof(
+  message: EnvelopeMessage,
+  balanceHash: Hash,
+  messageHash: Hash,
+): HexString<180> {
   return hexlify(
     concat([
       encode(message.token_network_address, 20),
@@ -70,7 +74,7 @@ function packBalanceProof(message: EnvelopeMessage, balanceHash: Hash, messageHa
       encode(message.nonce, 32),
       encode(messageHash, 32), // additional hash
     ]),
-  );
+  ) as HexString<180>;
 }
 
 /**
@@ -83,7 +87,7 @@ function packBalanceProof(message: EnvelopeMessage, balanceHash: Hash, messageHa
  * @param message Message to be packed
  * @returns HexBytes hex-encoded string data representing message in binary format
  */
-export function packMessage(message: Message): Bytes {
+export function packMessage(message: Message): HexString {
   let messageHash: Hash, balanceHash: Hash;
   switch (message.type) {
     case MessageType.DELIVERED:
@@ -93,7 +97,7 @@ export function packMessage(message: Message): Bytes {
           encode(0, 3), // pad(3)
           encode(message.delivered_message_identifier, 8),
         ]),
-      );
+      ) as HexString<12>;
     case MessageType.PROCESSED:
       return hexlify(
         concat([
@@ -101,7 +105,7 @@ export function packMessage(message: Message): Bytes {
           encode(0, 3), // pad(3)
           encode(message.message_identifier, 8),
         ]),
-      );
+      ) as HexString<12>;
     case MessageType.LOCKED_TRANSFER:
     case MessageType.REFUND_TRANSFER:
       // hash of packed representation of the whole message
@@ -127,7 +131,7 @@ export function packMessage(message: Message): Bytes {
           encode(message.lock.amount, 32),
           encode(message.fee, 32),
         ]),
-      );
+      ) as Hash;
       balanceHash = createBalanceHash(message);
       return packBalanceProof(message, balanceHash, messageHash);
     case MessageType.UNLOCK:
@@ -146,7 +150,7 @@ export function packMessage(message: Message): Bytes {
           encode(message.locked_amount, 32),
           encode(message.locksroot, 32),
         ]),
-      );
+      ) as Hash;
       balanceHash = createBalanceHash(message);
       return packBalanceProof(message, balanceHash, messageHash);
     case MessageType.LOCK_EXPIRED:
@@ -165,7 +169,7 @@ export function packMessage(message: Message): Bytes {
           encode(message.transferred_amount, 32),
           encode(message.locked_amount, 32),
         ]),
-      );
+      ) as Hash;
       balanceHash = createBalanceHash(message);
       return packBalanceProof(message, balanceHash, messageHash);
     case MessageType.SECRET_REQUEST:
@@ -179,7 +183,7 @@ export function packMessage(message: Message): Bytes {
           encode(message.amount, 32),
           encode(message.expiration, 32),
         ]),
-      );
+      ) as HexString<116>;
     case MessageType.REVEAL_SECRET:
       return hexlify(
         concat([
@@ -188,7 +192,7 @@ export function packMessage(message: Message): Bytes {
           encode(message.message_identifier, 8),
           encode(message.secret, 32),
         ]),
-      );
+      ) as HexString<44>;
     default:
       // place-holder error for type safety while this function isn't fully implemented
       throw new Error('Non-encodable message');

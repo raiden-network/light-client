@@ -1,12 +1,13 @@
 import { bigNumberify } from 'ethers/utils';
 
 import { channelDeposit, channelDepositFailed, channelMonitored } from 'raiden/channels/actions';
+import { Address } from 'raiden/utils/types';
 
 describe('action factories not tested in reducers.spec.ts', () => {
+  const tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,
+    partner = '0x0000000000000000000000000000000000000020' as Address;
   test('channelMonitor', () => {
-    const tokenNetwork = '0xtokenNetwork',
-      partner = '0xpartner',
-      id = 12,
+    const id = 12,
       fromBlock = 5123;
     expect(channelMonitored({ id, fromBlock }, { tokenNetwork, partner })).toEqual({
       type: 'channelMonitored',
@@ -16,9 +17,7 @@ describe('action factories not tested in reducers.spec.ts', () => {
   });
 
   test('channelDeposit', () => {
-    const tokenNetwork = '0xtokenNetwork',
-      partner = '0xpartner',
-      deposit = bigNumberify(999);
+    const deposit = bigNumberify(999);
     expect(channelDeposit({ deposit }, { tokenNetwork, partner })).toEqual({
       type: 'channelDeposit',
       payload: { deposit },
@@ -27,9 +26,7 @@ describe('action factories not tested in reducers.spec.ts', () => {
   });
 
   test('channelDepositFailed', () => {
-    const tokenNetwork = '0xtokenNetwork',
-      partner = '0xpartner',
-      error = new Error('not enough funds');
+    const error = new Error('not enough funds');
     expect(channelDepositFailed(error, { tokenNetwork, partner })).toEqual({
       type: 'channelDepositFailed',
       payload: error,

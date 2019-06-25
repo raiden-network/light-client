@@ -56,6 +56,7 @@ import TokenAbi from 'raiden/abi/Token.json';
 import { RaidenEpicDeps } from 'raiden/types';
 import { RaidenAction } from 'raiden/actions';
 import { RaidenState, initialState } from 'raiden/store/state';
+import { Address } from 'raiden/utils/types';
 
 type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -123,7 +124,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     '0x0123456789012345678901234567890123456789012345678901234567890123',
     provider,
   );
-  const address = signer.address;
+  const address = signer.address as Address;
 
   const registryAddress = '0xregistry';
   const registryContract = new Contract(
@@ -174,7 +175,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     network,
     contractsInfo: {
       TokenNetworkRegistry: {
-        address: registryContract.address,
+        address: registryContract.address as Address,
         block_number: 100, // eslint-disable-line
       },
     },

@@ -8,6 +8,7 @@ import { ContractFactory, Contract } from 'ethers/contract';
 import { parseUnits } from 'ethers/utils';
 
 import { ContractsInfo, RaidenContracts } from 'raiden/types';
+import { Address } from 'raiden/utils/types';
 import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../../contracts/TokenNetwork';
 import { Token } from '../../contracts/Token';
@@ -103,7 +104,7 @@ export class TestProvider extends Web3Provider {
     return [
       {
         TokenNetworkRegistry: {
-          address: registryContract.address,
+          address: registryContract.address as Address,
           block_number: registyDeployBlock!, // eslint-disable-line
         },
       },

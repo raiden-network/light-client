@@ -22,13 +22,15 @@ import {
 } from 'raiden/channels/actions';
 import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden/transport/actions';
 import { ChannelState } from 'raiden/channels';
+import { Address, Hash } from 'raiden/utils/types';
 
 describe('raidenReducer', () => {
   let state: RaidenState;
-  const address = '0xmyAddress',
-    token = '0xtoken',
-    tokenNetwork = '0xtokenNetwork',
-    partner = '0xpartner',
+  const address = '0x0000000000000000000000000000000000000001' as Address,
+    token = '0x0000000000000000000000000000000000010001' as Address,
+    tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,
+    partner = '0x0000000000000000000000000000000000000020' as Address,
+    txHash = '0x0000000000000000000000000000000000000020111111111111111111111111' as Hash,
     channelId = 17,
     settleTimeout = 500,
     openBlock = 5123,
@@ -63,8 +65,6 @@ describe('raidenReducer', () => {
   });
 
   describe('channelOpen', () => {
-    const txHash = '0xtxhash';
-
     test('new channelOpen', () => {
       const newState = raidenReducer(
         state,
@@ -118,7 +118,7 @@ describe('raidenReducer', () => {
       state = raidenReducer(
         state,
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       );
@@ -133,7 +133,7 @@ describe('raidenReducer', () => {
             id: channelId,
             participant: state.address,
             totalDeposit: bigNumberify(23),
-            txHash: '0xdeposittxhash',
+            txHash,
           },
           { tokenNetwork, partner },
         ),
@@ -147,9 +147,9 @@ describe('raidenReducer', () => {
         channelDeposited(
           {
             id: channelId,
-            participant: '0xunknown',
+            participant: '0xunknown' as Address,
             totalDeposit: bigNumberify(24),
-            txHash: '0xdeposittxhash',
+            txHash,
           },
           { tokenNetwork, partner },
         ),
@@ -166,7 +166,7 @@ describe('raidenReducer', () => {
             id: channelId,
             participant: address,
             totalDeposit: deposit,
-            txHash: '0xdepositTxHash',
+            txHash,
           },
           { tokenNetwork, partner },
         ),
@@ -192,7 +192,7 @@ describe('raidenReducer', () => {
             id: channelId,
             participant: partner,
             totalDeposit: deposit,
-            txHash: '0xdeposittxhash',
+            txHash,
           },
           { tokenNetwork, partner },
         ),
@@ -216,7 +216,7 @@ describe('raidenReducer', () => {
       state = raidenReducer(
         state,
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       );
@@ -250,7 +250,7 @@ describe('raidenReducer', () => {
       state = raidenReducer(
         state,
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       );
@@ -260,7 +260,7 @@ describe('raidenReducer', () => {
       const newState = raidenReducer(
         state,
         channelClosed(
-          { id: channelId + 1, participant: address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId + 1, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
       );
@@ -271,7 +271,7 @@ describe('raidenReducer', () => {
       const newState = raidenReducer(
         state,
         channelClosed(
-          { id: channelId, participant: address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
       );
@@ -286,7 +286,7 @@ describe('raidenReducer', () => {
       // channel in closing state
       state = [
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
         channelClose(undefined, { tokenNetwork, partner }),
@@ -315,7 +315,7 @@ describe('raidenReducer', () => {
       // channel in "open" state
       state = [
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -324,7 +324,7 @@ describe('raidenReducer', () => {
     test('unknown channel', () => {
       state = [
         channelClosed(
-          { id: channelId, participant: address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
@@ -346,7 +346,7 @@ describe('raidenReducer', () => {
     test('channel.state becomes "settleable" `settleTimeout` blocks after closeBlock', () => {
       const newState = [
         channelClosed(
-          { id: channelId, participant: address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
@@ -363,11 +363,11 @@ describe('raidenReducer', () => {
       // channel in "closed" state
       state = [
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
         channelClosed(
-          { id: channelId, participant: address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
@@ -423,7 +423,7 @@ describe('raidenReducer', () => {
       // channel starts in "opened" state
       state = [
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -432,17 +432,14 @@ describe('raidenReducer', () => {
     test('unknown channel', () => {
       state = [
         channelClosed(
-          { id: channelId, participant: address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
       ].reduce(raidenReducer, state);
       const newState = [
         // no channel with partner=token
-        channelSettled(
-          { id: channelId, settleBlock, txHash: '0xsettleTxHash' },
-          { tokenNetwork, partner: token },
-        ),
+        channelSettled({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner: token }),
       ].reduce(raidenReducer, state);
       expect(newState).toEqual(state);
     });
@@ -450,10 +447,7 @@ describe('raidenReducer', () => {
     test('channel not in "closed|settleable|settling" state', () => {
       // still in "opened" state
       const newState = [
-        channelSettled(
-          { id: channelId, settleBlock, txHash: '0xsettleTxHash' },
-          { tokenNetwork, partner },
-        ),
+        channelSettled({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       expect(newState).toEqual(state);
     });
@@ -461,14 +455,11 @@ describe('raidenReducer', () => {
     test('success: "closed" => gone', () => {
       const newState = [
         channelClosed(
-          { id: channelId, participant: address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
-        channelSettled(
-          { id: channelId, settleBlock, txHash: '0xsettleTxHash' },
-          { tokenNetwork, partner },
-        ),
+        channelSettled({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       expect(get(newState.channels, [tokenNetwork, partner])).toBeUndefined();
     });
@@ -476,14 +467,14 @@ describe('raidenReducer', () => {
     test('success: "settleable" => gone', () => {
       const newState = [
         channelClosed(
-          { id: channelId, participant: address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
         newBlock({ blockNumber: settleBlock + 1 }),
         channelSettled(
-          { id: channelId, settleBlock: settleBlock + 1, txHash: '0xsettleTxHash' },
+          { id: channelId, settleBlock: settleBlock + 1, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -493,7 +484,7 @@ describe('raidenReducer', () => {
     test('success: "settling" => gone', () => {
       const newState = [
         channelClosed(
-          { id: channelId, participant: address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
@@ -502,7 +493,7 @@ describe('raidenReducer', () => {
         channelSettle(undefined, { tokenNetwork, partner }), // state=settling
         newBlock({ blockNumber: settleBlock + 2 }),
         channelSettled(
-          { id: channelId, settleBlock: settleBlock + 2, txHash: '0xsettleTxHash' },
+          { id: channelId, settleBlock: settleBlock + 2, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);

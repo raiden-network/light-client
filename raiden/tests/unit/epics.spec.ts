@@ -81,6 +81,7 @@ import {
   matrixStartEpic,
 } from 'raiden/transport/epics';
 import { stateOutputEpic, actionOutputEpic } from 'raiden/store/epics';
+import { Address, Hash } from 'raiden/utils/types';
 
 describe('raidenRootEpic', () => {
   // mocks for all RaidenEpicDeps properties
@@ -91,9 +92,10 @@ describe('raidenRootEpic', () => {
     blockNumber: 125,
   };
 
-  const token = '0x0000000000000000000000000000000000010001',
-    tokenNetwork = '0x0000000000000000000000000000000000020001',
-    partner = '0x0000000000000000000000000000000000000020';
+  const token = '0x0000000000000000000000000000000000010001' as Address,
+    tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,
+    partner = '0x0000000000000000000000000000000000000020' as Address,
+    txHash = '0x0000000000000000000000000000000000000020111111111111111111111111' as Hash;
   depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async _token =>
     _token === token ? tokenNetwork : AddressZero,
   );
@@ -159,7 +161,7 @@ describe('raidenRootEpic', () => {
         const newState = [
           tokenMonitored({ token, tokenNetwork, first: true }),
           channelOpened(
-            { id: channelId, settleTimeout, openBlock: 121, txHash: '0xopenTxHash' },
+            { id: channelId, settleTimeout, openBlock: 121, txHash },
             { tokenNetwork, partner },
           ),
           channelDeposited(
@@ -167,7 +169,7 @@ describe('raidenRootEpic', () => {
               id: channelId,
               participant: depsMock.address,
               totalDeposit: bigNumberify(200),
-              txHash: '0xownDepositTxHash',
+              txHash,
             },
             { tokenNetwork, partner },
           ),
@@ -176,13 +178,13 @@ describe('raidenRootEpic', () => {
               id: channelId,
               participant: partner,
               totalDeposit: bigNumberify(200),
-              txHash: '0xpartnerDepositTxHash',
+              txHash,
             },
             { tokenNetwork, partner },
           ),
           newBlock({ blockNumber: 128 }),
           channelClosed(
-            { id: channelId, participant: partner, closeBlock: 128, txHash: '0xcloseTxHash' },
+            { id: channelId, participant: partner, closeBlock: 128, txHash },
             { tokenNetwork, partner },
           ),
           newBlock({ blockNumber: 629 }),
@@ -349,7 +351,7 @@ describe('raidenRootEpic', () => {
       const newState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock: 121, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock: 121, txHash },
           { tokenNetwork, partner },
         ),
         channelClosed(
@@ -357,7 +359,7 @@ describe('raidenRootEpic', () => {
             id: channelId,
             participant: depsMock.address,
             closeBlock,
-            txHash: '0xcloseTxHash',
+            txHash,
           },
           { tokenNetwork, partner },
         ),
@@ -501,7 +503,7 @@ describe('raidenRootEpic', () => {
         curState = [
           tokenMonitored({ token, tokenNetwork, first: true }),
           channelOpened(
-            { id: channelId, settleTimeout, openBlock: 125, txHash: '0xtxHash' },
+            { id: channelId, settleTimeout, openBlock: 125, txHash },
             { tokenNetwork, partner },
           ),
         ].reduce(raidenReducer, state);
@@ -526,7 +528,7 @@ describe('raidenRootEpic', () => {
         state$ = of<RaidenState>(curState);
 
       const tx: ContractTransaction = {
-        hash: '0xtxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 1,
         gasLimit: bigNumberify(1e6),
@@ -558,7 +560,7 @@ describe('raidenRootEpic', () => {
         state$ = of<RaidenState>(curState);
 
       const tx: ContractTransaction = {
-        hash: '0xtxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 1,
         gasLimit: bigNumberify(1e6),
@@ -590,7 +592,7 @@ describe('raidenRootEpic', () => {
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
           channelOpened(
-            { id: channelId, settleTimeout, openBlock: 125, txHash: '0xtxHash' },
+            { id: channelId, settleTimeout, openBlock: 125, txHash },
             { tokenNetwork, partner },
           ),
         ),
@@ -602,7 +604,7 @@ describe('raidenRootEpic', () => {
     test('channelOpened triggers channel monitoring', async () => {
       // channel.state is 'opening'
       const action = channelOpened(
-          { id: channelId, settleTimeout, openBlock: 125, txHash: '0xtxHash' },
+          { id: channelId, settleTimeout, openBlock: 125, txHash },
           { tokenNetwork, partner },
         ),
         curState = [tokenMonitored({ token, tokenNetwork, first: true }), action].reduce(
@@ -632,7 +634,7 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xtxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -669,7 +671,7 @@ describe('raidenRootEpic', () => {
         curState = [
           tokenMonitored({ token, tokenNetwork, first: true }),
           channelOpened(
-            { id: channelId, settleTimeout, openBlock, txHash: '0xtxHash' },
+            { id: channelId, settleTimeout, openBlock, txHash },
             { tokenNetwork, partner },
           ),
         ].reduce(raidenReducer, state);
@@ -701,7 +703,7 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xtxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -756,7 +758,7 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -773,14 +775,14 @@ describe('raidenRootEpic', () => {
         tokenNetworkContract.filters.ChannelClosed(channelId, null, null),
         makeLog({
           blockNumber: closeBlock,
-          transactionHash: '0xcloseTxHash',
+          transactionHash: txHash,
           filter: tokenNetworkContract.filters.ChannelClosed(channelId, partner, 11),
         }),
       );
 
       await expect(promise).resolves.toMatchObject({
         type: getType(channelClosed),
-        payload: { id: channelId, participant: partner, closeBlock, txHash: '0xcloseTxHash' },
+        payload: { id: channelId, participant: partner, closeBlock, txHash },
         meta: { tokenNetwork, partner },
       });
     });
@@ -789,11 +791,11 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
         channelClosed(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: depsMock.address, closeBlock, txHash },
           { tokenNetwork, partner },
         ), // channel is in "closed" state already
       ].reduce(raidenReducer, state);
@@ -829,17 +831,14 @@ describe('raidenRootEpic', () => {
         tokenNetworkContract.filters.ChannelSettled(channelId, null, null),
         makeLog({
           blockNumber: settleBlock,
-          transactionHash: '0xsettleTxHash',
+          transactionHash: txHash,
           filter: tokenNetworkContract.filters.ChannelSettled(channelId, null, null),
           data: settleAmountsEncoded, // participants amounts aren't indexed, so they go in data
         }),
       );
 
       await expect(promise).resolves.toEqual(
-        channelSettled(
-          { id: channelId, settleBlock, txHash: '0xsettleTxHash' },
-          { tokenNetwork, partner },
-        ),
+        channelSettled({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
       );
 
       // ensure ChannelSettledAction completed channel monitoring and unsubscribed from events
@@ -935,7 +934,7 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -943,7 +942,7 @@ describe('raidenRootEpic', () => {
         state$ = of<RaidenState>(curState);
 
       const approveTx: ContractTransaction = {
-        hash: '0xapproveTxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 1,
         gasLimit: bigNumberify(1e6),
@@ -971,7 +970,7 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -979,7 +978,7 @@ describe('raidenRootEpic', () => {
         state$ = of<RaidenState>(curState);
 
       const approveTx: ContractTransaction = {
-        hash: '0xapproveTxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 1,
         gasLimit: bigNumberify(1e6),
@@ -993,7 +992,7 @@ describe('raidenRootEpic', () => {
       tokenContract.functions.approve.mockResolvedValueOnce(approveTx);
 
       const setTotalDeposiTx: ContractTransaction = {
-        hash: '0xsetTotaldDepositTxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 2,
         gasLimit: bigNumberify(1e6),
@@ -1021,7 +1020,7 @@ describe('raidenRootEpic', () => {
       let curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
         // own initial deposit of 330
@@ -1030,7 +1029,7 @@ describe('raidenRootEpic', () => {
             id: channelId,
             participant: depsMock.address,
             totalDeposit: bigNumberify(330),
-            txHash: '0xinitialDepositTxHash',
+            txHash,
           },
           { tokenNetwork, partner },
         ),
@@ -1039,7 +1038,7 @@ describe('raidenRootEpic', () => {
         state$ = of<RaidenState>(curState);
 
       const approveTx: ContractTransaction = {
-        hash: '0xapproveTxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 1,
         gasLimit: bigNumberify(1e6),
@@ -1053,7 +1052,7 @@ describe('raidenRootEpic', () => {
       tokenContract.functions.approve.mockResolvedValueOnce(approveTx);
 
       const setTotalDepositTx: ContractTransaction = {
-        hash: '0xsetTotaldDepositTxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 2,
         gasLimit: bigNumberify(1e6),
@@ -1128,7 +1127,7 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -1136,7 +1135,7 @@ describe('raidenRootEpic', () => {
         state$ = of<RaidenState>(curState);
 
       const closeTx: ContractTransaction = {
-        hash: '0xcloseTxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 2,
         gasLimit: bigNumberify(1e6),
@@ -1164,7 +1163,7 @@ describe('raidenRootEpic', () => {
       let curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -1172,7 +1171,7 @@ describe('raidenRootEpic', () => {
         state$ = of<RaidenState>(curState);
 
       const closeTx: ContractTransaction = {
-        hash: '0xcloseTxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 3,
         gasLimit: bigNumberify(1e6),
@@ -1228,12 +1227,12 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
         channelClosed(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: depsMock.address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -1255,12 +1254,12 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
         channelClosed(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: depsMock.address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
@@ -1270,7 +1269,7 @@ describe('raidenRootEpic', () => {
         state$ = of<RaidenState>(curState);
 
       const settleTx: ContractTransaction = {
-        hash: '0xsettleTxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 2,
         gasLimit: bigNumberify(1e6),
@@ -1298,12 +1297,12 @@ describe('raidenRootEpic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash: '0xopenTxHash' },
+          { id: channelId, settleTimeout, openBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
         channelClosed(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash: '0xcloseTxHash' },
+          { id: channelId, participant: depsMock.address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
@@ -1313,7 +1312,7 @@ describe('raidenRootEpic', () => {
         state$ = of<RaidenState>(curState);
 
       const settleTx: ContractTransaction = {
-        hash: '0xsettleTxHash',
+        hash: txHash,
         confirmations: 1,
         nonce: 2,
         gasLimit: bigNumberify(1e6),

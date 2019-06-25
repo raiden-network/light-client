@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress } from 'ethers/utils';
+import { set } from 'lodash';
 
 /* A Subset of DOM's Storage/localStorage interface which supports async/await */
 export interface Storage {
@@ -9,7 +10,6 @@ export interface Storage {
 }
 
 const StringOrNumber = t.union([t.string, t.number]);
-
 const isBigNumber = (u: unknown): u is BigNumber => u instanceof BigNumber;
 /**
  * Codec of ethers.utils.BigNumber objects, to/from Decimal string
@@ -47,38 +47,14 @@ export class EnumType<A> extends t.Type<A> {
   }
 }
 
-/**
- * Helper type to declare and validate an arbitrary or variable-sized hex bytestring
- * Like a branded codec, but allows custom/per-size sub-types
- * @param size Required number of bytes. Pass undefined or zero to have a variable-sized type
- * @param name Optional type name.
- */
-export class HexBytes<S extends number | undefined> extends t.Type<string> {
-  public readonly _tag: 'HexString' = 'HexString';
-  public size: S;
-  private regex = /^0x([0-9a-f]{2})*$/i;
-  public constructor(size: S, name?: string) {
-    super(
-      name || (size ? `HexString<${size}>` : 'HexString'),
-      (u): u is string => typeof u === 'string' && !!u.match(this.regex),
-      (u, c) => (this.is(u) ? t.success(u) : t.failure(u, c)),
-      t.identity,
-    );
-    this.size = size;
-    if (typeof size === 'number' && size > 0) {
-      this.regex = new RegExp(`^0x[0-9a-f]{${size * 2}}$`, 'i');
-    }
-  }
-}
-
 // Positive & PositiveInt taken from io-ts Readme
 export interface PositiveBrand {
-  readonly Positive: unique symbol; // use `unique symbol` here to ensure uniqueness across modules / packages
+  readonly Positive: unique symbol;
 }
 
 export const Positive = t.brand(
-  t.number, // a codec representing the type to be refined
-  (n): n is t.Branded<number, PositiveBrand> => n >= 0, // a custom type guard using the build-in helper `Branded`
+  t.number,
+  (n): n is t.Branded<number, PositiveBrand> => n >= 0, // type guard for branded values
   'Positive', // the name must match the readonly field in the brand
 );
 export type Positive = t.TypeOf<typeof Positive>;
@@ -86,34 +62,91 @@ export type Positive = t.TypeOf<typeof Positive>;
 export const PositiveInt = t.intersection([t.Int, Positive]);
 export type PositiveInt = t.TypeOf<typeof PositiveInt>;
 
-export const Bytes = new HexBytes(undefined);
-export type Bytes = t.TypeOf<typeof Bytes>;
+// sized brands interfaces must derive from this interface
+export interface SizedB<S extends number> {
+  readonly size: S;
+}
 
-export const Signature = new HexBytes(65, 'Signature');
+// map cache from size -> codecName -> codec
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sizedCodecCache: { [s: number]: { [n: string]: t.BrandC<any, SizedB<number>> } } = {};
+
+/**
+ * Returns the size (in bytes) of a sized brand
+ * If the type is known, the return type is the literal size constant, or number otherwise
+ * The codec must have been registered and the instance be cached previously, or else it'll return
+ * an invalid size of -1.
+ * @param codec Codec object of a SizedB branded type to query size of
+ * @returns number representing size of the registered codec
+ */
+export function sizeOf<S extends number, C extends t.Any = t.Any>(
+  codec: t.BrandC<C, SizedB<S>>,
+): S {
+  for (const siz in sizedCodecCache)
+    for (const c in sizedCodecCache[siz]) if (sizedCodecCache[siz][c] === codec) return +siz as S;
+  return -1 as S; // shouldn't happen, as every created codec should be registered
+}
+
+// brand interface for branded hex strings, inherits SizedB brand
+export interface HexStringB<S extends number> extends SizedB<S> {
+  readonly HexString: unique symbol;
+}
+
+/**
+ * Helper function to create codecs to validate an arbitrary or variable-sized hex bytestring
+ * A branded codec to indicate validated hex-strings
+ * @param size Required number of bytes. Pass undefined or zero to have a variable-sized type
+ * @returns branded codec for hex-encoded bytestrings
+ */
+function HexStringF<S extends number = number>(size?: S) {
+  const name = 'HexString';
+  const siz: number = size === undefined ? 0 : size;
+  if (siz in sizedCodecCache && name in sizedCodecCache[siz])
+    return sizedCodecCache[siz][name] as t.BrandC<t.StringC, HexStringB<S>>;
+  const regex = size ? new RegExp(`^0x[0-9a-f]{${size * 2}}$`, 'i') : /^0x([0-9a-f]{2})*$/i;
+  if (!(siz in sizedCodecCache)) sizedCodecCache[siz] = {};
+  return (sizedCodecCache[siz][name] = t.brand(
+    t.string,
+    (n): n is t.Branded<string, HexStringB<S>> => typeof n === 'string' && !!n.match(regex),
+    name,
+  ));
+}
+
+// string brand: non size-constrained hex-string codec and its type
+export const HexString = HexStringF();
+export type HexString<S extends number = number> = t.Branded<string, HexStringB<S>>;
+
+// strig brand: ECDSA signature as an hex-string
+export const Signature = HexStringF(65);
 export type Signature = t.TypeOf<typeof Signature>;
 
-export const Hash = new HexBytes(32, 'Hash');
+// string brand: 256-bit hash, usually keccak256 or sha256
+export const Hash = HexStringF(32);
 export type Hash = t.TypeOf<typeof Hash>;
 
-export const Secret = new HexBytes(undefined, 'Secret');
+// string brand: a secret bytearray, non-sized
+export const Secret = HexStringF();
 export type Secret = t.TypeOf<typeof Secret>;
 
-export const PrivateKey = new HexBytes(32, 'PrivateKey');
+// string brand: ECDSA private key, 32 bytes
+export const PrivateKey = HexStringF(32);
 export type PrivateKey = t.TypeOf<typeof PrivateKey>;
 
-const isAddress = (u: unknown): u is string => {
-  try {
-    return typeof u === 'string' && getAddress(u) === u;
-  } catch (e) {}
-  return false;
-};
-/**
- * Validate a string is a checksummed address
- */
-export const Address = new t.Type<string>(
-  'Address',
-  isAddress,
-  (u, c) => (isAddress(u) ? t.success(u) : t.failure(u, c)),
-  t.identity,
+// checksummed address brand interface
+export interface AddressB extends HexStringB<20> {
+  readonly Address: unique symbol;
+}
+
+// string brand: checksummed address, 20 bytes
+export const Address = t.brand(
+  t.string,
+  (u): u is t.Branded<string, AddressB> => {
+    try {
+      return typeof u === 'string' && getAddress(u) === u;
+    } catch (e) {}
+    return false;
+  }, // type guard for branded values
+  'Address', // the name must match the readonly field in the brand
 );
 export type Address = t.TypeOf<typeof Address>;
+set(sizedCodecCache, ['20', 'Address'], Address); // register on sized cache, for sizeOf util

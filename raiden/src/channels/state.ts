@@ -58,6 +58,8 @@ export type Channel = t.TypeOf<typeof Channel>;
  * Channels is a mapping from tokenNetwork -> partner -> Channel
  * As in: { [tokenNetwork: Address]: { [partner: Address]: Channel } }
  * It's used as codec and type for 'channels' key in RaidenState
+ * We use t.string instead of the Address branded codecs because specialized types can't be used
+ * as index mapping keys.
  */
-export const Channels = t.record(Address, t.record(Address, Channel));
+export const Channels = t.record(t.string, t.record(t.string, Channel));
 export type Channels = t.TypeOf<typeof Channels>;

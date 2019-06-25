@@ -5,7 +5,7 @@ import { Event } from 'ethers/contract';
 import { bigNumberify, BigNumber } from 'ethers/utils';
 
 import { fromEthersEvent, getEventsStream } from 'raiden/utils/ethers';
-import { BigNumberC, Bytes, Positive, PositiveInt } from 'raiden/utils/types';
+import { Address, BigNumberC, HexString, Positive, PositiveInt, sizeOf } from 'raiden/utils/types';
 import { raidenEpicDeps, makeLog } from './mocks';
 
 describe('fromEthersEvent', () => {
@@ -131,11 +131,11 @@ describe('getEventsStream', () => {
 
 describe('types', () => {
   test('HexBytes & Bytes', () => {
-    const b = '0xdeadbeef';
-    const B = Bytes.encode(b);
-    expect(Bytes.is(B)).toBe(true);
+    const b = '0xdeadbeef' as HexString;
+    const B = HexString.encode(b);
+    expect(HexString.is(B)).toBe(true);
     expect(B).toBe(b);
-    const result = Bytes.decode(B);
+    const result = HexString.decode(B);
     expect(result.isRight()).toBe(true);
     expect(result.value).toBe(b);
   });
@@ -154,5 +154,12 @@ describe('types', () => {
     const result = BigNumberC.decode(b);
     expect(result.isRight()).toBe(true);
     expect(result.value).toBeInstanceOf(BigNumber);
+  });
+
+  test('sizeOf', () => {
+    expect(sizeOf(HexString)).toBe(0);
+    expect(sizeOf(Address)).toBe(20);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(sizeOf(1 as any)).toBe(-1); // to test unreachable case
   });
 });

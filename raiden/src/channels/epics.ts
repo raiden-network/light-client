@@ -41,7 +41,7 @@ import {
 } from './actions';
 import { raidenInit, raidenShutdown } from '../store/actions';
 import { SignatureZero, ShutdownReason } from '../constants';
-import { Address } from '../utils/types';
+import { Address, Hash } from '../utils/types';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
 
 /**
@@ -90,7 +90,9 @@ export const initMonitorRegistryEpic = (
         ),
         // monitor previously monitored tokens
         from(Object.entries(state.tokens)).pipe(
-          map(([token, tokenNetwork]) => tokenMonitored({ token, tokenNetwork })),
+          map(([token, tokenNetwork]) =>
+            tokenMonitored({ token: token as Address, tokenNetwork: tokenNetwork as Address }),
+          ),
         ),
       ),
     ),
@@ -110,7 +112,10 @@ export const initMonitorChannelsEpic = (
       for (const [tokenNetwork, obj] of Object.entries(state.channels)) {
         for (const [partner, channel] of Object.entries(obj)) {
           if (channel.id !== undefined) {
-            yield channelMonitored({ id: channel.id }, { tokenNetwork, partner });
+            yield channelMonitored(
+              { id: channel.id },
+              { tokenNetwork: tokenNetwork as Address, partner: partner as Address },
+            );
           }
         }
       }
@@ -211,10 +216,10 @@ export const tokenMonitoredEpic = (
                     id: id.toNumber(),
                     settleTimeout: settleTimeout.toNumber(),
                     openBlock: event.blockNumber!,
-                    txHash: event.transactionHash!,
+                    txHash: event.transactionHash! as Hash,
                   },
                   {
-                    tokenNetwork: tokenNetworkContract.address,
+                    tokenNetwork: tokenNetworkContract.address as Address,
                     partner: address === p1 ? p2 : p1,
                   },
                 ),
@@ -286,7 +291,7 @@ export const channelMonitoredEpic = (
                       id: id.toNumber(),
                       participant,
                       totalDeposit,
-                      txHash: event.transactionHash!,
+                      txHash: event.transactionHash! as Hash,
                     },
                     action.meta,
                   ),
@@ -306,7 +311,7 @@ export const channelMonitoredEpic = (
                       id: id.toNumber(),
                       participant,
                       closeBlock: event.blockNumber!,
-                      txHash: event.transactionHash!,
+                      txHash: event.transactionHash! as Hash,
                     },
                     action.meta,
                   ),
@@ -325,7 +330,7 @@ export const channelMonitoredEpic = (
                     {
                       id: id.toNumber(),
                       settleBlock: event.blockNumber!,
-                      txHash: event.transactionHash!,
+                      txHash: event.transactionHash! as Hash,
                     },
                     action.meta,
                   ),
@@ -438,7 +443,9 @@ export const channelDepositEpic = (
     filter(isActionOf(channelDeposit)),
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
-      const token = findKey(state.tokens, tn => tn === action.meta.tokenNetwork);
+      const token = findKey(state.tokens, tn => tn === action.meta.tokenNetwork) as
+        | Address
+        | undefined;
       if (!token) {
         const error = new Error(`token for tokenNetwork "${action.meta.tokenNetwork}" not found`);
         return of(channelDepositFailed(error, action.meta));
@@ -451,9 +458,7 @@ export const channelDepositEpic = (
       ]);
       if (!channel || channel.state !== ChannelState.open || channel.id === undefined) {
         const error = new Error(
-          `channel for "${action.meta.tokenNetwork}" and "${
-            action.meta.partner
-          }" not found or not in 'open' state`,
+          `channel for "${action.meta.tokenNetwork}" and "${action.meta.partner}" not found or not in 'open' state`,
         );
         return of(channelDepositFailed(error, action.meta));
       }
@@ -494,9 +499,7 @@ export const channelDepositEpic = (
           map(({ receipt, tx }) => {
             if (!receipt.status)
               throw new Error(
-                `tokenNetwork "${action.meta.tokenNetwork}" setTotalDeposit transaction "${
-                  tx.hash
-                }" failed`,
+                `tokenNetwork "${action.meta.tokenNetwork}" setTotalDeposit transaction "${tx.hash}" failed`,
               );
             return tx.hash;
           }),
@@ -538,9 +541,7 @@ export const channelCloseEpic = (
         !channel.id
       ) {
         const error = new Error(
-          `channel for "${action.meta.tokenNetwork}" and "${
-            action.meta.partner
-          }" not found or not in 'open' or 'closing' state`,
+          `channel for "${action.meta.tokenNetwork}" and "${action.meta.partner}" not found or not in 'open' or 'closing' state`,
         );
         return of(channelCloseFailed(error, action.meta));
       }
@@ -564,9 +565,7 @@ export const channelCloseEpic = (
         map(({ receipt, tx }) => {
           if (!receipt.status)
             throw new Error(
-              `tokenNetwork "${action.meta.tokenNetwork}" closeChannel transaction "${
-                tx.hash
-              }" failed`,
+              `tokenNetwork "${action.meta.tokenNetwork}" closeChannel transaction "${tx.hash}" failed`,
             );
           console.log(`closeChannel tx "${tx.hash}" successfuly mined!`);
           return tx.hash;
@@ -608,9 +607,7 @@ export const channelSettleEpic = (
         !channel.id
       ) {
         const error = new Error(
-          `channel for "${action.meta.tokenNetwork}" and "${
-            action.meta.partner
-          }" not found or not in 'settleable' or 'settling' state`,
+          `channel for "${action.meta.tokenNetwork}" and "${action.meta.partner}" not found or not in 'settleable' or 'settling' state`,
         );
         return of(channelSettleFailed(error, action.meta));
       }
@@ -637,9 +634,7 @@ export const channelSettleEpic = (
         map(({ receipt, tx }) => {
           if (!receipt.status)
             throw new Error(
-              `tokenNetwork "${action.meta.tokenNetwork}" settleChannel transaction "${
-                tx.hash
-              }" failed`,
+              `tokenNetwork "${action.meta.tokenNetwork}" settleChannel transaction "${tx.hash}" failed`,
             );
           console.log(`settleChannel tx "${tx.hash}" successfuly mined!`);
           return tx.hash;
@@ -679,7 +674,10 @@ export const channelSettleableEpic = (
             channel.closeBlock &&
             blockNumber > channel.closeBlock + channel.settleTimeout
           ) {
-            yield channelSettleable({ settleableBlock: blockNumber }, { tokenNetwork, partner });
+            yield channelSettleable(
+              { settleableBlock: blockNumber },
+              { tokenNetwork: tokenNetwork as Address, partner: partner as Address },
+            );
           }
         }
       }

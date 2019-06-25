@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
+import { AddressZero } from 'ethers/constants';
 
 import { Address } from '../utils/types';
 import { Channels } from '../channels';
@@ -11,7 +12,7 @@ export const RaidenState = t.type({
   address: Address,
   blockNumber: t.number,
   channels: Channels,
-  tokens: t.record(Address, Address),
+  tokens: t.record(t.string, Address),
   transport: t.partial({
     matrix: t.intersection([
       t.type({
@@ -19,7 +20,7 @@ export const RaidenState = t.type({
       }),
       t.partial({
         setup: RaidenMatrixSetup,
-        rooms: t.record(Address, t.array(t.string)),
+        rooms: t.record(t.string, t.array(t.string)),
       }),
     ]),
   }),
@@ -41,7 +42,7 @@ export function decodeRaidenState(data: unknown): RaidenState {
 }
 
 export const initialState: Readonly<RaidenState> = {
-  address: '',
+  address: AddressZero as Address,
   blockNumber: 0,
   channels: {},
   tokens: {},

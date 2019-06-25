@@ -133,7 +133,7 @@ export class Raiden {
           // transform state.channels to token-partner-raidenChannel map
           state.channels,
           (result, partner2channel, tokenNetwork) => {
-            const token = findKey(state.tokens, tn => tn === tokenNetwork);
+            const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
             if (!token) return; // shouldn't happen, token mapping is always bi-direction
             result[token] = transform(
               // transform Channel to RaidenChannel, with more info
@@ -141,8 +141,8 @@ export class Raiden {
               (partner2raidenChannel, channel, partner) =>
                 (partner2raidenChannel[partner] = {
                   token,
-                  tokenNetwork,
-                  partner,
+                  tokenNetwork: tokenNetwork as Address,
+                  partner: partner as Address,
                   state: channel.state,
                   id: channel.id,
                   settleTimeout: channel.settleTimeout,
@@ -206,7 +206,7 @@ export class Raiden {
     // use next from latest known blockNumber as start block when polling
     this.provider.resetEventsBlock(state.blockNumber + 1);
 
-    this.resolveName = provider.resolveName.bind(provider);
+    this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
 
     // initialize epics, this will start monitoring previous token networks and open channels
     this.store.dispatch(raidenInit());
@@ -233,7 +233,7 @@ export class Raiden {
    **/
   public static async create(
     connection: JsonRpcProvider | AsyncSendable | string,
-    account: Address | PrivateKey | number,
+    account: string | number,
     storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
   ): Promise<Raiden> {
@@ -251,16 +251,16 @@ export class Raiden {
     if (!contracts) {
       switch (network.name) {
         case 'rinkeby':
-          contracts = rinkebyDeploy.contracts;
+          contracts = (rinkebyDeploy.contracts as unknown) as ContractsInfo;
           break;
         case 'ropsten':
-          contracts = ropstenDeploy.contracts;
+          contracts = (ropstenDeploy.contracts as unknown) as ContractsInfo;
           break;
         case 'kovan':
-          contracts = kovanDeploy.contracts;
+          contracts = (kovanDeploy.contracts as unknown) as ContractsInfo;
           break;
         case 'goerli':
-          contracts = goerliDeploy.contracts;
+          contracts = (goerliDeploy.contracts as unknown) as ContractsInfo;
           break;
         default:
           throw new Error(
@@ -285,7 +285,7 @@ export class Raiden {
     } else {
       throw new Error('String account must be either a 0x-encoded address or private key');
     }
-    const address = await signer.getAddress();
+    const address = (await signer.getAddress()) as Address;
 
     // use TokenNetworkRegistry deployment block as initial blockNumber, or 0
     let loadedState: RaidenState = {
@@ -331,9 +331,7 @@ export class Raiden {
     }
     if (address !== loadedState.address)
       throw new Error(
-        `Mismatch between provided account and loaded state: "${address}" !== "${
-          loadedState.address
-        }"`,
+        `Mismatch between provided account and loaded state: "${address}" !== "${loadedState.address}"`,
       );
 
     const raiden = new Raiden(provider, network, signer, contracts, loadedState);
@@ -420,7 +418,7 @@ export class Raiden {
           first(),
         )
         .toPromise();
-    return Object.keys(this.state.tokens);
+    return Object.keys(this.state.tokens) as Address[];
   }
 
   /**
