@@ -180,6 +180,15 @@ export function packMessage(message: Message): Bytes {
           encode(message.expiration, 32),
         ]),
       );
+    case MessageType.REVEAL_SECRET:
+      return hexlify(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3),
+          encode(message.message_identifier, 8),
+          encode(message.secret, 32),
+        ]),
+      );
     default:
       // place-holder error for type safety while this function isn't fully implemented
       throw new Error('Non-encodable message');
