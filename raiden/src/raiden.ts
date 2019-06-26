@@ -10,7 +10,7 @@ import { createEpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
-import { debounce, findKey, transform, constant, isEmpty } from 'lodash';
+import { debounce, findKey, transform, constant, pick, isEmpty } from 'lodash';
 import { Observable, Subject, BehaviorSubject, AsyncSubject } from 'rxjs';
 import { first, filter, map } from 'rxjs/operators';
 
@@ -140,14 +140,11 @@ export class Raiden {
               partner2channel,
               (partner2raidenChannel, channel, partner) =>
                 (partner2raidenChannel[partner] = {
+                  state: channel.state,
+                  ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
                   token,
                   tokenNetwork: tokenNetwork as Address,
                   partner: partner as Address,
-                  state: channel.state,
-                  id: channel.id,
-                  settleTimeout: channel.settleTimeout,
-                  openBlock: channel.openBlock,
-                  closeBlock: channel.closeBlock,
                   ownDeposit: channel.own.deposit,
                   partnerDeposit: channel.partner.deposit,
                   // balance is difference between is partner's and own transfered+locked amounts

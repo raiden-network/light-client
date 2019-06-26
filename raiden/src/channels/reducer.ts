@@ -51,15 +51,12 @@ const channels = (state: Readonly<Channels> = initialState.channels, action: Rai
     case getType(channelOpen): {
       const path = [action.meta.tokenNetwork, action.meta.partner];
       if (get(path, state)) return state; // there's already a channel with partner
-      return set(
-        path,
-        {
-          state: ChannelState.opening,
-          own: { deposit: Zero },
-          partner: { deposit: Zero },
-        },
-        state,
-      );
+      const channel: Channel = {
+        state: ChannelState.opening,
+        own: { deposit: Zero },
+        partner: { deposit: Zero },
+      };
+      return set(path, channel, state);
     }
 
     case getType(channelOpened): {
@@ -83,20 +80,22 @@ const channels = (state: Readonly<Channels> = initialState.channels, action: Rai
     }
 
     case getType(channelDeposited): {
-      const path = [action.meta.tokenNetwork, action.meta.partner],
-        channel: Channel | undefined = get(path, state);
+      const path = [action.meta.tokenNetwork, action.meta.partner];
+      let channel: Channel | undefined = get(path, state);
       if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
         return state;
       if (action.payload.participant === action.meta.partner)
-        channel.partner.deposit = action.payload.totalDeposit;
-      else channel.own.deposit = action.payload.totalDeposit;
+        channel = set(['partner', 'deposit'], action.payload.totalDeposit, channel);
+      else channel = set(['own', 'deposit'], action.payload.totalDeposit, channel);
       return set(path, channel, state);
     }
 
     case getType(channelClose): {
-      const path = [action.meta.tokenNetwork, action.meta.partner, 'state'];
-      if (get(path, state) !== ChannelState.open) return state;
-      return set(path, ChannelState.closing, state);
+      const path = [action.meta.tokenNetwork, action.meta.partner];
+      let channel: Channel | undefined = get(path, state);
+      if (!channel || channel.state !== ChannelState.open) return state;
+      channel = { ...channel, state: ChannelState.closing };
+      return set(path, channel, state);
     }
 
     case getType(channelClosed): {
@@ -108,31 +107,33 @@ const channels = (state: Readonly<Channels> = initialState.channels, action: Rai
         channel.id !== action.payload.id
       )
         return state;
-      channel = {
-        ...channel,
-        state: ChannelState.closed,
-        closeBlock: action.payload.closeBlock,
-      };
+      channel = { ...channel, state: ChannelState.closed, closeBlock: action.payload.closeBlock };
       return set(path, channel, state);
     }
 
     case getType(channelSettleable): {
-      const path = [action.meta.tokenNetwork, action.meta.partner, 'state'];
-      if (get(path, state) !== ChannelState.closed) return state;
-      return set(path, ChannelState.settleable, state);
+      const path = [action.meta.tokenNetwork, action.meta.partner];
+      let channel: Channel | undefined = get(path, state);
+      if (!channel || channel.state !== ChannelState.closed) return state;
+      channel = { ...channel, state: ChannelState.settleable };
+      return set(path, channel, state);
     }
 
     case getType(channelSettle): {
-      const path = [action.meta.tokenNetwork, action.meta.partner, 'state'];
-      if (get(path, state) !== ChannelState.settleable) return state;
-      return set(path, ChannelState.settling, state);
+      const path = [action.meta.tokenNetwork, action.meta.partner];
+      let channel: Channel | undefined = get(path, state);
+      if (!channel || channel.state !== ChannelState.settleable) return state;
+      channel = { ...channel, state: ChannelState.settling };
+      return set(path, channel, state);
     }
 
     case getType(channelSettled): {
       const path = [action.meta.tokenNetwork, action.meta.partner];
+      let channel: Channel | undefined = get(path, state);
       if (
+        !channel ||
         ![ChannelState.closed, ChannelState.settleable, ChannelState.settling].includes(
-          get([...path, 'state'], state),
+          channel.state,
         )
       )
         return state;

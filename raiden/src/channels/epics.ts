@@ -111,12 +111,11 @@ export const initMonitorChannelsEpic = (
     mergeMap(function*([, state]) {
       for (const [tokenNetwork, obj] of Object.entries(state.channels)) {
         for (const [partner, channel] of Object.entries(obj)) {
-          if (channel.id !== undefined) {
-            yield channelMonitored(
-              { id: channel.id },
-              { tokenNetwork: tokenNetwork as Address, partner: partner as Address },
-            );
-          }
+          if (channel.state === ChannelState.opening) continue;
+          yield channelMonitored(
+            { id: channel.id },
+            { tokenNetwork: tokenNetwork as Address, partner: partner as Address },
+          );
         }
       }
     }),

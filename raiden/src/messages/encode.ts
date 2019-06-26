@@ -46,8 +46,8 @@ function encode(data: number | string | Arrayish | BigNumber, length: number): U
 }
 
 function createBalanceHash(message: EnvelopeMessage): Hash {
-  return (message.transferred_amount.eq(0) &&
-  message.locked_amount.eq(0) &&
+  return (message.transferred_amount.isZero() &&
+  message.locked_amount.isZero() &&
   message.locksroot === HashZero
     ? HashZero
     : keccak256(
@@ -87,7 +87,7 @@ function packBalanceProof(
  * @param message Message to be packed
  * @returns HexBytes hex-encoded string data representing message in binary format
  */
-export function packMessage(message: Message): HexString {
+export function packMessage(message: Message) {
   let messageHash: Hash, balanceHash: Hash;
   switch (message.type) {
     case MessageType.DELIVERED:
@@ -193,8 +193,5 @@ export function packMessage(message: Message): HexString {
           encode(message.secret, 32),
         ]),
       ) as HexString<44>;
-    default:
-      // place-holder error for type safety while this function isn't fully implemented
-      throw new Error('Non-encodable message');
   }
 }

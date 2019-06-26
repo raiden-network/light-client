@@ -141,22 +141,6 @@ describe('raidenReducer', () => {
       expect(newState).toEqual(state);
     });
 
-    test('participant unknown', () => {
-      const newState = raidenReducer(
-        state,
-        channelDeposited(
-          {
-            id: channelId,
-            participant: '0xunknown' as Address,
-            totalDeposit: bigNumberify(24),
-            txHash,
-          },
-          { tokenNetwork, partner },
-        ),
-      );
-      expect(newState).toEqual(state);
-    });
-
     test('own deposit successful', () => {
       const deposit = bigNumberify(25);
       const newState = raidenReducer(

@@ -10,7 +10,7 @@
   "scripts": {
     "start": "npm run contracts && tsc -p src -w",
     "build": "npm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json",
-    "test": "npm run build && NODE_ENV=development jest",
+    "test": "NODE_ENV=development jest",
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "clean": "rimraf dist/ dist:cjs/ contracts/ .coverage/",
     "contracts": "typechain --target=ethers 'src/abi/*.json' --outDir contracts",
