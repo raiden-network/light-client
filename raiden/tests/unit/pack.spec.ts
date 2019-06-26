@@ -1,4 +1,12 @@
-import { LockedTransfer, MessageType, packMessage, RefundTransfer, Unlock } from 'raiden/messages';
+import {
+  LockedTransfer,
+  LockExpired,
+  MessageType,
+  packMessage,
+  RefundTransfer,
+  SecretRequest,
+  Unlock,
+} from 'raiden/messages';
 import { PositiveInt } from 'raiden/utils/types';
 import { bigNumberify } from 'ethers/utils';
 
@@ -91,6 +99,51 @@ describe('packMessage', () => {
       message => {
         expect(packMessage(message)).toEqual(
           '0xe82ae5475589b828d3644e1b56546f93cd27d1a400000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000053a1d9479b298eb0a60edaf962f4cf092465456ad7a0265dfe28a0fe3a2a8ecef4e0000000000000000000000000000000000000000000000000000000000000001a0bf3aa37ee11d243bee523a4b0898ff3489fbf90609a4f41ef852a2cf0a31f5',
+        );
+      },
+    );
+  });
+
+  test('LockExpired', () => {
+    const message: LockExpired = {
+      type: MessageType.LOCK_EXPIRED,
+      chain_id: 337 as PositiveInt,
+      nonce: 1 as PositiveInt,
+      token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4',
+      message_identifier: 123457 as PositiveInt,
+      channel_identifier: 1338 as PositiveInt,
+      secrethash: '0xfdd5831261497a4de31cb31d29b3cafe1fd2dfcdadf3c4a72ed0af9bb106934d',
+      transferred_amount: bigNumberify(0),
+      locked_amount: bigNumberify(10),
+      recipient: '0x540B51eDc5900B8012091cc7c83caf2cb243aa86',
+      locksroot: '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b',
+    };
+
+    LockExpired.decode(message).fold(
+      error => fail(error),
+      message => {
+        expect(packMessage(message)).toEqual(
+          '0xe82ae5475589b828d3644e1b56546f93cd27d1a400000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000053a1d9479b298eb0a60edaf962f4cf092465456ad7a0265dfe28a0fe3a2a8ecef4e00000000000000000000000000000000000000000000000000000000000000015edbeebd4f2f7c97a51f07a83d39bbc8e72a18dd12ba2141929609e4735dd791',
+        );
+      },
+    );
+  });
+
+  test('SecretRequest', () => {
+    const message: SecretRequest = {
+      type: MessageType.SECRET_REQUEST,
+      message_identifier: 123456 as PositiveInt,
+      payment_identifier: 1 as PositiveInt,
+      secrethash: '0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8',
+      amount: bigNumberify(10),
+      expiration: 1 as PositiveInt,
+    };
+
+    SecretRequest.decode(message).fold(
+      error => fail(error),
+      message => {
+        expect(packMessage(message)).toEqual(
+          '0x03000000000000000001e240000000000000000159cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000001',
         );
       },
     );
