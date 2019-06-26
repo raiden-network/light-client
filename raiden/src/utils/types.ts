@@ -82,8 +82,11 @@ const sizedCodecCache: { [s: number]: { [n: string]: t.BrandC<any, SizedB<number
 export function sizeOf<S extends number, C extends t.Any = t.Any>(
   codec: t.BrandC<C, SizedB<S>>,
 ): S {
-  for (const siz in sizedCodecCache)
-    for (const c in sizedCodecCache[siz]) if (sizedCodecCache[siz][c] === codec) return +siz as S;
+  for (const siz in sizedCodecCache) {
+    for (const c in sizedCodecCache[siz]) {
+      if (sizedCodecCache[siz][c] === codec) return +siz as S;
+    }
+  }
   return -1 as S; // shouldn't happen, as every created codec should be registered
 }
 
@@ -98,7 +101,7 @@ export interface HexStringB<S extends number> extends SizedB<S> {
  * @param size Required number of bytes. Pass undefined or zero to have a variable-sized type
  * @returns branded codec for hex-encoded bytestrings
  */
-function HexStringF<S extends number = number>(size?: S) {
+export function HexString<S extends number = number>(size?: S) {
   const name = 'HexString';
   const siz: number = size === undefined ? 0 : size;
   if (siz in sizedCodecCache && name in sizedCodecCache[siz])
@@ -113,23 +116,51 @@ function HexStringF<S extends number = number>(size?: S) {
 }
 
 // string brand: non size-constrained hex-string codec and its type
-export const HexString = HexStringF();
 export type HexString<S extends number = number> = t.Branded<string, HexStringB<S>>;
 
+// brand interface for branded unsigned integers, inherits SizedB brand
+export interface UIntB<S extends number> extends SizedB<S> {
+  readonly UInt: unique symbol;
+}
+
+/**
+ * Helper function to create codecs to validate an arbitrary or variable-sized BigNumbers
+ * A branded codec/type to indicate size-validated BigNumbers
+ * @param size Required number of bytes. Pass undefined or zero to have a variable-sized type
+ * @returns branded codec for hex-encoded bytestrings
+ */
+export function UInt<S extends number = number>(size?: S) {
+  const name = 'UInt';
+  const siz: number = size === undefined ? 0 : size;
+  if (siz in sizedCodecCache && name in sizedCodecCache[siz])
+    return sizedCodecCache[siz][name] as t.BrandC<typeof BigNumberC, UIntB<S>>;
+  if (!(siz in sizedCodecCache)) sizedCodecCache[siz] = {};
+  const max = siz ? bigNumberify(2).pow(siz * 8) : undefined;
+  return (sizedCodecCache[siz][name] = t.brand(
+    BigNumberC,
+    (n): n is t.Branded<BigNumber, UIntB<S>> =>
+      BigNumberC.is(n) && n.gte(0) && (max === undefined || n.lt(max)),
+    name,
+  ));
+}
+export type UInt<S extends number = number> = t.Branded<BigNumber, UIntB<S>>;
+
+// specific types
+
 // strig brand: ECDSA signature as an hex-string
-export const Signature = HexStringF(65);
+export const Signature = HexString(65);
 export type Signature = t.TypeOf<typeof Signature>;
 
 // string brand: 256-bit hash, usually keccak256 or sha256
-export const Hash = HexStringF(32);
+export const Hash = HexString(32);
 export type Hash = t.TypeOf<typeof Hash>;
 
 // string brand: a secret bytearray, non-sized
-export const Secret = HexStringF();
+export const Secret = HexString();
 export type Secret = t.TypeOf<typeof Secret>;
 
 // string brand: ECDSA private key, 32 bytes
-export const PrivateKey = HexStringF(32);
+export const PrivateKey = HexString(32);
 export type PrivateKey = t.TypeOf<typeof PrivateKey>;
 
 // checksummed address brand interface
@@ -150,3 +181,6 @@ export const Address = t.brand(
 );
 export type Address = t.TypeOf<typeof Address>;
 set(sizedCodecCache, ['20', 'Address'], Address); // register on sized cache, for sizeOf util
+
+export const Byte = UInt(1);
+export type Byte = t.TypeOf<typeof Byte>;
