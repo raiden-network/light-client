@@ -363,8 +363,10 @@ export class Raiden {
    * @param address  Optional target address. If omitted, gets own balance
    * @returns  BigNumber of ETH balance
    */
-  public getBalance(address?: Address): Promise<BigNumber> {
-    return this.provider.getBalance(address || this.address);
+  public getBalance(address?: string): Promise<BigNumber> {
+    address = address || this.address;
+    if (!Address.is(address)) throw new Error('Invalid address');
+    return this.provider.getBalance(address);
   }
 
   /**
@@ -373,11 +375,13 @@ export class Raiden {
    * @param address  Optional target address. If omitted, gets own balance
    * @returns  BigNumber containing address's token balance
    */
-  public async getTokenBalance(token: Address, address?: Address): Promise<BigNumber> {
+  public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
+    address = address || this.address;
+    if (!Address.is(address) || !Address.is(token)) throw new Error('Invalid address');
     if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
     const tokenContract = this.getTokenContract(token);
 
-    return tokenContract.functions.balanceOf(address || this.address);
+    return tokenContract.functions.balanceOf(address);
   }
 
   /**
@@ -388,7 +392,8 @@ export class Raiden {
    * @param token address to fetch info from
    * @returns TokenInfo
    */
-  public async getTokenInfo(token: Address): Promise<TokenInfo> {
+  public async getTokenInfo(token: string): Promise<TokenInfo> {
+    if (!Address.is(token)) throw new Error('Invalid address');
     /* tokenInfo isn't in state as it isn't relevant for being preserved, it's merely a cache */
     if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
     if (!(token in this.tokenInfo)) {
@@ -461,10 +466,11 @@ export class Raiden {
    * @returns  txHash of channelOpen call, iff it succeeded
    */
   public async openChannel(
-    token: Address,
-    partner: Address,
+    token: string,
+    partner: string,
     settleTimeout: number = 500,
   ): Promise<Hash> {
+    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -493,10 +499,11 @@ export class Raiden {
    * @returns  txHash of setTotalDeposit call, iff it succeeded
    */
   public async depositChannel(
-    token: Address,
-    partner: Address,
+    token: string,
+    partner: string,
     deposit: BigNumber | number,
   ): Promise<Hash> {
+    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -531,7 +538,8 @@ export class Raiden {
    * @param partner  Partner address
    * @returns  txHash of closeChannel call, iff it succeeded
    */
-  public async closeChannel(token: Address, partner: Address): Promise<Hash> {
+  public async closeChannel(token: string, partner: string): Promise<Hash> {
+    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -563,7 +571,8 @@ export class Raiden {
    * @param partner  Partner address
    * @returns  txHash of settleChannel call, iff it succeeded
    */
-  public async settleChannel(token: Address, partner: Address): Promise<Hash> {
+  public async settleChannel(token: string, partner: string): Promise<Hash> {
+    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -593,8 +602,9 @@ export class Raiden {
    * @returns Promise to object describing availability and last event timestamp
    */
   public async getAvailability(
-    address: Address,
+    address: string,
   ): Promise<{ userId: string; available: boolean; ts: number }> {
+    if (!Address.is(address)) throw new Error('Invalid address');
     const promise = this.action$
       .pipe(
         filter(isActionOf([matrixPresenceUpdate, matrixRequestMonitorPresenceFailed])),
