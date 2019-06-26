@@ -4,7 +4,7 @@ import { Arrayish, arrayify, concat, hexlify, isArrayish, padZeros } from 'ether
 import { HashZero } from 'ethers/constants';
 
 import { BigNumberC, Bytes, Hash } from '../utils/types';
-import { Message, MessageType } from './types';
+import { EnvelopeMessage, Message, MessageType } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
@@ -43,6 +43,34 @@ function encode(data: number | string | Arrayish | BigNumber, length: number): U
     throw new Error('data is not a HexString or Uint8Array');
   }
   return bytes;
+}
+
+function createBalanceHash(message: EnvelopeMessage) {
+  return message.transferred_amount.eq(0) &&
+    message.locked_amount.eq(0) &&
+    message.locksroot === HashZero
+    ? HashZero
+    : keccak256(
+        concat([
+          encode(message.transferred_amount, 32),
+          encode(message.locked_amount, 32),
+          encode(message.locksroot, 32),
+        ]),
+      );
+}
+
+function packBalanceProof(message: EnvelopeMessage, balanceHash: Hash, messageHash: Hash) {
+  return hexlify(
+    concat([
+      encode(message.token_network_address, 20),
+      encode(message.chain_id, 32),
+      encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
+      encode(message.channel_identifier, 32),
+      encode(balanceHash, 32), // balance hash
+      encode(message.nonce, 32),
+      encode(messageHash, 32), // additional hash
+    ]),
+  );
 }
 
 /**
@@ -100,29 +128,8 @@ export function packMessage(message: Message): Bytes {
           encode(message.fee, 32),
         ]),
       );
-      balanceHash =
-        message.transferred_amount.eq(0) &&
-        message.locked_amount.eq(0) &&
-        message.locksroot === HashZero
-          ? HashZero
-          : keccak256(
-              concat([
-                encode(message.transferred_amount, 32),
-                encode(message.locked_amount, 32),
-                encode(message.locksroot, 32),
-              ]),
-            );
-      return hexlify(
-        concat([
-          encode(message.token_network_address, 20),
-          encode(message.chain_id, 32),
-          encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
-          encode(message.channel_identifier, 32),
-          encode(balanceHash, 32), // balance hash
-          encode(message.nonce, 32),
-          encode(messageHash, 32), // additional hash
-        ]),
-      );
+      balanceHash = createBalanceHash(message);
+      return packBalanceProof(message, balanceHash, messageHash);
     case MessageType.UNLOCK:
       messageHash = keccak256(
         concat([
@@ -140,27 +147,37 @@ export function packMessage(message: Message): Bytes {
           encode(message.locksroot, 32),
         ]),
       );
-      balanceHash =
-        message.transferred_amount.eq(0) &&
-        message.locked_amount.eq(0) &&
-        message.locksroot === HashZero
-          ? HashZero
-          : keccak256(
-              concat([
-                encode(message.transferred_amount, 32),
-                encode(message.locked_amount, 32),
-                encode(message.locksroot, 32),
-              ]),
-            );
+      balanceHash = createBalanceHash(message);
+      return packBalanceProof(message, balanceHash, messageHash);
+    case MessageType.LOCK_EXPIRED:
+      messageHash = keccak256(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3),
+          encode(message.nonce, 8),
+          encode(message.chain_id, 32),
+          encode(message.message_identifier, 8),
+          encode(message.token_network_address, 20),
+          encode(message.channel_identifier, 32),
+          encode(message.recipient, 20),
+          encode(message.locksroot, 32),
+          encode(message.secrethash, 32),
+          encode(message.transferred_amount, 32),
+          encode(message.locked_amount, 32),
+        ]),
+      );
+      balanceHash = createBalanceHash(message);
+      return packBalanceProof(message, balanceHash, messageHash);
+    case MessageType.SECRET_REQUEST:
       return hexlify(
         concat([
-          encode(message.token_network_address, 20),
-          encode(message.chain_id, 32),
-          encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
-          encode(message.channel_identifier, 32),
-          encode(balanceHash, 32), // balance hash
-          encode(message.nonce, 32),
-          encode(messageHash, 32), // additional hash
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3),
+          encode(message.message_identifier, 8),
+          encode(message.payment_identifier, 8),
+          encode(message.secrethash, 32),
+          encode(message.amount, 32),
+          encode(message.expiration, 32),
         ]),
       );
     default:
