@@ -1,9 +1,12 @@
 import {
+  Delivered,
   LockedTransfer,
   LockExpired,
   MessageType,
   packMessage,
+  Processed,
   RefundTransfer,
+  RevealSecret,
   SecretRequest,
   Unlock,
 } from 'raiden/messages';
@@ -145,6 +148,51 @@ describe('packMessage', () => {
         expect(packMessage(message)).toEqual(
           '0x03000000000000000001e240000000000000000159cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000001',
         );
+      },
+    );
+  });
+
+  test('RevealSecret', () => {
+    const message: RevealSecret = {
+      type: MessageType.REVEAL_SECRET,
+      message_identifier: 123456 as PositiveInt,
+      secret: '0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e',
+    };
+
+    RevealSecret.decode(message).fold(
+      error => fail(error),
+      message => {
+        expect(packMessage(message)).toEqual(
+          '0x0b000000000000000001e2403bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e',
+        );
+      },
+    );
+  });
+
+  test('Delivered', () => {
+    const message: Delivered = {
+      type: MessageType.DELIVERED,
+      delivered_message_identifier: 123456 as PositiveInt,
+    };
+
+    Delivered.decode(message).fold(
+      error => fail(error),
+      message => {
+        expect(packMessage(message)).toEqual('0x0c000000000000000001e240');
+      },
+    );
+  });
+
+  test('Processed', () => {
+    const message: Processed = {
+      type: MessageType.PROCESSED,
+      message_identifier: 123456 as PositiveInt,
+    };
+
+    Processed.decode(message).fold(
+      error => fail(error),
+      message => {
+        expect(packMessage(message)).toEqual('0x00000000000000000001e240');
       },
     );
   });
