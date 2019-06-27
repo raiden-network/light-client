@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { AddressZero } from 'ethers/constants';
+import { parse, stringify, LosslessNumber } from 'lossless-json';
 
 import { Address } from '../utils/types';
 import { Channels } from '../channels';
@@ -29,13 +30,41 @@ export const RaidenState = t.type({
 export type RaidenState = t.TypeOf<typeof RaidenState>;
 
 // helpers, utils & constants
-// TODO: replace JSON functions with BigNumber-aware ones
+
+/**
+ * Encode RaidenState to a JSON string
+ * For Raiden client compliance, this JSON encodes BigNumbers as 'number' (using lossless-json lib)
+ * which is valid json though not very common as common JS implementations lose precision when
+ * decoding through JSON.parse (more usually, BigNumbers are serialized as strings).
+ * This is solved in SDK by both encoding and decoding BigNumbers through lossless-json, without
+ * going to the intermediary JSON.parse/stringify form.
+ * @param state RaidenState object
+ * @returns JSON encoded string
+ */
 export function encodeRaidenState(state: RaidenState): string {
-  return JSON.stringify(RaidenState.encode(state), undefined, 2);
+  return stringify(RaidenState.encode(state), undefined, 2);
 }
 
+const isLosslessNumber = (u: unknown): u is LosslessNumber =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  u && (u as any)['isLosslessNumber'] === true;
+/**
+ * Try to decode any data as a RaidenState.
+ * If handled a string, will parse it with lossless-json, to preserve BigNumbers encoded as JSON
+ * 'number'.
+ * @param data string | any which may be decoded as RaidenState
+ * @returns RaidenState parsed and validated
+ */
 export function decodeRaidenState(data: unknown): RaidenState {
-  if (typeof data === 'string') data = JSON.parse(data);
+  if (typeof data === 'string')
+    data = parse(data, ({}, value) => {
+      if (isLosslessNumber(value)) {
+        try {
+          return value.valueOf(); // return number, if possible, or throw if > 2^53
+        } catch (e) {} // else, pass to return LosslessNumber, which can be decoded by BigNumberC
+      }
+      return value;
+    });
   const validationResult = RaidenState.decode(data);
   ThrowReporter.report(validationResult); // throws if decode failed
   return validationResult.value as RaidenState;

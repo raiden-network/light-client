@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress } from 'ethers/utils';
+import { LosslessNumber } from 'lossless-json';
 import { set } from 'lodash';
 
 /* A Subset of DOM's Storage/localStorage interface which supports async/await */
@@ -9,25 +10,32 @@ export interface Storage {
   removeItem(key: string): void | Promise<void>;
 }
 
-const StringOrNumber = t.union([t.string, t.number]);
+const isStringifiable = (u: unknown): u is { toString: () => string } =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  u !== null && u !== undefined && typeof (u as any)['toString'] === 'function';
 const isBigNumber = (u: unknown): u is BigNumber => u instanceof BigNumber;
 /**
- * Codec of ethers.utils.BigNumber objects, to/from Decimal string
+ * Codec of ethers.utils.BigNumber objects
+ * Input can be anything bigNumberify-able: number, string, LosslessNumber or BigNumber
+ * Output is LosslessNumber, so we can JSON-serialize with 'number' types bigger than JS VM limits
+ * of ~53bits, as Raiden full-client/python stdlib json encode/decode longs as json number
+ * (which is valid json despite not javascript-friendly)
+ * TODO: get Raiden to string-serialize long ints, so we can drop lossless-json and use standard
+ * JSON.parse/stringify and io-ts.encode/decode.
  */
-export const BigNumberC = new t.Type<BigNumber, string>(
+export const BigNumberC = new t.Type<BigNumber, LosslessNumber>(
   'BigNumber',
   isBigNumber,
   (u, c) => {
     if (isBigNumber(u)) return t.success(u);
-    return StringOrNumber.validate(u, c).chain(s => {
-      try {
-        return t.success(bigNumberify(s));
-      } catch (err) {
-        return t.failure(s, c, err.message);
-      }
-    });
+    try {
+      if (isStringifiable(u)) return t.success(bigNumberify(u.toString()));
+    } catch (err) {
+      return t.failure(u, c, err.message);
+    }
+    return t.failure(u, c);
   },
-  a => a.toString(),
+  a => new LosslessNumber(a.toString()),
 );
 
 /**

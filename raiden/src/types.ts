@@ -1,5 +1,4 @@
 /// <reference path="../typings/matrix-js-sdk/index.d.ts" />
-
 import { Subject, BehaviorSubject, AsyncSubject } from 'rxjs';
 import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';

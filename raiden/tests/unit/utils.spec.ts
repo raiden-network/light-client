@@ -3,6 +3,7 @@ import { first, take, toArray } from 'rxjs/operators';
 
 import { Event } from 'ethers/contract';
 import { bigNumberify, BigNumber } from 'ethers/utils';
+import { LosslessNumber } from 'lossless-json';
 
 import { fromEthersEvent, getEventsStream } from 'raiden/utils/ethers';
 import {
@@ -159,7 +160,7 @@ describe('types', () => {
   test('BigNumberC', () => {
     const b = bigNumberify(16);
     expect(BigNumberC.is(b)).toBe(true);
-    expect(BigNumberC.encode(b)).toBe('16');
+    expect(BigNumberC.encode(b)).toEqual(new LosslessNumber('16'));
     const result = BigNumberC.decode(b);
     expect(result.isRight()).toBe(true);
     expect(result.value).toBeInstanceOf(BigNumber);
