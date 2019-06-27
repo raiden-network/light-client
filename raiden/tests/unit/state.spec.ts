@@ -36,8 +36,8 @@ describe('RaidenState codecs', () => {
         [tokenNetwork]: {
           [partner]: {
             state: 'open',
-            own: { deposit: '200' },
-            partner: { deposit: '210' },
+            own: { deposit: 200 },
+            partner: { deposit: 210 },
             id: 17,
             settleTimeout: 500,
             openBlock: 121,

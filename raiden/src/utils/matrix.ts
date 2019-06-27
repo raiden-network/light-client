@@ -1,5 +1,3 @@
-/// <reference path="../../typings/matrix-js-sdk/index.d.ts" />
-
 import fetch from 'cross-fetch';
 import { MatrixClient } from 'matrix-js-sdk';
 import { encodeUri } from 'matrix-js-sdk/lib/utils';

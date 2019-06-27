@@ -31,7 +31,8 @@
       "dom",
       "dom.iterable",
       "scripthost"
-    ]
+    ],
+    "typeRoots": ["node_modules/@types", "../raiden/typings"]
   },
   "include": [
     "src/**/*.ts",
