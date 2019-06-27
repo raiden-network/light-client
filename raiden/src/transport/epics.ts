@@ -278,11 +278,11 @@ export const matrixMonitorPresenceEpic = (
       for (const user of matrix.getUsers()) {
         if (!user.displayName) continue;
         if (!user.presence) continue;
-        let recovered: Address;
+        let recovered: Address | undefined;
         try {
           const match = userRe.exec(user.userId);
           if (!match || getAddress(match[1]) !== action.meta.address) continue;
-          recovered = verifyMessage(user.userId, user.displayName);
+          recovered = verifyMessage(user.userId, user.displayName) as Address | undefined;
           if (!recovered || recovered !== action.meta.address) continue;
         } catch (err) {
           continue;
@@ -385,7 +385,11 @@ export const matrixPresenceUpdateEpic = (
         match = userRe.exec(user.userId),
         peerAddress = match && match[1];
       // getAddress will convert any valid address into checksummed-format
-      return { user, matrix, peerAddress: peerAddress && getAddress(peerAddress) };
+      return {
+        user,
+        matrix,
+        peerAddress: (peerAddress && getAddress(peerAddress)) as Address | undefined,
+      };
     }),
     // filter out events without userId in the right format (startWith hex-address)
     filter(({ user, peerAddress }) => !!(user.presence && peerAddress)),
@@ -430,7 +434,7 @@ export const matrixPresenceUpdateEpic = (
           // errors raised here will be logged and ignored on catchError below
           if (!displayName) throw new Error(`Could not get displayName of "${userId}"`);
           // ecrecover address, validating displayName is the signature of the userId
-          const recovered = verifyMessage(userId, displayName);
+          const recovered = verifyMessage(userId, displayName) as Address | undefined;
           if (!recovered || recovered !== peerAddress)
             throw new Error(
               `Could not verify displayName signature of "${userId}": got "${recovered}"`,
@@ -669,7 +673,7 @@ export const matrixCleanLeftRoomsEpic = (
       for (const address in rooms) {
         for (const roomId of rooms[address]) {
           if (roomId === room.roomId) {
-            yield matrixRoomLeave({ roomId }, { address });
+            yield matrixRoomLeave({ roomId }, { address: address as Address });
           }
         }
       }

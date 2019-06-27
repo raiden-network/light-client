@@ -19,13 +19,11 @@ jest.mock('ethers/utils/properties', () => ({
 // ethers utils mock to always validate matrix userIds
 jest.mock('ethers/utils', () => ({
   ...jest.requireActual('ethers/utils'),
-  verifyMessage: jest.fn(
-    (msg: string): string => {
-      const { getAddress, AddressZero } = jest.requireActual('ethers/utils');
-      const match = /^@(0x[0-9a-f]{40})[.:]/i.exec(msg);
-      return match && match[1] ? getAddress(match[1]) : AddressZero;
-    },
-  ),
+  verifyMessage: jest.fn((msg: string): string => {
+    const { getAddress, AddressZero } = jest.requireActual('ethers/utils');
+    const match = /^@(0x[0-9a-f]{40})[.:]/i.exec(msg);
+    return match && match[1] ? getAddress(match[1]) : AddressZero;
+  }),
 }));
 
 // raiden/utils.getNetwork has the same functionality as provider.getNetwork
@@ -58,13 +56,14 @@ import TokenAbi from 'raiden/abi/Token.json';
 import { RaidenEpicDeps } from 'raiden/types';
 import { RaidenAction } from 'raiden/actions';
 import { RaidenState, initialState } from 'raiden/store/state';
+import { Address } from 'raiden/utils/types';
 
 type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
     [K in keyof T['functions']]: jest.MockInstance<
       ReturnType<T['functions'][K]>,
       Parameters<T['functions'][K]>
-    >
+    >;
   };
 };
 
@@ -125,7 +124,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     '0x0123456789012345678901234567890123456789012345678901234567890123',
     provider,
   );
-  const address = signer.address;
+  const address = signer.address as Address;
 
   const registryAddress = '0xregistry';
   const registryContract = new Contract(
@@ -176,7 +175,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     network,
     contractsInfo: {
       TokenNetworkRegistry: {
-        address: registryContract.address,
+        address: registryContract.address as Address,
         block_number: 100, // eslint-disable-line
       },
     },
@@ -207,7 +206,7 @@ export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<L
 
 /* Returns a mocked MatrixClient */
 export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixClient> {
-  return Object.assign(new EventEmitter(), {
+  return (Object.assign(new EventEmitter(), {
     startClient: jest.fn(async () => true),
     stopClient: jest.fn(() => true),
     setDisplayName: jest.fn(async () => true),
@@ -244,5 +243,5 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
         presence: 'online',
       })),
     },
-  });
+  }) as unknown) as jest.Mocked<MatrixClient>;
 }

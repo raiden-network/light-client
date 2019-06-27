@@ -5,3 +5,4 @@ export { ChannelState } from './channels';
 export { ShutdownReason } from './constants';
 export * from './types';
 export * from './raiden';
+export { Address } from './utils/types';

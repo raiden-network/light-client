@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 
 import { Address, BigNumberC, Hash, PositiveInt, Signature } from '../utils/types';
-import { ChannelStateC, Lock } from './types';
+import { Lock, ChannelState } from './types';
 
 /**
  * Balance Proof constructed from an EnvelopeMessage
@@ -41,16 +41,35 @@ export type ChannelEnd = t.TypeOf<typeof ChannelEnd>;
 
 export const Channel = t.intersection([
   t.type({
-    state: ChannelStateC,
     own: ChannelEnd,
     partner: ChannelEnd,
   }),
-  t.partial({
-    id: t.number,
-    settleTimeout: t.number,
-    openBlock: t.number,
-    closeBlock: t.number,
-  }),
+  t.union([
+    /* union of types with literals intersection allows narrowing other props presence. e.g.:
+     * if (channel.state === ChannelState.open) {
+     *   id = channel.id; // <- id can't be undefined
+     *   closeBlock = channel.closeBlock; // error: closeBlock only exist on states closed|settling
+     * }
+     */
+    t.type({ state: t.literal(ChannelState.opening) }),
+    t.type({
+      state: t.union([t.literal(ChannelState.open), t.literal(ChannelState.closing)]),
+      id: t.number,
+      settleTimeout: t.number,
+      openBlock: t.number,
+    }),
+    t.type({
+      state: t.union([
+        t.literal(ChannelState.closed),
+        t.literal(ChannelState.settleable),
+        t.literal(ChannelState.settling),
+      ]),
+      id: t.number,
+      settleTimeout: t.number,
+      openBlock: t.number,
+      closeBlock: t.number,
+    }),
+  ]),
 ]);
 export type Channel = t.TypeOf<typeof Channel>;
 
@@ -58,6 +77,8 @@ export type Channel = t.TypeOf<typeof Channel>;
  * Channels is a mapping from tokenNetwork -> partner -> Channel
  * As in: { [tokenNetwork: Address]: { [partner: Address]: Channel } }
  * It's used as codec and type for 'channels' key in RaidenState
+ * We use t.string instead of the Address branded codecs because specialized types can't be used
+ * as index mapping keys.
  */
-export const Channels = t.record(Address, t.record(Address, Channel));
+export const Channels = t.record(t.string, t.record(t.string, Channel));
 export type Channels = t.TypeOf<typeof Channels>;

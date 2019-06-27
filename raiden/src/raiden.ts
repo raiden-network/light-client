@@ -10,7 +10,7 @@ import { createEpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
-import { debounce, findKey, transform, constant, isEmpty } from 'lodash';
+import { debounce, findKey, transform, constant, pick, isEmpty } from 'lodash';
 import { Observable, Subject, BehaviorSubject, AsyncSubject } from 'rxjs';
 import { first, filter, map } from 'rxjs/operators';
 
@@ -133,21 +133,18 @@ export class Raiden {
           // transform state.channels to token-partner-raidenChannel map
           state.channels,
           (result, partner2channel, tokenNetwork) => {
-            const token = findKey(state.tokens, tn => tn === tokenNetwork);
+            const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
             if (!token) return; // shouldn't happen, token mapping is always bi-direction
             result[token] = transform(
               // transform Channel to RaidenChannel, with more info
               partner2channel,
               (partner2raidenChannel, channel, partner) =>
                 (partner2raidenChannel[partner] = {
-                  token,
-                  tokenNetwork,
-                  partner,
                   state: channel.state,
-                  id: channel.id,
-                  settleTimeout: channel.settleTimeout,
-                  openBlock: channel.openBlock,
-                  closeBlock: channel.closeBlock,
+                  ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
+                  token,
+                  tokenNetwork: tokenNetwork as Address,
+                  partner: partner as Address,
                   ownDeposit: channel.own.deposit,
                   partnerDeposit: channel.partner.deposit,
                   // balance is difference between is partner's and own transfered+locked amounts
@@ -206,7 +203,7 @@ export class Raiden {
     // use next from latest known blockNumber as start block when polling
     this.provider.resetEventsBlock(state.blockNumber + 1);
 
-    this.resolveName = provider.resolveName.bind(provider);
+    this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
 
     // initialize epics, this will start monitoring previous token networks and open channels
     this.store.dispatch(raidenInit());
@@ -233,7 +230,7 @@ export class Raiden {
    **/
   public static async create(
     connection: JsonRpcProvider | AsyncSendable | string,
-    account: Address | PrivateKey | number,
+    account: string | number,
     storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
   ): Promise<Raiden> {
@@ -251,16 +248,16 @@ export class Raiden {
     if (!contracts) {
       switch (network.name) {
         case 'rinkeby':
-          contracts = rinkebyDeploy.contracts;
+          contracts = (rinkebyDeploy.contracts as unknown) as ContractsInfo;
           break;
         case 'ropsten':
-          contracts = ropstenDeploy.contracts;
+          contracts = (ropstenDeploy.contracts as unknown) as ContractsInfo;
           break;
         case 'kovan':
-          contracts = kovanDeploy.contracts;
+          contracts = (kovanDeploy.contracts as unknown) as ContractsInfo;
           break;
         case 'goerli':
-          contracts = goerliDeploy.contracts;
+          contracts = (goerliDeploy.contracts as unknown) as ContractsInfo;
           break;
         default:
           throw new Error(
@@ -285,7 +282,7 @@ export class Raiden {
     } else {
       throw new Error('String account must be either a 0x-encoded address or private key');
     }
-    const address = await signer.getAddress();
+    const address = (await signer.getAddress()) as Address;
 
     // use TokenNetworkRegistry deployment block as initial blockNumber, or 0
     let loadedState: RaidenState = {
@@ -331,9 +328,7 @@ export class Raiden {
     }
     if (address !== loadedState.address)
       throw new Error(
-        `Mismatch between provided account and loaded state: "${address}" !== "${
-          loadedState.address
-        }"`,
+        `Mismatch between provided account and loaded state: "${address}" !== "${loadedState.address}"`,
       );
 
     const raiden = new Raiden(provider, network, signer, contracts, loadedState);
@@ -365,8 +360,10 @@ export class Raiden {
    * @param address  Optional target address. If omitted, gets own balance
    * @returns  BigNumber of ETH balance
    */
-  public getBalance(address?: Address): Promise<BigNumber> {
-    return this.provider.getBalance(address || this.address);
+  public getBalance(address?: string): Promise<BigNumber> {
+    address = address || this.address;
+    if (!Address.is(address)) throw new Error('Invalid address');
+    return this.provider.getBalance(address);
   }
 
   /**
@@ -375,11 +372,13 @@ export class Raiden {
    * @param address  Optional target address. If omitted, gets own balance
    * @returns  BigNumber containing address's token balance
    */
-  public async getTokenBalance(token: Address, address?: Address): Promise<BigNumber> {
+  public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
+    address = address || this.address;
+    if (!Address.is(address) || !Address.is(token)) throw new Error('Invalid address');
     if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
     const tokenContract = this.getTokenContract(token);
 
-    return tokenContract.functions.balanceOf(address || this.address);
+    return tokenContract.functions.balanceOf(address);
   }
 
   /**
@@ -390,7 +389,8 @@ export class Raiden {
    * @param token address to fetch info from
    * @returns TokenInfo
    */
-  public async getTokenInfo(token: Address): Promise<TokenInfo> {
+  public async getTokenInfo(token: string): Promise<TokenInfo> {
+    if (!Address.is(token)) throw new Error('Invalid address');
     /* tokenInfo isn't in state as it isn't relevant for being preserved, it's merely a cache */
     if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
     if (!(token in this.tokenInfo)) {
@@ -420,7 +420,7 @@ export class Raiden {
           first(),
         )
         .toPromise();
-    return Object.keys(this.state.tokens);
+    return Object.keys(this.state.tokens) as Address[];
   }
 
   /**
@@ -463,10 +463,11 @@ export class Raiden {
    * @returns  txHash of channelOpen call, iff it succeeded
    */
   public async openChannel(
-    token: Address,
-    partner: Address,
+    token: string,
+    partner: string,
     settleTimeout: number = 500,
   ): Promise<Hash> {
+    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -495,10 +496,11 @@ export class Raiden {
    * @returns  txHash of setTotalDeposit call, iff it succeeded
    */
   public async depositChannel(
-    token: Address,
-    partner: Address,
+    token: string,
+    partner: string,
     deposit: BigNumber | number,
   ): Promise<Hash> {
+    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -533,7 +535,8 @@ export class Raiden {
    * @param partner  Partner address
    * @returns  txHash of closeChannel call, iff it succeeded
    */
-  public async closeChannel(token: Address, partner: Address): Promise<Hash> {
+  public async closeChannel(token: string, partner: string): Promise<Hash> {
+    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -565,7 +568,8 @@ export class Raiden {
    * @param partner  Partner address
    * @returns  txHash of settleChannel call, iff it succeeded
    */
-  public async settleChannel(token: Address, partner: Address): Promise<Hash> {
+  public async settleChannel(token: string, partner: string): Promise<Hash> {
+    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -595,8 +599,9 @@ export class Raiden {
    * @returns Promise to object describing availability and last event timestamp
    */
   public async getAvailability(
-    address: Address,
+    address: string,
   ): Promise<{ userId: string; available: boolean; ts: number }> {
+    if (!Address.is(address)) throw new Error('Invalid address');
     const promise = this.action$
       .pipe(
         filter(isActionOf([matrixPresenceUpdate, matrixRequestMonitorPresenceFailed])),
