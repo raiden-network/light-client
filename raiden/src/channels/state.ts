@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 
-import { Address, BigNumberC, Hash, PositiveInt, Signature } from '../utils/types';
-import { Lock, ChannelState } from './types';
+import { Address, Hash, Signature, UInt } from '../utils/types';
+import { ChannelState, Lock } from './types';
 
 /**
  * Balance Proof constructed from an EnvelopeMessage
@@ -11,13 +11,13 @@ import { Lock, ChannelState } from './types';
  */
 export const SignedBalanceProof = t.type({
   // channel data
-  chainId: PositiveInt,
+  chainId: UInt(32),
   tokenNetworkAddress: Address,
-  channelId: PositiveInt,
+  channelId: UInt(32),
   // balance proof data
-  nonce: PositiveInt,
-  transferredAmount: BigNumberC,
-  lockedAmount: BigNumberC,
+  nonce: UInt(8),
+  transferredAmount: UInt(32),
+  lockedAmount: UInt(32),
   locksroot: Hash,
   messageHash: Hash,
   signature: Signature,
@@ -30,7 +30,7 @@ export type SignedBalanceProof = t.TypeOf<typeof SignedBalanceProof>;
  */
 export const ChannelEnd = t.intersection([
   t.type({
-    deposit: BigNumberC, // total deposit/contract balance
+    deposit: UInt(32), // total deposit/contract balance
   }),
   t.partial({
     locks: t.array(Lock),

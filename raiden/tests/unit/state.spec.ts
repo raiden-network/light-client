@@ -1,8 +1,8 @@
 import { bigNumberify } from 'ethers/utils';
 
 import { ChannelState } from 'raiden/channels';
-import { RaidenState, encodeRaidenState, decodeRaidenState } from 'raiden/store/state';
-import { Address } from 'raiden/utils/types';
+import { decodeRaidenState, encodeRaidenState, RaidenState } from 'raiden/store/state';
+import { Address, UInt } from 'raiden/utils/types';
 
 describe('RaidenState codecs', () => {
   const address = '0x1111111111111111111111111111111111111111' as Address,
@@ -18,8 +18,8 @@ describe('RaidenState codecs', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
-            own: { deposit: bigNumberify(200) },
-            partner: { deposit: bigNumberify(210) },
+            own: { deposit: bigNumberify(200) as UInt<32> },
+            partner: { deposit: bigNumberify(210) as UInt<32> },
             id: 17,
             settleTimeout: 500,
             openBlock: 121,
@@ -102,8 +102,8 @@ describe('RaidenState codecs', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
-            own: { deposit: bigNumberify(200) },
-            partner: { deposit: bigNumberify(210) },
+            own: { deposit: bigNumberify(200) as UInt<32> },
+            partner: { deposit: bigNumberify(210) as UInt<32> },
             id: 17,
             settleTimeout: 500,
             openBlock: 121,

@@ -2,21 +2,21 @@ import { getType } from 'typesafe-actions';
 import { get, set, unset } from 'lodash/fp';
 import { Zero } from 'ethers/constants';
 
-import { Address } from '../utils/types';
+import { Address, UInt } from '../utils/types';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenAction } from '../actions';
 import {
-  newBlock,
-  tokenMonitored,
+  channelClose,
+  channelClosed,
+  channelDeposited,
   channelOpen,
   channelOpened,
   channelOpenFailed,
-  channelDeposited,
-  channelClose,
-  channelClosed,
-  channelSettleable,
   channelSettle,
+  channelSettleable,
   channelSettled,
+  newBlock,
+  tokenMonitored,
 } from './actions';
 import { Channel, Channels } from './state';
 import { ChannelState } from './types';
@@ -53,8 +53,8 @@ const channels = (state: Readonly<Channels> = initialState.channels, action: Rai
       if (get(path, state)) return state; // there's already a channel with partner
       const channel: Channel = {
         state: ChannelState.opening,
-        own: { deposit: Zero },
-        partner: { deposit: Zero },
+        own: { deposit: Zero as UInt<32> },
+        partner: { deposit: Zero as UInt<32> },
       };
       return set(path, channel, state);
     }
@@ -63,8 +63,8 @@ const channels = (state: Readonly<Channels> = initialState.channels, action: Rai
       const path = [action.meta.tokenNetwork, action.meta.partner],
         channel: Channel = {
           state: ChannelState.open,
-          own: { deposit: Zero },
-          partner: { deposit: Zero },
+          own: { deposit: Zero as UInt<32> },
+          partner: { deposit: Zero as UInt<32> },
           id: action.payload.id,
           settleTimeout: action.payload.settleTimeout,
           openBlock: action.payload.openBlock,

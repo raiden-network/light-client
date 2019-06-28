@@ -55,21 +55,6 @@ export class EnumType<A> extends t.Type<A> {
   }
 }
 
-// Positive & PositiveInt taken from io-ts Readme
-export interface PositiveBrand {
-  readonly Positive: unique symbol;
-}
-
-export const Positive = t.brand(
-  t.number,
-  (n): n is t.Branded<number, PositiveBrand> => n >= 0, // type guard for branded values
-  'Positive', // the name must match the readonly field in the brand
-);
-export type Positive = t.TypeOf<typeof Positive>;
-
-export const PositiveInt = t.intersection([t.Int, Positive]);
-export type PositiveInt = t.TypeOf<typeof PositiveInt>;
-
 // sized brands interfaces must derive from this interface
 export interface SizedB<S extends number> {
   readonly size: S;
