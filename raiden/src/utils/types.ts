@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress } from 'ethers/utils';
+import { Two } from 'ethers/constants';
 import { LosslessNumber } from 'lossless-json';
 import { set } from 'lodash';
 
@@ -128,7 +129,7 @@ export function UInt<S extends number = number>(size?: S) {
   if (siz in sizedCodecCache && name in sizedCodecCache[siz])
     return sizedCodecCache[siz][name] as t.BrandC<typeof BigNumberC, UIntB<S>>;
   if (!(siz in sizedCodecCache)) sizedCodecCache[siz] = {};
-  const max = siz ? bigNumberify(2).pow(siz * 8) : undefined;
+  const max = siz ? Two.pow(siz * 8) : undefined;
   return (sizedCodecCache[siz][name] = t.brand(
     BigNumberC,
     (n): n is t.Branded<BigNumber, UIntB<S>> =>
