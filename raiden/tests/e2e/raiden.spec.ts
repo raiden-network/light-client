@@ -37,7 +37,7 @@ describe('Raiden', () => {
   let matrixServer = 'matrix.raiden.test';
 
   beforeAll(async () => {
-    jest.setTimeout(10e3);
+    jest.setTimeout(20e3);
 
     (fetch as jest.Mock).mockResolvedValue({
       ok: true,
