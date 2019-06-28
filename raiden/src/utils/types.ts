@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress } from 'ethers/utils';
+import { Two } from 'ethers/constants';
 import { LosslessNumber } from 'lossless-json';
 import { set } from 'lodash';
 
@@ -54,21 +55,6 @@ export class EnumType<A> extends t.Type<A> {
     this.enumObject = e;
   }
 }
-
-// Positive & PositiveInt taken from io-ts Readme
-export interface PositiveBrand {
-  readonly Positive: unique symbol;
-}
-
-export const Positive = t.brand(
-  t.number,
-  (n): n is t.Branded<number, PositiveBrand> => n >= 0, // type guard for branded values
-  'Positive', // the name must match the readonly field in the brand
-);
-export type Positive = t.TypeOf<typeof Positive>;
-
-export const PositiveInt = t.intersection([t.Int, Positive]);
-export type PositiveInt = t.TypeOf<typeof PositiveInt>;
 
 // sized brands interfaces must derive from this interface
 export interface SizedB<S extends number> {
@@ -143,7 +129,7 @@ export function UInt<S extends number = number>(size?: S) {
   if (siz in sizedCodecCache && name in sizedCodecCache[siz])
     return sizedCodecCache[siz][name] as t.BrandC<typeof BigNumberC, UIntB<S>>;
   if (!(siz in sizedCodecCache)) sizedCodecCache[siz] = {};
-  const max = siz ? bigNumberify(2).pow(siz * 8) : undefined;
+  const max = siz ? Two.pow(siz * 8) : undefined;
   return (sizedCodecCache[siz][name] = t.brand(
     BigNumberC,
     (n): n is t.Branded<BigNumber, UIntB<S>> =>

@@ -2,21 +2,12 @@ import { of } from 'rxjs';
 import { first, take, toArray } from 'rxjs/operators';
 
 import { Event } from 'ethers/contract';
-import { bigNumberify, BigNumber } from 'ethers/utils';
+import { BigNumber, bigNumberify } from 'ethers/utils';
 import { LosslessNumber } from 'lossless-json';
 
 import { fromEthersEvent, getEventsStream } from 'raiden/utils/ethers';
-import {
-  Address,
-  BigNumberC,
-  Byte,
-  HexString,
-  Positive,
-  PositiveInt,
-  sizeOf,
-  UInt,
-} from 'raiden/utils/types';
-import { raidenEpicDeps, makeLog } from './mocks';
+import { Address, BigNumberC, Byte, HexString, sizeOf, UInt } from 'raiden/utils/types';
+import { makeLog, raidenEpicDeps } from './mocks';
 
 describe('fromEthersEvent', () => {
   let { provider } = raidenEpicDeps();
@@ -150,11 +141,28 @@ describe('types', () => {
     expect(result.value).toBe(b);
   });
 
-  test('Positive & PositiveInt', () => {
-    expect(PositiveInt.is(1)).toBe(true);
-    expect(PositiveInt.is(-1)).toBe(false);
-    expect(PositiveInt.is(1.5)).toBe(false);
-    expect(Positive.is(1.5)).toBe(true);
+  test('UInt<8>', () => {
+    expect(UInt(8).is(bigNumberify('18446744073709551615'))).toBe(true);
+    expect(UInt(8).is(bigNumberify('18446744073709551616'))).toBe(false);
+    expect(UInt(8).is(bigNumberify('-1'))).toBe(false);
+  });
+
+  test('UInt<32>', () => {
+    expect(
+      UInt(32).is(
+        bigNumberify(
+          '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      UInt(32).is(
+        bigNumberify(
+          '115792089237316195423570985008687907853269984665640564039457584007913129639936',
+        ),
+      ),
+    ).toBe(false);
+    expect(UInt(32).is(bigNumberify('-1'))).toBe(false);
   });
 
   test('BigNumberC', () => {

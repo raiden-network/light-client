@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 
-import { BigNumberC, EnumType, Hash, PositiveInt } from '../utils/types';
+import { EnumType, Hash, UInt } from '../utils/types';
 
 export enum ChannelState {
   opening = 'opening',
@@ -16,8 +16,8 @@ export const ChannelStateC = new EnumType<ChannelState>(ChannelState, 'ChannelSt
 
 // Represents a HashTime-Locked amount in a channel
 export const Lock = t.type({
-  amount: BigNumberC,
-  expiration: PositiveInt,
+  amount: UInt(32),
+  expiration: UInt(32),
   secrethash: Hash,
 });
 export type Lock = t.TypeOf<typeof Lock>;
