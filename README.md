@@ -89,7 +89,7 @@ This is a standalone Typescript library which contains all the low level machine
 
 Its target audience is blockchain and dApp developers looking into interacting with and performing payments through the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows it to reach the majority of current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other future languages and environments.
 
-Look at the [Raiden Light Client SDK folder of this repository](./raiden/README.md) for more information.
+Look at the [Raiden Light Client SDK folder of this repository](./raiden/README.md) for more information. Also, a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [project's Wiki page](https://github.com/raiden-network/light-client/wiki/SDK-Development). Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
 ### Raiden dApp
 
