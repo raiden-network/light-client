@@ -2,7 +2,7 @@
 import { raidenEpicDeps, makeLog, makeMatrix } from './mocks';
 
 import { AsyncSubject, BehaviorSubject, merge, of, from, timer, EMPTY, Subject } from 'rxjs';
-import { first, tap, ignoreElements, takeUntil, toArray } from 'rxjs/operators';
+import { first, tap, ignoreElements, takeUntil, toArray, delay } from 'rxjs/operators';
 import { marbles, fakeSchedulers } from 'rxjs-marbles/jest';
 import { getType } from 'typesafe-actions';
 import { range } from 'lodash';
@@ -387,7 +387,8 @@ describe('raidenRootEpic', () => {
     test('first tokenMonitored with past$ ChannelOpened event', async () => {
       const action = tokenMonitored({ token, tokenNetwork, first: true }),
         curState = raidenReducer(state, action);
-      const action$ = of<RaidenAction>(action),
+      // give time to multicast to register
+      const action$ = of<RaidenAction>(action).pipe(delay(1)),
         state$ = of<RaidenState>(curState);
 
       depsMock.provider.getLogs.mockResolvedValueOnce([
@@ -454,8 +455,6 @@ describe('raidenRootEpic', () => {
         ),
         state$ = of<RaidenState>(curState);
 
-      const listenerCountSpy = jest.spyOn(tokenNetworkContract, 'listenerCount');
-
       const promise = tokenMonitoredEpic(action$, state$, depsMock)
         .pipe(
           // wait a little and then complete observable, so it doesn't keep listening forever
@@ -487,12 +486,8 @@ describe('raidenRootEpic', () => {
         meta: { tokenNetwork, partner },
       });
 
-      // expect tokenNetworkContract.listenerCount to have been checked multiple times
-      expect(listenerCountSpy).toHaveBeenCalledTimes(multiple);
-      // but only one listener is registered
-      expect(listenerCountSpy).toHaveLastReturnedWith(1);
-
-      listenerCountSpy.mockRestore();
+      // one for channels with us, one for channels from us
+      expect(depsMock.provider.on).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -640,7 +635,7 @@ describe('raidenRootEpic', () => {
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
           channelMonitored({ id: channelId, fromBlock: openBlock }, { tokenNetwork, partner }),
-        ),
+        ).pipe(delay(1)), // give time to state multicast to register
         state$ = of<RaidenState>(curState);
 
       depsMock.provider.getLogs.mockResolvedValueOnce([
@@ -714,8 +709,6 @@ describe('raidenRootEpic', () => {
         ),
         state$ = of<RaidenState>(curState);
 
-      const listenerCountSpy = jest.spyOn(tokenNetworkContract, 'listenerCount');
-
       const promise = channelMonitoredEpic(action$, state$, depsMock)
         .pipe(
           // wait a little and then complete observable, so it doesn't keep listening forever
@@ -746,12 +739,7 @@ describe('raidenRootEpic', () => {
         meta: { tokenNetwork, partner },
       });
 
-      // expect tokenNetworkContract.listenerCount to have been checked multiple times
-      expect(listenerCountSpy).toHaveBeenCalledTimes(multiple);
-      // but only one listener is registered
-      expect(listenerCountSpy).toHaveLastReturnedWith(1);
-
-      listenerCountSpy.mockRestore();
+      expect(depsMock.provider.on).toHaveBeenCalledTimes(3); // one for each event
     });
 
     test('new$ partner ChannelClosed event', async () => {
