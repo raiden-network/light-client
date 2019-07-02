@@ -1,4 +1,4 @@
-import { Observable, from, of, EMPTY, defer, merge, interval } from 'rxjs';
+import { Observable, from, of, EMPTY, merge, interval, ReplaySubject } from 'rxjs';
 import {
   catchError,
   filter,
@@ -9,6 +9,9 @@ import {
   tap,
   takeWhile,
   withLatestFrom,
+  groupBy,
+  exhaustMap,
+  multicast,
 } from 'rxjs/operators';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { findKey, get, isEmpty, negate } from 'lodash';
@@ -179,53 +182,58 @@ export const tokenMonitoredEpic = (
   state$: Observable<RaidenState>,
   { address, getTokenNetworkContract, contractsInfo }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelOpened>> =>
-  action$.pipe(
-    filter(isActionOf(tokenMonitored)),
-    mergeMap(action => {
-      const tokenNetworkContract = getTokenNetworkContract(action.payload.tokenNetwork);
+  state$.pipe(
+    map(state => state.blockNumber),
+    multicast(new ReplaySubject(1), blockNumber$ =>
+      action$.pipe(
+        filter(isActionOf(tokenMonitored)),
+        groupBy(action => action.payload.tokenNetwork),
+        mergeMap(grouped$ =>
+          grouped$.pipe(
+            exhaustMap(action => {
+              const tokenNetworkContract = getTokenNetworkContract(action.payload.tokenNetwork);
 
-      // type of elements emitted by getEventsStream (past and new events coming from contract)
-      // [channelId, partner1, partner2, settleTimeout, Event]
-      type ChannelOpenedEvent = [BigNumber, Address, Address, BigNumber, Event];
+              // type of elements emitted by getEventsStream (past and new events coming from
+              // contract): [channelId, partner1, partner2, settleTimeout, Event]
+              type ChannelOpenedEvent = [BigNumber, Address, Address, BigNumber, Event];
 
-      const filters = [
-        tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
-        tokenNetworkContract.filters.ChannelOpened(null, null, address, null),
-      ];
+              const filters = [
+                tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
+                tokenNetworkContract.filters.ChannelOpened(null, null, address, null),
+              ];
 
-      // at subscription time, if there's already a filter, skip (return completed observable)
-      // TODO: replace mergeMap+defer with groupBy(token)+exhaustMap
-      return defer(() =>
-        tokenNetworkContract.listenerCount(filters[0])
-          ? EMPTY // completed/empty observable as return
-          : getEventsStream<ChannelOpenedEvent>(
-              tokenNetworkContract,
-              filters,
-              // if first time monitoring this token network,
-              // fetch TokenNetwork's pastEvents since registry deployment as fromBlock$
-              action.payload.first
-                ? of(contractsInfo.TokenNetworkRegistry.block_number)
-                : undefined,
-              action.payload.first ? state$.pipe(map(state => state.blockNumber)) : undefined,
-            ).pipe(
-              filter(([, p1, p2]) => p1 === address || p2 === address),
-              map(([id, p1, p2, settleTimeout, event]) =>
-                channelOpened(
-                  {
-                    id: id.toNumber(),
-                    settleTimeout: settleTimeout.toNumber(),
-                    openBlock: event.blockNumber!,
-                    txHash: event.transactionHash! as Hash,
-                  },
-                  {
-                    tokenNetwork: tokenNetworkContract.address as Address,
-                    partner: address === p1 ? p2 : p1,
-                  },
+              console.log('getEventsStream', action, blockNumber$);
+              return getEventsStream<ChannelOpenedEvent>(
+                tokenNetworkContract,
+                filters,
+                // if first time monitoring this token network,
+                // fetch TokenNetwork's pastEvents since registry deployment as fromBlock$
+                action.payload.first
+                  ? of(contractsInfo.TokenNetworkRegistry.block_number)
+                  : undefined,
+                action.payload.first ? blockNumber$ : undefined,
+              ).pipe(
+                filter(([, p1, p2]) => p1 === address || p2 === address),
+                map(([id, p1, p2, settleTimeout, event]) =>
+                  channelOpened(
+                    {
+                      id: id.toNumber(),
+                      settleTimeout: settleTimeout.toNumber(),
+                      openBlock: event.blockNumber!,
+                      txHash: event.transactionHash! as Hash,
+                    },
+                    {
+                      tokenNetwork: tokenNetworkContract.address as Address,
+                      partner: address === p1 ? p2 : p1,
+                    },
+                  ),
                 ),
-              ),
-            ),
-      );
-    }),
+              );
+            }),
+          ),
+        ),
+      ),
+    ),
   );
 
 /**
@@ -243,106 +251,116 @@ export const channelMonitoredEpic = (
 ): Observable<
   ActionType<typeof channelDeposited | typeof channelClosed | typeof channelSettled>
 > =>
-  action$.pipe(
-    filter(isActionOf(channelMonitored)),
-    mergeMap(action => {
-      const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
-
-      // type of elements emitted by getEventsStream (past and new events coming from contract)
-      // [channelId, participant, totalDeposit, Event]
-      type ChannelNewDepositEvent = [BigNumber, Address, BigNumber, Event];
-      // [channelId, participant, nonce, Event]
-      type ChannelClosedEvent = [BigNumber, Address, BigNumber, Event];
-      // [channelId, participant1amount, participant2amount, Event]
-      type ChannelSettledEvent = [BigNumber, BigNumber, BigNumber, Event];
-
-      // TODO: instead of one filter for each event, optimize to one filter per channel
-      // it requires ethers to support OR filters for topics:
-      // https://github.com/ethers-io/ethers.js/issues/437
-      // can we hook to provider.on directly and decoding the events ourselves?
-      const depositFilter = tokenNetworkContract.filters.ChannelNewDeposit(
-          action.payload.id,
-          null,
-          null,
+  state$.pipe(
+    map(state => state.blockNumber),
+    multicast(new ReplaySubject(1), blockNumber$ =>
+      action$.pipe(
+        filter(isActionOf(channelMonitored)),
+        groupBy(
+          action => `${action.payload.id}#${action.meta.partner}@${action.meta.tokenNetwork}`,
         ),
-        closedFilter = tokenNetworkContract.filters.ChannelClosed(action.payload.id, null, null),
-        settledFilter = tokenNetworkContract.filters.ChannelSettled(action.payload.id, null, null);
+        mergeMap(grouped$ =>
+          grouped$.pipe(
+            exhaustMap(action => {
+              const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
 
-      // at subscription time, if there's already a filter, skip (return completed observable)
-      // TODO: replace mergeMap+defer+listenerCount with groupBy+exhaustMap for concurrency control
-      return defer(() =>
-        tokenNetworkContract.listenerCount(depositFilter)
-          ? EMPTY // completed/empty observable as return
-          : merge(
-              getEventsStream<ChannelNewDepositEvent>(
-                tokenNetworkContract,
-                [depositFilter],
-                // if channelMonitored triggered by ChannelOpenedAction,
-                // fetch Channel's pastEvents since channelOpened blockNumber as fromBlock$
-                action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-                action.payload.fromBlock
-                  ? state$.pipe(map(state => state.blockNumber))
-                  : undefined,
-              ).pipe(
-                map(([id, participant, totalDeposit, event]) =>
-                  channelDeposited(
-                    {
-                      id: id.toNumber(),
-                      participant,
-                      totalDeposit,
-                      txHash: event.transactionHash! as Hash,
-                    },
-                    action.meta,
+              // type of elements emitted by getEventsStream (past and new events coming from
+              // contract): [channelId, participant, totalDeposit, Event]
+              type ChannelNewDepositEvent = [BigNumber, Address, BigNumber, Event];
+              // [channelId, participant, nonce, Event]
+              type ChannelClosedEvent = [BigNumber, Address, BigNumber, Event];
+              // [channelId, participant1amount, participant2amount, Event]
+              type ChannelSettledEvent = [BigNumber, BigNumber, BigNumber, Event];
+
+              // TODO: instead of one filter for each event, optimize to one filter per channel
+              // it requires ethers to support OR filters for topics:
+              // https://github.com/ethers-io/ethers.js/issues/437
+              // can we hook to provider.on directly and decoding the events ourselves?
+              const depositFilter = tokenNetworkContract.filters.ChannelNewDeposit(
+                  action.payload.id,
+                  null,
+                  null,
+                ),
+                closedFilter = tokenNetworkContract.filters.ChannelClosed(
+                  action.payload.id,
+                  null,
+                  null,
+                ),
+                settledFilter = tokenNetworkContract.filters.ChannelSettled(
+                  action.payload.id,
+                  null,
+                  null,
+                );
+
+              return merge(
+                getEventsStream<ChannelNewDepositEvent>(
+                  tokenNetworkContract,
+                  [depositFilter],
+                  // if channelMonitored triggered by ChannelOpenedAction,
+                  // fetch Channel's pastEvents since channelOpened blockNumber as fromBlock$
+                  action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+                  action.payload.fromBlock ? blockNumber$ : undefined,
+                ).pipe(
+                  map(([id, participant, totalDeposit, event]) =>
+                    channelDeposited(
+                      {
+                        id: id.toNumber(),
+                        participant,
+                        totalDeposit,
+                        txHash: event.transactionHash! as Hash,
+                      },
+                      action.meta,
+                    ),
                   ),
                 ),
-              ),
-              getEventsStream<ChannelClosedEvent>(
-                tokenNetworkContract,
-                [closedFilter],
-                action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-                action.payload.fromBlock
-                  ? state$.pipe(map(state => state.blockNumber))
-                  : undefined,
-              ).pipe(
-                map(([id, participant, , event]) =>
-                  channelClosed(
-                    {
-                      id: id.toNumber(),
-                      participant,
-                      closeBlock: event.blockNumber!,
-                      txHash: event.transactionHash! as Hash,
-                    },
-                    action.meta,
+                getEventsStream<ChannelClosedEvent>(
+                  tokenNetworkContract,
+                  [closedFilter],
+                  action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+                  action.payload.fromBlock ? blockNumber$ : undefined,
+                ).pipe(
+                  map(([id, participant, , event]) =>
+                    channelClosed(
+                      {
+                        id: id.toNumber(),
+                        participant,
+                        closeBlock: event.blockNumber!,
+                        txHash: event.transactionHash! as Hash,
+                      },
+                      action.meta,
+                    ),
                   ),
                 ),
-              ),
-              getEventsStream<ChannelSettledEvent>(
-                tokenNetworkContract,
-                [settledFilter],
-                action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-                action.payload.fromBlock
-                  ? state$.pipe(map(state => state.blockNumber))
-                  : undefined,
-              ).pipe(
-                map(([id, , , event]) =>
-                  channelSettled(
-                    {
-                      id: id.toNumber(),
-                      settleBlock: event.blockNumber!,
-                      txHash: event.transactionHash! as Hash,
-                    },
-                    action.meta,
+                getEventsStream<ChannelSettledEvent>(
+                  tokenNetworkContract,
+                  [settledFilter],
+                  action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+                  action.payload.fromBlock ? blockNumber$ : undefined,
+                ).pipe(
+                  map(([id, , , event]) =>
+                    channelSettled(
+                      {
+                        id: id.toNumber(),
+                        settleBlock: event.blockNumber!,
+                        txHash: event.transactionHash! as Hash,
+                      },
+                      action.meta,
+                    ),
                   ),
                 ),
-              ),
-            ).pipe(
-              // takeWhile tends to broad input to simple TypedAction. We need to narrow it by hand
-              takeWhile<
-                ActionType<typeof channelDeposited | typeof channelClosed | typeof channelSettled>
-              >(negate(isActionOf(channelSettled)), true),
-            ),
-      );
-    }),
+              ).pipe(
+                // takeWhile tends to broad input to generic Action. We need to narrow it by hand
+                takeWhile<
+                  ActionType<
+                    typeof channelDeposited | typeof channelClosed | typeof channelSettled
+                  >
+                >(negate(isActionOf(channelSettled)), true),
+              );
+            }),
+          ),
+        ),
+      ),
+    ),
   );
 
 /**
