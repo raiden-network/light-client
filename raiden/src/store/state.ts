@@ -35,9 +35,8 @@ export type RaidenState = t.TypeOf<typeof RaidenState>;
  * Encode RaidenState to a JSON string
  * For Raiden client compliance, this JSON encodes BigNumbers as 'number' (using lossless-json lib)
  * which is valid json though not very common as common JS implementations lose precision when
- * decoding through JSON.parse (more usually, BigNumbers are serialized as strings).
- * This is solved in SDK by both encoding and decoding BigNumbers through lossless-json, without
- * going to the intermediary JSON.parse/stringify form.
+ * decoding through JSON.parse. This is solved in SDK by both encoding and decoding BigNumbers
+ * using lossless-json, without going through the intermediary JS-number form.
  * @param state RaidenState object
  * @returns JSON encoded string
  */

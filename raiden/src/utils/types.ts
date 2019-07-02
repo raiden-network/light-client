@@ -20,10 +20,7 @@ const isBigNumber = (u: unknown): u is BigNumber => u instanceof BigNumber;
  * Codec of ethers.utils.BigNumber objects
  * Input can be anything bigNumberify-able: number, string, LosslessNumber or BigNumber
  * Output is LosslessNumber, so we can JSON-serialize with 'number' types bigger than JS VM limits
- * of ~53bits, as Raiden full-client/python stdlib json encode/decode longs as json number
- * (which is valid json despite not javascript-friendly)
- * TODO: get Raiden to string-serialize long ints, so we can drop lossless-json and use standard
- * JSON.parse/stringify and io-ts.encode/decode.
+ * of ±2^53, as Raiden full-client/python stdlib json encode/decode longs as json number.
  */
 export const BigNumberC = new t.Type<BigNumber, LosslessNumber>(
   'BigNumber',
