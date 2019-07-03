@@ -1,10 +1,12 @@
 // import * as t from 'io-ts';
-import { BigNumber, bigNumberify, keccak256 } from 'ethers/utils';
-import { Arrayish, arrayify, concat, hexlify, isArrayish, padZeros } from 'ethers/utils/bytes';
+import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
+import { keccak256 } from 'ethers/utils';
+import { concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
-import { BigNumberC, HexString, Hash } from '../utils/types';
-import { EnvelopeMessage, Message, MessageType } from './types';
+import { HexString, Hash } from '../utils/types';
+import { encode, losslessParse, losslessStringify } from '../utils/data';
+import { EnvelopeMessage, Message, MessageType, MessageCodecs } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
@@ -16,34 +18,6 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.UNLOCK]: 4,
   [MessageType.LOCK_EXPIRED]: 13,
 };
-
-/**
- * Encode data to a bytes array of exactly length size
- * Throw if data can't be made to fit in length.
- * @param data May be of multiple types:
- *      - number|BigNumber: Encoded in the big-endian byte-order and left-zero-padded to length
- *      - string: Must be hex-encoded string of length bytes
- *      - number[] Must be of exactly of length size (left/right-pad it before if needed)
- * @param length The expected length of the byte array
- * @returns Uint8Array byte-array of length, suitable to be concatenated or hexlified
- */
-function encode(data: number | string | Arrayish | BigNumber, length: number): Uint8Array {
-  let bytes: Uint8Array;
-  if (typeof data === 'number') data = bigNumberify(data);
-  if (BigNumberC.is(data)) {
-    if (data.lt(0)) throw new Error('Number is negative');
-    bytes = arrayify(data);
-    if (bytes.length > length) throw new Error('Number too large');
-    bytes = padZeros(bytes, length);
-  } else if (typeof data === 'string' || isArrayish(data)) {
-    bytes = arrayify(data);
-    if (bytes.length !== length)
-      throw new Error('Uint8Array or hex string must be of exact length');
-  } else {
-    throw new Error('data is not a HexString or Uint8Array');
-  }
-  return bytes;
-}
 
 function createBalanceHash(message: EnvelopeMessage): Hash {
   return (message.transferred_amount.isZero() &&
@@ -194,4 +168,28 @@ export function packMessage(message: Message) {
         ]),
       ) as HexString<44>;
   }
+}
+
+/**
+ * Encode a Message as a JSON string
+ * Uses lossless-json to encode BigNumbers as JSON 'number' type, as Raiden
+ * @param message Message object to be serialized
+ * @returns JSON string
+ */
+export function encodeJsonMessage(message: Message): string {
+  return losslessStringify(MessageCodecs[message.type].encode(message));
+}
+
+/**
+ * Try to decode text as a Message, using lossless-json to decode BigNumbers
+ * Throws if can't decode, or message is invalid regarding any of the encoded constraints
+ * @param text JSON string to try to decode
+ * @returns Message object
+ */
+export function decodeJsonMessage(text: string): Message {
+  const parsed = losslessParse(text);
+  if (!Message.is(parsed)) throw new Error(`Could not find Message "type" in ${text}`);
+  const decoded = MessageCodecs[parsed.type].decode(parsed);
+  ThrowReporter.report(decoded); // throws if decode failed
+  return decoded.value;
 }

@@ -164,3 +164,14 @@ export type Message =
   | RefundTransfer
   | Unlock
   | LockExpired;
+
+export const MessageCodecs: { readonly [T in MessageType]: t.Mixed } = {
+  [MessageType.DELIVERED]: Delivered,
+  [MessageType.PROCESSED]: Processed,
+  [MessageType.SECRET_REQUEST]: SecretRequest,
+  [MessageType.REVEAL_SECRET]: RevealSecret,
+  [MessageType.LOCKED_TRANSFER]: LockedTransfer,
+  [MessageType.REFUND_TRANSFER]: RefundTransfer,
+  [MessageType.UNLOCK]: Unlock,
+  [MessageType.LOCK_EXPIRED]: LockExpired,
+};

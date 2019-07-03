@@ -42,7 +42,9 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { MATRIX_KNOWN_SERVERS_URL } from '../constants';
 import { channelMonitored } from '../channels/actions';
+import { Message } from '../messages/types';
 import { messageSend, messageReceived } from '../messages/actions';
+import { decodeJsonMessage, encodeJsonMessage } from '../messages/encode';
 import { RaidenState } from '../store/state';
 import { raidenInit } from '../store/actions';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
@@ -757,14 +759,18 @@ export const matrixMessageSendEpic = (
                 }),
                 take(1), // use first room/user which meets all requirements/filters so far
                 // send message!
-                mergeMap(member =>
-                  matrix.sendEvent(
+                mergeMap(member => {
+                  const body: string =
+                    typeof action.payload.message === 'string'
+                      ? action.payload.message
+                      : encodeJsonMessage(action.payload.message);
+                  return matrix.sendEvent(
                     member.roomId,
                     'm.room.message',
-                    { body: action.payload.message, msgtype: 'm.text' },
+                    { body, msgtype: 'm.text' },
                     '',
-                  ),
-                ),
+                  );
+                }),
               ),
             ),
           ),
@@ -821,17 +827,27 @@ export const matrixMessageReceivedEpic = (
             // take up to an arbitrary timeout to presence status for the sender
             // AND the room in which this message was sent to be in sender's address room queue
             takeUntil(timer(30e3)),
-            map(([presences]) => {
+            mergeMap(function*([presences]) {
               const presence = find(presences, ['payload.userId', event.getSender()])!;
-              return messageReceived(
-                {
-                  message: event.event.content.body,
-                  ts: event.event.origin_server_ts,
-                  userId: presence.payload.userId,
-                  roomId: room.roomId,
-                },
-                presence.meta,
-              );
+              for (const line of (event.event.content.body || '').split('\n')) {
+                let message: Message | undefined = undefined;
+                try {
+                  message = decodeJsonMessage(line);
+                  if (!message) throw new Error(`Invalid message: ${line}`);
+                } catch (err) {
+                  console.warn(`Could not decode message: ${line}`);
+                }
+                yield messageReceived(
+                  {
+                    text: line,
+                    message,
+                    ts: event.event.origin_server_ts,
+                    userId: presence.payload.userId,
+                    roomId: room.roomId,
+                  },
+                  presence.meta,
+                );
+              }
             }),
           ),
         ),

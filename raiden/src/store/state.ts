@@ -1,8 +1,8 @@
 import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { AddressZero } from 'ethers/constants';
-import { parse, stringify, LosslessNumber } from 'lossless-json';
 
+import { losslessParse, losslessStringify } from '../utils/data';
 import { Address } from '../utils/types';
 import { Channels } from '../channels';
 import { RaidenMatrixSetup } from '../transport/state';
@@ -41,12 +41,9 @@ export type RaidenState = t.TypeOf<typeof RaidenState>;
  * @returns JSON encoded string
  */
 export function encodeRaidenState(state: RaidenState): string {
-  return stringify(RaidenState.encode(state), undefined, 2);
+  return losslessStringify(RaidenState.encode(state), undefined, 2);
 }
 
-const isLosslessNumber = (u: unknown): u is LosslessNumber =>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  u && (u as any)['isLosslessNumber'] === true;
 /**
  * Try to decode any data as a RaidenState.
  * If handled a string, will parse it with lossless-json, to preserve BigNumbers encoded as JSON
@@ -55,15 +52,7 @@ const isLosslessNumber = (u: unknown): u is LosslessNumber =>
  * @returns RaidenState parsed and validated
  */
 export function decodeRaidenState(data: unknown): RaidenState {
-  if (typeof data === 'string')
-    data = parse(data, ({}, value) => {
-      if (isLosslessNumber(value)) {
-        try {
-          return value.valueOf(); // return number, if possible, or throw if > 2^53
-        } catch (e) {} // else, pass to return LosslessNumber, which can be decoded by BigNumberC
-      }
-      return value;
-    });
+  if (typeof data === 'string') data = losslessParse(data);
   const validationResult = RaidenState.decode(data);
   ThrowReporter.report(validationResult); // throws if decode failed
   return validationResult.value as RaidenState;

@@ -2138,7 +2138,7 @@ describe('raidenRootEpic', () => {
       await expect(promise).resolves.toMatchObject({
         type: getType(messageReceived),
         payload: {
-          message,
+          text: message,
           ts: expect.any(Number),
           userId: partnerUserId,
           roomId,
@@ -2155,7 +2155,7 @@ describe('raidenRootEpic', () => {
       const roomId = `!roomId_for_partner:${matrixServer}`,
         action$ = of(
           messageReceived(
-            { message: 'test message', ts: 123, userId: partnerUserId, roomId },
+            { text: 'test message', ts: 123, userId: partnerUserId, roomId },
             { address: partner },
           ),
         ),
