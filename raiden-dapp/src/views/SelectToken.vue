@@ -1,13 +1,9 @@
 <template>
   <div class="content-host">
-    <v-layout align-center justify-center row>
-      <v-flex xs10 md10 lg10>
-        <div class="screen-title">Select Token</div>
-      </v-flex>
-    </v-layout>
+    <list-header class="header" header="Available"></list-header>
 
     <v-layout justify-center row class="list-container">
-      <v-flex xs12 md12 lg12>
+      <v-flex xs12>
         <v-list class="token-list">
           <template v-for="token in allTokens">
             <v-list-tile
@@ -26,9 +22,14 @@
                   {{ token.symbol }} | {{ token.name }}
                 </v-list-tile-title>
                 <v-list-tile-sub-title class="token-address">
-                  {{ token.address }}
+                  {{ token.address | truncate }}
                 </v-list-tile-sub-title>
               </v-list-tile-content>
+              <v-list-tile-action-text>
+                <span class="balance">
+                  {{ token.balance | displayFormat(token.decimals) }}
+                </span>
+              </v-list-tile-action-text>
             </v-list-tile>
           </template>
         </v-list>
@@ -44,9 +45,10 @@ import { mapGetters } from 'vuex';
 import { Token } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import ListHeader from '@/components/ListHeader.vue';
 
 @Component({
-  components: { AddressInput },
+  components: { ListHeader, AddressInput },
   computed: mapGetters(['allTokens'])
 })
 export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
@@ -57,12 +59,35 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 <style lang="scss" scoped>
 @import '../scss/input-screen';
 
+.header {
+  margin-top: 115px;
+}
+
 .token-list {
   background-color: transparent !important;
 }
 
+.balance {
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 20px;
+  height: 100%;
+  padding-right: 20px;
+}
+
 .token-list /deep/ .v-list__tile {
   height: 105px;
+}
+
+.token-list /deep/ .v-list__tile__action-text {
+  height: 44px;
+}
+
+.token-list {
+  padding-bottom: 0;
+  padding-top: 0;
 }
 
 .token {

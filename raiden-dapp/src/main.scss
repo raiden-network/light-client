@@ -31,7 +31,7 @@ $background-gradient: linear-gradient(90deg, #313030 0%, #000000 100%);
   -o-box-shadow: none !important;
 }
 
-$blockie-horizontal-margin: 29.5px;
+$blockie-horizontal-margin: 15px;
 
 .list-blockie {
   margin-left: $blockie-horizontal-margin;
@@ -39,8 +39,8 @@ $blockie-horizontal-margin: 29.5px;
 }
 
 .list-blockie img {
-  height: 45px;
-  width: 45px;
+  height: 50px;
+  width: 50px;
   border: 1px solid #979797;
   background-color: #D8D8D8;
 }
