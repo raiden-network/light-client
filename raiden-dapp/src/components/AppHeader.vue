@@ -10,7 +10,7 @@
           </div>
           <v-spacer></v-spacer>
           <v-layout column align-center justify-center>
-            <div class="header-title">Raiden dApp</div>
+            <div class="header-title">{{ $route.meta.title }}</div>
             <div class="network">{{ network }}</div>
           </v-layout>
           <v-spacer></v-spacer>
