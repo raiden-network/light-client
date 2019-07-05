@@ -4,19 +4,28 @@
       id="address-input"
       ref="address"
       :hint="hint"
-      :value="internalValue"
+      :value="address"
       :error-messages="errorMessages"
-      :class="{ invalid: !valid, 'hint-visible': hint.length > 0 }"
+      :class="{
+        invalid: !valid && touched,
+        'hint-visible': hint.length > 0,
+        untouched: !touched
+      }"
       persistent-hint
       placeholder="Enter an address or ens name..."
       clearable
       hide-selected
-      @blur="checkValidity()"
-      @input="valueChanged($event)"
+      @blur="$emit('blur')"
+      @focus="$emit('focus')"
+      @input="updateValue"
+      @change="updateValue"
     >
       <template v-slot:append>
         <div class="status-icon-wrapper">
-          <v-icon v-if="!valid" class="status-icon" large>error</v-icon>
+          <v-icon v-if="!valid && touched" class="status-icon status--invalid">
+            error
+          </v-icon>
+          <v-icon v-if="valid" class="status-icon status--valid">check</v-icon>
         </div>
       </template>
       <template v-slot:prepend-inner>
@@ -41,7 +50,7 @@
 
 <script lang="ts">
 import AddressUtils from '@/utils/address-utils';
-import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
+import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({})
@@ -53,14 +62,12 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   @Prop({ required: true })
   value!: string;
 
-  internalValue?: string;
-  valid: boolean = true;
-  hint: string = '';
-  errorMessages: string[] = [];
+  address: string = '';
 
-  created() {
-    this.internalValue = this.value;
-  }
+  valid: boolean = false;
+  touched: boolean = false;
+  hint: string = '';
+  errorMessages: string[] = [''];
 
   // noinspection JSUnusedLocalSymbols
   @Emit()
@@ -74,10 +81,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     );
   }
 
-  valueChanged(value?: string) {
+  updateValue(value?: string) {
     this.errorMessages = [];
     this.hint = '';
+    this.updateErrors(value);
+    this.checkForErrors();
+  }
 
+  private updateErrors(value?: string) {
     if (!value) {
       this.input(value);
       this.errorMessages.push('The address cannot be empty');
@@ -98,12 +109,11 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         `The input doesn't seem like a valid address or ens name`
       );
     }
-
-    this.checkValidity();
   }
 
-  private checkValidity() {
+  private checkForErrors() {
     if (this.$refs.address) {
+      this.touched = true;
       this.valid = this.errorMessages.length === 0;
     }
   }
@@ -125,7 +135,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           } else {
             this.errorMessages.push(`Could not resolve an address for ${url}`);
             this.input(undefined);
-            this.checkValidity();
+            this.checkForErrors();
           }
           this.timeout = 0;
         })
@@ -133,7 +143,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           console.log(e);
           this.errorMessages.push(`Could not resolve an address for ${url}`);
           this.input(undefined);
-          this.checkValidity();
+          this.checkForErrors();
           this.timeout = 0;
         });
     }, 800);
@@ -143,6 +153,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
 <style lang="scss" scoped>
 @import '../main';
+@import '../scss/colors';
 
 .selection-blockie {
   border-radius: 50%;
@@ -182,16 +193,20 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   line-height: 38px;
   max-height: 40px;
 }
+
 .address-input /deep/ input:focus {
   outline: 0;
 }
 
 .address-input /deep/ .v-messages {
-  color: white !important;
+  color: #323232 !important;
   font-family: Roboto, sans-serif;
   font-size: 16px;
   line-height: 21px;
   text-align: center;
+  .v-messages__wrapper {
+    color: white;
+  }
 }
 
 .address-input /deep/ .v-messages {
@@ -211,8 +226,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 }
 
-$dark_border: #fbfbfb;
-$dark_background: #1e1e1e;
+$dark_border: #323232;
+$dark_background: #323232;
 
 .invalid /deep/ .v-messages {
   border-color: $dark_border;
@@ -252,14 +267,46 @@ $dark_background: #1e1e1e;
 }
 
 .status-icon-wrapper {
-  margin-left: 12px;
+  margin-left: 10px;
+  margin-top: 3px;
+  .v-icon {
+    width: 19px;
+    height: 19px;
+  }
 }
 
 .status-icon {
+  border-radius: 50%;
+  line-height: 20px;
+  width: 20px;
+}
+
+.status--invalid {
+  font-size: 26px;
   color: #323232;
   background: white;
-  border-radius: 50%;
-  line-height: 18px;
-  width: 19px;
+}
+
+.status--valid {
+  font-size: 13px;
+  color: white;
+  background: $main-color;
+}
+
+.untouched {
+  caret-color: white !important;
+  color: white !important;
+}
+
+/deep/ .v-input__icon--clear {
+  margin-top: 2px;
+}
+
+/deep/ .v-text-field > .v-input__control > .v-input__slot::before {
+  border-width: 2px 0 0 0;
+}
+
+/deep/ .v-text-field > .v-input__control > .v-input__slot::after {
+  border-width: 3px 0 0 0;
 }
 </style>

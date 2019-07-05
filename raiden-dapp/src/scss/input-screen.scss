@@ -1,5 +1,6 @@
 @import '../main';
 @import "button";
+@import "colors";
 
 .screen-title {
   margin-top: 30px;
@@ -28,7 +29,7 @@
   box-sizing: border-box;
   height: 1px;
   width: 520px;
-  border: 1px solid #ffffff;
+  border: 1.5px solid $divider-color;
 }
 
 .information {
@@ -38,6 +39,7 @@
     font-size: 16px;
     font-weight: bold;
     line-height: 19px;
+    text-transform: uppercase;
   }
   .information-description {
     color: #ffffff;
