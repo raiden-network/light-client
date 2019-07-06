@@ -57,43 +57,13 @@ import {
   matrixRequestMonitorPresence,
 } from './actions';
 import { RaidenMatrixSetup } from './state';
-
-interface Presences {
-  [address: string]: ActionType<typeof matrixPresenceUpdate>;
-}
+import { Presences } from './types';
+import { getPresences$ } from './utils';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available then
 const AVAILABLE = ['online', 'unavailable'];
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
-
-/**
- * Helper to map/get an aggregated Presences observable from action$ bus
- * Known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
- * As this helper is basically a scan/reduce, you can't simply startWith the first/initial value,
- * as it needs to also be the initial mapping for the scan itself, so instead of pipe+startWith,
- * as we usually do with state$, we need to get the initial value as parameter when it's used in
- * withLatestFrom in some inner observable
- * @param action$ Observable
- * @param first optional Presences used as starting point, empty mapping used by default
- * @returns Observable of aggregated Presences from subscription to now
- */
-const getPresences$ = (
-  action$: Observable<RaidenAction>,
-  first: Presences = {},
-): Observable<Presences> =>
-  action$.pipe(
-    filter(isActionOf(matrixPresenceUpdate)),
-    scan(
-      // scan all presence update actions and populate/output a per-address mapping
-      (presences, update) => ({
-        ...presences,
-        [update.meta.address]: update,
-      }),
-      first,
-    ),
-    startWith(first),
-  );
 
 /**
  * Initialize matrix transport
