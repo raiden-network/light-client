@@ -5,7 +5,7 @@ import { isEmpty } from 'lodash';
 
 import { Hash } from '../utils/types';
 import { encode } from '../utils/data';
-import { Lock } from './types';
+import { Lock } from '../channels/types';
 
 /**
  * Return the hash of a lock
