@@ -28,7 +28,9 @@ export const Message = t.type({ type: MessageTypeC });
 
 // Mixin for a message that may contain a signature
 // The partial here is for messages that we've created and are about to sign, but messages coming
-// from peers must always have it, and signature should be validated elsewhere
+// from peers must always have it, and signature should be validated elsewhere.
+// If signature is the only optional parameter for a type, Required<Type> will give the type with
+// the field made mandatory (e.g. EnvelopeMessage requiring signed message)
 export const SignedMessage = t.partial({
   signature: Signature,
 });
@@ -97,7 +99,6 @@ export const EnvelopeMessage = t.intersection([
   }),
   SignedRetrieableMessage,
 ]);
-export type EnvelopeMessage = t.TypeOf<typeof EnvelopeMessage>;
 
 // base for locked and refund transfer, they differentiate only on the type tag
 const LockedTransferBase = t.intersection([
@@ -164,6 +165,8 @@ export type Message =
   | RefundTransfer
   | Unlock
   | LockExpired;
+
+export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;
 
 export const MessageCodecs: { readonly [T in MessageType]: t.Mixed } = {
   [MessageType.DELIVERED]: Delivered,

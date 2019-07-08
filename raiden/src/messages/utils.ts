@@ -1,11 +1,12 @@
 // import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
-import { keccak256 } from 'ethers/utils';
+import { keccak256, verifyMessage } from 'ethers/utils';
 import { concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
-import { HexString, Hash } from '../utils/types';
+import { Address, Hash, HexString } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
+import { SignedBalanceProof } from '../channels/state';
 import { EnvelopeMessage, Message, MessageType, MessageCodecs } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
@@ -19,71 +20,12 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.LOCK_EXPIRED]: 13,
 };
 
-function createBalanceHash(message: EnvelopeMessage): Hash {
-  return (message.transferred_amount.isZero() &&
-  message.locked_amount.isZero() &&
-  message.locksroot === HashZero
-    ? HashZero
-    : keccak256(
-        concat([
-          encode(message.transferred_amount, 32),
-          encode(message.locked_amount, 32),
-          encode(message.locksroot, 32),
-        ]),
-      )) as Hash;
-}
-
-function packBalanceProof(
-  message: EnvelopeMessage,
-  balanceHash: Hash,
-  messageHash: Hash,
-): HexString<180> {
-  return hexlify(
-    concat([
-      encode(message.token_network_address, 20),
-      encode(message.chain_id, 32),
-      encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
-      encode(message.channel_identifier, 32),
-      encode(balanceHash, 32), // balance hash
-      encode(message.nonce, 32),
-      encode(messageHash, 32), // additional hash
-    ]),
-  ) as HexString<180>;
-}
-
-/**
- * Pack a message in a hex-string format, **without** signature
- * This packed hex-byte-array can then be used for signing.
- * On Raiden python client, this is the output of `_data_to_sign` method of the messages, as the
- * actual packed encoding was once used for binary transport protocols, but nowadays is used only
- * for generating data to be signed, which is the purpose of our implementation.
- *
- * @param message Message to be packed
- * @returns HexBytes hex-encoded string data representing message in binary format
- */
-export function packMessage(message: Message) {
-  let messageHash: Hash, balanceHash: Hash;
+function createMessageHash(message: EnvelopeMessage): Hash {
   switch (message.type) {
-    case MessageType.DELIVERED:
-      return hexlify(
-        concat([
-          encode(CMDIDs[message.type], 1),
-          encode(0, 3), // pad(3)
-          encode(message.delivered_message_identifier, 8),
-        ]),
-      ) as HexString<12>;
-    case MessageType.PROCESSED:
-      return hexlify(
-        concat([
-          encode(CMDIDs[message.type], 1),
-          encode(0, 3), // pad(3)
-          encode(message.message_identifier, 8),
-        ]),
-      ) as HexString<12>;
     case MessageType.LOCKED_TRANSFER:
     case MessageType.REFUND_TRANSFER:
       // hash of packed representation of the whole message
-      messageHash = keccak256(
+      return keccak256(
         concat([
           encode(CMDIDs[message.type], 1),
           encode(0, 3), // pad(3)
@@ -106,10 +48,8 @@ export function packMessage(message: Message) {
           encode(message.fee, 32),
         ]),
       ) as Hash;
-      balanceHash = createBalanceHash(message);
-      return packBalanceProof(message, balanceHash, messageHash);
     case MessageType.UNLOCK:
-      messageHash = keccak256(
+      return keccak256(
         concat([
           encode(CMDIDs[message.type], 1),
           encode(0, 3),
@@ -125,10 +65,8 @@ export function packMessage(message: Message) {
           encode(message.locksroot, 32),
         ]),
       ) as Hash;
-      balanceHash = createBalanceHash(message);
-      return packBalanceProof(message, balanceHash, messageHash);
     case MessageType.LOCK_EXPIRED:
-      messageHash = keccak256(
+      return keccak256(
         concat([
           encode(CMDIDs[message.type], 1),
           encode(0, 3),
@@ -144,8 +82,65 @@ export function packMessage(message: Message) {
           encode(message.locked_amount, 32),
         ]),
       ) as Hash;
-      balanceHash = createBalanceHash(message);
-      return packBalanceProof(message, balanceHash, messageHash);
+  }
+}
+
+/**
+ * Pack a message in a hex-string format, **without** signature
+ * This packed hex-byte-array can then be used for signing.
+ * On Raiden python client, this is the output of `_data_to_sign` method of the messages, as the
+ * actual packed encoding was once used for binary transport protocols, but nowadays is used only
+ * for generating data to be signed, which is the purpose of our implementation.
+ *
+ * @param message Message to be packed
+ * @returns HexBytes hex-encoded string data representing message in binary format
+ */
+export function packMessage(message: Message) {
+  switch (message.type) {
+    case MessageType.DELIVERED:
+      return hexlify(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3), // pad(3)
+          encode(message.delivered_message_identifier, 8),
+        ]),
+      ) as HexString<12>;
+    case MessageType.PROCESSED:
+      return hexlify(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3), // pad(3)
+          encode(message.message_identifier, 8),
+        ]),
+      ) as HexString<12>;
+    case MessageType.LOCKED_TRANSFER:
+    case MessageType.REFUND_TRANSFER:
+    case MessageType.UNLOCK:
+    case MessageType.LOCK_EXPIRED: {
+      const messageHash = createMessageHash(message),
+        balanceHash = (message.transferred_amount.isZero() &&
+        message.locked_amount.isZero() &&
+        message.locksroot === HashZero
+          ? HashZero
+          : keccak256(
+              concat([
+                encode(message.transferred_amount, 32),
+                encode(message.locked_amount, 32),
+                encode(message.locksroot, 32),
+              ]),
+            )) as Hash;
+      return hexlify(
+        concat([
+          encode(message.token_network_address, 20),
+          encode(message.chain_id, 32),
+          encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
+          encode(message.channel_identifier, 32),
+          encode(balanceHash, 32), // balance hash
+          encode(message.nonce, 32),
+          encode(messageHash, 32), // additional hash
+        ]),
+      ) as HexString<180>;
+    }
     case MessageType.SECRET_REQUEST:
       return hexlify(
         concat([
@@ -168,6 +163,25 @@ export function packMessage(message: Message) {
         ]),
       ) as HexString<44>;
   }
+}
+
+export function getBalanceProofFromEnvelopeMessage(
+  message: Required<EnvelopeMessage>,
+): SignedBalanceProof {
+  const dataToSign = packMessage(message),
+    sender = verifyMessage(dataToSign, message.signature) as Address;
+  return {
+    chainId: message.chain_id,
+    tokenNetworkAddress: message.token_network_address,
+    channelId: message.channel_identifier,
+    nonce: message.nonce,
+    transferredAmount: message.transferred_amount,
+    lockedAmount: message.locked_amount,
+    locksroot: message.locksroot,
+    messageHash: createMessageHash(message),
+    signature: message.signature,
+    sender,
+  };
 }
 
 /**

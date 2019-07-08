@@ -44,7 +44,7 @@ import { MATRIX_KNOWN_SERVERS_URL } from '../constants';
 import { channelMonitored } from '../channels/actions';
 import { Message } from '../messages/types';
 import { messageSend, messageReceived } from '../messages/actions';
-import { decodeJsonMessage, encodeJsonMessage } from '../messages/encode';
+import { decodeJsonMessage, encodeJsonMessage } from '../messages/utils';
 import { RaidenState } from '../store/state';
 import { raidenInit } from '../store/actions';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';

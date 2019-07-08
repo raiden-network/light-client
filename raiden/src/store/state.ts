@@ -3,7 +3,7 @@ import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { AddressZero } from 'ethers/constants';
 
 import { losslessParse, losslessStringify } from '../utils/data';
-import { Address } from '../utils/types';
+import { Address, Secret } from '../utils/types';
 import { Channels } from '../channels';
 import { RaidenMatrixSetup } from '../transport/state';
 
@@ -13,7 +13,7 @@ export const RaidenState = t.type({
   address: Address,
   blockNumber: t.number,
   channels: Channels,
-  tokens: t.record(t.string, Address),
+  tokens: t.record(t.string /* token: Address */, Address),
   transport: t.partial({
     matrix: t.intersection([
       t.type({
@@ -21,10 +21,14 @@ export const RaidenState = t.type({
       }),
       t.partial({
         setup: RaidenMatrixSetup,
-        rooms: t.record(t.string, t.array(t.string)),
+        rooms: t.record(t.string /* partner: Address */, t.array(t.string)),
       }),
     ]),
   }),
+  secrets: t.record(
+    t.string /* secrethash: Hash */,
+    t.intersection([t.type({ secret: Secret }), t.partial({ registerBlock: t.number })]),
+  ),
 });
 
 export type RaidenState = t.TypeOf<typeof RaidenState>;
@@ -64,4 +68,5 @@ export const initialState: Readonly<RaidenState> = {
   channels: {},
   tokens: {},
   transport: {},
+  secrets: {},
 };

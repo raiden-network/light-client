@@ -18,12 +18,15 @@ export const transfer = createStandardAction('transfer')<
   TransferId
 >();
 
-export const transferSigned = createStandardAction('transferSigned')<LockedTransfer, TransferId>();
+export const transferSigned = createStandardAction('transferSigned')<
+  Required<LockedTransfer>,
+  TransferId
+>();
 
-export const transferSecret = createStandardAction('transferSigned')<{
-  secrethash: Hash;
-  secret: Secret;
-}>();
+export const transferSecret = createStandardAction('transferSecret')<
+  { secret: Secret; registerBlock?: number },
+  { secrethash: Hash }
+>();
 
 export const transferFailed = createStandardAction('transferFailed').map(
   (payload: Error, meta: TransferId) => ({ payload, error: true, meta }),

@@ -1,7 +1,27 @@
 import * as t from 'io-ts';
 
-import { Address, Hash, Signature, UInt } from '../utils/types';
-import { ChannelState, Lock } from './types';
+import { Address, EnumType, Hash, Signature, UInt } from '../utils/types';
+import { SentTransfers } from '../transfers/state';
+
+export enum ChannelState {
+  opening = 'opening',
+  open = 'open',
+  closing = 'closing',
+  closed = 'closed',
+  settleable = 'settleable',
+  settling = 'settling',
+  settled = 'settled',
+}
+
+export const ChannelStateC = new EnumType<ChannelState>(ChannelState, 'ChannelState');
+
+// Represents a HashTime-Locked amount in a channel
+export const Lock = t.type({
+  amount: UInt(32),
+  expiration: UInt(32),
+  secrethash: Hash,
+});
+export type Lock = t.TypeOf<typeof Lock>;
 
 /**
  * Balance Proof constructed from an EnvelopeMessage
@@ -21,7 +41,7 @@ export const SignedBalanceProof = t.type({
   locksroot: Hash,
   messageHash: Hash,
   signature: Signature,
-  sender: Address, // TODO: check if sender can be replaced by getter/recover function
+  sender: Address,
 });
 export type SignedBalanceProof = t.TypeOf<typeof SignedBalanceProof>;
 
@@ -70,6 +90,9 @@ export const Channel = t.intersection([
       closeBlock: t.number,
     }),
   ]),
+  t.partial({
+    sent: SentTransfers,
+  }),
 ]);
 export type Channel = t.TypeOf<typeof Channel>;
 
@@ -80,5 +103,8 @@ export type Channel = t.TypeOf<typeof Channel>;
  * We use t.string instead of the Address branded codecs because specialized types can't be used
  * as index mapping keys.
  */
-export const Channels = t.record(t.string, t.record(t.string, Channel));
+export const Channels = t.record(
+  t.string /* tokenNetwork: Address */,
+  t.record(t.string /* partner: Address */, Channel),
+);
 export type Channels = t.TypeOf<typeof Channels>;

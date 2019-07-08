@@ -18,8 +18,7 @@ import {
   newBlock,
   tokenMonitored,
 } from './actions';
-import { Channel, Channels } from './state';
-import { ChannelState } from './types';
+import { Channel, Channels, ChannelState } from './state';
 import { initialState } from '../store/state';
 
 // state.blockNumber specific reducer, handles only newBlock action

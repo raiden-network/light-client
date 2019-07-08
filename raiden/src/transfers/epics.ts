@@ -23,8 +23,8 @@ import { splitCombined } from '../utils/rxjs';
 import { Presences } from '../transport/types';
 import { getPresences$ } from '../transport/utils';
 import { LockedTransfer, MessageType } from '../messages/types';
-import { packMessage } from '../messages/encode';
-import { ChannelState, Lock } from '../channels/types';
+import { packMessage } from '../messages/utils';
+import { ChannelState, Lock } from '../channels/state';
 import { transfer, transferSigned, transferSecret, transferFailed } from './actions';
 import { getLocksroot } from './utils';
 
@@ -52,11 +52,19 @@ function makeAndSignTransfer(
       for (const [partner, channel] of Object.entries(
         state.channels[action.payload.tokenNetwork],
       )) {
-        const capacity = channel.own.deposit.sub(
-          channel.own.balanceProof
-            ? channel.own.balanceProof.transferredAmount.add(channel.own.balanceProof.lockedAmount)
-            : Zero,
-        );
+        // capacity is own deposit - (own trasferred + locked) + (partner transferred)
+        const capacity = channel.own.deposit
+          .sub(
+            channel.own.balanceProof
+              ? channel.own.balanceProof.transferredAmount.add(
+                  channel.own.balanceProof.lockedAmount,
+                )
+              : Zero,
+          )
+          .add(
+            // only relevant once we can receive from partner
+            channel.partner.balanceProof ? channel.partner.balanceProof.transferredAmount : Zero,
+          );
         if (channel.state !== ChannelState.open) {
           console.warn(
             `transfer: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`,
@@ -127,7 +135,7 @@ function makeAndSignTransfer(
       return from(signer.signMessage(dataToSign)).pipe(
         mergeMap(function*(signature) {
           // besides transferSigned, also yield transferSecret (for registering) if we know it
-          if (secret) yield transferSecret({ secrethash: secrethash!, secret });
+          if (secret) yield transferSecret({ secret }, { secrethash: secrethash! });
           yield transferSigned({ ...message, signature: signature as Signature }, action.meta);
         }),
       );

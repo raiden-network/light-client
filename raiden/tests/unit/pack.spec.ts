@@ -3,13 +3,13 @@ import {
   LockedTransfer,
   LockExpired,
   MessageType,
-  packMessage,
   Processed,
   RefundTransfer,
   RevealSecret,
   SecretRequest,
   Unlock,
-} from 'raiden/messages';
+} from 'raiden/messages/types';
+import { packMessage } from 'raiden/messages/utils';
 import { Address, Hash, Secret, UInt } from 'raiden/utils/types';
 import { bigNumberify } from 'ethers/utils';
 import { HashZero, One, Zero } from 'ethers/constants';
