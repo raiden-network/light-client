@@ -65,6 +65,7 @@ export default class App extends Vue {
 
 <style lang="scss" scoped>
 @import 'main';
+@import 'scss/colors';
 #application-wrapper {
   height: 100%;
   margin-top: 70px;
@@ -81,7 +82,7 @@ export default class App extends Vue {
   height: 100%;
   width: 620px;
   border-radius: 14px;
-  background-color: #1e1e1e;
+  background-color: $card-background;
   @include respond-to(handhelds) {
     height: 100vh;
     width: 100%;

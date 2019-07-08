@@ -29,7 +29,9 @@
       <div slot="prepend" class="prepend-placeholder"></div>
       <div slot="append-outer" class="status-icon-wrapper">
         <v-icon v-if="!valid" class="status-icon" large>error</v-icon>
-        <v-icon v-else class="status-icon" large>check_circle</v-icon>
+        <v-icon v-else class="status-icon status-icon--valid" large
+          >check_circle</v-icon
+        >
       </div>
     </v-text-field>
     <span class="token-symbol" :class="{ light }">{{
@@ -126,6 +128,7 @@ export default class AmountInput extends Vue {
 
 <style scoped lang="scss">
 @import '../main';
+@import '../scss/colors';
 
 $header-vertical-margin: 5rem;
 $header-vertical-margin-mobile: 2rem;
@@ -172,17 +175,20 @@ $light_background: #e4e4e4;
   }
 
   /deep/ .v-messages {
-    color: $light_color !important;
+    color: $error-tooltip-background !important;
+    .v-messages__wrapper {
+      color: white;
+    }
   }
 
   .invalid /deep/ .v-messages {
-    border-color: $dark_border;
-    background-color: $dark_background;
+    border-color: $error-tooltip-background;
+    background-color: $error-tooltip-background;
   }
 
   .invalid /deep/ .v-messages:after {
-    border-color: $dark_border;
-    background-color: $dark_background;
+    border-color: $error-tooltip-background;
+    background-color: $error-tooltip-background;
   }
 }
 
@@ -242,7 +248,7 @@ $light_background: #e4e4e4;
   font-size: 13px;
   line-height: 18px;
   text-align: center;
-  margin-top: 10px;
+  margin-top: 15px;
 
   .v-messages__wrapper {
     height: 30px;
@@ -259,9 +265,11 @@ $light_background: #e4e4e4;
 
 .token-symbol {
   font-family: Roboto, sans-serif;
+  color: $divider-color;
+  font-weight: 500;
   font-size: 16px;
   line-height: 20px;
-  margin-top: -70px;
+  margin-top: -85px;
 }
 
 .status-icon-wrapper {
@@ -274,6 +282,10 @@ $light_background: #e4e4e4;
   border-radius: 50%;
   line-height: 28px;
   width: 28px;
+}
+
+.status-icon--valid {
+  color: $main-color;
 }
 
 .section {
