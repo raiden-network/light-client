@@ -6,7 +6,7 @@ import { BigNumber, bigNumberify } from 'ethers/utils';
 import { LosslessNumber } from 'lossless-json';
 
 import { fromEthersEvent, getEventsStream } from 'raiden/utils/ethers';
-import { Address, BigNumberC, HexString, sizeOf, UInt } from 'raiden/utils/types';
+import { Address, BigNumberC, HexString, UInt } from 'raiden/utils/types';
 import { makeLog, raidenEpicDeps } from './mocks';
 
 describe('fromEthersEvent', () => {
@@ -133,7 +133,7 @@ describe('getEventsStream', () => {
 describe('types', () => {
   test('HexString', () => {
     // ensure same instance
-    expect(HexString()).toBe(HexString(0));
+    expect(HexString()).toBe(HexString(undefined));
     expect(HexString(20)).not.toBe(HexString());
 
     const b = '0xdeadbeef' as HexString;
@@ -181,15 +181,6 @@ describe('types', () => {
     expect(result.value).toBeInstanceOf(BigNumber);
     const result2 = BigNumberC.decode(null);
     expect(result2.isRight()).toBe(false);
-  });
-
-  test('sizeOf', () => {
-    expect(sizeOf(HexString())).toBe(0);
-    expect(sizeOf(Address)).toBe(20);
-    expect(sizeOf(UInt(8))).toBe(8);
-    expect(sizeOf(UInt(32))).toBe(32);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect(sizeOf(1 as any)).toBe(-1); // test unreachable case
   });
 
   test('Address', () => {
