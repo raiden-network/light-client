@@ -34,7 +34,7 @@
   "dependencies": {
     "eslint-config-prettier": "^4.1.0",
     "ethereum-blockies-base64": "^1.0.2",
-    "ethers": "^4.0.31",
+    "ethers": "^4.0.33",
     "lodash": "^4.17.11",
     "raiden": "file:../raiden",
     "register-service-worker": "^1.6.2",
