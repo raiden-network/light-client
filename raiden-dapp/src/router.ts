@@ -13,6 +13,9 @@ export default new Router({
     {
       path: '/',
       name: RouteNames.HOME,
+      meta: {
+        title: 'Raiden dApp'
+      },
       component: Home
     },
     {
@@ -22,6 +25,9 @@ export default new Router({
     {
       path: '/about',
       name: RouteNames.ABOUT,
+      meta: {
+        title: 'About'
+      },
       // route level code-splitting
       // this generates a separate chunk (about.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
@@ -30,26 +36,41 @@ export default new Router({
     {
       path: '/send/:token/:partner',
       name: RouteNames.SELECT_TARGET,
+      meta: {
+        title: 'Set payment recipient'
+      },
       component: () => import('./views/SelectTarget.vue')
     },
     {
       path: '/connect',
       name: RouteNames.SELECT_TOKEN,
+      meta: {
+        title: 'Select token'
+      },
       component: () => import('./views/SelectToken.vue')
     },
     {
       path: '/connect/:token',
       name: RouteNames.SELECT_HUB,
+      meta: {
+        title: 'Select hub'
+      },
       component: () => import('./views/SelectHub.vue')
     },
     {
       path: '/connect/:token/:partner',
       name: RouteNames.DEPOSIT,
+      meta: {
+        title: 'Open channel'
+      },
       component: () => import('./views/Deposit.vue')
     },
     {
       path: '/channels/:token',
       name: RouteNames.CHANNELS,
+      meta: {
+        title: 'Channels'
+      },
       component: () => import('./views/Channels.vue')
     }
   ]
