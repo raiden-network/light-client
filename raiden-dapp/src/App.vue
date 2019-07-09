@@ -5,7 +5,7 @@
       <div id="application-content">
         <app-header></app-header>
         <v-content>
-          <v-container fluid fill-height>
+          <v-container fluid fill-height class="application__container">
             <router-view></router-view>
           </v-container>
         </v-content>
@@ -68,10 +68,8 @@ export default class App extends Vue {
 @import 'scss/colors';
 #application-wrapper {
   height: 100%;
-  margin-top: 70px;
-  margin-bottom: 70px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   @include respond-to(handhelds) {
     margin-top: 0;
@@ -79,9 +77,9 @@ export default class App extends Vue {
 }
 
 #application-content {
-  height: 100%;
+  height: 844px;
   width: 620px;
-  border-radius: 14px;
+  border-radius: 10px;
   background-color: $card-background;
   @include respond-to(handhelds) {
     height: 100vh;
@@ -96,8 +94,12 @@ export default class App extends Vue {
 }
 
 .container {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  overflow-x: hidden;
+  padding: 0 !important;
+}
+
+.application__container {
+  height: calc(100% - 8px);
 }
 
 .application {
@@ -105,13 +107,18 @@ export default class App extends Vue {
 }
 
 .policy {
-  font-size: 12px;
-  position: absolute;
-  right: 0;
+  font-size: 13px;
+  line-height: 15px;
   bottom: 0;
-  padding: 8px;
+  left: 0;
+  right: 0;
+  width: 220px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 0 27px;
+
   a {
-    color: white;
+    color: #646464;
   }
 }
 </style>
