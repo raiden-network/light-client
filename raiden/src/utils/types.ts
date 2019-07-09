@@ -75,14 +75,14 @@ export const HexString = memoize<
 >(function<S extends number = number>(size?: S) {
   return t.brand(
     t.string,
-    (n): n is t.Branded<string, HexStringB<S>> =>
+    (n): n is string & t.Brand<HexStringB<S>> =>
       typeof n === 'string' && (size ? hexDataLength(n) === size : isHexString(n)),
     'HexString',
   );
 });
 
 // string brand: non size-constrained hex-string codec and its type
-export type HexString<S extends number = number> = t.Branded<string, HexStringB<S>>;
+export type HexString<S extends number = number> = string & t.Brand<HexStringB<S>>;
 
 // brand interface for branded unsigned integers, inherits SizedB brand
 export interface UIntB<S extends number> extends SizedB<S> {
@@ -101,30 +101,30 @@ export const UInt = memoize<
   const max = size ? Two.pow(size * 8) : undefined;
   return t.brand(
     BigNumberC,
-    (n): n is t.Branded<BigNumber, UIntB<S>> =>
+    (n): n is BigNumber & t.Brand<UIntB<S>> =>
       BigNumberC.is(n) && n.gte(0) && (max === undefined || n.lt(max)),
     'UInt',
   );
 });
-export type UInt<S extends number = number> = t.Branded<BigNumber, UIntB<S>>;
+export type UInt<S extends number = number> = BigNumber & t.Brand<UIntB<S>>;
 
 // specific types
 
 // strig brand: ECDSA signature as an hex-string
 export const Signature = HexString(65);
-export type Signature = t.TypeOf<typeof Signature>;
+export type Signature = string & t.Brand<HexStringB<65>>;
 
 // string brand: 256-bit hash, usually keccak256 or sha256
 export const Hash = HexString(32);
-export type Hash = t.TypeOf<typeof Hash>;
+export type Hash = string & t.Brand<HexStringB<32>>;
 
 // string brand: a secret bytearray, non-sized
 export const Secret = HexString();
-export type Secret = t.TypeOf<typeof Secret>;
+export type Secret = string & t.Brand<HexStringB<number>>;
 
 // string brand: ECDSA private key, 32 bytes
 export const PrivateKey = HexString(32);
-export type PrivateKey = t.TypeOf<typeof PrivateKey>;
+export type PrivateKey = string & t.Brand<HexStringB<32>>;
 
 // checksummed address brand interface
 export interface AddressB {
@@ -134,7 +134,7 @@ export interface AddressB {
 // string brand: checksummed address, 20 bytes
 export const Address = t.brand(
   HexString(20),
-  (u): u is t.Branded<HexString<20>, AddressB> => {
+  (u): u is HexString<20> & t.Brand<AddressB> => {
     try {
       return typeof u === 'string' && getAddress(u) === u;
     } catch (e) {}
@@ -142,4 +142,4 @@ export const Address = t.brand(
   }, // type guard for branded values
   'Address', // the name must match the readonly field in the brand
 );
-export type Address = t.TypeOf<typeof Address>;
+export type Address = string & t.Brand<HexStringB<20>> & t.Brand<AddressB>;

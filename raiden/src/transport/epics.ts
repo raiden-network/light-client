@@ -42,14 +42,9 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { MATRIX_KNOWN_SERVERS_URL } from '../constants';
 import { channelMonitored } from '../channels/actions';
-import { Message } from '../messages/types';
+import { Message, Signed } from '../messages/types';
+import { decodeJsonMessage, encodeJsonMessage, getMessageSigner } from '../messages/utils';
 import { messageSend, messageReceived } from '../messages/actions';
-import {
-  decodeJsonMessage,
-  encodeJsonMessage,
-  getMessageSigner,
-  isSigned,
-} from '../messages/utils';
 import { RaidenState } from '../store/state';
 import { raidenInit } from '../store/actions';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
@@ -805,19 +800,15 @@ export const matrixMessageReceivedEpic = (
             mergeMap(function*([presences]) {
               const presence = find(presences, ['payload.userId', event.getSender()])!;
               for (const line of (event.event.content.body || '').split('\n')) {
-                let message: Message | undefined = undefined;
+                let message: Signed<Message> | undefined = undefined;
                 try {
                   message = decodeJsonMessage(line);
                   if (!message) throw new Error(`Invalid message: ${line}`);
-                  // if message has signature, it must be valid and from sender
-                  if (message.signature) {
-                    if (!isSigned(message)) throw new Error(`Invalid message signature: ${line}`);
-                    const signer = getMessageSigner(message);
-                    if (signer !== presence.meta.address)
-                      throw new Error(
-                        `Signature mismatch: sender=${presence.meta.address} != signer=${signer}`,
-                      );
-                  }
+                  const signer = getMessageSigner(message);
+                  if (signer !== presence.meta.address)
+                    throw new Error(
+                      `Signature mismatch: sender=${presence.meta.address} != signer=${signer}`,
+                    );
                 } catch (err) {
                   console.warn(`Could not decode message: ${line}: ${err}`);
                   message = undefined;

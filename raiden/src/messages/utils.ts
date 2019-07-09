@@ -8,7 +8,7 @@ import { HashZero } from 'ethers/constants';
 import { Address, Hash, HexString, Signature } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { SignedBalanceProof } from '../channels/state';
-import { EnvelopeMessage, Message, MessageType, MessageCodecs, Signed } from './types';
+import { EnvelopeMessage, Message, MessageType, SignedMessageCodecs, Signed } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
@@ -169,7 +169,9 @@ export function packMessage(message: Message) {
 /**
  * Typeguard to check if a message contains a valid signature
  */
-export function isSigned(message: Message): message is Signed<Message> {
+export function isSigned<M extends Message & { signature?: Signature }>(
+  message: M,
+): message is Signed<M> {
   return Signature.is(message.signature);
 }
 
@@ -206,8 +208,8 @@ export function getBalanceProofFromEnvelopeMessage(
  * @param message Message object to be serialized
  * @returns JSON string
  */
-export function encodeJsonMessage(message: Message): string {
-  return losslessStringify(MessageCodecs[message.type].encode(message));
+export function encodeJsonMessage(message: Signed<Message>): string {
+  return losslessStringify(SignedMessageCodecs[message.type].encode(message));
 }
 
 /**
@@ -216,16 +218,19 @@ export function encodeJsonMessage(message: Message): string {
  * @param text JSON string to try to decode
  * @returns Message object
  */
-export function decodeJsonMessage(text: string): Message {
+export function decodeJsonMessage(text: string): Signed<Message> {
   const parsed = losslessParse(text);
   if (!Message.is(parsed)) throw new Error(`Could not find Message "type" in ${text}`);
-  const decoded = MessageCodecs[parsed.type].decode(parsed);
+  const decoded = SignedMessageCodecs[parsed.type].decode(parsed);
   ThrowReporter.report(decoded); // throws if decode failed
   return decoded.value;
 }
 
-export function signMessage<M extends Message>(signer: Signer, message: M): Promise<Signed<M>> {
-  return signer
-    .signMessage(packMessage(message))
-    .then(signature => ({ ...message, signature: signature as Signature }));
+export async function signMessage<M extends Message>(
+  signer: Signer,
+  message: M,
+): Promise<Signed<M>> {
+  if (isSigned(message)) return message;
+  const signature = (await signer.signMessage(packMessage(message))) as Signature;
+  return { ...message, signature };
 }

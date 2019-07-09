@@ -6,8 +6,10 @@ import {
   concatMap,
   filter,
   first,
+  map,
   mergeMap,
   withLatestFrom,
+  tap,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
 import { bigNumberify, keccak256, randomBytes } from 'ethers/utils';
@@ -20,11 +22,19 @@ import { RaidenState } from '../store';
 import { REVEAL_TIMEOUT } from '../constants';
 import { Address, Hash, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
+import { LruCache } from '../utils/lru';
 import { Presences } from '../transport/types';
 import { getPresences$ } from '../transport/utils';
-import { messageReceived } from '../messages/actions';
-import { LockedTransfer, Processed, MessageType } from '../messages/types';
-import { signMessage, isSigned } from '../messages/utils';
+import { messageReceived, messageSend } from '../messages/actions';
+import {
+  MessageType,
+  LockedTransfer,
+  Processed,
+  SecretRequest,
+  RevealSecret,
+  Signed,
+} from '../messages/types';
+import { signMessage } from '../messages/utils';
 import { ChannelState, Lock } from '../channels/state';
 import {
   transfer,
@@ -32,6 +42,7 @@ import {
   transferSecret,
   transferProcessed,
   transferFailed,
+  transferSecretRequest,
 } from './actions';
 import { getLocksroot } from './utils';
 
@@ -178,15 +189,13 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
 export const transferProcessedReceivedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  {  }: RaidenEpicDeps,
 ): Observable<ActionType<typeof transferProcessed>> =>
   action$.pipe(
     filter(isActionOf(messageReceived)),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
-      // transport only accepts Signed messages if they're signed by same sender's meta.address
-      if (!message || !Processed.is(message) || !isSigned(message)) return;
+      if (!message || !Signed(Processed).is(message)) return;
       let secrethash: Hash | undefined = undefined;
       for (const [key, sent] of Object.entries(state.sent)) {
         if (
@@ -201,3 +210,66 @@ export const transferProcessedReceivedEpic = (
       yield transferProcessed(message, { secrethash });
     }),
   );
+
+/**
+ * Handles receiving a signed SecretRequest for some sent LockedTransfer
+ */
+export const transferSecretRequestedEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof transferSecretRequest>> =>
+  action$.pipe(
+    filter(isActionOf(messageReceived)),
+    withLatestFrom(state$),
+    mergeMap(function*([action, state]) {
+      const message = action.payload.message;
+      if (!message || !Signed(SecretRequest).is(message)) return;
+      if (!(message.secrethash in state.secrets) || !(message.secrethash in state.sent)) return;
+      const sent = state.sent[message.secrethash];
+      if (
+        sent.transfer.target !== action.meta.address ||
+        !sent.transfer.payment_identifier.eq(message.payment_identifier) ||
+        !sent.transfer.lock.amount.eq(message.amount) ||
+        !sent.transfer.lock.expiration.eq(message.expiration)
+      )
+        return;
+      yield transferSecretRequest(message, { secrethash: message.secrethash });
+    }),
+  );
+
+/**
+ * Handles a transferSecretRequest action to send the respective secret
+ */
+export const transferRevealSecretEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { signer }: RaidenEpicDeps,
+): Observable<ActionType<typeof messageSend>> => {
+  const cache = new LruCache<Hash, Signed<RevealSecret>>(32);
+  return state$.pipe(
+    multicast(new ReplaySubject(1), state$ =>
+      action$.pipe(
+        filter(isActionOf(transferSecretRequest)),
+        concatMap(action =>
+          state$.pipe(
+            first(),
+            mergeMap(state => {
+              const target = state.sent[action.meta.secrethash].transfer.target;
+              const cached = cache.get(action.meta.secrethash);
+              if (cached) return of(messageSend({ message: cached }, { address: target }));
+              const message: RevealSecret = {
+                type: MessageType.REVEAL_SECRET,
+                message_identifier: bigNumberify(Date.now()) as UInt<8>,
+                secret: state.secrets[action.meta.secrethash].secret,
+              };
+              return from(signMessage(signer, message)).pipe(
+                tap(signed => cache.put(action.meta.secrethash, signed)),
+                map(signed => messageSend({ message: signed }, { address: target })),
+              );
+            }),
+          ),
+        ),
+      ),
+    ),
+  );
+};

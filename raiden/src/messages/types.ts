@@ -26,27 +26,13 @@ export const MessageTypeC = new EnumType<MessageType>(MessageType, 'MessageType'
 // Mixin for all tagged messages
 export const Message = t.type({ type: MessageTypeC });
 
-// Mixin for a message that may contain a signature
-// The partial here is for messages that we've created and are about to sign, but messages coming
-// from peers must always have it, and signature should be validated elsewhere.
-// If signature is the only optional parameter for a type, Required<Type> will give the type with
-// the field made mandatory (e.g. EnvelopeMessage requiring signed message)
-export const SignedMessage = t.partial({
-  signature: Signature,
-});
-// generic type codec for messages that must be signed
-// use it like: Codec = Signed(Message)
-// The t.TypeOf<typeof codec> will be Signed<Message>, defined later
-export const Signed = <C extends t.Mixed>(codec: C) =>
-  t.intersection([codec, t.type(SignedMessage.props)]);
-
 // Mixin of a message that contains an identifier and should be ack'ed with a respective Delivered
-const RetrieableMessage = t.type({
-  message_identifier: UInt(8),
-});
-
-// Mixin for both Signed and Retrieable Messages
-const SignedRetrieableMessage = t.intersection([RetrieableMessage, SignedMessage, Message]);
+const RetrieableMessage = t.intersection([
+  t.type({
+    message_identifier: UInt(8),
+  }),
+  Message,
+]);
 
 // Acknowledges to the sender that a RetrieableMessage was received
 export const Delivered = t.intersection([
@@ -54,7 +40,6 @@ export const Delivered = t.intersection([
     type: t.literal(MessageType.DELIVERED),
     delivered_message_identifier: UInt(8),
   }),
-  SignedMessage,
   Message,
 ]);
 export type Delivered = t.TypeOf<typeof Delivered>;
@@ -64,7 +49,7 @@ export const Processed = t.intersection([
   t.type({
     type: t.literal(MessageType.PROCESSED),
   }),
-  SignedRetrieableMessage,
+  RetrieableMessage,
 ]);
 export type Processed = t.TypeOf<typeof Processed>;
 
@@ -77,7 +62,7 @@ export const SecretRequest = t.intersection([
     amount: UInt(32),
     expiration: UInt(32),
   }),
-  SignedRetrieableMessage,
+  RetrieableMessage,
 ]);
 export type SecretRequest = t.TypeOf<typeof SecretRequest>;
 
@@ -87,7 +72,7 @@ export const RevealSecret = t.intersection([
     type: t.literal(MessageType.REVEAL_SECRET),
     secret: Secret,
   }),
-  SignedRetrieableMessage,
+  RetrieableMessage,
 ]);
 export type RevealSecret = t.TypeOf<typeof RevealSecret>;
 
@@ -102,7 +87,7 @@ export const EnvelopeMessage = t.intersection([
     locked_amount: UInt(32),
     locksroot: Hash,
   }),
-  SignedRetrieableMessage,
+  RetrieableMessage,
 ]);
 
 // base for locked and refund transfer, they differentiate only on the type tag
@@ -172,15 +157,22 @@ export type Message =
   | LockExpired;
 export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;
 // type to require a message to be signed!
-export type Signed<M extends Message> = M & Required<t.TypeOf<typeof SignedMessage>>;
 
-export const MessageCodecs: { readonly [T in MessageType]: t.Mixed } = {
-  [MessageType.DELIVERED]: Delivered,
-  [MessageType.PROCESSED]: Processed,
-  [MessageType.SECRET_REQUEST]: SecretRequest,
-  [MessageType.REVEAL_SECRET]: RevealSecret,
-  [MessageType.LOCKED_TRANSFER]: LockedTransfer,
-  [MessageType.REFUND_TRANSFER]: RefundTransfer,
-  [MessageType.UNLOCK]: Unlock,
-  [MessageType.LOCK_EXPIRED]: LockExpired,
+// generic type codec for messages that must be signed
+// use it like: Codec = Signed(Message)
+// The t.TypeOf<typeof codec> will be Signed<Message>, defined later
+export function Signed<C extends t.Mixed>(codec: C) {
+  return t.intersection([codec, t.type({ signature: Signature })]);
+}
+export type Signed<M extends Message> = M & { signature: Signature };
+
+export const SignedMessageCodecs: { readonly [T in MessageType]: t.Mixed } = {
+  [MessageType.DELIVERED]: Signed(Delivered),
+  [MessageType.PROCESSED]: Signed(Processed),
+  [MessageType.SECRET_REQUEST]: Signed(SecretRequest),
+  [MessageType.REVEAL_SECRET]: Signed(RevealSecret),
+  [MessageType.LOCKED_TRANSFER]: Signed(LockedTransfer),
+  [MessageType.REFUND_TRANSFER]: Signed(RefundTransfer),
+  [MessageType.UNLOCK]: Signed(Unlock),
+  [MessageType.LOCK_EXPIRED]: Signed(LockExpired),
 };
