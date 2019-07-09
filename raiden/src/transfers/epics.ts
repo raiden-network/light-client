@@ -18,13 +18,13 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../store';
 import { REVEAL_TIMEOUT } from '../constants';
-import { Address, Hash, Signature, UInt } from '../utils/types';
+import { Address, Hash, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
 import { Presences } from '../transport/types';
 import { getPresences$ } from '../transport/utils';
 import { messageReceived } from '../messages/actions';
 import { LockedTransfer, Processed, MessageType } from '../messages/types';
-import { packMessage, isSigned } from '../messages/utils';
+import { signMessage, isSigned } from '../messages/utils';
 import { ChannelState, Lock } from '../channels/state';
 import {
   transfer,
@@ -133,13 +133,12 @@ function makeAndSignTransfer(
         initiator: address,
         fee,
       };
-      const dataToSign = packMessage(message);
 
-      return from(signer.signMessage(dataToSign)).pipe(
-        mergeMap(function*(signature) {
+      return from(signMessage(signer, message)).pipe(
+        mergeMap(function*(signed) {
           // besides transferSigned, also yield transferSecret (for registering) if we know it
           if (secret) yield transferSecret({ secret }, { secrethash: action.meta.secrethash });
-          yield transferSigned({ ...message, signature: signature as Signature }, action.meta);
+          yield transferSigned(signed, action.meta);
         }),
       );
     }),

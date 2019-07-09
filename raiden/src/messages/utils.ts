@@ -1,5 +1,6 @@
 // import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
+import { Signer } from 'ethers';
 import { keccak256, verifyMessage } from 'ethers/utils';
 import { concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
@@ -221,4 +222,10 @@ export function decodeJsonMessage(text: string): Message {
   const decoded = MessageCodecs[parsed.type].decode(parsed);
   ThrowReporter.report(decoded); // throws if decode failed
   return decoded.value;
+}
+
+export function signMessage<M extends Message>(signer: Signer, message: M): Promise<Signed<M>> {
+  return signer
+    .signMessage(packMessage(message))
+    .then(signature => ({ ...message, signature: signature as Signature }));
 }
