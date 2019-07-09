@@ -44,7 +44,12 @@ import { MATRIX_KNOWN_SERVERS_URL } from '../constants';
 import { channelMonitored } from '../channels/actions';
 import { Message } from '../messages/types';
 import { messageSend, messageReceived } from '../messages/actions';
-import { decodeJsonMessage, encodeJsonMessage } from '../messages/utils';
+import {
+  decodeJsonMessage,
+  encodeJsonMessage,
+  getMessageSigner,
+  isSigned,
+} from '../messages/utils';
 import { RaidenState } from '../store/state';
 import { raidenInit } from '../store/actions';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
@@ -804,8 +809,18 @@ export const matrixMessageReceivedEpic = (
                 try {
                   message = decodeJsonMessage(line);
                   if (!message) throw new Error(`Invalid message: ${line}`);
+                  // if message has signature, it must be valid and from sender
+                  if (message.signature) {
+                    if (!isSigned(message)) throw new Error(`Invalid message signature: ${line}`);
+                    const signer = getMessageSigner(message);
+                    if (signer !== presence.meta.address)
+                      throw new Error(
+                        `Signature mismatch: sender=${presence.meta.address} != signer=${signer}`,
+                      );
+                  }
                 } catch (err) {
-                  console.warn(`Could not decode message: ${line}`);
+                  console.warn(`Could not decode message: ${line}: ${err}`);
+                  message = undefined;
                 }
                 yield messageReceived(
                   {

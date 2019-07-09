@@ -1,7 +1,6 @@
 import * as t from 'io-ts';
 
 import { Address, EnumType, Hash, Signature, UInt } from '../utils/types';
-import { SentTransfers } from '../transfers/state';
 
 export enum ChannelState {
   opening = 'opening',
@@ -90,9 +89,6 @@ export const Channel = t.intersection([
       closeBlock: t.number,
     }),
   ]),
-  t.partial({
-    sent: SentTransfers,
-  }),
 ]);
 export type Channel = t.TypeOf<typeof Channel>;
 

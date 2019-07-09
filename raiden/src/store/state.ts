@@ -6,6 +6,7 @@ import { losslessParse, losslessStringify } from '../utils/data';
 import { Address, Secret } from '../utils/types';
 import { Channels } from '../channels';
 import { RaidenMatrixSetup } from '../transport/state';
+import { SentTransfers } from '../transfers/state';
 
 // types
 
@@ -29,6 +30,7 @@ export const RaidenState = t.type({
     t.string /* secrethash: Hash */,
     t.intersection([t.type({ secret: Secret }), t.partial({ registerBlock: t.number })]),
   ),
+  sent: SentTransfers,
 });
 
 export type RaidenState = t.TypeOf<typeof RaidenState>;
@@ -69,4 +71,5 @@ export const initialState: Readonly<RaidenState> = {
   tokens: {},
   transport: {},
   secrets: {},
+  sent: {},
 };

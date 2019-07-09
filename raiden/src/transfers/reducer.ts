@@ -1,75 +1,76 @@
 import { getType } from 'typesafe-actions';
-import { set } from 'lodash/fp';
+import { get, set } from 'lodash/fp';
 import { One } from 'ethers/constants';
 
-import { Secret } from '../utils/types';
-import { partialCombineReducers } from '../utils/redux';
+import { RaidenState } from '../store/state';
 import { RaidenAction } from '../actions';
-import { transferSigned, transferSecret } from './actions';
-import { Channel, Channels } from '../channels/state';
+import { Channel } from '../channels/state';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { initialState } from '../store/state';
 import { SentTransfer } from './state';
+import { transferSigned, transferSecret, transferProcessed } from './actions';
 
-// state.tokens specific reducer, handles only tokenMonitored action
-const secrets = (
-  state: Readonly<{
-    [secrethash: string]: { secret: Secret; registerBlock?: number };
-  }> = initialState.secrets,
+// handles all transfers actions and requests
+export const transfersReducer = (
+  state: Readonly<RaidenState> = initialState,
   action: RaidenAction,
-) => {
+): RaidenState => {
   switch (action.type) {
     case getType(transferSecret):
-      if (action.meta.secrethash in state) return state;
-      return { ...state, [action.meta.secrethash]: action.payload };
-    default:
-      return state;
-  }
-};
+      if (action.meta.secrethash in state.secrets) return state;
+      return {
+        ...state,
+        secrets: {
+          ...state.secrets,
+          [action.meta.secrethash]: action.payload,
+        },
+      };
 
-// handles all channel actions and requests
-const channels = (state: Readonly<Channels> = initialState.channels, action: RaidenAction) => {
-  switch (action.type) {
     case getType(transferSigned): {
-      let channel: Channel | undefined =
-        state[action.payload.token_network_address] &&
-        state[action.payload.token_network_address][action.payload.recipient];
+      const transfer = action.payload,
+        secrethash = transfer.lock.secrethash;
+      // transferSigned must be the first action, to init SentTransfer state
+      if (secrethash in state.sent) return state;
+      const channelPath = ['channels', transfer.token_network_address, transfer.recipient];
+      let channel: Channel | undefined = get(channelPath, state);
       if (
         !channel ||
         !(channel.own.balanceProof ? channel.own.balanceProof.nonce.add(1) : One).eq(
-          action.payload.nonce, // nonce must be next or first!
+          transfer.nonce, // nonce must be next or first!
         )
       )
         return state;
-      const key = action.payload.payment_identifier.toString();
-      // on transferSigned, there must not be a SentTransfer with same paymentId
-      if (channel.sent && key in channel.sent) return state;
-      const sentTransfer: SentTransfer = { transfer: action.payload },
-        balanceProof = getBalanceProofFromEnvelopeMessage(action.payload);
+
       channel = {
         ...channel,
         own: {
           ...channel.own,
-          locks: [...(channel.own.locks || []), action.payload.lock], // append lock
-          balanceProof, // set current/latest channel.own.balanceProof to LockedTransfer's
-        },
-        sent: {
-          ...channel.sent,
-          [key]: sentTransfer,
+          locks: [...(channel.own.locks || []), transfer.lock], // append lock
+          // set current/latest channel.own.balanceProof to LockedTransfer's
+          balanceProof: getBalanceProofFromEnvelopeMessage(transfer),
         },
       };
-      return set([action.payload.token_network_address, action.payload.recipient], channel, state);
+      const sentTransfer: SentTransfer = { transfer };
+
+      state = set(channelPath, channel, state);
+      state = set(['sent', secrethash], sentTransfer, state);
+      return state;
     }
+
+    case getType(transferProcessed):
+      if (!(action.meta.secrethash in state.sent)) return state;
+      return {
+        ...state,
+        sent: {
+          ...state.sent,
+          [action.meta.secrethash]: {
+            ...state.sent[action.meta.secrethash],
+            transferProcessed: action.payload,
+          },
+        },
+      };
 
     default:
       return state;
   }
 };
-
-/**
- * Nested/combined reducer for channels
- * blockNumber, tokens & channels reducers get its own slice of the state, corresponding to the
- * name of the reducer. channels root reducer instead must be handled the complete state instead,
- * so it compose the output with each key/nested/combined state.
- */
-export const transfersReducer = partialCombineReducers({ secrets, channels }, initialState);

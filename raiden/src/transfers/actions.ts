@@ -1,10 +1,10 @@
 import { createStandardAction } from 'typesafe-actions';
 
 import { Address, UInt, Secret, Hash } from '../utils/types';
-import { LockedTransfer } from '../messages/types';
+import { LockedTransfer, Processed, Signed } from '../messages/types';
 
 // eslint-disable-next-line @typescript-eslint/prefer-interface
-type TransferId = { paymentId: UInt<8> };
+type TransferId = { secrethash: Hash };
 
 export const transfer = createStandardAction('transfer')<
   {
@@ -12,20 +12,25 @@ export const transfer = createStandardAction('transfer')<
     target: Address;
     amount: UInt<32>;
     fee?: UInt<32>;
+    paymentId?: UInt<8>;
     secret?: Secret;
-    secrethash?: Hash;
   },
   TransferId
 >();
 
 export const transferSigned = createStandardAction('transferSigned')<
-  Required<LockedTransfer>,
+  Signed<LockedTransfer>,
   TransferId
 >();
 
 export const transferSecret = createStandardAction('transferSecret')<
   { secret: Secret; registerBlock?: number },
-  { secrethash: Hash }
+  TransferId
+>();
+
+export const transferProcessed = createStandardAction('transferProcessed')<
+  Signed<Processed>,
+  TransferId
 >();
 
 export const transferFailed = createStandardAction('transferFailed').map(

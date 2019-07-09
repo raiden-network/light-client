@@ -34,6 +34,11 @@ export const Message = t.type({ type: MessageTypeC });
 export const SignedMessage = t.partial({
   signature: Signature,
 });
+// generic type codec for messages that must be signed
+// use it like: Codec = Signed(Message)
+// The t.TypeOf<typeof codec> will be Signed<Message>, defined later
+export const Signed = <C extends t.Mixed>(codec: C) =>
+  t.intersection([codec, t.type(SignedMessage.props)]);
 
 // Mixin of a message that contains an identifier and should be ack'ed with a respective Delivered
 const RetrieableMessage = t.type({
@@ -165,8 +170,9 @@ export type Message =
   | RefundTransfer
   | Unlock
   | LockExpired;
-
 export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;
+// type to require a message to be signed!
+export type Signed<M extends Message> = M & Required<t.TypeOf<typeof SignedMessage>>;
 
 export const MessageCodecs: { readonly [T in MessageType]: t.Mixed } = {
   [MessageType.DELIVERED]: Delivered,

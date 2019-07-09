@@ -10,7 +10,7 @@ import {
   withLatestFrom,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
-import { bigNumberify, hexlify, keccak256, randomBytes } from 'ethers/utils';
+import { bigNumberify, keccak256, randomBytes } from 'ethers/utils';
 import { One, Zero } from 'ethers/constants';
 import { findKey } from 'lodash';
 
@@ -18,14 +18,21 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../store';
 import { REVEAL_TIMEOUT } from '../constants';
-import { Address, Hash, Secret, Signature, UInt } from '../utils/types';
+import { Address, Hash, Signature, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
 import { Presences } from '../transport/types';
 import { getPresences$ } from '../transport/utils';
-import { LockedTransfer, MessageType } from '../messages/types';
-import { packMessage } from '../messages/utils';
+import { messageReceived } from '../messages/actions';
+import { LockedTransfer, Processed, MessageType } from '../messages/types';
+import { packMessage, isSigned } from '../messages/utils';
 import { ChannelState, Lock } from '../channels/state';
-import { transfer, transferSigned, transferSecret, transferFailed } from './actions';
+import {
+  transfer,
+  transferSigned,
+  transferSecret,
+  transferProcessed,
+  transferFailed,
+} from './actions';
 import { getLocksroot } from './utils';
 
 /**
@@ -86,24 +93,19 @@ function makeAndSignTransfer(
       // check below never fail, because of for loop filter, just for type narrowing
       if (channel.state !== ChannelState.open) throw new Error('not open');
 
-      let secret = action.payload.secret,
-        secrethash = action.payload.secrethash;
-      if (secret && secrethash) {
-        if (keccak256(secret) !== secrethash)
-          throw new Error('secrethash does not match provided secret');
-      } else if (secret) {
-        secrethash = keccak256(secret) as Hash;
-      } else if (!secret && !secrethash) {
-        secret = hexlify(randomBytes(32)) as Secret;
-        secrethash = keccak256(secret) as Hash;
-      } // else: only secrethash was provided, target must obtain secret externally
+      let secret = action.payload.secret;
+      if (secret && keccak256(secret) !== action.meta.secrethash) {
+        throw new Error('secrethash does not match provided secret');
+      }
+      let paymentId = action.payload.paymentId;
+      if (!paymentId) paymentId = bigNumberify(randomBytes(8)) as UInt<8>;
 
       const lock: Lock = {
           amount: action.payload.amount,
           expiration: bigNumberify(state.blockNumber + REVEAL_TIMEOUT * 2) as UInt<32>,
-          secrethash: secrethash!,
+          secrethash: action.meta.secrethash,
         },
-        locks: Lock[] = channel.own.locks ? [...channel.own.locks, lock] : [lock],
+        locks: Lock[] = [...(channel.own.locks || []), lock],
         locksroot = getLocksroot(locks),
         fee = action.payload.fee || (Zero as UInt<32>),
         msgId = bigNumberify(Date.now()) as UInt<8>,
@@ -123,7 +125,7 @@ function makeAndSignTransfer(
           ? (channel.own.balanceProof.lockedAmount.add(action.payload.amount) as UInt<32>)
           : action.payload.amount,
         locksroot,
-        payment_identifier: action.meta.paymentId,
+        payment_identifier: paymentId,
         token,
         recipient,
         lock,
@@ -132,10 +134,11 @@ function makeAndSignTransfer(
         fee,
       };
       const dataToSign = packMessage(message);
+
       return from(signer.signMessage(dataToSign)).pipe(
         mergeMap(function*(signature) {
           // besides transferSigned, also yield transferSecret (for registering) if we know it
-          if (secret) yield transferSecret({ secret }, { secrethash: secrethash! });
+          if (secret) yield transferSecret({ secret }, { secrethash: action.meta.secrethash });
           yield transferSigned({ ...message, signature: signature as Signature }, action.meta);
         }),
       );
@@ -144,6 +147,12 @@ function makeAndSignTransfer(
   );
 }
 
+/**
+ * Serialize creation and signing of BalanceProof-changing messages or actions
+ * Actions which change any data in any channel balance proof must only ever be created reading
+ * state inside the serialization flow provided by the concatMap, and also be composed and produced
+ * inside it (inner, subscribed observable)
+ */
 export const transferGenerateAndSignEnvelopeMessageEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
@@ -161,5 +170,35 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
             : EMPTY,
         ),
       );
+    }),
+  );
+
+/**
+ * Handles receiving a signed Processed for some sent LockedTransfer
+ */
+export const transferProcessedReceivedEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  {  }: RaidenEpicDeps,
+): Observable<ActionType<typeof transferProcessed>> =>
+  action$.pipe(
+    filter(isActionOf(messageReceived)),
+    withLatestFrom(state$),
+    mergeMap(function*([action, state]) {
+      const message = action.payload.message;
+      // transport only accepts Signed messages if they're signed by same sender's meta.address
+      if (!message || !Processed.is(message) || !isSigned(message)) return;
+      let secrethash: Hash | undefined = undefined;
+      for (const [key, sent] of Object.entries(state.sent)) {
+        if (
+          sent.transfer.message_identifier.eq(message.message_identifier) &&
+          sent.transfer.recipient === action.meta.address
+        ) {
+          secrethash = key as Hash;
+          break;
+        }
+      }
+      if (!secrethash) return;
+      yield transferProcessed(message, { secrethash });
     }),
   );

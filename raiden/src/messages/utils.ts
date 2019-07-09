@@ -4,10 +4,10 @@ import { keccak256, verifyMessage } from 'ethers/utils';
 import { concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
-import { Address, Hash, HexString } from '../utils/types';
+import { Address, Hash, HexString, Signature } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { SignedBalanceProof } from '../channels/state';
-import { EnvelopeMessage, Message, MessageType, MessageCodecs } from './types';
+import { EnvelopeMessage, Message, MessageType, MessageCodecs, Signed } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
@@ -165,11 +165,26 @@ export function packMessage(message: Message) {
   }
 }
 
+/**
+ * Typeguard to check if a message contains a valid signature
+ */
+export function isSigned(message: Message): message is Signed<Message> {
+  return Signature.is(message.signature);
+}
+
+/**
+ * Requires a signed message and returns its signer address
+ */
+export function getMessageSigner(message: Signed<Message>): Address {
+  return verifyMessage(packMessage(message), message.signature) as Address;
+}
+
+/**
+ * Get the SignedBalanceProof associated with an EnvelopeMessage
+ */
 export function getBalanceProofFromEnvelopeMessage(
-  message: Required<EnvelopeMessage>,
+  message: Signed<EnvelopeMessage>,
 ): SignedBalanceProof {
-  const dataToSign = packMessage(message),
-    sender = verifyMessage(dataToSign, message.signature) as Address;
   return {
     chainId: message.chain_id,
     tokenNetworkAddress: message.token_network_address,
@@ -180,7 +195,7 @@ export function getBalanceProofFromEnvelopeMessage(
     locksroot: message.locksroot,
     messageHash: createMessageHash(message),
     signature: message.signature,
-    sender,
+    sender: getMessageSigner(message),
   };
 }
 
