@@ -84,13 +84,13 @@ describe('ChannelList.vue', function() {
   describe('closing a channel', function() {
     it('should close the channel when confirmed', async function() {
       raiden.closeChannel = jest.fn().mockReturnValue(null);
-      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('');
+      expect(wrapper.vm.$data.visible).toBe('');
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('channel-278');
+      expect(wrapper.vm.$data.visible).toBe('channel-278-close');
       wrapper.find('#confirm-278').trigger('click');
 
-      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('');
+      expect(wrapper.vm.$data.visible).toBe('');
       await flushPromises();
       expect(raiden.closeChannel).toHaveBeenCalledTimes(1);
       expect(raiden.closeChannel).toHaveBeenCalledWith(
@@ -125,18 +125,18 @@ describe('ChannelList.vue', function() {
       raiden.closeChannel = jest.fn().mockReturnValue(null);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('channel-278');
+      expect(wrapper.vm.$data.visible).toBe('channel-278-close');
       wrapper.find('#cancel-278').trigger('click');
-      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('');
+      expect(wrapper.vm.$data.visible).toBe('');
       expect(raiden.closeChannel).toHaveBeenCalledTimes(0);
     });
 
     test('dismiss the confirmation when overlay is pressed', function() {
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#close-0').trigger('click');
-      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('channel-278');
+      expect(wrapper.vm.$data.visible).toBe('channel-278-close');
       wrapper.find('.overlay').trigger('click');
-      expect(wrapper.vm.$data.visibleCloseConfirmation).toBe('');
+      expect(wrapper.vm.$data.visible).toBe('');
     });
   });
 
@@ -144,13 +144,13 @@ describe('ChannelList.vue', function() {
     test('depositing 0.0 should just dismiss', async () => {
       raiden.deposit = jest.fn().mockResolvedValue(null);
       const $data = wrapper.vm.$data;
-      expect($data.visibleDeposit).toBe('');
+      expect($data.visible).toBe('');
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
-      expect($data.visibleDeposit).toBe('channel-278');
+      expect($data.visible).toBe('channel-278-deposit');
       wrapper.find('#confirm-278').trigger('click');
 
-      expect($data.visibleDeposit).toBe('');
+      expect($data.visible).toBe('');
       expect($data.selectedChannel).toBeNull();
 
       await flushPromises();
@@ -160,14 +160,14 @@ describe('ChannelList.vue', function() {
     it('should deposit to the channel when confirmed', async function() {
       raiden.deposit = jest.fn().mockResolvedValue(null);
       const $data = wrapper.vm.$data;
-      expect($data.visibleDeposit).toBe('');
+      expect($data.visible).toBe('');
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
-      expect($data.visibleDeposit).toBe('channel-278');
+      expect($data.visible).toBe('channel-278-deposit');
       mockInput(wrapper, '0.5');
       wrapper.find('#confirm-278').trigger('click');
 
-      expect($data.visibleDeposit).toBe('');
+      expect($data.visible).toBe('');
       expect($data.selectedChannel).toBeNull();
 
       await flushPromises();
@@ -205,9 +205,9 @@ describe('ChannelList.vue', function() {
       raiden.deposit = jest.fn().mockResolvedValue(null);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
-      expect(wrapper.vm.$data.visibleDeposit).toBe('channel-278');
+      expect(wrapper.vm.$data.visible).toBe('channel-278-deposit');
       wrapper.find('#cancel-278').trigger('click');
-      expect(wrapper.vm.$data.visibleDeposit).toBe('');
+      expect(wrapper.vm.$data.visible).toBe('');
       expect(raiden.deposit).toHaveBeenCalledTimes(0);
     });
   });
@@ -216,13 +216,13 @@ describe('ChannelList.vue', function() {
     it('should settle the channel when confirmed', async function() {
       raiden.settleChannel = jest.fn().mockReturnValue('thxhash');
       const $data = wrapper.vm.$data;
-      expect($data.visibleSettleConfirmation).toBe('');
+      expect($data.visible).toBe('');
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
-      expect($data.visibleSettleConfirmation).toBe('channel-280');
+      expect($data.visible).toBe('channel-280-settle');
       wrapper.find('#confirm-280').trigger('click');
 
-      expect($data.visibleSettleConfirmation).toBe('');
+      expect($data.visible).toBe('');
       expect($data.selectedChannel).toBeNull();
 
       await flushPromises();
@@ -261,18 +261,18 @@ describe('ChannelList.vue', function() {
         .mockRejectedValue(new ChannelSettleFailed());
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
-      expect(wrapper.vm.$data.visibleSettleConfirmation).toBe('channel-280');
+      expect(wrapper.vm.$data.visible).toBe('channel-280-settle');
       wrapper.find('#cancel-280').trigger('click');
-      expect(wrapper.vm.$data.visibleSettleConfirmation).toBe('');
+      expect(wrapper.vm.$data.visible).toBe('');
       expect(raiden.settleChannel).toHaveBeenCalledTimes(0);
     });
 
     test('clicking on the overlay should dismiss the confirmation', () => {
       wrapper.find('#channel-280').trigger('click');
       wrapper.find('#settle-2').trigger('click');
-      expect(wrapper.vm.$data.visibleSettleConfirmation).toBe('channel-280');
+      expect(wrapper.vm.$data.visible).toBe('channel-280-settle');
       wrapper.find('.overlay').trigger('click');
-      expect(wrapper.vm.$data.visibleSettleConfirmation).toBe('');
+      expect(wrapper.vm.$data.visible).toBe('');
     });
   });
 });

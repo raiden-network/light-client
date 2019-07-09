@@ -2,21 +2,13 @@
   <div class="content-host">
     <v-layout justify-center row class="list-container">
       <Transition name="fade-transition" mode="out-in">
-        <div
-          v-show="
-            visibleCloseConfirmation ||
-              visibleSettleConfirmation ||
-              visibleDeposit
-          "
-          class="overlay"
-          @click="closeConfirmation()"
-        ></div>
+        <div v-show="visible" class="overlay" @click="dismiss()"></div>
       </Transition>
-      <v-flex xs12 md12 lg12>
+      <v-flex xs12>
         <v-list class="channel-list">
           <v-list-group
             v-for="(channel, index) in channels"
-            :id="'channel-' + channel.id"
+            :id="`channel-${channel.id}`"
             :key="channel.partner"
             class="channel"
             no-action
@@ -41,73 +33,45 @@
                 </v-list-tile-content>
               </v-list-tile>
             </template>
-            <div :id="'expanded-area-' + index" class="expanded-area">
-              <div v-if="visibleCloseConfirmation === `channel-${channel.id}`">
+            <div :id="`expanded-area-${index}`" class="expanded-area">
+              <div v-if="visible === `channel-${channel.id}-close`">
                 <confirmation
                   :identifier="channel.id"
-                  @confirm="closeConfirmed()"
-                  @cancel="closeCancelled()"
+                  @confirm="close()"
+                  @cancel="dismiss()"
                 >
                   Are you sure you want to close this channel? <br />
                   This action cannot be undone.
                 </confirmation>
               </div>
-              <div
-                v-else-if="
-                  visibleSettleConfirmation === `channel-${channel.id}`
-                "
-              >
+              <div v-else-if="visible === `channel-${channel.id}-settle`">
                 <confirmation
                   :identifier="channel.id"
-                  @confirm="settleConfirmed()"
-                  @cancel="settleCancelled()"
+                  @confirm="settle()"
+                  @cancel="dismiss()"
                 >
                   Are you sure you want to settle the channel with hub
                   {{ selectedChannel.partner }} for token
                   {{ selectedChannel.token }}?
                 </confirmation>
               </div>
-              <div v-else-if="visibleDeposit === `channel-${channel.id}`">
+              <div v-else-if="visible === `channel-${channel.id}-deposit`">
                 <channel-deposit
                   :identifier="channel.id"
                   :token="token"
-                  @confirm="depositConfirmed($event)"
-                  @cancel="depositCancelled()"
+                  @confirm="deposit($event)"
+                  @cancel="dismiss()"
                 ></channel-deposit>
               </div>
               <div v-else class="area-content">
                 <channel-life-cycle :state="channel.state"></channel-life-cycle>
-                <v-layout justify-space-around row>
-                  <v-btn
-                    :id="'deposit-' + index"
-                    :disabled="channel.state !== 'open'"
-                    class="action-button text-capitalize"
-                    @click="deposit(channel)"
-                  >
-                    Deposit
-                  </v-btn>
-                  <v-btn
-                    :id="'close-' + index"
-                    :disabled="
-                      channel.state !== 'open' && channel.state !== 'closing'
-                    "
-                    class="action-button text-capitalize"
-                    @click="close(channel)"
-                  >
-                    Close
-                  </v-btn>
-                  <v-btn
-                    :id="'settle-' + index"
-                    class="action-button text-capitalize"
-                    :disabled="
-                      channel.state !== 'settleable' &&
-                        channel.state !== 'settling'
-                    "
-                    @click="settle(channel)"
-                  >
-                    Settle
-                  </v-btn>
-                </v-layout>
+                <channel-actions
+                  :index="index"
+                  :channel="channel"
+                  @close="onClose($event)"
+                  @settle="onSettle($event)"
+                  @deposit="onDeposit($event)"
+                ></channel-actions>
               </div>
             </div>
           </v-list-group>
@@ -132,9 +96,11 @@ import BlockieMixin from '@/mixins/blockie-mixin';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
 import Confirmation from '@/components/Confirmation.vue';
 import { BigNumber } from 'ethers/utils';
+import ChannelActions from '@/components/ChannelActions.vue';
 
 @Component({
   components: {
+    ChannelActions,
     Confirmation,
     ChannelLifeCycle,
     ChannelDeposit
@@ -148,9 +114,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   token: Token | null = TokenPlaceholder;
   selectedChannel: RaidenChannel | null = null;
-  visibleCloseConfirmation: string = '';
-  visibleSettleConfirmation: string = '';
-  visibleDeposit: string = '';
+  visible: string = '';
   message: string = '';
   snackbar: boolean = false;
 
@@ -158,50 +122,34 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.token = await this.$raiden.getToken(this.tokenAddress);
   }
 
-  closeCancelled() {
-    this.visibleCloseConfirmation = '';
-  }
-
-  async closeConfirmed() {
-    const channel = this.selectedChannel!;
-    const token = channel.token;
-    const partner = channel.partner;
-    this.dismissCloseModal();
-    try {
-      await this.$raiden.closeChannel(token, partner);
-      this.showMessage('Channel close successful');
-    } catch (e) {
-      this.showMessage('Channel close failed');
-    }
-  }
-
   private showMessage(message: string) {
     this.message = message;
     this.snackbar = true;
   }
 
-  private dismissCloseModal() {
-    this.visibleCloseConfirmation = '';
+  dismiss() {
+    this.visible = '';
     this.selectedChannel = null;
   }
 
-  close(channel: RaidenChannel) {
+  onDeposit(channel: RaidenChannel) {
     this.selectedChannel = channel;
-    this.visibleCloseConfirmation = `channel-${channel.id}`;
+    this.visible = `channel-${channel.id}-deposit`;
   }
 
-  depositCancelled() {
-    this.dismissDepositModal();
+  onClose(channel: RaidenChannel) {
+    this.selectedChannel = channel;
+    this.visible = `channel-${channel.id}-close`;
   }
 
-  private dismissDepositModal() {
-    this.visibleDeposit = '';
-    this.selectedChannel = null;
+  onSettle(channel: RaidenChannel) {
+    this.selectedChannel = channel;
+    this.visible = `channel-${channel.id}-settle`;
   }
 
-  async depositConfirmed(deposit: BigNumber) {
+  async deposit(deposit: BigNumber) {
     const { token, partner } = this.selectedChannel!;
-    this.dismissDepositModal();
+    this.dismiss();
     try {
       await this.$raiden.deposit(token, partner, deposit);
       this.showMessage('Deposit was successful');
@@ -210,39 +158,26 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     }
   }
 
-  deposit(channel: RaidenChannel) {
-    this.selectedChannel = channel;
-    this.visibleDeposit = `channel-${channel.id}`;
-  }
-
-  private dismissSettleModal() {
-    this.visibleSettleConfirmation = '';
-    this.selectedChannel = null;
-  }
-
-  settleCancelled() {
-    this.dismissSettleModal();
-  }
-
-  async settleConfirmed() {
+  async close() {
     const { token, partner } = this.selectedChannel!;
-    this.dismissSettleModal();
+    this.dismiss();
+    try {
+      await this.$raiden.closeChannel(token, partner);
+      this.showMessage('Channel close successful');
+    } catch (e) {
+      this.showMessage('Channel close failed');
+    }
+  }
+
+  async settle() {
+    const { token, partner } = this.selectedChannel!;
+    this.dismiss();
     try {
       await this.$raiden.settleChannel(token, partner);
       this.showMessage('Channel settle was successful');
     } catch (e) {
       this.showMessage('Channel settle failed');
     }
-  }
-
-  settle(channel: RaidenChannel) {
-    this.selectedChannel = channel;
-    this.visibleSettleConfirmation = `channel-${channel.id}`;
-  }
-
-  closeConfirmation() {
-    this.visibleSettleConfirmation = '';
-    this.visibleCloseConfirmation = '';
   }
 }
 </script>

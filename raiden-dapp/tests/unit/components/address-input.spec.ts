@@ -37,7 +37,8 @@ describe('AddressInput', function() {
   it('should show no validation messages', () => {
     const messages = wrapper.find('.v-messages__message');
     expect(wrapper.props().value).toBe('');
-    expect(messages.exists()).toBe(false);
+    expect(messages.exists()).toBe(true);
+    expect(messages.text()).toBe('');
   });
 
   it('should show a this address cannot be an empty message', async () => {
