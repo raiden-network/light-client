@@ -5,6 +5,7 @@ import { Address, Hash, Signature, UInt } from '../utils/types';
 // Represents a HashTime-Locked amount in a channel
 export const Lock = t.type(
   {
+    type: t.literal('Lock'),
     amount: UInt(32),
     expiration: UInt(32),
     secrethash: Hash,

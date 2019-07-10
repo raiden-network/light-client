@@ -36,7 +36,7 @@ export const ChannelEnd = t.intersection([
     ),
   }),
 ]);
-export type ChannelEnd = t.TypeOf<typeof ChannelEnd>;
+export interface ChannelEnd extends t.TypeOf<typeof ChannelEnd> {}
 
 export const Channel = t.intersection([
   t.type({

@@ -33,7 +33,9 @@ export const RaidenState = t.type({
   sent: SentTransfers,
 });
 
-export type RaidenState = t.TypeOf<typeof RaidenState>;
+// the interface trick below forces TSC to use the imported type instead of inlining
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface RaidenState extends t.TypeOf<typeof RaidenState> {}
 
 // helpers, utils & constants
 

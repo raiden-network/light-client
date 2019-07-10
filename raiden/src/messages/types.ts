@@ -43,7 +43,7 @@ export const Delivered = t.intersection([
   }),
   Message,
 ]);
-export type Delivered = t.TypeOf<typeof Delivered>;
+export interface Delivered extends t.TypeOf<typeof Delivered> {}
 
 // Confirms some message that required state validation was successfuly processed
 export const Processed = t.intersection([
@@ -52,7 +52,7 @@ export const Processed = t.intersection([
   }),
   RetrieableMessage,
 ]);
-export type Processed = t.TypeOf<typeof Processed>;
+export interface Processed extends t.TypeOf<typeof Processed> {}
 
 // Requests the initiator to reveal the secret for a LockedTransfer targeted to us
 export const SecretRequest = t.intersection([
@@ -65,7 +65,7 @@ export const SecretRequest = t.intersection([
   }),
   RetrieableMessage,
 ]);
-export type SecretRequest = t.TypeOf<typeof SecretRequest>;
+export interface SecretRequest extends t.TypeOf<typeof SecretRequest> {}
 
 // Reveal to the target or the previous hop a secret we just learned off-chain
 export const SecretReveal = t.intersection([
@@ -75,7 +75,7 @@ export const SecretReveal = t.intersection([
   }),
   RetrieableMessage,
 ]);
-export type SecretReveal = t.TypeOf<typeof SecretReveal>;
+export interface SecretReveal extends t.TypeOf<typeof SecretReveal> {}
 
 // Mixin for messages containing a balance proof
 export const EnvelopeMessage = t.intersection([
@@ -112,7 +112,7 @@ export const LockedTransfer = t.intersection([
   }),
   LockedTransferBase,
 ]);
-export type LockedTransfer = t.TypeOf<typeof LockedTransfer>;
+export interface LockedTransfer extends t.TypeOf<typeof LockedTransfer> {}
 
 // if a mediated transfer didn't succeed, mediator can refund the amount with the same secrethash
 // so the previous hop can retry it with another neighbor
@@ -122,7 +122,7 @@ export const RefundTransfer = t.intersection([
   }),
   LockedTransferBase,
 ]);
-export type RefundTransfer = t.TypeOf<typeof RefundTransfer>;
+export interface RefundTransfer extends t.TypeOf<typeof RefundTransfer> {}
 
 // when the secret is revealed, unlock sends a new balance proof without the lock and increasing
 // the total transfered to finish the offchain transfer
@@ -134,7 +134,7 @@ export const Unlock = t.intersection([
   }),
   EnvelopeMessage,
 ]);
-export type Unlock = t.TypeOf<typeof Unlock>;
+export interface Unlock extends t.TypeOf<typeof Unlock> {}
 
 // after mediated transfer fails and the lock expire, clean it from the locks tree
 export const LockExpired = t.intersection([
@@ -145,7 +145,7 @@ export const LockExpired = t.intersection([
   }),
   EnvelopeMessage,
 ]);
-export type LockExpired = t.TypeOf<typeof LockExpired>;
+export interface LockExpired extends t.TypeOf<typeof LockExpired> {}
 
 export type Message =
   | Delivered
