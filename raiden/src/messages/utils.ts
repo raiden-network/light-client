@@ -14,7 +14,7 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
   [MessageType.PROCESSED]: 0,
   [MessageType.SECRET_REQUEST]: 3,
-  [MessageType.REVEAL_SECRET]: 11,
+  [MessageType.SECRET_REVEAL]: 11,
   [MessageType.LOCKED_TRANSFER]: 7,
   [MessageType.REFUND_TRANSFER]: 8,
   [MessageType.UNLOCK]: 4,
@@ -154,7 +154,7 @@ export function packMessage(message: Message) {
           encode(message.expiration, 32),
         ]),
       ) as HexString<116>;
-    case MessageType.REVEAL_SECRET:
+    case MessageType.SECRET_REVEAL:
       return hexlify(
         concat([
           encode(CMDIDs[message.type], 1),

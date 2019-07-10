@@ -31,7 +31,8 @@ import {
   LockedTransfer,
   Processed,
   SecretRequest,
-  RevealSecret,
+  SecretReveal,
+  Unlock,
   Signed,
 } from '../messages/types';
 import { signMessage } from '../messages/utils';
@@ -43,6 +44,8 @@ import {
   transferProcessed,
   transferFailed,
   transferSecretRequest,
+  transferSecretReveal,
+  transferUnlock,
 } from './actions';
 import { getLocksroot } from './utils';
 
@@ -149,11 +152,72 @@ function makeAndSignTransfer(
         mergeMap(function*(signed) {
           // besides transferSigned, also yield transferSecret (for registering) if we know it
           if (secret) yield transferSecret({ secret }, { secrethash: action.meta.secrethash });
-          yield transferSigned(signed, action.meta);
+          yield transferSigned({ message: signed }, action.meta);
+          // TODO: retry messageSend
+          yield messageSend({ message: signed }, { address: recipient! });
         }),
       );
     }),
     catchError(err => of(transferFailed(err, action.meta))),
+  );
+}
+
+function makeAndSignUnlock(
+  {  }: Observable<Presences>,
+  state$: Observable<RaidenState>,
+  action: ActionType<typeof transferSecretReveal>,
+  { signer }: RaidenEpicDeps,
+) {
+  return state$.pipe(
+    first(),
+    mergeMap(state => {
+      const secrethash = action.meta.secrethash,
+        transfer = state.sent[secrethash].transfer;
+      if (
+        !(transfer.token_network_address in state.channels) ||
+        !(transfer.recipient in state.channels[transfer.token_network_address])
+      )
+        throw new Error('Channel gone!');
+      const channel = state.channels[transfer.token_network_address][transfer.recipient],
+        balanceProof = channel.own.balanceProof;
+
+      if (channel.state !== ChannelState.open) throw new Error('not open');
+      if (!balanceProof) throw new Error('assert: balanceProof gone!');
+      // don't forget to check after signature too, may have expired by then
+      if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
+
+      const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash),
+        locksroot = getLocksroot(locks),
+        msgId = bigNumberify(Date.now()) as UInt<8>;
+
+      const message: Unlock = {
+        type: MessageType.UNLOCK,
+        message_identifier: msgId,
+        chain_id: transfer.chain_id,
+        token_network_address: transfer.token_network_address,
+        channel_identifier: transfer.channel_identifier,
+        nonce: balanceProof.nonce.add(1) as UInt<8>,
+        transferred_amount: balanceProof.transferredAmount.add(transfer.lock.amount) as UInt<32>,
+        locked_amount: balanceProof.lockedAmount.sub(transfer.lock.amount) as UInt<32>,
+        locksroot,
+        payment_identifier: transfer.payment_identifier,
+        secret: action.payload.message.secret,
+      };
+
+      return from(signMessage(signer, message)).pipe(
+        withLatestFrom(state$),
+        mergeMap(function*([signed, state]) {
+          if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
+          yield transferUnlock({ message: signed }, action.meta);
+          // TODO: retry messageSend
+          yield messageSend({ message: signed }, { address: transfer.recipient });
+        }),
+      );
+    }),
+    catchError(err => {
+      console.error('Error when trying to unlock after SecretReveal', err);
+      return EMPTY;
+    }),
   );
 }
 
@@ -167,16 +231,26 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<ActionType<typeof transferSigned | typeof transferSecret | typeof transferFailed>> =>
+): Observable<
+  ActionType<
+    | typeof transferSigned
+    | typeof transferSecret
+    | typeof transferUnlock
+    | typeof transferFailed
+    | typeof messageSend
+  >
+> =>
   combineLatest(getPresences$(action$), state$).pipe(
     multicast(new ReplaySubject(1), presencesStateReplay$ => {
       const [presences$, state$] = splitCombined(presencesStateReplay$);
       return action$.pipe(
-        filter(isActionOf(transfer)),
+        filter(isActionOf([transfer, transferSecretReveal])),
         concatMap(action =>
           // TODO: add any other BP-changing observable below
           isActionOf(transfer, action)
             ? makeAndSignTransfer(presences$, state$, action, deps)
+            : isActionOf(transferSecretReveal, action)
+            ? makeAndSignUnlock(presences$, state$, action, deps)
             : EMPTY,
         ),
       );
@@ -207,7 +281,7 @@ export const transferProcessedReceivedEpic = (
         }
       }
       if (!secrethash) return;
-      yield transferProcessed(message, { secrethash });
+      yield transferProcessed({ message }, { secrethash });
     }),
   );
 
@@ -233,7 +307,7 @@ export const transferSecretRequestedEpic = (
         !sent.transfer.lock.expiration.eq(message.expiration)
       )
         return;
-      yield transferSecretRequest(message, { secrethash: message.secrethash });
+      yield transferSecretRequest({ message }, { secrethash: message.secrethash });
     }),
   );
 
@@ -245,7 +319,7 @@ export const transferRevealSecretEpic = (
   state$: Observable<RaidenState>,
   { signer }: RaidenEpicDeps,
 ): Observable<ActionType<typeof messageSend>> => {
-  const cache = new LruCache<Hash, Signed<RevealSecret>>(32);
+  const cache = new LruCache<Hash, Signed<SecretReveal>>(32);
   return state$.pipe(
     multicast(new ReplaySubject(1), state$ =>
       action$.pipe(
@@ -257,8 +331,8 @@ export const transferRevealSecretEpic = (
               const target = state.sent[action.meta.secrethash].transfer.target;
               const cached = cache.get(action.meta.secrethash);
               if (cached) return of(messageSend({ message: cached }, { address: target }));
-              const message: RevealSecret = {
-                type: MessageType.REVEAL_SECRET,
+              const message: SecretReveal = {
+                type: MessageType.SECRET_REVEAL,
                 message_identifier: bigNumberify(Date.now()) as UInt<8>,
                 secret: state.secrets[action.meta.secrethash].secret,
               };
@@ -273,3 +347,29 @@ export const transferRevealSecretEpic = (
     ),
   );
 };
+
+/**
+ * Handles receiving a valid SecretReveal from recipient (neighbor/partner)
+ */
+export const transferSecretRevealedEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof transferSecretReveal>> =>
+  action$.pipe(
+    filter(isActionOf(messageReceived)),
+    withLatestFrom(state$),
+    mergeMap(function*([action, state]) {
+      const message = action.payload.message;
+      if (!message || !Signed(SecretReveal).is(message)) return;
+      const secrethash = keccak256(message.secret) as Hash;
+      // if below only relevant after we can receive, so we reveal after learning the secret
+      // if (!(secrethash in state.secrets))
+      //   yield transferSecret({ secret: message.secret }, { secrethash });
+      if (
+        !(secrethash in state.sent) ||
+        action.meta.address !== state.sent[secrethash].transfer.recipient
+      )
+        return;
+      yield transferSecretReveal({ message }, { secrethash });
+    }),
+  );

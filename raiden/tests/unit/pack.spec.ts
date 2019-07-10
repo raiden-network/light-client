@@ -5,7 +5,7 @@ import {
   MessageType,
   Processed,
   RefundTransfer,
-  RevealSecret,
+  SecretReveal,
   SecretRequest,
   Unlock,
 } from 'raiden/messages/types';
@@ -153,14 +153,14 @@ describe('packMessage', () => {
     );
   });
 
-  test('RevealSecret', () => {
-    const message: RevealSecret = {
-      type: MessageType.REVEAL_SECRET,
+  test('SecretReveal', () => {
+    const message: SecretReveal = {
+      type: MessageType.SECRET_REVEAL,
       message_identifier: bigNumberify(123456) as UInt<8>,
       secret: '0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e' as Secret,
     };
 
-    RevealSecret.decode(message).fold(
+    SecretReveal.decode(message).fold(
       error => fail(error),
       message => {
         expect(packMessage(message)).toEqual(

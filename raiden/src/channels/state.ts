@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 
 import { Address, EnumType, Hash, Signature, UInt } from '../utils/types';
+import { LockedTransfer, LockExpired, Unlock } from '../messages/types';
 
 export enum ChannelState {
   opening = 'opening',
@@ -54,6 +55,10 @@ export const ChannelEnd = t.intersection([
   t.partial({
     locks: t.array(Lock),
     balanceProof: SignedBalanceProof,
+    history: t.record(
+      t.number /* timestamp */,
+      t.union([LockedTransfer, Unlock, LockExpired]) /* sent by this end */,
+    ),
   }),
 ]);
 export type ChannelEnd = t.TypeOf<typeof ChannelEnd>;

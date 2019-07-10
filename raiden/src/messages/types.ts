@@ -15,7 +15,7 @@ export enum MessageType {
   DELIVERED = 'Delivered',
   PROCESSED = 'Processed',
   SECRET_REQUEST = 'SecretRequest',
-  REVEAL_SECRET = 'RevealSecret',
+  SECRET_REVEAL = 'RevealSecret',
   LOCKED_TRANSFER = 'LockedTransfer',
   REFUND_TRANSFER = 'RefundTransfer',
   UNLOCK = 'Secret', // TODO: update to post-red-eyes 'Unlock' type tag
@@ -67,14 +67,14 @@ export const SecretRequest = t.intersection([
 export type SecretRequest = t.TypeOf<typeof SecretRequest>;
 
 // Reveal to the target or the previous hop a secret we just learned off-chain
-export const RevealSecret = t.intersection([
+export const SecretReveal = t.intersection([
   t.type({
-    type: t.literal(MessageType.REVEAL_SECRET),
+    type: t.literal(MessageType.SECRET_REVEAL),
     secret: Secret,
   }),
   RetrieableMessage,
 ]);
-export type RevealSecret = t.TypeOf<typeof RevealSecret>;
+export type SecretReveal = t.TypeOf<typeof SecretReveal>;
 
 // Mixin for messages containing a balance proof
 export const EnvelopeMessage = t.intersection([
@@ -150,7 +150,7 @@ export type Message =
   | Delivered
   | Processed
   | SecretRequest
-  | RevealSecret
+  | SecretReveal
   | LockedTransfer
   | RefundTransfer
   | Unlock
@@ -170,7 +170,7 @@ export const SignedMessageCodecs: { readonly [T in MessageType]: t.Mixed } = {
   [MessageType.DELIVERED]: Signed(Delivered),
   [MessageType.PROCESSED]: Signed(Processed),
   [MessageType.SECRET_REQUEST]: Signed(SecretRequest),
-  [MessageType.REVEAL_SECRET]: Signed(RevealSecret),
+  [MessageType.SECRET_REVEAL]: Signed(SecretReveal),
   [MessageType.LOCKED_TRANSFER]: Signed(LockedTransfer),
   [MessageType.REFUND_TRANSFER]: Signed(RefundTransfer),
   [MessageType.UNLOCK]: Signed(Unlock),

@@ -4,7 +4,7 @@ import {
   LockedTransfer,
   LockExpired,
   Processed,
-  RevealSecret,
+  SecretReveal,
   Unlock,
   Signed,
 } from '../messages/types';
@@ -19,8 +19,8 @@ export const SentTransfer = t.intersection([
   }),
   t.partial({
     transferProcessed: Signed(Processed), // <- incoming processed for locked transfer
-    revealSecret: Signed(RevealSecret), // <- incoming secret reveal
-    unlock: Signed(Unlock), // -> outgoing unlock
+    secretReveal: Signed(SecretReveal), // <- incoming secret reveal from recipient
+    unlock: Signed(Unlock), // -> outgoing unlock to recipient
     lockExpired: Signed(LockExpired), // -> outgoing lock expired (if so)
     // processed for Unlock or LockExpired clear this transfer, so aren't here
     // transferFailed also clear this transfer
