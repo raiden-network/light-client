@@ -1,6 +1,6 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, ParamType, BigNumber, bigNumberify } from 'ethers/utils';
+import { Network, ParamType, BigNumber, bigNumberify, keccak256 } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
@@ -35,7 +35,7 @@ import {
   TokenInfo,
 } from './types';
 import { ShutdownReason } from './constants';
-import { Address, PrivateKey, Storage, Hash } from './utils/types';
+import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './store';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
@@ -62,6 +62,8 @@ import {
   matrixRequestMonitorPresence,
 } from './transport/actions';
 import { messageSend } from './messages/actions';
+import { transfer, transferred, transferFailed } from './transfers/actions';
+import { makeSecret } from './transfers/utils';
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
@@ -622,6 +624,61 @@ export class Raiden {
    */
   public sendMessage(address: Address, message: string): void {
     this.store.dispatch(messageSend({ message }, { address }));
+  }
+
+  /**
+   * Temporary interface to test MessageSendAction
+   */
+  public async transfer(
+    token: string,
+    target: string,
+    amount: number | BigNumber,
+    opts?: { paymentId?: number | BigNumber; secret?: string; secrethash?: string },
+  ): Promise<BigNumber> {
+    if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
+    const tokenNetwork = this.state.tokens[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
+
+    if (typeof amount === 'number') amount = bigNumberify(amount);
+    if (!UInt(32).is(amount)) throw new Error('Invalid amount');
+
+    let paymentId =
+      !opts || opts.paymentId === undefined ? undefined : bigNumberify(opts.paymentId);
+    if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid opts.paymentId');
+
+    let secret: Secret | undefined, secrethash: Hash | undefined;
+    if (opts) {
+      const _secret = opts.secret;
+      if (_secret !== undefined && !Secret.is(_secret)) throw new Error('Invalid opts.secret');
+      const _secrethash = opts.secrethash;
+      if (_secrethash !== undefined && !Hash.is(_secrethash))
+        throw new Error('Invalid opts.secrethash');
+      secret = _secret;
+      secrethash = _secrethash;
+    }
+    if (!secrethash) {
+      if (!secret) secret = makeSecret();
+      secrethash = keccak256(secret) as Hash;
+    } else if (secret && keccak256(secret) !== secrethash) {
+      throw new Error('Secret and secrethash must match if passing both');
+    }
+
+    const promise = this.action$
+      .pipe(
+        filter(isActionOf([transferred, transferFailed])),
+        filter(action => action.meta.secrethash === secrethash),
+        first(),
+        map(action => {
+          if (isActionOf(transferFailed, action)) throw action.payload;
+          return action.payload.balanceProof.transferredAmount;
+        }),
+      )
+      .toPromise();
+
+    this.store.dispatch(
+      transfer({ tokenNetwork, target, amount, paymentId, secret }, { secrethash }),
+    );
+    return promise;
   }
 }
 

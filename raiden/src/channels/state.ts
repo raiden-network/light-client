@@ -1,7 +1,8 @@
 import * as t from 'io-ts';
 
-import { Address, EnumType, Hash, Signature, UInt } from '../utils/types';
-import { LockedTransfer, LockExpired, Unlock } from '../messages/types';
+import { EnumType, UInt } from '../utils/types';
+import { Signed, LockedTransfer, Unlock, LockExpired } from '../messages/types';
+import { Lock, SignedBalanceProof } from './types';
 
 export enum ChannelState {
   opening = 'opening',
@@ -15,36 +16,6 @@ export enum ChannelState {
 
 export const ChannelStateC = new EnumType<ChannelState>(ChannelState, 'ChannelState');
 
-// Represents a HashTime-Locked amount in a channel
-export const Lock = t.type({
-  amount: UInt(32),
-  expiration: UInt(32),
-  secrethash: Hash,
-});
-export type Lock = t.TypeOf<typeof Lock>;
-
-/**
- * Balance Proof constructed from an EnvelopeMessage
- * Either produced by us or received from the partner, the BPs are generated from the messages
- * because BP signature requires the hash of the message, for authentication of data not included
- * nor relevant for the smartcontract/BP itself, but so for the peers (e.g. payment_id)
- */
-export const SignedBalanceProof = t.type({
-  // channel data
-  chainId: UInt(32),
-  tokenNetworkAddress: Address,
-  channelId: UInt(32),
-  // balance proof data
-  nonce: UInt(8),
-  transferredAmount: UInt(32),
-  lockedAmount: UInt(32),
-  locksroot: Hash,
-  messageHash: Hash,
-  signature: Signature,
-  sender: Address,
-});
-export type SignedBalanceProof = t.TypeOf<typeof SignedBalanceProof>;
-
 /**
  * Contains info of each side of a channel
  */
@@ -57,7 +28,11 @@ export const ChannelEnd = t.intersection([
     balanceProof: SignedBalanceProof,
     history: t.record(
       t.number /* timestamp */,
-      t.union([LockedTransfer, Unlock, LockExpired]) /* sent by this end */,
+      t.union([
+        Signed(LockedTransfer),
+        Signed(Unlock),
+        Signed(LockExpired),
+      ]) /* sent by this end */,
     ),
   }),
 ]);

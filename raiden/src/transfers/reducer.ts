@@ -1,5 +1,5 @@
 import { getType } from 'typesafe-actions';
-import { get, set } from 'lodash/fp';
+import { get, set, unset } from 'lodash/fp';
 import { One } from 'ethers/constants';
 
 import { RaidenState } from '../store/state';
@@ -101,7 +101,7 @@ export const transfersReducer = (
     case getType(transferUnlock): {
       const unlock = action.payload.message,
         secrethash = action.meta.secrethash;
-      if (!(secrethash in state.sent)) return state;
+      if (!(secrethash in state.sent) || state.sent[secrethash].unlock) return state;
       const transfer = state.sent[secrethash].transfer;
       const channelPath = ['channels', transfer.token_network_address, transfer.recipient];
       let channel: Channel | undefined = get(channelPath, state);
@@ -134,16 +134,7 @@ export const transfersReducer = (
 
     case getType(transferUnlockProcessed):
       if (!(action.meta.secrethash in state.sent)) return state;
-      return {
-        ...state,
-        sent: {
-          ...state.sent,
-          [action.meta.secrethash]: {
-            ...state.sent[action.meta.secrethash],
-            transferProcessed: action.payload.message,
-          },
-        },
-      };
+      return unset(['sent', action.meta.secrethash], state);
 
     default:
       return state;

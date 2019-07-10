@@ -6,9 +6,10 @@
  * validation, etc, and converting everything to its respective object, where needed.
  */
 import * as t from 'io-ts';
+import { memoize } from 'lodash';
 // import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { Address, EnumType, Hash, Secret, Signature, UInt } from '../utils/types';
-import { Lock } from '../channels';
+import { Lock } from '../channels/types';
 
 // types
 export enum MessageType {
@@ -161,9 +162,18 @@ export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExp
 // generic type codec for messages that must be signed
 // use it like: Codec = Signed(Message)
 // The t.TypeOf<typeof codec> will be Signed<Message>, defined later
-export function Signed<C extends t.Mixed>(codec: C) {
-  return t.intersection([codec, t.type({ signature: Signature })]);
-}
+export const Signed = memoize<
+  <C extends t.Mixed>(
+    codec: C,
+  ) => t.IntersectionC<
+    [
+      C,
+      t.TypeC<{
+        signature: typeof Signature;
+      }>,
+    ]
+  >
+>(<C extends t.Mixed>(codec: C) => t.intersection([codec, t.type({ signature: Signature })]));
 export type Signed<M extends Message> = M & { signature: Signature };
 
 export const SignedMessageCodecs: { readonly [T in MessageType]: t.Mixed } = {

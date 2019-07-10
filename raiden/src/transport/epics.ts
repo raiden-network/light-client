@@ -42,12 +42,26 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { MATRIX_KNOWN_SERVERS_URL } from '../constants';
 import { channelMonitored } from '../channels/actions';
-import { Message, Signed } from '../messages/types';
-import { decodeJsonMessage, encodeJsonMessage, getMessageSigner } from '../messages/utils';
+import {
+  Message,
+  MessageType,
+  Delivered,
+  Processed,
+  SecretRequest,
+  SecretReveal,
+  Signed,
+} from '../messages/types';
+import {
+  decodeJsonMessage,
+  encodeJsonMessage,
+  getMessageSigner,
+  signMessage,
+} from '../messages/utils';
 import { messageSend, messageReceived } from '../messages/actions';
 import { RaidenState } from '../store/state';
 import { raidenInit } from '../store/actions';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
+import { LruCache } from '../utils/lru';
 import {
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,
@@ -867,3 +881,42 @@ export const matrixMonitorChannelPresenceEpic = (
     filter(isActionOf(channelMonitored)),
     map(action => matrixRequestMonitorPresence(undefined, { address: action.meta.partner })),
   );
+
+/**
+ * Sends Delivered for specific messages
+ */
+export const deliveredEpic = (
+  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenState>,
+  { signer }: RaidenEpicDeps,
+): Observable<ActionType<typeof messageSend>> => {
+  const cache = new LruCache<string, Signed<Delivered>>(32);
+  return action$.pipe(
+    filter(isActionOf(messageReceived)),
+    concatMap(action => {
+      const message = action.payload.message;
+      if (
+        !message ||
+        !(
+          Signed(Processed).is(message) ||
+          Signed(SecretRequest).is(message) ||
+          Signed(SecretReveal).is(message)
+        )
+      )
+        return EMPTY;
+      const msgId = message.message_identifier,
+        key = msgId.toString();
+      const cached = cache.get(key);
+      if (cached) return of(messageSend({ message: cached }, action.meta));
+
+      const delivered: Delivered = {
+        type: MessageType.DELIVERED,
+        delivered_message_identifier: msgId, // eslint-disable-line @typescript-eslint/camelcase
+      };
+      return from(signMessage(signer, delivered)).pipe(
+        tap(signed => cache.put(key, signed)),
+        map(signed => messageSend({ message: signed }, action.meta)),
+      );
+    }),
+  );
+};

@@ -1,11 +1,11 @@
-import { concat } from 'ethers/utils/bytes';
-import { keccak256 } from 'ethers/utils';
+import { concat, hexlify } from 'ethers/utils/bytes';
+import { keccak256, randomBytes, bigNumberify } from 'ethers/utils';
 import { HashZero } from 'ethers/constants';
 import { isEmpty } from 'lodash';
 
-import { Hash } from '../utils/types';
+import { Hash, Secret, UInt } from '../utils/types';
 import { encode } from '../utils/data';
-import { Lock } from '../channels/state';
+import { Lock } from '../channels/types';
 
 /**
  * Return the hash of a lock
@@ -36,4 +36,29 @@ export function getLocksroot(locks: readonly Lock[]): Hash {
   }
 
   return leaves[0]; // merkle tree root
+}
+
+/**
+ * Generates a random secret of given length, as an HexString<32>
+ * @param length of the secret to generate
+ * @returns HexString<32>
+ */
+export function makeSecret(length: number = 32): Secret {
+  return hexlify(randomBytes(length)) as Secret;
+}
+
+/**
+ * Generates a random payment identifier, as an UInt<8> (64 bits)
+ * @returns UInt<8>
+ */
+export function makePaymentId(): UInt<8> {
+  return bigNumberify(randomBytes(8)) as UInt<8>;
+}
+
+/**
+ * Generates a message identifier, as an UInt<8> (64 bits)
+ * @returns UInt<8>
+ */
+export function makeMessageId(): UInt<8> {
+  return bigNumberify(Date.now()) as UInt<8>;
 }

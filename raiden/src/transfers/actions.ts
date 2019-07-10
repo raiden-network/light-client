@@ -1,6 +1,7 @@
 import { createStandardAction } from 'typesafe-actions';
 
 import { Address, UInt, Secret, Hash } from '../utils/types';
+import { SignedBalanceProof } from '../channels/types';
 import {
   LockedTransfer,
   Processed,
@@ -57,6 +58,11 @@ export const transferUnlock = createStandardAction('transferUnlock')<
 
 export const transferUnlockProcessed = createStandardAction('transferUnlockProcessed')<
   { message: Signed<Processed> },
+  TransferId
+>();
+
+export const transferred = createStandardAction('transferred')<
+  { balanceProof: SignedBalanceProof },
   TransferId
 >();
 

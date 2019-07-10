@@ -12,7 +12,7 @@ import {
   tap,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
-import { bigNumberify, keccak256, randomBytes } from 'ethers/utils';
+import { bigNumberify, keccak256 } from 'ethers/utils';
 import { One, Zero } from 'ethers/constants';
 import { findKey } from 'lodash';
 
@@ -20,7 +20,7 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../store';
 import { REVEAL_TIMEOUT } from '../constants';
-import { Address, Hash, UInt } from '../utils/types';
+import { Address, Hash, Secret, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
 import { LruCache } from '../utils/lru';
 import { Presences } from '../transport/types';
@@ -35,8 +35,9 @@ import {
   Unlock,
   Signed,
 } from '../messages/types';
-import { signMessage } from '../messages/utils';
-import { ChannelState, Lock } from '../channels/state';
+import { signMessage, getBalanceProofFromEnvelopeMessage } from '../messages/utils';
+import { ChannelState } from '../channels/state';
+import { Lock } from '../channels/types';
 import {
   transfer,
   transferSigned,
@@ -46,8 +47,10 @@ import {
   transferSecretRequest,
   transferSecretReveal,
   transferUnlock,
+  transferUnlockProcessed,
+  transferred,
 } from './actions';
-import { getLocksroot } from './utils';
+import { getLocksroot, makePaymentId, makeMessageId } from './utils';
 
 /**
  * Create an observable to compose and sign a LockedTransfer message/transferSigned action
@@ -69,92 +72,103 @@ function makeAndSignTransfer(
       if (!presences[action.payload.target].payload.available)
         throw new Error('target not available/online');
 
-      let recipient: Address | undefined = undefined;
-      for (const [partner, channel] of Object.entries(
-        state.channels[action.payload.tokenNetwork],
-      )) {
-        // capacity is own deposit - (own trasferred + locked) + (partner transferred)
-        const capacity = channel.own.deposit
-          .sub(
-            channel.own.balanceProof
-              ? channel.own.balanceProof.transferredAmount.add(
-                  channel.own.balanceProof.lockedAmount,
-                )
-              : Zero,
-          )
-          .add(
-            // only relevant once we can receive from partner
-            channel.partner.balanceProof ? channel.partner.balanceProof.transferredAmount : Zero,
-          );
-        if (channel.state !== ChannelState.open) {
-          console.warn(
-            `transfer: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`,
-          );
-        } else if (capacity.lt(action.payload.amount)) {
-          console.warn(
-            `transfer: channel with "${partner}" without enough capacity (${capacity.toString()})`,
-          );
-        } else if (!(partner in presences) || !presences[partner].payload.available) {
-          console.warn(`transfer: partner "${partner}" not available in transport`);
-        } else {
-          recipient = partner as Address;
-          break;
+      let secret: Secret | undefined;
+      let signed$: Observable<Signed<LockedTransfer>>;
+      if (action.meta.secrethash in state.sent) {
+        // if already saw a transfer with secrethash, use cached instead of signing a new one
+        signed$ = of(state.sent[action.meta.secrethash].transfer);
+      } else {
+        let recipient: Address | undefined = undefined;
+        for (const [partner, channel] of Object.entries(
+          state.channels[action.payload.tokenNetwork],
+        )) {
+          // capacity is own deposit - (own trasferred + locked) + (partner transferred)
+          const capacity = channel.own.deposit
+            .sub(
+              channel.own.balanceProof
+                ? channel.own.balanceProof.transferredAmount.add(
+                    channel.own.balanceProof.lockedAmount,
+                  )
+                : Zero,
+            )
+            .add(
+              // only relevant once we can receive from partner
+              channel.partner.balanceProof ? channel.partner.balanceProof.transferredAmount : Zero,
+            );
+          if (channel.state !== ChannelState.open) {
+            console.warn(
+              `transfer: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`,
+            );
+          } else if (capacity.lt(action.payload.amount)) {
+            console.warn(
+              `transfer: channel with "${partner}" without enough capacity (${capacity.toString()})`,
+            );
+          } else if (!(partner in presences) || !presences[partner].payload.available) {
+            console.warn(`transfer: partner "${partner}" not available in transport`);
+          } else {
+            recipient = partner as Address;
+            break;
+          }
         }
+        if (!recipient)
+          throw new Error(
+            'Could not find an online partner for tokenNetwork with enough capacity',
+          );
+        const channel = state.channels[action.payload.tokenNetwork][recipient];
+        // check below never fail, because of for loop filter, just for type narrowing
+        if (channel.state !== ChannelState.open) throw new Error('not open');
+
+        secret = action.payload.secret;
+        if (secret && keccak256(secret) !== action.meta.secrethash) {
+          throw new Error('secrethash does not match provided secret');
+        }
+        let paymentId = action.payload.paymentId;
+        if (!paymentId) paymentId = makePaymentId();
+
+        const lock: Lock = {
+            amount: action.payload.amount,
+            expiration: bigNumberify(state.blockNumber + REVEAL_TIMEOUT * 2) as UInt<32>,
+            secrethash: action.meta.secrethash,
+          },
+          locks: Lock[] = [...(channel.own.locks || []), lock],
+          locksroot = getLocksroot(locks),
+          fee = action.payload.fee || (Zero as UInt<32>),
+          msgId = makeMessageId(),
+          token = findKey(state.tokens, tn => tn === action.payload.tokenNetwork)! as Address;
+
+        const message: LockedTransfer = {
+          type: MessageType.LOCKED_TRANSFER,
+          message_identifier: msgId,
+          chain_id: bigNumberify(network.chainId) as UInt<32>,
+          token_network_address: action.payload.tokenNetwork,
+          channel_identifier: bigNumberify(channel.id) as UInt<32>,
+          nonce: (channel.own.balanceProof ? channel.own.balanceProof.nonce.add(1) : One) as UInt<
+            8
+          >,
+          transferred_amount: channel.own.balanceProof
+            ? channel.own.balanceProof.transferredAmount
+            : (Zero as UInt<32>),
+          locked_amount: channel.own.balanceProof
+            ? (channel.own.balanceProof.lockedAmount.add(action.payload.amount) as UInt<32>)
+            : action.payload.amount,
+          locksroot,
+          payment_identifier: paymentId,
+          token,
+          recipient,
+          lock,
+          target: action.payload.target,
+          initiator: address,
+          fee,
+        };
+        signed$ = from(signMessage(signer, message));
       }
-      if (!recipient)
-        throw new Error('Could not find an online partner for tokenNetwork with enough capacity');
-      const channel = state.channels[action.payload.tokenNetwork][recipient];
-      // check below never fail, because of for loop filter, just for type narrowing
-      if (channel.state !== ChannelState.open) throw new Error('not open');
-
-      let secret = action.payload.secret;
-      if (secret && keccak256(secret) !== action.meta.secrethash) {
-        throw new Error('secrethash does not match provided secret');
-      }
-      let paymentId = action.payload.paymentId;
-      if (!paymentId) paymentId = bigNumberify(randomBytes(8)) as UInt<8>;
-
-      const lock: Lock = {
-          amount: action.payload.amount,
-          expiration: bigNumberify(state.blockNumber + REVEAL_TIMEOUT * 2) as UInt<32>,
-          secrethash: action.meta.secrethash,
-        },
-        locks: Lock[] = [...(channel.own.locks || []), lock],
-        locksroot = getLocksroot(locks),
-        fee = action.payload.fee || (Zero as UInt<32>),
-        msgId = bigNumberify(Date.now()) as UInt<8>,
-        token = findKey(state.tokens, action.payload.tokenNetwork)! as Address;
-
-      const message: LockedTransfer = {
-        type: MessageType.LOCKED_TRANSFER,
-        message_identifier: msgId,
-        chain_id: bigNumberify(network.chainId) as UInt<32>,
-        token_network_address: action.payload.tokenNetwork,
-        channel_identifier: bigNumberify(channel.id) as UInt<32>,
-        nonce: (channel.own.balanceProof ? channel.own.balanceProof.nonce.add(1) : One) as UInt<8>,
-        transferred_amount: channel.own.balanceProof
-          ? channel.own.balanceProof.transferredAmount
-          : (Zero as UInt<32>),
-        locked_amount: channel.own.balanceProof
-          ? (channel.own.balanceProof.lockedAmount.add(action.payload.amount) as UInt<32>)
-          : action.payload.amount,
-        locksroot,
-        payment_identifier: paymentId,
-        token,
-        recipient,
-        lock,
-        target: action.payload.target,
-        initiator: address,
-        fee,
-      };
-
-      return from(signMessage(signer, message)).pipe(
+      return signed$.pipe(
         mergeMap(function*(signed) {
           // besides transferSigned, also yield transferSecret (for registering) if we know it
           if (secret) yield transferSecret({ secret }, { secrethash: action.meta.secrethash });
-          yield transferSigned({ message: signed }, action.meta);
+          yield transferSigned({ message: signed }, { secrethash: action.meta.secrethash });
           // TODO: retry messageSend
-          yield messageSend({ message: signed }, { address: recipient! });
+          yield messageSend({ message: signed }, { address: signed.recipient });
         }),
       );
     }),
@@ -171,40 +185,48 @@ function makeAndSignUnlock(
   return state$.pipe(
     first(),
     mergeMap(state => {
-      const secrethash = action.meta.secrethash,
-        transfer = state.sent[secrethash].transfer;
-      if (
+      const secrethash = action.meta.secrethash;
+      if (!(secrethash in state.sent)) throw new Error('unknown transfer');
+      const transfer = state.sent[secrethash].transfer;
+      let signed$: Observable<Signed<Unlock>>;
+      if (state.sent[secrethash].unlock) {
+        // unlock already signed, use cached
+        signed$ = of(state.sent[secrethash].unlock!);
+      } else if (
         !(transfer.token_network_address in state.channels) ||
         !(transfer.recipient in state.channels[transfer.token_network_address])
       )
-        throw new Error('Channel gone!');
-      const channel = state.channels[transfer.token_network_address][transfer.recipient],
-        balanceProof = channel.own.balanceProof;
+        throw new Error('channel gone');
+      else {
+        const channel = state.channels[transfer.token_network_address][transfer.recipient],
+          balanceProof = channel.own.balanceProof;
 
-      if (channel.state !== ChannelState.open) throw new Error('not open');
-      if (!balanceProof) throw new Error('assert: balanceProof gone!');
-      // don't forget to check after signature too, may have expired by then
-      if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
+        if (channel.state !== ChannelState.open) throw new Error('channel not open');
+        if (!balanceProof) throw new Error('assert: balanceProof gone');
+        // don't forget to check after signature too, may have expired by then
+        if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired');
 
-      const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash),
-        locksroot = getLocksroot(locks),
-        msgId = bigNumberify(Date.now()) as UInt<8>;
+        const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash),
+          locksroot = getLocksroot(locks),
+          msgId = makeMessageId();
 
-      const message: Unlock = {
-        type: MessageType.UNLOCK,
-        message_identifier: msgId,
-        chain_id: transfer.chain_id,
-        token_network_address: transfer.token_network_address,
-        channel_identifier: transfer.channel_identifier,
-        nonce: balanceProof.nonce.add(1) as UInt<8>,
-        transferred_amount: balanceProof.transferredAmount.add(transfer.lock.amount) as UInt<32>,
-        locked_amount: balanceProof.lockedAmount.sub(transfer.lock.amount) as UInt<32>,
-        locksroot,
-        payment_identifier: transfer.payment_identifier,
-        secret: action.payload.message.secret,
-      };
+        const message: Unlock = {
+          type: MessageType.UNLOCK,
+          message_identifier: msgId,
+          chain_id: transfer.chain_id,
+          token_network_address: transfer.token_network_address,
+          channel_identifier: transfer.channel_identifier,
+          nonce: balanceProof.nonce.add(1) as UInt<8>,
+          transferred_amount: balanceProof.transferredAmount.add(transfer.lock.amount) as UInt<32>,
+          locked_amount: balanceProof.lockedAmount.sub(transfer.lock.amount) as UInt<32>,
+          locksroot,
+          payment_identifier: transfer.payment_identifier,
+          secret: action.payload.message.secret,
+        };
+        signed$ = from(signMessage(signer, message));
+      }
 
-      return from(signMessage(signer, message)).pipe(
+      return signed$.pipe(
         withLatestFrom(state$),
         mergeMap(function*([signed, state]) {
           if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
@@ -372,4 +394,55 @@ export const transferSecretRevealedEpic = (
         return;
       yield transferSecretReveal({ message }, { secrethash });
     }),
+  );
+
+/**
+ * Handles receiving a signed Processed for some sent Unlock
+ */
+export const transferUnlockProcessedReceivedEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof transferUnlockProcessed>> =>
+  action$.pipe(
+    filter(isActionOf(messageReceived)),
+    withLatestFrom(state$),
+    mergeMap(function*([action, state]) {
+      const message = action.payload.message;
+      if (!message || !Signed(Processed).is(message)) return;
+      let secrethash: Hash | undefined;
+      for (const [key, sent] of Object.entries(state.sent)) {
+        if (
+          sent.unlock &&
+          sent.unlock.message_identifier.eq(message.message_identifier) &&
+          sent.transfer.recipient === action.meta.address
+        ) {
+          secrethash = key as Hash;
+          break;
+        }
+      }
+      if (!secrethash) return;
+      yield transferUnlockProcessed({ message }, { secrethash });
+    }),
+  );
+
+/**
+ * transferUnlockProcessed means transfer succeeded
+ */
+export const transferSuccessEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof transferred>> =>
+  action$.pipe(
+    filter(isActionOf(transferUnlockProcessed)),
+    withLatestFrom(state$),
+    map(([action, state]) =>
+      transferred(
+        {
+          balanceProof: getBalanceProofFromEnvelopeMessage(
+            state.sent[action.meta.secrethash].unlock!,
+          ),
+        },
+        action.meta,
+      ),
+    ),
   );

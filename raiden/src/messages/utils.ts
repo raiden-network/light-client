@@ -7,7 +7,7 @@ import { HashZero } from 'ethers/constants';
 
 import { Address, Hash, HexString, Signature } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
-import { SignedBalanceProof } from '../channels/state';
+import { SignedBalanceProof } from '../channels/types';
 import { EnvelopeMessage, Message, MessageType, SignedMessageCodecs, Signed } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
@@ -208,8 +208,9 @@ export function getBalanceProofFromEnvelopeMessage(
  * @param message Message object to be serialized
  * @returns JSON string
  */
-export function encodeJsonMessage(message: Signed<Message>): string {
-  return losslessStringify(SignedMessageCodecs[message.type].encode(message));
+export function encodeJsonMessage<M extends Message>(message: Signed<M>): string {
+  const codec = SignedMessageCodecs[message.type];
+  return losslessStringify(codec.encode(message));
 }
 
 /**
@@ -222,7 +223,7 @@ export function decodeJsonMessage(text: string): Signed<Message> {
   const parsed = losslessParse(text);
   if (!Message.is(parsed)) throw new Error(`Could not find Message "type" in ${text}`);
   const decoded = SignedMessageCodecs[parsed.type].decode(parsed);
-  ThrowReporter.report(decoded); // throws if decode failed
+  if (decoded.isLeft()) throw ThrowReporter.report(decoded); // throws if decode failed
   return decoded.value;
 }
 

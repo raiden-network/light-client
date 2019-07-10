@@ -1,12 +1,12 @@
 import * as t from 'io-ts';
 
 import {
+  Signed,
   LockedTransfer,
-  LockExpired,
   Processed,
   SecretReveal,
   Unlock,
-  Signed,
+  LockExpired,
 } from '../messages/types';
 
 /**
