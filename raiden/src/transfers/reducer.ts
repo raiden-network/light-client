@@ -14,7 +14,7 @@ import {
   transferProcessed,
   transferSecretReveal,
   transferUnlock,
-  transferUnlockProcessed,
+  transferred,
 } from './actions';
 
 // handles all transfers actions and requests
@@ -59,7 +59,7 @@ export function transfersReducer(
         balanceProof: getBalanceProofFromEnvelopeMessage(transfer),
         history: {
           ...channel.own.history,
-          [Date.now()]: transfer,
+          [Date.now().toString()]: transfer,
         },
       },
     };
@@ -115,7 +115,7 @@ export function transfersReducer(
         balanceProof: getBalanceProofFromEnvelopeMessage(unlock),
         history: {
           ...channel.own.history,
-          [Date.now()]: unlock,
+          [Date.now().toString()]: unlock,
         },
       },
     };
@@ -124,8 +124,10 @@ export function transfersReducer(
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
     return state;
-  } else if (isActionOf(transferUnlockProcessed, action)) {
+  } else if (isActionOf(transferred, action)) {
     if (!(action.meta.secrethash in state.sent)) return state;
-    return unset(['sent', action.meta.secrethash], state);
+    state = unset(['sent', action.meta.secrethash], state);
+    state = unset(['secrets', action.meta.secrethash], state);
+    return state;
   } else return state;
 }

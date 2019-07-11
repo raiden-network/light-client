@@ -27,7 +27,7 @@ export const ChannelEnd = t.intersection([
     locks: t.array(Lock),
     balanceProof: SignedBalanceProof,
     history: t.record(
-      t.number /* timestamp */,
+      t.string /* timestamp */,
       t.union([
         Signed(LockedTransfer),
         Signed(Unlock),

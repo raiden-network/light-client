@@ -2,7 +2,7 @@
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { Signer } from 'ethers';
 import { keccak256, verifyMessage } from 'ethers/utils';
-import { concat, hexlify } from 'ethers/utils/bytes';
+import { concat, hexlify, arrayify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
 import { Address, Hash, HexString, Signature } from '../utils/types';
@@ -21,7 +21,12 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.LOCK_EXPIRED]: 13,
 };
 
-function createMessageHash(message: EnvelopeMessage): Hash {
+/**
+ * Create the messageHash for a given EnvelopeMessage
+ * @param message EnvelopeMessage to pack
+ * @returns Hash of the message pack
+ */
+export function createMessageHash(message: EnvelopeMessage): Hash {
   switch (message.type) {
     case MessageType.LOCKED_TRANSFER:
     case MessageType.REFUND_TRANSFER:
@@ -179,7 +184,7 @@ export function isSigned<M extends Message & { signature?: Signature }>(
  * Requires a signed message and returns its signer address
  */
 export function getMessageSigner(message: Signed<Message>): Address {
-  return verifyMessage(packMessage(message), message.signature) as Address;
+  return verifyMessage(arrayify(packMessage(message)), message.signature) as Address;
 }
 
 /**
@@ -232,6 +237,6 @@ export async function signMessage<M extends Message>(
   message: M,
 ): Promise<Signed<M>> {
   if (isSigned(message)) return message;
-  const signature = (await signer.signMessage(packMessage(message))) as Signature;
+  const signature = (await signer.signMessage(arrayify(packMessage(message)))) as Signature;
   return { ...message, signature };
 }
