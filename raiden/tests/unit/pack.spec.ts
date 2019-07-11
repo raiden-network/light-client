@@ -30,6 +30,7 @@ describe('packMessage', () => {
       recipient: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
       locksroot: '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
       lock: {
+        type: 'Lock',
         amount: bigNumberify(10) as UInt<32>,
         expiration: One as UInt<32>,
         secrethash: '0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8' as Hash,
@@ -64,6 +65,7 @@ describe('packMessage', () => {
       recipient: '0x540B51eDc5900B8012091cc7c83caf2cb243aa86' as Address,
       locksroot: HashZero as Hash,
       lock: {
+        type: 'Lock',
         amount: bigNumberify(10) as UInt<32>,
         expiration: One as UInt<32>,
         secrethash: '0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8' as Hash,
