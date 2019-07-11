@@ -1,25 +1,121 @@
 <template>
   <div class="content-host">
+    <v-layout justify-center row class="list-container">
+      <Transition name="fade-transition" mode="out-in">
+        <div v-show="visible" class="overlay" @click="visible = ''"></div>
+      </Transition>
+    </v-layout>
+    <list-header
+      v-if="open.length > 0"
+      header="Open"
+      class="channels__header"
+    ></list-header>
     <channel-list
-      :channels="channels($route.params.token)"
+      :visible="visible"
       :token-address="$route.params.token"
+      :channels="open"
+      @visible-changed="visible = $event"
+      @message="showMessage($event)"
     ></channel-list>
+    <list-header
+      v-if="closed.length > 0"
+      class="channels__header"
+      header="Closed"
+    ></list-header>
+    <channel-list
+      :visible="visible"
+      :token-address="$route.params.token"
+      :channels="closed"
+      @visible-changed="visible = $event"
+      @message="showMessage($event)"
+    ></channel-list>
+    <list-header
+      v-if="settleable.length > 0"
+      class="channels__header"
+      header="Settleable"
+    ></list-header>
+    <channel-list
+      :visible="visible"
+      :token-address="$route.params.token"
+      :channels="settleable"
+      @visible-changed="visible = $event"
+      @message="showMessage($event)"
+    ></channel-list>
+    <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
+      {{ message }}
+      <v-btn color="primary" flat @click="snackbar = false">
+        Close
+      </v-btn>
+    </v-snackbar>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import ChannelList from '@/components/ChannelList.vue';
 import { mapGetters } from 'vuex';
-import { RaidenChannels } from 'raiden';
+import { ChannelState, RaidenChannel } from 'raiden';
+import ChannelList from '@/components/ChannelList.vue';
+import ListHeader from '@/components/ListHeader.vue';
 
 @Component({
-  components: { ChannelList },
+  components: { ListHeader, ChannelList },
   computed: mapGetters(['channels'])
 })
 export default class Channels extends Vue {
-  channels!: (address: string) => RaidenChannels[];
+  channels!: (address: string) => RaidenChannel[];
+
+  get open(): RaidenChannel[] {
+    return this.channels(this.$route.params.token).filter(
+      channel =>
+        channel.state === ChannelState.open ||
+        channel.state === ChannelState.opening
+    );
+  }
+
+  get closed(): RaidenChannel[] {
+    return this.channels(this.$route.params.token).filter(
+      channel =>
+        channel.state === ChannelState.closed ||
+        channel.state === ChannelState.closing
+    );
+  }
+
+  get settleable(): RaidenChannel[] {
+    return this.channels(this.$route.params.token).filter(
+      channel =>
+        channel.state === ChannelState.settling ||
+        channel.state === ChannelState.settleable
+    );
+  }
+
+  message: string = '';
+  visible: string = '';
+  snackbar: boolean = false;
+
+  showMessage(message: string) {
+    this.message = message;
+    this.snackbar = true;
+  }
 }
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+@import '../scss/dimensions';
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(30, 30, 30, 0.75);
+  z-index: 10;
+}
+
+.channels__header {
+  padding-top: $list-header-padding-top;
+}
+
+.content-host:first-child {
+  padding-top: $first-child-padding;
+}
+</style>

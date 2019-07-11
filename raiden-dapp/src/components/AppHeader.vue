@@ -74,6 +74,7 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
 
 <style scoped lang="scss">
 @import '../main';
+@import '../scss/colors';
 
 .blockie {
   border-radius: 50%;
@@ -117,8 +118,8 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
 .header {
   height: 80px;
   width: 620px;
-  border-radius: 14px;
-  background-color: #141414;
+  border-radius: 10px 10px 0 0;
+  background-color: $card-background;
   box-shadow: 5px 5px 15px 0 rgba(0, 0, 0, 0.3);
   @include respond-to(handhelds) {
     width: 100%;
