@@ -1,13 +1,19 @@
-import { of } from 'rxjs';
+import { of, combineLatest } from 'rxjs';
 import { first, take, toArray } from 'rxjs/operators';
 
 import { Event } from 'ethers/contract';
-import { BigNumber, bigNumberify } from 'ethers/utils';
+import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils';
 import { LosslessNumber } from 'lossless-json';
 
 import { fromEthersEvent, getEventsStream } from 'raiden/utils/ethers';
-import { Address, BigNumberC, HexString, UInt } from 'raiden/utils/types';
+import { Address, BigNumberC, HexString, UInt, Hash, Secret } from 'raiden/utils/types';
+import { LruCache } from 'raiden/utils/lru';
+import { encode, losslessParse, losslessStringify } from 'raiden/utils/data';
+import { splitCombined } from 'raiden/utils/rxjs';
 import { makeLog, raidenEpicDeps } from './mocks';
+import { getLocksroot, lockhash, makeSecret } from 'raiden/transfers/utils';
+import { HashZero } from 'ethers/constants';
+import { Lock } from 'raiden/channels';
 
 describe('fromEthersEvent', () => {
   let { provider } = raidenEpicDeps();
@@ -210,5 +216,98 @@ describe('types', () => {
     }
     expect(foo(address)).toBe(address);
     expect(bar(address)).toBe(address);
+  });
+});
+
+test('LruCache', () => {
+  const cache = new LruCache<string, { v: number }>(2);
+  expect(cache.values.size).toBe(0);
+  expect(cache.max).toBe(2);
+
+  const v1 = { v: 1 },
+    v2 = { v: 2 },
+    v3 = { v: 3 };
+  cache.put('1', v1);
+  cache.put('2', v2);
+
+  expect(cache.get('1')).toBe(v1);
+  expect(cache.get('2')).toBe(v2);
+  expect(cache.get('3')).toBeUndefined();
+
+  cache.put('3', v3);
+  expect(cache.get('3')).toBe(v3);
+  expect(cache.get('2')).toBe(v2);
+  expect(cache.get('1')).toBeUndefined();
+  expect(cache.values.size).toBe(2);
+});
+
+describe('data', () => {
+  test('encode', () => {
+    expect(encode(3, 2)).toBe('0x0003');
+    expect(encode('0x4001', 2)).toBe('0x4001');
+    expect(encode([5, 6], 2)).toBe('0x0506');
+    expect(encode(bigNumberify('48879'), 3)).toBe('0x00beef');
+
+    expect(() => encode(-1, 2)).toThrowError('negative');
+    expect(() => encode(bigNumberify(65537), 2)).toThrowError('too large');
+    expect(() => encode('0x01', 2)).toThrowError('exact length');
+    expect(() => encode((true as unknown) as number, 2)).toThrowError('data is not');
+  });
+
+  test('losslessParse', () => {
+    const parsed = losslessParse('{"big":18446744073709551616,"small":65535 }');
+    expect(parsed.big).toBeInstanceOf(LosslessNumber);
+    expect(parsed.big.value).toBe('18446744073709551616');
+    expect(parsed.small).toBe(65535);
+  });
+
+  test('losslessStringify', () => {
+    const stringified = losslessStringify({ n: new LosslessNumber('18446744073709551616') });
+    expect(stringified).toBe('{"n":18446744073709551616}');
+  });
+});
+
+test('rxjs splitCombined', async () => {
+  const src = combineLatest(of(1), of(2), of(3), of(4));
+  let [of1, of2, of3, of4] = splitCombined(src);
+  await expect(of1.toPromise()).resolves.toBe(1);
+  await expect(of2.toPromise()).resolves.toBe(2);
+  await expect(of3.toPromise()).resolves.toBe(3);
+  await expect(of4.toPromise()).resolves.toBe(4);
+});
+
+describe('messages', () => {
+  test('getLocksroot', () => {
+    expect(getLocksroot([])).toBe(HashZero);
+    const locks: Lock[] = [
+      {
+        type: 'Lock',
+        amount: bigNumberify(1) as UInt<32>,
+        expiration: bigNumberify(1) as UInt<32>,
+        secrethash: keccak256('0x1') as Hash,
+      },
+      {
+        type: 'Lock',
+        amount: bigNumberify(2) as UInt<32>,
+        expiration: bigNumberify(2) as UInt<32>,
+        secrethash: keccak256('0x2') as Hash,
+      },
+      {
+        type: 'Lock',
+        amount: bigNumberify(3) as UInt<32>,
+        expiration: bigNumberify(3) as UInt<32>,
+        secrethash: keccak256('0x3') as Hash,
+      },
+    ];
+    expect(getLocksroot([locks[0]])).toBe(lockhash(locks[0]));
+    expect(getLocksroot(locks)).toBe(
+      '0x4cd8409aa5d9830ecdbf8753e5d1844eb4e2cf52954b6598e045e87c1403b70a',
+    );
+  });
+
+  test('makeSecret', () => {
+    const secret = makeSecret();
+    expect(Secret.is(secret)).toBe(true);
+    expect(hexDataLength(secret)).toBe(32);
   });
 });

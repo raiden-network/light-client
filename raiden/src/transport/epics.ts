@@ -29,6 +29,7 @@ import {
   tap,
   toArray,
   mapTo,
+  finalize,
 } from 'rxjs/operators';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { find, get, minBy, sortBy } from 'lodash';
@@ -231,8 +232,8 @@ export const matrixShutdownEpic = (
   { matrix$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   matrix$.pipe(
-    tap(matrix => action$.subscribe(undefined, undefined, () => matrix.stopClient())),
-    ignoreElements(),
+    mergeMap(matrix => action$.pipe(finalize(() => matrix.stopClient()))),
+    ignoreElements(), // dont re-emit action$, but keep it subscribed so finalize works
   );
 
 /**
@@ -255,6 +256,7 @@ export const matrixMonitorPresenceEpic = (
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
     withLatestFrom(getPresences$(action$)),
+    // TODO: groupBy(address)+concatMap serialize presence fetching
     mergeMap(([{ action, matrix }, presences]) => {
       if (action.meta.address in presences)
         // we already monitored/saw this user's presence
@@ -814,10 +816,9 @@ export const matrixMessageReceivedEpic = (
             mergeMap(function*([presences]) {
               const presence = find(presences, ['payload.userId', event.getSender()])!;
               for (const line of (event.event.content.body || '').split('\n')) {
-                let message: Signed<Message> | undefined = undefined;
+                let message: Signed<Message> | undefined;
                 try {
                   message = decodeJsonMessage(line);
-                  if (!message) throw new Error(`Invalid message: ${line}`);
                   const signer = getMessageSigner(message);
                   if (signer !== presence.meta.address)
                     throw new Error(

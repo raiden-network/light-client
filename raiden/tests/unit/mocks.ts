@@ -16,13 +16,14 @@ jest.mock('ethers/utils/properties', () => ({
   ),
 }));
 
-// ethers utils mock to always validate matrix userIds
+// ethers utils mock to always validate matrix userIds/displayName
 jest.mock('ethers/utils', () => ({
   ...jest.requireActual('ethers/utils'),
-  verifyMessage: jest.fn((msg: string): string => {
-    const { getAddress, AddressZero } = jest.requireActual('ethers/utils');
+  verifyMessage: jest.fn((msg: string, sig: string): string => {
+    const { getAddress, verifyMessage: origVerifyMessage } = jest.requireActual('ethers/utils');
     const match = /^@(0x[0-9a-f]{40})[.:]/i.exec(msg);
-    return match && match[1] ? getAddress(match[1]) : AddressZero;
+    if (match && match[1]) return getAddress(match[1]);
+    return origVerifyMessage(msg, sig);
   }),
 }));
 
@@ -56,7 +57,7 @@ import TokenAbi from 'raiden/abi/Token.json';
 import { RaidenEpicDeps } from 'raiden/types';
 import { RaidenAction } from 'raiden/actions';
 import { RaidenState, initialState } from 'raiden/store/state';
-import { Address } from 'raiden/utils/types';
+import { Address, Signature } from 'raiden/utils/types';
 
 type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -244,4 +245,9 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
       })),
     },
   }) as unknown) as jest.Mocked<MatrixClient>;
+}
+
+/* Returns some valid signature */
+export function makeSignature(): Signature {
+  return '0x5770d597b270ad9d1225c901b1ef6bfd8782b15d7541379619c5dae02c5c03c1196291b042a4fea9dbddcb1c6bcd2a5ee19180e8dc881c2e9298757e84ad190b1c' as Signature;
 }

@@ -13,14 +13,14 @@ import {
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
 import { bigNumberify, keccak256 } from 'ethers/utils';
-import { One, Zero } from 'ethers/constants';
+import { Zero } from 'ethers/constants';
 import { findKey } from 'lodash';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../store';
 import { REVEAL_TIMEOUT } from '../constants';
-import { Address, Hash, Secret, UInt } from '../utils/types';
+import { Address, Hash, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
 import { LruCache } from '../utils/lru';
 import { Presences } from '../transport/types';
@@ -72,7 +72,11 @@ function makeAndSignTransfer(
       if (!presences[action.payload.target].payload.available)
         throw new Error('target not available/online');
 
-      let secret: Secret | undefined;
+      let secret = action.payload.secret;
+      if (secret && keccak256(secret) !== action.meta.secrethash) {
+        throw new Error('secrethash does not match provided secret');
+      }
+
       let signed$: Observable<Signed<LockedTransfer>>;
       if (action.meta.secrethash in state.sent) {
         // if already saw a transfer with secrethash, use cached instead of signing a new one
@@ -114,14 +118,11 @@ function makeAndSignTransfer(
           throw new Error(
             'Could not find an online partner for tokenNetwork with enough capacity',
           );
+
         const channel = state.channels[action.payload.tokenNetwork][recipient];
         // check below never fail, because of for loop filter, just for type narrowing
         if (channel.state !== ChannelState.open) throw new Error('not open');
 
-        secret = action.payload.secret;
-        if (secret && keccak256(secret) !== action.meta.secrethash) {
-          throw new Error('secrethash does not match provided secret');
-        }
         let paymentId = action.payload.paymentId;
         if (!paymentId) paymentId = makePaymentId();
 
@@ -143,15 +144,16 @@ function makeAndSignTransfer(
           chain_id: bigNumberify(network.chainId) as UInt<32>,
           token_network_address: action.payload.tokenNetwork,
           channel_identifier: bigNumberify(channel.id) as UInt<32>,
-          nonce: (channel.own.balanceProof ? channel.own.balanceProof.nonce.add(1) : One) as UInt<
+          nonce: (channel.own.balanceProof ? channel.own.balanceProof.nonce : Zero).add(1) as UInt<
             8
           >,
-          transferred_amount: channel.own.balanceProof
+          transferred_amount: (channel.own.balanceProof
             ? channel.own.balanceProof.transferredAmount
-            : (Zero as UInt<32>),
-          locked_amount: channel.own.balanceProof
-            ? (channel.own.balanceProof.lockedAmount.add(action.payload.amount) as UInt<32>)
-            : action.payload.amount,
+            : Zero) as UInt<32>,
+          locked_amount: (channel.own.balanceProof
+            ? channel.own.balanceProof.lockedAmount
+            : Zero
+          ).add(action.payload.amount) as UInt<32>,
           locksroot,
           payment_identifier: paymentId,
           token,
@@ -322,12 +324,12 @@ export const transferSecretRequestedEpic = (
       const message = action.payload.message;
       if (!message || !Signed(SecretRequest).is(message)) return;
       if (!(message.secrethash in state.secrets) || !(message.secrethash in state.sent)) return;
-      const sent = state.sent[message.secrethash];
+      const transfer = state.sent[message.secrethash].transfer;
       if (
-        sent.transfer.target !== action.meta.address ||
-        !sent.transfer.payment_identifier.eq(message.payment_identifier) ||
-        !sent.transfer.lock.amount.eq(message.amount) ||
-        !sent.transfer.lock.expiration.eq(message.expiration)
+        transfer.target !== action.meta.address ||
+        !transfer.payment_identifier.eq(message.payment_identifier) ||
+        !transfer.lock.amount.eq(message.amount) ||
+        !transfer.lock.expiration.eq(message.expiration)
       )
         return;
       yield transferSecretRequest({ message }, { secrethash: message.secrethash });
@@ -356,7 +358,7 @@ export const transferRevealSecretEpic = (
               if (cached) return of(messageSend({ message: cached }, { address: target }));
               const message: SecretReveal = {
                 type: MessageType.SECRET_REVEAL,
-                message_identifier: bigNumberify(Date.now()) as UInt<8>,
+                message_identifier: makeMessageId(),
                 secret: state.secrets[action.meta.secrethash].secret,
               };
               return from(signMessage(signer, message)).pipe(

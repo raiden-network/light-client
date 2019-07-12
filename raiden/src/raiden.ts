@@ -68,7 +68,6 @@ import {
   matrixRequestMonitorPresenceFailed,
   matrixRequestMonitorPresence,
 } from './transport/actions';
-import { messageSend } from './messages/actions';
 import { transfer, transferred, transferFailed } from './transfers/actions';
 import { makeSecret } from './transfers/utils';
 
@@ -627,15 +626,21 @@ export class Raiden {
   }
 
   /**
-   * Temporary interface to test MessageSendAction
+   * Send a Locked Transfer!
+   * Coverage ignored until we handle the full transfer lifecycle
+   * TODO: remove uncover when implemented
+   * @param token  Token address on currently configured token network registry
+   * @param target  Target address (must be getAvailability before)
+   * @param amount  Amount to try to transfer
+   * @param opts.paymentId  Optionally specify a paymentId to use for this transfer
+   * @param opts.secret  Optionally specify a secret to use on this transfer
+   *    (in which case, it'll be registered and revealed to target)
+   * @param opts.secrethash  Optionally specify a secrethash to use. If secret is provided,
+   *    secrethash must be the keccak256 hash of the secret. If no secret is provided, the target
+   *    must be informed of it by other means/externally.
+   * @returns A promise to the total transferred amount on this channel after transfer succeeds
    */
-  public sendMessage(address: Address, message: string): void {
-    this.store.dispatch(messageSend({ message }, { address }));
-  }
-
-  /**
-   * Temporary interface to test MessageSendAction
-   */
+  /* istanbul ignore next */
   public async transfer(
     token: string,
     target: string,

@@ -1,6 +1,6 @@
 import { isActionOf } from 'typesafe-actions';
 import { get, set, unset } from 'lodash/fp';
-import { One } from 'ethers/constants';
+import { Zero } from 'ethers/constants';
 
 import { RaidenState } from '../store/state';
 import { RaidenAction } from '../actions';
@@ -16,6 +16,7 @@ import {
   transferUnlock,
   transferred,
 } from './actions';
+import { getLocksroot } from './utils';
 
 // handles all transfers actions and requests
 export function transfersReducer(
@@ -37,15 +38,26 @@ export function transfersReducer(
     };
   } else if (isActionOf(transferSigned, action)) {
     const transfer = action.payload.message,
-      secrethash = transfer.lock.secrethash;
+      lock = transfer.lock,
+      secrethash = lock.secrethash;
     // transferSigned must be the first action, to init SentTransfer state
     if (secrethash in state.sent) return state;
     const channelPath = ['channels', transfer.token_network_address, transfer.recipient];
     let channel: Channel | undefined = get(channelPath, state);
+    if (!channel) return state;
+
+    const locks = [...(channel.own.locks || []), lock], // append lock
+      locksroot = getLocksroot(locks);
     if (
-      !channel ||
-      !(channel.own.balanceProof ? channel.own.balanceProof.nonce.add(1) : One).eq(
-        transfer.nonce, // nonce must be next or first!
+      transfer.locksroot !== locksroot ||
+      !transfer.nonce.eq(
+        (channel.own.balanceProof ? channel.own.balanceProof.nonce : Zero).add(1),
+      ) || // nonce must be next
+      !transfer.transferred_amount.eq(
+        channel.own.balanceProof ? channel.own.balanceProof.transferredAmount : Zero,
+      ) ||
+      !transfer.locked_amount.eq(
+        (channel.own.balanceProof ? channel.own.balanceProof.lockedAmount : Zero).add(lock.amount),
       )
     )
       return state;
@@ -54,7 +66,7 @@ export function transfersReducer(
       ...channel,
       own: {
         ...channel.own,
-        locks: [...(channel.own.locks || []), transfer.lock], // append lock
+        locks,
         // set current/latest channel.own.balanceProof to LockedTransfer's
         balanceProof: getBalanceProofFromEnvelopeMessage(transfer),
         history: {
@@ -96,13 +108,19 @@ export function transfersReducer(
     const unlock = action.payload.message,
       secrethash = action.meta.secrethash;
     if (!(secrethash in state.sent) || state.sent[secrethash].unlock) return state;
-    const transfer = state.sent[secrethash].transfer;
+    const transfer = state.sent[secrethash].transfer,
+      lock = transfer.lock;
     const channelPath = ['channels', transfer.token_network_address, transfer.recipient];
     let channel: Channel | undefined = get(channelPath, state);
+    if (!channel || !channel.own.locks || !channel.own.balanceProof) return state;
+
+    const locks = channel.own.locks.filter(l => l.secrethash !== secrethash),
+      locksroot = getLocksroot(locks);
     if (
-      !channel ||
-      !channel.own.balanceProof ||
-      !channel.own.balanceProof.nonce.add(1).eq(unlock.nonce) // nonce must be next
+      unlock.locksroot !== locksroot ||
+      !channel.own.balanceProof.nonce.add(1).eq(unlock.nonce) || // nonce must be next
+      !unlock.transferred_amount.eq(channel.own.balanceProof.transferredAmount.add(lock.amount)) ||
+      !unlock.locked_amount.eq(channel.own.balanceProof.lockedAmount.sub(lock.amount))
     )
       return state;
 
@@ -110,7 +128,7 @@ export function transfersReducer(
       ...channel,
       own: {
         ...channel.own,
-        locks: channel.own.locks!.filter(l => l.secrethash !== secrethash), // pop lock
+        locks, // pop lock
         // set current/latest channel.own.balanceProof to LockedTransfer's
         balanceProof: getBalanceProofFromEnvelopeMessage(unlock),
         history: {

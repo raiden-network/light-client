@@ -8,9 +8,9 @@
   "typescript:main": "src/index.ts",
   "types": "dist/index.d.ts",
   "scripts": {
-    "start": "npm run contracts && tsc -p src -w",
+    "start": "npm run contracts && tsc -p src/tsconfig.cjs.json -w",
     "build": "npm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json",
-    "test": "NODE_ENV=development jest",
+    "test": "npm run lint && NODE_ENV=development jest --coverage=true",
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "clean": "rimraf dist/ dist:cjs/ contracts/ .coverage/",
     "contracts": "typechain --target=ethers 'src/abi/*.json' --outDir contracts",
@@ -124,10 +124,10 @@
       "<rootDir>/tests/**/*.spec.ts"
     ],
     "verbose": true,
-    "collectCoverage": true,
     "collectCoverageFrom": [
       "src/**/*.ts",
-      "!**/*.d.ts"
+      "!**/*.d.ts",
+      "!**/index.ts"
     ],
     "coverageDirectory": ".coverage",
     "reporters": [
