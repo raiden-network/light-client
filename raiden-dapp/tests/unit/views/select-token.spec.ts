@@ -13,6 +13,8 @@ describe('SelectToken.vue', function() {
     const localVue = createLocalVue();
     localVue.use(Vuex);
     localVue.use(Vuetify);
+    localVue.filter('displayFormat', (v: string) => v);
+    localVue.filter('truncate', (v: string) => v);
     let mockIdenticon = jest.fn().mockResolvedValue('');
     const $identicon = {
       getIdenticon: mockIdenticon

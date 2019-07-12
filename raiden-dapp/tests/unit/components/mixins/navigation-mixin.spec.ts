@@ -63,7 +63,7 @@ describe('NavigationMixin', function() {
     wrapper.vm.navigateToSelectPaymentTarget('0xtoken');
     const callArgs = args();
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(callArgs.name).toEqual(RouteNames.SELECT_TARGET);
+    expect(callArgs.name).toEqual(RouteNames.TRANSFER);
     expect(callArgs.params.token).toEqual('0xtoken');
   });
 
@@ -77,7 +77,7 @@ describe('NavigationMixin', function() {
     });
 
     test('from select target', async () => {
-      wrapper.vm.$route.name = RouteNames.SELECT_TARGET;
+      wrapper.vm.$route.name = RouteNames.TRANSFER;
       wrapper.vm.onBackClicked();
       const callArgs = args();
       expect(router.push).toHaveBeenCalledTimes(1);

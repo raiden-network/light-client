@@ -30,7 +30,7 @@ export default class NavigationMixin extends Vue {
 
   navigateToSelectPaymentTarget(token: string) {
     this.$router.push({
-      name: RouteNames.SELECT_TARGET,
+      name: RouteNames.TRANSFER,
       params: { token: token }
     });
   }
@@ -44,7 +44,7 @@ export default class NavigationMixin extends Vue {
   onBackClicked() {
     switch (this.$route.name) {
       case RouteNames.ABOUT:
-      case RouteNames.SELECT_TARGET:
+      case RouteNames.TRANSFER:
       case RouteNames.CHANNELS:
       case RouteNames.SELECT_TOKEN:
         this.navigateToHome();

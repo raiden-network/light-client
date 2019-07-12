@@ -255,6 +255,15 @@ export default class RaidenService {
       this.store.commit('updateTokens', cache);
     }
   }
+
+  async transfer(token: string, target: string, amount: BigNumber) {
+    try {
+      await this.raiden.getAvailability(target);
+      await this.raiden.transfer(token, target, amount);
+    } catch (e) {
+      throw new TransferFailed(e);
+    }
+  }
 }
 
 export class ChannelSettleFailed extends Error {}
@@ -266,5 +275,7 @@ export class ChannelOpenFailed extends Error {}
 export class ChannelDepositFailed extends Error {}
 
 export class EnsResolveFailed extends Error {}
+
+export class TransferFailed extends Error {}
 
 export class RaidenInitializationFailed extends Error {}
