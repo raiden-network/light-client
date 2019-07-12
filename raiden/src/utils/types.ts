@@ -15,7 +15,7 @@ export interface Storage {
 const isStringifiable = (u: unknown): u is { toString: () => string } =>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   u !== null && u !== undefined && typeof (u as any)['toString'] === 'function';
-const isBigNumber = (u: unknown): u is BigNumber => u instanceof BigNumber;
+const isBigNumber = (u: unknown): u is BigNumber => u && (u as any)['_ethersType'] === 'BigNumber';
 /**
  * Codec of ethers.utils.BigNumber objects
  * Input can be anything bigNumberify-able: number, string, LosslessNumber or BigNumber

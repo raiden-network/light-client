@@ -1,6 +1,13 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, ParamType, BigNumber, bigNumberify, keccak256 } from 'ethers/utils';
+import {
+  Network,
+  ParamType,
+  BigNumber,
+  bigNumberify,
+  BigNumberish,
+  keccak256,
+} from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
@@ -500,7 +507,7 @@ export class Raiden {
   public async depositChannel(
     token: string,
     partner: string,
-    deposit: BigNumber | number,
+    deposit: BigNumberish,
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
@@ -632,18 +639,17 @@ export class Raiden {
   public async transfer(
     token: string,
     target: string,
-    amount: number | BigNumber,
-    opts?: { paymentId?: number | BigNumber; secret?: string; secrethash?: string },
+    amount: BigNumberish,
+    opts?: { paymentId?: BigNumberish; secret?: string; secrethash?: string },
   ): Promise<BigNumber> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    if (typeof amount === 'number') amount = bigNumberify(amount);
+    amount = bigNumberify(amount);
     if (!UInt(32).is(amount)) throw new Error('Invalid amount');
 
-    let paymentId =
-      !opts || opts.paymentId === undefined ? undefined : bigNumberify(opts.paymentId);
+    let paymentId = !opts || !opts.paymentId ? undefined : bigNumberify(opts.paymentId);
     if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid opts.paymentId');
 
     let secret: Secret | undefined, secrethash: Hash | undefined;
