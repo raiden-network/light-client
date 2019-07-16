@@ -51,7 +51,7 @@ export default class App extends Vue {
 
   async connect() {
     this.initialized = false;
-    this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
+    this.$store.commit('reset');
     await this.$raiden.connect();
     await this.$raiden.fetchTokens();
     this.initialized = true;
