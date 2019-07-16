@@ -1,20 +1,18 @@
 <template>
   <div v-if="display" id="overlay">
     <div id="card">
-      <div v-if="done" class="steps">
-        <div class="active step">Done</div>
-      </div>
-      <div v-else-if="steps.length > 1" class="steps">
+      <div class="steps">
         <div
-          v-for="(_, index) in steps"
+          v-for="(step, index) in steps"
           :key="index"
           class="step"
           :class="{
-            active: current === index
+            active: current === index && !done
           }"
         >
-          Step {{ index + 1 }}
+          <span class="label">{{ step.label }}</span>
         </div>
+        <div class="step" :class="{ active: done }">Done</div>
       </div>
       <div class="card-content">
         <div class="step-title">
@@ -28,7 +26,7 @@
           v-else
           :size="120"
           :width="7"
-          color="blue"
+          class="progress"
           indeterminate
         ></v-progress-circular>
         <p id="message" class="step-description">
@@ -67,6 +65,7 @@ export default class ProgressOverlay extends Vue {
 
 <style lang="scss" scoped>
 @import '../main';
+@import '../scss/colors';
 #overlay {
   display: flex;
   flex-direction: column;
@@ -97,8 +96,8 @@ export default class ProgressOverlay extends Vue {
 }
 
 .card-content {
-  padding-right: 40px;
-  padding-left: 40px;
+  padding-right: 120px;
+  padding-left: 120px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -116,9 +115,9 @@ $horizontal-padding: 40px;
 .step-title {
   color: #ffffff;
   font-family: Roboto, sans-serif;
-  font-size: 40px;
-  font-weight: 500;
-  line-height: 47px;
+  font-size: 32px;
+  font-weight: bold;
+  line-height: 38px;
   text-align: center;
 }
 
@@ -140,31 +139,76 @@ $horizontal-padding: 40px;
 }
 
 .step {
-  flex-grow: 1;
-  flex-basis: 0;
+  letter-spacing: 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-evenly;
-  color: #ffffff;
+  justify-content: center;
   font-family: Roboto, sans-serif;
   font-size: 16px;
   line-height: 21px;
   text-align: center;
+  text-transform: uppercase;
+  color: $secondary-color;
+  border: 1.5px solid $secondary-color;
+  font-weight: 500;
+  width: 100%;
+  height: 100%;
+  background-color: #0f374b;
+  &:before,
+  &:after {
+    content: '';
+    position: absolute;
+    margin-left: 153px;
+    height: 28px;
+    width: 28px;
+    background: inherit;
+    border: inherit;
+    border-left-color: transparent;
+    border-bottom-color: transparent;
+    border-radius: 0 !important;
+
+    transform: rotate(45deg);
+  }
+}
+
+.label {
+  padding-left: 18px;
+}
+
+.step:first-child {
+  border-bottom-left-radius: 0;
+  border-top-left-radius: 14px;
+}
+
+.step:last-child {
+  border-bottom-right-radius: 0;
+  border-top-right-radius: 14px;
+  &:before,
+  &:after {
+    content: '';
+    position: absolute;
+    margin-left: 0;
+    height: 0; /* button_inner_height / sqrt(2) */
+    width: 0; /* same as height */
+    border-radius: 0 !important;
+  }
+}
+
+.progress {
+  color: $secondary-color;
 }
 
 .active {
-  width: 100%;
-  height: 100%;
-  border-radius: 14px;
-  background-color: #232323;
+  color: white;
+  background-color: $secondary-color;
 }
 
 $icon-size: 120px;
 $icon-bg-size: $icon-size - 22px;
 
 .success-icon {
-  color: #1e96c8;
+  color: $secondary-color;
   font-size: $icon-size;
   background: white;
   border-radius: 50%;

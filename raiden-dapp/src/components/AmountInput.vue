@@ -265,7 +265,7 @@ $light_background: #e4e4e4;
 
 .token-symbol {
   font-family: Roboto, sans-serif;
-  color: $divider-color;
+  color: $secondary-color;
   font-weight: 500;
   font-size: 16px;
   line-height: 20px;

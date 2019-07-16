@@ -29,8 +29,13 @@ describe('ChannelList.vue', function() {
   let raiden: Mocked<RaidenService>;
   let mockIdenticon: jest.Mock<any, any>;
 
-  function elementVisibilityChanged(eventIndex: number, elementVisible: string = '') {
-    expect(wrapper.emitted()['visible-changed'][eventIndex][0]).toBe(elementVisible);
+  function elementVisibilityChanged(
+    eventIndex: number,
+    elementVisible: string = ''
+  ) {
+    expect(wrapper.emitted()['visible-changed'][eventIndex][0]).toBe(
+      elementVisible
+    );
     wrapper.setProps({
       visible: elementVisible
     });

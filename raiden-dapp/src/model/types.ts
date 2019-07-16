@@ -47,6 +47,7 @@ export interface Progress {
 }
 
 export interface StepDescription {
+  readonly label: string;
   readonly title: string;
   readonly description: string;
 }

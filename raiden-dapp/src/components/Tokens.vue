@@ -96,6 +96,7 @@ export default class Tokens extends Mixins(BlockieMixin) {
   loading: boolean = false;
   steps: StepDescription[] = [
     {
+      label: 'Leave',
       title: 'Leaving network',
       description: 'Closing the channels'
     }

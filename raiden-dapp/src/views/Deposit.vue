@@ -95,22 +95,26 @@ export default class Deposit extends Mixins(NavigationMixin) {
 
   protected readonly allSteps: StepDescription[] = [
     {
+      label: 'Open',
       title: 'Opening a new Channel',
       description:
         'Please do not close the browser and confirm the transaction with MetaMask.'
     },
     {
+      label: 'Transfer',
       title: 'Transferring tokens to the network and deposit into the channel',
       description:
         'Please do not close the browser and confirm two (2) transactions with MetaMask.'
     },
     {
+      label: 'Deposit',
       title: 'Not implemented - split title above, when done',
       description: 'Not implemented - split description above, when done'
     }
   ];
 
   readonly doneStep: StepDescription = {
+    label: 'Done',
     title: 'New Channel opened',
     description:
       'A new channel has been opened successfully.<br/>You may now select a payment target.'
