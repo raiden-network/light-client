@@ -1,20 +1,38 @@
 <template>
-  <v-layout justify-center row>
-    <v-flex>
-      <v-stepper :value="step" alt-labels class="no-shadow lifecycle">
-        <v-stepper-header>
-          <v-stepper-step step="1">Open</v-stepper-step>
+  <v-layout column>
+    <v-layout justify-center row>
+      <v-flex>
+        <v-stepper :value="step" class="no-shadow lifecycle">
+          <v-stepper-header>
+            <v-stepper-step step="1">Open</v-stepper-step>
 
-          <v-divider :class="{ active: step > 1 }"></v-divider>
+            <v-divider :class="{ active: step > 1 }"></v-divider>
 
-          <v-stepper-step step="2">Closed</v-stepper-step>
+            <v-stepper-step step="2">Closed</v-stepper-step>
 
-          <v-divider :class="{ active: step > 2 }"></v-divider>
+            <v-divider :class="{ active: step > 2 }"></v-divider>
 
-          <v-stepper-step step="3">Settleable</v-stepper-step>
-        </v-stepper-header>
-      </v-stepper>
-    </v-flex>
+            <v-stepper-step step="3">Settleable</v-stepper-step>
+          </v-stepper-header>
+        </v-stepper>
+      </v-flex>
+    </v-layout>
+    <v-layout justify-center row>
+      <v-flex xs8 class="lifecycle__description">
+        <div v-if="step === 1" class="lifecycle__description__text">
+          You can deposit more tokens <br />
+          or close the channel.
+        </div>
+        <div v-if="step === 2" class="lifecycle__description__text">
+          Please wait until your channel is settleable. <br />
+          This may take up some time.
+        </div>
+        <div v-if="step === 3" class="lifecycle__description__text">
+          Settle your channel to transfer <br />
+          your tokens back to your account.
+        </div>
+      </v-flex>
+    </v-layout>
   </v-layout>
 </template>
 
@@ -47,24 +65,26 @@ export default class ChannelLifeCycle extends Vue {
 
 <style scoped lang="scss">
 @import '../main';
+@import '../scss/colors';
 
-$inactive-color: #1e1e1e;
-$active-color: #e4e4e4;
-$circle-size: 10px;
+$inactive-color: #646464;
+$active-color: $secondary-color;
+$circle-size: 20px;
 .lifecycle {
   background-color: transparent !important;
 }
 
 .lifecycle /deep/ .v-stepper__step__step {
-  margin-top: 7px;
-  font-size: 0 !important;
+  font-size: 12px !important;
   width: $circle-size;
   height: $circle-size;
   min-width: $circle-size;
+  margin-top: -10px;
+  margin-bottom: -10px;
 }
 
 .lifecycle .v-divider {
-  margin: 35px -83px 0;
+  margin-right: -24px;
   border-width: 2px 0 0 0;
 }
 
@@ -77,29 +97,61 @@ $circle-size: 10px;
 }
 
 .lifecycle /deep/ .v-stepper__label {
-  font-size: 14px;
-  line-height: 28px;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 19px;
+  text-align: center;
+  text-shadow: none !important;
+  padding-left: 8px;
 }
 
-.lifecycle /deep/ .v-stepper__step.v-stepper__step--active .primary {
-  background-color: $active-color !important;
-  border-color: $active-color !important;
+.lifecycle /deep/ .v-stepper__step.v-stepper__step--active {
+  .primary {
+    background-color: $active-color !important;
+    border-color: $active-color !important;
+  }
 }
 
-.lifecycle /deep/ .v-stepper__step.v-stepper__step .v-stepper__step__step {
-  background-color: $active-color !important;
-  border-color: $active-color !important;
-}
-
-.lifecycle
-  /deep/
-  .v-stepper__step.v-stepper__step--inactive
+.lifecycle /deep/ .v-stepper__step.v-stepper__step {
   .v-stepper__step__step {
-  background-color: $inactive-color !important;
-  border-color: $inactive-color !important;
+    background-color: $active-color !important;
+    border-color: $active-color !important;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 14px;
+    text-align: center;
+  }
+  .v-stepper__label {
+    color: $active-color;
+  }
+}
+
+.lifecycle /deep/ .v-stepper__step.v-stepper__step--inactive {
+  .v-stepper__step__step {
+    background-color: $inactive-color !important;
+    border-color: $inactive-color !important;
+    color: #323232 !important;
+  }
+  .v-stepper__label {
+    color: $inactive-color;
+  }
 }
 
 .lifecycle /deep/ .v-stepper__label {
   display: block;
+}
+
+.lifecycle__description {
+  height: 56px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.lifecycle__description__text {
+  color: #fafafa;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 21px;
+  text-align: center;
 }
 </style>

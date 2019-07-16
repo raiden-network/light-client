@@ -4,15 +4,15 @@
   height: 40px;
   width: 250px;
   border-radius: 29px;
-  background-color: $main-color !important;
+  background-color: $primary-color !important;
 }
 
 /deep/ .v-btn--disabled {
-  background-color: $main-color !important;
+  background-color: $primary-color !important;
 }
 
 .theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
-  background-color: $disabled-main-color !important;
+  background-color: $primary-disabled-color !important;
   color: $disabled-text-color !important;
 }
 

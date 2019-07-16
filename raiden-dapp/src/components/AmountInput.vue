@@ -285,7 +285,7 @@ $light_background: #e4e4e4;
 }
 
 .status-icon--valid {
-  color: $main-color;
+  color: $primary-color;
 }
 
 .section {

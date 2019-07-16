@@ -41,10 +41,11 @@ export default class Confirmation extends Vue {
 </script>
 
 <style scoped lang="scss">
+$background-color: #323232;
 .body {
-  height: 250px;
+  height: 252px;
   padding: 25px;
-  background-color: #e4e4e4;
+  background-color: $background-color;
   box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
 }
 

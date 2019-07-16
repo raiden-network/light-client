@@ -65,13 +65,7 @@ export default class RaidenService {
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
 
-        raiden.events$
-          .pipe(filter(value => value.type === 'raidenShutdown'))
-          .subscribe(() => this.store.commit('reset'));
-
-        raiden.events$
-          .pipe(filter(value => value.type === 'newBlock'))
-          .subscribe(async () => await this.updateTokenBalances());
+        this.setupEventListeners(raiden);
 
         raiden.channels$.subscribe(value => {
           this.store.commit('updateChannels', value);
@@ -80,7 +74,7 @@ export default class RaidenService {
         this.store.commit('network', raiden.network);
       }
     } catch (e) {
-      console.log(e);
+      console.error(e);
       let deniedReason: DeniedReason;
       if (startsWith(e.message, 'No deploy info provided')) {
         deniedReason = DeniedReason.UNSUPPORTED_NETWORK;
@@ -91,6 +85,16 @@ export default class RaidenService {
     }
 
     this.store.commit('loadComplete');
+  }
+
+  private setupEventListeners(raiden: Raiden) {
+    raiden.events$
+      .pipe(filter(value => value.type === 'raidenShutdown'))
+      .subscribe(() => this.store.commit('reset'));
+
+    raiden.events$
+      .pipe(filter(value => value.type === 'newBlock'))
+      .subscribe(async () => await this.updateTokenBalances());
   }
 
   disconnect() {

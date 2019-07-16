@@ -50,7 +50,7 @@
 
 <script lang="ts">
 import AddressUtils from '@/utils/address-utils';
-import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
+import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
 import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({})
@@ -73,6 +73,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   @Emit()
   public input(value?: string) {}
 
+  // noinspection JSMethodCanBeStatic
   isChecksumAddress(address: string): boolean {
     const tokenAddress = address;
     return (
@@ -290,7 +291,7 @@ $dark_background: #323232;
 .status--valid {
   font-size: 13px;
   color: white;
-  background: $main-color;
+  background: $primary-color;
 }
 
 .untouched {

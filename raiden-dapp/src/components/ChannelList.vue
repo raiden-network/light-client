@@ -61,7 +61,10 @@
               ></channel-deposit>
             </div>
             <div v-else class="channels__area-content">
-              <channel-life-cycle :state="channel.state"></channel-life-cycle>
+              <channel-life-cycle
+                :state="channel.state"
+                class="channels__lifecycle"
+              ></channel-life-cycle>
               <channel-actions
                 :index="index"
                 :channel="channel"
@@ -107,9 +110,11 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   token: Token | null = TokenPlaceholder;
   selectedChannel: RaidenChannel | null = null;
 
+  // noinspection JSUnusedLocalSymbols
   @Emit()
   message(message: string) {}
 
+  // noinspection JSUnusedLocalSymbols
   @Emit()
   visibleChanged(element: string) {}
 
@@ -184,7 +189,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   height: 250px;
 
   .channels__area-content {
-    padding: 25px;
+    padding: 20px;
   }
 
   position: relative;
@@ -215,6 +220,10 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
 .channels /deep/ .v-list__tile {
   height: 105px;
+}
+
+.channels__lifecycle {
+  margin-bottom: 30px;
 }
 
 .channels__icon {
