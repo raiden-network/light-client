@@ -1,11 +1,10 @@
 <template>
-  <div class="body">
-    <v-layout class="description-wrapper" row align-center justify-center>
-      <v-flex class="description">
+  <v-layout column class="channel-deposit">
+    <v-layout class="channel-deposit__wrapper" row align-center justify-center>
+      <v-flex xs12>
         <v-form v-model="valid">
           <amount-input
             v-model="deposit"
-            light
             :token="token"
             label="Amount"
             limit
@@ -13,11 +12,11 @@
         </v-form>
       </v-flex>
     </v-layout>
-    <v-layout row align-end justify-center class="action-buttons">
+    <v-layout row align-end justify-center class="channel-deposit__buttons">
       <v-btn
         :id="`cancel-${identifier}`"
         light
-        class="text-capitalize cancel-button"
+        class="text-capitalize channel-deposit__buttons__cancel"
         @click="cancel()"
       >
         Cancel
@@ -25,14 +24,14 @@
       <v-btn
         :id="`confirm-${identifier}`"
         light
-        class="text-capitalize confirm-button"
+        class="text-capitalize channel-deposit__buttons__confirm"
         :disabled="!valid"
         @click="confirm()"
       >
-        Confirm
+        Deposit
       </v-btn>
     </v-layout>
-  </div>
+  </v-layout>
 </template>
 
 <script lang="ts">
@@ -71,53 +70,49 @@ export default class ChannelDeposit extends Vue {
 </script>
 
 <style scoped lang="scss">
-.body {
-  height: 250px;
-  padding: 25px;
-  background-color: #e4e4e4;
+@import '../scss/colors';
+.channel-deposit {
+  height: 252px;
+  padding: 20px;
+  background-color: $channel-dialog-background;
   box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
 }
 
-.description-wrapper > * {
+.channel-deposit__wrapper > * {
   height: 150px;
-  color: #050505 !important;
   font-size: 16px;
   line-height: 21px;
   text-align: center;
 }
 
-.description {
-  margin-top: 10px;
-}
-
-.action-buttons {
+.channel-deposit__buttons {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
 }
 
-.action-buttons button {
-  height: 40px;
-  width: 125px;
-  border: 2px solid #050505;
+.channel-deposit__buttons button {
+  height: 35px;
+  width: 135px;
+  color: white;
   border-radius: 29px;
-  margin-left: 20px;
-  margin-right: 20px;
+  margin-left: 15px;
+  margin-right: 15px;
 }
 
-.cancel-button {
+.channel-deposit__buttons__cancel {
   background-color: transparent !important;
-  color: #050505;
+  border: 2px solid $primary-color;
 }
 
-.confirm-button {
-  background-color: #000000 !important;
+.channel-deposit__buttons__confirm {
+  background-color: $primary-color !important;
   color: #ffffff;
 }
 
 .theme--light.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
-  background-color: #2b2b2b !important;
+  background-color: $primary-disabled-color !important;
   color: #c4c4c4 !important;
 }
 </style>

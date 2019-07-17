@@ -25,7 +25,7 @@ describe('AmountInput.vue', function() {
       expect(wrapper.props().value).toEqual('0.00');
       expect(messages.exists()).toBe(true);
       expect(messages.text()).toEqual(
-        'Enter the amount you wish to deposit and confirm.'
+        'Please enter the amount you wish to deposit into this channel.'
       );
     });
 
@@ -47,7 +47,7 @@ describe('AmountInput.vue', function() {
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
       expect(messages.text()).toBe(
-        'Enter the amount you wish to deposit and confirm.'
+        'Please enter the amount you wish to deposit into this channel.'
       );
     });
   });
@@ -70,7 +70,7 @@ describe('AmountInput.vue', function() {
       expect(wrapper.emitted().input[0]).toEqual(['2.4']);
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
-      expect(messages.text()).toEqual('Insufficient balance');
+      expect(messages.text()).toEqual('Your maximum deposit amount is 1.2');
     });
 
     it('should display an error if the amount has more decimals than supported', async function() {

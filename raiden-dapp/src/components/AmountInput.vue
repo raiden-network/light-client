@@ -10,7 +10,7 @@
       :value="amount"
       background-color="transparent"
       autocomplete="off"
-      hint="Enter the amount you wish to deposit and confirm."
+      hint="Please enter the amount you wish to deposit into this channel."
       persistent-hint
       :light="light"
       :dark="!light"
@@ -73,7 +73,9 @@ export default class AmountInput extends Vue {
       this.noDecimalOverflow(v) ||
       `The token supports only up to ${this.token!!.decimals} decimals`,
     (v: string) =>
-      !this.limit || this.hasEnoughBalance(v) || 'Insufficient balance'
+      !this.limit ||
+      this.hasEnoughBalance(v) ||
+      `Your maximum deposit amount is ${this.token!!.units}`
   ];
 
   private noDecimalOverflow(v: string) {
@@ -277,7 +279,7 @@ $light_background: #e4e4e4;
 }
 
 .status-icon {
-  color: #323232;
+  color: $error-indicator-color;
   background: white;
   border-radius: 50%;
   line-height: 28px;
