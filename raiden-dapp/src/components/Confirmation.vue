@@ -1,27 +1,32 @@
 <template>
-  <div class="body">
-    <v-layout class="description-wrapper" row align-center justify-center>
-      <v-flex class="description">
-        <slot></slot>
+  <v-layout column class="confirmation">
+    <v-layout row align-center justify-center>
+      <v-flex xs12>
+        <h1 class="confirmation__text__header"><slot name="header"></slot></h1>
       </v-flex>
     </v-layout>
-    <v-layout row align-end justify-center class="action-buttons">
+    <v-layout row align-center justify-cenetr>
+      <v-flex xs12>
+        <p class="confirmation__text__message"><slot></slot></p>
+      </v-flex>
+    </v-layout>
+    <v-layout row align-end justify-center class="confirmation__buttons">
       <v-btn
         :id="`cancel-${identifier}`"
-        class="text-capitalize cancel-button"
+        class="text-capitalize confirmation__buttons__cancel"
         @click="cancel()"
       >
         Cancel
       </v-btn>
       <v-btn
         :id="`confirm-${identifier}`"
-        class="text-capitalize"
+        class="text-capitalize confirmation__buttons__confirm"
         @click="confirm()"
       >
         Close
       </v-btn>
     </v-layout>
-  </div>
+  </v-layout>
 </template>
 
 <script lang="ts">
@@ -41,40 +46,51 @@ export default class Confirmation extends Vue {
 </script>
 
 <style scoped lang="scss">
+@import '../scss/colors';
 $background-color: #323232;
-.body {
+.confirmation {
   height: 252px;
   padding: 25px;
   background-color: $background-color;
   box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
 }
 
-.description {
-  padding-top: 10px;
-}
-
-.description-wrapper > * {
-  height: 100px;
-  color: #050505;
-  font-size: 16px;
-  line-height: 21px;
+.confirmation__text__header {
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 28px;
   text-align: center;
 }
 
-.action-buttons button {
-  width: 125px;
-  height: 40px;
+.confirmation__text__message {
+  padding-top: 10px;
+  text-align: center;
+  height: 100%;
+}
+
+.confirmation__buttons {
+}
+
+.confirmation__buttons button {
+  width: 135px;
+  height: 35px;
   font-size: 16px;
   line-height: 21px;
   text-align: center;
   border-radius: 29px;
-  margin-left: 25px;
-  margin-right: 25px;
+  margin-left: 15px;
+  margin-right: 15px;
 }
 
-.cancel-button {
+.confirmation__buttons__cancel {
   background-color: transparent !important;
-  border: 2px solid #050505;
-  color: #050505;
+  border: 2px solid $primary-color;
+  color: white;
+}
+
+.confirmation__buttons__confirm {
+  background-color: $primary-color !important;
 }
 </style>
