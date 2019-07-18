@@ -6,16 +6,17 @@
  * validation, etc, and converting everything to its respective object, where needed.
  */
 import * as t from 'io-ts';
+import { memoize } from 'lodash';
 // import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { Address, EnumType, Hash, Secret, Signature, UInt } from '../utils/types';
-import { Lock } from '../channels';
+import { Lock } from '../channels/types';
 
 // types
 export enum MessageType {
   DELIVERED = 'Delivered',
   PROCESSED = 'Processed',
   SECRET_REQUEST = 'SecretRequest',
-  REVEAL_SECRET = 'RevealSecret',
+  SECRET_REVEAL = 'RevealSecret',
   LOCKED_TRANSFER = 'LockedTransfer',
   REFUND_TRANSFER = 'RefundTransfer',
   UNLOCK = 'Secret', // TODO: update to post-red-eyes 'Unlock' type tag
@@ -26,20 +27,13 @@ export const MessageTypeC = new EnumType<MessageType>(MessageType, 'MessageType'
 // Mixin for all tagged messages
 export const Message = t.type({ type: MessageTypeC });
 
-// Mixin for a message that may contain a signature
-// The partial here is for messages that we've created and are about to sign, but messages coming
-// from peers must always have it, and signature should be validated elsewhere
-export const SignedMessage = t.partial({
-  signature: Signature,
-});
-
 // Mixin of a message that contains an identifier and should be ack'ed with a respective Delivered
-const RetrieableMessage = t.type({
-  message_identifier: UInt(8),
-});
-
-// Mixin for both Signed and Retrieable Messages
-const SignedRetrieableMessage = t.intersection([RetrieableMessage, SignedMessage, Message]);
+const RetrieableMessage = t.intersection([
+  t.type({
+    message_identifier: UInt(8),
+  }),
+  Message,
+]);
 
 // Acknowledges to the sender that a RetrieableMessage was received
 export const Delivered = t.intersection([
@@ -47,19 +41,18 @@ export const Delivered = t.intersection([
     type: t.literal(MessageType.DELIVERED),
     delivered_message_identifier: UInt(8),
   }),
-  SignedMessage,
   Message,
 ]);
-export type Delivered = t.TypeOf<typeof Delivered>;
+export interface Delivered extends t.TypeOf<typeof Delivered> {}
 
 // Confirms some message that required state validation was successfuly processed
 export const Processed = t.intersection([
   t.type({
     type: t.literal(MessageType.PROCESSED),
   }),
-  SignedRetrieableMessage,
+  RetrieableMessage,
 ]);
-export type Processed = t.TypeOf<typeof Processed>;
+export interface Processed extends t.TypeOf<typeof Processed> {}
 
 // Requests the initiator to reveal the secret for a LockedTransfer targeted to us
 export const SecretRequest = t.intersection([
@@ -70,19 +63,19 @@ export const SecretRequest = t.intersection([
     amount: UInt(32),
     expiration: UInt(32),
   }),
-  SignedRetrieableMessage,
+  RetrieableMessage,
 ]);
-export type SecretRequest = t.TypeOf<typeof SecretRequest>;
+export interface SecretRequest extends t.TypeOf<typeof SecretRequest> {}
 
 // Reveal to the target or the previous hop a secret we just learned off-chain
-export const RevealSecret = t.intersection([
+export const SecretReveal = t.intersection([
   t.type({
-    type: t.literal(MessageType.REVEAL_SECRET),
+    type: t.literal(MessageType.SECRET_REVEAL),
     secret: Secret,
   }),
-  SignedRetrieableMessage,
+  RetrieableMessage,
 ]);
-export type RevealSecret = t.TypeOf<typeof RevealSecret>;
+export interface SecretReveal extends t.TypeOf<typeof SecretReveal> {}
 
 // Mixin for messages containing a balance proof
 export const EnvelopeMessage = t.intersection([
@@ -95,9 +88,8 @@ export const EnvelopeMessage = t.intersection([
     locked_amount: UInt(32),
     locksroot: Hash,
   }),
-  SignedRetrieableMessage,
+  RetrieableMessage,
 ]);
-export type EnvelopeMessage = t.TypeOf<typeof EnvelopeMessage>;
 
 // base for locked and refund transfer, they differentiate only on the type tag
 const LockedTransferBase = t.intersection([
@@ -120,7 +112,7 @@ export const LockedTransfer = t.intersection([
   }),
   LockedTransferBase,
 ]);
-export type LockedTransfer = t.TypeOf<typeof LockedTransfer>;
+export interface LockedTransfer extends t.TypeOf<typeof LockedTransfer> {}
 
 // if a mediated transfer didn't succeed, mediator can refund the amount with the same secrethash
 // so the previous hop can retry it with another neighbor
@@ -130,7 +122,7 @@ export const RefundTransfer = t.intersection([
   }),
   LockedTransferBase,
 ]);
-export type RefundTransfer = t.TypeOf<typeof RefundTransfer>;
+export interface RefundTransfer extends t.TypeOf<typeof RefundTransfer> {}
 
 // when the secret is revealed, unlock sends a new balance proof without the lock and increasing
 // the total transfered to finish the offchain transfer
@@ -142,7 +134,7 @@ export const Unlock = t.intersection([
   }),
   EnvelopeMessage,
 ]);
-export type Unlock = t.TypeOf<typeof Unlock>;
+export interface Unlock extends t.TypeOf<typeof Unlock> {}
 
 // after mediated transfer fails and the lock expire, clean it from the locks tree
 export const LockExpired = t.intersection([
@@ -153,14 +145,44 @@ export const LockExpired = t.intersection([
   }),
   EnvelopeMessage,
 ]);
-export type LockExpired = t.TypeOf<typeof LockExpired>;
+export interface LockExpired extends t.TypeOf<typeof LockExpired> {}
 
 export type Message =
   | Delivered
   | Processed
   | SecretRequest
-  | RevealSecret
+  | SecretReveal
   | LockedTransfer
   | RefundTransfer
   | Unlock
   | LockExpired;
+export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;
+// type to require a message to be signed!
+
+// generic type codec for messages that must be signed
+// use it like: Codec = Signed(Message)
+// The t.TypeOf<typeof codec> will be Signed<Message>, defined later
+export const Signed = memoize<
+  <C extends t.Mixed>(
+    codec: C,
+  ) => t.IntersectionC<
+    [
+      C,
+      t.TypeC<{
+        signature: typeof Signature;
+      }>,
+    ]
+  >
+>(<C extends t.Mixed>(codec: C) => t.intersection([codec, t.type({ signature: Signature })]));
+export type Signed<M extends Message> = M & { signature: Signature };
+
+export const SignedMessageCodecs: { readonly [T in MessageType]: t.Mixed } = {
+  [MessageType.DELIVERED]: Signed(Delivered),
+  [MessageType.PROCESSED]: Signed(Processed),
+  [MessageType.SECRET_REQUEST]: Signed(SecretRequest),
+  [MessageType.SECRET_REVEAL]: Signed(SecretReveal),
+  [MessageType.LOCKED_TRANSFER]: Signed(LockedTransfer),
+  [MessageType.REFUND_TRANSFER]: Signed(RefundTransfer),
+  [MessageType.UNLOCK]: Signed(Unlock),
+  [MessageType.LOCK_EXPIRED]: Signed(LockExpired),
+};

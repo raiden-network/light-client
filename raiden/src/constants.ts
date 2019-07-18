@@ -12,3 +12,5 @@ export enum ShutdownReason {
   ACCOUNT_CHANGED = 'providerAccountChanged',
   NETWORK_CHANGED = 'providerNetworkChanged',
 }
+
+export const REVEAL_TIMEOUT = 50;

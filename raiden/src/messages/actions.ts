@@ -1,10 +1,11 @@
 import { createStandardAction } from 'typesafe-actions';
 
+import { Signed, Message } from './types';
 import { Address } from '../utils/types';
 
 /* One-shot send payload.message to meta.address user in transport */
 export const messageSend = createStandardAction('messageSend')<
-  { message: string },
+  { message: string | Signed<Message> },
   { address: Address }
 >();
 
@@ -15,16 +16,18 @@ export const messageSend = createStandardAction('messageSend')<
 export const messageReceived = createStandardAction('messageReceived').map(
   (
     {
+      text,
       message,
       ts,
       userId,
       roomId,
     }: {
-      message: string;
+      text: string;
+      message?: Signed<Message>;
       ts?: number;
       userId?: string;
       roomId?: string;
     },
     meta: { address: Address },
-  ) => ({ payload: { message, ts: ts || Date.now(), userId, roomId }, meta }),
+  ) => ({ payload: { text, message, ts: ts || Date.now(), userId, roomId }, meta }),
 );

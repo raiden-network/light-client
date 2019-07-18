@@ -17,7 +17,7 @@ import { ShutdownReason } from 'raiden/constants';
 import { initialState } from 'raiden/store/state';
 import { raidenShutdown } from 'raiden/store/actions';
 import { newBlock } from 'raiden/channels/actions';
-import { ChannelState } from 'raiden/channels/types';
+import { ChannelState } from 'raiden/channels/state';
 import { Storage } from 'raiden/utils/types';
 import { ContractsInfo, RaidenContracts } from 'raiden/types';
 

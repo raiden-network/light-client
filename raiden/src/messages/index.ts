@@ -1,3 +1,3 @@
 /* istanbul ignore file */
 export * from './types';
-export { packMessage } from './encode';
+export * from './utils';

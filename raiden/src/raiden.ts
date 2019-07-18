@@ -1,6 +1,13 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, ParamType, BigNumber, bigNumberify } from 'ethers/utils';
+import {
+  Network,
+  ParamType,
+  BigNumber,
+  bigNumberify,
+  BigNumberish,
+  keccak256,
+} from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
@@ -35,7 +42,7 @@ import {
   TokenInfo,
 } from './types';
 import { ShutdownReason } from './constants';
-import { Address, PrivateKey, Storage, Hash } from './utils/types';
+import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './store';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
@@ -61,7 +68,8 @@ import {
   matrixRequestMonitorPresenceFailed,
   matrixRequestMonitorPresence,
 } from './transport/actions';
-import { messageSend } from './messages/actions';
+import { transfer, transferred, transferFailed } from './transfers/actions';
+import { makeSecret } from './transfers/utils';
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
@@ -498,7 +506,7 @@ export class Raiden {
   public async depositChannel(
     token: string,
     partner: string,
-    deposit: BigNumber | number,
+    deposit: BigNumberish,
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
@@ -618,10 +626,70 @@ export class Raiden {
   }
 
   /**
-   * Temporary interface to test MessageSendAction
+   * Send a Locked Transfer!
+   * Coverage ignored until we handle the full transfer lifecycle
+   * TODO: remove uncover when implemented
+   * @param token  Token address on currently configured token network registry
+   * @param target  Target address (must be getAvailability before)
+   * @param amount  Amount to try to transfer
+   * @param opts.paymentId  Optionally specify a paymentId to use for this transfer
+   * @param opts.secret  Optionally specify a secret to use on this transfer
+   *    (in which case, it'll be registered and revealed to target)
+   * @param opts.secrethash  Optionally specify a secrethash to use. If secret is provided,
+   *    secrethash must be the keccak256 hash of the secret. If no secret is provided, the target
+   *    must be informed of it by other means/externally.
+   * @returns A promise to the total transferred amount on this channel after transfer succeeds
    */
-  public sendMessage(address: Address, message: string): void {
-    this.store.dispatch(messageSend({ message }, { address }));
+  /* istanbul ignore next */
+  public async transfer(
+    token: string,
+    target: string,
+    amount: BigNumberish,
+    opts?: { paymentId?: BigNumberish; secret?: string; secrethash?: string },
+  ): Promise<BigNumber> {
+    if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
+    const tokenNetwork = this.state.tokens[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
+
+    amount = bigNumberify(amount);
+    if (!UInt(32).is(amount)) throw new Error('Invalid amount');
+
+    let paymentId = !opts || !opts.paymentId ? undefined : bigNumberify(opts.paymentId);
+    if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid opts.paymentId');
+
+    let secret: Secret | undefined, secrethash: Hash | undefined;
+    if (opts) {
+      const _secret = opts.secret;
+      if (_secret !== undefined && !Secret.is(_secret)) throw new Error('Invalid opts.secret');
+      const _secrethash = opts.secrethash;
+      if (_secrethash !== undefined && !Hash.is(_secrethash))
+        throw new Error('Invalid opts.secrethash');
+      secret = _secret;
+      secrethash = _secrethash;
+    }
+    if (!secrethash) {
+      if (!secret) secret = makeSecret();
+      secrethash = keccak256(secret) as Hash;
+    } else if (secret && keccak256(secret) !== secrethash) {
+      throw new Error('Secret and secrethash must match if passing both');
+    }
+
+    const promise = this.action$
+      .pipe(
+        filter(isActionOf([transferred, transferFailed])),
+        filter(action => action.meta.secrethash === secrethash),
+        first(),
+        map(action => {
+          if (isActionOf(transferFailed, action)) throw action.payload;
+          return action.payload.balanceProof.transferredAmount;
+        }),
+      )
+      .toPromise();
+
+    this.store.dispatch(
+      transfer({ tokenNetwork, target, amount, paymentId, secret }, { secrethash }),
+    );
+    return promise;
   }
 }
 

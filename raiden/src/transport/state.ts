@@ -7,4 +7,4 @@ export const RaidenMatrixSetup = t.type({
   displayName: t.string,
 });
 
-export type RaidenMatrixSetup = t.TypeOf<typeof RaidenMatrixSetup>;
+export interface RaidenMatrixSetup extends t.TypeOf<typeof RaidenMatrixSetup> {}

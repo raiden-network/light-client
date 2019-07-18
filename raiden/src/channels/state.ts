@@ -1,29 +1,20 @@
 import * as t from 'io-ts';
 
-import { Address, Hash, Signature, UInt } from '../utils/types';
-import { ChannelState, Lock } from './types';
+import { EnumType, UInt } from '../utils/types';
+import { Signed, LockedTransfer, Unlock, LockExpired } from '../messages/types';
+import { Lock, SignedBalanceProof } from './types';
 
-/**
- * Balance Proof constructed from an EnvelopeMessage
- * Either produced by us or received from the partner, the BPs are generated from the messages
- * because BP signature requires the hash of the message, for authentication of data not included
- * nor relevant for the smartcontract/BP itself, but so for the peers (e.g. payment_id)
- */
-export const SignedBalanceProof = t.type({
-  // channel data
-  chainId: UInt(32),
-  tokenNetworkAddress: Address,
-  channelId: UInt(32),
-  // balance proof data
-  nonce: UInt(8),
-  transferredAmount: UInt(32),
-  lockedAmount: UInt(32),
-  locksroot: Hash,
-  messageHash: Hash,
-  signature: Signature,
-  sender: Address, // TODO: check if sender can be replaced by getter/recover function
-});
-export type SignedBalanceProof = t.TypeOf<typeof SignedBalanceProof>;
+export enum ChannelState {
+  opening = 'opening',
+  open = 'open',
+  closing = 'closing',
+  closed = 'closed',
+  settleable = 'settleable',
+  settling = 'settling',
+  settled = 'settled',
+}
+
+export const ChannelStateC = new EnumType<ChannelState>(ChannelState, 'ChannelState');
 
 /**
  * Contains info of each side of a channel
@@ -35,9 +26,17 @@ export const ChannelEnd = t.intersection([
   t.partial({
     locks: t.array(Lock),
     balanceProof: SignedBalanceProof,
+    history: t.record(
+      t.string /* timestamp */,
+      t.union([
+        Signed(LockedTransfer),
+        Signed(Unlock),
+        Signed(LockExpired),
+      ]) /* sent by this end */,
+    ),
   }),
 ]);
-export type ChannelEnd = t.TypeOf<typeof ChannelEnd>;
+export interface ChannelEnd extends t.TypeOf<typeof ChannelEnd> {}
 
 export const Channel = t.intersection([
   t.type({
@@ -80,5 +79,8 @@ export type Channel = t.TypeOf<typeof Channel>;
  * We use t.string instead of the Address branded codecs because specialized types can't be used
  * as index mapping keys.
  */
-export const Channels = t.record(t.string, t.record(t.string, Channel));
+export const Channels = t.record(
+  t.string /* tokenNetwork: Address */,
+  t.record(t.string /* partner: Address */, Channel),
+);
 export type Channels = t.TypeOf<typeof Channels>;

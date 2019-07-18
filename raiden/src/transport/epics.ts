@@ -29,6 +29,7 @@ import {
   tap,
   toArray,
   mapTo,
+  finalize,
 } from 'rxjs/operators';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { find, get, minBy, sortBy } from 'lodash';
@@ -42,10 +43,26 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { MATRIX_KNOWN_SERVERS_URL } from '../constants';
 import { channelMonitored } from '../channels/actions';
+import {
+  Message,
+  MessageType,
+  Delivered,
+  Processed,
+  SecretRequest,
+  SecretReveal,
+  Signed,
+} from '../messages/types';
+import {
+  decodeJsonMessage,
+  encodeJsonMessage,
+  getMessageSigner,
+  signMessage,
+} from '../messages/utils';
 import { messageSend, messageReceived } from '../messages/actions';
 import { RaidenState } from '../store/state';
 import { raidenInit } from '../store/actions';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
+import { LruCache } from '../utils/lru';
 import {
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,
@@ -55,43 +72,13 @@ import {
   matrixRequestMonitorPresence,
 } from './actions';
 import { RaidenMatrixSetup } from './state';
-
-interface Presences {
-  [address: string]: ActionType<typeof matrixPresenceUpdate>;
-}
+import { Presences } from './types';
+import { getPresences$ } from './utils';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available then
 const AVAILABLE = ['online', 'unavailable'];
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
-
-/**
- * Helper to map/get an aggregated Presences observable from action$ bus
- * Known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
- * As this helper is basically a scan/reduce, you can't simply startWith the first/initial value,
- * as it needs to also be the initial mapping for the scan itself, so instead of pipe+startWith,
- * as we usually do with state$, we need to get the initial value as parameter when it's used in
- * withLatestFrom in some inner observable
- * @param action$ Observable
- * @param first optional Presences used as starting point, empty mapping used by default
- * @returns Observable of aggregated Presences from subscription to now
- */
-const getPresences$ = (
-  action$: Observable<RaidenAction>,
-  first: Presences = {},
-): Observable<Presences> =>
-  action$.pipe(
-    filter(isActionOf(matrixPresenceUpdate)),
-    scan(
-      // scan all presence update actions and populate/output a per-address mapping
-      (presences, update) => ({
-        ...presences,
-        [update.meta.address]: update,
-      }),
-      first,
-    ),
-    startWith(first),
-  );
 
 /**
  * Initialize matrix transport
@@ -245,8 +232,8 @@ export const matrixShutdownEpic = (
   { matrix$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   matrix$.pipe(
-    tap(matrix => action$.subscribe(undefined, undefined, () => matrix.stopClient())),
-    ignoreElements(),
+    mergeMap(matrix => action$.pipe(finalize(() => matrix.stopClient()))),
+    ignoreElements(), // dont re-emit action$, but keep it subscribed so finalize works
   );
 
 /**
@@ -269,6 +256,7 @@ export const matrixMonitorPresenceEpic = (
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
     withLatestFrom(getPresences$(action$)),
+    // TODO: groupBy(address)+concatMap serialize presence fetching
     mergeMap(([{ action, matrix }, presences]) => {
       if (action.meta.address in presences)
         // we already monitored/saw this user's presence
@@ -757,14 +745,18 @@ export const matrixMessageSendEpic = (
                 }),
                 take(1), // use first room/user which meets all requirements/filters so far
                 // send message!
-                mergeMap(member =>
-                  matrix.sendEvent(
+                mergeMap(member => {
+                  const body: string =
+                    typeof action.payload.message === 'string'
+                      ? action.payload.message
+                      : encodeJsonMessage(action.payload.message);
+                  return matrix.sendEvent(
                     member.roomId,
                     'm.room.message',
-                    { body: action.payload.message, msgtype: 'm.text' },
+                    { body, msgtype: 'm.text' },
                     '',
-                  ),
-                ),
+                  );
+                }),
               ),
             ),
           ),
@@ -821,17 +813,32 @@ export const matrixMessageReceivedEpic = (
             // take up to an arbitrary timeout to presence status for the sender
             // AND the room in which this message was sent to be in sender's address room queue
             takeUntil(timer(30e3)),
-            map(([presences]) => {
+            mergeMap(function*([presences]) {
               const presence = find(presences, ['payload.userId', event.getSender()])!;
-              return messageReceived(
-                {
-                  message: event.event.content.body,
-                  ts: event.event.origin_server_ts,
-                  userId: presence.payload.userId,
-                  roomId: room.roomId,
-                },
-                presence.meta,
-              );
+              for (const line of (event.event.content.body || '').split('\n')) {
+                let message: Signed<Message> | undefined;
+                try {
+                  message = decodeJsonMessage(line);
+                  const signer = getMessageSigner(message);
+                  if (signer !== presence.meta.address)
+                    throw new Error(
+                      `Signature mismatch: sender=${presence.meta.address} != signer=${signer}`,
+                    );
+                } catch (err) {
+                  console.warn(`Could not decode message: ${line}: ${err}`);
+                  message = undefined;
+                }
+                yield messageReceived(
+                  {
+                    text: line,
+                    message,
+                    ts: event.event.origin_server_ts,
+                    userId: presence.payload.userId,
+                    roomId: room.roomId,
+                  },
+                  presence.meta,
+                );
+              }
             }),
           ),
         ),
@@ -875,3 +882,42 @@ export const matrixMonitorChannelPresenceEpic = (
     filter(isActionOf(channelMonitored)),
     map(action => matrixRequestMonitorPresence(undefined, { address: action.meta.partner })),
   );
+
+/**
+ * Sends Delivered for specific messages
+ */
+export const deliveredEpic = (
+  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenState>,
+  { signer }: RaidenEpicDeps,
+): Observable<ActionType<typeof messageSend>> => {
+  const cache = new LruCache<string, Signed<Delivered>>(32);
+  return action$.pipe(
+    filter(isActionOf(messageReceived)),
+    concatMap(action => {
+      const message = action.payload.message;
+      if (
+        !message ||
+        !(
+          Signed(Processed).is(message) ||
+          Signed(SecretRequest).is(message) ||
+          Signed(SecretReveal).is(message)
+        )
+      )
+        return EMPTY;
+      const msgId = message.message_identifier,
+        key = msgId.toString();
+      const cached = cache.get(key);
+      if (cached) return of(messageSend({ message: cached }, action.meta));
+
+      const delivered: Delivered = {
+        type: MessageType.DELIVERED,
+        delivered_message_identifier: msgId, // eslint-disable-line @typescript-eslint/camelcase
+      };
+      return from(signMessage(signer, delivered)).pipe(
+        tap(signed => cache.put(key, signed)),
+        map(signed => messageSend({ message: signed }, action.meta)),
+      );
+    }),
+  );
+};

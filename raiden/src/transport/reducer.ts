@@ -1,4 +1,4 @@
-import { getType } from 'typesafe-actions';
+import { isActionOf } from 'typesafe-actions';
 import { get, getOr, isEmpty, set, unset } from 'lodash/fp';
 
 import { partialCombineReducers } from '../utils/redux';
@@ -10,47 +10,39 @@ import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
  * state.transport reducer
  * Handles all transport actions and requests
  */
-const transport = (
+function transport(
   state: Readonly<RaidenState['transport']> = initialState.transport,
   action: RaidenAction,
-) => {
-  switch (action.type) {
-    case getType(matrixSetup):
-      return {
-        ...state,
-        matrix: {
-          ...state.matrix,
-          ...action.payload,
-        },
-      };
-
-    case getType(matrixRoom): {
-      const path = ['matrix', 'rooms', action.meta.address];
-      return set(
-        path,
-        [
-          action.payload.roomId,
-          ...(getOr([], path, state) as string[]).filter(room => room !== action.payload.roomId),
-        ],
-        state,
-      );
-    }
-
-    case getType(matrixRoomLeave): {
-      const path = ['matrix', 'rooms', action.meta.address];
-      state = set(
-        path,
-        (getOr([], path, state) as string[]).filter(r => r !== action.payload.roomId),
-        state,
-      );
-      if (isEmpty(get(path, state))) state = unset(path, state);
-      return state;
-    }
-
-    default:
-      return state;
-  }
-};
+) {
+  if (isActionOf(matrixSetup, action)) {
+    return {
+      ...state,
+      matrix: {
+        ...state.matrix,
+        ...action.payload,
+      },
+    };
+  } else if (isActionOf(matrixRoom, action)) {
+    const path = ['matrix', 'rooms', action.meta.address];
+    return set(
+      path,
+      [
+        action.payload.roomId,
+        ...(getOr([], path, state) as string[]).filter(room => room !== action.payload.roomId),
+      ],
+      state,
+    );
+  } else if (isActionOf(matrixRoomLeave, action)) {
+    const path = ['matrix', 'rooms', action.meta.address];
+    state = set(
+      path,
+      (getOr([], path, state) as string[]).filter(r => r !== action.payload.roomId),
+      state,
+    );
+    if (isEmpty(get(path, state))) state = unset(path, state);
+    return state;
+  } else return state;
+}
 
 /**
  * Nested/combined reducer for transport
