@@ -3,11 +3,16 @@ $primary-color: #28A5C8;
 $primary-disabled-color: rgba($primary-color, 0.3);
 $secondary-color: #0A6E87;
 $disabled-text-color: rgba(255, 255, 255, 0.3);
+
+$secondary-text-color: #646464;
+
 $error-tooltip-background: #1E1E21;
 $card-background: #0F0E10;
 $secondary-button-color: #323232;
 $secondary-button-color-disabled: rgba($secondary-button-color, 0.3);
 
-
-$channel-dialog-background: $secondary-button-color;
+$dialog-background: $secondary-button-color;
 $error-indicator-color: $error-tooltip-background;
+$token-entry-background: $error-tooltip-background;
+$token-entry-hover-background: darken($error-tooltip-background, 1%);
+$expanded-area-background: $secondary-button-color
