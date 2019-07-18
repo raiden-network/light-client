@@ -1,4 +1,4 @@
-<template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
+<template>
   <fieldset>
     <v-text-field
       id="address-input"
@@ -20,7 +20,7 @@
       @input="updateValue"
       @change="updateValue"
     >
-      <template v-slot:append>
+      <template #append>
         <div class="status-icon-wrapper">
           <v-icon v-if="!valid && touched" class="status-icon status--invalid">
             error
@@ -28,7 +28,7 @@
           <v-icon v-if="valid" class="status-icon status--valid">check</v-icon>
         </div>
       </template>
-      <template v-slot:prepend-inner>
+      <template #prepend-inner>
         <img
           v-if="value && isChecksumAddress(value)"
           :src="$blockie(value)"

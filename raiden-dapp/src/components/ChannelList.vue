@@ -9,7 +9,7 @@
           class="channel"
           no-action
         >
-          <template v-slot:activator>
+          <template #activator>
             <v-list-tile>
               <v-list-tile-avatar class="channels__icon">
                 <img

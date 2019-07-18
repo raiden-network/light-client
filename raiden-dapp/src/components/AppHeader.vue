@@ -31,7 +31,7 @@
       <v-flex lg6 md6 xs6>
         <div class="address text-xs-left">
           <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
+            <template #activator="{ on }">
               <span v-on="on"> {{ defaultAccount | truncate }}</span>
             </template>
             <span>{{ defaultAccount }}</span>
