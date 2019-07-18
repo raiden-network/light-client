@@ -12,8 +12,8 @@ import {
   transferSigned,
   transferSecret,
   transferProcessed,
-  transferSecretReveal,
   transferUnlock,
+  transferUnlocked,
   transferred,
 } from './actions';
 import { getLocksroot } from './utils';
@@ -92,7 +92,7 @@ export function transfersReducer(
         },
       },
     };
-  } else if (isActionOf(transferSecretReveal, action)) {
+  } else if (isActionOf(transferUnlock, action)) {
     if (!(action.meta.secrethash in state.sent)) return state;
     return {
       ...state,
@@ -104,7 +104,7 @@ export function transfersReducer(
         },
       },
     };
-  } else if (isActionOf(transferUnlock, action)) {
+  } else if (isActionOf(transferUnlocked, action)) {
     const unlock = action.payload.message,
       secrethash = action.meta.secrethash;
     if (!(secrethash in state.sent) || state.sent[secrethash].unlock) return state;

@@ -28,8 +28,8 @@ import {
   transferSecret,
   transferSigned,
   transferProcessed,
-  transferSecretReveal,
   transferUnlock,
+  transferUnlocked,
   transferred,
 } from 'raiden/transfers/actions';
 import {
@@ -670,7 +670,7 @@ describe('raidenReducer', () => {
           message_identifier: makeMessageId(),
           signature: makeSignature(),
         },
-        newState = [transferSecretReveal({ message: reveal }, { secrethash })].reduce(
+        newState = [transferUnlock({ message: reveal }, { secrethash })].reduce(
           raidenReducer,
           state,
         );
@@ -679,7 +679,7 @@ describe('raidenReducer', () => {
 
       newState = [
         transferSigned({ message: transfer }, { secrethash }),
-        transferSecretReveal({ message: reveal }, { secrethash }),
+        transferUnlock({ message: reveal }, { secrethash }),
       ].reduce(raidenReducer, state);
 
       expect(get(newState, ['sent', secrethash, 'secretReveal'])).toBe(reveal);
@@ -700,7 +700,7 @@ describe('raidenReducer', () => {
           secret,
           signature: makeSignature(),
         },
-        newState = [transferUnlock({ message: unlock }, { secrethash })].reduce(
+        newState = [transferUnlocked({ message: unlock }, { secrethash })].reduce(
           raidenReducer,
           state,
         );
@@ -709,14 +709,14 @@ describe('raidenReducer', () => {
 
       newState = [
         transferSigned({ message: transfer }, { secrethash }),
-        transferUnlock({ message: unlock }, { secrethash }),
+        transferUnlocked({ message: unlock }, { secrethash }),
       ].reduce(raidenReducer, newState);
 
       // invalid lock because locked_amount isn't right
       expect(get(newState, ['sent', secrethash, 'unlock'])).toBeUndefined();
 
       unlock.locked_amount = Zero as UInt<32>;
-      newState = [transferUnlock({ message: unlock }, { secrethash })].reduce(
+      newState = [transferUnlocked({ message: unlock }, { secrethash })].reduce(
         raidenReducer,
         newState,
       );

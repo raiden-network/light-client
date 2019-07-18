@@ -22,7 +22,7 @@ export const SentTransfer = t.intersection([
     secretReveal: Signed(SecretReveal), // <- incoming secret reveal from recipient
     unlock: Signed(Unlock), // -> outgoing unlock to recipient
     lockExpired: Signed(LockExpired), // -> outgoing lock expired (if so)
-    // processed for Unlock or LockExpired clear this transfer, so aren't here
+    // processed for Unlock or LockExpired clear this transfer, so aren't persisted
     // transferFailed also clear this transfer
   }),
 ]);

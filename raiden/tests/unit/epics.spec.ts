@@ -110,8 +110,8 @@ import {
   transferSigned,
   transferSecret,
   transferFailed,
-  transferSecretReveal,
   transferUnlock,
+  transferUnlocked,
   transferProcessed,
   transferSecretRequest,
   transferUnlockProcessed,
@@ -2663,8 +2663,8 @@ describe('raidenRootEpic', () => {
         action$ = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
           transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
-          transferSecretReveal({ message: reveal }, { secrethash }),
-          transferSecretReveal({ message: reveal }, { secrethash }),
+          transferUnlock({ message: reveal }, { secrethash }),
+          transferUnlock({ message: reveal }, { secrethash }),
         ),
         state$ = new BehaviorSubject(
           [
@@ -2698,7 +2698,7 @@ describe('raidenRootEpic', () => {
       expect(output).toEqual(
         expect.arrayContaining([
           {
-            type: getType(transferUnlock),
+            type: getType(transferUnlocked),
             payload: {
               message: expect.objectContaining({
                 type: MessageType.UNLOCK,
@@ -2775,7 +2775,7 @@ describe('raidenRootEpic', () => {
         ].reduce(raidenReducer, state$.value),
       );
 
-      action$ = of(transferSecretReveal({ message: reveal }, { secrethash }));
+      action$ = of(transferUnlock({ message: reveal }, { secrethash }));
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -2785,7 +2785,7 @@ describe('raidenRootEpic', () => {
 
       expect(output).toEqual(
         expect.not.arrayContaining([
-          expect.objectContaining({ type: getType(transferUnlock), meta: { secrethash } }),
+          expect.objectContaining({ type: getType(transferUnlocked), meta: { secrethash } }),
         ]),
       );
 
@@ -2844,7 +2844,7 @@ describe('raidenRootEpic', () => {
         ].reduce(raidenReducer, state$.value),
       );
 
-      action$ = of(transferSecretReveal({ message: reveal }, { secrethash }));
+      action$ = of(transferUnlock({ message: reveal }, { secrethash }));
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -2854,7 +2854,7 @@ describe('raidenRootEpic', () => {
 
       expect(output).toEqual(
         expect.not.arrayContaining([
-          expect.objectContaining({ type: getType(transferUnlock), meta: { secrethash } }),
+          expect.objectContaining({ type: getType(transferUnlocked), meta: { secrethash } }),
         ]),
       );
 
@@ -2909,7 +2909,7 @@ describe('raidenRootEpic', () => {
         ),
       );
 
-      action$ = of(transferSecretReveal({ message: reveal }, { secrethash }));
+      action$ = of(transferUnlock({ message: reveal }, { secrethash }));
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -2919,7 +2919,7 @@ describe('raidenRootEpic', () => {
 
       expect(output).toEqual(
         expect.not.arrayContaining([
-          expect.objectContaining({ type: getType(transferUnlock), meta: { secrethash } }),
+          expect.objectContaining({ type: getType(transferUnlocked), meta: { secrethash } }),
         ]),
       );
 
@@ -3137,7 +3137,7 @@ describe('raidenRootEpic', () => {
         state$ = of(transferingState);
 
       await expect(transferSecretRevealedEpic(action$, state$).toPromise()).resolves.toEqual(
-        transferSecretReveal({ message: signed }, { secrethash }),
+        transferUnlock({ message: signed }, { secrethash }),
       );
     });
 
@@ -3170,14 +3170,14 @@ describe('raidenRootEpic', () => {
           secret,
         }),
         action$: Observable<RaidenAction> = of(
-          transferSecretReveal({ message: reveal }, { secrethash }),
+          transferUnlock({ message: reveal }, { secrethash }),
         ),
         state$ = new BehaviorSubject(transferingState);
 
       const unlock = (await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
         .pipe(
           tap(action => state$.next(raidenReducer(state$.value, action))),
-          filter(isActionOf(transferUnlock)),
+          filter(isActionOf(transferUnlocked)),
         )
         .toPromise()).payload.message;
 
@@ -3205,14 +3205,14 @@ describe('raidenRootEpic', () => {
           secret,
         }),
         action$: Observable<RaidenAction> = of(
-          transferSecretReveal({ message: reveal }, { secrethash }),
+          transferUnlock({ message: reveal }, { secrethash }),
         ),
         state$ = new BehaviorSubject(transferingState);
 
       const unlock = (await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
         .pipe(
           tap(action => state$.next(raidenReducer(state$.value, action))),
-          filter(isActionOf(transferUnlock)),
+          filter(isActionOf(transferUnlocked)),
         )
         .toPromise()).payload.message;
 

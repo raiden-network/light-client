@@ -46,12 +46,12 @@ export const transferSecretRequest = createStandardAction('transferSecretRequest
   TransferId
 >();
 
-export const transferSecretReveal = createStandardAction('transferSecretReveal')<
+export const transferUnlock = createStandardAction('transferUnlock')<
   { message: Signed<SecretReveal> },
   TransferId
 >();
 
-export const transferUnlock = createStandardAction('transferUnlock')<
+export const transferUnlocked = createStandardAction('transferUnlocked')<
   { message: Signed<Unlock> },
   TransferId
 >();

@@ -45,8 +45,8 @@ import {
   transferProcessed,
   transferFailed,
   transferSecretRequest,
-  transferSecretReveal,
   transferUnlock,
+  transferUnlocked,
   transferUnlockProcessed,
   transferred,
 } from './actions';
@@ -182,7 +182,7 @@ function makeAndSignTransfer(
 function makeAndSignUnlock(
   {  }: Observable<Presences>,
   state$: Observable<RaidenState>,
-  action: ActionType<typeof transferSecretReveal>,
+  action: ActionType<typeof transferUnlock>,
   { signer }: RaidenEpicDeps,
 ) {
   return state$.pipe(
@@ -224,7 +224,7 @@ function makeAndSignUnlock(
           locked_amount: balanceProof.lockedAmount.sub(transfer.lock.amount) as UInt<32>,
           locksroot,
           payment_identifier: transfer.payment_identifier,
-          secret: action.payload.message.secret,
+          secret: state.secrets[action.meta.secrethash].secret,
         };
         signed$ = from(signMessage(signer, message));
       }
@@ -233,7 +233,7 @@ function makeAndSignUnlock(
         withLatestFrom(state$),
         mergeMap(function*([signed, state]) {
           if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
-          yield transferUnlock({ message: signed }, action.meta);
+          yield transferUnlocked({ message: signed }, action.meta);
           // TODO: retry messageSend
           yield messageSend({ message: signed }, { address: transfer.recipient });
         }),
@@ -260,7 +260,7 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
   ActionType<
     | typeof transferSigned
     | typeof transferSecret
-    | typeof transferUnlock
+    | typeof transferUnlocked
     | typeof transferFailed
     | typeof messageSend
   >
@@ -269,12 +269,12 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
     multicast(new ReplaySubject(1), presencesStateReplay$ => {
       const [presences$, state$] = splitCombined(presencesStateReplay$);
       return action$.pipe(
-        filter(isActionOf([transfer, transferSecretReveal])),
+        filter(isActionOf([transfer, transferUnlock])),
         concatMap(action =>
           // TODO: add any other BP-changing observable below
           isActionOf(transfer, action)
             ? makeAndSignTransfer(presences$, state$, action, deps)
-            : isActionOf(transferSecretReveal, action)
+            : isActionOf(transferUnlock, action)
             ? makeAndSignUnlock(presences$, state$, action, deps)
             : EMPTY,
         ),
@@ -379,7 +379,7 @@ export const transferRevealSecretEpic = (
 export const transferSecretRevealedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ActionType<typeof transferSecretReveal>> =>
+): Observable<ActionType<typeof transferUnlock | typeof transferSecret>> =>
   action$.pipe(
     filter(isActionOf(messageReceived)),
     withLatestFrom(state$),
@@ -387,15 +387,14 @@ export const transferSecretRevealedEpic = (
       const message = action.payload.message;
       if (!message || !Signed(SecretReveal).is(message)) return;
       const secrethash = keccak256(message.secret) as Hash;
-      // if below only relevant after we can receive, so we reveal after learning the secret
-      // if (!(secrethash in state.secrets))
-      //   yield transferSecret({ secret: message.secret }, { secrethash });
       if (
         !(secrethash in state.sent) ||
         action.meta.address !== state.sent[secrethash].transfer.recipient
       )
         return;
-      yield transferSecretReveal({ message }, { secrethash });
+      // transferSecret is noop if we already know the secret (e.g. we're the initiator)
+      yield transferSecret({ secret: message.secret }, { secrethash });
+      yield transferUnlock({ message }, { secrethash });
     }),
   );
 
