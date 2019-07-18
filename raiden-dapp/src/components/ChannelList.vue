@@ -37,9 +37,9 @@
                 @confirm="close()"
                 @cancel="dismiss()"
               >
-                <template #header
-                  >Close Channel</template
-                >
+                <template #header>
+                  Close Channel
+                </template>
 
                 Are you sure you want to close this channel? <br />
                 This action cannot be undone.
@@ -51,9 +51,9 @@
                 @confirm="settle()"
                 @cancel="dismiss()"
               >
-                <template #header
-                  >Settle Channel</template
-                >
+                <template #header>
+                  Settle Channel
+                </template>
                 Are you sure you want to settle the channel with hub
                 {{ selectedChannel.partner }} for token
                 {{ selectedChannel.token }}?
