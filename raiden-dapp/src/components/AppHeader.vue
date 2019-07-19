@@ -1,17 +1,21 @@
 <template>
-  <div v-if="!loading && defaultAccount">
-    <v-layout class="header" justify-center align-center>
-      <v-flex lg12 md12 xs12>
-        <div id="header-content">
-          <div class="navigation-button">
+  <v-layout v-if="!loading && defaultAccount" class="app-header" column>
+    <v-layout class="app-header__top" justify-center align-center>
+      <v-flex xs12>
+        <div class="app-header__top__content">
+          <div class="app-header__top__content__back">
             <v-btn v-if="canGoBack" flat icon @click="onBackClicked()">
               <v-icon>arrow_back</v-icon>
             </v-btn>
           </div>
           <v-spacer></v-spacer>
           <v-layout column align-center justify-center>
-            <div class="header-title">{{ $route.meta.title }}</div>
-            <div class="network">{{ network }}</div>
+            <div class="app-header__top__content__title">
+              {{ $route.meta.title }}
+            </div>
+            <div class="app-header__top__content__network">
+              {{ network }}
+            </div>
           </v-layout>
           <v-spacer></v-spacer>
           <div>
@@ -20,31 +24,51 @@
               width="36"
               contain
               aspect-ratio="1"
-              class="blockie"
+              class="app-header__top__content__blockie"
               :src="$blockie(defaultAccount)"
             ></v-img>
           </div>
         </div>
       </v-flex>
     </v-layout>
-    <v-layout class="row-2" align-center>
-      <v-flex lg6 md6 xs6>
-        <div class="address text-xs-left">
+    <v-layout class="app-header__bottom" align-center>
+      <v-flex xs6>
+        <div class="app-header__bottom__address text-xs-left">
           <v-tooltip bottom>
             <template #activator="{ on }">
-              <span v-on="on"> {{ defaultAccount | truncate }}</span>
+              <span v-on="on">
+                {{ defaultAccount | truncate(8) }}
+              </span>
             </template>
             <span>{{ defaultAccount }}</span>
           </v-tooltip>
+          <v-tooltip v-model="copied" bottom dark>
+            <template #activator="{ on }">
+              <v-btn flat icon>
+                <v-img
+                  class="app-header__bottom__address__copy"
+                  contain
+                  :src="require('../assets/copy_icon.svg')"
+                  @click="copy()"
+                ></v-img>
+              </v-btn>
+            </template>
+            <span>Address copied successfully</span>
+          </v-tooltip>
         </div>
       </v-flex>
-      <v-flex lg6 md6 xs6>
-        <div class="balance text-xs-right">
+      <v-flex xs6>
+        <div class="app-header__bottom__balance text-xs-right">
           {{ accountBalance | decimals }} ETHER
         </div>
       </v-flex>
     </v-layout>
-  </div>
+    <textarea
+      ref="copy"
+      v-model="defaultAccount"
+      class="app-header__copy-area"
+    ></textarea>
+  </v-layout>
 </template>
 
 <script lang="ts">
@@ -66,8 +90,26 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
   accountBalance!: string;
   network!: string;
 
+  copied: boolean = false;
+  private timeout: number = 0;
+
   get canGoBack(): boolean {
     return this.$route.name !== RouteNames.HOME;
+  }
+
+  copy() {
+    const copyArea = this.$refs.copy as HTMLTextAreaElement;
+    copyArea.focus();
+    copyArea.select();
+    this.copied = document.execCommand('copy');
+
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+    }
+
+    this.timeout = setTimeout(() => {
+      this.copied = false;
+    }, 2000);
   }
 }
 </script>
@@ -76,7 +118,7 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
 @import '../main';
 @import '../scss/colors';
 
-.blockie {
+.app-header__top__content__blockie {
   border-radius: 50%;
   box-sizing: border-box;
   height: 36px;
@@ -84,7 +126,8 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
   border: 1px solid #979797;
   background-color: #d8d8d8;
 }
-.navigation-button {
+
+.app-header__top__content__back {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -93,7 +136,7 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
   height: 36px;
 }
 
-.header-title {
+.app-header__top__content__title {
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 24px;
@@ -101,21 +144,23 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
   text-align: center;
 }
 
-.address {
+.app-header__bottom__address {
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 19px;
+  display: flex;
+  align-items: center;
+}
+
+.app-header__bottom__balance {
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 16px;
   line-height: 19px;
 }
 
-.balance {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 19px;
-}
-
-.header {
+.app-header__top {
   height: 80px;
   width: 620px;
   border-radius: 10px 10px 0 0;
@@ -127,41 +172,39 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
   }
 }
 
-.network {
+.app-header__top__content__network {
   font-size: 12px;
   font-weight: 500;
+  color: $secondary-text-color;
 }
 
-$row-horizontal-padding: 34px;
-.row-2 {
+$row-horizontal-padding: 20px;
+.app-header__bottom {
   padding-left: $row-horizontal-padding;
   padding-right: $row-horizontal-padding;
   height: 40px;
-  background-color: #323232;
+  background-color: $error-tooltip-background;
 }
 
-#balance sup {
-  padding-left: 4px;
+.app-header__bottom__address__copy {
+  height: 12px;
+  width: 12px;
 }
 
-#header-content {
+$header-content-horizontal-margin: 20px;
+.app-header__top__content {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-@media only screen and (max-width: 600px) {
-  $header-content-horizontal-margin: 0.6rem;
-  #header-content > * {
-    margin-right: $header-content-horizontal-margin;
-    margin-left: $header-content-horizontal-margin;
-  }
+  margin-right: $header-content-horizontal-margin;
+  margin-left: $header-content-horizontal-margin;
 }
 
-@media only screen and (min-width: 601px) {
-  $header-content-horizontal-margin: 1.4rem;
-  #header-content > * {
-    margin-right: $header-content-horizontal-margin;
-    margin-left: $header-content-horizontal-margin;
-  }
+.app-header__copy-area {
+  height: 0;
+  width: 0;
+  position: absolute !important;
+  left: -1000px;
+  top: -1000px;
 }
 </style>
