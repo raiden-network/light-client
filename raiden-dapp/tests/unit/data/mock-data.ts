@@ -4,6 +4,7 @@ import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import { Address, ChannelState, RaidenChannel, RaidenChannels } from 'raiden';
 import { Route } from 'vue-router';
+import { RouteNames } from '@/route-names';
 
 export class TestData {
   static token: Token = {
@@ -81,14 +82,20 @@ export class TestData {
     }
   };
 
-  static mockRoute(params: {} = {}): Route {
+  static mockRoute(
+    params: {} = {},
+    meta: {} = {},
+    name: string = RouteNames.HOME
+  ): Route {
     return {
       path: '',
       fullPath: '',
       matched: [],
       hash: '',
       params,
-      query: {}
+      query: {},
+      name: name,
+      meta: meta
     };
   }
 }

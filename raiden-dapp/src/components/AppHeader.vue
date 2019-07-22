@@ -44,12 +44,11 @@
           </v-tooltip>
           <v-tooltip v-model="copied" bottom dark>
             <template #activator="{ on }">
-              <v-btn flat icon>
+              <v-btn flat icon @click="copy()">
                 <v-img
                   class="app-header__bottom__address__copy"
                   contain
                   :src="require('../assets/copy_icon.svg')"
-                  @click="copy()"
                 ></v-img>
               </v-btn>
             </template>
