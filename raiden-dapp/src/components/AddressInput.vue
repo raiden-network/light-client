@@ -22,10 +22,17 @@
     >
       <template #append>
         <div class="status-icon-wrapper">
-          <v-icon v-if="!valid && touched" class="status-icon status--invalid">
-            error
-          </v-icon>
-          <v-icon v-if="valid" class="status-icon status--valid">check</v-icon>
+          <v-img
+            v-if="!valid && touched"
+            :src="require('../assets/input_invalid.svg')"
+            class="status-icon status--invalid"
+          >
+          </v-img>
+          <v-img
+            v-if="valid"
+            :src="require('../assets/input_valid.svg')"
+            class="status-icon status--valid"
+          ></v-img>
         </div>
       </template>
       <template #prepend-inner>
@@ -267,31 +274,13 @@ $dark_background: #323232;
   margin-top: 0;
 }
 
-.status-icon-wrapper {
-  margin-left: 10px;
-  margin-top: 3px;
-  .v-icon {
-    width: 19px;
-    height: 19px;
-  }
-}
-
 .status-icon {
-  border-radius: 50%;
   line-height: 20px;
   width: 20px;
 }
 
-.status--invalid {
-  font-size: 26px;
-  color: #323232;
-  background: white;
-}
-
-.status--valid {
-  font-size: 13px;
-  color: white;
-  background: $primary-color;
+.status-icon-wrapper {
+  padding: 8px;
 }
 
 .untouched {
@@ -300,7 +289,7 @@ $dark_background: #323232;
 }
 
 /deep/ .v-input__icon--clear {
-  margin-top: 2px;
+  margin-top: 6px;
 }
 
 /deep/ .v-text-field > .v-input__control > .v-input__slot::before {

@@ -28,10 +28,16 @@
     >
       <div slot="prepend" class="prepend-placeholder"></div>
       <div slot="append-outer" class="status-icon-wrapper">
-        <v-icon v-if="!valid" class="status-icon" large>error</v-icon>
-        <v-icon v-else class="status-icon status-icon--valid" large
-          >check_circle</v-icon
-        >
+        <v-img
+          v-if="!valid"
+          class="status-icon"
+          :src="require('../assets/input_invalid.svg')"
+        ></v-img>
+        <v-img
+          v-else
+          :src="require('../assets/input_valid.svg')"
+          class="status-icon status-icon--valid"
+        ></v-img>
       </div>
     </v-text-field>
     <span class="token-symbol" :class="{ light }">{{
@@ -279,15 +285,8 @@ $light_background: #e4e4e4;
 }
 
 .status-icon {
-  color: $error-indicator-color;
-  background: white;
-  border-radius: 50%;
   line-height: 28px;
   width: 28px;
-}
-
-.status-icon--valid {
-  color: $primary-color;
 }
 
 .section {
