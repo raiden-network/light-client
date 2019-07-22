@@ -33,7 +33,7 @@
             large
             @click="openChannel()"
           >
-            Make Deposit
+            Open Channel
           </v-btn>
         </v-flex>
       </v-layout>
