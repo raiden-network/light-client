@@ -46,7 +46,7 @@
       :done="done"
     ></progress-overlay>
     <error-screen
-      title="Something went wrong"
+      title="Ops, something went wrong"
       :description="error"
       button-label="Dismiss"
       @dismiss="error = ''"

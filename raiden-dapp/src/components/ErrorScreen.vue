@@ -1,17 +1,23 @@
 <template>
   <div v-if="description !== ''" class="overlay">
-    <div class="card">
-      <div class="header">
-        <span class="header-title">Error</span>
+    <div class="error-screen">
+      <div class="error-screen__header">
+        <span class="error-screen__header__title">Error</span>
       </div>
-      <div class="card-content">
-        <div class="error-title">{{ title }}</div>
-        <div class="icon">
-          <v-icon size="90" class="error-icon">close</v-icon>
+      <div class="error-screen__content">
+        <div class="error-screen__content__title">{{ title }}</div>
+        <div class="error-screen__content__icon">
+          <v-img
+            size="110"
+            :src="require('../assets/error.png')"
+            class="error-screen__content__icon__img"
+          ></v-img>
         </div>
-        <div class="error-message">{{ description }}</div>
+        <div class="error-screen__content__message">{{ description }}</div>
         <div v-if="buttonLabel">
-          <v-btn class="button" @click="dismiss()">{{ buttonLabel }}</v-btn>
+          <v-btn class="error-screen__content__button" @click="dismiss()">{{
+            buttonLabel
+          }}</v-btn>
         </div>
       </div>
     </div>
@@ -37,6 +43,7 @@ export default class ErrorScreen extends Vue {
 
 <style scoped lang="scss">
 @import '../main';
+@import '../scss/colors';
 .overlay {
   display: flex;
   flex-direction: column;
@@ -53,7 +60,7 @@ export default class ErrorScreen extends Vue {
   z-index: 9000;
 }
 
-.card {
+.error-screen {
   height: 700px;
   width: 620px;
   border-radius: 14px;
@@ -66,7 +73,7 @@ export default class ErrorScreen extends Vue {
   }
 }
 
-.header {
+.error-screen__header {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -74,9 +81,9 @@ export default class ErrorScreen extends Vue {
   height: 40px;
   width: 619px;
   border-radius: 15px 15px 0 0;
-  background-color: #232323;
+  background-color: $error-color;
 
-  .header-title {
+  .error-screen__header__title {
     height: 19px;
     width: 36px;
     color: #ffffff;
@@ -84,10 +91,11 @@ export default class ErrorScreen extends Vue {
     font-size: 16px;
     font-weight: bold;
     line-height: 19px;
+    text-transform: uppercase;
   }
 }
 
-.card-content {
+.error-screen__content {
   padding-right: 40px;
   padding-left: 40px;
   height: calc(100% - 40px);
@@ -97,20 +105,20 @@ export default class ErrorScreen extends Vue {
   justify-content: space-around;
 }
 
-.icon {
+.error-screen__content__icon {
   height: 100px;
   width: 100px;
   background-color: #696969;
   border-radius: 50%;
 }
 
-.error-icon {
+.error-screen__content__icon__img {
   color: #fbfbfb;
   height: 100px;
   width: 100px;
 }
 
-.error-title {
+.error-screen__content__title {
   width: 60%;
   color: #ffffff;
   font-family: Roboto, sans-serif;
@@ -120,7 +128,7 @@ export default class ErrorScreen extends Vue {
   text-align: center;
 }
 
-.error-message {
+.error-screen__content__message {
   width: 60%;
   color: #ffffff;
   font-family: Roboto, sans-serif;
@@ -129,11 +137,11 @@ export default class ErrorScreen extends Vue {
   text-align: center;
 }
 
-.button {
+.error-screen__content__button {
   height: 40px;
   width: 225px;
   border-radius: 29px;
-  background-color: #000000;
+  background-color: $primary-color !important;
 }
 
 $icon-size: 120px;
