@@ -148,7 +148,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           this.timeout = 0;
         })
         .catch(e => {
-          console.log(e);
           this.errorMessages.push(`Could not resolve an address for ${url}`);
           this.input(undefined);
           this.checkForErrors();
