@@ -5,7 +5,7 @@
         <div class="app-header__top__content">
           <div class="app-header__top__content__back">
             <v-btn v-if="canGoBack" flat icon @click="onBackClicked()">
-              <v-icon>arrow_back</v-icon>
+              <v-img :src="require('../assets/back_arrow.svg')"></v-img>
             </v-btn>
           </div>
           <v-spacer></v-spacer>
