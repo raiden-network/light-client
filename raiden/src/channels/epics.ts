@@ -49,6 +49,11 @@ import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
 
 /**
  * Register for new block events and emit newBlock actions for new blocks
+ *
+ * @param action$  Observable of raidenInit actions
+ * @param state$  Observable of RaidenStates
+ * @param provider  RaidenEpicDeps members
+ * @returns  Observable of newBlock actions
  */
 export const initNewBlockEpic = (
   action$: Observable<RaidenAction>,
@@ -63,6 +68,11 @@ export const initNewBlockEpic = (
 
 /**
  * Monitor registry for new token networks and monitor them
+ *
+ * @param action$  Observable of raidenInit actions
+ * @param state$  Observable of RaidenStates
+ * @param registryContract,contractsInfo  RaidenEpicDeps members
+ * @returns  Observable of tokenMonitored actions
  */
 export const initMonitorRegistryEpic = (
   action$: Observable<RaidenAction>,
@@ -103,6 +113,10 @@ export const initMonitorRegistryEpic = (
 
 /**
  * Monitor channels previously already on state
+ *
+ * @param action$  Observable of raidenInit actions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of channelMonitored actions
  */
 export const initMonitorChannelsEpic = (
   action$: Observable<RaidenAction>,
@@ -126,6 +140,11 @@ export const initMonitorChannelsEpic = (
 
 /**
  * Monitor provider to ensure account continues to be available and network stays the same
+ *
+ * @param action$  Observable of raidenInit actions
+ * @param state$  Observable of RaidenStates
+ * @param address,network,provider  RaidenEpicDeps members
+ * @returns  Observable of raidenShutdown actions
  */
 export const initMonitorProviderEpic = (
   action$: Observable<RaidenAction>,
@@ -176,6 +195,11 @@ export const initMonitorProviderEpic = (
  * When this action goes through (because a former or new token registry event was deteceted),
  * subscribe to events and emit respective actions to the stream. Currently:
  * - ChannelOpened events with us or by us
+ *
+ * @param action$  Observable of tokenMonitored actions
+ * @param state$  Observable of RaidenStates
+ * @param matrix$  RaidenEpicDeps members
+ * @returns  Observable of channelOpened actions
  */
 export const tokenMonitoredEpic = (
   action$: Observable<RaidenAction>,
@@ -242,7 +266,14 @@ export const tokenMonitoredEpic = (
  * monitored TokenNetwork) or by a new detected ChannelOpenedAction. On the later case,
  * also fetches events since Channel.openBlock.
  * Currently monitored events:
- * - ChannelNewDeposit, fires a ChannelDepositedAction
+ * - ChannelNewDeposit, fires a channelDeposited action
+ * - ChannelClosedEvent, fires a channelClosed action
+ * - ChannelSettledEvent, fires a channelSettled action and completes that channel observable
+ *
+ * @param action$  Observable of channelMonitored actions
+ * @param state$  Observable of RaidenStates
+ * @param matrix$  RaidenEpicDeps members
+ * @returns  Observable of channelDeposited,channelClosed,channelSettled actions
  */
 export const channelMonitoredEpic = (
   action$: Observable<RaidenAction>,
@@ -369,6 +400,11 @@ export const channelMonitoredEpic = (
  * with given parameters. If tx goes through successfuly, stop as ChannelOpened success action
  * will instead be detected and fired by tokenMonitoredEpic. If anything detectable goes wrong,
  * fires a ChannnelOpenActionFailed instead
+ *
+ * @param action$  Observable of channelOpen actions
+ * @param state$  Observable of RaidenStates
+ * @param getTokenNetworkContract  RaidenEpicDeps members
+ * @returns  Observable of channelOpenFailed actions
  */
 export const channelOpenEpic = (
   action$: Observable<RaidenAction>,
@@ -416,6 +452,10 @@ export const channelOpenEpic = (
 
 /**
  * When we see a new ChannelOpenedAction event, starts monitoring channel
+ *
+ * @param action$  Observable of channelOpened actions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of channelMonitored actions
  */
 export const channelOpenedEpic = (
   action$: Observable<RaidenAction>,
@@ -450,6 +490,11 @@ export const channelOpenedEpic = (
  * ChannelDeposited success action will instead be detected and reacted by
  * channelMonitoredEpic. If anything detectable goes wrong, fires a ChannelDepositActionFailed
  * instead
+ *
+ * @param action$  Observable of channelDeposit actions
+ * @param state$  Observable of RaidenStates
+ * @param address,getTokenContract,getTokenNetworkContract  RaidenEpicDeps members
+ * @returns  Observable of channelDepositFailed actions
  */
 export const channelDepositEpic = (
   action$: Observable<RaidenAction>,
@@ -537,6 +582,11 @@ export const channelDepositEpic = (
  * If tx goes through successfuly, stop as ChannelClosed success action will instead be
  * detected and reacted by channelMonitoredEpic. If anything detectable goes wrong, fires a
  * ChannelCloseActionFailed instead
+ *
+ * @param action$  Observable of channelClose actions
+ * @param state$  Observable of RaidenStates
+ * @param getTokenNetworkContract  RaidenEpicDeps members
+ * @returns  Observable of channelCloseFailed actions
  */
 export const channelCloseEpic = (
   action$: Observable<RaidenAction>,
@@ -603,6 +653,11 @@ export const channelCloseEpic = (
  * If tx goes through successfuly, stop as ChannelSettled success action will instead be
  * detected and reacted by channelMonitoredEpic. If anything detectable goes wrong, fires a
  * ChannelSettleActionFailed instead
+ *
+ * @param action$  Observable of channelSettle actions
+ * @param state$  Observable of RaidenStates
+ * @param address,getTokenNetworkContract  RaidenEpicDeps members
+ * @returns  Observable of channelSettleFailed actions
  */
 export const channelSettleEpic = (
   action$: Observable<RaidenAction>,
@@ -668,6 +723,10 @@ export const channelSettleEpic = (
 
 /**
  * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable
+ *
+ * @param action$  Observable of newBlock actions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of channelSettleable actions
  */
 export const channelSettleableEpic = (
   action$: Observable<RaidenAction>,

@@ -13,6 +13,7 @@ import { matrixPresenceUpdate } from './actions';
  * as it needs to also be the initial mapping for the scan itself, so instead of pipe+startWith,
  * as we usually do with state$, we need to get the initial value as parameter when it's used in
  * withLatestFrom in some inner observable
+ *
  * @param action$ Observable
  * @returns Observable of aggregated Presences from subscription to now
  */

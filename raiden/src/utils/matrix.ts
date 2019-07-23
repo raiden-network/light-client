@@ -10,7 +10,9 @@ import { encodeUri } from 'matrix-js-sdk/lib/utils';
  *   - test2
  *   - test3
  * `) === ['test1', 'test2', 'test3']
- * @param yml String containing only YAML list
+ *
+ * @param yml  String containing only YAML list
+ * @returns  List of strings inside yml-encoded text
  */
 export function yamlListToArray(yml: string): string[] {
   // match all strings starting with optional spaces followed by a dash + space
@@ -26,6 +28,7 @@ export function yamlListToArray(yml: string): string[] {
 
 /**
  * Given a server name (with or without schema and port), return HTTP GET round trip time
+ *
  * @param server Server name with or without schema
  * @returns Promise to a { server, rtt } object, where `rtt` may be NaN
  */
@@ -47,6 +50,7 @@ export async function matrixRTT(server: string): Promise<{ server: string; rtt: 
 
 /**
  * Return server name without schema or path
+ *
  * @param server any URL
  * @returns server URL with domain and port (if present), without schema, paths or query params
  */
@@ -57,6 +61,7 @@ export function getServerName(server: string): string | null {
 
 /**
  * MatrixClient doesn't expose this API, but it does exist, so we create it here
+ *
  * @param matrix an already setup and started MatrixClient
  * @param userId to fetch status/presence from
  * @returns Promise to object containing status data

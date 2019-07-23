@@ -11,7 +11,7 @@
     "start": "npm run contracts && tsc -p src/tsconfig.cjs.json -w",
     "build": "npm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json",
     "test": "npm run lint && NODE_ENV=development jest --coverage=true",
-    "lint": "eslint src/**/*.ts tests/**/*.ts",
+    "lint": "eslint src/**/*.ts",
     "clean": "rimraf dist/ dist:cjs/ contracts/ .coverage/",
     "contracts": "typechain --target=ethers 'src/abi/*.json' --outDir contracts",
     "postinstall": "npm run build"
@@ -49,6 +49,7 @@
     "@typescript-eslint/parser": "^1.12.0",
     "eslint": "^5.16.0",
     "eslint-config-prettier": "^4.3.0",
+    "eslint-plugin-jsdoc": "^15.5.3",
     "eslint-plugin-prettier": "^3.1.0",
     "ganache-cli": "^6.5.0",
     "jest": "^24.8.0",
@@ -80,7 +81,8 @@
   "eslintConfig": {
     "parser": "@typescript-eslint/parser",
     "plugins": [
-      "@typescript-eslint"
+      "@typescript-eslint",
+      "jsdoc"
     ],
     "env": {
       "browser": true,
@@ -99,12 +101,22 @@
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-triple-slash-reference": "off",
-      "@typescript-eslint/no-empty-interface": "off"
+      "@typescript-eslint/no-empty-interface": "off",
+      "jsdoc/no-types": 1,
+      "jsdoc/require-param-type": 0,
+      "jsdoc/require-returns-type": 0,
+      "jsdoc/require-jsdoc": [
+        1,
+        {
+          "publicOnly": true
+        }
+      ]
     },
     "extends": [
       "plugin:@typescript-eslint/recommended",
       "prettier/@typescript-eslint",
-      "plugin:prettier/recommended"
+      "plugin:prettier/recommended",
+      "plugin:jsdoc/recommended"
     ]
   },
   "prettier": {

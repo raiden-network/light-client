@@ -219,6 +219,7 @@ export class Raiden {
 
   /**
    * Async helper factory to make a Raiden instance from more common parameters.
+   *
    * @param connection
    * - a JsonRpcProvider instance
    * - a Metamask's web3.currentProvider object or
@@ -233,6 +234,7 @@ export class Raiden {
    *   and update them on whichever persistency option is used
    * @param contracts
    *   Contracts deployment info
+   * @returns Promise to Raiden SDK client instance
    * An async factory is needed so we can do the needed async requests to construct the required
    * parameters ahead of construction time, and avoid partial initialization then
    **/
@@ -365,6 +367,7 @@ export class Raiden {
 
   /**
    * Get ETH balance for given address or self
+   *
    * @param address  Optional target address. If omitted, gets own balance
    * @returns  BigNumber of ETH balance
    */
@@ -376,6 +379,7 @@ export class Raiden {
 
   /**
    * Get token balance and token decimals for given address or self
+   *
    * @param token  Token address to fetch balance. Must be one of the monitored tokens.
    * @param address  Optional target address. If omitted, gets own balance
    * @returns  BigNumber containing address's token balance
@@ -394,6 +398,7 @@ export class Raiden {
    * Rejects only if 'token' contract doesn't define totalSupply and decimals methods.
    * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
    * very common and defined on most token contracts.
+   *
    * @param token address to fetch info from
    * @returns TokenInfo
    */
@@ -416,6 +421,8 @@ export class Raiden {
 
   /**
    * Returns a list of all token addresses registered as token networks in registry
+   *
+   * @returns Promise to list of token addresses
    */
   public async getTokenList(): Promise<Address[]> {
     // here we assume there'll be at least one token registered on a registry
@@ -434,8 +441,9 @@ export class Raiden {
   /**
    * Create a TokenNetwork contract linked to this.signer for given tokenNetwork address
    * Caches the result and returns the same contract instance again for the same address on this
+   *
    * @param address  TokenNetwork contract address (not token address!)
-   * @return  TokenNetwork Contract instance
+   * @returns  TokenNetwork Contract instance
    */
   private getTokenNetworkContract(address: Address): TokenNetwork {
     if (!(address in this.contracts.tokenNetworks))
@@ -450,8 +458,9 @@ export class Raiden {
   /**
    * Create a Token contract linked to this.signer for given token address
    * Caches the result and returns the same contract instance again for the same address on this
+   *
    * @param address  Token contract address
-   * @return  Token Contract instance
+   * @returns  Token Contract instance
    */
   private getTokenContract(address: Address): Token {
     if (!(address in this.contracts.tokens))
@@ -465,6 +474,7 @@ export class Raiden {
 
   /**
    * Open a channel on the tokenNetwork for given token address with partner
+   *
    * @param token  Token address on currently configured token network registry
    * @param partner  Partner address
    * @param settleTimeout  openChannel parameter, defaults to 500
@@ -498,6 +508,7 @@ export class Raiden {
 
   /**
    * Deposit tokens on channel between us and partner on tokenNetwork for token
+   *
    * @param token  Token address on currently configured token network registry
    * @param partner  Partner address
    * @param deposit  Number of tokens to deposit on channel
@@ -539,6 +550,7 @@ export class Raiden {
    * transaction fails, channel's state stays as 'closing', and this method can be called again
    * to retry sending 'closeChannel' transaction. After it's successful, channel becomes 'closed',
    * and can be settled after 'settleTimeout' blocks (when it then becomes 'settleable').
+   *
    * @param token  Token address on currently configured token network registry
    * @param partner  Partner address
    * @returns  txHash of closeChannel call, iff it succeeded
@@ -572,6 +584,7 @@ export class Raiden {
    * while Raiden Light Client is running or later on restart). When calling it, channel state
    * becomes 'settling'. If for any reason transaction fails, it'll stay on this state, and this
    * method can be called again to re-send a settleChannel transaction.
+   *
    * @param token  Token address on currently configured token network registry
    * @param partner  Partner address
    * @returns  txHash of settleChannel call, iff it succeeded
@@ -603,6 +616,7 @@ export class Raiden {
    * Returns object describing address's users availability on transport
    * After calling this method, any further presence update to valid transport peers of this
    * address will trigger a corresponding MatrixPresenceUpdateAction on events$
+   *
    * @param address checksummed address to be monitored
    * @returns Promise to object describing availability and last event timestamp
    */
@@ -629,6 +643,7 @@ export class Raiden {
    * Send a Locked Transfer!
    * Coverage ignored until we handle the full transfer lifecycle
    * TODO: remove uncover when implemented
+   *
    * @param token  Token address on currently configured token network registry
    * @param target  Target address (must be getAvailability before)
    * @param amount  Amount to try to transfer

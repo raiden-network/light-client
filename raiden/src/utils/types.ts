@@ -67,8 +67,9 @@ export interface HexStringB<S extends number> extends SizedB<S> {
 /**
  * Helper function to create codecs to validate an arbitrary or variable-sized hex bytestring
  * A branded codec to indicate validated hex-strings
- * @param size Required number of bytes. Pass undefined or zero to have a variable-sized type
- * @returns branded codec for hex-encoded bytestrings
+ *
+ * @param size  Required number of bytes. Pass undefined or zero to have a variable-sized type
+ * @returns branded  codec for hex-encoded bytestrings
  */
 export const HexString = memoize<
   <S extends number = number>(size?: S) => t.BrandC<t.StringC, HexStringB<S>>
@@ -92,8 +93,9 @@ export interface UIntB<S extends number> extends SizedB<S> {
 /**
  * Helper function to create codecs to validate an arbitrary or variable-sized BigNumbers
  * A branded codec/type to indicate size-validated BigNumbers
- * @param size Required number of bytes. Pass undefined or zero to have a variable-sized type
- * @returns branded codec for hex-encoded bytestrings
+ *
+ * @param size  Required number of bytes. Pass undefined or zero to have a variable-sized type
+ * @returns branded  codec for hex-encoded bytestrings
  */
 export const UInt = memoize<
   <S extends number = number>(size?: S) => t.BrandC<typeof BigNumberC, UIntB<S>>

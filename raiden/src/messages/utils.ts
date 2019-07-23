@@ -23,6 +23,7 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
 
 /**
  * Create the messageHash for a given EnvelopeMessage
+ *
  * @param message EnvelopeMessage to pack
  * @returns Hash of the message pack
  */
@@ -173,6 +174,9 @@ export function packMessage(message: Message) {
 
 /**
  * Typeguard to check if a message contains a valid signature
+ *
+ * @param message  May or may not be a signed message
+ * @returns  Boolean if message is signed
  */
 export function isSigned<M extends Message & { signature?: Signature }>(
   message: M,
@@ -182,6 +186,9 @@ export function isSigned<M extends Message & { signature?: Signature }>(
 
 /**
  * Requires a signed message and returns its signer address
+ *
+ * @param message  Signed message to retrieve signer address
+ * @returns  Address which signed message
  */
 export function getMessageSigner(message: Signed<Message>): Address {
   return verifyMessage(arrayify(packMessage(message)), message.signature) as Address;
@@ -189,6 +196,9 @@ export function getMessageSigner(message: Signed<Message>): Address {
 
 /**
  * Get the SignedBalanceProof associated with an EnvelopeMessage
+ *
+ * @param message  Signed EnvelopeMessage
+ * @returns SignedBalanceProof object for message
  */
 export function getBalanceProofFromEnvelopeMessage(
   message: Signed<EnvelopeMessage>,
@@ -210,6 +220,7 @@ export function getBalanceProofFromEnvelopeMessage(
 /**
  * Encode a Message as a JSON string
  * Uses lossless-json to encode BigNumbers as JSON 'number' type, as Raiden
+ *
  * @param message Message object to be serialized
  * @returns JSON string
  */
@@ -221,6 +232,7 @@ export function encodeJsonMessage<M extends Message>(message: Signed<M>): string
 /**
  * Try to decode text as a Message, using lossless-json to decode BigNumbers
  * Throws if can't decode, or message is invalid regarding any of the encoded constraints
+ *
  * @param text JSON string to try to decode
  * @returns Message object
  */
@@ -232,6 +244,13 @@ export function decodeJsonMessage(text: string): Signed<Message> {
   return decoded.value;
 }
 
+/**
+ * Pack message and request signer to sign it, and returns signed message
+ *
+ * @param signer  Signer instance
+ * @param message Unsigned message to pack and sign
+ * @returns  Promise to signed message
+ */
 export async function signMessage<M extends Message>(
   signer: Signer,
   message: M,

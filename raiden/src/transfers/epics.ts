@@ -57,6 +57,12 @@ import { getLocksroot, makePaymentId, makeMessageId } from './utils';
  * As it's an async observable which depends on state and may return an action which changes it,
  * the returned observable must be subscribed in a serialized context that ensures non-concurrent
  * write access to the channel's balance proof (e.g. concatMap)
+ *
+ * @param presences$  Observable of address to last matrixPresenceUpdate mapping
+ * @param state$  Observable of current state
+ * @param action  transfer request action to be sent
+ * @param network,address,signer  RaidenEpicDeps members
+ * @returns  Observable of output actions (transferSigned, transferSecret & messageSend)
  */
 function makeAndSignTransfer(
   presences$: Observable<Presences>,
@@ -179,6 +185,18 @@ function makeAndSignTransfer(
   );
 }
 
+/**
+ * Create an observable to compose and sign a Unlock message/transferUnlocked action
+ * As it's an async observable which depends on state and may return an action which changes it,
+ * the returned observable must be subscribed in a serialized context that ensures non-concurrent
+ * write access to the channel's balance proof (e.g. concatMap)
+ *
+ * @param presences$  Observable of address to last matrixPresenceUpdate mapping
+ * @param state$  Observable of current state
+ * @param action  transfer request action to be sent
+ * @param network,address,signer  RaidenEpicDeps members
+ * @returns  Observable of output actions (transferSigned, transferSecret & messageSend)
+ */
 function makeAndSignUnlock(
   {  }: Observable<Presences>,
   state$: Observable<RaidenState>,
@@ -251,6 +269,11 @@ function makeAndSignUnlock(
  * Actions which change any data in any channel balance proof must only ever be created reading
  * state inside the serialization flow provided by the concatMap, and also be composed and produced
  * inside it (inner, subscribed observable)
+ *
+ * @param action$  Observable of RaidenActions
+ * @param state$  Observable of RaidenStates
+ * @param deps  RaidenEpicDeps
+ * @returns  Observable of output actions for this epic
  */
 export const transferGenerateAndSignEnvelopeMessageEpic = (
   action$: Observable<RaidenAction>,
@@ -284,6 +307,10 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
 
 /**
  * Handles receiving a signed Processed for some sent LockedTransfer
+ *
+ * @param action$  Observable of RaidenActions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of output actions for this epic
  */
 export const transferProcessedReceivedEpic = (
   action$: Observable<RaidenAction>,
@@ -312,6 +339,10 @@ export const transferProcessedReceivedEpic = (
 
 /**
  * Handles receiving a signed SecretRequest for some sent LockedTransfer
+ *
+ * @param action$  Observable of RaidenActions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of output actions for this epic
  */
 export const transferSecretRequestedEpic = (
   action$: Observable<RaidenAction>,
@@ -338,6 +369,11 @@ export const transferSecretRequestedEpic = (
 
 /**
  * Handles a transferSecretRequest action to send the respective secret
+ *
+ * @param action$  Observable of RaidenActions
+ * @param state$  Observable of RaidenStates
+ * @param signer  RaidenEpicDeps signer
+ * @returns  Observable of output actions for this epic
  */
 export const transferRevealSecretEpic = (
   action$: Observable<RaidenAction>,
@@ -375,6 +411,10 @@ export const transferRevealSecretEpic = (
 
 /**
  * Handles receiving a valid SecretReveal from recipient (neighbor/partner)
+ *
+ * @param action$  Observable of RaidenActions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of output actions for this epic
  */
 export const transferSecretRevealedEpic = (
   action$: Observable<RaidenAction>,
@@ -400,6 +440,10 @@ export const transferSecretRevealedEpic = (
 
 /**
  * Handles receiving a signed Processed for some sent Unlock
+ *
+ * @param action$  Observable of RaidenActions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of output actions for this epic
  */
 export const transferUnlockProcessedReceivedEpic = (
   action$: Observable<RaidenAction>,
@@ -429,6 +473,10 @@ export const transferUnlockProcessedReceivedEpic = (
 
 /**
  * transferUnlockProcessed means transfer succeeded
+ *
+ * @param action$  Observable of RaidenActions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of output actions for this epic
  */
 export const transferSuccessEpic = (
   action$: Observable<RaidenAction>,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Contract, EventFilter, Event } from 'ethers';
 import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
 import { Network } from 'ethers/utils';
@@ -9,6 +10,12 @@ import { filter, first, map, mergeAll, switchMap, withLatestFrom, mergeMap } fro
 
 /**
  * Like rxjs' fromEvent, but event can be an EventFilter
+ *
+ * @param target  Object to hook event listener, maybe a Provider or Contract
+ * @param event  EventFilter or string representing the event to listen to
+ * @param resultSelector  A map of events arguments to output parameters
+ *      Default is to pass only first parameter
+ * @returns Observable of target.on(event) events
  */
 export function fromEthersEvent<T>(
   target: Provider | Contract,
@@ -35,8 +42,8 @@ export function fromEthersEvent<T>(
  * @param lastSeenBlock$  Observable of latest seen block, to be used as toBlock of pastEvents.
  *      lastSeenBlock + 1 is supposed to be first one fetched by contract.on newEvents$
  *      Both fromBlock$ and lastSeenBlock$ need to be set to fetch pastEvents$
+ * @returns Observable of contract's events
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getEventsStream<T extends any[]>(
   contract: Contract,
   filters: EventFilter[],
@@ -93,8 +100,9 @@ export function getEventsStream<T extends any[]>(
 
 /**
  * Like Provider.getNetwork, but fetches every time instead of using cached property
+ *
  * @param provider Provider to fetch data from
- * @returns Promise to Network
+ * @returns Promise of Network info
  */
 export async function getNetwork(provider: JsonRpcProvider): Promise<Network> {
   return parseNetwork(parseInt(await provider.send('net_version', [])));
