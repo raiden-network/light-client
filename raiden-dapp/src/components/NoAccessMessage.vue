@@ -1,8 +1,13 @@
+import {DeniedReason} from "@/model/types";
 <template>
   <v-alert :value="true" color="error" icon="warning" outline>
     <div class="font-weight-light message">
       <span v-if="networkUnsupported">
         The current network is unsupported.
+      </span>
+      <span v-else-if="initializationFailed">
+        SDK initialization failed. <br />
+        Please check the console for more information.
       </span>
       <span v-else>
         A valid account could not be detected. <br />
@@ -23,6 +28,10 @@ export default class NoAccessMessage extends Vue {
 
   get networkUnsupported(): boolean {
     return this.reason === DeniedReason.UNSUPPORTED_NETWORK;
+  }
+
+  get initializationFailed(): boolean {
+    return this.reason === DeniedReason.INITIALIZATION_FAILED;
   }
 }
 </script>

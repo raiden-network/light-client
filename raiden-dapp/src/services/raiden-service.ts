@@ -11,12 +11,19 @@ import {
 } from '@/model/types';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
-import startsWith from 'lodash/startsWith';
 import { filter } from 'rxjs/internal/operators';
 
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
+
+  private static async createRaiden(provider: any): Promise<Raiden> {
+    try {
+      return await Raiden.create(provider, 0, window.localStorage);
+    } catch (e) {
+      throw new RaidenInitializationFailed(e);
+    }
+  }
 
   private get raiden(): Raiden {
     if (this._raiden === undefined) {
@@ -28,7 +35,10 @@ export default class RaidenService {
 
   private async updateTokenBalances() {
     const cachedTokens = this.store.state.tokens;
-    for (let address in cachedTokens) {
+    for (const address in cachedTokens) {
+      if (!cachedTokens.hasOwnProperty(address)) {
+        continue;
+      }
       const token = cachedTokens[address];
       const balance = await this.raiden.getTokenBalance(address);
       cachedTokens[address] = Object.assign({}, token, {
@@ -59,7 +69,7 @@ export default class RaidenService {
       if (!provider) {
         this.store.commit('noProvider');
       } else {
-        const raiden = await Raiden.create(provider, 0, window.localStorage);
+        const raiden = await RaidenService.createRaiden(provider);
         this._raiden = raiden;
 
         this.store.commit('account', await this.getAccount());
@@ -76,8 +86,10 @@ export default class RaidenService {
     } catch (e) {
       console.error(e);
       let deniedReason: DeniedReason;
-      if (startsWith(e.message, 'No deploy info provided')) {
+      if (e.message && e.message.indexOf('No deploy info provided') > -1) {
         deniedReason = DeniedReason.UNSUPPORTED_NETWORK;
+      } else if (e instanceof RaidenInitializationFailed) {
+        deniedReason = DeniedReason.INITIALIZATION_FAILED;
       } else {
         deniedReason = DeniedReason.NO_ACCOUNT;
       }
@@ -254,3 +266,5 @@ export class ChannelOpenFailed extends Error {}
 export class ChannelDepositFailed extends Error {}
 
 export class EnsResolveFailed extends Error {}
+
+export class RaidenInitializationFailed extends Error {}

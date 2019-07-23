@@ -83,5 +83,6 @@ export const PlaceHolderNetwork: Network = {
 export enum DeniedReason {
   UNDEFINED,
   NO_ACCOUNT,
-  UNSUPPORTED_NETWORK
+  UNSUPPORTED_NETWORK,
+  INITIALIZATION_FAILED
 }
