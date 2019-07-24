@@ -34,12 +34,12 @@ export default new Router({
       component: () => import('./views/About.vue')
     },
     {
-      path: '/send/:token/:partner',
-      name: RouteNames.SELECT_TARGET,
+      path: '/transfer/:token',
+      name: RouteNames.TRANSFER,
       meta: {
-        title: 'Set payment recipient'
+        title: 'Send transaction'
       },
-      component: () => import('./views/SelectTarget.vue')
+      component: () => import('./views/Transfer.vue')
     },
     {
       path: '/connect',

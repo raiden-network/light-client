@@ -1,6 +1,6 @@
 export enum RouteNames {
   ABOUT = 'about',
-  SELECT_TARGET = 'send',
+  TRANSFER = 'transfer',
   SELECT_TOKEN = 'select-token',
   SELECT_HUB = 'select-hub',
   HOME = 'home',

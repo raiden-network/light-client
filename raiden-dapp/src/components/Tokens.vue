@@ -42,6 +42,13 @@
             >
               <v-layout justify-center row>
                 <v-btn
+                  :id="`pay-${index}`"
+                  class="text-capitalize connected-tokens__tokens__token__button"
+                  :to="`/transfer/${token.address}`"
+                >
+                  Pay
+                </v-btn>
+                <v-btn
                   :id="`leave-${index}`"
                   class="text-capitalize connected-tokens__tokens__token__button leave"
                   @click="leaveNetwork(token)"
@@ -200,8 +207,8 @@ export default class Tokens extends Mixins(BlockieMixin) {
   width: 180px;
   height: 35px;
   border-radius: 29px;
-  margin-right: 25px;
-  margin-left: 25px;
+  margin-right: 10px;
+  margin-left: 10px;
   background-color: $primary-color !important;
 }
 

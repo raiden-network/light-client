@@ -6,7 +6,8 @@ import RaidenService, {
   ChannelCloseFailed,
   ChannelDepositFailed,
   ChannelOpenFailed,
-  ChannelSettleFailed
+  ChannelSettleFailed,
+  TransferFailed
 } from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
@@ -16,7 +17,7 @@ import { Raiden } from 'raiden';
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
 import { BehaviorSubject, EMPTY } from 'rxjs';
-import { Zero } from 'ethers/constants';
+import { One, Zero } from 'ethers/constants';
 import Mocked = jest.Mocked;
 import anything = jasmine.anything;
 
@@ -616,5 +617,46 @@ describe('RaidenService', () => {
       DeniedReason.INITIALIZATION_FAILED
     );
     expect(store.commit).toBeCalledWith('loadComplete');
+  });
+
+  describe('transfer', () => {
+    test('should resolve when transfer succeeds', async () => {
+      const transfer = jest.fn().mockResolvedValue(One);
+      providerMock.mockResolvedValue(mockProvider);
+      factory.mockResolvedValue(
+        mockRaiden({
+          transfer: transfer,
+          getAvailability: jest.fn()
+        })
+      );
+
+      await raidenService.connect();
+      await flushPromises();
+
+      await expect(raidenService.transfer('0xtoken', '0xpartner', One))
+        .resolves;
+      expect(transfer).toHaveBeenCalledTimes(1);
+      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One);
+    });
+
+    test('should throw if the transfer fails', async () => {
+      const transfer = jest.fn().mockRejectedValue('txfailed');
+      providerMock.mockResolvedValue(mockProvider);
+      factory.mockResolvedValue(
+        mockRaiden({
+          transfer: transfer,
+          getAvailability: jest.fn()
+        })
+      );
+
+      await raidenService.connect();
+      await flushPromises();
+
+      await expect(
+        raidenService.transfer('0xtoken', '0xpartner', One)
+      ).rejects.toBeInstanceOf(TransferFailed);
+      expect(transfer).toHaveBeenCalledTimes(1);
+      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One);
+    });
   });
 });
