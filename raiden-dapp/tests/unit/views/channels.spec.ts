@@ -41,4 +41,14 @@ describe('Channels.vue', () => {
   test('renders the test data', () => {
     expect(wrapper.findAll('.channel').length).toEqual(4);
   });
+
+  test('dismiss the confirmation when overlay is pressed', function() {
+    wrapper.setData({
+      visible: 'channel-278-deposit'
+    });
+
+    expect(wrapper.vm.$data['visible']).toBe('channel-278-deposit');
+    wrapper.find('.overlay').trigger('click');
+    expect(wrapper.vm.$data['visible']).toBe('');
+  });
 });

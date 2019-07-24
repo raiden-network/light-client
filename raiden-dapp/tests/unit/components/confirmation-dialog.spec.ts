@@ -18,7 +18,7 @@ describe('ConfirmationDialog.vue', function() {
       },
       slots: {
         default: `<div class="description">Description</div>`,
-        title: `<span class="title">Title</span>`
+        header: `<span class="title">Title</span>`
       }
     });
   });

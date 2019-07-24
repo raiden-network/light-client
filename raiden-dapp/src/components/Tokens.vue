@@ -1,16 +1,20 @@
-<template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
-  <div class="content-host">
-    <v-layout justify-center row class="list-container">
-      <v-flex xs12 md12 lg12>
-        <v-list class="token-list">
+<template>
+  <v-layout column justify-space-between fill-height>
+    <list-header
+      class="connected-tokens__header"
+      header="Connected Tokens"
+    ></list-header>
+    <v-layout justify-center row fill-height>
+      <v-flex xs12>
+        <v-list class="connected-tokens__tokens">
           <v-list-group
             v-for="(token, index) in tokens"
-            :id="'token-' + index"
+            :id="`token-${index}`"
             :key="token.token"
-            class="token"
+            class="connected-tokens__tokens__token"
             no-action
           >
-            <template v-slot:activator>
+            <template #activator>
               <v-list-tile>
                 <v-list-tile-avatar class="list-blockie">
                   <img
@@ -19,44 +23,53 @@
                   />
                 </v-list-tile-avatar>
                 <v-list-tile-content>
-                  <v-list-tile-title class="token-info">
+                  <v-list-tile-title
+                    class="connected-tokens__tokens__token__info"
+                  >
                     {{ token.symbol }} | {{ token.name }}
                   </v-list-tile-title>
-                  <v-list-tile-sub-title class="token-address">
+                  <v-list-tile-sub-title
+                    class="connected-tokens__tokens__token__address"
+                  >
                     {{ token.address }}
                   </v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
             </template>
-            <div :id="'expanded-area-' + index" class="expanded-area">
+            <div
+              :id="`expanded-area-${index}`"
+              class="connected-tokens__tokens__token__expanded"
+            >
               <v-layout justify-center row>
                 <v-btn
-                  :id="'leave-' + index"
-                  class="text-capitalize action-button leave"
+                  :id="`leave-${index}`"
+                  class="text-capitalize connected-tokens__tokens__token__button leave"
                   @click="leaveNetwork(token)"
-                  >Leave Network</v-btn
                 >
+                  Disconnect Token
+                </v-btn>
                 <v-btn
-                  class="text-capitalize action-button"
-                  :to="'/channels/' + token.address"
-                  >View Channels</v-btn
+                  class="text-capitalize connected-tokens__tokens__token__button"
+                  :to="`/channels/${token.address}`"
                 >
+                  View Channels
+                </v-btn>
               </v-layout>
             </div>
           </v-list-group>
         </v-list>
       </v-flex>
     </v-layout>
-
-    <v-layout align-center justify-center class="section">
-      <v-flex xs10 md10 lg10 class="text-xs-center">
+    <v-layout align-center justify-center row class="connected-tokens__button">
+      <v-flex xs10 class="text-xs-center">
         <v-btn
           to="/connect"
           large
           class="text-capitalize confirm-button"
           depressed
-          >Connect</v-btn
         >
+          Connect new token
+        </v-btn>
       </v-flex>
     </v-layout>
     <confirmation-dialog
@@ -64,16 +77,19 @@
       @confirm="leaveConfirmed()"
       @cancel="leaveCancelled()"
     >
-      <template v-slot:title>
-        Confirm channel close
+      <template #header>
+        Disconnect token
       </template>
       <div v-if="selectedToken">
-        Are you sure you want to close all your channels for token
-        {{ selectedToken.address }}?
+        This action will close all channels for the
+        <b>{{ selectedToken.symbol }}</b> token!
+        <span class="connected-tokens__tokens__token__leave__address">
+          {{ selectedToken.address }}
+        </span>
       </div>
     </confirmation-dialog>
     <progress-overlay :display="loading" :steps="steps"></progress-overlay>
-  </div>
+  </v-layout>
 </template>
 
 <script lang="ts">
@@ -83,9 +99,10 @@ import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import { StepDescription, TokenModel } from '@/model/types';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import ListHeader from '@/components/ListHeader.vue';
 
 @Component({
-  components: { ProgressOverlay, ConfirmationDialog },
+  components: { ListHeader, ProgressOverlay, ConfirmationDialog },
   computed: mapGetters(['tokens'])
 })
 export default class Tokens extends Mixins(BlockieMixin) {
@@ -96,6 +113,7 @@ export default class Tokens extends Mixins(BlockieMixin) {
   loading: boolean = false;
   steps: StepDescription[] = [
     {
+      label: 'Leave',
       title: 'Leaving network',
       description: 'Closing the channels'
     }
@@ -126,53 +144,74 @@ export default class Tokens extends Mixins(BlockieMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../main';
 @import '../scss/button';
 
-.token {
-  background-color: #141414;
-  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
+.connected-tokens__header {
+  margin-top: 115px;
 }
 
-.token-list {
-  margin-top: 105px;
+.connected-tokens__tokens {
   background-color: transparent !important;
+  padding-bottom: 0;
+  padding-top: 0;
 }
 
-.token-list /deep/ .v-avatar {
+.connected-tokens__tokens /deep/ .v-avatar {
   padding-left: 30px;
   padding-right: 30px;
 }
 
-.token-list /deep/ .v-list__tile {
+.connected-tokens__tokens /deep/ .v-list__tile {
   height: 105px;
 }
 
-.token-info {
+.connected-tokens__tokens /deep/ .v-list__group__header:hover {
+  background-color: $token-entry-hover-background;
+}
+
+.connected-tokens__tokens__token {
+  background-color: $token-entry-background;
+  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
+}
+
+.connected-tokens__tokens__token__info {
   font-weight: bold;
   line-height: 20px;
   font-size: 16px;
 }
 
-.token-address {
-  color: #696969 !important;
+.connected-tokens__tokens__token__address {
+  color: $secondary-text-color !important;
   line-height: 20px;
   font-size: 16px;
 }
 
-.expanded-area {
-  background-color: #323232;
+.connected-tokens__tokens__token__expanded {
+  background-color: $expanded-area-background;
   padding: 25px;
 }
 
-.action-button.leave {
-  border: 2px solid #050505;
+.connected-tokens__tokens__token__button.leave {
+  border: 2px solid $primary-color;
   background-color: transparent !important;
 }
 
-.action-button {
+.connected-tokens__tokens__token__button {
+  width: 180px;
+  height: 35px;
   border-radius: 29px;
   margin-right: 25px;
   margin-left: 25px;
+  background-color: $primary-color !important;
+}
+
+.connected-tokens__button {
+  margin-top: 30px;
+  margin-bottom: 60px;
+}
+
+.connected-tokens__tokens__token__leave__address {
+  color: $secondary-text-color;
+  font-size: 14px;
 }
 </style>

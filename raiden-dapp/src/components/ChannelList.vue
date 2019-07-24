@@ -1,143 +1,109 @@
-<template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
-  <div class="content-host">
-    <v-layout justify-center row class="list-container">
-      <Transition name="fade-transition" mode="out-in">
-        <div
-          v-show="
-            visibleCloseConfirmation ||
-              visibleSettleConfirmation ||
-              visibleDeposit
-          "
-          class="overlay"
-          @click="closeConfirmation()"
-        ></div>
-      </Transition>
-      <v-flex xs12 md12 lg12>
-        <v-list class="channel-list">
-          <v-list-group
-            v-for="(channel, index) in channels"
-            :id="'channel-' + channel.id"
-            :key="channel.partner"
-            class="channel"
-            no-action
-          >
-            <template v-slot:activator>
-              <v-list-tile>
-                <v-list-tile-avatar class="list-blockie">
-                  <img
-                    :src="$blockie(channel.partner)"
-                    alt="Partner address blocky"
-                  />
-                </v-list-tile-avatar>
-                <v-list-tile-content>
-                  <v-list-tile-title class="partner-address">
-                    {{ channel.partner }}
-                  </v-list-tile-title>
-                  <v-list-tile-sub-title class="state-info">
-                    Deposit
-                    {{ channel.ownDeposit | displayFormat(token.decimals) }} |
-                    State: {{ channel.state | capitalizeFirst }}
-                  </v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
-            </template>
-            <div :id="'expanded-area-' + index" class="expanded-area">
-              <div v-if="visibleCloseConfirmation === `channel-${channel.id}`">
-                <confirmation
-                  :identifier="channel.id"
-                  @confirm="closeConfirmed()"
-                  @cancel="closeCancelled()"
-                >
-                  Are you sure you want to close this channel? <br />
-                  This action cannot be undone.
-                </confirmation>
-              </div>
-              <div
-                v-else-if="
-                  visibleSettleConfirmation === `channel-${channel.id}`
-                "
+<template>
+  <v-layout>
+    <v-flex xs12>
+      <v-list class="channels">
+        <v-list-group
+          v-for="(channel, index) in channels"
+          :id="`channel-${channel.id}`"
+          :key="channel.partner"
+          class="channel"
+          no-action
+        >
+          <template #activator>
+            <v-list-tile>
+              <v-list-tile-avatar class="channels__icon">
+                <img
+                  class="indenticon"
+                  :src="$blockie(channel.partner)"
+                  alt="Partner address blocky"
+                />
+              </v-list-tile-avatar>
+              <v-list-tile-content>
+                <v-list-tile-title class="channels__partner-address">
+                  {{ channel.partner }}
+                </v-list-tile-title>
+                <v-list-tile-sub-title class="channels__state-info">
+                  Deposit
+                  {{ channel.ownDeposit | displayFormat(token.decimals) }} |
+                  State: {{ channel.state | capitalizeFirst }}
+                </v-list-tile-sub-title>
+              </v-list-tile-content>
+            </v-list-tile>
+          </template>
+          <div :id="`expanded-area-${index}`" class="channels__expanded-area">
+            <div v-if="visible === `channel-${channel.id}-close`">
+              <confirmation
+                :identifier="channel.id"
+                @confirm="close()"
+                @cancel="dismiss()"
               >
-                <confirmation
-                  :identifier="channel.id"
-                  @confirm="settleConfirmed()"
-                  @cancel="settleCancelled()"
-                >
-                  Are you sure you want to settle the channel with hub
-                  {{ selectedChannel.partner }} for token
-                  {{ selectedChannel.token }}?
-                </confirmation>
-              </div>
-              <div v-else-if="visibleDeposit === `channel-${channel.id}`">
-                <channel-deposit
-                  :identifier="channel.id"
-                  :token="token"
-                  @confirm="depositConfirmed($event)"
-                  @cancel="depositCancelled()"
-                ></channel-deposit>
-              </div>
-              <div v-else class="area-content">
-                <channel-life-cycle :state="channel.state"></channel-life-cycle>
-                <v-layout justify-space-around row>
-                  <v-btn
-                    :id="'deposit-' + index"
-                    :disabled="channel.state !== 'open'"
-                    class="action-button text-capitalize"
-                    @click="deposit(channel)"
-                  >
-                    Deposit
-                  </v-btn>
-                  <v-btn
-                    :id="'close-' + index"
-                    :disabled="
-                      channel.state !== 'open' && channel.state !== 'closing'
-                    "
-                    class="action-button text-capitalize"
-                    @click="close(channel)"
-                  >
-                    Close
-                  </v-btn>
-                  <v-btn
-                    :id="'settle-' + index"
-                    class="action-button text-capitalize"
-                    :disabled="
-                      channel.state !== 'settleable' &&
-                        channel.state !== 'settling'
-                    "
-                    @click="settle(channel)"
-                  >
-                    Settle
-                  </v-btn>
-                </v-layout>
-              </div>
+                <template #header>
+                  Close Channel
+                </template>
+
+                Are you sure you want to close this channel? <br />
+                This action cannot be undone.
+              </confirmation>
             </div>
-          </v-list-group>
-        </v-list>
-      </v-flex>
-    </v-layout>
-    <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
-      {{ message }}
-      <v-btn color="primary" flat @click="snackbar = false">
-        Close
-      </v-btn>
-    </v-snackbar>
-  </div>
+            <div v-else-if="visible === `channel-${channel.id}-settle`">
+              <confirmation
+                :identifier="channel.id"
+                @confirm="settle()"
+                @cancel="dismiss()"
+              >
+                <template #header>
+                  Settle Channel
+                </template>
+                Are you sure you want to settle the channel with hub
+                {{ selectedChannel.partner }} for token
+                {{ selectedChannel.token }}?
+              </confirmation>
+            </div>
+            <div v-else-if="visible === `channel-${channel.id}-deposit`">
+              <channel-deposit
+                :identifier="channel.id"
+                :token="token"
+                @confirm="deposit($event)"
+                @cancel="dismiss()"
+              ></channel-deposit>
+            </div>
+            <div v-else class="channels__area-content">
+              <channel-life-cycle
+                :state="channel.state"
+                class="channels__lifecycle"
+              ></channel-life-cycle>
+              <channel-actions
+                :index="index"
+                :channel="channel"
+                @close="onClose($event)"
+                @settle="onSettle($event)"
+                @deposit="onDeposit($event)"
+              ></channel-actions>
+            </div>
+          </div>
+        </v-list-group>
+      </v-list>
+    </v-flex>
+  </v-layout>
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Prop } from 'vue-property-decorator';
+import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import { RaidenChannel } from 'raiden';
-import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import { Token, TokenPlaceholder } from '@/model/types';
-import BlockieMixin from '@/mixins/blockie-mixin';
+import ChannelActions from '@/components/ChannelActions.vue';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
+import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import Confirmation from '@/components/Confirmation.vue';
 import { BigNumber } from 'ethers/utils';
+import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({
   components: {
-    Confirmation,
+    ChannelActions,
     ChannelLifeCycle,
-    ChannelDeposit
+    ChannelDeposit,
+    Confirmation
   }
 })
 export default class ChannelList extends Mixins(BlockieMixin) {
@@ -145,158 +111,130 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   channels!: RaidenChannel[];
   @Prop({ required: true })
   tokenAddress!: string;
+  @Prop({ required: true })
+  visible!: string;
 
   token: Token | null = TokenPlaceholder;
   selectedChannel: RaidenChannel | null = null;
-  visibleCloseConfirmation: string = '';
-  visibleSettleConfirmation: string = '';
-  visibleDeposit: string = '';
-  message: string = '';
-  snackbar: boolean = false;
+
+  // noinspection JSUnusedLocalSymbols
+  @Emit()
+  message(message: string) {}
+
+  // noinspection JSUnusedLocalSymbols
+  @Emit()
+  visibleChanged(element: string) {}
 
   async created() {
     this.token = await this.$raiden.getToken(this.tokenAddress);
   }
 
-  closeCancelled() {
-    this.visibleCloseConfirmation = '';
-  }
-
-  async closeConfirmed() {
-    const channel = this.selectedChannel!;
-    const token = channel.token;
-    const partner = channel.partner;
-    this.dismissCloseModal();
-    try {
-      await this.$raiden.closeChannel(token, partner);
-      this.showMessage('Channel close successful');
-    } catch (e) {
-      this.showMessage('Channel close failed');
+  @Watch('visible')
+  onVisibilityChange() {
+    if (this.visible === '') {
+      this.selectedChannel = null;
     }
   }
 
-  private showMessage(message: string) {
-    this.message = message;
-    this.snackbar = true;
+  dismiss() {
+    this.visibleChanged('');
   }
 
-  private dismissCloseModal() {
-    this.visibleCloseConfirmation = '';
-    this.selectedChannel = null;
-  }
-
-  close(channel: RaidenChannel) {
+  onDeposit(channel: RaidenChannel) {
     this.selectedChannel = channel;
-    this.visibleCloseConfirmation = `channel-${channel.id}`;
+    this.visibleChanged(`channel-${channel.id}-deposit`);
   }
 
-  depositCancelled() {
-    this.dismissDepositModal();
+  onClose(channel: RaidenChannel) {
+    this.selectedChannel = channel;
+    this.visibleChanged(`channel-${channel.id}-close`);
   }
 
-  private dismissDepositModal() {
-    this.visibleDeposit = '';
-    this.selectedChannel = null;
+  onSettle(channel: RaidenChannel) {
+    this.selectedChannel = channel;
+    this.visibleChanged(`channel-${channel.id}-settle`);
   }
 
-  async depositConfirmed(deposit: BigNumber) {
+  async deposit(deposit: BigNumber) {
     const { token, partner } = this.selectedChannel!;
-    this.dismissDepositModal();
+    this.dismiss();
     try {
       await this.$raiden.deposit(token, partner, deposit);
-      this.showMessage('Deposit was successful');
+      this.message('Deposit was successful');
     } catch (e) {
-      this.showMessage('Deposit failed');
+      this.message('Deposit failed');
     }
   }
 
-  deposit(channel: RaidenChannel) {
-    this.selectedChannel = channel;
-    this.visibleDeposit = `channel-${channel.id}`;
-  }
-
-  private dismissSettleModal() {
-    this.visibleSettleConfirmation = '';
-    this.selectedChannel = null;
-  }
-
-  settleCancelled() {
-    this.dismissSettleModal();
-  }
-
-  async settleConfirmed() {
+  async close() {
     const { token, partner } = this.selectedChannel!;
-    this.dismissSettleModal();
+    this.dismiss();
+    try {
+      await this.$raiden.closeChannel(token, partner);
+      this.message('Channel close successful');
+    } catch (e) {
+      this.message('Channel close failed');
+    }
+  }
+
+  async settle() {
+    const { token, partner } = this.selectedChannel!;
+    this.dismiss();
     try {
       await this.$raiden.settleChannel(token, partner);
-      this.showMessage('Channel settle was successful');
+      this.message('Channel settle was successful');
     } catch (e) {
-      this.showMessage('Channel settle failed');
+      this.message('Channel settle failed');
     }
-  }
-
-  settle(channel: RaidenChannel) {
-    this.selectedChannel = channel;
-    this.visibleSettleConfirmation = `channel-${channel.id}`;
-  }
-
-  closeConfirmation() {
-    this.visibleSettleConfirmation = '';
-    this.visibleCloseConfirmation = '';
   }
 }
 </script>
 
-<style lang="scss" scoped>
-@import '../main';
+<style scoped lang="scss">
+.channels__expanded-area {
+  background-color: #323232;
+  height: 250px;
+
+  .channels__area-content {
+    padding: 20px;
+  }
+
+  position: relative;
+  z-index: 20;
+}
 
 .channel {
   background-color: #141414;
   box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
 }
 
-.channel .partner-address {
+.channel .channels__partner-address {
   font-size: 16px;
   line-height: 20px;
 }
 
-.channel .state-info {
+.channel .channels__state-info {
   color: #696969 !important;
   font-size: 16px;
   line-height: 20px;
 }
 
-.channel-list {
+.channels {
   background-color: transparent !important;
+  padding-bottom: 0;
+  padding-top: 0;
 }
 
-.channel-list /deep/ .v-list__tile {
+.channels /deep/ .v-list__tile {
   height: 105px;
 }
 
-.action-button {
-  width: 135px;
-  border-radius: 29px;
-  background-color: #000000;
+.channels__lifecycle {
+  margin-bottom: 30px;
 }
 
-.expanded-area {
-  background-color: #323232;
-  height: 250px;
-  .area-content {
-    padding: 25px;
-  }
-  position: relative;
-  z-index: 20;
-}
-
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(30, 30, 30, 0.75);
-  z-index: 10;
+.channels__icon {
+  padding-left: 10px;
+  margin-right: 15px;
 }
 </style>

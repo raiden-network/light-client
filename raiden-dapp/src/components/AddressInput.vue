@@ -1,25 +1,41 @@
-<template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
+<template>
   <fieldset>
     <v-text-field
       id="address-input"
       ref="address"
       :hint="hint"
-      :value="internalValue"
+      :value="address"
       :error-messages="errorMessages"
-      :class="{ invalid: !valid, 'hint-visible': hint.length > 0 }"
+      :class="{
+        invalid: !valid && touched,
+        'hint-visible': hint.length > 0,
+        untouched: !touched
+      }"
       persistent-hint
       placeholder="Enter an address or ens name..."
       clearable
       hide-selected
-      @blur="checkValidity()"
-      @input="valueChanged($event)"
+      @blur="$emit('blur')"
+      @focus="$emit('focus')"
+      @input="updateValue"
+      @change="updateValue"
     >
-      <template v-slot:append>
+      <template #append>
         <div class="status-icon-wrapper">
-          <v-icon v-if="!valid" class="status-icon" large>error</v-icon>
+          <v-img
+            v-if="!valid && touched"
+            :src="require('../assets/input_invalid.svg')"
+            class="status-icon status--invalid"
+          >
+          </v-img>
+          <v-img
+            v-if="valid"
+            :src="require('../assets/input_valid.svg')"
+            class="status-icon status--valid"
+          ></v-img>
         </div>
       </template>
-      <template v-slot:prepend-inner>
+      <template #prepend-inner>
         <img
           v-if="value && isChecksumAddress(value)"
           :src="$blockie(value)"
@@ -53,19 +69,18 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   @Prop({ required: true })
   value!: string;
 
-  internalValue?: string;
-  valid: boolean = true;
-  hint: string = '';
-  errorMessages: string[] = [];
+  address: string = '';
 
-  created() {
-    this.internalValue = this.value;
-  }
+  valid: boolean = false;
+  touched: boolean = false;
+  hint: string = '';
+  errorMessages: string[] = [''];
 
   // noinspection JSUnusedLocalSymbols
   @Emit()
   public input(value?: string) {}
 
+  // noinspection JSMethodCanBeStatic
   isChecksumAddress(address: string): boolean {
     const tokenAddress = address;
     return (
@@ -74,10 +89,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     );
   }
 
-  valueChanged(value?: string) {
+  updateValue(value?: string) {
     this.errorMessages = [];
     this.hint = '';
+    this.updateErrors(value);
+    this.checkForErrors();
+  }
 
+  private updateErrors(value?: string) {
     if (!value) {
       this.input(value);
       this.errorMessages.push('The address cannot be empty');
@@ -98,12 +117,11 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         `The input doesn't seem like a valid address or ens name`
       );
     }
-
-    this.checkValidity();
   }
 
-  private checkValidity() {
+  private checkForErrors() {
     if (this.$refs.address) {
+      this.touched = true;
       this.valid = this.errorMessages.length === 0;
     }
   }
@@ -125,15 +143,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           } else {
             this.errorMessages.push(`Could not resolve an address for ${url}`);
             this.input(undefined);
-            this.checkValidity();
+            this.checkForErrors();
           }
           this.timeout = 0;
         })
         .catch(e => {
-          console.log(e);
           this.errorMessages.push(`Could not resolve an address for ${url}`);
           this.input(undefined);
-          this.checkValidity();
+          this.checkForErrors();
           this.timeout = 0;
         });
     }, 800);
@@ -143,6 +160,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
 <style lang="scss" scoped>
 @import '../main';
+@import '../scss/colors';
 
 .selection-blockie {
   border-radius: 50%;
@@ -182,16 +200,20 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   line-height: 38px;
   max-height: 40px;
 }
+
 .address-input /deep/ input:focus {
   outline: 0;
 }
 
 .address-input /deep/ .v-messages {
-  color: white !important;
+  color: #323232 !important;
   font-family: Roboto, sans-serif;
   font-size: 16px;
   line-height: 21px;
   text-align: center;
+  .v-messages__wrapper {
+    color: white;
+  }
 }
 
 .address-input /deep/ .v-messages {
@@ -211,8 +233,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 }
 
-$dark_border: #fbfbfb;
-$dark_background: #1e1e1e;
+$dark_border: #323232;
+$dark_background: #323232;
 
 .invalid /deep/ .v-messages {
   border-color: $dark_border;
@@ -251,15 +273,29 @@ $dark_background: #1e1e1e;
   margin-top: 0;
 }
 
-.status-icon-wrapper {
-  margin-left: 12px;
+.status-icon {
+  line-height: 20px;
+  width: 20px;
 }
 
-.status-icon {
-  color: #323232;
-  background: white;
-  border-radius: 50%;
-  line-height: 18px;
-  width: 19px;
+.status-icon-wrapper {
+  padding: 8px;
+}
+
+.untouched {
+  caret-color: white !important;
+  color: white !important;
+}
+
+/deep/ .v-input__icon--clear {
+  margin-top: 6px;
+}
+
+/deep/ .v-text-field > .v-input__control > .v-input__slot::before {
+  border-width: 2px 0 0 0;
+}
+
+/deep/ .v-text-field > .v-input__control > .v-input__slot::after {
+  border-width: 3px 0 0 0;
 }
 </style>

@@ -1,21 +1,30 @@
 <template>
   <v-layout row justify-center>
-    <v-dialog v-model="display" persistent max-width="450">
+    <v-dialog v-model="display" persistent max-width="625">
       <v-card>
-        <v-card-title class="headline">
-          <slot name="title"></slot>
+        <v-card-title>
+          <v-flex>
+            <h1 class="confirmation-dialog__header">
+              <slot name="header"></slot>
+            </h1>
+          </v-flex>
         </v-card-title>
         <v-card-text>
-          <slot></slot>
+          <p class="confirmation-dialog__message"><slot></slot></p>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="primary darken-1" flat @click="cancel()">
+          <v-btn class="confirmation-dialog__button" flat @click="cancel()">
             Cancel
           </v-btn>
-          <v-btn color="primary darken-1" flat @click="confirm()">
+          <v-btn
+            class="confirmation-dialog__button confirmation-dialog__button__primary"
+            flat
+            @click="confirm()"
+          >
             Confirm
           </v-btn>
+          <v-spacer></v-spacer>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -40,4 +49,41 @@ export default class ConfirmationDialog extends Vue {
 }
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+@import '../scss/colors';
+@import '../scss/dimensions';
+
+/deep/ .theme--dark.v-sheet {
+  background-color: $dialog-background;
+}
+.confirmation-dialog__header {
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.confirmation-dialog__message {
+  color: #fafafa;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 21px;
+  text-align: center;
+}
+
+.confirmation-dialog__button {
+  height: $dialog-button-height;
+  width: 135px;
+  border: 2px solid $primary-color;
+  border-radius: 29px;
+  text-transform: capitalize;
+  margin-left: 15px;
+  margin-right: 15px;
+  margin-bottom: 8px;
+}
+
+.confirmation-dialog__button__primary {
+  background-color: $primary-color;
+}
+</style>

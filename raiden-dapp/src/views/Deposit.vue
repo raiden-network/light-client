@@ -2,43 +2,28 @@
   <div class="content-host">
     <v-form v-model="valid" autocomplete="off">
       <v-layout align-center justify-center row>
-        <v-flex xs10 md10 lg10>
-          <div class="screen-title">Open Channel</div>
-        </v-flex>
-      </v-layout>
-
-      <v-layout align-center justify-center row>
-        <v-flex xs10 md10 lg10>
+        <v-flex xs10>
           <amount-input v-model="deposit" :token="token" limit></amount-input>
         </v-flex>
       </v-layout>
 
-      <v-layout align-center justify-center row>
-        <div class="divider"></div>
-      </v-layout>
+      <divider></divider>
 
-      <v-layout align-center justify-center row>
-        <v-flex xs10 md10 lg10 class="information">
-          <div class="information-label text-xs-left">Token</div>
-          <div class="information-description text-xs-left">
-            <span class="font-weight-medium">{{ token.symbol }}</span>
-            · {{ token.name }}
-          </div>
-          <div class="text--secondary">
-            {{ token.address }}
-          </div>
-        </v-flex>
-      </v-layout>
+      <token-information :token="token"></token-information>
 
-      <v-layout align-center justify-center row>
-        <v-flex xs10 md10 lg10 class="information">
+      <divider></divider>
+
+      <v-layout align-center justify-center row class="hub-information">
+        <v-flex xs2 class="information">
           <div class="information-label text-xs-left">Hub</div>
+        </v-flex>
+        <v-flex xs8>
           <div class="information-description text-xs-left">{{ partner }}</div>
         </v-flex>
       </v-layout>
 
       <v-layout align-center justify-center class="section">
-        <v-flex xs10 md10 lg10 class="text-xs-center">
+        <v-flex xs10 class="text-xs-center">
           <v-btn
             id="open-channel"
             class="text-capitalize confirm-button"
@@ -48,7 +33,7 @@
             large
             @click="openChannel()"
           >
-            Make Deposit
+            Open Channel
           </v-btn>
         </v-flex>
       </v-layout>
@@ -61,7 +46,7 @@
       :done="done"
     ></progress-overlay>
     <error-screen
-      title="Something went wrong"
+      title="Ops, something went wrong"
       :description="error"
       button-label="Dismiss"
       @dismiss="error = ''"
@@ -84,9 +69,17 @@ import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { Route } from 'vue-router';
 import ErrorScreen from '@/components/ErrorScreen.vue';
+import Divider from '@/views/Divider.vue';
+import TokenInformation from '@/views/TokenInformation.vue';
 
 @Component({
-  components: { ErrorScreen, ProgressOverlay, AmountInput }
+  components: {
+    TokenInformation,
+    Divider,
+    ErrorScreen,
+    ProgressOverlay,
+    AmountInput
+  }
 })
 export default class Deposit extends Mixins(NavigationMixin) {
   partner: string = '';
@@ -102,22 +95,26 @@ export default class Deposit extends Mixins(NavigationMixin) {
 
   protected readonly allSteps: StepDescription[] = [
     {
+      label: 'Open',
       title: 'Opening a new Channel',
       description:
         'Please do not close the browser and confirm the transaction with MetaMask.'
     },
     {
+      label: 'Transfer',
       title: 'Transferring tokens to the network and deposit into the channel',
       description:
         'Please do not close the browser and confirm two (2) transactions with MetaMask.'
     },
     {
+      label: 'Deposit',
       title: 'Not implemented - split title above, when done',
       description: 'Not implemented - split description above, when done'
     }
   ];
 
   readonly doneStep: StepDescription = {
+    label: 'Done',
     title: 'New Channel opened',
     description:
       'A new channel has been opened successfully.<br/>You may now select a payment target.'
@@ -212,4 +209,8 @@ export default class Deposit extends Mixins(NavigationMixin) {
 
 <style scoped lang="scss">
 @import '../scss/input-screen';
+
+.hub-information {
+  max-height: 30px;
+}
 </style>

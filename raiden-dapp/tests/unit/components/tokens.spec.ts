@@ -72,7 +72,7 @@ describe('Tokens.vue', function() {
   });
 
   it('should display one connection entry', function() {
-    const connections = wrapper.findAll('.token');
+    const connections = wrapper.findAll('.connected-tokens__tokens__token');
     expect(connections.exists()).toBeTruthy();
     expect(connections.length).toBe(1);
   });

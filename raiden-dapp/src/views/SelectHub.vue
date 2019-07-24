@@ -10,23 +10,8 @@
         </v-flex>
       </v-layout>
 
-      <div class="divider-container">
-        <div class="divider"></div>
-      </div>
-
-      <v-layout align-start justify-center row>
-        <v-flex xs2 class="information">
-          <div class="information-label">Token</div>
-        </v-flex>
-        <v-flex xs8>
-          <div class="information-description">
-            {{ token.symbol }} | {{ token.name }}
-          </div>
-          <div>
-            {{ token.address }}
-          </div>
-        </v-flex>
-      </v-layout>
+      <divider></divider>
+      <token-information :token="token"></token-information>
 
       <v-layout align-center justify-center class="section">
         <v-flex xs10 md10 lg10 class="text-xs-center">
@@ -52,9 +37,11 @@ import { Token, TokenPlaceholder } from '@/model/types';
 import AddressInput from '@/components/AddressInput.vue';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
+import Divider from '@/views/Divider.vue';
+import TokenInformation from '@/views/TokenInformation.vue';
 
 @Component({
-  components: { AddressInput }
+  components: { TokenInformation, Divider, AddressInput }
 })
 export default class SelectHub extends Mixins(NavigationMixin) {
   token: Token = TokenPlaceholder;
