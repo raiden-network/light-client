@@ -9,6 +9,7 @@ import { Lock } from '../channels/types';
 
 /**
  * Return the hash of a lock
+ *
  * @param lock The lock to have the hash calculated from
  * @returns hash of lock
  */
@@ -22,6 +23,7 @@ export function lockhash(lock: Lock) {
  * Get the locksroot of a given locks array using keccak256
  * On Red-Eyes, locksroot is the root of the merkle tree of the hashes of the locks
  * TODO: replace by list concat hash instead, after moving to raiden-contracts@^0.25
+ *
  * @param locks Lock array to calculate the locksroot from
  * @returns hash of the locks array
  */
@@ -40,6 +42,7 @@ export function getLocksroot(locks: readonly Lock[]): Hash {
 
 /**
  * Generates a random secret of given length, as an HexString<32>
+ *
  * @param length of the secret to generate
  * @returns HexString<32>
  */
@@ -49,6 +52,7 @@ export function makeSecret(length: number = 32): Secret {
 
 /**
  * Generates a random payment identifier, as an UInt<8> (64 bits)
+ *
  * @returns UInt<8>
  */
 export function makePaymentId(): UInt<8> {
@@ -57,6 +61,7 @@ export function makePaymentId(): UInt<8> {
 
 /**
  * Generates a message identifier, as an UInt<8> (64 bits)
+ *
  * @returns UInt<8>
  */
 export function makeMessageId(): UInt<8> {

@@ -9,6 +9,7 @@ import { BigNumberC, HexString } from './types';
 /**
  * Encode data to hex string of exactly length size (in bytes)
  * Throw if data can't be made to fit in length.
+ *
  * @param data May be of multiple types:
  *      - number|BigNumber: Encoded in the big-endian byte-order and left-zero-padded to length
  *      - string: Must be hex-encoded string of length bytes
@@ -45,6 +46,7 @@ const isLosslessNumber = (u: unknown): u is LosslessNumber =>
  * If possible to decode a JSON number as JS number (i.e. value < 2^53) and return 'number',
  * otherwise returns LosslessNumber object, which can be decoded as BigNumber by BigNumberC
  * Throws if handled invalid JSON
+ *
  * @param text JSON string to parse
  * @returns Decoded object
  */

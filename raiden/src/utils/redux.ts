@@ -6,9 +6,10 @@ import { Action, AnyAction, Reducer } from 'redux';
  * which doesn't allow to only provide a partial set of reducers and passthrough the other state's
  * keys. This function allows that, also preserving state/object reference when reducers doesn't
  * change state value.
- * @param reducers A mapping of a subset of state's key to nested reducers functions
- * @param initialState global initial state, required when initializing first object with partial
- *                     reducers
+ *
+ * @param reducers  A mapping of a subset of state's key to nested reducers functions
+ * @param initialState  global initial state, required when initializing first object with partial
+ *                      reducers
  * @returns Full reducer for state S and actions A
  */
 export function partialCombineReducers<S, A extends Action = AnyAction>(

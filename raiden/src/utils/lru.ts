@@ -1,5 +1,6 @@
 /**
  * Simple Map-based LRU cache
+ *
  * @param max Maximum size of cache
  */
 export class LruCache<K, V> {

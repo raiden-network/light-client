@@ -18,7 +18,13 @@ import {
 } from './actions';
 import { getLocksroot } from './utils';
 
-// handles all transfers actions and requests
+/**
+ * Handles all transfers actions and requests
+ *
+ * @param state  Current RaidenState
+ * @param action  RaidenAction to handle
+ * @returns New RaidenState (or current, if action didn't change anything)
+ */
 export function transfersReducer(
   state: Readonly<RaidenState> = initialState,
   action: RaidenAction,
