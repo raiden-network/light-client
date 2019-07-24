@@ -600,4 +600,21 @@ describe('RaidenService', () => {
     expect(store.commit).toHaveBeenCalledTimes(6);
     expect(store.commit).toHaveBeenLastCalledWith('reset');
   });
+
+  test('store should be notified when factory fails', async () => {
+    providerMock.mockResolvedValue({
+      send: jest.fn(),
+      sendAsync: jest.fn()
+    });
+    factory.mockRejectedValue(new Error('create failed'));
+    await raidenService.connect();
+    await flushPromises();
+
+    expect(store.commit).toBeCalledTimes(2);
+    expect(store.commit).toBeCalledWith(
+      'accessDenied',
+      DeniedReason.INITIALIZATION_FAILED
+    );
+    expect(store.commit).toBeCalledWith('loadComplete');
+  });
 });

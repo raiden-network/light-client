@@ -39,4 +39,19 @@ describe('NoAccessScreen.vue', () => {
       'A valid account could not be detected. Please make sure that your provider is unlocked and accessible.'
     );
   });
+
+  test('sdk error', () => {
+    const wrapper = createWrapper(DeniedReason.INITIALIZATION_FAILED);
+    expect(
+      wrapper
+        .find('span')
+        .text()
+        .trim()
+        .split('\n')
+        .map(text => text.trim())
+        .join(' ')
+    ).toEqual(
+      'SDK initialization failed. Please check the console for more information.'
+    );
+  });
 });
