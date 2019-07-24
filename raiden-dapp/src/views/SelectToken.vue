@@ -22,7 +22,12 @@
                   {{ token.symbol }} | {{ token.name }}
                 </v-list-tile-title>
                 <v-list-tile-sub-title class="token-address">
-                  {{ token.address | truncate }}
+                  <v-tooltip bottom>
+                    <template #activator="{ on }">
+                      <span v-on="on">{{ token.address | truncate }}</span>
+                    </template>
+                    <span> {{ token.address }} </span>
+                  </v-tooltip>
                 </v-list-tile-sub-title>
               </v-list-tile-content>
               <v-list-tile-action-text>
