@@ -1,45 +1,43 @@
 <template>
   <v-container fluid fill-height>
     <v-layout align-center justify-center row>
-      <v-flex lg6 md8 xs10>
+      <v-flex lg4 md6 xs8>
         <div class="loading-wrapper display-3">
           <div class="img-container">
             <v-img
               id="logo"
+              :src="require('../assets/logo.svg')"
               aspect-ratio="1"
               contain
-              :src="require('../assets/logo.svg')"
             />
           </div>
           <div id="text-information">
             <div>
-              Raiden dApp
+              {{ name }}
             </div>
           </div>
         </div>
         <div class="font-weight-light text-xs-center disclaimer">
-          The Raiden dApp is a reference implementation of the Raiden Light
-          Client SDK.<br />
-          It is work in progress and can just be used on the Ethereum Testnets.
+          {{ $t('splash-screen.disclaimer') }}
         </div>
         <div
           class="font-weight-light text-xs-center splash-screen__matrix_sign"
         >
-          On the first launch you get asked to sign two messages to connect to
-          the Raiden transport layer. <br />
-          You sign the matrix server name and the public user name.
+          {{ $t('splash-screen.matrix-sign') }}
         </div>
         <div class="connect-button">
-          <v-btn v-if="injectedProvider" @click="connect()">Connect</v-btn>
+          <v-btn v-if="injectedProvider" @click="connect()">
+            {{ $t('splash-screen.connect-button') }}
+          </v-btn>
           <span v-else class="no-provider">
-            No web3 provider was detected
+            {{ $t('splash-screen.no-provider') }}
           </span>
         </div>
         <div class="message-container">
           <no-access-message
             v-if="accessDenied"
-            class="error-message"
             :reason="accessDenied"
+            class="error-message"
           ></no-access-message>
         </div>
       </v-flex>
@@ -62,6 +60,8 @@ import NoAccessMessage from '@/components/NoAccessMessage.vue';
 })
 export default class Loading extends Vue {
   accessDenied!: DeniedReason;
+  name: string = 'Raiden dApp';
+
   get injectedProvider(): boolean {
     return Web3Provider.injectedWeb3Available();
   }

@@ -33,11 +33,11 @@
         <v-flex xs10 class="text-xs-center">
           <v-btn
             id="transfer"
+            :disabled="!valid"
+            @click="transfer()"
             class="text-capitalize confirm-button"
             depressed
-            :disabled="!valid"
             large
-            @click="transfer()"
           >
             Pay
           </v-btn>
@@ -51,10 +51,10 @@
       :done="done"
     ></progress-overlay>
     <error-screen
-      title="Something went wrong"
       :description="error"
-      button-label="Dismiss"
       @dismiss="error = ''"
+      title="Something went wrong"
+      button-label="Dismiss"
     ></error-screen>
   </div>
 </template>

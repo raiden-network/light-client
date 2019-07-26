@@ -26,12 +26,12 @@
         <v-flex xs10 class="text-xs-center">
           <v-btn
             id="open-channel"
-            class="text-capitalize confirm-button"
-            depressed
             :disabled="!valid"
             :loading="loading"
-            large
             @click="openChannel()"
+            class="text-capitalize confirm-button"
+            depressed
+            large
           >
             Open Channel
           </v-btn>
@@ -46,10 +46,10 @@
       :done="done"
     ></progress-overlay>
     <error-screen
-      title="Ops, something went wrong"
       :description="error"
-      button-label="Dismiss"
       @dismiss="error = ''"
+      title="Ops, something went wrong"
+      button-label="Dismiss"
     ></error-screen>
   </div>
 </template>

@@ -2,12 +2,12 @@
   <div class="content-host">
     <v-layout justify-center row class="list-container">
       <Transition name="fade-transition" mode="out-in">
-        <div v-show="visible" class="overlay" @click="visible = ''"></div>
+        <div v-show="visible" @click="visible = ''" class="overlay"></div>
       </Transition>
     </v-layout>
     <list-header
       v-if="open.length > 0"
-      header="Open"
+      :header="$t('channels.open.header')"
       class="channels__header"
     ></list-header>
     <channel-list
@@ -19,8 +19,8 @@
     ></channel-list>
     <list-header
       v-if="closed.length > 0"
+      :header="$t('channels.closed.header')"
       class="channels__header"
-      header="Closed"
     ></list-header>
     <channel-list
       :visible="visible"
@@ -31,8 +31,8 @@
     ></channel-list>
     <list-header
       v-if="settleable.length > 0"
+      :header="$t('channels.settleable.header')"
       class="channels__header"
-      header="Settleable"
     ></list-header>
     <channel-list
       :visible="visible"
@@ -43,7 +43,7 @@
     ></channel-list>
     <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
       {{ message }}
-      <v-btn color="primary" flat @click="snackbar = false">
+      <v-btn @click="snackbar = false" color="primary" flat>
         Close
       </v-btn>
     </v-snackbar>

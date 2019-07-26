@@ -3,26 +3,26 @@
     <v-btn
       :id="`deposit-${index}`"
       :disabled="channel.state !== 'open'"
-      class="action-button text-capitalize action-button__primary"
       @click="$emit('deposit', channel)"
+      class="action-button text-capitalize action-button__primary"
     >
-      Deposit
+      {{ $t('channel-actions__deposit') }}
     </v-btn>
     <v-btn
       :id="`close-${index}`"
       :disabled="channel.state !== 'open' && channel.state !== 'closing'"
-      class="action-button text-capitalize action-button__secondary"
       @click="$emit('close', channel)"
+      class="action-button text-capitalize action-button__secondary"
     >
-      Close
+      {{ $t('channel-actions__close') }}
     </v-btn>
     <v-btn
       :id="`settle-${index}`"
-      class="action-button text-capitalize action-button__secondary"
       :disabled="channel.state !== 'settleable' && channel.state !== 'settling'"
       @click="$emit('settle', channel)"
+      class="action-button text-capitalize action-button__secondary"
     >
-      Settle
+      {{ $t('channel-actions__settle') }}
     </v-btn>
   </v-layout>
 </template>

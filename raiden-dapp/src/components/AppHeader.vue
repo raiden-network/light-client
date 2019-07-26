@@ -4,7 +4,7 @@
       <v-flex xs12>
         <div class="app-header__top__content">
           <div class="app-header__top__content__back">
-            <v-btn v-if="canGoBack" flat icon @click="onBackClicked()">
+            <v-btn v-if="canGoBack" @click="onBackClicked()" flat icon>
               <v-img :src="require('../assets/back_arrow.svg')"></v-img>
             </v-btn>
           </div>
@@ -20,12 +20,12 @@
           <v-spacer></v-spacer>
           <div>
             <v-img
+              :src="$blockie(defaultAccount)"
               height="36"
               width="36"
               contain
               aspect-ratio="1"
               class="app-header__top__content__blockie"
-              :src="$blockie(defaultAccount)"
             ></v-img>
           </div>
         </div>
@@ -44,15 +44,15 @@
           </v-tooltip>
           <v-tooltip v-model="copied" bottom dark>
             <template #activator="{ on }">
-              <v-btn flat icon @click="copy()">
+              <v-btn @click="copy()" v-on="on" flat icon>
                 <v-img
+                  :src="require('../assets/copy_icon.svg')"
                   class="app-header__bottom__address__copy"
                   contain
-                  :src="require('../assets/copy_icon.svg')"
                 ></v-img>
               </v-btn>
             </template>
-            <span>Address copied successfully</span>
+            <span> {{ $t('app-header__copy-success') }} </span>
           </v-tooltip>
         </div>
       </v-flex>

@@ -15,16 +15,26 @@
     "types": [
       "webpack-env",
       "jest",
-      "vuetify"
+      "vuetify",
+      "webpack",
+      "webpack-env"
     ],
     "paths": {
       "@/*": [
         "src/*"
       ],
-      "vuex": ["typings/vuex.d.ts"],
-      "rxjs": ["node_modules/rxjs"],
-      "rxjs/*": ["node_modules/rxjs/*"],
-      "ethers/*": ["node_modules/ethers/*"]
+      "vuex": [
+        "typings/vuex.d.ts"
+      ],
+      "rxjs": [
+        "node_modules/rxjs"
+      ],
+      "rxjs/*": [
+        "node_modules/rxjs/*"
+      ],
+      "ethers/*": [
+        "node_modules/ethers/*"
+      ]
     },
     "lib": [
       "esnext",
@@ -32,7 +42,10 @@
       "dom.iterable",
       "scripthost"
     ],
-    "typeRoots": ["node_modules/@types", "../raiden/typings"]
+    "typeRoots": [
+      "node_modules/@types",
+      "../raiden/typings"
+    ]
   },
   "include": [
     "src/**/*.ts",

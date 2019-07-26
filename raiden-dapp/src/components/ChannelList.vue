@@ -13,9 +13,9 @@
             <v-list-tile>
               <v-list-tile-avatar class="channels__icon">
                 <img
-                  class="indenticon"
                   :src="$blockie(channel.partner)"
-                  alt="Partner address blocky"
+                  :alt="$t('channels.channel.blockie_alt')"
+                  class="indenticon"
                 />
               </v-list-tile-avatar>
               <v-list-tile-content>
@@ -24,8 +24,8 @@
                 </v-list-tile-title>
                 <v-list-tile-sub-title class="channels__state-info">
                   Deposit
-                  {{ channel.ownDeposit | displayFormat(token.decimals) }} |
-                  State: {{ channel.state | capitalizeFirst }}
+                  {{ channel.balance | displayFormat(token.decimals) }} | State:
+                  {{ channel.state | capitalizeFirst }}
                 </v-list-tile-sub-title>
               </v-list-tile-content>
             </v-list-tile>
@@ -38,11 +38,10 @@
                 @cancel="dismiss()"
               >
                 <template #header>
-                  Close Channel
+                  {{ $t('channels.channel.close_dialog.title') }}
                 </template>
 
-                Are you sure you want to close this channel? <br />
-                This action cannot be undone.
+                {{ $t('channels.channel.close_dialog.description') }}
               </confirmation>
             </div>
             <div v-else-if="visible === `channel-${channel.id}-settle`">
@@ -52,11 +51,14 @@
                 @cancel="dismiss()"
               >
                 <template #header>
-                  Settle Channel
+                  {{ $t('channels.channel.settle_dialog.title') }}
                 </template>
-                Are you sure you want to settle the channel with hub
-                {{ selectedChannel.partner }} for token
-                {{ selectedChannel.token }}?
+                {{
+                  $t('channels.channel.settle_dialog.description', {
+                    partner: selectedChannel.partner,
+                    token: selectedChannel.token
+                  })
+                }}
               </confirmation>
             </div>
             <div v-else-if="visible === `channel-${channel.id}-deposit`">
@@ -160,9 +162,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.dismiss();
     try {
       await this.$raiden.deposit(token, partner, deposit);
-      this.message('Deposit was successful');
+      this.message(this.$t('channels.messages.deposit.success').toString());
     } catch (e) {
-      this.message('Deposit failed');
+      this.message(this.$t('channels.messages.deposit.failure').toString());
     }
   }
 
@@ -171,9 +173,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.dismiss();
     try {
       await this.$raiden.closeChannel(token, partner);
-      this.message('Channel close successful');
+      this.message(this.$t('channels.messages.close.success').toString());
     } catch (e) {
-      this.message('Channel close failed');
+      this.message(this.$t('channels.messages.close.failure').toString());
     }
   }
 
@@ -182,9 +184,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.dismiss();
     try {
       await this.$raiden.settleChannel(token, partner);
-      this.message('Channel settle was successful');
+      this.message(this.$t('channels.messages.settle.success').toString());
     } catch (e) {
-      this.message('Channel settle failed');
+      this.message(this.$t('channels.messages.settle.failure').toString());
     }
   }
 }

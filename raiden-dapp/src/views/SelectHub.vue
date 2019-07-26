@@ -17,11 +17,11 @@
         <v-flex xs10 md10 lg10 class="text-xs-center">
           <v-btn
             id="select-hub"
+            :disabled="!valid"
+            @click="selectHub()"
             class="text-capitalize confirm-button"
             depressed
-            :disabled="!valid"
             large
-            @click="selectHub()"
           >
             Select Hub
           </v-btn>

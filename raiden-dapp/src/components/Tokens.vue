@@ -1,8 +1,8 @@
 <template>
   <v-layout column justify-space-between fill-height>
     <list-header
+      :header="$t('tokens.connected.header')"
       class="connected-tokens__header"
-      header="Connected Tokens"
     ></list-header>
     <v-layout justify-center row fill-height>
       <v-flex xs12>
@@ -19,14 +19,19 @@
                 <v-list-tile-avatar class="list-blockie">
                   <img
                     :src="$blockie(token.address)"
-                    alt="Partner address blocky"
+                    :alt="$t('tokens.connected.token.blockie-alt')"
                   />
                 </v-list-tile-avatar>
                 <v-list-tile-content>
                   <v-list-tile-title
                     class="connected-tokens__tokens__token__info"
                   >
-                    {{ token.symbol }} | {{ token.name }}
+                    {{
+                      $t('tokens.connected.token.token-info', {
+                        symbol: token.symbol,
+                        name: token.name
+                      })
+                    }}
                   </v-list-tile-title>
                   <v-list-tile-sub-title
                     class="connected-tokens__tokens__token__address"
@@ -43,23 +48,23 @@
               <v-layout justify-center row>
                 <v-btn
                   :id="`pay-${index}`"
-                  class="text-capitalize connected-tokens__tokens__token__button"
                   :to="`/transfer/${token.address}`"
+                  class="text-capitalize connected-tokens__tokens__token__button"
                 >
-                  Pay
+                  {{ $t('tokens.connected.token.buttons.pay') }}
                 </v-btn>
                 <v-btn
                   :id="`leave-${index}`"
-                  class="text-capitalize connected-tokens__tokens__token__button leave"
                   @click="leaveNetwork(token)"
+                  class="text-capitalize connected-tokens__tokens__token__button leave"
                 >
-                  Disconnect Token
+                  {{ $t('tokens.connected.token.buttons.disconnect') }}
                 </v-btn>
                 <v-btn
-                  class="text-capitalize connected-tokens__tokens__token__button"
                   :to="`/channels/${token.address}`"
+                  class="text-capitalize connected-tokens__tokens__token__button"
                 >
-                  View Channels
+                  {{ $t('tokens.connected.token.buttons.view-channels') }}
                 </v-btn>
               </v-layout>
             </div>
@@ -75,7 +80,7 @@
           class="text-capitalize confirm-button"
           depressed
         >
-          Connect new token
+          {{ $t('tokens.connect-new') }}
         </v-btn>
       </v-flex>
     </v-layout>
@@ -85,7 +90,7 @@
       @cancel="leaveCancelled()"
     >
       <template #header>
-        Disconnect token
+        {{ $t('tokens.disconnect-dialog.header') }}
       </template>
       <div v-if="selectedToken">
         This action will close all channels for the

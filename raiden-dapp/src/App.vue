@@ -1,7 +1,7 @@
 <template>
   <v-app dark>
     <splash-screen v-if="inaccessible" @connect="connect()"></splash-screen>
-    <div v-else id="application-wrapper">
+    <div id="application-wrapper" v-else>
       <div id="application-content">
         <app-header></app-header>
         <v-content>
@@ -13,7 +13,7 @@
     </div>
     <div class="policy">
       <a href="https://raiden.network/privacy.html" target="_blank">
-        Privacy Policy, Disclaimer & Imprint
+        {{ $t('application.privacy-policy') }}
       </a>
     </div>
   </v-app>

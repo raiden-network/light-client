@@ -7,7 +7,8 @@ module.exports = {
     'plugin:vue/recommended',
     'plugin:vue/essential',
     '@vue/prettier',
-    '@vue/typescript'
+    '@vue/typescript',
+    'plugin:vue-i18n/recommended'
   ],
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',
@@ -15,5 +16,10 @@ module.exports = {
   },
   parserOptions: {
     parser: '@typescript-eslint/parser'
+  },
+  settings: {
+    'vue-i18n': {
+      localeDir: './src/locales/*.json'
+    }
   }
 };

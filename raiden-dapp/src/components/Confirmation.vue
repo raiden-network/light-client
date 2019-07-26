@@ -13,17 +13,17 @@
     <v-layout row align-end justify-center class="confirmation__buttons">
       <v-btn
         :id="`cancel-${identifier}`"
-        class="text-capitalize confirmation__buttons__cancel"
         @click="cancel()"
+        class="text-capitalize confirmation__buttons__cancel"
       >
-        Cancel
+        {{ $t('confirmation.buttons.cancel') }}
       </v-btn>
       <v-btn
         :id="`confirm-${identifier}`"
-        class="text-capitalize confirmation__buttons__confirm"
         @click="confirm()"
+        class="text-capitalize confirmation__buttons__confirm"
       >
-        Close
+        {{ $t('confirmation.buttons.close') }}
       </v-btn>
     </v-layout>
   </v-layout>

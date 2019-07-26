@@ -6,7 +6,7 @@
           <amount-input
             v-model="deposit"
             :token="token"
-            label="Amount"
+            :label="$t('channel-deposit__input__label')"
             limit
           ></amount-input>
         </v-form>
@@ -15,20 +15,20 @@
     <v-layout row align-end justify-center class="channel-deposit__buttons">
       <v-btn
         :id="`cancel-${identifier}`"
+        @click="cancel()"
         light
         class="text-capitalize channel-deposit__buttons__cancel"
-        @click="cancel()"
       >
-        Cancel
+        {{ $t('channel-deposit__buttons__cancel') }}
       </v-btn>
       <v-btn
         :id="`confirm-${identifier}`"
-        light
-        class="text-capitalize channel-deposit__buttons__confirm"
         :disabled="!valid"
         @click="confirm()"
+        light
+        class="text-capitalize channel-deposit__buttons__confirm"
       >
-        Deposit
+        {{ $t('channel-deposit__buttons__confirm') }}
       </v-btn>
     </v-layout>
   </v-layout>
