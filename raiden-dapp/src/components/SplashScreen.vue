@@ -22,6 +22,13 @@
           Client SDK.<br />
           It is work in progress and can just be used on the Ethereum Testnets.
         </div>
+        <div
+          class="font-weight-light text-xs-center splash-screen__matrix_sign"
+        >
+          On the first launch you get asked to sign two messages to connect to
+          the Raiden transport layer. <br />
+          You sign the matrix server name and the public user name.
+        </div>
         <div class="connect-button">
           <v-btn v-if="injectedProvider" @click="connect()">Connect</v-btn>
           <span v-else class="no-provider">
@@ -97,7 +104,7 @@ $name-horizontal-margin: 2rem;
 
 .connect-button {
   display: flex;
-  margin-top: 80px;
+  margin-top: 30px;
   align-items: center;
   justify-content: center;
 
@@ -117,5 +124,10 @@ $name-horizontal-margin: 2rem;
 .no-provider {
   font-weight: 500;
   font-size: 24px;
+}
+
+.splash-screen__matrix_sign {
+  margin-top: 90px;
+  color: rgba(255, 255, 255, 0.8);
 }
 </style>
