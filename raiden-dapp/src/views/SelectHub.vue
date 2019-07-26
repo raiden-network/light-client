@@ -37,8 +37,8 @@ import { Token, TokenPlaceholder } from '@/model/types';
 import AddressInput from '@/components/AddressInput.vue';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import Divider from '@/views/Divider.vue';
-import TokenInformation from '@/views/TokenInformation.vue';
+import Divider from '@/components/Divider.vue';
+import TokenInformation from '@/components/TokenInformation.vue';
 
 @Component({
   components: { TokenInformation, Divider, AddressInput }

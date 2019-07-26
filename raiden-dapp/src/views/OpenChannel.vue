@@ -69,8 +69,8 @@ import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { Route } from 'vue-router';
 import ErrorScreen from '@/components/ErrorScreen.vue';
-import Divider from '@/views/Divider.vue';
-import TokenInformation from '@/views/TokenInformation.vue';
+import Divider from '@/components/Divider.vue';
+import TokenInformation from '@/components/TokenInformation.vue';
 
 @Component({
   components: {
