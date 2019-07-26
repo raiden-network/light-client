@@ -19,11 +19,20 @@
 
       <v-layout align-center justify-center row class="information__wrapper">
         <v-flex xs2 class="information">
-          <div class="information-label text-xs-left">Token</div>
+          <div class="information-label text-xs-left">
+            {{ $t('transfer.information.title') }}
+          </div>
         </v-flex>
         <v-flex xs8>
           <div class="information-description text-xs-left">
-            <div>{{ token.symbol }} | {{ token.name }}</div>
+            <div>
+              {{
+                $t('transfer.information.token', {
+                  symbol: token.symbol,
+                  name: token.name
+                })
+              }}
+            </div>
             {{ token.address }}
           </div>
         </v-flex>
@@ -39,7 +48,7 @@
             depressed
             large
           >
-            Pay
+            {{ $t('transfer.pay-button') }}
           </v-btn>
         </v-flex>
       </v-layout>
@@ -53,8 +62,8 @@
     <error-screen
       :description="error"
       @dismiss="error = ''"
-      title="Something went wrong"
-      button-label="Dismiss"
+      :title="$t('transfer.error.title')"
+      :button-label="$t('transfer.error.button')"
     ></error-screen>
   </div>
 </template>
