@@ -52,7 +52,7 @@ export default new Router({
       meta: {
         title: 'Open channel'
       },
-      component: () => import('./views/Deposit.vue')
+      component: () => import('./views/OpenChannel.vue')
     },
     {
       path: '/channels/:token',

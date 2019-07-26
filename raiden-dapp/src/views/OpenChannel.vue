@@ -81,7 +81,7 @@ import TokenInformation from '@/views/TokenInformation.vue';
     AmountInput
   }
 })
-export default class Deposit extends Mixins(NavigationMixin) {
+export default class OpenChannel extends Mixins(NavigationMixin) {
   partner: string = '';
   token: Token = TokenPlaceholder;
 
@@ -107,7 +107,7 @@ export default class Deposit extends Mixins(NavigationMixin) {
         'Please do not close the browser and confirm two (2) transactions with MetaMask.'
     },
     {
-      label: 'Deposit',
+      label: 'OpenChannel.vue',
       title: 'Not implemented - split title above, when done',
       description: 'Not implemented - split description above, when done'
     }
