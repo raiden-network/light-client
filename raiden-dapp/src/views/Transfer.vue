@@ -72,7 +72,12 @@
 import { Component, Vue } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import { StepDescription, Token, TokenPlaceholder } from '@/model/types';
+import {
+  emptyDescription,
+  StepDescription,
+  Token,
+  TokenPlaceholder
+} from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
@@ -96,24 +101,16 @@ export default class Transfer extends Vue {
 
   error: string = '';
 
-  protected readonly steps: StepDescription[] = [
-    {
-      label: 'Transfer',
-      title: 'Sending Tokens',
-      description:
-        'Please do not close the browser and confirm the transactions with MetaMask.'
-    }
-  ];
-
-  protected readonly doneStep: StepDescription = {
-    label: 'Done',
-    title: 'Send Successful',
-    description: 'Your transfer was successful'
-  };
+  steps: StepDescription[] = [];
+  doneStep: StepDescription = emptyDescription();
 
   async created() {
     const { token } = this.$route.params;
     this.token = (await this.$raiden.getToken(token)) || TokenPlaceholder;
+    this.steps = [
+      (this.$t('transfer.steps.transfer') as any) as StepDescription
+    ];
+    this.doneStep = (this.$t('transfer.steps.done') as any) as StepDescription;
   }
 
   async transfer() {

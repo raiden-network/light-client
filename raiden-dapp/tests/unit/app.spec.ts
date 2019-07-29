@@ -31,7 +31,8 @@ describe('App.vue', () => {
     const wrapper = shallowMount(App, {
       store,
       mocks: {
-        $raiden: $raiden
+        $raiden: $raiden,
+        $t: (msg: string) => msg
       }
     });
 
@@ -49,7 +50,8 @@ describe('App.vue', () => {
     const wrapper = shallowMount(App, {
       store,
       mocks: {
-        $raiden: $raiden
+        $raiden: $raiden,
+        $t: (msg: string) => msg
       }
     });
 

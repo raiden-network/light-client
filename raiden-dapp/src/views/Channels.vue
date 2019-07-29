@@ -44,7 +44,7 @@
     <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
       {{ message }}
       <v-btn @click="snackbar = false" color="primary" flat>
-        Close
+        {{ $t('channels.snackbar-close') }}
       </v-btn>
     </v-snackbar>
   </div>

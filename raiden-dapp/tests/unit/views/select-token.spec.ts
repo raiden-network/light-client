@@ -34,7 +34,8 @@ describe('SelectToken.vue', function() {
         $identicon: $identicon,
         $raiden: {
           getToken: jest.fn().mockResolvedValue(TestData.token)
-        }
+        },
+        $t: (msg: string) => msg
       }
     });
   });

@@ -29,7 +29,8 @@ describe('AddressInput', function() {
         $raiden: raiden,
         $identicon: {
           getIdenticon: mockIdenticon
-        }
+        },
+        $t: (msg: string) => msg
       }
     });
   });

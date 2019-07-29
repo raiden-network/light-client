@@ -15,7 +15,7 @@
       @input.native="valueUpdated('input', $event)"
       @keydown="valueUpdated('keydown', $event)"
       @keyup="valueUpdated('keyup', $event)"
-      :hint="$t('amount-input__input__hint')"
+      :hint="$t('amount-input.input.hint')"
       @mousedown="valueUpdated('mousedown', $event)"
       @mouseup="valueUpdated('mouseup', $event)"
       @select="valueUpdated('select', $event)"
@@ -73,15 +73,15 @@ export default class AmountInput extends Vue {
   private static numericRegex = /^\d*[.,]?\d*$/;
 
   readonly rules = [
-    (v: string) => !!v || this.$t('amount-input__error__empty'),
+    (v: string) => !!v || this.$t('amount-input.error.empty'),
     (v: string) =>
       !this.limit ||
       this.noDecimalOverflow(v) ||
-      this.$t('amount-input__error__too-many-decimals'),
+      this.$t('amount-input.error.too-many-decimals'),
     (v: string) =>
       !this.limit ||
       this.hasEnoughBalance(v) ||
-      this.$t('amount-input__error__not_enough_funds', {
+      this.$t('amount-input.error.not-enough-funds', {
         funds: this.token!!.units
       })
   ];

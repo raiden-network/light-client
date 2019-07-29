@@ -23,7 +23,7 @@
             depressed
             large
           >
-            Select Hub
+            {{ $t('select-hub.select-button') }}
           </v-btn>
         </v-flex>
       </v-layout>

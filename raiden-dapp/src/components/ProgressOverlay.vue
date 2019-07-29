@@ -12,11 +12,13 @@
         >
           <span class="label">{{ step.label }}</span>
         </div>
-        <div :class="{ active: done }" class="step">Done</div>
+        <div :class="{ active: done }" class="step">{{ step.label }}</div>
       </div>
       <div class="card-content">
         <div class="step-title">
-          <span v-if="done"> {{ doneStep.title }}</span>
+          <span v-if="done">
+            {{ doneStep.title }}
+          </span>
           <span v-else>{{ steps[current].title }}</span>
         </div>
         <div v-if="done">
@@ -30,7 +32,9 @@
           indeterminate
         ></v-progress-circular>
         <p id="message" class="step-description">
-          <span v-if="done" v-html="doneStep.description"> </span>
+          <span v-if="done">
+            {{ doneStep.description }}
+          </span>
           <span v-else>
             {{ steps[current].description }}
           </span>

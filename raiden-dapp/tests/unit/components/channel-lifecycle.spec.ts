@@ -13,6 +13,9 @@ describe('ChannelLifeCycle.vue', function() {
       localVue,
       propsData: {
         state: channelState
+      },
+      mocks: {
+        $t: (msg: string) => msg
       }
     });
   }

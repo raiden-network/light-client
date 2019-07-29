@@ -92,13 +92,19 @@
       <template #header>
         {{ $t('tokens.disconnect-dialog.header') }}
       </template>
-      <div v-if="selectedToken">
-        This action will close all channels for the
-        <b>{{ selectedToken.symbol }}</b> token!
-        <span class="connected-tokens__tokens__token__leave__address">
+      <i18n
+        v-if="selectedToken"
+        path="tokens.disconnect-dialog.confirmation-message"
+        tag="div"
+      >
+        <b place="symbol">{{ selectedToken.symbol }}</b>
+        <span
+          place="address"
+          class="connected-tokens__tokens__token__leave__address"
+        >
           {{ selectedToken.address }}
         </span>
-      </div>
+      </i18n>
     </confirmation-dialog>
     <progress-overlay :display="loading" :steps="steps"></progress-overlay>
   </v-layout>
@@ -123,13 +129,11 @@ export default class Tokens extends Mixins(BlockieMixin) {
   leaveModalVisible: boolean = false;
 
   loading: boolean = false;
-  steps: StepDescription[] = [
-    {
-      label: 'Leave',
-      title: 'Leaving network',
-      description: 'Closing the channels'
-    }
-  ];
+  steps: StepDescription[] = [];
+
+  create() {
+    this.steps = [(this.$t('tokens.leave-progress') as any) as StepDescription];
+  }
 
   private dismissModal() {
     this.leaveModalVisible = false;

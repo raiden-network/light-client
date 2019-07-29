@@ -23,9 +23,15 @@
                   {{ channel.partner }}
                 </v-list-tile-title>
                 <v-list-tile-sub-title class="channels__state-info">
-                  Deposit
-                  {{ channel.balance | displayFormat(token.decimals) }} | State:
-                  {{ channel.state | capitalizeFirst }}
+                  {{
+                    $t('channels.channel.state', {
+                      deposit: displayFormat(
+                        channel.ownDeposit,
+                        token.decimals
+                      ),
+                      state: capitalizeFirst(channel.state)
+                    })
+                  }}
                 </v-list-tile-sub-title>
               </v-list-tile-content>
             </v-list-tile>
@@ -99,6 +105,7 @@ import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import Confirmation from '@/components/Confirmation.vue';
 import { BigNumber } from 'ethers/utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import Filters from '@/filters';
 
 @Component({
   components: {
@@ -131,6 +138,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.token = await this.$raiden.getToken(this.tokenAddress);
   }
 
+  displayFormat = Filters.displayFormat;
+  capitalizeFirst = Filters.capitalizeFirst;
+
   @Watch('visible')
   onVisibilityChange() {
     if (this.visible === '') {
@@ -162,9 +172,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.dismiss();
     try {
       await this.$raiden.deposit(token, partner, deposit);
-      this.message(this.$t('channels.messages.deposit.success').toString());
+      this.message(this.$t('channels.messages.deposit.success') as string);
     } catch (e) {
-      this.message(this.$t('channels.messages.deposit.failure').toString());
+      this.message(this.$t('channels.messages.deposit.failure') as string);
     }
   }
 
@@ -173,9 +183,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.dismiss();
     try {
       await this.$raiden.closeChannel(token, partner);
-      this.message(this.$t('channels.messages.close.success').toString());
+      this.message(this.$t('channels.messages.close.success') as string);
     } catch (e) {
-      this.message(this.$t('channels.messages.close.failure').toString());
+      this.message(this.$t('channels.messages.close.failure') as string);
     }
   }
 
@@ -184,9 +194,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.dismiss();
     try {
       await this.$raiden.settleChannel(token, partner);
-      this.message(this.$t('channels.messages.settle.success').toString());
+      this.message(this.$t('channels.messages.settle.success') as string);
     } catch (e) {
-      this.message(this.$t('channels.messages.settle.failure').toString());
+      this.message(this.$t('channels.messages.settle.failure') as string);
     }
   }
 }

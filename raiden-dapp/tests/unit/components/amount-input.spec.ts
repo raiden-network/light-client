@@ -16,6 +16,9 @@ describe('AmountInput.vue', function() {
         propsData: {
           label: 'Has Label',
           token: TestData.token
+        },
+        mocks: {
+          $t: (msg: string) => msg
         }
       });
     });
@@ -59,6 +62,9 @@ describe('AmountInput.vue', function() {
           label: 'Has Label',
           limit: true,
           token: TestData.token
+        },
+        mocks: {
+          $t: (msg: string) => msg
         }
       });
     });

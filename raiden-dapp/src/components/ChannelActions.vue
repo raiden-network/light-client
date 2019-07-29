@@ -6,7 +6,7 @@
       @click="$emit('deposit', channel)"
       class="action-button text-capitalize action-button__primary"
     >
-      {{ $t('channel-actions__deposit') }}
+      {{ $t('channel-actions.deposit') }}
     </v-btn>
     <v-btn
       :id="`close-${index}`"
@@ -14,7 +14,7 @@
       @click="$emit('close', channel)"
       class="action-button text-capitalize action-button__secondary"
     >
-      {{ $t('channel-actions__close') }}
+      {{ $t('channel-actions.close') }}
     </v-btn>
     <v-btn
       :id="`settle-${index}`"
@@ -22,7 +22,7 @@
       @click="$emit('settle', channel)"
       class="action-button text-capitalize action-button__secondary"
     >
-      {{ $t('channel-actions__settle') }}
+      {{ $t('channel-actions.settle') }}
     </v-btn>
   </v-layout>
 </template>

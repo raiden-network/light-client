@@ -52,13 +52,18 @@
                 ></v-img>
               </v-btn>
             </template>
-            <span> {{ $t('app-header__copy-success') }} </span>
+            <span>
+              {{ $t('app-header.copy-success') }}
+            </span>
           </v-tooltip>
         </div>
       </v-flex>
       <v-flex xs6>
         <div class="app-header__bottom__balance text-xs-right">
-          {{ accountBalance | decimals }} ETHER
+          {{ accountBalance | decimals }}
+          <span class="app-header__bottom__balance__currency">
+            {{ $t('app-header.currency') }}
+          </span>
         </div>
       </v-flex>
     </v-layout>

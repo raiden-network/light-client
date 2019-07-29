@@ -57,7 +57,8 @@ describe('ChannelList.vue', function() {
       },
       mocks: {
         $raiden: raiden,
-        $identicon: $identicon
+        $identicon: $identicon,
+        $t: (msg: string) => msg
       }
     });
   });
@@ -118,7 +119,7 @@ describe('ChannelList.vue', function() {
       await flushPromises();
 
       expect(wrapper.emitted()['message'][0][0]).toBe(
-        'Channel close successful'
+        'channels.messages.close.success'
       );
     });
 
@@ -132,7 +133,9 @@ describe('ChannelList.vue', function() {
       wrapper.find('#confirm-278').trigger('click');
       elementVisibilityChanged(1);
       await flushPromises();
-      expect(wrapper.emitted()['message'][0][0]).toBe('Channel close failed');
+      expect(wrapper.emitted()['message'][0][0]).toBe(
+        'channels.messages.close.failure'
+      );
     });
 
     it('should dismiss the dialog when cancel is pressed', function() {
@@ -187,7 +190,9 @@ describe('ChannelList.vue', function() {
       wrapper.find('#confirm-278').trigger('click');
       elementVisibilityChanged(1);
       await flushPromises();
-      expect(wrapper.emitted()['message'][0][0]).toBe('Deposit was successful');
+      expect(wrapper.emitted()['message'][0][0]).toBe(
+        'channels.messages.deposit.success'
+      );
     });
 
     it('should show an error message on deposit failure', async function() {
@@ -207,7 +212,9 @@ describe('ChannelList.vue', function() {
         visible: ''
       });
       await flushPromises();
-      expect(wrapper.emitted()['message'][0][0]).toBe('Deposit failed');
+      expect(wrapper.emitted()['message'][0][0]).toBe(
+        'channels.messages.deposit.failure'
+      );
     });
 
     it('should dismiss the dialog when cancel is pressed', function() {
@@ -250,7 +257,7 @@ describe('ChannelList.vue', function() {
       elementVisibilityChanged(1);
       await flushPromises();
       expect(wrapper.emitted()['message'][0][0]).toBe(
-        'Channel settle was successful'
+        'channels.messages.settle.success'
       );
     });
 
@@ -264,7 +271,9 @@ describe('ChannelList.vue', function() {
       wrapper.find('#confirm-280').trigger('click');
       elementVisibilityChanged(1);
       await flushPromises();
-      expect(wrapper.emitted()['message'][0][0]).toBe('Channel settle failed');
+      expect(wrapper.emitted()['message'][0][0]).toBe(
+        'channels.messages.settle.failure'
+      );
     });
 
     it('should dismiss the dialog when cancel is pressed', function() {

@@ -43,7 +43,8 @@ describe('SelectHub.vue', function() {
         },
         $raiden: {
           getToken: jest.fn().mockResolvedValue(token)
-        }
+        },
+        $t: (msg: string) => msg
       }
     };
     if (shallow) {

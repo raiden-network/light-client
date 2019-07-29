@@ -11,7 +11,7 @@
         'hint-visible': hint.length > 0,
         untouched: !touched
       }"
-      :placeholder="$t('address-input__input__placeholder')"
+      :placeholder="$t('address-input.input.placeholder')"
       @blur="$emit('blur')"
       @focus="$emit('focus')"
       @input="updateValue"
@@ -39,7 +39,7 @@
         <img
           v-if="value && isChecksumAddress(value)"
           :src="$blockie(value)"
-          :alt="$t('address-input__blockie')"
+          :alt="$t('address-input.blockie-alt')"
           class="selection-blockie prepend"
         />
         <div v-else-if="timeout">
@@ -99,16 +99,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   private updateErrors(value?: string) {
     if (!value) {
       this.input(value);
-      this.errorMessages.push(
-        this.$t('address-input__error__empty').toString()
-      );
+      this.errorMessages.push(this.$t('address-input.error.empty') as string);
     } else if (
       AddressUtils.isAddress(value) &&
       !AddressUtils.checkAddressChecksum(value)
     ) {
-      this.errorMessages.push(
-        this.$t('address-input__error__no-checksum').toString()
-      );
+      this.errorMessages.push(this.$t(
+        'address-input.error.no-checksum'
+      ) as string);
     } else if (AddressUtils.checkAddressChecksum(value)) {
       this.input(value);
     } else if (
@@ -117,9 +115,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     ) {
       this.resolveEnsAddress(value);
     } else {
-      this.errorMessages.push(
-        this.$t('address-input__error__invalid-address').toString()
-      );
+      this.errorMessages.push(this.$t(
+        'address-input.error.invalid-address'
+      ) as string);
     }
   }
 
@@ -145,22 +143,24 @@ export default class AddressInput extends Mixins(BlockieMixin) {
             this.input(resolvedAddress);
             this.errorMessages = [];
           } else {
-            this.errorMessages.push(
-              this.$t('address-input__error__ens-resolve-failed', {
+            this.errorMessages.push(this.$t(
+              'address-input.error.ens-resolve-failed',
+              {
                 url: url
-              }).toString()
-            );
+              }
+            ) as string);
             this.input(undefined);
             this.checkForErrors();
           }
           this.timeout = 0;
         })
         .catch(e => {
-          this.errorMessages.push(
-            this.$t('address-input__error__ens-resolve-failed', {
+          this.errorMessages.push(this.$t(
+            'address-input.error.ens-resolve-failed',
+            {
               url: url
-            }).toString()
-          );
+            }
+          ) as string);
           this.input(undefined);
           this.checkForErrors();
           this.timeout = 0;

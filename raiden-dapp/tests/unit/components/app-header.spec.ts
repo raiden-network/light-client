@@ -29,7 +29,8 @@ describe('AppHeader.vue', () => {
         ),
         $identicon: {
           getIdenticon: jest.fn()
-        }
+        },
+        $t: (msg: string) => msg
       }
     });
   });

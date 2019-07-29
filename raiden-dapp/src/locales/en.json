@@ -1,21 +1,44 @@
 {
-  "address-input__input__placeholder": "Enter an address or ens name...",
-  "address-input__blockie": "Selected token address blockie",
-  "address-input__error__invalid-address": "The input doesn't seem like a valid address or ens name",
-  "address-input__error__no-checksum": "The address is not in checksum format",
-  "address-input__error__empty": "The address cannot be empty",
-  "address-input__error__ens-resolve-failed": "Could not resolve an address for {url}",
-  "amount-input__input__hint": "Please enter the amount you wish to deposit into this channel.",
-  "amount-input__error__empty": "The amount cannot be empty",
-  "amount-input__error__too-many-decimals": "The token supports only up to {decimals} decimals",
-  "amount-input__error__not_enough_funds": "`Your maximum deposit amount is {funds}",
-  "app-header__copy-success": "Address copied successfully",
-  "channel-actions__deposit": "Deposit",
-  "channel-actions__close": "Close",
-  "channel-actions__settle": "Settle",
-  "channel-deposit__input__label": "Amount",
-  "channel-deposit__buttons__cancel": "Cancel",
-  "channel-deposit__buttons__confirm": "Deposit",
+  "address-input": {
+    "input": {
+      "placeholder": "Enter an address or ens name..."
+    },
+    "blockie-alt": "Selected token address blockie",
+    "error": {
+      "invalid-address": "The input doesn't seem like a valid address or ens name",
+      "no-checksum": "The address is not in checksum format",
+      "empty": "The address cannot be empty",
+      "ens-resolve-failed": "Could not resolve an address for {url}"
+    }
+  },
+  "amount-input": {
+    "input": {
+      "hint": "Please enter the amount you wish to deposit into this channel."
+    },
+    "error": {
+      "empty": "The amount cannot be empty",
+      "too-many-decimals": "The token supports only up to {decimals} decimals",
+      "not-enough-funds": "`Your maximum deposit amount is {funds}"
+    }
+  },
+  "app-header": {
+    "copy-success": "Address copied successfully",
+    "currency": "ETH"
+  },
+  "channel-actions": {
+    "deposit": "Deposit",
+    "close": "Close",
+    "settle": "Settle"
+  },
+  "channel-deposit": {
+    "buttons": {
+      "cancel": "Cancel",
+      "confirm": "Deposit"
+    },
+    "input": {
+      "label": "Amount"
+    }
+  },
   "stepper": {
     "steps": {
       "open": {
@@ -42,9 +65,10 @@
     "settleable": {
       "header": "Settleable"
     },
+    "snackbar-close": "Close",
     "channel": {
       "blockie_alt": "Partner address blockie",
-      "state:": "Balance {balance} | State: {state}",
+      "state": "Deposit {deposit} | State: {state}",
       "close_dialog": {
         "title": "Close Channel",
         "description": "Are you sure you want to close this channel? This action cannot be undone."
@@ -102,7 +126,7 @@
         "blockie-alt": "Partner address blockie",
         "token-info": "{symbol} | {name}",
         "buttons": {
-          "pay":  "Pay",
+          "pay": "Pay",
           "disconnect": "Disconnect Token",
           "view-channels": "View Channels"
         }
@@ -110,7 +134,14 @@
     },
     "connect-new": "Connect new token",
     "disconnect-dialog": {
-      "header": "Disconnect token"
+      "header": "Disconnect token",
+      "description": "This action will close all channels for the",
+      "confirmation-message": "This action will close all channels for the {symbol} token! {address}"
+    },
+    "leave-progress": {
+      "label": "Disconnect",
+      "title": "Disconnecting from the token network",
+      "description": "Closing the channels"
     }
   },
   "application": {
@@ -125,7 +156,67 @@
     "error": {
       "button": "Dismiss",
       "title": "Something went wrong"
+    },
+    "steps": {
+      "transfer": {
+        "label": "Transfer",
+        "title": "Sending Tokens",
+        "description": "Please do not close the browser and confirm the transactions with MetaMask."
+      },
+      "done": {
+        "label": "Done",
+        "title": "Send Successful",
+        "description": "Your transfer was successful"
+      }
     }
-
+  },
+  "select-token": {
+    "header": "Available",
+    "tokens": {
+      "token": {
+        "blockie-alt": "Token address blockie",
+        "token-information": "{symbol} | {name}"
+      }
+    }
+  },
+  "select-hub": {
+    "select-button": "Select Hub"
+  },
+  "open-channel": {
+    "error": {
+      "title": "Ops, something went wrong",
+      "button": "Dismiss",
+      "deposit-failed": "Could not deposit to the channel.",
+      "open-failed": "Channel open failed."
+    },
+    "open-button": "Open Channel",
+    "hub": "Hub",
+    "steps": {
+      "open": {
+        "label": "Open",
+        "title": "Opening a new Channel",
+        "description": "Please do not close the browser and confirm the transaction with MetaMask."
+      },
+      "transfer": {
+        "label": "Transfer",
+        "title": "Transferring tokens to the network and deposit into the channel",
+        "description": "Please do not close the browser and confirm two (2) transactions with MetaMask."
+      },
+      "deposit": {
+        "label": "Deposit",
+        "title": "Not implemented - split title above, when done",
+        "description": "Not implemented - split description above, when done"
+      },
+      "done": {
+        "label": "Done",
+        "title": "New Channel opened",
+        "description": "A new channel has been opened successfully. You may now select a payment target."
+      }
+    },
+    "confirmation": "Channel opening is in progress, are you sure you want to leave?"
+  },
+  "token-information": {
+    "title": "Token",
+    "description": "{symbol} | {name}"
   }
 }

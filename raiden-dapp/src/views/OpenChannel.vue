@@ -15,7 +15,9 @@
 
       <v-layout align-center justify-center row class="hub-information">
         <v-flex xs2 class="information">
-          <div class="information-label text-xs-left">Hub</div>
+          <div class="information-label text-xs-left">
+            {{ $t('open-channel.hub') }}
+          </div>
         </v-flex>
         <v-flex xs8>
           <div class="information-description text-xs-left">{{ partner }}</div>
@@ -33,7 +35,7 @@
             depressed
             large
           >
-            Open Channel
+            {{ $t('open-channel.open-button') }}
           </v-btn>
         </v-flex>
       </v-layout>
@@ -48,8 +50,8 @@
     <error-screen
       :description="error"
       @dismiss="error = ''"
-      title="Ops, something went wrong"
-      button-label="Dismiss"
+      :title="$t('open-channel.error.title')"
+      :button-label="$t('open-channel.error.button')"
     ></error-screen>
   </div>
 </template>
@@ -61,7 +63,12 @@ import {
   ChannelDepositFailed,
   ChannelOpenFailed
 } from '@/services/raiden-service';
-import { StepDescription, Token, TokenPlaceholder } from '@/model/types';
+import {
+  emptyDescription,
+  StepDescription,
+  Token,
+  TokenPlaceholder
+} from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
 import { Zero } from 'ethers/constants';
@@ -93,32 +100,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 
   steps: StepDescription[] = [];
 
-  protected readonly allSteps: StepDescription[] = [
-    {
-      label: 'Open',
-      title: 'Opening a new Channel',
-      description:
-        'Please do not close the browser and confirm the transaction with MetaMask.'
-    },
-    {
-      label: 'Transfer',
-      title: 'Transferring tokens to the network and deposit into the channel',
-      description:
-        'Please do not close the browser and confirm two (2) transactions with MetaMask.'
-    },
-    {
-      label: 'OpenChannel.vue',
-      title: 'Not implemented - split title above, when done',
-      description: 'Not implemented - split description above, when done'
-    }
-  ];
-
-  readonly doneStep: StepDescription = {
-    label: 'Done',
-    title: 'New Channel opened',
-    description:
-      'A new channel has been opened successfully.<br/>You may now select a payment target.'
-  };
+  doneStep: StepDescription = emptyDescription();
   current = 0;
   done = false;
 
@@ -126,11 +108,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
     if (!this.loading) {
       next();
     } else {
-      if (
-        window.confirm(
-          'Channel opening is in progress, are you sure you want to leave?'
-        )
-      ) {
+      if (window.confirm(this.$t('open-channel.confirmation') as string)) {
         next();
       } else {
         next(false);
@@ -143,9 +121,15 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
     const depositAmount = BalanceUtils.parse(this.deposit, token.decimals);
 
     if (depositAmount.eq(Zero)) {
-      this.steps = [this.allSteps[0]];
+      this.steps = [
+        (this.$t('open-channel.steps.open') as any) as StepDescription
+      ];
     } else {
-      this.steps = this.allSteps;
+      this.steps = [
+        (this.$t('open-channel.steps.open') as any) as StepDescription,
+        (this.$t('open-channel.steps.transfer') as any) as StepDescription,
+        (this.$t('open-channel.steps.deposit') as any) as StepDescription
+      ];
     }
 
     this.loading = true;
@@ -166,9 +150,9 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
     } catch (e) {
       this.error = '';
       if (e instanceof ChannelOpenFailed) {
-        this.error = 'Channel open failed.';
+        this.error = this.$t('open-channel.error.open-failed') as string;
       } else if (e instanceof ChannelDepositFailed) {
-        this.error = 'Could not deposit to the channel.';
+        this.error = this.$t('open-channel.error.deposit-failed') as string;
       } else {
         this.error = e.message;
       }
@@ -179,6 +163,9 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
   }
 
   async created() {
+    this.doneStep = (this.$t(
+      'open-channel.steps.done'
+    ) as any) as StepDescription;
     const { token, partner } = this.$route.params;
 
     if (!AddressUtils.checkAddressChecksum(token)) {

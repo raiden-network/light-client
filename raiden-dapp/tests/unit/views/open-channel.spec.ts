@@ -51,7 +51,8 @@ describe('Deposit.vue', function() {
       mocks: {
         $raiden: service,
         $router: router,
-        $route: TestData.mockRoute(routeParams)
+        $route: TestData.mockRoute(routeParams),
+        $t: (msg: string) => msg
       }
     };
 

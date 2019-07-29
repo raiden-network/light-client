@@ -11,6 +11,9 @@ describe('NoAccessScreen.vue', () => {
     return mount(NoAccessMessage, {
       propsData: {
         reason: reason
+      },
+      mocks: {
+        $t: (msg: string) => msg
       }
     });
   }
