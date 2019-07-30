@@ -12,7 +12,7 @@
         >
           <span class="label">{{ step.label }}</span>
         </div>
-        <div :class="{ active: done }" class="step">{{ step.label }}</div>
+        <div :class="{ active: done }" class="step">{{ doneStep.label }}</div>
       </div>
       <div class="card-content">
         <div class="step-title">
@@ -59,8 +59,8 @@ export default class ProgressOverlay extends Vue {
   @Prop({ required: true })
   steps!: StepDescription[];
 
-  @Prop({})
-  doneStep?: StepDescription;
+  @Prop({ required: true })
+  doneStep!: StepDescription;
 
   @Prop({})
   done?: boolean;

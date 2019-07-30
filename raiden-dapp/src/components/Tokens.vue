@@ -131,7 +131,7 @@ export default class Tokens extends Mixins(BlockieMixin) {
   loading: boolean = false;
   steps: StepDescription[] = [];
 
-  create() {
+  created() {
     this.steps = [(this.$t('tokens.leave-progress') as any) as StepDescription];
   }
 
