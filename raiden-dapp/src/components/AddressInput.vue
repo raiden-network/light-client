@@ -134,7 +134,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       this.timeout = 0;
     }
 
-    this.timeout = setTimeout(() => {
+    this.timeout = (setTimeout(() => {
       this.$raiden
         .ensResolve(url)
         .then(resolvedAddress => {
@@ -154,7 +154,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           }
           this.timeout = 0;
         })
-        .catch(e => {
+        .catch(() => {
           this.errorMessages.push(this.$t(
             'address-input.error.ens-resolve-failed',
             {
@@ -165,7 +165,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           this.checkForErrors();
           this.timeout = 0;
         });
-    }, 800);
+    }, 800) as unknown) as number;
   }
 }
 </script>

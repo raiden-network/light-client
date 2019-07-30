@@ -100,7 +100,7 @@ describe('Deposit.vue', function() {
       button.trigger('click');
       const deposit = wrapper.vm;
       await flushPromises();
-      expect(deposit.$data.error).toBe('Channel open failed.');
+      expect(deposit.$data.error).toBe('open-channel.error.open-failed');
     });
 
     it('should had an error if deposit failed', async function() {
@@ -111,7 +111,7 @@ describe('Deposit.vue', function() {
       button.trigger('click');
       const deposit = wrapper.vm;
       await flushPromises();
-      expect(deposit.$data.error).toBe('Could not deposit to the channel.');
+      expect(deposit.$data.error).toBe('open-channel.error.deposit-failed');
     });
 
     it('should show an error if any error happens during channel opening', async function() {

@@ -73,15 +73,19 @@ export default class AmountInput extends Vue {
   private static numericRegex = /^\d*[.,]?\d*$/;
 
   readonly rules = [
-    (v: string) => !!v || this.$t('amount-input.error.empty'),
+    (v: string) => {
+      return !!v || this.$parent.$t('amount-input.error.empty');
+    },
     (v: string) =>
       !this.limit ||
       this.noDecimalOverflow(v) ||
-      this.$t('amount-input.error.too-many-decimals'),
+      this.$parent.$t('amount-input.error.too-many-decimals', {
+        decimals: this.token!!.decimals
+      }),
     (v: string) =>
       !this.limit ||
       this.hasEnoughBalance(v) ||
-      this.$t('amount-input.error.not-enough-funds', {
+      this.$parent.$t('amount-input.error.not-enough-funds', {
         funds: this.token!!.units
       })
   ];

@@ -111,9 +111,9 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
       clearTimeout(this.timeout);
     }
 
-    this.timeout = setTimeout(() => {
+    this.timeout = (setTimeout(() => {
       this.copied = false;
-    }, 2000);
+    }, 2000) as unknown) as number;
   }
 }
 </script>
