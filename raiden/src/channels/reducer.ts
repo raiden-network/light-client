@@ -29,17 +29,14 @@ function blockNumber(state: number = initialState.blockNumber, action: RaidenAct
 }
 
 // state.tokens specific reducer, handles only tokenMonitored action
-function tokens(
-  state: Readonly<RaidenState['tokens']> = initialState.tokens,
-  action: RaidenAction,
-) {
+function tokens(state: RaidenState['tokens'] = initialState.tokens, action: RaidenAction) {
   if (isActionOf(tokenMonitored, action))
     return set([action.payload.token], action.payload.tokenNetwork, state);
   else return state;
 }
 
 // handles all channel actions and requests
-function channels(state: Readonly<Channels> = initialState.channels, action: RaidenAction) {
+function channels(state: Channels = initialState.channels, action: RaidenAction) {
   if (isActionOf(channelOpen, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
     if (get(path, state)) return state; // there's already a channel with partner

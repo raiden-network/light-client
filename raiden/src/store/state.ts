@@ -10,28 +10,38 @@ import { SentTransfers } from '../transfers/state';
 
 // types
 
-export const RaidenState = t.type({
-  address: Address,
-  blockNumber: t.number,
-  channels: Channels,
-  tokens: t.record(t.string /* token: Address */, Address),
-  transport: t.partial({
-    matrix: t.intersection([
-      t.type({
-        server: t.string,
-      }),
+export const RaidenState = t.readonly(
+  t.type({
+    address: Address,
+    blockNumber: t.number,
+    channels: Channels,
+    tokens: t.readonly(t.record(t.string /* token: Address */, Address)),
+    transport: t.readonly(
       t.partial({
-        setup: RaidenMatrixSetup,
-        rooms: t.record(t.string /* partner: Address */, t.array(t.string)),
+        matrix: t.readonly(
+          t.intersection([
+            t.type({
+              server: t.string,
+            }),
+            t.partial({
+              setup: RaidenMatrixSetup,
+              rooms: t.readonly(t.record(t.string /* partner: Address */, t.array(t.string))),
+            }),
+          ]),
+        ),
       }),
-    ]),
+    ),
+    secrets: t.readonly(
+      t.record(
+        t.string /* secrethash: Hash */,
+        t.readonly(
+          t.intersection([t.type({ secret: Secret }), t.partial({ registerBlock: t.number })]),
+        ),
+      ),
+    ),
+    sent: SentTransfers,
   }),
-  secrets: t.record(
-    t.string /* secrethash: Hash */,
-    t.intersection([t.type({ secret: Secret }), t.partial({ registerBlock: t.number })]),
-  ),
-  sent: SentTransfers,
-});
+);
 
 // the interface trick below forces TSC to use the imported type instead of inlining
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -68,7 +78,7 @@ export function decodeRaidenState(data: unknown): RaidenState {
   return validationResult.value as RaidenState;
 }
 
-export const initialState: Readonly<RaidenState> = {
+export const initialState: RaidenState = {
   address: AddressZero as Address,
   blockNumber: 0,
   channels: {},

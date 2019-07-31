@@ -15,7 +15,7 @@ import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
  * @returns New RaidenState['transport'] slice
  */
 function transport(
-  state: Readonly<RaidenState['transport']> = initialState.transport,
+  state: RaidenState['transport'] = initialState.transport,
   action: RaidenAction,
 ) {
   if (isActionOf(matrixSetup, action)) {
