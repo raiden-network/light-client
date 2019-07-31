@@ -147,11 +147,7 @@
   "application": {
     "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
   },
-  "transfer": {
-    "information": {
-      "title": "Token",
-      "token": "{symbol} | {name}"
-    },
+  "send-transaction": {
     "pay-button": "Pay",
     "error": {
       "button": "Dismiss",

@@ -49,7 +49,7 @@ describe('Channels.vue', () => {
     });
 
     expect(wrapper.vm.$data['visible']).toBe('channel-278-deposit');
-    wrapper.find('.overlay').trigger('click');
+    wrapper.find('.channels__overlay').trigger('click');
     expect(wrapper.vm.$data['visible']).toBe('');
   });
 });

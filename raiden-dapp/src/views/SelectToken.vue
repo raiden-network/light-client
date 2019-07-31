@@ -1,5 +1,5 @@
 <template>
-  <div class="content-host">
+  <div class="select-token">
     <list-header
       :header="$t('select-token.header')"
       class="header"
@@ -72,7 +72,10 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/input-screen';
+.select-token {
+  height: 100%;
+  width: 100%;
+}
 
 .header {
   margin-top: 115px;

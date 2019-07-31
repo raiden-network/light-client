@@ -1,0 +1,124 @@
+<template>
+  <v-form v-model="valid" autocomplete="off" class="send-transaction">
+    <v-layout column justify-space-between fill-height>
+      <v-layout align-center justify-center row>
+        <v-flex xs10>
+          <address-input v-model="target"></address-input>
+        </v-flex>
+      </v-layout>
+
+      <v-layout align-center justify-center row>
+        <v-flex xs10>
+          <amount-input v-model="amount" :token="token"></amount-input>
+        </v-flex>
+      </v-layout>
+
+      <divider></divider>
+
+      <token-information :token="token"></token-information>
+
+      <action-button
+        :enabled="valid"
+        @click="transfer()"
+        :text="$t('send-transaction.pay-button')"
+      ></action-button>
+
+      <stepper
+        :display="loading"
+        :steps="steps"
+        :done-step="doneStep"
+        :done="done"
+      ></stepper>
+
+      <error-screen
+        :description="error"
+        @dismiss="error = ''"
+        :title="$t('send-transaction.error.title')"
+        :button-label="$t('send-transaction.error.button')"
+      ></error-screen>
+    </v-layout>
+  </v-form>
+</template>
+
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
+import AddressInput from '@/components/AddressInput.vue';
+import AmountInput from '@/components/AmountInput.vue';
+import {
+  emptyDescription,
+  StepDescription,
+  Token,
+  TokenPlaceholder
+} from '@/model/types';
+import { BalanceUtils } from '@/utils/balance-utils';
+import Stepper from '@/components/Stepper.vue';
+import ErrorScreen from '@/components/ErrorScreen.vue';
+import Divider from '@/components/Divider.vue';
+import TokenInformation from '@/components/TokenInformation.vue';
+import ActionButton from '@/components/ActionButton.vue';
+
+@Component({
+  components: {
+    ActionButton,
+    TokenInformation,
+    Divider,
+    AddressInput,
+    AmountInput,
+    Stepper,
+    ErrorScreen
+  }
+})
+export default class SendTransaction extends Vue {
+  target: string = '';
+  token: Token = TokenPlaceholder;
+  amount: string = '0';
+
+  valid: boolean = false;
+  loading: boolean = false;
+  done: boolean = false;
+
+  error: string = '';
+
+  steps: StepDescription[] = [];
+  doneStep: StepDescription = emptyDescription();
+
+  async created() {
+    const { token } = this.$route.params;
+    this.token = (await this.$raiden.getToken(token)) || TokenPlaceholder;
+    this.steps = [
+      (this.$t('send-transaction.steps.transfer') as any) as StepDescription
+    ];
+    this.doneStep = (this.$t(
+      'send-transaction.steps.done'
+    ) as any) as StepDescription;
+  }
+
+  async transfer() {
+    const { address, decimals } = this.token;
+    try {
+      this.loading = true;
+      await this.$raiden.transfer(
+        address,
+        this.target,
+        BalanceUtils.parse(this.amount, decimals)
+      );
+      this.done = true;
+      setTimeout(() => {
+        this.loading = false;
+        this.done = false;
+      }, 2000);
+    } catch (e) {
+      this.loading = false;
+      this.done = false;
+      this.error = e.message;
+    }
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.send-transaction {
+  width: 100%;
+  height: 100%;
+}
+</style>

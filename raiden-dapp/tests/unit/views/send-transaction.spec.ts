@@ -9,7 +9,7 @@ import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
-import Transfer from '@/views/Transfer.vue';
+import SendTransaction from '@/views/SendTransaction.vue';
 import store from '@/store';
 import VueRouter, { Route } from 'vue-router';
 import { TestData } from '../data/mock-data';
@@ -19,8 +19,8 @@ import { Zero } from 'ethers/constants';
 
 Vue.use(Vuetify);
 
-describe('Transfer.vue', () => {
-  let wrapper: Wrapper<Transfer>;
+describe('SendTransaction.vue', () => {
+  let wrapper: Wrapper<SendTransaction>;
   let router: Mocked<VueRouter>;
   let raiden: Mocked<RaidenService>;
   let loading: jest.SpyInstance;
@@ -36,7 +36,7 @@ describe('Transfer.vue', () => {
   function vueFactory(
     router: VueRouter,
     raiden: RaidenService
-  ): Wrapper<Transfer> {
+  ): Wrapper<SendTransaction> {
     const localVue = createLocalVue();
     let options = {
       localVue,
@@ -52,7 +52,7 @@ describe('Transfer.vue', () => {
         $t: (msg: string) => msg
       }
     };
-    return mount(Transfer, options);
+    return mount(SendTransaction, options);
   }
 
   beforeEach(() => {
@@ -90,7 +90,7 @@ describe('Transfer.vue', () => {
       '0x32bBc8ba52FB6F61C24809FdeDA1baa5E55e55EA'
     );
     mockInput(wrapper.findAll('input').at(1), '1');
-    wrapper.find('#transfer').trigger('click');
+    wrapper.find('button').trigger('click');
     await flushPromises();
     jest.advanceTimersByTime(2000);
     expect(loading).toHaveBeenCalledTimes(2);
@@ -108,7 +108,7 @@ describe('Transfer.vue', () => {
       '0x32bBc8ba52FB6F61C24809FdeDA1baa5E55e55EA'
     );
     mockInput(wrapper.findAll('input').at(1), '1');
-    wrapper.find('#transfer').trigger('click');
+    wrapper.find('button').trigger('click');
     await flushPromises();
     jest.advanceTimersByTime(2000);
     expect(loading).toHaveBeenCalledTimes(2);

@@ -83,12 +83,11 @@ describe('Deposit.vue', function() {
         partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
       });
       await flushPromises();
-      button = wrapper.find('#open-channel');
+      button = wrapper.find('button');
       await wrapper.vm.$nextTick();
     });
 
     it('should not be disabled after load', async function() {
-      const button = wrapper.find('#open-channel');
       await flushPromises();
       expect(button.element.getAttribute('disabled')).toBeFalsy();
     });
@@ -132,7 +131,7 @@ describe('Deposit.vue', function() {
       jest.advanceTimersByTime(2000);
       expect(router.push).toHaveBeenCalledTimes(1);
       const args = router.push.mock.calls[0][0] as any;
-      expect(args.name).toEqual(RouteNames.TRANSFER);
+      expect(args.name).toEqual(RouteNames.SEND_TRANSACTION);
       expect(loading).toHaveBeenCalledTimes(2);
     });
   });

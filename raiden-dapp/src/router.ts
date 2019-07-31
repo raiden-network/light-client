@@ -23,12 +23,12 @@ export default new Router({
       redirect: '/'
     },
     {
-      path: '/transfer/:token',
-      name: RouteNames.TRANSFER,
+      path: '/send-transaction/:token',
+      name: RouteNames.SEND_TRANSACTION,
       meta: {
         title: 'Send transaction'
       },
-      component: () => import('./views/Transfer.vue')
+      component: () => import('./views/SendTransaction.vue')
     },
     {
       path: '/connect',

@@ -39,7 +39,6 @@ export default class ChannelActions extends Vue {
 }
 </script>
 <style lang="scss" scoped>
-@import '../main';
 @import '../scss/colors';
 
 .action-button {

@@ -48,7 +48,7 @@
               <v-layout justify-center row>
                 <v-btn
                   :id="`pay-${index}`"
-                  :to="`/transfer/${token.address}`"
+                  :to="`/send-transaction/${token.address}`"
                   class="text-capitalize connected-tokens__tokens__token__button"
                 >
                   {{ $t('tokens.connected.token.buttons.pay') }}
@@ -72,18 +72,14 @@
         </v-list>
       </v-flex>
     </v-layout>
-    <v-layout align-center justify-center row class="connected-tokens__button">
-      <v-flex xs10 class="text-xs-center">
-        <v-btn
-          to="/connect"
-          large
-          class="text-capitalize confirm-button"
-          depressed
-        >
-          {{ $t('tokens.connect-new') }}
-        </v-btn>
-      </v-flex>
-    </v-layout>
+
+    <action-button
+      @click="navigateToTokenSelect()"
+      :text="$t('tokens.connect-new')"
+      class="connected-tokens__button"
+      enabled
+    ></action-button>
+
     <confirmation-dialog
       :display="leaveModalVisible"
       @confirm="leaveConfirmed()"
@@ -118,12 +114,14 @@ import { StepDescription, TokenModel } from '@/model/types';
 import Stepper from '@/components/Stepper.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ListHeader from '@/components/ListHeader.vue';
+import ActionButton from '@/components/ActionButton.vue';
+import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({
-  components: { ListHeader, Stepper, ConfirmationDialog },
+  components: { ListHeader, Stepper, ConfirmationDialog, ActionButton },
   computed: mapGetters(['tokens'])
 })
-export default class Tokens extends Mixins(BlockieMixin) {
+export default class Tokens extends Mixins(BlockieMixin, NavigationMixin) {
   tokens!: TokenModel[];
   selectedToken: TokenModel | null = null;
   leaveModalVisible: boolean = false;
@@ -160,7 +158,7 @@ export default class Tokens extends Mixins(BlockieMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/button';
+@import '../scss/colors';
 
 .connected-tokens__header {
   margin-top: 115px;

@@ -1,7 +1,5 @@
 <template>
-  <div class="content-host">
-    <app-core />
-  </div>
+  <app-core />
 </template>
 
 <script lang="ts">
@@ -15,7 +13,3 @@ import AppCore from '@/components/AppCore.vue';
 })
 export default class Home extends Vue {}
 </script>
-
-<style scoped lang="scss">
-@import '../main';
-</style>

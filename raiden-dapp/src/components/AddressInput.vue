@@ -1,5 +1,5 @@
 <template>
-  <fieldset>
+  <fieldset class="address-input">
     <v-text-field
       id="address-input"
       ref="address"
