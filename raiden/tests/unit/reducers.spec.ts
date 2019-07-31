@@ -1,4 +1,5 @@
 import { cloneDeep, get } from 'lodash';
+import { set } from 'lodash/fp';
 
 import { Zero, One, HashZero } from 'ethers/constants';
 import { bigNumberify, keccak256 } from 'ethers/utils';
@@ -78,7 +79,10 @@ describe('raidenReducer', () => {
     });
 
     test('already monitored token', () => {
-      state.tokens[token] = tokenNetwork;
+      state = {
+        ...state,
+        tokens: { [token]: tokenNetwork },
+      };
       const newState = raidenReducer(state, tokenMonitored({ token, tokenNetwork, first: true }));
       expect(newState).toEqual(state);
     });
@@ -145,7 +149,7 @@ describe('raidenReducer', () => {
     });
 
     test('channel not in open state', () => {
-      state.channels[tokenNetwork][partner].state = ChannelState.closed;
+      state = set(['channels', tokenNetwork, partner, 'state'], ChannelState.closed, state);
       const newState = raidenReducer(
         state,
         channelDeposited(
@@ -227,7 +231,7 @@ describe('raidenReducer', () => {
     });
 
     test('channel not in open state', () => {
-      state.channels[tokenNetwork][partner].state = ChannelState.closed;
+      state = set(['channels', tokenNetwork, partner, 'state'], ChannelState.closed, state);
       const newState = raidenReducer(state, channelClose(undefined, { tokenNetwork, partner }));
       expect(newState).toEqual(state);
     });
