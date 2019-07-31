@@ -1,3 +1,6 @@
+import { fold, isRight } from 'fp-ts/lib/Either';
+import { pipe } from 'fp-ts/lib/pipeable';
+
 import { of, combineLatest } from 'rxjs';
 import { first, take, toArray } from 'rxjs/operators';
 
@@ -146,9 +149,10 @@ describe('types', () => {
     const B = HexString().encode(b);
     expect(HexString().is(B)).toBe(true);
     expect(B).toBe(b);
-    const result = HexString().decode(B);
-    expect(result.isRight()).toBe(true);
-    expect(result.value).toBe(b);
+    pipe(
+      HexString().decode(B),
+      fold(fail, result => expect(result).toBe(b)),
+    );
   });
 
   test('UInt<8>', () => {
@@ -182,11 +186,11 @@ describe('types', () => {
     const b = bigNumberify(16);
     expect(BigNumberC.is(b)).toBe(true);
     expect(BigNumberC.encode(b)).toEqual(new LosslessNumber('16'));
-    const result = BigNumberC.decode(b);
-    expect(result.isRight()).toBe(true);
-    expect(result.value).toBeInstanceOf(BigNumber);
-    const result2 = BigNumberC.decode(null);
-    expect(result2.isRight()).toBe(false);
+    pipe(
+      BigNumberC.decode(b),
+      fold(fail, result => expect(result).toBeInstanceOf(BigNumber)),
+    );
+    expect(isRight(BigNumberC.decode(null))).toBe(false);
   });
 
   test('Address', () => {

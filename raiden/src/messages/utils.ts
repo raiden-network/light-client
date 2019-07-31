@@ -1,5 +1,7 @@
 // import * as t from 'io-ts';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
+import { isLeft } from 'fp-ts/lib/Either';
+
 import { Signer } from 'ethers';
 import { keccak256, verifyMessage } from 'ethers/utils';
 import { concat, hexlify, arrayify } from 'ethers/utils/bytes';
@@ -240,8 +242,8 @@ export function decodeJsonMessage(text: string): Signed<Message> {
   const parsed = losslessParse(text);
   if (!Message.is(parsed)) throw new Error(`Could not find Message "type" in ${text}`);
   const decoded = SignedMessageCodecs[parsed.type].decode(parsed);
-  if (decoded.isLeft()) throw ThrowReporter.report(decoded); // throws if decode failed
-  return decoded.value;
+  if (isLeft(decoded)) throw ThrowReporter.report(decoded); // throws if decode failed
+  return decoded.right;
 }
 
 /**

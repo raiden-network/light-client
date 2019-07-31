@@ -1,4 +1,5 @@
 import * as t from 'io-ts';
+import { isLeft } from 'fp-ts/lib/Either';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { AddressZero } from 'ethers/constants';
 
@@ -73,9 +74,9 @@ export function encodeRaidenState(state: RaidenState): string {
  */
 export function decodeRaidenState(data: unknown): RaidenState {
   if (typeof data === 'string') data = losslessParse(data);
-  const validationResult = RaidenState.decode(data);
-  ThrowReporter.report(validationResult); // throws if decode failed
-  return validationResult.value as RaidenState;
+  const result = RaidenState.decode(data);
+  if (isLeft(result)) throw ThrowReporter.report(result); // throws if decode failed
+  return result.right;
 }
 
 export const initialState: RaidenState = {
