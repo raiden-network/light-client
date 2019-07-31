@@ -715,7 +715,7 @@ describe('raidenReducer', () => {
       // invalid lock because locked_amount isn't right
       expect(get(newState, ['sent', secrethash, 'unlock'])).toBeUndefined();
 
-      unlock.locked_amount = Zero as UInt<32>;
+      unlock = { ...unlock, locked_amount: Zero as UInt<32> };
       newState = [transferUnlocked({ message: unlock }, { secrethash })].reduce(
         raidenReducer,
         newState,
