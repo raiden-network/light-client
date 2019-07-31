@@ -2,20 +2,22 @@
   <div v-if="description !== ''" class="overlay">
     <div class="error-screen">
       <div class="error-screen__header">
-        <span class="error-screen__header__title">Error</span>
+        <span class="error-screen__header__title">
+          {{ $t('error-screen.title') }}
+        </span>
       </div>
       <div class="error-screen__content">
         <div class="error-screen__content__title">{{ title }}</div>
         <div class="error-screen__content__icon">
           <v-img
-            size="110"
             :src="require('../assets/error.png')"
+            size="110"
             class="error-screen__content__icon__img"
           ></v-img>
         </div>
         <div class="error-screen__content__message">{{ description }}</div>
         <div v-if="buttonLabel">
-          <v-btn class="error-screen__content__button" @click="dismiss()">{{
+          <v-btn @click="dismiss()" class="error-screen__content__button">{{
             buttonLabel
           }}</v-btn>
         </div>

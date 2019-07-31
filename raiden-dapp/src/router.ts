@@ -23,17 +23,6 @@ export default new Router({
       redirect: '/'
     },
     {
-      path: '/about',
-      name: RouteNames.ABOUT,
-      meta: {
-        title: 'About'
-      },
-      // route level code-splitting
-      // this generates a separate chunk (about.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('./views/About.vue')
-    },
-    {
       path: '/transfer/:token',
       name: RouteNames.TRANSFER,
       meta: {
@@ -63,7 +52,7 @@ export default new Router({
       meta: {
         title: 'Open channel'
       },
-      component: () => import('./views/Deposit.vue')
+      component: () => import('./views/OpenChannel.vue')
     },
     {
       path: '/channels/:token',

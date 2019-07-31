@@ -43,7 +43,6 @@ export default class NavigationMixin extends Vue {
 
   onBackClicked() {
     switch (this.$route.name) {
-      case RouteNames.ABOUT:
       case RouteNames.TRANSFER:
       case RouteNames.CHANNELS:
       case RouteNames.SELECT_TOKEN:

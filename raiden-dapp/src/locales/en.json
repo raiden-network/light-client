@@ -1,0 +1,222 @@
+{
+  "address-input": {
+    "input": {
+      "placeholder": "Enter an address or ens name..."
+    },
+    "blockie-alt": "Selected token address blockie",
+    "error": {
+      "invalid-address": "The input doesn't seem like a valid address or ens name",
+      "no-checksum": "The address is not in checksum format",
+      "empty": "The address cannot be empty",
+      "ens-resolve-failed": "Could not resolve an address for {url}"
+    }
+  },
+  "amount-input": {
+    "input": {
+      "hint": "Please enter the amount you wish to deposit into this channel."
+    },
+    "error": {
+      "empty": "The amount cannot be empty",
+      "too-many-decimals": "The token supports only up to {decimals} decimals",
+      "not-enough-funds": "`Your maximum deposit amount is {funds}"
+    }
+  },
+  "app-header": {
+    "copy-success": "Address copied successfully",
+    "currency": "ETH"
+  },
+  "channel-actions": {
+    "deposit": "Deposit",
+    "close": "Close",
+    "settle": "Settle"
+  },
+  "channel-deposit": {
+    "buttons": {
+      "cancel": "Cancel",
+      "confirm": "Deposit"
+    },
+    "input": {
+      "label": "Amount"
+    }
+  },
+  "stepper": {
+    "steps": {
+      "open": {
+        "title": "Open",
+        "description": "You can deposit more tokens \n or close the channel."
+      },
+      "closed": {
+        "title": "Closed",
+        "description": "Please wait until your channel is settleable. \nhis may take up some time."
+      },
+      "settleable": {
+        "title": "Settleable",
+        "description": "Settle your channel to transfer \n your tokens back to your account."
+      }
+    }
+  },
+  "channels": {
+    "open": {
+      "header": "Open"
+    },
+    "closed": {
+      "header": "Closed"
+    },
+    "settleable": {
+      "header": "Settleable"
+    },
+    "snackbar-close": "Close",
+    "channel": {
+      "blockie_alt": "Partner address blockie",
+      "state": "Deposit {deposit} | State: {state}",
+      "close_dialog": {
+        "title": "Close Channel",
+        "description": "Are you sure you want to close this channel? This action cannot be undone."
+      },
+      "settle_dialog": {
+        "title": "Settle Channel",
+        "description": "Are you sure you want to settle the channel with hub {partner} for token {token}?"
+      }
+    },
+    "messages": {
+      "close": {
+        "success": "Channel close successful",
+        "failure": "Channel close failed"
+      },
+      "deposit": {
+        "success": "Deposit was successful",
+        "failure": "Deposit failed"
+      },
+      "settle": {
+        "success": "Channel settle was successful",
+        "failure": "Channel settle failed"
+      }
+    }
+  },
+  "confirmation": {
+    "buttons": {
+      "cancel": "Cancel",
+      "close": "Close"
+    }
+  },
+  "confirmation-dialog": {
+    "buttons": {
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    }
+  },
+  "error-screen": {
+    "title": "Error"
+  },
+  "no-access": {
+    "unsupported-network": "The current network is unsupported.",
+    "sdk-initialization-failure": "SDK initialization failed. Please check the console for more information.",
+    "generic-error": "A valid account could not be detected. Please make sure that your provider is unlocked and accessible."
+  },
+  "splash-screen": {
+    "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and can just be used on the Ethereum Testnets.",
+    "matrix-sign": "On the first launch you get asked to sign two messages to connect to the Raiden transport layer. You sign the matrix server name and the public user name.",
+    "connect-button": "Connect",
+    "no-provider": "No web3 provider was detected"
+  },
+  "tokens": {
+    "connected": {
+      "header": "Connected Tokens",
+      "token": {
+        "blockie-alt": "Partner address blockie",
+        "token-info": "{symbol} | {name}",
+        "buttons": {
+          "pay": "Pay",
+          "disconnect": "Disconnect Token",
+          "view-channels": "View Channels"
+        }
+      }
+    },
+    "connect-new": "Connect new token",
+    "disconnect-dialog": {
+      "header": "Disconnect token",
+      "description": "This action will close all channels for the",
+      "confirmation-message": "This action will close all channels for the {symbol} token! {address}"
+    },
+    "leave-progress": {
+      "label": "Disconnect",
+      "title": "Disconnecting from the token network",
+      "description": "Closing the channels"
+    }
+  },
+  "application": {
+    "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
+  },
+  "transfer": {
+    "information": {
+      "title": "Token",
+      "token": "{symbol} | {name}"
+    },
+    "pay-button": "Pay",
+    "error": {
+      "button": "Dismiss",
+      "title": "Something went wrong"
+    },
+    "steps": {
+      "transfer": {
+        "label": "Transfer",
+        "title": "Sending Tokens",
+        "description": "Please do not close the browser and confirm the transactions with MetaMask."
+      },
+      "done": {
+        "label": "Done",
+        "title": "Send Successful",
+        "description": "Your transfer was successful"
+      }
+    }
+  },
+  "select-token": {
+    "header": "Available",
+    "tokens": {
+      "token": {
+        "blockie-alt": "Token address blockie",
+        "token-information": "{symbol} | {name}"
+      }
+    }
+  },
+  "select-hub": {
+    "select-button": "Select Hub"
+  },
+  "open-channel": {
+    "error": {
+      "title": "Ops, something went wrong",
+      "button": "Dismiss",
+      "deposit-failed": "Could not deposit to the channel.",
+      "open-failed": "Channel open failed."
+    },
+    "open-button": "Open Channel",
+    "hub": "Hub",
+    "steps": {
+      "open": {
+        "label": "Open",
+        "title": "Opening a new Channel",
+        "description": "Please do not close the browser and confirm the transaction with MetaMask."
+      },
+      "transfer": {
+        "label": "Transfer",
+        "title": "Transferring tokens to the network and deposit into the channel",
+        "description": "Please do not close the browser and confirm two (2) transactions with MetaMask."
+      },
+      "deposit": {
+        "label": "Deposit",
+        "title": "Not implemented - split title above, when done",
+        "description": "Not implemented - split description above, when done"
+      },
+      "done": {
+        "label": "Done",
+        "title": "New Channel opened",
+        "description": "A new channel has been opened successfully. You may now select a payment target."
+      }
+    },
+    "confirmation": "Channel opening is in progress, are you sure you want to leave?"
+  },
+  "token-information": {
+    "title": "Token",
+    "description": "{symbol} | {name}"
+  }
+}

@@ -11,6 +11,9 @@ describe('NoAccessScreen.vue', () => {
     return mount(NoAccessMessage, {
       propsData: {
         reason: reason
+      },
+      mocks: {
+        $t: (msg: string) => msg
       }
     });
   }
@@ -22,7 +25,7 @@ describe('NoAccessScreen.vue', () => {
         .find('span')
         .text()
         .trim()
-    ).toEqual('The current network is unsupported.');
+    ).toEqual('no-access.unsupported-network');
   });
 
   test('user denied', () => {
@@ -35,9 +38,7 @@ describe('NoAccessScreen.vue', () => {
         .split('\n')
         .map(text => text.trim())
         .join(' ')
-    ).toEqual(
-      'A valid account could not be detected. Please make sure that your provider is unlocked and accessible.'
-    );
+    ).toEqual('no-access.generic-error');
   });
 
   test('sdk error', () => {
@@ -50,8 +51,6 @@ describe('NoAccessScreen.vue', () => {
         .split('\n')
         .map(text => text.trim())
         .join(' ')
-    ).toEqual(
-      'SDK initialization failed. Please check the console for more information.'
-    );
+    ).toEqual('no-access.sdk-initialization-failure');
   });
 });

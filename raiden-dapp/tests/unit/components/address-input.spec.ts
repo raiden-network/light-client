@@ -29,7 +29,8 @@ describe('AddressInput', function() {
         $raiden: raiden,
         $identicon: {
           getIdenticon: mockIdenticon
-        }
+        },
+        $t: (msg: string) => msg
       }
     });
   });
@@ -53,7 +54,7 @@ describe('AddressInput', function() {
 
     const messages = wrapper.find('.v-messages__message');
     expect(messages.exists()).toBe(true);
-    expect(messages.text()).toBe('The address cannot be empty');
+    expect(messages.text()).toBe('address-input.error.empty');
   });
 
   it('should should show a no valid address message', async () => {
@@ -62,9 +63,7 @@ describe('AddressInput', function() {
 
     const messages = wrapper.find('.v-messages__message');
     expect(messages.exists()).toBe(true);
-    expect(messages.text()).toBe(
-      "The input doesn't seem like a valid address or ens name"
-    );
+    expect(messages.text()).toBe('address-input.error.invalid-address');
   });
 
   it('should should show a not checksum format message if address not in checksum format', async () => {
@@ -73,7 +72,7 @@ describe('AddressInput', function() {
 
     const messages = wrapper.find('.v-messages__message');
     expect(messages.exists()).toBe(true);
-    expect(messages.text()).toBe('The address is not in checksum format');
+    expect(messages.text()).toBe('address-input.error.no-checksum');
   });
 
   test('valid checksum address should fire input event', async () => {
@@ -130,7 +129,7 @@ describe('AddressInput', function() {
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(1);
       expect(wrapper.vm.$data.errorMessages).toContain(
-        'Could not resolve an address for enstest.test'
+        'address-input.error.ens-resolve-failed'
       );
     });
 
@@ -150,7 +149,7 @@ describe('AddressInput', function() {
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(1);
       expect(wrapper.vm.$data.errorMessages).toContain(
-        'Could not resolve an address for enstest.test'
+        'address-input.error.ens-resolve-failed'
       );
     });
   });

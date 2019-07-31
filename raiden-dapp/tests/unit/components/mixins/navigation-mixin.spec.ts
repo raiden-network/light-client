@@ -68,14 +68,6 @@ describe('NavigationMixin', function() {
   });
 
   describe('back navigation', () => {
-    test('from about', async () => {
-      wrapper.vm.$route.name = RouteNames.ABOUT;
-      wrapper.vm.onBackClicked();
-      const callArgs = args();
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(callArgs.name).toEqual(RouteNames.HOME);
-    });
-
     test('from select target', async () => {
       wrapper.vm.$route.name = RouteNames.TRANSFER;
       wrapper.vm.onBackClicked();

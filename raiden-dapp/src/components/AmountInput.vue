@@ -8,30 +8,30 @@
       :label="label"
       :rules="rules"
       :value="amount"
-      background-color="transparent"
-      autocomplete="off"
-      hint="Please enter the amount you wish to deposit into this channel."
-      persistent-hint
       :light="light"
       :dark="!light"
-      flat
-      placeholder="0.00"
-      solo
       @contextmenu="valueUpdated('contextmenu', $event)"
       @drop="valueUpdated('drop', $event)"
       @input.native="valueUpdated('input', $event)"
       @keydown="valueUpdated('keydown', $event)"
       @keyup="valueUpdated('keyup', $event)"
+      :hint="$t('amount-input.input.hint')"
       @mousedown="valueUpdated('mousedown', $event)"
       @mouseup="valueUpdated('mouseup', $event)"
       @select="valueUpdated('select', $event)"
+      background-color="transparent"
+      autocomplete="off"
+      persistent-hint
+      flat
+      placeholder="0.00"
+      solo
     >
       <div slot="prepend" class="prepend-placeholder"></div>
       <div slot="append-outer" class="status-icon-wrapper">
         <v-img
           v-if="!valid"
-          class="status-icon"
           :src="require('../assets/input_invalid.svg')"
+          class="status-icon"
         ></v-img>
         <v-img
           v-else
@@ -40,7 +40,7 @@
         ></v-img>
       </div>
     </v-text-field>
-    <span class="token-symbol" :class="{ light }">{{
+    <span :class="{ light }" class="token-symbol">{{
       token.symbol || 'TKN'
     }}</span>
   </fieldset>
@@ -73,15 +73,21 @@ export default class AmountInput extends Vue {
   private static numericRegex = /^\d*[.,]?\d*$/;
 
   readonly rules = [
-    (v: string) => !!v || 'The amount cannot be empty',
+    (v: string) => {
+      return !!v || this.$parent.$t('amount-input.error.empty');
+    },
     (v: string) =>
       !this.limit ||
       this.noDecimalOverflow(v) ||
-      `The token supports only up to ${this.token!!.decimals} decimals`,
+      this.$parent.$t('amount-input.error.too-many-decimals', {
+        decimals: this.token!!.decimals
+      }),
     (v: string) =>
       !this.limit ||
       this.hasEnoughBalance(v) ||
-      `Your maximum deposit amount is ${this.token!!.units}`
+      this.$parent.$t('amount-input.error.not-enough-funds', {
+        funds: this.token!!.units
+      })
   ];
 
   private noDecimalOverflow(v: string) {

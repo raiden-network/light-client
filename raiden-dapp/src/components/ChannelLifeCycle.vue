@@ -4,15 +4,21 @@
       <v-flex>
         <v-stepper :value="step" class="no-shadow lifecycle">
           <v-stepper-header>
-            <v-stepper-step step="1">Open</v-stepper-step>
+            <v-stepper-step step="1">
+              {{ $t('stepper.steps.open.title') }}
+            </v-stepper-step>
 
             <v-divider :class="{ active: step > 1 }"></v-divider>
 
-            <v-stepper-step step="2">Closed</v-stepper-step>
+            <v-stepper-step step="2">
+              {{ $t('stepper.steps.closed.title') }}
+            </v-stepper-step>
 
             <v-divider :class="{ active: step > 2 }"></v-divider>
 
-            <v-stepper-step step="3">Settleable</v-stepper-step>
+            <v-stepper-step step="3">
+              {{ $t('stepper.steps.settleable.title') }}
+            </v-stepper-step>
           </v-stepper-header>
         </v-stepper>
       </v-flex>
@@ -20,16 +26,13 @@
     <v-layout justify-center row>
       <v-flex xs8 class="lifecycle__description">
         <div v-if="step === 1" class="lifecycle__description__text">
-          You can deposit more tokens <br />
-          or close the channel.
+          {{ $t('stepper.steps.open.description') }}
         </div>
         <div v-if="step === 2" class="lifecycle__description__text">
-          Please wait until your channel is settleable. <br />
-          This may take up some time.
+          {{ $t('stepper.steps.closed.description') }}
         </div>
         <div v-if="step === 3" class="lifecycle__description__text">
-          Settle your channel to transfer <br />
-          your tokens back to your account.
+          {{ $t('stepper.steps.settleable.description') }}
         </div>
       </v-flex>
     </v-layout>

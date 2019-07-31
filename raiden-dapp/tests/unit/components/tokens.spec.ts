@@ -55,7 +55,8 @@ describe('Tokens.vue', function() {
         $raiden: raiden,
         $identicon: {
           getIdenticon: jest.fn()
-        }
+        },
+        $t: (msg: string) => msg
       },
       stubs: {
         ConfirmationDialog: `

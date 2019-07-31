@@ -1,22 +1,24 @@
 <template>
-  <div v-if="display" id="overlay">
+  <div id="overlay" v-if="display">
     <div id="card">
       <div class="steps">
         <div
           v-for="(step, index) in steps"
           :key="index"
-          class="step"
           :class="{
             active: current === index && !done
           }"
+          class="step"
         >
           <span class="label">{{ step.label }}</span>
         </div>
-        <div class="step" :class="{ active: done }">Done</div>
+        <div :class="{ active: done }" class="step">{{ doneStep.label }}</div>
       </div>
       <div class="card-content">
         <div class="step-title">
-          <span v-if="done"> {{ doneStep.title }}</span>
+          <span v-if="done">
+            {{ doneStep.title }}
+          </span>
           <span v-else>{{ steps[current].title }}</span>
         </div>
         <div v-if="done">
@@ -30,7 +32,9 @@
           indeterminate
         ></v-progress-circular>
         <p id="message" class="step-description">
-          <span v-if="done" v-html="doneStep.description"> </span>
+          <span v-if="done">
+            {{ doneStep.description }}
+          </span>
           <span v-else>
             {{ steps[current].description }}
           </span>
@@ -55,8 +59,8 @@ export default class ProgressOverlay extends Vue {
   @Prop({ required: true })
   steps!: StepDescription[];
 
-  @Prop({})
-  doneStep?: StepDescription;
+  @Prop({ required: true })
+  doneStep!: StepDescription;
 
   @Prop({})
   done?: boolean;

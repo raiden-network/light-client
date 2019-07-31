@@ -14,15 +14,15 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn class="confirmation-dialog__button" flat @click="cancel()">
-            Cancel
+          <v-btn @click="cancel()" class="confirmation-dialog__button" flat>
+            {{ $t('confirmation-dialog.buttons.cancel') }}
           </v-btn>
           <v-btn
+            @click="confirm()"
             class="confirmation-dialog__button confirmation-dialog__button__primary"
             flat
-            @click="confirm()"
           >
-            Confirm
+            {{ $t('confirmation-dialog.buttons.confirm') }}
           </v-btn>
           <v-spacer></v-spacer>
         </v-card-actions>

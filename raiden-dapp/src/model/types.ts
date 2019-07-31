@@ -52,6 +52,12 @@ export interface StepDescription {
   readonly description: string;
 }
 
+export const emptyDescription = (): StepDescription => ({
+  label: '',
+  title: '',
+  description: ''
+});
+
 export const emptyTokenModel = (): AccTokenModel => ({
   name: '',
   symbol: '',

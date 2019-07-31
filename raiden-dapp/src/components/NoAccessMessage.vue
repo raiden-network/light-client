@@ -1,17 +1,14 @@
-import {DeniedReason} from "@/model/types";
 <template>
   <v-alert :value="true" color="error" icon="warning" outline>
     <div class="font-weight-light message">
       <span v-if="networkUnsupported">
-        The current network is unsupported.
+        {{ $t('no-access.unsupported-network') }}
       </span>
       <span v-else-if="initializationFailed">
-        SDK initialization failed. <br />
-        Please check the console for more information.
+        {{ $t('no-access.sdk-initialization-failure') }}
       </span>
       <span v-else>
-        A valid account could not be detected. <br />
-        Please make sure that your provider is unlocked and accessible.
+        {{ $t('no-access.generic-error') }}
       </span>
     </div>
   </v-alert>

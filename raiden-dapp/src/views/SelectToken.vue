@@ -1,6 +1,9 @@
 <template>
   <div class="content-host">
-    <list-header class="header" header="Available"></list-header>
+    <list-header
+      :header="$t('select-token.header')"
+      class="header"
+    ></list-header>
 
     <v-layout justify-center row class="list-container">
       <v-flex xs12>
@@ -8,25 +11,32 @@
           <template v-for="token in allTokens">
             <v-list-tile
               :key="token.address"
-              class="token"
               @click="navigateToSelectHub(token.address)"
+              class="token"
             >
               <v-list-tile-avatar class="list-blockie">
                 <img
                   :src="$blockie(token.address)"
-                  alt="Partner address blockie"
+                  :alt="$t('select-token.tokens.token.blockie-alt')"
                 />
               </v-list-tile-avatar>
               <v-list-tile-content>
                 <v-list-tile-title class="token-info">
-                  {{ token.symbol }} | {{ token.name }}
+                  {{
+                    $t('select-token.tokens.token.token-information', {
+                      symbol: token.symbol,
+                      name: token.name
+                    })
+                  }}
                 </v-list-tile-title>
                 <v-list-tile-sub-title class="token-address">
                   <v-tooltip bottom>
                     <template #activator="{ on }">
                       <span v-on="on">{{ token.address | truncate }}</span>
                     </template>
-                    <span> {{ token.address }} </span>
+                    <span>
+                      {{ token.address }}
+                    </span>
                   </v-tooltip>
                 </v-list-tile-sub-title>
               </v-list-tile-content>

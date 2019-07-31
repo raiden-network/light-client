@@ -19,11 +19,20 @@
 
       <v-layout align-center justify-center row class="information__wrapper">
         <v-flex xs2 class="information">
-          <div class="information-label text-xs-left">Token</div>
+          <div class="information-label text-xs-left">
+            {{ $t('transfer.information.title') }}
+          </div>
         </v-flex>
         <v-flex xs8>
           <div class="information-description text-xs-left">
-            <div>{{ token.symbol }} | {{ token.name }}</div>
+            <div>
+              {{
+                $t('transfer.information.token', {
+                  symbol: token.symbol,
+                  name: token.name
+                })
+              }}
+            </div>
             {{ token.address }}
           </div>
         </v-flex>
@@ -33,13 +42,13 @@
         <v-flex xs10 class="text-xs-center">
           <v-btn
             id="transfer"
+            :disabled="!valid"
+            @click="transfer()"
             class="text-capitalize confirm-button"
             depressed
-            :disabled="!valid"
             large
-            @click="transfer()"
           >
-            Pay
+            {{ $t('transfer.pay-button') }}
           </v-btn>
         </v-flex>
       </v-layout>
@@ -51,10 +60,10 @@
       :done="done"
     ></progress-overlay>
     <error-screen
-      title="Something went wrong"
       :description="error"
-      button-label="Dismiss"
       @dismiss="error = ''"
+      :title="$t('transfer.error.title')"
+      :button-label="$t('transfer.error.button')"
     ></error-screen>
   </div>
 </template>
@@ -63,7 +72,12 @@
 import { Component, Vue } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import { StepDescription, Token, TokenPlaceholder } from '@/model/types';
+import {
+  emptyDescription,
+  StepDescription,
+  Token,
+  TokenPlaceholder
+} from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import ProgressOverlay from '@/components/ProgressOverlay.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
@@ -87,24 +101,16 @@ export default class Transfer extends Vue {
 
   error: string = '';
 
-  protected readonly steps: StepDescription[] = [
-    {
-      label: 'Transfer',
-      title: 'Sending Tokens',
-      description:
-        'Please do not close the browser and confirm the transactions with MetaMask.'
-    }
-  ];
-
-  protected readonly doneStep: StepDescription = {
-    label: 'Done',
-    title: 'Send Successful',
-    description: 'Your transfer was successful'
-  };
+  steps: StepDescription[] = [];
+  doneStep: StepDescription = emptyDescription();
 
   async created() {
     const { token } = this.$route.params;
     this.token = (await this.$raiden.getToken(token)) || TokenPlaceholder;
+    this.steps = [
+      (this.$t('transfer.steps.transfer') as any) as StepDescription
+    ];
+    this.doneStep = (this.$t('transfer.steps.done') as any) as StepDescription;
   }
 
   async transfer() {

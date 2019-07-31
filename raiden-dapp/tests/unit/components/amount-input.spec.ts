@@ -16,6 +16,9 @@ describe('AmountInput.vue', function() {
         propsData: {
           label: 'Has Label',
           token: TestData.token
+        },
+        mocks: {
+          $t: (msg: string) => msg
         }
       });
     });
@@ -24,9 +27,7 @@ describe('AmountInput.vue', function() {
       const messages = wrapper.find('.v-messages__message');
       expect(wrapper.props().value).toEqual('0.00');
       expect(messages.exists()).toBe(true);
-      expect(messages.text()).toEqual(
-        'Please enter the amount you wish to deposit into this channel.'
-      );
+      expect(messages.text()).toEqual('amount-input.input.hint');
     });
 
     it('should show an amount cannot be empty message', async function() {
@@ -36,7 +37,7 @@ describe('AmountInput.vue', function() {
       expect(wrapper.emitted().input[0]).toEqual(['']);
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
-      expect(messages.text()).toEqual('The amount cannot be empty');
+      expect(messages.text()).toEqual('amount-input.error.empty');
     });
 
     it('should show no error if a valid amount is added', async function() {
@@ -46,9 +47,7 @@ describe('AmountInput.vue', function() {
       expect(wrapper.emitted().input[0]).toEqual(['1.2']);
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
-      expect(messages.text()).toBe(
-        'Please enter the amount you wish to deposit into this channel.'
-      );
+      expect(messages.text()).toBe('amount-input.input.hint');
     });
   });
 
@@ -59,6 +58,9 @@ describe('AmountInput.vue', function() {
           label: 'Has Label',
           limit: true,
           token: TestData.token
+        },
+        mocks: {
+          $t: (msg: string) => msg
         }
       });
     });
@@ -70,7 +72,7 @@ describe('AmountInput.vue', function() {
       expect(wrapper.emitted().input[0]).toEqual(['2.4']);
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
-      expect(messages.text()).toEqual('Your maximum deposit amount is 1.2');
+      expect(messages.text()).toEqual('amount-input.error.not-enough-funds');
     });
 
     it('should display an error if the amount has more decimals than supported', async function() {
@@ -80,9 +82,7 @@ describe('AmountInput.vue', function() {
       expect(wrapper.emitted().input[0]).toEqual(['1.42345678']);
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
-      expect(messages.text()).toEqual(
-        'The token supports only up to 5 decimals'
-      );
+      expect(messages.text()).toEqual('amount-input.error.too-many-decimals');
     });
 
     it('should not emit an event if the input is not a valid number', async function() {

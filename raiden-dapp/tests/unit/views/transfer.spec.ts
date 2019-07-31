@@ -48,7 +48,8 @@ describe('Transfer.vue', () => {
         $raiden: raiden,
         $identicon: {
           getIdenticon: jest.fn()
-        }
+        },
+        $t: (msg: string) => msg
       }
     };
     return mount(Transfer, options);

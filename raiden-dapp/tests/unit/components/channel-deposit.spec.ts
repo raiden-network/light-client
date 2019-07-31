@@ -18,6 +18,9 @@ describe('ChannelDeposit.vue', function() {
     wrapper = mount(ChannelDeposit, {
       propsData: {
         token: TestData.token
+      },
+      mocks: {
+        $t: (msg: string) => msg
       }
     });
   });

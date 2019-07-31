@@ -7,7 +7,7 @@ import VueRouter, { NavigationGuard } from 'vue-router';
 import { mockInput } from '../utils/interaction-utils';
 import flushPromises from 'flush-promises';
 import { createLocalVue, mount, shallowMount, Wrapper } from '@vue/test-utils';
-import Deposit from '@/views/Deposit.vue';
+import OpenChannel from '@/views/OpenChannel.vue';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { TestData } from '../data/mock-data';
@@ -24,7 +24,7 @@ Vue.use(Vuetify);
 
 describe('Deposit.vue', function() {
   let service: Mocked<RaidenService>;
-  let wrapper: Wrapper<Deposit>;
+  let wrapper: Wrapper<OpenChannel>;
   let button: Wrapper<Vue>;
   let router: Mocked<VueRouter>;
 
@@ -35,7 +35,7 @@ describe('Deposit.vue', function() {
     },
     shallow: boolean = false,
     token: any = TestData.token
-  ): Wrapper<Deposit> {
+  ): Wrapper<OpenChannel> {
     const localVue = createLocalVue();
     const options = {
       localVue,
@@ -51,14 +51,15 @@ describe('Deposit.vue', function() {
       mocks: {
         $raiden: service,
         $router: router,
-        $route: TestData.mockRoute(routeParams)
+        $route: TestData.mockRoute(routeParams),
+        $t: (msg: string) => msg
       }
     };
 
     if (shallow) {
-      return shallowMount(Deposit, options);
+      return shallowMount(OpenChannel, options);
     }
-    return mount(Deposit, options);
+    return mount(OpenChannel, options);
   }
 
   beforeAll(() => {
@@ -99,7 +100,7 @@ describe('Deposit.vue', function() {
       button.trigger('click');
       const deposit = wrapper.vm;
       await flushPromises();
-      expect(deposit.$data.error).toBe('Channel open failed.');
+      expect(deposit.$data.error).toBe('open-channel.error.open-failed');
     });
 
     it('should had an error if deposit failed', async function() {
@@ -110,7 +111,7 @@ describe('Deposit.vue', function() {
       button.trigger('click');
       const deposit = wrapper.vm;
       await flushPromises();
-      expect(deposit.$data.error).toBe('Could not deposit to the channel.');
+      expect(deposit.$data.error).toBe('open-channel.error.deposit-failed');
     });
 
     it('should show an error if any error happens during channel opening', async function() {

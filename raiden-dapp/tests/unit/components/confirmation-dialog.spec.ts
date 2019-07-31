@@ -19,6 +19,9 @@ describe('ConfirmationDialog.vue', function() {
       slots: {
         default: `<div class="description">Description</div>`,
         header: `<span class="title">Title</span>`
+      },
+      mocks: {
+        $t: (msg: string) => msg
       }
     });
   });
