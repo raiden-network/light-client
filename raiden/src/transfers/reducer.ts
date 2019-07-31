@@ -26,7 +26,7 @@ import { getLocksroot } from './utils';
  * @returns New RaidenState (or current, if action didn't change anything)
  */
 export function transfersReducer(
-  state: Readonly<RaidenState> = initialState,
+  state: RaidenState = initialState,
   action: RaidenAction,
 ): RaidenState {
   if (isActionOf(transferSecret, action)) {

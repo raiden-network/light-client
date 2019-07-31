@@ -19,6 +19,10 @@ const raidenReducers = {
  * state. This approach is similar to `reduce-reducers` util.
  * Each submodule root reducer may then choose to split its concerns into nested or flattened
  * reducers (like this one).
+ *
+ * @param state  Current RaidenState to reduce
+ * @param action  RaidenAction to apply over state
+ * @returns New RaidenState
  */
-export const raidenReducer = (state: Readonly<RaidenState> = initialState, action: RaidenAction) =>
+export const raidenReducer = (state: RaidenState = initialState, action: RaidenAction) =>
   Object.values(raidenReducers).reduce((s, reducer) => reducer(s, action), state);
