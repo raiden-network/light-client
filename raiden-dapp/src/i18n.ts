@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import Vue from 'vue';
 import VueI18n, { LocaleMessages } from 'vue-i18n';
 
