@@ -70,7 +70,7 @@ import {
   TokenPlaceholder
 } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import ProgressOverlay from '@/components/ProgressOverlay.vue';
+import Stepper from '@/components/Stepper.vue';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -84,7 +84,7 @@ import TokenInformation from '@/components/TokenInformation.vue';
     TokenInformation,
     Divider,
     ErrorScreen,
-    ProgressOverlay,
+    ProgressOverlay: Stepper,
     AmountInput
   }
 })

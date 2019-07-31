@@ -79,14 +79,14 @@ import {
   TokenPlaceholder
 } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import ProgressOverlay from '@/components/ProgressOverlay.vue';
+import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
 
 @Component({
   components: {
     AddressInput,
     AmountInput,
-    ProgressOverlay,
+    ProgressOverlay: Stepper,
     ErrorScreen
   }
 })

@@ -106,7 +106,7 @@
         </span>
       </i18n>
     </confirmation-dialog>
-    <progress-overlay :display="loading" :steps="steps"></progress-overlay>
+    <stepper :display="loading" :steps="steps"></stepper>
   </v-layout>
 </template>
 
@@ -115,12 +115,12 @@ import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import { StepDescription, TokenModel } from '@/model/types';
-import ProgressOverlay from '@/components/ProgressOverlay.vue';
+import Stepper from '@/components/Stepper.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ListHeader from '@/components/ListHeader.vue';
 
 @Component({
-  components: { ListHeader, ProgressOverlay, ConfirmationDialog },
+  components: { ListHeader, Stepper, ConfirmationDialog },
   computed: mapGetters(['tokens'])
 })
 export default class Tokens extends Mixins(BlockieMixin) {
