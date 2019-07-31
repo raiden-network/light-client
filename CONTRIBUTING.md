@@ -59,10 +59,10 @@ Agreement). Our CLA bot will help you with that after you created a pull
 request. If you or your employer do not hold the whole copyright of the
 authorship submitted we can not accept your contribution.
 
-For frequent contributors with write access to the repository we have a set of labels to put on Pull Requests to signal to our colleagues what the current state of the PR is. These are:
+For frequent contributors with write access to the repository we have a set of rules on Pull Requests to signal to our colleagues what the current state of the PR is. These are:
 
-- [Dev: Please Review](https://github.com/raiden-network/light-client/labels/dev%3A%20Please%20Review) to a Pull Request that is currently ready for a reviewer to have a look at.
-- [Dev: Work in Progress](https://github.com/raiden-network/light-client/labels/dev%3A%20Work%20In%20Progress) to a Pull Request that is either not yet ready for review or is getting PR review suggestions applied by the author until it's ready for review again.
+- A ready for review Pull Request means that you consider your work done and it is currently ready for a reviewer to have a look at.
+- A draft Pull Request is considered work in progress and it is not yet ready for review.
 
 ### Pull Request Reviews
 
@@ -226,6 +226,14 @@ For consistency reason the [shorthand](https://vuejs.org/v2/guide/syntax.html#Sh
 <a @click="doSomething"> ... </a>
 ```
 
+```html
+<!-- full syntax -->
+<template v-slot:append> ... </template>
+
+<!-- shorthand -->
+<a #append> ... </a>
+```
+
 ##### Vue components
 
 When using custom vue components in templates make sure to use the kebab case name of the components.
@@ -253,6 +261,11 @@ The for consistensy you should use:
   </v-container>
 </template>
 ```
+
+##### CSS naming scheme
+
+For CSS naming we try to follow the [BEM](http://getbem.com/) methodology. Along with the naming,
+you should try to scope the styles in their respective components.
 
 ### Workflow
 
