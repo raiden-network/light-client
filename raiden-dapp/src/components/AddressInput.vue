@@ -7,9 +7,9 @@
       :value="address"
       :error-messages="errorMessages"
       :class="{
-        invalid: !valid && touched,
-        'hint-visible': hint.length > 0,
-        untouched: !touched
+        'address-input--invalid': !valid && touched,
+        'address-input--hint-visible': hint.length > 0,
+        'address-input--untouched': !touched
       }"
       :placeholder="$t('address-input.input.placeholder')"
       @blur="$emit('blur')"
@@ -245,14 +245,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 $dark_border: #323232;
 $dark_background: #323232;
 
-.invalid /deep/ .v-messages {
+.address-input--invalid /deep/ .v-messages {
   border-color: $dark_border;
   background-color: $dark_background;
   border: 1px solid !important;
   border-radius: 5px;
 }
 
-.invalid /deep/ .v-messages:after {
+.address-input--invalid /deep/ .v-messages:after {
   content: ' ';
   border: solid;
   border-radius: 1px;
@@ -268,7 +268,7 @@ $dark_background: #323232;
   background-color: $dark_background;
 }
 
-.hint-visible /deep/ .v-messages {
+.address-input--hint-visible /deep/ .v-messages {
   color: #696969 !important;
   font-family: Roboto, sans-serif;
   font-size: 16px;
@@ -277,7 +277,7 @@ $dark_background: #323232;
   margin-bottom: 14px;
 }
 
-.hint-visible /deep/ .v-text-field__details {
+.address-input--hint-visible /deep/ .v-text-field__details {
   padding-top: 0;
   margin-top: 0;
 }
@@ -291,7 +291,7 @@ $dark_background: #323232;
   padding: 8px;
 }
 
-.untouched {
+.address-input--untouched {
   caret-color: white !important;
   color: white !important;
 }
