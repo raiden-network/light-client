@@ -68,7 +68,7 @@ describe('ChannelList.vue', function() {
   });
 
   it('should display two channels entries', function() {
-    const connections = wrapper.findAll('.channel');
+    const connections = wrapper.findAll('.channel-list__channels__channel');
     expect(connections.exists()).toBeTruthy();
     expect(connections.length).toBe(4);
   });

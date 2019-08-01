@@ -1,5 +1,5 @@
 <template>
-  <fieldset id="token-amount" :class="{ light, dark: !light, padded }">
+  <fieldset :class="{ light, dark: !light, padded }" class="amount-input">
     <v-text-field
       id="amount"
       ref="input"
@@ -26,21 +26,21 @@
       placeholder="0.00"
       solo
     >
-      <div slot="prepend" class="prepend-placeholder"></div>
-      <div slot="append-outer" class="status-icon-wrapper">
+      <div slot="prepend" class="amount-input__prepend"></div>
+      <div slot="append-outer" class="amount-input__status-icon">
         <v-img
           v-if="!valid"
           :src="require('../assets/input_invalid.svg')"
-          class="status-icon"
+          class="amount-input__status-icon__icon"
         ></v-img>
         <v-img
           v-else
           :src="require('../assets/input_valid.svg')"
-          class="status-icon status-icon--valid"
+          class="amount-input__status-icon__icon"
         ></v-img>
       </div>
     </v-text-field>
-    <span :class="{ light }" class="token-symbol">{{
+    <span :class="{ light }" class="amount-input__token-symbol">{{
       token.symbol || 'TKN'
     }}</span>
   </fieldset>
@@ -225,7 +225,7 @@ $light_background: #e4e4e4;
   -webkit-transform: rotate(-135deg);
 }
 
-#token-amount {
+.amount-input {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,7 +239,7 @@ $light_background: #e4e4e4;
   }
 }
 
-#token-amount /deep/ input {
+.amount-input /deep/ input {
   font-family: Roboto, sans-serif;
   font-size: 40px;
   font-weight: 500;
@@ -247,16 +247,16 @@ $light_background: #e4e4e4;
   text-align: center;
   max-height: 50px;
 }
-#token-amount /deep/ input:focus {
+.amount-input /deep/ input:focus {
   outline: 0;
 }
 
-#token-amount /deep/ .v-text-field__details {
+.amount-input /deep/ .v-text-field__details {
   padding-top: 8px;
   margin-top: 16px;
 }
 
-#token-amount /deep/ .v-messages {
+.amount-input /deep/ .v-messages {
   border: 1px solid transparent;
   font-family: Roboto, sans-serif;
   font-size: 13px;
@@ -273,11 +273,11 @@ $light_background: #e4e4e4;
   }
 }
 
-#token-amount /deep/ .v-messages:after {
+.amount-input /deep/ .v-messages:after {
   padding: 3px;
 }
 
-.token-symbol {
+.amount-input__token-symbol {
   font-family: Roboto, sans-serif;
   color: $secondary-color;
   font-weight: 500;
@@ -286,25 +286,16 @@ $light_background: #e4e4e4;
   margin-top: -85px;
 }
 
-.status-icon-wrapper {
+.amount-input__status-icon {
   padding: 8px;
 }
 
-.status-icon {
+.amount-input__status-icon__icon {
   line-height: 28px;
   width: 28px;
 }
 
-.section {
-  margin-top: $header-vertical-margin;
-  margin-bottom: $header-vertical-margin;
-  @include respond-to(handhelds) {
-    margin-top: $header-vertical-margin-mobile;
-    margin-bottom: $header-vertical-margin-mobile;
-  }
-}
-
-.prepend-placeholder {
+.amount-input__prepend {
   width: 44px;
 }
 </style>

@@ -1,23 +1,23 @@
 <template>
-  <v-container fluid fill-height>
+  <v-container fluid fill-height class="splash-screen">
     <v-layout align-center justify-center row>
-      <v-flex lg4 md6 xs8>
-        <div class="loading-wrapper display-3">
-          <div class="img-container">
+      <v-flex xs8 md6 lg4>
+        <div class="splash-screen__wrapper display-3">
+          <div class="splash-screen__logo-container">
             <v-img
-              id="logo"
               :src="require('../assets/logo.svg')"
+              class="splash-screen__logo"
               aspect-ratio="1"
               contain
             />
           </div>
-          <div id="text-information">
+          <div class="splash-screen__app-name">
             <div>
               {{ name }}
             </div>
           </div>
         </div>
-        <div class="font-weight-light text-xs-center disclaimer">
+        <div class="font-weight-light text-xs-center splash-screen__disclaimer">
           {{ $t('splash-screen.disclaimer') }}
         </div>
         <div
@@ -25,19 +25,21 @@
         >
           {{ $t('splash-screen.matrix-sign') }}
         </div>
-        <div class="connect-button">
-          <v-btn v-if="injectedProvider" @click="connect()">
-            {{ $t('splash-screen.connect-button') }}
-          </v-btn>
-          <span v-else class="no-provider">
+        <div class="splash-screen__button">
+          <action-button
+            :text="$t('splash-screen.connect-button')"
+            v-if="injectedProvider"
+            @click="connect()"
+            enabled
+          ></action-button>
+          <span v-else class="splash-screen__no-provider">
             {{ $t('splash-screen.no-provider') }}
           </span>
         </div>
-        <div class="message-container">
+        <div class="splash-screen__message">
           <no-access-message
             v-if="accessDenied"
             :reason="accessDenied"
-            class="error-message"
           ></no-access-message>
         </div>
       </v-flex>
@@ -51,9 +53,11 @@ import { Web3Provider } from '@/services/web3-provider';
 import { DeniedReason } from '@/model/types';
 import { mapState } from 'vuex';
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
+import ActionButton from '@/components/ActionButton.vue';
 
 @Component({
   components: {
+    ActionButton,
     NoAccessMessage
   },
   computed: mapState(['accessDenied'])
@@ -72,56 +76,45 @@ export default class Loading extends Vue {
 </script>
 
 <style lang="scss" scoped>
-#logo {
+.splash-screen__logo {
   filter: invert(100%);
 }
 
 $name-horizontal-margin: 2rem;
-#text-information {
+.splash-screen__app-name {
   margin-left: $name-horizontal-margin;
   margin-right: $name-horizontal-margin;
 }
 
-.img-container {
+.splash-screen__wrapper__logo-container {
   width: 8rem;
   padding: 1.4rem;
 }
-.loading {
-  font-size: 2.5rem;
-  display: flex;
-}
 
-.loading-wrapper {
+.splash-screen__wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.disclaimer {
+.splash-screen__disclaimer {
   margin-top: 60px;
   font-size: 16px;
 }
 
-.connect-button {
+.splash-screen__button {
   display: flex;
   margin-top: 30px;
   align-items: center;
   justify-content: center;
-
-  button {
-    height: 40px;
-    width: 250px;
-    border-radius: 29px;
-    background-color: #000000 !important;
-  }
 }
 
-.message-container {
+.splash-screen__message {
   margin-top: 40px;
   height: 35px;
 }
 
-.no-provider {
+.splash-screen__no-provider {
   font-weight: 500;
   font-size: 24px;
 }

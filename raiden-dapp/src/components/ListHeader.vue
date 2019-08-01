@@ -1,8 +1,8 @@
 <template>
-  <v-layout row>
+  <v-layout row class="list-header">
     <v-flex xs12>
-      <div class="header-text">{{ header }}</div>
-      <div class="divider"></div>
+      <div class="list-header__header">{{ header }}</div>
+      <div class="list-header__divider"></div>
     </v-flex>
   </v-layout>
 </template>
@@ -18,7 +18,7 @@ export default class ListHeader extends Vue {
 </script>
 
 <style scoped lang="scss">
-.header-text {
+.list-header__header {
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 16px;
@@ -29,7 +29,7 @@ export default class ListHeader extends Vue {
   padding-bottom: 8px;
 }
 
-.divider {
+.list-header__divider {
   box-sizing: border-box;
   height: 1px;
   width: 100%;

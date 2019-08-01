@@ -1,8 +1,8 @@
 <template>
-  <v-layout column>
+  <v-layout column class="channel-lifecycle">
     <v-layout justify-center row>
       <v-flex>
-        <v-stepper :value="step" class="no-shadow lifecycle">
+        <v-stepper :value="step" class="no-shadow channel-lifecycle__stepper">
           <v-stepper-header>
             <v-stepper-step step="1">
               {{ $t('stepper.steps.open.title') }}
@@ -24,14 +24,14 @@
       </v-flex>
     </v-layout>
     <v-layout justify-center row>
-      <v-flex xs8 class="lifecycle__description">
-        <div v-if="step === 1" class="lifecycle__description__text">
+      <v-flex xs8 class="channel-lifecycle__description">
+        <div v-if="step === 1" class="channel-lifecycle__description__text">
           {{ $t('stepper.steps.open.description') }}
         </div>
-        <div v-if="step === 2" class="lifecycle__description__text">
+        <div v-if="step === 2" class="channel-lifecycle__description__text">
           {{ $t('stepper.steps.closed.description') }}
         </div>
-        <div v-if="step === 3" class="lifecycle__description__text">
+        <div v-if="step === 3" class="channel-lifecycle__description__text">
           {{ $t('stepper.steps.settleable.description') }}
         </div>
       </v-flex>
@@ -73,11 +73,11 @@ export default class ChannelLifeCycle extends Vue {
 $inactive-color: #646464;
 $active-color: $secondary-color;
 $circle-size: 20px;
-.lifecycle {
+.channel-lifecycle__stepper {
   background-color: transparent !important;
 }
 
-.lifecycle /deep/ .v-stepper__step__step {
+.channel-lifecycle__stepper /deep/ .v-stepper__step__step {
   font-size: 12px !important;
   width: $circle-size;
   height: $circle-size;
@@ -86,20 +86,20 @@ $circle-size: 20px;
   margin-bottom: -10px;
 }
 
-.lifecycle .v-divider {
+.channel-lifecycle__stepper .v-divider {
   margin-right: -24px;
   border-width: 2px 0 0 0;
 }
 
-.lifecycle .v-divider {
+.channel-lifecycle__stepper .v-divider {
   border-color: $inactive-color !important;
 }
 
-.lifecycle .v-divider.active {
+.channel-lifecycle__stepper .v-divider.active {
   border-color: $active-color !important;
 }
 
-.lifecycle /deep/ .v-stepper__label {
+.channel-lifecycle__stepper /deep/ .v-stepper__label {
   font-size: 16px;
   font-weight: bold;
   line-height: 19px;
@@ -108,14 +108,14 @@ $circle-size: 20px;
   padding-left: 8px;
 }
 
-.lifecycle /deep/ .v-stepper__step.v-stepper__step--active {
+.channel-lifecycle__stepper /deep/ .v-stepper__step.v-stepper__step--active {
   .primary {
     background-color: $active-color !important;
     border-color: $active-color !important;
   }
 }
 
-.lifecycle /deep/ .v-stepper__step.v-stepper__step {
+.channel-lifecycle__stepper /deep/ .v-stepper__step.v-stepper__step {
   .v-stepper__step__step {
     background-color: $active-color !important;
     border-color: $active-color !important;
@@ -129,7 +129,7 @@ $circle-size: 20px;
   }
 }
 
-.lifecycle /deep/ .v-stepper__step.v-stepper__step--inactive {
+.channel-lifecycle__stepper /deep/ .v-stepper__step.v-stepper__step--inactive {
   .v-stepper__step__step {
     background-color: $inactive-color !important;
     border-color: $inactive-color !important;
@@ -140,17 +140,17 @@ $circle-size: 20px;
   }
 }
 
-.lifecycle /deep/ .v-stepper__label {
+.channel-lifecycle__stepper /deep/ .v-stepper__label {
   display: block;
 }
 
-.lifecycle__description {
+.channel-lifecycle__description {
   height: 56px;
   padding-top: 8px;
   padding-bottom: 8px;
 }
 
-.lifecycle__description__text {
+.channel-lifecycle__description__text {
   color: #fafafa;
   font-family: Roboto, sans-serif;
   font-size: 16px;

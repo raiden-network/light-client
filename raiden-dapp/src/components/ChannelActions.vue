@@ -1,10 +1,10 @@
 <template>
-  <v-layout justify-space-around row>
+  <v-layout justify-space-around row class="channel-actions">
     <v-btn
       :id="`deposit-${index}`"
       :disabled="channel.state !== 'open'"
       @click="$emit('deposit', channel)"
-      class="action-button text-capitalize action-button__primary"
+      class="channel-action__button text-capitalize channel-action__button__primary"
     >
       {{ $t('channel-actions.deposit') }}
     </v-btn>
@@ -12,7 +12,7 @@
       :id="`close-${index}`"
       :disabled="channel.state !== 'open' && channel.state !== 'closing'"
       @click="$emit('close', channel)"
-      class="action-button text-capitalize action-button__secondary"
+      class="channel-action__button text-capitalize channel-action__button__secondary"
     >
       {{ $t('channel-actions.close') }}
     </v-btn>
@@ -20,7 +20,7 @@
       :id="`settle-${index}`"
       :disabled="channel.state !== 'settleable' && channel.state !== 'settling'"
       @click="$emit('settle', channel)"
-      class="action-button text-capitalize action-button__secondary"
+      class="channel-action__button text-capitalize channel-action__button__secondary"
     >
       {{ $t('channel-actions.settle') }}
     </v-btn>
@@ -41,27 +41,27 @@ export default class ChannelActions extends Vue {
 <style lang="scss" scoped>
 @import '../scss/colors';
 
-.action-button {
+.channel-action__button {
   width: 135px;
   border-radius: 29px;
 }
-.action-button__primary {
+.channel-action__button__primary {
   background-color: $primary-color !important;
 }
-.action-button__secondary {
+.channel-action__button__secondary {
   border: 2px solid $primary-color;
   background-color: $secondary-button-color !important;
 }
 
-.action-button__secondary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
+.channel-action__button__secondary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
   background-color: transparent !important;
 }
 
-.action-button__primary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
+.channel-action__button__primary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
   background-color: $primary-disabled-color !important;
 }
 
-.action-button__secondary.v-btn--disabled {
+.channel-action__button__secondary.v-btn--disabled {
   border-color: $primary-disabled-color;
 }
 </style>

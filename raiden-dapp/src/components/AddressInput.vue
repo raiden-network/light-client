@@ -21,17 +21,17 @@
       hide-selected
     >
       <template #append>
-        <div class="status-icon-wrapper">
+        <div class="address-input__status-icon">
           <v-img
             v-if="!valid && touched"
             :src="require('../assets/input_invalid.svg')"
-            class="status-icon status--invalid"
+            class="address-input__status-icon__icon"
           >
           </v-img>
           <v-img
             v-if="valid"
             :src="require('../assets/input_valid.svg')"
-            class="status-icon status--valid"
+            class="address-input__status-icon__icon"
           ></v-img>
         </div>
       </template>
@@ -40,7 +40,7 @@
           v-if="value && isChecksumAddress(value)"
           :src="$blockie(value)"
           :alt="$t('address-input.blockie-alt')"
-          class="selection-blockie prepend"
+          class="address-input__blockie"
         />
         <div v-else-if="timeout">
           <v-progress-circular
@@ -174,16 +174,13 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 @import '../main';
 @import '../scss/colors';
 
-.selection-blockie {
+.address-input__blockie {
   border-radius: 50%;
   box-sizing: border-box;
   height: 28px;
   width: 28px;
   border: 1px solid #979797;
   background-color: #d8d8d8;
-}
-
-.prepend {
   margin-right: 12px;
 }
 
@@ -285,12 +282,12 @@ $dark_background: #323232;
   margin-top: 0;
 }
 
-.status-icon {
+.address-input__status-icon__icon {
   line-height: 20px;
   width: 20px;
 }
 
-.status-icon-wrapper {
+.address-input__status-icon {
   padding: 8px;
 }
 

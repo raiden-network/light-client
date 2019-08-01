@@ -3,10 +3,7 @@
     <v-layout column justify-space-between fill-height>
       <v-layout align-center justify-center row>
         <v-flex xs10>
-          <address-input
-            v-model="partner"
-            class="address-input"
-          ></address-input>
+          <address-input v-model="partner"></address-input>
         </v-flex>
       </v-layout>
 

@@ -1,17 +1,17 @@
 <template>
-  <v-layout>
+  <v-layout class="channel-list">
     <v-flex xs12>
-      <v-list class="channels">
+      <v-list class="channel-list__channels">
         <v-list-group
           v-for="(channel, index) in channels"
           :id="`channel-${channel.id}`"
           :key="channel.partner"
-          class="channel"
+          class="channel-list__channels__channel"
           no-action
         >
           <template #activator>
             <v-list-tile>
-              <v-list-tile-avatar class="channels__icon">
+              <v-list-tile-avatar class="channel-list__channels__channel__icon">
                 <img
                   :src="$blockie(channel.partner)"
                   :alt="$t('channels.channel.blockie_alt')"
@@ -19,10 +19,14 @@
                 />
               </v-list-tile-avatar>
               <v-list-tile-content>
-                <v-list-tile-title class="channels__partner-address">
+                <v-list-tile-title
+                  class="channel-list__channels__channel__partner-address"
+                >
                   {{ channel.partner }}
                 </v-list-tile-title>
-                <v-list-tile-sub-title class="channels__state-info">
+                <v-list-tile-sub-title
+                  class="channel-list__channels__channel__state-info"
+                >
                   {{
                     $t('channels.channel.state', {
                       deposit: displayFormat(
@@ -36,7 +40,10 @@
               </v-list-tile-content>
             </v-list-tile>
           </template>
-          <div :id="`expanded-area-${index}`" class="channels__expanded-area">
+          <div
+            :id="`expanded-area-${index}`"
+            class="channel-list__channels__channel__expanded-area"
+          >
             <div v-if="visible === `channel-${channel.id}-close`">
               <confirmation
                 :identifier="channel.id"
@@ -75,10 +82,10 @@
                 @cancel="dismiss()"
               ></channel-deposit>
             </div>
-            <div v-else class="channels__area-content">
+            <div v-else class="channel-list__channels__channel__area-content">
               <channel-life-cycle
                 :state="channel.state"
-                class="channels__lifecycle"
+                class="channel-list__channels__channel__lifecycle"
               ></channel-life-cycle>
               <channel-actions
                 :index="index"
@@ -203,11 +210,11 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 </script>
 
 <style scoped lang="scss">
-.channels__expanded-area {
+.channel-list__channels__channel__expanded-area {
   background-color: #323232;
   height: 250px;
 
-  .channels__area-content {
+  .channel-list__channels__channel__area-content {
     padding: 20px;
   }
 
@@ -215,37 +222,37 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   z-index: 20;
 }
 
-.channel {
+.channel-list__channels__channel {
   background-color: #141414;
   box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
 }
 
-.channel .channels__partner-address {
+.channel-list__channels__channel__partner-address {
   font-size: 16px;
   line-height: 20px;
 }
 
-.channel .channels__state-info {
+.channel-list__channels__channel__state-info {
   color: #696969 !important;
   font-size: 16px;
   line-height: 20px;
 }
 
-.channels {
+.channel-list__channels {
   background-color: transparent !important;
   padding-bottom: 0;
   padding-top: 0;
 }
 
-.channels /deep/ .v-list__tile {
+.channel-list__channels__channel /deep/ .v-list__tile {
   height: 105px;
 }
 
-.channels__lifecycle {
+.channel-list__channels__channel__lifecycle {
   margin-bottom: 30px;
 }
 
-.channels__icon {
+.channel-list__channels__channel__icon {
   padding-left: 10px;
   margin-right: 15px;
 }

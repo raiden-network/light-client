@@ -1,6 +1,12 @@
 <template>
-  <v-alert :value="true" color="error" icon="warning" outline>
-    <div class="font-weight-light message">
+  <v-alert
+    :value="true"
+    color="error"
+    icon="warning"
+    outline
+    class="no-access-message"
+  >
+    <div class="font-weight-light no-access-message__message">
       <span v-if="networkUnsupported">
         {{ $t('no-access.unsupported-network') }}
       </span>
@@ -34,7 +40,7 @@ export default class NoAccessMessage extends Vue {
 </script>
 
 <style scoped lang="scss">
-.message {
+.no-access-message__message {
   font-size: 16px;
   line-height: 20px;
 }
