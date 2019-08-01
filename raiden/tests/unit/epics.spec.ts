@@ -2456,15 +2456,6 @@ describe('raidenRootEpic', () => {
             },
             meta: { secrethash },
           },
-          {
-            type: getType(messageSend),
-            payload: {
-              message: expect.objectContaining({
-                type: MessageType.LOCKED_TRANSFER,
-              }),
-            },
-            meta: { address: partner },
-          },
         ]),
       );
 

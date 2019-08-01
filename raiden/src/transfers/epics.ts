@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { of, from, combineLatest, Observable, ReplaySubject, EMPTY } from 'rxjs';
+import { of, from, combineLatest, merge, Observable, ReplaySubject, EMPTY } from 'rxjs';
 import {
   multicast,
   catchError,
@@ -10,6 +10,11 @@ import {
   mergeMap,
   withLatestFrom,
   tap,
+  take,
+  ignoreElements,
+  repeatWhen,
+  delay,
+  takeUntil,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
 import { bigNumberify, keccak256 } from 'ethers/utils';
@@ -23,9 +28,10 @@ import { REVEAL_TIMEOUT } from '../constants';
 import { Address, Hash, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
 import { LruCache } from '../utils/lru';
+import { raidenInit } from '../store/actions';
 import { Presences } from '../transport/types';
 import { getPresences$ } from '../transport/utils';
-import { messageReceived, messageSend } from '../messages/actions';
+import { messageReceived, messageSend, messageSent } from '../messages/actions';
 import {
   MessageType,
   LockedTransfer,
@@ -62,7 +68,7 @@ import { getLocksroot, makePaymentId, makeMessageId } from './utils';
  * @param state$  Observable of current state
  * @param action  transfer request action to be sent
  * @param network,address,signer  RaidenEpicDeps members
- * @returns  Observable of output actions (transferSigned, transferSecret & messageSend)
+ * @returns  Observable of transferSigned|transferSecret actions
  */
 function makeAndSignTransfer(
   presences$: Observable<Presences>,
@@ -176,8 +182,7 @@ function makeAndSignTransfer(
           // besides transferSigned, also yield transferSecret (for registering) if we know it
           if (secret) yield transferSecret({ secret }, { secrethash: action.meta.secrethash });
           yield transferSigned({ message: signed }, { secrethash: action.meta.secrethash });
-          // TODO: retry messageSend
-          yield messageSend({ message: signed }, { address: signed.recipient });
+          // messageSend LockedTransfer handled by transferSignedRetryMessageEpic
         }),
       );
     }),
@@ -195,7 +200,7 @@ function makeAndSignTransfer(
  * @param state$  Observable of current state
  * @param action  transfer request action to be sent
  * @param network,address,signer  RaidenEpicDeps members
- * @returns  Observable of output actions (transferSigned, transferSecret & messageSend)
+ * @returns  Observable of transferUnlocked actions
  */
 function makeAndSignUnlock(
   {  }: Observable<Presences>,
@@ -252,8 +257,7 @@ function makeAndSignUnlock(
         mergeMap(function*([signed, state]) {
           if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
           yield transferUnlocked({ message: signed }, action.meta);
-          // TODO: retry messageSend
-          yield messageSend({ message: signed }, { address: transfer.recipient });
+          // messageSend Unlock handled by transferUnlockedRetryMessageEpic
         }),
       );
     }),
@@ -281,11 +285,7 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
   deps: RaidenEpicDeps,
 ): Observable<
   ActionType<
-    | typeof transferSigned
-    | typeof transferSecret
-    | typeof transferUnlocked
-    | typeof transferFailed
-    | typeof messageSend
+    typeof transferSigned | typeof transferSecret | typeof transferUnlocked | typeof transferFailed
   >
 > =>
   combineLatest(getPresences$(action$), state$).pipe(
@@ -302,6 +302,150 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
             : EMPTY,
         ),
       );
+    }),
+  );
+
+/**
+ * Handles a transferSigned action and retry messageSend until transfer is gone (completed with
+ * success or error) OR Processed message for LockedTransfer received.
+ * transferSigned for pending LockedTransfer's may be re-emitted on startup for pending transfer,
+ * to start retrying sending the message again until stop condition is met.
+ *
+ * @param action$  Observable of transferSigned actions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of messageSend actions
+ */
+export const transferSignedRetryMessageEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof messageSend>> =>
+  state$.pipe(
+    multicast(new ReplaySubject(1), state$ =>
+      action$.pipe(
+        filter(isActionOf(transferSigned)),
+        mergeMap(action => {
+          const secrethash = action.meta.secrethash,
+            signed = action.payload.message,
+            send = messageSend({ message: signed }, { address: signed.recipient });
+          // emit Send once immediatelly, then wait until respective messageSent, then completes
+          const sendOnceAndWaitSent$ = merge(
+            of(send),
+            action$.pipe(
+              filter(
+                a =>
+                  isActionOf(messageSent, a) &&
+                  a.payload.message === send.payload.message &&
+                  a.meta.address === send.meta.address,
+              ),
+              take(1),
+              // don't output messageSent, just wait for it before completing
+              ignoreElements(),
+            ),
+          );
+          return sendOnceAndWaitSent$.pipe(
+            // Resubscribe/retry every 30s after messageSend succeeds with messageSent
+            // Notice first (or any) messageSend can wait for a long time before succeeding, as it
+            // waits for address's user in transport to be online and joined room before actually
+            // sending the message. That's why repeatWhen emits/resubscribe only some time after
+            // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
+            // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
+            repeatWhen(completed$ => completed$.pipe(delay(30e3))),
+            // until transfer gone (not in state.sent anymore) OR transferProcessed received
+            takeUntil(
+              state$.pipe(
+                filter(
+                  state =>
+                    !(secrethash in state.sent) || !!state.sent[secrethash].transferProcessed,
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    ),
+  );
+
+/**
+ * Handles a transferUnlocked action and retry messageSend until transfer is gone (completed with
+ * success or error).
+ * transferUnlocked for pending Unlock's may be re-emitted on startup for pending transfer, to
+ * start retrying sending the message again until stop condition is met.
+ *
+ * @param action$  Observable of transferUnlocked actions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of messageSend actions
+ */
+export const transferUnlockedRetryMessageEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof messageSend>> =>
+  state$.pipe(
+    multicast(new ReplaySubject(1), state$ =>
+      action$.pipe(
+        filter(isActionOf(transferUnlocked)),
+        withLatestFrom(state$),
+        mergeMap(([action, state]) => {
+          const secrethash = action.meta.secrethash;
+          if (!(secrethash in state.sent) || !state.sent[secrethash].unlock) return EMPTY;
+          const unlock = action.payload.message,
+            transfer = state.sent[secrethash].transfer,
+            send = messageSend({ message: unlock }, { address: transfer.recipient });
+          // emit Send once immediatelly, then wait until respective messageSent, then completes
+          const sendOnceAndWaitSent$ = merge(
+            of(send),
+            action$.pipe(
+              filter(
+                a =>
+                  isActionOf(messageSent, a) &&
+                  a.payload.message === send.payload.message &&
+                  a.meta.address === send.meta.address,
+              ),
+              take(1),
+              // don't output messageSent, just wait for it before completing
+              ignoreElements(),
+            ),
+          );
+          return sendOnceAndWaitSent$.pipe(
+            // Resubscribe/retry every 30s after messageSend succeeds with messageSent
+            // Notice first (or any) messageSend can wait for a long time before succeeding, as it
+            // waits for address's user in transport to be online and joined room before actually
+            // sending the message. That's why repeatWhen emits/resubscribe only some time after
+            // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
+            // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
+            repeatWhen(completed$ => completed$.pipe(delay(30e3))),
+            // until transfer not in state.sent anymore, i.e. received transferUnlockProcessed
+            takeUntil(state$.pipe(filter(state => !(secrethash in state.sent)))),
+          );
+        }),
+      ),
+    ),
+  );
+
+/**
+ * Re-queue pending transfer's BalanceProof/Envelope messages for retry on raidenInit
+ *
+ * @param action$  Observable of raidenInit actions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of transferSigned|transferUnlocked actions
+ */
+export const initQueuePendingEnvelopeMessagesEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof transferSigned | typeof transferUnlocked>> =>
+  action$.pipe(
+    filter(isActionOf(raidenInit)),
+    withLatestFrom(state$),
+    mergeMap(function*([, state]) {
+      // loop over all pending transfers
+      for (const [key, sent] of Object.entries(state.sent)) {
+        const secrethash = key as Hash,
+          transfer = sent.transfer;
+        // Processed not received yet for LockedTransfer
+        if (!sent.transferProcessed) yield transferSigned({ message: transfer }, { secrethash });
+        // already unlocked, but Processed not received yet for Unlock
+        // (or else transfer would have been cleared)
+        if (sent.unlock) yield transferUnlocked({ message: sent.unlock }, { secrethash });
+      }
     }),
   );
 
@@ -429,7 +573,10 @@ export const transferSecretRevealedEpic = (
       const secrethash = keccak256(message.secret) as Hash;
       if (
         !(secrethash in state.sent) ||
-        action.meta.address !== state.sent[secrethash].transfer.recipient
+        action.meta.address !== state.sent[secrethash].transfer.recipient ||
+        // don't unlock again if already unlocked, retry handled by transferUnlockedRetryMessageEpic
+        // in the future, we may avoid retry until Processed, and [re]send once per SecretReveal
+        !!state.sent[secrethash].unlock
       )
         return;
       // transferSecret is noop if we already know the secret (e.g. we're the initiator)
