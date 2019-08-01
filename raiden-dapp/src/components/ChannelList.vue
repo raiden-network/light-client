@@ -14,7 +14,7 @@
               <v-list-tile-avatar class="channel-list__channels__channel__icon">
                 <img
                   :src="$blockie(channel.partner)"
-                  :alt="$t('channels.channel.blockie_alt')"
+                  :alt="$t('channel-list.channel.blockie_alt')"
                   class="indenticon"
                 />
               </v-list-tile-avatar>
@@ -28,7 +28,7 @@
                   class="channel-list__channels__channel__state-info"
                 >
                   {{
-                    $t('channels.channel.state', {
+                    $t('channel-list.channel.state', {
                       deposit: displayFormat(
                         channel.ownDeposit,
                         token.decimals
@@ -51,10 +51,10 @@
                 @cancel="dismiss()"
               >
                 <template #header>
-                  {{ $t('channels.channel.close_dialog.title') }}
+                  {{ $t('channel-list.channel.close_dialog.title') }}
                 </template>
 
-                {{ $t('channels.channel.close_dialog.description') }}
+                {{ $t('channel-list.channel.close_dialog.description') }}
               </confirmation>
             </div>
             <div v-else-if="visible === `channel-${channel.id}-settle`">
@@ -64,10 +64,10 @@
                 @cancel="dismiss()"
               >
                 <template #header>
-                  {{ $t('channels.channel.settle_dialog.title') }}
+                  {{ $t('channel-list.channel.settle_dialog.title') }}
                 </template>
                 {{
-                  $t('channels.channel.settle_dialog.description', {
+                  $t('channel-list.channel.settle_dialog.description', {
                     partner: selectedChannel.partner,
                     token: selectedChannel.token
                   })
@@ -179,9 +179,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.dismiss();
     try {
       await this.$raiden.deposit(token, partner, deposit);
-      this.message(this.$t('channels.messages.deposit.success') as string);
+      this.message(this.$t('channel-list.messages.deposit.success') as string);
     } catch (e) {
-      this.message(this.$t('channels.messages.deposit.failure') as string);
+      this.message(this.$t('channel-list.messages.deposit.failure') as string);
     }
   }
 
@@ -190,9 +190,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.dismiss();
     try {
       await this.$raiden.closeChannel(token, partner);
-      this.message(this.$t('channels.messages.close.success') as string);
+      this.message(this.$t('channel-list.messages.close.success') as string);
     } catch (e) {
-      this.message(this.$t('channels.messages.close.failure') as string);
+      this.message(this.$t('channel-list.messages.close.failure') as string);
     }
   }
 
@@ -201,9 +201,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
     this.dismiss();
     try {
       await this.$raiden.settleChannel(token, partner);
-      this.message(this.$t('channels.messages.settle.success') as string);
+      this.message(this.$t('channel-list.messages.settle.success') as string);
     } catch (e) {
-      this.message(this.$t('channels.messages.settle.failure') as string);
+      this.message(this.$t('channel-list.messages.settle.failure') as string);
     }
   }
 }

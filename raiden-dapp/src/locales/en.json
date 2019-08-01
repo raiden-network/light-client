@@ -65,7 +65,9 @@
     "settleable": {
       "header": "Settleable"
     },
-    "snackbar-close": "Close",
+    "snackbar-close": "Close"
+  },
+  "channel-list": {
     "channel": {
       "blockie_alt": "Partner address blockie",
       "state": "Deposit {deposit} | State: {state}",
