@@ -3,8 +3,23 @@ import { createStandardAction } from 'typesafe-actions';
 import { Signed, Message } from './types';
 import { Address } from '../utils/types';
 
-/* One-shot send payload.message to meta.address user in transport */
+/** One-shot send payload.message to meta.address user in transport */
 export const messageSend = createStandardAction('messageSend')<
+  { message: string | Signed<Message> },
+  { address: Address }
+>();
+
+/**
+ * Success action when message is actually sent
+ * messageSend doesn't fail (except unexpectedly, like network errors), instead just hang there
+ * until a suitable set of conditions is met, i.e.: there's a room for recipient's address, an
+ * online validated user for this address, and it had joined that room, then the message is sent
+ * and this success action is emitted. 'payload.message' and 'meta.address' should be kept strictly
+ * equal to messageSend (even by reference, in case of Message), to ease filtering.
+ * Useful to control retry without queueing multiple identical messages while the first is still
+ * pending
+ */
+export const messageSent = createStandardAction('messageSent')<
   { message: string | Signed<Message> },
   { address: Address }
 >();

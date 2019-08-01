@@ -25,6 +25,7 @@ export const SentTransfer = t.readonly(
       lockExpired: Signed(LockExpired), // -> outgoing lock expired (if so)
       // processed for Unlock or LockExpired clear this transfer, so aren't persisted
       // transferFailed also clear this transfer
+      // TODO: check on how to handle RefundTransfer
     }),
   ]),
 );

@@ -58,7 +58,7 @@ import {
   getMessageSigner,
   signMessage,
 } from '../messages/utils';
-import { messageSend, messageReceived } from '../messages/actions';
+import { messageSend, messageReceived, messageSent } from '../messages/actions';
 import { RaidenState } from '../store/state';
 import { raidenInit } from '../store/actions';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
@@ -819,11 +819,11 @@ export const matrixMessageSendEpic = (
                     '',
                   );
                 }),
+                map(() => messageSent(action.payload, action.meta)),
               ),
             ),
           ),
         ),
-        ignoreElements(),
       ),
     ),
   );
