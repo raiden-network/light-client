@@ -1,8 +1,12 @@
 <template>
-  <div class="content-host">
-    <v-layout justify-center row class="list-container">
+  <div class="channels">
+    <v-layout justify-center row>
       <Transition name="fade-transition" mode="out-in">
-        <div v-show="visible" @click="visible = ''" class="overlay"></div>
+        <div
+          v-show="visible"
+          @click="visible = ''"
+          class="channels__overlay"
+        ></div>
       </Transition>
     </v-layout>
     <list-header
@@ -101,7 +105,7 @@ export default class Channels extends Vue {
 
 <style lang="scss" scoped>
 @import '../scss/dimensions';
-.overlay {
+.channels__overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -115,7 +119,12 @@ export default class Channels extends Vue {
   padding-top: $list-header-padding-top;
 }
 
-.content-host:first-child {
+.channels:first-child {
   padding-top: $first-child-padding;
+}
+
+.channels {
+  width: 100%;
+  height: 100%;
 }
 </style>

@@ -145,16 +145,4 @@ export default class ErrorScreen extends Vue {
   border-radius: 29px;
   background-color: $primary-color !important;
 }
-
-$icon-size: 120px;
-$icon-bg-size: $icon-size - 22px;
-
-.success-icon {
-  color: #1e96c8;
-  font-size: $icon-size;
-  background: white;
-  border-radius: 50%;
-  line-height: $icon-bg-size;
-  width: $icon-bg-size;
-}
 </style>

@@ -1,6 +1,6 @@
 <template>
-  <div class="content-host">
-    <v-form v-model="valid" autocomplete="off">
+  <v-form v-model="valid" autocomplete="off" class="open-channel">
+    <v-layout column justify-space-between fill-height>
       <v-layout align-center justify-center row>
         <v-flex xs10>
           <amount-input v-model="deposit" :token="token" limit></amount-input>
@@ -13,47 +13,37 @@
 
       <divider></divider>
 
-      <v-layout align-center justify-center row class="hub-information">
-        <v-flex xs2 class="information">
-          <div class="information-label text-xs-left">
-            {{ $t('open-channel.hub') }}
-          </div>
+      <v-layout align-center justify-center row class="open-channel__hub">
+        <v-flex xs2 class="open-channel__hub__label text-xs-left">
+          {{ $t('open-channel.hub') }}
         </v-flex>
-        <v-flex xs8>
-          <div class="information-description text-xs-left">{{ partner }}</div>
+        <v-flex xs8 class="open-channel__hub__address text-xs-left">
+          {{ partner }}
         </v-flex>
       </v-layout>
 
-      <v-layout align-center justify-center class="section">
-        <v-flex xs10 class="text-xs-center">
-          <v-btn
-            id="open-channel"
-            :disabled="!valid"
-            :loading="loading"
-            @click="openChannel()"
-            class="text-capitalize confirm-button"
-            depressed
-            large
-          >
-            {{ $t('open-channel.open-button') }}
-          </v-btn>
-        </v-flex>
-      </v-layout>
-    </v-form>
-    <progress-overlay
-      :display="loading"
-      :steps="steps"
-      :done-step="doneStep"
-      :current="current"
-      :done="done"
-    ></progress-overlay>
-    <error-screen
-      :description="error"
-      @dismiss="error = ''"
-      :title="$t('open-channel.error.title')"
-      :button-label="$t('open-channel.error.button')"
-    ></error-screen>
-  </div>
+      <action-button
+        :enabled="valid"
+        @click="openChannel()"
+        :text="$t('open-channel.open-button')"
+      ></action-button>
+
+      <stepper
+        :display="loading"
+        :steps="steps"
+        :done-step="doneStep"
+        :current="current"
+        :done="done"
+      ></stepper>
+
+      <error-screen
+        :description="error"
+        @dismiss="error = ''"
+        :title="$t('open-channel.error.title')"
+        :button-label="$t('open-channel.error.button')"
+      ></error-screen>
+    </v-layout>
+  </v-form>
 </template>
 
 <script lang="ts">
@@ -70,7 +60,7 @@ import {
   TokenPlaceholder
 } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import ProgressOverlay from '@/components/ProgressOverlay.vue';
+import Stepper from '@/components/Stepper.vue';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -78,13 +68,15 @@ import { Route } from 'vue-router';
 import ErrorScreen from '@/components/ErrorScreen.vue';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
+import ActionButton from '@/components/ActionButton.vue';
 
 @Component({
   components: {
     TokenInformation,
     Divider,
     ErrorScreen,
-    ProgressOverlay,
+    Stepper,
+    ActionButton,
     AmountInput
   }
 })
@@ -195,9 +187,30 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/input-screen';
+.open-channel {
+  height: 100%;
+  width: 100%;
+}
 
-.hub-information {
+.open-channel__hub {
   max-height: 30px;
+}
+
+.open-channel__hub__label {
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 19px;
+  text-transform: uppercase;
+}
+
+.open-channel__hub__address {
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 20px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
 }
 </style>

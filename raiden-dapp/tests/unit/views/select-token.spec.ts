@@ -41,6 +41,6 @@ describe('SelectToken.vue', function() {
   });
 
   test('renders', () => {
-    expect(wrapper.findAll('.token').length).toEqual(1);
+    expect(wrapper.findAll('.select-token__tokens__token').length).toEqual(1);
   });
 });

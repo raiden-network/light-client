@@ -40,7 +40,9 @@ describe('Channels.vue', () => {
     });
   });
   test('renders the test data', () => {
-    expect(wrapper.findAll('.channel').length).toEqual(4);
+    expect(wrapper.findAll('.channel-list__channels__channel').length).toEqual(
+      4
+    );
   });
 
   test('dismiss the confirmation when overlay is pressed', function() {
@@ -49,7 +51,7 @@ describe('Channels.vue', () => {
     });
 
     expect(wrapper.vm.$data['visible']).toBe('channel-278-deposit');
-    wrapper.find('.overlay').trigger('click');
+    wrapper.find('.channels__overlay').trigger('click');
     expect(wrapper.vm.$data['visible']).toBe('');
   });
 });

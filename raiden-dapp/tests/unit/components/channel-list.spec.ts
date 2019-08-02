@@ -68,7 +68,7 @@ describe('ChannelList.vue', function() {
   });
 
   it('should display two channels entries', function() {
-    const connections = wrapper.findAll('.channel');
+    const connections = wrapper.findAll('.channel-list__channels__channel');
     expect(connections.exists()).toBeTruthy();
     expect(connections.length).toBe(4);
   });
@@ -119,7 +119,7 @@ describe('ChannelList.vue', function() {
       await flushPromises();
 
       expect(wrapper.emitted()['message'][0][0]).toBe(
-        'channels.messages.close.success'
+        'channel-list.messages.close.success'
       );
     });
 
@@ -134,7 +134,7 @@ describe('ChannelList.vue', function() {
       elementVisibilityChanged(1);
       await flushPromises();
       expect(wrapper.emitted()['message'][0][0]).toBe(
-        'channels.messages.close.failure'
+        'channel-list.messages.close.failure'
       );
     });
 
@@ -191,7 +191,7 @@ describe('ChannelList.vue', function() {
       elementVisibilityChanged(1);
       await flushPromises();
       expect(wrapper.emitted()['message'][0][0]).toBe(
-        'channels.messages.deposit.success'
+        'channel-list.messages.deposit.success'
       );
     });
 
@@ -213,7 +213,7 @@ describe('ChannelList.vue', function() {
       });
       await flushPromises();
       expect(wrapper.emitted()['message'][0][0]).toBe(
-        'channels.messages.deposit.failure'
+        'channel-list.messages.deposit.failure'
       );
     });
 
@@ -257,7 +257,7 @@ describe('ChannelList.vue', function() {
       elementVisibilityChanged(1);
       await flushPromises();
       expect(wrapper.emitted()['message'][0][0]).toBe(
-        'channels.messages.settle.success'
+        'channel-list.messages.settle.success'
       );
     });
 
@@ -272,7 +272,7 @@ describe('ChannelList.vue', function() {
       elementVisibilityChanged(1);
       await flushPromises();
       expect(wrapper.emitted()['message'][0][0]).toBe(
-        'channels.messages.settle.failure'
+        'channel-list.messages.settle.failure'
       );
     });
 

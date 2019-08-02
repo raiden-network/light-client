@@ -1,27 +1,27 @@
 <template>
-  <div class="content-host">
+  <div class="select-token">
     <list-header
       :header="$t('select-token.header')"
-      class="header"
+      class="select-token__header"
     ></list-header>
 
-    <v-layout justify-center row class="list-container">
+    <v-layout justify-center row>
       <v-flex xs12>
-        <v-list class="token-list">
+        <v-list class="select-token__tokens">
           <template v-for="token in allTokens">
             <v-list-tile
               :key="token.address"
               @click="navigateToSelectHub(token.address)"
-              class="token"
+              class="select-token__tokens__token"
             >
-              <v-list-tile-avatar class="list-blockie">
+              <v-list-tile-avatar class="select-token__tokens__token__blockie">
                 <img
                   :src="$blockie(token.address)"
                   :alt="$t('select-token.tokens.token.blockie-alt')"
                 />
               </v-list-tile-avatar>
               <v-list-tile-content>
-                <v-list-tile-title class="token-info">
+                <v-list-tile-title class="select-token__tokens__token__info">
                   {{
                     $t('select-token.tokens.token.token-information', {
                       symbol: token.symbol,
@@ -29,7 +29,9 @@
                     })
                   }}
                 </v-list-tile-title>
-                <v-list-tile-sub-title class="token-address">
+                <v-list-tile-sub-title
+                  class="select-token__tokens__token__address"
+                >
                   <v-tooltip bottom>
                     <template #activator="{ on }">
                       <span v-on="on">{{ token.address | truncate }}</span>
@@ -41,7 +43,7 @@
                 </v-list-tile-sub-title>
               </v-list-tile-content>
               <v-list-tile-action-text>
-                <span class="balance">
+                <span class="select-token__tokens__token__balance">
                   {{ token.balance | displayFormat(token.decimals) }}
                 </span>
               </v-list-tile-action-text>
@@ -72,17 +74,22 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/input-screen';
+.select-token {
+  height: 100%;
+  width: 100%;
+}
 
-.header {
+.select-token__header {
   margin-top: 115px;
 }
 
-.token-list {
+.select-token__tokens {
   background-color: transparent !important;
+  padding-bottom: 0;
+  padding-top: 0;
 }
 
-.balance {
+.select-token__tokens__token__balance {
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 16px;
@@ -92,31 +99,26 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
   padding-right: 20px;
 }
 
-.token-list /deep/ .v-list__tile {
+.select-token__tokens /deep/ .v-list__tile {
   height: 105px;
 }
 
-.token-list /deep/ .v-list__tile__action-text {
+.select-token__tokens /deep/ .v-list__tile__action-text {
   height: 44px;
 }
 
-.token-list {
-  padding-bottom: 0;
-  padding-top: 0;
-}
-
-.token {
+.select-token__tokens__token {
   background-color: rgba(0, 0, 0, 0.25);
   box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
 }
 
-.token-info {
+.select-token__tokens__token__info {
   font-weight: bold;
   line-height: 20px;
   font-size: 16px;
 }
 
-.token-address {
+.select-token__tokens__token__address {
   color: #696969 !important;
   line-height: 20px;
   font-size: 16px;

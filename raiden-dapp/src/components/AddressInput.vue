@@ -1,5 +1,5 @@
 <template>
-  <fieldset>
+  <fieldset class="address-input">
     <v-text-field
       id="address-input"
       ref="address"
@@ -7,9 +7,9 @@
       :value="address"
       :error-messages="errorMessages"
       :class="{
-        invalid: !valid && touched,
-        'hint-visible': hint.length > 0,
-        untouched: !touched
+        'address-input--invalid': !valid && touched,
+        'address-input--hint-visible': hint.length > 0,
+        'address-input--untouched': !touched
       }"
       :placeholder="$t('address-input.input.placeholder')"
       @blur="$emit('blur')"
@@ -21,17 +21,17 @@
       hide-selected
     >
       <template #append>
-        <div class="status-icon-wrapper">
+        <div class="address-input__status-icon">
           <v-img
             v-if="!valid && touched"
             :src="require('../assets/input_invalid.svg')"
-            class="status-icon status--invalid"
+            class="address-input__status-icon__icon"
           >
           </v-img>
           <v-img
             v-if="valid"
             :src="require('../assets/input_valid.svg')"
-            class="status-icon status--valid"
+            class="address-input__status-icon__icon"
           ></v-img>
         </div>
       </template>
@@ -40,7 +40,7 @@
           v-if="value && isChecksumAddress(value)"
           :src="$blockie(value)"
           :alt="$t('address-input.blockie-alt')"
-          class="selection-blockie prepend"
+          class="address-input__blockie"
         />
         <div v-else-if="timeout">
           <v-progress-circular
@@ -174,16 +174,13 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 @import '../main';
 @import '../scss/colors';
 
-.selection-blockie {
+.address-input__blockie {
   border-radius: 50%;
   box-sizing: border-box;
   height: 28px;
   width: 28px;
   border: 1px solid #979797;
   background-color: #d8d8d8;
-}
-
-.prepend {
   margin-right: 12px;
 }
 
@@ -248,14 +245,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 $dark_border: #323232;
 $dark_background: #323232;
 
-.invalid /deep/ .v-messages {
+.address-input--invalid /deep/ .v-messages {
   border-color: $dark_border;
   background-color: $dark_background;
   border: 1px solid !important;
   border-radius: 5px;
 }
 
-.invalid /deep/ .v-messages:after {
+.address-input--invalid /deep/ .v-messages:after {
   content: ' ';
   border: solid;
   border-radius: 1px;
@@ -271,7 +268,7 @@ $dark_background: #323232;
   background-color: $dark_background;
 }
 
-.hint-visible /deep/ .v-messages {
+.address-input--hint-visible /deep/ .v-messages {
   color: #696969 !important;
   font-family: Roboto, sans-serif;
   font-size: 16px;
@@ -280,21 +277,21 @@ $dark_background: #323232;
   margin-bottom: 14px;
 }
 
-.hint-visible /deep/ .v-text-field__details {
+.address-input--hint-visible /deep/ .v-text-field__details {
   padding-top: 0;
   margin-top: 0;
 }
 
-.status-icon {
+.address-input__status-icon__icon {
   line-height: 20px;
   width: 20px;
 }
 
-.status-icon-wrapper {
+.address-input__status-icon {
   padding: 8px;
 }
 
-.untouched {
+.address-input--untouched {
   caret-color: white !important;
   color: white !important;
 }

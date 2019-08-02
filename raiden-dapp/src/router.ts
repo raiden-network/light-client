@@ -23,12 +23,12 @@ export default new Router({
       redirect: '/'
     },
     {
-      path: '/transfer/:token',
-      name: RouteNames.TRANSFER,
+      path: '/payment/:token',
+      name: RouteNames.PAYMENT,
       meta: {
         title: 'Send transaction'
       },
-      component: () => import('./views/Transfer.vue')
+      component: () => import('./views/Payment.vue')
     },
     {
       path: '/connect',
@@ -48,7 +48,7 @@ export default new Router({
     },
     {
       path: '/connect/:token/:partner',
-      name: RouteNames.DEPOSIT,
+      name: RouteNames.OPEN_CHANNEL,
       meta: {
         title: 'Open channel'
       },

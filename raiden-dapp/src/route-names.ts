@@ -1,8 +1,8 @@
 export enum RouteNames {
-  TRANSFER = 'transfer',
+  PAYMENT = 'send-transaction',
   SELECT_TOKEN = 'select-token',
   SELECT_HUB = 'select-hub',
   HOME = 'home',
   CHANNELS = 'channels',
-  DEPOSIT = 'deposit'
+  OPEN_CHANNEL = 'open-channel'
 }

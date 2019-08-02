@@ -1,34 +1,22 @@
 <template>
-  <div class="content-host">
-    <v-form v-model="valid" autocomplete="off">
+  <v-form v-model="valid" autocomplete="off" class="select-hub">
+    <v-layout column justify-space-between fill-height>
       <v-layout align-center justify-center row>
-        <v-flex xs10 md10 lg10>
-          <address-input
-            v-model="partner"
-            class="address-input"
-          ></address-input>
+        <v-flex xs10>
+          <address-input v-model="partner"></address-input>
         </v-flex>
       </v-layout>
 
       <divider></divider>
       <token-information :token="token"></token-information>
 
-      <v-layout align-center justify-center class="section">
-        <v-flex xs10 md10 lg10 class="text-xs-center">
-          <v-btn
-            id="select-hub"
-            :disabled="!valid"
-            @click="selectHub()"
-            class="text-capitalize confirm-button"
-            depressed
-            large
-          >
-            {{ $t('select-hub.select-button') }}
-          </v-btn>
-        </v-flex>
-      </v-layout>
-    </v-form>
-  </div>
+      <action-button
+        :enabled="valid"
+        @click="selectHub()"
+        :text="$t('select-hub.select-button')"
+      ></action-button>
+    </v-layout>
+  </v-form>
 </template>
 
 <script lang="ts">
@@ -39,9 +27,10 @@ import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
+import ActionButton from '@/components/ActionButton.vue';
 
 @Component({
-  components: { TokenInformation, Divider, AddressInput }
+  components: { TokenInformation, Divider, AddressInput, ActionButton }
 })
 export default class SelectHub extends Mixins(NavigationMixin) {
   token: Token = TokenPlaceholder;
@@ -50,7 +39,7 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   valid: boolean = false;
 
   selectHub() {
-    this.navigateToDeposit(this.token.address, this.partner);
+    this.navigateToOpenChannel(this.token.address, this.partner);
   }
 
   async created() {
@@ -75,5 +64,8 @@ export default class SelectHub extends Mixins(NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/input-screen';
+.select-hub {
+  height: 100%;
+  width: 100%;
+}
 </style>

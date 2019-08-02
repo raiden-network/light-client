@@ -1,37 +1,47 @@
 <template>
-  <div id="overlay" v-if="display">
-    <div id="card">
-      <div class="steps">
+  <div v-if="display" class="stepper">
+    <div class="stepper__card">
+      <div class="stepper__card__steps">
         <div
           v-for="(step, index) in steps"
           :key="index"
           :class="{
-            active: current === index && !done
+            'stepper__card__steps__step--active': current === index && !done
           }"
-          class="step"
+          class="stepper__card__steps__step"
         >
-          <span class="label">{{ step.label }}</span>
+          <span class="stepper__card__steps__step__label">
+            {{ step.label }}
+          </span>
         </div>
-        <div :class="{ active: done }" class="step">{{ doneStep.label }}</div>
+        <div
+          :class="{ 'stepper__card__steps__step--active': done }"
+          class="stepper__card__steps__step"
+        >
+          {{ doneStep.label }}
+        </div>
       </div>
-      <div class="card-content">
-        <div class="step-title">
+      <div class="stepper__card__content">
+        <div class="stepper__card__content__title">
           <span v-if="done">
             {{ doneStep.title }}
           </span>
           <span v-else>{{ steps[current].title }}</span>
         </div>
         <div v-if="done">
-          <v-icon class="success-icon">check_circle</v-icon>
+          <v-img
+            :src="require('../assets/done.svg')"
+            class="stepper__card__content--done"
+          ></v-img>
         </div>
         <v-progress-circular
           v-else
-          :size="120"
+          :size="110"
           :width="7"
-          class="progress"
+          class="stepper__card__content--progress"
           indeterminate
         ></v-progress-circular>
-        <p id="message" class="step-description">
+        <p class="stepper__card__content__description">
           <span v-if="done">
             {{ doneStep.description }}
           </span>
@@ -49,7 +59,7 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import { StepDescription } from '@/model/types';
 
 @Component({})
-export default class ProgressOverlay extends Vue {
+export default class Stepper extends Vue {
   @Prop({ required: true })
   display!: boolean;
 
@@ -70,7 +80,7 @@ export default class ProgressOverlay extends Vue {
 <style lang="scss" scoped>
 @import '../main';
 @import '../scss/colors';
-#overlay {
+.stepper {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -86,7 +96,7 @@ export default class ProgressOverlay extends Vue {
   z-index: 9000;
 }
 
-#card {
+.stepper__card {
   height: 700px;
   width: 620px;
   border-radius: 14px;
@@ -99,7 +109,7 @@ export default class ProgressOverlay extends Vue {
   }
 }
 
-.card-content {
+.stepper__card__content {
   padding-right: 120px;
   padding-left: 120px;
   height: 100%;
@@ -109,14 +119,7 @@ export default class ProgressOverlay extends Vue {
   justify-content: space-evenly;
 }
 
-$horizontal-padding: 40px;
-
-.horizontally-padded {
-  padding-left: $horizontal-padding;
-  padding-right: $horizontal-padding;
-}
-
-.step-title {
+.stepper__card__content__title {
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 32px;
@@ -125,15 +128,16 @@ $horizontal-padding: 40px;
   text-align: center;
 }
 
-.step-description {
+.stepper__card__content__description {
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 16px;
   line-height: 21px;
   text-align: center;
+  margin-top: 2rem;
 }
 
-.steps {
+.stepper__card__steps {
   width: 100%;
   align-items: center;
   justify-content: space-evenly;
@@ -142,7 +146,7 @@ $horizontal-padding: 40px;
   flex-direction: row;
 }
 
-.step {
+.stepper__card__steps__step {
   letter-spacing: 2px;
   display: flex;
   flex-direction: column;
@@ -176,16 +180,16 @@ $horizontal-padding: 40px;
   }
 }
 
-.label {
+.stepper__card__steps__step__label {
   padding-left: 18px;
 }
 
-.step:first-child {
+.stepper__card__steps__step:first-child {
   border-bottom-left-radius: 0;
   border-top-left-radius: 14px;
 }
 
-.step:last-child {
+.stepper__card__steps__step:last-child {
   border-bottom-right-radius: 0;
   border-top-right-radius: 14px;
   &:before,
@@ -199,29 +203,17 @@ $horizontal-padding: 40px;
   }
 }
 
-.progress {
+.stepper__card__content--progress {
   color: $secondary-color;
 }
 
-.active {
+.stepper__card__steps__step--active {
   color: white;
   background-color: $secondary-color;
 }
 
-$icon-size: 120px;
-$icon-bg-size: $icon-size - 22px;
-
-.success-icon {
-  color: $secondary-color;
-  font-size: $icon-size;
-  background: white;
+.stepper__card__content--done {
   border-radius: 50%;
-  line-height: $icon-bg-size;
-  width: $icon-bg-size;
-}
-
-#message {
-  color: white;
-  margin-top: 2rem;
+  width: 110px;
 }
 </style>

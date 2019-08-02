@@ -18,9 +18,9 @@ export default class NavigationMixin extends Vue {
     });
   }
 
-  navigateToDeposit(token: string, partner: string) {
+  navigateToOpenChannel(token: string, partner: string) {
     this.$router.push({
-      name: RouteNames.DEPOSIT,
+      name: RouteNames.OPEN_CHANNEL,
       params: {
         token: token,
         partner: partner
@@ -30,7 +30,7 @@ export default class NavigationMixin extends Vue {
 
   navigateToSelectPaymentTarget(token: string) {
     this.$router.push({
-      name: RouteNames.TRANSFER,
+      name: RouteNames.PAYMENT,
       params: { token: token }
     });
   }
@@ -43,7 +43,7 @@ export default class NavigationMixin extends Vue {
 
   onBackClicked() {
     switch (this.$route.name) {
-      case RouteNames.TRANSFER:
+      case RouteNames.PAYMENT:
       case RouteNames.CHANNELS:
       case RouteNames.SELECT_TOKEN:
         this.navigateToHome();
@@ -51,7 +51,7 @@ export default class NavigationMixin extends Vue {
       case RouteNames.SELECT_HUB:
         this.navigateToTokenSelect();
         break;
-      case RouteNames.DEPOSIT:
+      case RouteNames.OPEN_CHANNEL:
         this.navigateToSelectHub(this.$route.params.token);
         break;
     }
