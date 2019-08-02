@@ -131,7 +131,7 @@ describe('Deposit.vue', function() {
       jest.advanceTimersByTime(2000);
       expect(router.push).toHaveBeenCalledTimes(1);
       const args = router.push.mock.calls[0][0] as any;
-      expect(args.name).toEqual(RouteNames.SEND_TRANSACTION);
+      expect(args.name).toEqual(RouteNames.PAYMENT);
       expect(loading).toHaveBeenCalledTimes(2);
     });
   });

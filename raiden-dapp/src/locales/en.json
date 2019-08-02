@@ -149,7 +149,7 @@
   "application": {
     "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
   },
-  "send-transaction": {
+  "payment": {
     "pay-button": "Pay",
     "error": {
       "button": "Dismiss",

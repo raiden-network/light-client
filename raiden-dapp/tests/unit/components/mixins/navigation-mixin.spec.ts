@@ -63,13 +63,13 @@ describe('NavigationMixin', function() {
     wrapper.vm.navigateToSelectPaymentTarget('0xtoken');
     const callArgs = args();
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(callArgs.name).toEqual(RouteNames.SEND_TRANSACTION);
+    expect(callArgs.name).toEqual(RouteNames.PAYMENT);
     expect(callArgs.params.token).toEqual('0xtoken');
   });
 
   describe('back navigation', () => {
     test('from select target', async () => {
-      wrapper.vm.$route.name = RouteNames.SEND_TRANSACTION;
+      wrapper.vm.$route.name = RouteNames.PAYMENT;
       wrapper.vm.onBackClicked();
       const callArgs = args();
       expect(router.push).toHaveBeenCalledTimes(1);

@@ -9,7 +9,7 @@ import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
-import SendTransaction from '@/views/SendTransaction.vue';
+import Payment from '@/views/Payment.vue';
 import store from '@/store';
 import VueRouter, { Route } from 'vue-router';
 import { TestData } from '../data/mock-data';
@@ -20,7 +20,7 @@ import { Zero } from 'ethers/constants';
 Vue.use(Vuetify);
 
 describe('SendTransaction.vue', () => {
-  let wrapper: Wrapper<SendTransaction>;
+  let wrapper: Wrapper<Payment>;
   let router: Mocked<VueRouter>;
   let raiden: Mocked<RaidenService>;
   let loading: jest.SpyInstance;
@@ -36,7 +36,7 @@ describe('SendTransaction.vue', () => {
   function vueFactory(
     router: VueRouter,
     raiden: RaidenService
-  ): Wrapper<SendTransaction> {
+  ): Wrapper<Payment> {
     const localVue = createLocalVue();
     let options = {
       localVue,
@@ -52,7 +52,7 @@ describe('SendTransaction.vue', () => {
         $t: (msg: string) => msg
       }
     };
-    return mount(SendTransaction, options);
+    return mount(Payment, options);
   }
 
   beforeEach(() => {

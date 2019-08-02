@@ -1,5 +1,5 @@
 <template>
-  <v-form v-model="valid" autocomplete="off" class="send-transaction">
+  <v-form v-model="valid" autocomplete="off" class="payment">
     <v-layout column justify-space-between fill-height>
       <v-layout align-center justify-center row>
         <v-flex xs10>
@@ -20,7 +20,7 @@
       <action-button
         :enabled="valid"
         @click="transfer()"
-        :text="$t('send-transaction.pay-button')"
+        :text="$t('payment.pay-button')"
       ></action-button>
 
       <stepper
@@ -33,8 +33,8 @@
       <error-screen
         :description="error"
         @dismiss="error = ''"
-        :title="$t('send-transaction.error.title')"
-        :button-label="$t('send-transaction.error.button')"
+        :title="$t('payment.error.title')"
+        :button-label="$t('payment.error.button')"
       ></error-screen>
     </v-layout>
   </v-form>
@@ -68,7 +68,7 @@ import ActionButton from '@/components/ActionButton.vue';
     ErrorScreen
   }
 })
-export default class SendTransaction extends Vue {
+export default class Payment extends Vue {
   target: string = '';
   token: Token = TokenPlaceholder;
   amount: string = '0';
@@ -86,11 +86,9 @@ export default class SendTransaction extends Vue {
     const { token } = this.$route.params;
     this.token = (await this.$raiden.getToken(token)) || TokenPlaceholder;
     this.steps = [
-      (this.$t('send-transaction.steps.transfer') as any) as StepDescription
+      (this.$t('payment.steps.transfer') as any) as StepDescription
     ];
-    this.doneStep = (this.$t(
-      'send-transaction.steps.done'
-    ) as any) as StepDescription;
+    this.doneStep = (this.$t('payment.steps.done') as any) as StepDescription;
   }
 
   async transfer() {
@@ -117,7 +115,7 @@ export default class SendTransaction extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.send-transaction {
+.payment {
   width: 100%;
   height: 100%;
 }

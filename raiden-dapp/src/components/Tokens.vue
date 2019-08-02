@@ -48,7 +48,7 @@
               <v-layout justify-center row>
                 <v-btn
                   :id="`pay-${index}`"
-                  :to="`/send-transaction/${token.address}`"
+                  :to="`/payment/${token.address}`"
                   class="text-capitalize connected-tokens__tokens__token__button"
                 >
                   {{ $t('tokens.connected.token.buttons.pay') }}
