@@ -48,7 +48,7 @@ export default new Router({
     },
     {
       path: '/connect/:token/:partner',
-      name: RouteNames.DEPOSIT,
+      name: RouteNames.OPEN_CHANNEL,
       meta: {
         title: 'Open channel'
       },

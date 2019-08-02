@@ -43,11 +43,11 @@ describe('NavigationMixin', function() {
     expect(callArgs.name).toEqual(RouteNames.HOME);
   });
 
-  test('navigate to deposit', () => {
-    wrapper.vm.navigateToDeposit('0xtoken', '0xpartner');
+  test('navigate to open-channel', () => {
+    wrapper.vm.navigateToOpenChannel('0xtoken', '0xpartner');
     const callArgs = args();
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(callArgs.name).toEqual(RouteNames.DEPOSIT);
+    expect(callArgs.name).toEqual(RouteNames.OPEN_CHANNEL);
     expect(callArgs.params.token).toEqual('0xtoken');
     expect(callArgs.params.partner).toEqual('0xpartner');
   });
@@ -59,7 +59,7 @@ describe('NavigationMixin', function() {
     expect(callArgs.name).toEqual(RouteNames.SELECT_TOKEN);
   });
 
-  test('navigate to select payment target', () => {
+  test('navigate to payment target', () => {
     wrapper.vm.navigateToSelectPaymentTarget('0xtoken');
     const callArgs = args();
     expect(router.push).toHaveBeenCalledTimes(1);
@@ -100,8 +100,8 @@ describe('NavigationMixin', function() {
       expect(callArgs.name).toEqual(RouteNames.HOME);
     });
 
-    test('from deposit', async () => {
-      wrapper.vm.$route.name = RouteNames.DEPOSIT;
+    test('from open-channel', async () => {
+      wrapper.vm.$route.name = RouteNames.OPEN_CHANNEL;
       wrapper.vm.$route.params = {
         token: '0xtoken'
       };

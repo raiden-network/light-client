@@ -70,7 +70,7 @@ describe('SelectHub.vue', function() {
     await wrapper.vm.$nextTick();
     wrapper.find('button').trigger('click');
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(callArgs().name).toEqual(RouteNames.DEPOSIT);
+    expect(callArgs().name).toEqual(RouteNames.OPEN_CHANNEL);
   });
 
   test('when token address is not checksum should navigate to home', async () => {

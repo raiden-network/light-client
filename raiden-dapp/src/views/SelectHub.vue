@@ -39,7 +39,7 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   valid: boolean = false;
 
   selectHub() {
-    this.navigateToDeposit(this.token.address, this.partner);
+    this.navigateToOpenChannel(this.token.address, this.partner);
   }
 
   async created() {
