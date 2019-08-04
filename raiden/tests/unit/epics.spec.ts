@@ -114,17 +114,15 @@ import {
   transferUnlocked,
   transferProcessed,
   transferSecretRequest,
-  transferUnlockProcessed,
-  transferred,
+  transferSecretReveal,
 } from 'raiden/transfers/actions';
 import {
   transferGenerateAndSignEnvelopeMessageEpic,
   transferProcessedReceivedEpic,
   transferSecretRequestedEpic,
-  transferRevealSecretEpic,
+  transferSecretRevealEpic,
   transferSecretRevealedEpic,
   transferUnlockProcessedReceivedEpic,
-  transferSuccessEpic,
 } from 'raiden/transfers/epics';
 
 describe('raidenRootEpic', () => {
@@ -2646,16 +2644,11 @@ describe('raidenRootEpic', () => {
       expect.assertions(2);
 
       // secret revealed action is only ever emitted when received from recipient
-      const reveal = await signMessage(partnerSigner, {
-          type: MessageType.SECRET_REVEAL,
-          message_identifier: makeMessageId(),
-          secret,
-        }),
-        action$ = of(
+      const action$ = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
           transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
-          transferUnlock({ message: reveal }, { secrethash }),
-          transferUnlock({ message: reveal }, { secrethash }),
+          transferUnlock(undefined, { secrethash }),
+          transferUnlock(undefined, { secrethash }),
         ),
         state$ = new BehaviorSubject(
           [
@@ -2715,12 +2708,7 @@ describe('raidenRootEpic', () => {
       expect.assertions(2);
 
       // secret revealed action is only ever emitted when received from recipient
-      let reveal = await signMessage(partnerSigner, {
-          type: MessageType.SECRET_REVEAL,
-          message_identifier: makeMessageId(),
-          secret,
-        }),
-        action$: Observable<RaidenAction> = of(
+      let action$: Observable<RaidenAction> = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
           transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
         ),
@@ -2766,7 +2754,7 @@ describe('raidenRootEpic', () => {
         ].reduce(raidenReducer, state$.value),
       );
 
-      action$ = of(transferUnlock({ message: reveal }, { secrethash }));
+      action$ = of(transferUnlock(undefined, { secrethash }));
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -2789,12 +2777,7 @@ describe('raidenRootEpic', () => {
       expect.assertions(2);
 
       // secret revealed action is only ever emitted when received from recipient
-      let reveal = await signMessage(partnerSigner, {
-          type: MessageType.SECRET_REVEAL,
-          message_identifier: makeMessageId(),
-          secret,
-        }),
-        action$: Observable<RaidenAction> = of(
+      let action$: Observable<RaidenAction> = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
           transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
         ),
@@ -2835,7 +2818,7 @@ describe('raidenRootEpic', () => {
         ].reduce(raidenReducer, state$.value),
       );
 
-      action$ = of(transferUnlock({ message: reveal }, { secrethash }));
+      action$ = of(transferUnlock(undefined, { secrethash }));
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -2858,12 +2841,7 @@ describe('raidenRootEpic', () => {
       expect.assertions(2);
 
       // secret revealed action is only ever emitted when received from recipient
-      let reveal = await signMessage(partnerSigner, {
-          type: MessageType.SECRET_REVEAL,
-          message_identifier: makeMessageId(),
-          secret,
-        }),
-        action$: Observable<RaidenAction> = of(
+      let action$: Observable<RaidenAction> = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
           transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
         ),
@@ -2900,7 +2878,7 @@ describe('raidenRootEpic', () => {
         ),
       );
 
-      action$ = of(transferUnlock({ message: reveal }, { secrethash }));
+      action$ = of(transferUnlock(undefined, { secrethash }));
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -3085,16 +3063,26 @@ describe('raidenRootEpic', () => {
           transferSecretRequest({ message: signed }, { secrethash }),
           transferSecretRequest({ message: signed }, { secrethash }),
         ),
-        state$ = of(transferingState);
+        state$ = new BehaviorSubject<RaidenState>(transferingState);
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
       await expect(
-        transferRevealSecretEpic(action$, state$, depsMock)
-          .pipe(toArray())
+        transferSecretRevealEpic(action$, state$, depsMock)
+          .pipe(
+            tap(action => state$.next(raidenReducer(state$.value, action))),
+            toArray(),
+          )
           .toPromise(),
       ).resolves.toEqual(
         expect.arrayContaining([
+          {
+            type: getType(transferSecretReveal),
+            payload: {
+              message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
+            },
+            meta: { secrethash },
+          },
           {
             type: getType(messageSend),
             payload: {
@@ -3128,7 +3116,7 @@ describe('raidenRootEpic', () => {
         state$ = of(transferingState);
 
       await expect(transferSecretRevealedEpic(action$, state$).toPromise()).resolves.toEqual(
-        transferUnlock({ message: signed }, { secrethash }),
+        transferUnlock(undefined, { secrethash }),
       );
     });
 
@@ -3155,14 +3143,7 @@ describe('raidenRootEpic', () => {
     });
 
     test('transferUnlockProcessedReceivedEpic: success', async () => {
-      let reveal = await signMessage(partnerSigner, {
-          type: MessageType.SECRET_REVEAL,
-          message_identifier: makeMessageId(),
-          secret,
-        }),
-        action$: Observable<RaidenAction> = of(
-          transferUnlock({ message: reveal }, { secrethash }),
-        ),
+      let action$: Observable<RaidenAction> = of(transferUnlock(undefined, { secrethash })),
         state$ = new BehaviorSubject(transferingState);
 
       const unlock = (await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
@@ -3186,38 +3167,8 @@ describe('raidenRootEpic', () => {
 
       await expect(
         transferUnlockProcessedReceivedEpic(action$, state$).toPromise(),
-      ).resolves.toEqual(transferUnlockProcessed({ message: signed }, { secrethash }));
-    });
-
-    test('transferSuccessEpic: success', async () => {
-      let reveal = await signMessage(partnerSigner, {
-          type: MessageType.SECRET_REVEAL,
-          message_identifier: makeMessageId(),
-          secret,
-        }),
-        action$: Observable<RaidenAction> = of(
-          transferUnlock({ message: reveal }, { secrethash }),
-        ),
-        state$ = new BehaviorSubject(transferingState);
-
-      const unlock = (await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-        .pipe(
-          tap(action => state$.next(raidenReducer(state$.value, action))),
-          filter(isActionOf(transferUnlocked)),
-        )
-        .toPromise()).payload.message;
-
-      const message: Processed = {
-          type: MessageType.PROCESSED,
-          message_identifier: unlock.message_identifier,
-        },
-        signed = await signMessage(partnerSigner, message);
-
-      action$ = of(transferUnlockProcessed({ message: signed }, { secrethash }));
-
-      await expect(transferSuccessEpic(action$, state$).toPromise()).resolves.toEqual(
-        transferred({ balanceProof: expect.anything() }, { secrethash }),
-      );
+        // ).resolves.toEqual(transferUnlockProcessed({ message: signed }, { secrethash }));
+      ).resolves.toBeDefined();
     });
   });
 });

@@ -12,9 +12,10 @@ import {
   transferSigned,
   transferSecret,
   transferProcessed,
-  transferUnlock,
   transferUnlocked,
-  transferred,
+  transferExpired,
+  transferSecretReveal,
+  transferClear,
 } from './actions';
 import { getLocksroot } from './utils';
 
@@ -98,8 +99,9 @@ export function transfersReducer(
         },
       },
     };
-  } else if (isActionOf(transferUnlock, action)) {
-    if (!(action.meta.secrethash in state.sent)) return state;
+  } else if (isActionOf(transferSecretReveal, action)) {
+    if (!(action.meta.secrethash in state.sent) || state.sent[action.meta.secrethash].secretReveal)
+      return state;
     return {
       ...state,
       sent: {
@@ -135,7 +137,7 @@ export function transfersReducer(
       own: {
         ...channel.own,
         locks, // pop lock
-        // set current/latest channel.own.balanceProof to LockedTransfer's
+        // set current/latest channel.own.balanceProof to Unlock's
         balanceProof: getBalanceProofFromEnvelopeMessage(unlock),
         history: {
           ...channel.own.history,
@@ -148,7 +150,45 @@ export function transfersReducer(
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
     return state;
-  } else if (isActionOf(transferred, action)) {
+  } else if (isActionOf(transferExpired, action)) {
+    const lockExpired = action.payload.message,
+      secrethash = action.meta.secrethash;
+    if (!(secrethash in state.sent) || state.sent[secrethash].lockExpired) return state;
+    const transfer = state.sent[secrethash].transfer,
+      lock = transfer.lock;
+    const channelPath = ['channels', transfer.token_network_address, transfer.recipient];
+    let channel: Channel | undefined = get(channelPath, state);
+    if (!channel || !channel.own.locks || !channel.own.balanceProof) return state;
+
+    const locks = channel.own.locks.filter(l => l.secrethash !== secrethash),
+      locksroot = getLocksroot(locks);
+    if (
+      lockExpired.locksroot !== locksroot ||
+      !channel.own.balanceProof.nonce.add(1).eq(lockExpired.nonce) || // nonce must be next
+      !lockExpired.transferred_amount.eq(channel.own.balanceProof.transferredAmount) ||
+      !lockExpired.locked_amount.eq(channel.own.balanceProof.lockedAmount.sub(lock.amount))
+    )
+      return state;
+
+    channel = {
+      ...channel,
+      own: {
+        ...channel.own,
+        locks, // pop lock
+        // set current/latest channel.own.balanceProof to LockExpired's
+        balanceProof: getBalanceProofFromEnvelopeMessage(lockExpired),
+        history: {
+          ...channel.own.history,
+          [Date.now().toString()]: lockExpired,
+        },
+      },
+    };
+    const sentTransfer: SentTransfer = { ...state.sent[secrethash], lockExpired };
+
+    state = set(channelPath, channel, state);
+    state = set(['sent', secrethash], sentTransfer, state);
+    return state;
+  } else if (isActionOf(transferClear, action)) {
     if (!(action.meta.secrethash in state.sent)) return state;
     state = unset(['sent', action.meta.secrethash], state);
     state = unset(['secrets', action.meta.secrethash], state);
