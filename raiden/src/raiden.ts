@@ -654,7 +654,7 @@ export class Raiden {
    * @param opts.secrethash  Optionally specify a secrethash to use. If secret is provided,
    *    secrethash must be the keccak256 hash of the secret. If no secret is provided, the target
    *    must be informed of it by other means/externally.
-   * @returns A promise to the total transferred amount on this channel after transfer succeeds
+   * @returns A promise to boolean indicating if the transfer completed with Unlock
    */
   /* istanbul ignore next */
   public async transfer(
@@ -662,7 +662,7 @@ export class Raiden {
     target: string,
     amount: BigNumberish,
     opts?: { paymentId?: BigNumberish; secret?: string; secrethash?: string },
-  ): Promise<BigNumber> {
+  ): Promise<boolean> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -697,7 +697,7 @@ export class Raiden {
         first(),
         map(action => {
           if (isActionOf(transferFailed, action)) throw action.payload;
-          return action.payload.balanceProof.transferredAmount;
+          return !!action.payload.balanceProof;
         }),
       )
       .toPromise();

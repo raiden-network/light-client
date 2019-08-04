@@ -16,15 +16,30 @@ import {
 export const SentTransfer = t.readonly(
   t.intersection([
     t.type({
-      transfer: Signed(LockedTransfer), // -> outgoing locked transfer
+      /** -> outgoing locked transfer */
+      transfer: Signed(LockedTransfer),
     }),
     t.partial({
-      transferProcessed: Signed(Processed), // <- incoming processed for locked transfer
-      secretReveal: Signed(SecretReveal), // <- incoming secret reveal from recipient
-      unlock: Signed(Unlock), // -> outgoing unlock to recipient
-      lockExpired: Signed(LockExpired), // -> outgoing lock expired (if so)
-      // processed for Unlock or LockExpired clear this transfer, so aren't persisted
-      // transferFailed also clear this transfer
+      /** <- incoming processed for locked transfer */
+      transferProcessed: Signed(Processed),
+      /**
+       * -> outgoing secret reveal to target
+       * If this is set, it means the secret was revealed (so transfer succeeded, even if it didn't
+       * complete yet)
+       */
+      secretReveal: Signed(SecretReveal),
+      /**
+       * -> outgoing unlock to recipient
+       * If this is set, it means the Unlock was sent (even if partner didn't acknowledge it yet)
+       */
+      unlock: Signed(Unlock),
+      /**
+       * -> outgoing lock expired (if so)
+       * If this is set, transfer failed, and we expired the lock (retrieving the locked amount).
+       * Transfer failed may not have completed yet, e.g. waiting for LockExpired's Processed reply
+       */
+      lockExpired: Signed(LockExpired),
+      // Processed for Unlock or LockExpired clear this transfer, so aren't persisted here
       // TODO: check on how to handle RefundTransfer
     }),
   ]),
