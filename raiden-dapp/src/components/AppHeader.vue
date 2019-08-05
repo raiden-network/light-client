@@ -4,8 +4,18 @@
       <v-flex xs12>
         <div class="app-header__top__content">
           <div class="app-header__top__content__back">
-            <v-btn v-if="canGoBack" @click="onBackClicked()" flat icon>
-              <v-img :src="require('../assets/back_arrow.svg')"></v-img>
+            <v-btn
+              v-if="canGoBack"
+              @click="onBackClicked()"
+              height="40px"
+              width="40px"
+              text
+              icon
+            >
+              <v-img
+                :src="require('../assets/back_arrow.svg')"
+                max-width="34px"
+              ></v-img>
             </v-btn>
           </div>
           <v-spacer></v-spacer>
@@ -33,7 +43,7 @@
     </v-layout>
     <v-layout class="app-header__bottom" align-center>
       <v-flex xs6>
-        <div class="app-header__bottom__address text-xs-left">
+        <div class="app-header__bottom__address text-left">
           <v-tooltip bottom>
             <template #activator="{ on }">
               <span v-on="on">
@@ -44,7 +54,7 @@
           </v-tooltip>
           <v-tooltip v-model="copied" bottom dark>
             <template #activator="{ on }">
-              <v-btn @click="copy()" v-on="on" flat icon>
+              <v-btn @click="copy()" v-on="on" text icon>
                 <v-img
                   :src="require('../assets/copy_icon.svg')"
                   class="app-header__bottom__address__copy"
@@ -59,7 +69,7 @@
         </div>
       </v-flex>
       <v-flex xs6>
-        <div class="app-header__bottom__balance text-xs-right">
+        <div class="app-header__bottom__balance text-right">
           {{ accountBalance | decimals }}
           <span class="app-header__bottom__balance__currency">
             {{ $t('app-header.currency') }}

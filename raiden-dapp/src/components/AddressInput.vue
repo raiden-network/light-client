@@ -197,11 +197,11 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 }
 
-.address-input /deep/ .v-text-field__details {
+.address-input ::v-deep .v-text-field__details {
   padding-top: 8px;
 }
 
-.address-input /deep/ input {
+.address-input ::v-deep input {
   color: #ffffff;
   font-family: Roboto, sans-serif;
   font-size: 30px;
@@ -210,11 +210,11 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   max-height: 40px;
 }
 
-.address-input /deep/ input:focus {
+.address-input ::v-deep input:focus {
   outline: 0;
 }
 
-.address-input /deep/ .v-messages {
+.address-input ::v-deep .v-messages {
   color: #323232 !important;
   font-family: Roboto, sans-serif;
   font-size: 16px;
@@ -225,7 +225,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 }
 
-.address-input /deep/ .v-messages {
+.address-input ::v-deep .v-messages {
   border: 1px solid transparent;
   font-family: Roboto, sans-serif;
   font-size: 13px;
@@ -245,14 +245,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 $dark_border: #323232;
 $dark_background: #323232;
 
-.address-input--invalid /deep/ .v-messages {
+.address-input--invalid ::v-deep .v-messages {
   border-color: $dark_border;
   background-color: $dark_background;
   border: 1px solid !important;
   border-radius: 5px;
 }
 
-.address-input--invalid /deep/ .v-messages:after {
+.address-input--invalid ::v-deep .v-messages:after {
   content: ' ';
   border: solid;
   border-radius: 1px;
@@ -268,7 +268,7 @@ $dark_background: #323232;
   background-color: $dark_background;
 }
 
-.address-input--hint-visible /deep/ .v-messages {
+.address-input--hint-visible ::v-deep .v-messages {
   color: #696969 !important;
   font-family: Roboto, sans-serif;
   font-size: 16px;
@@ -277,7 +277,7 @@ $dark_background: #323232;
   margin-bottom: 14px;
 }
 
-.address-input--hint-visible /deep/ .v-text-field__details {
+.address-input--hint-visible ::v-deep .v-text-field__details {
   padding-top: 0;
   margin-top: 0;
 }
@@ -296,15 +296,15 @@ $dark_background: #323232;
   color: white !important;
 }
 
-/deep/ .v-input__icon--clear {
+::v-deep .v-input__icon--clear {
   margin-top: 6px;
 }
 
-/deep/ .v-text-field > .v-input__control > .v-input__slot::before {
+::v-deep .v-text-field > .v-input__control > .v-input__slot::before {
   border-width: 2px 0 0 0;
 }
 
-/deep/ .v-text-field > .v-input__control > .v-input__slot::after {
+::v-deep .v-text-field > .v-input__control > .v-input__slot::after {
   border-width: 3px 0 0 0;
 }
 </style>

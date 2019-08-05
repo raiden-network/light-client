@@ -1,6 +1,6 @@
 <template>
   <v-layout column class="channel-deposit">
-    <v-layout class="channel-deposit__wrapper" row align-center justify-center>
+    <v-layout class="channel-deposit__wrapper" align-center justify-center>
       <v-flex xs12>
         <v-form v-model="valid">
           <amount-input
@@ -12,7 +12,7 @@
         </v-form>
       </v-flex>
     </v-layout>
-    <v-layout row align-end justify-center class="channel-deposit__buttons">
+    <v-layout align-end justify-center class="channel-deposit__buttons">
       <v-btn
         :id="`cancel-${identifier}`"
         @click="cancel()"
@@ -111,7 +111,7 @@ export default class ChannelDeposit extends Vue {
   color: #ffffff;
 }
 
-.theme--light.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
+.theme--light.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
   background-color: $primary-disabled-color !important;
   color: #c4c4c4 !important;
 }

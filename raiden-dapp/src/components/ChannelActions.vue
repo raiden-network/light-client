@@ -1,5 +1,5 @@
 <template>
-  <v-layout justify-space-around row class="channel-actions">
+  <v-layout justify-space-around class="channel-actions">
     <v-btn
       :id="`deposit-${index}`"
       :disabled="channel.state !== 'open'"
@@ -53,11 +53,11 @@ export default class ChannelActions extends Vue {
   background-color: $secondary-button-color !important;
 }
 
-.channel-action__button__secondary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
+.channel-action__button__secondary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
   background-color: transparent !important;
 }
 
-.channel-action__button__primary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
+.channel-action__button__primary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
   background-color: $primary-disabled-color !important;
 }
 

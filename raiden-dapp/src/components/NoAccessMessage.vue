@@ -1,11 +1,5 @@
 <template>
-  <v-alert
-    :value="true"
-    color="error"
-    icon="warning"
-    outline
-    class="no-access-message"
-  >
+  <v-alert :value="true" color="error" icon="warning" class="no-access-message">
     <div class="font-weight-light no-access-message__message">
       <span v-if="networkUnsupported">
         {{ $t('no-access.unsupported-network') }}

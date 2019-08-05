@@ -5,7 +5,7 @@ import store from '@/store';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import { mount, Wrapper } from '@vue/test-utils';
+import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
 import { TestData } from '../data/mock-data';
 import VueRouter from 'vue-router';
 import RaidenService, {
@@ -24,10 +24,13 @@ Vue.use(Vuex);
 Vue.use(VueRouter);
 Vue.filter('displayFormat', Filters.displayFormat);
 
+const localVue = createLocalVue();
+
 describe('ChannelList.vue', function() {
   let wrapper: Wrapper<ChannelList>;
   let raiden: Mocked<RaidenService>;
   let mockIdenticon: jest.Mock<any, any>;
+  let vuetify: typeof Vuetify;
 
   function elementVisibilityChanged(
     eventIndex: number,
@@ -49,7 +52,11 @@ describe('ChannelList.vue', function() {
       getIdenticon: mockIdenticon
     };
 
+    vuetify = new Vuetify();
+
     wrapper = mount(ChannelList, {
+      localVue,
+      vuetify,
       propsData: {
         tokenAddress: '0xtoken',
         channels: TestData.mockChannelArray,
@@ -74,18 +81,24 @@ describe('ChannelList.vue', function() {
   });
 
   it('should display a close and deposit action for an open channel', function() {
+    wrapper.find('#channel-278').trigger('click');
+
     expect(wrapper.find('#close-0').attributes('disabled')).toBeFalsy();
     expect(wrapper.find('#deposit-0').attributes('disabled')).toBeFalsy();
     expect(wrapper.find('#settle-0').attributes('disabled')).toBeTruthy();
   });
 
   it('should display an no action entry when the channel is not open or settleable', function() {
+    wrapper.find('#channel-281').trigger('click');
+
     expect(wrapper.find('#close-3').attributes('disabled')).toBeTruthy();
     expect(wrapper.find('#deposit-3').attributes('disabled')).toBeTruthy();
     expect(wrapper.find('#settle-3').attributes('disabled')).toBeTruthy();
   });
 
   it('should display only settle in a settleable channel', function() {
+    wrapper.find('#channel-280').trigger('click');
+
     expect(wrapper.find('#close-2').attributes('disabled')).toBeTruthy();
     expect(wrapper.find('#deposit-2').attributes('disabled')).toBeTruthy();
     expect(wrapper.find('#settle-2').attributes('disabled')).toBeFalsy();

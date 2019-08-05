@@ -1,7 +1,7 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="select-hub">
     <v-layout column justify-space-between fill-height>
-      <v-layout align-center justify-center row>
+      <v-layout align-center justify-center>
         <v-flex xs10>
           <address-input v-model="partner"></address-input>
         </v-flex>

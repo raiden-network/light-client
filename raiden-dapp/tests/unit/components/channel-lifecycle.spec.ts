@@ -2,15 +2,20 @@ import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
 import { ChannelState } from 'raiden';
 import Vuetify from 'vuetify';
+import Vue from 'vue';
+
+Vue.use(Vuetify);
 
 describe('ChannelLifeCycle.vue', function() {
+  let vuetify: typeof Vuetify;
   function createWrapper(
     channelState: ChannelState
   ): Wrapper<ChannelLifeCycle> {
     const localVue = createLocalVue();
-    localVue.use(Vuetify);
+
     return mount(ChannelLifeCycle, {
       localVue,
+      vuetify,
       propsData: {
         state: channelState
       },

@@ -5,15 +5,19 @@ import { TestData } from '../data/mock-data';
 import Vuetify from 'vuetify';
 import { addElemWithDataAppToBody } from '../utils/dialog';
 import Filters from '@/filters';
+import Vue from 'vue';
+
+Vue.use(Vuetify);
 
 describe('Channels.vue', () => {
   let wrapper: Wrapper<Channels>;
+  let vuetify: typeof Vuetify;
 
   beforeEach(() => {
     addElemWithDataAppToBody();
+    vuetify = new Vuetify();
     const localVue = createLocalVue();
     localVue.use(Vuex);
-    localVue.use(Vuetify);
     localVue.filter('displayFormat', Filters.displayFormat);
     let mockIdenticon = jest.fn().mockResolvedValue('');
     const $identicon = {
@@ -22,6 +26,7 @@ describe('Channels.vue', () => {
 
     wrapper = mount(Channels, {
       localVue,
+      vuetify,
       store: new Store({
         getters: {
           channels: jest.fn().mockReturnValue(() => TestData.mockChannelArray)

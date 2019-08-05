@@ -1,11 +1,12 @@
 <template>
   <v-container fluid fill-height class="splash-screen">
-    <v-layout align-center justify-center row>
+    <v-layout align-center justify-center>
       <v-flex xs8 md6 lg4>
         <div class="splash-screen__wrapper display-3">
           <div class="splash-screen__logo-container">
             <v-img
               :src="require('../assets/logo.svg')"
+              min-width="50px"
               class="splash-screen__logo"
               aspect-ratio="1"
               contain
@@ -17,12 +18,10 @@
             </div>
           </div>
         </div>
-        <div class="font-weight-light text-xs-center splash-screen__disclaimer">
+        <div class="font-weight-light text-center splash-screen__disclaimer">
           {{ $t('splash-screen.disclaimer') }}
         </div>
-        <div
-          class="font-weight-light text-xs-center splash-screen__matrix_sign"
-        >
+        <div class="font-weight-light text-center splash-screen__matrix_sign">
           {{ $t('splash-screen.matrix-sign') }}
         </div>
         <div class="splash-screen__button">
@@ -66,6 +65,7 @@ export default class Loading extends Vue {
   accessDenied!: DeniedReason;
   name: string = 'Raiden dApp';
 
+  // noinspection JSMethodCanBeStatic
   get injectedProvider(): boolean {
     return Web3Provider.injectedWeb3Available();
   }
