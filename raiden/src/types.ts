@@ -50,7 +50,13 @@ export interface RaidenChannel {
   state: ChannelState;
   ownDeposit: BigNumber;
   partnerDeposit: BigNumber;
+  // balance is difference between partner's sent tokens minus own sent tokens
+  // as of now we can only send, balance usually is a negative number, as once you send
+  // X tokens, you have X less tokens than before, and initial balance is zero
   balance: BigNumber;
+  // "distributable" capacity of channel, sum of own total deposit and balance (which as usually
+  // negative, decreases capacity)
+  capacity: BigNumber;
   id?: number;
   settleTimeout?: number;
   openBlock?: number;

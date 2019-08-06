@@ -146,17 +146,8 @@ export class Raiden {
             result[token] = transform(
               // transform Channel to RaidenChannel, with more info
               partner2channel,
-              (partner2raidenChannel, channel, partner) =>
-                (partner2raidenChannel[partner] = {
-                  state: channel.state,
-                  ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
-                  token,
-                  tokenNetwork: tokenNetwork as Address,
-                  partner: partner as Address,
-                  ownDeposit: channel.own.deposit,
-                  partnerDeposit: channel.partner.deposit,
-                  // balance is difference between is partner's and own transfered+locked amounts
-                  balance: (channel.partner.balanceProof
+              (partner2raidenChannel, channel, partner) => {
+                const balance = (channel.partner.balanceProof
                     ? channel.partner.balanceProof.transferredAmount.add(
                         channel.partner.balanceProof.lockedAmount,
                       )
@@ -168,7 +159,19 @@ export class Raiden {
                         )
                       : Zero,
                   ),
-                }),
+                  capacity = channel.own.deposit.add(balance);
+                return (partner2raidenChannel[partner] = {
+                  state: channel.state,
+                  ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
+                  token,
+                  tokenNetwork: tokenNetwork as Address,
+                  partner: partner as Address,
+                  ownDeposit: channel.own.deposit,
+                  partnerDeposit: channel.partner.deposit,
+                  balance,
+                  capacity,
+                });
+              },
             );
           },
         ),
