@@ -1,5 +1,5 @@
 <template>
-  <v-layout row class="list-header">
+  <v-layout class="list-header">
     <v-flex xs12>
       <div class="list-header__header">{{ header }}</div>
       <div class="list-header__divider"></div>

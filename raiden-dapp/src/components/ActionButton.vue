@@ -1,6 +1,6 @@
 <template>
-  <v-layout class="action-button" row align-center justify-center>
-    <v-flex xs10 class="text-xs-center">
+  <v-layout class="action-button" align-center justify-center>
+    <v-flex xs10 class="text-center">
       <v-btn
         :disabled="!enabled"
         @click="click()"
@@ -38,11 +38,11 @@ export default class ActionButton extends Vue {
   background-color: $primary-color !important;
 }
 
-/deep/ .v-btn--disabled {
+::v-deep .v-btn--disabled {
   background-color: $primary-color !important;
 }
 
-.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--flat):not(.v-btn--outline) {
+.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
   background-color: $primary-disabled-color !important;
   color: $disabled-text-color !important;
 }

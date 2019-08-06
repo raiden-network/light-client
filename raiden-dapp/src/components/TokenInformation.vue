@@ -1,5 +1,5 @@
 <template>
-  <v-layout align-start justify-center row class="token-information">
+  <v-layout align-start justify-center class="token-information">
     <v-flex xs2>
       <div class="token-information__label">
         {{ $t('token-information.title') }}

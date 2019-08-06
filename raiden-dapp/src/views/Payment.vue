@@ -1,13 +1,13 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="payment">
     <v-layout column justify-space-between fill-height>
-      <v-layout align-center justify-center row>
+      <v-layout align-center justify-center>
         <v-flex xs10>
           <address-input v-model="target"></address-input>
         </v-flex>
       </v-layout>
 
-      <v-layout align-center justify-center row>
+      <v-layout align-center justify-center>
         <v-flex xs10>
           <amount-input v-model="amount" :token="token"></amount-input>
         </v-flex>

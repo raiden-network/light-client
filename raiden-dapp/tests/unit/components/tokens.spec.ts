@@ -1,22 +1,24 @@
+jest.mock('@/services/raiden-service');
+
 import { addElemWithDataAppToBody } from '../utils/dialog';
 import store from '@/store';
 import Vue from 'vue';
 import Vuex, { Store } from 'vuex';
 import Vuetify from 'vuetify';
-import { mount, Wrapper } from '@vue/test-utils';
+import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
 import Tokens from '@/components/Tokens.vue';
 import { TestData } from '../data/mock-data';
 import VueRouter from 'vue-router';
 import RaidenService from '@/services/raiden-service';
 import { emptyTokenModel } from '@/model/types';
-
-jest.mock('@/services/raiden-service');
-
 import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
 Vue.use(VueRouter);
+
+const localVue = createLocalVue();
+localVue.use(Vuetify);
 
 describe('Tokens.vue', function() {
   addElemWithDataAppToBody();
@@ -24,9 +26,12 @@ describe('Tokens.vue', function() {
   let wrapper: Wrapper<Tokens>;
   let mockRouter: VueRouter;
   let raiden: Mocked<RaidenService>;
+  let vuetify: typeof Vuetify;
 
   beforeEach(() => {
     raiden = new RaidenService(store) as Mocked<RaidenService>;
+    vuetify = new Vuetify();
+
     mockRouter = new VueRouter({
       routes: [
         {
@@ -43,6 +48,8 @@ describe('Tokens.vue', function() {
     };
 
     wrapper = mount(Tokens, {
+      localVue,
+      vuetify,
       store: new Store({
         getters
       }),

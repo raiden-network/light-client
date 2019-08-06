@@ -102,8 +102,8 @@ export default class App extends Vue {
   height: calc(100% - 8px);
 }
 
-.application {
-  background: $background-gradient;
+.v-application {
+  background: $background-gradient !important;
 }
 
 .policy {

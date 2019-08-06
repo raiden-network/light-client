@@ -1,7 +1,7 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="open-channel">
     <v-layout column justify-space-between fill-height>
-      <v-layout align-center justify-center row>
+      <v-layout align-center justify-center>
         <v-flex xs10>
           <amount-input v-model="deposit" :token="token" limit></amount-input>
         </v-flex>
@@ -13,11 +13,11 @@
 
       <divider></divider>
 
-      <v-layout align-center justify-center row class="open-channel__hub">
-        <v-flex xs2 class="open-channel__hub__label text-xs-left">
+      <v-layout align-center justify-center class="open-channel__hub">
+        <v-flex xs2 class="open-channel__hub__label text-left">
           {{ $t('open-channel.hub') }}
         </v-flex>
-        <v-flex xs8 class="open-channel__hub__address text-xs-left">
+        <v-flex xs8 class="open-channel__hub__address text-left">
           {{ partner }}
         </v-flex>
       </v-layout>

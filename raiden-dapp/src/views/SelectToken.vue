@@ -5,31 +5,31 @@
       class="select-token__header"
     ></list-header>
 
-    <v-layout justify-center row>
+    <v-layout justify-center>
       <v-flex xs12>
         <v-list class="select-token__tokens">
           <template v-for="token in allTokens">
-            <v-list-tile
+            <v-list-item
               :key="token.address"
               @click="navigateToSelectHub(token.address)"
               class="select-token__tokens__token"
             >
-              <v-list-tile-avatar class="select-token__tokens__token__blockie">
+              <v-list-item-avatar class="select-token__tokens__token__blockie">
                 <img
                   :src="$blockie(token.address)"
                   :alt="$t('select-token.tokens.token.blockie-alt')"
                 />
-              </v-list-tile-avatar>
-              <v-list-tile-content>
-                <v-list-tile-title class="select-token__tokens__token__info">
+              </v-list-item-avatar>
+              <v-list-item-content>
+                <v-list-item-title class="select-token__tokens__token__info">
                   {{
                     $t('select-token.tokens.token.token-information', {
                       symbol: token.symbol,
                       name: token.name
                     })
                   }}
-                </v-list-tile-title>
-                <v-list-tile-sub-title
+                </v-list-item-title>
+                <v-list-item-subtitle
                   class="select-token__tokens__token__address"
                 >
                   <v-tooltip bottom>
@@ -40,14 +40,14 @@
                       {{ token.address }}
                     </span>
                   </v-tooltip>
-                </v-list-tile-sub-title>
-              </v-list-tile-content>
-              <v-list-tile-action-text>
+                </v-list-item-subtitle>
+              </v-list-item-content>
+              <v-list-item-action-text>
                 <span class="select-token__tokens__token__balance">
                   {{ token.balance | displayFormat(token.decimals) }}
                 </span>
-              </v-list-tile-action-text>
-            </v-list-tile>
+              </v-list-item-action-text>
+            </v-list-item>
           </template>
         </v-list>
       </v-flex>
@@ -99,11 +99,11 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
   padding-right: 20px;
 }
 
-.select-token__tokens /deep/ .v-list__tile {
+.select-token__tokens ::v-deep .v-list-item {
   height: 105px;
 }
 
-.select-token__tokens /deep/ .v-list__tile__action-text {
+.select-token__tokens ::v-deep .v-list-item__action-text {
   height: 44px;
 }
 

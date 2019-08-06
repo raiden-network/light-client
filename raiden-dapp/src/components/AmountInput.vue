@@ -22,9 +22,9 @@
       background-color="transparent"
       autocomplete="off"
       persistent-hint
-      flat
       placeholder="0.00"
       solo
+      flat
     >
       <div slot="prepend" class="amount-input__prepend"></div>
       <div slot="append-outer" class="amount-input__status-icon">
@@ -162,20 +162,20 @@ $light_background: #e4e4e4;
 .light {
   color: $dark_color !important;
 
-  /deep/ input {
+  ::v-deep input {
     color: $dark_color !important;
   }
 
-  /deep/ .v-messages {
+  ::v-deep .v-messages {
     color: $dark_color !important;
   }
 
-  .invalid /deep/ .v-messages {
+  .invalid ::v-deep .v-messages {
     border-color: $light_border;
     background-color: $light_background;
   }
 
-  .invalid /deep/ .v-messages:after {
+  .invalid ::v-deep .v-messages:after {
     border-color: $light_border;
     background-color: $light_background;
   }
@@ -184,34 +184,34 @@ $light_background: #e4e4e4;
 .dark {
   color: $light_color !important;
 
-  /deep/ input {
+  ::v-deep input {
     color: $light_color !important;
   }
 
-  /deep/ .v-messages {
+  ::v-deep .v-messages {
     color: $error-tooltip-background !important;
     .v-messages__wrapper {
       color: white;
     }
   }
 
-  .invalid /deep/ .v-messages {
+  .invalid ::v-deep .v-messages {
     border-color: $error-tooltip-background;
     background-color: $error-tooltip-background;
   }
 
-  .invalid /deep/ .v-messages:after {
+  .invalid ::v-deep .v-messages:after {
     border-color: $error-tooltip-background;
     background-color: $error-tooltip-background;
   }
 }
 
-.invalid /deep/ .v-messages {
+.invalid ::v-deep .v-messages {
   border: 1px solid !important;
   border-radius: 5px;
 }
 
-.invalid /deep/ .v-messages:after {
+.invalid ::v-deep .v-messages:after {
   content: ' ';
   border: solid #050505;
   border-radius: 1px;
@@ -239,7 +239,7 @@ $light_background: #e4e4e4;
   }
 }
 
-.amount-input /deep/ input {
+.amount-input ::v-deep input {
   font-family: Roboto, sans-serif;
   font-size: 40px;
   font-weight: 500;
@@ -247,16 +247,17 @@ $light_background: #e4e4e4;
   text-align: center;
   max-height: 50px;
 }
-.amount-input /deep/ input:focus {
+
+.amount-input ::v-deep input:focus {
   outline: 0;
 }
 
-.amount-input /deep/ .v-text-field__details {
+.amount-input ::v-deep .v-text-field__details {
   padding-top: 8px;
   margin-top: 16px;
 }
 
-.amount-input /deep/ .v-messages {
+.amount-input ::v-deep .v-messages {
   border: 1px solid transparent;
   font-family: Roboto, sans-serif;
   font-size: 13px;
@@ -273,7 +274,7 @@ $light_background: #e4e4e4;
   }
 }
 
-.amount-input /deep/ .v-messages:after {
+.amount-input ::v-deep .v-messages:after {
   padding: 3px;
 }
 
@@ -284,6 +285,7 @@ $light_background: #e4e4e4;
   font-size: 16px;
   line-height: 20px;
   margin-top: -85px;
+  text-align: center;
 }
 
 .amount-input__status-icon {
