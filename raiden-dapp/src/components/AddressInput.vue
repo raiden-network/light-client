@@ -21,18 +21,12 @@
       hide-selected
     >
       <template #append>
-        <div class="address-input__status-icon">
-          <v-img
-            v-if="!valid && touched"
-            :src="require('../assets/input_invalid.svg')"
-            class="address-input__status-icon__icon"
-          >
-          </v-img>
-          <v-img
-            v-if="valid"
-            :src="require('../assets/input_valid.svg')"
-            class="address-input__status-icon__icon"
-          ></v-img>
+        <div class="address-input__status__paste-button">
+          <v-btn text class="text-capitalize">
+            <span class="address-input__status__paste-button__text">
+              Paste
+            </span>
+          </v-btn>
         </div>
       </template>
       <template #prepend-inner>
@@ -198,14 +192,18 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 .address-input ::v-deep input {
   color: #ffffff;
   font-family: Roboto, sans-serif;
-  font-size: 30px;
-  font-weight: 500;
-  line-height: 38px;
-  max-height: 40px;
+  font-size: 16px;
+  max-height: 49px;
 }
 
 .address-input ::v-deep input:focus {
   outline: 0;
+}
+
+.address-input ::v-deep .v-input__slot {
+  border-radius: 10px;
+  background-color: $input-background;
+  padding: 8px 16px;
 }
 
 .address-input ::v-deep .v-messages {
@@ -276,29 +274,20 @@ $dark_background: #323232;
   margin-top: 0;
 }
 
-.address-input__status-icon__icon {
-  line-height: 20px;
-  width: 20px;
-}
-
-.address-input__status-icon {
-  padding: 8px;
-}
-
 .address-input--untouched {
   caret-color: white !important;
   color: white !important;
 }
 
-::v-deep .v-input__icon--clear {
-  margin-top: 6px;
-}
-
 ::v-deep .v-text-field > .v-input__control > .v-input__slot::before {
-  border-width: 2px 0 0 0;
+  border-width: 0 0 0 0;
 }
 
 ::v-deep .v-text-field > .v-input__control > .v-input__slot::after {
-  border-width: 3px 0 0 0;
+  border-width: 0 0 0 0;
+}
+
+.address-input__status__paste-button__text {
+  color: $primary-color;
 }
 </style>

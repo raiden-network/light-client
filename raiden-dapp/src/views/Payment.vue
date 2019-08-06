@@ -1,21 +1,52 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="payment">
     <v-layout column justify-space-between fill-height>
-      <v-layout align-center justify-center>
+      <v-layout align-center justify-center class="payment__recipient">
         <v-flex xs10>
+          <div class="payment__recipient__label">
+            {{ $t('payment.recipient-label') }}
+          </div>
           <address-input v-model="target"></address-input>
         </v-flex>
       </v-layout>
 
       <v-layout align-center justify-center>
         <v-flex xs10>
-          <amount-input v-model="amount" :token="token"></amount-input>
+          <div class="payment__amount__label">
+            {{ $t('payment.amount-label') }}
+          </div>
+          <amount-input
+            v-model="amount"
+            :token="token"
+            :placeholder="$t('payment.amount-placeholder')"
+          ></amount-input>
         </v-flex>
       </v-layout>
 
-      <divider></divider>
+      <v-layout class="payment__capacity" justify-center>
+        <v-flex xs5>
+          <v-layout column>
+            <span class="payment__capacity__label">
+              {{ $t('payment.capacity-label') }}
+            </span>
+            <span class="payment__capacity__amount">
+              {{
+                $t('payment.capacity-amount', {
+                  capacity: convertToUnits(token.balance, token.decimals),
+                  token: token.symbol
+                })
+              }}
+            </span>
+          </v-layout>
+        </v-flex>
+        <v-flex xs2 offset-xs3 align-self-end>
+          <v-btn text class="payment__capacity__deposit">
+            {{ $t('payment.deposit-button') }}
+          </v-btn>
+        </v-flex>
+      </v-layout>
 
-      <token-information :token="token"></token-information>
+      <v-spacer></v-spacer>
 
       <action-button
         :enabled="valid"
@@ -82,6 +113,8 @@ export default class Payment extends Vue {
   steps: StepDescription[] = [];
   doneStep: StepDescription = emptyDescription();
 
+  convertToUnits = BalanceUtils.toUnits;
+
   async created() {
     const { token } = this.$route.params;
     this.token = (await this.$raiden.getToken(token)) || TokenPlaceholder;
@@ -115,8 +148,48 @@ export default class Payment extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '../scss/colors';
 .payment {
   width: 100%;
   height: 100%;
+}
+
+.payment__capacity__label {
+  color: $secondary-color;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  line-height: 15px;
+  text-transform: uppercase;
+}
+
+.payment__capacity__amount {
+  color: $text-color;
+  font-size: 16px;
+  line-height: 19px;
+  padding-left: 11px;
+  margin-top: 10px;
+}
+
+.payment__capacity__deposit {
+  color: $primary-color;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 21px;
+}
+
+.payment__recipient,
+.payment__amount {
+  max-height: 150px;
+}
+
+.payment__recipient__label,
+.payment__amount__label {
+  color: $secondary-color;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  line-height: 15px;
+  text-transform: uppercase;
 }
 </style>

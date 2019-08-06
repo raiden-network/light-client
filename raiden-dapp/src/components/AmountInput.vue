@@ -1,48 +1,30 @@
 <template>
-  <fieldset :class="{ light, dark: !light, padded }" class="amount-input">
+  <fieldset class="amount-input">
     <v-text-field
       id="amount"
       ref="input"
-      :class="{ light, invalid: !valid }"
+      :class="{ invalid: !valid }"
       :disabled="disabled"
       :label="label"
       :rules="rules"
       :value="amount"
-      :light="light"
-      :dark="!light"
       @contextmenu="valueUpdated('contextmenu', $event)"
       @drop="valueUpdated('drop', $event)"
       @input.native="valueUpdated('input', $event)"
       @keydown="valueUpdated('keydown', $event)"
       @keyup="valueUpdated('keyup', $event)"
-      :hint="$t('amount-input.input.hint')"
       @mousedown="valueUpdated('mousedown', $event)"
       @mouseup="valueUpdated('mouseup', $event)"
       @select="valueUpdated('select', $event)"
-      background-color="transparent"
+      :placeholder="placeholder"
       autocomplete="off"
-      persistent-hint
-      placeholder="0.00"
       solo
       flat
     >
-      <div slot="prepend" class="amount-input__prepend"></div>
-      <div slot="append-outer" class="amount-input__status-icon">
-        <v-img
-          v-if="!valid"
-          :src="require('../assets/input_invalid.svg')"
-          class="amount-input__status-icon__icon"
-        ></v-img>
-        <v-img
-          v-else
-          :src="require('../assets/input_valid.svg')"
-          class="amount-input__status-icon__icon"
-        ></v-img>
+      <div slot="append" class="amount-input__token-symbol">
+        {{ token.symbol || 'TKN' }}
       </div>
     </v-text-field>
-    <span :class="{ light }" class="amount-input__token-symbol">{{
-      token.symbol || 'TKN'
-    }}</span>
   </fieldset>
 </template>
 
@@ -67,9 +49,11 @@ export default class AmountInput extends Vue {
   light!: boolean;
   @Prop({ default: false, type: Boolean })
   padded!: boolean;
+  @Prop({ default: '0.0', type: String })
+  placeholder!: string;
 
   valid: boolean = true;
-  amount: string = '0.00';
+  amount: string = '';
   private static numericRegex = /^\d*[.,]?\d*$/;
 
   readonly rules = [
@@ -147,65 +131,6 @@ export default class AmountInput extends Vue {
 $header-vertical-margin: 5rem;
 $header-vertical-margin-mobile: 2rem;
 
-.padded {
-  padding-top: 60px;
-  padding-bottom: 60px;
-}
-
-$dark_color: #050505;
-$light_color: #ffffff;
-$dark_border: #fbfbfb;
-$light_border: #050505;
-$dark_background: #1e1e1e;
-$light_background: #e4e4e4;
-
-.light {
-  color: $dark_color !important;
-
-  ::v-deep input {
-    color: $dark_color !important;
-  }
-
-  ::v-deep .v-messages {
-    color: $dark_color !important;
-  }
-
-  .invalid ::v-deep .v-messages {
-    border-color: $light_border;
-    background-color: $light_background;
-  }
-
-  .invalid ::v-deep .v-messages:after {
-    border-color: $light_border;
-    background-color: $light_background;
-  }
-}
-
-.dark {
-  color: $light_color !important;
-
-  ::v-deep input {
-    color: $light_color !important;
-  }
-
-  ::v-deep .v-messages {
-    color: $error-tooltip-background !important;
-    .v-messages__wrapper {
-      color: white;
-    }
-  }
-
-  .invalid ::v-deep .v-messages {
-    border-color: $error-tooltip-background;
-    background-color: $error-tooltip-background;
-  }
-
-  .invalid ::v-deep .v-messages:after {
-    border-color: $error-tooltip-background;
-    background-color: $error-tooltip-background;
-  }
-}
-
 .invalid ::v-deep .v-messages {
   border: 1px solid !important;
   border-radius: 5px;
@@ -239,22 +164,25 @@ $light_background: #e4e4e4;
   }
 }
 
+.amount-input ::v-deep .v-input__slot {
+  border-radius: 10px;
+  background-color: $input-background !important;
+  padding: 8px 16px;
+  max-height: 49px;
+}
+
+.amount-input ::v-deep .v-input {
+  width: 100%;
+}
+
 .amount-input ::v-deep input {
   font-family: Roboto, sans-serif;
-  font-size: 40px;
-  font-weight: 500;
-  line-height: 47px;
-  text-align: center;
-  max-height: 50px;
+  font-size: 16px;
+  line-height: 20px;
 }
 
 .amount-input ::v-deep input:focus {
   outline: 0;
-}
-
-.amount-input ::v-deep .v-text-field__details {
-  padding-top: 8px;
-  margin-top: 16px;
 }
 
 .amount-input ::v-deep .v-messages {
@@ -263,7 +191,6 @@ $light_background: #e4e4e4;
   font-size: 13px;
   line-height: 18px;
   text-align: center;
-  margin-top: 15px;
 
   .v-messages__wrapper {
     height: 30px;
@@ -274,30 +201,12 @@ $light_background: #e4e4e4;
   }
 }
 
-.amount-input ::v-deep .v-messages:after {
-  padding: 3px;
-}
-
 .amount-input__token-symbol {
   font-family: Roboto, sans-serif;
-  color: $secondary-color;
+  color: $text-color;
   font-weight: 500;
-  font-size: 16px;
-  line-height: 20px;
-  margin-top: -85px;
+  font-size: 14px;
+  line-height: 16px;
   text-align: center;
-}
-
-.amount-input__status-icon {
-  padding: 8px;
-}
-
-.amount-input__status-icon__icon {
-  line-height: 28px;
-  width: 28px;
-}
-
-.amount-input__prepend {
-  width: 44px;
 }
 </style>

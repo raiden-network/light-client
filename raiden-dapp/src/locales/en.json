@@ -156,6 +156,12 @@
   },
   "payment": {
     "pay-button": "Pay",
+    "deposit-button": "Deposit",
+    "capacity-label": "Capacity",
+    "capacity-amount": "{capacity} {token}",
+    "recipient-label": "Recipient",
+    "amount-label": "Amount",
+    "amount-placeholder": "Specify amount...",
     "error": {
       "button": "Dismiss",
       "title": "Payment unsuccessful. Please retry."

@@ -15,6 +15,7 @@ import flatMap from 'lodash/flatMap';
 import clone from 'lodash/clone';
 import reduce from 'lodash/reduce';
 import { Network } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 Vue.use(Vuex);
 
@@ -122,6 +123,15 @@ const store: StoreOptions<RootState> = {
     },
     network: (state: RootState) => {
       return state.network.name || `Chain ${state.network.chainId}`;
+    },
+    capacity: (state, getters) => (tokenAddress: string) => {
+      const channels: RaidenChannel[] = getters.channels(tokenAddress);
+      return channels
+        .map(value => value.balance)
+        .reduce(
+          (previousValue, currentValue) => previousValue.add(currentValue),
+          Zero
+        );
     }
   }
 };
