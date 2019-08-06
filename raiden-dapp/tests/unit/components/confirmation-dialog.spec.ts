@@ -10,9 +10,12 @@ describe('ConfirmationDialog.vue', function() {
   addElemWithDataAppToBody();
 
   let wrapper: Wrapper<ConfirmationDialog>;
+  let vuetify: typeof Vuetify;
 
   beforeEach(() => {
+    vuetify = new Vuetify();
     wrapper = mount(ConfirmationDialog, {
+      vuetify,
       propsData: {
         display: true
       },

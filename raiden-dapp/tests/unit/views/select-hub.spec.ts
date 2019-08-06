@@ -8,11 +8,15 @@ import VueRouter, { Route } from 'vue-router';
 import { mockInput } from '../utils/interaction-utils';
 import Mocked = jest.Mocked;
 import { RouteNames } from '@/route-names';
+import Vue from 'vue';
+
+Vue.use(Vuetify);
 
 describe('SelectHub.vue', function() {
   let wrapper: Wrapper<SelectHub>;
   let router: Mocked<VueRouter>;
   let callArgs: () => any;
+  let vuetify: typeof Vuetify;
 
   const testToken = (address: string) =>
     Object.assign(TestData.token, {
@@ -27,8 +31,8 @@ describe('SelectHub.vue', function() {
   ) {
     const localVue = createLocalVue();
     localVue.use(Vuex);
-    localVue.use(Vuetify);
     const options = {
+      vuetify,
       localVue,
       store: new Store({
         getters: {

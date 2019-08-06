@@ -1,16 +1,16 @@
 <template>
   <v-layout column class="confirmation">
-    <v-layout row align-center justify-center>
+    <v-layout align-center justify-center>
       <v-flex xs12>
         <h1 class="confirmation__text__header"><slot name="header"></slot></h1>
       </v-flex>
     </v-layout>
-    <v-layout row align-center justify-cenetr>
+    <v-layout align-center justify-cenetr>
       <v-flex xs12>
         <p class="confirmation__text__message"><slot></slot></p>
       </v-flex>
     </v-layout>
-    <v-layout row align-end justify-center class="confirmation__buttons">
+    <v-layout align-end justify-center class="confirmation__buttons">
       <v-btn
         :id="`cancel-${identifier}`"
         @click="cancel()"
@@ -23,7 +23,7 @@
         @click="confirm()"
         class="text-capitalize confirmation__buttons__confirm"
       >
-        {{ $t('confirmation.buttons.close') }}
+        {{ positiveAction }}
       </v-btn>
     </v-layout>
   </v-layout>
@@ -36,6 +36,8 @@ import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 export default class Confirmation extends Vue {
   @Prop({ required: true })
   identifier!: number;
+  @Prop({ required: true })
+  positiveAction!: string;
 
   @Emit()
   public cancel() {}
@@ -68,14 +70,15 @@ $background-color: #323232;
   padding-top: 10px;
   text-align: center;
   height: 100%;
+  color: #ffffff;
 }
 
 .confirmation__buttons {
 }
 
 .confirmation__buttons button {
-  width: 135px;
-  height: 35px;
+  width: 135px !important;
+  height: 35px !important;
   font-size: 16px;
   line-height: 21px;
   text-align: center;

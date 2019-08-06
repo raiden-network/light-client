@@ -1,6 +1,6 @@
 <template>
   <div class="channels">
-    <v-layout justify-center row>
+    <v-layout justify-center>
       <Transition name="fade-transition" mode="out-in">
         <div
           v-show="visible"
@@ -47,7 +47,7 @@
     ></channel-list>
     <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
       {{ message }}
-      <v-btn @click="snackbar = false" color="primary" flat>
+      <v-btn @click="snackbar = false" color="primary" text>
         {{ $t('channels.snackbar-close') }}
       </v-btn>
     </v-snackbar>

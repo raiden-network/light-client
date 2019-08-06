@@ -1,9 +1,8 @@
 /* istanbul ignore file */
 import Vue from 'vue';
-import '@/plugins/vuetify';
+import App from './App.vue';
 import '@/plugins/class-component.hooks';
 import '@/filters';
-import App from './App.vue';
 import router from './router';
 import store from './store';
 import './registerServiceWorker';
@@ -11,6 +10,7 @@ import './class-component-hooks';
 import { RaidenPlugin } from '@/plugins/raiden';
 import { IdenticonPlugin } from '@/plugins/identicon-plugin';
 import i18n from './i18n';
+import vuetify from '@/plugins/vuetify';
 
 Vue.config.productionTip = false;
 
@@ -18,6 +18,7 @@ Vue.use(RaidenPlugin);
 Vue.use(IdenticonPlugin);
 
 new Vue({
+  vuetify,
   router,
   store,
 

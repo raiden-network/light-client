@@ -4,26 +4,25 @@
       :header="$t('tokens.connected.header')"
       class="connected-tokens__header"
     ></list-header>
-    <v-layout justify-center row fill-height>
+    <v-layout justify-center fill-height>
       <v-flex xs12>
-        <v-list class="connected-tokens__tokens">
+        <v-list class="connected-tokens__tokens" expand>
           <v-list-group
             v-for="(token, index) in tokens"
-            :id="`token-${index}`"
             :key="token.token"
             class="connected-tokens__tokens__token"
             no-action
           >
             <template #activator>
-              <v-list-tile>
-                <v-list-tile-avatar class="list-blockie">
+              <v-list-item :id="`token-${index}`">
+                <v-list-item-avatar class="list-blockie">
                   <img
                     :src="$blockie(token.address)"
                     :alt="$t('tokens.connected.token.blockie-alt')"
                   />
-                </v-list-tile-avatar>
-                <v-list-tile-content>
-                  <v-list-tile-title
+                </v-list-item-avatar>
+                <v-list-item-content>
+                  <v-list-item-title
                     class="connected-tokens__tokens__token__info"
                   >
                     {{
@@ -32,20 +31,20 @@
                         name: token.name
                       })
                     }}
-                  </v-list-tile-title>
-                  <v-list-tile-sub-title
+                  </v-list-item-title>
+                  <v-list-item-subtitle
                     class="connected-tokens__tokens__token__address"
                   >
                     {{ token.address }}
-                  </v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
             </template>
             <div
               :id="`expanded-area-${index}`"
               class="connected-tokens__tokens__token__expanded"
             >
-              <v-layout justify-center row>
+              <v-layout justify-center>
                 <v-btn
                   :id="`pay-${index}`"
                   :to="`/payment/${token.address}`"
@@ -102,7 +101,7 @@
         </span>
       </i18n>
     </confirmation-dialog>
-    <stepper :display="loading" :steps="steps"></stepper>
+    <stepper :display="loading" :steps="steps" :doneStep="doneStep"></stepper>
   </v-layout>
 </template>
 
@@ -110,7 +109,7 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
-import { StepDescription, TokenModel } from '@/model/types';
+import { emptyDescription, StepDescription, TokenModel } from '@/model/types';
 import Stepper from '@/components/Stepper.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ListHeader from '@/components/ListHeader.vue';
@@ -128,9 +127,11 @@ export default class Tokens extends Mixins(BlockieMixin, NavigationMixin) {
 
   loading: boolean = false;
   steps: StepDescription[] = [];
+  doneStep: StepDescription = emptyDescription();
 
   created() {
     this.steps = [(this.$t('tokens.leave-progress') as any) as StepDescription];
+    this.doneStep = (this.$t('tokens.leave-done') as any) as StepDescription;
   }
 
   private dismissModal() {
@@ -170,16 +171,16 @@ export default class Tokens extends Mixins(BlockieMixin, NavigationMixin) {
   padding-top: 0;
 }
 
-.connected-tokens__tokens /deep/ .v-avatar {
+.connected-tokens__tokens ::v-deep .v-avatar {
   padding-left: 30px;
   padding-right: 30px;
 }
 
-.connected-tokens__tokens /deep/ .v-list__tile {
+.connected-tokens__tokens ::v-deep .v-list-item {
   height: 105px;
 }
 
-.connected-tokens__tokens /deep/ .v-list__group__header:hover {
+.connected-tokens__tokens ::v-deep .v-list__group__header:hover {
   background-color: $token-entry-hover-background;
 }
 

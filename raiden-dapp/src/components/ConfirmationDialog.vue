@@ -1,5 +1,5 @@
 <template>
-  <v-layout row justify-center>
+  <v-layout justify-center>
     <v-dialog v-model="display" persistent max-width="625">
       <v-card>
         <v-card-title>
@@ -14,13 +14,13 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn @click="cancel()" class="confirmation-dialog__button" flat>
+          <v-btn @click="cancel()" class="confirmation-dialog__button" text>
             {{ $t('confirmation-dialog.buttons.cancel') }}
           </v-btn>
           <v-btn
             @click="confirm()"
             class="confirmation-dialog__button confirmation-dialog__button__primary"
-            flat
+            text
           >
             {{ $t('confirmation-dialog.buttons.confirm') }}
           </v-btn>
@@ -53,7 +53,7 @@ export default class ConfirmationDialog extends Vue {
 @import '../scss/colors';
 @import '../scss/dimensions';
 
-/deep/ .theme--dark.v-sheet {
+::v-deep .theme--dark.v-sheet {
   background-color: $dialog-background;
 }
 .confirmation-dialog__header {
@@ -84,6 +84,6 @@ export default class ConfirmationDialog extends Vue {
 }
 
 .confirmation-dialog__button__primary {
-  background-color: $primary-color;
+  background-color: $primary-color !important;
 }
 </style>
