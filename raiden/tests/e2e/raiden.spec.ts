@@ -172,6 +172,7 @@ describe('Raiden', () => {
             ownDeposit: Zero,
             partnerDeposit: Zero,
             settleTimeout: 500,
+            balance: Zero,
           },
         },
       });
@@ -211,6 +212,8 @@ describe('Raiden', () => {
             partner,
             state: ChannelState.open,
             ownDeposit: bigNumberify(300),
+            balance: Zero,
+            capacity: bigNumberify(300),
           },
         },
       });

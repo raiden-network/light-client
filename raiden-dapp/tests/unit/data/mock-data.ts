@@ -26,7 +26,8 @@ export class TestData {
     token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C' as Address,
     tokenNetwork: '0x111157460c0F41EfD9107239B7864c062aA8B978' as Address,
     ownDeposit: new BigNumber(10 ** 8),
-    balance: Zero
+    balance: Zero,
+    capacity: new BigNumber(10 ** 8),
   };
 
   static settlingChannel: RaidenChannel = {
@@ -39,7 +40,8 @@ export class TestData {
     token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C' as Address,
     tokenNetwork: '0x111157460c0F41EfD9107239B7864c062aA8B978' as Address,
     ownDeposit: new BigNumber(10 ** 8),
-    balance: Zero
+    balance: Zero,
+    capacity: new BigNumber(10 ** 8),
   };
 
   static settlableChannel: RaidenChannel = {
@@ -52,7 +54,8 @@ export class TestData {
     token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C' as Address,
     tokenNetwork: '0x111157460c0F41EfD9107239B7864c062aA8B978' as Address,
     ownDeposit: new BigNumber(10 ** 8),
-    balance: Zero
+    balance: Zero,
+    capacity: new BigNumber(10 ** 8),
   };
 
   static closedChannel: RaidenChannel = {
@@ -65,7 +68,8 @@ export class TestData {
     token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C' as Address,
     tokenNetwork: '0x111157460c0F41EfD9107239B7864c062aA8B978' as Address,
     ownDeposit: new BigNumber(10 ** 8),
-    balance: Zero
+    balance: Zero,
+    capacity: new BigNumber(10 ** 8),
   };
 
   static mockChannelArray = [
