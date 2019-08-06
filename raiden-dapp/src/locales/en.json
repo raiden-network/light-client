@@ -1,28 +1,28 @@
 {
   "address-input": {
     "input": {
-      "placeholder": "Enter an address or ens name..."
+      "placeholder": "Enter an address or ENS name..."
     },
     "blockie-alt": "Selected token address blockie",
     "error": {
-      "invalid-address": "The input doesn't seem like a valid address or ens name",
-      "no-checksum": "The address is not in checksum format",
-      "empty": "The address cannot be empty",
-      "ens-resolve-failed": "Could not resolve an address for {url}"
+      "invalid-address": "Please enter a valid address or ENS name",
+      "no-checksum": "Please enter an address in checksum format. You can convert your address on https://ethsum.netlify.com",
+      "empty": "Please enter an address or ENS name",
+      "ens-resolve-failed": "Please enter a resolvable ENS name"
     }
   },
   "amount-input": {
     "input": {
-      "hint": "Please enter the amount you wish to deposit into this channel."
+      "hint": "Please enter an amount"
     },
     "error": {
-      "empty": "The amount cannot be empty",
-      "too-many-decimals": "The token supports only up to {decimals} decimals",
+      "empty": "Please enter an amount",
+      "too-many-decimals": "Please use only up to {decimals} decimals for this token",
       "not-enough-funds": "`Your maximum deposit amount is {funds}"
     }
   },
   "app-header": {
-    "copy-success": "Address copied successfully",
+    "copy-success": "Copied!",
     "currency": "ETH"
   },
   "channel-actions": {
@@ -82,7 +82,7 @@
     },
     "messages": {
       "close": {
-        "success": "Channel close successful",
+        "success": "Channel closed successfully",
         "failure": "Channel close failed"
       },
       "deposit": {
@@ -111,7 +111,7 @@
     "title": "Error"
   },
   "no-access": {
-    "unsupported-network": "The current network is unsupported.",
+    "unsupported-network": "The current network is unsupported. Please choose a different network.",
     "sdk-initialization-failure": "SDK initialization failed. Please check the console for more information.",
     "generic-error": "A valid account could not be detected. Please make sure that your provider is unlocked and accessible."
   },
@@ -119,7 +119,7 @@
     "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and can just be used on the Ethereum Testnets.",
     "matrix-sign": "On the first launch you get asked to sign two messages to connect to the Raiden transport layer. You sign the matrix server name and the public user name.",
     "connect-button": "Connect",
-    "no-provider": "No web3 provider was detected"
+    "no-provider": "No web3 provider was detected. Please install e.g. MetaMask"
   },
   "tokens": {
     "connected": {
@@ -137,7 +137,6 @@
     "connect-new": "Connect new token",
     "disconnect-dialog": {
       "header": "Disconnect token",
-      "description": "This action will close all channels for the",
       "confirmation-message": "This action will close all channels for the {symbol} token! {address}"
     },
     "leave-progress": {
@@ -153,7 +152,7 @@
     "pay-button": "Pay",
     "error": {
       "button": "Dismiss",
-      "title": "Something went wrong"
+      "title": "Payment unsuccessful. Please retry."
     },
     "steps": {
       "transfer": {
@@ -192,7 +191,7 @@
     "steps": {
       "open": {
         "label": "Open",
-        "title": "Opening a new Channel",
+        "title": "Opening a new channel",
         "description": "Please do not close the browser and confirm the transaction with MetaMask."
       },
       "transfer": {
