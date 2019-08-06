@@ -31,8 +31,18 @@ import {
   transferProcessed,
   transferUnlocked,
   transferClear,
+  transferExpired,
+  transferSecretReveal,
 } from 'raiden/transfers/actions';
-import { LockedTransfer, MessageType, Signed, Processed, Unlock } from 'raiden/messages/types';
+import {
+  LockedTransfer,
+  MessageType,
+  Signed,
+  Processed,
+  Unlock,
+  LockExpired,
+  SecretReveal,
+} from 'raiden/messages/types';
 import { makeMessageId, makePaymentId } from 'raiden/transfers/utils';
 import { makeSignature } from './mocks';
 
@@ -658,7 +668,30 @@ describe('raidenReducer', () => {
       expect(get(newState, ['sent', secrethash, 'transferProcessed'])).toBe(processed);
     });
 
-    test('transfer unlock', () => {
+    test('transfer secret reveal', () => {
+      let secretReveal: Signed<SecretReveal> = {
+          type: MessageType.SECRET_REVEAL,
+          message_identifier: makeMessageId(),
+          secret,
+          signature: makeSignature(),
+        },
+        action = transferSecretReveal({ message: secretReveal }, { secrethash }),
+        newState = [transferSigned({ message: transfer }, { secrethash }), action].reduce(
+          raidenReducer,
+          state,
+        );
+
+      expect(get(newState, ['sent', secrethash, 'secretReveal'])).toBe(secretReveal);
+
+      const newState2 = [transferSecretReveal({ message: secretReveal }, { secrethash })].reduce(
+        raidenReducer,
+        newState,
+      );
+
+      expect(newState2).toBe(newState);
+    });
+
+    test('transfer unlocked', () => {
       let unlock: Signed<Unlock> = {
           type: MessageType.UNLOCK,
           chain_id: transfer.chain_id,
@@ -695,6 +728,45 @@ describe('raidenReducer', () => {
       );
 
       expect(get(newState, ['sent', secrethash, 'unlock'])).toBe(unlock);
+    });
+
+    test('transfer expired', () => {
+      let lockExpired: Signed<LockExpired> = {
+          type: MessageType.LOCK_EXPIRED,
+          chain_id: transfer.chain_id,
+          message_identifier: makeMessageId(),
+          nonce: transfer.nonce.add(1) as UInt<8>,
+          token_network_address: tokenNetwork,
+          channel_identifier: transfer.channel_identifier,
+          transferred_amount: Zero as UInt<32>,
+          locked_amount: transfer.locked_amount, // "forgot" to decrease locked_amount
+          locksroot: HashZero as Hash,
+          secrethash,
+          recipient: partner,
+          signature: makeSignature(),
+        },
+        newState = [transferExpired({ message: lockExpired }, { secrethash })].reduce(
+          raidenReducer,
+          state,
+        );
+
+      expect(get(newState, ['sent', secrethash])).toBeUndefined();
+
+      newState = [
+        transferSigned({ message: transfer }, { secrethash }),
+        transferExpired({ message: lockExpired }, { secrethash }),
+      ].reduce(raidenReducer, newState);
+
+      // invalid lock because locked_amount isn't right
+      expect(get(newState, ['sent', secrethash, 'lockExpired'])).toBeUndefined();
+
+      lockExpired = { ...lockExpired, locked_amount: Zero as UInt<32> };
+      newState = [transferExpired({ message: lockExpired }, { secrethash })].reduce(
+        raidenReducer,
+        newState,
+      );
+
+      expect(get(newState, ['sent', secrethash, 'lockExpired'])).toBe(lockExpired);
     });
 
     test('transfer cleared', () => {
