@@ -98,7 +98,8 @@
   "confirmation": {
     "buttons": {
       "cancel": "Cancel",
-      "close": "Close"
+      "close": "Close",
+      "settle": "Settle"
     }
   },
   "confirmation-dialog": {
@@ -143,6 +144,11 @@
       "label": "Disconnect",
       "title": "Disconnecting from the token network",
       "description": "Closing the channels"
+    },
+    "leave-done": {
+      "label": "Done",
+      "title": "Disconnected from the token network",
+      "description": "All your channels were successfully closed"
     }
   },
   "application": {

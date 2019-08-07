@@ -4,27 +4,26 @@
       <v-list class="channel-list__channels">
         <v-list-group
           v-for="(channel, index) in channels"
-          :id="`channel-${channel.id}`"
           :key="channel.partner"
           class="channel-list__channels__channel"
           no-action
         >
           <template #activator>
-            <v-list-tile>
-              <v-list-tile-avatar class="channel-list__channels__channel__icon">
+            <v-list-item :id="`channel-${channel.id}`">
+              <v-list-item-avatar class="channel-list__channels__channel__icon">
                 <img
                   :src="$blockie(channel.partner)"
                   :alt="$t('channel-list.channel.blockie_alt')"
                   class="indenticon"
                 />
-              </v-list-tile-avatar>
-              <v-list-tile-content>
-                <v-list-tile-title
+              </v-list-item-avatar>
+              <v-list-item-content>
+                <v-list-item-title
                   class="channel-list__channels__channel__partner-address"
                 >
                   {{ channel.partner }}
-                </v-list-tile-title>
-                <v-list-tile-sub-title
+                </v-list-item-title>
+                <v-list-item-subtitle
                   class="channel-list__channels__channel__state-info"
                 >
                   {{
@@ -36,9 +35,9 @@
                       state: capitalizeFirst(channel.state)
                     })
                   }}
-                </v-list-tile-sub-title>
-              </v-list-tile-content>
-            </v-list-tile>
+                </v-list-item-subtitle>
+              </v-list-item-content>
+            </v-list-item>
           </template>
           <div
             :id="`expanded-area-${index}`"
@@ -47,6 +46,7 @@
             <div v-if="visible === `channel-${channel.id}-close`">
               <confirmation
                 :identifier="channel.id"
+                :positive-action="$t('confirmation.buttons.close')"
                 @confirm="close()"
                 @cancel="dismiss()"
               >
@@ -60,6 +60,7 @@
             <div v-else-if="visible === `channel-${channel.id}-settle`">
               <confirmation
                 :identifier="channel.id"
+                :positive-action="$t('confirmation.buttons.settle')"
                 @confirm="settle()"
                 @cancel="dismiss()"
               >
@@ -244,7 +245,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   padding-top: 0;
 }
 
-.channel-list__channels__channel /deep/ .v-list__tile {
+.channel-list__channels__channel ::v-deep .v-list-item {
   height: 105px;
 }
 

@@ -1,6 +1,6 @@
 <template>
   <v-layout column class="channel-lifecycle">
-    <v-layout justify-center row>
+    <v-layout justify-center>
       <v-flex>
         <v-stepper :value="step" class="no-shadow channel-lifecycle__stepper">
           <v-stepper-header>
@@ -23,7 +23,7 @@
         </v-stepper>
       </v-flex>
     </v-layout>
-    <v-layout justify-center row>
+    <v-layout justify-center>
       <v-flex xs8 class="channel-lifecycle__description">
         <div v-if="step === 1" class="channel-lifecycle__description__text">
           {{ $t('stepper.steps.open.description') }}
@@ -77,7 +77,7 @@ $circle-size: 20px;
   background-color: transparent !important;
 }
 
-.channel-lifecycle__stepper /deep/ .v-stepper__step__step {
+.channel-lifecycle__stepper ::v-deep .v-stepper__step__step {
   font-size: 12px !important;
   width: $circle-size;
   height: $circle-size;
@@ -99,7 +99,7 @@ $circle-size: 20px;
   border-color: $active-color !important;
 }
 
-.channel-lifecycle__stepper /deep/ .v-stepper__label {
+.channel-lifecycle__stepper ::v-deep .v-stepper__label {
   font-size: 16px;
   font-weight: bold;
   line-height: 19px;
@@ -108,14 +108,14 @@ $circle-size: 20px;
   padding-left: 8px;
 }
 
-.channel-lifecycle__stepper /deep/ .v-stepper__step.v-stepper__step--active {
+.channel-lifecycle__stepper ::v-deep .v-stepper__step.v-stepper__step--active {
   .primary {
     background-color: $active-color !important;
     border-color: $active-color !important;
   }
 }
 
-.channel-lifecycle__stepper /deep/ .v-stepper__step.v-stepper__step {
+.channel-lifecycle__stepper ::v-deep .v-stepper__step.v-stepper__step {
   .v-stepper__step__step {
     background-color: $active-color !important;
     border-color: $active-color !important;
@@ -129,7 +129,9 @@ $circle-size: 20px;
   }
 }
 
-.channel-lifecycle__stepper /deep/ .v-stepper__step.v-stepper__step--inactive {
+.channel-lifecycle__stepper
+  ::v-deep
+  .v-stepper__step.v-stepper__step--inactive {
   .v-stepper__step__step {
     background-color: $inactive-color !important;
     border-color: $inactive-color !important;
@@ -140,7 +142,7 @@ $circle-size: 20px;
   }
 }
 
-.channel-lifecycle__stepper /deep/ .v-stepper__label {
+.channel-lifecycle__stepper ::v-deep .v-stepper__label {
   display: block;
 }
 
