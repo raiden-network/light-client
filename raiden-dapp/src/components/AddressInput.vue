@@ -17,14 +17,14 @@
       @input="updateValue"
       @change="updateValue"
       persistent-hint
-      clearable
-      hide-selected
     >
       <template #append>
         <div class="address-input__status__paste-button">
-          <v-btn text class="text-capitalize">
-            <span class="address-input__status__paste-button__text">
-              Paste
+          <v-btn text>
+            <span
+              class="address-input__status__paste-button__text text-capitalize"
+            >
+              {{ $t('address-input.paste-button') }}
             </span>
           </v-btn>
         </div>
@@ -34,11 +34,12 @@
           v-if="value && isChecksumAddress(value)"
           :src="$blockie(value)"
           :alt="$t('address-input.blockie-alt')"
-          class="address-input__blockie"
+          class="address-input__blockie address-input__prepend"
         />
         <div v-else-if="timeout">
           <v-progress-circular
-            class="prepend"
+            size="22"
+            class="address-input__prepend"
             indeterminate
             color="primary"
           ></v-progress-circular>
@@ -165,11 +166,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 .address-input__blockie {
   border-radius: 50%;
   box-sizing: border-box;
-  height: 28px;
-  width: 28px;
+  height: 22px;
+  width: 22px;
   border: 1px solid #979797;
   background-color: #d8d8d8;
-  margin-right: 12px;
+}
+
+.address-input__prepend {
+  margin-right: 10px;
 }
 
 .address-input {
@@ -203,7 +207,13 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 .address-input ::v-deep .v-input__slot {
   border-radius: 10px;
   background-color: $input-background;
-  padding: 8px 16px;
+  padding: 8px 8px 8px 16px;
+  border: 1.5px solid transparent;
+  max-height: 49px;
+}
+
+::v-deep .v-input--is-focused .v-input__slot {
+  border: 1.5px solid $primary-color;
 }
 
 .address-input ::v-deep .v-messages {
@@ -220,16 +230,15 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 .address-input ::v-deep .v-messages {
   border: 1px solid transparent;
   font-family: Roboto, sans-serif;
-  font-size: 13px;
-  line-height: 18px;
-  text-align: center;
-  margin-top: 10px;
+  font-size: 14px;
+  line-height: 16px;
 
   .v-messages__wrapper {
-    height: 30px;
+    height: 25px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: start;
+    padding-left: 20px;
     justify-content: center;
   }
 }
@@ -238,40 +247,25 @@ $dark_border: #323232;
 $dark_background: #323232;
 
 .address-input--invalid ::v-deep .v-messages {
-  border-color: $dark_border;
-  background-color: $dark_background;
-  border: 1px solid !important;
-  border-radius: 5px;
+  border: none !important;
 }
 
 .address-input--invalid ::v-deep .v-messages:after {
   content: ' ';
-  border: solid;
-  border-radius: 1px;
-  border-width: 0 1px 1px 0;
   position: absolute;
   left: 50%;
   bottom: 90%;
   display: inline-block;
   padding: 3px;
-  transform: rotate(-135deg);
-  -webkit-transform: rotate(-135deg);
-  border-color: $dark_border;
-  background-color: $dark_background;
-}
-
-.address-input--hint-visible ::v-deep .v-messages {
-  color: #696969 !important;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 19px;
-  margin-top: 4px;
-  margin-bottom: 14px;
 }
 
 .address-input--hint-visible ::v-deep .v-text-field__details {
   padding-top: 0;
   margin-top: 0;
+}
+
+::v-deep .v-text-field__details {
+  height: 30px;
 }
 
 .address-input--untouched {
@@ -285,6 +279,10 @@ $dark_background: #323232;
 
 ::v-deep .v-text-field > .v-input__control > .v-input__slot::after {
   border-width: 0 0 0 0;
+}
+
+.address-input__status__paste-button {
+  margin-top: -6px;
 }
 
 .address-input__status__paste-button__text {

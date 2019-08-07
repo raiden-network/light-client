@@ -12,14 +12,13 @@
       @drop="valueUpdated('drop', $event)"
       @input.native="valueUpdated('input', $event)"
       @keydown="valueUpdated('keydown', $event)"
+      @keypress="checkIfValid($event)"
       @keyup="valueUpdated('keyup', $event)"
       @mousedown="valueUpdated('mousedown', $event)"
       @mouseup="valueUpdated('mouseup', $event)"
       @select="valueUpdated('select', $event)"
       :placeholder="placeholder"
       autocomplete="off"
-      solo
-      flat
     >
       <div slot="append" class="amount-input__token-symbol">
         {{ token.symbol || 'TKN' }}
@@ -54,7 +53,7 @@ export default class AmountInput extends Vue {
 
   valid: boolean = true;
   amount: string = '';
-  private static numericRegex = /^\d*[.,]?\d*$/;
+  private static numericRegex = /^\d*[.]?\d*$/;
 
   readonly rules = [
     (v: string) => {
@@ -91,12 +90,18 @@ export default class AmountInput extends Vue {
     );
   }
 
-  private oldValue: string = '0.00';
-  private oldSelectionStart: number | null = 0;
-  private oldSelectionEnd: number | null = 0;
-
   mounted() {
-    this.amount = this.oldValue = this.value;
+    this.amount = this.value;
+  }
+
+  checkIfValid(event: KeyboardEvent) {
+    if (
+      !/[\d.]/.test(event.key) ||
+      (!this.value && event.key === '.') ||
+      (this.value.indexOf('.') > -1 && event.key === '.')
+    ) {
+      event.preventDefault();
+    }
   }
 
   valueUpdated(eventName: string, event: Event) {
@@ -109,17 +114,7 @@ export default class AmountInput extends Vue {
       this.valid = input.valid;
     }
 
-    if (AmountInput.numericRegex.test(value)) {
-      this.$emit(eventName, value);
-      this.oldValue = value;
-      this.oldSelectionStart = target.selectionStart;
-      this.oldSelectionEnd = target.selectionEnd;
-    } else {
-      target.value = this.oldValue;
-      if (this.oldSelectionStart && this.oldSelectionEnd) {
-        target.setSelectionRange(this.oldSelectionStart, this.oldSelectionEnd);
-      }
-    }
+    this.$emit(eventName, value);
   }
 }
 </script>
@@ -130,25 +125,6 @@ export default class AmountInput extends Vue {
 
 $header-vertical-margin: 5rem;
 $header-vertical-margin-mobile: 2rem;
-
-.invalid ::v-deep .v-messages {
-  border: 1px solid !important;
-  border-radius: 5px;
-}
-
-.invalid ::v-deep .v-messages:after {
-  content: ' ';
-  border: solid #050505;
-  border-radius: 1px;
-  border-width: 0 1px 1px 0;
-  position: absolute;
-  left: 50%;
-  bottom: 90%;
-  display: inline-block;
-  padding: 3px;
-  transform: rotate(-135deg);
-  -webkit-transform: rotate(-135deg);
-}
 
 .amount-input {
   display: flex;
@@ -179,6 +155,7 @@ $header-vertical-margin-mobile: 2rem;
   font-family: Roboto, sans-serif;
   font-size: 16px;
   line-height: 20px;
+  caret-color: white !important;
 }
 
 .amount-input ::v-deep input:focus {
@@ -188,17 +165,26 @@ $header-vertical-margin-mobile: 2rem;
 .amount-input ::v-deep .v-messages {
   border: 1px solid transparent;
   font-family: Roboto, sans-serif;
-  font-size: 13px;
-  line-height: 18px;
-  text-align: center;
+  font-size: 14px;
+  line-height: 16px;
 
   .v-messages__wrapper {
-    height: 30px;
+    height: 25px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: start;
+    padding-left: 20px;
     justify-content: center;
+    color: white;
   }
+}
+
+::v-deep .v-input__slot {
+  border: 1.5px solid transparent;
+}
+
+::v-deep .v-input--is-focused .v-input__slot {
+  border: 1.5px solid $primary-color;
 }
 
 .amount-input__token-symbol {
@@ -206,7 +192,15 @@ $header-vertical-margin-mobile: 2rem;
   color: $text-color;
   font-weight: 500;
   font-size: 14px;
-  line-height: 16px;
+  line-height: 27px;
   text-align: center;
+}
+
+::v-deep .v-text-field > .v-input__control > .v-input__slot::before {
+  border-width: 0 0 0 0;
+}
+
+::v-deep .v-text-field > .v-input__control > .v-input__slot::after {
+  border-width: 0 0 0 0;
 }
 </style>

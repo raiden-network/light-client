@@ -32,7 +32,7 @@ export default class ActionButton extends Vue {
 @import '../scss/colors';
 
 .action-button__button {
-  height: 40px;
+  max-height: 40px;
   width: 250px;
   border-radius: 29px;
   background-color: $primary-color !important;
@@ -49,5 +49,9 @@ export default class ActionButton extends Vue {
 
 .action-button__button:hover {
   background-color: rgba($primary-color, 0.8) !important;
+}
+
+::v-deep .v-btn {
+  letter-spacing: 0 !important;
 }
 </style>

@@ -19,6 +19,7 @@
             v-model="amount"
             :token="token"
             :placeholder="$t('payment.amount-placeholder')"
+            limit
           ></amount-input>
         </v-flex>
       </v-layout>
@@ -52,6 +53,7 @@
         :enabled="valid"
         @click="transfer()"
         :text="$t('payment.pay-button')"
+        class="payment__pay-button"
       ></action-button>
 
       <stepper
@@ -102,7 +104,7 @@ import ActionButton from '@/components/ActionButton.vue';
 export default class Payment extends Vue {
   target: string = '';
   token: Token = TokenPlaceholder;
-  amount: string = '0';
+  amount: string = '';
 
   valid: boolean = false;
   loading: boolean = false;
@@ -154,6 +156,10 @@ export default class Payment extends Vue {
   height: 100%;
 }
 
+.payment__capacity {
+  max-height: 50px;
+}
+
 .payment__capacity__label {
   color: $secondary-color;
   font-size: 13px;
@@ -178,6 +184,10 @@ export default class Payment extends Vue {
   line-height: 21px;
 }
 
+.payment__recipient {
+  margin-top: 75px;
+}
+
 .payment__recipient,
 .payment__amount {
   max-height: 150px;
@@ -191,5 +201,9 @@ export default class Payment extends Vue {
   letter-spacing: 3px;
   line-height: 15px;
   text-transform: uppercase;
+}
+
+.payment__pay-button {
+  margin-bottom: 24px;
 }
 </style>
