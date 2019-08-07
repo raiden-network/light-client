@@ -142,25 +142,23 @@ export class Raiden {
           state.channels,
           (result, partner2channel, tokenNetwork) => {
             const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
-            if (!token) return; // shouldn't happen, token mapping is always bi-direction
+            if (!token) return; // shouldn't happen, token mapping is always bi-directional
             result[token] = transform(
               // transform Channel to RaidenChannel, with more info
               partner2channel,
               (partner2raidenChannel, channel, partner) => {
-                const balance = (channel.partner.balanceProof
+                const partnerTotal = channel.partner.balanceProof
                     ? channel.partner.balanceProof.transferredAmount.add(
                         channel.partner.balanceProof.lockedAmount,
                       )
-                    : Zero
-                  ).sub(
-                    channel.own.balanceProof
-                      ? channel.own.balanceProof.transferredAmount.add(
-                          channel.own.balanceProof.lockedAmount,
-                        )
-                      : Zero,
-                  ),
-                  capacity = channel.own.deposit.add(balance);
-                return (partner2raidenChannel[partner] = {
+                    : Zero,
+                  ownTotal = channel.own.balanceProof
+                    ? channel.own.balanceProof.transferredAmount.add(
+                        channel.own.balanceProof.lockedAmount,
+                      )
+                    : Zero,
+                  balance = partnerTotal.sub(ownTotal);
+                partner2raidenChannel[partner] = {
                   state: channel.state,
                   ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
                   token,
@@ -169,8 +167,8 @@ export class Raiden {
                   ownDeposit: channel.own.deposit,
                   partnerDeposit: channel.partner.deposit,
                   balance,
-                  capacity,
-                });
+                  capacity: channel.own.deposit.add(balance),
+                };
               },
             );
           },
