@@ -18,7 +18,7 @@
     "error": {
       "empty": "Please enter an amount",
       "too-many-decimals": "Please use only up to {decimals} decimals for this token",
-      "not-enough-funds": "`Your maximum deposit amount is {funds}"
+      "not-enough-funds": "Your maximum deposit amount is {funds}"
     }
   },
   "app-header": {
