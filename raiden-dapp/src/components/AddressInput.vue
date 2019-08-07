@@ -144,10 +144,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
             this.errorMessages = [];
           } else {
             this.errorMessages.push(this.$t(
-              'address-input.error.ens-resolve-failed',
-              {
-                url: url
-              }
+              'address-input.error.ens-resolve-failed'
             ) as string);
             this.input(undefined);
             this.checkForErrors();
@@ -156,10 +153,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         })
         .catch(() => {
           this.errorMessages.push(this.$t(
-            'address-input.error.ens-resolve-failed',
-            {
-              url: url
-            }
+            'address-input.error.ens-resolve-failed'
           ) as string);
           this.input(undefined);
           this.checkForErrors();
