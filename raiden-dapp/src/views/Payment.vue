@@ -12,13 +12,12 @@
 
       <v-layout align-center justify-center>
         <v-flex xs10>
-          <div class="payment__amount__label">
-            {{ $t('payment.amount-label') }}
-          </div>
           <amount-input
             v-model="amount"
             :token="token"
+            :label="$t('payment.amount-label')"
             :placeholder="$t('payment.amount-placeholder')"
+            :max="capacity"
             limit
           ></amount-input>
         </v-flex>
@@ -33,7 +32,7 @@
             <span class="payment__capacity__amount">
               {{
                 $t('payment.capacity-amount', {
-                  capacity: convertToUnits(token.balance, token.decimals),
+                  capacity: convertToUnits(capacity, token.decimals),
                   token: token.symbol
                 })
               }}
@@ -41,9 +40,25 @@
           </v-layout>
         </v-flex>
         <v-flex xs2 offset-xs3 align-self-end>
-          <v-btn text class="payment__capacity__deposit">
-            {{ $t('payment.deposit-button') }}
-          </v-btn>
+          <v-dialog v-model="depositting" max-width="450">
+            <template #activator="{ on }">
+              <v-btn
+                @click="depositting = true"
+                text
+                class="payment__capacity__deposit"
+              >
+                {{ $t('payment.deposit-button') }}
+              </v-btn>
+            </template>
+            <v-card class="payment__deposit-dialog">
+              <channel-deposit
+                @cancel="depositting = false"
+                @confirm="deposit($event)"
+                :token="token"
+                identifier="0"
+              ></channel-deposit>
+            </v-card>
+          </v-dialog>
         </v-flex>
       </v-layout>
 
@@ -66,7 +81,7 @@
       <error-screen
         :description="error"
         @dismiss="error = ''"
-        :title="$t('payment.error.title')"
+        :title="errorTitle"
         :button-label="$t('payment.error.button')"
       ></error-screen>
     </v-layout>
@@ -89,9 +104,15 @@ import ErrorScreen from '@/components/ErrorScreen.vue';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
+import ChannelDeposit from '@/components/ChannelDeposit.vue';
+import { BigNumber } from 'ethers/utils';
+import { mapGetters } from 'vuex';
+import { RaidenChannel } from 'raiden';
+import { Zero } from 'ethers/constants';
 
 @Component({
   components: {
+    ChannelDeposit,
     ActionButton,
     TokenInformation,
     Divider,
@@ -99,6 +120,9 @@ import ActionButton from '@/components/ActionButton.vue';
     AmountInput,
     Stepper,
     ErrorScreen
+  },
+  computed: {
+    ...mapGetters(['channelWithBiggestCapacity'])
   }
 })
 export default class Payment extends Vue {
@@ -110,7 +134,24 @@ export default class Payment extends Vue {
   loading: boolean = false;
   done: boolean = false;
 
+  errorTitle: string = '';
   error: string = '';
+
+  channelWithBiggestCapacity!: (
+    tokenAddress: string
+  ) => RaidenChannel | undefined;
+
+  get capacity(): BigNumber {
+    const withBiggestCapacity = this.channelWithBiggestCapacity(
+      this.token.address
+    );
+    if (withBiggestCapacity) {
+      return withBiggestCapacity.capacity;
+    }
+    return Zero;
+  }
+
+  depositting: boolean = false;
 
   steps: StepDescription[] = [];
   doneStep: StepDescription = emptyDescription();
@@ -120,14 +161,41 @@ export default class Payment extends Vue {
   async created() {
     const { token } = this.$route.params;
     this.token = (await this.$raiden.getToken(token)) || TokenPlaceholder;
+  }
+
+  async deposit(amount: BigNumber) {
+    this.steps = [(this.$t('payment.steps.deposit') as any) as StepDescription];
+    this.doneStep = (this.$t(
+      'payment.steps.deposit-done'
+    ) as any) as StepDescription;
+    this.errorTitle = this.$t('payment.error.deposit-title') as string;
+
+    this.loading = true;
+
+    try {
+      await this.$raiden.deposit(
+        this.token.address,
+        this.channelWithBiggestCapacity(this.token.address)!!.partner,
+        amount
+      );
+      this.done = true;
+      this.dismissError();
+    } catch (e) {
+      this.loading = false;
+      this.depositting = false;
+      this.error = e.message;
+    }
+  }
+
+  async transfer() {
     this.steps = [
       (this.$t('payment.steps.transfer') as any) as StepDescription
     ];
     this.doneStep = (this.$t('payment.steps.done') as any) as StepDescription;
-  }
+    this.errorTitle = this.$t('payment.error.title') as string;
 
-  async transfer() {
     const { address, decimals } = this.token;
+
     try {
       this.loading = true;
       await this.$raiden.transfer(
@@ -136,15 +204,19 @@ export default class Payment extends Vue {
         BalanceUtils.parse(this.amount, decimals)
       );
       this.done = true;
-      setTimeout(() => {
-        this.loading = false;
-        this.done = false;
-      }, 2000);
+      this.dismissError();
     } catch (e) {
       this.loading = false;
       this.done = false;
       this.error = e.message;
     }
+  }
+
+  private dismissError() {
+    setTimeout(() => {
+      this.loading = false;
+      this.done = false;
+    }, 2000);
   }
 }
 </script>
@@ -193,8 +265,7 @@ export default class Payment extends Vue {
   max-height: 150px;
 }
 
-.payment__recipient__label,
-.payment__amount__label {
+.payment__recipient__label {
   color: $secondary-color;
   font-size: 13px;
   font-weight: bold;

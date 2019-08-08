@@ -20,7 +20,7 @@
     >
       <template #append>
         <div class="address-input__status__paste-button">
-          <v-btn text>
+          <v-btn @click="paste()" text>
             <span
               class="address-input__status__paste-button__text text-capitalize"
             >
@@ -156,6 +156,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         });
     }, 800) as unknown) as number;
   }
+
+  paste() {}
 }
 </script>
 

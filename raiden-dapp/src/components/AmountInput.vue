@@ -1,22 +1,18 @@
 <template>
   <fieldset class="amount-input">
+    <div class="amount-input__label">
+      {{ label }}
+    </div>
     <v-text-field
       id="amount"
       ref="input"
       :class="{ invalid: !valid }"
       :disabled="disabled"
-      :label="label"
       :rules="rules"
       :value="amount"
-      @contextmenu="valueUpdated('contextmenu', $event)"
-      @drop="valueUpdated('drop', $event)"
-      @input.native="valueUpdated('input', $event)"
-      @keydown="valueUpdated('keydown', $event)"
+      @paste="onPaste($event)"
       @keypress="checkIfValid($event)"
-      @keyup="valueUpdated('keyup', $event)"
-      @mousedown="valueUpdated('mousedown', $event)"
-      @mouseup="valueUpdated('mouseup', $event)"
-      @select="valueUpdated('select', $event)"
+      @input="onInput($event)"
       :placeholder="placeholder"
       autocomplete="off"
     >
@@ -31,6 +27,8 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
+import { BigNumber } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 @Component({})
 export default class AmountInput extends Vue {
@@ -44,12 +42,10 @@ export default class AmountInput extends Vue {
   token?: Token;
   @Prop({ default: false, type: Boolean })
   limit!: boolean;
-  @Prop({ default: false, type: Boolean })
-  light!: boolean;
-  @Prop({ default: false, type: Boolean })
-  padded!: boolean;
   @Prop({ default: '0.0', type: String })
   placeholder!: string;
+  @Prop({ required: false, default: () => Zero })
+  max!: BigNumber;
 
   valid: boolean = true;
   amount: string = '';
@@ -61,15 +57,16 @@ export default class AmountInput extends Vue {
     },
     (v: string) =>
       !this.limit ||
-      this.noDecimalOverflow(v) ||
+      (v && this.noDecimalOverflow(v)) ||
       this.$parent.$t('amount-input.error.too-many-decimals', {
         decimals: this.token!!.decimals
       }),
     (v: string) =>
       !this.limit ||
-      this.hasEnoughBalance(v) ||
+      (v && this.hasEnoughBalance(v, this.max)) ||
       this.$parent.$t('amount-input.error.not-enough-funds', {
-        funds: this.token!!.units
+        funds: BalanceUtils.toUnits(this.max, this.token!!.decimals),
+        symbol: this.token!!.symbol
       })
   ];
 
@@ -81,12 +78,13 @@ export default class AmountInput extends Vue {
     );
   }
 
-  private hasEnoughBalance(v: string) {
+  private hasEnoughBalance(v: string, max: BigNumber) {
+    const amount = BalanceUtils.parse(v, this.token!!.decimals);
     return (
       v &&
       AmountInput.numericRegex.test(v) &&
       !BalanceUtils.decimalsOverflow(v, this.token!!) &&
-      BalanceUtils.hasBalance(v, this.token!!)
+      amount.lte(max)
     );
   }
 
@@ -104,17 +102,23 @@ export default class AmountInput extends Vue {
     }
   }
 
-  valueUpdated(eventName: string, event: Event) {
-    const target = event.target as HTMLInputElement;
-    const value = target.value;
+  onPaste(event: Event) {
+    const clipboardData = (event as ClipboardEvent).clipboardData;
+    const value = clipboardData.getData('text');
 
+    if (!AmountInput.numericRegex.test(value)) {
+      event.preventDefault();
+    }
+  }
+
+  onInput(value: string) {
     /* istanbul ignore else */
     if (this.$refs.input) {
       const input = this.$refs.input as any;
       this.valid = input.valid;
     }
 
-    this.$emit(eventName, value);
+    this.$emit('input', value);
   }
 }
 </script>
@@ -202,5 +206,16 @@ $header-vertical-margin-mobile: 2rem;
 
 ::v-deep .v-text-field > .v-input__control > .v-input__slot::after {
   border-width: 0 0 0 0;
+}
+
+.amount-input__label {
+  color: $secondary-color;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  line-height: 15px;
+  text-transform: uppercase;
+  text-align: left;
+  width: 100%;
 }
 </style>

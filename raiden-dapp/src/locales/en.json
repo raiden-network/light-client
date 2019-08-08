@@ -19,7 +19,7 @@
     "error": {
       "empty": "Please enter an amount",
       "too-many-decimals": "Please use only up to {decimals} decimals for this token",
-      "not-enough-funds": "Your maximum deposit amount is {funds}"
+      "not-enough-funds": "Your maximum usable amount is {funds} {symbol}"
     }
   },
   "app-header": {
@@ -165,7 +165,8 @@
     "amount-placeholder": "Specify amount...",
     "error": {
       "button": "Dismiss",
-      "title": "Payment unsuccessful. Please retry."
+      "title": "Payment unsuccessful. Please retry.",
+      "deposit-title": "Deposit was unsuccessful. Please retry."
     },
     "steps": {
       "transfer": {
@@ -177,6 +178,16 @@
         "label": "Done",
         "title": "Send Successful",
         "description": "Your transfer was successful"
+      },
+      "deposit": {
+        "label": "Deposit",
+        "title": "Depositing Tokens",
+        "description": "Please do not close the browser and confirm the transactions with MetaMask."
+      },
+      "deposit-done": {
+        "label": "Done",
+        "title": "Deposit successful",
+        "description": "Your tokens have been success"
       }
     }
   },

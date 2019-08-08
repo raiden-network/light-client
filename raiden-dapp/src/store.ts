@@ -14,6 +14,7 @@ import map from 'lodash/map';
 import flatMap from 'lodash/flatMap';
 import clone from 'lodash/clone';
 import reduce from 'lodash/reduce';
+import orderBy from 'lodash/orderBy';
 import { Network } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
@@ -124,14 +125,9 @@ const store: StoreOptions<RootState> = {
     network: (state: RootState) => {
       return state.network.name || `Chain ${state.network.chainId}`;
     },
-    capacity: (state, getters) => (tokenAddress: string) => {
+    channelWithBiggestCapacity: (state, getters) => (tokenAddress: string) => {
       const channels: RaidenChannel[] = getters.channels(tokenAddress);
-      return channels
-        .map(value => value.balance)
-        .reduce(
-          (previousValue, currentValue) => previousValue.add(currentValue),
-          Zero
-        );
+      return orderBy(channels, ['capacity'], ['desc'])[0];
     }
   }
 };
