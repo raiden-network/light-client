@@ -44,6 +44,7 @@
             <template #activator="{ on }">
               <v-btn
                 @click="depositting = true"
+                v-on="on"
                 text
                 class="payment__capacity__deposit"
               >
@@ -179,7 +180,7 @@ export default class Payment extends Vue {
         amount
       );
       this.done = true;
-      this.dismissError();
+      this.dismissProgress();
     } catch (e) {
       this.loading = false;
       this.depositting = false;
@@ -204,15 +205,14 @@ export default class Payment extends Vue {
         BalanceUtils.parse(this.amount, decimals)
       );
       this.done = true;
-      this.dismissError();
+      this.dismissProgress();
     } catch (e) {
       this.loading = false;
-      this.done = false;
       this.error = e.message;
     }
   }
 
-  private dismissError() {
+  private dismissProgress() {
     setTimeout(() => {
       this.loading = false;
       this.done = false;

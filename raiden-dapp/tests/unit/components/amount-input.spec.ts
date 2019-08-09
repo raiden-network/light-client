@@ -26,8 +26,7 @@ describe('AmountInput.vue', function() {
     it('should show no validation messages', () => {
       const messages = wrapper.find('.v-messages__message');
       expect(wrapper.props().value).toEqual('0.00');
-      expect(messages.exists()).toBe(true);
-      expect(messages.text()).toEqual('amount-input.input.hint');
+      expect(messages.exists()).toBe(false);
     });
 
     it('should show an amount cannot be empty message', async function() {
@@ -46,8 +45,7 @@ describe('AmountInput.vue', function() {
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual(['1.2']);
       const messages = wrapper.find('.v-messages__message');
-      expect(messages.exists()).toBe(true);
-      expect(messages.text()).toBe('amount-input.input.hint');
+      expect(messages.exists()).toBe(false);
     });
   });
 
