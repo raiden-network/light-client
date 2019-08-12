@@ -284,6 +284,7 @@ $dark_background: #323232;
 }
 
 .address-input__status__paste-button {
+  display: none;
   margin-top: -6px;
 }
 
