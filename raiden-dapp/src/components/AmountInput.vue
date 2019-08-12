@@ -72,19 +72,16 @@ export default class AmountInput extends Vue {
 
   private noDecimalOverflow(v: string) {
     return (
-      v &&
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!!)
+      !BalanceUtils.decimalsOverflow(v, this.token!!.decimals)
     );
   }
 
   private hasEnoughBalance(v: string, max: BigNumber) {
-    const amount = BalanceUtils.parse(v, this.token!!.decimals);
     return (
-      v &&
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!!) &&
-      amount.lte(max)
+      !BalanceUtils.decimalsOverflow(v, this.token!!.decimals) &&
+      BalanceUtils.parse(v, this.token!!.decimals).lte(max)
     );
   }
 
