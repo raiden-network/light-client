@@ -83,17 +83,84 @@ describe('AmountInput.vue', function() {
       expect(messages.text()).toEqual('amount-input.error.too-many-decimals');
     });
 
-    it('should not emit an event if the input is not a valid number', async function() {
-      mockInput(wrapper, '1.4');
-      await wrapper.vm.$nextTick();
+    test('should not prevent keypress if allowed', () => {
+      wrapper.find('input').setValue('');
+      const event = {
+        key: '1',
+        preventDefault: jest.fn().mockReturnValue(null)
+      };
+      // @ts-ignore
+      wrapper.vm.checkIfValid(event);
 
-      mockInput(wrapper, '1.4a');
-      await wrapper.vm.$nextTick();
+      expect(event.preventDefault).toHaveBeenCalledTimes(0);
+    });
 
-      const inputEvent = wrapper.emitted().input;
-      expect(inputEvent).toBeTruthy();
-      expect(inputEvent.length).toBe(1);
-      expect(inputEvent[0]).toEqual(['1.4']);
+    test('should prevent keypress if the key is not a number', () => {
+      wrapper.find('input').setValue('');
+      const event = {
+        key: 'a',
+        preventDefault: jest.fn().mockReturnValue(null)
+      };
+      // @ts-ignore
+      wrapper.vm.checkIfValid(event);
+
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    });
+
+    test('should prevent keypress if the input is empty and the key is a dot', () => {
+      wrapper.find('input').setValue('');
+      const event = {
+        key: '.',
+        preventDefault: jest.fn().mockReturnValue(null)
+      };
+      // @ts-ignore
+      wrapper.vm.checkIfValid(event);
+
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    });
+
+    test('should prevent keypress if the input is contains a dot and the key is a dot', () => {
+      wrapper.find('input').setValue('1.');
+      const event = {
+        key: '.',
+        preventDefault: jest.fn().mockReturnValue(null)
+      };
+      // @ts-ignore
+      wrapper.vm.checkIfValid(event);
+
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    });
+
+    test('pasting invalid value should preventDefault', () => {
+      const event = {
+        clipboardData: {
+          getData: jest.fn().mockReturnValue('invalid')
+        },
+        preventDefault: jest.fn().mockReturnValue(null)
+      };
+      // @ts-ignore
+      wrapper.vm.onPaste(event);
+
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    });
+
+    test('pasting a valid value should select the previous value', () => {
+      const event = {
+        clipboardData: {
+          getData: jest.fn().mockReturnValue('1.2')
+        },
+        target: {
+          value: '1.2',
+          setSelectionRange: jest.fn().mockReturnValue(null)
+        },
+        preventDefault: jest.fn().mockReturnValue(null)
+      };
+      // @ts-ignore
+      wrapper.vm.onPaste(event);
+
+      expect(event.preventDefault).toHaveBeenCalledTimes(0);
+      expect(event.target.setSelectionRange).toHaveBeenCalledTimes(1);
+      expect(event.target.setSelectionRange).toBeCalledWith(0, 3);
     });
   });
 });

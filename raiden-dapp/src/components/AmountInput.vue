@@ -99,12 +99,14 @@ export default class AmountInput extends Vue {
     }
   }
 
-  onPaste(event: Event) {
-    const clipboardData = (event as ClipboardEvent).clipboardData;
+  onPaste(event: ClipboardEvent) {
+    const clipboardData = event.clipboardData;
     const value = clipboardData.getData('text');
-
     if (!AmountInput.numericRegex.test(value)) {
       event.preventDefault();
+    } else {
+      const input = event.target as HTMLInputElement;
+      input.setSelectionRange(0, input.value.length);
     }
   }
 
