@@ -15,6 +15,7 @@ import {
   takeUntil,
   exhaustMap,
   publishReplay,
+  tap,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
 import { bigNumberify, keccak256 } from 'ethers/utils';
@@ -27,6 +28,7 @@ import { RaidenState } from '../store';
 import { REVEAL_TIMEOUT } from '../constants';
 import { Address, Hash, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
+import { LruCache } from '../utils/lru';
 import { raidenInit } from '../store/actions';
 import { Presences } from '../transport/types';
 import { getPresences$ } from '../transport/utils';
@@ -40,6 +42,7 @@ import {
   Unlock,
   Signed,
   LockExpired,
+  RefundTransfer,
 } from '../messages/types';
 import { signMessage, getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
@@ -923,3 +926,54 @@ export const transferChannelClosedEpic = (
       }
     }),
   );
+
+/**
+ * Sends Processed for unhandled transfer messages
+ *
+ * We don't yet support receiving nor mediating transfers (LockedTransfer, RefundTransfer), but
+ * also don't want the partner to keep retrying any messages intended for us indefinitely.
+ * That's why we decided to just answer them with Processed, to clear their queue. Of course, we
+ * still don't validate, store state for these messages nor handle them in any way (e.g. requesting
+ * secret from initiator), so any transfer is going to expire, and then we also reply Processed for
+ * the respective LockExpired.
+ *
+ * @param action$  Observable of messageSend actions
+ * @param state$  Observable of RaidenStates
+ * @param signer  RaidenEpicDeps members
+ * @returns  Observable of messageSend actions
+ */
+export const transferReceivedReplyProcessedEpic = (
+  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenState>,
+  { signer }: RaidenEpicDeps,
+): Observable<ActionType<typeof messageSend>> => {
+  const cache = new LruCache<string, Signed<Processed>>(32);
+  return action$.pipe(
+    filter(isActionOf(messageReceived)),
+    concatMap(action => {
+      const message = action.payload.message;
+      if (
+        !message ||
+        !(
+          Signed(LockedTransfer).is(message) ||
+          Signed(RefundTransfer).is(message) ||
+          Signed(LockExpired).is(message)
+        )
+      )
+        return EMPTY;
+      const msgId = message.message_identifier,
+        key = msgId.toString();
+      const cached = cache.get(key);
+      if (cached) return of(messageSend({ message: cached }, action.meta));
+
+      const processed: Processed = {
+        type: MessageType.PROCESSED,
+        message_identifier: msgId, // eslint-disable-line @typescript-eslint/camelcase
+      };
+      return from(signMessage(signer, processed)).pipe(
+        tap(signed => cache.put(key, signed)),
+        map(signed => messageSend({ message: signed }, action.meta)),
+      );
+    }),
+  );
+};
