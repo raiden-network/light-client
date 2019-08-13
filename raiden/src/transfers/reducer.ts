@@ -16,6 +16,7 @@ import {
   transferExpired,
   transferSecretReveal,
   transferClear,
+  transferRefunded,
 } from './actions';
 import { getLocksroot } from './utils';
 
@@ -153,7 +154,12 @@ export function transfersReducer(
   } else if (isActionOf(transferExpired, action)) {
     const lockExpired = action.payload.message,
       secrethash = action.meta.secrethash;
-    if (!(secrethash in state.sent) || state.sent[secrethash].lockExpired) return state;
+    if (
+      !(secrethash in state.sent) ||
+      state.sent[secrethash].unlock || // don't accept expire if already unlocked
+      state.sent[secrethash].lockExpired // already expired
+    )
+      return state;
     const transfer = state.sent[secrethash].transfer,
       lock = transfer.lock;
     const channelPath = ['channels', transfer.token_network_address, transfer.recipient];
@@ -184,6 +190,28 @@ export function transfersReducer(
       },
     };
     const sentTransfer: SentTransfer = { ...state.sent[secrethash], lockExpired };
+
+    state = set(channelPath, channel, state);
+    state = set(['sent', secrethash], sentTransfer, state);
+    return state;
+  } else if (isActionOf(transferRefunded, action)) {
+    const refund = action.payload.message,
+      secrethash = action.meta.secrethash,
+      channelPath = ['channels', refund.token_network_address, refund.initiator];
+    let channel: Channel | undefined = get(channelPath, state);
+    if (!(secrethash in state.sent) || !channel) return state;
+
+    channel = {
+      ...channel,
+      own: {
+        ...channel.own,
+        history: {
+          ...channel.own.history,
+          [Date.now().toString()]: refund,
+        },
+      },
+    };
+    const sentTransfer: SentTransfer = { ...state.sent[secrethash], refund };
 
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);

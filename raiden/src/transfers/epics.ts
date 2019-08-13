@@ -63,6 +63,7 @@ import {
   transferExpireFailed,
   transferSecretReveal,
   transferClear,
+  transferRefunded,
 } from './actions';
 import { getLocksroot, makePaymentId, makeMessageId } from './utils';
 
@@ -262,6 +263,8 @@ function makeAndSignUnlock(
           if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
           yield transferUnlocked({ message: signed }, action.meta);
           // messageSend Unlock handled by transferUnlockedRetryMessageEpic
+          // we don't check if transfer was refunded. If partner refunded the transfer but still
+          // forwarded the payment, we still act honestly and unlock if they revealed
         }),
       );
     }),
@@ -714,6 +717,8 @@ export const transferSecretRequestedEpic = (
         !transfer.payment_identifier.eq(message.payment_identifier) ||
         !transfer.lock.amount.eq(message.amount) ||
         !transfer.lock.expiration.eq(message.expiration)
+        // we don't check if transfer was refunded. If partner refunded the transfer but still
+        // forwarded the payment, they would be in risk of losing their money, not us
       )
         return;
       yield transferSecretRequest({ message }, { secrethash: message.secrethash });
@@ -977,3 +982,37 @@ export const transferReceivedReplyProcessedEpic = (
     }),
   );
 };
+
+/**
+ * Receiving RefundTransfer for pending transfer fails it
+ *
+ * @param action$  Observable of messageReceived actions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of transferFailed|transferRefunded actions
+ */
+export const transferRefundedEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof transferRefunded | typeof transferFailed>> =>
+  action$.pipe(
+    filter(isActionOf(messageReceived)),
+    withLatestFrom(state$),
+    mergeMap(function*([action, state]) {
+      const message = action.payload.message;
+      if (!message || !Signed(RefundTransfer).is(message)) return;
+      const secrethash = message.lock.secrethash;
+      if (
+        !(secrethash in state.sent) ||
+        message.initiator !== state.sent[secrethash].transfer.recipient ||
+        !message.payment_identifier.eq(state.sent[secrethash].transfer.payment_identifier) ||
+        !message.lock.amount.eq(state.sent[secrethash].transfer.lock.amount) ||
+        !message.lock.expiration.eq(state.sent[secrethash].transfer.lock.expiration) ||
+        state.sent[secrethash].unlock || // alrady unlocked
+        state.sent[secrethash].lockExpired || // already expired
+        message.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
+      )
+        return;
+      yield transferRefunded({ message }, { secrethash });
+      yield transferFailed(new Error('transfer refunded'), { secrethash });
+    }),
+  );

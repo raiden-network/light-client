@@ -7,6 +7,7 @@ import {
   SecretReveal,
   Unlock,
   LockExpired,
+  RefundTransfer,
 } from '../messages/types';
 
 /**
@@ -40,7 +41,13 @@ export const SentTransfer = t.readonly(
        */
       lockExpired: Signed(LockExpired),
       // Processed for Unlock or LockExpired clear this transfer, so aren't persisted here
-      // TODO: check on how to handle RefundTransfer
+      /**
+       * <- incoming refund transfer (if so)
+       * If this is set, transfer failed and partner tried refunding the transfer to us. We don't
+       * handle receiving transfers, but just store it here to sign this transfer failed with a
+       * refund, until the lock expires normally
+       */
+      refund: Signed(RefundTransfer),
     }),
   ]),
 );
