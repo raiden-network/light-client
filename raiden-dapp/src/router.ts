@@ -26,7 +26,7 @@ export default new Router({
       path: '/payment/:token',
       name: RouteNames.PAYMENT,
       meta: {
-        title: 'Send transaction'
+        title: 'Send'
       },
       component: () => import('./views/Payment.vue')
     },

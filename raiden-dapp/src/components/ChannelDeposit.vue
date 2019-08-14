@@ -7,6 +7,7 @@
             v-model="deposit"
             :token="token"
             :label="$t('channel-deposit.input.label')"
+            :max="token.balance"
             limit
           ></amount-input>
         </v-form>

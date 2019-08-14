@@ -3,7 +3,12 @@
     <v-layout column justify-space-between fill-height>
       <v-layout align-center justify-center>
         <v-flex xs10>
-          <amount-input v-model="deposit" :token="token" limit></amount-input>
+          <amount-input
+            v-model="deposit"
+            :token="token"
+            :max="token.balance"
+            limit
+          ></amount-input>
         </v-flex>
       </v-layout>
 
