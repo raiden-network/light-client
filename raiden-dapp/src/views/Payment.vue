@@ -176,7 +176,7 @@ export default class Payment extends Vue {
     try {
       await this.$raiden.deposit(
         this.token.address,
-        this.channelWithBiggestCapacity(this.token.address)!!.partner,
+        this.channelWithBiggestCapacity(this.token.address)!.partner,
         amount
       );
       this.done = true;

@@ -59,29 +59,29 @@ export default class AmountInput extends Vue {
       !this.limit ||
       (v && this.noDecimalOverflow(v)) ||
       this.$parent.$t('amount-input.error.too-many-decimals', {
-        decimals: this.token!!.decimals
+        decimals: this.token!.decimals
       }),
     (v: string) =>
       !this.limit ||
       (v && this.hasEnoughBalance(v, this.max)) ||
       this.$parent.$t('amount-input.error.not-enough-funds', {
-        funds: BalanceUtils.toUnits(this.max, this.token!!.decimals),
-        symbol: this.token!!.symbol
+        funds: BalanceUtils.toUnits(this.max, this.token!.decimals),
+        symbol: this.token!.symbol
       })
   ];
 
   private noDecimalOverflow(v: string) {
     return (
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!!.decimals)
+      !BalanceUtils.decimalsOverflow(v, this.token!.decimals)
     );
   }
 
   private hasEnoughBalance(v: string, max: BigNumber) {
     return (
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!!.decimals) &&
-      BalanceUtils.parse(v, this.token!!.decimals).lte(max)
+      !BalanceUtils.decimalsOverflow(v, this.token!.decimals) &&
+      BalanceUtils.parse(v, this.token!.decimals).lte(max)
     );
   }
 
