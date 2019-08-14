@@ -3,6 +3,7 @@ import { TestData } from './data/mock-data';
 import { DeniedReason, emptyTokenModel } from '@/model/types';
 import { Tokens } from '@/types';
 import { Zero } from 'ethers/constants';
+import { BigNumber } from 'ethers/utils';
 
 describe('store', () => {
   const testTokens = (token: string, name?: string, symbol?: string) => {
@@ -166,10 +167,52 @@ describe('store', () => {
     expect(store.getters.network).toEqual('Testnet');
   });
 
-  test('state should reset when reset mutation is commited', () => {
+  test('state should reset when reset mutation is committed', () => {
     store.commit('loadComplete', false);
     expect(store.state.loading).toBe(false);
     store.commit('reset');
     expect(store.state.loading).toBe(true);
+  });
+
+  describe('channelWithBiggestCapacity', () => {
+    test('returns the open channel if only one open channel', () => {
+      let mockChannels = TestData.mockChannels;
+      store.commit('updateChannels', mockChannels);
+      expect(
+        store.getters.channelWithBiggestCapacity(
+          '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
+        )
+      ).toEqual(TestData.openChannel);
+    });
+
+    test('returns undefined if no channel is found', () => {
+      expect(
+        store.getters.channelWithBiggestCapacity(
+          '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
+        )
+      ).toBeUndefined();
+    });
+
+    test('returns the channel with the biggest capacity if there are multiple open', () => {
+      const biggestChannel = {
+        ...TestData.openChannel,
+        capacity: new BigNumber(20 ** 8),
+        partner: '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103'
+      };
+      const mockChannels = {
+        '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {
+          '0x1D36124C90f53d491b6832F1c073F43E2550E35b': TestData.openChannel,
+          '0x82641569b2062B545431cF6D7F0A418582865ba7':
+            TestData.settlingChannel,
+          '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103': biggestChannel
+        }
+      };
+      store.commit('updateChannels', mockChannels);
+      expect(
+        store.getters.channelWithBiggestCapacity(
+          '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
+        )
+      ).toEqual(biggestChannel);
+    });
   });
 });

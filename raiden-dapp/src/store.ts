@@ -1,10 +1,10 @@
 import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState, Tokens } from '@/types';
-import { RaidenChannel, RaidenChannels } from 'raiden';
+import { ChannelState, RaidenChannel, RaidenChannels } from 'raiden';
 import {
-  DeniedReason,
   AccTokenModel,
+  DeniedReason,
   emptyTokenModel,
   PlaceHolderNetwork,
   Token,
@@ -16,7 +16,6 @@ import clone from 'lodash/clone';
 import reduce from 'lodash/reduce';
 import orderBy from 'lodash/orderBy';
 import { Network } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
 
 Vue.use(Vuex);
 
@@ -125,9 +124,12 @@ const store: StoreOptions<RootState> = {
     network: (state: RootState) => {
       return state.network.name || `Chain ${state.network.chainId}`;
     },
-    channelWithBiggestCapacity: (state, getters) => (tokenAddress: string) => {
+    channelWithBiggestCapacity: (_, getters) => (tokenAddress: string) => {
       const channels: RaidenChannel[] = getters.channels(tokenAddress);
-      return orderBy(channels, ['capacity'], ['desc'])[0];
+      const openChannels = channels.filter(
+        value => value.state === ChannelState.open
+      );
+      return orderBy(openChannels, ['capacity'], ['desc'])[0];
     }
   }
 };
