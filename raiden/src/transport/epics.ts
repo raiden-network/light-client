@@ -34,7 +34,7 @@ import {
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { find, get, minBy, sortBy } from 'lodash';
 
-import { getAddress, verifyMessage, hexlify, toUtf8Bytes } from 'ethers/utils';
+import { getAddress, verifyMessage } from 'ethers/utils';
 import { createClient, MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
 import fetch from 'cross-fetch';
 
@@ -178,9 +178,7 @@ export const initMatrixEpic = (
             deviceId = result.device_id;
           }),
           // displayName must be signature of full userId for our messages to be accepted
-          mergeMap(() =>
-            signData(signer, userId!)
-          ),
+          mergeMap(() => signData(signer, userId!)),
           map(signedUserId => ({
             matrix,
             server,
