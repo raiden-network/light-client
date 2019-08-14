@@ -59,7 +59,7 @@ import {
   signMessage,
 } from '../messages/utils';
 import { messageSend, messageReceived, messageSent } from '../messages/actions';
-import { RaidenState } from '../store/state';
+import { RaidenState } from '../state';
 import { raidenInit } from '../store/actions';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
 import { LruCache } from '../utils/lru';

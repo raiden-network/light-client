@@ -2,7 +2,7 @@ import { Observable, EMPTY } from 'rxjs';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
-import { RaidenState } from './state';
+import { RaidenState } from '../state';
 
 /**
  * This epic simply pipes all states to stateOutput$ subject injected as dependency

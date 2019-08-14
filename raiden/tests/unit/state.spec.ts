@@ -1,7 +1,7 @@
 import { bigNumberify } from 'ethers/utils';
 
 import { ChannelState } from 'raiden/channels';
-import { decodeRaidenState, encodeRaidenState, RaidenState } from 'raiden/store/state';
+import { decodeRaidenState, encodeRaidenState, RaidenState } from 'raiden/state';
 import { Address, UInt } from 'raiden/utils/types';
 
 describe('RaidenState codecs', () => {

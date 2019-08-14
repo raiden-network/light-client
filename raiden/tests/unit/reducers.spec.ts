@@ -5,7 +5,7 @@ import { Zero, One, HashZero } from 'ethers/constants';
 import { bigNumberify, keccak256 } from 'ethers/utils';
 
 import { raidenReducer } from 'raiden/reducer';
-import { RaidenState, initialState } from 'raiden/store';
+import { RaidenState, initialState } from 'raiden/state';
 import { raidenInit } from 'raiden/store/actions';
 import {
   newBlock,

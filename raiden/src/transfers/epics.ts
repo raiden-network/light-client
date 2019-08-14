@@ -24,7 +24,7 @@ import { findKey, get } from 'lodash';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
-import { RaidenState } from '../store';
+import { RaidenState } from '../state';
 import { REVEAL_TIMEOUT } from '../constants';
 import { Address, Hash, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
