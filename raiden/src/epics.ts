@@ -3,9 +3,9 @@ import { catchError, filter, mergeMap, takeWhile, takeUntil } from 'rxjs/operato
 import { isActionOf } from 'typesafe-actions';
 import { negate } from 'lodash';
 
+import { RaidenState } from './state';
 import { RaidenEpicDeps } from './types';
 import { RaidenAction } from './actions';
-import { RaidenState } from './store/state';
 import { raidenShutdown } from './store/actions';
 
 import * as StoreEpics from './store/epics';

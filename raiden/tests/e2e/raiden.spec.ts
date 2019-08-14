@@ -14,7 +14,7 @@ import { request } from 'matrix-js-sdk';
 
 import { Raiden } from 'raiden/raiden';
 import { ShutdownReason } from 'raiden/constants';
-import { initialState } from 'raiden/store/state';
+import { initialState } from 'raiden/state';
 import { raidenShutdown } from 'raiden/store/actions';
 import { newBlock } from 'raiden/channels/actions';
 import { ChannelState } from 'raiden/channels/state';

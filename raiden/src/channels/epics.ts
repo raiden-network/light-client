@@ -23,7 +23,7 @@ import { HashZero, Zero } from 'ethers/constants';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { Channel, ChannelState } from '../channels';
-import { RaidenState } from '../store/state';
+import { RaidenState } from '../state';
 import {
   channelOpenFailed,
   channelMonitored,

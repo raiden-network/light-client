@@ -2,8 +2,8 @@ import { isActionOf } from 'typesafe-actions';
 import { get, getOr, isEmpty, set, unset } from 'lodash/fp';
 
 import { partialCombineReducers } from '../utils/redux';
+import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
-import { RaidenState, initialState } from '../store/state';
 import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
 
 /**

@@ -3,11 +3,11 @@ import { isLeft } from 'fp-ts/lib/Either';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { AddressZero } from 'ethers/constants';
 
-import { losslessParse, losslessStringify } from '../utils/data';
-import { Address, Secret } from '../utils/types';
-import { Channels } from '../channels';
-import { RaidenMatrixSetup } from '../transport/state';
-import { SentTransfers } from '../transfers/state';
+import { losslessParse, losslessStringify } from './utils/data';
+import { Address, Secret } from './utils/types';
+import { Channels } from './channels/state';
+import { RaidenMatrixSetup } from './transport/state';
+import { SentTransfers } from './transfers/state';
 
 // types
 

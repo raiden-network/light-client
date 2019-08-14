@@ -2,11 +2,10 @@ import { isActionOf } from 'typesafe-actions';
 import { get, set, unset } from 'lodash/fp';
 import { Zero } from 'ethers/constants';
 
-import { RaidenState } from '../store/state';
+import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
 import { Channel } from '../channels/state';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
-import { initialState } from '../store/state';
 import { SentTransfer } from './state';
 import {
   transferSigned,

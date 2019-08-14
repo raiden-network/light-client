@@ -3,7 +3,7 @@ import { transportReducer } from './transport/reducer';
 import { transfersReducer } from './transfers/reducer';
 
 import { RaidenAction } from './actions';
-import { RaidenState, initialState } from './store/state';
+import { RaidenState, initialState } from './state';
 
 const raidenReducers = {
   channelsReducer,

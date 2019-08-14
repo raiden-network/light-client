@@ -10,7 +10,7 @@ import { TokenNetwork } from '../contracts/TokenNetwork';
 import { Token } from '../contracts/Token';
 
 import { RaidenAction } from './actions';
-import { RaidenState } from './store';
+import { RaidenState } from './state';
 import { ChannelState } from './channels';
 import { Address } from './utils/types';
 

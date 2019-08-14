@@ -4,7 +4,7 @@ import { Zero } from 'ethers/constants';
 
 import { UInt } from '../utils/types';
 import { partialCombineReducers } from '../utils/redux';
-import { RaidenState } from '../store/state';
+import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
 import {
   channelClose,
@@ -20,7 +20,6 @@ import {
   tokenMonitored,
 } from './actions';
 import { Channel, Channels, ChannelState } from './state';
-import { initialState } from '../store/state';
 
 // state.blockNumber specific reducer, handles only newBlock action
 function blockNumber(state: number = initialState.blockNumber, action: RaidenAction) {
