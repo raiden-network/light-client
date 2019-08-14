@@ -34,7 +34,7 @@ import {
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { find, get, minBy, sortBy } from 'lodash';
 
-import { getAddress, verifyMessage } from 'ethers/utils';
+import { getAddress, verifyMessage, hexlify, toUtf8Bytes } from 'ethers/utils';
 import { createClient, MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
 import fetch from 'cross-fetch';
 
@@ -74,6 +74,7 @@ import {
 import { RaidenMatrixSetup } from './state';
 import { Presences } from './types';
 import { getPresences$ } from './utils';
+import { signData } from '../utils/ethers';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available then
@@ -156,7 +157,7 @@ export const initMatrixEpic = (
         userId = `@${userName}:${serverName}`;
 
         // create password as signature of serverName, then try login or register
-        return from(signer.signMessage(serverName)).pipe(
+        return from(signData(signer, serverName)).pipe(
           mergeMap(password =>
             from(matrix.loginWithPassword(userName, password)).pipe(
               catchError(() => from(matrix.register(userName, password))),
@@ -177,7 +178,9 @@ export const initMatrixEpic = (
             deviceId = result.device_id;
           }),
           // displayName must be signature of full userId for our messages to be accepted
-          mergeMap(() => signer.signMessage(userId!)),
+          mergeMap(() =>
+            signData(signer, userId!)
+          ),
           map(signedUserId => ({
             matrix,
             server,

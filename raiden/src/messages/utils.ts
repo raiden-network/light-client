@@ -11,6 +11,7 @@ import { Address, Hash, HexString, Signature } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { SignedBalanceProof } from '../channels/types';
 import { EnvelopeMessage, Message, MessageType, SignedMessageCodecs, Signed } from './types';
+import { JsonRpcProvider } from 'ethers/providers';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
@@ -258,6 +259,23 @@ export async function signMessage<M extends Message>(
   message: M,
 ): Promise<Signed<M>> {
   if (isSigned(message)) return message;
-  const signature = (await signer.signMessage(arrayify(packMessage(message)))) as Signature;
+
+  //const signature = (await signer.signMessage(arrayify(packMessage(message)))) as Signature;
+  let signature = '' as Signature;
+  try {
+    signature = (await signer.signMessage(arrayify(packMessage(message)))) as Signature;
+  } catch (e) {
+    if (e.message.includes('The method eth_sign does not exist')) {
+      const provider = signer.provider! as JsonRpcProvider,
+        address = await signer.getAddress();
+      signature = (await provider.send('personal_sign', [
+        arrayify(packMessage(message)),
+        address.toLowerCase(),
+      ])) as Signature;
+    } else {
+      throw e;
+    }
+  }
+
   return { ...message, signature };
 }
