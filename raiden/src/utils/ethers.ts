@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Contract, EventFilter, Event, Signer } from 'ethers';
+import { Contract, EventFilter, Event } from 'ethers';
 import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
-import { Network, hexlify, toUtf8Bytes } from 'ethers/utils';
+import { Network } from 'ethers/utils';
 import { getNetwork as parseNetwork } from 'ethers/utils/networks';
 import { flatten, sortBy } from 'lodash';
 
@@ -20,7 +20,7 @@ import { filter, first, map, mergeAll, switchMap, withLatestFrom, mergeMap } fro
 export function fromEthersEvent<T>(
   target: Provider | Contract,
   event: EventFilter | string,
-  resultSelector?: (...args: any[]) => T, // eslint-disable-line
+  resultSelector?: (...args: any[]) => T,  // eslint-disable-line
 ): Observable<T> {
   return fromEventPattern<T>(
     (handler: Listener) => target.on(event, handler),
@@ -106,19 +106,4 @@ export function getEventsStream<T extends any[]>(
  */
 export async function getNetwork(provider: JsonRpcProvider): Promise<Network> {
   return parseNetwork(parseInt(await provider.send('net_version', [])));
-}
-
-/**
- * Workaround for JsonRpcProvider.signMessage and Web3Provider.signMessage that
- * uses `personal_sign` instead of `eth_sign`.
- *
- * @param signer Signer signing entity
- * @param data string data to be signed
- * @returns Promise<string>
- */
-export async function signData(signer: Signer, data: string): Promise<string> {
-  const addr = await signer.getAddress(),
-    provider = signer.provider as JsonRpcProvider;
-
-  return provider.send('personal_sign', [hexlify(toUtf8Bytes(data)), addr.toLowerCase()]);
 }
