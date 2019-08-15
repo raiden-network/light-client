@@ -6,6 +6,8 @@ import { bigNumberify, keccak256 } from 'ethers/utils';
 
 import { raidenReducer } from 'raiden/reducer';
 import { RaidenState, initialState } from 'raiden/state';
+import { ShutdownReason } from 'raiden/constants';
+import { raidenShutdown } from 'raiden/actions';
 import {
   newBlock,
   tokenMonitored,
@@ -45,8 +47,6 @@ import {
   RefundTransfer,
 } from 'raiden/messages/types';
 import { makeMessageId, makePaymentId } from 'raiden/transfers/utils';
-import { raidenShutdown } from 'raiden/store/actions';
-import { ShutdownReason } from 'raiden/constants';
 import { makeSignature } from './mocks';
 
 describe('raidenReducer', () => {

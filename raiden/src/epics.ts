@@ -5,8 +5,7 @@ import { negate } from 'lodash';
 
 import { RaidenState } from './state';
 import { RaidenEpicDeps } from './types';
-import { RaidenAction } from './actions';
-import { raidenShutdown } from './store/actions';
+import { RaidenAction, raidenShutdown } from './actions';
 
 import * as StoreEpics from './store/epics';
 import * as ChannelsEpics from './channels/epics';
