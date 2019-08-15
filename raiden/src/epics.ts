@@ -7,13 +7,11 @@ import { RaidenState } from './state';
 import { RaidenEpicDeps } from './types';
 import { RaidenAction, raidenShutdown } from './actions';
 
-import * as StoreEpics from './store/epics';
 import * as ChannelsEpics from './channels/epics';
 import * as TransportEpics from './transport/epics';
 import * as TransfersEpics from './transfers/epics';
 
 export const RaidenEpics = {
-  ...StoreEpics,
   ...ChannelsEpics,
   ...TransportEpics,
   ...TransfersEpics,
@@ -29,6 +27,11 @@ export const raidenRootEpic = (
       takeWhile<RaidenAction>(negate(isActionOf(raidenShutdown)), true),
     ),
     limitedState$ = state$.pipe(takeUntil(shutdownNotification));
+
+  // wire state$ & action$ to output subjects, to expose them to Raiden public class
+  limitedState$.subscribe(deps.stateOutput$);
+  limitedAction$.subscribe(deps.actionOutput$);
+
   // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
   return from(Object.values(RaidenEpics)).pipe(
     mergeMap(epic => epic(limitedAction$, limitedState$, deps)),
