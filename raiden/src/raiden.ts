@@ -70,6 +70,7 @@ import {
 } from './transport/actions';
 import { transfer, transferred, transferFailed } from './transfers/actions';
 import { makeSecret } from './transfers/utils';
+import { patchSignSend } from './utils/ethers';
 
 export class Raiden {
   private readonly provider: JsonRpcProvider;
@@ -216,6 +217,9 @@ export class Raiden {
 
     // initialize epics, this will start monitoring previous token networks and open channels
     this.store.dispatch(raidenInit());
+    
+    // Patch provider's signMessage method (https://github.com/raiden-network/light-client/issues/223)
+    patchSignSend(this.provider);
   }
 
   /**
