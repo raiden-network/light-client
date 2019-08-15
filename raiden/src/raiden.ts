@@ -218,7 +218,7 @@ export class Raiden {
     // initialize epics, this will start monitoring previous token networks and open channels
     this.store.dispatch(raidenInit());
     
-    // Patch provider's signMessage method (https://github.com/raiden-network/light-client/issues/223)
+    // Patch provider's sign method (https://github.com/raiden-network/light-client/issues/223)
     patchSignSend(this.provider);
   }
 
