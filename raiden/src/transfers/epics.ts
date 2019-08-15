@@ -29,7 +29,6 @@ import { REVEAL_TIMEOUT } from '../constants';
 import { Address, Hash, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
 import { LruCache } from '../utils/lru';
-import { raidenInit } from '../store/actions';
 import { Presences } from '../transport/types';
 import { getPresences$ } from '../transport/utils';
 import { messageReceived, messageSend, messageSent } from '../messages/actions';
@@ -624,22 +623,21 @@ export const transferAutoExpireEpic = (
   );
 
 /**
- * Re-queue pending transfer's BalanceProof/Envelope messages for retry on raidenInit
+ * Re-queue pending transfer's BalanceProof/Envelope messages for retry on init
  *
- * @param action$  Observable of raidenInit actions
+ * @param action$  Observable of RaidenActions
  * @param state$  Observable of RaidenStates
  * @returns  Observable of transferSigned|transferUnlocked actions
  */
 export const initQueuePendingEnvelopeMessagesEpic = (
-  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
 ): Observable<
   ActionType<typeof transferSigned | typeof transferUnlocked | typeof transferExpired>
 > =>
-  action$.pipe(
-    filter(isActionOf(raidenInit)),
-    withLatestFrom(state$),
-    mergeMap(function*([, state]) {
+  state$.pipe(
+    first(),
+    mergeMap(function*(state) {
       // loop over all pending transfers
       for (const [key, sent] of Object.entries(state.sent)) {
         const secrethash = key as Hash,

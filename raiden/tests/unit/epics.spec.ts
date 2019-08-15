@@ -33,7 +33,7 @@ import { ShutdownReason } from 'raiden/constants';
 import { RaidenAction } from 'raiden/actions';
 import { raidenReducer } from 'raiden/reducer';
 import { RaidenState, initialState } from 'raiden/state';
-import { raidenInit, raidenShutdown } from 'raiden/store/actions';
+import { raidenShutdown } from 'raiden/store/actions';
 import {
   newBlock,
   tokenMonitored,
@@ -259,8 +259,7 @@ describe('raidenRootEpic', () => {
         /* this test requires mocked provider, or else emit is called with setTimeout and doesn't
          * run before the return of the function.
          */
-        const action$ = m.cold('---a------d|', {
-            a: raidenInit(),
+        const action$ = m.cold('----------d|', {
             d: raidenShutdown({ reason: ShutdownReason.STOP }),
           }),
           state$ = m.cold('--s---|', { s: newState }),
@@ -269,9 +268,9 @@ describe('raidenRootEpic', () => {
             ignoreElements(),
           );
         m.expect(merge(emitBlock$, raidenRootEpic(action$, state$, depsMock))).toBeObservable(
-          m.cold('---(tc)---b-|', {
+          m.cold('--(tc)----b-|', {
             t: tokenMonitored({ token, tokenNetwork, first: false }),
-            // ensure channelMonitored is emitted by raidenInit even for 'settling' channel
+            // ensure channelMonitored is emitted by init even for 'settling' channel
             c: channelMonitored({ id: channelId }, { tokenNetwork, partner }),
             b: newBlock({ blockNumber: 634 }),
           }),
@@ -280,7 +279,7 @@ describe('raidenRootEpic', () => {
     );
 
     test('ShutdownReason.ACCOUNT_CHANGED', async () => {
-      const action$ = of(raidenInit()),
+      const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of(state);
 
       depsMock.provider.listAccounts.mockResolvedValue([]);
@@ -295,7 +294,7 @@ describe('raidenRootEpic', () => {
     });
 
     test('ShutdownReason.NETWORK_CHANGED', async () => {
-      const action$ = of(raidenInit()),
+      const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of(state);
 
       depsMock.provider.getNetwork.mockResolvedValueOnce({ chainId: 899, name: 'unknown' });
@@ -308,7 +307,7 @@ describe('raidenRootEpic', () => {
     });
 
     test('unexpected exception triggers shutdown', async () => {
-      const action$ = of(raidenInit()),
+      const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of(state);
 
       const error = new Error('connection lost');
@@ -321,7 +320,7 @@ describe('raidenRootEpic', () => {
     });
 
     test('matrix stored setup', async () => {
-      const action$ = of(raidenInit()),
+      const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of({
           ...state,
           transport: {
@@ -351,7 +350,7 @@ describe('raidenRootEpic', () => {
     });
 
     test('matrix fetch servers list', async () => {
-      const action$ = of(raidenInit()),
+      const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of(state);
       await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
         type: getType(matrixSetup),
@@ -369,7 +368,7 @@ describe('raidenRootEpic', () => {
 
     test('matrix throws if can not fetch servers list', async () => {
       expect.assertions(2);
-      const action$ = of(raidenInit()),
+      const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of(state);
       (fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
@@ -384,7 +383,7 @@ describe('raidenRootEpic', () => {
 
     test('matrix throws if can not contact any server from list', async () => {
       expect.assertions(2);
-      const action$ = of(raidenInit()),
+      const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of(state);
       // mock*Once is a stack. this 'fetch' will be for the servers list
       (fetch as jest.Mock).mockResolvedValueOnce({
@@ -3326,7 +3325,7 @@ describe('raidenRootEpic', () => {
       test('transferSigned', async () => {
         const state$ = of(transferingState);
         await expect(
-          initQueuePendingEnvelopeMessagesEpic(of(raidenInit()), state$).toPromise(),
+          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$).toPromise(),
         ).resolves.toEqual(transferSigned({ message: signedTransfer }, { secrethash }));
       });
 
@@ -3341,7 +3340,7 @@ describe('raidenRootEpic', () => {
         state$.next(raidenReducer(state$.value, unlocked));
 
         await expect(
-          initQueuePendingEnvelopeMessagesEpic(of(raidenInit()), state$).toPromise(),
+          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$).toPromise(),
         ).resolves.toEqual(unlocked);
       });
 
@@ -3361,7 +3360,7 @@ describe('raidenRootEpic', () => {
         state$.next(raidenReducer(state$.value, expired));
 
         await expect(
-          initQueuePendingEnvelopeMessagesEpic(of(raidenInit()), state$).toPromise(),
+          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$).toPromise(),
         ).resolves.toEqual(expired);
       });
     });

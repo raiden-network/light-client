@@ -107,8 +107,12 @@ describe('Raiden', () => {
   });
 
   test('address', () => {
-    expect.assertions(1);
     expect(raiden.address).toBe(accounts[0]);
+  });
+
+  test('network', async () => {
+    expect.assertions(1);
+    expect(raiden.network).toEqual(await provider.getNetwork());
   });
 
   test('getBlockNumber', async () => {
