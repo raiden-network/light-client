@@ -26,6 +26,8 @@ import { RaidenAction, raidenShutdown } from '../actions';
 import { Channel, ChannelState } from '../channels';
 import { RaidenState } from '../state';
 import {
+  newBlock,
+  tokenMonitored,
   channelOpenFailed,
   channelMonitored,
   channelDepositFailed,
@@ -37,8 +39,6 @@ import {
   channelClose,
   channelSettle,
   channelSettleable,
-  newBlock,
-  tokenMonitored,
   channelDeposited,
   channelClosed,
   channelSettled,

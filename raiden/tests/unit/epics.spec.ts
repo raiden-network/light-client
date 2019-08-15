@@ -91,7 +91,6 @@ import {
   matrixStartEpic,
   deliveredEpic,
 } from 'raiden/transport/epics';
-import { stateOutputEpic, actionOutputEpic } from 'raiden/store/epics';
 import { Address, Hash, UInt } from 'raiden/utils/types';
 import {
   MessageType,
@@ -184,35 +183,6 @@ describe('raidenRootEpic', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-  });
-
-  test('stateOutputEpic', async () => {
-    const outputPromise = depsMock.stateOutput$.toPromise();
-    const epicPromise = stateOutputEpic(
-      of<RaidenAction>(),
-      of<RaidenState>(state),
-      depsMock,
-    ).toPromise();
-
-    // stateOutputEpic is an state sink and doesn't emit any action
-    await expect(epicPromise).resolves.toBeUndefined();
-    // stateOutput$ completes (because state$ completed) and last value was our last emitted state
-    await expect(outputPromise).resolves.toMatchObject({ blockNumber: state.blockNumber });
-  });
-
-  test('actionOutputEpic', async () => {
-    const action = newBlock({ blockNumber: 123 }); // a random action
-    const outputPromise = depsMock.actionOutput$.toPromise();
-    const epicPromise = actionOutputEpic(
-      of<RaidenAction>(action),
-      of<RaidenState>(state),
-      depsMock,
-    ).toPromise();
-
-    // actionOutputEpic is an action sink and doesn't emit any action
-    await expect(epicPromise).resolves.toBeUndefined();
-    // actionOutput$ completes (because action$ completed) and last value was our random action
-    await expect(outputPromise).resolves.toBe(action);
   });
 
   describe('raiden initialization & shutdown', () => {
