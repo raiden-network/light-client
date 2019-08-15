@@ -115,27 +115,25 @@ export async function getNetwork(provider: JsonRpcProvider): Promise<Network> {
  * @param provider  A JsonRpcProvider instance to patch
  */
 export function patchSignSend(provider: JsonRpcProvider): void {
-  const origSend: (method: string, params: any) => Promise<any> = (provider as any).send;
-  Object.assign(provider as any, {
-    send: async function send(method: string, params: any): Promise<any> {
-      if (method === 'eth_sign') {
-        // try 'personal_sign' by default instead of 'eth_sign'
-        return origSend
-          .bind(this)('personal_sign', [params[1], params[0]])
-          .catch(reason => {
-            // on first error, if personal_sign isn't available
-            if (
-              reason instanceof Error &&
-              (reason.message.includes('The method personal_sign does not exist') ||
-                reason.message.includes('Method personal_sign not supported'))
-            ) {
-              Object.assign(provider as any, { send: origSend }); // un-patch
-              return provider.send(method, params); // and retry with eth_sign
-            }
-            throw reason; // else, re-raise
-          });
-      }
-      return origSend.bind(this)(method, params);
-    },
-  });
+  const origSend: (method: string, params: any) => Promise<any> = provider.send;
+  provider.send = async function(method: string, params: any): Promise<any> {
+    if (method === 'eth_sign') {
+      // try 'personal_sign' by default instead of 'eth_sign'
+      return origSend
+        .bind(this)('personal_sign', [params[1], params[0]])
+        .catch(err => {
+          // on first error, if personal_sign isn't available
+          if (
+            err instanceof Error &&
+            (err.message.includes('The method personal_sign does not exist') ||
+              err.message.includes('Method personal_sign not supported'))
+          ) {
+            provider.send = origSend; // un-patch
+            return provider.send(method, params); // and retry with eth_sign
+          }
+          throw err; // else, re-raise
+        });
+    }
+    return origSend.bind(this)(method, params);
+  };
 }
