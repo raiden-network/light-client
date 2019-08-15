@@ -30,10 +30,9 @@ jest.mock('cross-fetch');
 import fetch from 'cross-fetch';
 
 import { ShutdownReason } from 'raiden/constants';
-import { RaidenAction } from 'raiden/actions';
+import { RaidenAction, raidenShutdown } from 'raiden/actions';
 import { raidenReducer } from 'raiden/reducer';
 import { RaidenState, initialState } from 'raiden/state';
-import { raidenShutdown } from 'raiden/store/actions';
 import {
   newBlock,
   tokenMonitored,

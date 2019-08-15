@@ -2,15 +2,20 @@
  * Aggregate types and exported properties from actions from all modules
  */
 import { pick } from 'lodash';
-import { ActionType, getType, Action } from 'typesafe-actions';
-import * as StoreActions from './store/actions';
+import { ActionType, createStandardAction, getType, Action } from 'typesafe-actions';
+import { ShutdownReason } from './constants';
+
 import * as ChannelsActions from './channels/actions';
 import * as TransportActions from './transport/actions';
 import * as MessagesActions from './messages/actions';
 import * as TransfersActions from './transfers/actions';
 
+export const raidenShutdown = createStandardAction('raidenShutdown')<{
+  reason: ShutdownReason | Error;
+}>();
+
 export const RaidenActions = {
-  ...StoreActions,
+  raidenShutdown,
   ...ChannelsActions,
   ...TransportActions,
   ...MessagesActions,

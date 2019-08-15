@@ -22,7 +22,7 @@ import { Event } from 'ethers/contract';
 import { HashZero, Zero } from 'ethers/constants';
 
 import { RaidenEpicDeps } from '../types';
-import { RaidenAction } from '../actions';
+import { RaidenAction, raidenShutdown } from '../actions';
 import { Channel, ChannelState } from '../channels';
 import { RaidenState } from '../state';
 import {
@@ -43,7 +43,6 @@ import {
   channelClosed,
   channelSettled,
 } from './actions';
-import { raidenShutdown } from '../store/actions';
 import { SignatureZero, ShutdownReason } from '../constants';
 import { Address, Hash } from '../utils/types';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';

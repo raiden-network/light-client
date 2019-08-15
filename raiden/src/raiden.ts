@@ -46,8 +46,7 @@ import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types'
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
-import { RaidenAction, RaidenEvents, RaidenEvent } from './actions';
-import { raidenShutdown } from './store/actions';
+import { RaidenAction, RaidenEvents, RaidenEvent, raidenShutdown } from './actions';
 import {
   tokenMonitored,
   channelOpened,
