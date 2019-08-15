@@ -126,7 +126,8 @@ export function patchSignSend(provider: JsonRpcProvider): void {
             // on first error, if personal_sign isn't available
             if (
               reason instanceof Error &&
-              reason.message.includes('The method personal_sign does not exist')
+              (reason.message.includes('The method personal_sign does not exist') ||
+                reason.message.includes('Method personal_sign not supported'))
             ) {
               Object.assign(provider as any, { send: origSend }); // un-patch
               return provider.send(method, params); // and retry with eth_sign
