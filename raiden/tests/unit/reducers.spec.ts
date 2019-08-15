@@ -6,7 +6,6 @@ import { bigNumberify, keccak256 } from 'ethers/utils';
 
 import { raidenReducer } from 'raiden/reducer';
 import { RaidenState, initialState } from 'raiden/state';
-import { raidenInit } from 'raiden/store/actions';
 import {
   newBlock,
   tokenMonitored,
@@ -46,6 +45,8 @@ import {
   RefundTransfer,
 } from 'raiden/messages/types';
 import { makeMessageId, makePaymentId } from 'raiden/transfers/utils';
+import { raidenShutdown } from 'raiden/store/actions';
+import { ShutdownReason } from 'raiden/constants';
 import { makeSignature } from './mocks';
 
 describe('raidenReducer', () => {
@@ -71,7 +72,7 @@ describe('raidenReducer', () => {
   });
 
   test('unhandled state change returns same object', () => {
-    const newState = raidenReducer(state, raidenInit());
+    const newState = raidenReducer(state, raidenShutdown({ reason: ShutdownReason.STOP }));
     expect(newState).toEqual(state);
   });
 

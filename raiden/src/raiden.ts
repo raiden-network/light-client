@@ -47,7 +47,7 @@ import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from 
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import { RaidenAction, RaidenEvents, RaidenEvent } from './actions';
-import { raidenInit, raidenShutdown } from './store/actions';
+import { raidenShutdown } from './store/actions';
 import {
   tokenMonitored,
   channelOpened,
@@ -73,20 +73,26 @@ import { makeSecret } from './transfers/utils';
 import { patchSignSend } from './utils/ethers';
 
 export class Raiden {
-  private readonly provider: JsonRpcProvider;
-  public readonly network: Network;
-  private readonly signer: Signer;
   private readonly store: Store<RaidenState, RaidenAction>;
-  private contracts: RaidenContracts;
+  private readonly deps: RaidenEpicDeps;
+  private readonly contracts: RaidenContracts;
   private readonly tokenInfo: { [token: string]: TokenInfo } = {};
 
-  private readonly action$: Observable<RaidenAction>;
+  /**
+   * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
+   * must not be relied on, as its actions interfaces and structures can change without warning.
+   */
+  public readonly action$: Observable<RaidenAction>;
   /**
    * state$ is exposed only so user can listen to state changes and persist them somewhere else,
    * in case they didn't use the Storage overload for the storageOrState argument of `create`.
    * Format/content of the emitted objects are subject to changes and not part of the public API
    */
   public readonly state$: Observable<RaidenState>;
+  /**
+   * channels$ is public interface, exposing a view of the currently known channels
+   * Its format is expected to be kept backwards-compatible, and may be relied on
+   */
   public readonly channels$: Observable<RaidenChannels>;
   /**
    * A subset ot RaidenActions exposed as public events.
@@ -107,34 +113,27 @@ export class Raiden {
     contractsInfo: ContractsInfo,
     state: RaidenState,
   ) {
-    this.provider = provider;
-    this.network = network;
-    this.signer = signer;
+    this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
+
+    // use next from latest known blockNumber as start block when polling
+    provider.resetEventsBlock(state.blockNumber + 1);
 
     this.contracts = {
       registry: new Contract(
         contractsInfo.TokenNetworkRegistry.address,
         TokenNetworkRegistryAbi as ParamType[],
-        this.signer,
+        signer,
       ) as TokenNetworkRegistry,
       tokenNetworks: {},
       tokens: {},
     };
-
-    const middlewares: Middleware[] = [];
-
-    if (process.env.NODE_ENV === 'development') {
-      middlewares.push(createLogger({ level: 'debug' }));
-    }
 
     const state$ = new BehaviorSubject<RaidenState>(state);
     this.state$ = state$;
 
     const action$ = new Subject<RaidenAction>();
     this.action$ = action$;
-
-    const matrix$ = new AsyncSubject<MatrixClient>();
 
     this.channels$ = state$.pipe(
       map(state =>
@@ -179,27 +178,32 @@ export class Raiden {
 
     this.events$ = action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
 
+    const middlewares: Middleware[] = [];
+
+    if (process.env.NODE_ENV === 'development') {
+      middlewares.push(createLogger({ level: 'debug' }));
+    }
+
+    this.deps = {
+      stateOutput$: state$,
+      actionOutput$: action$,
+      matrix$: new AsyncSubject<MatrixClient>(),
+      provider,
+      network,
+      signer,
+      address,
+      contractsInfo,
+      registryContract: this.contracts.registry,
+      getTokenNetworkContract: this.getTokenNetworkContract.bind(this),
+      getTokenContract: this.getTokenContract.bind(this),
+    };
     // minimum blockNumber of contracts deployment as start scan block
     const epicMiddleware = createEpicMiddleware<
       RaidenAction,
       RaidenAction,
       RaidenState,
       RaidenEpicDeps
-    >({
-      dependencies: {
-        stateOutput$: state$,
-        actionOutput$: action$,
-        matrix$,
-        provider,
-        network,
-        signer,
-        address,
-        contractsInfo,
-        registryContract: this.contracts.registry,
-        getTokenNetworkContract: this.getTokenNetworkContract.bind(this),
-        getTokenContract: this.getTokenContract.bind(this),
-      },
-    });
+    >({ dependencies: this.deps });
 
     this.store = createStore(
       raidenReducer,
@@ -208,15 +212,6 @@ export class Raiden {
     );
 
     epicMiddleware.run(raidenRootEpic);
-    state = this.store.getState();
-
-    // use next from latest known blockNumber as start block when polling
-    this.provider.resetEventsBlock(state.blockNumber + 1);
-
-    this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
-
-    // initialize epics, this will start monitoring previous token networks and open channels
-    this.store.dispatch(raidenInit());
   }
 
   /**
@@ -364,11 +359,15 @@ export class Raiden {
   }
 
   public get address(): Address {
-    return this.state.address;
+    return this.deps.address;
+  }
+
+  public get network(): Network {
+    return this.deps.network;
   }
 
   public async getBlockNumber(): Promise<number> {
-    return this.provider.blockNumber || (await this.provider.getBlockNumber());
+    return this.deps.provider.blockNumber || (await this.deps.provider.getBlockNumber());
   }
 
   /**
@@ -380,7 +379,7 @@ export class Raiden {
   public getBalance(address?: string): Promise<BigNumber> {
     address = address || this.address;
     if (!Address.is(address)) throw new Error('Invalid address');
-    return this.provider.getBalance(address);
+    return this.deps.provider.getBalance(address);
   }
 
   /**
@@ -445,7 +444,7 @@ export class Raiden {
   }
 
   /**
-   * Create a TokenNetwork contract linked to this.signer for given tokenNetwork address
+   * Create a TokenNetwork contract linked to this.deps.signer for given tokenNetwork address
    * Caches the result and returns the same contract instance again for the same address on this
    *
    * @param address  TokenNetwork contract address (not token address!)
@@ -456,13 +455,13 @@ export class Raiden {
       this.contracts.tokenNetworks[address] = new Contract(
         address,
         TokenNetworkAbi as ParamType[],
-        this.signer,
+        this.deps.signer,
       ) as TokenNetwork;
     return this.contracts.tokenNetworks[address];
   }
 
   /**
-   * Create a Token contract linked to this.signer for given token address
+   * Create a Token contract linked to this.deps.signer for given token address
    * Caches the result and returns the same contract instance again for the same address on this
    *
    * @param address  Token contract address
@@ -473,7 +472,7 @@ export class Raiden {
       this.contracts.tokens[address] = new Contract(
         address,
         TokenAbi as ParamType[],
-        this.signer,
+        this.deps.signer,
       ) as Token;
     return this.contracts.tokens[address];
   }

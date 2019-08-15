@@ -12,6 +12,7 @@ import {
   groupBy,
   exhaustMap,
   multicast,
+  first,
 } from 'rxjs/operators';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { findKey, get, isEmpty, negate } from 'lodash';
@@ -42,7 +43,7 @@ import {
   channelClosed,
   channelSettled,
 } from './actions';
-import { raidenInit, raidenShutdown } from '../store/actions';
+import { raidenShutdown } from '../store/actions';
 import { SignatureZero, ShutdownReason } from '../constants';
 import { Address, Hash } from '../utils/types';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
@@ -50,18 +51,18 @@ import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
 /**
  * Register for new block events and emit newBlock actions for new blocks
  *
- * @param action$  Observable of raidenInit actions
+ * @param action$  Observable of RaidenActions
  * @param state$  Observable of RaidenStates
  * @param provider  RaidenEpicDeps members
  * @returns  Observable of newBlock actions
  */
 export const initNewBlockEpic = (
-  action$: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
+  {  }: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
 ): Observable<ActionType<typeof newBlock>> =>
-  action$.pipe(
-    filter(isActionOf(raidenInit)),
+  state$.pipe(
+    first(),
     mergeMap(() => fromEthersEvent<number>(provider, 'block')),
     map(blockNumber => newBlock({ blockNumber })),
   );
@@ -69,20 +70,19 @@ export const initNewBlockEpic = (
 /**
  * Monitor registry for new token networks and monitor them
  *
- * @param action$  Observable of raidenInit actions
+ * @param action$  Observable of RaidenActions
  * @param state$  Observable of RaidenStates
  * @param registryContract,contractsInfo  RaidenEpicDeps members
  * @returns  Observable of tokenMonitored actions
  */
 export const initMonitorRegistryEpic = (
-  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { registryContract, contractsInfo }: RaidenEpicDeps,
 ): Observable<ActionType<typeof tokenMonitored>> =>
-  action$.pipe(
-    filter(isActionOf(raidenInit)),
-    withLatestFrom(state$),
-    mergeMap(([, state]) =>
+  state$.pipe(
+    first(),
+    mergeMap(state =>
       merge(
         // monitor old (in case of empty tokens) and new registered tokens
         // and starts monitoring every registered token
@@ -114,18 +114,17 @@ export const initMonitorRegistryEpic = (
 /**
  * Monitor channels previously already on state
  *
- * @param action$  Observable of raidenInit actions
+ * @param action$  Observable of RaidenActions
  * @param state$  Observable of RaidenStates
  * @returns  Observable of channelMonitored actions
  */
 export const initMonitorChannelsEpic = (
-  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
 ): Observable<ActionType<typeof channelMonitored>> =>
-  action$.pipe(
-    filter(isActionOf(raidenInit)),
-    withLatestFrom(state$),
-    mergeMap(function*([, state]) {
+  state$.pipe(
+    first(),
+    mergeMap(function*(state) {
       for (const [tokenNetwork, obj] of Object.entries(state.channels)) {
         for (const [partner, channel] of Object.entries(obj)) {
           if (channel.state === ChannelState.opening) continue;
@@ -141,18 +140,18 @@ export const initMonitorChannelsEpic = (
 /**
  * Monitor provider to ensure account continues to be available and network stays the same
  *
- * @param action$  Observable of raidenInit actions
+ * @param action$  Observable of RaidenActions
  * @param state$  Observable of RaidenStates
  * @param address,network,provider  RaidenEpicDeps members
  * @returns  Observable of raidenShutdown actions
  */
 export const initMonitorProviderEpic = (
-  action$: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
+  {  }: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
   { address, network, provider }: RaidenEpicDeps,
 ): Observable<ActionType<typeof raidenShutdown>> =>
-  action$.pipe(
-    filter(isActionOf(raidenInit)),
+  state$.pipe(
+    first(),
     mergeMap(() => provider.listAccounts()),
     // at init time, check if our address is in provider's accounts list
     // if not, it means Signer is a local Wallet or another non-provider-side account
