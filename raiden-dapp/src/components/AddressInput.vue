@@ -70,7 +70,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   value!: string;
 
   @Prop({
-    default: []
+    default: function() {
+      return ['']
+    }
   })
   exclude!: Array<string>;
 

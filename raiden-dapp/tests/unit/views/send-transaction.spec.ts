@@ -7,6 +7,7 @@ jest.useFakeTimers();
 import { stub } from '../utils/stub';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
+import { Store } from 'vuex';
 import Vuetify from 'vuetify';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
 import Payment from '@/views/Payment.vue';
@@ -40,6 +41,11 @@ describe('SendTransaction.vue', () => {
     const localVue = createLocalVue();
     let options = {
       localVue,
+      store: new Store({
+        getters: {
+          defaultAddress: jest.fn().mockReturnValue(['0x1234567890'])
+        }
+      }),
       mocks: {
         $router: router,
         $route: TestData.mockRoute({
