@@ -168,5 +168,26 @@ describe('AddressInput', function() {
         'address-input.error.invalid-excluded-address'
       );
     });
+
+    it('should not show error message if there is no exclude prop', async () => {
+      wrapper = mount(AddressInput, {
+        propsData: {
+          value: ''
+        },
+        mocks: {
+          $raiden: raiden,
+          $identicon: {
+            getIdenticon: mockIdenticon
+          },
+          $t: (msg: string) => msg
+        }
+      });
+
+      mockInput(wrapper, excludedAddress);
+      await wrapper.vm.$nextTick();
+
+      const messages = wrapper.find('.v-messages__message');
+      expect(messages.exists()).toBe(false);
+    })
   });
 });
