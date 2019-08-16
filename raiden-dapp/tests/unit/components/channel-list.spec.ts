@@ -58,7 +58,7 @@ describe('ChannelList.vue', function() {
       localVue,
       vuetify,
       propsData: {
-        tokenAddress: '0xtoken',
+        tokenAddress: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
         channels: TestData.mockChannelArray,
         visible: ''
       },
@@ -168,6 +168,7 @@ describe('ChannelList.vue', function() {
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
       elementVisibilityChanged(0, 'channel-278-deposit');
+      await wrapper.vm.$nextTick();
       wrapper.find('#confirm-278').trigger('click');
       elementVisibilityChanged(1);
       await flushPromises();
@@ -181,6 +182,7 @@ describe('ChannelList.vue', function() {
       wrapper.find('#deposit-0').trigger('click');
       elementVisibilityChanged(0, 'channel-278-deposit');
       mockInput(wrapper, '0.5');
+      await wrapper.vm.$nextTick();
       wrapper.find('#confirm-278').trigger('click');
       elementVisibilityChanged(1);
       expect(wrapper.vm.$data.selectedChannel).toBeNull();
@@ -200,6 +202,7 @@ describe('ChannelList.vue', function() {
       wrapper.find('#deposit-0').trigger('click');
       elementVisibilityChanged(0, 'channel-278-deposit');
       mockInput(wrapper, '0.5');
+      await wrapper.vm.$nextTick();
       wrapper.find('#confirm-278').trigger('click');
       elementVisibilityChanged(1);
       await flushPromises();
@@ -219,6 +222,7 @@ describe('ChannelList.vue', function() {
         visible: 'channel-278-deposit'
       });
       mockInput(wrapper, '0.5');
+      await wrapper.vm.$nextTick();
       wrapper.find('#confirm-278').trigger('click');
       expect(wrapper.emitted()['visible-changed'][1][0]).toBe('');
       wrapper.setProps({

@@ -15,6 +15,7 @@ import {
   takeUntil,
   exhaustMap,
   publishReplay,
+  tap,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
 import { bigNumberify, keccak256 } from 'ethers/utils';
@@ -27,6 +28,7 @@ import { RaidenState } from '../store';
 import { REVEAL_TIMEOUT } from '../constants';
 import { Address, Hash, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
+import { LruCache } from '../utils/lru';
 import { raidenInit } from '../store/actions';
 import { Presences } from '../transport/types';
 import { getPresences$ } from '../transport/utils';
@@ -40,6 +42,7 @@ import {
   Unlock,
   Signed,
   LockExpired,
+  RefundTransfer,
 } from '../messages/types';
 import { signMessage, getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
@@ -60,6 +63,7 @@ import {
   transferExpireFailed,
   transferSecretReveal,
   transferClear,
+  transferRefunded,
 } from './actions';
 import { getLocksroot, makePaymentId, makeMessageId } from './utils';
 
@@ -259,6 +263,8 @@ function makeAndSignUnlock(
           if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
           yield transferUnlocked({ message: signed }, action.meta);
           // messageSend Unlock handled by transferUnlockedRetryMessageEpic
+          // we don't check if transfer was refunded. If partner refunded the transfer but still
+          // forwarded the payment, we still act honestly and unlock if they revealed
         }),
       );
     }),
@@ -711,6 +717,8 @@ export const transferSecretRequestedEpic = (
         !transfer.payment_identifier.eq(message.payment_identifier) ||
         !transfer.lock.amount.eq(message.amount) ||
         !transfer.lock.expiration.eq(message.expiration)
+        // we don't check if transfer was refunded. If partner refunded the transfer but still
+        // forwarded the payment, they would be in risk of losing their money, not us
       )
         return;
       yield transferSecretRequest({ message }, { secrethash: message.secrethash });
@@ -921,5 +929,90 @@ export const transferChannelClosedEpic = (
         // regardless of success or fail, always clear this transfer, channel gone
         yield transferClear(undefined, { secrethash });
       }
+    }),
+  );
+
+/**
+ * Sends Processed for unhandled transfer messages
+ *
+ * We don't yet support receiving nor mediating transfers (LockedTransfer, RefundTransfer), but
+ * also don't want the partner to keep retrying any messages intended for us indefinitely.
+ * That's why we decided to just answer them with Processed, to clear their queue. Of course, we
+ * still don't validate, store state for these messages nor handle them in any way (e.g. requesting
+ * secret from initiator), so any transfer is going to expire, and then we also reply Processed for
+ * the respective LockExpired.
+ *
+ * @param action$  Observable of messageSend actions
+ * @param state$  Observable of RaidenStates
+ * @param signer  RaidenEpicDeps members
+ * @returns  Observable of messageSend actions
+ */
+export const transferReceivedReplyProcessedEpic = (
+  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenState>,
+  { signer }: RaidenEpicDeps,
+): Observable<ActionType<typeof messageSend>> => {
+  const cache = new LruCache<string, Signed<Processed>>(32);
+  return action$.pipe(
+    filter(isActionOf(messageReceived)),
+    concatMap(action => {
+      const message = action.payload.message;
+      if (
+        !message ||
+        !(
+          Signed(LockedTransfer).is(message) ||
+          Signed(RefundTransfer).is(message) ||
+          Signed(LockExpired).is(message)
+        )
+      )
+        return EMPTY;
+      const msgId = message.message_identifier,
+        key = msgId.toString();
+      const cached = cache.get(key);
+      if (cached) return of(messageSend({ message: cached }, action.meta));
+
+      const processed: Processed = {
+        type: MessageType.PROCESSED,
+        message_identifier: msgId, // eslint-disable-line @typescript-eslint/camelcase
+      };
+      return from(signMessage(signer, processed)).pipe(
+        tap(signed => cache.put(key, signed)),
+        map(signed => messageSend({ message: signed }, action.meta)),
+      );
+    }),
+  );
+};
+
+/**
+ * Receiving RefundTransfer for pending transfer fails it
+ *
+ * @param action$  Observable of messageReceived actions
+ * @param state$  Observable of RaidenStates
+ * @returns  Observable of transferFailed|transferRefunded actions
+ */
+export const transferRefundedEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof transferRefunded | typeof transferFailed>> =>
+  action$.pipe(
+    filter(isActionOf(messageReceived)),
+    withLatestFrom(state$),
+    mergeMap(function*([action, state]) {
+      const message = action.payload.message;
+      if (!message || !Signed(RefundTransfer).is(message)) return;
+      const secrethash = message.lock.secrethash;
+      if (
+        !(secrethash in state.sent) ||
+        message.initiator !== state.sent[secrethash].transfer.recipient ||
+        !message.payment_identifier.eq(state.sent[secrethash].transfer.payment_identifier) ||
+        !message.lock.amount.eq(state.sent[secrethash].transfer.lock.amount) ||
+        !message.lock.expiration.eq(state.sent[secrethash].transfer.lock.expiration) ||
+        state.sent[secrethash].unlock || // alrady unlocked
+        state.sent[secrethash].lockExpired || // already expired
+        message.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
+      )
+        return;
+      yield transferRefunded({ message }, { secrethash });
+      yield transferFailed(new Error('transfer refunded'), { secrethash });
     }),
   );

@@ -1,48 +1,25 @@
 <template>
-  <fieldset :class="{ light, dark: !light, padded }" class="amount-input">
+  <fieldset class="amount-input">
+    <div class="amount-input__label">
+      {{ label }}
+    </div>
     <v-text-field
       id="amount"
       ref="input"
-      :class="{ light, invalid: !valid }"
+      :class="{ invalid: !valid }"
       :disabled="disabled"
-      :label="label"
       :rules="rules"
       :value="amount"
-      :light="light"
-      :dark="!light"
-      @contextmenu="valueUpdated('contextmenu', $event)"
-      @drop="valueUpdated('drop', $event)"
-      @input.native="valueUpdated('input', $event)"
-      @keydown="valueUpdated('keydown', $event)"
-      @keyup="valueUpdated('keyup', $event)"
-      :hint="$t('amount-input.input.hint')"
-      @mousedown="valueUpdated('mousedown', $event)"
-      @mouseup="valueUpdated('mouseup', $event)"
-      @select="valueUpdated('select', $event)"
-      background-color="transparent"
+      @paste="onPaste($event)"
+      @keypress="checkIfValid($event)"
+      @input="onInput($event)"
+      :placeholder="placeholder"
       autocomplete="off"
-      persistent-hint
-      placeholder="0.00"
-      solo
-      flat
     >
-      <div slot="prepend" class="amount-input__prepend"></div>
-      <div slot="append-outer" class="amount-input__status-icon">
-        <v-img
-          v-if="!valid"
-          :src="require('../assets/input_invalid.svg')"
-          class="amount-input__status-icon__icon"
-        ></v-img>
-        <v-img
-          v-else
-          :src="require('../assets/input_valid.svg')"
-          class="amount-input__status-icon__icon"
-        ></v-img>
+      <div slot="append" class="amount-input__token-symbol">
+        {{ token.symbol || 'TKN' }}
       </div>
     </v-text-field>
-    <span :class="{ light }" class="amount-input__token-symbol">{{
-      token.symbol || 'TKN'
-    }}</span>
   </fieldset>
 </template>
 
@@ -50,6 +27,8 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
+import { BigNumber } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 @Component({})
 export default class AmountInput extends Vue {
@@ -63,14 +42,14 @@ export default class AmountInput extends Vue {
   token?: Token;
   @Prop({ default: false, type: Boolean })
   limit!: boolean;
-  @Prop({ default: false, type: Boolean })
-  light!: boolean;
-  @Prop({ default: false, type: Boolean })
-  padded!: boolean;
+  @Prop({ default: '0.0', type: String })
+  placeholder!: string;
+  @Prop({ required: false, default: () => Zero })
+  max!: BigNumber;
 
   valid: boolean = true;
-  amount: string = '0.00';
-  private static numericRegex = /^\d*[.,]?\d*$/;
+  amount: string = '';
+  private static numericRegex = /^\d*[.]?\d*$/;
 
   readonly rules = [
     (v: string) => {
@@ -78,64 +57,67 @@ export default class AmountInput extends Vue {
     },
     (v: string) =>
       !this.limit ||
-      this.noDecimalOverflow(v) ||
+      (v && this.noDecimalOverflow(v)) ||
       this.$parent.$t('amount-input.error.too-many-decimals', {
-        decimals: this.token!!.decimals
+        decimals: this.token!.decimals
       }),
     (v: string) =>
       !this.limit ||
-      this.hasEnoughBalance(v) ||
+      (v && this.hasEnoughBalance(v, this.max)) ||
       this.$parent.$t('amount-input.error.not-enough-funds', {
-        funds: this.token!!.units
+        funds: BalanceUtils.toUnits(this.max, this.token!.decimals),
+        symbol: this.token!.symbol
       })
   ];
 
   private noDecimalOverflow(v: string) {
     return (
-      v &&
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!!)
+      !BalanceUtils.decimalsOverflow(v, this.token!.decimals)
     );
   }
 
-  private hasEnoughBalance(v: string) {
+  private hasEnoughBalance(v: string, max: BigNumber) {
     return (
-      v &&
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!!) &&
-      BalanceUtils.hasBalance(v, this.token!!)
+      !BalanceUtils.decimalsOverflow(v, this.token!.decimals) &&
+      BalanceUtils.parse(v, this.token!.decimals).lte(max)
     );
   }
-
-  private oldValue: string = '0.00';
-  private oldSelectionStart: number | null = 0;
-  private oldSelectionEnd: number | null = 0;
 
   mounted() {
-    this.amount = this.oldValue = this.value;
+    this.amount = this.value;
   }
 
-  valueUpdated(eventName: string, event: Event) {
-    const target = event.target as HTMLInputElement;
-    const value = target.value;
+  checkIfValid(event: KeyboardEvent) {
+    if (
+      !/[\d.]/.test(event.key) ||
+      (!this.value && event.key === '.') ||
+      (this.value.indexOf('.') > -1 && event.key === '.')
+    ) {
+      event.preventDefault();
+    }
+  }
 
+  onPaste(event: ClipboardEvent) {
+    const clipboardData = event.clipboardData;
+    const value = clipboardData.getData('text');
+    if (!AmountInput.numericRegex.test(value)) {
+      event.preventDefault();
+    } else {
+      const input = event.target as HTMLInputElement;
+      input.setSelectionRange(0, input.value.length);
+    }
+  }
+
+  onInput(value: string) {
     /* istanbul ignore else */
     if (this.$refs.input) {
       const input = this.$refs.input as any;
       this.valid = input.valid;
     }
 
-    if (AmountInput.numericRegex.test(value)) {
-      this.$emit(eventName, value);
-      this.oldValue = value;
-      this.oldSelectionStart = target.selectionStart;
-      this.oldSelectionEnd = target.selectionEnd;
-    } else {
-      target.value = this.oldValue;
-      if (this.oldSelectionStart && this.oldSelectionEnd) {
-        target.setSelectionRange(this.oldSelectionStart, this.oldSelectionEnd);
-      }
-    }
+    this.$emit('input', value);
   }
 }
 </script>
@@ -146,84 +128,6 @@ export default class AmountInput extends Vue {
 
 $header-vertical-margin: 5rem;
 $header-vertical-margin-mobile: 2rem;
-
-.padded {
-  padding-top: 60px;
-  padding-bottom: 60px;
-}
-
-$dark_color: #050505;
-$light_color: #ffffff;
-$dark_border: #fbfbfb;
-$light_border: #050505;
-$dark_background: #1e1e1e;
-$light_background: #e4e4e4;
-
-.light {
-  color: $dark_color !important;
-
-  ::v-deep input {
-    color: $dark_color !important;
-  }
-
-  ::v-deep .v-messages {
-    color: $dark_color !important;
-  }
-
-  .invalid ::v-deep .v-messages {
-    border-color: $light_border;
-    background-color: $light_background;
-  }
-
-  .invalid ::v-deep .v-messages:after {
-    border-color: $light_border;
-    background-color: $light_background;
-  }
-}
-
-.dark {
-  color: $light_color !important;
-
-  ::v-deep input {
-    color: $light_color !important;
-  }
-
-  ::v-deep .v-messages {
-    color: $error-tooltip-background !important;
-    .v-messages__wrapper {
-      color: white;
-    }
-  }
-
-  .invalid ::v-deep .v-messages {
-    border-color: $error-tooltip-background;
-    background-color: $error-tooltip-background;
-  }
-
-  .invalid ::v-deep .v-messages:after {
-    border-color: $error-tooltip-background;
-    background-color: $error-tooltip-background;
-  }
-}
-
-.invalid ::v-deep .v-messages {
-  border: 1px solid !important;
-  border-radius: 5px;
-}
-
-.invalid ::v-deep .v-messages:after {
-  content: ' ';
-  border: solid #050505;
-  border-radius: 1px;
-  border-width: 0 1px 1px 0;
-  position: absolute;
-  left: 50%;
-  bottom: 90%;
-  display: inline-block;
-  padding: 3px;
-  transform: rotate(-135deg);
-  -webkit-transform: rotate(-135deg);
-}
 
 .amount-input {
   display: flex;
@@ -239,65 +143,78 @@ $light_background: #e4e4e4;
   }
 }
 
+.amount-input ::v-deep .v-input__slot {
+  border-radius: 10px;
+  background-color: $input-background !important;
+  padding: 8px 16px;
+  max-height: 49px;
+}
+
+.amount-input ::v-deep .v-input {
+  width: 100%;
+}
+
 .amount-input ::v-deep input {
   font-family: Roboto, sans-serif;
-  font-size: 40px;
-  font-weight: 500;
-  line-height: 47px;
-  text-align: center;
-  max-height: 50px;
+  font-size: 16px;
+  line-height: 20px;
+  caret-color: white !important;
 }
 
 .amount-input ::v-deep input:focus {
   outline: 0;
 }
 
-.amount-input ::v-deep .v-text-field__details {
-  padding-top: 8px;
-  margin-top: 16px;
-}
-
 .amount-input ::v-deep .v-messages {
   border: 1px solid transparent;
   font-family: Roboto, sans-serif;
-  font-size: 13px;
-  line-height: 18px;
-  text-align: center;
-  margin-top: 15px;
+  font-size: 14px;
+  line-height: 16px;
 
   .v-messages__wrapper {
-    height: 30px;
+    height: 25px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: start;
+    padding-left: 20px;
     justify-content: center;
+    color: white;
   }
 }
 
-.amount-input ::v-deep .v-messages:after {
-  padding: 3px;
+::v-deep .v-input__slot {
+  border: 1.5px solid transparent;
+}
+
+::v-deep .v-input--is-focused .v-input__slot {
+  border: 1.5px solid $primary-color;
 }
 
 .amount-input__token-symbol {
   font-family: Roboto, sans-serif;
-  color: $secondary-color;
+  color: $text-color;
   font-weight: 500;
-  font-size: 16px;
-  line-height: 20px;
-  margin-top: -85px;
+  font-size: 14px;
+  line-height: 27px;
   text-align: center;
 }
 
-.amount-input__status-icon {
-  padding: 8px;
+::v-deep .v-text-field > .v-input__control > .v-input__slot::before {
+  border-width: 0 0 0 0;
 }
 
-.amount-input__status-icon__icon {
-  line-height: 28px;
-  width: 28px;
+::v-deep .v-text-field > .v-input__control > .v-input__slot::after {
+  border-width: 0 0 0 0;
 }
 
-.amount-input__prepend {
-  width: 44px;
+.amount-input__label {
+  color: $secondary-color;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  line-height: 15px;
+  text-transform: uppercase;
+  text-align: left;
+  width: 100%;
 }
 </style>

@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 
 import { EnumType, UInt } from '../utils/types';
-import { Signed, LockedTransfer, Unlock, LockExpired } from '../messages/types';
+import { Signed, LockedTransfer, Unlock, LockExpired, RefundTransfer } from '../messages/types';
 import { Lock, SignedBalanceProof } from './types';
 
 export enum ChannelState {
@@ -33,6 +33,7 @@ export const ChannelEnd = t.readonly(
           Signed(LockedTransfer),
           Signed(Unlock),
           Signed(LockExpired),
+          Signed(RefundTransfer),
         ]) /* sent by this end */,
       ),
     }),

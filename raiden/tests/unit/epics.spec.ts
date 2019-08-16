@@ -18,7 +18,7 @@ import { getType, isActionOf, ActionType } from 'typesafe-actions';
 import { get, range } from 'lodash';
 
 import { Wallet } from 'ethers';
-import { AddressZero, Zero, HashZero } from 'ethers/constants';
+import { AddressZero, Zero, HashZero, One } from 'ethers/constants';
 import { bigNumberify, verifyMessage, BigNumber, keccak256 } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { ContractTransaction } from 'ethers/contract';
@@ -103,6 +103,7 @@ import {
   SecretRequest,
   SecretReveal,
   LockExpired,
+  RefundTransfer,
 } from 'raiden/messages/types';
 import { makeMessageId, makeSecret } from 'raiden/transfers/utils';
 import { encodeJsonMessage, signMessage } from 'raiden/messages/utils';
@@ -121,6 +122,7 @@ import {
   transferExpire,
   transferExpired,
   transferExpireFailed,
+  transferRefunded,
 } from 'raiden/transfers/actions';
 import {
   transferGenerateAndSignEnvelopeMessageEpic,
@@ -136,6 +138,8 @@ import {
   transferSignedRetryMessageEpic,
   transferUnlockedRetryMessageEpic,
   transferExpiredRetryMessageEpic,
+  transferReceivedReplyProcessedEpic,
+  transferRefundedEpic,
 } from 'raiden/transfers/epics';
 
 describe('raidenRootEpic', () => {
@@ -3743,6 +3747,112 @@ describe('raidenRootEpic', () => {
           transferChannelClosedEpic(
             of(channelClose(undefined, { tokenNetwork, partner: token })),
             state$,
+          ).toPromise(),
+        ).resolves.toBeUndefined();
+      });
+    });
+
+    describe('RefundTransfer', () => {
+      let refund: Signed<RefundTransfer>,
+        action: ActionType<typeof messageReceived>,
+        otherAction: ActionType<typeof messageReceived>;
+
+      beforeEach(async () => {
+        const message: RefundTransfer = {
+          type: MessageType.REFUND_TRANSFER,
+          chain_id: signedTransfer.chain_id,
+          message_identifier: makeMessageId(),
+          payment_identifier: signedTransfer.payment_identifier,
+          nonce: One as UInt<8>,
+          token_network_address: tokenNetwork,
+          token,
+          recipient: depsMock.address,
+          target: depsMock.address,
+          initiator: partner,
+          channel_identifier: signedTransfer.channel_identifier,
+          transferred_amount: Zero as UInt<32>,
+          locked_amount: signedTransfer.locked_amount, // "forgot" to decrease locked_amount
+          lock: signedTransfer.lock,
+          locksroot: signedTransfer.locksroot,
+          fee: Zero as UInt<32>,
+        };
+        refund = await signMessage(partnerSigner, message);
+        action = messageReceived(
+          { text: encodeJsonMessage(refund), message: refund },
+          { address: partner },
+        );
+        // a message that won't be processed by this epic
+        const other: Delivered = {
+            type: MessageType.DELIVERED,
+            delivered_message_identifier: refund.message_identifier,
+          },
+          otherSigned = await signMessage(partnerSigner, other);
+        otherAction = messageReceived(
+          { text: encodeJsonMessage(otherSigned), message: otherSigned },
+          { address: partner },
+        );
+      });
+
+      test('transferReceivedReplyProcessedEpic', async () => {
+        expect.assertions(4);
+
+        const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
+
+        const output = await transferReceivedReplyProcessedEpic(
+          of(action, otherAction, action),
+          of(transferingState),
+          depsMock,
+        )
+          .pipe(toArray())
+          .toPromise();
+
+        expect(output).toHaveLength(2);
+        expect(output[0]).toMatchObject({
+          type: getType(messageSend),
+          payload: {
+            message: expect.objectContaining({
+              type: MessageType.PROCESSED,
+              message_identifier: refund.message_identifier,
+            }),
+          },
+          meta: { address: partner },
+        });
+        expect(output[0].payload.message).toBe(output[1].payload.message);
+        // second signMessage should have been cached
+        expect(signerSpy).toHaveBeenCalledTimes(1);
+        signerSpy.mockRestore();
+      });
+
+      test('transferRefundedEpic', async () => {
+        expect.assertions(2);
+
+        // success case
+        await expect(
+          transferRefundedEpic(of(otherAction, action), of(transferingState))
+            .pipe(toArray())
+            .toPromise(),
+        ).resolves.toEqual(
+          expect.arrayContaining([
+            transferRefunded({ message: refund }, { secrethash }),
+            {
+              type: getType(transferFailed),
+              payload: expect.any(Error),
+              error: true,
+              meta: { secrethash },
+            },
+          ]),
+        );
+
+        // if transfer expired, refund is ignored
+        await expect(
+          transferRefundedEpic(
+            of(action),
+            of(
+              [newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 })].reduce(
+                raidenReducer,
+                transferingState,
+              ),
+            ),
           ).toPromise(),
         ).resolves.toBeUndefined();
       });

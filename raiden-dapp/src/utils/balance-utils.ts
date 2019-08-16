@@ -11,22 +11,14 @@ export class BalanceUtils {
     return utils.formatUnits(wei, decimals);
   }
 
-  static hasBalance(depositTokens: string, token: Token): boolean {
-    const deposit = BalanceUtils.parse(depositTokens, token.decimals);
-    const balance = BalanceUtils.parse(token.units, token.decimals);
-    return deposit.lte(balance);
-  }
-
-  static decimalsOverflow(depositTokens: string, token: Token): boolean {
+  static decimalsOverflow(depositTokens: string, decimals: number): boolean {
     let decimalPart: string;
     if (depositTokens.indexOf('.') > 0) {
       decimalPart = depositTokens.split('.')[1];
-    } else if (depositTokens.indexOf(',') > 0) {
-      decimalPart = depositTokens.split(',')[1];
     } else {
       decimalPart = '';
     }
-    return decimalPart.length > token.decimals;
+    return decimalPart.length > decimals;
   }
 
   static parse(deposit: string, decimals: number) {

@@ -20,7 +20,7 @@ import { filter, first, map, mergeAll, switchMap, withLatestFrom, mergeMap } fro
 export function fromEthersEvent<T>(
   target: Provider | Contract,
   event: EventFilter | string,
-  resultSelector?: (...args: any[]) => T,  // eslint-disable-line
+  resultSelector?: (...args: any[]) => T, // eslint-disable-line
 ): Observable<T> {
   return fromEventPattern<T>(
     (handler: Listener) => target.on(event, handler),
@@ -106,4 +106,32 @@ export function getEventsStream<T extends any[]>(
  */
 export async function getNetwork(provider: JsonRpcProvider): Promise<Network> {
   return parseNetwork(parseInt(await provider.send('net_version', [])));
+}
+
+/**
+ * Patch JsonRpcProvider.send to try personal_sign first, and fallback to eth_sign if it fails
+ * Call it once on the provider instance
+ *
+ * @param provider  A JsonRpcProvider instance to patch
+ */
+export function patchSignSend(provider: JsonRpcProvider): void {
+  const origSend: (method: string, params: any) => Promise<any> = provider.send;
+  provider.send = async function(method: string, params: any): Promise<any> {
+    if (method === 'eth_sign') {
+      // try 'personal_sign' by default instead of 'eth_sign'
+      return origSend.apply(this, ['personal_sign', [params[1], params[0]]]).catch(err => {
+        // on first error, if personal_sign isn't available
+        if (
+          err instanceof Error &&
+          (err.message.includes('The method personal_sign does not exist') ||
+            err.message.includes('Method personal_sign not supported'))
+        ) {
+          provider.send = origSend; // un-patch
+          return provider.send(method, params); // and retry with eth_sign
+        }
+        throw err; // else, re-raise
+      });
+    }
+    return origSend.apply(this, [method, params]);
+  };
 }

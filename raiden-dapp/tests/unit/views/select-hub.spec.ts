@@ -72,7 +72,7 @@ describe('SelectHub.vue', function() {
     wrapper = createWrapper(route, token, token);
     mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
     await wrapper.vm.$nextTick();
-    wrapper.find('button').trigger('click');
+    wrapper.find('.action-button__button').trigger('click');
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(callArgs().name).toEqual(RouteNames.OPEN_CHANNEL);
   });

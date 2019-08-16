@@ -258,10 +258,10 @@ describe('RaidenService', () => {
 
     const result = await raidenService.getToken('0xtoken');
     expect(result).toBeDefined();
-    expect(result!!.decimals).toBe(18);
-    expect(result!!.address).toBe('0xtoken');
-    expect(result!!.units).toBe('1.0');
-    expect(result!!.balance).toBe(balance);
+    expect(result!.decimals).toBe(18);
+    expect(result!.address).toBe('0xtoken');
+    expect(result!.units).toBe('1.0');
+    expect(result!.balance).toBe(balance);
     expect(tokenBalance).toHaveBeenCalledTimes(1);
     expect(tokenBalance).toHaveBeenCalledWith('0xtoken');
     expect(tokenInfo).toHaveBeenCalledTimes(1);

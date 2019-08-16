@@ -10,6 +10,7 @@ import {
   Unlock,
   Signed,
   LockExpired,
+  RefundTransfer,
 } from '../messages/types';
 
 // eslint-disable-next-line @typescript-eslint/prefer-interface
@@ -84,6 +85,12 @@ export const transferExpired = createStandardAction('transferExpired')<
 export const transferExpireFailed = createStandardAction('transferExpireFailed').map(
   (payload: Error, meta: TransferId) => ({ payload, error: true, meta }),
 );
+
+/** A transfer was refunded */
+export const transferRefunded = createStandardAction('transferRefunded')<
+  { message: Signed<RefundTransfer> },
+  TransferId
+>();
 
 /**
  * A transfer completed successfuly
