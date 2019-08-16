@@ -3,7 +3,7 @@
     <v-layout column justify-space-between fill-height>
       <v-layout align-center justify-center>
         <v-flex xs10>
-          <address-input v-model="target"></address-input>
+          <address-input v-model="target" :exclude="[token.address, defaultAccount]"></address-input>
         </v-flex>
       </v-layout>
 
@@ -56,6 +56,7 @@ import ErrorScreen from '@/components/ErrorScreen.vue';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
+import { mapState } from 'vuex';
 
 @Component({
   components: {
@@ -66,11 +67,15 @@ import ActionButton from '@/components/ActionButton.vue';
     AmountInput,
     Stepper,
     ErrorScreen
+  },
+  computed: {
+    ...mapState(['defaultAccount'])
   }
 })
 export default class Payment extends Vue {
   target: string = '';
   token: Token = TokenPlaceholder;
+  defaultAccount!: string;
   amount: string = '0';
 
   valid: boolean = false;
