@@ -217,9 +217,6 @@ export class Raiden {
 
     // initialize epics, this will start monitoring previous token networks and open channels
     this.store.dispatch(raidenInit());
-    
-    // Patch provider's sign method (https://github.com/raiden-network/light-client/issues/223)
-    patchSignSend(this.provider);
   }
 
   /**
@@ -257,6 +254,10 @@ export class Raiden {
     } else {
       provider = new Web3Provider(connection);
     }
+
+    // Patch provider's sign method (https://github.com/raiden-network/light-client/issues/223)
+    patchSignSend(provider);
+
     const network = await provider.getNetwork();
 
     // if no ContractsInfo, try to populate from defaults
