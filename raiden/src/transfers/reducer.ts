@@ -1,10 +1,12 @@
 import { isActionOf } from 'typesafe-actions';
-import { get, set, unset } from 'lodash/fp';
+import { get, set, unset, mapValues } from 'lodash/fp';
 import { Zero } from 'ethers/constants';
 
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
 import { Channel } from '../channels/state';
+import { timed } from '../utils/types';
+import { channelClosed } from '../channels/actions';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { SentTransfer } from './state';
 import {
@@ -14,8 +16,10 @@ import {
   transferUnlocked,
   transferExpired,
   transferSecretReveal,
-  transferClear,
   transferRefunded,
+  transferUnlockProcessed,
+  transferExpireProcessed,
+  transferClear,
 } from './actions';
 import { getLocksroot } from './utils';
 
@@ -76,13 +80,9 @@ export function transfersReducer(
         locks,
         // set current/latest channel.own.balanceProof to LockedTransfer's
         balanceProof: getBalanceProofFromEnvelopeMessage(transfer),
-        history: {
-          ...channel.own.history,
-          [Date.now().toString()]: transfer,
-        },
       },
     };
-    const sentTransfer: SentTransfer = { transfer };
+    const sentTransfer: SentTransfer = { transfer: timed(transfer) };
 
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
@@ -95,7 +95,7 @@ export function transfersReducer(
         ...state.sent,
         [action.meta.secrethash]: {
           ...state.sent[action.meta.secrethash],
-          transferProcessed: action.payload.message,
+          transferProcessed: timed(action.payload.message),
         },
       },
     };
@@ -108,7 +108,7 @@ export function transfersReducer(
         ...state.sent,
         [action.meta.secrethash]: {
           ...state.sent[action.meta.secrethash],
-          secretReveal: action.payload.message,
+          secretReveal: timed(action.payload.message),
         },
       },
     };
@@ -116,7 +116,7 @@ export function transfersReducer(
     const unlock = action.payload.message,
       secrethash = action.meta.secrethash;
     if (!(secrethash in state.sent) || state.sent[secrethash].unlock) return state;
-    const transfer = state.sent[secrethash].transfer,
+    const transfer = state.sent[secrethash].transfer[1],
       lock = transfer.lock;
     const channelPath = ['channels', transfer.token_network_address, transfer.recipient];
     let channel: Channel | undefined = get(channelPath, state);
@@ -139,17 +139,25 @@ export function transfersReducer(
         locks, // pop lock
         // set current/latest channel.own.balanceProof to Unlock's
         balanceProof: getBalanceProofFromEnvelopeMessage(unlock),
-        history: {
-          ...channel.own.history,
-          [Date.now().toString()]: unlock,
-        },
       },
     };
-    const sentTransfer: SentTransfer = { ...state.sent[secrethash], unlock };
+    const sentTransfer: SentTransfer = { ...state.sent[secrethash], unlock: timed(unlock) };
 
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
     return state;
+  } else if (isActionOf(transferUnlockProcessed, action)) {
+    if (!(action.meta.secrethash in state.sent)) return state;
+    return {
+      ...state,
+      sent: {
+        ...state.sent,
+        [action.meta.secrethash]: {
+          ...state.sent[action.meta.secrethash],
+          unlockProcessed: timed(action.payload.message),
+        },
+      },
+    };
   } else if (isActionOf(transferExpired, action)) {
     const lockExpired = action.payload.message,
       secrethash = action.meta.secrethash;
@@ -159,7 +167,7 @@ export function transfersReducer(
       state.sent[secrethash].lockExpired // already expired
     )
       return state;
-    const transfer = state.sent[secrethash].transfer,
+    const transfer = state.sent[secrethash].transfer[1],
       lock = transfer.lock;
     const channelPath = ['channels', transfer.token_network_address, transfer.recipient];
     let channel: Channel | undefined = get(channelPath, state);
@@ -182,17 +190,28 @@ export function transfersReducer(
         locks, // pop lock
         // set current/latest channel.own.balanceProof to LockExpired's
         balanceProof: getBalanceProofFromEnvelopeMessage(lockExpired),
-        history: {
-          ...channel.own.history,
-          [Date.now().toString()]: lockExpired,
-        },
       },
     };
-    const sentTransfer: SentTransfer = { ...state.sent[secrethash], lockExpired };
+    const sentTransfer: SentTransfer = {
+      ...state.sent[secrethash],
+      lockExpired: timed(lockExpired),
+    };
 
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
     return state;
+  } else if (isActionOf(transferExpireProcessed, action)) {
+    if (!(action.meta.secrethash in state.sent)) return state;
+    return {
+      ...state,
+      sent: {
+        ...state.sent,
+        [action.meta.secrethash]: {
+          ...state.sent[action.meta.secrethash],
+          lockExpiredProcessed: timed(action.payload.message),
+        },
+      },
+    };
   } else if (isActionOf(transferRefunded, action)) {
     const refund = action.payload.message,
       secrethash = action.meta.secrethash,
@@ -200,21 +219,23 @@ export function transfersReducer(
     let channel: Channel | undefined = get(channelPath, state);
     if (!(secrethash in state.sent) || !channel) return state;
 
-    channel = {
-      ...channel,
-      own: {
-        ...channel.own,
-        history: {
-          ...channel.own.history,
-          [Date.now().toString()]: refund,
-        },
-      },
-    };
-    const sentTransfer: SentTransfer = { ...state.sent[secrethash], refund };
+    const sentTransfer: SentTransfer = { ...state.sent[secrethash], refund: timed(refund) };
 
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
     return state;
+  } else if (isActionOf(channelClosed, action)) {
+    // accumulator type is writable typeof state.sent
+    return {
+      ...state,
+      sent: mapValues(
+        (v: SentTransfer): SentTransfer =>
+          // if transfer was on this channel, persist CloseChannel txHash, else pass
+          v.transfer[1].channel_identifier.eq(action.payload.id)
+            ? { ...v, channelClosed: timed(action.payload.txHash) }
+            : v,
+      )(state.sent),
+    };
   } else if (isActionOf(transferClear, action)) {
     if (!(action.meta.secrethash in state.sent)) return state;
     state = unset(['sent', action.meta.secrethash], state);

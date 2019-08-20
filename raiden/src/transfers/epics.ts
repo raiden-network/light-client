@@ -61,8 +61,9 @@ import {
   transferExpired,
   transferExpireFailed,
   transferSecretReveal,
-  transferClear,
   transferRefunded,
+  transferUnlockProcessed,
+  transferExpireProcessed,
 } from './actions';
 import { getLocksroot, makePaymentId, makeMessageId } from './utils';
 
@@ -215,7 +216,7 @@ function makeAndSignUnlock(
     mergeMap(state => {
       const secrethash = action.meta.secrethash;
       if (!(secrethash in state.sent)) throw new Error('unknown transfer');
-      const transfer = state.sent[secrethash].transfer,
+      const transfer = state.sent[secrethash].transfer[1],
         channel: Channel | undefined = get(state.channels, [
           transfer.token_network_address,
           transfer.recipient,
@@ -227,7 +228,7 @@ function makeAndSignUnlock(
       let signed$: Observable<Signed<Unlock>>;
       if (state.sent[secrethash].unlock) {
         // unlock already signed, use cached
-        signed$ = of(state.sent[secrethash].unlock!);
+        signed$ = of(state.sent[secrethash].unlock![1]);
       } else {
         // don't forget to check after signature too, may have expired by then
         if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired');
@@ -260,6 +261,7 @@ function makeAndSignUnlock(
         withLatestFrom(state$),
         mergeMap(function*([signed, state]) {
           if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
+          if (state.sent[secrethash].channelClosed) throw new Error('channel closed!');
           yield transferUnlocked({ message: signed }, action.meta);
           // messageSend Unlock handled by transferUnlockedRetryMessageEpic
           // we don't check if transfer was refunded. If partner refunded the transfer but still
@@ -295,19 +297,18 @@ function makeAndSignLockExpired(
     mergeMap(state => {
       const secrethash = action.meta.secrethash;
       if (!(secrethash in state.sent)) throw new Error('unknown transfer');
-      const transfer = state.sent[secrethash].transfer,
+      const transfer = state.sent[secrethash].transfer[1],
         channel: Channel | undefined = get(state.channels, [
           transfer.token_network_address,
           transfer.recipient,
         ]);
-      // shouldn't happen, channel close clears transfers, but unlock may already have been queued
       if (!channel || channel.state !== ChannelState.open || !channel.own.balanceProof)
         throw new Error('channel gone, not open or no balanceProof');
 
       let signed$: Observable<Signed<LockExpired>>;
       if (state.sent[secrethash].lockExpired) {
-        // unlock already signed, use cached
-        signed$ = of(state.sent[secrethash].lockExpired!);
+        // lockExpired already signed, use cached
+        signed$ = of(state.sent[secrethash].lockExpired![1]);
       } else {
         if (transfer.lock.expiration.gte(state.blockNumber))
           throw new Error('lock not yet expired');
@@ -375,14 +376,11 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
       return action$.pipe(
         filter(isActionOf([transfer, transferUnlock, transferExpire])),
         concatMap(action =>
-          // TODO: add any other BP-changing observable below
           isActionOf(transfer, action)
             ? makeAndSignTransfer(presences$, state$, action, deps)
             : isActionOf(transferUnlock, action)
             ? makeAndSignUnlock(state$, action, deps)
-            : isActionOf(transferExpire, action)
-            ? makeAndSignLockExpired(state$, action, deps)
-            : EMPTY,
+            : makeAndSignLockExpired(state$, action, deps),
         ),
       );
     }),
@@ -433,12 +431,15 @@ export const transferSignedRetryMessageEpic = (
             // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
             // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
             repeatWhen(completed$ => completed$.pipe(delay(30e3))),
-            // until transfer gone (not in state.sent anymore) OR transferProcessed received
+            // until transferProcessed received OR transfer completed OR channelClosed
             takeUntil(
               state$.pipe(
                 filter(
                   state =>
-                    !(secrethash in state.sent) || !!state.sent[secrethash].transferProcessed,
+                    !!state.sent[secrethash].transferProcessed ||
+                    !!state.sent[secrethash].unlockProcessed ||
+                    !!state.sent[secrethash].lockExpiredProcessed ||
+                    !!state.sent[secrethash].channelClosed,
                 ),
               ),
             ),
@@ -469,9 +470,9 @@ export const transferUnlockedRetryMessageEpic = (
         withLatestFrom(state$),
         mergeMap(([action, state]) => {
           const secrethash = action.meta.secrethash;
-          if (!(secrethash in state.sent) || !state.sent[secrethash].unlock) return EMPTY;
+          if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
           const unlock = action.payload.message,
-            transfer = state.sent[secrethash].transfer,
+            transfer = state.sent[secrethash].transfer[1],
             send = messageSend({ message: unlock }, { address: transfer.recipient });
           // emit Send once immediatelly, then wait until respective messageSent, then completes
           const sendOnceAndWaitSent$ = merge(
@@ -496,8 +497,16 @@ export const transferUnlockedRetryMessageEpic = (
             // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
             // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
             repeatWhen(completed$ => completed$.pipe(delay(30e3))),
-            // until transfer gets cleared, i.e. received Processed for Unlock
-            takeUntil(state$.pipe(filter(state => !(secrethash in state.sent)))),
+            // until transferUnlockProcessed OR channelClosed
+            takeUntil(
+              state$.pipe(
+                filter(
+                  state =>
+                    !!state.sent[secrethash].unlockProcessed ||
+                    !!state.sent[secrethash].channelClosed,
+                ),
+              ),
+            ),
           );
         }),
       ),
@@ -525,11 +534,11 @@ export const transferExpiredRetryMessageEpic = (
         withLatestFrom(state$),
         mergeMap(([action, state]) => {
           const secrethash = action.meta.secrethash;
-          if (!(secrethash in state.sent) || !state.sent[secrethash].lockExpired) return EMPTY;
+          if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
           const lockExpired = action.payload.message,
             send = messageSend(
               { message: lockExpired },
-              { address: state.sent[secrethash].transfer.recipient },
+              { address: state.sent[secrethash].transfer[1].recipient },
             );
           // emit Send once immediatelly, then wait until respective messageSent, then completes
           const sendOnceAndWaitSent$ = merge(
@@ -554,8 +563,16 @@ export const transferExpiredRetryMessageEpic = (
             // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
             // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
             repeatWhen(completed$ => completed$.pipe(delay(30e3))),
-            // until transfer gets cleared, i.e. received Processed for LockExpired
-            takeUntil(state$.pipe(filter(state => !(secrethash in state.sent)))),
+            // until transferExpireProcessed OR channelClosed
+            takeUntil(
+              state$.pipe(
+                filter(
+                  state =>
+                    !!state.sent[secrethash].lockExpiredProcessed ||
+                    !!state.sent[secrethash].channelClosed,
+                ),
+              ),
+            ),
           );
         }),
       ),
@@ -586,7 +603,12 @@ export const transferAutoExpireEpic = (
       >[] = [];
 
       for (const [key, sent] of Object.entries(state.sent)) {
-        if (sent.unlock || sent.lockExpired || sent.transfer.lock.expiration.gte(blockNumber))
+        if (
+          sent.unlock ||
+          sent.lockExpired ||
+          sent.channelClosed ||
+          sent.transfer[1].lock.expiration.gte(blockNumber)
+        )
           continue;
         const secrethash = key as Hash;
         // this observable acts like a Promise: emits request once, completes on success/failure
@@ -610,7 +632,9 @@ export const transferAutoExpireEpic = (
         requests$.push(
           of(
             transferFailed(
-              new Error(`transfer expired at block=${sent.transfer.lock.expiration.toString()}`),
+              new Error(
+                `transfer expired at block=${sent.transfer[1].lock.expiration.toString()}`,
+              ),
               { secrethash },
             ),
           ),
@@ -640,16 +664,17 @@ export const initQueuePendingEnvelopeMessagesEpic = (
     mergeMap(function*(state) {
       // loop over all pending transfers
       for (const [key, sent] of Object.entries(state.sent)) {
-        const secrethash = key as Hash,
-          transfer = sent.transfer;
+        const secrethash = key as Hash;
+        // transfer already completed or channelClosed
+        if (sent.unlockProcessed || sent.lockExpiredProcessed || sent.channelClosed) continue;
         // Processed not received yet for LockedTransfer
-        if (!sent.transferProcessed) yield transferSigned({ message: transfer }, { secrethash });
+        if (!sent.transferProcessed)
+          yield transferSigned({ message: sent.transfer[1] }, { secrethash });
         // already unlocked, but Processed not received yet for Unlock
-        // (or else transfer would have been cleared)
-        if (sent.unlock) yield transferUnlocked({ message: sent.unlock }, { secrethash });
+        if (sent.unlock) yield transferUnlocked({ message: sent.unlock[1] }, { secrethash });
         // lock expired, but Processed not received yet for LockExpired
-        // (or else transfer would have been cleared)
-        if (sent.lockExpired) yield transferExpired({ message: sent.lockExpired }, { secrethash });
+        if (sent.lockExpired)
+          yield transferExpired({ message: sent.lockExpired[1] }, { secrethash });
       }
     }),
   );
@@ -658,9 +683,9 @@ export const initQueuePendingEnvelopeMessagesEpic = (
  * Handles receiving a signed Processed for some sent LockedTransfer
  * This will persist the Processed reply in transfer state and stop message retry
  *
- * @param action$  Observable of RaidenActions
+ * @param action$  Observable of messageReceived actions
  * @param state$  Observable of RaidenStates
- * @returns  Observable of output actions for this epic
+ * @returns  Observable of transferProcessed actions
  */
 export const transferProcessedReceivedEpic = (
   action$: Observable<RaidenAction>,
@@ -675,8 +700,8 @@ export const transferProcessedReceivedEpic = (
       let secrethash: Hash | undefined = undefined;
       for (const [key, sent] of Object.entries(state.sent)) {
         if (
-          sent.transfer.message_identifier.eq(message.message_identifier) &&
-          sent.transfer.recipient === action.meta.address
+          sent.transfer[1].message_identifier.eq(message.message_identifier) &&
+          sent.transfer[1].recipient === action.meta.address
         ) {
           secrethash = key as Hash;
           break;
@@ -705,10 +730,10 @@ export const transferSecretRequestedEpic = (
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
       if (!message || !Signed(SecretRequest).is(message)) return;
-      // transfer gone or we don't know the secret
+      // proceed only if we know the secret and the transfer
       if (!(message.secrethash in state.secrets) || !(message.secrethash in state.sent)) return;
 
-      const transfer = state.sent[message.secrethash].transfer;
+      const transfer = state.sent[message.secrethash].transfer[1];
       if (
         transfer.target !== action.meta.address || // reveal only to target
         transfer.lock.expiration.lte(state.blockNumber) || // don't reveal if expired
@@ -748,12 +773,11 @@ export const transferSecretRevealEpic = (
           state$.pipe(
             first(),
             mergeMap(state => {
-              if (!(action.meta.secrethash in state.sent)) return EMPTY;
-              const target = state.sent[action.meta.secrethash].transfer.target;
+              const target = state.sent[action.meta.secrethash].transfer[1].target;
 
               let reveal$: Observable<Signed<SecretReveal>>;
               if (state.sent[action.meta.secrethash].secretReveal)
-                reveal$ = of(state.sent[action.meta.secrethash].secretReveal!);
+                reveal$ = of(state.sent[action.meta.secrethash].secretReveal![1]);
               else {
                 const message: SecretReveal = {
                   type: MessageType.SECRET_REVEAL,
@@ -798,10 +822,12 @@ export const transferSecretRevealedEpic = (
       const secrethash = keccak256(message.secret) as Hash;
       if (
         !(secrethash in state.sent) ||
-        action.meta.address !== state.sent[secrethash].transfer.recipient ||
+        action.meta.address !== state.sent[secrethash].transfer[1].recipient ||
+        // don't unlock if channel closed
+        state.sent[secrethash].channelClosed ||
         // don't unlock again if already unlocked, retry handled by transferUnlockedRetryMessageEpic
         // in the future, we may avoid retry until Processed, and [re]send once per SecretReveal
-        !!state.sent[secrethash].unlock
+        state.sent[secrethash].unlock
       )
         return;
       // transferSecret is noop if we already know the secret (e.g. we're the initiator)
@@ -813,17 +839,17 @@ export const transferSecretRevealedEpic = (
 
 /**
  * Handles receiving a signed Processed for some sent Unlock
- * It sends the success action for transfer (which resolves any pending Promise), as well sa clears
- * the pending transfer state, as it isn't needed anymore
+ * It sends the success action for transfer (which resolves any pending Promise), marking it as
+ * completed successfuly by setting sent.unlockProcessed
  *
  * @param action$  Observable of messageReceived actions
  * @param state$  Observable of RaidenStates
- * @returns  Observable of transferred|transferClear actions
+ * @returns  Observable of transferred|transferUnlockProcessed actions
  */
 export const transferUnlockProcessedReceivedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ActionType<typeof transferred | typeof transferClear>> =>
+): Observable<ActionType<typeof transferred | typeof transferUnlockProcessed>> =>
   action$.pipe(
     filter(isActionOf(messageReceived)),
     withLatestFrom(state$),
@@ -834,8 +860,8 @@ export const transferUnlockProcessedReceivedEpic = (
       for (const [key, sent] of Object.entries(state.sent)) {
         if (
           sent.unlock &&
-          sent.unlock.message_identifier.eq(message.message_identifier) &&
-          sent.transfer.recipient === action.meta.address
+          sent.unlock[1].message_identifier.eq(message.message_identifier) &&
+          sent.transfer[1].recipient === action.meta.address
         ) {
           secrethash = key as Hash;
           break;
@@ -844,18 +870,18 @@ export const transferUnlockProcessedReceivedEpic = (
       if (!secrethash) return;
       yield transferred(
         {
-          balanceProof: getBalanceProofFromEnvelopeMessage(state.sent[secrethash].unlock!),
+          balanceProof: getBalanceProofFromEnvelopeMessage(state.sent[secrethash].unlock![1]),
         },
         { secrethash },
       );
-      yield transferClear(undefined, { secrethash });
+      yield transferUnlockProcessed({ message }, { secrethash });
     }),
   );
 
 /**
  * Handles receiving a signed Processed for some sent LockExpired
- * It marks the end of the unhappy case, and clears pending transfer state
- * transferFailed already sent at newBlock handling/transferExpire request time, so just clear
+ * It marks the end of the unhappy case, by setting sent.lockExpiredProcessed
+ * transferFailed was already sent at newBlock handling/transferExpire time
  *
  * @param action$  Observable of RaidenActions
  * @param state$  Observable of RaidenStates
@@ -864,7 +890,7 @@ export const transferUnlockProcessedReceivedEpic = (
 export const transferExpireProcessedClearsEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ActionType<typeof transferClear>> =>
+): Observable<ActionType<typeof transferExpireProcessed>> =>
   action$.pipe(
     filter(isActionOf(messageReceived)),
     withLatestFrom(state$),
@@ -875,38 +901,38 @@ export const transferExpireProcessedClearsEpic = (
       for (const [key, sent] of Object.entries(state.sent)) {
         if (
           sent.lockExpired &&
-          sent.lockExpired.message_identifier.eq(message.message_identifier) &&
-          sent.transfer.recipient === action.meta.address
+          sent.lockExpired[1].message_identifier.eq(message.message_identifier) &&
+          sent.transfer[1].recipient === action.meta.address
         ) {
           secrethash = key as Hash;
           break;
         }
       }
       if (!secrethash) return;
-      yield transferClear(undefined, { secrethash });
+      yield transferExpireProcessed({ message }, { secrethash });
     }),
   );
 
 /**
  * Complete or fail any pending transfer for any closing or closed channels
- * The output actions will also clear the pending transfer from state, as well as resolve/reject
- * any [user-facing] pending Promise
+ * Transfer is considered successful if secret was revealed (as it could be claimed on-chain),
+ * else it's considered as failed as couldn't succeed inside expiration timeout
  *
  * @param action$  Observable of channelClose|channelClosed actions
  * @param state$  Observable of RaidenStates
- * @returns  Observable of transferred|transferFailed|transferClear actions
+ * @returns  Observable of transferred|transferFailed actions
  */
 export const transferChannelClosedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ActionType<typeof transferred | typeof transferFailed | typeof transferClear>> =>
+): Observable<ActionType<typeof transferred | typeof transferFailed>> =>
   action$.pipe(
     filter(isActionOf([channelClose, channelClosed])),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       for (const [key, sent] of Object.entries(state.sent)) {
         const secrethash = key as Hash,
-          transfer = sent.transfer;
+          transfer = sent.transfer[1];
         if (
           transfer.token_network_address !== action.meta.tokenNetwork ||
           transfer.recipient !== action.meta.partner
@@ -920,12 +946,12 @@ export const transferChannelClosedEpic = (
           });
         else if (state.sent[secrethash].unlock)
           yield transferred(
-            { balanceProof: getBalanceProofFromEnvelopeMessage(state.sent[secrethash].unlock!) },
+            {
+              balanceProof: getBalanceProofFromEnvelopeMessage(state.sent[secrethash].unlock![1]),
+            },
             { secrethash },
           );
         else yield transferred({}, { secrethash });
-        // regardless of success or fail, always clear this transfer, channel gone
-        yield transferClear(undefined, { secrethash });
       }
     }),
   );
@@ -1001,12 +1027,13 @@ export const transferRefundedEpic = (
       const secrethash = message.lock.secrethash;
       if (
         !(secrethash in state.sent) ||
-        message.initiator !== state.sent[secrethash].transfer.recipient ||
-        !message.payment_identifier.eq(state.sent[secrethash].transfer.payment_identifier) ||
-        !message.lock.amount.eq(state.sent[secrethash].transfer.lock.amount) ||
-        !message.lock.expiration.eq(state.sent[secrethash].transfer.lock.expiration) ||
-        state.sent[secrethash].unlock || // alrady unlocked
+        message.initiator !== state.sent[secrethash].transfer[1].recipient ||
+        !message.payment_identifier.eq(state.sent[secrethash].transfer[1].payment_identifier) ||
+        !message.lock.amount.eq(state.sent[secrethash].transfer[1].lock.amount) ||
+        !message.lock.expiration.eq(state.sent[secrethash].transfer[1].lock.expiration) ||
+        state.sent[secrethash].unlock || // already unlocked
         state.sent[secrethash].lockExpired || // already expired
+        state.sent[secrethash].channelClosed || // channel closed
         message.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
       )
         return;

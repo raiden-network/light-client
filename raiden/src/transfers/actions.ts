@@ -68,6 +68,12 @@ export const transferUnlocked = createStandardAction('transferUnlocked')<
   TransferId
 >();
 
+/** Partner acknowledge they received and processed our Unlock */
+export const transferUnlockProcessed = createStandardAction('transferUnlockProcessed')<
+  { message: Signed<Processed> },
+  TransferId
+>();
+
 /** A request to expire a given transfer */
 export const transferExpire = createStandardAction('transferExpire')<undefined, TransferId>();
 
@@ -85,6 +91,12 @@ export const transferExpired = createStandardAction('transferExpired')<
 export const transferExpireFailed = createStandardAction('transferExpireFailed').map(
   (payload: Error, meta: TransferId) => ({ payload, error: true, meta }),
 );
+
+/** Partner acknowledge they received and processed our LockExpired */
+export const transferExpireProcessed = createStandardAction('transferExpireProcessed')<
+  { message: Signed<Processed> },
+  TransferId
+>();
 
 /** A transfer was refunded */
 export const transferRefunded = createStandardAction('transferRefunded')<
