@@ -42,6 +42,13 @@ export const SentTransfer = t.readonly(
        */
       unlockProcessed: Timed(Signed(Processed)),
       /**
+       * <- incoming refund transfer (if so)
+       * If this is set, transfer failed and partner tried refunding the transfer to us. We don't
+       * handle receiving transfers, but just store it here to mark this transfer as failed with a
+       * refund, until the lock expires normally
+       */
+      refund: Timed(Signed(RefundTransfer)),
+      /**
        * -> outgoing lock expired (if so)
        * If this is set, transfer failed, and we expired the lock (retrieving the locked amount).
        * Transfer failed may not have completed yet, e.g. waiting for LockExpired's Processed reply
@@ -53,13 +60,6 @@ export const SentTransfer = t.readonly(
        * this transfer can't be claimed anymore
        */
       lockExpiredProcessed: Timed(Signed(Processed)),
-      /**
-       * <- incoming refund transfer (if so)
-       * If this is set, transfer failed and partner tried refunding the transfer to us. We don't
-       * handle receiving transfers, but just store it here to mark this transfer as failed with a
-       * refund, until the lock expires normally
-       */
-      refund: Timed(Signed(RefundTransfer)),
       /**
        * !! channel was closed !!
        * In the case a channel is closed (possibly middle transfer), this will be the txHash of the

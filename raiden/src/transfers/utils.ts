@@ -6,6 +6,8 @@ import { isEmpty } from 'lodash';
 import { Hash, Secret, UInt } from '../utils/types';
 import { encode } from '../utils/data';
 import { Lock } from '../channels/types';
+import { SentTransfer } from './state';
+import { RaidenSentTransfer, RaidenSentTransferStatus } from './types';
 
 /**
  * Return the hash of a lock
@@ -66,4 +68,57 @@ export function makePaymentId(): UInt<8> {
  */
 export function makeMessageId(): UInt<8> {
   return bigNumberify(Date.now()) as UInt<8>;
+}
+
+/**
+ * Convert a state.sent: SentTransfer to a public RaidenSentTransfer object
+ *
+ * @param sent  RaidenState.sent value
+ * @returns  Public raiden sent transfer info object
+ */
+export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
+  const [status, changedAt]: [RaidenSentTransferStatus, number] =
+      // channelClosed after secret revealed or unlocked
+      sent.channelClosed && (sent.secretReveal || sent.unlock)
+        ? [RaidenSentTransferStatus.succeeded, sent.channelClosed[0]]
+        : sent.channelClosed // channelClosed before
+        ? [RaidenSentTransferStatus.failed, sent.channelClosed[0]]
+        : sent.lockExpiredProcessed
+        ? [RaidenSentTransferStatus.failed, sent.lockExpiredProcessed[0]]
+        : sent.unlockProcessed
+        ? [RaidenSentTransferStatus.succeeded, sent.unlockProcessed[0]]
+        : sent.lockExpired
+        ? [RaidenSentTransferStatus.expired, sent.lockExpired[0]]
+        : sent.refund
+        ? [RaidenSentTransferStatus.refunded, sent.refund[0]]
+        : sent.unlock
+        ? [RaidenSentTransferStatus.unlocked, sent.unlock[0]]
+        : sent.secretReveal
+        ? [RaidenSentTransferStatus.revealed, sent.secretReveal[0]]
+        : sent.transferProcessed
+        ? [RaidenSentTransferStatus.received, sent.transferProcessed[0]]
+        : [RaidenSentTransferStatus.pending, sent.transfer[0]],
+    success: boolean | undefined =
+      status === RaidenSentTransferStatus.succeeded
+        ? true
+        : status === RaidenSentTransferStatus.failed
+        ? false
+        : undefined;
+  return {
+    secrethash: sent.transfer[1].lock.secrethash,
+    status,
+    initiator: sent.transfer[1].initiator,
+    recipient: sent.transfer[1].recipient,
+    target: sent.transfer[1].target,
+    paymentId: sent.transfer[1].payment_identifier,
+    chainId: sent.transfer[1].chain_id.toNumber(),
+    token: sent.transfer[1].token,
+    tokenNetwork: sent.transfer[1].token_network_address,
+    channelId: sent.transfer[1].channel_identifier,
+    amount: sent.transfer[1].lock.amount,
+    fee: sent.transfer[1].fee,
+    startedAt: new Date(sent.transfer[0]),
+    changedAt: new Date(changedAt),
+    success,
+  };
 }

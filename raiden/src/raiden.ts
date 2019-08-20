@@ -18,8 +18,8 @@ import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
 import { debounce, findKey, transform, constant, pick, isEmpty } from 'lodash';
-import { Observable, Subject, BehaviorSubject, AsyncSubject } from 'rxjs';
-import { first, filter, map } from 'rxjs/operators';
+import { Observable, Subject, BehaviorSubject, AsyncSubject, from } from 'rxjs';
+import { first, filter, map, distinctUntilChanged, scan, concatMap } from 'rxjs/operators';
 
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
@@ -44,6 +44,7 @@ import {
 import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
+import { RaidenSentTransfer } from './transfers/types';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import { RaidenAction, RaidenEvents, RaidenEvent, raidenShutdown } from './actions';
@@ -68,8 +69,9 @@ import {
   matrixRequestMonitorPresence,
 } from './transport/actions';
 import { transfer, transferred, transferFailed } from './transfers/actions';
-import { makeSecret } from './transfers/utils';
+import { makeSecret, raidenSentTransfer } from './transfers/utils';
 import { patchSignSend } from './utils/ethers';
+import { SentTransfer, SentTransfers } from 'raiden/transfers/state';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -104,6 +106,13 @@ export class Raiden {
    * Expose ether's Provider.resolveName for ENS support
    */
   public readonly resolveName: (name: string) => Promise<Address>;
+
+  /**
+   * Observable of completed and pending transfers
+   * Every time a transfer state is updated, it's emitted here. 'secrethash' property is unique and
+   * may be used as identifier to know which transfer got updated.
+   */
+  public readonly transfers$: Observable<RaidenSentTransfer>;
 
   public constructor(
     provider: JsonRpcProvider,
@@ -173,6 +182,22 @@ export class Raiden {
           },
         ),
       ),
+    );
+
+    this.transfers$ = state$.pipe(
+      map(state => state.sent),
+      distinctUntilChanged(),
+      concatMap(sent => from(Object.entries(sent))),
+      /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
+       * changes from last time seen. It relies on value references changing only if needed */
+      scan<[string, SentTransfer], { acc: SentTransfers; changed?: SentTransfer }>(
+        ({ acc }, [k, v]) => (acc[k] === v ? { acc } : { acc: { ...acc, [k]: v }, changed: v }),
+        { acc: {} },
+      ),
+      filter(({ changed }) => !!changed), // filter out if reference didn't change from last emit
+      map(({ changed }) => changed!), // get the changed object only
+      // from here, we get SentTransfer objects which changed from previous state (all on first)
+      map(raidenSentTransfer),
     );
 
     this.events$ = action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
