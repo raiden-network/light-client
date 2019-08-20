@@ -157,7 +157,6 @@ describe('AddressInput', function() {
   });
 
   describe('excluded', () => {
-    // Only testing the negative case here, as positive cases are already covered
     it('should show error message if excluded address is entered', async () => {
       mockInput(wrapper, excludedAddress);
       await wrapper.vm.$nextTick();
