@@ -17,13 +17,15 @@ describe('AddressInput', function() {
   let wrapper: Wrapper<AddressInput>;
   let raiden: Mocked<RaidenService>;
   let mockIdenticon: jest.Mock<any, any>;
+  const excludedAddress: string = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
 
   beforeEach(() => {
     mockIdenticon = jest.fn().mockResolvedValue('');
     raiden = new RaidenService(store) as Mocked<RaidenService>;
     wrapper = mount(AddressInput, {
       propsData: {
-        value: ''
+        value: '',
+        exclude: [excludedAddress]
       },
       mocks: {
         $raiden: raiden,
@@ -152,5 +154,39 @@ describe('AddressInput', function() {
         'address-input.error.ens-resolve-failed'
       );
     });
+  });
+
+  describe('excluded', () => {
+    it('should show error message if excluded address is entered', async () => {
+      mockInput(wrapper, excludedAddress);
+      await wrapper.vm.$nextTick();
+
+      const messages = wrapper.find('.v-messages__message');
+      expect(messages.exists()).toBe(true);
+      expect(messages.text()).toBe(
+        'address-input.error.invalid-excluded-address'
+      );
+    });
+
+    it('should not show error message if there is no exclude prop', async () => {
+      wrapper = mount(AddressInput, {
+        propsData: {
+          value: ''
+        },
+        mocks: {
+          $raiden: raiden,
+          $identicon: {
+            getIdenticon: mockIdenticon
+          },
+          $t: (msg: string) => msg
+        }
+      });
+
+      mockInput(wrapper, excludedAddress);
+      await wrapper.vm.$nextTick();
+
+      const messages = wrapper.find('.v-messages__message');
+      expect(messages.exists()).toBe(false);
+    })
   });
 });

@@ -6,7 +6,7 @@
           <div class="payment__recipient__label">
             {{ $t('payment.recipient-label') }}
           </div>
-          <address-input v-model="target"></address-input>
+          <address-input v-model="target" :exclude="[token.address, defaultAccount]"></address-input>
         </v-flex>
       </v-layout>
 
@@ -107,7 +107,7 @@ import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import { BigNumber } from 'ethers/utils';
-import { mapGetters } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 import { RaidenChannel } from 'raiden';
 import { Zero } from 'ethers/constants';
 
@@ -123,12 +123,14 @@ import { Zero } from 'ethers/constants';
     ErrorScreen
   },
   computed: {
+    ...mapState(['defaultAccount']),
     ...mapGetters(['channelWithBiggestCapacity'])
   }
 })
 export default class Payment extends Vue {
   target: string = '';
   token: Token = TokenPlaceholder;
+  defaultAccount!: string;
   amount: string = '';
 
   valid: boolean = false;

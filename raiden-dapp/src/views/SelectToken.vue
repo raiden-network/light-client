@@ -57,7 +57,6 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import AddressInput from '@/components/AddressInput.vue';
 import { mapGetters } from 'vuex';
 import { Token } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -65,7 +64,7 @@ import BlockieMixin from '@/mixins/blockie-mixin';
 import ListHeader from '@/components/ListHeader.vue';
 
 @Component({
-  components: { ListHeader, AddressInput },
+  components: { ListHeader },
   computed: mapGetters(['allTokens'])
 })
 export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {

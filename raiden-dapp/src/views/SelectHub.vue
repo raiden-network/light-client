@@ -3,7 +3,7 @@
     <v-layout column justify-space-between fill-height>
       <v-layout align-center justify-center>
         <v-flex xs10>
-          <address-input v-model="partner"></address-input>
+          <address-input v-model="partner" :exclude="[token.address, defaultAccount]"></address-input>
         </v-flex>
       </v-layout>
 
@@ -28,12 +28,17 @@ import NavigationMixin from '@/mixins/navigation-mixin';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
+import { mapState } from 'vuex';
 
 @Component({
-  components: { TokenInformation, Divider, AddressInput, ActionButton }
+  components: { TokenInformation, Divider, AddressInput, ActionButton },
+  computed: {
+    ...mapState(['defaultAccount'])
+  }
 })
 export default class SelectHub extends Mixins(NavigationMixin) {
   token: Token = TokenPlaceholder;
+  defaultAccount!: string;
 
   partner: string = '';
   valid: boolean = false;

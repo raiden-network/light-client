@@ -67,7 +67,8 @@ describe('Payment.vue', () => {
             closeBlock: undefined,
             openBlock: 12346,
             id: 1
-          }))
+          })),
+          defaultAddress: jest.fn().mockReturnValue(['0x1234567890'])
         }
       }),
       mocks: {
