@@ -1,5 +1,6 @@
 /* istanbul ignore file */
 export * from './types';
+export * from './transfers/types';
 export { RaidenState } from './state';
 export { RaidenEvent } from './actions';
 export { ChannelState } from './channels';

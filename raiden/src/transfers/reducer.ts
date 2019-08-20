@@ -225,7 +225,6 @@ export function transfersReducer(
     state = set(['sent', secrethash], sentTransfer, state);
     return state;
   } else if (isActionOf(channelClosed, action)) {
-    // accumulator type is writable typeof state.sent
     return {
       ...state,
       sent: mapValues(
