@@ -1,7 +1,6 @@
 import * as t from 'io-ts';
 
 import { EnumType, UInt } from '../utils/types';
-import { Signed, LockedTransfer, Unlock, LockExpired, RefundTransfer } from '../messages/types';
 import { Lock, SignedBalanceProof } from './types';
 
 export enum ChannelState {
@@ -27,15 +26,6 @@ export const ChannelEnd = t.readonly(
     t.partial({
       locks: t.array(Lock),
       balanceProof: SignedBalanceProof,
-      history: t.record(
-        t.string /* timestamp */,
-        t.union([
-          Signed(LockedTransfer),
-          Signed(Unlock),
-          Signed(LockExpired),
-          Signed(RefundTransfer),
-        ]) /* sent by this end */,
-      ),
     }),
   ]),
 );

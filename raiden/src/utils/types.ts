@@ -145,3 +145,24 @@ export const Address = t.brand(
   'Address', // the name must match the readonly field in the brand
 );
 export type Address = string & t.Brand<HexStringB<20>> & t.Brand<AddressB>;
+
+/**
+ * Helper function to create codecs to validate [timestamp, value] tuples
+ *
+ * @param codec  Codec to compose with a timestamp in a tuple
+ * @returns  Codec of a tuple of timestamp and codec type
+ */
+export const Timed = memoize<<T extends t.Mixed>(codec: T) => t.TupleC<[t.NumberC, T]>>(
+  <T extends t.Mixed>(codec: T) => t.tuple([t.number, codec]),
+);
+export type Timed<T> = [number, T];
+
+/**
+ * Given a value of type T, returns a Timed<T> tuple with current time as first value
+ *
+ * @param v  Value to return with time
+ * @returns  Tuple of call timestamp as first elemtn and value passed as parameter as second
+ */
+export function timed<T>(v: T): Timed<T> {
+  return [Date.now(), v];
+}

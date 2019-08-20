@@ -1,3 +1,4 @@
+import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 
@@ -9,7 +10,16 @@ import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils'
 import { LosslessNumber } from 'lossless-json';
 
 import { fromEthersEvent, getEventsStream } from 'raiden/utils/ethers';
-import { Address, BigNumberC, HexString, UInt, Hash, Secret } from 'raiden/utils/types';
+import {
+  Address,
+  BigNumberC,
+  HexString,
+  UInt,
+  Hash,
+  Secret,
+  Timed,
+  timed,
+} from 'raiden/utils/types';
 import { LruCache } from 'raiden/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden/utils/data';
 import { splitCombined } from 'raiden/utils/rxjs';
@@ -220,6 +230,16 @@ describe('types', () => {
     }
     expect(foo(address)).toBe(address);
     expect(bar(address)).toBe(address);
+  });
+
+  test('Timed', () => {
+    const TimedAddress = Timed(Address);
+    type TimedAddress = t.TypeOf<typeof TimedAddress>;
+
+    const address = '0x000000000000000000000000000000000004000A' as Address,
+      data: TimedAddress = timed(address);
+    expect(TimedAddress.is(data)).toBe(true);
+    expect(TimedAddress.is(['invalid number', address])).toBe(false);
   });
 });
 
