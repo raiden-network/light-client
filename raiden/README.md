@@ -17,7 +17,8 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 - [About The Project](#about-the-project)
 - [Getting Started](#getting-started)
   * [Connecting to a Raiden test network](#connecting-to-a-raiden-test-network)
-  * [Subscribing to channel$ observable and opening your first channel](#subscribing-to-channel--observable-and-opening-your-first-channel)
+  * [Using the SDK in a private chain or a development environment](#using-the-sdk-in-a-private-chain-or-a-development-environment)
+  * [Subscribing to channel$ observable and opening your first channel](#subscribing-to-channel-observable-and-opening-your-first-channel)
   * [Funding a channel](#funding-a-channel)
   * [Paying through a channel](#paying-through-a-channel)
   * [Closing a channel](#closing-a-channel)
@@ -104,6 +105,10 @@ const raiden = await Raiden.create(web3.currentProvider, 0, localStorage, contra
 ```
 
 Contract info is a JSON file that is generated when you deploy [raiden-contracts](https://github.com/raiden-network/raiden-contracts).
+
+### Using the SDK in a private chain or a development environment
+
+If you want to use the SDK in a private chain or a development environment, you can follow [this guide](https://github.com/raiden-network/light-client/wiki/Using-the-SDK-in-a-private-chain-or-a-development-environment).
 
 ### Subscribing to channel$ observable and opening your first channel
 
