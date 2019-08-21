@@ -24,8 +24,18 @@ export interface RaidenSentTransfer {
   tokenNetwork: Address; // token network address
   channelId: BigNumber; // channel identifier in which the transfer went through
   amount: BigNumber; // amount to transfer
+  expirationBlock: number; // blockNumber in which this transfer expires (if doesn't succeed)
   fee: BigNumber; // not supported yet, so always Zero
   startedAt: Date; // time of transfer start
   changedAt: Date; // time of current/last state (if transfer completed, end timestamp)
-  success: boolean | undefined; // undefined=pending, true=success, false=failed
+  /**
+   * Set as soon as known if transfer did happen or fail (even if still there're pending actions)
+   * undefined=pending, true=success, false=failed
+   */
+  success: boolean | undefined;
+  /**
+   * True if transfer did complete, i.e. nothing else left to be done for it
+   * False if transfer still has pending actions (even if success status is already known)
+   */
+  completed: boolean;
 }
