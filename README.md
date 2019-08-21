@@ -17,7 +17,11 @@
 
 <p align="center">
   <a href="#getting-started">Getting Started</a> ∙
-  <a href='#contact'>Contact</a>
+  <a href="#contact">Contact</a>
+</p>
+
+<p align="center">
+  <a href="https://lightclient.raiden.network/">Play with the Raiden Demo dApp</a>
 </p>
 
 <p align="center">
@@ -39,7 +43,7 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 
 The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
-> **INFO:** The Light Client SDK and dApp are **work in progress**, don't work for token transfers yet and currently can only be used on the Ethereum **Testnets**.
+> **INFO:** The Light Client SDK and dApp are **work in progress** and can only be used on the Ethereum **Testnets**.
 
 ## Table of Contents
 - [About The Project](#about-the-project)
@@ -49,6 +53,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
   * [Architecture diagram](#architecture-diagram)
 - [Getting Started](#getting-started)
   * [Learn about Raiden](#learn-about-raiden)
+  * [Play with the Raiden Demo dApp](#play-with-the-raiden-demo-dapp)
   * [Prerequisites](#prerequisites)
   * [SDK Installation](#sdk-installation)
   * [dApp Installation](#dapp-installation)
@@ -134,6 +139,10 @@ If you didn't use Raiden before, you can
 * Learn more by watching explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
 * Read the blog posts on [Medium](https://medium.com/@raiden_network)
 
+### Play with the Raiden Demo dApp
+
+You can play with the Raiden Demo dApp on any Ethereum Testnet hosted at https://lightclient.raiden.network/.
+
 ### Prerequisites
 
 To run the code in this repository, you must have Node.js 10+ on your computer and a web3-enabled browser (e.g. Firefox with Metamask extension), as well as some ETH on the account.
@@ -214,7 +223,9 @@ npm run serve
 After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp. It requires either MetaMask to be installed on your browser or some other web3 provider (e.g. Wallet apps with dApp support).
 
 ## Roadmap and Timeline
-We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1). We are currently working towards milestone 0, where the SDK and dApp are able to send payments, but will not be able to receive payments.
+We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1). 
+
+With the [first testnet release](https://github.com/raiden-network/light-client/releases) we have reached milestone 0, where the SDK and dApp are able to send payments, but will not be able to receive payments.
 
 ## Contributing
 
