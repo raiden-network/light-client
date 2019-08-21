@@ -141,13 +141,13 @@ To run the code in this repository, you must have Node.js 10+ on your computer a
 ### SDK Installation
 
 ```bash
-npm install <raiden_npm_package>
+npm install raiden-ts
 ```
 
 Then in your JavaScript or TypeScript project:
 
 ```typescript
-import { Raiden } from 'raiden';
+import { Raiden } from 'raiden-ts';
 
 # async factory
 const raiden = await Raiden.create(web3.currentProvider, 0, localStorage);
