@@ -582,8 +582,8 @@ export const transferExpiredRetryMessageEpic = (
 /**
  * Process newBlocks, emits transferExpire (request to compose&sign LockExpired for a transfer)
  * if pending transfer's lock expired and transfer didn't unlock (succeed) in time
- * Also, emits transferFailed, to notify users that a transfer failed (rejecting potentially
- * pending Promises)
+ * Also, emits transferFailed, to notify users that a transfer has failed (although it'll only be
+ * considered as completed with fail once the transferExpireProcessed arrives).
  *
  * @param action$  Observable of newBlock|transferExpired|transferExpireFailed actions
  * @param state$  Observable of RaidenStates
