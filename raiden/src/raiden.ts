@@ -191,7 +191,12 @@ export class Raiden {
       /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
        * changes from last time seen. It relies on value references changing only if needed */
       scan<[string, SentTransfer], { acc: SentTransfers; changed?: SentTransfer }>(
-        ({ acc }, [k, v]) => (acc[k] === v ? { acc } : { acc: { ...acc, [k]: v }, changed: v }),
+        ({ acc }, [secrethash, sent]) => {
+          // if ref didn't change, emit previous accumulator, without 'changed' value
+          if (acc[secrethash] === sent) return { acc };
+          // else, update ref in 'acc' and emit value in 'changed' prop
+          else return { acc: { ...acc, [secrethash]: sent }, changed: sent };
+        },
         { acc: {} },
       ),
       filter(({ changed }) => !!changed), // filter out if reference didn't change from last emit
