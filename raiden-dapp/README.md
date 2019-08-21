@@ -2,6 +2,10 @@
 
 > **INFO:** The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress, doesn't work for token transfers yet and currently can only be used on the Ethereum **Testnets**.
 
+## Demo
+
+You can access an alpha testnet version of the Raiden dApp at https://lightclient.raiden.network/. It is compatible with any web3 provider.
+
 ## Project setup
 ```
 npm install
