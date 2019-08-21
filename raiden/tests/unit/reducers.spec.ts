@@ -35,6 +35,8 @@ import {
   transferExpired,
   transferSecretReveal,
   transferRefunded,
+  transferUnlockProcessed,
+  transferExpireProcessed,
 } from 'raiden/transfers/actions';
 import {
   LockedTransfer,
@@ -636,10 +638,9 @@ describe('raidenReducer', () => {
 
       message.locked_amount = transfer.locked_amount; // fix locked amount
       newState = [transferSigned({ message }, { secrethash })].reduce(raidenReducer, newState);
-      expect(get(newState, ['sent', secrethash])).toStrictEqual({ transfer: message });
-      expect(
-        Object.values(get(newState, ['channels', tokenNetwork, partner, 'own', 'history'])),
-      ).toContainEqual(message);
+      expect(get(newState, ['sent', secrethash])).toEqual({
+        transfer: [expect.any(Number), message],
+      });
 
       // other transfer with same secretHash doesn't replace the first
       const otherMessageSameSecret = { ...message, payment_identifier: makePaymentId() };
@@ -647,7 +648,7 @@ describe('raidenReducer', () => {
         raidenReducer,
         newState,
       );
-      expect(get(newState, ['sent', secrethash, 'transfer'])).toBe(message);
+      expect(get(newState, ['sent', secrethash, 'transfer', 1])).toBe(message);
     });
 
     test('transfer processed', () => {
@@ -668,7 +669,7 @@ describe('raidenReducer', () => {
         transferProcessed({ message: processed }, { secrethash }),
       ].reduce(raidenReducer, state);
 
-      expect(get(newState, ['sent', secrethash, 'transferProcessed'])).toBe(processed);
+      expect(get(newState, ['sent', secrethash, 'transferProcessed', 1])).toBe(processed);
     });
 
     test('transfer secret reveal', () => {
@@ -684,7 +685,7 @@ describe('raidenReducer', () => {
           state,
         );
 
-      expect(get(newState, ['sent', secrethash, 'secretReveal'])).toBe(secretReveal);
+      expect(get(newState, ['sent', secrethash, 'secretReveal', 1])).toBe(secretReveal);
 
       const newState2 = [transferSecretReveal({ message: secretReveal }, { secrethash })].reduce(
         raidenReducer,
@@ -730,7 +731,19 @@ describe('raidenReducer', () => {
         newState,
       );
 
-      expect(get(newState, ['sent', secrethash, 'unlock'])).toBe(unlock);
+      expect(get(newState, ['sent', secrethash, 'unlock', 1])).toBe(unlock);
+
+      let processed: Signed<Processed> = {
+        type: MessageType.PROCESSED,
+        message_identifier: unlock.message_identifier,
+        signature: makeSignature(),
+      };
+      newState = [transferUnlockProcessed({ message: processed }, { secrethash })].reduce(
+        raidenReducer,
+        newState,
+      );
+
+      expect(get(newState, ['sent', secrethash, 'unlockProcessed', 1])).toBe(processed);
     });
 
     test('transfer expired', () => {
@@ -769,7 +782,19 @@ describe('raidenReducer', () => {
         newState,
       );
 
-      expect(get(newState, ['sent', secrethash, 'lockExpired'])).toBe(lockExpired);
+      expect(get(newState, ['sent', secrethash, 'lockExpired', 1])).toBe(lockExpired);
+
+      let processed: Signed<Processed> = {
+        type: MessageType.PROCESSED,
+        message_identifier: lockExpired.message_identifier,
+        signature: makeSignature(),
+      };
+      newState = [transferExpireProcessed({ message: processed }, { secrethash })].reduce(
+        raidenReducer,
+        newState,
+      );
+
+      expect(get(newState, ['sent', secrethash, 'lockExpiredProcessed', 1])).toBe(processed);
     });
 
     test('transfer refunded', () => {
@@ -804,7 +829,7 @@ describe('raidenReducer', () => {
         transferRefunded({ message: refund }, { secrethash }),
       ].reduce(raidenReducer, newState);
 
-      expect(get(newState, ['sent', secrethash, 'refund'])).toBe(refund);
+      expect(get(newState, ['sent', secrethash, 'refund', 1])).toBe(refund);
     });
 
     test('transfer cleared', () => {
@@ -813,7 +838,7 @@ describe('raidenReducer', () => {
         transferSigned({ message: transfer }, { secrethash }),
       ].reduce(raidenReducer, state);
 
-      expect(get(newState, ['sent', secrethash, 'transfer'])).toBe(transfer);
+      expect(get(newState, ['sent', secrethash, 'transfer', 1])).toBe(transfer);
       expect(get(newState, ['secrets', secrethash, 'secret'])).toBe(secret);
 
       newState = [transferClear(undefined, { secrethash })].reduce(raidenReducer, newState);

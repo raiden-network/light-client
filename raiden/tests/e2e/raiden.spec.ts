@@ -1,6 +1,6 @@
 import { first, filter } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
-import { parseEther, parseUnits, bigNumberify, BigNumber } from 'ethers/utils';
+import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256 } from 'ethers/utils';
 import { getType } from 'typesafe-actions';
 import { get } from 'lodash';
 
@@ -18,8 +18,10 @@ import { initialState } from 'raiden/state';
 import { raidenShutdown } from 'raiden/actions';
 import { newBlock } from 'raiden/channels/actions';
 import { ChannelState } from 'raiden/channels/state';
-import { Storage } from 'raiden/utils/types';
+import { Storage, Hash } from 'raiden/utils/types';
 import { ContractsInfo, RaidenContracts } from 'raiden/types';
+import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden/transfers/types';
+import { makeSecret } from 'raiden/transfers/utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
@@ -390,6 +392,64 @@ describe('Raiden', () => {
       });
 
       raiden1.stop();
+    });
+  });
+
+  describe('transfer', () => {
+    beforeEach(async () => {
+      await raiden.openChannel(token, partner);
+      await raiden.depositChannel(token, partner, 200);
+    });
+
+    test('initiate, auto secret', async () => {
+      expect.assertions(5);
+
+      // success when using address of account on provider and initial state
+      const raiden1 = await Raiden.create(
+        provider,
+        partner,
+        { ...initialState, address: partner },
+        info,
+      );
+      expect(raiden1).toBeInstanceOf(Raiden);
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
+        userId: `@${partner.toLowerCase()}:${matrixServer}`,
+        available: true,
+        ts: expect.any(Number),
+      });
+
+      const transfers: { [h: string]: RaidenSentTransfer } = {};
+
+      raiden.transfers$.subscribe(t => (transfers[t.secrethash] = t));
+
+      const secrethash = await raiden.transfer(token, partner, 17);
+      expect(secrethash).toMatch(/^0x[0-9a-fA-F]{64}$/);
+
+      expect(secrethash in transfers).toBe(true);
+      expect(transfers[secrethash].status).toBe(RaidenSentTransferStatus.pending);
+
+      raiden1.stop();
+    });
+
+    test('secret and secrethash doesn\'t match', async () => {
+      expect.assertions(1);
+      const secret = makeSecret(),
+        secrethash: Hash = keccak256('0xdeadbeef') as Hash;
+      await expect(
+        raiden.transfer(token, partner, 17, { secret, secrethash }),
+      ).rejects.toThrowError('Secret and secrethash must match');
+    });
+
+    test('invalid provided secrethash', async () => {
+      expect.assertions(1);
+      const secret = makeSecret(),
+        secrethash = '0xdeadbeef';
+      await expect(
+        raiden.transfer(token, partner, 17, { secret, secrethash }),
+      ).rejects.toThrowError(/Invalid.*secrethash/);
     });
   });
 });
