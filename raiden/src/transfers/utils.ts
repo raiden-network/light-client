@@ -99,11 +99,12 @@ export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
         ? [RaidenSentTransferStatus.received, sent.transferProcessed[0]]
         : [RaidenSentTransferStatus.pending, sent.transfer[0]],
     success: boolean | undefined =
-      status === RaidenSentTransferStatus.succeeded
+      sent.secretReveal || sent.unlock
         ? true
-        : status === RaidenSentTransferStatus.failed
+        : sent.refund || sent.lockExpired || sent.channelClosed
         ? false
-        : undefined;
+        : undefined,
+    completed = !!(sent.unlockProcessed || sent.lockExpiredProcessed || sent.channelClosed);
   return {
     secrethash: sent.transfer[1].lock.secrethash,
     status,
@@ -116,9 +117,11 @@ export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
     tokenNetwork: sent.transfer[1].token_network_address,
     channelId: sent.transfer[1].channel_identifier,
     amount: sent.transfer[1].lock.amount,
+    expirationBlock: sent.transfer[1].lock.expiration.toNumber(),
     fee: sent.transfer[1].fee,
     startedAt: new Date(sent.transfer[0]),
     changedAt: new Date(changedAt),
     success,
+    completed,
   };
 }
