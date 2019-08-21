@@ -434,7 +434,7 @@ describe('Raiden', () => {
       raiden1.stop();
     });
 
-    test('secret and secrethash doesn\'t match', async () => {
+    test("secret and secrethash doesn't match", async () => {
       expect.assertions(1);
       const secret = makeSecret(),
         secrethash: Hash = keccak256('0xdeadbeef') as Hash;
