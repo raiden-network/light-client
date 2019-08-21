@@ -4,7 +4,9 @@
 
 ## Demo
 
-You can access an alpha testnet version of the Raiden dApp at https://lightclient.raiden.network/. It is compatible with any web3 provider.
+You can access an alpha testnet version of the Raiden dApp at https://lightclient.raiden.network/. 
+
+![Raiden dApp Screenshot](https://user-images.githubusercontent.com/35398162/63415278-c9207300-c3fd-11e9-9109-20f563a8d7f0.PNG)
 
 ## Project setup
 ```
