@@ -887,7 +887,7 @@ export const transferUnlockProcessedReceivedEpic = (
  * @param state$  Observable of RaidenStates
  * @returns  Observable of output actions for this epic
  */
-export const transferExpireProcessedClearsEpic = (
+export const transferExpireProcessedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
 ): Observable<ActionType<typeof transferExpireProcessed>> =>

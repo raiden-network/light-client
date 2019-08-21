@@ -675,21 +675,16 @@ export class Raiden {
    * queried with this id on this.transfers$ observable, which will just have emitted the 'pending'
    * transfer. Any following transfer state change will be notified through this observable.
    *
-   * Coverage ignored until we handle the full transfer lifecycle
-   * TODO: remove istanbul ignore when covered
-   *
    * @param token  Token address on currently configured token network registry
    * @param target  Target address (must be getAvailability before)
    * @param amount  Amount to try to transfer
-   * @param opts.paymentId  Optionally specify a paymentId to use for this transfer
-   * @param opts.secret  Optionally specify a secret to use on this transfer
-   *    (in which case, it'll be registered and revealed to target)
-   * @param opts.secrethash  Optionally specify a secrethash to use. If secret is provided,
-   *    secrethash must be the keccak256 hash of the secret. If no secret is provided, the target
-   *    must be informed of it by other means/externally.
+   * @param opts  Optional parameters for transfer:
+   *                - paymentId  payment identifier, a random one will be generated if missing
+   *                - secret  Secret to register, a random one will be generated if missing
+   *                - secrethash  Must match secret, if both provided, or else, secret must be
+   *                              informed to target by other means, and reveal can't be performed
    * @returns A promise to transfer's secrethash (unique id) when it's accepted
    */
-  /* istanbul ignore next */
   public async transfer(
     token: string,
     target: string,

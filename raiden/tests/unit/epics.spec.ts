@@ -115,12 +115,13 @@ import {
   transferProcessed,
   transferSecretRequest,
   transferSecretReveal,
-  transferClear,
   transferred,
   transferExpire,
   transferExpired,
   transferExpireFailed,
   transferRefunded,
+  transferUnlockProcessed,
+  transferExpireProcessed,
 } from 'raiden/transfers/actions';
 import {
   transferGenerateAndSignEnvelopeMessageEpic,
@@ -131,7 +132,7 @@ import {
   transferUnlockProcessedReceivedEpic,
   transferAutoExpireEpic,
   initQueuePendingEnvelopeMessagesEpic,
-  transferExpireProcessedClearsEpic,
+  transferExpireProcessedEpic,
   transferChannelClosedEpic,
   transferSignedRetryMessageEpic,
   transferUnlockedRetryMessageEpic,
@@ -2988,7 +2989,7 @@ describe('raidenRootEpic', () => {
           .toPromise();
 
         // expect unlock to be set
-        expect(get(state$.value, ['sent', secrethash, 'unlock'])).toMatchObject({
+        expect(get(state$.value, ['sent', secrethash, 'unlock', 1])).toMatchObject({
           type: MessageType.UNLOCK,
           signature: expect.any(String),
         });
@@ -3026,7 +3027,9 @@ describe('raidenRootEpic', () => {
     describe('transfer*RetryMessageEpic', () => {
       let processed: Signed<Processed>,
         unlockedAction: ActionType<typeof transferUnlocked>,
-        expiredAction: ActionType<typeof transferExpired>;
+        unlockProcessed: Signed<Processed>,
+        expiredAction: ActionType<typeof transferExpired>,
+        expiredProcessed: Signed<Processed>;
 
       beforeEach(async () => {
         jest.useFakeTimers();
@@ -3046,6 +3049,10 @@ describe('raidenRootEpic', () => {
 
         if (!a || !isActionOf(transferUnlocked, a)) throw new Error(`not unlocked: ${a}`);
         unlockedAction = a;
+        unlockProcessed = await signMessage(partnerSigner, {
+          type: MessageType.PROCESSED,
+          message_identifier: unlockedAction.payload.message.message_identifier,
+        });
 
         // set state as unlocked
         const b = await transferGenerateAndSignEnvelopeMessageEpic(
@@ -3061,6 +3068,10 @@ describe('raidenRootEpic', () => {
 
         if (!b || !isActionOf(transferExpired, b)) throw new Error(`not expired`);
         expiredAction = b;
+        expiredProcessed = await signMessage(partnerSigner, {
+          type: MessageType.PROCESSED,
+          message_identifier: expiredAction.payload.message.message_identifier,
+        });
       });
 
       test(
@@ -3127,9 +3138,14 @@ describe('raidenRootEpic', () => {
           expect(sent).toBe(3);
 
           // clear transfer from state
-          state$.next(raidenReducer(state$.value, transferClear(undefined, { secrethash })));
+          state$.next(
+            raidenReducer(
+              state$.value,
+              transferUnlockProcessed({ message: unlockProcessed }, { secrethash }),
+            ),
+          );
 
-          // +30s and no new messageSend, as transferClear stopped retry
+          // +30s and no new messageSend, as transferUnlockProcessed stopped retry
           for (let t = 0; t < 30; t += 10) advance(10e3);
           expect(sent).toBe(3);
         }),
@@ -3167,9 +3183,14 @@ describe('raidenRootEpic', () => {
           expect(sent).toBe(3);
 
           // clear transfer from state
-          state$.next(raidenReducer(state$.value, transferClear(undefined, { secrethash })));
+          state$.next(
+            raidenReducer(
+              state$.value,
+              transferExpireProcessed({ message: expiredProcessed }, { secrethash }),
+            ),
+          );
 
-          // +30s and no new messageSend, as transferClear stopped retry
+          // +30s and no new messageSend, as transferExpireProcessed stopped retry
           for (let t = 0; t < 30; t += 10) advance(10e3);
           expect(sent).toBe(3);
         }),
@@ -3426,7 +3447,7 @@ describe('raidenRootEpic', () => {
       );
 
       // expect reveal to be persisted on state
-      const reveal = get(state$.value, ['sent', secrethash, 'secretReveal']);
+      const reveal = get(state$.value, ['sent', secrethash, 'secretReveal', 1]);
       expect(reveal).toMatchObject({
         type: MessageType.SECRET_REVEAL,
         secret,
@@ -3517,7 +3538,7 @@ describe('raidenRootEpic', () => {
           .toPromise();
 
         // expect unlock to be set
-        expect(get(state$.value, ['sent', secrethash, 'unlock'])).toMatchObject({
+        expect(get(state$.value, ['sent', secrethash, 'unlock', 1])).toMatchObject({
           type: MessageType.UNLOCK,
           signature: expect.any(String),
         });
@@ -3574,12 +3595,15 @@ describe('raidenRootEpic', () => {
             { balanceProof: expect.objectContaining({ sender: depsMock.address }) },
             { secrethash },
           ),
-          transferClear(undefined, { secrethash }),
+          transferUnlockProcessed(
+            { message: expect.objectContaining({ type: MessageType.PROCESSED }) },
+            { secrethash },
+          ),
         ]),
       );
     });
 
-    describe('transferExpireProcessedClearsEpic', () => {
+    describe('transferExpireProcessedEpic', () => {
       let state$: BehaviorSubject<RaidenState>, expired: Signed<LockExpired>;
 
       beforeEach(async () => {
@@ -3618,8 +3642,8 @@ describe('raidenRootEpic', () => {
           );
 
         await expect(
-          transferExpireProcessedClearsEpic(of(received), state$).toPromise(),
-        ).resolves.toEqual(transferClear(undefined, { secrethash }));
+          transferExpireProcessedEpic(of(received), state$).toPromise(),
+        ).resolves.toEqual(transferExpireProcessed({ message: signed }, { secrethash }));
       });
 
       test('fail sender mismatch', async () => {
@@ -3639,7 +3663,7 @@ describe('raidenRootEpic', () => {
           );
 
         await expect(
-          transferExpireProcessedClearsEpic(of(received), state$).toPromise(),
+          transferExpireProcessedEpic(of(received), state$).toPromise(),
         ).resolves.toBeUndefined();
       });
     });
@@ -3656,10 +3680,7 @@ describe('raidenRootEpic', () => {
             .pipe(toArray())
             .toPromise(),
         ).resolves.toEqual(
-          expect.arrayContaining([
-            transferFailed(expect.any(Error), { secrethash }),
-            transferClear(undefined, { secrethash }),
-          ]),
+          expect.arrayContaining([transferFailed(expect.any(Error), { secrethash })]),
         );
       });
 
@@ -3682,7 +3703,6 @@ describe('raidenRootEpic', () => {
               { balanceProof: expect.objectContaining({ sender: depsMock.address }) },
               { secrethash },
             ),
-            transferClear(undefined, { secrethash }),
           ]),
         );
       });
@@ -3702,12 +3722,7 @@ describe('raidenRootEpic', () => {
           transferChannelClosedEpic(of(action), state$)
             .pipe(toArray())
             .toPromise(),
-        ).resolves.toEqual(
-          expect.arrayContaining([
-            transferred({}, { secrethash }),
-            transferClear(undefined, { secrethash }),
-          ]),
-        );
+        ).resolves.toEqual(expect.arrayContaining([transferred({}, { secrethash })]));
       });
 
       test('skip different channel', async () => {
