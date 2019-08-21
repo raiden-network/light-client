@@ -68,7 +68,7 @@ import {
   matrixRequestMonitorPresenceFailed,
   matrixRequestMonitorPresence,
 } from './transport/actions';
-import { transfer, transferred, transferFailed } from './transfers/actions';
+import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer } from './transfers/utils';
 import { patchSignSend } from './utils/ethers';
 import { SentTransfer, SentTransfers } from 'raiden/transfers/state';
@@ -670,8 +670,13 @@ export class Raiden {
 
   /**
    * Send a Locked Transfer!
+   * This will reject if LockedTransfer signature prompt is canceled/signature fails, or be
+   * resolved to the transfer unique identifier (secrethash) otherwise, and transfer status can be
+   * queried with this id on this.transfers$ observable, which will just have emitted the 'pending'
+   * transfer. Any following transfer state change will be notified through this observable.
+   *
    * Coverage ignored until we handle the full transfer lifecycle
-   * TODO: remove uncover when implemented
+   * TODO: remove istanbul ignore when covered
    *
    * @param token  Token address on currently configured token network registry
    * @param target  Target address (must be getAvailability before)
@@ -682,7 +687,7 @@ export class Raiden {
    * @param opts.secrethash  Optionally specify a secrethash to use. If secret is provided,
    *    secrethash must be the keccak256 hash of the secret. If no secret is provided, the target
    *    must be informed of it by other means/externally.
-   * @returns A promise to boolean indicating if the transfer completed with Unlock
+   * @returns A promise to transfer's secrethash (unique id) when it's accepted
    */
   /* istanbul ignore next */
   public async transfer(
@@ -690,7 +695,7 @@ export class Raiden {
     target: string,
     amount: BigNumberish,
     opts?: { paymentId?: BigNumberish; secret?: string; secrethash?: string },
-  ): Promise<boolean> {
+  ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -720,12 +725,12 @@ export class Raiden {
 
     const promise = this.action$
       .pipe(
-        filter(isActionOf([transferred, transferFailed])),
-        filter(action => action.meta.secrethash === secrethash),
+        filter(isActionOf([transferSigned, transferFailed])),
+        filter(action => action.meta.secrethash === secrethash!),
         first(),
         map(action => {
           if (isActionOf(transferFailed, action)) throw action.payload;
-          return !!action.payload.balanceProof;
+          return secrethash!;
         }),
       )
       .toPromise();
