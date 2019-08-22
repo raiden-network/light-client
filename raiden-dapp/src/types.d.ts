@@ -1,5 +1,5 @@
 import RaidenService from '@/services/raiden-service';
-import { RaidenChannels } from 'raiden';
+import { RaidenChannels } from 'raiden-ts';
 import { DeniedReason, Token } from '@/model/types';
 import { Network } from 'ethers/utils';
 

@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState, Tokens } from '@/types';
-import { ChannelState, RaidenChannel, RaidenChannels } from 'raiden';
+import { ChannelState, RaidenChannel, RaidenChannels } from 'raiden-ts';
 import {
   AccTokenModel,
   DeniedReason,

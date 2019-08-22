@@ -5,7 +5,7 @@ jest.useFakeTimers();
 
 import { Store } from 'vuex';
 import { addElemWithDataAppToBody } from '../utils/dialog';
-import { ChannelState, RaidenChannel } from 'raiden';
+import { ChannelState, RaidenChannel } from 'raiden-ts';
 import { mockInput } from '../utils/interaction-utils';
 import { stub } from '../utils/stub';
 import flushPromises from 'flush-promises';

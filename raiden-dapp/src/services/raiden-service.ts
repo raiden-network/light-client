@@ -1,4 +1,4 @@
-import { Raiden, RaidenChannel } from 'raiden';
+import { Raiden, RaidenChannel } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';

@@ -105,7 +105,7 @@
 
 <script lang="ts">
 import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
-import { RaidenChannel } from 'raiden';
+import { RaidenChannel } from 'raiden-ts';
 import { Token, TokenPlaceholder } from '@/model/types';
 import ChannelActions from '@/components/ChannelActions.vue';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';

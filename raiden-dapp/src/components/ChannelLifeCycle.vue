@@ -41,7 +41,7 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { ChannelState } from 'raiden';
+import { ChannelState } from 'raiden-ts';
 
 @Component({})
 export default class ChannelLifeCycle extends Vue {
