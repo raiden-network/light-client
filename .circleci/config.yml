@@ -1,9 +1,9 @@
 version: 2.1
 
 var_1: &docker_image circleci/node:10.13.0-browsers
-var_2: &sdk_cache_key raiden-{{ .Branch }}-{{ checksum "package-lock.json" }}
+var_2: &sdk_cache_key raiden-ts-{{ .Branch }}-{{ checksum "package-lock.json" }}
 var_3: &dapp_cache_key raiden-dapp-{{ .Branch }}-{{ checksum "package-lock.json" }}
-var_4: &raiden_working_dir ~/src/raiden
+var_4: &sdk_working_dir ~/src/raiden-ts
 var_5: &dapp_working_dir ~/src/raiden-dapp
 
 anchor_1: &sdk_package_lock_key
@@ -34,7 +34,7 @@ jobs:
 
   install_sdk:
     executor: base-executor
-    working_directory: *raiden_working_dir
+    working_directory: *sdk_working_dir
     steps:
       - attach_workspace: *attach_options
       - restore_cache: *sdk_package_lock_key
@@ -53,10 +53,8 @@ jobs:
     working_directory: *dapp_working_dir
     steps:
       - attach_workspace: *attach_options
+      - restore_cache: *sdk_package_lock_key
       - restore_cache: *dapp_package_lock_key
-      - run: cd ../raiden && sudo npm link
-      - run: npm link raiden
-      - run: npm install --save raiden
       - run: npm install
       - save_cache:
           <<: *dapp_package_lock_key
@@ -69,7 +67,7 @@ jobs:
 
   lint_sdk:
     executor: base-executor
-    working_directory: *raiden_working_dir
+    working_directory: *sdk_working_dir
     steps:
       - attach_workspace: *attach_options
       - run: npm run lint
@@ -83,7 +81,7 @@ jobs:
 
   test_sdk:
     executor: base-executor
-    working_directory: *raiden_working_dir
+    working_directory: *sdk_working_dir
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -97,7 +95,7 @@ jobs:
           path: reports/junit
       - run:
           name: "Upload coverage"
-          command: cd .. && bash <(curl -s https://codecov.io/bash)  -F sdk
+          command: cd .. && bash <(curl -s https://codecov.io/bash) -F sdk
 
   test_dapp:
     executor: base-executor
@@ -116,13 +114,6 @@ jobs:
       - run:
           name: "Upload coverage"
           command: cd .. && bash <(curl -s https://codecov.io/bash) -F dapp
-
-  build_sdk:
-    executor: base-executor
-    working_directory: *raiden_working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - run: npm run build
 
   build_dapp:
     executor: base-executor
@@ -156,22 +147,19 @@ workflows:
       - install_dapp:
           requires:
             - checkout
+            - install_sdk
       - lint_sdk:
           requires:
             - install_sdk
       - lint_dapp:
           requires:
             - install_dapp
-      - build_sdk:
-          requires:
-            - install_sdk
       - build_dapp:
           requires:
             - install_dapp
       - test_sdk:
           requires:
             - lint_sdk
-            - build_sdk
       - test_dapp:
           requires:
             - lint_dapp
