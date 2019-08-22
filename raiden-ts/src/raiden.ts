@@ -44,6 +44,7 @@ import {
 import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
+import { SentTransfer, SentTransfers } from './transfers/state';
 import { RaidenSentTransfer } from './transfers/types';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
@@ -71,7 +72,6 @@ import {
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer } from './transfers/utils';
 import { patchSignSend } from './utils/ethers';
-import { SentTransfer, SentTransfers } from 'raiden/transfers/state';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
