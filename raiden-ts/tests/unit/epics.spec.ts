@@ -29,10 +29,10 @@ import { createClient } from 'matrix-js-sdk';
 jest.mock('cross-fetch');
 import fetch from 'cross-fetch';
 
-import { ShutdownReason } from 'raiden/constants';
-import { RaidenAction, raidenShutdown } from 'raiden/actions';
-import { raidenReducer } from 'raiden/reducer';
-import { RaidenState, initialState } from 'raiden/state';
+import { ShutdownReason } from 'raiden-ts/constants';
+import { RaidenAction, raidenShutdown } from 'raiden-ts/actions';
+import { raidenReducer } from 'raiden-ts/reducer';
+import { RaidenState, initialState } from 'raiden-ts/state';
 import {
   newBlock,
   tokenMonitored,
@@ -50,7 +50,7 @@ import {
   channelDepositFailed,
   channelCloseFailed,
   channelSettleFailed,
-} from 'raiden/channels/actions';
+} from 'raiden-ts/channels/actions';
 import {
   matrixRequestMonitorPresence,
   matrixPresenceUpdate,
@@ -58,10 +58,10 @@ import {
   matrixSetup,
   matrixRequestMonitorPresenceFailed,
   matrixRoomLeave,
-} from 'raiden/transport/actions';
-import { messageSend, messageReceived, messageSent } from 'raiden/messages/actions';
+} from 'raiden-ts/transport/actions';
+import { messageSend, messageReceived, messageSent } from 'raiden-ts/messages/actions';
 
-import { raidenRootEpic } from 'raiden/epics';
+import { raidenRootEpic } from 'raiden-ts/epics';
 import {
   initMonitorProviderEpic,
   channelOpenEpic,
@@ -72,7 +72,7 @@ import {
   channelMonitoredEpic,
   channelSettleableEpic,
   tokenMonitoredEpic,
-} from 'raiden/channels/epics';
+} from 'raiden-ts/channels/epics';
 import {
   initMatrixEpic,
   matrixMonitorChannelPresenceEpic,
@@ -90,8 +90,8 @@ import {
   matrixMessageReceivedUpdateRoomEpic,
   matrixStartEpic,
   deliveredEpic,
-} from 'raiden/transport/epics';
-import { Address, Hash, UInt } from 'raiden/utils/types';
+} from 'raiden-ts/transport/epics';
+import { Address, Hash, UInt } from 'raiden-ts/utils/types';
 import {
   MessageType,
   Signed,
@@ -102,9 +102,9 @@ import {
   SecretReveal,
   LockExpired,
   RefundTransfer,
-} from 'raiden/messages/types';
-import { makeMessageId, makeSecret } from 'raiden/transfers/utils';
-import { encodeJsonMessage, signMessage } from 'raiden/messages/utils';
+} from 'raiden-ts/messages/types';
+import { makeMessageId, makeSecret } from 'raiden-ts/transfers/utils';
+import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
 import {
   transfer,
   transferSigned,
@@ -122,7 +122,7 @@ import {
   transferRefunded,
   transferUnlockProcessed,
   transferExpireProcessed,
-} from 'raiden/transfers/actions';
+} from 'raiden-ts/transfers/actions';
 import {
   transferGenerateAndSignEnvelopeMessageEpic,
   transferProcessedReceivedEpic,
@@ -139,7 +139,7 @@ import {
   transferExpiredRetryMessageEpic,
   transferReceivedReplyProcessedEpic,
   transferRefundedEpic,
-} from 'raiden/transfers/epics';
+} from 'raiden-ts/transfers/epics';
 
 describe('raidenRootEpic', () => {
   // mocks for all RaidenEpicDeps properties

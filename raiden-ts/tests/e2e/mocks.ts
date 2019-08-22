@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
 import { requestCallback, RequestOpts } from 'matrix-js-sdk';
 
-import { Storage } from 'raiden/utils/types';
+import { Storage } from 'raiden-ts/utils/types';
 
 export const MockStorage: jest.Mock<
   jest.Mocked<Storage>,

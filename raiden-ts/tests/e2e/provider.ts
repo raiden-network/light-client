@@ -7,8 +7,8 @@ import { Web3Provider } from 'ethers/providers';
 import { ContractFactory, Contract } from 'ethers/contract';
 import { parseUnits } from 'ethers/utils';
 
-import { ContractsInfo, RaidenContracts } from 'raiden/types';
-import { Address } from 'raiden/utils/types';
+import { ContractsInfo, RaidenContracts } from 'raiden-ts/types';
+import { Address } from 'raiden-ts/utils/types';
 import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../../contracts/TokenNetwork';
 import { Token } from '../../contracts/Token';

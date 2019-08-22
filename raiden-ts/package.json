@@ -132,7 +132,7 @@
     "preset": "ts-jest",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^raiden/(.*)$": "<rootDir>/src/$1"
+      "^raiden-ts/(.*)$": "<rootDir>/src/$1"
     },
     "testMatch": [
       "<rootDir>/tests/**/*.spec.ts"

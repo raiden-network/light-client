@@ -1,7 +1,7 @@
 import { bigNumberify } from 'ethers/utils';
 
-import { channelDeposit, channelDepositFailed, channelMonitored } from 'raiden/channels/actions';
-import { Address } from 'raiden/utils/types';
+import { channelDeposit, channelDepositFailed, channelMonitored } from 'raiden-ts/channels/actions';
+import { Address } from 'raiden-ts/utils/types';
 
 describe('action factories not tested in reducers.spec.ts', () => {
   const tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,
