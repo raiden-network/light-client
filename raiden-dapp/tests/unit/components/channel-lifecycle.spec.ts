@@ -1,6 +1,6 @@
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
-import { ChannelState } from 'raiden';
+import { ChannelState } from 'raiden-ts';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 

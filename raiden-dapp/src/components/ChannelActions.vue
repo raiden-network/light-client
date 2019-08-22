@@ -28,7 +28,7 @@
 </template>
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { RaidenChannel } from 'raiden';
+import { RaidenChannel } from 'raiden-ts';
 
 @Component({})
 export default class ChannelActions extends Vue {

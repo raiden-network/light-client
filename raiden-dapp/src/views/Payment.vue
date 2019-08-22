@@ -108,7 +108,7 @@ import ActionButton from '@/components/ActionButton.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannel } from 'raiden';
+import { RaidenChannel } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 
 @Component({

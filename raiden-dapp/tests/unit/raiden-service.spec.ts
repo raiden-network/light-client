@@ -13,7 +13,7 @@ import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
-import { Raiden } from 'raiden';
+import { Raiden } from 'raiden-ts';
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
 import { BehaviorSubject, EMPTY } from 'rxjs';

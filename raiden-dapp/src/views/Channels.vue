@@ -57,7 +57,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { ChannelState, RaidenChannel } from 'raiden';
+import { ChannelState, RaidenChannel } from 'raiden-ts';
 import ChannelList from '@/components/ChannelList.vue';
 import ListHeader from '@/components/ListHeader.vue';
 
