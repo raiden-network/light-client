@@ -12,7 +12,7 @@
     "lib": ["es2015", "es2016", "es2017"],
     "baseUrl": ".",
     "paths": {
-      "raiden/*": ["src/*"]
+      "raiden-ts/*": ["src/*"]
     },
     "typeRoots": ["typings", "node_modules/@types"]
   }

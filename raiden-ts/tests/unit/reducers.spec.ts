@@ -4,10 +4,10 @@ import { set } from 'lodash/fp';
 import { Zero, One, HashZero } from 'ethers/constants';
 import { bigNumberify, keccak256 } from 'ethers/utils';
 
-import { raidenReducer } from 'raiden/reducer';
-import { RaidenState, initialState } from 'raiden/state';
-import { ShutdownReason } from 'raiden/constants';
-import { raidenShutdown } from 'raiden/actions';
+import { raidenReducer } from 'raiden-ts/reducer';
+import { RaidenState, initialState } from 'raiden-ts/state';
+import { ShutdownReason } from 'raiden-ts/constants';
+import { raidenShutdown } from 'raiden-ts/actions';
 import {
   newBlock,
   tokenMonitored,
@@ -22,10 +22,10 @@ import {
   channelSettle,
   channelSettleFailed,
   channelSettled,
-} from 'raiden/channels/actions';
-import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden/transport/actions';
-import { ChannelState } from 'raiden/channels';
-import { Address, Hash, Secret, UInt } from 'raiden/utils/types';
+} from 'raiden-ts/channels/actions';
+import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden-ts/transport/actions';
+import { ChannelState } from 'raiden-ts/channels';
+import { Address, Hash, Secret, UInt } from 'raiden-ts/utils/types';
 import {
   transferSecret,
   transferSigned,
@@ -37,7 +37,7 @@ import {
   transferRefunded,
   transferUnlockProcessed,
   transferExpireProcessed,
-} from 'raiden/transfers/actions';
+} from 'raiden-ts/transfers/actions';
 import {
   LockedTransfer,
   MessageType,
@@ -47,8 +47,8 @@ import {
   LockExpired,
   SecretReveal,
   RefundTransfer,
-} from 'raiden/messages/types';
-import { makeMessageId, makePaymentId } from 'raiden/transfers/utils';
+} from 'raiden-ts/messages/types';
+import { makeMessageId, makePaymentId } from 'raiden-ts/transfers/utils';
 import { makeSignature } from './mocks';
 
 describe('raidenReducer', () => {

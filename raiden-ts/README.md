@@ -72,7 +72,7 @@ npm install <raiden_npm_package>
 Then in your JavaScript or TypeScript project:
 
 ```typescript
-import { Raiden } from 'raiden';
+import { Raiden } from 'raiden-ts';
 
 # async factory
 const raiden = await Raiden.create(web3.currentProvider, 0, localStorage);
@@ -98,7 +98,7 @@ To connect for example on a privately deployed Raiden network,
 you can initialize the SDK as usual, and pass the Contract Info as the fourth parameter of the create function.
 
 ```typescript
-import { Raiden } from 'raiden';
+import { Raiden } from 'raiden-ts';
 
 # async factory
 const raiden = await Raiden.create(web3.currentProvider, 0, localStorage, contractInfo);
@@ -115,7 +115,7 @@ If you want to use the SDK in a private chain or a development environment, you 
 To connect to the Raiden Network, you simply make a transaction to open a channel on-chain with a given partner on a registered token network. You can also specify a `settleTimeout`, which will be the number of blocks you and your partner will need to wait after closing a channel to be able to settle it and actually get the due tokens back. `settleTimeout` defaults to `500`
 
 ```
-import { RaidenChannels } from 'raiden';
+import { RaidenChannels } from 'raiden-ts';
 
 # logs channels$ changes
 raiden.channels$.subscribe((channels: RaidenChannels) => console.log('Raiden channels:', channels));

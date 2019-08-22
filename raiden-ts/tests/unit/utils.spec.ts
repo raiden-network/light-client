@@ -9,7 +9,7 @@ import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils';
 import { LosslessNumber } from 'lossless-json';
 
-import { fromEthersEvent, getEventsStream } from 'raiden/utils/ethers';
+import { fromEthersEvent, getEventsStream } from 'raiden-ts/utils/ethers';
 import {
   Address,
   BigNumberC,
@@ -19,14 +19,14 @@ import {
   Secret,
   Timed,
   timed,
-} from 'raiden/utils/types';
-import { LruCache } from 'raiden/utils/lru';
-import { encode, losslessParse, losslessStringify } from 'raiden/utils/data';
-import { splitCombined } from 'raiden/utils/rxjs';
+} from 'raiden-ts/utils/types';
+import { LruCache } from 'raiden-ts/utils/lru';
+import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
+import { splitCombined } from 'raiden-ts/utils/rxjs';
 import { makeLog, raidenEpicDeps } from './mocks';
-import { getLocksroot, lockhash, makeSecret } from 'raiden/transfers/utils';
+import { getLocksroot, lockhash, makeSecret } from 'raiden-ts/transfers/utils';
 import { HashZero } from 'ethers/constants';
-import { Lock } from 'raiden/channels';
+import { Lock } from 'raiden-ts/channels';
 
 describe('fromEthersEvent', () => {
   let { provider } = raidenEpicDeps();

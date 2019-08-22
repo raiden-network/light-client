@@ -1,8 +1,8 @@
 import { bigNumberify } from 'ethers/utils';
 
-import { ChannelState } from 'raiden/channels';
-import { decodeRaidenState, encodeRaidenState, RaidenState } from 'raiden/state';
-import { Address, UInt } from 'raiden/utils/types';
+import { ChannelState } from 'raiden-ts/channels';
+import { decodeRaidenState, encodeRaidenState, RaidenState } from 'raiden-ts/state';
+import { Address, UInt } from 'raiden-ts/utils/types';
 
 describe('RaidenState codecs', () => {
   const address = '0x1111111111111111111111111111111111111111' as Address,

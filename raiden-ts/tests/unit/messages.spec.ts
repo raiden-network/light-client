@@ -11,7 +11,7 @@ import {
   SecretRequest,
   Unlock,
   Signed,
-} from 'raiden/messages/types';
+} from 'raiden-ts/messages/types';
 import {
   packMessage,
   signMessage,
@@ -20,8 +20,8 @@ import {
   decodeJsonMessage,
   getBalanceProofFromEnvelopeMessage,
   createMessageHash,
-} from 'raiden/messages/utils';
-import { Address, Hash, Secret, UInt } from 'raiden/utils/types';
+} from 'raiden-ts/messages/utils';
+import { Address, Hash, Secret, UInt } from 'raiden-ts/utils/types';
 import { bigNumberify } from 'ethers/utils';
 import { HashZero, One, Zero } from 'ethers/constants';
 

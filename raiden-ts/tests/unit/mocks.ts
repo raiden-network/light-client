@@ -27,11 +27,11 @@ jest.mock('ethers/utils', () => ({
   }),
 }));
 
-// raiden/utils.getNetwork has the same functionality as provider.getNetwork
+// raiden-ts/utils.getNetwork has the same functionality as provider.getNetwork
 // but fetches everytime instead of just returning a cached property
 // On mocked tests, we unify both again, so we can just mock provider.getNetwork in-place
-jest.mock('raiden/utils/matrix', () => ({
-  ...jest.requireActual('raiden/utils/matrix'),
+jest.mock('raiden-ts/utils/matrix', () => ({
+  ...jest.requireActual('raiden-ts/utils/matrix'),
   getNetwork: jest.fn((provider: JsonRpcProvider): Promise<Network> => provider.getNetwork()),
 }));
 
@@ -50,14 +50,14 @@ import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../../contracts/TokenNetwork';
 import { Token } from '../../contracts/Token';
 
-import TokenNetworkRegistryAbi from 'raiden/abi/TokenNetworkRegistry.json';
-import TokenNetworkAbi from 'raiden/abi/TokenNetwork.json';
-import TokenAbi from 'raiden/abi/Token.json';
+import TokenNetworkRegistryAbi from 'raiden-ts/abi/TokenNetworkRegistry.json';
+import TokenNetworkAbi from 'raiden-ts/abi/TokenNetwork.json';
+import TokenAbi from 'raiden-ts/abi/Token.json';
 
-import { RaidenEpicDeps } from 'raiden/types';
-import { RaidenAction } from 'raiden/actions';
-import { RaidenState, initialState } from 'raiden/state';
-import { Address, Signature } from 'raiden/utils/types';
+import { RaidenEpicDeps } from 'raiden-ts/types';
+import { RaidenAction } from 'raiden-ts/actions';
+import { RaidenState, initialState } from 'raiden-ts/state';
+import { Address, Signature } from 'raiden-ts/utils/types';
 
 type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
