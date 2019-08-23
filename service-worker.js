@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "/precache-manifest.370e13f19edfd77f50a7ef976af10d98.js"
+  "/precache-manifest.2a5bf92375e9d3dcf1bf2d4b7830346b.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "raiden-dapp"});
