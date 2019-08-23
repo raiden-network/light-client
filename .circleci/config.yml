@@ -38,7 +38,7 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - restore_cache: *sdk_package_lock_key
-      - run: npm install
+      - run: npm ci
       - save_cache:
           <<: *sdk_package_lock_key
           paths:
@@ -55,7 +55,7 @@ jobs:
       - attach_workspace: *attach_options
       - restore_cache: *sdk_package_lock_key
       - restore_cache: *dapp_package_lock_key
-      - run: npm install
+      - run: npm ci
       - save_cache:
           <<: *dapp_package_lock_key
           paths:
