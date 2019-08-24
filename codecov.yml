@@ -3,12 +3,12 @@ coverage:
   round: down
   precision: 2
 
-  status: 
+  status:
     patch:
       default:
         target: 85%
         threshold: 1.00%
-    project: 
+    project:
       default: off
       dapp:
         flags: dapp
@@ -18,11 +18,11 @@ coverage:
         flags: sdk
         target: 85%
         threshold: 1.00%
-  
+
 flags:
   dapp:
-    paths: 
+    paths:
       - raiden-dapp/
   sdk:
     paths:
-      - raiden/ 
+      - raiden-ts/
