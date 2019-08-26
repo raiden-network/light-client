@@ -7,7 +7,7 @@ import { Hash, Secret, UInt } from '../utils/types';
 import { encode } from '../utils/data';
 import { Lock } from '../channels/types';
 import { SentTransfer } from './state';
-import { RaidenSentTransfer, RaidenSentTransferStatus } from './types';
+import { RaidenSentTransfer, RaidenSentTransferStatus } from './state';
 
 /**
  * Return the hash of a lock

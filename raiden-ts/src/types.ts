@@ -11,7 +11,6 @@ import { Token } from '../contracts/Token';
 
 import { RaidenAction } from './actions';
 import { RaidenState } from './state';
-import { ChannelState } from './channels';
 import { Address } from './utils/types';
 
 interface Info {
@@ -41,32 +40,6 @@ export interface RaidenEpicDeps {
   registryContract: TokenNetworkRegistry;
   getTokenNetworkContract: (address: Address) => TokenNetwork;
   getTokenContract: (address: Address) => Token;
-}
-
-export interface RaidenChannel {
-  token: Address;
-  tokenNetwork: Address;
-  partner: Address;
-  state: ChannelState;
-  ownDeposit: BigNumber;
-  partnerDeposit: BigNumber;
-  // balance is difference between partner's sent tokens minus own sent tokens
-  // as of now we can only send, balance usually is a negative number, as once you send
-  // X tokens, you have X less tokens than before, and initial balance is zero
-  balance: BigNumber;
-  // "distributable" capacity of channel, sum of own total deposit and balance (which as usually
-  // negative, decreases capacity)
-  capacity: BigNumber;
-  id?: number;
-  settleTimeout?: number;
-  openBlock?: number;
-  closeBlock?: number;
-}
-
-export interface RaidenChannels {
-  [token: string]: {
-    [partner: string]: RaidenChannel;
-  };
 }
 
 export interface TokenInfo {
