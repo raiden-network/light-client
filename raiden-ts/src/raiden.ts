@@ -34,18 +34,12 @@ import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 import goerliDeploy from './deployment/deployment_goerli.json';
 
-import {
-  ContractsInfo,
-  RaidenContracts,
-  RaidenEpicDeps,
-  RaidenChannels,
-  TokenInfo,
-} from './types';
+import { ContractsInfo, RaidenContracts, RaidenEpicDeps, TokenInfo } from './types';
 import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
-import { SentTransfer, SentTransfers } from './transfers/state';
-import { RaidenSentTransfer } from './transfers/types';
+import { RaidenChannel } from './channels/state';
+import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import { RaidenAction, RaidenEvents, RaidenEvent, raidenShutdown } from './actions';
@@ -94,7 +88,7 @@ export class Raiden {
    * channels$ is public interface, exposing a view of the currently known channels
    * Its format is expected to be kept backwards-compatible, and may be relied on
    */
-  public readonly channels$: Observable<RaidenChannels>;
+  public readonly channels$: Observable<{ [token: string]: { [partner: string]: RaidenChannel } }>;
   /**
    * A subset ot RaidenActions exposed as public events.
    * The interface of the objects emitted by this Observable are expected not to change internally,
