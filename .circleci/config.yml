@@ -27,6 +27,8 @@ jobs:
     working_directory: ~/src
     steps:
       - checkout
+      - run: git submodule sync
+      - run: git submodule update --init
       - persist_to_workspace:
           root: .
           paths:
