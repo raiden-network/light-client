@@ -111,3 +111,12 @@ export interface RaidenChannel {
   openBlock?: number;
   closeBlock?: number;
 }
+
+/**
+ * Public exposed aggregated channels mapping
+ *
+ * token => partner => RaidenChannel
+ */
+export interface RaidenChannels {
+  [token: string]: { [partner: string]: RaidenChannel };
+}
