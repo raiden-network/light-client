@@ -1,8 +1,8 @@
 <h2 align="center">
   <br/>
-  <a href='https://raiden.network/'><img 
-      width='400px' 
-      alt='' 
+  <a href='https://raiden.network/'><img
+      width='400px'
+      alt=''
       src="https://user-images.githubusercontent.com/35398162/54018436-ee3f6300-4188-11e9-9b4e-0666c44cda53.png" /></a>
   <br/>
   Raiden Light Client SDK
@@ -66,7 +66,7 @@ A technical deep dive into the SDK architecture, technologies, tips and details 
 ## Getting Started
 
 ```bash
-npm install <raiden_npm_package>
+npm install raiden-ts
 ```
 
 Then in your JavaScript or TypeScript project:
@@ -115,10 +115,13 @@ If you want to use the SDK in a private chain or a development environment, you 
 To connect to the Raiden Network, you simply make a transaction to open a channel on-chain with a given partner on a registered token network. You can also specify a `settleTimeout`, which will be the number of blocks you and your partner will need to wait after closing a channel to be able to settle it and actually get the due tokens back. `settleTimeout` defaults to `500`
 
 ```
-import { RaidenChannels } from 'raiden-ts';
+import { RaidenChannel } from 'raiden-ts';
 
 # logs channels$ changes
-raiden.channels$.subscribe((channels: RaidenChannels) => console.log('Raiden channels:', channels));
+raiden.channels$.subscribe(
+  (channels: { [token: string]: { [partner: string]: RaidenChannel } }) =>
+    console.log('Raiden channels:', channels)
+);
 
 # get list of registered tokens
 await raiden.getTokenList();
@@ -131,12 +134,17 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 # Raiden channels: {
 #   '0xtoken': {
 #     '0xpartner': {
+#       token: '0xtoken',
+#       tokenNetwork: '0xtokenNetwork',
+#       partner: '0xpartner',
 #       state: 'open',
-#       totalDeposit: BigNumber(0),
+#       ownDeposit: BigNumber(0),
 #       partnerDeposit: BigNumber(0),
 #       id: 123,
 #       settleTimeout: 500,
-#       openBlock: 5123
+#       openBlock: 5123,
+#       balance: BigNumber(0),
+#       capacity: BigNumber(0),
 #     }
 #   }
 # }
@@ -152,12 +160,17 @@ raiden.depositChannel('0xtoken', '0xpartner', 100);
 # Raiden channels: {
 #   '0xtoken': {
 #     '0xpartner': {
+#       token: '0xtoken',
+#       tokenNetwork: '0xtokenNetwork',
+#       partner: '0xpartner',
 #       state: 'closed',
-#       totalDeposit: BigNumber(100),
+#       ownDeposit: BigNumber(100),
 #       partnerDeposit: BigNumber(0),
 #       id: 123,
 #       settleTimeout: 500,
 #       openBlock: 5123
+#       balance: BigNumber(0), // total received minus sent
+#       capacity: BigNumber(100), // current spendable amount on channel
 #     }
 #   }
 # }
@@ -165,7 +178,64 @@ raiden.depositChannel('0xtoken', '0xpartner', 100);
 
 ### Paying through a channel
 
-This is where the fun begins: off-chain payments! ...but we're still working on it on the Light Client ;)
+This is where the fun begins: off-chain payments!
+
+The main point of information about past and pending transfers is the `transfers$: Observable<RaidenSentTransfer>` observable. It'll first emit all known past transfers at subscription time (history), then emit again each time a transfer state changes, allowing you to keep track of the transfer status. The [Raiden.transfer](https://github.com/raiden-network/light-client/blob/dfe87e1886b12fc9f85857b01e28db5e81cc5070/raiden-ts/src/raiden.ts#L693) method is used to initiate an outgoing transfer, and returned Promise will reject with an Error if transfer signature prompt is cancelled or resolve with the `secrethash` value (a transfer unique key) as soon as it's registered. You can use this `secrethash` property of the objects emitted by `transfers$` as a unique key to keep track of specific transfers.
+
+```typescript
+import { RaidenSentTransfer } from 'raiden-ts';
+
+const transfers: { [secrethash: string]: RaidenSentTransfer } = {};
+raiden.transfers$.subscribe(transfer => {
+  transfers[transfer.secrethash] = transfer;
+  console.log('Transfers updated:', transfers);
+});
+const secrethash: string = await raiden.transfer('0xtoken', '0xtarget', 10);
+
+## channels$ output, as balance & capacity are updated:
+# Raiden channels: {
+#   '0xtoken': {
+#     '0xpartner': {
+#       token: '0xtoken',
+#       tokenNetwork: '0xtokenNetwork',
+#       partner: '0xpartner',
+#       state: 'open',
+#       ownDeposit: BigNumber(100),
+#       partnerDeposit: BigNumber(0),
+#       id: 123,
+#       settleTimeout: 500,
+#       openBlock: 5123
+#       balance: BigNumber(-10), // you spent 10 tokens
+#       capacity: BigNumber(90), // capacity is reduced as well
+#     }
+#   }
+# }
+
+## transfers$ output:
+# Transfers updated: {
+#   [secrethash]: {
+#     secrethash,
+#     status: 'PENDING', // see RaidenSentTransferStatus enum imported from 'raiden-ts'
+#     initiator: '0xourAddress'
+#     recipient: '0xpartner',
+#     target: '0xtarget',
+#     paymentId: BigNumber(99123), // auto-generated if not passed as `opts.paymentId` to transfer
+#     chainId, // channel info
+#     token: '0xtoken',
+#     tokenNetwork: '0xtokenNetwork',
+#     channelId: 123,
+#     amount: BigNumber(10),
+#     expirationBlock: 5223,
+#     fee: BigNumber(0),
+#     startedAt: new Date(1566929562387),
+#     changedAt: new Date(1566929562387),
+#     success: undefined, // set as soon as known if transfer was revealed or failed
+#     completed: false, // true after no more actions are pending for this transfer
+#   }
+# }
+
+```
+
 
 ### Closing a channel
 
@@ -179,13 +249,18 @@ await raiden.closeChannel('0xtoken', '0xpartner')
 # Raiden channels: {
 #   '0xtoken': {
 #     '0xpartner': {
+#       token: '0xtoken',
+#       tokenNetwork: '0xtokenNetwork',
+#       partner: '0xpartner',
 #       state: 'closed',
-#       totalDeposit: BigNumber(100),
+#       ownDeposit: BigNumber(100),
 #       partnerDeposit: BigNumber(0),
 #       id: 123,
 #       settleTimeout: 500,
 #       openBlock: 5123
 #       closeBlock: 5999,
+#       balance: BigNumber(-10),
+#       capacity: BigNumber(90),
 #     }
 #   }
 # }
