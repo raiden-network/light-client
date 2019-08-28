@@ -11,7 +11,7 @@ import { ContractsInfo, RaidenContracts } from 'raiden-ts/types';
 import { Address } from 'raiden-ts/utils/types';
 import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../../contracts/TokenNetwork';
-import { Token } from '../../contracts/Token';
+import { HumanStandardToken } from '../../contracts/HumanStandardToken';
 import Contracts from '../../contracts.json';
 
 export class TestProvider extends Web3Provider {
@@ -114,7 +114,7 @@ export class TestProvider extends Web3Provider {
           [tokenNetworkAddress]: tokenNetworkContract,
         },
         tokens: {
-          [tokenContract.address]: tokenContract as Token,
+          [tokenContract.address]: tokenContract as HumanStandardToken,
         },
       },
     ];

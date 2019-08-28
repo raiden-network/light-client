@@ -7,7 +7,7 @@ import { MatrixClient } from 'matrix-js-sdk';
 
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
-import { Token } from '../contracts/Token';
+import { HumanStandardToken } from '../contracts/HumanStandardToken';
 
 import { RaidenAction } from './actions';
 import { RaidenState } from './state';
@@ -26,7 +26,7 @@ export interface ContractsInfo {
 export interface RaidenContracts {
   registry: TokenNetworkRegistry;
   tokenNetworks: { [address: string]: TokenNetwork };
-  tokens: { [address: string]: Token };
+  tokens: { [address: string]: HumanStandardToken };
 }
 
 export interface RaidenEpicDeps {
@@ -40,7 +40,7 @@ export interface RaidenEpicDeps {
   contractsInfo: ContractsInfo;
   registryContract: TokenNetworkRegistry;
   getTokenNetworkContract: (address: Address) => TokenNetwork;
-  getTokenContract: (address: Address) => Token;
+  getTokenContract: (address: Address) => HumanStandardToken;
 }
 
 export interface RaidenChannel {
