@@ -146,18 +146,6 @@ export function transfersReducer(
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
     return state;
-  } else if (isActionOf(transferUnlockProcessed, action)) {
-    if (!(action.meta.secrethash in state.sent)) return state;
-    return {
-      ...state,
-      sent: {
-        ...state.sent,
-        [action.meta.secrethash]: {
-          ...state.sent[action.meta.secrethash],
-          unlockProcessed: timed(action.payload.message),
-        },
-      },
-    };
   } else if (isActionOf(transferExpired, action)) {
     const lockExpired = action.payload.message,
       secrethash = action.meta.secrethash;
@@ -200,6 +188,18 @@ export function transfersReducer(
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
     return state;
+  } else if (isActionOf(transferUnlockProcessed, action)) {
+    if (!(action.meta.secrethash in state.sent)) return state;
+    return {
+      ...state,
+      sent: {
+        ...state.sent,
+        [action.meta.secrethash]: {
+          ...state.sent[action.meta.secrethash],
+          unlockProcessed: timed(action.payload.message),
+        },
+      },
+    };
   } else if (isActionOf(transferExpireProcessed, action)) {
     if (!(action.meta.secrethash in state.sent)) return state;
     return {
@@ -213,24 +213,26 @@ export function transfersReducer(
       },
     };
   } else if (isActionOf(transferRefunded, action)) {
-    const refund = action.payload.message,
-      secrethash = action.meta.secrethash,
-      channelPath = ['channels', refund.token_network_address, refund.initiator];
-    let channel: Channel | undefined = get(channelPath, state);
-    if (!(secrethash in state.sent) || !channel) return state;
-
-    const sentTransfer: SentTransfer = { ...state.sent[secrethash], refund: timed(refund) };
-
-    state = set(channelPath, channel, state);
-    state = set(['sent', secrethash], sentTransfer, state);
-    return state;
+    if (!(action.meta.secrethash in state.sent)) return state;
+    return {
+      ...state,
+      sent: {
+        ...state.sent,
+        [action.meta.secrethash]: {
+          ...state.sent[action.meta.secrethash],
+          refund: timed(action.payload.message),
+        },
+      },
+    };
   } else if (isActionOf(channelClosed, action)) {
     return {
       ...state,
       sent: mapValues(
         (v: SentTransfer): SentTransfer =>
           // if transfer was on this channel, persist CloseChannel txHash, else pass
-          v.transfer[1].channel_identifier.eq(action.payload.id)
+          v.transfer[1].channel_identifier.eq(action.payload.id) &&
+          v.transfer[1].recipient === action.meta.partner &&
+          v.transfer[1].token_network_address === action.meta.tokenNetwork
             ? { ...v, channelClosed: timed(action.payload.txHash) }
             : v,
       )(state.sent),
