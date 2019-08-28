@@ -77,27 +77,23 @@ export function makeMessageId(): UInt<8> {
  * @returns  Public raiden sent transfer info object
  */
 export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
-  const [status, changedAt]: [RaidenSentTransferStatus, number] =
-      // channelClosed after secret revealed or unlocked
-      sent.channelClosed && (sent.secretReveal || sent.unlock)
-        ? [RaidenSentTransferStatus.succeeded, sent.channelClosed[0]]
-        : sent.channelClosed // channelClosed before
-        ? [RaidenSentTransferStatus.failed, sent.channelClosed[0]]
-        : sent.lockExpiredProcessed
-        ? [RaidenSentTransferStatus.failed, sent.lockExpiredProcessed[0]]
-        : sent.unlockProcessed
-        ? [RaidenSentTransferStatus.succeeded, sent.unlockProcessed[0]]
-        : sent.lockExpired
-        ? [RaidenSentTransferStatus.expired, sent.lockExpired[0]]
-        : sent.refund
-        ? [RaidenSentTransferStatus.refunded, sent.refund[0]]
-        : sent.unlock
-        ? [RaidenSentTransferStatus.unlocked, sent.unlock[0]]
-        : sent.secretReveal
-        ? [RaidenSentTransferStatus.revealed, sent.secretReveal[0]]
-        : sent.transferProcessed
-        ? [RaidenSentTransferStatus.received, sent.transferProcessed[0]]
-        : [RaidenSentTransferStatus.pending, sent.transfer[0]],
+  const [status, changedAt]: [RaidenSentTransferStatus, number] = sent.lockExpiredProcessed
+      ? [RaidenSentTransferStatus.expired, sent.lockExpiredProcessed[0]]
+      : sent.unlockProcessed
+      ? [RaidenSentTransferStatus.unlocked, sent.unlockProcessed[0]]
+      : sent.lockExpired
+      ? [RaidenSentTransferStatus.expiring, sent.lockExpired[0]]
+      : sent.unlock
+      ? [RaidenSentTransferStatus.unlocking, sent.unlock[0]]
+      : sent.secretReveal
+      ? [RaidenSentTransferStatus.revealed, sent.secretReveal[0]]
+      : sent.channelClosed // channelClosed before revealing
+      ? [RaidenSentTransferStatus.closed, sent.channelClosed[0]]
+      : sent.refund
+      ? [RaidenSentTransferStatus.refunded, sent.refund[0]]
+      : sent.transferProcessed
+      ? [RaidenSentTransferStatus.received, sent.transferProcessed[0]]
+      : [RaidenSentTransferStatus.pending, sent.transfer[0]],
     success: boolean | undefined =
       sent.secretReveal || sent.unlock
         ? true
