@@ -1,0 +1,3 @@
+[submodule "raiden-ts/raiden-contracts"]
+	path = raiden-ts/raiden-contracts
+	url = https://github.com/raiden-network/raiden-contracts

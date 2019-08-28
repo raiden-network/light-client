@@ -12,8 +12,10 @@
     "build": "npm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json",
     "test": "npm run lint && NODE_ENV=development jest --coverage=true",
     "lint": "eslint src/**/*.ts",
-    "clean": "rimraf dist/ dist:cjs/ contracts/ .coverage/",
-    "contracts": "typechain --target=ethers 'src/abi/*.json' --outDir contracts",
+    "clean": "rimraf dist/ dist:cjs/ .coverage/ contracts/ src/abi/ src/deployment/",
+    "contracts:copy": "node ./scripts/copyContracts.js",
+    "contracts:build": "typechain --target=ethers 'src/abi/*.json' --outDir contracts",
+    "contracts": "npm run contracts:copy && npm run contracts:build",
     "postinstall": "npm run build",
     "prepare": "npm run clean && npm run build"
   },
