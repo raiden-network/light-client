@@ -38,7 +38,7 @@ import { ContractsInfo, RaidenContracts, RaidenEpicDeps, TokenInfo } from './typ
 import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
-import { RaidenChannel } from './channels/state';
+import { RaidenChannels } from './channels/state';
 import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
@@ -88,7 +88,7 @@ export class Raiden {
    * channels$ is public interface, exposing a view of the currently known channels
    * Its format is expected to be kept backwards-compatible, and may be relied on
    */
-  public readonly channels$: Observable<{ [token: string]: { [partner: string]: RaidenChannel } }>;
+  public readonly channels$: Observable<RaidenChannels>;
   /**
    * A subset ot RaidenActions exposed as public events.
    * The interface of the objects emitted by this Observable are expected not to change internally,
