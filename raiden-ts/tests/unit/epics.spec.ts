@@ -1218,11 +1218,11 @@ describe('raidenRootEpic', () => {
         channelId,
         partner,
         depsMock.address,
-        expect.any(String), // balance_hash
-        expect.any(Number), // nonce
-        expect.any(String), // additional_hash
-        expect.anything(), // non_closing_signature
-        expect.anything(), // closing_signature
+        HashZero, // balance_hash
+        Zero, // nonce
+        HashZero, // additional_hash
+        expect.any(String), // non_closing_signature
+        expect.any(String), // closing_signature
       );
       expect(closeTx.wait).toHaveBeenCalledTimes(1);
     });

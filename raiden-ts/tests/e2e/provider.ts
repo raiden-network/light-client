@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import ganache, { GanacheServerOptions } from 'ganache-cli';
 import memdown from 'memdown';
 import { range } from 'lodash';
 import asyncPool from 'tiny-async-pool';
 
 import { Web3Provider } from 'ethers/providers';
+import { MaxUint256 } from 'ethers/constants';
 import { ContractFactory, Contract } from 'ethers/contract';
 import { parseUnits } from 'ethers/utils';
 
@@ -12,15 +14,16 @@ import { Address } from 'raiden-ts/utils/types';
 import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../../contracts/TokenNetwork';
 import { HumanStandardToken } from '../../contracts/HumanStandardToken';
-import Contracts from '../../contracts.json';
+import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
 
 export class TestProvider extends Web3Provider {
   public constructor(opts?: GanacheServerOptions) {
     super(
       ganache.provider({
-        total_accounts: 3, // eslint-disable-line @typescript-eslint/camelcase
-        default_balance_ether: 5, // eslint-disable-line @typescript-eslint/camelcase
+        total_accounts: 3,
+        default_balance_ether: 5,
         seed: 'testrpc_provider',
+        network_id: 1338,
         db: memdown(),
         // logger: console,
         ...opts,
@@ -68,7 +71,7 @@ export class TestProvider extends Web3Provider {
       Contracts.contracts.TokenNetworkRegistry.abi,
       Contracts.contracts.TokenNetworkRegistry.bin,
       signer,
-    ).deploy(secretRegistryContract.address, this.network.chainId, 500, 555428);
+    ).deploy(secretRegistryContract.address, this.network.chainId, 500, 555428, 1);
     await registryContract.deployed();
     const registyDeployBlock = registryContract.deployTransaction.blockNumber;
 
@@ -87,9 +90,12 @@ export class TestProvider extends Web3Provider {
     );
     await Promise.all(txs);
 
-    const tx = await registryContract.functions.createERC20TokenNetwork(tokenContract.address, {
-      gasLimit: 6e6,
-    });
+    const tx = await registryContract.functions.createERC20TokenNetwork(
+      tokenContract.address,
+      MaxUint256,
+      MaxUint256,
+      { gasLimit: 6e6 },
+    );
     await tx.wait();
 
     const tokenNetworkAddress = await registryContract.functions.token_to_token_networks(

@@ -7,7 +7,7 @@ import { keccak256, verifyMessage } from 'ethers/utils';
 import { concat, hexlify, arrayify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
-import { Address, Hash, HexString, Signature } from '../utils/types';
+import { Address, Hash, HexString, Signature, UInt } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { SignedBalanceProof } from '../channels/types';
 import { EnvelopeMessage, Message, MessageType, SignedMessageCodecs, Signed } from './types';
@@ -22,6 +22,26 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.UNLOCK]: 4,
   [MessageType.LOCK_EXPIRED]: 13,
 };
+
+/**
+ * Returns a balance_hash from transferred&locked amounts & locksroot
+ *
+ * @param transferredAmount  EnvelopeMessage.transferred_amount
+ * @param lockedAmount  EnvelopeMessage.locked_amount
+ * @param locksroot  Hash of all current locks
+ * @returns  Hash of the balance
+ */
+export function createBalanceHash(
+  transferredAmount: UInt<32>,
+  lockedAmount: UInt<32>,
+  locksroot: Hash,
+): Hash {
+  return (transferredAmount.isZero() && lockedAmount.isZero() && locksroot === HashZero
+    ? HashZero
+    : keccak256(
+        concat([encode(transferredAmount, 32), encode(lockedAmount, 32), encode(locksroot, 32)]),
+      )) as Hash;
+}
 
 /**
  * Create the messageHash for a given EnvelopeMessage
@@ -127,17 +147,11 @@ export function packMessage(message: Message) {
     case MessageType.UNLOCK:
     case MessageType.LOCK_EXPIRED: {
       const messageHash = createMessageHash(message),
-        balanceHash = (message.transferred_amount.isZero() &&
-        message.locked_amount.isZero() &&
-        message.locksroot === HashZero
-          ? HashZero
-          : keccak256(
-              concat([
-                encode(message.transferred_amount, 32),
-                encode(message.locked_amount, 32),
-                encode(message.locksroot, 32),
-              ]),
-            )) as Hash;
+        balanceHash = createBalanceHash(
+          message.transferred_amount,
+          message.locked_amount,
+          message.locksroot,
+        );
       return hexlify(
         concat([
           encode(message.token_network_address, 20),
@@ -148,7 +162,7 @@ export function packMessage(message: Message) {
           encode(message.nonce, 32),
           encode(messageHash, 32), // additional hash
         ]),
-      ) as HexString<180>;
+      ) as HexString<212>;
     }
     case MessageType.SECRET_REQUEST:
       return hexlify(

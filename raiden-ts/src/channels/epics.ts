@@ -17,7 +17,7 @@ import {
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { findKey, get, isEmpty, negate } from 'lodash';
 
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, hexlify, concat } from 'ethers/utils';
 import { Event } from 'ethers/contract';
 import { HashZero, Zero } from 'ethers/constants';
 
@@ -44,8 +44,9 @@ import {
   channelSettled,
 } from './actions';
 import { SignatureZero, ShutdownReason } from '../constants';
-import { Address, Hash, UInt } from '../utils/types';
+import { Address, Hash, UInt, Signature } from '../utils/types';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
+import { encode } from '../utils/data';
 
 /**
  * Register for new block events and emit newBlock actions for new blocks
@@ -593,7 +594,7 @@ export const channelDepositEpic = (
 export const channelCloseEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, getTokenNetworkContract }: RaidenEpicDeps,
+  { address, network, getTokenNetworkContract, signer }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelCloseFailed>> =>
   action$.pipe(
     filter(isActionOf(channelClose)),
@@ -616,19 +617,49 @@ export const channelCloseEpic = (
       }
       const channelId = channel.id;
 
-      // send closeChannel transaction
-      return from(
-        tokenNetworkContract.functions.closeChannel(
-          channelId,
-          action.meta.partner,
-          address,
-          HashZero,
-          0,
-          HashZero,
-          SignatureZero,
-          SignatureZero,
+      let balanceHash = HashZero as Hash,
+        nonce = Zero as UInt<8>,
+        additionalHash = HashZero as Hash,
+        nonClosingSignature = hexlify(SignatureZero) as Signature;
+
+      // TODO: enable this after we're able to receive transfers
+      // if (channel.partner.balanceProof) {
+      //   balanceHash = createBalanceHash(
+      //     channel.partner.balanceProof.transferredAmount,
+      //     channel.partner.balanceProof.lockedAmount,
+      //     channel.partner.balanceProof.locksroot,
+      //   );
+      //   nonce = channel.partner.balanceProof.nonce;
+      //   additionalHash = channel.partner.balanceProof.messageHash;
+      //   nonClosingSignature = channel.partner.balanceProof.signature;
+      // }
+
+      const closingMessage = concat([
+        encode(action.meta.tokenNetwork, 20),
+        encode(network.chainId, 32),
+        encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
+        encode(channelId, 32),
+        encode(balanceHash, 32),
+        encode(nonce, 32),
+        encode(additionalHash, 32),
+        encode(nonClosingSignature, 65), // partner's signature for this balance proof
+      ]); // UInt8Array of 277 bytes
+
+      // sign counter balance proof (while we don't receive transfers yet, it's always zero),
+      // then send closeChannel transaction with our signature
+      return from(signer.signMessage(closingMessage) as Promise<Signature>).pipe(
+        mergeMap(closingSignature =>
+          tokenNetworkContract.functions.closeChannel(
+            channelId,
+            action.meta.partner,
+            address,
+            balanceHash,
+            nonce,
+            additionalHash,
+            nonClosingSignature,
+            closingSignature,
+          ),
         ),
-      ).pipe(
         tap(tx =>
           console.log(`sent closeChannel tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
         ),
