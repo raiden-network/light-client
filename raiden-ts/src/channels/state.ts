@@ -52,6 +52,7 @@ export const Channel = t.intersection([
         id: t.number,
         settleTimeout: t.number,
         openBlock: t.number,
+        isFirstParticipant: t.boolean,
       }),
     ),
     t.readonly(
@@ -64,6 +65,7 @@ export const Channel = t.intersection([
         id: t.number,
         settleTimeout: t.number,
         openBlock: t.number,
+        isFirstParticipant: t.boolean,
         closeBlock: t.number,
       }),
     ),

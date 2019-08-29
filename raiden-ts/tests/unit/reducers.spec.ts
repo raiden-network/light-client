@@ -62,7 +62,8 @@ describe('raidenReducer', () => {
     settleTimeout = 500,
     openBlock = 5123,
     closeBlock = 5999,
-    settleBlock = closeBlock + settleTimeout + 1;
+    settleBlock = closeBlock + settleTimeout + 1,
+    isFirstParticipant = true;
 
   beforeEach(() => {
     state = cloneDeep({ ...initialState, address, blockNumber: 1337 });
@@ -115,7 +116,7 @@ describe('raidenReducer', () => {
       const newState = raidenReducer(
         state,
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash },
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       );
@@ -148,7 +149,7 @@ describe('raidenReducer', () => {
       state = raidenReducer(
         state,
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash },
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       );
@@ -230,7 +231,7 @@ describe('raidenReducer', () => {
       state = raidenReducer(
         state,
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash },
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       );
@@ -264,7 +265,7 @@ describe('raidenReducer', () => {
       state = raidenReducer(
         state,
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash },
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       );
@@ -300,7 +301,7 @@ describe('raidenReducer', () => {
       // channel in closing state
       state = [
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash },
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
         channelClose(undefined, { tokenNetwork, partner }),
@@ -329,7 +330,7 @@ describe('raidenReducer', () => {
       // channel in "open" state
       state = [
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash },
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -377,7 +378,7 @@ describe('raidenReducer', () => {
       // channel in "closed" state
       state = [
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash },
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
         channelClosed(
@@ -437,7 +438,7 @@ describe('raidenReducer', () => {
       // channel starts in "opened" state
       state = [
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash },
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -598,7 +599,7 @@ describe('raidenReducer', () => {
       state = raidenReducer(
         state,
         channelOpened(
-          { id: channelId, settleTimeout, openBlock, txHash },
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       );
