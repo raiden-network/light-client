@@ -597,6 +597,7 @@ describe('raidenReducer', () => {
         target: partner,
         initiator: address,
         fee: Zero as UInt<32>,
+        metadata: { routes: [{ route: [partner] }] },
         signature: makeSignature(),
       };
 
@@ -822,6 +823,7 @@ describe('raidenReducer', () => {
           lock: transfer.lock,
           locksroot: transfer.locksroot,
           fee: Zero as UInt<32>,
+          metadata: { routes: [{ route: [partner] }] },
           signature: makeSignature(),
         },
         newState = [transferRefunded({ message: refund }, { secrethash })].reduce(

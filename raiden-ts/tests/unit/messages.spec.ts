@@ -12,6 +12,10 @@ import {
   Unlock,
   Signed,
   Metadata,
+  ToDevice,
+  WithdrawRequest,
+  WithdrawConfirmation,
+  WithdrawExpired,
 } from 'raiden-ts/messages/types';
 import {
   packMessage,
@@ -407,5 +411,144 @@ describe('sign/verify, pack & encode/decode ', () => {
     expect(createMetadataHash(metadata)).toEqual(
       '0x24b7955a3be270fd6c9513737759f42741653e9e39d901f7e2f255cc71dd4ae5',
     );
+  });
+
+  test('ToDevice', async () => {
+    const message: ToDevice = {
+      type: MessageType.TO_DEVICE,
+      message_identifier: bigNumberify(123456) as UInt<8>,
+    };
+
+    expect(packMessage(message)).toEqual('0x0e000000000000000001e240');
+
+    const signed = await signMessage(signer, message);
+    expect(Signed(ToDevice).is(signed)).toBe(true);
+    expect(signed.signature).toBe(
+      '0x26674d7687baf09d21185664daf85cf6a9f9671d61f00e85d32621a721c3b4e251197dafe01d6930f1d86177e119dd0948f206d352204eb986b286b6b76a541d1b',
+    );
+    expect(getMessageSigner(signed)).toBe(address);
+
+    const encoded = encodeJsonMessage(signed);
+    expect(encoded).toBe(
+      '{"type":"ToDevice","message_identifier":123456,"signature":"0x26674d7687baf09d21185664daf85cf6a9f9671d61f00e85d32621a721c3b4e251197dafe01d6930f1d86177e119dd0948f206d352204eb986b286b6b76a541d1b"}',
+    );
+
+    const decoded = decodeJsonMessage(encoded);
+    expect(decoded).toEqual(signed);
+
+    // test sign already signed message return original object
+    const signed2 = await signMessage(signer, signed);
+    expect(signed2).toBe(signed);
+  });
+
+  test('WithdrawRequest', async () => {
+    const message: WithdrawRequest = {
+      type: MessageType.WITHDRAW_REQUEST,
+      chain_id: bigNumberify(337) as UInt<32>,
+      message_identifier: bigNumberify(123456) as UInt<8>,
+      token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
+      channel_identifier: bigNumberify(1338) as UInt<32>,
+      participant: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
+      total_withdraw: bigNumberify('10000000000000000000') as UInt<32>,
+      nonce: bigNumberify(135) as UInt<8>,
+      expiration: bigNumberify(182811) as UInt<32>,
+    };
+
+    expect(packMessage(message)).toEqual(
+      '0xe82ae5475589b828d3644e1b56546f93cd27d1a400000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000053a2a915fda69746f515b46c520ed511401d5ccd5e20000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000000000000000002ca1b',
+    );
+
+    const signed = await signMessage(signer, message);
+    expect(Signed(WithdrawRequest).is(signed)).toBe(true);
+    expect(signed.signature).toBe(
+      '0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c',
+    );
+    expect(getMessageSigner(signed)).toBe(address);
+
+    const encoded = encodeJsonMessage(signed);
+    expect(encoded).toBe(
+      '{"type":"WithdrawRequest","chain_id":337,"message_identifier":123456,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":1338,"participant":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","total_withdraw":10000000000000000000,"nonce":135,"expiration":182811,"signature":"0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c"}',
+    );
+
+    const decoded = decodeJsonMessage(encoded);
+    expect(decoded).toEqual(signed);
+
+    // test sign already signed message return original object
+    const signed2 = await signMessage(signer, signed);
+    expect(signed2).toBe(signed);
+  });
+
+  test('WithdrawConfirmation', async () => {
+    const message: WithdrawConfirmation = {
+      type: MessageType.WITHDRAW_CONFIRMATION,
+      chain_id: bigNumberify(337) as UInt<32>,
+      message_identifier: bigNumberify(123456) as UInt<8>,
+      token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
+      channel_identifier: bigNumberify(1338) as UInt<32>,
+      participant: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
+      total_withdraw: bigNumberify('10000000000000000000') as UInt<32>,
+      nonce: bigNumberify(135) as UInt<8>,
+      expiration: bigNumberify(182811) as UInt<32>,
+    };
+
+    expect(packMessage(message)).toEqual(
+      '0xe82ae5475589b828d3644e1b56546f93cd27d1a400000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000053a2a915fda69746f515b46c520ed511401d5ccd5e20000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000000000000000002ca1b',
+    );
+
+    const signed = await signMessage(signer, message);
+    expect(Signed(WithdrawConfirmation).is(signed)).toBe(true);
+    expect(signed.signature).toBe(
+      '0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c',
+    );
+    expect(getMessageSigner(signed)).toBe(address);
+
+    const encoded = encodeJsonMessage(signed);
+    expect(encoded).toBe(
+      '{"type":"WithdrawConfirmation","chain_id":337,"message_identifier":123456,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":1338,"participant":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","total_withdraw":10000000000000000000,"nonce":135,"expiration":182811,"signature":"0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c"}',
+    );
+
+    const decoded = decodeJsonMessage(encoded);
+    expect(decoded).toEqual(signed);
+
+    // test sign already signed message return original object
+    const signed2 = await signMessage(signer, signed);
+    expect(signed2).toBe(signed);
+  });
+
+  test('WithdrawExpired', async () => {
+    const message: WithdrawExpired = {
+      type: MessageType.WITHDRAW_EXPIRED,
+      chain_id: bigNumberify(337) as UInt<32>,
+      message_identifier: bigNumberify(123456) as UInt<8>,
+      token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
+      channel_identifier: bigNumberify(1338) as UInt<32>,
+      participant: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
+      total_withdraw: bigNumberify('10000000000000000000') as UInt<32>,
+      nonce: bigNumberify(135) as UInt<8>,
+      expiration: bigNumberify(182811) as UInt<32>,
+    };
+
+    expect(packMessage(message)).toEqual(
+      '0xe82ae5475589b828d3644e1b56546f93cd27d1a400000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000053a2a915fda69746f515b46c520ed511401d5ccd5e20000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000000000000000002ca1b',
+    );
+
+    const signed = await signMessage(signer, message);
+    expect(Signed(WithdrawExpired).is(signed)).toBe(true);
+    expect(signed.signature).toBe(
+      '0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c',
+    );
+    expect(getMessageSigner(signed)).toBe(address);
+
+    const encoded = encodeJsonMessage(signed);
+    expect(encoded).toBe(
+      '{"type":"WithdrawExpired","chain_id":337,"message_identifier":123456,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":1338,"participant":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","total_withdraw":10000000000000000000,"nonce":135,"expiration":182811,"signature":"0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c"}',
+    );
+
+    const decoded = decodeJsonMessage(encoded);
+    expect(decoded).toEqual(signed);
+
+    // test sign already signed message return original object
+    const signed2 = await signMessage(signer, signed);
+    expect(signed2).toBe(signed);
   });
 });
