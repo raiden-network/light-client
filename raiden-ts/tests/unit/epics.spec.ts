@@ -3764,6 +3764,7 @@ describe('raidenRootEpic', () => {
           locked_amount: signedTransfer.locked_amount, // "forgot" to decrease locked_amount
           lock: signedTransfer.lock,
           locksroot: signedTransfer.locksroot,
+          metadata: { routes: [{ route: [depsMock.address] }] },
           fee: Zero as UInt<32>,
         };
         refund = await signMessage(partnerSigner, message);

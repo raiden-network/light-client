@@ -181,6 +181,9 @@ function makeAndSignTransfer(
         target: action.payload.target,
         initiator: address,
         fee,
+        metadata: {
+          routes: [{ route: [action.payload.target] }],
+        },
       };
       return from(signMessage(signer, message)).pipe(
         mergeMap(function*(signed) {
