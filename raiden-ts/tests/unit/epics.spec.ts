@@ -19,7 +19,7 @@ import { get, range } from 'lodash';
 
 import { Wallet } from 'ethers';
 import { AddressZero, Zero, HashZero, One } from 'ethers/constants';
-import { bigNumberify, verifyMessage, BigNumber, keccak256 } from 'ethers/utils';
+import { bigNumberify, verifyMessage, BigNumber } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { ContractTransaction } from 'ethers/contract';
 
@@ -103,7 +103,7 @@ import {
   LockExpired,
   RefundTransfer,
 } from 'raiden-ts/messages/types';
-import { makeMessageId, makeSecret } from 'raiden-ts/transfers/utils';
+import { makeMessageId, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
 import {
   transfer,
@@ -2387,7 +2387,7 @@ describe('raidenRootEpic', () => {
 
   describe('transfer: request', () => {
     const secret = makeSecret(),
-      secrethash = keccak256(secret) as Hash,
+      secrethash = getSecrethash(secret),
       amount = bigNumberify(10) as UInt<32>,
       openBlock = 121;
 
@@ -2636,7 +2636,7 @@ describe('raidenRootEpic', () => {
 
   describe('transfer: epics depending on pending transfer', () => {
     const secret = makeSecret(),
-      secrethash = keccak256(secret) as Hash,
+      secrethash = getSecrethash(secret),
       amount = bigNumberify(10) as UInt<32>,
       openBlock = 121;
 

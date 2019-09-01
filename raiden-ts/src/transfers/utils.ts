@@ -1,5 +1,5 @@
 import { concat, hexlify } from 'ethers/utils/bytes';
-import { keccak256, randomBytes, bigNumberify } from 'ethers/utils';
+import { keccak256, randomBytes, bigNumberify, sha256 } from 'ethers/utils';
 import { HashZero } from 'ethers/constants';
 import { isEmpty } from 'lodash';
 
@@ -22,6 +22,17 @@ export function getLocksroot(locks: readonly Lock[]): Hash {
   for (const lock of locks)
     encoded.push(encode(lock.expiration, 32), encode(lock.amount, 32), lock.secrethash);
   return keccak256(concat(encoded)) as Hash;
+}
+
+/**
+ * Return the secrethash of a given secret
+ * On Alderaan, the sha256 hash is used for the secret.
+ *
+ * @param secret  Secret to get the hash from
+ * @returns  hash of the secret
+ */
+export function getSecrethash(secret: Secret): Hash {
+  return sha256(secret) as Hash;
 }
 
 /**

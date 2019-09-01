@@ -18,7 +18,7 @@ import {
   tap,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
-import { bigNumberify, keccak256 } from 'ethers/utils';
+import { bigNumberify } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import { findKey, get } from 'lodash';
 
@@ -65,7 +65,7 @@ import {
   transferUnlockProcessed,
   transferExpireProcessed,
 } from './actions';
-import { getLocksroot, makePaymentId, makeMessageId } from './utils';
+import { getLocksroot, makePaymentId, makeMessageId, getSecrethash } from './utils';
 
 /**
  * Create an observable to compose and sign a LockedTransfer message/transferSigned action
@@ -99,7 +99,7 @@ function makeAndSignTransfer(
         throw new Error('target not available/online');
 
       let secret = action.payload.secret;
-      if (secret && keccak256(secret) !== action.meta.secrethash) {
+      if (secret && getSecrethash(secret) !== action.meta.secrethash) {
         throw new Error('secrethash does not match provided secret');
       }
 
@@ -819,7 +819,7 @@ export const transferSecretRevealedEpic = (
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
       if (!message || !Signed(SecretReveal).is(message)) return;
-      const secrethash = keccak256(message.secret) as Hash;
+      const secrethash = getSecrethash(message.secret);
       if (
         !(secrethash in state.sent) ||
         action.meta.address !== state.sent[secrethash].transfer[1].recipient ||

@@ -24,7 +24,7 @@ import {
   channelSettled,
 } from 'raiden-ts/channels/actions';
 import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden-ts/transport/actions';
-import { ChannelState } from 'raiden-ts/channels';
+import { ChannelState, Lock } from 'raiden-ts/channels';
 import { Address, Hash, Secret, UInt } from 'raiden-ts/utils/types';
 import {
   transferSecret,
@@ -48,7 +48,12 @@ import {
   SecretReveal,
   RefundTransfer,
 } from 'raiden-ts/messages/types';
-import { makeMessageId, makePaymentId } from 'raiden-ts/transfers/utils';
+import {
+  makeMessageId,
+  makePaymentId,
+  getSecrethash,
+  getLocksroot,
+} from 'raiden-ts/transfers/utils';
 import { makeSignature } from './mocks';
 
 describe('raidenReducer', () => {
@@ -568,7 +573,13 @@ describe('raidenReducer', () => {
   /* eslint-disable @typescript-eslint/camelcase */
   describe('transfers', () => {
     const secret = keccak256('0xdeadbeef') as Secret,
-      secrethash = keccak256(secret) as Hash,
+      secrethash = getSecrethash(secret),
+      lock: Lock = {
+        type: 'Lock',
+        amount: bigNumberify(10) as UInt<32>,
+        expiration: One as UInt<32>,
+        secrethash,
+      },
       transfer: Signed<LockedTransfer> = {
         type: MessageType.LOCKED_TRANSFER,
         chain_id: bigNumberify(337) as UInt<32>,
@@ -581,13 +592,8 @@ describe('raidenReducer', () => {
         transferred_amount: Zero as UInt<32>,
         locked_amount: bigNumberify(10) as UInt<32>,
         recipient: partner,
-        locksroot: '0x0f62facb2351def6af297be573082446fdc8b74a8361fba9376f3b083afd5271' as Hash,
-        lock: {
-          type: 'Lock',
-          amount: bigNumberify(10) as UInt<32>,
-          expiration: One as UInt<32>,
-          secrethash,
-        },
+        locksroot: getLocksroot([lock]),
+        lock,
         target: partner,
         initiator: address,
         fee: Zero as UInt<32>,

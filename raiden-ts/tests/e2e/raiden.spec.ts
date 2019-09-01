@@ -18,10 +18,10 @@ import { initialState } from 'raiden-ts/state';
 import { raidenShutdown } from 'raiden-ts/actions';
 import { newBlock } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
-import { Storage, Hash } from 'raiden-ts/utils/types';
+import { Storage, Secret } from 'raiden-ts/utils/types';
 import { ContractsInfo, RaidenContracts } from 'raiden-ts/types';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/types';
-import { makeSecret } from 'raiden-ts/transfers/utils';
+import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
@@ -437,7 +437,7 @@ describe('Raiden', () => {
     test("secret and secrethash doesn't match", async () => {
       expect.assertions(1);
       const secret = makeSecret(),
-        secrethash: Hash = keccak256('0xdeadbeef') as Hash;
+        secrethash = getSecrethash(keccak256('0xdeadbeef') as Secret);
       await expect(
         raiden.transfer(token, partner, 17, { secret, secrethash }),
       ).rejects.toThrowError('Secret and secrethash must match');

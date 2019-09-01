@@ -1,13 +1,6 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import {
-  Network,
-  ParamType,
-  BigNumber,
-  bigNumberify,
-  BigNumberish,
-  keccak256,
-} from 'ethers/utils';
+import { Network, ParamType, BigNumber, bigNumberify, BigNumberish } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
@@ -70,7 +63,7 @@ import {
   matrixRequestMonitorPresence,
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
-import { makeSecret, raidenSentTransfer } from './transfers/utils';
+import { makeSecret, raidenSentTransfer, getSecrethash } from './transfers/utils';
 import { patchSignSend } from './utils/ethers';
 
 export class Raiden {
@@ -718,8 +711,8 @@ export class Raiden {
     }
     if (!secrethash) {
       if (!secret) secret = makeSecret();
-      secrethash = keccak256(secret) as Hash;
-    } else if (secret && keccak256(secret) !== secrethash) {
+      secrethash = getSecrethash(secret);
+    } else if (secret && getSecrethash(secret) !== secrethash) {
       throw new Error('Secret and secrethash must match if passing both');
     }
 
