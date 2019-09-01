@@ -24,7 +24,7 @@ import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
 import { splitCombined } from 'raiden-ts/utils/rxjs';
 import { makeLog, raidenEpicDeps } from './mocks';
-import { getLocksroot, lockhash, makeSecret } from 'raiden-ts/transfers/utils';
+import { getLocksroot, makeSecret } from 'raiden-ts/transfers/utils';
 import { HashZero } from 'ethers/constants';
 import { Lock } from 'raiden-ts/channels';
 
@@ -323,9 +323,11 @@ describe('messages', () => {
         secrethash: keccak256('0x3') as Hash,
       },
     ];
-    expect(getLocksroot([locks[0]])).toBe(lockhash(locks[0]));
+    expect(getLocksroot([locks[0]])).toBe(
+      '0x2599b6b40120cea50f91332d5ecbfd5b859f262c58c58d51a404c21e52a10cf0',
+    );
     expect(getLocksroot(locks)).toBe(
-      '0x4cd8409aa5d9830ecdbf8753e5d1844eb4e2cf52954b6598e045e87c1403b70a',
+      '0x4ef27fdafa11dc7c6e23248cda492c8e6bbadb311f9b99c5b2ffbcd0671c4879',
     );
   });
 
