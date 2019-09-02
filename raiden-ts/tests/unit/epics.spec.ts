@@ -2455,6 +2455,48 @@ describe('raidenRootEpic', () => {
       signerSpy.mockRestore();
     });
 
+    test('transferSigned fail recipient is not target', async () => {
+      const target = '0x1000000000000000000000000000000000010001' as Address;
+      const targetUserId = `@${target.toLowerCase()}:${matrixServer}`;
+      expect.assertions(1);
+
+      const action$ = of(
+          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+          matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+          transfer({ tokenNetwork, target: target, amount, secret }, { secrethash }),
+        ),
+        state$ = new BehaviorSubject(
+          [
+            tokenMonitored({ token, tokenNetwork, first: true }),
+            channelOpened(
+              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+              { tokenNetwork, partner },
+            ),
+            channelDeposited(
+              {
+                id: channelId,
+                participant: depsMock.address,
+                totalDeposit: bigNumberify(500),
+                txHash,
+              },
+              { tokenNetwork, partner },
+            ),
+            newBlock({ blockNumber: 125 }),
+          ].reduce(raidenReducer, state),
+        );
+
+      await expect(
+        transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(first())
+          .toPromise(),
+      ).resolves.toMatchObject({
+        type: getType(transferFailed),
+        payload: expect.any(Error),
+        error: true,
+        meta: { secrethash },
+      });
+    });
+
     test('transferSigned fail no route', async () => {
       expect.assertions(1);
 
