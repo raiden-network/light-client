@@ -138,6 +138,9 @@ function makeAndSignTransfer(
       if (!recipient)
         throw new Error('Could not find an online partner for tokenNetwork with enough capacity');
 
+      if (recipient !== action.payload.target)
+        throw new Error('Mediated transfers are currently not supported');
+
       const channel = state.channels[action.payload.tokenNetwork][recipient];
       // check below never fail, because of for loop filter, just for type narrowing
       if (channel.state !== ChannelState.open) throw new Error('not open');
