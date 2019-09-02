@@ -1,45 +1,38 @@
 import { concat, hexlify } from 'ethers/utils/bytes';
-import { keccak256, randomBytes, bigNumberify } from 'ethers/utils';
+import { keccak256, randomBytes, bigNumberify, sha256 } from 'ethers/utils';
 import { HashZero } from 'ethers/constants';
 import { isEmpty } from 'lodash';
 
-import { Hash, Secret, UInt } from '../utils/types';
+import { Hash, Secret, UInt, HexString } from '../utils/types';
 import { encode } from '../utils/data';
 import { Lock } from '../channels/types';
 import { SentTransfer } from './state';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from './types';
 
 /**
- * Return the hash of a lock
+ * Get the locksroot of a given array of pending locks
+ * On Alderaan, it's the keccak256 hash of the concatenation of the ordered locks data
  *
- * @param lock The lock to have the hash calculated from
- * @returns hash of lock
- */
-export function lockhash(lock: Lock) {
-  return keccak256(
-    concat([encode(lock.expiration, 32), encode(lock.amount, 32), lock.secrethash]),
-  ) as Hash;
-}
-
-/**
- * Get the locksroot of a given locks array using keccak256
- * On Red-Eyes, locksroot is the root of the merkle tree of the hashes of the locks
- * TODO: replace by list concat hash instead, after moving to raiden-contracts@^0.25
- *
- * @param locks Lock array to calculate the locksroot from
- * @returns hash of the locks array
+ * @param locks  Lock array to calculate the locksroot from
+ * @returns  hash of the locks array
  */
 export function getLocksroot(locks: readonly Lock[]): Hash {
   if (isEmpty(locks)) return HashZero as Hash;
-  const leaves = locks.map(lockhash);
+  const encoded: HexString[] = [];
+  for (const lock of locks)
+    encoded.push(encode(lock.expiration, 32), encode(lock.amount, 32), lock.secrethash);
+  return keccak256(concat(encoded)) as Hash;
+}
 
-  while (leaves.length > 1) {
-    for (let i = 0; i < leaves.length - 1; i++) {
-      leaves.splice(i, 2, keccak256(leaves[i] + leaves[i + 1].substr(2)) as Hash);
-    }
-  }
-
-  return leaves[0]; // merkle tree root
+/**
+ * Return the secrethash of a given secret
+ * On Alderaan, the sha256 hash is used for the secret.
+ *
+ * @param secret  Secret to get the hash from
+ * @returns  hash of the secret
+ */
+export function getSecrethash(secret: Secret): Hash {
+  return sha256(secret) as Hash;
 }
 
 /**

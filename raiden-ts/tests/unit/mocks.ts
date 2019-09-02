@@ -48,11 +48,11 @@ import { Wallet } from 'ethers/wallet';
 
 import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../../contracts/TokenNetwork';
-import { Token } from '../../contracts/Token';
+import { HumanStandardToken } from '../../contracts/HumanStandardToken';
 
 import TokenNetworkRegistryAbi from 'raiden-ts/abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from 'raiden-ts/abi/TokenNetwork.json';
-import TokenAbi from 'raiden-ts/abi/Token.json';
+import HumanStandardTokenAbi from 'raiden-ts/abi/HumanStandardToken.json';
 
 import { RaidenEpicDeps } from 'raiden-ts/types';
 import { RaidenAction } from 'raiden-ts/actions';
@@ -72,7 +72,7 @@ interface MockRaidenEpicDeps extends RaidenEpicDeps {
   provider: jest.Mocked<JsonRpcProvider>;
   registryContract: MockedContract<TokenNetworkRegistry>;
   getTokenNetworkContract: (address: string) => MockedContract<TokenNetwork>;
-  getTokenContract: (address: string) => MockedContract<Token>;
+  getTokenContract: (address: string) => MockedContract<HumanStandardToken>;
 }
 
 /**
@@ -159,12 +159,12 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     return tokenNetworkContracts[address];
   };
 
-  const tokenContracts: { [address: string]: MockedContract<Token> } = {};
-  const getTokenContract = (address: string): MockedContract<Token> => {
+  const tokenContracts: { [address: string]: MockedContract<HumanStandardToken> } = {};
+  const getTokenContract = (address: string): MockedContract<HumanStandardToken> => {
     if (!(address in tokenContracts)) {
-      const tokenContract = new Contract(address, TokenAbi, signer) as MockedContract<Token>;
+      const tokenContract = new Contract(address, HumanStandardTokenAbi, signer) as MockedContract<HumanStandardToken>;
       for (const func in tokenContract.functions) {
-        jest.spyOn(tokenContract.functions, func as keyof Token['functions']);
+        jest.spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions']);
       }
       tokenContracts[address] = tokenContract;
     }

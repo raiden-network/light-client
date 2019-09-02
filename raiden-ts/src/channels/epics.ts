@@ -17,7 +17,7 @@ import {
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { findKey, get, isEmpty, negate } from 'lodash';
 
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, hexlify, concat } from 'ethers/utils';
 import { Event } from 'ethers/contract';
 import { HashZero, Zero } from 'ethers/constants';
 
@@ -44,8 +44,9 @@ import {
   channelSettled,
 } from './actions';
 import { SignatureZero, ShutdownReason } from '../constants';
-import { Address, Hash } from '../utils/types';
+import { Address, Hash, UInt, Signature } from '../utils/types';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
+import { encode } from '../utils/data';
 
 /**
  * Register for new block events and emit newBlock actions for new blocks
@@ -242,6 +243,7 @@ export const tokenMonitoredEpic = (
                       id: id.toNumber(),
                       settleTimeout: settleTimeout.toNumber(),
                       openBlock: event.blockNumber!,
+                      isFirstParticipant: address === p1,
                       txHash: event.transactionHash! as Hash,
                     },
                     {
@@ -296,10 +298,10 @@ export const channelMonitoredEpic = (
               // type of elements emitted by getEventsStream (past and new events coming from
               // contract): [channelId, participant, totalDeposit, Event]
               type ChannelNewDepositEvent = [BigNumber, Address, BigNumber, Event];
-              // [channelId, participant, nonce, Event]
-              type ChannelClosedEvent = [BigNumber, Address, BigNumber, Event];
-              // [channelId, participant1amount, participant2amount, Event]
-              type ChannelSettledEvent = [BigNumber, BigNumber, BigNumber, Event];
+              // [channelId, participant, nonce, balanceHash, Event]
+              type ChannelClosedEvent = [BigNumber, Address, BigNumber, Hash, Event];
+              // [channelId, part1_amount, part1_locksroot, part2_amount, part2_locksroot Event]
+              type ChannelSettledEvent = [BigNumber, BigNumber, Hash, BigNumber, Hash, Event];
 
               // TODO: instead of one filter for each event, optimize to one filter per channel
               // it requires ethers to support OR filters for topics:
@@ -314,9 +316,12 @@ export const channelMonitoredEpic = (
                   action.payload.id,
                   null,
                   null,
+                  null,
                 ),
                 settledFilter = tokenNetworkContract.filters.ChannelSettled(
                   action.payload.id,
+                  null,
+                  null,
                   null,
                   null,
                 );
@@ -348,7 +353,7 @@ export const channelMonitoredEpic = (
                   action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
                   action.payload.fromBlock ? blockNumber$ : undefined,
                 ).pipe(
-                  map(([id, participant, , event]) =>
+                  map(([id, participant, , , event]) =>
                     channelClosed(
                       {
                         id: id.toNumber(),
@@ -366,7 +371,7 @@ export const channelMonitoredEpic = (
                   action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
                   action.payload.fromBlock ? blockNumber$ : undefined,
                 ).pipe(
-                  map(([id, , , event]) =>
+                  map(([id, , , , , event]) =>
                     channelSettled(
                       {
                         id: id.toNumber(),
@@ -589,7 +594,7 @@ export const channelDepositEpic = (
 export const channelCloseEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { getTokenNetworkContract }: RaidenEpicDeps,
+  { address, network, getTokenNetworkContract, signer }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelCloseFailed>> =>
   action$.pipe(
     filter(isActionOf(channelClose)),
@@ -612,17 +617,49 @@ export const channelCloseEpic = (
       }
       const channelId = channel.id;
 
-      // send closeChannel transaction
-      return from(
-        tokenNetworkContract.functions.closeChannel(
-          channelId,
-          action.meta.partner,
-          HashZero,
-          0,
-          HashZero,
-          SignatureZero,
+      let balanceHash = HashZero as Hash,
+        nonce = Zero as UInt<8>,
+        additionalHash = HashZero as Hash,
+        nonClosingSignature = hexlify(SignatureZero) as Signature;
+
+      // TODO: enable this after we're able to receive transfers
+      // if (channel.partner.balanceProof) {
+      //   balanceHash = createBalanceHash(
+      //     channel.partner.balanceProof.transferredAmount,
+      //     channel.partner.balanceProof.lockedAmount,
+      //     channel.partner.balanceProof.locksroot,
+      //   );
+      //   nonce = channel.partner.balanceProof.nonce;
+      //   additionalHash = channel.partner.balanceProof.messageHash;
+      //   nonClosingSignature = channel.partner.balanceProof.signature;
+      // }
+
+      const closingMessage = concat([
+        encode(action.meta.tokenNetwork, 20),
+        encode(network.chainId, 32),
+        encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
+        encode(channelId, 32),
+        encode(balanceHash, 32),
+        encode(nonce, 32),
+        encode(additionalHash, 32),
+        encode(nonClosingSignature, 65), // partner's signature for this balance proof
+      ]); // UInt8Array of 277 bytes
+
+      // sign counter balance proof (while we don't receive transfers yet, it's always zero),
+      // then send closeChannel transaction with our signature
+      return from(signer.signMessage(closingMessage) as Promise<Signature>).pipe(
+        mergeMap(closingSignature =>
+          tokenNetworkContract.functions.closeChannel(
+            channelId,
+            action.meta.partner,
+            address,
+            balanceHash,
+            nonce,
+            additionalHash,
+            nonClosingSignature,
+            closingSignature,
+          ),
         ),
-      ).pipe(
         tap(tx =>
           console.log(`sent closeChannel tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
         ),
@@ -683,18 +720,33 @@ export const channelSettleEpic = (
       }
       const channelId = channel.id;
 
+      const zeroBalanceProof = {
+        transferredAmount: Zero as UInt<32>,
+        lockedAmount: Zero as UInt<32>,
+        locksroot: HashZero as Hash,
+      };
+      let part1 = {
+          address: action.meta.partner,
+          ...(channel.partner.balanceProof || zeroBalanceProof),
+        },
+        part2 = {
+          address,
+          ...(channel.own.balanceProof || zeroBalanceProof),
+        };
+      if (channel.isFirstParticipant) [part1, part2] = [part2, part1];
+
       // send settleChannel transaction
       return from(
         tokenNetworkContract.functions.settleChannel(
           channelId,
-          address,
-          Zero,
-          Zero,
-          HashZero,
-          action.meta.partner,
-          Zero,
-          Zero,
-          HashZero,
+          part1.address,
+          part1.transferredAmount,
+          part1.lockedAmount,
+          part1.locksroot,
+          part2.address,
+          part2.transferredAmount,
+          part2.lockedAmount,
+          part2.locksroot,
         ),
       ).pipe(
         tap(tx =>

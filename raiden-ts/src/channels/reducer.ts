@@ -54,6 +54,7 @@ function channels(state: Channels = initialState.channels, action: RaidenAction)
         id: action.payload.id,
         settleTimeout: action.payload.settleTimeout,
         openBlock: action.payload.openBlock,
+        isFirstParticipant: action.payload.isFirstParticipant,
         /* txHash: action.txHash, */ // not needed in state for now, but comes in action
       };
     return set(path, channel, state);

@@ -1,13 +1,6 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import {
-  Network,
-  ParamType,
-  BigNumber,
-  bigNumberify,
-  BigNumberish,
-  keccak256,
-} from 'ethers/utils';
+import { Network, ParamType, BigNumber, bigNumberify, BigNumberish } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
@@ -23,11 +16,11 @@ import { first, filter, map, distinctUntilChanged, scan, concatMap } from 'rxjs/
 
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
 import { TokenNetwork } from '../contracts/TokenNetwork';
-import { Token } from '../contracts/Token';
+import { HumanStandardToken } from '../contracts/HumanStandardToken';
 
 import TokenNetworkRegistryAbi from './abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from './abi/TokenNetwork.json';
-import TokenAbi from './abi/Token.json';
+import HumanStandardTokenAbi from './abi/HumanStandardToken.json';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
@@ -70,7 +63,7 @@ import {
   matrixRequestMonitorPresence,
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
-import { makeSecret, raidenSentTransfer } from './transfers/utils';
+import { makeSecret, raidenSentTransfer, getSecrethash } from './transfers/utils';
 import { patchSignSend } from './utils/ethers';
 
 export class Raiden {
@@ -496,13 +489,13 @@ export class Raiden {
    * @param address  Token contract address
    * @returns  Token Contract instance
    */
-  private getTokenContract(address: Address): Token {
+  private getTokenContract(address: Address): HumanStandardToken {
     if (!(address in this.contracts.tokens))
       this.contracts.tokens[address] = new Contract(
         address,
-        TokenAbi as ParamType[],
+        HumanStandardTokenAbi as ParamType[],
         this.deps.signer,
-      ) as Token;
+      ) as HumanStandardToken;
     return this.contracts.tokens[address];
   }
 
@@ -718,8 +711,8 @@ export class Raiden {
     }
     if (!secrethash) {
       if (!secret) secret = makeSecret();
-      secrethash = keccak256(secret) as Hash;
-    } else if (secret && keccak256(secret) !== secrethash) {
+      secrethash = getSecrethash(secret);
+    } else if (secret && getSecrethash(secret) !== secrethash) {
       throw new Error('Secret and secrethash must match if passing both');
     }
 

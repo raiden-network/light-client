@@ -41,7 +41,13 @@ export const channelOpen = createStandardAction('channelOpen')<
 
 /* A channel is detected on-chain. Also works as 'success' for channelOpen action */
 export const channelOpened = createStandardAction('channelOpened')<
-  { id: number; settleTimeout: number; openBlock: number; txHash: Hash },
+  {
+    id: number;
+    settleTimeout: number;
+    openBlock: number;
+    isFirstParticipant: boolean;
+    txHash: Hash;
+  },
   ChannelId
 >();
 

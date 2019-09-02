@@ -10,21 +10,12 @@ import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils'
 import { LosslessNumber } from 'lossless-json';
 
 import { fromEthersEvent, getEventsStream } from 'raiden-ts/utils/ethers';
-import {
-  Address,
-  BigNumberC,
-  HexString,
-  UInt,
-  Hash,
-  Secret,
-  Timed,
-  timed,
-} from 'raiden-ts/utils/types';
+import { Address, BigNumberC, HexString, UInt, Secret, Timed, timed } from 'raiden-ts/utils/types';
 import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
 import { splitCombined } from 'raiden-ts/utils/rxjs';
 import { makeLog, raidenEpicDeps } from './mocks';
-import { getLocksroot, lockhash, makeSecret } from 'raiden-ts/transfers/utils';
+import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { HashZero } from 'ethers/constants';
 import { Lock } from 'raiden-ts/channels';
 
@@ -308,24 +299,26 @@ describe('messages', () => {
         type: 'Lock',
         amount: bigNumberify(1) as UInt<32>,
         expiration: bigNumberify(1) as UInt<32>,
-        secrethash: keccak256('0x1') as Hash,
+        secrethash: getSecrethash(keccak256('0x1') as Secret),
       },
       {
         type: 'Lock',
         amount: bigNumberify(2) as UInt<32>,
         expiration: bigNumberify(2) as UInt<32>,
-        secrethash: keccak256('0x2') as Hash,
+        secrethash: getSecrethash(keccak256('0x2') as Secret),
       },
       {
         type: 'Lock',
         amount: bigNumberify(3) as UInt<32>,
         expiration: bigNumberify(3) as UInt<32>,
-        secrethash: keccak256('0x3') as Hash,
+        secrethash: getSecrethash(keccak256('0x3') as Secret),
       },
     ];
-    expect(getLocksroot([locks[0]])).toBe(lockhash(locks[0]));
+    expect(getLocksroot([locks[0]])).toBe(
+      '0xa006dee2839936dcff0101a74d3760319cecb7ce7fbca57be4a7e2bb86bbbfe6',
+    );
     expect(getLocksroot(locks)).toBe(
-      '0x4cd8409aa5d9830ecdbf8753e5d1844eb4e2cf52954b6598e045e87c1403b70a',
+      '0xe0cd0d2f9fb2ed8cf1ddc3789e62b6b6f83e2b174399202d7217333e141a910b',
     );
   });
 
