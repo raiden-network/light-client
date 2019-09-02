@@ -2,8 +2,8 @@
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { isLeft } from 'fp-ts/lib/Either';
 
-import { ethers, Signer } from 'ethers';
-import { keccak256, verifyMessage } from 'ethers/utils';
+import { Signer } from 'ethers';
+import { keccak256, RLP, verifyMessage } from 'ethers/utils';
 import { arrayify, concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
@@ -47,10 +47,8 @@ enum MessageTypeId {
  * @returns Hash of the metadata.
  */
 export function createMetadataHash(metadata: Metadata): Hash {
-  const routeHashes = metadata.routes.map(
-    value => keccak256(ethers.utils.RLP.encode(value.route)) as Hash,
-  );
-  return keccak256(ethers.utils.RLP.encode(routeHashes)) as Hash;
+  const routeHashes = metadata.routes.map(value => keccak256(RLP.encode(value.route)) as Hash);
+  return keccak256(RLP.encode(routeHashes)) as Hash;
 }
 
 /**
