@@ -296,19 +296,16 @@ describe('messages', () => {
     expect(getLocksroot([])).toBe(HashZero);
     const locks: Lock[] = [
       {
-        type: 'Lock',
         amount: bigNumberify(1) as UInt<32>,
         expiration: bigNumberify(1) as UInt<32>,
         secrethash: getSecrethash(keccak256('0x1') as Secret),
       },
       {
-        type: 'Lock',
         amount: bigNumberify(2) as UInt<32>,
         expiration: bigNumberify(2) as UInt<32>,
         secrethash: getSecrethash(keccak256('0x2') as Secret),
       },
       {
-        type: 'Lock',
         amount: bigNumberify(3) as UInt<32>,
         expiration: bigNumberify(3) as UInt<32>,
         secrethash: getSecrethash(keccak256('0x3') as Secret),

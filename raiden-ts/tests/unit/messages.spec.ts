@@ -51,7 +51,6 @@ describe('sign/verify, pack & encode/decode ', () => {
       recipient: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
       locksroot: '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
       lock: {
-        type: 'Lock',
         amount: bigNumberify(10) as UInt<32>,
         expiration: One as UInt<32>,
         secrethash: '0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8' as Hash,
@@ -88,7 +87,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"LockedTransfer","chain_id":337,"message_identifier":123456,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","lock":{"type":"Lock","amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x811957b07304d335B271feeBF46754696694b09e","initiator":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","fee":0,"metadata":{"routes":[{"route":["0x2A915FDA69746F515b46C520eD511401d5CCD5e2","0x811957b07304d335B271feeBF46754696694b09e"]}]},"signature":"0x81a29e70b8f36379a3c0939f1e23c66a75a820dddfa87319d5022431cdc5ad0471281e13437ae58f0d3feb80f0193ede01f2721c82610c8f0b782ec723e85be21c"}',
+      '{"type":"LockedTransfer","chain_id":337,"message_identifier":123456,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","lock":{"amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x811957b07304d335B271feeBF46754696694b09e","initiator":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","fee":0,"metadata":{"routes":[{"route":["0x2A915FDA69746F515b46C520eD511401d5CCD5e2","0x811957b07304d335B271feeBF46754696694b09e"]}]},"signature":"0x81a29e70b8f36379a3c0939f1e23c66a75a820dddfa87319d5022431cdc5ad0471281e13437ae58f0d3feb80f0193ede01f2721c82610c8f0b782ec723e85be21c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -110,7 +109,6 @@ describe('sign/verify, pack & encode/decode ', () => {
       recipient: '0x540B51eDc5900B8012091cc7c83caf2cb243aa86' as Address,
       locksroot: HashZero as Hash,
       lock: {
-        type: 'Lock',
         amount: bigNumberify(10) as UInt<32>,
         expiration: One as UInt<32>,
         secrethash: '0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8' as Hash,
@@ -144,7 +142,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"RefundTransfer","chain_id":337,"message_identifier":123457,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","locksroot":"0x0000000000000000000000000000000000000000000000000000000000000000","lock":{"type":"Lock","amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","initiator":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","fee":0,"metadata":{"routes":[{"route":["0x540B51eDc5900B8012091cc7c83caf2cb243aa86"]}]},"signature":"0x7ec958b5d0accea573474e21298bcb38c35b48f54a1fafcf0beba7ed48e2a9f21f28742471124e3f15fee445c46b130756dc9d4115563b1a420266caec65c6c71c"}',
+      '{"type":"RefundTransfer","chain_id":337,"message_identifier":123457,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","locksroot":"0x0000000000000000000000000000000000000000000000000000000000000000","lock":{"amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","initiator":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","fee":0,"metadata":{"routes":[{"route":["0x540B51eDc5900B8012091cc7c83caf2cb243aa86"]}]},"signature":"0x7ec958b5d0accea573474e21298bcb38c35b48f54a1fafcf0beba7ed48e2a9f21f28742471124e3f15fee445c46b130756dc9d4115563b1a420266caec65c6c71c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -360,7 +358,6 @@ describe('sign/verify, pack & encode/decode ', () => {
       recipient: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
       locksroot: '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
       lock: {
-        type: 'Lock',
         amount: bigNumberify(10) as UInt<32>,
         expiration: One as UInt<32>,
         secrethash: '0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8' as Hash,

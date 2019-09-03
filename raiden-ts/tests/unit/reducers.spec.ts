@@ -575,7 +575,6 @@ describe('raidenReducer', () => {
     const secret = keccak256('0xdeadbeef') as Secret,
       secrethash = getSecrethash(secret),
       lock: Lock = {
-        type: 'Lock',
         amount: bigNumberify(10) as UInt<32>,
         expiration: One as UInt<32>,
         secrethash,
