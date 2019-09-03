@@ -27,6 +27,7 @@ export const ChannelEnd = t.readonly(
     t.partial({
       locks: t.array(Lock),
       balanceProof: SignedBalanceProof,
+      withdraw: UInt(32),
     }),
   ]),
 );

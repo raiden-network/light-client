@@ -42,6 +42,7 @@ import {
   channelDeposited,
   channelClosed,
   channelSettled,
+  channelWithdrawn,
 } from './actions';
 import { SignatureZero, ShutdownReason } from '../constants';
 import { Address, Hash, UInt, Signature } from '../utils/types';
@@ -280,7 +281,12 @@ export const channelMonitoredEpic = (
   state$: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<
-  ActionType<typeof channelDeposited | typeof channelClosed | typeof channelSettled>
+  ActionType<
+    | typeof channelDeposited
+    | typeof channelWithdrawn
+    | typeof channelClosed
+    | typeof channelSettled
+  >
 > =>
   state$.pipe(
     map(state => state.blockNumber),
@@ -297,17 +303,24 @@ export const channelMonitoredEpic = (
 
               // type of elements emitted by getEventsStream (past and new events coming from
               // contract): [channelId, participant, totalDeposit, Event]
-              type ChannelNewDepositEvent = [BigNumber, Address, BigNumber, Event];
+              type ChannelNewDepositEvent = [BigNumber, Address, UInt<32>, Event];
+              // [channelId, participant, totalWithdraw, Event]
+              type ChannelWithdrawEvent = [BigNumber, Address, UInt<32>, Event];
               // [channelId, participant, nonce, balanceHash, Event]
-              type ChannelClosedEvent = [BigNumber, Address, BigNumber, Hash, Event];
+              type ChannelClosedEvent = [BigNumber, Address, UInt<8>, Hash, Event];
               // [channelId, part1_amount, part1_locksroot, part2_amount, part2_locksroot Event]
-              type ChannelSettledEvent = [BigNumber, BigNumber, Hash, BigNumber, Hash, Event];
+              type ChannelSettledEvent = [BigNumber, UInt<32>, Hash, UInt<32>, Hash, Event];
 
               // TODO: instead of one filter for each event, optimize to one filter per channel
               // it requires ethers to support OR filters for topics:
               // https://github.com/ethers-io/ethers.js/issues/437
               // can we hook to provider.on directly and decoding the events ourselves?
               const depositFilter = tokenNetworkContract.filters.ChannelNewDeposit(
+                  action.payload.id,
+                  null,
+                  null,
+                ),
+                withdrawFilter = tokenNetworkContract.filters.ChannelWithdraw(
                   action.payload.id,
                   null,
                   null,
@@ -341,6 +354,24 @@ export const channelMonitoredEpic = (
                         id: id.toNumber(),
                         participant,
                         totalDeposit,
+                        txHash: event.transactionHash! as Hash,
+                      },
+                      action.meta,
+                    ),
+                  ),
+                ),
+                getEventsStream<ChannelWithdrawEvent>(
+                  tokenNetworkContract,
+                  [withdrawFilter],
+                  action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+                  action.payload.fromBlock ? blockNumber$ : undefined,
+                ).pipe(
+                  map(([id, participant, totalWithdraw, event]) =>
+                    channelWithdrawn(
+                      {
+                        id: id.toNumber(),
+                        participant,
+                        totalWithdraw,
                         txHash: event.transactionHash! as Hash,
                       },
                       action.meta,
@@ -386,7 +417,10 @@ export const channelMonitoredEpic = (
                 // takeWhile tends to broad input to generic Action. We need to narrow it by hand
                 takeWhile<
                   ActionType<
-                    typeof channelDeposited | typeof channelClosed | typeof channelSettled
+                    | typeof channelDeposited
+                    | typeof channelWithdrawn
+                    | typeof channelClosed
+                    | typeof channelSettled
                   >
                 >(negate(isActionOf(channelSettled)), true),
               );
