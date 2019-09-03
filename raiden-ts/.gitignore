@@ -8,3 +8,5 @@ contracts/
 
 src/deployment/*
 src/abi/*
+
+docs/

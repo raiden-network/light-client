@@ -20,7 +20,7 @@ import { newBlock } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
 import { Storage, Secret } from 'raiden-ts/utils/types';
 import { ContractsInfo, RaidenContracts } from 'raiden-ts/types';
-import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/types';
+import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -105,7 +105,7 @@ The Raiden dApp is the demo and first dApp user of the SDK. It's a single page a
 ```
             +-------------------+
             |                   |
-            |   Raiden dApp   |
+            |   Raiden dApp     |
             |                   |
             |  vue/vuex/vuetify |
             |                   |
