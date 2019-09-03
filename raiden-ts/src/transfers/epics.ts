@@ -19,7 +19,7 @@ import {
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
 import { BigNumber, bigNumberify } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { Zero, One } from 'ethers/constants';
 import { findKey, get } from 'lodash';
 
 import { RaidenEpicDeps } from '../types';
@@ -42,10 +42,13 @@ import {
   SecretReveal,
   Signed,
   Unlock,
+  WithdrawExpired,
+  WithdrawConfirmation,
+  WithdrawRequest,
 } from '../messages/types';
 import { getBalanceProofFromEnvelopeMessage, signMessage } from '../messages/utils';
 import { Channel, ChannelState } from '../channels/state';
-import { Lock } from '../channels/types';
+import { Lock, SignedBalanceProof } from '../channels/types';
 import { channelClose, channelClosed, newBlock } from '../channels/actions';
 import {
   transfer,
@@ -64,8 +67,21 @@ import {
   transferUnlock,
   transferUnlocked,
   transferUnlockProcessed,
+  withdrawReceiveRequest,
+  withdrawSendConfirmation,
 } from './actions';
 import { getLocksroot, getSecrethash, makeMessageId, makePaymentId } from './utils';
+
+/**
+ * Return the next nonce for a (possibly missing) balanceProof, or else BigNumber(1)
+ *
+ * @param balanceProof  Balance proof to increase nonce from
+ * @returns  Increased nonce, or One if no balance proof provided
+ */
+function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
+  if (balanceProof) return balanceProof.nonce.add(1) as UInt<8>;
+  else return One as UInt<8>;
+}
 
 /**
  * Create an observable to compose and sign a LockedTransfer message/transferSigned action
@@ -177,9 +193,7 @@ function makeAndSignTransfer(
         chain_id: bigNumberify(network.chainId) as UInt<32>,
         token_network_address: action.payload.tokenNetwork,
         channel_identifier: bigNumberify(channel.id) as UInt<32>,
-        nonce: (channel.own.balanceProof ? channel.own.balanceProof.nonce : Zero).add(1) as UInt<
-          8
-        >,
+        nonce: nextNonce(channel.own.balanceProof),
         transferred_amount: (channel.own.balanceProof
           ? channel.own.balanceProof.transferredAmount
           : Zero) as UInt<32>,
@@ -260,7 +274,7 @@ function makeAndSignUnlock(
           chain_id: transfer.chain_id,
           token_network_address: transfer.token_network_address,
           channel_identifier: transfer.channel_identifier,
-          nonce: channel.own.balanceProof.nonce.add(1) as UInt<8>,
+          nonce: nextNonce(channel.own.balanceProof),
           transferred_amount: channel.own.balanceProof.transferredAmount.add(
             transfer.lock.amount,
           ) as UInt<32>,
@@ -341,7 +355,7 @@ function makeAndSignLockExpired(
           chain_id: transfer.chain_id,
           token_network_address: transfer.token_network_address,
           channel_identifier: transfer.channel_identifier,
-          nonce: channel.own.balanceProof.nonce.add(1) as UInt<8>,
+          nonce: nextNonce(channel.own.balanceProof),
           transferred_amount: channel.own.balanceProof.transferredAmount,
           locked_amount: channel.own.balanceProof.lockedAmount.sub(transfer.lock.amount) as UInt<
             32
@@ -359,6 +373,106 @@ function makeAndSignLockExpired(
       );
     }),
     catchError(err => of(transferExpireFailed(err, action.meta))),
+  );
+}
+
+/**
+ * Create an observable to compose and sign a WithdrawConfirmation message
+ *
+ * Validate we're inside expiration timeout, channel exists and is open, and that total_withdraw is
+ * less than or equal withdrawable amount (while we don't receive, partner.deposit +
+ * own.transferredAmount).
+ * We need it inside transferGenerateAndSignEnvelopeMessageEpic concatMap/lock because we read and
+ * change the 'nonce', even though WithdrawConfirmation doesn't carry a full balanceProof.
+ * Also, instead of storing the messages in state and retrying, we just cache it and send cached
+ * signed message on each received request.
+ *
+ * TODO: once we're able to receive transfers, instead of considering only own.transferredAmount,
+ * we must also listen to ChannelWithdraw events, store it alongside pending withdraw requests and
+ * take that into account before accepting a transfer and also total balance/capacity for accepting
+ * a total_withdraw from a WithdrawRequest.
+ *
+ * @param state$  Observable of current state
+ * @param action  Withdraw request which caused this handling
+ * @param signer  RaidenEpicDeps members
+ * @param cache  A Map to store and reuse previously Signed<WithdrawConfirmation>
+ * @returns  Observable of transferExpired|transferExpireFailed actions
+ */
+function makeAndSignWithdrawConfirmation(
+  state$: Observable<RaidenState>,
+  action: ActionType<typeof withdrawReceiveRequest>,
+  { signer }: RaidenEpicDeps,
+  cache: LruCache<string, Signed<WithdrawConfirmation>>,
+): Observable<ActionType<typeof withdrawSendConfirmation>> {
+  return state$.pipe(
+    first(),
+    mergeMap(state => {
+      const request = action.payload.message;
+
+      const channel: Channel | undefined = get(state.channels, [
+        action.meta.tokenNetwork,
+        action.meta.partner,
+      ]);
+      // check channel is in valid state and requested total_withdraw is valid
+      // withdrawable amount is: total_withdraw <= partner.deposit + own.transferredAmount
+      if (
+        !channel ||
+        channel.state !== ChannelState.open ||
+        !request.channel_identifier.eq(channel.id)
+      )
+        throw new Error('channel gone or not open');
+      else if (request.expiration.lte(state.blockNumber))
+        throw new Error('WithdrawRequest expired');
+      else if (
+        request.total_withdraw.gt(
+          channel.partner.deposit.add(
+            channel.own.balanceProof ? channel.own.balanceProof.transferredAmount : Zero,
+          ),
+        )
+      )
+        throw new Error(
+          'invalid total_withdraw, greater than partner.deposit + own.transferredAmount',
+        );
+
+      let signed$: Observable<Signed<WithdrawConfirmation>>;
+      const key = request.message_identifier.toString();
+      const cached = cache.get(key);
+      // ensure all parameters are equal the cached one before returning it, or else sign again
+      if (
+        cached &&
+        cached.chain_id.eq(request.chain_id) &&
+        cached.token_network_address === request.token_network_address &&
+        cached.channel_identifier.eq(request.channel_identifier) &&
+        cached.participant === request.participant &&
+        cached.total_withdraw.eq(request.total_withdraw) &&
+        cached.expiration.eq(request.expiration)
+      ) {
+        signed$ = of(cached);
+      } else {
+        const confirmation: WithdrawConfirmation = {
+          type: MessageType.WITHDRAW_CONFIRMATION,
+          message_identifier: request.message_identifier,
+          chain_id: request.chain_id,
+          token_network_address: request.token_network_address,
+          channel_identifier: request.channel_identifier,
+          participant: request.participant,
+          total_withdraw: request.total_withdraw,
+          nonce: nextNonce(channel.own.balanceProof),
+          expiration: request.expiration,
+        };
+        signed$ = from(signMessage(signer, confirmation)).pipe(
+          tap(signed => cache.put(key, signed)),
+        );
+      }
+
+      return signed$.pipe(
+        map(signed => withdrawSendConfirmation({ message: signed }, action.meta)),
+      );
+    }),
+    catchError(err => {
+      console.error('Error trying to handle WithdrawRequest, ignoring:', err);
+      return EMPTY;
+    }),
   );
 }
 
@@ -385,19 +499,23 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
     | typeof transferFailed
     | typeof transferExpired
     | typeof transferExpireFailed
+    | typeof withdrawSendConfirmation
   >
 > =>
   combineLatest(getPresences$(action$), state$).pipe(
     publishReplay(1, undefined, presencesStateReplay$ => {
-      const [presences$, state$] = splitCombined(presencesStateReplay$);
+      const [presences$, state$] = splitCombined(presencesStateReplay$),
+        withdrawCache = new LruCache<string, Signed<WithdrawConfirmation>>(32);
       return action$.pipe(
-        filter(isActionOf([transfer, transferUnlock, transferExpire])),
+        filter(isActionOf([transfer, transferUnlock, transferExpire, withdrawReceiveRequest])),
         concatMap(action =>
           isActionOf(transfer, action)
             ? makeAndSignTransfer(presences$, state$, action, deps)
             : isActionOf(transferUnlock, action)
             ? makeAndSignUnlock(state$, action, deps)
-            : makeAndSignLockExpired(state$, action, deps),
+            : isActionOf(transferExpire, action)
+            ? makeAndSignLockExpired(state$, action, deps)
+            : makeAndSignWithdrawConfirmation(state$, action, deps, withdrawCache),
         ),
       );
     }),
@@ -974,57 +1092,6 @@ export const transferChannelClosedEpic = (
   );
 
 /**
- * Sends Processed for unhandled transfer messages
- *
- * We don't yet support receiving nor mediating transfers (LockedTransfer, RefundTransfer), but
- * also don't want the partner to keep retrying any messages intended for us indefinitely.
- * That's why we decided to just answer them with Processed, to clear their queue. Of course, we
- * still don't validate, store state for these messages nor handle them in any way (e.g. requesting
- * secret from initiator), so any transfer is going to expire, and then we also reply Processed for
- * the respective LockExpired.
- *
- * @param action$  Observable of messageSend actions
- * @param state$  Observable of RaidenStates
- * @param signer  RaidenEpicDeps members
- * @returns  Observable of messageSend actions
- */
-export const transferReceivedReplyProcessedEpic = (
-  action$: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
-  { signer }: RaidenEpicDeps,
-): Observable<ActionType<typeof messageSend>> => {
-  const cache = new LruCache<string, Signed<Processed>>(32);
-  return action$.pipe(
-    filter(isActionOf(messageReceived)),
-    concatMap(action => {
-      const message = action.payload.message;
-      if (
-        !message ||
-        !(
-          Signed(LockedTransfer).is(message) ||
-          Signed(RefundTransfer).is(message) ||
-          Signed(LockExpired).is(message)
-        )
-      )
-        return EMPTY;
-      const msgId = message.message_identifier,
-        key = msgId.toString();
-      const cached = cache.get(key);
-      if (cached) return of(messageSend({ message: cached }, action.meta));
-
-      const processed: Processed = {
-        type: MessageType.PROCESSED,
-        message_identifier: msgId, // eslint-disable-line @typescript-eslint/camelcase
-      };
-      return from(signMessage(signer, processed)).pipe(
-        tap(signed => cache.put(key, signed)),
-        map(signed => messageSend({ message: signed }, action.meta)),
-      );
-    }),
-  );
-};
-
-/**
  * Receiving RefundTransfer for pending transfer fails it
  *
  * @param action$  Observable of messageReceived actions
@@ -1057,4 +1124,105 @@ export const transferRefundedEpic = (
       yield transferRefunded({ message }, { secrethash });
       yield transferFailed(new Error('transfer refunded'), { secrethash });
     }),
+  );
+
+/**
+ * Sends Processed for unhandled nonce'd messages
+ *
+ * We don't yet support receiving nor mediating transfers (LockedTransfer, RefundTransfer), but
+ * also don't want the partner to keep retrying any messages intended for us indefinitely.
+ * That's why we decided to just answer them with Processed, to clear their queue. Of course, we
+ * still don't validate, store state for these messages nor handle them in any way (e.g. requesting
+ * secret from initiator), so any transfer is going to expire, and then we also reply Processed for
+ * the respective LockExpired.
+ * Additionally, we hook in sending Processed for other messages which contain nonces (and require
+ * Processed reply to stop being retried) but are safe to be ignored, like WithdrawExpired.
+ *
+ * @param action$  Observable of messageReceived actions
+ * @param state$  Observable of RaidenStates
+ * @param signer  RaidenEpicDeps members
+ * @returns  Observable of messageSend actions
+ */
+export const transferReceivedReplyProcessedEpic = (
+  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenState>,
+  { signer }: RaidenEpicDeps,
+): Observable<ActionType<typeof messageSend>> => {
+  const cache = new LruCache<string, Signed<Processed>>(32);
+  return action$.pipe(
+    filter(isActionOf(messageReceived)),
+    concatMap(action => {
+      const message = action.payload.message;
+      if (
+        !message ||
+        !(
+          Signed(LockedTransfer).is(message) ||
+          Signed(RefundTransfer).is(message) ||
+          Signed(LockExpired).is(message) ||
+          Signed(WithdrawExpired).is(message)
+        )
+      )
+        return EMPTY;
+      const msgId = message.message_identifier,
+        key = msgId.toString();
+      const cached = cache.get(key);
+      if (cached) return of(messageSend({ message: cached }, action.meta));
+
+      const processed: Processed = {
+        type: MessageType.PROCESSED,
+        message_identifier: msgId,
+      };
+      return from(signMessage(signer, processed)).pipe(
+        tap(signed => cache.put(key, signed)),
+        map(signed => messageSend({ message: signed }, action.meta)),
+      );
+    }),
+  );
+};
+
+/**
+ * When receiving a WithdrawRequest message, create the respective withdrawReceiveRequest action
+ *
+ * @param action$  Observable of messageReceived actions
+ * @returns  Observable of withdrawReceiveRequest actions
+ */
+export const withdrawRequestReceivedEpic = (
+  action$: Observable<RaidenAction>,
+): Observable<ActionType<typeof withdrawReceiveRequest>> =>
+  action$.pipe(
+    filter(isActionOf(messageReceived)),
+    mergeMap(function*(action) {
+      const message = action.payload.message;
+      if (
+        !message ||
+        !Signed(WithdrawRequest).is(message) ||
+        message.participant !== action.meta.address
+      )
+        return;
+      yield withdrawReceiveRequest(
+        { message },
+        {
+          tokenNetwork: message.token_network_address,
+          partner: message.participant,
+          totalWithdraw: message.total_withdraw,
+          expiration: message.expiration.toNumber(),
+        },
+      );
+    }),
+  );
+
+/**
+ * sendMessage when a withdrawSendConfirmation action is fired
+ *
+ * @param action$  Observable of withdrawSendConfirmation actions
+ * @returns  Observable of messageSend actions
+ */
+export const withdrawSendConfirmationEpic = (
+  action$: Observable<RaidenAction>,
+): Observable<ActionType<typeof messageSend>> =>
+  action$.pipe(
+    filter(isActionOf(withdrawSendConfirmation)),
+    map(action =>
+      messageSend({ message: action.payload.message }, { address: action.meta.partner }),
+    ),
   );
