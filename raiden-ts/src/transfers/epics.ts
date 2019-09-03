@@ -149,7 +149,6 @@ function makeAndSignTransfer(
       if (!paymentId) paymentId = makePaymentId();
 
       const lock: Lock = {
-          type: 'Lock',
           amount: action.payload.amount,
           expiration: bigNumberify(state.blockNumber + REVEAL_TIMEOUT * 2) as UInt<32>,
           secrethash: action.meta.secrethash,
