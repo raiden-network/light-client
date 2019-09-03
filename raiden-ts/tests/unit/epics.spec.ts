@@ -19,7 +19,14 @@ import { get, range } from 'lodash';
 
 import { Wallet } from 'ethers';
 import { AddressZero, Zero, HashZero, One } from 'ethers/constants';
-import { bigNumberify, verifyMessage, BigNumber, keccak256 } from 'ethers/utils';
+import {
+  bigNumberify,
+  verifyMessage,
+  BigNumber,
+  keccak256,
+  hexlify,
+  randomBytes,
+} from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { ContractTransaction } from 'ethers/contract';
 
@@ -50,6 +57,7 @@ import {
   channelDepositFailed,
   channelCloseFailed,
   channelSettleFailed,
+  channelWithdrawn,
 } from 'raiden-ts/channels/actions';
 import {
   matrixRequestMonitorPresence,
@@ -102,6 +110,7 @@ import {
   SecretReveal,
   LockExpired,
   RefundTransfer,
+  WithdrawRequest,
 } from 'raiden-ts/messages/types';
 import { makeMessageId, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
@@ -122,6 +131,8 @@ import {
   transferRefunded,
   transferUnlockProcessed,
   transferExpireProcessed,
+  withdrawReceiveRequest,
+  withdrawSendConfirmation,
 } from 'raiden-ts/transfers/actions';
 import {
   transferGenerateAndSignEnvelopeMessageEpic,
@@ -139,6 +150,8 @@ import {
   transferExpiredRetryMessageEpic,
   transferReceivedReplyProcessedEpic,
   transferRefundedEpic,
+  withdrawRequestReceivedEpic,
+  withdrawSendConfirmationEpic,
 } from 'raiden-ts/transfers/epics';
 
 describe('raidenRootEpic', () => {
@@ -201,7 +214,7 @@ describe('raidenRootEpic', () => {
             {
               id: channelId,
               participant: depsMock.address,
-              totalDeposit: bigNumberify(200),
+              totalDeposit: bigNumberify(200) as UInt<32>,
               txHash,
             },
             { tokenNetwork, partner },
@@ -210,7 +223,7 @@ describe('raidenRootEpic', () => {
             {
               id: channelId,
               participant: partner,
-              totalDeposit: bigNumberify(200),
+              totalDeposit: bigNumberify(200) as UInt<32>,
               txHash,
             },
             { tokenNetwork, partner },
@@ -650,8 +663,10 @@ describe('raidenRootEpic', () => {
   });
 
   describe('channelMonitoredEpic', () => {
-    const deposit = bigNumberify(1023),
+    const deposit = bigNumberify(1023) as UInt<32>,
       depositEncoded = defaultAbiCoder.encode(['uint256'], [deposit]),
+      withdraw = bigNumberify(100) as UInt<32>,
+      withdrawEncoded = defaultAbiCoder.encode(['uint256'], [withdraw]),
       openBlock = 121,
       closeBlock = 124,
       settleBlock = closeBlock + settleTimeout + 1,
@@ -774,7 +789,50 @@ describe('raidenRootEpic', () => {
         meta: { tokenNetwork, partner },
       });
 
-      expect(depsMock.provider.on).toHaveBeenCalledTimes(3); // one for each event
+      expect(depsMock.provider.on).toHaveBeenCalledTimes(4); // one for each event
+    });
+
+    test('new$ partner ChannelWithdraw event', async () => {
+      const curState = [
+        tokenMonitored({ token, tokenNetwork, first: true }),
+        channelOpened(
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          { tokenNetwork, partner },
+        ),
+        channelDeposited(
+          {
+            id: channelId,
+            participant: partner,
+            totalDeposit: bigNumberify(410) as UInt<32>,
+            txHash,
+          },
+          { tokenNetwork, partner },
+        ),
+      ].reduce(raidenReducer, state);
+      const action$ = of<RaidenAction>(
+          channelMonitored({ id: channelId }, { tokenNetwork, partner }),
+        ),
+        state$ = of<RaidenState>(curState);
+
+      const promise = channelMonitoredEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      depsMock.provider.emit(
+        tokenNetworkContract.filters.ChannelWithdraw(channelId, null, null),
+        makeLog({
+          blockNumber: closeBlock,
+          transactionHash: txHash,
+          filter: tokenNetworkContract.filters.ChannelWithdraw(channelId, partner, null),
+          data: withdrawEncoded, // non-indexed totalWithdraw
+        }),
+      );
+
+      await expect(promise).resolves.toMatchObject({
+        type: getType(channelWithdrawn),
+        payload: { id: channelId, participant: partner, totalWithdraw: withdraw, txHash },
+        meta: { tokenNetwork, partner },
+      });
     });
 
     test('new$ partner ChannelClosed event', async () => {
@@ -914,7 +972,7 @@ describe('raidenRootEpic', () => {
   });
 
   describe('channelDepositEpic', () => {
-    const deposit = bigNumberify(1023),
+    const deposit = bigNumberify(1023) as UInt<32>,
       openBlock = 121;
 
     test('fails if there is no token for tokenNetwork', async () => {
@@ -1052,7 +1110,7 @@ describe('raidenRootEpic', () => {
           {
             id: channelId,
             participant: depsMock.address,
-            totalDeposit: bigNumberify(330),
+            totalDeposit: bigNumberify(330) as UInt<32>,
             txHash,
           },
           { tokenNetwork, partner },
@@ -2394,7 +2452,18 @@ describe('raidenRootEpic', () => {
     test('transferSigned success and cached', async () => {
       expect.assertions(2);
 
-      const action$ = of(
+      const otherPartner1 = hexlify(randomBytes(20)) as Address,
+        otherPartner2 = hexlify(randomBytes(20)) as Address,
+        otherDeposit = bigNumberify(800) as UInt<32>,
+        action$ = of(
+          matrixPresenceUpdate(
+            { userId: `@${otherPartner1.toLowerCase()}:${matrixServer}`, available: true },
+            { address: otherPartner1 },
+          ),
+          matrixPresenceUpdate(
+            { userId: `@${otherPartner2.toLowerCase()}:${matrixServer}`, available: true },
+            { address: otherPartner2 },
+          ),
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
           transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
           // double transfer to test caching
@@ -2403,6 +2472,34 @@ describe('raidenRootEpic', () => {
         state$ = new BehaviorSubject(
           [
             tokenMonitored({ token, tokenNetwork, first: true }),
+            // a couple of channels with unrelated partners, with larger deposits
+            channelOpened(
+              { id: channelId - 2, settleTimeout, openBlock, isFirstParticipant, txHash },
+              { tokenNetwork, partner: otherPartner2 },
+            ),
+            channelDeposited(
+              {
+                id: channelId - 2,
+                participant: depsMock.address,
+                totalDeposit: otherDeposit,
+                txHash,
+              },
+              { tokenNetwork, partner: otherPartner2 },
+            ),
+            channelOpened(
+              { id: channelId - 1, settleTimeout, openBlock, isFirstParticipant, txHash },
+              { tokenNetwork, partner: otherPartner1 },
+            ),
+            channelDeposited(
+              {
+                id: channelId - 1,
+                participant: depsMock.address,
+                totalDeposit: otherDeposit,
+                txHash,
+              },
+              { tokenNetwork, partner: otherPartner1 },
+            ),
+            // but transfer should prefer this direct channel
             channelOpened(
               { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner },
@@ -2411,7 +2508,7 @@ describe('raidenRootEpic', () => {
               {
                 id: channelId,
                 participant: depsMock.address,
-                totalDeposit: bigNumberify(500),
+                totalDeposit: bigNumberify(500) as UInt<32>,
                 txHash,
               },
               { tokenNetwork, partner },
@@ -2476,7 +2573,7 @@ describe('raidenRootEpic', () => {
               {
                 id: channelId,
                 participant: depsMock.address,
-                totalDeposit: bigNumberify(500),
+                totalDeposit: bigNumberify(500) as UInt<32>,
                 txHash,
               },
               { tokenNetwork, partner },
@@ -2538,7 +2635,7 @@ describe('raidenRootEpic', () => {
               {
                 id: channelId,
                 participant: depsMock.address,
-                totalDeposit: bigNumberify(500),
+                totalDeposit: bigNumberify(500) as UInt<32>,
                 txHash,
               },
               { tokenNetwork, partner: offlinePartner },
@@ -2576,7 +2673,7 @@ describe('raidenRootEpic', () => {
               {
                 id: channelId,
                 participant: depsMock.address,
-                totalDeposit: bigNumberify(500),
+                totalDeposit: bigNumberify(500) as UInt<32>,
                 txHash,
               },
               { tokenNetwork, partner },
@@ -2615,7 +2712,7 @@ describe('raidenRootEpic', () => {
               {
                 id: channelId,
                 participant: depsMock.address,
-                totalDeposit: bigNumberify(500),
+                totalDeposit: bigNumberify(500) as UInt<32>,
                 txHash,
               },
               { tokenNetwork, partner },
@@ -2654,7 +2751,7 @@ describe('raidenRootEpic', () => {
               {
                 id: channelId,
                 participant: depsMock.address,
-                totalDeposit: bigNumberify(500),
+                totalDeposit: bigNumberify(500) as UInt<32>,
                 txHash,
               },
               { tokenNetwork, partner },
@@ -2704,7 +2801,7 @@ describe('raidenRootEpic', () => {
               {
                 id: channelId,
                 participant: depsMock.address,
-                totalDeposit: bigNumberify(500),
+                totalDeposit: bigNumberify(500) as UInt<32>,
                 txHash,
               },
               { tokenNetwork, partner },
@@ -3887,6 +3984,201 @@ describe('raidenRootEpic', () => {
               ),
             ),
           ).toPromise(),
+        ).resolves.toBeUndefined();
+      });
+    });
+
+    describe('withdraw request', () => {
+      const state$ = new BehaviorSubject(transferingState),
+        partnerDeposit = bigNumberify(30) as UInt<32>,
+        transferredAmount = amount,
+        withdrawableAmount = partnerDeposit.add(transferredAmount) as UInt<32>;
+
+      /* state$ holds the state when a transfer unlocked and completed */
+      beforeEach(async () => {
+        state$.next(
+          [
+            channelDeposited(
+              {
+                id: channelId,
+                participant: partner,
+                totalDeposit: partnerDeposit,
+                txHash,
+              },
+              { tokenNetwork, partner },
+            ),
+          ].reduce(raidenReducer, transferingState),
+        );
+        await transferGenerateAndSignEnvelopeMessageEpic(
+          of(transferUnlock(undefined, { secrethash })),
+          state$,
+          depsMock,
+        )
+          .pipe(tap(action => state$.next(raidenReducer(state$.value, action))))
+          .toPromise();
+      });
+
+      test('success', async () => {
+        expect.assertions(6);
+
+        const request: WithdrawRequest = {
+            type: MessageType.WITHDRAW_REQUEST,
+            message_identifier: makeMessageId(),
+            chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
+            token_network_address: tokenNetwork,
+            channel_identifier: bigNumberify(channelId) as UInt<32>,
+            participant: partner,
+            // withdrawable amount is partner.deposit + own.g
+            total_withdraw: withdrawableAmount,
+            nonce: bigNumberify(1) as UInt<8>,
+            expiration: bigNumberify(125 + 20) as UInt<32>,
+          },
+          signed = await signMessage(partnerSigner, request),
+          messageReceivedAction = messageReceived(
+            { text: encodeJsonMessage(signed), message: signed },
+            { address: partner },
+          );
+
+        const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
+
+        const withdrawRequestAction = await withdrawRequestReceivedEpic(
+          of(messageReceivedAction),
+        ).toPromise();
+
+        expect(withdrawRequestAction).toMatchObject({
+          type: getType(withdrawReceiveRequest),
+          payload: { message: signed },
+          meta: {
+            tokenNetwork,
+            partner,
+            totalWithdraw: request.total_withdraw,
+            expiration: request.expiration.toNumber(),
+          },
+        });
+
+        const action$ = of(withdrawRequestAction, withdrawRequestAction);
+
+        const output = await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(toArray())
+          .toPromise();
+
+        expect(output).toHaveLength(2);
+        expect(output[0].payload).toEqual(output[1].payload);
+        expect(output[0]).toEqual({
+          type: getType(withdrawSendConfirmation),
+          payload: {
+            message: {
+              ...request,
+              type: MessageType.WITHDRAW_CONFIRMATION,
+              message_identifier: expect.any(BigNumber),
+              nonce: state$.value.channels[tokenNetwork][partner].own.balanceProof!.nonce.add(1),
+              signature: expect.any(String),
+            },
+          },
+          meta: withdrawRequestAction.meta,
+        });
+
+        const withdrawConfirmationAction = output[0] as ActionType<
+          typeof withdrawSendConfirmation
+        >;
+
+        await expect(
+          withdrawSendConfirmationEpic(of(withdrawConfirmationAction)).toPromise(),
+        ).resolves.toMatchObject({
+          type: getType(messageSend),
+          payload: { message: withdrawConfirmationAction.payload.message },
+          meta: { address: partner },
+        });
+
+        // ensure signMessage was cached
+        expect(signerSpy).toHaveBeenCalledTimes(1);
+        signerSpy.mockRestore();
+      });
+
+      test('fail with totalWithdraw larger than partner.deposit + own.g', async () => {
+        expect.assertions(1);
+
+        const request: WithdrawRequest = {
+            type: MessageType.WITHDRAW_REQUEST,
+            message_identifier: makeMessageId(),
+            chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
+            token_network_address: tokenNetwork,
+            channel_identifier: bigNumberify(channelId) as UInt<32>,
+            participant: partner,
+            // withdrawable amount is partner.deposit + own.g
+            total_withdraw: withdrawableAmount.add(1) as UInt<32>,
+            nonce: bigNumberify(1) as UInt<8>,
+            expiration: bigNumberify(125 + 20) as UInt<32>,
+          },
+          signed = await signMessage(partnerSigner, request),
+          messageReceivedAction = messageReceived(
+            { text: encodeJsonMessage(signed), message: signed },
+            { address: partner },
+          ),
+          action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
+
+        await expect(
+          transferGenerateAndSignEnvelopeMessageEpic(of(action), state$, depsMock).toPromise(),
+        ).resolves.toBeUndefined();
+      });
+
+      test('fail WithdrawRequest expired', async () => {
+        expect.assertions(1);
+
+        const request: WithdrawRequest = {
+            type: MessageType.WITHDRAW_REQUEST,
+            message_identifier: makeMessageId(),
+            chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
+            token_network_address: tokenNetwork,
+            channel_identifier: bigNumberify(channelId) as UInt<32>,
+            participant: partner,
+            // withdrawable amount is partner.deposit + own.g
+            total_withdraw: withdrawableAmount,
+            nonce: bigNumberify(1) as UInt<8>,
+            expiration: bigNumberify(125 + 20) as UInt<32>,
+          },
+          signed = await signMessage(partnerSigner, request),
+          messageReceivedAction = messageReceived(
+            { text: encodeJsonMessage(signed), message: signed },
+            { address: partner },
+          ),
+          action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
+
+        state$.next([newBlock({ blockNumber: 125 + 20 + 2 })].reduce(raidenReducer, state$.value));
+
+        await expect(
+          transferGenerateAndSignEnvelopeMessageEpic(of(action), state$, depsMock).toPromise(),
+        ).resolves.toBeUndefined();
+      });
+
+      test('fail channel not open', async () => {
+        expect.assertions(1);
+
+        const request: WithdrawRequest = {
+            type: MessageType.WITHDRAW_REQUEST,
+            message_identifier: makeMessageId(),
+            chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
+            token_network_address: tokenNetwork,
+            channel_identifier: bigNumberify(channelId) as UInt<32>,
+            participant: partner,
+            // withdrawable amount is partner.deposit + own.g
+            total_withdraw: withdrawableAmount,
+            nonce: bigNumberify(1) as UInt<8>,
+            expiration: bigNumberify(125 + 20) as UInt<32>,
+          },
+          signed = await signMessage(partnerSigner, request),
+          messageReceivedAction = messageReceived(
+            { text: encodeJsonMessage(signed), message: signed },
+            { address: partner },
+          ),
+          action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
+
+        state$.next(
+          [channelClose(undefined, { tokenNetwork, partner })].reduce(raidenReducer, state$.value),
+        );
+
+        await expect(
+          transferGenerateAndSignEnvelopeMessageEpic(of(action), state$, depsMock).toPromise(),
         ).resolves.toBeUndefined();
       });
     });
