@@ -22,6 +22,7 @@ import {
   channelSettle,
   channelSettleFailed,
   channelSettled,
+  channelWithdrawn,
 } from 'raiden-ts/channels/actions';
 import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden-ts/transport/actions';
 import { ChannelState, Lock } from 'raiden-ts/channels';
@@ -37,6 +38,7 @@ import {
   transferRefunded,
   transferUnlockProcessed,
   transferExpireProcessed,
+  withdrawSendConfirmation,
 } from 'raiden-ts/transfers/actions';
 import {
   LockedTransfer,
@@ -47,6 +49,7 @@ import {
   LockExpired,
   SecretReveal,
   RefundTransfer,
+  WithdrawConfirmation,
 } from 'raiden-ts/messages/types';
 import {
   makeMessageId,
@@ -168,7 +171,7 @@ describe('raidenReducer', () => {
           {
             id: channelId,
             participant: state.address,
-            totalDeposit: bigNumberify(23),
+            totalDeposit: bigNumberify(23) as UInt<32>,
             txHash,
           },
           { tokenNetwork, partner },
@@ -178,7 +181,7 @@ describe('raidenReducer', () => {
     });
 
     test('own deposit successful', () => {
-      const deposit = bigNumberify(25);
+      const deposit = bigNumberify(25) as UInt<32>;
       const newState = raidenReducer(
         state,
         channelDeposited(
@@ -204,7 +207,7 @@ describe('raidenReducer', () => {
     });
 
     test('partner deposit successful', () => {
-      const deposit = bigNumberify(26);
+      const deposit = bigNumberify(26) as UInt<32>;
       const newState = raidenReducer(
         state,
         channelDeposited(
@@ -223,6 +226,105 @@ describe('raidenReducer', () => {
             state: ChannelState.open,
             own: { deposit: Zero },
             partner: { deposit: deposit }, // partner's total deposit was updated
+            id: channelId,
+          },
+        },
+      });
+    });
+  });
+
+  describe('channelWithdrawn', () => {
+    const deposit = bigNumberify(500) as UInt<32>;
+    beforeEach(() => {
+      state = [
+        channelOpened(
+          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          { tokenNetwork, partner },
+        ),
+        channelDeposited(
+          {
+            id: channelId,
+            participant: state.address,
+            totalDeposit: deposit,
+            txHash,
+          },
+          { tokenNetwork, partner },
+        ),
+        channelDeposited(
+          {
+            id: channelId,
+            participant: partner,
+            totalDeposit: deposit,
+            txHash,
+          },
+          { tokenNetwork, partner },
+        ),
+      ].reduce(raidenReducer, state);
+    });
+
+    test('channel not in open state', () => {
+      state = set(['channels', tokenNetwork, partner, 'state'], ChannelState.closed, state);
+      const newState = raidenReducer(
+        state,
+        channelWithdrawn(
+          {
+            id: channelId,
+            participant: state.address,
+            totalWithdraw: bigNumberify(23) as UInt<32>,
+            txHash,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
+      expect(newState).toEqual(state);
+    });
+
+    test('own withdraw successful', () => {
+      const withdraw = bigNumberify(25) as UInt<32>;
+      const newState = raidenReducer(
+        state,
+        channelWithdrawn(
+          {
+            id: channelId,
+            participant: address,
+            totalWithdraw: withdraw,
+            txHash,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
+      expect(newState.channels).toMatchObject({
+        [tokenNetwork]: {
+          [partner]: {
+            state: ChannelState.open,
+            own: { deposit, withdraw }, // our totalWithdraw was updated
+            partner: { deposit },
+            id: channelId,
+          },
+        },
+      });
+    });
+
+    test('partner withdraw successful', () => {
+      const withdraw = bigNumberify(26) as UInt<32>;
+      const newState = raidenReducer(
+        state,
+        channelWithdrawn(
+          {
+            id: channelId,
+            participant: partner,
+            totalWithdraw: withdraw,
+            txHash,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
+      expect(newState.channels).toMatchObject({
+        [tokenNetwork]: {
+          [partner]: {
+            state: ChannelState.open,
+            own: { deposit },
+            partner: { deposit, withdraw }, // partner's totalWithdraw was updated
             id: channelId,
           },
         },
@@ -840,6 +942,24 @@ describe('raidenReducer', () => {
       expect(get(newState, ['sent', secrethash, 'refund', 1])).toBe(refund);
     });
 
+    test('transfer channel closed', () => {
+      let newState = [
+        transferSigned({ message: transfer }, { secrethash }),
+      ].reduce(raidenReducer, state);
+
+      expect(get(newState, ['sent', secrethash, 'transfer', 1])).toBe(transfer);
+      expect(get(newState, ['secrets', secrethash, 'channelClosed'])).toBeUndefined();
+
+      newState = [
+        channelClosed(
+          { id: transfer.channel_identifier.toNumber(), participant: partner, closeBlock, txHash },
+          { tokenNetwork, partner },
+        ),
+      ].reduce(raidenReducer, newState);
+
+      expect(get(newState, ['sent', secrethash, 'channelClosed', 1])).toBe(txHash);
+    });
+
     test('transfer cleared', () => {
       let newState = [
         transferSecret({ secret }, { secrethash }),
@@ -853,6 +973,106 @@ describe('raidenReducer', () => {
 
       expect(get(newState, ['sent', secrethash])).toBeUndefined();
       expect(get(newState, ['secrets', secrethash])).toBeUndefined();
+    });
+
+    // withdraw request is under transfer just to use its pending transfer setup/vars
+    describe('withdraw request', () => {
+      test('withdrawSendConfirmation', () => {
+        let confirmation: Signed<WithdrawConfirmation> = {
+          type: MessageType.WITHDRAW_CONFIRMATION,
+          message_identifier: makeMessageId(),
+          chain_id: transfer.chain_id,
+          token_network_address: tokenNetwork,
+          channel_identifier: transfer.channel_identifier,
+          participant: partner,
+          // withdrawable amount is partner.deposit + own.g
+          total_withdraw: transfer.lock.amount,
+          nonce: One as UInt<8>,
+          expiration: bigNumberify(state.blockNumber + 20) as UInt<32>,
+          signature: makeSignature(),
+        };
+
+        // no previous balanceProof, next nonce = 1 should work
+        expect(
+          get(
+            raidenReducer(
+              state,
+              withdrawSendConfirmation(
+                { message: confirmation },
+                {
+                  tokenNetwork,
+                  partner,
+                  totalWithdraw: confirmation.total_withdraw,
+                  expiration: confirmation.expiration.toNumber(),
+                },
+              ),
+            ).channels,
+            [tokenNetwork, partner, 'own', 'balanceProof', 'nonce'],
+          ),
+        ).toEqual(One);
+
+        let unlock: Signed<Unlock> = {
+            type: MessageType.UNLOCK,
+            chain_id: transfer.chain_id,
+            message_identifier: makeMessageId(),
+            payment_identifier: transfer.payment_identifier,
+            nonce: transfer.nonce.add(1) as UInt<8>,
+            token_network_address: tokenNetwork,
+            channel_identifier: transfer.channel_identifier,
+            transferred_amount: Zero.add(transfer.lock.amount) as UInt<32>,
+            locked_amount: Zero as UInt<32>,
+            locksroot: keccak256([]) as Hash,
+            secret,
+            signature: makeSignature(),
+          },
+          // now, a state with a preent own.balanceProof due to a completed transfer
+          newState = [
+            transferSigned({ message: transfer }, { secrethash }),
+            transferUnlocked({ message: unlock }, { secrethash }),
+          ].reduce(raidenReducer, state),
+          prevNonce = newState.channels[tokenNetwork][partner].own.balanceProof!.nonce;
+
+        // forgot to update nonce, reducer must be noop
+        let newState2 = raidenReducer(
+          newState,
+          withdrawSendConfirmation(
+            { message: confirmation },
+            {
+              tokenNetwork,
+              partner,
+              totalWithdraw: confirmation.total_withdraw,
+              expiration: confirmation.expiration.toNumber(),
+            },
+          ),
+        );
+        expect(newState2).toBe(newState);
+
+        // update nonce
+        confirmation = {
+          ...confirmation,
+          nonce: newState.channels[tokenNetwork][partner].own.balanceProof!.nonce.add(1) as UInt<
+            8
+          >,
+        };
+
+        newState2 = raidenReducer(
+          newState,
+          withdrawSendConfirmation(
+            { message: confirmation },
+            {
+              tokenNetwork,
+              partner,
+              totalWithdraw: confirmation.total_withdraw,
+              expiration: confirmation.expiration.toNumber(),
+            },
+          ),
+        );
+
+        // nonce updated
+        expect(
+          get(newState2.channels, [tokenNetwork, partner, 'own', 'balanceProof', 'nonce']),
+        ).toEqual(prevNonce.add(1));
+      });
     });
   });
 });

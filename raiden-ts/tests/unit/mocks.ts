@@ -162,7 +162,9 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   const tokenContracts: { [address: string]: MockedContract<HumanStandardToken> } = {};
   const getTokenContract = (address: string): MockedContract<HumanStandardToken> => {
     if (!(address in tokenContracts)) {
-      const tokenContract = new Contract(address, HumanStandardTokenAbi, signer) as MockedContract<HumanStandardToken>;
+      const tokenContract = new Contract(address, HumanStandardTokenAbi, signer) as MockedContract<
+        HumanStandardToken
+      >;
       for (const func in tokenContract.functions) {
         jest.spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions']);
       }
