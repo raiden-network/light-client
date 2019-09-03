@@ -82,7 +82,7 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
     case MessageType.LOCKED_TRANSFER:
     case MessageType.REFUND_TRANSFER:
       // hash of packed representation of the whole message
-      const packed = concat([
+      let packed = concat([
         encode(CMDIDs[message.type], 1),
         encode(message.message_identifier, 8),
         encode(message.payment_identifier, 8),
@@ -95,11 +95,10 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
         encode(message.lock.amount, 32),
         encode(message.fee, 32),
       ]);
-      const hashable =
-        message.type === MessageType.LOCKED_TRANSFER
-          ? concat([packed, createMetadataHash(message.metadata)])
-          : packed;
-      return keccak256(hashable) as Hash;
+
+      if (message.type === MessageType.LOCKED_TRANSFER)
+        packed = concat([packed, createMetadataHash(message.metadata)]);
+      return keccak256(packed) as Hash;
     case MessageType.UNLOCK:
       return keccak256(
         concat([
@@ -199,7 +198,7 @@ export function packMessage(message: Message) {
           encode(0, 3),
           encode(message.message_identifier, 8),
         ]),
-      );
+      ) as HexString<12>;
     case MessageType.WITHDRAW_REQUEST:
     case MessageType.WITHDRAW_EXPIRED:
     case MessageType.WITHDRAW_CONFIRMATION:
@@ -213,7 +212,7 @@ export function packMessage(message: Message) {
           encode(message.total_withdraw, 32),
           encode(message.expiration, 32),
         ]),
-      );
+      ) as HexString<200>;
   }
 }
 
