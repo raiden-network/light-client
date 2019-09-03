@@ -1,7 +1,6 @@
-import { BigNumber } from 'ethers/utils';
 import { createStandardAction } from 'typesafe-actions';
 
-import { Address, Hash } from '../utils/types';
+import { Address, Hash, UInt } from '../utils/types';
 
 // interfaces need to be exported, and we need/want to support `import * as RaidenActions`
 // eslint-disable-next-line @typescript-eslint/prefer-interface
@@ -64,13 +63,13 @@ export const channelMonitored = createStandardAction('channelMonitored')<
 
 /* Request a payload.deposit to be made to channel meta:ChannelId */
 export const channelDeposit = createStandardAction('channelDeposit')<
-  { deposit: BigNumber },
+  { deposit: UInt<32> },
   ChannelId
 >();
 
 /* A deposit is detected on-chain. Also works as 'success' for channelDeposit action */
 export const channelDeposited = createStandardAction('channelDeposited')<
-  { id: number; participant: Address; totalDeposit: BigNumber; txHash: Hash },
+  { id: number; participant: Address; totalDeposit: UInt<32>; txHash: Hash },
   ChannelId
 >();
 
@@ -78,6 +77,12 @@ export const channelDeposited = createStandardAction('channelDeposited')<
 export const channelDepositFailed = createStandardAction('channelDepositFailed').map(
   (payload: Error, meta: ChannelId) => ({ payload, error: true, meta }),
 );
+
+/* A withdraw is detected on-chain */
+export const channelWithdrawn = createStandardAction('channelWithdrawn')<
+  { id: number; participant: Address; totalWithdraw: UInt<32>; txHash: Hash },
+  ChannelId
+>();
 
 /* Request channel meta:ChannelId to be closed */
 export const channelClose = createStandardAction('channelClose')<undefined, ChannelId>();
