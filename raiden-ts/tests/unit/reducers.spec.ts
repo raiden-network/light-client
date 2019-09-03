@@ -1,7 +1,7 @@
 import { cloneDeep, get } from 'lodash';
 import { set } from 'lodash/fp';
 
-import { Zero, One, HashZero } from 'ethers/constants';
+import { Zero, One } from 'ethers/constants';
 import { bigNumberify, keccak256 } from 'ethers/utils';
 
 import { raidenReducer } from 'raiden-ts/reducer';
@@ -713,7 +713,7 @@ describe('raidenReducer', () => {
           channel_identifier: transfer.channel_identifier,
           transferred_amount: Zero.add(transfer.lock.amount) as UInt<32>,
           locked_amount: transfer.locked_amount, // "forgot" to decrease locked_amount
-          locksroot: HashZero as Hash,
+          locksroot: keccak256([]) as Hash,
           secret,
           signature: makeSignature(),
         },
@@ -763,7 +763,7 @@ describe('raidenReducer', () => {
           channel_identifier: transfer.channel_identifier,
           transferred_amount: Zero as UInt<32>,
           locked_amount: transfer.locked_amount, // "forgot" to decrease locked_amount
-          locksroot: HashZero as Hash,
+          locksroot: keccak256([]) as Hash,
           secrethash,
           recipient: partner,
           signature: makeSignature(),

@@ -19,7 +19,7 @@ import { get, range } from 'lodash';
 
 import { Wallet } from 'ethers';
 import { AddressZero, Zero, HashZero, One } from 'ethers/constants';
-import { bigNumberify, verifyMessage, BigNumber } from 'ethers/utils';
+import { bigNumberify, verifyMessage, BigNumber, keccak256 } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { ContractTransaction } from 'ethers/contract';
 
@@ -2753,7 +2753,7 @@ describe('raidenRootEpic', () => {
               payload: {
                 message: expect.objectContaining({
                   type: MessageType.UNLOCK,
-                  locksroot: HashZero,
+                  locksroot: keccak256([]),
                   transferred_amount: amount,
                   locked_amount: Zero,
                   message_identifier: expect.any(BigNumber),
@@ -2901,7 +2901,7 @@ describe('raidenRootEpic', () => {
               payload: {
                 message: expect.objectContaining({
                   type: MessageType.LOCK_EXPIRED,
-                  locksroot: HashZero,
+                  locksroot: keccak256([]),
                   transferred_amount: Zero,
                   locked_amount: Zero,
                   message_identifier: expect.any(BigNumber),

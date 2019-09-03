@@ -1,7 +1,5 @@
 import { concat, hexlify } from 'ethers/utils/bytes';
 import { keccak256, randomBytes, bigNumberify, sha256 } from 'ethers/utils';
-import { HashZero } from 'ethers/constants';
-import { isEmpty } from 'lodash';
 
 import { Hash, Secret, UInt, HexString } from '../utils/types';
 import { encode } from '../utils/data';
@@ -17,7 +15,6 @@ import { RaidenSentTransfer, RaidenSentTransferStatus } from './types';
  * @returns  hash of the locks array
  */
 export function getLocksroot(locks: readonly Lock[]): Hash {
-  if (isEmpty(locks)) return HashZero as Hash;
   const encoded: HexString[] = [];
   for (const lock of locks)
     encoded.push(encode(lock.expiration, 32), encode(lock.amount, 32), lock.secrethash);
