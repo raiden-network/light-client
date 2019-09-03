@@ -11,6 +11,8 @@ import {
   Signed,
   LockExpired,
   RefundTransfer,
+  WithdrawRequest,
+  WithdrawConfirmation,
 } from '../messages/types';
 
 // eslint-disable-next-line @typescript-eslint/prefer-interface
@@ -135,3 +137,25 @@ export const transferFailed = createStandardAction('transferFailed').map(
 
 /** A pending transfer isn't needed anymore and should be cleared from state */
 export const transferClear = createStandardAction('transferClear')<undefined, TransferId>();
+
+// Withdraw actions
+
+// eslint-disable-next-line @typescript-eslint/prefer-interface
+type WithdrawId = {
+  tokenNetwork: Address;
+  partner: Address;
+  totalWithdraw: UInt<32>;
+  expiration: number;
+};
+
+/** A WithdrawRequest was received from partner */
+export const withdrawReceiveRequest = createStandardAction('withdrawReceiveRequest')<
+  { message: Signed<WithdrawRequest> },
+  WithdrawId
+>();
+
+/** A WithdrawConfirmation was signed and must be sent to partner */
+export const withdrawSendConfirmation = createStandardAction('withdrawSendConfirmation')<
+  { message: Signed<WithdrawConfirmation> },
+  WithdrawId
+>();

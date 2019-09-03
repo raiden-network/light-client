@@ -1,12 +1,16 @@
 import { isActionOf } from 'typesafe-actions';
 import { get, set, unset, mapValues } from 'lodash/fp';
-import { Zero } from 'ethers/constants';
+import { Zero, HashZero } from 'ethers/constants';
+import { hexlify } from 'ethers/utils';
 
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
-import { Channel } from '../channels/state';
-import { timed } from '../utils/types';
+import { Channel, ChannelState } from '../channels/state';
+import { SignedBalanceProof } from '../channels/types';
 import { channelClosed } from '../channels/actions';
+import { getLocksroot } from './utils';
+import { SignatureZero } from '../constants';
+import { timed, UInt, Signature, Hash } from '../utils/types';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { SentTransfer } from './state';
 import {
@@ -20,8 +24,8 @@ import {
   transferUnlockProcessed,
   transferExpireProcessed,
   transferClear,
+  withdrawSendConfirmation,
 } from './actions';
-import { getLocksroot } from './utils';
 
 /**
  * Handles all transfers actions and requests
@@ -241,6 +245,40 @@ export function transfersReducer(
     if (!(action.meta.secrethash in state.sent)) return state;
     state = unset(['sent', action.meta.secrethash], state);
     state = unset(['secrets', action.meta.secrethash], state);
+    return state;
+  } else if (isActionOf(withdrawSendConfirmation, action)) {
+    const message = action.payload.message,
+      channelPath = ['channels', action.meta.tokenNetwork, action.meta.partner];
+    let channel: Channel | undefined = get(channelPath, state);
+    if (!channel || channel.state !== ChannelState.open) return state;
+    // current own balanceProof, or zero balance proof, with some known fields filled
+    let balanceProof: SignedBalanceProof = channel.own.balanceProof || {
+      chainId: message.chain_id,
+      tokenNetworkAddress: action.meta.tokenNetwork,
+      channelId: message.channel_identifier,
+      // balance proof data
+      nonce: Zero as UInt<8>,
+      transferredAmount: Zero as UInt<32>,
+      lockedAmount: Zero as UInt<32>,
+      locksroot: HashZero as Hash,
+      messageHash: HashZero as Hash,
+      signature: hexlify(SignatureZero) as Signature,
+      sender: state.address,
+    };
+    // if it's the next nonce, update balance proof
+    if (message.nonce.eq(balanceProof.nonce.add(1)) && message.expiration.gt(state.blockNumber)) {
+      channel = {
+        ...channel,
+        own: {
+          ...channel.own,
+          balanceProof: {
+            ...balanceProof,
+            nonce: message.nonce,
+          },
+        },
+      };
+      state = set(channelPath, channel, state);
+    }
     return state;
   } else return state;
 }
