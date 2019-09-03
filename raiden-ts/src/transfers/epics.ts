@@ -1,24 +1,24 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { of, from, combineLatest, merge, Observable, EMPTY } from 'rxjs';
+import { combineLatest, EMPTY, from, merge, Observable, of } from 'rxjs';
 import {
   catchError,
   concatMap,
+  delay,
+  exhaustMap,
   filter,
   first,
+  ignoreElements,
   map,
   mergeMap,
-  withLatestFrom,
-  take,
-  ignoreElements,
-  repeatWhen,
-  delay,
-  takeUntil,
-  exhaustMap,
   publishReplay,
+  repeatWhen,
+  take,
+  takeUntil,
   tap,
+  withLatestFrom,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
-import { bigNumberify } from 'ethers/utils';
+import { BigNumber, bigNumberify } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import { findKey, get } from 'lodash';
 
@@ -33,39 +33,39 @@ import { Presences } from '../transport/types';
 import { getPresences$ } from '../transport/utils';
 import { messageReceived, messageSend, messageSent } from '../messages/actions';
 import {
-  MessageType,
   LockedTransfer,
+  LockExpired,
+  MessageType,
   Processed,
+  RefundTransfer,
   SecretRequest,
   SecretReveal,
-  Unlock,
   Signed,
-  LockExpired,
-  RefundTransfer,
+  Unlock,
 } from '../messages/types';
-import { signMessage, getBalanceProofFromEnvelopeMessage } from '../messages/utils';
-import { ChannelState, Channel } from '../channels/state';
+import { getBalanceProofFromEnvelopeMessage, signMessage } from '../messages/utils';
+import { Channel, ChannelState } from '../channels/state';
 import { Lock } from '../channels/types';
-import { newBlock, channelClosed, channelClose } from '../channels/actions';
+import { channelClose, channelClosed, newBlock } from '../channels/actions';
 import {
   transfer,
-  transferSigned,
-  transferSecret,
-  transferProcessed,
-  transferFailed,
-  transferSecretRequest,
-  transferUnlock,
-  transferUnlocked,
-  transferred,
   transferExpire,
   transferExpired,
   transferExpireFailed,
-  transferSecretReveal,
-  transferRefunded,
-  transferUnlockProcessed,
   transferExpireProcessed,
+  transferFailed,
+  transferProcessed,
+  transferred,
+  transferRefunded,
+  transferSecret,
+  transferSecretRequest,
+  transferSecretReveal,
+  transferSigned,
+  transferUnlock,
+  transferUnlocked,
+  transferUnlockProcessed,
 } from './actions';
-import { getLocksroot, makePaymentId, makeMessageId, getSecrethash } from './utils';
+import { getLocksroot, getSecrethash, makeMessageId, makePaymentId } from './utils';
 
 /**
  * Create an observable to compose and sign a LockedTransfer message/transferSigned action
@@ -103,8 +103,8 @@ function makeAndSignTransfer(
         throw new Error('secrethash does not match provided secret');
       }
 
-      let recipient: Address | undefined = undefined;
       // find a route
+      const availableRouteCapacities = new Map<Address, BigNumber>();
       for (const [key, channel] of Object.entries(state.channels[action.payload.tokenNetwork])) {
         const partner = key as Address;
         // capacity is own deposit - (own trasferred + locked) + (partner transferred)
@@ -121,20 +121,32 @@ function makeAndSignTransfer(
             channel.partner.balanceProof ? channel.partner.balanceProof.transferredAmount : Zero,
           );
         if (channel.state !== ChannelState.open) {
-          console.warn(
+          console.debug(
             `transfer: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`,
           );
         } else if (capacity.lt(action.payload.amount)) {
-          console.warn(
+          console.debug(
             `transfer: channel with "${partner}" without enough capacity (${capacity.toString()})`,
           );
         } else if (!(partner in presences) || !presences[partner].payload.available) {
-          console.warn(`transfer: partner "${partner}" not available in transport`);
+          console.debug(`transfer: partner "${partner}" not available in transport`);
         } else {
-          recipient = partner;
-          break;
+          availableRouteCapacities.set(partner, capacity);
         }
       }
+      const sortedRecipients = Array.from(availableRouteCapacities.keys()).sort((a, b) => {
+        // prioritize a direct available route
+        if (a === action.payload.target) return -1;
+        if (b === action.payload.target) return 1;
+        // else, sort descending on capacity (larger capacity first)
+        const capA = availableRouteCapacities.get(a)!,
+          capB = availableRouteCapacities.get(b)!;
+        if (capA.gt(capB)) return -1;
+        if (capA.lt(capB)) return 1;
+        else return 0;
+      });
+
+      const recipient: Address | undefined = sortedRecipients[0];
       if (!recipient)
         throw new Error('Could not find an online partner for tokenNetwork with enough capacity');
 
