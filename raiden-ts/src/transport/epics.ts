@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import {
   Observable,
   combineLatest,
@@ -342,11 +343,14 @@ export const matrixMonitorPresenceEpic = (
         }),
         mergeMap(userIds => from(userIds)),
         mergeMap(userId =>
-          getUserPresence(matrix, userId).then(presence =>
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            Object.assign(presence, { user_id: userId }),
-          ),
+          getUserPresence(matrix, userId)
+            .then(presence => ({ ...presence, user_id: userId }))
+            .catch(err => {
+              console.log('Error fetching user presence, ignoring:', err);
+              return { presence: '', user_id: userId };
+            }),
         ),
+        filter(presence => !!presence && !!presence.presence),
         toArray(),
         // for all matched/verified users, get its presence through dedicated API
         // it's required because, as the user events could already have been handled and
@@ -990,7 +994,7 @@ export const deliveredEpic = (
 
       const delivered: Delivered = {
         type: MessageType.DELIVERED,
-        delivered_message_identifier: msgId, // eslint-disable-line @typescript-eslint/camelcase
+        delivered_message_identifier: msgId,
       };
       return from(signMessage(signer, delivered)).pipe(
         tap(signed => cache.put(key, signed)),
