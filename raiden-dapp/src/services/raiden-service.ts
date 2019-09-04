@@ -1,4 +1,4 @@
-import { Raiden, RaidenChannel } from 'raiden-ts';
+import { Raiden, RaidenChannel, RaidenSentTransfer } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
@@ -11,7 +11,7 @@ import {
 } from '@/model/types';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
-import { filter } from 'rxjs/internal/operators';
+import { filter, first } from 'rxjs/internal/operators';
 
 export default class RaidenService {
   private _raiden?: Raiden;
@@ -259,7 +259,17 @@ export default class RaidenService {
   async transfer(token: string, target: string, amount: BigNumber) {
     try {
       await this.raiden.getAvailability(target);
-      await this.raiden.transfer(token, target, amount);
+      const secretHash = await this.raiden.transfer(token, target, amount);
+
+      // Wait for transaction to be completed
+      await this.raiden.transfers$
+        .pipe(
+          first(
+            (transfer: RaidenSentTransfer) =>
+              transfer.secrethash === secretHash && transfer.completed
+          )
+        )
+        .toPromise();
     } catch (e) {
       throw new TransferFailed(e);
     }
