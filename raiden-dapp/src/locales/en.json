@@ -157,7 +157,7 @@
     "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
   },
   "payment": {
-    "pay-button": "Pay",
+    "pay-button": "Send payment",
     "deposit-button": "Deposit",
     "capacity-label": "Capacity",
     "capacity-amount": "{capacity} {token}",

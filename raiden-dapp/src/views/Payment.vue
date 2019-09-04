@@ -1,12 +1,59 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="payment">
     <v-layout column justify-space-between fill-height>
+      <v-layout class="payment__capacity" justify-center>
+        <v-flex xs7 class="payment__capacity_capacity-column">
+          <v-layout column>
+            <span class="payment__capacity__label">{{
+              $t('payment.capacity-label')
+            }}</span>
+            <span class="payment__capacity__amount">
+              {{
+                $t('payment.capacity-amount', {
+                  capacity: convertToUnits(capacity, token.decimals),
+                  token: token.symbol
+                })
+              }}
+            </span>
+          </v-layout>
+          <v-img
+            :src="require('../assets/down_arrow.svg')"
+            max-width="18px"
+            class="payment__capacity__arrow"
+          ></v-img>
+        </v-flex>
+        <v-flex xs3 align-center class="payment__capacity__deposit-column">
+          <v-dialog v-model="depositting" max-width="450">
+            <template #activator="{ on }">
+              <v-btn
+                @click="depositting = true"
+                v-on="on"
+                text
+                class="payment__capacity__deposit"
+                >{{ $t('payment.deposit-button') }}</v-btn
+              >
+            </template>
+            <v-card class="payment__deposit-dialog">
+              <channel-deposit
+                @cancel="depositting = false"
+                @confirm="deposit($event)"
+                :token="token"
+                identifier="0"
+              ></channel-deposit>
+            </v-card>
+          </v-dialog>
+        </v-flex>
+      </v-layout>
+
       <v-layout align-center justify-center class="payment__recipient">
         <v-flex xs10>
           <div class="payment__recipient__label">
             {{ $t('payment.recipient-label') }}
           </div>
-          <address-input v-model="target" :exclude="[token.address, defaultAccount]"></address-input>
+          <address-input
+            v-model="target"
+            :exclude="[token.address, defaultAccount]"
+          ></address-input>
         </v-flex>
       </v-layout>
 
@@ -20,46 +67,6 @@
             :max="capacity"
             limit
           ></amount-input>
-        </v-flex>
-      </v-layout>
-
-      <v-layout class="payment__capacity" justify-center>
-        <v-flex xs5>
-          <v-layout column>
-            <span class="payment__capacity__label">
-              {{ $t('payment.capacity-label') }}
-            </span>
-            <span class="payment__capacity__amount">
-              {{
-                $t('payment.capacity-amount', {
-                  capacity: convertToUnits(capacity, token.decimals),
-                  token: token.symbol
-                })
-              }}
-            </span>
-          </v-layout>
-        </v-flex>
-        <v-flex xs2 offset-xs3 align-self-end>
-          <v-dialog v-model="depositting" max-width="450">
-            <template #activator="{ on }">
-              <v-btn
-                @click="depositting = true"
-                v-on="on"
-                text
-                class="payment__capacity__deposit"
-              >
-                {{ $t('payment.deposit-button') }}
-              </v-btn>
-            </template>
-            <v-card class="payment__deposit-dialog">
-              <channel-deposit
-                @cancel="depositting = false"
-                @confirm="deposit($event)"
-                :token="token"
-                identifier="0"
-              ></channel-deposit>
-            </v-card>
-          </v-dialog>
         </v-flex>
       </v-layout>
 
@@ -231,7 +238,23 @@ export default class Payment extends Vue {
 }
 
 .payment__capacity {
-  max-height: 50px;
+  position: relative;
+  background-image: linear-gradient(180deg, #050505 0%, #0a1923 100%);
+}
+
+.payment__capacity__deposit-column {
+  justify-content: flex-end;
+  display: flex;
+}
+
+.payment__capacity_capacity-column {
+  align-self: center;
+}
+
+.payment__capacity__arrow {
+  position: absolute;
+  left: calc(50% - 9px);
+  bottom: 10px;
 }
 
 .payment__capacity__label {
@@ -244,8 +267,9 @@ export default class Payment extends Vue {
 }
 
 .payment__capacity__amount {
-  color: $text-color;
-  font-size: 16px;
+  color: $color-white;
+  font-size: 24px;
+  font-weight: bold;
   line-height: 19px;
   padding-left: 11px;
   margin-top: 10px;
