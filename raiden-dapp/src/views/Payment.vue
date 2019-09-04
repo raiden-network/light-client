@@ -2,7 +2,7 @@
   <v-form v-model="valid" autocomplete="off" class="payment">
     <v-layout column justify-space-between fill-height>
       <v-layout class="payment__capacity" justify-center>
-        <v-flex xs5 class="payment__capacity_capacity-column">
+        <v-flex xs7 class="payment__capacity_capacity-column">
           <v-layout column>
             <span class="payment__capacity__label">{{
               $t('payment.capacity-label')
@@ -22,7 +22,7 @@
             class="payment__capacity__arrow"
           ></v-img>
         </v-flex>
-        <v-flex xs5 align-center class="payment__capacity__deposit-column">
+        <v-flex xs3 align-center class="payment__capacity__deposit-column">
           <v-dialog v-model="depositting" max-width="450">
             <template #activator="{ on }">
               <v-btn
