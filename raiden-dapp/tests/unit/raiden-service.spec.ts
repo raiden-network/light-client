@@ -16,8 +16,9 @@ import flushPromises from 'flush-promises';
 import { Raiden } from 'raiden-ts';
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
-import { BehaviorSubject, EMPTY } from 'rxjs';
-import { One, Zero } from 'ethers/constants';
+import { BehaviorSubject, EMPTY, of } from 'rxjs';
+import { delay } from 'rxjs/internal/operators';
+import { One, Zero, AddressZero } from 'ethers/constants';
 import Mocked = jest.Mocked;
 import anything = jasmine.anything;
 
@@ -40,6 +41,8 @@ describe('RaidenService', () => {
         getBalance: jest.fn().mockResolvedValue(Zero),
         channels$: EMPTY,
         events$: EMPTY,
+        // Emit a dummy transfer event every time raiden is mocked
+        transfers$: of({}).pipe(delay(1000)),
         getTokenBalance: jest.fn().mockResolvedValue(Zero)
       },
       extras
@@ -658,5 +661,17 @@ describe('RaidenService', () => {
       expect(transfer).toHaveBeenCalledTimes(1);
       expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One);
     });
+  });
+
+  it('resolve ens addresses', async () => {
+    const resolveName = jest.fn().mockResolvedValue(AddressZero);
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(mockRaiden({ resolveName }));
+
+    await raidenService.connect();
+    await flushPromises();
+
+    expect(await raidenService.ensResolve('domain.eth')).toEqual(AddressZero);
+    expect(resolveName).toHaveBeenCalledTimes(1);
   });
 });
