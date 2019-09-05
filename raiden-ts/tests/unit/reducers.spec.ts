@@ -263,7 +263,9 @@ describe('raidenReducer', () => {
     });
 
     test('channel not in open state', () => {
+      // put channel in 'closed' state
       state = set(['channels', tokenNetwork, partner, 'state'], ChannelState.closed, state);
+      // try to apply action/state change
       const newState = raidenReducer(
         state,
         channelWithdrawn(
@@ -276,7 +278,8 @@ describe('raidenReducer', () => {
           { tokenNetwork, partner },
         ),
       );
-      expect(newState).toEqual(state);
+      // if channel is not open, action is noop and new state must be the previous one
+      expect(newState).toBe(state);
     });
 
     test('own withdraw successful', () => {
@@ -943,9 +946,10 @@ describe('raidenReducer', () => {
     });
 
     test('transfer channel closed', () => {
-      let newState = [
-        transferSigned({ message: transfer }, { secrethash }),
-      ].reduce(raidenReducer, state);
+      let newState = [transferSigned({ message: transfer }, { secrethash })].reduce(
+        raidenReducer,
+        state,
+      );
 
       expect(get(newState, ['sent', secrethash, 'transfer', 1])).toBe(transfer);
       expect(get(newState, ['secrets', secrethash, 'channelClosed'])).toBeUndefined();
