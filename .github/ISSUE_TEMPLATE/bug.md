@@ -6,19 +6,17 @@ labels: ''
 assignees: ''
 
 ---
-## Thanks :-)
-
-This template helps us to reproduce and debug the bug you have found.
+## Thanks for filing a bug report :-)
 
 ## Steps to Reproduce
 1. 
 2. 
 
 ## Expected Result
-
+- 
 
 ## Actual Result
-
+- 
 
 ## Additional Infos (Optional) 
 ```
