@@ -10,15 +10,19 @@ assignees: ''
 
 This template helps us to reproduce and debug the bug you have found.
 
-## Steps to reproduce
+## Steps to Reproduce
 1. 
 2. 
 
-## Expected result
+## Expected Result
 
 
-## Actual result
+## Actual Result
 
 
-## Output of the browser console
-(if you know how to get it -> the red text)
+## Additional Infos (Optional) 
+```
+- Browser & version
+- Browser console errors
+- Device / OS
+```
