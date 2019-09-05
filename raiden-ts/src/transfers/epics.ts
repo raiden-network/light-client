@@ -377,13 +377,13 @@ function makeAndSignLockExpired(
 }
 
 /**
- * Create an observable to compose and sign a WithdrawConfirmation message
+ * Create an observable to compose and sign a [[WithdrawConfirmation]] message
  *
  * Validate we're inside expiration timeout, channel exists and is open, and that total_withdraw is
  * less than or equal withdrawable amount (while we don't receive, partner.deposit +
  * own.transferredAmount).
- * We need it inside transferGenerateAndSignEnvelopeMessageEpic concatMap/lock because we read and
- * change the 'nonce', even though WithdrawConfirmation doesn't carry a full balanceProof.
+ * We need it inside [[transferGenerateAndSignEnvelopeMessageEpic]] concatMap/lock because we read
+ * and change the 'nonce', even though WithdrawConfirmation doesn't carry a full balanceProof.
  * Also, instead of storing the messages in state and retrying, we just cache it and send cached
  * signed message on each received request.
  *
@@ -1109,12 +1109,13 @@ export const transferRefundedEpic = (
       const message = action.payload.message;
       if (!message || !Signed(RefundTransfer).is(message)) return;
       const secrethash = message.lock.secrethash;
+      if (!(secrethash in state.sent)) return;
+      const [, transfer] = state.sent[secrethash].transfer;
       if (
-        !(secrethash in state.sent) ||
-        message.initiator !== state.sent[secrethash].transfer[1].recipient ||
-        !message.payment_identifier.eq(state.sent[secrethash].transfer[1].payment_identifier) ||
-        !message.lock.amount.eq(state.sent[secrethash].transfer[1].lock.amount) ||
-        !message.lock.expiration.eq(state.sent[secrethash].transfer[1].lock.expiration) ||
+        message.initiator !== transfer.recipient ||
+        !message.payment_identifier.eq(transfer.payment_identifier) ||
+        !message.lock.amount.eq(transfer.lock.amount) ||
+        !message.lock.expiration.eq(transfer.lock.expiration) ||
         state.sent[secrethash].unlock || // already unlocked
         state.sent[secrethash].lockExpired || // already expired
         state.sent[secrethash].channelClosed || // channel closed
@@ -1181,7 +1182,8 @@ export const transferReceivedReplyProcessedEpic = (
 };
 
 /**
- * When receiving a WithdrawRequest message, create the respective withdrawReceiveRequest action
+ * When receiving a [[WithdrawRequest]] message, create the respective [[withdrawReceiveRequest]]
+ * action
  *
  * @param action$  Observable of messageReceived actions
  * @returns  Observable of withdrawReceiveRequest actions
@@ -1212,7 +1214,7 @@ export const withdrawRequestReceivedEpic = (
   );
 
 /**
- * sendMessage when a withdrawSendConfirmation action is fired
+ * sendMessage when a [[withdrawSendConfirmation]] action is fired
  *
  * @param action$  Observable of withdrawSendConfirmation actions
  * @returns  Observable of messageSend actions

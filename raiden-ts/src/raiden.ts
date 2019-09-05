@@ -545,7 +545,7 @@ export class Raiden {
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
     deposit = bigNumberify(deposit);
-    if (!UInt(32).is(deposit)) throw new Error('invalid deposit');
+    if (!UInt(32).is(deposit)) throw new Error('invalid deposit: must be 0 < amount < 2^256');
     const promise = this.action$
       .pipe(
         filter(isActionOf([channelDeposited, channelDepositFailed])),
