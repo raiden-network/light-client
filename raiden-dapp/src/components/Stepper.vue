@@ -163,19 +163,20 @@ export default class Stepper extends Vue {
   width: 100%;
   height: 100%;
   background-color: #0f374b;
-  &:before,
-  &:after {
+  position: relative;
+  &:before {
     content: '';
     position: absolute;
-    margin-left: 153px;
+    z-index: 1;
+    right: -16px;
     height: 28px;
     width: 28px;
     background: inherit;
     border: inherit;
+    border-width: 2px 2px 0 0;
     border-left-color: transparent;
     border-bottom-color: transparent;
     border-radius: 0 !important;
-
     transform: rotate(45deg);
   }
 }
@@ -192,14 +193,14 @@ export default class Stepper extends Vue {
 .stepper__card__steps__step:last-child {
   border-bottom-right-radius: 0;
   border-top-right-radius: 14px;
-  &:before,
-  &:after {
+  &:before {
     content: '';
     position: absolute;
     margin-left: 0;
     height: 0; /* button_inner_height / sqrt(2) */
     width: 0; /* same as height */
     border-radius: 0 !important;
+    transform: translate(-999em, -999em);
   }
 }
 
