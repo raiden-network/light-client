@@ -234,7 +234,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   font-family: Roboto, sans-serif;
   font-size: 16px;
   line-height: 21px;
-  text-align: center;
+  text-align: left;
   .v-messages__wrapper {
     color: white;
   }
@@ -275,10 +275,6 @@ $dark_background: #323232;
 .address-input--hint-visible ::v-deep .v-text-field__details {
   padding-top: 0;
   margin-top: 0;
-}
-
-::v-deep .v-text-field__details {
-  height: 30px;
 }
 
 .address-input--untouched {
