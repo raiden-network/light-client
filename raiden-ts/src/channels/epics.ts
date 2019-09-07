@@ -1,18 +1,18 @@
-import { Observable, from, of, EMPTY, merge, interval, ReplaySubject } from 'rxjs';
+import { Observable, from, of, EMPTY, merge, interval } from 'rxjs';
 import {
   catchError,
   filter,
   map,
   mergeMap,
   mergeMapTo,
-  startWith,
   tap,
   takeWhile,
   withLatestFrom,
   groupBy,
   exhaustMap,
-  multicast,
   first,
+  publishReplay,
+  switchMap,
 } from 'rxjs/operators';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { findKey, get, isEmpty, negate } from 'lodash';
@@ -50,7 +50,7 @@ import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
 import { encode } from '../utils/data';
 
 /**
- * Register for new block events and emit newBlock actions for new blocks
+ * Fetch current blockNumber, register for new block events and emit newBlock actions
  *
  * @param action$  Observable of RaidenActions
  * @param state$  Observable of RaidenStates
@@ -59,12 +59,11 @@ import { encode } from '../utils/data';
  */
 export const initNewBlockEpic = (
   {  }: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
 ): Observable<ActionType<typeof newBlock>> =>
-  state$.pipe(
-    first(),
-    mergeMap(() => fromEthersEvent<number>(provider, 'block')),
+  from(provider.getBlockNumber()).pipe(
+    mergeMap(blockNumber => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
     map(blockNumber => newBlock({ blockNumber })),
   );
 
@@ -77,35 +76,42 @@ export const initNewBlockEpic = (
  * @returns  Observable of tokenMonitored actions
  */
 export const initMonitorRegistryEpic = (
-  {  }: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { registryContract, contractsInfo }: RaidenEpicDeps,
 ): Observable<ActionType<typeof tokenMonitored>> =>
   state$.pipe(
-    first(),
-    mergeMap(state =>
-      merge(
-        // monitor old (in case of empty tokens) and new registered tokens
-        // and starts monitoring every registered token
-        getEventsStream<[Address, Address, Event]>(
-          registryContract,
-          [registryContract.filters.TokenNetworkCreated(null, null)],
-          isEmpty(state.tokens) ? of(contractsInfo.TokenNetworkRegistry.block_number) : undefined,
-          isEmpty(state.tokens) ? of(state.blockNumber) : undefined,
-        ).pipe(
-          withLatestFrom(state$.pipe(startWith(state))),
-          map(([[token, tokenNetwork], state]) =>
-            tokenMonitored({
-              token,
-              tokenNetwork,
-              first: !(token in state.tokens),
-            }),
-          ),
-        ),
-        // monitor previously monitored tokens
-        from(Object.entries(state.tokens)).pipe(
-          map(([token, tokenNetwork]) =>
-            tokenMonitored({ token: token as Address, tokenNetwork: tokenNetwork as Address }),
+    publishReplay(1, undefined, state$ =>
+      action$.pipe(
+        first(isActionOf(newBlock)),
+        withLatestFrom(state$),
+        switchMap(([{ payload: { blockNumber } }, state]) =>
+          merge(
+            // monitor old (in case of empty tokens) and new registered tokens
+            // and starts monitoring every registered token
+            getEventsStream<[Address, Address, Event]>(
+              registryContract,
+              [registryContract.filters.TokenNetworkCreated(null, null)],
+              isEmpty(state.tokens)
+                ? of(contractsInfo.TokenNetworkRegistry.block_number)
+                : undefined,
+              isEmpty(state.tokens) ? of(blockNumber) : undefined,
+            ).pipe(
+              withLatestFrom(state$),
+              map(([[token, tokenNetwork, event], state]) =>
+                tokenMonitored({
+                  token,
+                  tokenNetwork,
+                  fromBlock: !(token in state.tokens) ? event.blockNumber : undefined,
+                }),
+              ),
+            ),
+            // monitor previously monitored tokens
+            from(Object.entries(state.tokens)).pipe(
+              map(([token, tokenNetwork]) =>
+                tokenMonitored({ token: token as Address, tokenNetwork }),
+              ),
+            ),
           ),
         ),
       ),
@@ -148,12 +154,10 @@ export const initMonitorChannelsEpic = (
  */
 export const initMonitorProviderEpic = (
   {  }: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { address, network, provider }: RaidenEpicDeps,
 ): Observable<ActionType<typeof raidenShutdown>> =>
-  state$.pipe(
-    first(),
-    mergeMap(() => provider.listAccounts()),
+  from(provider.listAccounts()).pipe(
     // at init time, check if our address is in provider's accounts list
     // if not, it means Signer is a local Wallet or another non-provider-side account
     // if yes, poll accounts every 1s and monitors if address is still there
@@ -204,11 +208,11 @@ export const initMonitorProviderEpic = (
 export const tokenMonitoredEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, getTokenNetworkContract, contractsInfo }: RaidenEpicDeps,
+  { address, getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelOpened>> =>
   state$.pipe(
     map(state => state.blockNumber),
-    multicast(new ReplaySubject(1), blockNumber$ =>
+    publishReplay(1, undefined, blockNumber$ =>
       action$.pipe(
         filter(isActionOf(tokenMonitored)),
         groupBy(action => action.payload.tokenNetwork),
@@ -226,16 +230,13 @@ export const tokenMonitoredEpic = (
                 tokenNetworkContract.filters.ChannelOpened(null, null, address, null),
               ];
 
-              console.log('getEventsStream', action, blockNumber$);
               return getEventsStream<ChannelOpenedEvent>(
                 tokenNetworkContract,
                 filters,
                 // if first time monitoring this token network,
                 // fetch TokenNetwork's pastEvents since registry deployment as fromBlock$
-                action.payload.first
-                  ? of(contractsInfo.TokenNetworkRegistry.block_number)
-                  : undefined,
-                action.payload.first ? blockNumber$ : undefined,
+                action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+                action.payload.fromBlock ? blockNumber$ : undefined,
               ).pipe(
                 filter(([, p1, p2]) => p1 === address || p2 === address),
                 map(([id, p1, p2, settleTimeout, event]) =>
@@ -290,7 +291,7 @@ export const channelMonitoredEpic = (
 > =>
   state$.pipe(
     map(state => state.blockNumber),
-    multicast(new ReplaySubject(1), blockNumber$ =>
+    publishReplay(1, undefined, blockNumber$ =>
       action$.pipe(
         filter(isActionOf(channelMonitored)),
         groupBy(

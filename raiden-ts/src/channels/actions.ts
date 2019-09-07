@@ -12,20 +12,15 @@ type ChannelId = {
 /* A new head in the blockchain is detected by provider */
 export const newBlock = createStandardAction('newBlock')<{ blockNumber: number }>();
 
-/* A new token network is detected in the TokenNetworkRegistry instance */
-export const tokenMonitored = createStandardAction('tokenMonitored').map(
-  ({
-    token,
-    tokenNetwork,
-    first = false,
-  }: {
-    token: Address;
-    tokenNetwork: Address;
-    first?: boolean;
-  }) => ({
-    payload: { token, tokenNetwork, first },
-  }),
-);
+/**
+ * A new token network is detected in the TokenNetworkRegistry instance
+ * fromBlock is only set on the first time, to fetch and handle past events
+ */
+export const tokenMonitored = createStandardAction('tokenMonitored')<{
+  token: Address;
+  tokenNetwork: Address;
+  fromBlock?: number;
+}>();
 
 /**
  * Channel actions receive ChannelId as 'meta' action property

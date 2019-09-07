@@ -12,7 +12,17 @@ import {
   Subject,
   Observable,
 } from 'rxjs';
-import { first, tap, ignoreElements, takeUntil, toArray, delay, filter } from 'rxjs/operators';
+import {
+  first,
+  tap,
+  ignoreElements,
+  takeUntil,
+  toArray,
+  delay,
+  filter,
+  take,
+  finalize,
+} from 'rxjs/operators';
 import { marbles, fakeSchedulers } from 'rxjs-marbles/jest';
 import { getType, isActionOf, ActionType } from 'typesafe-actions';
 import { get, range } from 'lodash';
@@ -80,6 +90,7 @@ import {
   channelMonitoredEpic,
   channelSettleableEpic,
   tokenMonitoredEpic,
+  initMonitorRegistryEpic,
 } from 'raiden-ts/channels/epics';
 import {
   initMatrixEpic,
@@ -205,7 +216,7 @@ describe('raidenRootEpic', () => {
       'init newBlock, tokenMonitored, channelMonitored events',
       marbles(m => {
         const newState = [
-          tokenMonitored({ token, tokenNetwork, first: true }),
+          tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpened(
             { id: channelId, settleTimeout, openBlock: 121, isFirstParticipant, txHash },
             { tokenNetwork, partner },
@@ -243,24 +254,84 @@ describe('raidenRootEpic', () => {
         /* this test requires mocked provider, or else emit is called with setTimeout and doesn't
          * run before the return of the function.
          */
-        const action$ = m.cold('----------d|', {
+        // See: https://github.com/cartant/rxjs-marbles/issues/11
+        depsMock.provider.getBlockNumber.mockReturnValueOnce((of(633) as unknown) as Promise<
+          number
+        >);
+        const action$ = m.cold('--b-------d|', {
+            b: newBlock({ blockNumber: 634 }),
             d: raidenShutdown({ reason: ShutdownReason.STOP }),
           }),
-          state$ = m.cold('--s---|', { s: newState }),
+          state$ = m.cold('-s----|', { s: newState }),
           emitBlock$ = m.cold('----------b-|').pipe(
-            tap(() => depsMock.provider.emit('block', 634)),
+            tap(() => depsMock.provider.emit('block', 635)),
             ignoreElements(),
           );
         m.expect(merge(emitBlock$, raidenRootEpic(action$, state$, depsMock))).toBeObservable(
-          m.cold('--(tc)----b-|', {
-            t: tokenMonitored({ token, tokenNetwork, first: false }),
+          m.cold('bct-------B-|', {
+            b: newBlock({ blockNumber: 633 }),
             // ensure channelMonitored is emitted by init even for 'settling' channel
             c: channelMonitored({ id: channelId }, { tokenNetwork, partner }),
-            b: newBlock({ blockNumber: 634 }),
+            t: tokenMonitored({ token, tokenNetwork }),
+            B: newBlock({ blockNumber: 635 }),
           }),
         );
       }),
     );
+
+    test('monitorRegistry: fetch past and new tokenNetworks', async () => {
+      const state$ = new BehaviorSubject(state),
+        action$ = new Subject<RaidenAction>(),
+        otherToken = '0x0000000000000000000000000000000000080001' as Address,
+        otherTokenNetwork = '0x0000000000000000000000000000000000090001' as Address;
+
+      action$.subscribe(action => state$.next(raidenReducer(state$.value, action)));
+
+      depsMock.provider.resetEventsBlock(126);
+
+      depsMock.provider.getLogs.mockResolvedValueOnce([
+        makeLog({
+          blockNumber: 121,
+          filter: depsMock.registryContract.filters.TokenNetworkCreated(token, tokenNetwork),
+        }),
+      ]);
+
+      const output = initMonitorRegistryEpic(action$, state$, depsMock)
+        .pipe(
+          tap(action => state$.next(raidenReducer(state$.value, action))),
+          take(2),
+          finalize(() => (action$.complete(), state$.complete())),
+          toArray(),
+        )
+        .toPromise();
+
+      action$.next(newBlock({ blockNumber: 126 }));
+
+      depsMock.provider.resetEventsBlock(127);
+      action$.next(newBlock({ blockNumber: 127 }));
+      depsMock.provider.emit(
+        depsMock.registryContract.filters.TokenNetworkCreated(null, null),
+        makeLog({
+          blockNumber: 127,
+          filter: depsMock.registryContract.filters.TokenNetworkCreated(
+            otherToken,
+            otherTokenNetwork,
+          ),
+        }),
+      );
+
+      await expect(output).resolves.toEqual([
+        tokenMonitored({ token, tokenNetwork, fromBlock: 121 }),
+        tokenMonitored({ token: otherToken, tokenNetwork: otherTokenNetwork, fromBlock: 127 }),
+      ]);
+      expect(depsMock.provider.getLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...depsMock.registryContract.filters.TokenNetworkCreated(null, null),
+          fromBlock: depsMock.contractsInfo.TokenNetworkRegistry.block_number,
+          toBlock: 126,
+        }),
+      );
+    });
 
     test('ShutdownReason.ACCOUNT_CHANGED', async () => {
       const action$ = EMPTY as Observable<RaidenAction>,
@@ -291,7 +362,7 @@ describe('raidenRootEpic', () => {
     });
 
     test('unexpected exception triggers shutdown', async () => {
-      const action$ = EMPTY as Observable<RaidenAction>,
+      const action$ = of(newBlock({ blockNumber: 122 })),
         state$ = of(state);
 
       const error = new Error('connection lost');
@@ -394,7 +465,7 @@ describe('raidenRootEpic', () => {
       const closeBlock = 125;
       // state contains one channel in closed state
       const newState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock: 121, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -430,7 +501,7 @@ describe('raidenRootEpic', () => {
     const settleTimeoutEncoded = defaultAbiCoder.encode(['uint256'], [settleTimeout]);
 
     test('first tokenMonitored with past$ ChannelOpened event', async () => {
-      const action = tokenMonitored({ token, tokenNetwork, first: true }),
+      const action = tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         curState = raidenReducer(state, action);
       // give time to multicast to register
       const action$ = of<RaidenAction>(action).pipe(delay(1)),
@@ -461,7 +532,7 @@ describe('raidenRootEpic', () => {
     });
 
     test('already tokenMonitored with new$ ChannelOpened event', async () => {
-      const action = tokenMonitored({ token, tokenNetwork, first: false }),
+      const action = tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         curState = raidenReducer(state, action);
       const action$ = of<RaidenAction>(action),
         state$ = of<RaidenState>(curState);
@@ -493,10 +564,10 @@ describe('raidenRootEpic', () => {
 
     test("ensure multiple tokenMonitored don't produce duplicated events", async () => {
       const multiple = 16;
-      const action = tokenMonitored({ token, tokenNetwork, first: false }),
+      const action = tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         curState = raidenReducer(state, action);
       const action$ = from(
-          range(multiple).map(() => tokenMonitored({ token, tokenNetwork, first: false })),
+          range(multiple).map(() => tokenMonitored({ token, tokenNetwork, fromBlock: 1 })),
         ),
         state$ = of<RaidenState>(curState);
 
@@ -541,7 +612,7 @@ describe('raidenRootEpic', () => {
       // there's a channel already opened in state
       const action = channelOpen({ settleTimeout }, { tokenNetwork, partner }),
         curState = [
-          tokenMonitored({ token, tokenNetwork, first: true }),
+          tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpened(
             { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
             { tokenNetwork, partner },
@@ -560,7 +631,7 @@ describe('raidenRootEpic', () => {
 
     test('tx fails', async () => {
       const action = channelOpen({ settleTimeout }, { tokenNetwork, partner }),
-        curState = [tokenMonitored({ token, tokenNetwork, first: true }), action].reduce(
+        curState = [tokenMonitored({ token, tokenNetwork, fromBlock: 1 }), action].reduce(
           raidenReducer,
           state,
         );
@@ -592,7 +663,7 @@ describe('raidenRootEpic', () => {
     test('success', async () => {
       // there's a channel already opened in state
       const action = channelOpen({ settleTimeout }, { tokenNetwork, partner }),
-        curState = [tokenMonitored({ token, tokenNetwork, first: true }), action].reduce(
+        curState = [tokenMonitored({ token, tokenNetwork, fromBlock: 1 }), action].reduce(
           raidenReducer,
           state,
         );
@@ -627,7 +698,7 @@ describe('raidenRootEpic', () => {
     test("filter out if channel isn't in 'open' state", async () => {
       // channel.state is 'opening'
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen({ settleTimeout }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
@@ -647,7 +718,7 @@ describe('raidenRootEpic', () => {
           { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
-        curState = [tokenMonitored({ token, tokenNetwork, first: true }), action].reduce(
+        curState = [tokenMonitored({ token, tokenNetwork, fromBlock: 1 }), action].reduce(
           raidenReducer,
           state,
         );
@@ -677,7 +748,7 @@ describe('raidenRootEpic', () => {
 
     test('first channelMonitored with past$ own ChannelNewDeposit event', async () => {
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -714,7 +785,7 @@ describe('raidenRootEpic', () => {
     test('already channelMonitored with new$ partner ChannelNewDeposit event', async () => {
       const action = channelMonitored({ id: channelId }, { tokenNetwork, partner }),
         curState = [
-          tokenMonitored({ token, tokenNetwork, first: true }),
+          tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpened(
             { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
             { tokenNetwork, partner },
@@ -746,7 +817,7 @@ describe('raidenRootEpic', () => {
     test("ensure multiple channelMonitored don't produce duplicated events", async () => {
       const multiple = 16;
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -794,7 +865,7 @@ describe('raidenRootEpic', () => {
 
     test('new$ partner ChannelWithdraw event', async () => {
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -837,7 +908,7 @@ describe('raidenRootEpic', () => {
 
     test('new$ partner ChannelClosed event', async () => {
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -871,7 +942,7 @@ describe('raidenRootEpic', () => {
 
     test('new$ ChannelSettled event', async () => {
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -995,7 +1066,7 @@ describe('raidenRootEpic', () => {
       const action = channelDeposit({ deposit }, { tokenNetwork, partner }),
         // channel is in 'opening' state
         curState = [
-          tokenMonitored({ token, tokenNetwork, first: true }),
+          tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpen({ settleTimeout }, { tokenNetwork, partner }),
         ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(action),
@@ -1014,7 +1085,7 @@ describe('raidenRootEpic', () => {
     test('approve tx fails', async () => {
       // there's a channel already opened in state
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -1050,7 +1121,7 @@ describe('raidenRootEpic', () => {
     test('setTotalDeposit tx fails', async () => {
       // there's a channel already opened in state
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -1100,7 +1171,7 @@ describe('raidenRootEpic', () => {
     test('success', async () => {
       // there's a channel already opened in state
       let curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -1187,7 +1258,7 @@ describe('raidenRootEpic', () => {
     test('fails if channel.state !== "open"|"closing"', async () => {
       // there's a channel already opened in state
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         // channel is in 'opening' state
         channelOpen({ settleTimeout }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
@@ -1207,7 +1278,7 @@ describe('raidenRootEpic', () => {
     test('closeChannel tx fails', async () => {
       // there's a channel already opened in state
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -1243,7 +1314,7 @@ describe('raidenRootEpic', () => {
     test('success', async () => {
       // there's a channel already opened in state
       let curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -1309,7 +1380,7 @@ describe('raidenRootEpic', () => {
     test('fails if channel.state !== "settleable|settling"', async () => {
       // there's a channel in closed state, but not yet settleable
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -1336,7 +1407,7 @@ describe('raidenRootEpic', () => {
     test('settleChannel tx fails', async () => {
       // there's a channel with partner in closed state and current block >= settleBlock
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -1379,7 +1450,7 @@ describe('raidenRootEpic', () => {
     test('success', async () => {
       // there's a channel with partner in closed state and current block >= settleBlock
       const curState = [
-        tokenMonitored({ token, tokenNetwork, first: true }),
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
@@ -2471,7 +2542,7 @@ describe('raidenRootEpic', () => {
         ),
         state$ = new BehaviorSubject(
           [
-            tokenMonitored({ token, tokenNetwork, first: true }),
+            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             // a couple of channels with unrelated partners, with larger deposits
             channelOpened(
               { id: channelId - 2, settleTimeout, openBlock, isFirstParticipant, txHash },
@@ -2564,7 +2635,7 @@ describe('raidenRootEpic', () => {
         ),
         state$ = new BehaviorSubject(
           [
-            tokenMonitored({ token, tokenNetwork, first: true }),
+            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             channelOpened(
               { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner },
@@ -2606,7 +2677,7 @@ describe('raidenRootEpic', () => {
         offlinePartner = '0x0300000000000000000000000000000000000000' as Address,
         state$ = of(
           [
-            tokenMonitored({ token, tokenNetwork, first: true }),
+            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             // channel with closingPartner: closed
             channelOpened(
               { id: channelId + 1, settleTimeout, openBlock, isFirstParticipant, txHash },
@@ -2664,7 +2735,7 @@ describe('raidenRootEpic', () => {
         ),
         state$ = of(
           [
-            tokenMonitored({ token, tokenNetwork, first: true }),
+            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             channelOpened(
               { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner },
@@ -2703,7 +2774,7 @@ describe('raidenRootEpic', () => {
         ),
         state$ = of(
           [
-            tokenMonitored({ token, tokenNetwork, first: true }),
+            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             channelOpened(
               { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner },
@@ -2742,7 +2813,7 @@ describe('raidenRootEpic', () => {
         ),
         state$ = of(
           [
-            tokenMonitored({ token, tokenNetwork, first: true }),
+            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             channelOpened(
               { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner },
@@ -2792,7 +2863,7 @@ describe('raidenRootEpic', () => {
         ),
         state$ = new BehaviorSubject(
           [
-            tokenMonitored({ token, tokenNetwork, first: true }),
+            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             channelOpened(
               { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner },

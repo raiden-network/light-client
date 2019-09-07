@@ -37,7 +37,6 @@ import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import { RaidenAction, RaidenEvents, RaidenEvent, raidenShutdown } from './actions';
 import {
-  tokenMonitored,
   channelOpened,
   channelOpenFailed,
   channelOpen,
@@ -451,14 +450,12 @@ export class Raiden {
     // here we assume there'll be at least one token registered on a registry
     // so, if the list is empty (e.g. on first init), raidenInitializationEpic is still fetching
     // the TokenNetworkCreated events from registry, so we wait until some token is found
-    if (isEmpty(this.state.tokens))
-      await this.action$
-        .pipe(
-          filter(isActionOf(tokenMonitored)),
-          first(),
-        )
-        .toPromise();
-    return Object.keys(this.state.tokens) as Address[];
+    return this.state$
+      .pipe(
+        first(state => !isEmpty(state.tokens)),
+        map(state => Object.keys(state.tokens) as Address[]),
+      )
+      .toPromise();
   }
 
   /**
