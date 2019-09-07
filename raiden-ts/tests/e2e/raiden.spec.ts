@@ -19,7 +19,7 @@ import { raidenShutdown } from 'raiden-ts/actions';
 import { newBlock } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
 import { Storage, Secret } from 'raiden-ts/utils/types';
-import { ContractsInfo, RaidenContracts } from 'raiden-ts/types';
+import { ContractsInfo } from 'raiden-ts/types';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 
@@ -47,10 +47,7 @@ describe('Raiden', () => {
       text: jest.fn(async () => `- ${matrixServer}`),
     });
 
-    let contracts: RaidenContracts;
-    [info, contracts] = await provider.deployRaidenContracts();
-    token = Object.keys(contracts.tokens)[0];
-    tokenNetwork = Object.keys(contracts.tokenNetworks)[0];
+    ({ info, token, tokenNetwork } = await provider.deployRaidenContracts());
     accounts = await provider.listAccounts();
     partner = accounts[1];
   });

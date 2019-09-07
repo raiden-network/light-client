@@ -1,6 +1,6 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, ParamType, BigNumber, bigNumberify, BigNumberish } from 'ethers/utils';
+import { Network, BigNumber, bigNumberify, BigNumberish } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
@@ -10,7 +10,7 @@ import { createEpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
-import { debounce, findKey, transform, constant, pick, isEmpty } from 'lodash';
+import { debounce, findKey, transform, constant, memoize, pick, isEmpty } from 'lodash';
 import { Observable, Subject, BehaviorSubject, AsyncSubject, from } from 'rxjs';
 import { first, filter, map, distinctUntilChanged, scan, concatMap } from 'rxjs/operators';
 
@@ -27,7 +27,7 @@ import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 import goerliDeploy from './deployment/deployment_goerli.json';
 
-import { ContractsInfo, RaidenContracts, RaidenEpicDeps, TokenInfo } from './types';
+import { ContractsInfo, RaidenEpicDeps, TokenInfo } from './types';
 import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
@@ -63,8 +63,7 @@ import { patchSignSend } from './utils/ethers';
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
   private readonly deps: RaidenEpicDeps;
-  private readonly contracts: RaidenContracts;
-  private readonly tokenInfo: { [token: string]: TokenInfo } = {};
+  private readonly tokenInfo: { [token: string /* Address */]: TokenInfo } = {};
 
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
@@ -113,16 +112,6 @@ export class Raiden {
 
     // use next from latest known blockNumber as start block when polling
     provider.resetEventsBlock(state.blockNumber + 1);
-
-    this.contracts = {
-      registry: new Contract(
-        contractsInfo.TokenNetworkRegistry.address,
-        TokenNetworkRegistryAbi as ParamType[],
-        signer,
-      ) as TokenNetworkRegistry,
-      tokenNetworks: {},
-      tokens: {},
-    };
 
     const state$ = new BehaviorSubject<RaidenState>(state);
     this.state$ = state$;
@@ -209,9 +198,18 @@ export class Raiden {
       signer,
       address,
       contractsInfo,
-      registryContract: this.contracts.registry,
-      getTokenNetworkContract: this.getTokenNetworkContract.bind(this),
-      getTokenContract: this.getTokenContract.bind(this),
+      registryContract: new Contract(
+        contractsInfo.TokenNetworkRegistry.address,
+        TokenNetworkRegistryAbi,
+        signer,
+      ) as TokenNetworkRegistry,
+      getTokenNetworkContract: memoize(
+        (address: Address) => new Contract(address, TokenNetworkAbi, signer) as TokenNetwork,
+      ),
+      getTokenContract: memoize(
+        (address: Address) =>
+          new Contract(address, HumanStandardTokenAbi, signer) as HumanStandardToken,
+      ),
     };
     // minimum blockNumber of contracts deployment as start scan block
     const epicMiddleware = createEpicMiddleware<
@@ -409,7 +407,7 @@ export class Raiden {
     address = address || this.address;
     if (!Address.is(address) || !Address.is(token)) throw new Error('Invalid address');
     if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
-    const tokenContract = this.getTokenContract(token);
+    const tokenContract = this.deps.getTokenContract(token);
 
     return tokenContract.functions.balanceOf(address);
   }
@@ -428,7 +426,7 @@ export class Raiden {
     /* tokenInfo isn't in state as it isn't relevant for being preserved, it's merely a cache */
     if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
     if (!(token in this.tokenInfo)) {
-      const tokenContract = this.getTokenContract(token);
+      const tokenContract = this.deps.getTokenContract(token);
       const [totalSupply, decimals, name, symbol] = await Promise.all([
         tokenContract.functions.totalSupply(),
         tokenContract.functions.decimals(),
@@ -457,40 +455,6 @@ export class Raiden {
         )
         .toPromise();
     return Object.keys(this.state.tokens) as Address[];
-  }
-
-  /**
-   * Create a TokenNetwork contract linked to this.deps.signer for given tokenNetwork address
-   * Caches the result and returns the same contract instance again for the same address on this
-   *
-   * @param address  TokenNetwork contract address (not token address!)
-   * @returns  TokenNetwork Contract instance
-   */
-  private getTokenNetworkContract(address: Address): TokenNetwork {
-    if (!(address in this.contracts.tokenNetworks))
-      this.contracts.tokenNetworks[address] = new Contract(
-        address,
-        TokenNetworkAbi as ParamType[],
-        this.deps.signer,
-      ) as TokenNetwork;
-    return this.contracts.tokenNetworks[address];
-  }
-
-  /**
-   * Create a Token contract linked to this.deps.signer for given token address
-   * Caches the result and returns the same contract instance again for the same address on this
-   *
-   * @param address  Token contract address
-   * @returns  Token Contract instance
-   */
-  private getTokenContract(address: Address): HumanStandardToken {
-    if (!(address in this.contracts.tokens))
-      this.contracts.tokens[address] = new Contract(
-        address,
-        HumanStandardTokenAbi as ParamType[],
-        this.deps.signer,
-      ) as HumanStandardToken;
-    return this.contracts.tokens[address];
   }
 
   /**

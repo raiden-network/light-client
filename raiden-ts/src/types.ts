@@ -22,12 +22,6 @@ export interface ContractsInfo {
   TokenNetworkRegistry: Info;
 }
 
-export interface RaidenContracts {
-  registry: TokenNetworkRegistry;
-  tokenNetworks: { [address: string]: TokenNetwork };
-  tokens: { [address: string]: HumanStandardToken };
-}
-
 export interface RaidenEpicDeps {
   stateOutput$: BehaviorSubject<RaidenState>;
   actionOutput$: Subject<RaidenAction>;
