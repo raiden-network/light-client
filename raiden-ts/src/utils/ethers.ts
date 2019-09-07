@@ -5,8 +5,8 @@ import { Network } from 'ethers/utils';
 import { getNetwork as parseNetwork } from 'ethers/utils/networks';
 import { flatten, sortBy } from 'lodash';
 
-import { Observable, fromEventPattern, merge, from, of, defer, EMPTY } from 'rxjs';
-import { filter, first, map, mergeAll, switchMap, withLatestFrom, mergeMap } from 'rxjs/operators';
+import { Observable, fromEventPattern, merge, from, of, defer, EMPTY, combineLatest } from 'rxjs';
+import { filter, first, map, switchMap, mergeMap } from 'rxjs/operators';
 
 /**
  * Like rxjs' fromEvent, but event can be an EventFilter
@@ -51,27 +51,22 @@ export function getEventsStream<T extends any[]>(
   lastSeenBlock$?: Observable<number>,
 ): Observable<T> {
   const provider = contract.provider as JsonRpcProvider;
-  // filters for channels opened by and with us
-  const newEvents$: Observable<T> = from(filters).pipe(
-    mergeMap(filter => fromEthersEvent(contract, filter, (...args) => args as T)),
-  );
 
+  // past events (in the closed-interval=[fromBlock, lastSeenBlock]),
+  // fetch once, sort by blockNumber, emit all, complete
   let pastEvents$: Observable<T> = EMPTY;
   if (fromBlock$ && lastSeenBlock$) {
-    pastEvents$ = fromBlock$.pipe(
-      withLatestFrom(
-        defer(() => (provider.blockNumber ? of(provider.blockNumber) : lastSeenBlock$)),
-      ),
+    pastEvents$ = combineLatest(
+      fromBlock$,
+      defer(() => (provider.blockNumber ? of(provider.blockNumber) : lastSeenBlock$)),
+    ).pipe(
       first(),
-      switchMap(async ([fromBlock, toBlock]) => {
-        const logs = await Promise.all(
-          filters.map(filter => provider.getLogs({ ...filter, fromBlock, toBlock })),
-        );
-        // flatten array of each getLogs query response and sort them
-        // emit log array elements as separate logs into stream
-        return from(sortBy(flatten(logs), ['blockNumber']));
-      }),
-      mergeAll(), // async return above will be a Promise of an Observable, so unpack inner$
+      switchMap(([fromBlock, toBlock]) =>
+        Promise.all(filters.map(filter => provider.getLogs({ ...filter, fromBlock, toBlock }))),
+      ),
+      // flatten array of each getLogs query response and sort them
+      // emit log array elements as separate logs into stream (unwind)
+      mergeMap(logs => from(sortBy(flatten(logs), ['blockNumber']))),
       map(log => {
         // parse log into [...args, event: Event] array,
         // the same that contract.on events/callbacks
@@ -94,6 +89,13 @@ export function getEventsStream<T extends any[]>(
       filter((event): event is T => !!event),
     );
   }
+
+  // new events (in open-interval=]lastSeenBlock, latest])
+  // where lastSeenBlock is the currentBlock at call time
+  // doesn't complete, keep emitting events for each new block (if any) until unsubscription
+  const newEvents$: Observable<T> = from(filters).pipe(
+    mergeMap(filter => fromEthersEvent(contract, filter, (...args) => args as T)),
+  );
 
   return merge(pastEvents$, newEvents$);
 }

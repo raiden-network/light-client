@@ -35,7 +35,7 @@ jest.mock('raiden-ts/utils/matrix', () => ({
   getNetwork: jest.fn((provider: JsonRpcProvider): Promise<Network> => provider.getNetwork()),
 }));
 
-import { BehaviorSubject, Subject, AsyncSubject } from 'rxjs';
+import { BehaviorSubject, Subject, AsyncSubject, of } from 'rxjs';
 import { MatrixClient } from 'matrix-js-sdk';
 import { EventEmitter } from 'events';
 
@@ -122,6 +122,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   jest.spyOn(provider, 'resolveName').mockImplementation(async addressOrName => addressOrName);
   jest.spyOn(provider, 'getLogs').mockResolvedValue([]);
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([]);
+  // See: https://github.com/cartant/rxjs-marbles/issues/11
+  jest.spyOn(provider, 'getBlockNumber').mockReturnValue((of(120) as unknown) as Promise<number>);
   mockEthersEventEmitter(provider);
 
   const signer = new Wallet(
