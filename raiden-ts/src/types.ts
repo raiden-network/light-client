@@ -2,7 +2,7 @@
 import { Subject, BehaviorSubject, AsyncSubject } from 'rxjs';
 import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
-import { Network, BigNumber } from 'ethers/utils';
+import { Network } from 'ethers/utils';
 import { MatrixClient } from 'matrix-js-sdk';
 
 import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
@@ -34,11 +34,4 @@ export interface RaidenEpicDeps {
   registryContract: TokenNetworkRegistry;
   getTokenNetworkContract: (address: Address) => TokenNetwork;
   getTokenContract: (address: Address) => HumanStandardToken;
-}
-
-export interface TokenInfo {
-  totalSupply: BigNumber;
-  decimals: number;
-  name?: string;
-  symbol?: string;
 }

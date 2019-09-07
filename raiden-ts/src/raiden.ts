@@ -27,7 +27,7 @@ import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 import goerliDeploy from './deployment/deployment_goerli.json';
 
-import { ContractsInfo, RaidenEpicDeps, TokenInfo } from './types';
+import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
@@ -63,7 +63,6 @@ import { patchSignSend } from './utils/ethers';
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
   private readonly deps: RaidenEpicDeps;
-  private readonly tokenInfo: { [token: string /* Address */]: TokenInfo } = {};
 
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
@@ -89,16 +88,34 @@ export class Raiden {
   public readonly events$: Observable<RaidenEvent>;
 
   /**
-   * Expose ether's Provider.resolveName for ENS support
-   */
-  public readonly resolveName: (name: string) => Promise<Address>;
-
-  /**
    * Observable of completed and pending transfers
    * Every time a transfer state is updated, it's emitted here. 'secrethash' property is unique and
    * may be used as identifier to know which transfer got updated.
    */
   public readonly transfers$: Observable<RaidenSentTransfer>;
+
+  /**
+   * Expose ether's Provider.resolveName for ENS support
+   */
+  public readonly resolveName: (name: string) => Promise<Address>;
+
+  /**
+   * Get token information: totalSupply, decimals, name and symbol
+   * Rejects only if 'token' contract doesn't define totalSupply and decimals methods.
+   * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
+   * very common and defined on most token contracts.
+   *
+   * @param token  address to fetch info from
+   * @returns  token info
+   */
+  public getTokenInfo: (
+    token: string,
+  ) => Promise<{
+    totalSupply: BigNumber;
+    decimals: number;
+    name?: string;
+    symbol?: string;
+  }>;
 
   public constructor(
     provider: JsonRpcProvider,
@@ -182,6 +199,19 @@ export class Raiden {
     );
 
     this.events$ = action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
+
+    this.getTokenInfo = memoize(async (token: string) => {
+      if (!Address.is(token)) throw new Error('Invalid address');
+      if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
+      const tokenContract = this.deps.getTokenContract(token);
+      const [totalSupply, decimals, name, symbol] = await Promise.all([
+        tokenContract.functions.totalSupply(),
+        tokenContract.functions.decimals(),
+        tokenContract.functions.name().catch(constant(undefined)),
+        tokenContract.functions.symbol().catch(constant(undefined)),
+      ]);
+      return { totalSupply, decimals, name, symbol };
+    });
 
     const middlewares: Middleware[] = [];
 
@@ -410,32 +440,6 @@ export class Raiden {
     const tokenContract = this.deps.getTokenContract(token);
 
     return tokenContract.functions.balanceOf(address);
-  }
-
-  /**
-   * Get token information: totalSupply, decimals, name and symbol
-   * Rejects only if 'token' contract doesn't define totalSupply and decimals methods.
-   * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
-   * very common and defined on most token contracts.
-   *
-   * @param token address to fetch info from
-   * @returns TokenInfo
-   */
-  public async getTokenInfo(token: string): Promise<TokenInfo> {
-    if (!Address.is(token)) throw new Error('Invalid address');
-    /* tokenInfo isn't in state as it isn't relevant for being preserved, it's merely a cache */
-    if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
-    if (!(token in this.tokenInfo)) {
-      const tokenContract = this.deps.getTokenContract(token);
-      const [totalSupply, decimals, name, symbol] = await Promise.all([
-        tokenContract.functions.totalSupply(),
-        tokenContract.functions.decimals(),
-        tokenContract.functions.name().catch(constant(undefined)),
-        tokenContract.functions.symbol().catch(constant(undefined)),
-      ]);
-      this.tokenInfo[token] = { totalSupply, decimals, name, symbol };
-    }
-    return this.tokenInfo[token];
   }
 
   /**
