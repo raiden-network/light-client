@@ -1,6 +1,6 @@
 import { Wallet, Signer, Contract } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, BigNumber, bigNumberify, BigNumberish } from 'ethers/utils';
+import { Network, BigNumber, bigNumberify, BigNumberish, ParamType } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
@@ -14,9 +14,9 @@ import { debounce, findKey, transform, constant, memoize, pick, isEmpty } from '
 import { Observable, Subject, BehaviorSubject, AsyncSubject, from } from 'rxjs';
 import { first, filter, map, distinctUntilChanged, scan, concatMap } from 'rxjs/operators';
 
-import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
-import { TokenNetwork } from '../contracts/TokenNetwork';
-import { HumanStandardToken } from '../contracts/HumanStandardToken';
+import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
+import { TokenNetwork } from './contracts/TokenNetwork';
+import { HumanStandardToken } from './contracts/HumanStandardToken';
 
 import TokenNetworkRegistryAbi from './abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from './abi/TokenNetwork.json';
@@ -229,15 +229,20 @@ export class Raiden {
       contractsInfo,
       registryContract: new Contract(
         contractsInfo.TokenNetworkRegistry.address,
-        TokenNetworkRegistryAbi,
+        TokenNetworkRegistryAbi as ParamType[],
         signer,
       ) as TokenNetworkRegistry,
       getTokenNetworkContract: memoize(
-        (address: Address) => new Contract(address, TokenNetworkAbi, signer) as TokenNetwork,
+        (address: Address) =>
+          new Contract(address, TokenNetworkAbi as ParamType[], signer) as TokenNetwork,
       ),
       getTokenContract: memoize(
         (address: Address) =>
-          new Contract(address, HumanStandardTokenAbi, signer) as HumanStandardToken,
+          new Contract(
+            address,
+            HumanStandardTokenAbi as ParamType[],
+            signer,
+          ) as HumanStandardToken,
       ),
     };
     // minimum blockNumber of contracts deployment as start scan block
