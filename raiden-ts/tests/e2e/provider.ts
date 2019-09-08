@@ -11,8 +11,8 @@ import { parseUnits } from 'ethers/utils';
 
 import { ContractsInfo } from 'raiden-ts/types';
 import { Address } from 'raiden-ts/utils/types';
+import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
 import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
-import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
 
 export class TestProvider extends Web3Provider {
   public constructor(opts?: GanacheServerOptions) {

@@ -5,9 +5,9 @@ import { JsonRpcProvider } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 import { MatrixClient } from 'matrix-js-sdk';
 
-import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
-import { TokenNetwork } from '../contracts/TokenNetwork';
-import { HumanStandardToken } from '../contracts/HumanStandardToken';
+import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
+import { TokenNetwork } from './contracts/TokenNetwork';
+import { HumanStandardToken } from './contracts/HumanStandardToken';
 
 import { RaidenAction } from './actions';
 import { RaidenState } from './state';

@@ -46,9 +46,9 @@ import { Network } from 'ethers/utils';
 import { Contract, EventFilter } from 'ethers/contract';
 import { Wallet } from 'ethers/wallet';
 
-import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
-import { TokenNetwork } from '../../contracts/TokenNetwork';
-import { HumanStandardToken } from '../../contracts/HumanStandardToken';
+import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
+import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
+import { HumanStandardToken } from 'raiden-ts/contracts/HumanStandardToken';
 
 import TokenNetworkRegistryAbi from 'raiden-ts/abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from 'raiden-ts/abi/TokenNetwork.json';
