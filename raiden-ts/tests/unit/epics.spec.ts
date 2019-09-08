@@ -280,6 +280,7 @@ describe('raidenRootEpic', () => {
     );
 
     test('monitorRegistry: fetch past and new tokenNetworks', async () => {
+      expect.assertions(2);
       const state$ = new BehaviorSubject(state),
         action$ = new Subject<RaidenAction>(),
         otherToken = '0x0000000000000000000000000000000000080001' as Address,

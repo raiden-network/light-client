@@ -148,7 +148,8 @@
     "collectCoverageFrom": [
       "src/**/*.ts",
       "!**/*.d.ts",
-      "!**/index.ts"
+      "!**/index.ts",
+      "!src/contracts/**"
     ],
     "coverageDirectory": ".coverage",
     "reporters": [

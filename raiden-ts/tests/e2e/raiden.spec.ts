@@ -18,7 +18,7 @@ import { initialState } from 'raiden-ts/state';
 import { raidenShutdown } from 'raiden-ts/actions';
 import { newBlock } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
-import { Storage, Secret } from 'raiden-ts/utils/types';
+import { Storage, Secret, Address } from 'raiden-ts/utils/types';
 import { ContractsInfo } from 'raiden-ts/types';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
@@ -29,6 +29,8 @@ describe('Raiden', () => {
   const provider = new TestProvider();
   let accounts: string[];
   let info: ContractsInfo;
+  let chainId: number;
+  let registry: Address;
   let snapId: number | undefined;
   let raiden: Raiden;
   let storage: jest.Mocked<Storage>;
@@ -48,8 +50,10 @@ describe('Raiden', () => {
     });
 
     ({ info, token, tokenNetwork } = await provider.deployRaidenContracts());
+    registry = info.TokenNetworkRegistry.address;
     accounts = await provider.listAccounts();
     partner = accounts[1];
+    chainId = (await provider.getNetwork()).chainId;
   });
 
   beforeEach(async () => {
@@ -72,7 +76,7 @@ describe('Raiden', () => {
   });
 
   test('create from other params and RaidenState', async () => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     // token address not found as an account in provider
     await expect(Raiden.create(provider, token, storage, info)).rejects.toThrow(
@@ -94,11 +98,20 @@ describe('Raiden', () => {
       ),
     ).rejects.toThrow(/Mismatch between provided account and loaded state/i);
 
+    expect(
+      Raiden.create(
+        provider,
+        1,
+        JSON.stringify({ ...initialState, address: accounts[1], chainId, registry: token }),
+        info,
+      ),
+    ).rejects.toThrow(/Mismatch between network or registry address and loaded state/i);
+
     // success when using address of account on provider and initial state
     const raiden1 = await Raiden.create(
       provider,
       accounts[1],
-      { ...initialState, address: accounts[1] },
+      { ...initialState, address: accounts[1], chainId, registry },
       info,
     );
     expect(raiden1).toBeInstanceOf(Raiden);
@@ -375,7 +388,7 @@ describe('Raiden', () => {
       const raiden1 = await Raiden.create(
         provider,
         accounts[2],
-        { ...initialState, address: accounts[2] },
+        { ...initialState, address: accounts[2], chainId, registry },
         info,
       );
       expect(raiden1).toBeInstanceOf(Raiden);
@@ -405,7 +418,7 @@ describe('Raiden', () => {
       const raiden1 = await Raiden.create(
         provider,
         partner,
-        { ...initialState, address: partner },
+        { ...initialState, address: partner, chainId, registry },
         info,
       );
       expect(raiden1).toBeInstanceOf(Raiden);
