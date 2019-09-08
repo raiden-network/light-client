@@ -348,6 +348,8 @@ export class Raiden {
       ...initialState,
       blockNumber: contracts.TokenNetworkRegistry.block_number || 0,
       address,
+      chainId: network.chainId,
+      registry: contracts.TokenNetworkRegistry.address,
     };
 
     // type guard
@@ -389,6 +391,11 @@ export class Raiden {
       throw new Error(
         `Mismatch between provided account and loaded state: "${address}" !== "${loadedState.address}"`,
       );
+    if (
+      network.chainId !== loadedState.chainId ||
+      contracts.TokenNetworkRegistry.address !== loadedState.registry
+    )
+      throw new Error(`Mismatch between network or registry address and loaded state`);
 
     const raiden = new Raiden(provider, network, signer, contracts, loadedState);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
