@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "../dist"
   },
-  "include": [
-    "./**/*.ts"
+  "exclude": [
+    "./contracts/*Factory.ts"
   ]
 }
