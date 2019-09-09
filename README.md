@@ -155,7 +155,7 @@ You need to have MetaMask installed for your browser.
 __Step 1: Acquire and Wrap ETH__
 
 1. Visit the Ropsten faucet at [https://faucet.ropsten.be](https://faucet.ropsten.be).
-2. Enter your keystore address associated with the Ropsten Test Network.
+2. Enter the wallet address associated with your Ropsten Test Network.
 3. Click the __"Send me test Ether"__ button, you will receive a total of 1 ETH.
 4. Visit [https://0x.org/portal/weth](https://0x.org/portal/weth), this is where you will be wrapping your ETH to WETH.
 5. Click __"Confirm"__ when *0x Poral* asks to connect to your MetaMask.
@@ -170,7 +170,7 @@ __Step 2: Connect to the Raiden Demo dApp__
 
 __Step 3: Select a Hub and Open a Channel__
 
-1. Enter ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub for testing.
+1. Enter the address ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub, this will connect you to a Raiden test node.
 2. Enter the amount of wrapped ETH (WETH) you want to deposit when opening a channel.
 3. Sign the deposit with your MetaMask.
 4. Click __Open Channel__.
