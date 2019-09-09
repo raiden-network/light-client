@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="https://lightclient.raiden.network/">Play with the Raiden Demo dApp</a>
+  <a href="https://lightclient.raiden.network/">Try Out the Raiden Demo dApp</a>
 </p>
 
 <p align="center">
