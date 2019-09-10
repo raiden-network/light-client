@@ -2,16 +2,17 @@
 import { Subject, BehaviorSubject, AsyncSubject } from 'rxjs';
 import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
-import { Network, BigNumber } from 'ethers/utils';
+import { Network } from 'ethers/utils';
 import { MatrixClient } from 'matrix-js-sdk';
 
-import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
-import { TokenNetwork } from '../contracts/TokenNetwork';
-import { HumanStandardToken } from '../contracts/HumanStandardToken';
+import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
+import { TokenNetwork } from './contracts/TokenNetwork';
+import { HumanStandardToken } from './contracts/HumanStandardToken';
 
 import { RaidenAction } from './actions';
 import { RaidenState } from './state';
 import { Address } from './utils/types';
+import { RaidenConfig } from './config';
 
 interface Info {
   address: Address;
@@ -22,15 +23,10 @@ export interface ContractsInfo {
   TokenNetworkRegistry: Info;
 }
 
-export interface RaidenContracts {
-  registry: TokenNetworkRegistry;
-  tokenNetworks: { [address: string]: TokenNetwork };
-  tokens: { [address: string]: HumanStandardToken };
-}
-
 export interface RaidenEpicDeps {
   stateOutput$: BehaviorSubject<RaidenState>;
   actionOutput$: Subject<RaidenAction>;
+  config$: BehaviorSubject<RaidenConfig>;
   matrix$: AsyncSubject<MatrixClient>;
   provider: JsonRpcProvider;
   network: Network;
@@ -40,11 +36,4 @@ export interface RaidenEpicDeps {
   registryContract: TokenNetworkRegistry;
   getTokenNetworkContract: (address: Address) => TokenNetwork;
   getTokenContract: (address: Address) => HumanStandardToken;
-}
-
-export interface TokenInfo {
-  totalSupply: BigNumber;
-  decimals: number;
-  name?: string;
-  symbol?: string;
 }

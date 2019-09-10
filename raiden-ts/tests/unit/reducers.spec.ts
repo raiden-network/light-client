@@ -67,6 +67,7 @@ describe('raidenReducer', () => {
     partner = '0x0000000000000000000000000000000000000020' as Address,
     txHash = '0x0000000000000000000000000000000000000020111111111111111111111111' as Hash,
     channelId = 17,
+    fromBlock = 1,
     settleTimeout = 500,
     openBlock = 5123,
     closeBlock = 5999,
@@ -89,7 +90,7 @@ describe('raidenReducer', () => {
 
   describe('tokenMonitored', () => {
     test('new tokenMonitored', () => {
-      const newState = raidenReducer(state, tokenMonitored({ token, tokenNetwork, first: true }));
+      const newState = raidenReducer(state, tokenMonitored({ token, tokenNetwork, fromBlock }));
       expect(newState).toMatchObject({ tokens: { [token]: tokenNetwork } });
     });
 
@@ -98,7 +99,7 @@ describe('raidenReducer', () => {
         ...state,
         tokens: { [token]: tokenNetwork },
       };
-      const newState = raidenReducer(state, tokenMonitored({ token, tokenNetwork, first: true }));
+      const newState = raidenReducer(state, tokenMonitored({ token, tokenNetwork, fromBlock }));
       expect(newState).toEqual(state);
     });
   });

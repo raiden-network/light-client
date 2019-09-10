@@ -35,7 +35,7 @@ jest.mock('raiden-ts/utils/matrix', () => ({
   getNetwork: jest.fn((provider: JsonRpcProvider): Promise<Network> => provider.getNetwork()),
 }));
 
-import { BehaviorSubject, Subject, AsyncSubject } from 'rxjs';
+import { BehaviorSubject, Subject, AsyncSubject, of } from 'rxjs';
 import { MatrixClient } from 'matrix-js-sdk';
 import { EventEmitter } from 'events';
 
@@ -46,9 +46,9 @@ import { Network } from 'ethers/utils';
 import { Contract, EventFilter } from 'ethers/contract';
 import { Wallet } from 'ethers/wallet';
 
-import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
-import { TokenNetwork } from '../../contracts/TokenNetwork';
-import { HumanStandardToken } from '../../contracts/HumanStandardToken';
+import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
+import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
+import { HumanStandardToken } from 'raiden-ts/contracts/HumanStandardToken';
 
 import TokenNetworkRegistryAbi from 'raiden-ts/abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from 'raiden-ts/abi/TokenNetwork.json';
@@ -58,6 +58,7 @@ import { RaidenEpicDeps } from 'raiden-ts/types';
 import { RaidenAction } from 'raiden-ts/actions';
 import { RaidenState, initialState } from 'raiden-ts/state';
 import { Address, Signature } from 'raiden-ts/utils/types';
+import { RaidenConfig } from 'raiden-ts/config';
 
 type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -122,6 +123,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   jest.spyOn(provider, 'resolveName').mockImplementation(async addressOrName => addressOrName);
   jest.spyOn(provider, 'getLogs').mockResolvedValue([]);
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([]);
+  // See: https://github.com/cartant/rxjs-marbles/issues/11
+  jest.spyOn(provider, 'getBlockNumber').mockReturnValue((of(120) as unknown) as Promise<number>);
   mockEthersEventEmitter(provider);
 
   const signer = new Wallet(
@@ -173,9 +176,16 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     return tokenContracts[address];
   };
 
+  const config: RaidenConfig = {
+    matrixServerLookup: '',
+    revealTimeout: 50,
+    settleTimeout: 500
+  }
+
   return {
     stateOutput$: new BehaviorSubject<RaidenState>(initialState),
     actionOutput$: new Subject<RaidenAction>(),
+    config$: new BehaviorSubject<RaidenConfig>(config),
     matrix$: new AsyncSubject<MatrixClient>(),
     address,
     network,
