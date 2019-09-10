@@ -99,7 +99,7 @@ export class Raiden {
   public readonly resolveName: (name: string) => Promise<Address>;
 
   /**
-   * Get token information: totalSupply, decimals, name and symbol
+   * Get constant token details from token contract, caches it.
    * Rejects only if 'token' contract doesn't define totalSupply and decimals methods.
    * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
    * very common and defined on most token contracts.
