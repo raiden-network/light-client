@@ -67,8 +67,11 @@ function postBuild() {
   });
 }
 
-if (process.argv.includes('postbuild')) {
+if (process.argv.includes('prebuild')) {
+  preBuild();
+} else if (process.argv.includes('postbuild')) {
   postBuild();
 } else {
-  preBuild();
+  console.error(`Usage: ${process.argv.slice(0, 2).join(' ')} [prebuild|postbuild]`);
+  process.exit(1);
 }
