@@ -43,7 +43,6 @@ import fetch from 'cross-fetch';
 import { Address } from '../utils/types';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
-import { MATRIX_KNOWN_SERVERS_URL } from '../constants';
 import { channelMonitored } from '../channels/actions';
 import {
   Message,
@@ -75,6 +74,7 @@ import {
 import { RaidenMatrixSetup } from './state';
 import { Presences } from './types';
 import { getPresences$ } from './utils';
+import { RaidenConfig } from 'raiden-ts/config';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available then
@@ -94,26 +94,28 @@ const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
 export const initMatrixEpic = (
   {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, network, signer, matrix$ }: RaidenEpicDeps,
+  { address, network, signer, matrix$, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof matrixSetup>> =>
   state$.pipe(
     first(),
-    mergeMap(state => {
+    withLatestFrom(config$),
+    mergeMap(([state, { matrixServer, matrixServerLookup }]) => {
       const server: string | undefined = get(state, ['transport', 'matrix', 'server']),
         setup: RaidenMatrixSetup | undefined = get(state, ['transport', 'matrix', 'setup']);
+
       if (server) {
         // use server from state/settings
         return of({ server, setup });
+      } else if (matrixServer) {
+        return of({ server: matrixServer, setup });
       } else {
-        const knownServersUrl =
-          MATRIX_KNOWN_SERVERS_URL[network.name] || MATRIX_KNOWN_SERVERS_URL.default;
         // fetch servers list and use the one with shortest http round trip time (rtt)
-        return from(fetch(knownServersUrl)).pipe(
+        return from(fetch(matrixServerLookup)).pipe(
           mergeMap(response => {
             if (!response.ok)
               return throwError(
                 new Error(
-                  `Could not fetch server list from "${knownServersUrl}" => ${response.status}`,
+                  `Could not fetch server list from "${matrixServerLookup}" => ${response.status}`,
                 ),
               );
             return response.text();

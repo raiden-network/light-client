@@ -12,6 +12,7 @@ import { HumanStandardToken } from './contracts/HumanStandardToken';
 import { RaidenAction } from './actions';
 import { RaidenState } from './state';
 import { Address } from './utils/types';
+import { RaidenConfig } from './config';
 
 interface Info {
   address: Address;
@@ -25,6 +26,7 @@ export interface ContractsInfo {
 export interface RaidenEpicDeps {
   stateOutput$: BehaviorSubject<RaidenState>;
   actionOutput$: Subject<RaidenAction>;
+  config$: BehaviorSubject<RaidenConfig>;
   matrix$: AsyncSubject<MatrixClient>;
   provider: JsonRpcProvider;
   network: Network;
