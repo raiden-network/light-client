@@ -12,7 +12,15 @@ import { createLogger } from 'redux-logger';
 
 import { debounce, findKey, transform, constant, memoize, pick, isEmpty } from 'lodash';
 import { Observable, Subject, BehaviorSubject, AsyncSubject, from } from 'rxjs';
-import { first, filter, map, distinctUntilChanged, scan, concatMap } from 'rxjs/operators';
+import {
+  first,
+  filter,
+  map,
+  distinctUntilChanged,
+  scan,
+  concatMap,
+  mergeMap,
+} from 'rxjs/operators';
 
 import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
 import { TokenNetwork } from './contracts/TokenNetwork';
@@ -58,6 +66,7 @@ import {
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer, getSecrethash } from './transfers/utils';
 import { patchSignSend } from './utils/ethers';
+import { RaidenConfig, defaultConfig } from './config';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -122,6 +131,7 @@ export class Raiden {
     signer: Signer,
     contractsInfo: ContractsInfo,
     state: RaidenState,
+    config: RaidenConfig,
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
@@ -221,6 +231,7 @@ export class Raiden {
     this.deps = {
       stateOutput$: state$,
       actionOutput$: action$,
+      config$: new BehaviorSubject<RaidenConfig>(config),
       matrix$: new AsyncSubject<MatrixClient>(),
       provider,
       network,
@@ -266,19 +277,25 @@ export class Raiden {
    * Async helper factory to make a Raiden instance from more common parameters.
    *
    * @param connection
-   * - a JsonRpcProvider instance
-   * - a Metamask's web3.currentProvider object or
-   * - a hostname or remote json-rpc connection string
+   * <ul>
+   *   <li>JsonRpcProvider instance,</li>
+   *   <li>a Metamask's web3.currentProvider object or,</li>
+   *   <li>a hostname or remote json-rpc connection string</li>
+   * </ul>
    * @param account
-   * - a string address of an account loaded in provider or
-   * - a string private key or
-   * - a number index of an account loaded in provider (e.g. 0 for Metamask's loaded account)
+   * <ul>
+   *   <li>string address of an account loaded in provider or</li>
+   *   <li>string private key or</li>
+   *   <li>number index of an account loaded in provider (e.g. 0 for Metamask's loaded account)</li>
+   * </ul>
    * @param storageOrState
    *   Storage/localStorage-like synchronous object where to load and store current state or
    *   initial RaidenState-like object instead. In this case, user must listen state$ changes
    *   and update them on whichever persistency option is used
    * @param contracts
    *   Contracts deployment info
+   * @param config
+   *   Raiden configuration
    * @returns Promise to Raiden SDK client instance
    * An async factory is needed so we can do the needed async requests to construct the required
    * parameters ahead of construction time, and avoid partial initialization then
@@ -288,6 +305,7 @@ export class Raiden {
     account: string | number,
     storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
+    config?: Partial<RaidenConfig>,
   ): Promise<Raiden> {
     let provider: JsonRpcProvider;
     if (typeof connection === 'string') {
@@ -397,7 +415,12 @@ export class Raiden {
     )
       throw new Error(`Mismatch between network or registry address and loaded state`);
 
-    const raiden = new Raiden(provider, network, signer, contracts, loadedState);
+    const raidenConfig: RaidenConfig = {
+      ...defaultConfig,
+      ...config,
+    };
+
+    const raiden = new Raiden(provider, network, signer, contracts, loadedState, raidenConfig);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
@@ -423,6 +446,15 @@ export class Raiden {
 
   public async getBlockNumber(): Promise<number> {
     return this.deps.provider.blockNumber || (await this.deps.provider.getBlockNumber());
+  }
+
+  public config(newConfig: Partial<RaidenConfig>) {
+    this.deps.config$.pipe(first()).subscribe((currentConfig: RaidenConfig) =>
+      this.deps.config$.next({
+        ...currentConfig,
+        ...newConfig,
+      }),
+    );
   }
 
   /**
@@ -475,13 +507,14 @@ export class Raiden {
    *
    * @param token  Token address on currently configured token network registry
    * @param partner  Partner address
-   * @param settleTimeout  openChannel parameter, defaults to 500
+   * @param options (optional) option parameter
+   * @param options.settleTimeout Custom, one-time settle timeout
    * @returns  txHash of channelOpen call, iff it succeeded
    */
   public async openChannel(
     token: string,
     partner: string,
-    settleTimeout: number = 500,
+    options: { settleTimeout?: number} = {},
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
@@ -500,7 +533,11 @@ export class Raiden {
         }),
       )
       .toPromise();
-    this.store.dispatch(channelOpen({ settleTimeout }, { tokenNetwork, partner }));
+
+    this.store.dispatch(
+      channelOpen({ ...options }, { tokenNetwork, partner }),
+    );
+
     return promise;
   }
 

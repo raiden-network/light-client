@@ -29,7 +29,7 @@ export const tokenMonitored = createStandardAction('tokenMonitored')<{
 
 /* Request a channel to be opened with meta={ tokenNetwork, partner } and payload.settleTimeout */
 export const channelOpen = createStandardAction('channelOpen')<
-  { settleTimeout: number },
+  { settleTimeout?: number },
   ChannelId
 >();
 

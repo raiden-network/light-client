@@ -172,7 +172,7 @@ describe('Raiden', () => {
     test('tx fail', async () => {
       expect.assertions(1);
       // settleTimeout < min of 500
-      await expect(raiden.openChannel(token, partner, 499)).rejects.toThrow();
+      await expect(raiden.openChannel(token, partner, { settleTimeout: 499 })).rejects.toThrow();
     });
 
     test('success with default settleTimeout=500', async () => {

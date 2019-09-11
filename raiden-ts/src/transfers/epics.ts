@@ -25,7 +25,6 @@ import { findKey, get } from 'lodash';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
-import { REVEAL_TIMEOUT } from '../constants';
 import { Address, Hash, UInt } from '../utils/types';
 import { splitCombined } from '../utils/rxjs';
 import { LruCache } from '../utils/lru';
@@ -99,11 +98,11 @@ function makeAndSignTransfer(
   presences$: Observable<Presences>,
   state$: Observable<RaidenState>,
   action: ActionType<typeof transfer>,
-  { network, address, signer }: RaidenEpicDeps,
+  { network, address, signer, config$ }: RaidenEpicDeps,
 ) {
-  return combineLatest(presences$, state$).pipe(
+  return combineLatest(presences$, state$, config$).pipe(
     first(),
-    mergeMap(([presences, state]) => {
+    mergeMap(([presences, state, config]) => {
       if (action.meta.secrethash in state.sent) {
         // don't throw to avoid emitting transferFailed, to just wait for already pending transfer
         console.error('transfer already present', action.meta);
@@ -178,7 +177,7 @@ function makeAndSignTransfer(
 
       const lock: Lock = {
           amount: action.payload.amount,
-          expiration: bigNumberify(state.blockNumber + REVEAL_TIMEOUT * 2) as UInt<32>,
+          expiration: bigNumberify(state.blockNumber + config.revealTimeout * 2) as UInt<32>,
           secrethash: action.meta.secrethash,
         },
         locks: Lock[] = [...(channel.own.locks || []), lock],

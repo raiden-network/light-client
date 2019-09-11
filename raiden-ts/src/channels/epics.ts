@@ -447,12 +447,12 @@ export const channelMonitoredEpic = (
 export const channelOpenEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { getTokenNetworkContract }: RaidenEpicDeps,
+  { getTokenNetworkContract, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelOpenFailed>> =>
   action$.pipe(
     filter(isActionOf(channelOpen)),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
+    withLatestFrom(state$, config$),
+    mergeMap(([action, state, config]) => {
       const tokenNetwork = getTokenNetworkContract(action.meta.tokenNetwork);
       const channelState = get(state.channels, [
         action.meta.tokenNetwork,
@@ -470,7 +470,7 @@ export const channelOpenEpic = (
         tokenNetwork.functions.openChannel(
           state.address,
           action.meta.partner,
-          action.payload.settleTimeout,
+          action.payload.settleTimeout || config.settleTimeout,
         ),
       ).pipe(
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
