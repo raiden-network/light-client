@@ -74,8 +74,8 @@ import { getLocksroot, getSecrethash, makeMessageId, makePaymentId } from './uti
 /**
  * Return the next nonce for a (possibly missing) balanceProof, or else BigNumber(1)
  *
- * @param balanceProof  Balance proof to increase nonce from
- * @returns  Increased nonce, or One if no balance proof provided
+ * @param balanceProof - Balance proof to increase nonce from
+ * @returns Increased nonce, or One if no balance proof provided
  */
 function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
   if (balanceProof) return balanceProof.nonce.add(1) as UInt<8>;
@@ -88,11 +88,11 @@ function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
  * the returned observable must be subscribed in a serialized context that ensures non-concurrent
  * write access to the channel's balance proof (e.g. concatMap)
  *
- * @param presences$  Observable of address to last matrixPresenceUpdate mapping
- * @param state$  Observable of current state
- * @param action  transfer request action to be sent
- * @param network,address,signer  RaidenEpicDeps members
- * @returns  Observable of transferSigned|transferSecret|transferFailed actions
+ * @param presences$ - Observable of address to last matrixPresenceUpdate mapping
+ * @param state$ - Observable of current state
+ * @param action - transfer request action to be sent
+ * @param network,address,signer - RaidenEpicDeps members
+ * @returns Observable of transferSigned|transferSecret|transferFailed actions
  */
 function makeAndSignTransfer(
   presences$: Observable<Presences>,
@@ -231,10 +231,10 @@ function makeAndSignTransfer(
  * the returned observable must be subscribed in a serialized context that ensures non-concurrent
  * write access to the channel's balance proof (e.g. concatMap)
  *
- * @param state$  Observable of current state
- * @param action  transferUnlock request action to be sent
- * @param signer  RaidenEpicDeps members
- * @returns  Observable of transferUnlocked actions
+ * @param state$ - Observable of current state
+ * @param action - transferUnlock request action to be sent
+ * @param signer - RaidenEpicDeps members
+ * @returns Observable of transferUnlocked actions
  */
 function makeAndSignUnlock(
   state$: Observable<RaidenState>,
@@ -312,10 +312,10 @@ function makeAndSignUnlock(
  * the returned observable must be subscribed in a serialized context that ensures non-concurrent
  * write access to the channel's balance proof (e.g. concatMap)
  *
- * @param state$  Observable of current state
- * @param action  transfer request action to be sent
- * @param signer  RaidenEpicDeps members
- * @returns  Observable of transferExpired|transferExpireFailed actions
+ * @param state$ - Observable of current state
+ * @param action - transfer request action to be sent
+ * @param signer - RaidenEpicDeps members
+ * @returns Observable of transferExpired|transferExpireFailed actions
  */
 function makeAndSignLockExpired(
   state$: Observable<RaidenState>,
@@ -391,11 +391,11 @@ function makeAndSignLockExpired(
  * take that into account before accepting a transfer and also total balance/capacity for accepting
  * a total_withdraw from a WithdrawRequest.
  *
- * @param state$  Observable of current state
- * @param action  Withdraw request which caused this handling
- * @param signer  RaidenEpicDeps members
- * @param cache  A Map to store and reuse previously Signed<WithdrawConfirmation>
- * @returns  Observable of transferExpired|transferExpireFailed actions
+ * @param state$ - Observable of current state
+ * @param action - Withdraw request which caused this handling
+ * @param signer - RaidenEpicDeps members
+ * @param cache - A Map to store and reuse previously Signed<WithdrawConfirmation>
+ * @returns Observable of transferExpired|transferExpireFailed actions
  */
 function makeAndSignWithdrawConfirmation(
   state$: Observable<RaidenState>,
@@ -481,10 +481,10 @@ function makeAndSignWithdrawConfirmation(
  * state inside the serialization flow provided by the concatMap, and also be composed and produced
  * inside it (inner, subscribed observable)
  *
- * @param action$  Observable of RaidenActions
- * @param state$  Observable of RaidenStates
- * @param deps  RaidenEpicDeps
- * @returns  Observable of output actions for this epic
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps
+ * @returns Observable of output actions for this epic
  */
 export const transferGenerateAndSignEnvelopeMessageEpic = (
   action$: Observable<RaidenAction>,
@@ -526,9 +526,9 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
  * transferSigned for pending LockedTransfer's may be re-emitted on startup for pending transfer,
  * to start retrying sending the message again until stop condition is met.
  *
- * @param action$  Observable of transferSigned actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of messageSend actions
+ * @param action$ - Observable of transferSigned actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of messageSend actions
  */
 export const transferSignedRetryMessageEpic = (
   action$: Observable<RaidenAction>,
@@ -589,9 +589,9 @@ export const transferSignedRetryMessageEpic = (
  * transferUnlocked for pending Unlock's may be re-emitted on startup for pending transfer, to
  * start retrying sending the message again until stop condition is met.
  *
- * @param action$  Observable of transferUnlocked actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of messageSend actions
+ * @param action$ - Observable of transferUnlocked actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of messageSend actions
  */
 export const transferUnlockedRetryMessageEpic = (
   action$: Observable<RaidenAction>,
@@ -653,9 +653,9 @@ export const transferUnlockedRetryMessageEpic = (
  * transferExpired for pending LockExpired's may be re-emitted on startup for pending transfer, to
  * start retrying sending the message again until stop condition is met.
  *
- * @param action$  Observable of transferExpired actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of messageSend actions
+ * @param action$ - Observable of transferExpired actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of messageSend actions
  */
 export const transferExpiredRetryMessageEpic = (
   action$: Observable<RaidenAction>,
@@ -719,9 +719,9 @@ export const transferExpiredRetryMessageEpic = (
  * Also, emits transferFailed, to notify users that a transfer has failed (although it'll only be
  * considered as completed with fail once the transferExpireProcessed arrives).
  *
- * @param action$  Observable of newBlock|transferExpired|transferExpireFailed actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of transferExpire|transferFailed actions
+ * @param action$ - Observable of newBlock|transferExpired|transferExpireFailed actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of transferExpire|transferFailed actions
  */
 export const transferAutoExpireEpic = (
   action$: Observable<RaidenAction>,
@@ -783,9 +783,9 @@ export const transferAutoExpireEpic = (
 /**
  * Re-queue pending transfer's BalanceProof/Envelope messages for retry on init
  *
- * @param action$  Observable of RaidenActions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of transferSigned|transferUnlocked actions
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of transferSigned|transferUnlocked actions
  */
 export const initQueuePendingEnvelopeMessagesEpic = (
   {  }: Observable<RaidenAction>,
@@ -817,9 +817,9 @@ export const initQueuePendingEnvelopeMessagesEpic = (
  * Handles receiving a signed Processed for some sent LockedTransfer
  * This will persist the Processed reply in transfer state and stop message retry
  *
- * @param action$  Observable of messageReceived actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of transferProcessed actions
+ * @param action$ - Observable of messageReceived actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of transferProcessed actions
  */
 export const transferProcessedReceivedEpic = (
   action$: Observable<RaidenAction>,
@@ -850,9 +850,9 @@ export const transferProcessedReceivedEpic = (
  * Handles receiving a signed SecretRequest from target for some sent LockedTransfer
  * Emits a transferSecretRequest action only if all conditions are met
  *
- * @param action$  Observable of RaidenActions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of output actions for this epic
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of output actions for this epic
  */
 export const transferSecretRequestedEpic = (
   action$: Observable<RaidenAction>,
@@ -889,10 +889,10 @@ export const transferSecretRequestedEpic = (
  * triggers sending the message once. New SecretRequests will cause a new transferSecretRequest,
  * which will re-send the cached SecretReveal.
  *
- * @param action$  Observable of transferSecretRequest actions
- * @param state$  Observable of RaidenStates
- * @param signer  RaidenEpicDeps signer
- * @returns  Observable of transferSecretReveal|messageSend actions
+ * @param action$ - Observable of transferSecretRequest actions
+ * @param state$ - Observable of RaidenStates
+ * @param signer - RaidenEpicDeps signer
+ * @returns Observable of transferSecretReveal|messageSend actions
  */
 export const transferSecretRevealEpic = (
   action$: Observable<RaidenAction>,
@@ -939,9 +939,9 @@ export const transferSecretRevealEpic = (
  * This indicates that the partner knowws the secret, and we should Unlock to avoid going on-chain.
  * The transferUnlock action is a request for the unlocking to be generated and sent.
  *
- * @param action$  Observable of RaidenActions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of output actions for this epic
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of output actions for this epic
  */
 export const transferSecretRevealedEpic = (
   action$: Observable<RaidenAction>,
@@ -976,9 +976,9 @@ export const transferSecretRevealedEpic = (
  * It sends the success action for transfer (which resolves any pending Promise), marking it as
  * completed successfuly by setting sent.unlockProcessed
  *
- * @param action$  Observable of messageReceived actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of transferred|transferUnlockProcessed actions
+ * @param action$ - Observable of messageReceived actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of transferred|transferUnlockProcessed actions
  */
 export const transferUnlockProcessedReceivedEpic = (
   action$: Observable<RaidenAction>,
@@ -1017,9 +1017,9 @@ export const transferUnlockProcessedReceivedEpic = (
  * It marks the end of the unhappy case, by setting sent.lockExpiredProcessed
  * transferFailed was already sent at newBlock handling/transferExpire time
  *
- * @param action$  Observable of RaidenActions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of output actions for this epic
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of output actions for this epic
  */
 export const transferExpireProcessedEpic = (
   action$: Observable<RaidenAction>,
@@ -1052,9 +1052,9 @@ export const transferExpireProcessedEpic = (
  * Transfer is considered successful if secret was revealed (as it could be claimed on-chain),
  * else it's considered as failed as couldn't succeed inside expiration timeout
  *
- * @param action$  Observable of channelClose|channelClosed actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of transferred|transferFailed actions
+ * @param action$ - Observable of channelClose|channelClosed actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of transferred|transferFailed actions
  */
 export const transferChannelClosedEpic = (
   action$: Observable<RaidenAction>,
@@ -1093,9 +1093,9 @@ export const transferChannelClosedEpic = (
 /**
  * Receiving RefundTransfer for pending transfer fails it
  *
- * @param action$  Observable of messageReceived actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of transferFailed|transferRefunded actions
+ * @param action$ - Observable of messageReceived actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of transferFailed|transferRefunded actions
  */
 export const transferRefundedEpic = (
   action$: Observable<RaidenAction>,
@@ -1138,10 +1138,10 @@ export const transferRefundedEpic = (
  * Additionally, we hook in sending Processed for other messages which contain nonces (and require
  * Processed reply to stop being retried) but are safe to be ignored, like WithdrawExpired.
  *
- * @param action$  Observable of messageReceived actions
- * @param state$  Observable of RaidenStates
- * @param signer  RaidenEpicDeps members
- * @returns  Observable of messageSend actions
+ * @param action$ - Observable of messageReceived actions
+ * @param state$ - Observable of RaidenStates
+ * @param signer - RaidenEpicDeps members
+ * @returns Observable of messageSend actions
  */
 export const transferReceivedReplyProcessedEpic = (
   action$: Observable<RaidenAction>,
@@ -1184,8 +1184,8 @@ export const transferReceivedReplyProcessedEpic = (
  * When receiving a [[WithdrawRequest]] message, create the respective [[withdrawReceiveRequest]]
  * action
  *
- * @param action$  Observable of messageReceived actions
- * @returns  Observable of withdrawReceiveRequest actions
+ * @param action$ - Observable of messageReceived actions
+ * @returns Observable of withdrawReceiveRequest actions
  */
 export const withdrawRequestReceivedEpic = (
   action$: Observable<RaidenAction>,
@@ -1215,8 +1215,8 @@ export const withdrawRequestReceivedEpic = (
 /**
  * sendMessage when a [[withdrawSendConfirmation]] action is fired
  *
- * @param action$  Observable of withdrawSendConfirmation actions
- * @returns  Observable of messageSend actions
+ * @param action$ - Observable of withdrawSendConfirmation actions
+ * @returns Observable of messageSend actions
  */
 export const withdrawSendConfirmationEpic = (
   action$: Observable<RaidenAction>,

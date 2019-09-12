@@ -20,8 +20,8 @@ const raidenReducers = {
  * Each submodule root reducer may then choose to split its concerns into nested or flattened
  * reducers (like this one).
  *
- * @param state  Current RaidenState to reduce
- * @param action  RaidenAction to apply over state
+ * @param state - Current RaidenState to reduce
+ * @param action - RaidenAction to apply over state
  * @returns New RaidenState
  */
 export const raidenReducer = (state: RaidenState = initialState, action: RaidenAction) =>

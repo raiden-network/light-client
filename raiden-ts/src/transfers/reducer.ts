@@ -30,8 +30,8 @@ import {
 /**
  * Handles all transfers actions and requests
  *
- * @param state  Current RaidenState
- * @param action  RaidenAction to handle
+ * @param state - Current RaidenState
+ * @param action - RaidenAction to handle
  * @returns New RaidenState (or current, if action didn't change anything)
  */
 export function transfersReducer(

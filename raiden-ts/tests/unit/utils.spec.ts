@@ -14,10 +14,9 @@ import { Address, BigNumberC, HexString, UInt, Secret, Timed, timed } from 'raid
 import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
 import { splitCombined } from 'raiden-ts/utils/rxjs';
-import { makeLog, raidenEpicDeps } from './mocks';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
-import { HashZero } from 'ethers/constants';
 import { Lock } from 'raiden-ts/channels';
+import { makeLog, raidenEpicDeps } from './mocks';
 
 describe('fromEthersEvent', () => {
   let { provider } = raidenEpicDeps();
