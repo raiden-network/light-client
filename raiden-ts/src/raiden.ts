@@ -672,7 +672,7 @@ export class Raiden {
    * @param token - Token address on currently configured token network registry
    * @param target - Target address (must be getAvailability before)
    * @param amount - Amount to try to transfer
-   * @param opts - Optional parameters for transfer:
+   * @param options - Optional parameters for transfer:
    *                - paymentId  payment identifier, a random one will be generated if missing
    *                - secret  Secret to register, a random one will be generated if missing
    *                - secrethash  Must match secret, if both provided, or else, secret must be
@@ -683,7 +683,7 @@ export class Raiden {
     token: string,
     target: string,
     amount: BigNumberish,
-    opts?: { paymentId?: BigNumberish; secret?: string; secrethash?: string },
+    options: { paymentId?: BigNumberish; secret?: string; secrethash?: string } = {},
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
@@ -692,19 +692,14 @@ export class Raiden {
     amount = bigNumberify(amount);
     if (!UInt(32).is(amount)) throw new Error('Invalid amount');
 
-    let paymentId = !opts || !opts.paymentId ? undefined : bigNumberify(opts.paymentId);
+    const paymentId = !options.paymentId ? undefined : bigNumberify(options.paymentId);
     if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid opts.paymentId');
 
-    let secret: Secret | undefined, secrethash: Hash | undefined;
-    if (opts) {
-      const _secret = opts.secret;
-      if (_secret !== undefined && !Secret.is(_secret)) throw new Error('Invalid opts.secret');
-      const _secrethash = opts.secrethash;
-      if (_secrethash !== undefined && !Hash.is(_secrethash))
-        throw new Error('Invalid opts.secrethash');
-      secret = _secret;
-      secrethash = _secrethash;
-    }
+    if (options.secret !== undefined && !Secret.is(options.secret))
+      throw new Error('Invalid opts.secret');
+    if (options.secrethash !== undefined && !Hash.is(options.secrethash))
+      throw new Error('Invalid opts.secrethash');
+    let { secret, secrethash } = options;
     if (!secrethash) {
       if (!secret) secret = makeSecret();
       secrethash = getSecrethash(secret);
@@ -715,8 +710,7 @@ export class Raiden {
     const promise = this.action$
       .pipe(
         filter(isActionOf([transferSigned, transferFailed])),
-        filter(action => action.meta.secrethash === secrethash!),
-        first(),
+        first(action => action.meta.secrethash === secrethash!),
         map(action => {
           if (isActionOf(transferFailed, action)) throw action.payload;
           return secrethash!;
