@@ -102,11 +102,12 @@ export const initMatrixEpic = (
       const server: string | undefined = get(state, ['transport', 'matrix', 'server']),
         setup: RaidenMatrixSetup | undefined = get(state, ['transport', 'matrix', 'setup']);
 
-      if (server) {
-        // use server from state/settings
+      if (server && (!matrixServer || matrixServer === server)) {
+        // reuse server&setup from state iff set and either matrixServer equal or undefined
         return of({ server, setup });
       } else if (matrixServer) {
-        return of({ server: matrixServer, setup });
+        // [re]auth on [new] server if matrixServer is set and different from state or first run
+        return of({ server: matrixServer, setup: undefined });
       } else {
         // fetch servers list and use the one with shortest http round trip time (rtt)
         return from(fetch(matrixServerLookup)).pipe(
