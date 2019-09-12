@@ -57,7 +57,7 @@ export interface RaidenState extends t.TypeOf<typeof RaidenState> {}
  * decoding through JSON.parse. This is solved in SDK by both encoding and decoding BigNumbers
  * using lossless-json, without going through the intermediary JS-number form.
  *
- * @param state RaidenState object
+ * @param state - RaidenState object
  * @returns JSON encoded string
  */
 export function encodeRaidenState(state: RaidenState): string {
@@ -69,7 +69,7 @@ export function encodeRaidenState(state: RaidenState): string {
  * If handled a string, will parse it with lossless-json, to preserve BigNumbers encoded as JSON
  * 'number'.
  *
- * @param data string | any which may be decoded as RaidenState
+ * @param data - string | any which may be decoded as RaidenState
  * @returns RaidenState parsed and validated
  */
 export function decodeRaidenState(data: unknown): RaidenState {

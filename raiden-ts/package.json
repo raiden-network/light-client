@@ -11,7 +11,7 @@
     "start": "npm run contracts && tsc -p src/tsconfig.cjs.json -w",
     "build": "npm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json",
     "test": "npm run lint && NODE_ENV=development jest --coverage=true",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "clean": "rimraf dist/ dist:cjs/ contracts/ .coverage/",
     "contracts": "typechain --target=ethers 'src/abi/*.json' --outDir contracts",
     "postinstall": "npm run build",
@@ -109,9 +109,10 @@
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-triple-slash-reference": "off",
       "@typescript-eslint/no-empty-interface": "off",
-      "jsdoc/no-types": 1,
-      "jsdoc/require-param-type": 0,
-      "jsdoc/require-returns-type": 0,
+      "jsdoc/no-types": "warn",
+      "jsdoc/require-param-type": "off",
+      "jsdoc/require-returns-type": "off",
+      "jsdoc/require-hyphen-before-param-description": "warn",
       "jsdoc/require-jsdoc": [
         1,
         {
@@ -126,6 +127,12 @@
       "plugin:jsdoc/recommended"
     ]
   },
+  "eslintIgnore": [
+    "contracts/*",
+    "scripts/*",
+    "dist*/*",
+    "typings/*"
+  ],
   "prettier": {
     "semi": true,
     "trailingComma": "all",

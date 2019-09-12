@@ -240,23 +240,26 @@ export class Raiden {
   /**
    * Async helper factory to make a Raiden instance from more common parameters.
    *
-   * @param connection
-   * - a JsonRpcProvider instance
-   * - a Metamask's web3.currentProvider object or
-   * - a hostname or remote json-rpc connection string
-   * @param account
-   * - a string address of an account loaded in provider or
-   * - a string private key or
-   * - a number index of an account loaded in provider (e.g. 0 for Metamask's loaded account)
-   * @param storageOrState
-   *   Storage/localStorage-like synchronous object where to load and store current state or
-   *   initial RaidenState-like object instead. In this case, user must listen state$ changes
-   *   and update them on whichever persistency option is used
-   * @param contracts
-   *   Contracts deployment info
-   * @returns Promise to Raiden SDK client instance
    * An async factory is needed so we can do the needed async requests to construct the required
    * parameters ahead of construction time, and avoid partial initialization then
+   *
+   * @param connection - A URL or provider to connect to, one of:
+   *     <ul>
+   *       <li>JsonRpcProvider instance,</li>
+   *       <li>a Metamask's web3.currentProvider object or,</li>
+   *       <li>a hostname or remote json-rpc connection string</li>
+   *     </ul>
+   * @param account - An account to use as main account, one of:
+   *     <ul>
+   *       <li>string address of an account loaded in provider or</li>
+   *       <li>string private key or</li>
+   *       <li>number index of an account loaded in provider (e.g. 0 for Metamask's loaded account)</li>
+   *     </ul>
+   * @param storageOrState - Storage/localStorage-like synchronous object where to load and store
+   *     current state or initial RaidenState-like object instead. In this case, user must listen
+   *     state$ changes and update them on whichever persistency option is used
+   * @param contracts - Contracts deployment info
+   * @returns Promise to Raiden SDK client instance
    **/
   public static async create(
     connection: JsonRpcProvider | AsyncSendable | string,
@@ -396,8 +399,8 @@ export class Raiden {
   /**
    * Get ETH balance for given address or self
    *
-   * @param address  Optional target address. If omitted, gets own balance
-   * @returns  BigNumber of ETH balance
+   * @param address - Optional target address. If omitted, gets own balance
+   * @returns BigNumber of ETH balance
    */
   public getBalance(address?: string): Promise<BigNumber> {
     address = address || this.address;
@@ -408,9 +411,9 @@ export class Raiden {
   /**
    * Get token balance and token decimals for given address or self
    *
-   * @param token  Token address to fetch balance. Must be one of the monitored tokens.
-   * @param address  Optional target address. If omitted, gets own balance
-   * @returns  BigNumber containing address's token balance
+   * @param token - Token address to fetch balance. Must be one of the monitored tokens.
+   * @param address - Optional target address. If omitted, gets own balance
+   * @returns BigNumber containing address's token balance
    */
   public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
     address = address || this.address;
@@ -427,7 +430,7 @@ export class Raiden {
    * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
    * very common and defined on most token contracts.
    *
-   * @param token address to fetch info from
+   * @param token - address to fetch info from
    * @returns TokenInfo
    */
   public async getTokenInfo(token: string): Promise<TokenInfo> {
@@ -470,8 +473,8 @@ export class Raiden {
    * Create a TokenNetwork contract linked to this.deps.signer for given tokenNetwork address
    * Caches the result and returns the same contract instance again for the same address on this
    *
-   * @param address  TokenNetwork contract address (not token address!)
-   * @returns  TokenNetwork Contract instance
+   * @param address - TokenNetwork contract address (not token address!)
+   * @returns TokenNetwork Contract instance
    */
   private getTokenNetworkContract(address: Address): TokenNetwork {
     if (!(address in this.contracts.tokenNetworks))
@@ -487,8 +490,8 @@ export class Raiden {
    * Create a Token contract linked to this.deps.signer for given token address
    * Caches the result and returns the same contract instance again for the same address on this
    *
-   * @param address  Token contract address
-   * @returns  Token Contract instance
+   * @param address - Token contract address
+   * @returns Token Contract instance
    */
   private getTokenContract(address: Address): Token {
     if (!(address in this.contracts.tokens))
@@ -503,10 +506,10 @@ export class Raiden {
   /**
    * Open a channel on the tokenNetwork for given token address with partner
    *
-   * @param token  Token address on currently configured token network registry
-   * @param partner  Partner address
-   * @param settleTimeout  openChannel parameter, defaults to 500
-   * @returns  txHash of channelOpen call, iff it succeeded
+   * @param token - Token address on currently configured token network registry
+   * @param partner - Partner address
+   * @param settleTimeout - openChannel parameter, defaults to 500
+   * @returns txHash of channelOpen call, iff it succeeded
    */
   public async openChannel(
     token: string,
@@ -537,10 +540,10 @@ export class Raiden {
   /**
    * Deposit tokens on channel between us and partner on tokenNetwork for token
    *
-   * @param token  Token address on currently configured token network registry
-   * @param partner  Partner address
-   * @param deposit  Number of tokens to deposit on channel
-   * @returns  txHash of setTotalDeposit call, iff it succeeded
+   * @param token - Token address on currently configured token network registry
+   * @param partner - Partner address
+   * @param deposit - Number of tokens to deposit on channel
+   * @returns txHash of setTotalDeposit call, iff it succeeded
    */
   public async depositChannel(
     token: string,
@@ -579,9 +582,9 @@ export class Raiden {
    * to retry sending 'closeChannel' transaction. After it's successful, channel becomes 'closed',
    * and can be settled after 'settleTimeout' blocks (when it then becomes 'settleable').
    *
-   * @param token  Token address on currently configured token network registry
-   * @param partner  Partner address
-   * @returns  txHash of closeChannel call, iff it succeeded
+   * @param token - Token address on currently configured token network registry
+   * @param partner - Partner address
+   * @returns txHash of closeChannel call, iff it succeeded
    */
   public async closeChannel(token: string, partner: string): Promise<Hash> {
     if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
@@ -613,9 +616,9 @@ export class Raiden {
    * becomes 'settling'. If for any reason transaction fails, it'll stay on this state, and this
    * method can be called again to re-send a settleChannel transaction.
    *
-   * @param token  Token address on currently configured token network registry
-   * @param partner  Partner address
-   * @returns  txHash of settleChannel call, iff it succeeded
+   * @param token - Token address on currently configured token network registry
+   * @param partner - Partner address
+   * @returns txHash of settleChannel call, iff it succeeded
    */
   public async settleChannel(token: string, partner: string): Promise<Hash> {
     if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
@@ -645,7 +648,7 @@ export class Raiden {
    * After calling this method, any further presence update to valid transport peers of this
    * address will trigger a corresponding MatrixPresenceUpdateAction on events$
    *
-   * @param address checksummed address to be monitored
+   * @param address - checksummed address to be monitored
    * @returns Promise to object describing availability and last event timestamp
    */
   public async getAvailability(
@@ -674,10 +677,10 @@ export class Raiden {
    * queried with this id on this.transfers$ observable, which will just have emitted the 'pending'
    * transfer. Any following transfer state change will be notified through this observable.
    *
-   * @param token  Token address on currently configured token network registry
-   * @param target  Target address (must be getAvailability before)
-   * @param amount  Amount to try to transfer
-   * @param opts  Optional parameters for transfer:
+   * @param token - Token address on currently configured token network registry
+   * @param target - Target address (must be getAvailability before)
+   * @param amount - Amount to try to transfer
+   * @param opts - Optional parameters for transfer:
    *                - paymentId  payment identifier, a random one will be generated if missing
    *                - secret  Secret to register, a random one will be generated if missing
    *                - secrethash  Must match secret, if both provided, or else, secret must be

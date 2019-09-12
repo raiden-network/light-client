@@ -10,11 +10,11 @@ import { BigNumberC, HexString } from './types';
  * Encode data to hex string of exactly length size (in bytes)
  * Throw if data can't be made to fit in length.
  *
- * @param data May be of multiple types:
+ * @param data - May be of multiple types:
  *      - number|BigNumber: Encoded in the big-endian byte-order and left-zero-padded to length
  *      - string: Must be hex-encoded string of length bytes
  *      - number[] Must be of exactly of length size (left/right-pad it before if needed)
- * @param length The expected length of the hex string, in bytes
+ * @param length - The expected length of the hex string, in bytes
  * @returns HexString byte-array of length
  */
 export function encode<S extends number = number>(
@@ -47,7 +47,7 @@ const isLosslessNumber = (u: unknown): u is LosslessNumber =>
  * otherwise returns LosslessNumber object, which can be decoded as BigNumber by BigNumberC
  * Throws if handled invalid JSON
  *
- * @param text JSON string to parse
+ * @param text - JSON string to parse
  * @returns Decoded object
  */
 export function losslessParse(text: string): any {

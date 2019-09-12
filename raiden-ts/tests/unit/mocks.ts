@@ -78,7 +78,7 @@ interface MockRaidenEpicDeps extends RaidenEpicDeps {
 /**
  * Create a mock of RaidenEpicDeps
  *
- * @returns  Mocked RaidenEpicDeps
+ * @returns Mocked RaidenEpicDeps
  */
 export function raidenEpicDeps(): MockRaidenEpicDeps {
   const network: Network = { name: 'testnet', chainId: 1337 };
@@ -194,8 +194,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
 /**
  * Create a mocked ethers Log object
  *
- * @param filter  EventFilter object
- * @returns  Log object
+ * @param filter - EventFilter object
+ * @returns Log object
  */
 export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<Log>): Log {
   const blockNumber = opts.blockNumber || 1337;
@@ -217,9 +217,9 @@ export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<L
 /**
  * Returns a mocked MatrixClient
  *
- * @param userId  userId of account owner
- * @param server  server mock hostname
- * @returns  Mocked MatrixClient
+ * @param userId - userId of account owner
+ * @param server - server mock hostname
+ * @returns Mocked MatrixClient
  */
 export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixClient> {
   return (Object.assign(new EventEmitter(), {
@@ -265,7 +265,7 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
 /**
  * Returns some valid signature
  *
- * @returns  Some arbitrary valid signature hex string
+ * @returns Some arbitrary valid signature hex string
  */
 export function makeSignature(): Signature {
   return '0x5770d597b270ad9d1225c901b1ef6bfd8782b15d7541379619c5dae02c5c03c1196291b042a4fea9dbddcb1c6bcd2a5ee19180e8dc881c2e9298757e84ad190b1c' as Signature;
