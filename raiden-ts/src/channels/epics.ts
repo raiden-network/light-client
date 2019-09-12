@@ -52,10 +52,10 @@ import { encode } from '../utils/data';
 /**
  * Fetch current blockNumber, register for new block events and emit newBlock actions
  *
- * @param action$  Observable of RaidenActions
- * @param state$  Observable of RaidenStates
- * @param provider  RaidenEpicDeps members
- * @returns  Observable of newBlock actions
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param provider - RaidenEpicDeps members
+ * @returns Observable of newBlock actions
  */
 export const initNewBlockEpic = (
   {  }: Observable<RaidenAction>,
@@ -70,10 +70,10 @@ export const initNewBlockEpic = (
 /**
  * Monitor registry for new token networks and monitor them
  *
- * @param action$  Observable of RaidenActions
- * @param state$  Observable of RaidenStates
- * @param registryContract,contractsInfo  RaidenEpicDeps members
- * @returns  Observable of tokenMonitored actions
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param registryContract,contractsInfo - RaidenEpicDeps members
+ * @returns Observable of tokenMonitored actions
  */
 export const initMonitorRegistryEpic = (
   action$: Observable<RaidenAction>,
@@ -121,9 +121,9 @@ export const initMonitorRegistryEpic = (
 /**
  * Monitor channels previously already on state
  *
- * @param action$  Observable of RaidenActions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of channelMonitored actions
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of channelMonitored actions
  */
 export const initMonitorChannelsEpic = (
   {  }: Observable<RaidenAction>,
@@ -147,10 +147,10 @@ export const initMonitorChannelsEpic = (
 /**
  * Monitor provider to ensure account continues to be available and network stays the same
  *
- * @param action$  Observable of RaidenActions
- * @param state$  Observable of RaidenStates
- * @param address,network,provider  RaidenEpicDeps members
- * @returns  Observable of raidenShutdown actions
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param address,network,provider - RaidenEpicDeps members
+ * @returns Observable of raidenShutdown actions
  */
 export const initMonitorProviderEpic = (
   {  }: Observable<RaidenAction>,
@@ -200,10 +200,10 @@ export const initMonitorProviderEpic = (
  * subscribe to events and emit respective actions to the stream. Currently:
  * - ChannelOpened events with us or by us
  *
- * @param action$  Observable of tokenMonitored actions
- * @param state$  Observable of RaidenStates
- * @param matrix$  RaidenEpicDeps members
- * @returns  Observable of channelOpened actions
+ * @param action$ - Observable of tokenMonitored actions
+ * @param state$ - Observable of RaidenStates
+ * @param matrix$ - RaidenEpicDeps members
+ * @returns Observable of channelOpened actions
  */
 export const tokenMonitoredEpic = (
   action$: Observable<RaidenAction>,
@@ -272,10 +272,10 @@ export const tokenMonitoredEpic = (
  * - ChannelClosedEvent, fires a channelClosed action
  * - ChannelSettledEvent, fires a channelSettled action and completes that channel observable
  *
- * @param action$  Observable of channelMonitored actions
- * @param state$  Observable of RaidenStates
- * @param matrix$  RaidenEpicDeps members
- * @returns  Observable of channelDeposited,channelClosed,channelSettled actions
+ * @param action$ - Observable of channelMonitored actions
+ * @param state$ - Observable of RaidenStates
+ * @param matrix$ - RaidenEpicDeps members
+ * @returns Observable of channelDeposited,channelClosed,channelSettled actions
  */
 export const channelMonitoredEpic = (
   action$: Observable<RaidenAction>,
@@ -439,10 +439,10 @@ export const channelMonitoredEpic = (
  * will instead be detected and fired by tokenMonitoredEpic. If anything detectable goes wrong,
  * fires a ChannnelOpenActionFailed instead
  *
- * @param action$  Observable of channelOpen actions
- * @param state$  Observable of RaidenStates
- * @param getTokenNetworkContract  RaidenEpicDeps members
- * @returns  Observable of channelOpenFailed actions
+ * @param action$ - Observable of channelOpen actions
+ * @param state$ - Observable of RaidenStates
+ * @param getTokenNetworkContract - RaidenEpicDeps members
+ * @returns Observable of channelOpenFailed actions
  */
 export const channelOpenEpic = (
   action$: Observable<RaidenAction>,
@@ -491,9 +491,9 @@ export const channelOpenEpic = (
 /**
  * When we see a new ChannelOpenedAction event, starts monitoring channel
  *
- * @param action$  Observable of channelOpened actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of channelMonitored actions
+ * @param action$ - Observable of channelOpened actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of channelMonitored actions
  */
 export const channelOpenedEpic = (
   action$: Observable<RaidenAction>,
@@ -529,10 +529,10 @@ export const channelOpenedEpic = (
  * channelMonitoredEpic. If anything detectable goes wrong, fires a ChannelDepositActionFailed
  * instead
  *
- * @param action$  Observable of channelDeposit actions
- * @param state$  Observable of RaidenStates
- * @param address,getTokenContract,getTokenNetworkContract  RaidenEpicDeps members
- * @returns  Observable of channelDepositFailed actions
+ * @param action$ - Observable of channelDeposit actions
+ * @param state$ - Observable of RaidenStates
+ * @param address,getTokenContract,getTokenNetworkContract - RaidenEpicDeps members
+ * @returns Observable of channelDepositFailed actions
  */
 export const channelDepositEpic = (
   action$: Observable<RaidenAction>,
@@ -621,10 +621,10 @@ export const channelDepositEpic = (
  * detected and reacted by channelMonitoredEpic. If anything detectable goes wrong, fires a
  * ChannelCloseActionFailed instead
  *
- * @param action$  Observable of channelClose actions
- * @param state$  Observable of RaidenStates
- * @param getTokenNetworkContract  RaidenEpicDeps members
- * @returns  Observable of channelCloseFailed actions
+ * @param action$ - Observable of channelClose actions
+ * @param state$ - Observable of RaidenStates
+ * @param getTokenNetworkContract - RaidenEpicDeps members
+ * @returns Observable of channelCloseFailed actions
  */
 export const channelCloseEpic = (
   action$: Observable<RaidenAction>,
@@ -724,10 +724,10 @@ export const channelCloseEpic = (
  * detected and reacted by channelMonitoredEpic. If anything detectable goes wrong, fires a
  * ChannelSettleActionFailed instead
  *
- * @param action$  Observable of channelSettle actions
- * @param state$  Observable of RaidenStates
- * @param address,getTokenNetworkContract  RaidenEpicDeps members
- * @returns  Observable of channelSettleFailed actions
+ * @param action$ - Observable of channelSettle actions
+ * @param state$ - Observable of RaidenStates
+ * @param address,getTokenNetworkContract - RaidenEpicDeps members
+ * @returns Observable of channelSettleFailed actions
  */
 export const channelSettleEpic = (
   action$: Observable<RaidenAction>,
@@ -809,9 +809,9 @@ export const channelSettleEpic = (
 /**
  * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable
  *
- * @param action$  Observable of newBlock actions
- * @param state$  Observable of RaidenStates
- * @returns  Observable of channelSettleable actions
+ * @param action$ - Observable of newBlock actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of channelSettleable actions
  */
 export const channelSettleableEpic = (
   action$: Observable<RaidenAction>,

@@ -10,8 +10,8 @@ import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
  * state.transport reducer
  * Handles all transport actions and requests
  *
- * @param state  Current RaidenState['transport'] slice
- * @param action  RaidenAction to handle
+ * @param state - Current RaidenState['transport'] slice
+ * @param action - RaidenAction to handle
  * @returns New RaidenState['transport'] slice
  */
 function transport(

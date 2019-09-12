@@ -43,7 +43,7 @@ enum MessageTypeId {
 /**
  * Create the hash of Metadata structure.
  *
- * @param metadata The LockedTransfer metadata
+ * @param metadata - The LockedTransfer metadata
  * @returns Hash of the metadata.
  */
 export function createMetadataHash(metadata: Metadata): Hash {
@@ -54,10 +54,10 @@ export function createMetadataHash(metadata: Metadata): Hash {
 /**
  * Returns a balance_hash from transferred&locked amounts & locksroot
  *
- * @param transferredAmount  EnvelopeMessage.transferred_amount
- * @param lockedAmount  EnvelopeMessage.locked_amount
- * @param locksroot  Hash of all current locks
- * @returns  Hash of the balance
+ * @param transferredAmount - EnvelopeMessage.transferred_amount
+ * @param lockedAmount - EnvelopeMessage.locked_amount
+ * @param locksroot - Hash of all current locks
+ * @returns Hash of the balance
  */
 export function createBalanceHash(
   transferredAmount: UInt<32>,
@@ -74,7 +74,7 @@ export function createBalanceHash(
 /**
  * Create the messageHash for a given EnvelopeMessage
  *
- * @param message EnvelopeMessage to pack
+ * @param message - EnvelopeMessage to pack
  * @returns Hash of the message pack
  */
 export function createMessageHash(message: EnvelopeMessage): Hash {
@@ -127,7 +127,7 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
  * actual packed encoding was once used for binary transport protocols, but nowadays is used only
  * for generating data to be signed, which is the purpose of our implementation.
  *
- * @param message Message to be packed
+ * @param message - Message to be packed
  * @returns HexBytes hex-encoded string data representing message in binary format
  */
 export function packMessage(message: Message) {
@@ -219,8 +219,8 @@ export function packMessage(message: Message) {
 /**
  * Typeguard to check if a message contains a valid signature
  *
- * @param message  May or may not be a signed message
- * @returns  Boolean if message is signed
+ * @param message - May or may not be a signed message
+ * @returns Boolean if message is signed
  */
 export function isSigned<M extends Message & { signature?: Signature }>(
   message: M,
@@ -231,8 +231,8 @@ export function isSigned<M extends Message & { signature?: Signature }>(
 /**
  * Requires a signed message and returns its signer address
  *
- * @param message  Signed message to retrieve signer address
- * @returns  Address which signed message
+ * @param message - Signed message to retrieve signer address
+ * @returns Address which signed message
  */
 export function getMessageSigner(message: Signed<Message>): Address {
   return verifyMessage(arrayify(packMessage(message)), message.signature) as Address;
@@ -241,7 +241,7 @@ export function getMessageSigner(message: Signed<Message>): Address {
 /**
  * Get the SignedBalanceProof associated with an EnvelopeMessage
  *
- * @param message  Signed EnvelopeMessage
+ * @param message - Signed EnvelopeMessage
  * @returns SignedBalanceProof object for message
  */
 export function getBalanceProofFromEnvelopeMessage(
@@ -265,7 +265,7 @@ export function getBalanceProofFromEnvelopeMessage(
  * Encode a Message as a JSON string
  * Uses lossless-json to encode BigNumbers as JSON 'number' type, as Raiden
  *
- * @param message Message object to be serialized
+ * @param message - Message object to be serialized
  * @returns JSON string
  */
 export function encodeJsonMessage<M extends Message>(message: Signed<M>): string {
@@ -277,7 +277,7 @@ export function encodeJsonMessage<M extends Message>(message: Signed<M>): string
  * Try to decode text as a Message, using lossless-json to decode BigNumbers
  * Throws if can't decode, or message is invalid regarding any of the encoded constraints
  *
- * @param text JSON string to try to decode
+ * @param text - JSON string to try to decode
  * @returns Message object
  */
 export function decodeJsonMessage(text: string): Signed<Message> {
@@ -291,9 +291,9 @@ export function decodeJsonMessage(text: string): Signed<Message> {
 /**
  * Pack message and request signer to sign it, and returns signed message
  *
- * @param signer  Signer instance
- * @param message Unsigned message to pack and sign
- * @returns  Promise to signed message
+ * @param signer - Signer instance
+ * @param message - Unsigned message to pack and sign
+ * @returns Promise to signed message
  */
 export async function signMessage<M extends Message>(
   signer: Signer,

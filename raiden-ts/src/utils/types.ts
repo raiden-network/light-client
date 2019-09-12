@@ -68,8 +68,8 @@ export interface HexStringB<S extends number> extends SizedB<S> {
  * Helper function to create codecs to validate an arbitrary or variable-sized hex bytestring
  * A branded codec to indicate validated hex-strings
  *
- * @param size  Required number of bytes. Pass undefined or zero to have a variable-sized type
- * @returns branded  codec for hex-encoded bytestrings
+ * @param size - Required number of bytes. Pass undefined or zero to have a variable-sized type
+ * @returns branded codec for hex-encoded bytestrings
  */
 export const HexString = memoize<
   <S extends number = number>(size?: S) => t.BrandC<t.StringC, HexStringB<S>>
@@ -94,8 +94,8 @@ export interface UIntB<S extends number> extends SizedB<S> {
  * Helper function to create codecs to validate an arbitrary or variable-sized BigNumbers
  * A branded codec/type to indicate size-validated BigNumbers
  *
- * @param size  Required number of bytes. Pass undefined or zero to have a variable-sized type
- * @returns branded  codec for hex-encoded bytestrings
+ * @param size - Required number of bytes. Pass undefined or zero to have a variable-sized type
+ * @returns branded codec for hex-encoded bytestrings
  */
 export const UInt = memoize<
   <S extends number = number>(size?: S) => t.BrandC<typeof BigNumberC, UIntB<S>>
@@ -149,8 +149,8 @@ export type Address = string & t.Brand<HexStringB<20>> & t.Brand<AddressB>;
 /**
  * Helper function to create codecs to validate [timestamp, value] tuples
  *
- * @param codec  Codec to compose with a timestamp in a tuple
- * @returns  Codec of a tuple of timestamp and codec type
+ * @param codec - Codec to compose with a timestamp in a tuple
+ * @returns Codec of a tuple of timestamp and codec type
  */
 export const Timed = memoize<<T extends t.Mixed>(codec: T) => t.TupleC<[t.NumberC, T]>>(
   <T extends t.Mixed>(codec: T) => t.tuple([t.number, codec]),
@@ -160,8 +160,8 @@ export type Timed<T> = [number, T];
 /**
  * Given a value of type T, returns a Timed<T> tuple with current time as first value
  *
- * @param v  Value to return with time
- * @returns  Tuple of call timestamp as first elemtn and value passed as parameter as second
+ * @param v - Value to return with time
+ * @returns Tuple of call timestamp as first elemtn and value passed as parameter as second
  */
 export function timed<T>(v: T): Timed<T> {
   return [Date.now(), v];

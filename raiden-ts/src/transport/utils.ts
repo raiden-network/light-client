@@ -12,7 +12,7 @@ import { matrixPresenceUpdate } from './actions';
  * Known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
  * It's memoized and shared, so all subscriptions share the same mapped/output object
  *
- * @param action$ Observable
+ * @param action$ - Observable
  * @returns Observable of aggregated Presences from subscription to now
  */
 export const getPresences$ = memoize(
