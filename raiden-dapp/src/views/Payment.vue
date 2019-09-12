@@ -191,10 +191,10 @@ export default class Payment extends Vue {
       this.done = true;
       this.dismissProgress();
     } catch (e) {
-      this.loading = false;
-      this.depositting = false;
       this.error = e.message;
     }
+    this.loading = false;
+    this.depositting = false;
   }
 
   async transfer() {

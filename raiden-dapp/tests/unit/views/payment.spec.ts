@@ -176,9 +176,10 @@ describe('Payment.vue', () => {
     await flushPromises();
     jest.advanceTimersByTime(2000);
 
-    expect(loading).toHaveBeenCalledTimes(2);
+    expect(loading).toHaveBeenCalledTimes(3);
     expect(loading).toHaveBeenNthCalledWith(1, true);
     expect(loading).toHaveBeenNthCalledWith(2, false);
+    expect(loading).toHaveBeenNthCalledWith(3, false);
     expect(done).toBeCalledTimes(2);
     expect(done).toHaveBeenNthCalledWith(1, true);
     expect(done).toHaveBeenNthCalledWith(2, false);
