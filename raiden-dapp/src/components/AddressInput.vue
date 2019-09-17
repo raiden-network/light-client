@@ -66,7 +66,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   @Prop({
     default: function() {
-      return ['']
+      return [''];
     }
   })
   exclude!: Array<string>;
@@ -102,7 +102,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     if (!value) {
       this.input(value);
       this.errorMessages.push(this.$t('address-input.error.empty') as string);
-    } else if(this.exclude.includes(value)) {
+    } else if (this.exclude.includes(value)) {
       this.errorMessages.push(this.$t(
         'address-input.error.invalid-excluded-address'
       ) as string);

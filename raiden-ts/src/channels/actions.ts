@@ -4,7 +4,6 @@ import { createStandardAction } from 'typesafe-actions';
 import { Address, Hash } from '../utils/types';
 
 // interfaces need to be exported, and we need/want to support `import * as RaidenActions`
-// eslint-disable-next-line @typescript-eslint/prefer-interface
 type ChannelId = {
   tokenNetwork: Address;
   partner: Address;

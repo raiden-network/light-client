@@ -13,7 +13,6 @@ import {
   RefundTransfer,
 } from '../messages/types';
 
-// eslint-disable-next-line @typescript-eslint/prefer-interface
 type TransferId = { secrethash: Hash };
 
 /** A request to initiate a transfer */

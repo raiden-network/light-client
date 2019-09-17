@@ -111,9 +111,12 @@ export class MockMatrixRequestFn {
       type = 'application/json';
     }
 
-    let timeoutId: NodeJS.Timeout;
-    let cancel = () => {
-      clearTimeout(timeoutId);
+    let timeoutId: NodeJS.Timeout | undefined;
+    const cancel = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = undefined;
+      }
       callback(new Error('cancelled!'));
     };
     timeoutId = setTimeout(() => {
