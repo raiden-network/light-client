@@ -1,8 +1,11 @@
 export class Web3Provider {
-  static async provider() {
+  static async provider(config?: { INFURA_ENDPOINT: string }) {
     const ethereum = window.ethereum;
     let provider = null;
-    if (typeof ethereum !== 'undefined') {
+
+    if (config) {
+      provider = `https://${config.INFURA_ENDPOINT}`;
+    } else if (typeof ethereum !== 'undefined') {
       await ethereum.enable();
       provider = ethereum;
     } else if (window.web3) {
