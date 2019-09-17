@@ -98,7 +98,7 @@ function makeAndSignTransfer(
       if (!presences[action.payload.target].payload.available)
         throw new Error('target not available/online');
 
-      let secret = action.payload.secret;
+      const secret = action.payload.secret;
       if (secret && keccak256(secret) !== action.meta.secrethash) {
         throw new Error('secrethash does not match provided secret');
       }

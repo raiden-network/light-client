@@ -48,7 +48,7 @@ export function getLocksroot(locks: readonly Lock[]): Hash {
  * @param length - of the secret to generate
  * @returns HexString<32>
  */
-export function makeSecret(length: number = 32): Secret {
+export function makeSecret(length = 32): Secret {
   return hexlify(randomBytes(length)) as Secret;
 }
 

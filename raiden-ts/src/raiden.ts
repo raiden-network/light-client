@@ -1,4 +1,5 @@
-import { Wallet, Signer, Contract } from 'ethers';
+import { Signer, Contract } from 'ethers';
+import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import {
   Network,
@@ -251,9 +252,11 @@ export class Raiden {
    *     </ul>
    * @param account - An account to use as main account, one of:
    *     <ul>
-   *       <li>string address of an account loaded in provider or</li>
-   *       <li>string private key or</li>
-   *       <li>number index of an account loaded in provider (e.g. 0 for Metamask's loaded account)</li>
+   *       <li>Signer instance (e.g. Wallet) loadded with account/private key or</li>
+   *       <li>hex-encoded string address of a remote account in provider or</li>
+   *       <li>hex-encoded string local private key or</li>
+   *       <li>number index of a remote account loaded in provider
+   *            (e.g. 0 for Metamask's loaded account)</li>
    *     </ul>
    * @param storageOrState - Storage/localStorage-like synchronous object where to load and store
    *     current state or initial RaidenState-like object instead. In this case, user must listen
@@ -263,7 +266,7 @@ export class Raiden {
    **/
   public static async create(
     connection: JsonRpcProvider | AsyncSendable | string,
-    account: string | number,
+    account: Signer | string | number,
     storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
   ): Promise<Raiden> {
@@ -304,7 +307,11 @@ export class Raiden {
     }
 
     let signer: Signer;
-    if (typeof account === 'number') {
+    if (Signer.isSigner(account)) {
+      if (account.provider === provider) signer = account;
+      else if (account instanceof Wallet) signer = account.connect(provider);
+      else throw new Error(`Signer ${account} not connected to ${provider}`);
+    } else if (typeof account === 'number') {
       // index of account in provider
       signer = provider.getSigner(account);
     } else if (Address.is(account)) {
@@ -511,11 +518,7 @@ export class Raiden {
    * @param settleTimeout - openChannel parameter, defaults to 500
    * @returns txHash of channelOpen call, iff it succeeded
    */
-  public async openChannel(
-    token: string,
-    partner: string,
-    settleTimeout: number = 500,
-  ): Promise<Hash> {
+  public async openChannel(token: string, partner: string, settleTimeout = 500): Promise<Hash> {
     if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
@@ -700,7 +703,7 @@ export class Raiden {
     amount = bigNumberify(amount);
     if (!UInt(32).is(amount)) throw new Error('Invalid amount');
 
-    let paymentId = !opts || !opts.paymentId ? undefined : bigNumberify(opts.paymentId);
+    const paymentId = !opts || !opts.paymentId ? undefined : bigNumberify(opts.paymentId);
     if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid opts.paymentId');
 
     let secret: Secret | undefined, secrethash: Hash | undefined;

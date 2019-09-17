@@ -1036,7 +1036,7 @@ describe('raidenRootEpic', () => {
 
     test('success', async () => {
       // there's a channel already opened in state
-      let curState = [
+      const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, txHash },
@@ -1179,7 +1179,7 @@ describe('raidenRootEpic', () => {
 
     test('success', async () => {
       // there's a channel already opened in state
-      let curState = [
+      const curState = [
         tokenMonitored({ token, tokenNetwork, first: true }),
         channelOpened(
           { id: channelId, settleTimeout, openBlock, txHash },
@@ -2640,7 +2640,7 @@ describe('raidenRootEpic', () => {
      * transfer
      */
     beforeEach(async () => {
-      let action$: Observable<RaidenAction> = of(
+      const action$: Observable<RaidenAction> = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
           transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
         ),
@@ -3200,7 +3200,7 @@ describe('raidenRootEpic', () => {
     test('transferAutoExpireEpic', async () => {
       expect.assertions(2);
 
-      let state$ = new BehaviorSubject(transferingState);
+      const state$ = new BehaviorSubject(transferingState);
 
       // no output if lock didn't expire yet
       await expect(
@@ -3563,8 +3563,8 @@ describe('raidenRootEpic', () => {
     });
 
     test('transferUnlockProcessedReceivedEpic: success', async () => {
-      let action$: Observable<RaidenAction> = of(transferUnlock(undefined, { secrethash })),
-        state$ = new BehaviorSubject(transferingState);
+      let action$: Observable<RaidenAction> = of(transferUnlock(undefined, { secrethash }));
+      const state$ = new BehaviorSubject(transferingState);
 
       const unlock = (await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
         .pipe(

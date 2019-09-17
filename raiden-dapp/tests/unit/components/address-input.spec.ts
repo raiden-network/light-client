@@ -187,6 +187,6 @@ describe('AddressInput', function() {
 
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(false);
-    })
+    });
   });
 });
