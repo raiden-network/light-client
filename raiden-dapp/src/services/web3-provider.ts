@@ -1,8 +1,13 @@
+import { JsonRpcProvider } from 'ethers/providers';
+
 export class Web3Provider {
-  static async provider() {
+  static async provider(config?: { INFURA_PROJECT_ID: string }) {
     const ethereum = window.ethereum;
     let provider = null;
-    if (typeof ethereum !== 'undefined') {
+
+    if (config) {
+      provider = `https://goerli.infura.io/v3/${config.INFURA_PROJECT_ID}`;
+    } else if (typeof ethereum !== 'undefined') {
       await ethereum.enable();
       provider = ethereum;
     } else if (window.web3) {
