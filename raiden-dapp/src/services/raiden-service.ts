@@ -12,14 +12,18 @@ import {
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import { filter, first } from 'rxjs/internal/operators';
+import { ConfigProvider } from './config-provider';
 
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
 
-  private static async createRaiden(provider: any): Promise<Raiden> {
+  private static async createRaiden(
+    provider: any,
+    account: string | number = 0
+  ): Promise<Raiden> {
     try {
-      return await Raiden.create(provider, 0, window.localStorage);
+      return await Raiden.create(provider, account, window.localStorage);
     } catch (e) {
       throw new RaidenInitializationFailed(e);
     }
@@ -65,11 +69,30 @@ export default class RaidenService {
 
   async connect() {
     try {
-      const provider = await Web3Provider.provider();
+      const raidenPackageConfigUrl = process.env.VUE_APP_RAIDEN_PACKAGE;
+      let config;
+      let provider;
+      let raiden;
+
+      if (raidenPackageConfigUrl) {
+        config = await ConfigProvider.fetch(raidenPackageConfigUrl);
+        provider = await Web3Provider.provider(config);
+      } else {
+        provider = await Web3Provider.provider();
+      }
+
       if (!provider) {
         this.store.commit('noProvider');
       } else {
-        const raiden = await RaidenService.createRaiden(provider);
+        if (config) {
+          raiden = await RaidenService.createRaiden(
+            provider,
+            config.PRIVATE_KEY
+          );
+        } else {
+          raiden = await RaidenService.createRaiden(provider);
+        }
+
         this._raiden = raiden;
 
         this.store.commit('account', await this.getAccount());
