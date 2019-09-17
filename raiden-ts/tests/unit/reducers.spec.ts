@@ -745,7 +745,7 @@ describe('raidenReducer', () => {
     });
 
     test('transfer signed', () => {
-      let message = { ...transfer, locked_amount: bigNumberify(20) as UInt<32> }; // invalid locked
+      const message = { ...transfer, locked_amount: bigNumberify(20) as UInt<32> }; // invalid locked
       let newState = [transferSigned({ message }, { secrethash })].reduce(raidenReducer, state);
       expect(newState.sent).toStrictEqual({});
 
@@ -765,15 +765,15 @@ describe('raidenReducer', () => {
     });
 
     test('transfer processed', () => {
-      let processed: Signed<Processed> = {
-          type: MessageType.PROCESSED,
-          message_identifier: transfer.message_identifier,
-          signature: makeSignature(),
-        },
-        newState = [transferProcessed({ message: processed }, { secrethash })].reduce(
-          raidenReducer,
-          state,
-        );
+      const processed: Signed<Processed> = {
+        type: MessageType.PROCESSED,
+        message_identifier: transfer.message_identifier,
+        signature: makeSignature(),
+      };
+      let newState = [transferProcessed({ message: processed }, { secrethash })].reduce(
+        raidenReducer,
+        state,
+      );
 
       expect(get(newState, ['sent', secrethash])).toBeUndefined();
 
@@ -786,7 +786,7 @@ describe('raidenReducer', () => {
     });
 
     test('transfer secret reveal', () => {
-      let secretReveal: Signed<SecretReveal> = {
+      const secretReveal: Signed<SecretReveal> = {
           type: MessageType.SECRET_REVEAL,
           message_identifier: makeMessageId(),
           secret,
@@ -846,7 +846,7 @@ describe('raidenReducer', () => {
 
       expect(get(newState, ['sent', secrethash, 'unlock', 1])).toBe(unlock);
 
-      let processed: Signed<Processed> = {
+      const processed: Signed<Processed> = {
         type: MessageType.PROCESSED,
         message_identifier: unlock.message_identifier,
         signature: makeSignature(),
@@ -897,7 +897,7 @@ describe('raidenReducer', () => {
 
       expect(get(newState, ['sent', secrethash, 'lockExpired', 1])).toBe(lockExpired);
 
-      let processed: Signed<Processed> = {
+      const processed: Signed<Processed> = {
         type: MessageType.PROCESSED,
         message_identifier: lockExpired.message_identifier,
         signature: makeSignature(),
@@ -911,30 +911,30 @@ describe('raidenReducer', () => {
     });
 
     test('transfer refunded', () => {
-      let refund: Signed<RefundTransfer> = {
-          type: MessageType.REFUND_TRANSFER,
-          chain_id: transfer.chain_id,
-          message_identifier: makeMessageId(),
-          payment_identifier: transfer.payment_identifier,
-          nonce: One as UInt<8>,
-          token_network_address: tokenNetwork,
-          token,
-          recipient: address,
-          target: address,
-          initiator: partner,
-          channel_identifier: transfer.channel_identifier,
-          transferred_amount: Zero as UInt<32>,
-          locked_amount: transfer.locked_amount, // "forgot" to decrease locked_amount
-          lock: transfer.lock,
-          locksroot: transfer.locksroot,
-          fee: Zero as UInt<32>,
-          metadata: { routes: [{ route: [partner] }] },
-          signature: makeSignature(),
-        },
-        newState = [transferRefunded({ message: refund }, { secrethash })].reduce(
-          raidenReducer,
-          state,
-        );
+      const refund: Signed<RefundTransfer> = {
+        type: MessageType.REFUND_TRANSFER,
+        chain_id: transfer.chain_id,
+        message_identifier: makeMessageId(),
+        payment_identifier: transfer.payment_identifier,
+        nonce: One as UInt<8>,
+        token_network_address: tokenNetwork,
+        token,
+        recipient: address,
+        target: address,
+        initiator: partner,
+        channel_identifier: transfer.channel_identifier,
+        transferred_amount: Zero as UInt<32>,
+        locked_amount: transfer.locked_amount, // "forgot" to decrease locked_amount
+        lock: transfer.lock,
+        locksroot: transfer.locksroot,
+        fee: Zero as UInt<32>,
+        metadata: { routes: [{ route: [partner] }] },
+        signature: makeSignature(),
+      };
+      let newState = [transferRefunded({ message: refund }, { secrethash })].reduce(
+        raidenReducer,
+        state,
+      );
 
       expect(get(newState, ['sent', secrethash])).toBeUndefined();
 
@@ -1016,7 +1016,7 @@ describe('raidenReducer', () => {
           ),
         ).toEqual(One);
 
-        let unlock: Signed<Unlock> = {
+        const unlock: Signed<Unlock> = {
             type: MessageType.UNLOCK,
             chain_id: transfer.chain_id,
             message_identifier: makeMessageId(),

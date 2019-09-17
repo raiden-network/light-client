@@ -138,7 +138,7 @@ function channels(state: Channels = initialState.channels, action: RaidenAction)
     return set(path, channel, state);
   } else if (isActionOf(channelSettled, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
-    let channel: Channel | undefined = get(path, state);
+    const channel: Channel | undefined = get(path, state);
     if (
       !channel ||
       ![ChannelState.closed, ChannelState.settleable, ChannelState.settling].includes(

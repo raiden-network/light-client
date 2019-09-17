@@ -19,7 +19,7 @@ import { Lock } from 'raiden-ts/channels';
 import { makeLog, raidenEpicDeps } from './mocks';
 
 describe('fromEthersEvent', () => {
-  let { provider } = raidenEpicDeps();
+  const { provider } = raidenEpicDeps();
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -40,7 +40,7 @@ describe('fromEthersEvent', () => {
 });
 
 describe('getEventsStream', () => {
-  let { provider, registryContract } = raidenEpicDeps();
+  const { provider, registryContract } = raidenEpicDeps();
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -283,7 +283,7 @@ describe('data', () => {
 
 test('rxjs splitCombined', async () => {
   const src = combineLatest(of(1), of(2), of(3), of(4));
-  let [of1, of2, of3, of4] = splitCombined(src);
+  const [of1, of2, of3, of4] = splitCombined(src);
   await expect(of1.toPromise()).resolves.toBe(1);
   await expect(of2.toPromise()).resolves.toBe(2);
   await expect(of3.toPromise()).resolves.toBe(3);

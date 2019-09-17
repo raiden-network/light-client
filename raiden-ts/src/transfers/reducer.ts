@@ -252,7 +252,7 @@ export function transfersReducer(
     let channel: Channel | undefined = get(channelPath, state);
     if (!channel || channel.state !== ChannelState.open) return state;
     // current own balanceProof, or zero balance proof, with some known fields filled
-    let balanceProof: SignedBalanceProof = channel.own.balanceProof || {
+    const balanceProof: SignedBalanceProof = channel.own.balanceProof || {
       chainId: message.chain_id,
       tokenNetworkAddress: action.meta.tokenNetwork,
       channelId: message.channel_identifier,

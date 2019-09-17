@@ -15,7 +15,6 @@ import {
   WithdrawConfirmation,
 } from '../messages/types';
 
-// eslint-disable-next-line @typescript-eslint/prefer-interface
 type TransferId = { secrethash: Hash };
 
 /** A request to initiate a transfer */
@@ -140,7 +139,6 @@ export const transferClear = createStandardAction('transferClear')<undefined, Tr
 
 // Withdraw actions
 
-// eslint-disable-next-line @typescript-eslint/prefer-interface
 type WithdrawId = {
   tokenNetwork: Address;
   partner: Address;

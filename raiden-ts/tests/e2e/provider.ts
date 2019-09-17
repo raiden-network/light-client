@@ -38,7 +38,7 @@ export class TestProvider extends Web3Provider {
     return this.send('evm_revert', id);
   }
 
-  public async mine(count: number = 1): Promise<number> {
+  public async mine(count = 1): Promise<number> {
     const blockNumber = await this.getBlockNumber();
     console.debug(`mining ${count} blocks after blockNumber=${blockNumber}`);
     const promise = new Promise(resolve => {

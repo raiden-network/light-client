@@ -652,7 +652,7 @@ export const channelCloseEpic = (
       }
       const channelId = channel.id;
 
-      let balanceHash = HashZero as Hash,
+      const balanceHash = HashZero as Hash,
         nonce = Zero as UInt<8>,
         additionalHash = HashZero as Hash,
         nonClosingSignature = hexlify(SignatureZero) as Signature;

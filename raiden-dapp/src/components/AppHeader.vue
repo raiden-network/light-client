@@ -55,7 +55,7 @@
           <v-tooltip v-model="copied" bottom dark activator="#copyBtn">
             <span>{{ $t('app-header.copy-success') }}</span>
           </v-tooltip>
-          <v-btn @click="copy()" id="copyBtn" text icon>
+          <v-btn id="copyBtn" @click="copy()" text icon>
             <v-img
               :src="require('../assets/copy_icon.svg')"
               class="app-header__bottom__address__copy"
