@@ -3,7 +3,10 @@
 
 import { register } from 'register-service-worker';
 
-if (process.env.NODE_ENV === 'production' && !process.env.VUE_APP_RAIDEN_PACKAGE) {
+if (
+  process.env.NODE_ENV === 'production' &&
+  !process.env.VUE_APP_RAIDEN_PACKAGE
+) {
   register(`${process.env.BASE_URL}service-worker.js`, {
     ready() {
       console.log(
