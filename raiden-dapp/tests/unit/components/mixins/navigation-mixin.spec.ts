@@ -11,15 +11,17 @@ describe('NavigationMixin', function() {
   let wrapper: Wrapper<NavigationMixin>;
   let router: Mocked<VueRouter>;
 
-  let args: () => any;
-
   beforeEach(async () => {
     router = new VueRouter() as Mocked<VueRouter>;
     router.push = jest.fn().mockReturnValue(null);
-    args = () => router.push.mock.calls[0][0];
 
     const localVue = createLocalVue();
-    wrapper = shallowMount(NavigationMixin, {
+    const component = {
+      render() {},
+      mixins: [NavigationMixin]
+    };
+
+    wrapper = shallowMount(component as any, {
       localVue,
       mocks: {
         $router: router,
@@ -30,74 +32,116 @@ describe('NavigationMixin', function() {
 
   test('navigate to select hub', () => {
     wrapper.vm.navigateToSelectHub('0xtoken');
+
     expect(router.push).toHaveBeenCalledTimes(1);
-    const callArgs = args();
-    expect(callArgs.name).toEqual(RouteNames.SELECT_HUB);
-    expect(callArgs.params.token).toEqual('0xtoken');
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.SELECT_HUB,
+        params: {
+          token: '0xtoken'
+        }
+      })
+    );
   });
 
   test('navigate to home', () => {
     wrapper.vm.navigateToHome();
-    const callArgs = args();
+
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(callArgs.name).toEqual(RouteNames.HOME);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.HOME
+      })
+    );
   });
 
   test('navigate to open-channel', () => {
     wrapper.vm.navigateToOpenChannel('0xtoken', '0xpartner');
-    const callArgs = args();
+
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(callArgs.name).toEqual(RouteNames.OPEN_CHANNEL);
-    expect(callArgs.params.token).toEqual('0xtoken');
-    expect(callArgs.params.partner).toEqual('0xpartner');
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.OPEN_CHANNEL,
+        params: {
+          token: '0xtoken',
+          partner: '0xpartner'
+        }
+      })
+    );
   });
 
   test('navigate to token select', () => {
     wrapper.vm.navigateToTokenSelect();
-    const callArgs = args();
+
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(callArgs.name).toEqual(RouteNames.SELECT_TOKEN);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.SELECT_TOKEN
+      })
+    );
   });
 
   test('navigate to payment target', () => {
     wrapper.vm.navigateToSelectPaymentTarget('0xtoken');
-    const callArgs = args();
+
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(callArgs.name).toEqual(RouteNames.PAYMENT);
-    expect(callArgs.params.token).toEqual('0xtoken');
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.PAYMENT,
+        params: {
+          token: '0xtoken'
+        }
+      })
+    );
   });
 
   describe('back navigation', () => {
     test('from select target', async () => {
       wrapper.vm.$route.name = RouteNames.PAYMENT;
       wrapper.vm.onBackClicked();
-      const callArgs = args();
+
       expect(router.push).toHaveBeenCalledTimes(1);
-      expect(callArgs.name).toEqual(RouteNames.HOME);
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.HOME
+        })
+      );
     });
 
     test('from select token', async () => {
       wrapper.vm.$route.name = RouteNames.SELECT_TOKEN;
       wrapper.vm.onBackClicked();
-      const callArgs = args();
+
       expect(router.push).toHaveBeenCalledTimes(1);
-      expect(callArgs.name).toEqual(RouteNames.HOME);
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.HOME
+        })
+      );
     });
 
     test('from select hub', async () => {
       wrapper.vm.$route.name = RouteNames.SELECT_HUB;
       wrapper.vm.onBackClicked();
-      const callArgs = args();
+
       expect(router.push).toHaveBeenCalledTimes(1);
-      expect(callArgs.name).toEqual(RouteNames.SELECT_TOKEN);
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.SELECT_TOKEN
+        })
+      );
     });
 
     test('from channels', async () => {
       wrapper.vm.$route.name = RouteNames.CHANNELS;
       wrapper.vm.onBackClicked();
-      const callArgs = args();
+
       expect(router.push).toHaveBeenCalledTimes(1);
-      expect(callArgs.name).toEqual(RouteNames.HOME);
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.HOME
+        })
+      );
     });
 
     test('from open-channel', async () => {
@@ -106,10 +150,16 @@ describe('NavigationMixin', function() {
         token: '0xtoken'
       };
       wrapper.vm.onBackClicked();
-      const callArgs = args();
+
       expect(router.push).toHaveBeenCalledTimes(1);
-      expect(callArgs.name).toEqual(RouteNames.SELECT_HUB);
-      expect(callArgs.params.token).toEqual('0xtoken');
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.SELECT_HUB,
+          params: {
+            token: '0xtoken'
+          }
+        })
+      );
     });
   });
 });

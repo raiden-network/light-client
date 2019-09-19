@@ -60,7 +60,7 @@ export default class ChannelDeposit extends Vue {
   cancel() {}
 
   confirm() {
-    const deposit = BalanceUtils.parse(this.deposit, this.token.decimals);
+    const deposit = BalanceUtils.parse(this.deposit, this.token.decimals!);
     if (deposit.isZero()) {
       this.$emit('cancel');
     } else {

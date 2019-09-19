@@ -1,11 +1,12 @@
+import { Token } from '@/model/types';
+
 jest.mock('vue-router');
 
 jest.mock('@/services/raiden-service');
 jest.useFakeTimers();
 
-import { Store } from 'vuex';
 import { addElemWithDataAppToBody } from '../utils/dialog';
-import { ChannelState, RaidenChannel } from 'raiden-ts';
+import { ChannelState } from 'raiden-ts';
 import { mockInput } from '../utils/interaction-utils';
 import { stub } from '../utils/stub';
 import flushPromises from 'flush-promises';
@@ -20,6 +21,7 @@ import RaidenService from '@/services/raiden-service';
 import { One, Zero } from 'ethers/constants';
 
 import Mocked = jest.Mocked;
+import { $identicon } from '../utils/mocks';
 
 Vue.use(Vuetify);
 
@@ -33,11 +35,10 @@ describe('Payment.vue', () => {
   let done: jest.SpyInstance;
   let vuetify: typeof Vuetify;
 
-  const token = {
+  const token: Token = {
     address: '0xtoken',
     balance: One,
     decimals: 18,
-    units: '1.0',
     symbol: 'TTT',
     name: 'Test Token'
   };
@@ -52,34 +53,14 @@ describe('Payment.vue', () => {
     let options = {
       localVue,
       vuetify,
-      store: new Store({
-        getters: {
-          channelWithBiggestCapacity: jest.fn().mockReturnValue(() => ({
-            capacity: One,
-            balance: Zero,
-            ownDeposit: One,
-            partnerDeposit: Zero,
-            partner: '0xaddr' as any,
-            token: '0xtoken' as any,
-            state: ChannelState.open,
-            settleTimeout: 500,
-            tokenNetwork: '0xtokennetwork' as any,
-            closeBlock: undefined,
-            openBlock: 12346,
-            id: 1
-          })),
-          defaultAddress: jest.fn().mockReturnValue(['0x1234567890'])
-        }
-      }),
+      store,
       mocks: {
         $router: router,
         $route: TestData.mockRoute({
           token: '0xtoken'
         }),
         $raiden: raiden,
-        $identicon: {
-          getIdenticon: jest.fn()
-        },
+        $identicon: $identicon(),
         $t: (msg: string) => msg
       }
     };
@@ -94,14 +75,35 @@ describe('Payment.vue', () => {
   beforeAll(async () => {
     router = new VueRouter() as Mocked<VueRouter>;
     raiden = new RaidenService(store) as Mocked<RaidenService>;
+    raiden.fetchTokenData = jest.fn().mockResolvedValue(undefined);
     const route = stub<Route>();
 
-    raiden.getToken = jest.fn().mockResolvedValue(token);
     route.params = {
       token: '0xtoken'
     };
 
     router.currentRoute = route;
+
+    store.commit('updateChannels', {
+      '0xtoken': {
+        '0xaddr': {
+          capacity: One,
+          balance: Zero,
+          ownDeposit: One,
+          partnerDeposit: Zero,
+          partner: '0xaddr' as any,
+          token: '0xtoken' as any,
+          state: ChannelState.open,
+          settleTimeout: 500,
+          tokenNetwork: '0xtokennetwork' as any,
+          closeBlock: undefined,
+          openBlock: 12346,
+          id: 1
+        }
+      }
+    });
+    store.commit('updateTokens', { '0xtoken': token });
+    store.commit('account', '0x1234567890');
 
     wrapper = vueFactory(router, raiden);
 
@@ -110,8 +112,8 @@ describe('Payment.vue', () => {
     done = jest.spyOn(wrapper.vm.$data, 'done', 'set');
   });
 
-  test('should populate the data properties on mount', async () => {
-    expect(wrapper.vm.$data.token).toEqual(token);
+  test('should populate the data properties on create', async () => {
+    expect((wrapper.vm as any).token).toEqual(token);
   });
 
   test('should finish reset load and done after successful transfer', async () => {

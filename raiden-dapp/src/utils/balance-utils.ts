@@ -1,14 +1,12 @@
-import { BigNumber } from 'ethers/utils';
-import { utils } from 'ethers';
-import { Token } from '@/model/types';
+import { BigNumber, parseUnits, formatUnits, formatEther } from 'ethers/utils';
 
 export class BalanceUtils {
   static toEth(wei: BigNumber): string {
-    return utils.formatEther(wei);
+    return formatEther(wei);
   }
 
   static toUnits(wei: BigNumber, decimals: number): string {
-    return utils.formatUnits(wei, decimals);
+    return formatUnits(wei, decimals);
   }
 
   static decimalsOverflow(depositTokens: string, decimals: number): boolean {
@@ -22,6 +20,6 @@ export class BalanceUtils {
   }
 
   static parse(deposit: string, decimals: number) {
-    return utils.parseUnits(deposit, decimals);
+    return parseUnits(deposit, decimals);
   }
 }

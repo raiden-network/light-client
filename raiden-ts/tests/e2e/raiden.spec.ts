@@ -16,7 +16,7 @@ import { Raiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { initialState } from 'raiden-ts/state';
 import { raidenShutdown } from 'raiden-ts/actions';
-import { newBlock } from 'raiden-ts/channels/actions';
+import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
 import { Storage, Secret, Address } from 'raiden-ts/utils/types';
 import { ContractsInfo } from 'raiden-ts/types';
@@ -367,11 +367,36 @@ describe('Raiden', () => {
     test('newBlock', async () => {
       expect.assertions(1);
       await provider.mine(5);
-      const promise = raiden.events$.pipe(first()).toPromise();
+      const promise = raiden.events$
+        .pipe(
+          filter(value => value.type === 'newBlock'),
+          first(),
+        )
+        .toPromise();
       await provider.mine(10);
       await expect(promise).resolves.toMatchObject({
         type: getType(newBlock),
         payload: { blockNumber: expect.any(Number) },
+      });
+    });
+
+    test('tokenMonitored', async () => {
+      expect.assertions(1);
+      await provider.mine(5);
+      const promise = raiden.events$
+        .pipe(
+          filter(value => value.type === 'tokenMonitored'),
+          first(),
+        )
+        .toPromise();
+      await provider.mine(10);
+      await expect(promise).resolves.toMatchObject({
+        type: getType(tokenMonitored),
+        payload: {
+          fromBlock: undefined,
+          token: '0xfF06581Bc4D7e8bE4F9E15E4b9452E79785E0aa9',
+          tokenNetwork: '0x3979Aa776fE2ef327dFD0747aF6F4EF5A0EE4517',
+        },
       });
     });
   });

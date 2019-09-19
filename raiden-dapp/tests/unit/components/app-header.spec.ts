@@ -7,6 +7,7 @@ import { TestData } from '../data/mock-data';
 import flushPromises from 'flush-promises';
 import Filters from '@/filters';
 import { addElemWithDataAppToBody } from '../utils/dialog';
+import { $identicon } from '../utils/mocks';
 
 Vue.use(Vuetify);
 Vue.filter('displayFormat', Filters.displayFormat);
@@ -27,9 +28,7 @@ describe('AppHeader.vue', () => {
             title: 'Home'
           }
         ),
-        $identicon: {
-          getIdenticon: jest.fn()
-        },
+        $identicon: $identicon(),
         $t: (msg: string) => msg
       }
     });

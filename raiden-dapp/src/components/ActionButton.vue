@@ -4,6 +4,7 @@
       <v-btn
         :disabled="!enabled"
         @click="click()"
+        :loading="loading"
         class="text-capitalize action-button__button"
         depressed
         large
@@ -23,6 +24,9 @@ export default class ActionButton extends Vue {
 
   @Prop({ required: true })
   text!: string;
+
+  @Prop({ type: Boolean, default: false })
+  loading!: boolean;
 
   @Emit()
   click() {}

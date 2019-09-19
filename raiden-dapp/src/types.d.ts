@@ -5,8 +5,6 @@ import { Network } from 'ethers/utils';
 
 export type Tokens = { [token: string]: Token };
 
-export type ValidationRule = (v: string) => true | string;
-
 export interface RootState {
   loading: boolean;
   defaultAccount: string;

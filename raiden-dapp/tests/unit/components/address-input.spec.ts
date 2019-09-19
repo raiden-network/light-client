@@ -1,7 +1,8 @@
 jest.mock('@/services/raiden-service');
-jest.useFakeTimers();
 
+jest.useFakeTimers();
 import flushPromises from 'flush-promises';
+import { $identicon } from '../utils/mocks';
 import store from '@/store';
 import { mount, Wrapper } from '@vue/test-utils';
 import AddressInput from '@/components/AddressInput.vue';
@@ -16,11 +17,22 @@ Vue.use(Vuetify);
 describe('AddressInput', function() {
   let wrapper: Wrapper<AddressInput>;
   let raiden: Mocked<RaidenService>;
-  let mockIdenticon: jest.Mock<any, any>;
   const excludedAddress: string = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
 
+  function vueFactory(value: string = '') {
+    return mount(AddressInput, {
+      propsData: {
+        value
+      },
+      mocks: {
+        $raiden: raiden,
+        $identicon: $identicon(),
+        $t: (msg: string) => msg
+      }
+    });
+  }
+
   beforeEach(() => {
-    mockIdenticon = jest.fn().mockResolvedValue('');
     raiden = new RaidenService(store) as Mocked<RaidenService>;
     wrapper = mount(AddressInput, {
       propsData: {
@@ -29,9 +41,7 @@ describe('AddressInput', function() {
       },
       mocks: {
         $raiden: raiden,
-        $identicon: {
-          getIdenticon: mockIdenticon
-        },
+        $identicon: $identicon(),
         $t: (msg: string) => msg
       }
     });
@@ -89,7 +99,7 @@ describe('AddressInput', function() {
 
   test('setting a valid address should render a blockie', async () => {
     wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
-    expect(mockIdenticon).toHaveBeenCalled();
+    expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
   });
 
   describe('resolving ens names', () => {
@@ -169,24 +179,45 @@ describe('AddressInput', function() {
     });
 
     it('should not show error message if there is no exclude prop', async () => {
-      wrapper = mount(AddressInput, {
-        propsData: {
-          value: ''
-        },
-        mocks: {
-          $raiden: raiden,
-          $identicon: {
-            getIdenticon: mockIdenticon
-          },
-          $t: (msg: string) => msg
-        }
-      });
+      wrapper = vueFactory();
 
       mockInput(wrapper, excludedAddress);
       await wrapper.vm.$nextTick();
 
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(false);
+    });
+  });
+
+  describe('internal value should react to model changes', () => {
+    test('invalid value should not update address', () => {
+      wrapper = vueFactory('0xsdajlskdj');
+      expect(wrapper.vm.$data.address).toBe('');
+    });
+
+    test('valid value should update address', () => {
+      wrapper = vueFactory('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
+      expect(wrapper.vm.$data.address).toBe(
+        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
+      );
+    });
+
+    test('address should be updated on valid changes', async () => {
+      wrapper = vueFactory();
+      expect(wrapper.vm.$data.address).toBe('');
+      wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.$data.address).toBe(
+        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
+      );
+    });
+
+    test('address should not be updated on invalid changes', async () => {
+      wrapper = vueFactory();
+      expect(wrapper.vm.$data.address).toBe('');
+      wrapper.setProps({ value: '0x1aaaaaadshjd' });
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.$data.address).toBe('');
     });
   });
 });

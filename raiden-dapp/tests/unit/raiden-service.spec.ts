@@ -1,6 +1,6 @@
 jest.mock('vuex');
 
-import { DeniedReason } from '@/model/types';
+import { DeniedReason, Token, TokenModel } from '@/model/types';
 import { TestData } from './data/mock-data';
 import RaidenService, {
   ChannelCloseFailed,
@@ -20,7 +20,6 @@ import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
 import { One, Zero, AddressZero } from 'ethers/constants';
 import Mocked = jest.Mocked;
-import anything = jasmine.anything;
 
 Vue.use(Vuex);
 
@@ -43,7 +42,9 @@ describe('RaidenService', () => {
         events$: EMPTY,
         // Emit a dummy transfer event every time raiden is mocked
         transfers$: of({}).pipe(delay(1000)),
-        getTokenBalance: jest.fn().mockResolvedValue(Zero)
+        getTokenBalance: jest.fn().mockResolvedValue(Zero),
+        getTokenList: jest.fn().mockResolvedValue(['0xtoken']),
+        getTokenInfo: jest.fn().mockResolvedValue(null)
       },
       extras
     );
@@ -53,6 +54,9 @@ describe('RaidenService', () => {
     providerMock = Web3Provider.provider = jest.fn();
     store = new Store({}) as Mocked<Store<RootState>>;
     store.commit = jest.fn();
+    (store as any).state = {
+      tokens: {}
+    };
     raidenService = new RaidenService(store);
   });
 
@@ -222,34 +226,16 @@ describe('RaidenService', () => {
     expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
   });
 
-  it('should return null from getTokenBalance if there is an exception', async function() {
-    providerMock.mockResolvedValue(mockProvider);
-    const raidenMock = {
-      channels$: EMPTY,
-      getBalance: jest.fn().mockResolvedValue(Zero),
-      getTokenBalance: jest.fn().mockRejectedValue('reject'),
-      getTokenInfo: jest.fn().mockRejectedValue('reject')
-    };
-
-    factory.mockResolvedValue(raidenMock);
-    await raidenService.connect();
-    await flushPromises();
-
-    const result = await raidenService.getToken('0xtoken');
-    expect(result).toBeNull();
-    expect(raidenMock.getTokenBalance).toHaveBeenCalledTimes(1);
-    expect(raidenMock.getTokenBalance).toHaveBeenCalledWith('0xtoken');
-    expect(raidenMock.getTokenInfo).toHaveBeenCalledTimes(1);
-    expect(raidenMock.getTokenInfo).toHaveBeenCalledWith('0xtoken');
-  });
-
   it('should return a token object from getTokenBalance if everything is good', async function() {
     providerMock.mockResolvedValue(mockProvider);
     const balance = new BigNumber('1000000000000000000');
     const tokenBalance = jest.fn().mockResolvedValue(balance);
     const tokenInfo = jest.fn().mockResolvedValue({
-      decimals: 18
-    });
+      decimals: 18,
+      name: 'Test Token 1',
+      symbol: 'TT1'
+    } as Token);
+
     const raidenMock = mockRaiden({
       getTokenBalance: tokenBalance,
       getTokenInfo: tokenInfo
@@ -259,12 +245,20 @@ describe('RaidenService', () => {
     await raidenService.connect();
     await flushPromises();
 
-    const result = await raidenService.getToken('0xtoken');
-    expect(result).toBeDefined();
-    expect(result!.decimals).toBe(18);
-    expect(result!.address).toBe('0xtoken');
-    expect(result!.units).toBe('1.0');
-    expect(result!.balance).toBe(balance);
+    await raidenService.fetchTokenData(['0xtoken']);
+    expect(store.commit).toHaveBeenNthCalledWith(
+      6,
+      'updateTokens',
+      expect.objectContaining({
+        '0xtoken': {
+          decimals: 18,
+          address: '0xtoken',
+          balance,
+          name: 'Test Token 1',
+          symbol: 'TT1'
+        } as Token
+      } as Tokens)
+    );
     expect(tokenBalance).toHaveBeenCalledTimes(1);
     expect(tokenBalance).toHaveBeenCalledWith('0xtoken');
     expect(tokenInfo).toHaveBeenCalledTimes(1);
@@ -281,7 +275,8 @@ describe('RaidenService', () => {
       channels$: stub,
       getBalance: jest.fn().mockResolvedValue(Zero),
       events$: new BehaviorSubject({}),
-      stop: jest.fn().mockReturnValue(null)
+      stop: jest.fn().mockReturnValue(null),
+      getTokenList: jest.fn().mockResolvedValue([])
     };
 
     factory.mockResolvedValue(raidenMock);
@@ -289,7 +284,7 @@ describe('RaidenService', () => {
     await raidenService.connect();
     await flushPromises();
 
-    expect(store.commit).toHaveBeenNthCalledWith(3, 'updateChannels', {});
+    expect(store.commit).toHaveBeenNthCalledWith(5, 'loadComplete');
     expect(store.commit).toHaveBeenCalledTimes(5);
     raidenService.disconnect();
     expect(raidenMock.stop).toHaveBeenCalledTimes(1);
@@ -483,10 +478,9 @@ describe('RaidenService', () => {
     const mockToken1 = '0xtoken1';
     const mockToken2 = '0xtoken2';
 
-    const mockToken = (address: string) => ({
+    const mockToken = (address: string): Token => ({
       address: address,
       balance: Zero,
-      units: '0.0',
       decimals: 18,
       name: address,
       symbol: address.replace('0x', '').toLocaleUpperCase()
@@ -512,47 +506,85 @@ describe('RaidenService', () => {
       );
     });
 
-    test('fetch should skip already cached tokens', async () => {
-      // @ts-ignore
-      store.state = {
+    test('successful connect should create token placeholders', async () => {
+      const mockStore = store as any;
+
+      mockStore.state = {
         tokens: tokens
       };
 
       await raidenService.connect();
       await flushPromises();
 
-      await expect(raidenService.fetchTokens()).resolves.toBeUndefined();
-
-      expect(store.commit).toHaveBeenCalledTimes(4);
-
       expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
       expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
-      expect(store.commit).toHaveBeenLastCalledWith('loadComplete');
+      expect(store.commit).toHaveBeenNthCalledWith(
+        3,
+        'updateTokens',
+        expect.objectContaining({
+          [mockToken1]: { address: mockToken1 },
+          [mockToken2]: { address: mockToken2 }
+        })
+      );
+      expect(store.commit).toHaveBeenNthCalledWith(4, 'network', undefined);
+      expect(store.commit).toHaveBeenNthCalledWith(5, 'loadComplete');
+      expect(store.commit).toHaveBeenCalledTimes(5);
     });
 
     test('fetch should fetch contracts that are not cached', async () => {
-      // @ts-ignore
-      store.state = {
-        tokens: {}
+      const mockStore = store as any;
+      mockStore.state = {
+        tokens: {
+          [mockToken1]: {
+            address: mockToken1,
+            placeholder: true
+          },
+          [mockToken2]: {
+            address: mockToken2,
+            placeholder: true
+          }
+        }
+      };
+      mockStore.getters = {
+        tokens: [{ address: mockToken1 } as TokenModel]
       };
 
       await raidenService.connect();
       await flushPromises();
-
-      await expect(raidenService.fetchTokens()).resolves.toBeUndefined();
 
       expect(store.commit).toHaveBeenCalledTimes(5);
 
       expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
       expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
-      expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
-      expect(store.commit).toHaveBeenNthCalledWith(5, 'updateTokens', tokens);
+      expect(store.commit).toHaveBeenNthCalledWith(5, 'loadComplete');
+
+      await raidenService.fetchTokenData(['0xtoken1']);
+
+      expect(store.commit).toHaveBeenNthCalledWith(6, 'updateTokens', {
+        [mockToken1]: tokens[mockToken1]
+      });
     });
 
-    test('check token balances on a new block', async () => {
-      // @ts-ignore
-      store.state = {
-        tokens: tokens
+    test('check connected token balances on a new block', async () => {
+      const mockStore = store as any;
+
+      mockStore.state = {
+        tokens: {
+          [mockToken1]: {
+            address: mockToken1
+          },
+          [mockToken2]: {
+            address: mockToken2
+          }
+        }
+      };
+
+      mockStore.getters = {
+        tokens: [
+          {
+            address: mockToken1
+          } as TokenModel
+        ]
       };
 
       providerMock.mockResolvedValue({
@@ -560,12 +592,20 @@ describe('RaidenService', () => {
         sendAsync: jest.fn()
       });
       const subject = new BehaviorSubject({});
+      const testToken: Token = {
+        address: mockToken1,
+        decimals: 18,
+        name: 'Token 1',
+        symbol: 'TKN1'
+      };
       const raidenMock = {
         channels$: new BehaviorSubject({}),
         getBalance: jest.fn().mockResolvedValue(Zero),
-        getTokenBalance: jest.fn().mockResolvedValue(new BigNumber(1)),
+        getTokenBalance: jest.fn().mockResolvedValue(One),
         events$: subject,
-        stop: jest.fn().mockReturnValue(null)
+        stop: jest.fn().mockReturnValue(null),
+        getTokenList: jest.fn().mockResolvedValue([mockToken1]),
+        getTokenInfo: jest.fn().mockResolvedValue(testToken)
       };
 
       factory.mockResolvedValue(raidenMock);
@@ -574,24 +614,41 @@ describe('RaidenService', () => {
       subject.next({ type: 'newBlock' });
       await flushPromises();
 
-      expect(store.commit).toHaveBeenLastCalledWith('updateTokens', anything());
-      const payload = store.commit.mock.calls[5][1] as Tokens;
-      const firstToken = payload[mockToken1];
-      expect(firstToken.balance.toString()).toEqual('1');
-      expect(firstToken.units).toEqual('0.000000000000000001');
+      expect(store.commit).toHaveBeenNthCalledWith(
+        7,
+        'updateTokens',
+        expect.objectContaining({
+          [mockToken1]: {
+            ...testToken,
+            balance: One
+          }
+        })
+      );
     });
   });
 
-  test('shutdown and stop raiden', async function() {
+  test('shutdown and stop raiden', async () => {
+    expect.assertions(2);
+
+    const mockStore = store as any;
+    mockStore.getters = {
+      tokens: []
+    };
+    mockStore.state = {
+      tokens: {}
+    };
+
     providerMock.mockResolvedValue({
       send: jest.fn(),
       sendAsync: jest.fn()
     });
+
     const subject = new BehaviorSubject({});
     const raidenMock = {
       channels$: new BehaviorSubject({}),
       getBalance: jest.fn().mockResolvedValue(Zero),
       events$: subject,
+      getTokenList: jest.fn().mockResolvedValue([]),
       stop: jest.fn().mockReturnValue(null)
     };
 
