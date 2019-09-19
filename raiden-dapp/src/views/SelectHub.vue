@@ -24,48 +24,51 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { Token, TokenPlaceholder } from '@/model/types';
+import { Token } from '@/model/types';
 import AddressInput from '@/components/AddressInput.vue';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import { mapState } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 
 @Component({
   components: { TokenInformation, Divider, AddressInput, ActionButton },
   computed: {
-    ...mapState(['defaultAccount'])
+    ...mapState(['defaultAccount']),
+    ...mapGetters({
+      getToken: 'token'
+    })
   }
 })
 export default class SelectHub extends Mixins(NavigationMixin) {
-  token: Token = TokenPlaceholder;
   defaultAccount!: string;
+  getToken!: (address: string) => Token;
 
   partner: string = '';
   valid: boolean = false;
+
+  get token(): Token {
+    const { token: address } = this.$route.params;
+    return this.getToken(address) || ({ address } as Token);
+  }
 
   selectHub() {
     this.navigateToOpenChannel(this.token.address, this.partner);
   }
 
   async created() {
-    const { token } = this.$route.params;
-    if (!AddressUtils.checkAddressChecksum(token)) {
+    const { token: address } = this.$route.params;
+    if (!AddressUtils.checkAddressChecksum(address)) {
       this.navigateToHome();
       return;
     }
 
-    let tokenInfo = this.$store.getters.token(token);
-    if (!tokenInfo) {
-      tokenInfo = await this.$raiden.getToken(token);
-    }
+    await this.$raiden.fetchTokenData([address]);
 
-    if (!tokenInfo) {
+    if (typeof this.token.decimals !== 'number') {
       this.navigateToHome();
-    } else {
-      this.token = tokenInfo;
     }
   }
 }

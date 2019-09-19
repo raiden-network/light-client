@@ -1,6 +1,10 @@
 <template>
   <v-app dark>
-    <splash-screen v-if="inaccessible" @connect="connect()"></splash-screen>
+    <splash-screen
+      v-if="inaccessible"
+      @connect="connect()"
+      :connecting="connecting"
+    ></splash-screen>
     <div id="application-wrapper" v-else>
       <div id="application-content">
         <app-header></app-header>
@@ -32,7 +36,7 @@ import { DeniedReason } from '@/model/types';
 })
 export default class App extends Vue {
   name: string;
-  initialized: boolean = false;
+  connecting: boolean = false;
   accessDenied!: DeniedReason;
   loading!: boolean;
 
@@ -43,18 +47,17 @@ export default class App extends Vue {
 
   get inaccessible() {
     return (
-      !this.initialized ||
+      this.connecting ||
       this.loading ||
       this.accessDenied !== DeniedReason.UNDEFINED
     );
   }
 
   async connect() {
-    this.initialized = false;
+    this.connecting = true;
     this.$store.commit('reset');
     await this.$raiden.connect();
-    await this.$raiden.fetchTokens();
-    this.initialized = true;
+    this.connecting = false;
   }
 
   destroyed() {

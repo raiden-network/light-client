@@ -5,51 +5,60 @@
       class="select-token__header"
     ></list-header>
 
-    <v-layout justify-center>
+    <v-layout justify-center class="select-token__tokens__wrapper">
       <v-flex xs12>
-        <v-list class="select-token__tokens">
-          <template v-for="token in allTokens">
-            <v-list-item
-              :key="token.address"
-              @click="navigateToSelectHub(token.address)"
-              class="select-token__tokens__token"
-            >
-              <v-list-item-avatar class="select-token__tokens__token__blockie">
-                <img
-                  :src="$blockie(token.address)"
-                  :alt="$t('select-token.tokens.token.blockie-alt')"
-                />
-              </v-list-item-avatar>
-              <v-list-item-content>
-                <v-list-item-title class="select-token__tokens__token__info">
-                  {{
-                    $t('select-token.tokens.token.token-information', {
-                      symbol: token.symbol,
-                      name: token.name
-                    })
-                  }}
-                </v-list-item-title>
-                <v-list-item-subtitle
-                  class="select-token__tokens__token__address"
-                >
-                  <v-tooltip bottom>
-                    <template #activator="{ on }">
-                      <span v-on="on">{{ token.address | truncate }}</span>
-                    </template>
-                    <span>
-                      {{ token.address }}
-                    </span>
-                  </v-tooltip>
-                </v-list-item-subtitle>
-              </v-list-item-content>
-              <v-list-item-action-text>
-                <span class="select-token__tokens__token__balance">
-                  {{ token.balance | displayFormat(token.decimals) }}
-                </span>
-              </v-list-item-action-text>
-            </v-list-item>
-          </template>
-        </v-list>
+        <recycle-scroller
+          :items="allTokens"
+          v-slot="{ item }"
+          :buffer="20"
+          :item-size="105"
+          key-field="address"
+          class="select-token__tokens"
+        >
+          <v-list-item
+            :key="item.address"
+            @click="navigateToSelectHub(item.address)"
+            class="select-token__tokens__token"
+          >
+            <v-list-item-avatar class="select-token__tokens__token__blockie">
+              <img
+                :src="$blockie(item.address)"
+                :src-lazy="require('../assets/generic.svg')"
+                :alt="$t('select-token.tokens.token.blockie-alt')"
+              />
+            </v-list-item-avatar>
+            <v-list-item-content>
+              <v-list-item-title class="select-token__tokens__token__info">
+                {{
+                  $t('select-token.tokens.token.token-information', {
+                    symbol: item.symbol,
+                    name: item.name
+                  })
+                }}
+              </v-list-item-title>
+              <v-list-item-subtitle
+                class="select-token__tokens__token__address"
+              >
+                <v-tooltip bottom>
+                  <template #activator="{ on }">
+                    <span v-on="on">{{ item.address | truncate }}</span>
+                  </template>
+                  <span>
+                    {{ item.address }}
+                  </span>
+                </v-tooltip>
+              </v-list-item-subtitle>
+            </v-list-item-content>
+            <v-list-item-action-text>
+              <span
+                v-if="typeof item.decimals === 'number'"
+                class="select-token__tokens__token__balance"
+              >
+                {{ item.balance | displayFormat(item.decimals) }}
+              </span>
+            </v-list-item-action-text>
+          </v-list-item>
+        </recycle-scroller>
       </v-flex>
     </v-layout>
   </div>
@@ -69,6 +78,10 @@ import ListHeader from '@/components/ListHeader.vue';
 })
 export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
   allTokens!: Token[];
+
+  mounted() {
+    this.$raiden.fetchTokenData(Object.keys(this.$store.state.tokens));
+  }
 }
 </script>
 
@@ -82,7 +95,12 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
   margin-top: 115px;
 }
 
+.select-token__tokens__wrapper {
+  height: calc(100% - 150px);
+}
+
 .select-token__tokens {
+  height: 100%;
   background-color: transparent !important;
   padding-bottom: 0;
   padding-top: 0;

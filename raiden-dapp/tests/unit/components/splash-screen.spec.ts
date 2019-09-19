@@ -12,6 +12,9 @@ describe('SplashScreen.vue', () => {
   beforeEach(() => {
     wrapper = mount(Loading, {
       store,
+      propsData: {
+        connecting: false
+      },
       mocks: {
         $t: (msg: string) => msg
       }

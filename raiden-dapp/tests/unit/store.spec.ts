@@ -1,6 +1,6 @@
 import store, { defaultState } from '@/store';
 import { TestData } from './data/mock-data';
-import { DeniedReason, emptyTokenModel } from '@/model/types';
+import { DeniedReason, emptyTokenModel, Token } from '@/model/types';
 import { Tokens } from '@/types';
 import { Zero } from 'ethers/constants';
 import { BigNumber } from 'ethers/utils';
@@ -11,7 +11,6 @@ describe('store', () => {
     tokens[token] = {
       address: token,
       balance: Zero,
-      units: '',
       decimals: 18,
       name,
       symbol
@@ -124,7 +123,6 @@ describe('store', () => {
         address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
         balance: Zero,
         decimals: 18,
-        units: '',
         symbol: 'TTT',
         name: 'Test Token'
       }
@@ -151,10 +149,9 @@ describe('store', () => {
       address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
       balance: Zero,
       decimals: 18,
-      units: '',
       symbol: 'TTT',
       name: 'Test Token'
-    });
+    } as Token);
   });
 
   test('chain without a name returns chain id', () => {

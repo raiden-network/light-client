@@ -58,12 +58,7 @@ import {
   ChannelDepositFailed,
   ChannelOpenFailed
 } from '@/services/raiden-service';
-import {
-  emptyDescription,
-  StepDescription,
-  Token,
-  TokenPlaceholder
-} from '@/model/types';
+import { emptyDescription, StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import Stepper from '@/components/Stepper.vue';
 import { Zero } from 'ethers/constants';
@@ -74,6 +69,8 @@ import ErrorScreen from '@/components/ErrorScreen.vue';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
+import { mapGetters } from 'vuex';
+import { getAmount } from '@/utils/query-params';
 
 @Component({
   components: {
@@ -83,11 +80,16 @@ import ActionButton from '@/components/ActionButton.vue';
     Stepper,
     ActionButton,
     AmountInput
+  },
+  computed: {
+    ...mapGetters({
+      getToken: 'token'
+    })
   }
 })
 export default class OpenChannel extends Mixins(NavigationMixin) {
   partner: string = '';
-  token: Token = TokenPlaceholder;
+  getToken!: (address: string) => Token;
 
   deposit: string = '0.00';
 
@@ -100,6 +102,11 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
   doneStep: StepDescription = emptyDescription();
   current = 0;
   done = false;
+
+  get token(): Token {
+    const { token: address } = this.$route.params;
+    return this.getToken(address) || ({ address } as Token);
+  }
 
   beforeRouteLeave(to: Route, from: Route, next: any) {
     if (!this.loading) {
@@ -114,8 +121,8 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
   }
 
   async openChannel() {
-    const token = this.token;
-    const depositAmount = BalanceUtils.parse(this.deposit, token.decimals);
+    const { address, decimals } = this.token;
+    const depositAmount = BalanceUtils.parse(this.deposit, decimals!);
 
     if (depositAmount.eq(Zero)) {
       this.steps = [
@@ -133,7 +140,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 
     try {
       await this.$raiden.openChannel(
-        token.address,
+        address,
         this.partner,
         depositAmount,
         progress => (this.current = progress.current - 1)
@@ -142,7 +149,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
       this.done = true;
       setTimeout(() => {
         this.loading = false;
-        this.navigateToSelectPaymentTarget(this.token.address);
+        this.navigateToSelectPaymentTarget(address);
       }, 2000);
     } catch (e) {
       this.error = '';
@@ -160,14 +167,22 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
   }
 
   async created() {
+    this.deposit = getAmount(this.$route.query.deposit);
+
     this.doneStep = (this.$t(
       'open-channel.steps.done'
     ) as any) as StepDescription;
-    const { token, partner } = this.$route.params;
+    const { token: address, partner } = this.$route.params;
 
-    if (!AddressUtils.checkAddressChecksum(token)) {
+    if (!AddressUtils.checkAddressChecksum(address)) {
       this.navigateToHome();
       return;
+    }
+
+    await this.$raiden.fetchTokenData([address]);
+
+    if (typeof this.token.decimals !== 'number') {
+      this.navigateToHome();
     }
 
     if (!AddressUtils.checkAddressChecksum(partner)) {
@@ -175,17 +190,6 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
       return;
     } else {
       this.partner = partner;
-    }
-
-    let tokenInfo = this.$store.getters.token(token);
-    if (!tokenInfo) {
-      tokenInfo = await this.$raiden.getToken(token);
-    }
-
-    if (!tokenInfo) {
-      this.navigateToHome();
-    } else {
-      this.token = tokenInfo;
     }
   }
 }

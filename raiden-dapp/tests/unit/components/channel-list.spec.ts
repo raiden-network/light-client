@@ -1,6 +1,7 @@
 jest.mock('@/services/raiden-service');
 
 import Mocked = jest.Mocked;
+
 import store from '@/store';
 import Vue from 'vue';
 import Vuex from 'vuex';
@@ -15,9 +16,11 @@ import RaidenService, {
 } from '@/services/raiden-service';
 import Filters from '@/filters';
 import flushPromises from 'flush-promises';
-import { BigNumber } from 'ethers/utils';
+import { $identicon } from '../utils/mocks';
+import { BigNumber, parseUnits } from 'ethers/utils';
 import { mockInput } from '../utils/interaction-utils';
 import ChannelList from '@/components/ChannelList.vue';
+import { Token } from '@/model/types';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -29,7 +32,6 @@ const localVue = createLocalVue();
 describe('ChannelList.vue', function() {
   let wrapper: Wrapper<ChannelList>;
   let raiden: Mocked<RaidenService>;
-  let mockIdenticon: jest.Mock<any, any>;
   let vuetify: typeof Vuetify;
 
   function elementVisibilityChanged(
@@ -46,11 +48,6 @@ describe('ChannelList.vue', function() {
 
   beforeEach(() => {
     raiden = new RaidenService(store) as Mocked<RaidenService>;
-    raiden.getToken = jest.fn().mockResolvedValue(TestData.token);
-    mockIdenticon = jest.fn().mockResolvedValue('');
-    const $identicon = {
-      getIdenticon: mockIdenticon
-    };
 
     vuetify = new Vuetify();
 
@@ -58,13 +55,17 @@ describe('ChannelList.vue', function() {
       localVue,
       vuetify,
       propsData: {
-        tokenAddress: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+        token: {
+          address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+          decimals: 10,
+          balance: parseUnits('2', 10)
+        } as Token,
         channels: TestData.mockChannelArray,
         visible: ''
       },
       mocks: {
         $raiden: raiden,
-        $identicon: $identicon,
+        $identicon: $identicon(),
         $t: (msg: string) => msg
       }
     });
@@ -162,9 +163,13 @@ describe('ChannelList.vue', function() {
     });
   });
 
-  describe('depositing in a channel', function() {
+  describe('depositing in a channel', () => {
+    beforeEach(() => {
+      raiden.deposit = jest.fn();
+    });
+
     test('depositing 0.0 should just dismiss', async () => {
-      raiden.deposit = jest.fn().mockResolvedValue(null);
+      raiden.deposit.mockResolvedValueOnce(undefined);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
       elementVisibilityChanged(0, 'channel-278-deposit');
@@ -177,7 +182,7 @@ describe('ChannelList.vue', function() {
     });
 
     it('should deposit to the channel when confirmed', async function() {
-      raiden.deposit = jest.fn().mockResolvedValue(null);
+      raiden.deposit.mockResolvedValueOnce(undefined);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
       elementVisibilityChanged(0, 'channel-278-deposit');
@@ -192,12 +197,12 @@ describe('ChannelList.vue', function() {
       expect(raiden.deposit).toHaveBeenCalledWith(
         TestData.openChannel.token,
         TestData.openChannel.partner,
-        new BigNumber(0.5 * 10 ** 5)
+        new BigNumber(0.5 * 10 ** 10)
       );
     });
 
     it('should show a success message on deposit success', async function() {
-      raiden.deposit = jest.fn().mockResolvedValue(null);
+      raiden.deposit.mockResolvedValueOnce(undefined);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
       elementVisibilityChanged(0, 'channel-278-deposit');
@@ -212,7 +217,7 @@ describe('ChannelList.vue', function() {
     });
 
     it('should show an error message on deposit failure', async function() {
-      raiden.deposit = jest.fn().mockRejectedValue(new ChannelDepositFailed());
+      raiden.deposit.mockRejectedValue(new ChannelDepositFailed());
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
       expect(wrapper.emitted()['visible-changed'][0][0]).toBe(
@@ -235,7 +240,7 @@ describe('ChannelList.vue', function() {
     });
 
     it('should dismiss the dialog when cancel is pressed', function() {
-      raiden.deposit = jest.fn().mockResolvedValue(null);
+      raiden.deposit.mockResolvedValueOnce(undefined);
       wrapper.find('#channel-278').trigger('click');
       wrapper.find('#deposit-0').trigger('click');
       elementVisibilityChanged(0, 'channel-278-deposit');

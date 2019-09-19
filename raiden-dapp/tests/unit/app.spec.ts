@@ -1,9 +1,7 @@
-import { DeniedReason } from '@/model/types';
-
 jest.mock('@/services/raiden-service');
 
-import Mock = jest.Mock;
 import { shallowMount } from '@vue/test-utils';
+import { DeniedReason } from '@/model/types';
 import App from '@/App.vue';
 import RaidenService from '@/services/raiden-service';
 import Vue from 'vue';
@@ -19,7 +17,6 @@ Vue.use(VueRouter);
 
 describe('App.vue', () => {
   let $raiden: RaidenService;
-  let connect: Mock<any, any>;
 
   beforeEach(() => {
     $raiden = new RaidenService(store);

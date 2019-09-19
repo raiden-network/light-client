@@ -1,11 +1,9 @@
 import { BigNumberish, Network } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
 
 export interface Token {
-  readonly balance: BigNumberish;
-  readonly decimals: number;
-  readonly units: string;
   readonly address: string;
+  readonly decimals?: number;
+  readonly balance?: BigNumberish;
   readonly symbol?: string;
   readonly name?: string;
 }
@@ -69,17 +67,6 @@ export const emptyTokenModel = (): AccTokenModel => ({
   settling: 0,
   settled: 0
 });
-
-/**
- * A placeholder token used on the views while awaiting for the actual
- * token information to load.
- */
-export const TokenPlaceholder: Token = {
-  balance: Zero,
-  decimals: 18,
-  units: '0.0',
-  address: ''
-};
 
 export const PlaceHolderNetwork: Network = {
   name: '',

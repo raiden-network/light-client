@@ -29,7 +29,8 @@
             :text="$t('splash-screen.connect-button')"
             v-if="injectedProvider"
             @click="connect()"
-            enabled
+            :enabled="!connecting"
+            :loading="connecting"
           ></action-button>
           <span v-else class="splash-screen__no-provider">
             {{ $t('splash-screen.no-provider') }}
@@ -47,7 +48,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Vue } from 'vue-property-decorator';
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import { Web3Provider } from '@/services/web3-provider';
 import { DeniedReason } from '@/model/types';
 import { mapState } from 'vuex';
@@ -64,6 +65,9 @@ import ActionButton from '@/components/ActionButton.vue';
 export default class Loading extends Vue {
   accessDenied!: DeniedReason;
   name: string = 'Raiden dApp';
+
+  @Prop({ default: false, required: true, type: Boolean })
+  connecting!: boolean;
 
   // noinspection JSMethodCanBeStatic
   get injectedProvider(): boolean {

@@ -31,9 +31,12 @@ export type RaidenAction = Action;
 /* Mapping { [type: string]: Action } of a subset of RaidenActions exposed as events */
 export const RaidenEvents = pick(
   RaidenActions,
-  [RaidenActions.raidenShutdown, RaidenActions.newBlock, RaidenActions.matrixPresenceUpdate].map(
-    getType,
-  ),
+  [
+    RaidenActions.raidenShutdown,
+    RaidenActions.newBlock,
+    RaidenActions.matrixPresenceUpdate,
+    RaidenActions.tokenMonitored,
+  ].map(getType),
 );
 /* Tagged union of RaidenEvents actions */
 export type RaidenEvent = ActionType<typeof RaidenEvents>;

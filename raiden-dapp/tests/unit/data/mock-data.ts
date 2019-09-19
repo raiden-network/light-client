@@ -1,5 +1,5 @@
 import { Token } from '@/model/types';
-import { ethers } from 'ethers';
+import { parseUnits } from 'ethers/utils';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import {
@@ -10,13 +10,13 @@ import {
 } from 'raiden-ts';
 import { Route } from 'vue-router';
 import { RouteNames } from '@/route-names';
+import { Tokens } from '@/types';
 
 export class TestData {
   static token: Token = {
     address: '0xtoken',
     decimals: 5,
-    balance: ethers.utils.parseUnits('1.2', 5),
-    units: '1.2',
+    balance: parseUnits('1.2', 5),
     name: 'TestToken',
     symbol: 'TTT'
   };
@@ -89,6 +89,16 @@ export class TestData {
       '0x1D36124C90f53d491b6832F1c073F43E2550E35b': TestData.openChannel,
       '0x82641569b2062B545431cF6D7F0A418582865ba7': TestData.settlingChannel
     }
+  };
+
+  static mockTokens: Tokens = {
+    '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {
+      address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+      decimals: 5,
+      balance: parseUnits('1.2', 5),
+      name: 'TestToken',
+      symbol: 'TTT'
+    } as Token
   };
 
   static mockRoute(

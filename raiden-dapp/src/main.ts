@@ -11,11 +11,14 @@ import { RaidenPlugin } from '@/plugins/raiden';
 import { IdenticonPlugin } from '@/plugins/identicon-plugin';
 import i18n from './i18n';
 import vuetify from '@/plugins/vuetify';
+import VueVirtualScroller from 'vue-virtual-scroller';
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
 Vue.config.productionTip = false;
 
 Vue.use(RaidenPlugin);
 Vue.use(IdenticonPlugin);
+Vue.use(VueVirtualScroller);
 
 new Vue({
   vuetify,

@@ -1,6 +1,7 @@
 jest.mock('@/services/raiden-service');
 
 import { addElemWithDataAppToBody } from '../utils/dialog';
+import { $identicon } from '../utils/mocks';
 import store from '@/store';
 import Vue from 'vue';
 import Vuex, { Store } from 'vuex';
@@ -60,9 +61,7 @@ describe('Tokens.vue', function() {
       router: mockRouter,
       mocks: {
         $raiden: raiden,
-        $identicon: {
-          getIdenticon: jest.fn()
-        },
+        $identicon: $identicon(),
         $t: (msg: string) => msg
       },
       stubs: {
