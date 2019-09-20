@@ -8,7 +8,7 @@
 import * as t from 'io-ts';
 import { memoize } from 'lodash';
 // import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
-import { Address, EnumType, Hash, Secret, Signature, UInt } from '../utils/types';
+import { Address, Hash, Secret, Signature, UInt } from '../utils/types';
 import { Lock } from '../channels/types';
 
 // types
@@ -22,30 +22,16 @@ export enum MessageType {
   UNLOCK = 'Secret', // TODO: update to post-red-eyes 'Unlock' type tag
   LOCK_EXPIRED = 'LockExpired',
 }
-export const MessageTypeC = new EnumType<MessageType>(MessageType, 'MessageType');
-
-// Mixin for all tagged messages
-export const Message = t.readonly(t.type({ type: MessageTypeC }));
 
 // Mixin of a message that contains an identifier and should be ack'ed with a respective Delivered
-const RetrieableMessage = t.readonly(
-  t.intersection([
-    t.type({
-      message_identifier: UInt(8),
-    }),
-    Message,
-  ]),
-);
+const RetrieableMessage = t.readonly(t.type({ message_identifier: UInt(8) }));
 
 // Acknowledges to the sender that a RetrieableMessage was received
 export const Delivered = t.readonly(
-  t.intersection([
-    t.type({
-      type: t.literal(MessageType.DELIVERED),
-      delivered_message_identifier: UInt(8),
-    }),
-    Message,
-  ]),
+  t.type({
+    type: t.literal(MessageType.DELIVERED),
+    delivered_message_identifier: UInt(8),
+  }),
 );
 export interface Delivered extends t.TypeOf<typeof Delivered> {}
 
@@ -169,6 +155,17 @@ export const LockExpired = t.readonly(
 );
 export interface LockExpired extends t.TypeOf<typeof LockExpired> {}
 
+export const Message = t.union([
+  Delivered,
+  Processed,
+  SecretRequest,
+  SecretReveal,
+  LockedTransfer,
+  RefundTransfer,
+  Unlock,
+  LockExpired,
+]);
+// prefer an explicit union to have the union of the interfaces, instead of the union of t.TypeOf's
 export type Message =
   | Delivered
   | Processed
@@ -179,7 +176,6 @@ export type Message =
   | Unlock
   | LockExpired;
 export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;
-// type to require a message to be signed!
 
 // generic type codec for messages that must be signed
 // use it like: Codec = Signed(Message)
@@ -201,14 +197,3 @@ export const Signed = memoize<
   t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),
 );
 export type Signed<M extends Message> = M & { signature: Signature };
-
-export const SignedMessageCodecs: { readonly [T in MessageType]: t.Mixed } = {
-  [MessageType.DELIVERED]: Signed(Delivered),
-  [MessageType.PROCESSED]: Signed(Processed),
-  [MessageType.SECRET_REQUEST]: Signed(SecretRequest),
-  [MessageType.SECRET_REVEAL]: Signed(SecretReveal),
-  [MessageType.LOCKED_TRANSFER]: Signed(LockedTransfer),
-  [MessageType.REFUND_TRANSFER]: Signed(RefundTransfer),
-  [MessageType.UNLOCK]: Signed(Unlock),
-  [MessageType.LOCK_EXPIRED]: Signed(LockExpired),
-};

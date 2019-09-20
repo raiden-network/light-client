@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { BigNumber } from 'ethers/utils';
 
-import { EnumType, UInt, Address } from '../utils/types';
+import { UInt, Address } from '../utils/types';
 import { Lock, SignedBalanceProof } from './types';
 
 export enum ChannelState {
@@ -13,8 +13,6 @@ export enum ChannelState {
   settling = 'settling',
   settled = 'settled',
 }
-
-export const ChannelStateC = new EnumType<ChannelState>(ChannelState, 'ChannelState');
 
 /**
  * Contains info of each side of a channel
