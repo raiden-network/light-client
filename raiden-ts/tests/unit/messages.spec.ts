@@ -300,7 +300,7 @@ describe('sign/verify, pack & encode/decode ', () => {
   });
 
   test('decodeJsonMessage invalid', () => {
-    expect(() => decodeJsonMessage('{"type":"Invalid"}')).toThrowError('Message "type"');
+    expect(() => decodeJsonMessage('{"type":"Invalid"}')).toThrowError('/type:');
     expect(() =>
       decodeJsonMessage('{"type":"Processed","message_identifier":123456}'),
     ).toThrowError('Invalid value undefined');

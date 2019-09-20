@@ -37,23 +37,6 @@ export const BigNumberC = new t.Type<BigNumber, LosslessNumber>(
   a => new LosslessNumber(a.toString()),
 );
 
-/**
- * Creates a NEW codec for a specific [non-const] enum object
- */
-export class EnumType<A> extends t.Type<A> {
-  public readonly _tag: 'EnumType' = 'EnumType';
-  public enumObject!: object;
-  public constructor(e: object, name?: string) {
-    super(
-      name || 'enum',
-      (u): u is A => Object.values(this.enumObject).some(v => v === u),
-      (u, c) => (this.is(u) ? t.success(u) : t.failure(u, c)),
-      t.identity,
-    );
-    this.enumObject = e;
-  }
-}
-
 // sized brands interfaces must derive from this interface
 export interface SizedB<S extends number> {
   readonly size: S;
