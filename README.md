@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="https://lightclient.raiden.network/">Try Out the Raiden Demo dApp</a>
+  <a href="#try-out-the-raiden-demo-dapp">Try Out the Raiden Demo dApp</a>
 </p>
 
 <p align="center">
@@ -142,7 +142,7 @@ If you didn't use Raiden before, you can
 
 ### Try Out the Raiden Demo dApp
 
-These step-by-step instructions will guide you through the process for trying the Raiden dApp. We will be using the Ropsten testnet and MetaMask wallet in this example.
+These step-by-step instructions will guide you through the process for trying the Raiden dApp hosted at [https://lightclient.raiden.network/](https://lightclient.raiden.network/). We will be using the Ropsten testnet and MetaMask wallet in this example.
 
 __Prerequisites__
 
@@ -178,7 +178,7 @@ __Step 3: Select a Hub and Open a Channel__
 
 You can now start making payments. To do so, simply:
 
-1. Enter the address of the receiver of your payment.
+1. Enter the address of the receiver (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```) of your payment.
 2. Enter the amount you want to pay.
 3. Click __Send Payment__.
 
