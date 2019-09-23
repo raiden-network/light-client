@@ -10,14 +10,7 @@ import { HashZero } from 'ethers/constants';
 import { Address, Hash, HexString, Signature, UInt } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { SignedBalanceProof } from '../channels/types';
-import {
-  EnvelopeMessage,
-  Message,
-  MessageType,
-  Metadata,
-  Signed,
-  SignedMessageCodecs,
-} from './types';
+import { EnvelopeMessage, Message, MessageType, Metadata, Signed } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
@@ -268,9 +261,8 @@ export function getBalanceProofFromEnvelopeMessage(
  * @param message - Message object to be serialized
  * @returns JSON string
  */
-export function encodeJsonMessage<M extends Message>(message: Signed<M>): string {
-  const codec = SignedMessageCodecs[message.type];
-  return losslessStringify(codec.encode(message));
+export function encodeJsonMessage(message: Signed<Message>): string {
+  return losslessStringify(Signed(Message).encode(message));
 }
 
 /**
@@ -281,9 +273,8 @@ export function encodeJsonMessage<M extends Message>(message: Signed<M>): string
  * @returns Message object
  */
 export function decodeJsonMessage(text: string): Signed<Message> {
-  const parsed = losslessParse(text);
-  if (!Message.is(parsed)) throw new Error(`Could not find Message "type" in ${text}`);
-  const decoded = SignedMessageCodecs[parsed.type].decode(parsed);
+  const parsed = losslessParse(text),
+    decoded = Signed(Message).decode(parsed);
   if (isLeft(decoded)) throw ThrowReporter.report(decoded); // throws if decode failed
   return decoded.right;
 }
