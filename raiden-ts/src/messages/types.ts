@@ -95,14 +95,14 @@ export const EnvelopeMessage = t.readonly(
 
 export const RouteMetadata = t.readonly(
   t.type({
-    route: t.array(Address),
+    route: t.readonlyArray(Address),
   }),
 );
 export interface RouteMetadata extends t.TypeOf<typeof RouteMetadata> {}
 
 export const Metadata = t.readonly(
   t.type({
-    routes: t.array(RouteMetadata),
+    routes: t.readonlyArray(RouteMetadata),
   }),
 );
 export interface Metadata extends t.TypeOf<typeof Metadata> {}

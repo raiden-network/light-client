@@ -16,6 +16,7 @@ export const RaidenConfig = t.readonly(
       matrixServerLookup: t.string,
       revealTimeout: t.number,
       settleTimeout: t.number,
+      pfs: t.union([t.string, t.null]),
     }),
     t.partial({
       matrixServer: t.string,
@@ -24,9 +25,18 @@ export const RaidenConfig = t.readonly(
 );
 export interface RaidenConfig extends t.TypeOf<typeof RaidenConfig> {}
 
-export const defaultConfig: RaidenConfig = {
-  matrixServerLookup:
-    'https://raw.githubusercontent.com/raiden-network/raiden-transport/master/known_servers.test.yaml',
-  settleTimeout: 500,
-  revealTimeout: 50,
+export const defaultConfig: {
+  [network: string]: Partial<RaidenConfig>;
+  default: RaidenConfig;
+} = {
+  goerli: {
+    pfs: 'https://pfs-goerli.services-dev.raiden.network',
+  },
+  default: {
+    matrixServerLookup:
+      'https://raw.githubusercontent.com/raiden-network/raiden-transport/master/known_servers.test.yaml',
+    settleTimeout: 500,
+    revealTimeout: 50,
+    pfs: null,
+  },
 };

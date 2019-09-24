@@ -1,4 +1,6 @@
-import fetch from 'cross-fetch';
+import { Observable, defer, of } from 'rxjs';
+import { fromFetch } from 'rxjs/fetch';
+import { map, catchError } from 'rxjs/operators';
 import { MatrixClient } from 'matrix-js-sdk';
 import { encodeUri } from 'matrix-js-sdk/lib/utils';
 
@@ -32,20 +34,21 @@ export function yamlListToArray(yml: string): string[] {
  * @param server - Server name with or without schema
  * @returns Promise to a { server, rtt } object, where `rtt` may be NaN
  */
-export async function matrixRTT(server: string): Promise<{ server: string; rtt: number }> {
+export function matrixRTT(server: string): Observable<{ server: string; rtt: number }> {
   let url = server;
   if (!url.includes('://')) {
     url = `https://${url}`;
   }
   url += `/_matrix/client/versions`;
-  let start = Date.now();
-  try {
-    const resp = await fetch(url);
-    if (resp.status < 200 || resp.status >= 300) throw NaN;
-  } catch (e) {
-    start = NaN; // return will also be NaN
-  }
-  return { server, rtt: Date.now() - start };
+  return defer(() => {
+    const start = Date.now();
+    return fromFetch(url).pipe(
+      map(response => (response.ok ? Date.now() : NaN)),
+      catchError(() => of(NaN)),
+      map(end => end - start),
+      map(rtt => ({ server, rtt })),
+    );
+  });
 }
 
 /**

@@ -13,6 +13,7 @@ import {
   first,
   publishReplay,
   switchMap,
+  pluck,
 } from 'rxjs/operators';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { findKey, get, isEmpty, negate } from 'lodash';
@@ -211,7 +212,7 @@ export const tokenMonitoredEpic = (
   { address, getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelOpened>> =>
   state$.pipe(
-    map(state => state.blockNumber),
+    pluck('blockNumber'),
     publishReplay(1, undefined, blockNumber$ =>
       action$.pipe(
         filter(isActionOf(tokenMonitored)),
@@ -290,7 +291,7 @@ export const channelMonitoredEpic = (
   >
 > =>
   state$.pipe(
-    map(state => state.blockNumber),
+    pluck('blockNumber'),
     publishReplay(1, undefined, blockNumber$ =>
       action$.pipe(
         filter(isActionOf(channelMonitored)),

@@ -12,9 +12,20 @@ import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
 import { debounce, findKey, transform, constant, memoize, pick, isEmpty } from 'lodash';
-import { Observable, Subject, BehaviorSubject, AsyncSubject, from } from 'rxjs';
-import { first, filter, map, distinctUntilChanged, scan, concatMap } from 'rxjs/operators';
+import { Observable, Subject, BehaviorSubject, AsyncSubject, from, merge, of } from 'rxjs';
+import {
+  first,
+  filter,
+  map,
+  distinctUntilChanged,
+  scan,
+  concatMap,
+  mergeMap,
+  tap,
+  ignoreElements,
+} from 'rxjs/operators';
 
+import './polyfills';
 import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
 import { TokenNetwork } from './contracts/TokenNetwork';
 import { HumanStandardToken } from './contracts/HumanStandardToken';
@@ -58,8 +69,10 @@ import {
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer, getSecrethash } from './transfers/utils';
+import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { patchSignSend } from './utils/ethers';
 import { RaidenConfig, defaultConfig } from './config';
+import { Metadata } from './messages/types';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -413,7 +426,8 @@ export class Raiden {
       throw new Error(`Mismatch between network or registry address and loaded state`);
 
     const raidenConfig: RaidenConfig = {
-      ...defaultConfig,
+      ...defaultConfig.default,
+      ...defaultConfig[network.name],
       ...config,
     };
 
@@ -684,13 +698,19 @@ export class Raiden {
    *                - secret  Secret to register, a random one will be generated if missing
    *                - secrethash  Must match secret, if both provided, or else, secret must be
    *                              informed to target by other means, and reveal can't be performed
+   *                - metadata  Used to specify possible routes instead of querying PFS.
    * @returns A promise to transfer's secrethash (unique id) when it's accepted
    */
   public async transfer(
     token: string,
     target: string,
     amount: BigNumberish,
-    options: { paymentId?: BigNumberish; secret?: string; secrethash?: string } = {},
+    options: {
+      paymentId?: BigNumberish;
+      secret?: string;
+      secrethash?: string;
+      metadata?: { readonly routes: { readonly route: string[] }[] };
+    } = {},
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
@@ -700,35 +720,81 @@ export class Raiden {
     if (!UInt(32).is(amount)) throw new Error('Invalid amount');
 
     const paymentId = !options.paymentId ? undefined : bigNumberify(options.paymentId);
-    if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid opts.paymentId');
+    if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid options.paymentId');
 
     if (options.secret !== undefined && !Secret.is(options.secret))
-      throw new Error('Invalid opts.secret');
+      throw new Error('Invalid options.secret');
     if (options.secrethash !== undefined && !Hash.is(options.secrethash))
-      throw new Error('Invalid opts.secrethash');
-    let { secret, secrethash } = options;
-    if (!secrethash) {
-      if (!secret) secret = makeSecret();
-      secrethash = getSecrethash(secret);
-    } else if (secret && getSecrethash(secret) !== secrethash) {
-      throw new Error('Secret and secrethash must match if passing both');
-    }
+      throw new Error('Invalid options.secrethash');
 
-    const promise = this.action$
-      .pipe(
-        filter(isActionOf([transferSigned, transferFailed])),
-        first(action => action.meta.secrethash === secrethash!),
+    // use provided secret or create one if no secrethash was provided
+    const secret = options.secret
+        ? options.secret
+        : !options.secrethash
+        ? makeSecret()
+        : undefined,
+      secrethash = options.secrethash || getSecrethash(secret!);
+    if (secret && getSecrethash(secret) !== secrethash)
+      throw new Error('Provided secrethash must match the sha256 hash of provided secret');
+
+    const metadata = options.metadata;
+    if (metadata && !Metadata.is(metadata)) throw new Error('Invalid options.metadata');
+
+    return merge(
+      // wait for pathFind response
+      this.action$.pipe(
+        filter(isActionOf([pathFound, pathFindFailed])),
+        first(
+          action =>
+            action.meta.tokenNetwork === tokenNetwork &&
+            action.meta.target === target &&
+            action.meta.value.eq(amount),
+        ),
         map(action => {
-          if (isActionOf(transferFailed, action)) throw action.payload;
-          return secrethash!;
+          if (isActionOf(pathFindFailed, action)) throw action.payload;
+          return action.payload.metadata;
         }),
+      ),
+      // request pathFind; even if metadata was provided, send it for validation
+      // this is done at 'merge' subscription time (i.e. when above action filter is subscribed)
+      of(pathFind({ metadata }, { tokenNetwork, target, value: amount })).pipe(
+        tap(request => this.store.dispatch(request)),
+        ignoreElements(),
+      ),
+    )
+      .pipe(
+        mergeMap(metadata =>
+          merge(
+            // wait for transfer response
+            this.action$.pipe(
+              filter(isActionOf([transferSigned, transferFailed])),
+              first(action => action.meta.secrethash === secrethash),
+              map(action => {
+                if (isActionOf(transferFailed, action)) throw action.payload;
+                return secrethash;
+              }),
+            ),
+            // request transfer with returned/validated metadata at 'merge' subscription time
+            of(
+              transfer(
+                {
+                  tokenNetwork,
+                  target,
+                  amount: amount as UInt<32>,
+                  metadata,
+                  paymentId,
+                  secret,
+                },
+                { secrethash },
+              ),
+            ).pipe(
+              tap(request => this.store.dispatch(request)),
+              ignoreElements(),
+            ),
+          ),
+        ),
       )
       .toPromise();
-
-    this.store.dispatch(
-      transfer({ tokenNetwork, target, amount, paymentId, secret }, { secrethash }),
-    );
-    return promise;
   }
 }
 

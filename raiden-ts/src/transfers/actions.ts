@@ -13,6 +13,7 @@ import {
   RefundTransfer,
   WithdrawRequest,
   WithdrawConfirmation,
+  Metadata,
 } from '../messages/types';
 
 type TransferId = { secrethash: Hash };
@@ -23,8 +24,9 @@ export const transfer = createStandardAction('transfer')<
     tokenNetwork: Address;
     target: Address;
     amount: UInt<32>;
-    fee?: UInt<32>;
+    metadata: Metadata;
     paymentId?: UInt<8>;
+    fee?: UInt<32>;
     secret?: Secret;
   },
   TransferId

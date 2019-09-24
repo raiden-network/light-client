@@ -33,12 +33,12 @@ import {
   finalize,
   first,
 } from 'rxjs/operators';
+import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { find, get, minBy, sortBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { createClient, MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
-import fetch from 'cross-fetch';
 
 import { Address } from '../utils/types';
 import { RaidenEpicDeps } from '../types';
@@ -110,7 +110,7 @@ export const initMatrixEpic = (
         return of({ server: matrixServer, setup: undefined });
       } else {
         // fetch servers list and use the one with shortest http round trip time (rtt)
-        return from(fetch(matrixServerLookup)).pipe(
+        return fromFetch(matrixServerLookup).pipe(
           mergeMap(response => {
             if (!response.ok)
               return throwError(
@@ -121,7 +121,7 @@ export const initMatrixEpic = (
             return response.text();
           }),
           mergeMap(text => from(yamlListToArray(text))),
-          mergeMap(server => matrixRTT(server)),
+          mergeMap(matrixRTT),
           toArray(),
           map(rtts => sortBy(rtts, ['rtt'])),
           map(rtts => {
