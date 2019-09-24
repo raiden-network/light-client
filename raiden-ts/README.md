@@ -59,7 +59,7 @@ External off-chain communication with the Raiden Network is provided by a dedica
                      +------+------+
                      |  ethereum   |
                      +-------------+
-                     ```
+```
 
 A technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [project's Wiki page](https://github.com/raiden-network/light-client/wiki/SDK-Development). Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
