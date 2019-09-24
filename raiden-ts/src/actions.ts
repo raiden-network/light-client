@@ -9,6 +9,7 @@ import * as ChannelsActions from './channels/actions';
 import * as TransportActions from './transport/actions';
 import * as MessagesActions from './messages/actions';
 import * as TransfersActions from './transfers/actions';
+import * as PathFindActions from './path/actions';
 
 export const raidenShutdown = createStandardAction('raidenShutdown')<{
   reason: ShutdownReason | Error;
@@ -20,6 +21,7 @@ export const RaidenActions = {
   ...TransportActions,
   ...MessagesActions,
   ...TransfersActions,
+  ...PathFindActions,
 };
 
 /* Tagged union of all action types from the action creators */

@@ -25,9 +25,9 @@ export const getPresences$ = memoize(
           ...presences,
           [update.meta.address]: update,
         }),
-        {},
+        {} as Presences,
       ),
-      startWith({}),
       share(),
+      startWith({}),
     ),
 );

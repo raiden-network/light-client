@@ -44,6 +44,7 @@
   "homepage": "https://github.com/raiden-network/light-client#readme",
   "devDependencies": {
     "@types/events": "^3.0.0",
+    "@types/isomorphic-fetch": "0.0.35",
     "@types/jest": "^24.0.18",
     "@types/lodash": "^4.14.138",
     "@types/lossless-json": "^1.0.0",
@@ -75,10 +76,11 @@
     "vuepress": "^1.1.0"
   },
   "dependencies": {
-    "cross-fetch": "^3.0.4",
+    "abort-controller": "^3.0.0",
     "ethers": "^4.0.37",
     "fp-ts": "^2.0.5",
     "io-ts": "^2.0.1",
+    "isomorphic-fetch": "^2.2.1",
     "lodash": "^4.17.15",
     "lossless-json": "^1.0.3",
     "matrix-js-sdk": "^2.3.2",

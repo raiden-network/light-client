@@ -18,7 +18,7 @@ import {
   withLatestFrom,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
-import { BigNumber, bigNumberify } from 'ethers/utils';
+import { bigNumberify } from 'ethers/utils';
 import { Zero, One } from 'ethers/constants';
 import { findKey, get } from 'lodash';
 
@@ -26,10 +26,7 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { Address, Hash, UInt } from '../utils/types';
-import { splitCombined } from '../utils/rxjs';
 import { LruCache } from '../utils/lru';
-import { Presences } from '../transport/types';
-import { getPresences$ } from '../transport/utils';
 import { messageReceived, messageSend, messageSent } from '../messages/actions';
 import {
   LockedTransfer,
@@ -44,6 +41,7 @@ import {
   WithdrawExpired,
   WithdrawConfirmation,
   WithdrawRequest,
+  Metadata,
 } from '../messages/types';
 import { getBalanceProofFromEnvelopeMessage, signMessage } from '../messages/utils';
 import { Channel, ChannelState } from '../channels/state';
@@ -88,107 +86,48 @@ function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
  * the returned observable must be subscribed in a serialized context that ensures non-concurrent
  * write access to the channel's balance proof (e.g. concatMap)
  *
- * @param presences$ - Observable of address to last matrixPresenceUpdate mapping
  * @param state$ - Observable of current state
  * @param action - transfer request action to be sent
  * @param network,address,signer - RaidenEpicDeps members
  * @returns Observable of transferSigned|transferSecret|transferFailed actions
  */
 function makeAndSignTransfer(
-  presences$: Observable<Presences>,
   state$: Observable<RaidenState>,
   action: ActionType<typeof transfer>,
   { network, address, signer, config$ }: RaidenEpicDeps,
 ) {
-  return combineLatest(presences$, state$, config$).pipe(
+  return combineLatest(state$, config$).pipe(
     first(),
-    mergeMap(([presences, state, config]) => {
+    mergeMap(([state, { revealTimeout }]) => {
       if (action.meta.secrethash in state.sent) {
         // don't throw to avoid emitting transferFailed, to just wait for already pending transfer
         console.error('transfer already present', action.meta);
         return EMPTY;
       }
 
-      if (!(action.payload.target in presences)) throw new Error('target not monitored');
-      if (!presences[action.payload.target].payload.available)
-        throw new Error('target not available/online');
+      // assume metadata is valid and recipient is first hop of first route
+      const metadata: Metadata = action.payload.metadata,
+        recipient = metadata.routes[0].route[0];
 
-      const secret = action.payload.secret;
-      if (secret && getSecrethash(secret) !== action.meta.secrethash) {
-        throw new Error('secrethash does not match provided secret');
-      }
+      const channel: Channel | undefined = state.channels[action.payload.tokenNetwork][recipient];
+      // check below shouldn't fail because of route validation in pathFindServiceEpic
+      // used here mostly for type narrowing on channel union
+      if (!channel || channel.state !== ChannelState.open) throw new Error('not open');
 
-      // find a route
-      const availableRouteCapacities = new Map<Address, BigNumber>();
-      for (const [key, channel] of Object.entries(state.channels[action.payload.tokenNetwork])) {
-        const partner = key as Address;
-        // capacity is own deposit - (own trasferred + locked) + (partner transferred)
-        const capacity = channel.own.deposit
-          .sub(
-            channel.own.balanceProof
-              ? channel.own.balanceProof.transferredAmount.add(
-                  channel.own.balanceProof.lockedAmount,
-                )
-              : Zero,
-          )
-          .add(
-            // only relevant once we can receive from partner
-            channel.partner.balanceProof ? channel.partner.balanceProof.transferredAmount : Zero,
-          );
-        if (channel.state !== ChannelState.open) {
-          console.debug(
-            `transfer: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`,
-          );
-        } else if (capacity.lt(action.payload.amount)) {
-          console.debug(
-            `transfer: channel with "${partner}" without enough capacity (${capacity.toString()})`,
-          );
-        } else if (!(partner in presences) || !presences[partner].payload.available) {
-          console.debug(`transfer: partner "${partner}" not available in transport`);
-        } else {
-          availableRouteCapacities.set(partner, capacity);
-        }
-      }
-      const sortedRecipients = Array.from(availableRouteCapacities.keys()).sort((a, b) => {
-        // prioritize a direct available route
-        if (a === action.payload.target) return -1;
-        if (b === action.payload.target) return 1;
-        // else, sort descending on capacity (larger capacity first)
-        const capA = availableRouteCapacities.get(a)!,
-          capB = availableRouteCapacities.get(b)!;
-        if (capA.gt(capB)) return -1;
-        if (capA.lt(capB)) return 1;
-        else return 0;
-      });
-
-      const recipient: Address | undefined = sortedRecipients[0];
-      if (!recipient)
-        throw new Error('Could not find an online partner for tokenNetwork with enough capacity');
-
-      if (recipient !== action.payload.target)
-        throw new Error('Mediated transfers are currently not supported');
-
-      const channel = state.channels[action.payload.tokenNetwork][recipient];
-      // check below never fail, because of for loop filter, just for type narrowing
-      if (channel.state !== ChannelState.open) throw new Error('not open');
-
-      let paymentId = action.payload.paymentId;
-      if (!paymentId) paymentId = makePaymentId();
-
-      const lock: Lock = {
+      const paymentId = action.payload.paymentId || makePaymentId(),
+        lock: Lock = {
           amount: action.payload.amount,
-          expiration: bigNumberify(state.blockNumber + config.revealTimeout * 2) as UInt<32>,
+          expiration: bigNumberify(state.blockNumber + revealTimeout * 2) as UInt<32>,
           secrethash: action.meta.secrethash,
         },
         locks: Lock[] = [...(channel.own.locks || []), lock],
         locksroot = getLocksroot(locks),
         fee = action.payload.fee || (Zero as UInt<32>),
-        msgId = makeMessageId(),
         token = findKey(state.tokens, tn => tn === action.payload.tokenNetwork)! as Address;
 
       const message: LockedTransfer = {
         type: MessageType.LOCKED_TRANSFER,
-        message_identifier: msgId,
+        message_identifier: makeMessageId(),
         chain_id: bigNumberify(network.chainId) as UInt<32>,
         token_network_address: action.payload.tokenNetwork,
         channel_identifier: bigNumberify(channel.id) as UInt<32>,
@@ -208,15 +147,14 @@ function makeAndSignTransfer(
         target: action.payload.target,
         initiator: address,
         fee,
-        metadata: {
-          routes: [{ route: [action.payload.target] }],
-        },
+        metadata,
       };
       return from(signMessage(signer, message)).pipe(
         mergeMap(function*(signed) {
           // besides transferSigned, also yield transferSecret (for registering) if we know it
-          if (secret) yield transferSecret({ secret }, { secrethash: action.meta.secrethash });
-          yield transferSigned({ message: signed }, { secrethash: action.meta.secrethash });
+          if (action.payload.secret)
+            yield transferSecret({ secret: action.payload.secret }, action.meta);
+          yield transferSigned({ message: signed }, action.meta);
           // messageSend LockedTransfer handled by transferSignedRetryMessageEpic
         }),
       );
@@ -264,12 +202,11 @@ function makeAndSignUnlock(
         if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired');
 
         const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash),
-          locksroot = getLocksroot(locks),
-          msgId = makeMessageId();
+          locksroot = getLocksroot(locks);
 
         const message: Unlock = {
           type: MessageType.UNLOCK,
-          message_identifier: msgId,
+          message_identifier: makeMessageId(),
           chain_id: transfer.chain_id,
           token_network_address: transfer.token_network_address,
           channel_identifier: transfer.channel_identifier,
@@ -345,12 +282,11 @@ function makeAndSignLockExpired(
         else if (state.sent[secrethash].unlock) throw new Error('transfer already unlocked');
 
         const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash),
-          locksroot = getLocksroot(locks),
-          msgId = makeMessageId();
+          locksroot = getLocksroot(locks);
 
         const message: LockExpired = {
           type: MessageType.LOCK_EXPIRED,
-          message_identifier: msgId,
+          message_identifier: makeMessageId(),
           chain_id: transfer.chain_id,
           token_network_address: transfer.token_network_address,
           channel_identifier: transfer.channel_identifier,
@@ -501,15 +437,14 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
     | typeof withdrawSendConfirmation
   >
 > =>
-  combineLatest(getPresences$(action$), state$).pipe(
-    publishReplay(1, undefined, presencesStateReplay$ => {
-      const [presences$, state$] = splitCombined(presencesStateReplay$),
-        withdrawCache = new LruCache<string, Signed<WithdrawConfirmation>>(32);
+  state$.pipe(
+    publishReplay(1, undefined, state$ => {
+      const withdrawCache = new LruCache<string, Signed<WithdrawConfirmation>>(32);
       return action$.pipe(
         filter(isActionOf([transfer, transferUnlock, transferExpire, withdrawReceiveRequest])),
         concatMap(action =>
           isActionOf(transfer, action)
-            ? makeAndSignTransfer(presences$, state$, action, deps)
+            ? makeAndSignTransfer(state$, action, deps)
             : isActionOf(transferUnlock, action)
             ? makeAndSignUnlock(state$, action, deps)
             : isActionOf(transferExpire, action)
