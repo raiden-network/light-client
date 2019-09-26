@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
 jest.mock('matrix-js-sdk');
-jest.mock('cross-fetch');
 
 import { marbles } from 'rxjs-marbles/jest';
 import { of, from, timer, BehaviorSubject, Subject, Observable, EMPTY, merge } from 'rxjs';
@@ -18,7 +17,6 @@ import { bigNumberify } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { getType } from 'typesafe-actions';
 import { range } from 'lodash';
-import fetch from 'cross-fetch';
 import { createClient } from 'matrix-js-sdk';
 
 import { UInt, Address } from 'raiden-ts/utils/types';
@@ -75,10 +73,12 @@ describe('raiden epic', () => {
 
   (createClient as jest.Mock).mockReturnValue(matrix);
 
-  (fetch as jest.Mock).mockResolvedValue({
-    ok: true,
-    status: 200,
-    text: jest.fn(async () => `- ${matrixServer}`),
+  Object.assign(global, {
+    fetch: jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: jest.fn(async () => `- ${matrixServer}`),
+    })),
   });
 
   afterEach(() => {
