@@ -66,10 +66,17 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   @Prop({
     default: function() {
-      return ['']
+      return [''];
     }
   })
   exclude!: Array<string>;
+
+  @Prop({
+    default: function() {
+      return [''];
+    }
+  })
+  block!: Array<string>;
 
   address: string = '';
 
@@ -102,9 +109,13 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     if (!value) {
       this.input(value);
       this.errorMessages.push(this.$t('address-input.error.empty') as string);
-    } else if(this.exclude.includes(value)) {
+    } else if (this.exclude.includes(value)) {
       this.errorMessages.push(this.$t(
         'address-input.error.invalid-excluded-address'
+      ) as string);
+    } else if (this.block.includes(value)) {
+      this.errorMessages.push(this.$t(
+        'address-input.error.channel-not-open'
       ) as string);
     } else if (
       AddressUtils.isAddress(value) &&
@@ -247,7 +258,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   line-height: 16px;
 
   .v-messages__wrapper {
-    height: 25px;
     display: flex;
     flex-direction: column;
     align-items: start;

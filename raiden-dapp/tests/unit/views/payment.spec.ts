@@ -42,6 +42,21 @@ describe('Payment.vue', () => {
     name: 'Test Token'
   };
 
+  const channel = {
+    capacity: One,
+    balance: Zero,
+    ownDeposit: One,
+    partnerDeposit: Zero,
+    partner: '0xaddr' as any,
+    token: '0xtoken' as any,
+    state: ChannelState.open,
+    settleTimeout: 500,
+    tokenNetwork: '0xtokennetwork' as any,
+    closeBlock: undefined,
+    openBlock: 12346,
+    id: 1
+  } as RaidenChannel;
+
   function vueFactory(
     router: VueRouter,
     raiden: RaidenService
@@ -54,21 +69,9 @@ describe('Payment.vue', () => {
       vuetify,
       store: new Store({
         getters: {
-          channelWithBiggestCapacity: jest.fn().mockReturnValue(() => ({
-            capacity: One,
-            balance: Zero,
-            ownDeposit: One,
-            partnerDeposit: Zero,
-            partner: '0xaddr' as any,
-            token: '0xtoken' as any,
-            state: ChannelState.open,
-            settleTimeout: 500,
-            tokenNetwork: '0xtokennetwork' as any,
-            closeBlock: undefined,
-            openBlock: 12346,
-            id: 1
-          })),
-          defaultAddress: jest.fn().mockReturnValue(['0x1234567890'])
+          channelWithBiggestCapacity: jest.fn().mockReturnValue(() => channel),
+          defaultAddress: jest.fn().mockReturnValue(['0x1234567890']),
+          channels: jest.fn().mockReturnValue(() => [channel])
         }
       }),
       mocks: {
