@@ -221,7 +221,7 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 # }
 ```
 
-You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden/README.md).
+You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden/README.md) and within the [SDK Documentation](https://lightclient.raiden.network/docs/).
 
 ### dApp Installation
 
