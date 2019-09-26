@@ -53,6 +53,7 @@
           <address-input
             v-model="target"
             :exclude="[token.address, defaultAccount]"
+            :block="blockedHubs"
           ></address-input>
         </v-flex>
       </v-layout>
@@ -115,7 +116,7 @@ import ActionButton from '@/components/ActionButton.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannel } from 'raiden-ts';
+import { RaidenChannel, ChannelState } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 
 @Component({
@@ -131,7 +132,7 @@ import { Zero } from 'ethers/constants';
   },
   computed: {
     ...mapState(['defaultAccount']),
-    ...mapGetters(['channelWithBiggestCapacity'])
+    ...mapGetters(['channelWithBiggestCapacity', 'channels'])
   }
 })
 export default class Payment extends Vue {
@@ -147,9 +148,17 @@ export default class Payment extends Vue {
   errorTitle: string = '';
   error: string = '';
 
+  channels!: (tokenAddress: string) => RaidenChannel[];
+
   channelWithBiggestCapacity!: (
     tokenAddress: string
   ) => RaidenChannel | undefined;
+
+  get blockedHubs(): string[] {
+    return this.channels(this.token.address)
+      .filter((channel: RaidenChannel) => channel.state !== ChannelState.open)
+      .map((channel: RaidenChannel) => channel.partner as string);
+  }
 
   get capacity(): BigNumber {
     const withBiggestCapacity = this.channelWithBiggestCapacity(

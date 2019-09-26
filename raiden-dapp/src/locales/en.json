@@ -10,7 +10,8 @@
       "no-checksum": "Please enter an address in checksum format. You can convert your address on https://ethsum.netlify.com",
       "empty": "Please enter an address or ENS name",
       "ens-resolve-failed": "Please enter a resolvable ENS name",
-      "invalid-excluded-address": "Please enter a different address or ENS name. You can't use your own address or the address of the token network."
+      "invalid-excluded-address": "Please enter a different address or ENS name. You can't use your own address or the address of the token network.",
+      "channel-not-open": "Please enter a hub address you have an open channel with."
     }
   },
   "amount-input": {
