@@ -8,6 +8,9 @@
   Raiden Light Client SDK
   <br/>
 </h2>
+<h4 align="center">
+  <a href="https://lightclient.raiden.network/docs/">Full documentation</a>
+</h4>
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
@@ -64,6 +67,8 @@ External off-chain communication with the Raiden Network is provided by a dedica
 A technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [project's Wiki page](https://github.com/raiden-network/light-client/wiki/SDK-Development). Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
 ## Getting Started
+
+Go to the [full documentation including this readme and the documentation of the SDK classes, enums and interfaces.](https://lightclient.raiden.network/docs/#getting-started)
 
 ```bash
 npm install raiden-ts
