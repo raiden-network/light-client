@@ -1,12 +1,45 @@
 /* istanbul ignore file */
 import Vue from 'vue';
-import Router from 'vue-router';
+import Router, { Route } from 'vue-router';
+import { Dictionary } from 'vue-router/types/router';
+
 import Home from './views/Home.vue';
 import { RouteNames } from '@/route-names';
+import store from './store';
+import { Tokens } from './types';
 
 Vue.use(Router);
 
-export default new Router({
+/**
+ * Checks whether a token parameter is present and whether
+ * requested token network address exists in store.
+ */
+export const checkTokenNetworkRoute = (
+  { token }: Dictionary<string>,
+  next: (to?: string | void) => void,
+  tokens: Tokens
+): void => {
+  if (!token) return next();
+
+  return Object.keys(tokens)
+    .map(key => tokens[key].address === token)
+    .includes(true)
+    ? next()
+    : next('/');
+};
+
+/**
+ * Decorator that wraps vue router's `NavigationGuard` and
+ * the current list of tokens in the store. This makes testing
+ * `checkTokenNetworkRoute` very straight forward.
+ */
+export const tokenNetworkGuard = (
+  { params }: Route,
+  _: Route,
+  next: (to?: string | void) => void
+) => checkTokenNetworkRoute(params, next, store.getters.allTokens);
+
+const router = new Router({
   mode: 'history',
   base: process.env.BASE_URL,
   routes: [
@@ -28,7 +61,8 @@ export default new Router({
       meta: {
         title: 'Send'
       },
-      component: () => import('./views/Payment.vue')
+      component: () => import('./views/Payment.vue'),
+      beforeEnter: tokenNetworkGuard
     },
     {
       path: '/connect',
@@ -44,7 +78,8 @@ export default new Router({
       meta: {
         title: 'Select hub'
       },
-      component: () => import('./views/SelectHub.vue')
+      component: () => import('./views/SelectHub.vue'),
+      beforeEnter: tokenNetworkGuard
     },
     {
       path: '/connect/:token/:partner',
@@ -52,7 +87,8 @@ export default new Router({
       meta: {
         title: 'Open channel'
       },
-      component: () => import('./views/OpenChannel.vue')
+      component: () => import('./views/OpenChannel.vue'),
+      beforeEnter: tokenNetworkGuard
     },
     {
       path: '/channels/:token',
@@ -60,7 +96,10 @@ export default new Router({
       meta: {
         title: 'Channels'
       },
-      component: () => import('./views/Channels.vue')
+      component: () => import('./views/Channels.vue'),
+      beforeEnter: tokenNetworkGuard
     }
   ]
 });
+
+export default router;

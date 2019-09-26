@@ -14,7 +14,7 @@ import { matrixPresenceUpdate } from './actions';
  * as we usually do with state$, we need to get the initial value as parameter when it's used in
  * withLatestFrom in some inner observable
  *
- * @param action$ Observable
+ * @param action$ - Observable
  * @returns Observable of aggregated Presences from subscription to now
  */
 export const getPresences$ = (action$: Observable<RaidenAction>): Observable<Presences> =>

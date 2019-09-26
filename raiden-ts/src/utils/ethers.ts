@@ -11,9 +11,9 @@ import { filter, first, map, mergeAll, switchMap, withLatestFrom, mergeMap } fro
 /**
  * Like rxjs' fromEvent, but event can be an EventFilter
  *
- * @param target  Object to hook event listener, maybe a Provider or Contract
- * @param event  EventFilter or string representing the event to listen to
- * @param resultSelector  A map of events arguments to output parameters
+ * @param target - Object to hook event listener, maybe a Provider or Contract
+ * @param event - EventFilter or string representing the event to listen to
+ * @param resultSelector - A map of events arguments to output parameters
  *      Default is to pass only first parameter
  * @returns Observable of target.on(event) events
  */
@@ -36,10 +36,10 @@ export function fromEthersEvent<T>(
  * since fromBlock up to lastSeenBlock$ === provider.resetEventsBlock - 1
  * T must be a tuple-like type receiving all filters arguments plus the respective Event in the end
  *
- * @param contract  Contract source instance for filters, connected to a provider
- * @param filters  array of OR filters from tokenNetwork
- * @param fromBlock$  Observable of a past blockNumber since when to fetch past events
- * @param lastSeenBlock$  Observable of latest seen block, to be used as toBlock of pastEvents.
+ * @param contract - Contract source instance for filters, connected to a provider
+ * @param filters - array of OR filters from tokenNetwork
+ * @param fromBlock$ - Observable of a past blockNumber since when to fetch past events
+ * @param lastSeenBlock$ - Observable of latest seen block, to be used as toBlock of pastEvents.
  *      lastSeenBlock + 1 is supposed to be first one fetched by contract.on newEvents$
  *      Both fromBlock$ and lastSeenBlock$ need to be set to fetch pastEvents$
  * @returns Observable of contract's events
@@ -101,7 +101,7 @@ export function getEventsStream<T extends any[]>(
 /**
  * Like Provider.getNetwork, but fetches every time instead of using cached property
  *
- * @param provider Provider to fetch data from
+ * @param provider - Provider to fetch data from
  * @returns Promise of Network info
  */
 export async function getNetwork(provider: JsonRpcProvider): Promise<Network> {
@@ -112,7 +112,7 @@ export async function getNetwork(provider: JsonRpcProvider): Promise<Network> {
  * Patch JsonRpcProvider.send to try personal_sign first, and fallback to eth_sign if it fails
  * Call it once on the provider instance
  *
- * @param provider  A JsonRpcProvider instance to patch
+ * @param provider - A JsonRpcProvider instance to patch
  */
 export function patchSignSend(provider: JsonRpcProvider): void {
   const origSend: (method: string, params: any) => Promise<any> = provider.send;

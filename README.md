@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="https://lightclient.raiden.network/">Play with the Raiden Demo dApp</a>
+  <a href="#try-out-the-raiden-demo-dapp">Try Out the Raiden Demo dApp</a>
 </p>
 
 <p align="center">
@@ -46,20 +46,21 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
 > **INFO:** The Light Client SDK and dApp are **work in progress** and can only be used on the Ethereum **Testnets**.
 
 ## Table of Contents
+- [Table of Contents](#table-of-contents)
 - [About The Project](#about-the-project)
 - [Architecture](#architecture)
-  * [Raiden Light Client SDK](#raiden-light-client-sdk)
-  * [Raiden dApp](#raiden-dapp)
-  * [Architecture diagram](#architecture-diagram)
+  - [Raiden Light Client SDK](#raiden-light-client-sdk)
+  - [Raiden dApp](#raiden-dapp)
+  - [Architecture diagram](#architecture-diagram)
 - [Getting Started](#getting-started)
-  * [Learn about Raiden](#learn-about-raiden)
-  * [Play with the Raiden Demo dApp](#play-with-the-raiden-demo-dapp)
-  * [Prerequisites](#prerequisites)
-  * [SDK Installation](#sdk-installation)
-  * [dApp Installation](#dapp-installation)
-    + [Build the Raiden SDK](#build-the-raiden-sdk)
-    + [Install the dApp Dependencies](#install-the-dapp-dependencies)
-    + [Running the dApp locally](#running-the-dapp-locally)
+  - [Learn about Raiden](#learn-about-raiden)
+  - [Try Out the Raiden Demo dApp](#try-out-the-raiden-demo-dapp)
+  - [Prerequisites](#prerequisites)
+  - [SDK Installation](#sdk-installation)
+  - [dApp Installation](#dapp-installation)
+    - [Build the Raiden SDK](#build-the-raiden-sdk)
+    - [Install the dApp Dependencies](#install-the-dapp-dependencies)
+    - [Running the dApp locally](#running-the-dapp-locally)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
 - [License](#license)
@@ -139,9 +140,47 @@ If you didn't use Raiden before, you can
 * Learn more by watching explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
 * Read the blog posts on [Medium](https://medium.com/@raiden_network)
 
-### Play with the Raiden Demo dApp
+### Try Out the Raiden Demo dApp
 
-You can play with the Raiden Demo dApp on any Ethereum Testnet hosted at https://lightclient.raiden.network/.
+These step-by-step instructions will guide you through the process for trying the Raiden dApp hosted at [https://lightclient.raiden.network/](https://lightclient.raiden.network/). We will be using the Ropsten testnet and MetaMask wallet in this example.
+
+__Prerequisites__
+
+You need to have MetaMask installed for your browser.
+
+1. Visit the [MetaMask website](https://metamask.io/) to download and install MetaMask.
+2. Select the Ropsten Test Network when you've logged in to your MetaMask.
+
+
+__Step 1: Acquire and Wrap ETH__
+
+1. Visit the Ropsten faucet at [https://faucet.ropsten.be](https://faucet.ropsten.be).
+2. Enter the wallet address associated with your Ropsten Test Network.
+3. Click the __"Send me test Ether"__ button, you will receive a total of 1 ETH.
+4. Visit [https://0x.org/portal/weth](https://0x.org/portal/weth), this is where you will be wrapping your ETH to WETH.
+5. Click __"Confirm"__ when *0x Poral* asks to connect to your MetaMask.
+6. Click the __"WRAP"__ button in *0x Portal* next to the ETH Token.
+7. Enter the amount of ETH you would like to wrap and click __"Convert"__.
+
+__Step 2: Connect to the Raiden Demo dApp__
+
+1. Visit the Raiden Demo dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/).
+2. Click __Connect__ to connect the dApp to your MetaMask.
+3. Select your newly wrapped token in the list of available tokens.
+
+__Step 3: Select a Hub and Open a Channel__
+
+1. Enter the address ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub, this will connect you to a Raiden test node.
+2. Enter the amount of wrapped ETH (WETH) you want to deposit when opening a channel.
+3. Sign the deposit with your MetaMask.
+4. Click __Open Channel__.
+5. Sign again with your MetaMask when prompted for "Open Channel", "Approve" and "Set Total Deposit".
+
+You can now start making payments. To do so, simply:
+
+1. Enter the address of the receiver (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```) of your payment.
+2. Enter the amount you want to pay.
+3. Click __Send Payment__.
 
 ### Prerequisites
 
@@ -182,7 +221,7 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 # }
 ```
 
-You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden/README.md).
+You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden/README.md) and within the [SDK Documentation](https://lightclient.raiden.network/docs/).
 
 ### dApp Installation
 

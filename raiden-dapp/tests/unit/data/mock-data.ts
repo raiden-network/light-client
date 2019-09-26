@@ -2,7 +2,12 @@ import { Token } from '@/model/types';
 import { ethers } from 'ethers';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
-import { Address, ChannelState, RaidenChannel, RaidenChannels } from 'raiden-ts';
+import {
+  Address,
+  ChannelState,
+  RaidenChannel,
+  RaidenChannels
+} from 'raiden-ts';
 import { Route } from 'vue-router';
 import { RouteNames } from '@/route-names';
 

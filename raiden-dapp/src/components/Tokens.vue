@@ -46,6 +46,7 @@
             >
               <v-layout justify-center>
                 <v-btn
+                  :disabled="token.open === 0"
                   :id="`pay-${index}`"
                   :to="`/payment/${token.address}`"
                   class="text-capitalize connected-tokens__tokens__token__button"

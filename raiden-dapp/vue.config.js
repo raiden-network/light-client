@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
   chainWebpack: config => {
     if (process.env.NODE_ENV !== 'production' && !process.env.CI) {
@@ -17,6 +19,10 @@ module.exports = {
       .use('i18n')
       .loader('@kazupon/vue-i18n-loader')
       .end();
+    config.resolve.alias.set(
+      'ethers',
+      path.resolve(__dirname, 'node_modules/ethers')
+    );
   },
 
   pluginOptions: {

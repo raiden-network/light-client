@@ -12,7 +12,7 @@ import { RaidenSentTransfer, RaidenSentTransferStatus } from './state';
 /**
  * Return the hash of a lock
  *
- * @param lock The lock to have the hash calculated from
+ * @param lock - The lock to have the hash calculated from
  * @returns hash of lock
  */
 export function lockhash(lock: Lock) {
@@ -26,7 +26,7 @@ export function lockhash(lock: Lock) {
  * On Red-Eyes, locksroot is the root of the merkle tree of the hashes of the locks
  * TODO: replace by list concat hash instead, after moving to raiden-contracts@^0.25
  *
- * @param locks Lock array to calculate the locksroot from
+ * @param locks - Lock array to calculate the locksroot from
  * @returns hash of the locks array
  */
 export function getLocksroot(locks: readonly Lock[]): Hash {
@@ -45,10 +45,10 @@ export function getLocksroot(locks: readonly Lock[]): Hash {
 /**
  * Generates a random secret of given length, as an HexString<32>
  *
- * @param length of the secret to generate
+ * @param length - of the secret to generate
  * @returns HexString<32>
  */
-export function makeSecret(length: number = 32): Secret {
+export function makeSecret(length = 32): Secret {
   return hexlify(randomBytes(length)) as Secret;
 }
 
@@ -73,8 +73,8 @@ export function makeMessageId(): UInt<8> {
 /**
  * Convert a state.sent: SentTransfer to a public RaidenSentTransfer object
  *
- * @param sent  RaidenState.sent value
- * @returns  Public raiden sent transfer info object
+ * @param sent - RaidenState.sent value
+ * @returns Public raiden sent transfer info object
  */
 export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
   const [status, changedAt]: [RaidenSentTransferStatus, number] = sent.lockExpiredProcessed

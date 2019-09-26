@@ -36,7 +36,7 @@ describe('Raiden', () => {
   let partner: string;
 
   let httpBackend: MockMatrixRequestFn;
-  let matrixServer = 'matrix.raiden.test';
+  const matrixServer = 'matrix.raiden.test';
 
   beforeAll(async () => {
     jest.setTimeout(20e3);
