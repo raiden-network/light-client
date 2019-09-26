@@ -94,6 +94,7 @@ describe('transfers epic', () => {
     matrixServer,
     partnerUserId,
     partnerSigner,
+    metadata,
   } = epicFixtures(depsMock);
 
   afterEach(() => {
@@ -122,9 +123,9 @@ describe('transfers epic', () => {
             { address: otherPartner2 },
           ),
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-          transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
+          transfer({ tokenNetwork, target: partner, amount, secret, metadata }, { secrethash }),
           // double transfer to test caching
-          transfer({ tokenNetwork, target: partner, amount }, { secrethash }),
+          transfer({ tokenNetwork, target: partner, amount, metadata }, { secrethash }),
         ),
         state$ = new BehaviorSubject(
           [
@@ -209,58 +210,23 @@ describe('transfers epic', () => {
       signerSpy.mockRestore();
     });
 
-    test('transferSigned fail recipient is not target', async () => {
-      const target = '0x1000000000000000000000000000000000010001' as Address;
-      const targetUserId = `@${target.toLowerCase()}:${matrixServer}`;
+    test('transferSigned fail no channel with route partner', async () => {
       expect.assertions(1);
 
-      const action$ = of(
+      const closingPartner = '0x0100000000000000000000000000000000000000' as Address,
+        action$ = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-          matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
-          transfer({ tokenNetwork, target: target, amount, secret }, { secrethash }),
+          transfer(
+            {
+              tokenNetwork,
+              target: partner,
+              amount,
+              secret,
+              metadata: { routes: [{ route: [closingPartner] }] },
+            },
+            { secrethash },
+          ),
         ),
-        state$ = new BehaviorSubject(
-          [
-            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-            channelOpened(
-              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
-              { tokenNetwork, partner },
-            ),
-            channelDeposited(
-              {
-                id: channelId,
-                participant: depsMock.address,
-                totalDeposit: bigNumberify(500) as UInt<32>,
-                txHash,
-              },
-              { tokenNetwork, partner },
-            ),
-            newBlock({ blockNumber: 125 }),
-          ].reduce(raidenReducer, state),
-        );
-
-      await expect(
-        transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
-      ).resolves.toMatchObject({
-        type: getType(transferFailed),
-        payload: expect.any(Error),
-        error: true,
-        meta: { secrethash },
-      });
-    });
-
-    test('transferSigned fail no route', async () => {
-      expect.assertions(1);
-
-      const action$ = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-          transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
-        ),
-        closingPartner = '0x0100000000000000000000000000000000000000' as Address,
-        noCapPartner = '0x0200000000000000000000000000000000000000' as Address,
-        offlinePartner = '0x0300000000000000000000000000000000000000' as Address,
         state$ = of(
           [
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
@@ -277,141 +243,6 @@ describe('transfers epic', () => {
                 txHash,
               },
               { tokenNetwork, partner: closingPartner },
-            ),
-            // channel with noCapPartner: open but no deposit
-            channelOpened(
-              { id: channelId + 2, settleTimeout, openBlock, isFirstParticipant, txHash },
-              { tokenNetwork, partner: noCapPartner },
-            ),
-            // channel with partner: enough capacity but partner is offline
-            channelOpened(
-              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
-              { tokenNetwork, partner: offlinePartner },
-            ),
-            channelDeposited(
-              {
-                id: channelId,
-                participant: depsMock.address,
-                totalDeposit: bigNumberify(500) as UInt<32>,
-                txHash,
-              },
-              { tokenNetwork, partner: offlinePartner },
-            ),
-            newBlock({ blockNumber: 125 }),
-          ].reduce(raidenReducer, state),
-        );
-
-      await expect(
-        transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
-      ).resolves.toMatchObject({
-        type: getType(transferFailed),
-        payload: expect.any(Error),
-        error: true,
-        meta: { secrethash },
-      });
-    });
-
-    test('transferSigned fail target not monitored', async () => {
-      expect.assertions(1);
-
-      const action$ = of(
-          transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
-        ),
-        state$ = of(
-          [
-            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-            channelOpened(
-              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
-              { tokenNetwork, partner },
-            ),
-            channelDeposited(
-              {
-                id: channelId,
-                participant: depsMock.address,
-                totalDeposit: bigNumberify(500) as UInt<32>,
-                txHash,
-              },
-              { tokenNetwork, partner },
-            ),
-            newBlock({ blockNumber: 125 }),
-          ].reduce(raidenReducer, state),
-        );
-
-      await expect(
-        transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
-      ).resolves.toMatchObject({
-        type: getType(transferFailed),
-        payload: expect.any(Error),
-        error: true,
-        meta: { secrethash },
-      });
-    });
-
-    test('transferSigned fail target not available', async () => {
-      expect.assertions(1);
-
-      const action$ = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: false }, { address: partner }),
-          transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
-        ),
-        state$ = of(
-          [
-            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-            channelOpened(
-              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
-              { tokenNetwork, partner },
-            ),
-            channelDeposited(
-              {
-                id: channelId,
-                participant: depsMock.address,
-                totalDeposit: bigNumberify(500) as UInt<32>,
-                txHash,
-              },
-              { tokenNetwork, partner },
-            ),
-            newBlock({ blockNumber: 125 }),
-          ].reduce(raidenReducer, state),
-        );
-
-      await expect(
-        transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
-      ).resolves.toMatchObject({
-        type: getType(transferFailed),
-        payload: expect.any(Error),
-        error: true,
-        meta: { secrethash },
-      });
-    });
-
-    test('transferSigned fail invalid secret', async () => {
-      expect.assertions(1);
-
-      const action$ = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-          transfer({ tokenNetwork, target: partner, amount, secret: txHash }, { secrethash }),
-        ),
-        state$ = of(
-          [
-            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-            channelOpened(
-              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
-              { tokenNetwork, partner },
-            ),
-            channelDeposited(
-              {
-                id: channelId,
-                participant: depsMock.address,
-                totalDeposit: bigNumberify(500) as UInt<32>,
-                txHash,
-              },
-              { tokenNetwork, partner },
             ),
             newBlock({ blockNumber: 125 }),
           ].reduce(raidenReducer, state),
@@ -445,7 +276,7 @@ describe('transfers epic', () => {
     beforeEach(async () => {
       const action$: Observable<RaidenAction> = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-          transfer({ tokenNetwork, target: partner, amount, secret }, { secrethash }),
+          transfer({ tokenNetwork, target: partner, amount, secret, metadata }, { secrethash }),
         ),
         state$ = new BehaviorSubject(
           [

@@ -23,6 +23,7 @@ import TokenNetworkRegistryAbi from 'raiden-ts/abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from 'raiden-ts/abi/TokenNetwork.json';
 import HumanStandardTokenAbi from 'raiden-ts/abi/HumanStandardToken.json';
 
+import 'raiden-ts/polyfills';
 import { RaidenEpicDeps } from 'raiden-ts/types';
 import { RaidenAction } from 'raiden-ts/actions';
 import { RaidenState, initialState } from 'raiden-ts/state';
@@ -148,7 +149,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   return {
     stateOutput$: new BehaviorSubject<RaidenState>(initialState),
     actionOutput$: new Subject<RaidenAction>(),
-    config$: new BehaviorSubject<RaidenConfig>(defaultConfig),
+    config$: new BehaviorSubject<RaidenConfig>(defaultConfig.default),
     matrix$: new AsyncSubject<MatrixClient>(),
     address,
     network,

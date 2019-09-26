@@ -2,7 +2,7 @@ import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 
-import { of, combineLatest } from 'rxjs';
+import { of } from 'rxjs';
 import { first, take, toArray } from 'rxjs/operators';
 
 import { Event } from 'ethers/contract';
@@ -13,7 +13,6 @@ import { fromEthersEvent, getEventsStream } from 'raiden-ts/utils/ethers';
 import { Address, BigNumberC, HexString, UInt, Secret, Timed, timed } from 'raiden-ts/utils/types';
 import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
-import { splitCombined } from 'raiden-ts/utils/rxjs';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { Lock } from 'raiden-ts/channels';
 import { makeLog, raidenEpicDeps } from './mocks';
@@ -279,15 +278,6 @@ describe('data', () => {
     const stringified = losslessStringify({ n: new LosslessNumber('18446744073709551616') });
     expect(stringified).toBe('{"n":18446744073709551616}');
   });
-});
-
-test('rxjs splitCombined', async () => {
-  const src = combineLatest(of(1), of(2), of(3), of(4));
-  const [of1, of2, of3, of4] = splitCombined(src);
-  await expect(of1.toPromise()).resolves.toBe(1);
-  await expect(of2.toPromise()).resolves.toBe(2);
-  await expect(of3.toPromise()).resolves.toBe(3);
-  await expect(of4.toPromise()).resolves.toBe(4);
 });
 
 describe('messages', () => {
