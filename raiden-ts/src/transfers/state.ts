@@ -9,6 +9,7 @@ import {
   Unlock,
   LockExpired,
   RefundTransfer,
+  Metadata,
 } from '../messages/types';
 import { Address, Timed, Hash } from '../utils/types';
 
@@ -101,6 +102,7 @@ export interface RaidenSentTransfer {
   initiator: Address; // us
   recipient: Address; // receiver/partner/hub
   target: Address; // final receiver of the transfer
+  metadata: Metadata; // chosen routes
   paymentId: BigNumber;
   chainId: number;
   token: Address; // token address
