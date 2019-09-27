@@ -8,7 +8,10 @@ import * as t from 'io-ts';
  *      After intializing a [[Raiden]] instance, the matrix server can't be changed later on.
  * - revealTimeout - Timeout for secrets to be revealed
  * - settleTimeout - Timeout for channels to be settled
- * - matrixServer - Specify a matrix server to use.
+ * - httpTimeout - Used in http fetch requests
+ * - matrixServer? - Specify a matrix server to use.
+ * - logger? - String specifying the console log level of redux-logger. Use '' to disable.
+ *             Defaults to 'debug' if process.env.NODE_ENV === 'development'
  */
 export const RaidenConfig = t.readonly(
   t.intersection([
@@ -16,10 +19,12 @@ export const RaidenConfig = t.readonly(
       matrixServerLookup: t.string,
       revealTimeout: t.number,
       settleTimeout: t.number,
+      httpTimeout: t.number,
       pfs: t.union([t.string, t.null]),
     }),
     t.partial({
       matrixServer: t.string,
+      logger: t.keyof({ ['']: null, debug: null, log: null, info: null, warn: null, error: null }),
     }),
   ]),
 );
@@ -32,11 +37,21 @@ export const defaultConfig: {
   goerli: {
     pfs: 'https://pfs-goerli.services-dev.raiden.network',
   },
+  ropsten: {
+    pfs: 'https://pfs-ropsten.services-dev.raiden.network',
+  },
+  kovan: {
+    pfs: 'https://pfs-kovan.services-dev.raiden.network',
+  },
+  rinkeby: {
+    pfs: 'https://pfs-rinkeby.services-dev.raiden.network',
+  },
   default: {
     matrixServerLookup:
       'https://raw.githubusercontent.com/raiden-network/raiden-transport/master/known_servers.test.yaml',
     settleTimeout: 500,
     revealTimeout: 50,
+    httpTimeout: 30e3,
     pfs: null,
   },
 };

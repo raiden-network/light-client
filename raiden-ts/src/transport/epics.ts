@@ -32,6 +32,7 @@ import {
   mapTo,
   finalize,
   first,
+  timeout,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
@@ -98,7 +99,7 @@ export const initMatrixEpic = (
   state$.pipe(
     first(),
     withLatestFrom(config$),
-    mergeMap(([state, { matrixServer, matrixServerLookup }]) => {
+    mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout }]) => {
       const server: string | undefined = get(state, ['transport', 'matrix', 'server']),
         setup: RaidenMatrixSetup | undefined = get(state, ['transport', 'matrix', 'setup']);
 
@@ -120,8 +121,9 @@ export const initMatrixEpic = (
               );
             return response.text();
           }),
+          timeout(httpTimeout),
           mergeMap(text => from(yamlListToArray(text))),
-          mergeMap(matrixRTT),
+          mergeMap(server => matrixRTT(server, httpTimeout)),
           toArray(),
           map(rtts => sortBy(rtts, ['rtt'])),
           map(rtts => {

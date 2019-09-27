@@ -9,6 +9,7 @@ import {
   map,
   withLatestFrom,
   reduce,
+  timeout,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
@@ -44,7 +45,7 @@ export const pathFindServiceEpic = (
         concatMap(action =>
           statePresencesConfig$.pipe(
             first(),
-            mergeMap(([state, presences, { pfs }]) => {
+            mergeMap(([state, presences, { pfs, httpTimeout }]) => {
               const { tokenNetwork, target } = action.meta;
               if (!(tokenNetwork in state.channels))
                 throw new Error(`PFS: unknown tokenNetwork ${tokenNetwork}`);
@@ -85,6 +86,7 @@ export const pathFindServiceEpic = (
                         max_paths: 10, // eslint-disable-line @typescript-eslint/camelcase
                       }),
                     }).pipe(
+                      timeout(httpTimeout),
                       mergeMap(async response => {
                         if (!response.ok)
                           throw new Error(
