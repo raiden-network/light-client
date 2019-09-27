@@ -1,6 +1,6 @@
 import { Observable, defer, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, timeout } from 'rxjs/operators';
 import { MatrixClient } from 'matrix-js-sdk';
 import { encodeUri } from 'matrix-js-sdk/lib/utils';
 
@@ -32,9 +32,13 @@ export function yamlListToArray(yml: string): string[] {
  * Given a server name (with or without schema and port), return HTTP GET round trip time
  *
  * @param server - Server name with or without schema
+ * @param httpTimeout - Optional timeout for the HTTP request
  * @returns Promise to a { server, rtt } object, where `rtt` may be NaN
  */
-export function matrixRTT(server: string): Observable<{ server: string; rtt: number }> {
+export function matrixRTT(
+  server: string,
+  httpTimeout?: number,
+): Observable<{ server: string; rtt: number }> {
   let url = server;
   if (!url.includes('://')) {
     url = `https://${url}`;
@@ -44,6 +48,7 @@ export function matrixRTT(server: string): Observable<{ server: string; rtt: num
     const start = Date.now();
     return fromFetch(url).pipe(
       map(response => (response.ok ? Date.now() : NaN)),
+      timeout(httpTimeout || Number.MAX_SAFE_INTEGER),
       catchError(() => of(NaN)),
       map(end => end - start),
       map(rtt => ({ server, rtt })),

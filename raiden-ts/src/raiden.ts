@@ -228,11 +228,16 @@ export class Raiden {
       return { totalSupply, decimals, name, symbol };
     });
 
-    const middlewares: Middleware[] = [];
-
-    if (process.env.NODE_ENV === 'development') {
-      middlewares.push(createLogger({ level: 'debug' }));
-    }
+    const middlewares: Middleware[] = [
+      createLogger({
+        level: () =>
+          this.deps.config$.value.logger !== undefined
+            ? this.deps.config$.value.logger
+            : process.env.NODE_ENV === 'development'
+            ? 'debug'
+            : '',
+      }),
+    ];
 
     this.deps = {
       stateOutput$: state$,
@@ -694,11 +699,13 @@ export class Raiden {
    * @param target - Target address (must be getAvailability before)
    * @param amount - Amount to try to transfer
    * @param options - Optional parameters for transfer:
-   *                - paymentId  payment identifier, a random one will be generated if missing
-   *                - secret  Secret to register, a random one will be generated if missing
-   *                - secrethash  Must match secret, if both provided, or else, secret must be
-   *                              informed to target by other means, and reveal can't be performed
-   *                - metadata  Used to specify possible routes instead of querying PFS.
+   *    <ul>
+   *      <li>paymentId - payment identifier, a random one will be generated if missing</li>
+   *      <li>secret - Secret to register, a random one will be generated if missing</li>
+   *      <li>secrethash - Must match secret, if both provided, or else, secret must be
+   *          informed to target by other means, and reveal can't be performed</li>
+   *      <li>metadata - Used to specify possible routes instead of querying PFS.</li>
+   *    </ul>
    * @returns A promise to transfer's secrethash (unique id) when it's accepted
    */
   public async transfer(
