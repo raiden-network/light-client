@@ -97,6 +97,7 @@ export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
     initiator: sent.transfer[1].initiator,
     recipient: sent.transfer[1].recipient,
     target: sent.transfer[1].target,
+    metadata: sent.transfer[1].metadata,
     paymentId: sent.transfer[1].payment_identifier,
     chainId: sent.transfer[1].chain_id.toNumber(),
     token: sent.transfer[1].token,
