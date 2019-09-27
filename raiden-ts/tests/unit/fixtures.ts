@@ -21,6 +21,7 @@ export const epicFixtures = function(
   token: Address;
   tokenNetwork: Address;
   partner: Address;
+  target: Address;
   matrix: jest.Mocked<MatrixClient>;
   channelId: number;
   settleTimeout: number;
@@ -31,6 +32,7 @@ export const epicFixtures = function(
   deviceId: string;
   displayName: string;
   partnerUserId: string;
+  targetUserId: string;
   state: RaidenState;
   partnerSigner: Wallet;
   txHash: Hash;
@@ -42,6 +44,7 @@ export const epicFixtures = function(
     token = '0x0000000000000000000000000000000000010001' as Address,
     tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,
     partner = wallet.address as Address,
+    target = '0x0100000000000000000000000000000000000005' as Address,
     tokenNetworkContract = depsMock.getTokenNetworkContract(tokenNetwork),
     tokenContract = depsMock.getTokenContract(token),
     settleTimeout = 500,
@@ -53,6 +56,7 @@ export const epicFixtures = function(
     deviceId = 'device_id',
     displayName = 'display_name',
     partnerUserId = `@${partner.toLowerCase()}:${matrixServer}`,
+    targetUserId = `@${target.toLowerCase()}:${matrixServer}`,
     matrix = makeMatrix(userId, matrixServer),
     txHash = '0x0000000000000000000000000000000000000020111111111111111111111111' as Hash,
     metadata = { routes: [{ route: [partner] }] };
@@ -65,6 +69,7 @@ export const epicFixtures = function(
     token,
     tokenNetwork,
     partner,
+    target,
     matrix,
     channelId,
     settleTimeout,
@@ -75,6 +80,7 @@ export const epicFixtures = function(
     deviceId,
     displayName,
     partnerUserId,
+    targetUserId,
     matrixServer,
     userId,
     txHash,

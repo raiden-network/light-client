@@ -2,7 +2,7 @@
 import { of, BehaviorSubject } from 'rxjs';
 import { bigNumberify } from 'ethers/utils';
 
-import { UInt, Address } from 'raiden-ts/utils/types';
+import { UInt } from 'raiden-ts/utils/types';
 import {
   newBlock,
   tokenMonitored,
@@ -25,17 +25,16 @@ describe('PFS: pathFindServiceEpic', () => {
     tokenNetwork,
     channelId,
     partner,
+    target,
     settleTimeout,
     isFirstParticipant,
     txHash,
     state,
-    matrixServer,
     partnerUserId,
+    targetUserId,
   } = epicFixtures(depsMock);
 
-  const target = '0x0100000000000000000000000000000000000005' as Address,
-    targetUserId = `@${partner.toLowerCase()}:${matrixServer}`,
-    openBlock = 121,
+  const openBlock = 121,
     state$ = new BehaviorSubject(state);
 
   const fetch = jest.fn(async () => ({

@@ -518,7 +518,7 @@ describe('Raiden', () => {
       });
 
       test('success: pfs route', async () => {
-        expect.assertions(4);
+        expect.assertions(7);
 
         const target = accounts[2],
           raiden2 = await Raiden.create(
@@ -546,13 +546,30 @@ describe('Raiden', () => {
           ok: true,
           status: 200,
           json: jest.fn(async () => ({
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            result: [{ path: [partner, target], estimated_fee: 0 }],
+            result: [
+              // first returned route is invalid and should be filtered
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              { path: [tokenNetwork, target], estimated_fee: 0 },
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              { path: [partner, target], estimated_fee: 0 },
+            ],
           })),
           text: jest.fn(async () => ''),
         });
 
-        await expect(raiden.transfer(token, target, 23)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+        const transfers: { [h: string]: RaidenSentTransfer } = {};
+        raiden.transfers$.subscribe(t => (transfers[t.secrethash] = t));
+
+        const secrethash = await raiden.transfer(token, target, 23);
+        expect(secrethash).toMatch(/^0x[0-9a-fA-F]{64}$/);
+
+        expect(secrethash in transfers).toBe(true);
+        expect(transfers[secrethash].status).toBe(RaidenSentTransferStatus.pending);
+
+        // transfer metadata contains the actual used routes (removing invalid ones)
+        expect(transfers[secrethash].metadata).toEqual({
+          routes: [{ route: [partner, target] }],
+        });
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringMatching(new RegExp(`^${pfs}/.*/${tokenNetwork}/paths$`)),
