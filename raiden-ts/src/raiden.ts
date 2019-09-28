@@ -12,7 +12,16 @@ import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
 import { debounce, findKey, transform, constant, memoize, pick, isEmpty } from 'lodash';
-import { Observable, Subject, BehaviorSubject, AsyncSubject, from, merge, of } from 'rxjs';
+import {
+  Observable,
+  Subject,
+  BehaviorSubject,
+  AsyncSubject,
+  from,
+  merge,
+  defer,
+  EMPTY,
+} from 'rxjs';
 import {
   first,
   filter,
@@ -21,8 +30,6 @@ import {
   scan,
   concatMap,
   mergeMap,
-  tap,
-  ignoreElements,
 } from 'rxjs/operators';
 
 import './polyfills';
@@ -723,8 +730,8 @@ export class Raiden {
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    amount = bigNumberify(amount);
-    if (!UInt(32).is(amount)) throw new Error('Invalid amount');
+    const value = bigNumberify(amount);
+    if (!UInt(32).is(value)) throw new Error('Invalid amount');
 
     const paymentId = !options.paymentId ? undefined : bigNumberify(options.paymentId);
     if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid options.paymentId');
@@ -755,7 +762,7 @@ export class Raiden {
           action =>
             action.meta.tokenNetwork === tokenNetwork &&
             action.meta.target === target &&
-            action.meta.value.eq(amount),
+            action.meta.value.eq(value),
         ),
         map(action => {
           if (isActionOf(pathFindFailed, action)) throw action.payload;
@@ -764,10 +771,10 @@ export class Raiden {
       ),
       // request pathFind; even if metadata was provided, send it for validation
       // this is done at 'merge' subscription time (i.e. when above action filter is subscribed)
-      of(pathFind({ metadata }, { tokenNetwork, target, value: amount })).pipe(
-        tap(request => this.store.dispatch(request)),
-        ignoreElements(),
-      ),
+      defer(() => {
+        this.store.dispatch(pathFind({ metadata }, { tokenNetwork, target, value }));
+        return EMPTY;
+      }),
     )
       .pipe(
         mergeMap(metadata =>
@@ -782,26 +789,65 @@ export class Raiden {
               }),
             ),
             // request transfer with returned/validated metadata at 'merge' subscription time
-            of(
-              transfer(
-                {
-                  tokenNetwork,
-                  target,
-                  amount: amount as UInt<32>,
-                  metadata,
-                  paymentId,
-                  secret,
-                },
-                { secrethash },
-              ),
-            ).pipe(
-              tap(request => this.store.dispatch(request)),
-              ignoreElements(),
-            ),
+            defer(() => {
+              this.store.dispatch(
+                transfer(
+                  {
+                    tokenNetwork,
+                    target,
+                    amount: value,
+                    metadata,
+                    paymentId,
+                    secret,
+                  },
+                  { secrethash },
+                ),
+              );
+              return EMPTY;
+            }),
           ),
         ),
       )
       .toPromise();
+  }
+
+  /**
+   * Request a path from PFS
+   *
+   * If a direct route is possible, it'll be returned. Else if PFS is set up, a request will be
+   * performed and the cleaned/validated result metadata containing the 'routes' will be resolved.
+   * Else, if no route can be found, promise is rejected with respective error.
+   *
+   * @param token - Token address on currently configured token network registry
+   * @param target - Target address (must be getAvailability before)
+   * @param amount - Minimum capacity required on routes
+   * @returns A promise to transfer's secrethash (unique id) when it's accepted
+   */
+  public async findRoutes(token: string, target: string, amount: BigNumberish): Promise<Metadata> {
+    if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
+    const tokenNetwork = this.state.tokens[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
+
+    const value = bigNumberify(amount);
+    if (!UInt(32).is(value)) throw new Error('Invalid amount');
+
+    const promise = this.action$
+      .pipe(
+        filter(isActionOf([pathFound, pathFindFailed])),
+        first(
+          action =>
+            action.meta.tokenNetwork === tokenNetwork &&
+            action.meta.target === target &&
+            action.meta.value.eq(amount),
+        ),
+        map(action => {
+          if (isActionOf(pathFindFailed, action)) throw action.payload;
+          return action.payload.metadata;
+        }),
+      )
+      .toPromise();
+    this.store.dispatch(pathFind({}, { tokenNetwork, target, value }));
+    return promise;
   }
 }
 
