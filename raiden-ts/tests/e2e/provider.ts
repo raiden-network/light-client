@@ -6,7 +6,7 @@ import asyncPool from 'tiny-async-pool';
 
 import { Web3Provider } from 'ethers/providers';
 import { MaxUint256 } from 'ethers/constants';
-import { ContractFactory } from 'ethers/contract';
+import { ContractFactory, Contract } from 'ethers/contract';
 import { parseUnits } from 'ethers/utils';
 
 import { ContractsInfo } from 'raiden-ts/types';
@@ -54,13 +54,9 @@ export class TestProvider extends Web3Provider {
     return this.blockNumber;
   }
 
-  public async deployRaidenContracts(): Promise<{
-    info: ContractsInfo;
-    token: string;
-    tokenNetwork: string;
-  }> {
+  public async deployRegistry(): Promise<ContractsInfo> {
     const accounts = await this.listAccounts();
-    const signer = this.getSigner(accounts.pop());
+    const signer = this.getSigner(accounts[accounts.length - 1]);
 
     const secretRegistryContract = await new ContractFactory(
       Contracts.contracts.SecretRegistry.abi,
@@ -78,16 +74,42 @@ export class TestProvider extends Web3Provider {
       this.network.chainId,
       500,
       555428,
-      1,
+      10,
     )) as TokenNetworkRegistry;
     await registryContract.deployed();
     const registyDeployBlock = registryContract.deployTransaction.blockNumber;
+
+    return {
+      TokenNetworkRegistry: {
+        address: registryContract.address as Address,
+        block_number: registyDeployBlock!,
+      },
+    };
+  }
+
+  public async deployTokenNetwork(
+    info: ContractsInfo,
+  ): Promise<{
+    token: string;
+    tokenNetwork: string;
+  }> {
+    const accounts = await this.listAccounts();
+    const signer = this.getSigner(accounts[accounts.length - 1]);
+
+    const registryContract = new Contract(
+      info.TokenNetworkRegistry.address,
+      Contracts.contracts.TokenNetworkRegistry.abi,
+      signer,
+    ) as TokenNetworkRegistry;
+
+    const next =
+      (await this.getLogs(registryContract.filters.TokenNetworkCreated(null, null))).length + 1;
 
     const tokenContract = await new ContractFactory(
       Contracts.contracts.CustomToken.abi,
       Contracts.contracts.CustomToken.bin,
       signer,
-    ).deploy(parseUnits('1000000', 18), 18, 'TestToken', 'TKN');
+    ).deploy(parseUnits('1000000', 18), 18, `TestToken${next}`, `TK${next}`);
     await tokenContract.deployed();
 
     const decimals = await tokenContract.functions.decimals();
@@ -111,12 +133,6 @@ export class TestProvider extends Web3Provider {
     );
 
     return {
-      info: {
-        TokenNetworkRegistry: {
-          address: registryContract.address as Address,
-          block_number: registyDeployBlock!,
-        },
-      },
       token: tokenContract.address,
       tokenNetwork: tokenNetworkAddress,
     };
