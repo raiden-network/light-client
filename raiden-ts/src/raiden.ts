@@ -821,7 +821,7 @@ export class Raiden {
    * @param token - Token address on currently configured token network registry
    * @param target - Target address (must be getAvailability before)
    * @param amount - Minimum capacity required on routes
-   * @returns A promise to transfer's secrethash (unique id) when it's accepted
+   * @returns A promise to returned routes metadata
    */
   public async findRoutes(token: string, target: string, amount: BigNumberish): Promise<Metadata> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');

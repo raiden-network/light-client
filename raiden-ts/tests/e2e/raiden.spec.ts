@@ -50,7 +50,8 @@ describe('Raiden', () => {
   beforeAll(async () => {
     jest.setTimeout(20e3);
 
-    ({ info, token, tokenNetwork } = await provider.deployRaidenContracts());
+    info = await provider.deployRegistry();
+    ({ token, tokenNetwork } = await provider.deployTokenNetwork(info));
     registry = info.TokenNetworkRegistry.address;
     accounts = await provider.listAccounts();
     partner = accounts[1];
@@ -163,8 +164,8 @@ describe('Raiden', () => {
       await expect(raiden.getTokenInfo(token)).resolves.toEqual({
         totalSupply: expect.any(BigNumber),
         decimals: 18,
-        name: 'TestToken',
-        symbol: 'TKN',
+        name: 'TestToken1',
+        symbol: 'TK1',
       });
     });
   });
@@ -385,19 +386,14 @@ describe('Raiden', () => {
       expect.assertions(1);
       await provider.mine(5);
       const promise = raiden.events$
-        .pipe(
-          filter(value => value.type === 'tokenMonitored'),
-          first(),
-        )
+        .pipe(first(value => value.type === 'tokenMonitored' && !!value.payload.fromBlock))
         .toPromise();
-      await provider.mine(10);
+      await provider.mine(5);
+      // deploy a new token & tokenNetwork
+      const { token, tokenNetwork } = await provider.deployTokenNetwork(info);
       await expect(promise).resolves.toMatchObject({
         type: getType(tokenMonitored),
-        payload: {
-          fromBlock: undefined,
-          token: '0xfF06581Bc4D7e8bE4F9E15E4b9452E79785E0aa9',
-          tokenNetwork: '0x3979Aa776fE2ef327dFD0747aF6F4EF5A0EE4517',
-        },
+        payload: { fromBlock: expect.any(Number), token, tokenNetwork },
       });
     });
   });
