@@ -605,4 +605,100 @@ describe('Raiden', () => {
       });
     });
   });
+
+  describe('findRoutes', () => {
+    const pfs = 'http://pfs';
+    let raiden1: Raiden, raiden2: Raiden, target: string;
+
+    beforeEach(async () => {
+      target = accounts[2];
+
+      await raiden.openChannel(token, partner);
+      await raiden.depositChannel(token, partner, 200);
+
+      raiden1 = await Raiden.create(
+        provider,
+        partner,
+        { ...initialState, address: partner, chainId, registry },
+        info,
+      );
+      raiden2 = await Raiden.create(
+        provider,
+        target,
+        { ...initialState, address: target, chainId, registry },
+        info,
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
+        userId: `@${partner.toLowerCase()}:${matrixServer}`,
+        available: true,
+        ts: expect.any(Number),
+      });
+      await expect(raiden.getAvailability(target)).resolves.toMatchObject({
+        userId: `@${target.toLowerCase()}:${matrixServer}`,
+        available: true,
+        ts: expect.any(Number),
+      });
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      raiden.config({ pfs });
+    });
+
+    afterEach(() => {
+      raiden1.stop();
+      raiden2.stop();
+    });
+
+    test('success', async () => {
+      expect.assertions(4);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => ({
+          result: [
+            // first returned route is invalid and should be filtered
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [tokenNetwork, target], estimated_fee: 0 },
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [raiden.address, partner, target], estimated_fee: 0 },
+          ],
+        })),
+        text: jest.fn(async () => ''),
+      });
+
+      await expect(raiden.findRoutes(token, target, 23)).resolves.toEqual({
+        routes: [{ route: [partner, target] }],
+      });
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`^${pfs}/.*/${tokenNetwork}/paths$`)),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+
+    test('fail: filtered no capacity routes', async () => {
+      expect.assertions(3);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => ({
+          result: [
+            // first returned route is invalid and should be filtered
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [tokenNetwork, target], estimated_fee: 0 },
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [raiden.address, partner, target], estimated_fee: 0 },
+          ],
+        })),
+        text: jest.fn(async () => ''),
+      });
+
+      await expect(raiden.findRoutes(token, target, 201)).rejects.toThrowError(
+        /validated routes.*empty/,
+      );
+    });
+  });
 });
