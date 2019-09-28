@@ -193,7 +193,6 @@ export function packMessage(message: Message) {
         ]),
       ) as HexString<12>;
     case MessageType.WITHDRAW_REQUEST:
-    case MessageType.WITHDRAW_EXPIRED:
     case MessageType.WITHDRAW_CONFIRMATION:
       return hexlify(
         concat([
@@ -206,6 +205,22 @@ export function packMessage(message: Message) {
           encode(message.expiration, 32),
         ]),
       ) as HexString<200>;
+    case MessageType.WITHDRAW_EXPIRED:
+      return hexlify(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3),
+          encode(message.nonce, 32),
+          encode(message.message_identifier, 8),
+          encode(message.token_network_address, 20),
+          encode(message.chain_id, 32),
+          encode(MessageTypeId.WITHDRAW, 32),
+          encode(message.channel_identifier, 32),
+          encode(message.participant, 20),
+          encode(message.total_withdraw, 32),
+          encode(message.expiration, 32),
+        ]),
+      ) as HexString<244>;
   }
 }
 
