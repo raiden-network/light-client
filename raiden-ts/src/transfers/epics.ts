@@ -813,15 +813,24 @@ export const transferSecretRequestedEpic = (
       const transfer = state.sent[message.secrethash].transfer[1];
       if (
         transfer.target !== action.meta.address || // reveal only to target
-        transfer.lock.expiration.lte(state.blockNumber) || // don't reveal if expired
-        !transfer.payment_identifier.eq(message.payment_identifier) ||
-        !transfer.lock.amount.eq(message.amount) ||
-        !transfer.lock.expiration.eq(message.expiration)
-        // we don't check if transfer was refunded. If partner refunded the transfer but still
-        // forwarded the payment, they would be in risk of losing their money, not us
-      )
-        return;
-      yield transferSecretRequest({ message }, { secrethash: message.secrethash });
+        !transfer.payment_identifier.eq(message.payment_identifier)
+      ) {
+        console.warn('Invalid SecretRequest for transfer', message, transfer);
+      } else if (
+        !message.expiration.lte(transfer.lock.expiration) ||
+        !message.expiration.gt(state.blockNumber)
+      ) {
+        console.warn('SecretRequest for expired transfer', message, transfer);
+      } else if (!message.amount.gte(transfer.lock.amount.mul(9).div(10))) {
+        // FIXME: TMP! accept transfers deduced up to 10% what was sent
+        console.warn('SecretRequest for amount too small!', message, transfer);
+      } /* accept request */ else {
+        if (!message.amount.eq(transfer.lock.amount))
+          console.warn('Accepted SecretRequest for amount different than sent', message, transfer);
+        yield transferSecretRequest({ message }, { secrethash: message.secrethash });
+      }
+      // we don't check if transfer was refunded. If partner refunded the transfer but still
+      // forwarded the payment, they would be in risk of losing their money, not us
     }),
   );
 
