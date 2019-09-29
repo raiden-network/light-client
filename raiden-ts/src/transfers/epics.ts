@@ -47,6 +47,7 @@ import { getBalanceProofFromEnvelopeMessage, signMessage } from '../messages/uti
 import { Channel, ChannelState } from '../channels/state';
 import { Lock, SignedBalanceProof } from '../channels/types';
 import { channelClose, channelClosed, newBlock } from '../channels/actions';
+import { matrixRequestMonitorPresence } from '../transport/actions';
 import {
   transfer,
   transferExpire,
@@ -726,7 +727,12 @@ export const initQueuePendingEnvelopeMessagesEpic = (
   {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
 ): Observable<
-  ActionType<typeof transferSigned | typeof transferUnlocked | typeof transferExpired>
+  ActionType<
+    | typeof matrixRequestMonitorPresence
+    | typeof transferSigned
+    | typeof transferUnlocked
+    | typeof transferExpired
+  >
 > =>
   state$.pipe(
     first(),
@@ -736,6 +742,8 @@ export const initQueuePendingEnvelopeMessagesEpic = (
         const secrethash = key as Hash;
         // transfer already completed or channelClosed
         if (sent.unlockProcessed || sent.lockExpiredProcessed || sent.channelClosed) continue;
+        // on init, request monitor presence of any pending transfer target
+        yield matrixRequestMonitorPresence(undefined, { address: sent.transfer[1].target });
         // Processed not received yet for LockedTransfer
         if (!sent.transferProcessed)
           yield transferSigned({ message: sent.transfer[1] }, { secrethash });

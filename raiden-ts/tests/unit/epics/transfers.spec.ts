@@ -72,7 +72,7 @@ import {
   withdrawRequestReceivedEpic,
   withdrawSendConfirmationEpic,
 } from 'raiden-ts/transfers/epics';
-import { matrixPresenceUpdate } from 'raiden-ts/transport/actions';
+import { matrixPresenceUpdate, matrixRequestMonitorPresence } from 'raiden-ts/transport/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
 import { UInt, Address, Hash } from 'raiden-ts/utils/types';
 import { makeMessageId, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
@@ -949,8 +949,13 @@ describe('transfers epic', () => {
       test('transferSigned', async () => {
         const state$ = of(transferingState);
         await expect(
-          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$).toPromise(),
-        ).resolves.toEqual(transferSigned({ message: signedTransfer }, { secrethash }));
+          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
+            .pipe(toArray())
+            .toPromise(),
+        ).resolves.toEqual([
+          matrixRequestMonitorPresence(undefined, { address: partner }),
+          transferSigned({ message: signedTransfer }, { secrethash }),
+        ]);
       });
 
       test('transferUnlocked', async () => {
@@ -964,8 +969,15 @@ describe('transfers epic', () => {
         state$.next(raidenReducer(state$.value, unlocked));
 
         await expect(
-          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$).toPromise(),
-        ).resolves.toEqual(unlocked);
+          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
+            .pipe(toArray())
+            .toPromise(),
+        ).resolves.toEqual(
+          expect.arrayContaining([
+            matrixRequestMonitorPresence(undefined, { address: partner }),
+            unlocked,
+          ]),
+        );
       });
 
       test('transferExpired', async () => {
@@ -984,8 +996,49 @@ describe('transfers epic', () => {
         state$.next(raidenReducer(state$.value, expired));
 
         await expect(
+          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
+            .pipe(toArray())
+            .toPromise(),
+        ).resolves.toEqual(
+          expect.arrayContaining([
+            matrixRequestMonitorPresence(undefined, { address: partner }),
+            expired,
+          ]),
+        );
+      });
+
+      test('completed transfer is skipped', async () => {
+        const state$ = new BehaviorSubject(
+            raidenReducer(
+              transferingState,
+              newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
+            ),
+          ),
+          expired = await transferGenerateAndSignEnvelopeMessageEpic(
+            of(transferExpire(undefined, { secrethash })),
+            state$,
+            depsMock,
+          ).toPromise();
+
+        // narrow down type of expired
+        if (!isActionOf(transferExpired, expired)) throw new Error('not expired');
+
+        const expireProcessed: Processed = {
+            type: MessageType.PROCESSED,
+            message_identifier: expired.payload.message.message_identifier,
+          },
+          message = await signMessage(partnerSigner, expireProcessed);
+
+        state$.next(
+          [expired, transferExpireProcessed({ message }, expired.meta)].reduce(
+            raidenReducer,
+            state$.value,
+          ),
+        );
+
+        await expect(
           initQueuePendingEnvelopeMessagesEpic(EMPTY, state$).toPromise(),
-        ).resolves.toEqual(expired);
+        ).resolves.toBeUndefined();
       });
     });
 
