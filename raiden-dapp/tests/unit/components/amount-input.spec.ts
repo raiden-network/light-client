@@ -4,6 +4,7 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { mockInput } from '../utils/interaction-utils';
 import { TestData } from '../data/mock-data';
+import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
 
@@ -12,6 +13,7 @@ describe('AmountInput.vue', function() {
 
   const vueFactory = (params: {}): Wrapper<AmountInput> =>
     mount(AmountInput, {
+      sync: false,
       propsData: {
         label: 'Has Label',
         token: TestData.token,
@@ -23,8 +25,9 @@ describe('AmountInput.vue', function() {
     });
 
   describe('unlimited', function() {
-    beforeEach(() => {
+    beforeEach(async () => {
       wrapper = vueFactory({ limit: false });
+      await wrapper.vm.$nextTick();
     });
 
     it('should show no validation messages', () => {
@@ -36,6 +39,7 @@ describe('AmountInput.vue', function() {
     it('should show an amount cannot be empty message', async function() {
       mockInput(wrapper, '');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual(['']);
       const messages = wrapper.find('.v-messages__message');
@@ -61,6 +65,7 @@ describe('AmountInput.vue', function() {
     it('should display an error if the amount is smaller than the limit', async function() {
       mockInput(wrapper, '2.4');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual(['2.4']);
       const messages = wrapper.find('.v-messages__message');
@@ -71,6 +76,7 @@ describe('AmountInput.vue', function() {
     it('should display an error if the amount has more decimals than supported', async function() {
       mockInput(wrapper, '1.42345678');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual(['1.42345678']);
       const messages = wrapper.find('.v-messages__message');

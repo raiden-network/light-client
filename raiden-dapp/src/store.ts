@@ -16,6 +16,7 @@ import clone from 'lodash/clone';
 import reduce from 'lodash/reduce';
 import orderBy from 'lodash/orderBy';
 import isEqual from 'lodash/isEqual';
+import isEmpty from 'lodash/isEmpty';
 import { Network } from 'ethers/utils';
 
 Vue.use(Vuex);
@@ -100,7 +101,7 @@ const store: StoreOptions<RootState> = {
     channels: (state: RootState) => (tokenAddress: string) => {
       let channels: RaidenChannel[] = [];
       const tokenChannels = state.channels[tokenAddress];
-      if (tokenChannels) {
+      if (tokenChannels && !isEmpty(tokenChannels)) {
         channels = flatMap(tokenChannels);
       }
       return channels;

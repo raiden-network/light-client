@@ -29,7 +29,7 @@ describe('Tokens.vue', function() {
   let raiden: Mocked<RaidenService>;
   let vuetify: typeof Vuetify;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     raiden = new RaidenService(store) as Mocked<RaidenService>;
     vuetify = new Vuetify();
 
@@ -49,6 +49,7 @@ describe('Tokens.vue', function() {
     };
 
     wrapper = mount(Tokens, {
+      sync: false,
       localVue,
       vuetify,
       store: new Store({
@@ -72,6 +73,7 @@ describe('Tokens.vue', function() {
         </div>`
       }
     });
+    await wrapper.vm.$nextTick();
   });
 
   afterEach(() => {
@@ -84,13 +86,16 @@ describe('Tokens.vue', function() {
     expect(connections.length).toBe(1);
   });
 
-  it('should close the channel when confirmed', function() {
+  it('should close the channel when confirmed', async () => {
     raiden.leaveNetwork = jest.fn().mockReturnValue(null);
     expect(wrapper.vm.$data.leaveModalVisible).toBe(false);
     wrapper.find('#token-0').trigger('click');
+    await wrapper.vm.$nextTick();
     wrapper.find('#leave-0').trigger('click');
+    await wrapper.vm.$nextTick();
     expect(wrapper.vm.$data.leaveModalVisible).toBe(true);
     wrapper.find('#confirm').trigger('click');
+    await wrapper.vm.$nextTick();
     expect(wrapper.vm.$data.leaveModalVisible).toBe(false);
     expect(raiden.leaveNetwork).toHaveBeenCalledTimes(1);
     expect(raiden.leaveNetwork).toHaveBeenCalledWith(
@@ -98,12 +103,15 @@ describe('Tokens.vue', function() {
     );
   });
 
-  it('should dismiss the dialog when cancel is pressed', function() {
+  it('should dismiss the dialog when cancel is pressed', async () => {
     raiden.leaveNetwork = jest.fn().mockReturnValue(null);
     wrapper.find('#token-0').trigger('click');
+    await wrapper.vm.$nextTick();
     wrapper.find('#leave-0').trigger('click');
+    await wrapper.vm.$nextTick();
     expect(wrapper.vm.$data.leaveModalVisible).toBe(true);
     wrapper.find('#cancel').trigger('click');
+    await wrapper.vm.$nextTick();
     expect(wrapper.vm.$data.leaveModalVisible).toBe(false);
     expect(raiden.leaveNetwork).toHaveBeenCalledTimes(0);
   });

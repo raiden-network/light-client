@@ -21,6 +21,7 @@ describe('AddressInput', function() {
 
   function vueFactory(value: string = '') {
     return mount(AddressInput, {
+      sync: false,
       propsData: {
         value
       },
@@ -35,6 +36,7 @@ describe('AddressInput', function() {
   beforeEach(() => {
     raiden = new RaidenService(store) as Mocked<RaidenService>;
     wrapper = mount(AddressInput, {
+      sync: false,
       propsData: {
         value: '',
         exclude: [excludedAddress]
@@ -99,6 +101,7 @@ describe('AddressInput', function() {
 
   test('setting a valid address should render a blockie', async () => {
     wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
+    await wrapper.vm.$nextTick();
     expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
   });
 
