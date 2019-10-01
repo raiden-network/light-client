@@ -112,6 +112,11 @@ export default class AmountInput extends Vue {
 
   onPaste(event: ClipboardEvent) {
     const clipboardData = event.clipboardData;
+
+    if (!clipboardData) {
+      return;
+    }
+
     const value = clipboardData.getData('text');
     if (!AmountInput.numericRegex.test(value)) {
       event.preventDefault();
@@ -186,7 +191,7 @@ $header-vertical-margin-mobile: 2rem;
     height: 25px;
     display: flex;
     flex-direction: column;
-    align-items: start;
+    align-items: flex-start;
     padding-left: 20px;
     justify-content: center;
     color: white;

@@ -1,27 +1,24 @@
-import { Token } from '@/model/types';
-
 jest.mock('vue-router');
-
 jest.mock('@/services/raiden-service');
 jest.useFakeTimers();
 
+import { Token } from '@/model/types';
 import { addElemWithDataAppToBody } from '../utils/dialog';
 import { ChannelState } from 'raiden-ts';
 import { mockInput } from '../utils/interaction-utils';
-import { stub } from '../utils/stub';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
 import Payment from '@/views/Payment.vue';
 import store from '@/store';
-import VueRouter, { Route } from 'vue-router';
+import VueRouter from 'vue-router';
 import { TestData } from '../data/mock-data';
 import RaidenService from '@/services/raiden-service';
 import { One, Zero } from 'ethers/constants';
+import { $identicon } from '../utils/mocks';
 
 import Mocked = jest.Mocked;
-import { $identicon } from '../utils/mocks';
 
 Vue.use(Vuetify);
 
@@ -76,13 +73,10 @@ describe('Payment.vue', () => {
     router = new VueRouter() as Mocked<VueRouter>;
     raiden = new RaidenService(store) as Mocked<RaidenService>;
     raiden.fetchTokenData = jest.fn().mockResolvedValue(undefined);
-    const route = stub<Route>();
 
-    route.params = {
+    router.currentRoute = TestData.mockRoute({
       token: '0xtoken'
-    };
-
-    router.currentRoute = route;
+    });
 
     store.commit('updateChannels', {
       '0xtoken': {

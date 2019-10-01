@@ -263,7 +263,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     height: 25px;
     display: flex;
     flex-direction: column;
-    align-items: start;
+    align-items: flex-start;
     padding-left: 20px;
     justify-content: center;
   }

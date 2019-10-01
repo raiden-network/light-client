@@ -12,10 +12,12 @@ import {
 } from '@/model/types';
 import map from 'lodash/map';
 import flatMap from 'lodash/flatMap';
+import filter from 'lodash/filter';
 import clone from 'lodash/clone';
 import reduce from 'lodash/reduce';
 import orderBy from 'lodash/orderBy';
 import isEqual from 'lodash/isEqual';
+import isEmpty from 'lodash/isEmpty';
 import { Network } from 'ethers/utils';
 
 Vue.use(Vuex);
@@ -83,16 +85,19 @@ const store: StoreOptions<RootState> = {
         return acc;
       };
 
-      return map(flatMap(state.channels), tokenChannels => {
-        const model = reduce(tokenChannels, reducer, emptyTokenModel());
-        const tokenInfo = state.tokens[model.address];
-        if (tokenInfo) {
-          model.name = tokenInfo.name || '';
-          model.symbol = tokenInfo.symbol || '';
-        }
+      return map(
+        filter(flatMap(state.channels), channels => !isEmpty(channels)),
+        tokenChannels => {
+          const model = reduce(tokenChannels, reducer, emptyTokenModel());
+          const tokenInfo = state.tokens[model.address];
+          if (tokenInfo) {
+            model.name = tokenInfo.name || '';
+            model.symbol = tokenInfo.symbol || '';
+          }
 
-        return model;
-      });
+          return model;
+        }
+      );
     },
     allTokens: (state: RootState): Token[] => {
       return Object.values(state.tokens);
@@ -100,7 +105,7 @@ const store: StoreOptions<RootState> = {
     channels: (state: RootState) => (tokenAddress: string) => {
       let channels: RaidenChannel[] = [];
       const tokenChannels = state.channels[tokenAddress];
-      if (tokenChannels) {
+      if (tokenChannels && !isEmpty(tokenChannels)) {
         channels = flatMap(tokenChannels);
       }
       return channels;
