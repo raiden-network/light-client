@@ -221,5 +221,13 @@ describe('store', () => {
         store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
       ).toEqual([]);
     });
+
+    test('when token has no channels token getter should return an empty array', () => {
+      const channels = {
+        '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {}
+      };
+      store.commit('updateChannels', channels);
+      expect(store.getters.tokens).toEqual([]);
+    });
   });
 });
