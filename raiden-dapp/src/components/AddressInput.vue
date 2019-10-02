@@ -85,9 +85,10 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   hint: string = '';
   errorMessages: string[] = [''];
 
-  created() {
+  mounted() {
     if (this.isChecksumAddress(this.value)) {
       this.address = this.value;
+      this.updateValue(this.value);
     }
   }
 
@@ -95,6 +96,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   onChange(value: string) {
     if (value !== this.address && this.isChecksumAddress(value)) {
       this.address = value;
+      this.updateValue(value);
     }
   }
 

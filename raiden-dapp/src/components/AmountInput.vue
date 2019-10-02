@@ -65,7 +65,7 @@ export default class AmountInput extends Vue {
       !this.limit ||
       (v && this.hasEnoughBalance(v, this.max)) ||
       this.$parent.$t('amount-input.error.not-enough-funds', {
-        funds: BalanceUtils.toUnits(this.max, this.token!.decimals || 0),
+        funds: BalanceUtils.toUnits(this.max, this.token!.decimals || 18),
         symbol: this.token!.symbol
       })
   ];
@@ -73,7 +73,7 @@ export default class AmountInput extends Vue {
   private noDecimalOverflow(v: string) {
     return (
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!.decimals || 0)
+      !BalanceUtils.decimalsOverflow(v, this.token!.decimals || 18)
     );
   }
 
@@ -94,6 +94,11 @@ export default class AmountInput extends Vue {
   @Watch('value')
   onChange(value: string) {
     this.updateIfValid(value);
+  }
+
+  @Watch('token')
+  onTokenUpdate() {
+    (this.$refs.input as any).validate();
   }
 
   mounted() {
