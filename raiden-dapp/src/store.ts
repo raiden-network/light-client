@@ -12,9 +12,12 @@ import {
 } from '@/model/types';
 import map from 'lodash/map';
 import flatMap from 'lodash/flatMap';
+import filter from 'lodash/filter';
 import clone from 'lodash/clone';
 import reduce from 'lodash/reduce';
 import orderBy from 'lodash/orderBy';
+import isEqual from 'lodash/isEqual';
+import isEmpty from 'lodash/isEmpty';
 import { Network } from 'ethers/utils';
 
 Vue.use(Vuex);
@@ -56,7 +59,12 @@ const store: StoreOptions<RootState> = {
       state.channels = channels;
     },
     updateTokens(state: RootState, tokens: Tokens) {
-      state.tokens = Object.assign({}, tokens);
+      for (const [address, token] of Object.entries(tokens))
+        if (address in state.tokens && isEqual(token, state.tokens[address]))
+          continue;
+        else if (address in state.tokens)
+          state.tokens[address] = { ...state.tokens[address], ...token };
+        else state.tokens = { ...state.tokens, [address]: token };
     },
     network(state: RootState, network: Network) {
       state.network = network;
@@ -77,39 +85,27 @@ const store: StoreOptions<RootState> = {
         return acc;
       };
 
-      return map(flatMap(state.channels), tokenChannels => {
-        const model = reduce(tokenChannels, reducer, emptyTokenModel());
-        const tokenInfo = state.tokens[model.address];
-        if (tokenInfo) {
-          model.name = tokenInfo.name || '';
-          model.symbol = tokenInfo.symbol || '';
-        }
+      return map(
+        filter(flatMap(state.channels), channels => !isEmpty(channels)),
+        tokenChannels => {
+          const model = reduce(tokenChannels, reducer, emptyTokenModel());
+          const tokenInfo = state.tokens[model.address];
+          if (tokenInfo) {
+            model.name = tokenInfo.name || '';
+            model.symbol = tokenInfo.symbol || '';
+          }
 
-        return model;
-      });
+          return model;
+        }
+      );
     },
     allTokens: (state: RootState): Token[] => {
-      return reduce(
-        state.tokens,
-        (result: Token[], value: Token, key: string) => {
-          const model: Token = {
-            address: key,
-            balance: value.balance,
-            decimals: value.decimals,
-            units: value.units,
-            symbol: value.symbol,
-            name: value.name
-          };
-          result.push(model);
-          return result;
-        },
-        []
-      );
+      return Object.values(state.tokens);
     },
     channels: (state: RootState) => (tokenAddress: string) => {
       let channels: RaidenChannel[] = [];
       const tokenChannels = state.channels[tokenAddress];
-      if (tokenChannels) {
+      if (tokenChannels && !isEmpty(tokenChannels)) {
         channels = flatMap(tokenChannels);
       }
       return channels;

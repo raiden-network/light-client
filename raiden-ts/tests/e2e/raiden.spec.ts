@@ -4,24 +4,22 @@ import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256 } from 'ethe
 import { getType } from 'typesafe-actions';
 import { get } from 'lodash';
 
-jest.mock('cross-fetch');
-import fetch from 'cross-fetch';
-
 import { TestProvider } from './provider';
 import { MockStorage, MockMatrixRequestFn } from './mocks';
 
 import { request } from 'matrix-js-sdk';
 
+import 'raiden-ts/polyfills';
 import { Raiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { initialState } from 'raiden-ts/state';
 import { raidenShutdown } from 'raiden-ts/actions';
-import { newBlock } from 'raiden-ts/channels/actions';
+import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
-import { Storage, Hash } from 'raiden-ts/utils/types';
-import { ContractsInfo, RaidenContracts } from 'raiden-ts/types';
+import { Storage, Secret, Address } from 'raiden-ts/utils/types';
+import { ContractsInfo } from 'raiden-ts/types';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
-import { makeSecret } from 'raiden-ts/transfers/utils';
+import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
@@ -29,6 +27,8 @@ describe('Raiden', () => {
   const provider = new TestProvider();
   let accounts: string[];
   let info: ContractsInfo;
+  let chainId: number;
+  let registry: Address;
   let snapId: number | undefined;
   let raiden: Raiden;
   let storage: jest.Mocked<Storage>;
@@ -38,21 +38,24 @@ describe('Raiden', () => {
   let httpBackend: MockMatrixRequestFn;
   const matrixServer = 'matrix.raiden.test';
 
+  const fetch = jest.fn(async () => ({
+    ok: true,
+    status: 200,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    json: jest.fn(async () => ({} as any)),
+    text: jest.fn(async () => `- ${matrixServer}`),
+  }));
+  Object.assign(global, { fetch });
+
   beforeAll(async () => {
     jest.setTimeout(20e3);
 
-    (fetch as jest.Mock).mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: jest.fn(async () => `- ${matrixServer}`),
-    });
-
-    let contracts: RaidenContracts;
-    [info, contracts] = await provider.deployRaidenContracts();
-    token = Object.keys(contracts.tokens)[0];
-    tokenNetwork = Object.keys(contracts.tokenNetworks)[0];
+    info = await provider.deployRegistry();
+    ({ token, tokenNetwork } = await provider.deployTokenNetwork(info));
+    registry = info.TokenNetworkRegistry.address;
     accounts = await provider.listAccounts();
     partner = accounts[1];
+    chainId = (await provider.getNetwork()).chainId;
   });
 
   beforeEach(async () => {
@@ -75,7 +78,7 @@ describe('Raiden', () => {
   });
 
   test('create from other params and RaidenState', async () => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     // token address not found as an account in provider
     await expect(Raiden.create(provider, token, storage, info)).rejects.toThrow(
@@ -97,11 +100,20 @@ describe('Raiden', () => {
       ),
     ).rejects.toThrow(/Mismatch between provided account and loaded state/i);
 
+    expect(
+      Raiden.create(
+        provider,
+        1,
+        JSON.stringify({ ...initialState, address: accounts[1], chainId, registry: token }),
+        info,
+      ),
+    ).rejects.toThrow(/Mismatch between network or registry address and loaded state/i);
+
     // success when using address of account on provider and initial state
     const raiden1 = await Raiden.create(
       provider,
       accounts[1],
-      { ...initialState, address: accounts[1] },
+      { ...initialState, address: accounts[1], chainId, registry },
       info,
     );
     expect(raiden1).toBeInstanceOf(Raiden);
@@ -152,8 +164,8 @@ describe('Raiden', () => {
       await expect(raiden.getTokenInfo(token)).resolves.toEqual({
         totalSupply: expect.any(BigNumber),
         decimals: 18,
-        name: 'TestToken',
-        symbol: 'TKN',
+        name: 'TestToken1',
+        symbol: 'TK1',
       });
     });
   });
@@ -162,7 +174,7 @@ describe('Raiden', () => {
     test('tx fail', async () => {
       expect.assertions(1);
       // settleTimeout < min of 500
-      await expect(raiden.openChannel(token, partner, 499)).rejects.toThrow();
+      await expect(raiden.openChannel(token, partner, { settleTimeout: 499 })).rejects.toThrow();
     });
 
     test('success with default settleTimeout=500', async () => {
@@ -357,11 +369,31 @@ describe('Raiden', () => {
     test('newBlock', async () => {
       expect.assertions(1);
       await provider.mine(5);
-      const promise = raiden.events$.pipe(first()).toPromise();
+      const promise = raiden.events$
+        .pipe(
+          filter(value => value.type === 'newBlock'),
+          first(),
+        )
+        .toPromise();
       await provider.mine(10);
       await expect(promise).resolves.toMatchObject({
         type: getType(newBlock),
         payload: { blockNumber: expect.any(Number) },
+      });
+    });
+
+    test('tokenMonitored', async () => {
+      expect.assertions(1);
+      await provider.mine(5);
+      const promise = raiden.events$
+        .pipe(first(value => value.type === 'tokenMonitored' && !!value.payload.fromBlock))
+        .toPromise();
+      await provider.mine(5);
+      // deploy a new token & tokenNetwork
+      const { token, tokenNetwork } = await provider.deployTokenNetwork(info);
+      await expect(promise).resolves.toMatchObject({
+        type: getType(tokenMonitored),
+        payload: { fromBlock: expect.any(Number), token, tokenNetwork },
       });
     });
   });
@@ -378,7 +410,7 @@ describe('Raiden', () => {
       const raiden1 = await Raiden.create(
         provider,
         accounts[2],
-        { ...initialState, address: accounts[2] },
+        { ...initialState, address: accounts[2], chainId, registry },
         info,
       );
       expect(raiden1).toBeInstanceOf(Raiden);
@@ -401,55 +433,268 @@ describe('Raiden', () => {
       await raiden.depositChannel(token, partner, 200);
     });
 
-    test('initiate, auto secret', async () => {
-      expect.assertions(5);
-
-      // success when using address of account on provider and initial state
-      const raiden1 = await Raiden.create(
-        provider,
-        partner,
-        { ...initialState, address: partner },
-        info,
+    test('invalid target', async () => {
+      expect.assertions(1);
+      await expect(raiden.transfer(token, '0xnotAnAddress', 23)).rejects.toThrowError(
+        /Invalid.*address\b/i,
       );
-      expect(raiden1).toBeInstanceOf(Raiden);
+    });
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    test('unknown token network', async () => {
+      expect.assertions(1);
+      await expect(raiden.transfer(partner, partner, 23)).rejects.toThrowError(/Unknown token/i);
+    });
 
-      await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
-        userId: `@${partner.toLowerCase()}:${matrixServer}`,
-        available: true,
-        ts: expect.any(Number),
-      });
-
-      const transfers: { [h: string]: RaidenSentTransfer } = {};
-
-      raiden.transfers$.subscribe(t => (transfers[t.secrethash] = t));
-
-      const secrethash = await raiden.transfer(token, partner, 17);
-      expect(secrethash).toMatch(/^0x[0-9a-fA-F]{64}$/);
-
-      expect(secrethash in transfers).toBe(true);
-      expect(transfers[secrethash].status).toBe(RaidenSentTransferStatus.pending);
-
-      raiden1.stop();
+    test('invalid amount', async () => {
+      expect.assertions(1);
+      await expect(raiden.transfer(token, partner, -1)).rejects.toThrowError(/Invalid amount/i);
     });
 
     test("secret and secrethash doesn't match", async () => {
       expect.assertions(1);
       const secret = makeSecret(),
-        secrethash: Hash = keccak256('0xdeadbeef') as Hash;
+        secrethash = getSecrethash(keccak256('0xdeadbeef') as Secret);
       await expect(
-        raiden.transfer(token, partner, 17, { secret, secrethash }),
-      ).rejects.toThrowError('Secret and secrethash must match');
+        raiden.transfer(token, partner, 23, { secret, secrethash }),
+      ).rejects.toThrowError(/secrethash.*hash.*secret/i);
+    });
+
+    test('invalid provided secret', async () => {
+      expect.assertions(1);
+      await expect(
+        raiden.transfer(token, partner, 23, { secret: 'not a valid secret' }),
+      ).rejects.toThrowError(/Invalid.*secret\b/i);
     });
 
     test('invalid provided secrethash', async () => {
       expect.assertions(1);
-      const secret = makeSecret(),
-        secrethash = '0xdeadbeef';
       await expect(
-        raiden.transfer(token, partner, 17, { secret, secrethash }),
-      ).rejects.toThrowError(/Invalid.*secrethash/);
+        raiden.transfer(token, partner, 23, { secrethash: '0xdeadbeef' }),
+      ).rejects.toThrowError(/Invalid.*secrethash\b/i);
+    });
+
+    test('invalid provided paymentId', async () => {
+      expect.assertions(1);
+      await expect(raiden.transfer(token, partner, 23, { paymentId: -1 })).rejects.toThrowError(
+        /Invalid.*paymentId\b/i,
+      );
+    });
+
+    test('invalid provided metadata/route', async () => {
+      expect.assertions(1);
+      await expect(
+        raiden.transfer(token, partner, 23, {
+          metadata: { routes: [{ route: ['0xnotAnAddress'] }] },
+        }),
+      ).rejects.toThrowError(/Invalid.*metadata\b/i);
+    });
+
+    test('target not available', async () => {
+      expect.assertions(1);
+      await expect(raiden.transfer(token, partner, 21)).rejects.toThrowError(
+        /\btarget.*not available\b/i,
+      );
+    });
+
+    describe('partner online', () => {
+      // partner's client instance
+      let raiden1: Raiden;
+
+      beforeEach(async () => {
+        raiden1 = await Raiden.create(
+          provider,
+          partner,
+          { ...initialState, address: partner, chainId, registry },
+          info,
+        );
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
+          userId: `@${partner.toLowerCase()}:${matrixServer}`,
+          available: true,
+          ts: expect.any(Number),
+        });
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      afterEach(() => raiden1.stop());
+
+      test('success: direct route', async () => {
+        expect.assertions(4);
+
+        const transfers: { [h: string]: RaidenSentTransfer } = {};
+        raiden.transfers$.subscribe(t => (transfers[t.secrethash] = t));
+
+        const secrethash = await raiden.transfer(token, partner, 23);
+        expect(secrethash).toMatch(/^0x[0-9a-fA-F]{64}$/);
+
+        expect(secrethash in transfers).toBe(true);
+        expect(transfers[secrethash].status).toBe(RaidenSentTransferStatus.pending);
+      });
+
+      test('fail: direct channel without enough capacity, pfs disabled', async () => {
+        expect.assertions(2);
+        await expect(raiden.transfer(token, partner, 201)).rejects.toThrowError(
+          /no direct route/i,
+        );
+      });
+
+      test('success: pfs route', async () => {
+        expect.assertions(7);
+
+        const target = accounts[2],
+          raiden2 = await Raiden.create(
+            provider,
+            target,
+            { ...initialState, address: target, chainId, registry },
+            info,
+          );
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        await raiden1.openChannel(token, target);
+        await raiden1.depositChannel(token, target, 200);
+
+        await expect(raiden.getAvailability(target)).resolves.toMatchObject({
+          userId: `@${target.toLowerCase()}:${matrixServer}`,
+          available: true,
+          ts: expect.any(Number),
+        });
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const pfs = 'http://pfs';
+        raiden.config({ pfs });
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: jest.fn(async () => ({
+            result: [
+              // first returned route is invalid and should be filtered
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              { path: [tokenNetwork, target], estimated_fee: 0 },
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              { path: [partner, target], estimated_fee: 0 },
+            ],
+          })),
+          text: jest.fn(async () => ''),
+        });
+
+        const transfers: { [h: string]: RaidenSentTransfer } = {};
+        raiden.transfers$.subscribe(t => (transfers[t.secrethash] = t));
+
+        const secrethash = await raiden.transfer(token, target, 23);
+        expect(secrethash).toMatch(/^0x[0-9a-fA-F]{64}$/);
+
+        expect(secrethash in transfers).toBe(true);
+        expect(transfers[secrethash].status).toBe(RaidenSentTransferStatus.pending);
+
+        // transfer metadata contains the actual used routes (removing invalid ones)
+        expect(transfers[secrethash].metadata).toEqual({
+          routes: [{ route: [partner, target] }],
+        });
+
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringMatching(new RegExp(`^${pfs}/.*/${tokenNetwork}/paths$`)),
+          expect.objectContaining({ method: 'POST' }),
+        );
+
+        raiden2.stop();
+      });
+    });
+  });
+
+  describe('findRoutes', () => {
+    const pfs = 'http://pfs';
+    let raiden1: Raiden, raiden2: Raiden, target: string;
+
+    beforeEach(async () => {
+      target = accounts[2];
+
+      await raiden.openChannel(token, partner);
+      await raiden.depositChannel(token, partner, 200);
+
+      raiden1 = await Raiden.create(
+        provider,
+        partner,
+        { ...initialState, address: partner, chainId, registry },
+        info,
+      );
+      raiden2 = await Raiden.create(
+        provider,
+        target,
+        { ...initialState, address: target, chainId, registry },
+        info,
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
+        userId: `@${partner.toLowerCase()}:${matrixServer}`,
+        available: true,
+        ts: expect.any(Number),
+      });
+      await expect(raiden.getAvailability(target)).resolves.toMatchObject({
+        userId: `@${target.toLowerCase()}:${matrixServer}`,
+        available: true,
+        ts: expect.any(Number),
+      });
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      raiden.config({ pfs });
+    });
+
+    afterEach(() => {
+      raiden1.stop();
+      raiden2.stop();
+    });
+
+    test('success', async () => {
+      expect.assertions(4);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => ({
+          result: [
+            // first returned route is invalid and should be filtered
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [tokenNetwork, target], estimated_fee: 0 },
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [raiden.address, partner, target], estimated_fee: 0 },
+          ],
+        })),
+        text: jest.fn(async () => ''),
+      });
+
+      await expect(raiden.findRoutes(token, target, 23)).resolves.toEqual({
+        routes: [{ route: [partner, target] }],
+      });
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`^${pfs}/.*/${tokenNetwork}/paths$`)),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+
+    test('fail: filtered no capacity routes', async () => {
+      expect.assertions(3);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => ({
+          result: [
+            // first returned route is invalid and should be filtered
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [tokenNetwork, target], estimated_fee: 0 },
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [raiden.address, partner, target], estimated_fee: 0 },
+          ],
+        })),
+        text: jest.fn(async () => ''),
+      });
+
+      await expect(raiden.findRoutes(token, target, 201)).rejects.toThrowError(
+        /validated routes.*empty/,
+      );
     });
   });
 });

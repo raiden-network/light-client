@@ -1,41 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
 
-// ethers's contracts use a lot defineReadOnly which doesn't allow us to mock
-// functions and properties. Mock it here so we can mock later
-jest.mock('ethers/utils/properties', () => ({
-  ...jest.requireActual('ethers/utils/properties'),
-  defineReadOnly: jest.fn(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (object: any, name: string, value: any): void =>
-      Object.defineProperty(object, name, {
-        enumerable: true,
-        value,
-        writable: true,
-        configurable: true,
-      }),
-  ),
-}));
+import { patchEthersDefineReadOnly, patchMatrixGetNetwork } from './patches';
+patchEthersDefineReadOnly();
+patchMatrixGetNetwork();
 
-// ethers utils mock to always validate matrix userIds/displayName
-jest.mock('ethers/utils', () => ({
-  ...jest.requireActual('ethers/utils'),
-  verifyMessage: jest.fn((msg: string, sig: string): string => {
-    const { getAddress, verifyMessage: origVerifyMessage } = jest.requireActual('ethers/utils');
-    const match = /^@(0x[0-9a-f]{40})[.:]/i.exec(msg);
-    if (match && match[1]) return getAddress(match[1]);
-    return origVerifyMessage(msg, sig);
-  }),
-}));
-
-// raiden-ts/utils.getNetwork has the same functionality as provider.getNetwork
-// but fetches everytime instead of just returning a cached property
-// On mocked tests, we unify both again, so we can just mock provider.getNetwork in-place
-jest.mock('raiden-ts/utils/matrix', () => ({
-  ...jest.requireActual('raiden-ts/utils/matrix'),
-  getNetwork: jest.fn((provider: JsonRpcProvider): Promise<Network> => provider.getNetwork()),
-}));
-
-import { BehaviorSubject, Subject, AsyncSubject } from 'rxjs';
+import { BehaviorSubject, Subject, AsyncSubject, of } from 'rxjs';
 import { MatrixClient } from 'matrix-js-sdk';
 import { EventEmitter } from 'events';
 
@@ -46,20 +15,22 @@ import { Network } from 'ethers/utils';
 import { Contract, EventFilter } from 'ethers/contract';
 import { Wallet } from 'ethers/wallet';
 
-import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
-import { TokenNetwork } from '../../contracts/TokenNetwork';
-import { Token } from '../../contracts/Token';
+import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
+import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
+import { HumanStandardToken } from 'raiden-ts/contracts/HumanStandardToken';
 
 import TokenNetworkRegistryAbi from 'raiden-ts/abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from 'raiden-ts/abi/TokenNetwork.json';
-import TokenAbi from 'raiden-ts/abi/Token.json';
+import HumanStandardTokenAbi from 'raiden-ts/abi/HumanStandardToken.json';
 
+import 'raiden-ts/polyfills';
 import { RaidenEpicDeps } from 'raiden-ts/types';
 import { RaidenAction } from 'raiden-ts/actions';
 import { RaidenState, initialState } from 'raiden-ts/state';
 import { Address, Signature } from 'raiden-ts/utils/types';
+import { RaidenConfig, defaultConfig } from 'raiden-ts/config';
 
-type MockedContract<T extends Contract> = jest.Mocked<T> & {
+export type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
     [K in keyof T['functions']]: jest.MockInstance<
       ReturnType<T['functions'][K]>,
@@ -68,11 +39,11 @@ type MockedContract<T extends Contract> = jest.Mocked<T> & {
   };
 };
 
-interface MockRaidenEpicDeps extends RaidenEpicDeps {
+export interface MockRaidenEpicDeps extends RaidenEpicDeps {
   provider: jest.Mocked<JsonRpcProvider>;
   registryContract: MockedContract<TokenNetworkRegistry>;
   getTokenNetworkContract: (address: string) => MockedContract<TokenNetwork>;
-  getTokenContract: (address: string) => MockedContract<Token>;
+  getTokenContract: (address: string) => MockedContract<HumanStandardToken>;
 }
 
 /**
@@ -122,6 +93,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   jest.spyOn(provider, 'resolveName').mockImplementation(async addressOrName => addressOrName);
   jest.spyOn(provider, 'getLogs').mockResolvedValue([]);
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([]);
+  // See: https://github.com/cartant/rxjs-marbles/issues/11
+  jest.spyOn(provider, 'getBlockNumber').mockReturnValue((of(120) as unknown) as Promise<number>);
   mockEthersEventEmitter(provider);
 
   const signer = new Wallet(
@@ -159,12 +132,14 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     return tokenNetworkContracts[address];
   };
 
-  const tokenContracts: { [address: string]: MockedContract<Token> } = {};
-  const getTokenContract = (address: string): MockedContract<Token> => {
+  const tokenContracts: { [address: string]: MockedContract<HumanStandardToken> } = {};
+  const getTokenContract = (address: string): MockedContract<HumanStandardToken> => {
     if (!(address in tokenContracts)) {
-      const tokenContract = new Contract(address, TokenAbi, signer) as MockedContract<Token>;
+      const tokenContract = new Contract(address, HumanStandardTokenAbi, signer) as MockedContract<
+        HumanStandardToken
+      >;
       for (const func in tokenContract.functions) {
-        jest.spyOn(tokenContract.functions, func as keyof Token['functions']);
+        jest.spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions']);
       }
       tokenContracts[address] = tokenContract;
     }
@@ -174,6 +149,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   return {
     stateOutput$: new BehaviorSubject<RaidenState>(initialState),
     actionOutput$: new Subject<RaidenAction>(),
+    config$: new BehaviorSubject<RaidenConfig>(defaultConfig.default),
     matrix$: new AsyncSubject<MatrixClient>(),
     address,
     network,

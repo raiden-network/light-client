@@ -11,6 +11,9 @@ import {
   Signed,
   LockExpired,
   RefundTransfer,
+  WithdrawRequest,
+  WithdrawConfirmation,
+  Metadata,
 } from '../messages/types';
 
 type TransferId = { secrethash: Hash };
@@ -21,8 +24,9 @@ export const transfer = createStandardAction('transfer')<
     tokenNetwork: Address;
     target: Address;
     amount: UInt<32>;
-    fee?: UInt<32>;
+    metadata: Metadata;
     paymentId?: UInt<8>;
+    fee?: UInt<32>;
     secret?: Secret;
   },
   TransferId
@@ -134,3 +138,24 @@ export const transferFailed = createStandardAction('transferFailed').map(
 
 /** A pending transfer isn't needed anymore and should be cleared from state */
 export const transferClear = createStandardAction('transferClear')<undefined, TransferId>();
+
+// Withdraw actions
+
+type WithdrawId = {
+  tokenNetwork: Address;
+  partner: Address;
+  totalWithdraw: UInt<32>;
+  expiration: number;
+};
+
+/** A WithdrawRequest was received from partner */
+export const withdrawReceiveRequest = createStandardAction('withdrawReceiveRequest')<
+  { message: Signed<WithdrawRequest> },
+  WithdrawId
+>();
+
+/** A WithdrawConfirmation was signed and must be sent to partner */
+export const withdrawSendConfirmation = createStandardAction('withdrawSendConfirmation')<
+  { message: Signed<WithdrawConfirmation> },
+  WithdrawId
+>();

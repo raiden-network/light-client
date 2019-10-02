@@ -1,25 +1,31 @@
 import { Raiden, RaidenChannel, RaidenSentTransfer } from 'raiden-ts';
 import { Store } from 'vuex';
-import { RootState } from '@/types';
+import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import {
   DeniedReason,
   LeaveNetworkResult,
   Progress,
-  Token
+  Token,
+  TokenModel
 } from '@/model/types';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
-import { filter, first } from 'rxjs/internal/operators';
+import { exhaustMap, filter, first } from 'rxjs/operators';
+import asyncPool from 'tiny-async-pool';
+import { ConfigProvider } from './config-provider';
 
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
 
-  private static async createRaiden(provider: any): Promise<Raiden> {
+  private static async createRaiden(
+    provider: any,
+    account: string | number = 0
+  ): Promise<Raiden> {
     try {
-      return await Raiden.create(provider, 0, window.localStorage);
+      return await Raiden.create(provider, account, window.localStorage);
     } catch (e) {
       throw new RaidenInitializationFailed(e);
     }
@@ -31,23 +37,6 @@ export default class RaidenService {
     } else {
       return this._raiden;
     }
-  }
-
-  private async updateTokenBalances() {
-    const cachedTokens = this.store.state.tokens;
-    for (const address in cachedTokens) {
-      if (!cachedTokens.hasOwnProperty(address)) {
-        continue;
-      }
-      const token = cachedTokens[address];
-      const balance = await this.raiden.getTokenBalance(address);
-      cachedTokens[address] = Object.assign({}, token, {
-        balance: balance,
-        units: BalanceUtils.toUnits(balance, token.decimals)
-      });
-    }
-
-    this.store.commit('updateTokens', cachedTokens);
   }
 
   constructor(store: Store<RootState>) {
@@ -65,17 +54,69 @@ export default class RaidenService {
 
   async connect() {
     try {
-      const provider = await Web3Provider.provider();
+      const raidenPackageConfigUrl = process.env.VUE_APP_RAIDEN_PACKAGE;
+      let config;
+      let provider;
+      let raiden;
+
+      if (raidenPackageConfigUrl) {
+        config = await ConfigProvider.fetch(raidenPackageConfigUrl);
+        provider = await Web3Provider.provider(config);
+      } else {
+        provider = await Web3Provider.provider();
+      }
+
       if (!provider) {
         this.store.commit('noProvider');
       } else {
-        const raiden = await RaidenService.createRaiden(provider);
+        if (config) {
+          raiden = await RaidenService.createRaiden(
+            provider,
+            config.PRIVATE_KEY
+          );
+        } else {
+          raiden = await RaidenService.createRaiden(provider);
+        }
+
         this._raiden = raiden;
 
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
 
-        this.setupEventListeners(raiden);
+        // update connected tokens data on each newBlock
+        raiden.events$
+          .pipe(
+            filter(value => value.type === 'newBlock'),
+            exhaustMap(() =>
+              this.fetchTokenData(
+                this.store.getters.tokens.map((m: TokenModel) => m.address)
+              )
+            )
+          )
+          .subscribe();
+
+        raiden.events$
+          .pipe(filter(value => value.type === 'raidenShutdown'))
+          .subscribe(() => this.store.commit('reset'));
+
+        raiden.events$.subscribe(value => {
+          if (value.type === 'tokenMonitored') {
+            this.store.commit('updateTokens', {
+              [value.payload.token]: { address: value.payload.token }
+            });
+          }
+        });
+
+        const initialTokens = await raiden.getTokenList();
+        if (initialTokens.length) {
+          this.store.commit(
+            'updateTokens',
+            initialTokens.reduce(
+              (acc, token) => ({ ...acc, [token]: { address: token } }),
+              {} as Tokens
+            )
+          );
+        }
 
         raiden.channels$.subscribe(value => {
           this.store.commit('updateChannels', value);
@@ -98,17 +139,6 @@ export default class RaidenService {
 
     this.store.commit('loadComplete');
   }
-
-  private setupEventListeners(raiden: Raiden) {
-    raiden.events$
-      .pipe(filter(value => value.type === 'raidenShutdown'))
-      .subscribe(() => this.store.commit('reset'));
-
-    raiden.events$
-      .pipe(filter(value => value.type === 'newBlock'))
-      .subscribe(async () => await this.updateTokenBalances());
-  }
-
   disconnect() {
     this.raiden.stop();
   }
@@ -122,7 +152,7 @@ export default class RaidenService {
     return BalanceUtils.toEth(balance);
   }
 
-  async getToken(tokenAddress: string): Promise<Token | null> {
+  private async getToken(tokenAddress: string): Promise<Token | null> {
     const raiden = this.raiden;
     try {
       const [balance, { decimals, symbol, name }] = await Promise.all([
@@ -134,7 +164,6 @@ export default class RaidenService {
         symbol: symbol,
         balance: balance,
         decimals: decimals,
-        units: BalanceUtils.toUnits(balance, decimals),
         address: tokenAddress
       };
     } catch (e) {
@@ -229,31 +258,15 @@ export default class RaidenService {
     }
   }
 
-  async fetchTokens() {
-    const cache = this.store.state.tokens;
-    let updateEntries = 0;
-    let tokens: string[];
-    try {
-      tokens = await this.raiden.getTokenList();
-    } catch (e) {
-      tokens = [];
-    }
+  async fetchTokenData(tokens: string[]): Promise<void> {
+    if (!tokens.length) return;
+    const fetchToken = async (address: string): Promise<void> =>
+      this.getToken(address).then(token => {
+        if (!token) return;
+        this.store.commit('updateTokens', { [token.address]: token });
+      });
 
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-      if (token in cache) {
-        continue;
-      }
-      const retrievedToken = await this.getToken(token);
-      if (retrievedToken) {
-        cache[token] = retrievedToken;
-        updateEntries += 1;
-      }
-    }
-
-    if (updateEntries > 0) {
-      this.store.commit('updateTokens', cache);
-    }
+    await asyncPool(6, tokens, fetchToken);
   }
 
   async transfer(token: string, target: string, amount: BigNumber) {

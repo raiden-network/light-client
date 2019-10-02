@@ -10,11 +10,13 @@ import { RaidenAction, raidenShutdown } from './actions';
 import * as ChannelsEpics from './channels/epics';
 import * as TransportEpics from './transport/epics';
 import * as TransfersEpics from './transfers/epics';
+import * as PathFindEpics from './path/epics';
 
 export const RaidenEpics = {
   ...ChannelsEpics,
   ...TransportEpics,
   ...TransfersEpics,
+  ...PathFindEpics,
 };
 
 export const raidenRootEpic = (

@@ -30,7 +30,7 @@
                     $t('channel-list.channel.state', {
                       deposit: displayFormat(
                         channel.ownDeposit,
-                        token.decimals
+                        token.decimals || 0
                       ),
                       state: capitalizeFirst(channel.state)
                     })
@@ -106,7 +106,7 @@
 <script lang="ts">
 import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import { RaidenChannel } from 'raiden-ts';
-import { Token, TokenPlaceholder } from '@/model/types';
+import { Token } from '@/model/types';
 import ChannelActions from '@/components/ChannelActions.vue';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
@@ -127,11 +127,10 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   @Prop({ required: true })
   channels!: RaidenChannel[];
   @Prop({ required: true })
-  tokenAddress!: string;
-  @Prop({ required: true })
   visible!: string;
 
-  token: Token | null = TokenPlaceholder;
+  @Prop({ required: true })
+  token!: Token;
   selectedChannel: RaidenChannel | null = null;
 
   // noinspection JSUnusedLocalSymbols
@@ -141,10 +140,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   // noinspection JSUnusedLocalSymbols
   @Emit()
   visibleChanged(element: string) {}
-
-  async created() {
-    this.token = await this.$raiden.getToken(this.tokenAddress);
-  }
 
   displayFormat = Filters.displayFormat;
   capitalizeFirst = Filters.capitalizeFirst;

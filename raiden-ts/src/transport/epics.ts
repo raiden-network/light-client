@@ -32,18 +32,18 @@ import {
   mapTo,
   finalize,
   first,
+  timeout,
 } from 'rxjs/operators';
+import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { find, get, minBy, sortBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { createClient, MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
-import fetch from 'cross-fetch';
 
 import { Address } from '../utils/types';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
-import { MATRIX_KNOWN_SERVERS_URL } from '../constants';
 import { channelMonitored } from '../channels/actions';
 import {
   Message,
@@ -94,32 +94,36 @@ const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
 export const initMatrixEpic = (
   {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, network, signer, matrix$ }: RaidenEpicDeps,
+  { address, network, signer, matrix$, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof matrixSetup>> =>
   state$.pipe(
     first(),
-    mergeMap(state => {
+    withLatestFrom(config$),
+    mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout }]) => {
       const server: string | undefined = get(state, ['transport', 'matrix', 'server']),
         setup: RaidenMatrixSetup | undefined = get(state, ['transport', 'matrix', 'setup']);
-      if (server) {
-        // use server from state/settings
+
+      if (server && (!matrixServer || matrixServer === server)) {
+        // reuse server&setup from state iff set and either matrixServer equal or undefined
         return of({ server, setup });
+      } else if (matrixServer) {
+        // [re]auth on [new] server if matrixServer is set and different from state or first run
+        return of({ server: matrixServer, setup: undefined });
       } else {
-        const knownServersUrl =
-          MATRIX_KNOWN_SERVERS_URL[network.name] || MATRIX_KNOWN_SERVERS_URL.default;
         // fetch servers list and use the one with shortest http round trip time (rtt)
-        return from(fetch(knownServersUrl)).pipe(
+        return fromFetch(matrixServerLookup).pipe(
           mergeMap(response => {
             if (!response.ok)
               return throwError(
                 new Error(
-                  `Could not fetch server list from "${knownServersUrl}" => ${response.status}`,
+                  `Could not fetch server list from "${matrixServerLookup}" => ${response.status}`,
                 ),
               );
             return response.text();
           }),
+          timeout(httpTimeout),
           mergeMap(text => from(yamlListToArray(text))),
-          mergeMap(server => matrixRTT(server)),
+          mergeMap(server => matrixRTT(server, httpTimeout)),
           toArray(),
           map(rtts => sortBy(rtts, ['rtt'])),
           map(rtts => {

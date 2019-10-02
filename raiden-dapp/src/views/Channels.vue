@@ -16,7 +16,7 @@
     ></list-header>
     <channel-list
       :visible="visible"
-      :token-address="$route.params.token"
+      :token="token"
       :channels="open"
       @visible-changed="visible = $event"
       @message="showMessage($event)"
@@ -28,7 +28,7 @@
     ></list-header>
     <channel-list
       :visible="visible"
-      :token-address="$route.params.token"
+      :token="token"
       :channels="closed"
       @visible-changed="visible = $event"
       @message="showMessage($event)"
@@ -40,7 +40,7 @@
     ></list-header>
     <channel-list
       :visible="visible"
-      :token-address="$route.params.token"
+      :token="token"
       :channels="settleable"
       @visible-changed="visible = $event"
       @message="showMessage($event)"
@@ -55,17 +55,26 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import { ChannelState, RaidenChannel } from 'raiden-ts';
 import ChannelList from '@/components/ChannelList.vue';
 import ListHeader from '@/components/ListHeader.vue';
+import { Token } from '@/model/types';
+import AddressUtils from '@/utils/address-utils';
+import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({
   components: { ListHeader, ChannelList },
-  computed: mapGetters(['channels'])
+  computed: {
+    ...mapGetters(['channels'])
+  }
 })
-export default class Channels extends Vue {
+export default class Channels extends Mixins(NavigationMixin) {
+  message: string = '';
+  visible: string = '';
+  snackbar: boolean = false;
+
   channels!: (address: string) => RaidenChannel[];
 
   get open(): RaidenChannel[] {
@@ -92,9 +101,24 @@ export default class Channels extends Vue {
     );
   }
 
-  message: string = '';
-  visible: string = '';
-  snackbar: boolean = false;
+  get token(): Token {
+    const { token: address } = this.$route.params;
+    return this.$store.state.tokens[address] || ({ address } as Token);
+  }
+
+  async created() {
+    const { token: address } = this.$route.params;
+    if (!AddressUtils.checkAddressChecksum(address)) {
+      this.navigateToHome();
+      return;
+    }
+
+    await this.$raiden.fetchTokenData([address]);
+
+    if (typeof this.token.decimals !== 'number') {
+      this.navigateToHome();
+    }
+  }
 
   showMessage(message: string) {
     this.message = message;

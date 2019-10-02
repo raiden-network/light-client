@@ -1,71 +1,85 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { of, from, combineLatest, merge, Observable, EMPTY } from 'rxjs';
+import { combineLatest, EMPTY, from, merge, Observable, of } from 'rxjs';
 import {
   catchError,
   concatMap,
+  delay,
+  exhaustMap,
   filter,
   first,
+  ignoreElements,
   map,
   mergeMap,
-  withLatestFrom,
-  take,
-  ignoreElements,
-  repeatWhen,
-  delay,
-  takeUntil,
-  exhaustMap,
   publishReplay,
+  repeatWhen,
+  take,
+  takeUntil,
   tap,
+  withLatestFrom,
 } from 'rxjs/operators';
 import { ActionType, isActionOf } from 'typesafe-actions';
-import { bigNumberify, keccak256 } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { bigNumberify } from 'ethers/utils';
+import { Zero, One } from 'ethers/constants';
 import { findKey, get } from 'lodash';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
-import { REVEAL_TIMEOUT } from '../constants';
 import { Address, Hash, UInt } from '../utils/types';
-import { splitCombined } from '../utils/rxjs';
 import { LruCache } from '../utils/lru';
-import { Presences } from '../transport/types';
-import { getPresences$ } from '../transport/utils';
 import { messageReceived, messageSend, messageSent } from '../messages/actions';
 import {
-  MessageType,
   LockedTransfer,
+  LockExpired,
+  MessageType,
   Processed,
+  RefundTransfer,
   SecretRequest,
   SecretReveal,
-  Unlock,
   Signed,
-  LockExpired,
-  RefundTransfer,
+  Unlock,
+  WithdrawExpired,
+  WithdrawConfirmation,
+  WithdrawRequest,
+  Metadata,
 } from '../messages/types';
-import { signMessage, getBalanceProofFromEnvelopeMessage } from '../messages/utils';
-import { ChannelState, Channel } from '../channels/state';
-import { Lock } from '../channels/types';
-import { newBlock, channelClosed, channelClose } from '../channels/actions';
+import { getBalanceProofFromEnvelopeMessage, signMessage } from '../messages/utils';
+import { Channel, ChannelState } from '../channels/state';
+import { Lock, SignedBalanceProof } from '../channels/types';
+import { channelClose, channelClosed, newBlock } from '../channels/actions';
+import { matrixRequestMonitorPresence } from '../transport/actions';
 import {
   transfer,
-  transferSigned,
-  transferSecret,
-  transferProcessed,
-  transferFailed,
-  transferSecretRequest,
-  transferUnlock,
-  transferUnlocked,
-  transferred,
   transferExpire,
   transferExpired,
   transferExpireFailed,
-  transferSecretReveal,
-  transferRefunded,
-  transferUnlockProcessed,
   transferExpireProcessed,
+  transferFailed,
+  transferProcessed,
+  transferred,
+  transferRefunded,
+  transferSecret,
+  transferSecretRequest,
+  transferSecretReveal,
+  transferSigned,
+  transferUnlock,
+  transferUnlocked,
+  transferUnlockProcessed,
+  withdrawReceiveRequest,
+  withdrawSendConfirmation,
 } from './actions';
-import { getLocksroot, makePaymentId, makeMessageId } from './utils';
+import { getLocksroot, getSecrethash, makeMessageId, makePaymentId } from './utils';
+
+/**
+ * Return the next nonce for a (possibly missing) balanceProof, or else BigNumber(1)
+ *
+ * @param balanceProof - Balance proof to increase nonce from
+ * @returns Increased nonce, or One if no balance proof provided
+ */
+function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
+  if (balanceProof) return balanceProof.nonce.add(1) as UInt<8>;
+  else return One as UInt<8>;
+}
 
 /**
  * Create an observable to compose and sign a LockedTransfer message/transferSigned action
@@ -73,99 +87,52 @@ import { getLocksroot, makePaymentId, makeMessageId } from './utils';
  * the returned observable must be subscribed in a serialized context that ensures non-concurrent
  * write access to the channel's balance proof (e.g. concatMap)
  *
- * @param presences$ - Observable of address to last matrixPresenceUpdate mapping
  * @param state$ - Observable of current state
  * @param action - transfer request action to be sent
  * @param network,address,signer - RaidenEpicDeps members
  * @returns Observable of transferSigned|transferSecret|transferFailed actions
  */
 function makeAndSignTransfer(
-  presences$: Observable<Presences>,
   state$: Observable<RaidenState>,
   action: ActionType<typeof transfer>,
-  { network, address, signer }: RaidenEpicDeps,
+  { network, address, signer, config$ }: RaidenEpicDeps,
 ) {
-  return combineLatest(presences$, state$).pipe(
+  return combineLatest(state$, config$).pipe(
     first(),
-    mergeMap(([presences, state]) => {
+    mergeMap(([state, { revealTimeout }]) => {
       if (action.meta.secrethash in state.sent) {
         // don't throw to avoid emitting transferFailed, to just wait for already pending transfer
         console.error('transfer already present', action.meta);
         return EMPTY;
       }
 
-      if (!(action.payload.target in presences)) throw new Error('target not monitored');
-      if (!presences[action.payload.target].payload.available)
-        throw new Error('target not available/online');
+      // assume metadata is valid and recipient is first hop of first route
+      const metadata: Metadata = action.payload.metadata,
+        recipient = metadata.routes[0].route[0];
 
-      const secret = action.payload.secret;
-      if (secret && keccak256(secret) !== action.meta.secrethash) {
-        throw new Error('secrethash does not match provided secret');
-      }
+      const channel: Channel | undefined = state.channels[action.payload.tokenNetwork][recipient];
+      // check below shouldn't fail because of route validation in pathFindServiceEpic
+      // used here mostly for type narrowing on channel union
+      if (!channel || channel.state !== ChannelState.open) throw new Error('not open');
 
-      let recipient: Address | undefined = undefined;
-      // find a route
-      for (const [key, channel] of Object.entries(state.channels[action.payload.tokenNetwork])) {
-        const partner = key as Address;
-        // capacity is own deposit - (own trasferred + locked) + (partner transferred)
-        const capacity = channel.own.deposit
-          .sub(
-            channel.own.balanceProof
-              ? channel.own.balanceProof.transferredAmount.add(
-                  channel.own.balanceProof.lockedAmount,
-                )
-              : Zero,
-          )
-          .add(
-            // only relevant once we can receive from partner
-            channel.partner.balanceProof ? channel.partner.balanceProof.transferredAmount : Zero,
-          );
-        if (channel.state !== ChannelState.open) {
-          console.warn(
-            `transfer: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`,
-          );
-        } else if (capacity.lt(action.payload.amount)) {
-          console.warn(
-            `transfer: channel with "${partner}" without enough capacity (${capacity.toString()})`,
-          );
-        } else if (!(partner in presences) || !presences[partner].payload.available) {
-          console.warn(`transfer: partner "${partner}" not available in transport`);
-        } else {
-          recipient = partner;
-          break;
-        }
-      }
-      if (!recipient)
-        throw new Error('Could not find an online partner for tokenNetwork with enough capacity');
-
-      const channel = state.channels[action.payload.tokenNetwork][recipient];
-      // check below never fail, because of for loop filter, just for type narrowing
-      if (channel.state !== ChannelState.open) throw new Error('not open');
-
-      let paymentId = action.payload.paymentId;
-      if (!paymentId) paymentId = makePaymentId();
-
-      const lock: Lock = {
-          type: 'Lock',
+      const paymentId = action.payload.paymentId || makePaymentId(),
+        lock: Lock = {
           amount: action.payload.amount,
-          expiration: bigNumberify(state.blockNumber + REVEAL_TIMEOUT * 2) as UInt<32>,
+          expiration: bigNumberify(state.blockNumber + revealTimeout * 2) as UInt<32>,
           secrethash: action.meta.secrethash,
         },
         locks: Lock[] = [...(channel.own.locks || []), lock],
         locksroot = getLocksroot(locks),
         fee = action.payload.fee || (Zero as UInt<32>),
-        msgId = makeMessageId(),
         token = findKey(state.tokens, tn => tn === action.payload.tokenNetwork)! as Address;
 
       const message: LockedTransfer = {
         type: MessageType.LOCKED_TRANSFER,
-        message_identifier: msgId,
+        message_identifier: makeMessageId(),
         chain_id: bigNumberify(network.chainId) as UInt<32>,
         token_network_address: action.payload.tokenNetwork,
         channel_identifier: bigNumberify(channel.id) as UInt<32>,
-        nonce: (channel.own.balanceProof ? channel.own.balanceProof.nonce : Zero).add(1) as UInt<
-          8
-        >,
+        nonce: nextNonce(channel.own.balanceProof),
         transferred_amount: (channel.own.balanceProof
           ? channel.own.balanceProof.transferredAmount
           : Zero) as UInt<32>,
@@ -181,12 +148,14 @@ function makeAndSignTransfer(
         target: action.payload.target,
         initiator: address,
         fee,
+        metadata,
       };
       return from(signMessage(signer, message)).pipe(
         mergeMap(function*(signed) {
           // besides transferSigned, also yield transferSecret (for registering) if we know it
-          if (secret) yield transferSecret({ secret }, { secrethash: action.meta.secrethash });
-          yield transferSigned({ message: signed }, { secrethash: action.meta.secrethash });
+          if (action.payload.secret)
+            yield transferSecret({ secret: action.payload.secret }, action.meta);
+          yield transferSigned({ message: signed }, action.meta);
           // messageSend LockedTransfer handled by transferSignedRetryMessageEpic
         }),
       );
@@ -234,16 +203,15 @@ function makeAndSignUnlock(
         if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired');
 
         const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash),
-          locksroot = getLocksroot(locks),
-          msgId = makeMessageId();
+          locksroot = getLocksroot(locks);
 
         const message: Unlock = {
           type: MessageType.UNLOCK,
-          message_identifier: msgId,
+          message_identifier: makeMessageId(),
           chain_id: transfer.chain_id,
           token_network_address: transfer.token_network_address,
           channel_identifier: transfer.channel_identifier,
-          nonce: channel.own.balanceProof.nonce.add(1) as UInt<8>,
+          nonce: nextNonce(channel.own.balanceProof),
           transferred_amount: channel.own.balanceProof.transferredAmount.add(
             transfer.lock.amount,
           ) as UInt<32>,
@@ -315,16 +283,15 @@ function makeAndSignLockExpired(
         else if (state.sent[secrethash].unlock) throw new Error('transfer already unlocked');
 
         const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash),
-          locksroot = getLocksroot(locks),
-          msgId = makeMessageId();
+          locksroot = getLocksroot(locks);
 
         const message: LockExpired = {
           type: MessageType.LOCK_EXPIRED,
-          message_identifier: msgId,
+          message_identifier: makeMessageId(),
           chain_id: transfer.chain_id,
           token_network_address: transfer.token_network_address,
           channel_identifier: transfer.channel_identifier,
-          nonce: channel.own.balanceProof.nonce.add(1) as UInt<8>,
+          nonce: nextNonce(channel.own.balanceProof),
           transferred_amount: channel.own.balanceProof.transferredAmount,
           locked_amount: channel.own.balanceProof.lockedAmount.sub(transfer.lock.amount) as UInt<
             32
@@ -342,6 +309,106 @@ function makeAndSignLockExpired(
       );
     }),
     catchError(err => of(transferExpireFailed(err, action.meta))),
+  );
+}
+
+/**
+ * Create an observable to compose and sign a [[WithdrawConfirmation]] message
+ *
+ * Validate we're inside expiration timeout, channel exists and is open, and that total_withdraw is
+ * less than or equal withdrawable amount (while we don't receive, partner.deposit +
+ * own.transferredAmount).
+ * We need it inside [[transferGenerateAndSignEnvelopeMessageEpic]] concatMap/lock because we read
+ * and change the 'nonce', even though WithdrawConfirmation doesn't carry a full balanceProof.
+ * Also, instead of storing the messages in state and retrying, we just cache it and send cached
+ * signed message on each received request.
+ *
+ * TODO: once we're able to receive transfers, instead of considering only own.transferredAmount,
+ * we must also listen to ChannelWithdraw events, store it alongside pending withdraw requests and
+ * take that into account before accepting a transfer and also total balance/capacity for accepting
+ * a total_withdraw from a WithdrawRequest.
+ *
+ * @param state$ - Observable of current state
+ * @param action - Withdraw request which caused this handling
+ * @param signer - RaidenEpicDeps members
+ * @param cache - A Map to store and reuse previously Signed<WithdrawConfirmation>
+ * @returns Observable of transferExpired|transferExpireFailed actions
+ */
+function makeAndSignWithdrawConfirmation(
+  state$: Observable<RaidenState>,
+  action: ActionType<typeof withdrawReceiveRequest>,
+  { signer }: RaidenEpicDeps,
+  cache: LruCache<string, Signed<WithdrawConfirmation>>,
+): Observable<ActionType<typeof withdrawSendConfirmation>> {
+  return state$.pipe(
+    first(),
+    mergeMap(state => {
+      const request = action.payload.message;
+
+      const channel: Channel | undefined = get(state.channels, [
+        action.meta.tokenNetwork,
+        action.meta.partner,
+      ]);
+      // check channel is in valid state and requested total_withdraw is valid
+      // withdrawable amount is: total_withdraw <= partner.deposit + own.transferredAmount
+      if (
+        !channel ||
+        channel.state !== ChannelState.open ||
+        !request.channel_identifier.eq(channel.id)
+      )
+        throw new Error('channel gone or not open');
+      else if (request.expiration.lte(state.blockNumber))
+        throw new Error('WithdrawRequest expired');
+      else if (
+        request.total_withdraw.gt(
+          channel.partner.deposit.add(
+            channel.own.balanceProof ? channel.own.balanceProof.transferredAmount : Zero,
+          ),
+        )
+      )
+        throw new Error(
+          'invalid total_withdraw, greater than partner.deposit + own.transferredAmount',
+        );
+
+      let signed$: Observable<Signed<WithdrawConfirmation>>;
+      const key = request.message_identifier.toString();
+      const cached = cache.get(key);
+      // ensure all parameters are equal the cached one before returning it, or else sign again
+      if (
+        cached &&
+        cached.chain_id.eq(request.chain_id) &&
+        cached.token_network_address === request.token_network_address &&
+        cached.channel_identifier.eq(request.channel_identifier) &&
+        cached.participant === request.participant &&
+        cached.total_withdraw.eq(request.total_withdraw) &&
+        cached.expiration.eq(request.expiration)
+      ) {
+        signed$ = of(cached);
+      } else {
+        const confirmation: WithdrawConfirmation = {
+          type: MessageType.WITHDRAW_CONFIRMATION,
+          message_identifier: request.message_identifier,
+          chain_id: request.chain_id,
+          token_network_address: request.token_network_address,
+          channel_identifier: request.channel_identifier,
+          participant: request.participant,
+          total_withdraw: request.total_withdraw,
+          nonce: nextNonce(channel.own.balanceProof),
+          expiration: request.expiration,
+        };
+        signed$ = from(signMessage(signer, confirmation)).pipe(
+          tap(signed => cache.put(key, signed)),
+        );
+      }
+
+      return signed$.pipe(
+        map(signed => withdrawSendConfirmation({ message: signed }, action.meta)),
+      );
+    }),
+    catchError(err => {
+      console.error('Error trying to handle WithdrawRequest, ignoring:', err);
+      return EMPTY;
+    }),
   );
 }
 
@@ -368,19 +435,22 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
     | typeof transferFailed
     | typeof transferExpired
     | typeof transferExpireFailed
+    | typeof withdrawSendConfirmation
   >
 > =>
-  combineLatest(getPresences$(action$), state$).pipe(
-    publishReplay(1, undefined, presencesStateReplay$ => {
-      const [presences$, state$] = splitCombined(presencesStateReplay$);
+  state$.pipe(
+    publishReplay(1, undefined, state$ => {
+      const withdrawCache = new LruCache<string, Signed<WithdrawConfirmation>>(32);
       return action$.pipe(
-        filter(isActionOf([transfer, transferUnlock, transferExpire])),
+        filter(isActionOf([transfer, transferUnlock, transferExpire, withdrawReceiveRequest])),
         concatMap(action =>
           isActionOf(transfer, action)
-            ? makeAndSignTransfer(presences$, state$, action, deps)
+            ? makeAndSignTransfer(state$, action, deps)
             : isActionOf(transferUnlock, action)
             ? makeAndSignUnlock(state$, action, deps)
-            : makeAndSignLockExpired(state$, action, deps),
+            : isActionOf(transferExpire, action)
+            ? makeAndSignLockExpired(state$, action, deps)
+            : makeAndSignWithdrawConfirmation(state$, action, deps, withdrawCache),
         ),
       );
     }),
@@ -657,7 +727,12 @@ export const initQueuePendingEnvelopeMessagesEpic = (
   {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
 ): Observable<
-  ActionType<typeof transferSigned | typeof transferUnlocked | typeof transferExpired>
+  ActionType<
+    | typeof matrixRequestMonitorPresence
+    | typeof transferSigned
+    | typeof transferUnlocked
+    | typeof transferExpired
+  >
 > =>
   state$.pipe(
     first(),
@@ -667,6 +742,8 @@ export const initQueuePendingEnvelopeMessagesEpic = (
         const secrethash = key as Hash;
         // transfer already completed or channelClosed
         if (sent.unlockProcessed || sent.lockExpiredProcessed || sent.channelClosed) continue;
+        // on init, request monitor presence of any pending transfer target
+        yield matrixRequestMonitorPresence(undefined, { address: sent.transfer[1].target });
         // Processed not received yet for LockedTransfer
         if (!sent.transferProcessed)
           yield transferSigned({ message: sent.transfer[1] }, { secrethash });
@@ -736,15 +813,24 @@ export const transferSecretRequestedEpic = (
       const transfer = state.sent[message.secrethash].transfer[1];
       if (
         transfer.target !== action.meta.address || // reveal only to target
-        transfer.lock.expiration.lte(state.blockNumber) || // don't reveal if expired
-        !transfer.payment_identifier.eq(message.payment_identifier) ||
-        !transfer.lock.amount.eq(message.amount) ||
-        !transfer.lock.expiration.eq(message.expiration)
-        // we don't check if transfer was refunded. If partner refunded the transfer but still
-        // forwarded the payment, they would be in risk of losing their money, not us
-      )
-        return;
-      yield transferSecretRequest({ message }, { secrethash: message.secrethash });
+        !transfer.payment_identifier.eq(message.payment_identifier)
+      ) {
+        console.warn('Invalid SecretRequest for transfer', message, transfer);
+      } else if (
+        !message.expiration.lte(transfer.lock.expiration) ||
+        !message.expiration.gt(state.blockNumber)
+      ) {
+        console.warn('SecretRequest for expired transfer', message, transfer);
+      } else if (!message.amount.gte(transfer.lock.amount.mul(9).div(10))) {
+        // FIXME: TMP! accept transfers deduced up to 10% what was sent
+        console.warn('SecretRequest for amount too small!', message, transfer);
+      } /* accept request */ else {
+        if (!message.amount.eq(transfer.lock.amount))
+          console.warn('Accepted SecretRequest for amount different than sent', message, transfer);
+        yield transferSecretRequest({ message }, { secrethash: message.secrethash });
+      }
+      // we don't check if transfer was refunded. If partner refunded the transfer but still
+      // forwarded the payment, they would be in risk of losing their money, not us
     }),
   );
 
@@ -819,7 +905,7 @@ export const transferSecretRevealedEpic = (
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
       if (!message || !Signed(SecretReveal).is(message)) return;
-      const secrethash = keccak256(message.secret) as Hash;
+      const secrethash = getSecrethash(message.secret);
       if (
         !(secrethash in state.sent) ||
         action.meta.address !== state.sent[secrethash].transfer[1].recipient ||
@@ -957,7 +1043,43 @@ export const transferChannelClosedEpic = (
   );
 
 /**
- * Sends Processed for unhandled transfer messages
+ * Receiving RefundTransfer for pending transfer fails it
+ *
+ * @param action$ - Observable of messageReceived actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of transferFailed|transferRefunded actions
+ */
+export const transferRefundedEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<ActionType<typeof transferRefunded | typeof transferFailed>> =>
+  action$.pipe(
+    filter(isActionOf(messageReceived)),
+    withLatestFrom(state$),
+    mergeMap(function*([action, state]) {
+      const message = action.payload.message;
+      if (!message || !Signed(RefundTransfer).is(message)) return;
+      const secrethash = message.lock.secrethash;
+      if (!(secrethash in state.sent)) return;
+      const [, transfer] = state.sent[secrethash].transfer;
+      if (
+        message.initiator !== transfer.recipient ||
+        !message.payment_identifier.eq(transfer.payment_identifier) ||
+        !message.lock.amount.eq(transfer.lock.amount) ||
+        !message.lock.expiration.eq(transfer.lock.expiration) ||
+        state.sent[secrethash].unlock || // already unlocked
+        state.sent[secrethash].lockExpired || // already expired
+        state.sent[secrethash].channelClosed || // channel closed
+        message.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
+      )
+        return;
+      yield transferRefunded({ message }, { secrethash });
+      yield transferFailed(new Error('transfer refunded'), { secrethash });
+    }),
+  );
+
+/**
+ * Sends Processed for unhandled nonce'd messages
  *
  * We don't yet support receiving nor mediating transfers (LockedTransfer, RefundTransfer), but
  * also don't want the partner to keep retrying any messages intended for us indefinitely.
@@ -965,8 +1087,10 @@ export const transferChannelClosedEpic = (
  * still don't validate, store state for these messages nor handle them in any way (e.g. requesting
  * secret from initiator), so any transfer is going to expire, and then we also reply Processed for
  * the respective LockExpired.
+ * Additionally, we hook in sending Processed for other messages which contain nonces (and require
+ * Processed reply to stop being retried) but are safe to be ignored, like WithdrawExpired.
  *
- * @param action$ - Observable of messageSend actions
+ * @param action$ - Observable of messageReceived actions
  * @param state$ - Observable of RaidenStates
  * @param signer - RaidenEpicDeps members
  * @returns Observable of messageSend actions
@@ -986,7 +1110,8 @@ export const transferReceivedReplyProcessedEpic = (
         !(
           Signed(LockedTransfer).is(message) ||
           Signed(RefundTransfer).is(message) ||
-          Signed(LockExpired).is(message)
+          Signed(LockExpired).is(message) ||
+          Signed(WithdrawExpired).is(message)
         )
       )
         return EMPTY;
@@ -997,7 +1122,7 @@ export const transferReceivedReplyProcessedEpic = (
 
       const processed: Processed = {
         type: MessageType.PROCESSED,
-        message_identifier: msgId, // eslint-disable-line @typescript-eslint/camelcase
+        message_identifier: msgId,
       };
       return from(signMessage(signer, processed)).pipe(
         tap(signed => cache.put(key, signed)),
@@ -1008,36 +1133,49 @@ export const transferReceivedReplyProcessedEpic = (
 };
 
 /**
- * Receiving RefundTransfer for pending transfer fails it
+ * When receiving a [[WithdrawRequest]] message, create the respective [[withdrawReceiveRequest]]
+ * action
  *
  * @param action$ - Observable of messageReceived actions
- * @param state$ - Observable of RaidenStates
- * @returns Observable of transferFailed|transferRefunded actions
+ * @returns Observable of withdrawReceiveRequest actions
  */
-export const transferRefundedEpic = (
+export const withdrawRequestReceivedEpic = (
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-): Observable<ActionType<typeof transferRefunded | typeof transferFailed>> =>
+): Observable<ActionType<typeof withdrawReceiveRequest>> =>
   action$.pipe(
     filter(isActionOf(messageReceived)),
-    withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function*(action) {
       const message = action.payload.message;
-      if (!message || !Signed(RefundTransfer).is(message)) return;
-      const secrethash = message.lock.secrethash;
       if (
-        !(secrethash in state.sent) ||
-        message.initiator !== state.sent[secrethash].transfer[1].recipient ||
-        !message.payment_identifier.eq(state.sent[secrethash].transfer[1].payment_identifier) ||
-        !message.lock.amount.eq(state.sent[secrethash].transfer[1].lock.amount) ||
-        !message.lock.expiration.eq(state.sent[secrethash].transfer[1].lock.expiration) ||
-        state.sent[secrethash].unlock || // already unlocked
-        state.sent[secrethash].lockExpired || // already expired
-        state.sent[secrethash].channelClosed || // channel closed
-        message.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
+        !message ||
+        !Signed(WithdrawRequest).is(message) ||
+        message.participant !== action.meta.address
       )
         return;
-      yield transferRefunded({ message }, { secrethash });
-      yield transferFailed(new Error('transfer refunded'), { secrethash });
+      yield withdrawReceiveRequest(
+        { message },
+        {
+          tokenNetwork: message.token_network_address,
+          partner: message.participant,
+          totalWithdraw: message.total_withdraw,
+          expiration: message.expiration.toNumber(),
+        },
+      );
     }),
+  );
+
+/**
+ * sendMessage when a [[withdrawSendConfirmation]] action is fired
+ *
+ * @param action$ - Observable of withdrawSendConfirmation actions
+ * @returns Observable of messageSend actions
+ */
+export const withdrawSendConfirmationEpic = (
+  action$: Observable<RaidenAction>,
+): Observable<ActionType<typeof messageSend>> =>
+  action$.pipe(
+    filter(isActionOf(withdrawSendConfirmation)),
+    map(action =>
+      messageSend({ message: action.payload.message }, { address: action.meta.partner }),
+    ),
   );

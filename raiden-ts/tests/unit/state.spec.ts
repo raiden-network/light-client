@@ -8,11 +8,15 @@ describe('RaidenState codecs', () => {
   const address = '0x1111111111111111111111111111111111111111' as Address,
     token = '0x0000000000000000000000000000000000010001' as Address,
     tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,
-    partner = '0x0000000000000000000000000000000000000020' as Address;
+    partner = '0x0000000000000000000000000000000000000020' as Address,
+    chainId = 1338,
+    registry = '0x0000000000000000000000000000000000000070' as Address;
 
   test('encodeRaidenState', () => {
     const state: RaidenState = {
       address,
+      chainId,
+      registry,
       blockNumber: 123,
       channels: {
         [tokenNetwork]: {
@@ -23,6 +27,7 @@ describe('RaidenState codecs', () => {
             id: 17,
             settleTimeout: 500,
             openBlock: 121,
+            isFirstParticipant: true,
           },
         },
       },
@@ -33,6 +38,8 @@ describe('RaidenState codecs', () => {
     };
     expect(JSON.parse(encodeRaidenState(state))).toEqual({
       address,
+      chainId,
+      registry,
       blockNumber: 123,
       channels: {
         [tokenNetwork]: {
@@ -43,6 +50,7 @@ describe('RaidenState codecs', () => {
             id: 17,
             settleTimeout: 500,
             openBlock: 121,
+            isFirstParticipant: true,
           },
         },
       },
@@ -64,6 +72,8 @@ describe('RaidenState codecs', () => {
     expect(() =>
       decodeRaidenState({
         address,
+        chainId,
+        registry,
         blockNumber: 123,
         channels: {
           [tokenNetwork]: {
@@ -85,6 +95,8 @@ describe('RaidenState codecs', () => {
     expect(
       decodeRaidenState({
         address,
+        chainId,
+        registry,
         blockNumber: 123,
         channels: {
           [tokenNetwork]: {
@@ -95,6 +107,7 @@ describe('RaidenState codecs', () => {
               id: 17,
               settleTimeout: 500,
               openBlock: 121,
+              isFirstParticipant: true,
             },
           },
         },
@@ -105,6 +118,8 @@ describe('RaidenState codecs', () => {
       }),
     ).toEqual({
       address,
+      chainId,
+      registry,
       blockNumber: 123,
       channels: {
         [tokenNetwork]: {
@@ -115,6 +130,7 @@ describe('RaidenState codecs', () => {
             id: 17,
             settleTimeout: 500,
             openBlock: 121,
+            isFirstParticipant: true,
           },
         },
       },

@@ -5,4 +5,8 @@ contracts/
 
 *.vim
 .localstorage
-docs
+
+src/deployment/*
+src/abi/*
+
+docs/

@@ -24,3 +24,5 @@ yarn-error.log*
 *.sw*
 
 coverage
+
+public/wizard.json

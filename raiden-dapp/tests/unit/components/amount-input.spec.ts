@@ -4,23 +4,30 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { mockInput } from '../utils/interaction-utils';
 import { TestData } from '../data/mock-data';
+import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
 
 describe('AmountInput.vue', function() {
   let wrapper: Wrapper<AmountInput>;
 
+  const vueFactory = (params: {}): Wrapper<AmountInput> =>
+    mount(AmountInput, {
+      sync: false,
+      propsData: {
+        label: 'Has Label',
+        token: TestData.token,
+        ...params
+      },
+      mocks: {
+        $t: (msg: string) => msg
+      }
+    });
+
   describe('unlimited', function() {
-    beforeEach(() => {
-      wrapper = mount(AmountInput, {
-        propsData: {
-          label: 'Has Label',
-          token: TestData.token
-        },
-        mocks: {
-          $t: (msg: string) => msg
-        }
-      });
+    beforeEach(async () => {
+      wrapper = vueFactory({ limit: false });
+      await wrapper.vm.$nextTick();
     });
 
     it('should show no validation messages', () => {
@@ -32,6 +39,7 @@ describe('AmountInput.vue', function() {
     it('should show an amount cannot be empty message', async function() {
       mockInput(wrapper, '');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual(['']);
       const messages = wrapper.find('.v-messages__message');
@@ -51,21 +59,13 @@ describe('AmountInput.vue', function() {
 
   describe('limited', function() {
     beforeEach(() => {
-      wrapper = mount(AmountInput, {
-        propsData: {
-          label: 'Has Label',
-          limit: true,
-          token: TestData.token
-        },
-        mocks: {
-          $t: (msg: string) => msg
-        }
-      });
+      wrapper = vueFactory({ limit: true, value: '' });
     });
 
     it('should display an error if the amount is smaller than the limit', async function() {
       mockInput(wrapper, '2.4');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual(['2.4']);
       const messages = wrapper.find('.v-messages__message');
@@ -76,6 +76,7 @@ describe('AmountInput.vue', function() {
     it('should display an error if the amount has more decimals than supported', async function() {
       mockInput(wrapper, '1.42345678');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual(['1.42345678']);
       const messages = wrapper.find('.v-messages__message');
@@ -161,6 +162,34 @@ describe('AmountInput.vue', function() {
       expect(event.preventDefault).toHaveBeenCalledTimes(0);
       expect(event.target.setSelectionRange).toHaveBeenCalledTimes(1);
       expect(event.target.setSelectionRange).toBeCalledWith(0, 3);
+    });
+  });
+
+  describe('internal value should react to model changes', () => {
+    test('invalid value should not update internal amount', () => {
+      wrapper = vueFactory({ value: '1.41asjdhlk' });
+      expect(wrapper.vm.$data.amount).toBe('');
+    });
+
+    test('valid value should update internal amount', () => {
+      wrapper = vueFactory({ value: '1.2' });
+      expect(wrapper.vm.$data.amount).toBe('1.2');
+    });
+
+    test('amount should be updated on valid changes', async () => {
+      wrapper = vueFactory({ value: '' });
+      expect(wrapper.vm.$data.amount).toBe('');
+      wrapper.setProps({ value: '1.2' });
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.$data.amount).toBe('1.2');
+    });
+
+    test('amount should not update on invalid changes', async () => {
+      wrapper = vueFactory({ value: '' });
+      expect(wrapper.vm.$data.amount).toBe('');
+      wrapper.setProps({ value: '1.2asddasd' });
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.$data.amount).toBe('');
     });
   });
 });

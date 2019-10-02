@@ -1,26 +1,27 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import ganache, { GanacheServerOptions } from 'ganache-cli';
 import memdown from 'memdown';
 import { range } from 'lodash';
 import asyncPool from 'tiny-async-pool';
 
 import { Web3Provider } from 'ethers/providers';
+import { MaxUint256 } from 'ethers/constants';
 import { ContractFactory, Contract } from 'ethers/contract';
 import { parseUnits } from 'ethers/utils';
 
-import { ContractsInfo, RaidenContracts } from 'raiden-ts/types';
+import { ContractsInfo } from 'raiden-ts/types';
 import { Address } from 'raiden-ts/utils/types';
-import { TokenNetworkRegistry } from '../../contracts/TokenNetworkRegistry';
-import { TokenNetwork } from '../../contracts/TokenNetwork';
-import { Token } from '../../contracts/Token';
-import Contracts from '../../contracts.json';
+import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
+import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
 
 export class TestProvider extends Web3Provider {
   public constructor(opts?: GanacheServerOptions) {
     super(
       ganache.provider({
-        total_accounts: 3, // eslint-disable-line @typescript-eslint/camelcase
-        default_balance_ether: 5, // eslint-disable-line @typescript-eslint/camelcase
+        total_accounts: 3,
+        default_balance_ether: 5,
         seed: 'testrpc_provider',
+        network_id: 1338,
         db: memdown(),
         // logger: console,
         ...opts,
@@ -53,9 +54,9 @@ export class TestProvider extends Web3Provider {
     return this.blockNumber;
   }
 
-  public async deployRaidenContracts(): Promise<[ContractsInfo, RaidenContracts]> {
+  public async deployRegistry(): Promise<ContractsInfo> {
     const accounts = await this.listAccounts();
-    const signer = this.getSigner(accounts.pop());
+    const signer = this.getSigner(accounts[accounts.length - 1]);
 
     const secretRegistryContract = await new ContractFactory(
       Contracts.contracts.SecretRegistry.abi,
@@ -64,19 +65,51 @@ export class TestProvider extends Web3Provider {
     ).deploy();
     await secretRegistryContract.deployed();
 
-    const registryContract = await new ContractFactory(
+    const registryContract = (await new ContractFactory(
       Contracts.contracts.TokenNetworkRegistry.abi,
       Contracts.contracts.TokenNetworkRegistry.bin,
       signer,
-    ).deploy(secretRegistryContract.address, this.network.chainId, 500, 555428);
+    ).deploy(
+      secretRegistryContract.address,
+      this.network.chainId,
+      500,
+      555428,
+      10,
+    )) as TokenNetworkRegistry;
     await registryContract.deployed();
     const registyDeployBlock = registryContract.deployTransaction.blockNumber;
+
+    return {
+      TokenNetworkRegistry: {
+        address: registryContract.address as Address,
+        block_number: registyDeployBlock!,
+      },
+    };
+  }
+
+  public async deployTokenNetwork(
+    info: ContractsInfo,
+  ): Promise<{
+    token: string;
+    tokenNetwork: string;
+  }> {
+    const accounts = await this.listAccounts();
+    const signer = this.getSigner(accounts[accounts.length - 1]);
+
+    const registryContract = new Contract(
+      info.TokenNetworkRegistry.address,
+      Contracts.contracts.TokenNetworkRegistry.abi,
+      signer,
+    ) as TokenNetworkRegistry;
+
+    const next =
+      (await this.getLogs(registryContract.filters.TokenNetworkCreated(null, null))).length + 1;
 
     const tokenContract = await new ContractFactory(
       Contracts.contracts.CustomToken.abi,
       Contracts.contracts.CustomToken.bin,
       signer,
-    ).deploy(parseUnits('1000000', 18), 18, 'TestToken', 'TKN');
+    ).deploy(parseUnits('1000000', 18), 18, `TestToken${next}`, `TK${next}`);
     await tokenContract.deployed();
 
     const decimals = await tokenContract.functions.decimals();
@@ -87,36 +120,21 @@ export class TestProvider extends Web3Provider {
     );
     await Promise.all(txs);
 
-    const tx = await registryContract.functions.createERC20TokenNetwork(tokenContract.address, {
-      gasLimit: 6e6,
-    });
+    const tx = await registryContract.functions.createERC20TokenNetwork(
+      tokenContract.address,
+      MaxUint256,
+      MaxUint256,
+      { gasLimit: 6e6 },
+    );
     await tx.wait();
 
     const tokenNetworkAddress = await registryContract.functions.token_to_token_networks(
       tokenContract.address,
     );
-    const tokenNetworkContract = new Contract(
-      tokenNetworkAddress,
-      Contracts.contracts.TokenNetwork.abi,
-      signer,
-    ) as TokenNetwork;
 
-    return [
-      {
-        TokenNetworkRegistry: {
-          address: registryContract.address as Address,
-          block_number: registyDeployBlock!, // eslint-disable-line
-        },
-      },
-      {
-        registry: registryContract as TokenNetworkRegistry,
-        tokenNetworks: {
-          [tokenNetworkAddress]: tokenNetworkContract,
-        },
-        tokens: {
-          [tokenContract.address]: tokenContract as Token,
-        },
-      },
-    ];
+    return {
+      token: tokenContract.address,
+      tokenNetwork: tokenNetworkAddress,
+    };
   }
 }

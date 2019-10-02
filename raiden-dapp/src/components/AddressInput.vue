@@ -52,7 +52,7 @@
 
 <script lang="ts">
 import AddressUtils from '@/utils/address-utils';
-import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
+import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({})
@@ -84,6 +84,19 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   touched: boolean = false;
   hint: string = '';
   errorMessages: string[] = [''];
+
+  created() {
+    if (this.isChecksumAddress(this.value)) {
+      this.address = this.value;
+    }
+  }
+
+  @Watch('value')
+  onChange(value: string) {
+    if (value !== this.address && this.isChecksumAddress(value)) {
+      this.address = value;
+    }
+  }
 
   // noinspection JSUnusedLocalSymbols
   @Emit()
@@ -260,7 +273,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   .v-messages__wrapper {
     display: flex;
     flex-direction: column;
-    align-items: start;
+    align-items: flex-start;
     padding-left: 20px;
     justify-content: center;
   }

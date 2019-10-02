@@ -24,7 +24,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { BigNumber } from 'ethers/utils';
@@ -65,7 +65,7 @@ export default class AmountInput extends Vue {
       !this.limit ||
       (v && this.hasEnoughBalance(v, this.max)) ||
       this.$parent.$t('amount-input.error.not-enough-funds', {
-        funds: BalanceUtils.toUnits(this.max, this.token!.decimals),
+        funds: BalanceUtils.toUnits(this.max, this.token!.decimals || 0),
         symbol: this.token!.symbol
       })
   ];
@@ -73,20 +73,31 @@ export default class AmountInput extends Vue {
   private noDecimalOverflow(v: string) {
     return (
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!.decimals)
+      !BalanceUtils.decimalsOverflow(v, this.token!.decimals || 0)
     );
   }
 
   private hasEnoughBalance(v: string, max: BigNumber) {
     return (
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!.decimals) &&
-      BalanceUtils.parse(v, this.token!.decimals).lte(max)
+      !BalanceUtils.decimalsOverflow(v, this.token!.decimals!) &&
+      BalanceUtils.parse(v, this.token!.decimals!).lte(max)
     );
   }
 
+  private updateIfValid(value: string) {
+    if (value !== this.amount && AmountInput.numericRegex.test(value)) {
+      this.amount = value;
+    }
+  }
+
+  @Watch('value')
+  onChange(value: string) {
+    this.updateIfValid(value);
+  }
+
   mounted() {
-    this.amount = this.value;
+    this.updateIfValid(this.value);
   }
 
   checkIfValid(event: KeyboardEvent) {
@@ -101,6 +112,11 @@ export default class AmountInput extends Vue {
 
   onPaste(event: ClipboardEvent) {
     const clipboardData = event.clipboardData;
+
+    if (!clipboardData) {
+      return;
+    }
+
     const value = clipboardData.getData('text');
     if (!AmountInput.numericRegex.test(value)) {
       event.preventDefault();
@@ -175,7 +191,7 @@ $header-vertical-margin-mobile: 2rem;
     height: 25px;
     display: flex;
     flex-direction: column;
-    align-items: start;
+    align-items: flex-start;
     padding-left: 20px;
     justify-content: center;
     color: white;

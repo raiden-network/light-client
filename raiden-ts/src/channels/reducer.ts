@@ -18,6 +18,7 @@ import {
   channelSettled,
   newBlock,
   tokenMonitored,
+  channelWithdrawn,
 } from './actions';
 import { Channel, Channels, ChannelState } from './state';
 
@@ -54,6 +55,7 @@ function channels(state: Channels = initialState.channels, action: RaidenAction)
         id: action.payload.id,
         settleTimeout: action.payload.settleTimeout,
         openBlock: action.payload.openBlock,
+        isFirstParticipant: action.payload.isFirstParticipant,
         /* txHash: action.txHash, */ // not needed in state for now, but comes in action
       };
     return set(path, channel, state);
@@ -67,8 +69,43 @@ function channels(state: Channels = initialState.channels, action: RaidenAction)
     if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
       return state;
     if (action.payload.participant === action.meta.partner)
-      channel = set(['partner', 'deposit'], action.payload.totalDeposit, channel);
-    else channel = set(['own', 'deposit'], action.payload.totalDeposit, channel);
+      channel = {
+        ...channel,
+        partner: {
+          ...channel.partner,
+          deposit: action.payload.totalDeposit,
+        },
+      };
+    else
+      channel = {
+        ...channel,
+        own: {
+          ...channel.own,
+          deposit: action.payload.totalDeposit,
+        },
+      };
+    return set(path, channel, state);
+  } else if (isActionOf(channelWithdrawn, action)) {
+    const path = [action.meta.tokenNetwork, action.meta.partner];
+    let channel: Channel | undefined = get(path, state);
+    if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
+      return state;
+    if (action.payload.participant === action.meta.partner)
+      channel = {
+        ...channel,
+        partner: {
+          ...channel.partner,
+          withdraw: action.payload.totalWithdraw,
+        },
+      };
+    else
+      channel = {
+        ...channel,
+        own: {
+          ...channel.own,
+          withdraw: action.payload.totalWithdraw,
+        },
+      };
     return set(path, channel, state);
   } else if (isActionOf(channelClose, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];

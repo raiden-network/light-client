@@ -14,6 +14,8 @@ import { SentTransfers } from './transfers/state';
 export const RaidenState = t.readonly(
   t.type({
     address: Address,
+    chainId: t.number,
+    registry: Address,
     blockNumber: t.number,
     channels: Channels,
     tokens: t.readonly(t.record(t.string /* token: Address */, Address)),
@@ -81,6 +83,8 @@ export function decodeRaidenState(data: unknown): RaidenState {
 
 export const initialState: RaidenState = {
   address: AddressZero as Address,
+  chainId: 0,
+  registry: AddressZero as Address,
   blockNumber: 0,
   channels: {},
   tokens: {},

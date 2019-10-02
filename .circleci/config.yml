@@ -1,6 +1,6 @@
 version: 2.1
 
-var_1: &docker_image circleci/node:10.13.0-browsers
+var_1: &docker_image circleci/node:12-browsers
 var_2: &sdk_cache_key raiden-ts-{{ .Branch }}-{{ checksum "package-lock.json" }}
 var_3: &dapp_cache_key raiden-dapp-{{ .Branch }}-{{ checksum "package-lock.json" }}
 var_4: &sdk_working_dir ~/src/raiden-ts
@@ -27,6 +27,8 @@ jobs:
     working_directory: ~/src
     steps:
       - checkout
+      - run: git submodule sync
+      - run: git submodule update --init
       - persist_to_workspace:
           root: .
           paths:

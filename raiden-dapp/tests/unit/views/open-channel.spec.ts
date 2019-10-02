@@ -2,9 +2,7 @@ jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
 jest.useFakeTimers();
 
-import { Store } from 'vuex';
 import VueRouter, { NavigationGuard } from 'vue-router';
-import { mockInput } from '../utils/interaction-utils';
 import flushPromises from 'flush-promises';
 import { createLocalVue, mount, shallowMount, Wrapper } from '@vue/test-utils';
 import OpenChannel from '@/views/OpenChannel.vue';
@@ -19,10 +17,14 @@ import store from '@/store';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { RouteNames } from '@/route-names';
 import Mocked = jest.Mocked;
+import { Token } from '@/model/types';
+import { Tokens } from '@/types';
+import { mockInput } from '../utils/interaction-utils';
+import { parseUnits } from 'ethers/utils';
 
 Vue.use(Vuetify);
 
-describe('Deposit.vue', function() {
+describe('OpenChannel.vue', function() {
   let service: Mocked<RaidenService>;
   let wrapper: Wrapper<OpenChannel>;
   let button: Wrapper<Vue>;
@@ -33,17 +35,12 @@ describe('Deposit.vue', function() {
       token?: string;
       partner?: string;
     },
-    shallow: boolean = false,
-    token: any = TestData.token
+    shallow: boolean = false
   ): Wrapper<OpenChannel> {
     const localVue = createLocalVue();
     const options = {
       localVue,
-      store: new Store({
-        getters: {
-          token: jest.fn().mockReturnValue(() => token)
-        }
-      }),
+      store,
       propsData: {
         current: 0
       },
@@ -64,6 +61,7 @@ describe('Deposit.vue', function() {
 
   beforeAll(() => {
     service = new RaidenService(store) as Mocked<RaidenService>;
+    service.fetchTokenData = jest.fn().mockResolvedValue(undefined);
     router = new VueRouter() as Mocked<VueRouter>;
     router.push = jest.fn().mockResolvedValue(null);
   });
@@ -76,15 +74,27 @@ describe('Deposit.vue', function() {
     jest.clearAllTimers();
   });
 
-  describe('valid route', function() {
+  describe('valid route', () => {
     beforeAll(async () => {
+      store.commit('updateTokens', {
+        '0xc778417E063141139Fce010982780140Aa0cD5Ab': {
+          address: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
+          decimals: 10,
+          balance: parseUnits('2', 10)
+        } as Token
+      } as Tokens);
       wrapper = createWrapper({
         token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
         partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
       });
-      await flushPromises();
+
       button = wrapper.find('button');
       await wrapper.vm.$nextTick();
+      service.openChannel = jest.fn();
+    });
+
+    afterEach(() => {
+      service.openChannel.mockReset();
     });
 
     it('should not be disabled after load', async function() {
@@ -92,51 +102,68 @@ describe('Deposit.vue', function() {
       expect(button.element.getAttribute('disabled')).toBeFalsy();
     });
 
-    it('should show an error if channel opening failed', async function() {
-      service.openChannel = jest
-        .fn()
-        .mockRejectedValue(new ChannelOpenFailed());
+    it('should show an error if channel opening failed', async () => {
+      service.openChannel.mockRejectedValueOnce(
+        new ChannelOpenFailed('open: transaction failed')
+      );
+
+      mockInput(wrapper, '0.1');
       button.trigger('click');
-      const deposit = wrapper.vm;
+      await wrapper.vm.$nextTick();
       await flushPromises();
-      expect(deposit.$data.error).toBe('open-channel.error.open-failed');
+      expect(wrapper.vm.$data.error).toBe('open-channel.error.open-failed');
+      await flushPromises();
     });
 
-    it('should had an error if deposit failed', async function() {
-      service.openChannel = jest
-        .fn()
-        .mockRejectedValue(new ChannelDepositFailed());
-      mockInput(wrapper, '0.0001');
+    it('should had an error if deposit failed', async () => {
+      service.openChannel.mockRejectedValueOnce(
+        new ChannelDepositFailed('deposit: transaction failed')
+      );
+
+      mockInput(wrapper, '0.1');
       button.trigger('click');
-      const deposit = wrapper.vm;
+      await wrapper.vm.$nextTick();
       await flushPromises();
-      expect(deposit.$data.error).toBe('open-channel.error.deposit-failed');
+      expect(wrapper.vm.$data.error).toBe('open-channel.error.deposit-failed');
+      await flushPromises();
     });
 
-    it('should show an error if any error happens during channel opening', async function() {
-      service.openChannel = jest.fn().mockRejectedValue(new Error('unknown'));
-      mockInput(wrapper, '0.0001');
+    it('should show an error if any error happens during channel opening', async () => {
+      service.openChannel.mockRejectedValueOnce(new Error('unknown'));
+      mockInput(wrapper, '0.1');
       button.trigger('click');
-      const deposit = wrapper.vm;
+      await wrapper.vm.$nextTick();
       await flushPromises();
-      expect(deposit.$data.error).toBe('unknown');
+      expect(wrapper.vm.$data.error).toBe('unknown');
+      await flushPromises();
     });
 
-    it('should navigate to send on success', async function() {
-      const deposit = wrapper.vm;
-      const loading = jest.spyOn(deposit.$data, 'loading', 'set');
-      service.openChannel = jest.fn().mockResolvedValue(null);
+    it('should navigate to send on success', async () => {
+      const loading = jest.spyOn(wrapper.vm.$data, 'loading', 'set');
+      service.openChannel.mockResolvedValue(undefined);
       button.trigger('click');
+      await wrapper.vm.$nextTick();
       await flushPromises();
       jest.advanceTimersByTime(2000);
       expect(router.push).toHaveBeenCalledTimes(1);
-      const args = router.push.mock.calls[0][0] as any;
-      expect(args.name).toEqual(RouteNames.PAYMENT);
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.PAYMENT
+        })
+      );
       expect(loading).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('invalid route', function() {
+  describe('invalid route', () => {
+    beforeAll(() => {
+      service.fetchTokenData = jest.fn().mockResolvedValue(null);
+    });
+
+    afterEach(() => {
+      store.commit('reset');
+    });
+
     test('navigating with non checksum token address', async () => {
       wrapper = createWrapper(
         {
@@ -145,12 +172,23 @@ describe('Deposit.vue', function() {
         true
       );
 
+      await flushPromises();
+
       expect(router.push).toHaveBeenCalledTimes(1);
-      const args = router.push.mock.calls[0][0] as any;
-      expect(args.name).toEqual(RouteNames.HOME);
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.HOME
+        })
+      );
     });
 
-    test('partner address is non checksum', () => {
+    test('partner address is non checksum', async () => {
+      store.commit('updateTokens', {
+        '0xc778417E063141139Fce010982780140Aa0cD5Ab': {
+          address: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
+          decimals: 18
+        }
+      });
       wrapper = createWrapper(
         {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
@@ -159,26 +197,32 @@ describe('Deposit.vue', function() {
         true
       );
 
+      await flushPromises();
+
       expect(router.push).toHaveBeenCalledTimes(1);
-      const args = router.push.mock.calls[0][0] as any;
-      expect(args.name).toEqual(RouteNames.SELECT_TOKEN);
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.SELECT_TOKEN
+        })
+      );
     });
 
     test('token was could not be found', async () => {
-      service.getToken = jest.fn().mockResolvedValue(null);
       wrapper = createWrapper(
         {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
           partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
         },
-        true,
-        null
+        true
       );
       await flushPromises();
 
       expect(router.push).toHaveBeenCalledTimes(1);
-      const args = router.push.mock.calls[0][0] as any;
-      expect(args.name).toEqual(RouteNames.HOME);
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.HOME
+        })
+      );
     });
   });
 

@@ -25,6 +25,7 @@ export const ChannelEnd = t.readonly(
     t.partial({
       locks: t.array(Lock),
       balanceProof: SignedBalanceProof,
+      withdraw: UInt(32),
     }),
   ]),
 );
@@ -51,6 +52,7 @@ export const Channel = t.intersection([
         id: t.number,
         settleTimeout: t.number,
         openBlock: t.number,
+        isFirstParticipant: t.boolean,
       }),
     ),
     t.readonly(
@@ -63,6 +65,7 @@ export const Channel = t.intersection([
         id: t.number,
         settleTimeout: t.number,
         openBlock: t.number,
+        isFirstParticipant: t.boolean,
         closeBlock: t.number,
       }),
     ),

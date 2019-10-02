@@ -5,7 +5,7 @@ import {
   channelDepositFailed,
   channelMonitored,
 } from 'raiden-ts/channels/actions';
-import { Address } from 'raiden-ts/utils/types';
+import { Address, UInt } from 'raiden-ts/utils/types';
 
 describe('action factories not tested in reducers.spec.ts', () => {
   const tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,
@@ -21,7 +21,7 @@ describe('action factories not tested in reducers.spec.ts', () => {
   });
 
   test('channelDeposit', () => {
-    const deposit = bigNumberify(999);
+    const deposit = bigNumberify(999) as UInt<32>;
     expect(channelDeposit({ deposit }, { tokenNetwork, partner })).toEqual({
       type: 'channelDeposit',
       payload: { deposit },

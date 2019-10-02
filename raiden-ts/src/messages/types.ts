@@ -19,8 +19,12 @@ export enum MessageType {
   SECRET_REVEAL = 'RevealSecret',
   LOCKED_TRANSFER = 'LockedTransfer',
   REFUND_TRANSFER = 'RefundTransfer',
-  UNLOCK = 'Secret', // TODO: update to post-red-eyes 'Unlock' type tag
+  UNLOCK = 'Unlock',
   LOCK_EXPIRED = 'LockExpired',
+  TO_DEVICE = 'ToDevice',
+  WITHDRAW_REQUEST = 'WithdrawRequest',
+  WITHDRAW_CONFIRMATION = 'WithdrawConfirmation',
+  WITHDRAW_EXPIRED = 'WithdrawExpired',
 }
 
 // Mixin of a message that contains an identifier and should be ack'ed with a respective Delivered
@@ -89,6 +93,20 @@ export const EnvelopeMessage = t.readonly(
   ]),
 );
 
+export const RouteMetadata = t.readonly(
+  t.type({
+    route: t.readonlyArray(Address),
+  }),
+);
+export interface RouteMetadata extends t.TypeOf<typeof RouteMetadata> {}
+
+export const Metadata = t.readonly(
+  t.type({
+    routes: t.readonlyArray(RouteMetadata),
+  }),
+);
+export interface Metadata extends t.TypeOf<typeof Metadata> {}
+
 // base for locked and refund transfer, they differentiate only on the type tag
 const LockedTransferBase = t.readonly(
   t.intersection([
@@ -100,6 +118,7 @@ const LockedTransferBase = t.readonly(
       target: Address,
       initiator: Address,
       fee: UInt(32),
+      metadata: Metadata,
     }),
     EnvelopeMessage,
   ]),
@@ -155,6 +174,59 @@ export const LockExpired = t.readonly(
 );
 export interface LockExpired extends t.TypeOf<typeof LockExpired> {}
 
+export const ToDevice = t.readonly(
+  t.type({
+    type: t.literal(MessageType.TO_DEVICE),
+    message_identifier: UInt(8),
+  }),
+);
+export interface ToDevice extends t.TypeOf<typeof ToDevice> {}
+
+export const WithdrawBase = t.readonly(
+  t.type({
+    chain_id: UInt(32),
+    token_network_address: Address,
+    channel_identifier: UInt(32),
+    participant: Address,
+    total_withdraw: UInt(32),
+    nonce: UInt(8),
+    expiration: UInt(32),
+  }),
+);
+
+export const WithdrawRequest = t.readonly(
+  t.intersection([
+    t.type({
+      type: t.literal(MessageType.WITHDRAW_REQUEST),
+    }),
+    WithdrawBase,
+    RetrieableMessage,
+  ]),
+);
+export interface WithdrawRequest extends t.TypeOf<typeof WithdrawRequest> {}
+
+export const WithdrawConfirmation = t.readonly(
+  t.intersection([
+    t.type({
+      type: t.literal(MessageType.WITHDRAW_CONFIRMATION),
+    }),
+    WithdrawBase,
+    RetrieableMessage,
+  ]),
+);
+export interface WithdrawConfirmation extends t.TypeOf<typeof WithdrawConfirmation> {}
+
+export const WithdrawExpired = t.readonly(
+  t.intersection([
+    t.type({
+      type: t.literal(MessageType.WITHDRAW_EXPIRED),
+    }),
+    WithdrawBase,
+    RetrieableMessage,
+  ]),
+);
+export interface WithdrawExpired extends t.TypeOf<typeof WithdrawExpired> {}
+
 export const Message = t.union([
   Delivered,
   Processed,
@@ -164,6 +236,10 @@ export const Message = t.union([
   RefundTransfer,
   Unlock,
   LockExpired,
+  ToDevice,
+  WithdrawRequest,
+  WithdrawConfirmation,
+  WithdrawExpired,
 ]);
 // prefer an explicit union to have the union of the interfaces, instead of the union of t.TypeOf's
 export type Message =
@@ -174,7 +250,11 @@ export type Message =
   | LockedTransfer
   | RefundTransfer
   | Unlock
-  | LockExpired;
+  | LockExpired
+  | ToDevice
+  | WithdrawRequest
+  | WithdrawConfirmation
+  | WithdrawExpired;
 export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;
 
 // generic type codec for messages that must be signed

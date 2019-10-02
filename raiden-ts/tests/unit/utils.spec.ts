@@ -2,7 +2,7 @@ import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 
-import { of, combineLatest } from 'rxjs';
+import { of } from 'rxjs';
 import { first, take, toArray } from 'rxjs/operators';
 
 import { Event } from 'ethers/contract';
@@ -10,23 +10,12 @@ import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils'
 import { LosslessNumber } from 'lossless-json';
 
 import { fromEthersEvent, getEventsStream } from 'raiden-ts/utils/ethers';
-import {
-  Address,
-  BigNumberC,
-  HexString,
-  UInt,
-  Hash,
-  Secret,
-  Timed,
-  timed,
-} from 'raiden-ts/utils/types';
+import { Address, BigNumberC, HexString, UInt, Secret, Timed, timed } from 'raiden-ts/utils/types';
 import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
-import { splitCombined } from 'raiden-ts/utils/rxjs';
-import { makeLog, raidenEpicDeps } from './mocks';
-import { getLocksroot, lockhash, makeSecret } from 'raiden-ts/transfers/utils';
-import { HashZero } from 'ethers/constants';
+import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { Lock } from 'raiden-ts/channels';
+import { makeLog, raidenEpicDeps } from './mocks';
 
 describe('fromEthersEvent', () => {
   const { provider } = raidenEpicDeps();
@@ -291,41 +280,33 @@ describe('data', () => {
   });
 });
 
-test('rxjs splitCombined', async () => {
-  const src = combineLatest(of(1), of(2), of(3), of(4));
-  const [of1, of2, of3, of4] = splitCombined(src);
-  await expect(of1.toPromise()).resolves.toBe(1);
-  await expect(of2.toPromise()).resolves.toBe(2);
-  await expect(of3.toPromise()).resolves.toBe(3);
-  await expect(of4.toPromise()).resolves.toBe(4);
-});
-
 describe('messages', () => {
   test('getLocksroot', () => {
-    expect(getLocksroot([])).toBe(HashZero);
+    expect(getLocksroot([])).toBe(
+      '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470',
+    );
     const locks: Lock[] = [
       {
-        type: 'Lock',
         amount: bigNumberify(1) as UInt<32>,
         expiration: bigNumberify(1) as UInt<32>,
-        secrethash: keccak256('0x1') as Hash,
+        secrethash: getSecrethash(keccak256('0x1') as Secret),
       },
       {
-        type: 'Lock',
         amount: bigNumberify(2) as UInt<32>,
         expiration: bigNumberify(2) as UInt<32>,
-        secrethash: keccak256('0x2') as Hash,
+        secrethash: getSecrethash(keccak256('0x2') as Secret),
       },
       {
-        type: 'Lock',
         amount: bigNumberify(3) as UInt<32>,
         expiration: bigNumberify(3) as UInt<32>,
-        secrethash: keccak256('0x3') as Hash,
+        secrethash: getSecrethash(keccak256('0x3') as Secret),
       },
     ];
-    expect(getLocksroot([locks[0]])).toBe(lockhash(locks[0]));
+    expect(getLocksroot([locks[0]])).toBe(
+      '0xa006dee2839936dcff0101a74d3760319cecb7ce7fbca57be4a7e2bb86bbbfe6',
+    );
     expect(getLocksroot(locks)).toBe(
-      '0x4cd8409aa5d9830ecdbf8753e5d1844eb4e2cf52954b6598e045e87c1403b70a',
+      '0xe0cd0d2f9fb2ed8cf1ddc3789e62b6b6f83e2b174399202d7217333e141a910b',
     );
   });
 

@@ -7,7 +7,10 @@
             <span class="payment__capacity__label">{{
               $t('payment.capacity-label')
             }}</span>
-            <span class="payment__capacity__amount">
+            <span
+              v-if="typeof token.decimals === 'number'"
+              class="payment__capacity__amount"
+            >
               {{
                 $t('payment.capacity-amount', {
                   capacity: convertToUnits(capacity, token.decimals),
@@ -15,6 +18,7 @@
                 })
               }}
             </span>
+            <span v-else class="payment__capacity__amount"></span>
           </v-layout>
           <v-img
             :src="require('../assets/down_arrow.svg')"
@@ -23,10 +27,10 @@
           ></v-img>
         </v-flex>
         <v-flex xs3 align-center class="payment__capacity__deposit-column">
-          <v-dialog v-model="depositting" max-width="450">
+          <v-dialog v-model="depositing" max-width="450">
             <template #activator="{ on }">
               <v-btn
-                @click="depositting = true"
+                @click="depositing = true"
                 v-on="on"
                 text
                 class="payment__capacity__deposit"
@@ -35,7 +39,7 @@
             </template>
             <v-card class="payment__deposit-dialog">
               <channel-deposit
-                @cancel="depositting = false"
+                @cancel="depositing = false"
                 @confirm="deposit($event)"
                 :token="token"
                 identifier="0"
@@ -98,15 +102,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import {
-  emptyDescription,
-  StepDescription,
-  Token,
-  TokenPlaceholder
-} from '@/model/types';
+import { emptyDescription, StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
@@ -118,6 +117,9 @@ import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
 import { RaidenChannel, ChannelState } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
+import AddressUtils from '@/utils/address-utils';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import { getAddress, getAmount } from '@/utils/query-params';
 
 @Component({
   components: {
@@ -135,9 +137,9 @@ import { Zero } from 'ethers/constants';
     ...mapGetters(['channelWithBiggestCapacity', 'channels'])
   }
 })
-export default class Payment extends Vue {
+export default class Payment extends Mixins(NavigationMixin) {
   target: string = '';
-  token: Token = TokenPlaceholder;
+
   defaultAccount!: string;
   amount: string = '';
 
@@ -153,6 +155,11 @@ export default class Payment extends Vue {
   channelWithBiggestCapacity!: (
     tokenAddress: string
   ) => RaidenChannel | undefined;
+
+  get token(): Token {
+    const { token: address } = this.$route.params;
+    return this.$store.getters.token(address) || ({ address } as Token);
+  }
 
   get blockedHubs(): string[] {
     return this.channels(this.token.address)
@@ -170,7 +177,7 @@ export default class Payment extends Vue {
     return Zero;
   }
 
-  depositting: boolean = false;
+  depositing: boolean = false;
 
   steps: StepDescription[] = [];
   doneStep: StepDescription = emptyDescription();
@@ -178,8 +185,23 @@ export default class Payment extends Vue {
   convertToUnits = BalanceUtils.toUnits;
 
   async created() {
-    const { token } = this.$route.params;
-    this.token = (await this.$raiden.getToken(token)) || TokenPlaceholder;
+    const { amount, target } = this.$route.query;
+
+    this.amount = getAmount(amount);
+    this.target = getAddress(target);
+
+    const { token: address } = this.$route.params;
+
+    if (!AddressUtils.checkAddressChecksum(address)) {
+      this.navigateToHome();
+      return;
+    }
+
+    await this.$raiden.fetchTokenData([address]);
+
+    if (typeof this.token.decimals !== 'number') {
+      this.navigateToHome();
+    }
   }
 
   async deposit(amount: BigNumber) {
@@ -203,7 +225,7 @@ export default class Payment extends Vue {
       this.error = e.message;
     }
     this.loading = false;
-    this.depositting = false;
+    this.depositing = false;
   }
 
   async transfer() {
@@ -220,7 +242,7 @@ export default class Payment extends Vue {
       await this.$raiden.transfer(
         address,
         this.target,
-        BalanceUtils.parse(this.amount, decimals)
+        BalanceUtils.parse(this.amount, decimals!)
       );
       this.done = true;
       this.dismissProgress();

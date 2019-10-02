@@ -1,14 +1,7 @@
 import { Signer, Contract } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import {
-  Network,
-  ParamType,
-  BigNumber,
-  bigNumberify,
-  BigNumberish,
-  keccak256,
-} from 'ethers/utils';
+import { Network, BigNumber, bigNumberify, BigNumberish, ParamType } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
@@ -18,24 +11,42 @@ import { createEpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
-import { debounce, findKey, transform, constant, pick, isEmpty } from 'lodash';
-import { Observable, Subject, BehaviorSubject, AsyncSubject, from } from 'rxjs';
-import { first, filter, map, distinctUntilChanged, scan, concatMap } from 'rxjs/operators';
+import { debounce, findKey, transform, constant, memoize, pick, isEmpty } from 'lodash';
+import {
+  Observable,
+  Subject,
+  BehaviorSubject,
+  AsyncSubject,
+  from,
+  merge,
+  defer,
+  EMPTY,
+} from 'rxjs';
+import {
+  first,
+  filter,
+  map,
+  distinctUntilChanged,
+  scan,
+  concatMap,
+  mergeMap,
+} from 'rxjs/operators';
 
-import { TokenNetworkRegistry } from '../contracts/TokenNetworkRegistry';
-import { TokenNetwork } from '../contracts/TokenNetwork';
-import { Token } from '../contracts/Token';
+import './polyfills';
+import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
+import { TokenNetwork } from './contracts/TokenNetwork';
+import { HumanStandardToken } from './contracts/HumanStandardToken';
 
 import TokenNetworkRegistryAbi from './abi/TokenNetworkRegistry.json';
 import TokenNetworkAbi from './abi/TokenNetwork.json';
-import TokenAbi from './abi/Token.json';
+import HumanStandardTokenAbi from './abi/HumanStandardToken.json';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 import goerliDeploy from './deployment/deployment_goerli.json';
 
-import { ContractsInfo, RaidenContracts, RaidenEpicDeps, TokenInfo } from './types';
+import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
@@ -45,7 +56,6 @@ import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import { RaidenAction, RaidenEvents, RaidenEvent, raidenShutdown } from './actions';
 import {
-  tokenMonitored,
   channelOpened,
   channelOpenFailed,
   channelOpen,
@@ -65,14 +75,15 @@ import {
   matrixRequestMonitorPresence,
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
-import { makeSecret, raidenSentTransfer } from './transfers/utils';
+import { makeSecret, raidenSentTransfer, getSecrethash } from './transfers/utils';
+import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { patchSignSend } from './utils/ethers';
+import { RaidenConfig, defaultConfig } from './config';
+import { Metadata } from './messages/types';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
   private readonly deps: RaidenEpicDeps;
-  private readonly contracts: RaidenContracts;
-  private readonly tokenInfo: { [token: string]: TokenInfo } = {};
 
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
@@ -98,16 +109,34 @@ export class Raiden {
   public readonly events$: Observable<RaidenEvent>;
 
   /**
-   * Expose ether's Provider.resolveName for ENS support
-   */
-  public readonly resolveName: (name: string) => Promise<Address>;
-
-  /**
    * Observable of completed and pending transfers
    * Every time a transfer state is updated, it's emitted here. 'secrethash' property is unique and
    * may be used as identifier to know which transfer got updated.
    */
   public readonly transfers$: Observable<RaidenSentTransfer>;
+
+  /**
+   * Expose ether's Provider.resolveName for ENS support
+   */
+  public readonly resolveName: (name: string) => Promise<Address>;
+
+  /**
+   * Get constant token details from token contract, caches it.
+   * Rejects only if 'token' contract doesn't define totalSupply and decimals methods.
+   * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
+   * very common and defined on most token contracts.
+   *
+   * @param token - address to fetch info from
+   * @returns token info
+   */
+  public getTokenInfo: (
+    token: string,
+  ) => Promise<{
+    totalSupply: BigNumber;
+    decimals: number;
+    name?: string;
+    symbol?: string;
+  }>;
 
   public constructor(
     provider: JsonRpcProvider,
@@ -115,22 +144,13 @@ export class Raiden {
     signer: Signer,
     contractsInfo: ContractsInfo,
     state: RaidenState,
+    config: RaidenConfig,
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
 
     // use next from latest known blockNumber as start block when polling
     provider.resetEventsBlock(state.blockNumber + 1);
-
-    this.contracts = {
-      registry: new Contract(
-        contractsInfo.TokenNetworkRegistry.address,
-        TokenNetworkRegistryAbi as ParamType[],
-        signer,
-      ) as TokenNetworkRegistry,
-      tokenNetworks: {},
-      tokens: {},
-    };
 
     const state$ = new BehaviorSubject<RaidenState>(state);
     this.state$ = state$;
@@ -202,24 +222,57 @@ export class Raiden {
 
     this.events$ = action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
 
-    const middlewares: Middleware[] = [];
+    this.getTokenInfo = memoize(async (token: string) => {
+      if (!Address.is(token)) throw new Error('Invalid address');
+      if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
+      const tokenContract = this.deps.getTokenContract(token);
+      const [totalSupply, decimals, name, symbol] = await Promise.all([
+        tokenContract.functions.totalSupply(),
+        tokenContract.functions.decimals(),
+        tokenContract.functions.name().catch(constant(undefined)),
+        tokenContract.functions.symbol().catch(constant(undefined)),
+      ]);
+      return { totalSupply, decimals, name, symbol };
+    });
 
-    if (process.env.NODE_ENV === 'development') {
-      middlewares.push(createLogger({ level: 'debug' }));
-    }
+    const middlewares: Middleware[] = [
+      createLogger({
+        level: () =>
+          this.deps.config$.value.logger !== undefined
+            ? this.deps.config$.value.logger
+            : process.env.NODE_ENV === 'development'
+            ? 'debug'
+            : '',
+      }),
+    ];
 
     this.deps = {
       stateOutput$: state$,
       actionOutput$: action$,
+      config$: new BehaviorSubject<RaidenConfig>(config),
       matrix$: new AsyncSubject<MatrixClient>(),
       provider,
       network,
       signer,
       address,
       contractsInfo,
-      registryContract: this.contracts.registry,
-      getTokenNetworkContract: this.getTokenNetworkContract.bind(this),
-      getTokenContract: this.getTokenContract.bind(this),
+      registryContract: new Contract(
+        contractsInfo.TokenNetworkRegistry.address,
+        TokenNetworkRegistryAbi as ParamType[],
+        signer,
+      ) as TokenNetworkRegistry,
+      getTokenNetworkContract: memoize(
+        (address: Address) =>
+          new Contract(address, TokenNetworkAbi as ParamType[], signer) as TokenNetwork,
+      ),
+      getTokenContract: memoize(
+        (address: Address) =>
+          new Contract(
+            address,
+            HumanStandardTokenAbi as ParamType[],
+            signer,
+          ) as HumanStandardToken,
+      ),
     };
     // minimum blockNumber of contracts deployment as start scan block
     const epicMiddleware = createEpicMiddleware<
@@ -262,6 +315,7 @@ export class Raiden {
    *     current state or initial RaidenState-like object instead. In this case, user must listen
    *     state$ changes and update them on whichever persistency option is used
    * @param contracts - Contracts deployment info
+   * @param config - Raiden configuration
    * @returns Promise to Raiden SDK client instance
    **/
   public static async create(
@@ -269,6 +323,7 @@ export class Raiden {
     account: Signer | string | number,
     storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
+    config?: Partial<RaidenConfig>,
   ): Promise<Raiden> {
     let provider: JsonRpcProvider;
     if (typeof connection === 'string') {
@@ -333,6 +388,8 @@ export class Raiden {
       ...initialState,
       blockNumber: contracts.TokenNetworkRegistry.block_number || 0,
       address,
+      chainId: network.chainId,
+      registry: contracts.TokenNetworkRegistry.address,
     };
 
     // type guard
@@ -374,8 +431,19 @@ export class Raiden {
       throw new Error(
         `Mismatch between provided account and loaded state: "${address}" !== "${loadedState.address}"`,
       );
+    if (
+      network.chainId !== loadedState.chainId ||
+      contracts.TokenNetworkRegistry.address !== loadedState.registry
+    )
+      throw new Error(`Mismatch between network or registry address and loaded state`);
 
-    const raiden = new Raiden(provider, network, signer, contracts, loadedState);
+    const raidenConfig: RaidenConfig = {
+      ...defaultConfig.default,
+      ...defaultConfig[network.name],
+      ...config,
+    };
+
+    const raiden = new Raiden(provider, network, signer, contracts, loadedState, raidenConfig);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
@@ -403,6 +471,15 @@ export class Raiden {
     return this.deps.provider.blockNumber || (await this.deps.provider.getBlockNumber());
   }
 
+  public config(newConfig: Partial<RaidenConfig>) {
+    this.deps.config$.pipe(first()).subscribe((currentConfig: RaidenConfig) =>
+      this.deps.config$.next({
+        ...currentConfig,
+        ...newConfig,
+      }),
+    );
+  }
+
   /**
    * Get ETH balance for given address or self
    *
@@ -426,35 +503,9 @@ export class Raiden {
     address = address || this.address;
     if (!Address.is(address) || !Address.is(token)) throw new Error('Invalid address');
     if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
-    const tokenContract = this.getTokenContract(token);
+    const tokenContract = this.deps.getTokenContract(token);
 
     return tokenContract.functions.balanceOf(address);
-  }
-
-  /**
-   * Get token information: totalSupply, decimals, name and symbol
-   * Rejects only if 'token' contract doesn't define totalSupply and decimals methods.
-   * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
-   * very common and defined on most token contracts.
-   *
-   * @param token - address to fetch info from
-   * @returns TokenInfo
-   */
-  public async getTokenInfo(token: string): Promise<TokenInfo> {
-    if (!Address.is(token)) throw new Error('Invalid address');
-    /* tokenInfo isn't in state as it isn't relevant for being preserved, it's merely a cache */
-    if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
-    if (!(token in this.tokenInfo)) {
-      const tokenContract = this.getTokenContract(token);
-      const [totalSupply, decimals, name, symbol] = await Promise.all([
-        tokenContract.functions.totalSupply(),
-        tokenContract.functions.decimals(),
-        tokenContract.functions.name().catch(constant(undefined)),
-        tokenContract.functions.symbol().catch(constant(undefined)),
-      ]);
-      this.tokenInfo[token] = { totalSupply, decimals, name, symbol };
-    }
-    return this.tokenInfo[token];
   }
 
   /**
@@ -466,48 +517,12 @@ export class Raiden {
     // here we assume there'll be at least one token registered on a registry
     // so, if the list is empty (e.g. on first init), raidenInitializationEpic is still fetching
     // the TokenNetworkCreated events from registry, so we wait until some token is found
-    if (isEmpty(this.state.tokens))
-      await this.action$
-        .pipe(
-          filter(isActionOf(tokenMonitored)),
-          first(),
-        )
-        .toPromise();
-    return Object.keys(this.state.tokens) as Address[];
-  }
-
-  /**
-   * Create a TokenNetwork contract linked to this.deps.signer for given tokenNetwork address
-   * Caches the result and returns the same contract instance again for the same address on this
-   *
-   * @param address - TokenNetwork contract address (not token address!)
-   * @returns TokenNetwork Contract instance
-   */
-  private getTokenNetworkContract(address: Address): TokenNetwork {
-    if (!(address in this.contracts.tokenNetworks))
-      this.contracts.tokenNetworks[address] = new Contract(
-        address,
-        TokenNetworkAbi as ParamType[],
-        this.deps.signer,
-      ) as TokenNetwork;
-    return this.contracts.tokenNetworks[address];
-  }
-
-  /**
-   * Create a Token contract linked to this.deps.signer for given token address
-   * Caches the result and returns the same contract instance again for the same address on this
-   *
-   * @param address - Token contract address
-   * @returns Token Contract instance
-   */
-  private getTokenContract(address: Address): Token {
-    if (!(address in this.contracts.tokens))
-      this.contracts.tokens[address] = new Contract(
-        address,
-        TokenAbi as ParamType[],
-        this.deps.signer,
-      ) as Token;
-    return this.contracts.tokens[address];
+    return this.state$
+      .pipe(
+        first(state => !isEmpty(state.tokens)),
+        map(state => Object.keys(state.tokens) as Address[]),
+      )
+      .toPromise();
   }
 
   /**
@@ -515,10 +530,15 @@ export class Raiden {
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
-   * @param settleTimeout - openChannel parameter, defaults to 500
+   * @param options - (optional) option parameter
+   * @param options.settleTimeout - Custom, one-time settle timeout
    * @returns txHash of channelOpen call, iff it succeeded
    */
-  public async openChannel(token: string, partner: string, settleTimeout = 500): Promise<Hash> {
+  public async openChannel(
+    token: string,
+    partner: string,
+    options: { settleTimeout?: number } = {},
+  ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
@@ -536,7 +556,9 @@ export class Raiden {
         }),
       )
       .toPromise();
-    this.store.dispatch(channelOpen({ settleTimeout }, { tokenNetwork, partner }));
+
+    this.store.dispatch(channelOpen({ ...options }, { tokenNetwork, partner }));
+
     return promise;
   }
 
@@ -557,6 +579,8 @@ export class Raiden {
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
+    deposit = bigNumberify(deposit);
+    if (!UInt(32).is(deposit)) throw new Error('invalid deposit: must be 0 < amount < 2^256');
     const promise = this.action$
       .pipe(
         filter(isActionOf([channelDeposited, channelDepositFailed])),
@@ -570,9 +594,7 @@ export class Raiden {
         }),
       )
       .toPromise();
-    this.store.dispatch(
-      channelDeposit({ deposit: bigNumberify(deposit) }, { tokenNetwork, partner }),
-    );
+    this.store.dispatch(channelDeposit({ deposit }, { tokenNetwork, partner }));
     return promise;
   }
 
@@ -683,61 +705,148 @@ export class Raiden {
    * @param token - Token address on currently configured token network registry
    * @param target - Target address (must be getAvailability before)
    * @param amount - Amount to try to transfer
-   * @param opts - Optional parameters for transfer:
-   *                - paymentId  payment identifier, a random one will be generated if missing
-   *                - secret  Secret to register, a random one will be generated if missing
-   *                - secrethash  Must match secret, if both provided, or else, secret must be
-   *                              informed to target by other means, and reveal can't be performed
+   * @param options - Optional parameters for transfer:
+   *    <ul>
+   *      <li>paymentId - payment identifier, a random one will be generated if missing</li>
+   *      <li>secret - Secret to register, a random one will be generated if missing</li>
+   *      <li>secrethash - Must match secret, if both provided, or else, secret must be
+   *          informed to target by other means, and reveal can't be performed</li>
+   *      <li>metadata - Used to specify possible routes instead of querying PFS.</li>
+   *    </ul>
    * @returns A promise to transfer's secrethash (unique id) when it's accepted
    */
   public async transfer(
     token: string,
     target: string,
     amount: BigNumberish,
-    opts?: { paymentId?: BigNumberish; secret?: string; secrethash?: string },
+    options: {
+      paymentId?: BigNumberish;
+      secret?: string;
+      secrethash?: string;
+      metadata?: { readonly routes: { readonly route: string[] }[] };
+    } = {},
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    amount = bigNumberify(amount);
-    if (!UInt(32).is(amount)) throw new Error('Invalid amount');
+    const value = bigNumberify(amount);
+    if (!UInt(32).is(value)) throw new Error('Invalid amount');
 
-    const paymentId = !opts || !opts.paymentId ? undefined : bigNumberify(opts.paymentId);
-    if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid opts.paymentId');
+    const paymentId = !options.paymentId ? undefined : bigNumberify(options.paymentId);
+    if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid options.paymentId');
 
-    let secret: Secret | undefined, secrethash: Hash | undefined;
-    if (opts) {
-      const _secret = opts.secret;
-      if (_secret !== undefined && !Secret.is(_secret)) throw new Error('Invalid opts.secret');
-      const _secrethash = opts.secrethash;
-      if (_secrethash !== undefined && !Hash.is(_secrethash))
-        throw new Error('Invalid opts.secrethash');
-      secret = _secret;
-      secrethash = _secrethash;
-    }
-    if (!secrethash) {
-      if (!secret) secret = makeSecret();
-      secrethash = keccak256(secret) as Hash;
-    } else if (secret && keccak256(secret) !== secrethash) {
-      throw new Error('Secret and secrethash must match if passing both');
-    }
+    if (options.secret !== undefined && !Secret.is(options.secret))
+      throw new Error('Invalid options.secret');
+    if (options.secrethash !== undefined && !Hash.is(options.secrethash))
+      throw new Error('Invalid options.secrethash');
+
+    // use provided secret or create one if no secrethash was provided
+    const secret = options.secret
+        ? options.secret
+        : !options.secrethash
+        ? makeSecret()
+        : undefined,
+      secrethash = options.secrethash || getSecrethash(secret!);
+    if (secret && getSecrethash(secret) !== secrethash)
+      throw new Error('Provided secrethash must match the sha256 hash of provided secret');
+
+    const metadata = options.metadata;
+    if (metadata && !Metadata.is(metadata)) throw new Error('Invalid options.metadata');
+
+    return merge(
+      // wait for pathFind response
+      this.action$.pipe(
+        filter(isActionOf([pathFound, pathFindFailed])),
+        first(
+          action =>
+            action.meta.tokenNetwork === tokenNetwork &&
+            action.meta.target === target &&
+            action.meta.value.eq(value),
+        ),
+        map(action => {
+          if (isActionOf(pathFindFailed, action)) throw action.payload;
+          return action.payload.metadata;
+        }),
+      ),
+      // request pathFind; even if metadata was provided, send it for validation
+      // this is done at 'merge' subscription time (i.e. when above action filter is subscribed)
+      defer(() => {
+        this.store.dispatch(pathFind({ metadata }, { tokenNetwork, target, value }));
+        return EMPTY;
+      }),
+    )
+      .pipe(
+        mergeMap(metadata =>
+          merge(
+            // wait for transfer response
+            this.action$.pipe(
+              filter(isActionOf([transferSigned, transferFailed])),
+              first(action => action.meta.secrethash === secrethash),
+              map(action => {
+                if (isActionOf(transferFailed, action)) throw action.payload;
+                return secrethash;
+              }),
+            ),
+            // request transfer with returned/validated metadata at 'merge' subscription time
+            defer(() => {
+              this.store.dispatch(
+                transfer(
+                  {
+                    tokenNetwork,
+                    target,
+                    amount: value,
+                    metadata,
+                    paymentId,
+                    secret,
+                  },
+                  { secrethash },
+                ),
+              );
+              return EMPTY;
+            }),
+          ),
+        ),
+      )
+      .toPromise();
+  }
+
+  /**
+   * Request a path from PFS
+   *
+   * If a direct route is possible, it'll be returned. Else if PFS is set up, a request will be
+   * performed and the cleaned/validated result metadata containing the 'routes' will be resolved.
+   * Else, if no route can be found, promise is rejected with respective error.
+   *
+   * @param token - Token address on currently configured token network registry
+   * @param target - Target address (must be getAvailability before)
+   * @param amount - Minimum capacity required on routes
+   * @returns A promise to returned routes metadata
+   */
+  public async findRoutes(token: string, target: string, amount: BigNumberish): Promise<Metadata> {
+    if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
+    const tokenNetwork = this.state.tokens[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
+
+    const value = bigNumberify(amount);
+    if (!UInt(32).is(value)) throw new Error('Invalid amount');
 
     const promise = this.action$
       .pipe(
-        filter(isActionOf([transferSigned, transferFailed])),
-        filter(action => action.meta.secrethash === secrethash!),
-        first(),
+        filter(isActionOf([pathFound, pathFindFailed])),
+        first(
+          action =>
+            action.meta.tokenNetwork === tokenNetwork &&
+            action.meta.target === target &&
+            action.meta.value.eq(amount),
+        ),
         map(action => {
-          if (isActionOf(transferFailed, action)) throw action.payload;
-          return secrethash!;
+          if (isActionOf(pathFindFailed, action)) throw action.payload;
+          return action.payload.metadata;
         }),
       )
       .toPromise();
-
-    this.store.dispatch(
-      transfer({ tokenNetwork, target, amount, paymentId, secret }, { secrethash }),
-    );
+    this.store.dispatch(pathFind({}, { tokenNetwork, target, value }));
     return promise;
   }
 }

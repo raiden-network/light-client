@@ -3,14 +3,14 @@ import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { isLeft } from 'fp-ts/lib/Either';
 
 import { Signer } from 'ethers';
-import { keccak256, verifyMessage } from 'ethers/utils';
-import { concat, hexlify, arrayify } from 'ethers/utils/bytes';
+import { keccak256, RLP, verifyMessage } from 'ethers/utils';
+import { arrayify, concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
-import { Address, Hash, HexString, Signature } from '../utils/types';
+import { Address, Hash, HexString, Signature, UInt } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { SignedBalanceProof } from '../channels/types';
-import { EnvelopeMessage, Message, MessageType, Signed } from './types';
+import { EnvelopeMessage, Message, MessageType, Metadata, Signed } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
@@ -21,7 +21,48 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.REFUND_TRANSFER]: 8,
   [MessageType.UNLOCK]: 4,
   [MessageType.LOCK_EXPIRED]: 13,
+  [MessageType.TO_DEVICE]: 14,
+  [MessageType.WITHDRAW_REQUEST]: 15,
+  [MessageType.WITHDRAW_CONFIRMATION]: 16,
+  [MessageType.WITHDRAW_EXPIRED]: 17,
 };
+
+// raiden_contracts.constants.MessageTypeId
+enum MessageTypeId {
+  BALANCE_PROOF = 1,
+  WITHDRAW = 3,
+}
+
+/**
+ * Create the hash of Metadata structure.
+ *
+ * @param metadata - The LockedTransfer metadata
+ * @returns Hash of the metadata.
+ */
+export function createMetadataHash(metadata: Metadata): Hash {
+  const routeHashes = metadata.routes.map(value => keccak256(RLP.encode(value.route)) as Hash);
+  return keccak256(RLP.encode(routeHashes)) as Hash;
+}
+
+/**
+ * Returns a balance_hash from transferred&locked amounts & locksroot
+ *
+ * @param transferredAmount - EnvelopeMessage.transferred_amount
+ * @param lockedAmount - EnvelopeMessage.locked_amount
+ * @param locksroot - Hash of all current locks
+ * @returns Hash of the balance
+ */
+export function createBalanceHash(
+  transferredAmount: UInt<32>,
+  lockedAmount: UInt<32>,
+  locksroot: Hash,
+): Hash {
+  return (transferredAmount.isZero() && lockedAmount.isZero() && locksroot === HashZero
+    ? HashZero
+    : keccak256(
+        concat([encode(transferredAmount, 32), encode(lockedAmount, 32), encode(locksroot, 32)]),
+      )) as Hash;
+}
 
 /**
  * Create the messageHash for a given EnvelopeMessage
@@ -34,61 +75,39 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
     case MessageType.LOCKED_TRANSFER:
     case MessageType.REFUND_TRANSFER:
       // hash of packed representation of the whole message
-      return keccak256(
-        concat([
-          encode(CMDIDs[message.type], 1),
-          encode(0, 3), // pad(3)
-          encode(message.nonce, 8),
-          encode(message.chain_id, 32),
-          encode(message.message_identifier, 8),
-          encode(message.payment_identifier, 8),
-          encode(message.lock.expiration, 32),
-          encode(message.token_network_address, 20),
-          encode(message.token, 20),
-          encode(message.channel_identifier, 32),
-          encode(message.recipient, 20),
-          encode(message.target, 20),
-          encode(message.initiator, 20),
-          encode(message.locksroot, 32),
-          encode(message.lock.secrethash, 32),
-          encode(message.transferred_amount, 32),
-          encode(message.locked_amount, 32),
-          encode(message.lock.amount, 32),
-          encode(message.fee, 32),
-        ]),
-      ) as Hash;
+      let packed = concat([
+        encode(CMDIDs[message.type], 1),
+        encode(message.message_identifier, 8),
+        encode(message.payment_identifier, 8),
+        encode(message.lock.expiration, 32),
+        encode(message.token, 20),
+        encode(message.recipient, 20),
+        encode(message.target, 20),
+        encode(message.initiator, 20),
+        encode(message.lock.secrethash, 32),
+        encode(message.lock.amount, 32),
+        encode(message.fee, 32),
+      ]);
+
+      if (message.type === MessageType.LOCKED_TRANSFER)
+        packed = concat([packed, createMetadataHash(message.metadata)]);
+      return keccak256(packed) as Hash;
     case MessageType.UNLOCK:
       return keccak256(
         concat([
           encode(CMDIDs[message.type], 1),
-          encode(0, 3),
-          encode(message.chain_id, 32),
           encode(message.message_identifier, 8),
           encode(message.payment_identifier, 8),
-          encode(message.token_network_address, 20),
           encode(message.secret, 32),
-          encode(message.nonce, 8),
-          encode(message.channel_identifier, 32),
-          encode(message.transferred_amount, 32),
-          encode(message.locked_amount, 32),
-          encode(message.locksroot, 32),
         ]),
       ) as Hash;
     case MessageType.LOCK_EXPIRED:
       return keccak256(
         concat([
           encode(CMDIDs[message.type], 1),
-          encode(0, 3),
-          encode(message.nonce, 8),
-          encode(message.chain_id, 32),
           encode(message.message_identifier, 8),
-          encode(message.token_network_address, 20),
-          encode(message.channel_identifier, 32),
           encode(message.recipient, 20),
-          encode(message.locksroot, 32),
           encode(message.secrethash, 32),
-          encode(message.transferred_amount, 32),
-          encode(message.locked_amount, 32),
         ]),
       ) as Hash;
   }
@@ -127,28 +146,22 @@ export function packMessage(message: Message) {
     case MessageType.UNLOCK:
     case MessageType.LOCK_EXPIRED: {
       const messageHash = createMessageHash(message),
-        balanceHash = (message.transferred_amount.isZero() &&
-        message.locked_amount.isZero() &&
-        message.locksroot === HashZero
-          ? HashZero
-          : keccak256(
-              concat([
-                encode(message.transferred_amount, 32),
-                encode(message.locked_amount, 32),
-                encode(message.locksroot, 32),
-              ]),
-            )) as Hash;
+        balanceHash = createBalanceHash(
+          message.transferred_amount,
+          message.locked_amount,
+          message.locksroot,
+        );
       return hexlify(
         concat([
           encode(message.token_network_address, 20),
           encode(message.chain_id, 32),
-          encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
+          encode(MessageTypeId.BALANCE_PROOF, 32),
           encode(message.channel_identifier, 32),
           encode(balanceHash, 32), // balance hash
           encode(message.nonce, 32),
           encode(messageHash, 32), // additional hash
         ]),
-      ) as HexString<180>;
+      ) as HexString<212>;
     }
     case MessageType.SECRET_REQUEST:
       return hexlify(
@@ -171,6 +184,43 @@ export function packMessage(message: Message) {
           encode(message.secret, 32),
         ]),
       ) as HexString<44>;
+    case MessageType.TO_DEVICE:
+      return hexlify(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3),
+          encode(message.message_identifier, 8),
+        ]),
+      ) as HexString<12>;
+    case MessageType.WITHDRAW_REQUEST:
+    case MessageType.WITHDRAW_CONFIRMATION:
+      return hexlify(
+        concat([
+          encode(message.token_network_address, 20),
+          encode(message.chain_id, 32),
+          encode(MessageTypeId.WITHDRAW, 32),
+          encode(message.channel_identifier, 32),
+          encode(message.participant, 20),
+          encode(message.total_withdraw, 32),
+          encode(message.expiration, 32),
+        ]),
+      ) as HexString<200>;
+    case MessageType.WITHDRAW_EXPIRED:
+      return hexlify(
+        concat([
+          encode(CMDIDs[message.type], 1),
+          encode(0, 3),
+          encode(message.nonce, 32),
+          encode(message.message_identifier, 8),
+          encode(message.token_network_address, 20),
+          encode(message.chain_id, 32),
+          encode(MessageTypeId.WITHDRAW, 32),
+          encode(message.channel_identifier, 32),
+          encode(message.participant, 20),
+          encode(message.total_withdraw, 32),
+          encode(message.expiration, 32),
+        ]),
+      ) as HexString<244>;
   }
 }
 
