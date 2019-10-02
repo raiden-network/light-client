@@ -17,7 +17,9 @@ Vue.use(Vuetify);
 describe('AddressInput', function() {
   let wrapper: Wrapper<AddressInput>;
   let raiden: Mocked<RaidenService>;
-  const excludedAddress: string = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
+  let mockIdenticon: jest.Mock<any, any>;
+  const excludeAddress: string = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
+  const blockAddress: string = '0x123456789009876543211234567890';
 
   function vueFactory(value: string = '') {
     return mount(AddressInput, {
@@ -39,7 +41,8 @@ describe('AddressInput', function() {
       sync: false,
       propsData: {
         value: '',
-        exclude: [excludedAddress]
+        exclude: [excludeAddress],
+        block: [blockAddress]
       },
       mocks: {
         $raiden: raiden,
@@ -169,9 +172,9 @@ describe('AddressInput', function() {
     });
   });
 
-  describe('excluded', () => {
+  describe('exclude & block address', () => {
     it('should show error message if excluded address is entered', async () => {
-      mockInput(wrapper, excludedAddress);
+      mockInput(wrapper, excludeAddress);
       await wrapper.vm.$nextTick();
 
       const messages = wrapper.find('.v-messages__message');
@@ -181,10 +184,30 @@ describe('AddressInput', function() {
       );
     });
 
-    it('should not show error message if there is no exclude prop', async () => {
-      wrapper = vueFactory();
+    it('should show error message if blocked address is entered', async () => {
+      mockInput(wrapper, blockAddress);
+      await wrapper.vm.$nextTick();
 
-      mockInput(wrapper, excludedAddress);
+      const messages = wrapper.find('.v-messages__message');
+      expect(messages.exists()).toBe(true);
+      expect(messages.text()).toBe('address-input.error.channel-not-open');
+    });
+
+    it('should not show error message if there is no exclude or block prop', async () => {
+      wrapper = mount(AddressInput, {
+        propsData: {
+          value: ''
+        },
+        mocks: {
+          $raiden: raiden,
+          $identicon: {
+            getIdenticon: mockIdenticon
+          },
+          $t: (msg: string) => msg
+        }
+      });
+
+      mockInput(wrapper, excludeAddress);
       await wrapper.vm.$nextTick();
 
       const messages = wrapper.find('.v-messages__message');

@@ -57,6 +57,7 @@
           <address-input
             v-model="target"
             :exclude="[token.address, defaultAccount]"
+            :block="blockedHubs"
           ></address-input>
         </v-flex>
       </v-layout>
@@ -114,7 +115,7 @@ import ActionButton from '@/components/ActionButton.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannel } from 'raiden-ts';
+import { RaidenChannel, ChannelState } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -133,10 +134,7 @@ import { getAddress, getAmount } from '@/utils/query-params';
   },
   computed: {
     ...mapState(['defaultAccount']),
-    ...mapGetters({
-      getToken: 'token'
-    }),
-    ...mapGetters(['channelWithBiggestCapacity'])
+    ...mapGetters(['channelWithBiggestCapacity', 'channels'])
   }
 })
 export default class Payment extends Mixins(NavigationMixin) {
@@ -152,15 +150,21 @@ export default class Payment extends Mixins(NavigationMixin) {
   errorTitle: string = '';
   error: string = '';
 
+  channels!: (tokenAddress: string) => RaidenChannel[];
+
   channelWithBiggestCapacity!: (
     tokenAddress: string
   ) => RaidenChannel | undefined;
 
-  getToken!: (address: string) => Token;
-
   get token(): Token {
     const { token: address } = this.$route.params;
-    return this.getToken(address) || ({ address } as Token);
+    return this.$store.getters.token(address) || ({ address } as Token);
+  }
+
+  get blockedHubs(): string[] {
+    return this.channels(this.token.address)
+      .filter((channel: RaidenChannel) => channel.state !== ChannelState.open)
+      .map((channel: RaidenChannel) => channel.partner as string);
   }
 
   get capacity(): BigNumber {
