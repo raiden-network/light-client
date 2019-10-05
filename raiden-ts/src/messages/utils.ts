@@ -25,6 +25,7 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.WITHDRAW_REQUEST]: 15,
   [MessageType.WITHDRAW_CONFIRMATION]: 16,
   [MessageType.WITHDRAW_EXPIRED]: 17,
+  [MessageType.PFS_CAPACITY_UPDATE]: -1,
 };
 
 // raiden_contracts.constants.MessageTypeId
@@ -221,6 +222,21 @@ export function packMessage(message: Message) {
           encode(message.expiration, 32),
         ]),
       ) as HexString<244>;
+    case MessageType.PFS_CAPACITY_UPDATE:
+      return hexlify(
+        concat([
+          encode(message.canonical_identifier.chain_identifier, 32),
+          encode(message.canonical_identifier.token_network_address, 20),
+          encode(message.canonical_identifier.channel_identifier, 32),
+          encode(message.updating_participant, 20),
+          encode(message.other_participant, 20),
+          encode(message.updating_nonce, 8),
+          encode(message.other_nonce, 8),
+          encode(message.updating_capacity, 32),
+          encode(message.other_capacity, 32),
+          encode(message.reveal_timeout, 32),
+        ]),
+      ) as HexString<236>;
   }
 }
 
