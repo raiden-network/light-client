@@ -600,6 +600,8 @@ declare module 'matrix-js-sdk' {
     public roomId: string;
     public getMember(userId: string): RoomMember | null;
     public getJoinedMembers(): RoomMember[];
+    public getCanonicalAlias(): string | null;
+    public getAliases(): string[];
   }
 
   /* models/room-member.js*/
