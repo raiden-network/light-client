@@ -60,7 +60,7 @@ import {
   getMessageSigner,
   signMessage,
 } from '../messages/utils';
-import { messageSend, messageReceived, messageSent } from '../messages/actions';
+import { messageSend, messageReceived, messageSent, messageGlobalSend } from '../messages/actions';
 import { RaidenState } from '../state';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
 import { LruCache } from '../utils/lru';
@@ -73,10 +73,10 @@ import {
   matrixRequestMonitorPresence,
 } from './actions';
 import { RaidenMatrixSetup } from './state';
-import { getPresences$ } from './utils';
+import { getPresences$, getRoom$ } from './utils';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
-// still there, so we consider the user as available then
+// still there, so we consider the user as available/online then
 const AVAILABLE = ['online', 'unavailable'];
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
 
@@ -733,12 +733,12 @@ export const matrixCleanLeftRoomsEpic = (
   );
 
 /**
- * Handles a MessageSendAction and send its message to the first room on queue for address
+ * Handles a messageSend action and send its message to the first room on queue for address
  *
  * @param action$ - Observable of messageSend actions
  * @param state$ - Observable of RaidenStates
  * @param matrix$ - RaidenEpicDeps members
- * @returns Empty observable (whole side-effect on matrix instance)
+ * @returns Observable of messageSent actions
  */
 export const matrixMessageSendEpic = (
   action$: Observable<RaidenAction>,
@@ -774,16 +774,8 @@ export const matrixMessageSendEpic = (
                 map(([, state]) => state.transport!.matrix!.rooms![action.meta.address][0]),
                 distinctUntilChanged(),
                 // get/wait room object for roomId
-                switchMap(roomId => {
-                  const room = matrix.getRoom(roomId);
-                  // wait for the room state to be populated (happens after createRoom resolves)
-                  return room
-                    ? of(room)
-                    : fromEvent<Room>(matrix, 'Room').pipe(
-                        filter(room => room.roomId === roomId),
-                        take(1),
-                      );
-                }),
+                // may wait for the room state to be populated (happens after createRoom resolves)
+                switchMap(roomId => getRoom$(matrix, roomId)),
                 // get up-to-date/last presences at this point in time, which may have been updated
                 withLatestFrom(presencesStateReplay$),
                 // get room member for partner userId
@@ -833,6 +825,51 @@ export const matrixMessageSendEpic = (
         ),
       ),
     ),
+  );
+
+/**
+ * Handles a messageGlobalSend action and send one-shot message to a global room
+ *
+ * @param action$ - Observable of messageSend actions
+ * @param state$ - Observable of RaidenStates
+ * @param matrix$ - RaidenEpicDeps members
+ * @returns Empty observable (whole side-effect on matrix instance)
+ */
+export const matrixMessageGlobalSendEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { matrix$, config$ }: RaidenEpicDeps,
+): Observable<RaidenAction> =>
+  // actual output observable, gets/wait for the user to be in a room, and then sendMessage
+  action$.pipe(
+    filter(isActionOf(messageGlobalSend)),
+    // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
+    mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
+    withLatestFrom(state$, config$),
+    mergeMap(([{ action, matrix }, state, config]) => {
+      const globalRooms = [config.discoveryRoom, config.pfsRoom].filter(g => !!g);
+      if (!globalRooms.includes(action.meta.roomName)) {
+        console.warn(
+          'messageGlobalSend for unknown global room, ignoring',
+          action.meta.roomName,
+          globalRooms,
+        );
+        return EMPTY;
+      }
+      const serverName = getServerName(state.transport!.matrix!.server),
+        roomAlias = `#${action.meta.roomName}:${serverName}`;
+      return getRoom$(matrix, roomAlias).pipe(
+        // send message!
+        mergeMap(room => {
+          const body: string =
+            typeof action.payload.message === 'string'
+              ? action.payload.message
+              : encodeJsonMessage(action.payload.message);
+          return matrix.sendEvent(room.roomId, 'm.room.message', { body, msgtype: 'm.text' }, '');
+        }),
+      );
+    }),
+    ignoreElements(),
   );
 
 /**

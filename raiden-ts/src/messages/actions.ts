@@ -24,6 +24,12 @@ export const messageSent = createStandardAction('messageSent')<
   { address: Address }
 >();
 
+/** One-shot send payload.message to a global room in transport */
+export const messageGlobalSend = createStandardAction('messageSend')<
+  { message: string | Signed<Message> },
+  { roomName: string }
+>();
+
 /**
  * payload.message was received on payload.ts (timestamp) from meta.address
  * payload.userId and payload.roomId are optional and specific to matrix transport, as sender info
