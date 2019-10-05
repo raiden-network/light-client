@@ -25,6 +25,7 @@ export enum MessageType {
   WITHDRAW_REQUEST = 'WithdrawRequest',
   WITHDRAW_CONFIRMATION = 'WithdrawConfirmation',
   WITHDRAW_EXPIRED = 'WithdrawExpired',
+  PFS_CAPACITY_UPDATE = 'PFSCapacityUpdate',
 }
 
 // Mixin of a message that contains an identifier and should be ack'ed with a respective Delivered
@@ -227,6 +228,27 @@ export const WithdrawExpired = t.readonly(
 );
 export interface WithdrawExpired extends t.TypeOf<typeof WithdrawExpired> {}
 
+export const PFSCapacityUpdate = t.readonly(
+  t.type({
+    type: t.literal(MessageType.PFS_CAPACITY_UPDATE),
+    canonical_identifier: t.readonly(
+      t.type({
+        chain_identifier: UInt(32),
+        token_network_address: Address,
+        channel_identifier: UInt(32),
+      }),
+    ),
+    updating_participant: Address,
+    other_participant: Address,
+    updating_nonce: UInt(8),
+    other_nonce: UInt(8),
+    updating_capacity: UInt(32),
+    other_capacity: UInt(32),
+    reveal_timeout: t.number,
+  }),
+);
+export interface PFSCapacityUpdate extends t.TypeOf<typeof PFSCapacityUpdate> {}
+
 export const Message = t.union([
   Delivered,
   Processed,
@@ -240,6 +262,7 @@ export const Message = t.union([
   WithdrawRequest,
   WithdrawConfirmation,
   WithdrawExpired,
+  PFSCapacityUpdate,
 ]);
 // prefer an explicit union to have the union of the interfaces, instead of the union of t.TypeOf's
 export type Message =
@@ -254,7 +277,8 @@ export type Message =
   | ToDevice
   | WithdrawRequest
   | WithdrawConfirmation
-  | WithdrawExpired;
+  | WithdrawExpired
+  | PFSCapacityUpdate;
 export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;
 
 // generic type codec for messages that must be signed
