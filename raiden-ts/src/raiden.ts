@@ -439,6 +439,10 @@ export class Raiden {
 
     const raidenConfig: RaidenConfig = {
       ...defaultConfig.default,
+      ...{
+        discoveryRoom: `raiden_${network.name || network.chainId}_discovery`,
+        pfsRoom: `raiden_${network.name || network.chainId}_path_finding`,
+      },
       ...defaultConfig[network.name],
       ...config,
     };
