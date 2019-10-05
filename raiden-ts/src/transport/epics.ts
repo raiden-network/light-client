@@ -9,6 +9,7 @@ import {
   timer,
   ReplaySubject,
   throwError,
+  merge,
 } from 'rxjs';
 import {
   catchError,
@@ -94,7 +95,7 @@ const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
 export const initMatrixEpic = (
   {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, network, signer, matrix$, config$ }: RaidenEpicDeps,
+  { address, signer, matrix$, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof matrixSetup>> =>
   state$.pipe(
     first(),
@@ -195,16 +196,18 @@ export const initMatrixEpic = (
         );
       }
     }),
-    mergeMap(({ matrix, server, setup }) =>
-      // ensure displayName is set even on restarts
-      from(matrix.setDisplayName(setup.displayName)).pipe(
-        // ensure we joined discovery room
-        mergeMap(() =>
-          matrix.joinRoom(
-            `#raiden_${network.name || network.chainId}_discovery:${getServerName(server)}`,
-          ),
-        ),
-        mapTo({ matrix, server, setup }),
+    withLatestFrom(config$),
+    mergeMap(([{ matrix, server, setup }, config]) =>
+      merge(
+        // ensure displayName is set even on restarts
+        from(matrix.setDisplayName(setup.displayName)),
+        // ensure we joined global rooms
+        ...[config.discoveryRoom, config.pfsRoom]
+          .filter(g => !!g)
+          .map(globalRoom => from(matrix.joinRoom(`#${globalRoom}:${getServerName(server)}`))),
+      ).pipe(
+        toArray(), // wait all promises to complete
+        mapTo({ matrix, server, setup }), // return triplet again
       ),
     ),
     tap(({ matrix }) => {
@@ -618,7 +621,8 @@ export const matrixHandleInvitesEpic = (
 
 /**
  * Leave any excess room for a partner when creating or joining a new one.
- * Excess rooms are the ones behind a given threshold (currently 3) in the address's rooms queue
+ * Excess rooms are LRU beyond a given threshold (configurable, default=3) in address's rooms
+ * queue and are checked (only) when a new one is added to it.
  *
  * @param action$ - Observable of matrixRoom actions
  * @param state$ - Observable of RaidenStates
@@ -628,18 +632,17 @@ export const matrixHandleInvitesEpic = (
 export const matrixLeaveExcessRoomsEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { matrix$ }: RaidenEpicDeps,
+  { matrix$, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof matrixRoomLeave>> =>
   action$.pipe(
     // act whenever a new room is added to the address queue in state
     filter(isActionOf(matrixRoom)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
-    withLatestFrom(state$),
-    mergeMap(([{ action, matrix }, state]) => {
-      const THRESHOLD = 3;
+    withLatestFrom(state$, config$),
+    mergeMap(([{ action, matrix }, state, { matrixExcessRooms }]) => {
       const rooms = state.transport!.matrix!.rooms![action.meta.address];
-      return from(rooms.filter(({}, i) => i >= THRESHOLD)).pipe(
+      return from(rooms.filter(({}, i) => i >= matrixExcessRooms)).pipe(
         mergeMap(roomId => matrix.leave(roomId).then(() => roomId)),
         map(roomId => matrixRoomLeave({ roomId }, action.meta)),
       );
@@ -647,8 +650,7 @@ export const matrixLeaveExcessRoomsEpic = (
   );
 
 /**
- * Leave any room which is neither discovery/global nor known to state as a room for a user of
- * interest
+ * Leave any room which is neither global nor known as a room for some user of interest
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
@@ -658,7 +660,7 @@ export const matrixLeaveExcessRoomsEpic = (
 export const matrixLeaveUnknownRoomsEpic = (
   {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { matrix$, network }: RaidenEpicDeps,
+  { matrix$, config$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix Room events
@@ -666,13 +668,13 @@ export const matrixLeaveUnknownRoomsEpic = (
       fromEvent<Room>(matrix, 'Room').pipe(map(room => ({ matrix, roomId: room.roomId }))),
     ),
     delay(30e3), // this room may become known later for some reason, so wait a little
-    withLatestFrom(state$),
+    withLatestFrom(state$, config$),
     // filter for leave events to us
-    filter(([{ matrix, roomId }, state]) => {
+    filter(([{ matrix, roomId }, state, config]) => {
       const room = matrix.getRoom(roomId);
       if (!room) return false; // room already gone while waiting
-      if (room.name && room.name.match(`#raiden_${network.name || network.chainId}_discovery:`))
-        return false;
+      const globalRooms = [config.discoveryRoom, config.pfsRoom].filter(g => !!g);
+      if (room.name && globalRooms.some(g => room.name.match(`#${g}:`))) return false;
       const rooms: { [address: string]: string[] } = get(
         state,
         ['transport', 'matrix', 'rooms'],
@@ -847,7 +849,7 @@ export const matrixMessageSendEpic = (
 export const matrixMessageReceivedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { matrix$ }: RaidenEpicDeps,
+  { matrix$, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof messageReceived>> =>
   combineLatest(getPresences$(action$), state$).pipe(
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
@@ -863,14 +865,18 @@ export const matrixMessageReceivedEpic = (
             (event, room) => ({ matrix, event, room }),
           ),
         ),
-        // filter for text messages from other users
+        withLatestFrom(config$),
+        // filter for text messages not from us and not from global rooms
         filter(
-          ({ event, matrix }) =>
+          ([{ matrix, event, room }, config]) =>
             event.getType() === 'm.room.message' &&
+            event.event.content.msgtype === 'm.text' &&
             event.getSender() !== matrix.getUserId() &&
-            event.event.content.msgtype === 'm.text',
+            ![config.discoveryRoom, config.pfsRoom]
+              .filter(g => !!g)
+              .some(g => room.name && room.name.match(`#${g}:`)),
         ),
-        mergeMap(({ event, room }) =>
+        mergeMap(([{ event, room }]) =>
           presencesStateReplay$.pipe(
             filter(([presences, state]) => {
               const presence = find(presences, ['payload.userId', event.getSender()]);

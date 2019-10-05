@@ -9,9 +9,14 @@ import * as t from 'io-ts';
  * - revealTimeout - Timeout for secrets to be revealed
  * - settleTimeout - Timeout for channels to be settled
  * - httpTimeout - Used in http fetch requests
+ * - pfs - Path Finding Service URL, set to null to disable
+ * - discoveryRoom - Discovery Room to auto-join, use null to disable
+ * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
+ * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
+ *                       Leave LRU beyond this threshold.
  * - matrixServer? - Specify a matrix server to use.
  * - logger? - String specifying the console log level of redux-logger. Use '' to disable.
- *             Defaults to 'debug' if process.env.NODE_ENV === 'development'
+ *             Defaults to 'debug' if undefined and process.env.NODE_ENV === 'development'
  */
 export const RaidenConfig = t.readonly(
   t.intersection([
@@ -21,6 +26,9 @@ export const RaidenConfig = t.readonly(
       settleTimeout: t.number,
       httpTimeout: t.number,
       pfs: t.union([t.string, t.null]),
+      discoveryRoom: t.union([t.string, t.null]),
+      pfsRoom: t.union([t.string, t.null]),
+      matrixExcessRooms: t.number,
     }),
     t.partial({
       matrixServer: t.string,
@@ -53,5 +61,8 @@ export const defaultConfig: {
     revealTimeout: 50,
     httpTimeout: 30e3,
     pfs: null,
+    discoveryRoom: null,
+    pfsRoom: null,
+    matrixExcessRooms: 3,
   },
 };
