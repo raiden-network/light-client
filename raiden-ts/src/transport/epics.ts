@@ -7,7 +7,6 @@ import {
   EMPTY,
   fromEvent,
   timer,
-  ReplaySubject,
   throwError,
   merge,
 } from 'rxjs';
@@ -21,7 +20,6 @@ import {
   ignoreElements,
   map,
   mergeMap,
-  multicast,
   withLatestFrom,
   scan,
   startWith,
@@ -34,6 +32,7 @@ import {
   finalize,
   first,
   timeout,
+  publishReplay,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
@@ -74,7 +73,6 @@ import {
   matrixRequestMonitorPresence,
 } from './actions';
 import { RaidenMatrixSetup } from './state';
-import { Presences } from './types';
 import { getPresences$ } from './utils';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
@@ -491,7 +489,7 @@ export const matrixCreateRoomEpic = (
   combineLatest(getPresences$(action$), state$).pipe(
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
     // but working inside concatMap, which is called only at outer next and subscribe delayed
-    multicast(new ReplaySubject<[Presences, RaidenState]>(1), presencesStateReplay$ =>
+    publishReplay(1, undefined, presencesStateReplay$ =>
       // actual output observable, handles MessageSendAction serially and create room if needed
       action$.pipe(
         filter(isActionOf(messageSend)),
@@ -750,7 +748,7 @@ export const matrixMessageSendEpic = (
   combineLatest(getPresences$(action$), state$).pipe(
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
     // but working inside concatMap, called only at outer emit and subscription delayed
-    multicast(new ReplaySubject<[Presences, RaidenState]>(1), presencesStateReplay$ =>
+    publishReplay(1, undefined, presencesStateReplay$ =>
       // actual output observable, gets/wait for the user to be in a room, and then sendMessage
       action$.pipe(
         filter(isActionOf(messageSend)),
@@ -854,7 +852,7 @@ export const matrixMessageReceivedEpic = (
   combineLatest(getPresences$(action$), state$).pipe(
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
     // but working inside concatMap, called only at outer emit and subscription delayed
-    multicast(new ReplaySubject<[Presences, RaidenState]>(1), presencesStateReplay$ =>
+    publishReplay(1, undefined, presencesStateReplay$ =>
       // actual output observable, gets/wait for the user to be in a room, and then sendMessage
       matrix$.pipe(
         // when matrix finishes initialization, register to matrix timeline events
