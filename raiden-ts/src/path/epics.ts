@@ -1,4 +1,5 @@
-import { Observable, of, combineLatest, from } from 'rxjs';
+/* eslint-disable @typescript-eslint/camelcase */
+import { Observable, of, combineLatest, from, EMPTY } from 'rxjs';
 import {
   filter,
   mergeMap,
@@ -15,16 +16,23 @@ import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { isLeft } from 'fp-ts/lib/Either';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
+import { bigNumberify } from 'ethers/utils';
 
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { getPresences$ } from '../transport/utils';
+import { messageGlobalSend } from '../messages/actions';
+import { PFSCapacityUpdate, MessageType } from '../messages/types';
+import { signMessage } from '../messages/utils';
+import { channelDeposited } from '../channels/actions';
 import { Address, UInt } from '../utils/types';
 import { losslessStringify } from '../utils/data';
 import { pathFind, pathFound, pathFindFailed } from './actions';
 import { channelCanRoute } from './utils';
 import { PathResults } from './types';
+import { ChannelState } from 'raiden-ts/channels';
+import { Zero } from 'ethers/constants';
 
 /**
  * Check if a transfer can be made and return a set of paths for it.
@@ -162,5 +170,73 @@ export const pathFindServiceEpic = (
           ),
         ),
       );
+    }),
+  );
+
+/**
+ * Sends a PFSCapacityUpdate to PFS global room on new deposit on our side of channels
+ *
+ * @param action$ - Observable of channelDeposited actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of messageGlobalSend actions
+ */
+export const pfsCapacityUpdateEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { address, network, signer, config$ }: RaidenEpicDeps,
+): Observable<ActionType<typeof messageGlobalSend>> =>
+  action$.pipe(
+    filter(isActionOf(channelDeposited)),
+    filter(action => action.payload.participant === address),
+    withLatestFrom(state$, config$),
+    filter(([, , { pfsRoom }]) => !!pfsRoom), // ignore actions while/if config.pfsRoom isn't set
+    mergeMap(([action, state, { revealTimeout, pfsRoom }]) => {
+      const channel = state.channels[action.meta.tokenNetwork][action.meta.partner];
+      if (channel.state !== ChannelState.open) return EMPTY;
+
+      const ownTransferred = channel.own.balanceProof
+          ? channel.own.balanceProof.transferredAmount
+          : Zero,
+        ownLocked = channel.own.balanceProof ? channel.own.balanceProof.lockedAmount : Zero,
+        partnerTransferred = channel.partner.balanceProof
+          ? channel.partner.balanceProof.transferredAmount
+          : Zero,
+        partnerLocked = channel.partner.balanceProof
+          ? channel.partner.balanceProof.lockedAmount
+          : Zero,
+        ownBalance = partnerTransferred.sub(ownTransferred),
+        partnerBalance = ownTransferred.sub(partnerTransferred), // == -ownBalance
+        ownCapacity = channel.own.deposit.add(ownBalance).sub(ownLocked) as UInt<32>,
+        partnerCapacity = channel.partner.deposit.add(partnerBalance).sub(partnerLocked) as UInt<
+          32
+        >;
+
+      const message: PFSCapacityUpdate = {
+        type: MessageType.PFS_CAPACITY_UPDATE,
+        canonical_identifier: {
+          chain_identifier: bigNumberify(network.chainId) as UInt<32>,
+          token_network_address: action.meta.tokenNetwork,
+          channel_identifier: bigNumberify(channel.id) as UInt<32>,
+        },
+        updating_participant: address,
+        other_participant: action.meta.partner,
+        updating_nonce: channel.own.balanceProof
+          ? channel.own.balanceProof.nonce
+          : (Zero as UInt<8>),
+        other_nonce: channel.partner.balanceProof
+          ? channel.partner.balanceProof.nonce
+          : (Zero as UInt<8>),
+        updating_capacity: ownCapacity,
+        other_capacity: partnerCapacity,
+        reveal_timeout: revealTimeout,
+      };
+
+      return from(signMessage(signer, message)).pipe(
+        map(signed => messageGlobalSend({ message: signed }, { roomName: pfsRoom! })),
+      );
+    }),
+    catchError(err => {
+      console.error('Error trying to generate & sign PFSCapacityUpdate', err);
+      return EMPTY;
     }),
   );

@@ -30,6 +30,7 @@ import {
   scan,
   concatMap,
   mergeMap,
+  pluck,
 } from 'rxjs/operators';
 
 import './polyfills';
@@ -200,18 +201,18 @@ export class Raiden {
     );
 
     this.transfers$ = state$.pipe(
-      map(state => state.sent),
+      pluck('sent'),
       distinctUntilChanged(),
       concatMap(sent => from(Object.entries(sent))),
       /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
        * changes from last time seen. It relies on value references changing only if needed */
       scan<[string, SentTransfer], { acc: SentTransfers; changed?: SentTransfer }>(
-        ({ acc }, [secrethash, sent]) => {
+        ({ acc }, [secrethash, sent]) =>
           // if ref didn't change, emit previous accumulator, without 'changed' value
-          if (acc[secrethash] === sent) return { acc };
-          // else, update ref in 'acc' and emit value in 'changed' prop
-          else return { acc: { ...acc, [secrethash]: sent }, changed: sent };
-        },
+          acc[secrethash] === sent
+            ? { acc }
+            : // else, update ref in 'acc' and emit value in 'changed' prop
+              { acc: { ...acc, [secrethash]: sent }, changed: sent },
         { acc: {} },
       ),
       filter(({ changed }) => !!changed), // filter out if reference didn't change from last emit
