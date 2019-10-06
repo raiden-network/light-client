@@ -9,7 +9,6 @@ import {
   concatMap,
   map,
   withLatestFrom,
-  reduce,
   timeout,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
@@ -44,7 +43,7 @@ import { Zero } from 'ethers/constants';
 export const pathFindServiceEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { config$ }: RaidenEpicDeps,
+  { address, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof pathFound | typeof pathFindFailed>> =>
   combineLatest(state$, getPresences$(action$), config$).pipe(
     publishReplay(1, undefined, statePresencesConfig$ => {
@@ -69,55 +68,29 @@ export const pathFindServiceEpic = (
               // else, request a route from PFS
               else if (pfs !== null) {
                 // from all channels
-                return from(Object.keys(state.channels[tokenNetwork]) as Address[]).pipe(
-                  // filter partners that can receive (online, enough capacity, etc)
-                  filter(
-                    partner =>
-                      channelCanRoute(
-                        state,
-                        presences,
-                        tokenNetwork,
-                        partner,
-                        action.meta.value,
-                      ) === true,
-                  ),
-                  // TODO: request pathFind once from ourselves instead of each partner
-                  // this requires us updating the PFS with our outgoing capacity on each channel
-                  mergeMap(partner =>
-                    fromFetch(`${pfs}/api/v1/${tokenNetwork}/paths`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: losslessStringify({
-                        from: partner,
-                        to: target,
-                        value: UInt(32).encode(action.meta.value),
-                        max_paths: 10, // eslint-disable-line @typescript-eslint/camelcase
-                      }),
-                    }).pipe(
-                      timeout(httpTimeout),
-                      mergeMap(async response => {
-                        if (!response.ok)
-                          throw new Error(
-                            `PFS: paths request: code=${
-                              response.status
-                            } => body=${await response.text()}`,
-                          );
-                        const decoded = PathResults.decode(await response.json());
-                        if (isLeft(decoded)) throw ThrowReporter.report(decoded);
-                        return decoded.right;
-                      }),
-                      // catch early so other output routes can have the change to succeed
-                      catchError(err => {
-                        console.error('PFS: request error - ignoring', err);
-                        return of<PathResults>({ result: [] });
-                      }),
-                    ),
-                  ),
-                  reduce<PathResults, PathResults['result']>(
-                    (acc, { result }) => [...acc, ...result],
-                    [],
-                  ),
-                  map(result => ({
+                return fromFetch(`${pfs}/api/v1/${tokenNetwork}/paths`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: losslessStringify({
+                    from: address,
+                    to: target,
+                    value: UInt(32).encode(action.meta.value),
+                    max_paths: 10,
+                  }),
+                }).pipe(
+                  timeout(httpTimeout),
+                  mergeMap(async response => {
+                    if (!response.ok)
+                      throw new Error(
+                        `PFS: paths request: code=${
+                          response.status
+                        } => body=${await response.text()}`,
+                      );
+                    const decoded = PathResults.decode(await response.json());
+                    if (isLeft(decoded)) throw ThrowReporter.report(decoded);
+                    return decoded.right;
+                  }),
+                  map(({ result }) => ({
                     routes: result
                       .slice()
                       .sort(({ estimated_fee: a }, { estimated_fee: b }) => a - b)
