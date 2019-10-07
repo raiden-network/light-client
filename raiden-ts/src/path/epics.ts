@@ -16,6 +16,7 @@ import { isActionOf, ActionType } from 'typesafe-actions';
 import { isLeft } from 'fp-ts/lib/Either';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { bigNumberify } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
@@ -25,13 +26,12 @@ import { messageGlobalSend } from '../messages/actions';
 import { PFSCapacityUpdate, MessageType } from '../messages/types';
 import { signMessage } from '../messages/utils';
 import { channelDeposited } from '../channels/actions';
+import { ChannelState } from '../channels/state';
 import { Address, UInt } from '../utils/types';
 import { losslessStringify } from '../utils/data';
 import { pathFind, pathFound, pathFindFailed } from './actions';
 import { channelCanRoute } from './utils';
 import { PathResults } from './types';
-import { ChannelState } from 'raiden-ts/channels';
-import { Zero } from 'ethers/constants';
 
 /**
  * Check if a transfer can be made and return a set of paths for it.

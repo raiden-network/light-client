@@ -25,7 +25,7 @@ export const messageSent = createStandardAction('messageSent')<
 >();
 
 /** One-shot send payload.message to a global room in transport */
-export const messageGlobalSend = createStandardAction('messageSend')<
+export const messageGlobalSend = createStandardAction('messageGlobalSend')<
   { message: string | Signed<Message> },
   { roomName: string }
 >();
