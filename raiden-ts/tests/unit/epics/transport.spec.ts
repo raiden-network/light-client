@@ -4,7 +4,7 @@ import { patchVerifyMessage } from '../patches';
 patchVerifyMessage();
 
 import { AsyncSubject, BehaviorSubject, of, timer, EMPTY, Subject } from 'rxjs';
-import { first, tap, takeUntil } from 'rxjs/operators';
+import { first, tap, takeUntil, toArray } from 'rxjs/operators';
 import { fakeSchedulers } from 'rxjs-marbles/jest';
 import { getType } from 'typesafe-actions';
 import { verifyMessage, BigNumber } from 'ethers/utils';
@@ -21,7 +21,12 @@ import {
   matrixRequestMonitorPresenceFailed,
   matrixRoomLeave,
 } from 'raiden-ts/transport/actions';
-import { messageSend, messageReceived, messageSent } from 'raiden-ts/messages/actions';
+import {
+  messageSend,
+  messageReceived,
+  messageSent,
+  messageGlobalSend,
+} from 'raiden-ts/messages/actions';
 
 import {
   matrixMonitorChannelPresenceEpic,
@@ -38,8 +43,10 @@ import {
   matrixMessageReceivedEpic,
   matrixMessageReceivedUpdateRoomEpic,
   matrixStartEpic,
+  deliveredEpic,
+  matrixMessageGlobalSendEpic,
 } from 'raiden-ts/transport/epics';
-import { MessageType, Processed } from 'raiden-ts/messages/types';
+import { MessageType, Processed, Delivered } from 'raiden-ts/messages/types';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
 import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
 
@@ -293,6 +300,29 @@ describe('transport epic', () => {
       expect.assertions(1);
       const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })),
         state$ = of(state);
+      await expect(
+        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
+      ).resolves.toMatchObject({
+        type: getType(matrixPresenceUpdate),
+        payload: { userId: partnerUserId, available: true, ts: expect.any(Number) },
+        meta: { address: partner },
+      });
+    });
+
+    test('success even if some getUserPresence fails', async () => {
+      expect.assertions(1);
+      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })),
+        state$ = of(state);
+
+      matrix.searchUserDirectory.mockImplementationOnce(async () => ({
+        limited: false,
+        results: [
+          { user_id: `@${partner.toLowerCase()}.2:${matrixServer}`, display_name: '2' },
+          { user_id: partnerUserId, display_name: '1' },
+        ],
+      }));
+      matrix._http.authedRequest.mockRejectedValueOnce(new Error('Could not fetch presence'));
+
       await expect(
         matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
@@ -672,13 +702,16 @@ describe('transport epic', () => {
         expect.assertions(2);
 
         const roomId = `!discoveryRoomId:${matrixServer}`,
-          state$ = of(state);
+          state$ = of(state),
+          name = `#raiden_${depsMock.network.name}_discovery:${matrixServer}`;
 
         matrix.getRoom.mockReturnValueOnce({
           roomId,
-          name: `#raiden_${depsMock.network.name}_discovery:${matrixServer}`,
+          name,
           getMember: jest.fn(),
           getJoinedMembers: jest.fn(() => []),
+          getCanonicalAlias: jest.fn(() => name),
+          getAliases: jest.fn(() => []),
         });
 
         const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
@@ -783,6 +816,8 @@ describe('transport epic', () => {
           user: null,
         })),
         getJoinedMembers: jest.fn(() => []),
+        getCanonicalAlias: jest.fn(() => roomId),
+        getAliases: jest.fn(() => []),
       });
 
       expect(matrixMessageSendEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
@@ -820,6 +855,8 @@ describe('transport epic', () => {
         name: roomId,
         getMember: jest.fn(),
         getJoinedMembers: jest.fn(),
+        getCanonicalAlias: jest.fn(() => roomId),
+        getAliases: jest.fn(() => []),
       });
 
       // user joins later
@@ -842,19 +879,28 @@ describe('transport epic', () => {
   });
 
   describe('matrixMessageReceivedEpic', () => {
+    let state$: BehaviorSubject<RaidenState>;
+
     beforeEach(() => {
+      state$ = new BehaviorSubject<RaidenState>(
+        [
+          matrixSetup({
+            server: matrixServer,
+            setup: { userId, deviceId, accessToken, displayName },
+          }),
+        ].reduce(raidenReducer, state),
+      );
       depsMock.matrix$ = new AsyncSubject();
       depsMock.matrix$.next(matrix);
       depsMock.matrix$.complete();
     });
 
-    test('receive: late presence and late room', async () => {
+    test('receive: success on late presence and late room', async () => {
       expect.assertions(1);
 
       const roomId = `!roomId_for_partner:${matrixServer}`,
         message = 'test message',
-        action$ = new Subject<RaidenAction>(),
-        state$ = new BehaviorSubject<RaidenState>(state);
+        action$ = new Subject<RaidenAction>();
 
       const promise = matrixMessageReceivedEpic(action$, state$, depsMock)
         .pipe(first())
@@ -870,7 +916,7 @@ describe('transport epic', () => {
             origin_server_ts: 123,
           },
         },
-        { roomId },
+        { roomId, getCanonicalAlias: jest.fn(), getAliases: jest.fn(() => []) },
       );
 
       // actions sees presence update for partner only later
@@ -878,7 +924,9 @@ describe('transport epic', () => {
         matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
       );
       // state includes room for partner only later
-      state$.next(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
+      state$.next(
+        [matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, state$.value),
+      );
 
       // then it resolves
       await expect(promise).resolves.toMatchObject({
@@ -904,8 +952,10 @@ describe('transport epic', () => {
         message = encodeJsonMessage(signed),
         action$ = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        ),
-        state$ = of([matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, state));
+        );
+      state$.next(
+        [matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, state$.value),
+      );
 
       const promise = matrixMessageReceivedEpic(action$, state$, depsMock)
         .pipe(first())
@@ -921,7 +971,7 @@ describe('transport epic', () => {
             origin_server_ts: 123,
           },
         },
-        { roomId },
+        { roomId, getCanonicalAlias: jest.fn(), getAliases: jest.fn(() => []) },
       );
 
       // then it resolves
@@ -942,7 +992,7 @@ describe('transport epic', () => {
       });
     });
 
-    test('receive: refuse messages not signed by sender', async () => {
+    test("receive: messages from wrong sender aren't decoded", async () => {
       expect.assertions(1);
 
       const roomId = `!roomId_for_partner:${matrixServer}`,
@@ -954,8 +1004,10 @@ describe('transport epic', () => {
         message = encodeJsonMessage(signed),
         action$ = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        ),
-        state$ = of([matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, state));
+        );
+      state$.next(
+        [matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, state$.value),
+      );
 
       const promise = matrixMessageReceivedEpic(action$, state$, depsMock)
         .pipe(first())
@@ -971,7 +1023,7 @@ describe('transport epic', () => {
             origin_server_ts: 123,
           },
         },
-        { roomId },
+        { roomId, getCanonicalAlias: jest.fn(), getAliases: jest.fn(() => []) },
       );
 
       // then it resolves
@@ -1008,10 +1060,112 @@ describe('transport epic', () => {
           ].reduce(raidenReducer, state),
         );
 
-      const promise = matrixMessageReceivedUpdateRoomEpic(action$, state$).toPromise();
-
-      // then it resolves
-      await expect(promise).resolves.toEqual(matrixRoom({ roomId }, { address: partner }));
+      await expect(
+        matrixMessageReceivedUpdateRoomEpic(action$, state$).toPromise(),
+      ).resolves.toEqual(matrixRoom({ roomId }, { address: partner }));
     });
+  });
+
+  test('deliveredEpic', async () => {
+    expect.assertions(5);
+
+    const roomId = `!roomId_for_partner:${matrixServer}`,
+      processed: Processed = {
+        type: MessageType.PROCESSED,
+        message_identifier: makeMessageId(),
+      },
+      message = await signMessage(partnerSigner, processed),
+      text = encodeJsonMessage(message),
+      action = messageReceived(
+        { text, message, ts: 123, userId: partnerUserId, roomId },
+        { address: partner },
+      ),
+      other: Delivered = {
+        type: MessageType.DELIVERED,
+        delivered_message_identifier: makeMessageId(),
+      },
+      otherSigned = await signMessage(partnerSigner, other),
+      otherText = encodeJsonMessage(otherSigned),
+      otherAction = messageReceived(
+        { text: otherText, message: otherSigned, ts: 456, userId: partnerUserId, roomId },
+        { address: partner },
+      ),
+      // twice messageReceived
+      action$ = of(action, action, otherAction);
+
+    const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
+
+    const output = await deliveredEpic(action$, EMPTY, depsMock)
+      .pipe(toArray())
+      .toPromise();
+
+    expect(output).toHaveLength(2);
+    expect(output[0]).toEqual(
+      messageSend(
+        {
+          message: {
+            type: MessageType.DELIVERED,
+            delivered_message_identifier: message.message_identifier,
+            signature: expect.any(String),
+          },
+        },
+        action.meta,
+      ),
+    );
+    expect(output[1].payload.message).toBe(output[0].payload.message);
+
+    // second signature should have been cached
+    expect(signerSpy).toHaveBeenCalledTimes(1);
+    signerSpy.mockRestore();
+
+    // if you pass something different than the accepted messages, no Delivered is replied
+    await expect(
+      deliveredEpic(of(otherAction), EMPTY, depsMock).toPromise(),
+    ).resolves.toBeUndefined();
+  });
+
+  test('matrixMessageGlobalSendEpic', async () => {
+    expect.assertions(5);
+
+    const processed: Processed = {
+        type: MessageType.PROCESSED,
+        message_identifier: makeMessageId(),
+      },
+      message = await signMessage(partnerSigner, processed),
+      text = encodeJsonMessage(message),
+      state$ = of(
+        [
+          matrixSetup({
+            server: matrixServer,
+            setup: { userId, deviceId, accessToken, displayName },
+          }),
+        ].reduce(raidenReducer, state),
+      );
+
+    await expect(
+      matrixMessageGlobalSendEpic(
+        of(messageGlobalSend({ message }, { roomName: 'unknown_global_room' })),
+        state$,
+        depsMock,
+      ).toPromise(),
+    ).resolves.toBeUndefined();
+
+    expect(matrix.sendEvent).toHaveBeenCalledTimes(0);
+
+    await expect(
+      matrixMessageGlobalSendEpic(
+        of(messageGlobalSend({ message }, { roomName: depsMock.config$.value.discoveryRoom! })),
+        state$,
+        depsMock,
+      ).toPromise(),
+    ).resolves.toBeUndefined();
+
+    expect(matrix.sendEvent).toHaveBeenCalledTimes(1);
+    expect(matrix.sendEvent).toHaveBeenCalledWith(
+      expect.any(String),
+      'm.room.message',
+      expect.objectContaining({ body: text, msgtype: 'm.text' }),
+      expect.anything(),
+    );
   });
 });
