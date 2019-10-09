@@ -28,6 +28,7 @@ import { RaidenEpicDeps } from 'raiden-ts/types';
 import { RaidenAction } from 'raiden-ts/actions';
 import { RaidenState, initialState } from 'raiden-ts/state';
 import { Address, Signature } from 'raiden-ts/utils/types';
+import { getServerName } from 'raiden-ts/utils/matrix';
 import { RaidenConfig, defaultConfig } from 'raiden-ts/config';
 
 export type MockedContract<T extends Contract> = jest.Mocked<T> & {
@@ -149,7 +150,11 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   return {
     stateOutput$: new BehaviorSubject<RaidenState>(initialState),
     actionOutput$: new Subject<RaidenAction>(),
-    config$: new BehaviorSubject<RaidenConfig>(defaultConfig.default),
+    config$: new BehaviorSubject<RaidenConfig>({
+      ...defaultConfig.default,
+      discoveryRoom: `raiden_${network.name}_discovery`,
+      pfsRoom: `raiden_${network.name}_path_finding`,
+    }),
     matrix$: new AsyncSubject<MatrixClient>(),
     address,
     network,
@@ -221,8 +226,18 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
     getProfileInfo: jest.fn(async userId => ({ displayname: `${userId}_display_name` })),
     createRoom: jest.fn(async ({ visibility, invite }) => ({
       room_id: `!roomId_${visibility || 'public'}_with_${(invite || []).join('_')}:${server}`,
+      getMember: jest.fn(),
+      getCanonicalAlias: jest.fn(() => null),
+      getAliases: jest.fn(() => []),
     })),
-    getRoom: jest.fn(roomId => ({ roomId, getMember: jest.fn() })),
+    getRoom: jest.fn(roomId => ({
+      roomId,
+      getMember: jest.fn(),
+      getCanonicalAlias: jest.fn(() => null),
+      getAliases: jest.fn(() => []),
+    })),
+    getRooms: jest.fn(() => []),
+    getHomeserverUrl: jest.fn(() => getServerName(server)),
     invite: jest.fn(async () => true),
     leave: jest.fn(async () => true),
     sendEvent: jest.fn(async () => true),
