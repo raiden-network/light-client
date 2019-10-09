@@ -1,7 +1,7 @@
 import { Observable, of, fromEvent } from 'rxjs';
 import { filter, scan, startWith, share, take } from 'rxjs/operators';
 import { isActionOf } from 'typesafe-actions';
-import { memoize } from 'lodash';
+import { memoize, curry } from 'lodash';
 import { MatrixClient, Room } from 'matrix-js-sdk';
 
 import { RaidenAction } from '../actions';
@@ -34,6 +34,22 @@ export const getPresences$ = memoize(
 );
 
 /**
+ * Curried function (arity=2) which matches room passed as second argument based on roomId, name or
+ * alias passed as first argument
+ *
+ * @param roomIdOrAlias - Room Id, name, canonical or normal alias for room
+ * @param room - Room to test
+ * @returns True if room matches term, false otherwise
+ */
+export const roomMatch = curry(
+  (roomIdOrAlias: string, room: Room) =>
+    roomIdOrAlias === room.roomId ||
+    roomIdOrAlias === room.name ||
+    roomIdOrAlias === room.getCanonicalAlias() ||
+    room.getAliases().includes(roomIdOrAlias),
+);
+
+/**
  * Returns an observable to a (possibly pending) room matching roomId or some alias
  * This method doesn't try to join the room, just wait for it to show up in MatrixClient.
  *
@@ -43,20 +59,10 @@ export const getPresences$ = memoize(
  */
 export function getRoom$(matrix: MatrixClient, roomIdOrAlias: string): Observable<Room> {
   let room: Room | null | undefined = matrix.getRoom(roomIdOrAlias);
-  if (!room)
-    room = matrix
-      .getRooms()
-      .find(
-        r => roomIdOrAlias === r.getCanonicalAlias() || r.getAliases().includes(roomIdOrAlias),
-      );
+  if (!room) room = matrix.getRooms().find(roomMatch(roomIdOrAlias));
   if (room) return of(room);
   return fromEvent<Room>(matrix, 'Room').pipe(
-    filter(
-      room =>
-        roomIdOrAlias == room.roomId ||
-        roomIdOrAlias === room.getCanonicalAlias() ||
-        room.getAliases().includes(roomIdOrAlias),
-    ),
+    filter(roomMatch(roomIdOrAlias)),
     take(1),
   );
 }

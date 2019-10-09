@@ -73,7 +73,7 @@ import {
   matrixRequestMonitorPresence,
 } from './actions';
 import { RaidenMatrixSetup } from './state';
-import { getPresences$, getRoom$ } from './utils';
+import { getPresences$, getRoom$, roomMatch } from './utils';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available/online then
@@ -323,8 +323,7 @@ export const matrixMonitorPresenceEpic = (
         matrix.searchUserDirectory({ term: action.meta.address.toLowerCase() }),
       ).pipe(
         // for every result matches, verify displayName signature is address of interest
-        map(({ results }) => {
-          const validUsers: string[] = [];
+        mergeMap(function*({ results }) {
           for (const user of results) {
             if (!user.display_name) continue;
             try {
@@ -335,18 +334,9 @@ export const matrixMonitorPresenceEpic = (
             } catch (err) {
               continue;
             }
-            validUsers.push(user.user_id);
+            yield user.user_id;
           }
-          if (validUsers.length === 0)
-            // if no valid user could be found, throw an error to be handled below
-            throw new Error(
-              `Could not find any user with valid signature for ${
-                action.meta.address
-              } in ${JSON.stringify(results)}`,
-            );
-          else return validUsers;
         }),
-        mergeMap(userIds => from(userIds)),
         mergeMap(userId =>
           getUserPresence(matrix, userId)
             .then(presence => ({ ...presence, user_id: userId }))
@@ -363,7 +353,13 @@ export const matrixMonitorPresenceEpic = (
         // we could have missed presence updates, then we need to fetch it here directly,
         // and from now on, that other epic will monitor its updates, and sort by most recently
         // seen user
-        map(presences => minBy(presences, 'last_active_ago')!),
+        map(presences => {
+          if (!presences.length)
+            throw new Error(
+              `Could not find any user with valid signature for ${action.meta.address}`,
+            );
+          return minBy(presences, 'last_active_ago')!;
+        }),
         map(({ presence, user_id: userId }) =>
           matrixPresenceUpdate(
             {
@@ -909,7 +905,10 @@ export const matrixMessageReceivedEpic = (
             event.getSender() !== matrix.getUserId() &&
             ![config.discoveryRoom, config.pfsRoom]
               .filter(g => !!g)
-              .some(g => room.name && room.name.match(`#${g}:`)),
+              .some(g =>
+                // generate an alias for discovery room of given name, and check if room matches
+                roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
+              ),
         ),
         mergeMap(([{ event, room }]) =>
           presencesStateReplay$.pipe(
