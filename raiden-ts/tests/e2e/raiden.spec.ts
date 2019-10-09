@@ -1,7 +1,7 @@
 import { first, filter } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256 } from 'ethers/utils';
-import { getType } from 'typesafe-actions';
+import { getType, isActionOf } from 'typesafe-actions';
 import { get } from 'lodash';
 
 import { TestProvider } from './provider';
@@ -20,6 +20,7 @@ import { Storage, Secret, Address } from 'raiden-ts/utils/types';
 import { ContractsInfo } from 'raiden-ts/types';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
+import { matrixSetup } from 'raiden-ts/transport/actions';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
@@ -625,7 +626,22 @@ describe('Raiden', () => {
         info,
       );
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await client's matrix initialization
+      await Promise.all([
+        raiden1.action$
+          .pipe(
+            filter(isActionOf(matrixSetup)),
+            first(),
+          )
+          .toPromise(),
+        raiden2.action$
+          .pipe(
+            filter(isActionOf(matrixSetup)),
+            first(),
+          )
+          .toPromise(),
+      ]);
+
       await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
         userId: `@${partner.toLowerCase()}:${matrixServer}`,
         available: true,

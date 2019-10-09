@@ -196,14 +196,16 @@ export const initMatrixEpic = (
     }),
     withLatestFrom(config$),
     mergeMap(([{ matrix, server, setup }, config]) =>
-      merge(
-        // ensure displayName is set even on restarts
-        from(matrix.setDisplayName(setup.displayName)),
-        // ensure we joined global rooms
-        ...[config.discoveryRoom, config.pfsRoom]
-          .filter(g => !!g)
-          .map(globalRoom => from(matrix.joinRoom(`#${globalRoom}:${getServerName(server)}`))),
-      ).pipe(
+      // ensure displayName is set even on restarts
+      from(matrix.setDisplayName(setup.displayName)).pipe(
+        mergeMap(() =>
+          merge(
+            // ensure we joined global rooms
+            ...[config.discoveryRoom, config.pfsRoom]
+              .filter(g => !!g)
+              .map(globalRoom => from(matrix.joinRoom(`#${globalRoom}:${getServerName(server)}`))),
+          ),
+        ),
         toArray(), // wait all promises to complete
         mapTo({ matrix, server, setup }), // return triplet again
       ),
