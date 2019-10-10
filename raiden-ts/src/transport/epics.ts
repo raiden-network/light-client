@@ -73,7 +73,7 @@ import {
   matrixRequestMonitorPresence,
 } from './actions';
 import { RaidenMatrixSetup } from './state';
-import { getPresences$, getRoom$, roomMatch } from './utils';
+import { getPresences$, getRoom$, roomMatch, globalRoomNames } from './utils';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available/online then
@@ -201,9 +201,9 @@ export const initMatrixEpic = (
         mergeMap(() =>
           merge(
             // ensure we joined global rooms
-            ...[config.discoveryRoom, config.pfsRoom]
-              .filter(g => !!g)
-              .map(globalRoom => from(matrix.joinRoom(`#${globalRoom}:${getServerName(server)}`))),
+            ...globalRoomNames(config).map(globalRoom =>
+              from(matrix.joinRoom(`#${globalRoom}:${getServerName(server)}`)),
+            ),
           ),
         ),
         toArray(), // wait all promises to complete
@@ -669,7 +669,7 @@ export const matrixLeaveUnknownRoomsEpic = (
     filter(([{ matrix, roomId }, state, config]) => {
       const room = matrix.getRoom(roomId);
       if (!room) return false; // room already gone while waiting
-      const globalRooms = [config.discoveryRoom, config.pfsRoom].filter(g => !!g);
+      const globalRooms = globalRoomNames(config);
       if (room.name && globalRooms.some(g => room.name.match(`#${g}:`))) return false;
       const rooms: { [address: string]: string[] } = get(
         state,
@@ -731,7 +731,7 @@ export const matrixCleanLeftRoomsEpic = (
   );
 
 /**
- * Handles a messageSend action and send its message to the first room on queue for address
+ * Handles a [[messageSend]] action and send its message to the first room on queue for address
  *
  * @param action$ - Observable of messageSend actions
  * @param state$ - Observable of RaidenStates
@@ -826,7 +826,7 @@ export const matrixMessageSendEpic = (
   );
 
 /**
- * Handles a messageGlobalSend action and send one-shot message to a global room
+ * Handles a [[messageGlobalSend]] action and send one-shot message to a global room
  *
  * @param action$ - Observable of messageSend actions
  * @param state$ - Observable of RaidenStates
@@ -845,7 +845,7 @@ export const matrixMessageGlobalSendEpic = (
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
     withLatestFrom(state$, config$),
     mergeMap(([{ action, matrix }, state, config]) => {
-      const globalRooms = [config.discoveryRoom, config.pfsRoom].filter(g => !!g);
+      const globalRooms = globalRoomNames(config);
       if (!globalRooms.includes(action.meta.roomName)) {
         console.warn(
           'messageGlobalSend for unknown global room, ignoring',
@@ -905,12 +905,10 @@ export const matrixMessageReceivedEpic = (
             event.getType() === 'm.room.message' &&
             event.event.content.msgtype === 'm.text' &&
             event.getSender() !== matrix.getUserId() &&
-            ![config.discoveryRoom, config.pfsRoom]
-              .filter(g => !!g)
-              .some(g =>
-                // generate an alias for discovery room of given name, and check if room matches
-                roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
-              ),
+            !globalRoomNames(config).some(g =>
+              // generate an alias for global room of given name, and check if room matches
+              roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
+            ),
         ),
         mergeMap(([{ event, room }]) =>
           presencesStateReplay$.pipe(

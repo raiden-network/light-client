@@ -5,6 +5,7 @@ import { memoize, curry } from 'lodash';
 import { MatrixClient, Room } from 'matrix-js-sdk';
 
 import { RaidenAction } from '../actions';
+import { RaidenConfig } from '../config';
 import { Presences } from './types';
 import { matrixPresenceUpdate } from './actions';
 
@@ -32,6 +33,16 @@ export const getPresences$ = memoize(
       startWith({}),
     ),
 );
+
+/**
+ * Return the array of configured global rooms
+ *
+ * @param config - object to gather the list from
+ * @returns Array of room names
+ */
+export function globalRoomNames(config: RaidenConfig) {
+  return [config.discoveryRoom, config.pfsRoom].filter((g): g is string => !!g);
+}
 
 /**
  * Curried function (arity=2) which matches room passed as second argument based on roomId, name or
