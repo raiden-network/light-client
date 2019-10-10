@@ -77,12 +77,27 @@
 
       <v-spacer></v-spacer>
 
-      <action-button
-        :enabled="valid"
-        @click="transfer()"
-        :text="$t('payment.pay-button')"
-        class="payment__pay-button"
-      ></action-button>
+      <v-dialog v-model="findingRoutes" max-width="450">
+        <template #activator="{ on }">
+          <action-button
+            :enabled="valid"
+            @click="findingRoutes = true"
+            :text="$t('payment.pay-button')"
+            v-on="on"
+            class="payment__pay-button"
+          ></action-button>
+        </template>
+        <v-card class="payment__deposit-dialog">
+          <find-routes
+            v-if="findingRoutes"
+            @cancel="findingRoutes = false"
+            @confirm="transfer($event)"
+            :token="token"
+            :amount="amount"
+            :target="target"
+          ></find-routes>
+        </v-card>
+      </v-dialog>
 
       <stepper
         :display="loading"
@@ -113,6 +128,7 @@ import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
+import FindRoutes from '@/components/FindRoutes.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
 import { RaidenChannel, ChannelState } from 'raiden-ts';
@@ -130,7 +146,8 @@ import { getAddress, getAmount } from '@/utils/query-params';
     AddressInput,
     AmountInput,
     Stepper,
-    ErrorScreen
+    ErrorScreen,
+    FindRoutes
   },
   computed: {
     ...mapState(['defaultAccount']),
@@ -149,6 +166,14 @@ export default class Payment extends Mixins(NavigationMixin) {
 
   errorTitle: string = '';
   error: string = '';
+
+  depositing: boolean = false;
+  findingRoutes: boolean = false;
+
+  steps: StepDescription[] = [];
+  doneStep: StepDescription = emptyDescription();
+
+  convertToUnits = BalanceUtils.toUnits;
 
   channels!: (tokenAddress: string) => RaidenChannel[];
 
@@ -176,13 +201,6 @@ export default class Payment extends Mixins(NavigationMixin) {
     }
     return Zero;
   }
-
-  depositing: boolean = false;
-
-  steps: StepDescription[] = [];
-  doneStep: StepDescription = emptyDescription();
-
-  convertToUnits = BalanceUtils.toUnits;
 
   async created() {
     const { amount, target } = this.$route.query;

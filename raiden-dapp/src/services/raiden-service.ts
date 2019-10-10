@@ -15,6 +15,7 @@ import { Zero } from 'ethers/constants';
 import { exhaustMap, filter, first } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import { ConfigProvider } from './config-provider';
+import { Metadata } from 'raiden-ts/dist/messages';
 
 export default class RaidenService {
   private _raiden?: Raiden;
@@ -287,6 +288,18 @@ export default class RaidenService {
       throw new TransferFailed(e);
     }
   }
+
+  async findRoutes(token: string, target: string, amount: BigNumber) {
+    let routes: Metadata | null = null;
+
+    try {
+      routes = await this.raiden.findRoutes(token, target, amount);
+    } catch (e) {
+      throw new FindRoutesFailed(e);
+    }
+
+    return routes;
+  }
 }
 
 export class ChannelSettleFailed extends Error {}
@@ -302,3 +315,5 @@ export class EnsResolveFailed extends Error {}
 export class TransferFailed extends Error {}
 
 export class RaidenInitializationFailed extends Error {}
+
+export class FindRoutesFailed extends Error {}
