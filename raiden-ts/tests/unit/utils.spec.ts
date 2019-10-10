@@ -9,7 +9,7 @@ import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils';
 import { LosslessNumber } from 'lossless-json';
 
-import { fromEthersEvent, getEventsStream } from 'raiden-ts/utils/ethers';
+import { fromEthersEvent, getEventsStream, patchSignSend } from 'raiden-ts/utils/ethers';
 import { Address, BigNumberC, HexString, UInt, Secret, Timed, timed } from 'raiden-ts/utils/types';
 import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
@@ -136,6 +136,36 @@ describe('getEventsStream', () => {
     expect(provider.getTransaction).toHaveBeenCalledWith(pastLog.transactionHash);
     expect(provider.getTransactionReceipt).toHaveBeenCalledWith(pastLog.transactionHash);
   });
+});
+
+test('patchSignSend', async () => {
+  const { provider } = raidenEpicDeps();
+
+  const sendSpy = jest.spyOn(provider, 'send');
+  sendSpy.mockImplementation(async (method, params) => [method, params]);
+
+  patchSignSend(provider);
+
+  // other methods are called as is
+  await expect(provider.send('eth_othermethod', [1, 2])).resolves.toEqual([
+    'eth_othermethod',
+    [1, 2],
+  ]);
+
+  // eth_sign is first replaced by personal_sign with swapped params
+  await expect(provider.send('eth_sign', [1, 2])).resolves.toEqual(['personal_sign', [2, 1]]);
+
+  // other errors in personal_sign are simply re-raised
+  sendSpy.mockRejectedValueOnce(new Error('signature rejected'));
+  await expect(provider.send('eth_sign', [1, 2])).rejects.toThrow('signature rejected');
+
+  // specific error causes monkey patch to revert itself and call again
+  sendSpy.mockClear();
+  sendSpy.mockRejectedValueOnce(new Error('Method personal_sign not supported'));
+  await expect(provider.send('eth_sign', [1, 2])).resolves.toEqual(['eth_sign', [1, 2]]);
+  expect(sendSpy).toHaveBeenCalledTimes(2);
+  expect(sendSpy).toHaveBeenCalledWith('personal_sign', [2, 1]);
+  expect(sendSpy).toHaveBeenCalledWith('eth_sign', [1, 2]);
 });
 
 describe('types', () => {

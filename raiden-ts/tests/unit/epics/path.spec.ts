@@ -12,8 +12,11 @@ import {
 } from 'raiden-ts/channels/actions';
 import { matrixPresenceUpdate } from 'raiden-ts/transport/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
-import { pathFindServiceEpic } from 'raiden-ts/path/epics';
+import { pathFindServiceEpic, pfsCapacityUpdateEpic } from 'raiden-ts/path/epics';
 import { pathFound, pathFind, pathFindFailed } from 'raiden-ts/path/actions';
+import { RaidenState } from 'raiden-ts/state';
+import { messageGlobalSend } from 'raiden-ts/messages/actions';
+import { MessageType } from 'raiden-ts/messages/types';
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps } from '../mocks';
@@ -329,5 +332,96 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(pathFindFailed(expect.any(Error), { tokenNetwork, target, value }));
+  });
+});
+
+describe('PFS: pfsCapacityUpdateEpic', () => {
+  const depsMock = raidenEpicDeps();
+  const {
+    token,
+    tokenNetwork,
+    channelId,
+    partner,
+    settleTimeout,
+    isFirstParticipant,
+    txHash,
+    state,
+  } = epicFixtures(depsMock);
+
+  const openBlock = 121;
+  let openedState: RaidenState;
+
+  /**
+   * this will leave/reset transferingState, signedTransfer as a state with a channel and pending
+   * transfer
+   */
+  beforeEach(async () => {
+    openedState = [
+      tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
+      channelOpened(
+        { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+        { tokenNetwork, partner },
+      ),
+      newBlock({ blockNumber: 125 }),
+    ].reduce(raidenReducer, state);
+  });
+
+  test('own channelDeposited triggers capacity update', async () => {
+    expect.assertions(1);
+
+    const deposit = bigNumberify(500) as UInt<32>,
+      action = channelDeposited(
+        {
+          id: channelId,
+          participant: depsMock.address,
+          totalDeposit: deposit,
+          txHash,
+        },
+        { tokenNetwork, partner },
+      ),
+      action$ = of(action),
+      state$ = new BehaviorSubject<RaidenState>([action].reduce(raidenReducer, openedState));
+
+    await expect(pfsCapacityUpdateEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+      messageGlobalSend(
+        {
+          message: expect.objectContaining({
+            type: MessageType.PFS_CAPACITY_UPDATE,
+            updating_participant: depsMock.address,
+            other_participant: partner,
+            updating_capacity: deposit,
+            signature: expect.any(String),
+          }),
+        },
+        { roomName: expect.stringMatching(depsMock.config$.value.pfsRoom!) },
+      ),
+    );
+  });
+
+  test("signature fail isn't fatal", async () => {
+    expect.assertions(2);
+
+    const deposit = bigNumberify(500) as UInt<32>,
+      action = channelDeposited(
+        {
+          id: channelId,
+          participant: depsMock.address,
+          totalDeposit: deposit,
+          txHash,
+        },
+        { tokenNetwork, partner },
+      ),
+      action$ = of(action),
+      state$ = new BehaviorSubject<RaidenState>([action].reduce(raidenReducer, openedState));
+
+    const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
+    signerSpy.mockRejectedValueOnce(new Error('Signature rejected'));
+
+    await expect(
+      pfsCapacityUpdateEpic(action$, state$, depsMock).toPromise(),
+    ).resolves.toBeUndefined();
+
+    expect(signerSpy).toHaveBeenCalledTimes(1);
+    signerSpy.mockRestore();
   });
 });
