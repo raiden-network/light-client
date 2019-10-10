@@ -1,4 +1,10 @@
 {
+  "general": {
+    "buttons": {
+      "cancel": "Cancel",
+      "pay": "Pay"
+    }
+  },
   "address-input": {
     "paste-button": "Paste",
     "input": {
@@ -35,12 +41,22 @@
   },
   "channel-deposit": {
     "buttons": {
-      "cancel": "Cancel",
       "confirm": "Deposit"
     },
     "input": {
       "label": "Amount"
     }
+  },
+  "find-routes": {
+    "busy-title": "Searching available routes",
+    "title": "Select a route",
+    "description": "Mediators require a small fee to forward your payment. Please select one below:",
+    "buttons": {
+      "confirm": "Continue"
+    },
+    "hops": "Hops",
+    "fees-in": "Fees in {token}",
+    "total-amount": "{totalAmount} {token}"
   },
   "stepper": {
     "steps": {
@@ -132,7 +148,6 @@
         "blockie-alt": "Partner address blockie",
         "token-info": "{symbol} | {name}",
         "buttons": {
-          "pay": "Pay",
           "disconnect": "Disconnect Token",
           "view-channels": "View Channels"
         }
