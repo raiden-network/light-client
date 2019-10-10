@@ -1,8 +1,8 @@
-import { Zero } from 'ethers/constants';
 import { RaidenState } from '../state';
 import { Address, UInt } from '../utils/types';
 import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
+import { channelAmounts } from '../channels/utils';
 
 /**
  * Either returns true if given channel can route a payment, or a reason as string if not
@@ -28,16 +28,7 @@ export function channelCanRoute(
   const channel = state.channels[tokenNetwork][partner];
   if (channel.state !== ChannelState.open)
     return `path: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`;
-  const capacity = channel.own.deposit
-    .sub(
-      channel.own.balanceProof
-        ? channel.own.balanceProof.transferredAmount.add(channel.own.balanceProof.lockedAmount)
-        : Zero,
-    )
-    .add(
-      // only relevant once we can receive from partner
-      channel.partner.balanceProof ? channel.partner.balanceProof.transferredAmount : Zero,
-    );
+  const { ownCapacity: capacity } = channelAmounts(channel);
   if (capacity.lt(amount))
     return `path: channel with "${partner}" don't have enough capacity=${capacity.toString()}`;
   return true;
