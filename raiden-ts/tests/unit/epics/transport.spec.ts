@@ -62,6 +62,7 @@ describe('transport epic', () => {
     partner,
     state,
     matrixServer,
+    partnerRoomId,
     partnerUserId,
     partnerSigner,
     matrix,
@@ -519,7 +520,7 @@ describe('transport epic', () => {
             { address: partner },
           ),
         ),
-        roomId = `!roomId_for_partner:${matrixServer}`,
+        roomId = partnerRoomId,
         state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
 
       const promise = matrixInviteEpic(action$, state$, depsMock).toPromise();
@@ -546,7 +547,7 @@ describe('transport epic', () => {
           ),
         ),
         state$ = of(state),
-        roomId = `!roomId_for_partner:${matrixServer}`;
+        roomId = partnerRoomId;
 
       const promise = matrixHandleInvitesEpic(action$, state$, depsMock)
         .pipe(first())
@@ -574,7 +575,7 @@ describe('transport epic', () => {
       expect.assertions(3);
       const action$ = new Subject<RaidenAction>(),
         state$ = of(state),
-        roomId = `!roomId_for_partner:${matrixServer}`;
+        roomId = partnerRoomId;
 
       const promise = matrixHandleInvitesEpic(action$, state$, depsMock)
         .pipe(first())
@@ -606,7 +607,7 @@ describe('transport epic', () => {
       expect.assertions(2);
       const action$ = of<RaidenAction>(),
         state$ = of(state),
-        roomId = `!roomId_for_partner:${matrixServer}`;
+        roomId = partnerRoomId;
 
       const promise = matrixHandleInvitesEpic(action$, state$, depsMock)
         .pipe(
@@ -635,7 +636,7 @@ describe('transport epic', () => {
 
     test('leave rooms behind threshold', async () => {
       expect.assertions(3);
-      const roomId = `!backRoomId_for_partner:${matrixServer}`,
+      const roomId = partnerRoomId,
         action = matrixRoom(
           { roomId: `!frontRoomId_for_partner:${matrixServer}` },
           { address: partner },
@@ -737,7 +738,7 @@ describe('transport epic', () => {
       fakeSchedulers(advance => {
         expect.assertions(2);
 
-        const roomId = `!partnerRoomId:${matrixServer}`,
+        const roomId = partnerRoomId,
           state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
 
         const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
@@ -769,7 +770,7 @@ describe('transport epic', () => {
     test('clean left rooms', async () => {
       expect.assertions(1);
 
-      const roomId = `!partnerRoomId:${matrixServer}`,
+      const roomId = partnerRoomId,
         state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
 
       const promise = matrixCleanLeftRoomsEpic(EMPTY, state$, depsMock)
@@ -796,7 +797,7 @@ describe('transport epic', () => {
     test('send: all needed objects in place', async () => {
       expect.assertions(3);
 
-      const roomId = `!roomId_for_partner:${matrixServer}`,
+      const roomId = partnerRoomId,
         message: Processed = { type: MessageType.PROCESSED, message_identifier: makeMessageId() },
         signed = await signMessage(depsMock.signer, message),
         action$ = of(
@@ -835,7 +836,7 @@ describe('transport epic', () => {
     test('send: Room appears late, user joins late', async () => {
       expect.assertions(3);
 
-      const roomId = `!roomId_for_partner:${matrixServer}`,
+      const roomId = partnerRoomId,
         message = 'test message',
         action$ = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
@@ -898,7 +899,7 @@ describe('transport epic', () => {
     test('receive: success on late presence and late room', async () => {
       expect.assertions(1);
 
-      const roomId = `!roomId_for_partner:${matrixServer}`,
+      const roomId = partnerRoomId,
         message = 'test message',
         action$ = new Subject<RaidenAction>();
 
@@ -944,7 +945,7 @@ describe('transport epic', () => {
     test('receive: decode signed message', async () => {
       expect.assertions(1);
 
-      const roomId = `!roomId_for_partner:${matrixServer}`,
+      const roomId = partnerRoomId,
         signed = await signMessage(partnerSigner, {
           type: MessageType.PROCESSED,
           message_identifier: makeMessageId(),
@@ -995,7 +996,7 @@ describe('transport epic', () => {
     test("receive: messages from wrong sender aren't decoded", async () => {
       expect.assertions(1);
 
-      const roomId = `!roomId_for_partner:${matrixServer}`,
+      const roomId = partnerRoomId,
         // signed by ourselves
         signed = await signMessage(depsMock.signer, {
           type: MessageType.PROCESSED,
@@ -1045,7 +1046,7 @@ describe('transport epic', () => {
     test('messageReceived on second room emits matrixRoom', async () => {
       expect.assertions(1);
 
-      const roomId = `!roomId_for_partner:${matrixServer}`,
+      const roomId = partnerRoomId,
         action$ = of(
           messageReceived(
             { text: 'test message', ts: 123, userId: partnerUserId, roomId },
@@ -1069,7 +1070,7 @@ describe('transport epic', () => {
   test('deliveredEpic', async () => {
     expect.assertions(5);
 
-    const roomId = `!roomId_for_partner:${matrixServer}`,
+    const roomId = partnerRoomId,
       processed: Processed = {
         type: MessageType.PROCESSED,
         message_identifier: makeMessageId(),

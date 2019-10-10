@@ -31,6 +31,7 @@ export const epicFixtures = function(
   accessToken: string;
   deviceId: string;
   displayName: string;
+  partnerRoomId: string;
   partnerUserId: string;
   targetUserId: string;
   state: RaidenState;
@@ -55,6 +56,7 @@ export const epicFixtures = function(
     accessToken = 'access_token',
     deviceId = 'device_id',
     displayName = 'display_name',
+    partnerRoomId = `!partnerRoomId:${matrixServer}`,
     partnerUserId = `@${partner.toLowerCase()}:${matrixServer}`,
     targetUserId = `@${target.toLowerCase()}:${matrixServer}`,
     matrix = makeMatrix(userId, matrixServer),
@@ -79,6 +81,7 @@ export const epicFixtures = function(
     accessToken,
     deviceId,
     displayName,
+    partnerRoomId,
     partnerUserId,
     targetUserId,
     matrixServer,
