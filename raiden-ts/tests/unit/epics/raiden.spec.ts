@@ -67,6 +67,7 @@ describe('raiden epic', () => {
     accessToken,
     deviceId,
     displayName,
+    partnerRoomId,
     partnerUserId,
     matrix,
   } = epicFixtures(depsMock);
@@ -453,7 +454,7 @@ describe('raiden epic', () => {
           message_identifier: makeMessageId(),
           signature: makeSignature(),
         },
-        roomId = `!roomId_for_partner:${matrixServer}`,
+        roomId = partnerRoomId,
         action = messageReceived(
           {
             text: encodeJsonMessage(message),
@@ -499,7 +500,7 @@ describe('raiden epic', () => {
           delivered_message_identifier: makeMessageId(),
           signature: makeSignature(),
         },
-        roomId = `!roomId_for_partner:${matrixServer}`,
+        roomId = partnerRoomId,
         action$ = of(
           messageReceived(
             {
