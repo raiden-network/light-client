@@ -25,7 +25,7 @@ export const transfer = createStandardAction('transfer')<
     target: Address;
     amount: UInt<32>;
     metadata: Metadata;
-    paymentId?: UInt<8>;
+    paymentId: UInt<8>;
     fee?: UInt<32>;
     secret?: Secret;
   },

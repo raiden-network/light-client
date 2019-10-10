@@ -1,10 +1,9 @@
 import { Signer, Contract } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, BigNumber, bigNumberify, BigNumberish, ParamType } from 'ethers/utils';
+import { Network, BigNumber, BigNumberish, ParamType } from 'ethers/utils';
 
 import { MatrixClient } from 'matrix-js-sdk';
-
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
@@ -48,7 +47,7 @@ import goerliDeploy from './deployment/deployment_goerli.json';
 
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
-import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
+import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
 import { RaidenChannels } from './channels/state';
 import { channelAmounts } from './channels/utils';
@@ -76,7 +75,7 @@ import {
   matrixRequestMonitorPresence,
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
-import { makeSecret, raidenSentTransfer, getSecrethash } from './transfers/utils';
+import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './transfers/utils';
 import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { patchSignSend } from './utils/ethers';
 import { losslessParse } from './utils/data';
@@ -569,20 +568,21 @@ export class Raiden {
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
-   * @param deposit - Number of tokens to deposit on channel
+   * @param amount - Number of tokens to deposit on channel
    * @returns txHash of setTotalDeposit call, iff it succeeded
    */
   public async depositChannel(
     token: string,
     partner: string,
-    deposit: BigNumberish,
+    amount: BigNumberish,
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
-    deposit = bigNumberify(deposit);
-    if (!UInt(32).is(deposit)) throw new Error('invalid deposit: must be 0 < amount < 2^256');
+
+    const deposit = decode(UInt(32), amount);
+
     const promise = this.action$
       .pipe(
         filter(isActionOf([channelDeposited, channelDepositFailed])),
@@ -732,11 +732,9 @@ export class Raiden {
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const value = bigNumberify(amount);
-    if (!UInt(32).is(value)) throw new Error('Invalid amount');
-
-    const paymentId = !options.paymentId ? undefined : bigNumberify(options.paymentId);
-    if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid options.paymentId');
+    const value = decode(UInt(32), amount);
+    const paymentId = options.paymentId ? decode(UInt(8), options.paymentId) : makePaymentId();
+    const metadata = options.metadata ? decode(Metadata, options.metadata) : undefined;
 
     if (options.secret !== undefined && !Secret.is(options.secret))
       throw new Error('Invalid options.secret');
@@ -752,9 +750,6 @@ export class Raiden {
       secrethash = options.secrethash || getSecrethash(secret!);
     if (secret && getSecrethash(secret) !== secrethash)
       throw new Error('Provided secrethash must match the sha256 hash of provided secret');
-
-    const metadata = options.metadata;
-    if (metadata && !Metadata.is(metadata)) throw new Error('Invalid options.metadata');
 
     return merge(
       // wait for pathFind response
@@ -830,8 +825,7 @@ export class Raiden {
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const value = bigNumberify(amount);
-    if (!UInt(32).is(value)) throw new Error('Invalid amount');
+    const value = decode(UInt(32), amount);
 
     const promise = this.action$
       .pipe(
