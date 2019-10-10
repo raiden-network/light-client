@@ -4,12 +4,29 @@ import { BigNumber, bigNumberify, getAddress, isHexString, hexDataLength } from 
 import { Two } from 'ethers/constants';
 import { LosslessNumber } from 'lossless-json';
 import { memoize } from 'lodash';
+import { isLeft } from 'fp-ts/lib/Either';
+import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
 /* A Subset of DOM's Storage/localStorage interface which supports async/await */
 export interface Storage {
   getItem(key: string): string | null | Promise<string | null>;
   setItem(key: string, value: string): void | Promise<void>;
   removeItem(key: string): void | Promise<void>;
+}
+
+/**
+ * Decode/validate like codec.decode, but throw or return right instead of Either
+ * TODO: add assert signature after TS 3.7
+ *
+ * @param codec - io-ts codec to be used for decoding/validation
+ * @param data - data to decode/validate
+ * @returns Decoded value of codec type
+ */
+export function decode<C extends t.Mixed>(codec: C, data: C['_I']): C['_A'] {
+  const decoded = codec.decode(data);
+  // report already throw, so the throw here is just for type narrowing in context
+  if (isLeft(decoded)) throw ThrowReporter.report(decoded);
+  return decoded.right;
 }
 
 const isStringifiable = (u: unknown): u is { toString: () => string } =>
