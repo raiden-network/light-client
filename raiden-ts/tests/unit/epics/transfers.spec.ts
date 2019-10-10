@@ -95,6 +95,7 @@ describe('transfers epic', () => {
     partnerUserId,
     partnerSigner,
     metadata,
+    paymentId,
   } = epicFixtures(depsMock);
 
   afterEach(() => {
@@ -123,9 +124,12 @@ describe('transfers epic', () => {
             { address: otherPartner2 },
           ),
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-          transfer({ tokenNetwork, target: partner, amount, secret, metadata }, { secrethash }),
+          transfer(
+            { tokenNetwork, target: partner, amount, secret, metadata, paymentId },
+            { secrethash },
+          ),
           // double transfer to test caching
-          transfer({ tokenNetwork, target: partner, amount, metadata }, { secrethash }),
+          transfer({ tokenNetwork, target: partner, amount, metadata, paymentId }, { secrethash }),
         ),
         state$ = new BehaviorSubject(
           [
@@ -223,6 +227,7 @@ describe('transfers epic', () => {
               amount,
               secret,
               metadata: { routes: [{ route: [closingPartner] }] },
+              paymentId,
             },
             { secrethash },
           ),
@@ -276,7 +281,10 @@ describe('transfers epic', () => {
     beforeEach(async () => {
       const action$: Observable<RaidenAction> = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-          transfer({ tokenNetwork, target: partner, amount, secret, metadata }, { secrethash }),
+          transfer(
+            { tokenNetwork, target: partner, amount, secret, metadata, paymentId },
+            { secrethash },
+          ),
         ),
         state$ = new BehaviorSubject(
           [

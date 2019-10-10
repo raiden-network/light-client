@@ -68,7 +68,7 @@ import {
   withdrawReceiveRequest,
   withdrawSendConfirmation,
 } from './actions';
-import { getLocksroot, getSecrethash, makeMessageId, makePaymentId } from './utils';
+import { getLocksroot, getSecrethash, makeMessageId } from './utils';
 
 /**
  * Return the next nonce for a (possibly missing) balanceProof, or else BigNumber(1)
@@ -115,8 +115,7 @@ function makeAndSignTransfer(
       // used here mostly for type narrowing on channel union
       if (!channel || channel.state !== ChannelState.open) throw new Error('not open');
 
-      const paymentId = action.payload.paymentId || makePaymentId(),
-        lock: Lock = {
+      const lock: Lock = {
           amount: action.payload.amount,
           expiration: bigNumberify(state.blockNumber + revealTimeout * 2) as UInt<32>,
           secrethash: action.meta.secrethash,
@@ -141,7 +140,7 @@ function makeAndSignTransfer(
           : Zero
         ).add(action.payload.amount) as UInt<32>,
         locksroot,
-        payment_identifier: paymentId,
+        payment_identifier: action.payload.paymentId,
         token,
         recipient,
         lock,

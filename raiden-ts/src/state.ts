@@ -1,10 +1,8 @@
 import * as t from 'io-ts';
-import { isLeft } from 'fp-ts/lib/Either';
-import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { AddressZero } from 'ethers/constants';
 
 import { losslessParse, losslessStringify } from './utils/data';
-import { Address, Secret } from './utils/types';
+import { Address, Secret, decode } from './utils/types';
 import { Channels } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
@@ -76,9 +74,7 @@ export function encodeRaidenState(state: RaidenState): string {
  */
 export function decodeRaidenState(data: unknown): RaidenState {
   if (typeof data === 'string') data = losslessParse(data);
-  const result = RaidenState.decode(data);
-  if (isLeft(result)) throw ThrowReporter.report(result); // throws if decode failed
-  return result.right;
+  return decode(RaidenState, data);
 }
 
 export const initialState: RaidenState = {
