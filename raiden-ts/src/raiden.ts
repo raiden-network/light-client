@@ -2,7 +2,6 @@ import { Signer, Contract } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, bigNumberify, BigNumberish, ParamType } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
 
@@ -52,6 +51,7 @@ import { ShutdownReason } from './constants';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
 import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
 import { RaidenChannels } from './channels/state';
+import { channelAmounts } from './channels/utils';
 import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
@@ -171,27 +171,23 @@ export class Raiden {
               // transform Channel to RaidenChannel, with more info
               partner2channel,
               (partner2raidenChannel, channel, partner) => {
-                const partnerTotal = channel.partner.balanceProof
-                    ? channel.partner.balanceProof.transferredAmount.add(
-                        channel.partner.balanceProof.lockedAmount,
-                      )
-                    : Zero,
-                  ownTotal = channel.own.balanceProof
-                    ? channel.own.balanceProof.transferredAmount.add(
-                        channel.own.balanceProof.lockedAmount,
-                      )
-                    : Zero,
-                  balance = partnerTotal.sub(ownTotal);
+                const {
+                  ownDeposit,
+                  partnerDeposit,
+                  ownBalance: balance,
+                  ownCapacity: capacity,
+                } = channelAmounts(channel);
+
                 partner2raidenChannel[partner] = {
                   state: channel.state,
                   ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
                   token,
                   tokenNetwork: tokenNetwork as Address,
                   partner: partner as Address,
-                  ownDeposit: channel.own.deposit,
-                  partnerDeposit: channel.partner.deposit,
+                  ownDeposit,
+                  partnerDeposit,
                   balance,
-                  capacity: channel.own.deposit.add(balance),
+                  capacity,
                 };
               },
             );

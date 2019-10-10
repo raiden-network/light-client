@@ -27,6 +27,7 @@ import { PFSCapacityUpdate, MessageType } from '../messages/types';
 import { signMessage } from '../messages/utils';
 import { channelDeposited } from '../channels/actions';
 import { ChannelState } from '../channels/state';
+import { channelAmounts } from '../channels/utils';
 import { Address, UInt } from '../utils/types';
 import { losslessStringify } from '../utils/data';
 import { pathFind, pathFound, pathFindFailed } from './actions';
@@ -147,7 +148,7 @@ export const pathFindServiceEpic = (
   );
 
 /**
- * Sends a PFSCapacityUpdate to PFS global room on new deposit on our side of channels
+ * Sends a [[PFSCapacityUpdate]] to PFS global room on new deposit on our side of channels
  *
  * @param action$ - Observable of channelDeposited actions
  * @param state$ - Observable of RaidenStates
@@ -167,22 +168,7 @@ export const pfsCapacityUpdateEpic = (
       const channel = state.channels[action.meta.tokenNetwork][action.meta.partner];
       if (channel.state !== ChannelState.open) return EMPTY;
 
-      const ownTransferred = channel.own.balanceProof
-          ? channel.own.balanceProof.transferredAmount
-          : Zero,
-        ownLocked = channel.own.balanceProof ? channel.own.balanceProof.lockedAmount : Zero,
-        partnerTransferred = channel.partner.balanceProof
-          ? channel.partner.balanceProof.transferredAmount
-          : Zero,
-        partnerLocked = channel.partner.balanceProof
-          ? channel.partner.balanceProof.lockedAmount
-          : Zero,
-        ownBalance = partnerTransferred.sub(ownTransferred),
-        partnerBalance = ownTransferred.sub(partnerTransferred), // == -ownBalance
-        ownCapacity = channel.own.deposit.add(ownBalance).sub(ownLocked) as UInt<32>,
-        partnerCapacity = channel.partner.deposit.add(partnerBalance).sub(partnerLocked) as UInt<
-          32
-        >;
+      const { ownCapacity, partnerCapacity } = channelAmounts(channel);
 
       const message: PFSCapacityUpdate = {
         type: MessageType.PFS_CAPACITY_UPDATE,
