@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { patchEthersDefineReadOnly } from './patches';
@@ -11,7 +12,8 @@ import { Address, Hash } from 'raiden-ts/utils/types';
 import { initialState, RaidenState } from 'raiden-ts/state';
 import { HumanStandardToken } from 'raiden-ts/contracts/HumanStandardToken';
 import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
-import { Metadata } from 'raiden-ts/messages/types';
+import { Metadata, Processed, MessageType } from 'raiden-ts/messages/types';
+import { makeMessageId } from 'raiden-ts/transfers/utils';
 
 import { makeMatrix, MockRaidenEpicDeps, MockedContract } from './mocks';
 
@@ -40,6 +42,7 @@ export const epicFixtures = function(
   matrixServer: string;
   userId: string;
   metadata: Metadata;
+  processed: Processed;
 } {
   const wallet = new Wallet('0x3333333333333333333333333333333333333333333333333333333333333333'),
     token = '0x0000000000000000000000000000000000010001' as Address,
@@ -61,7 +64,8 @@ export const epicFixtures = function(
     targetUserId = `@${target.toLowerCase()}:${matrixServer}`,
     matrix = makeMatrix(userId, matrixServer),
     txHash = '0x0000000000000000000000000000000000000020111111111111111111111111' as Hash,
-    metadata = { routes: [{ route: [partner] }] };
+    metadata = { routes: [{ route: [partner] }] },
+    processed: Processed = { type: MessageType.PROCESSED, message_identifier: makeMessageId() };
 
   depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async _token =>
     _token === token ? tokenNetwork : AddressZero,
@@ -94,5 +98,6 @@ export const epicFixtures = function(
     },
     partnerSigner: wallet,
     metadata,
+    processed,
   };
 };
