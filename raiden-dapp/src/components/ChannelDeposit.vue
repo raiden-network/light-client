@@ -20,7 +20,7 @@
         light
         class="text-capitalize channel-deposit__buttons__cancel"
       >
-        {{ $t('channel-deposit.buttons.cancel') }}
+        {{ $t('general.buttons.cancel') }}
       </v-btn>
       <v-btn
         :id="`confirm-${identifier}`"

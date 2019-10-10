@@ -51,7 +51,7 @@
                   :to="`/payment/${token.address}`"
                   class="text-capitalize connected-tokens__tokens__token__button"
                 >
-                  {{ $t('tokens.connected.token.buttons.pay') }}
+                  {{ $t('general.buttons.pay') }}
                 </v-btn>
                 <v-btn
                   :id="`leave-${index}`"
