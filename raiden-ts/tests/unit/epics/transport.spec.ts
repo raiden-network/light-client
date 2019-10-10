@@ -46,7 +46,7 @@ import {
   deliveredEpic,
   matrixMessageGlobalSendEpic,
 } from 'raiden-ts/transport/epics';
-import { MessageType, Processed, Delivered } from 'raiden-ts/messages/types';
+import { MessageType, Delivered } from 'raiden-ts/messages/types';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
 import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
 
@@ -70,6 +70,7 @@ describe('transport epic', () => {
     accessToken,
     deviceId,
     displayName,
+    processed,
   } = epicFixtures(depsMock);
 
   afterEach(() => {
@@ -798,7 +799,7 @@ describe('transport epic', () => {
       expect.assertions(3);
 
       const roomId = partnerRoomId,
-        message: Processed = { type: MessageType.PROCESSED, message_identifier: makeMessageId() },
+        message = processed,
         signed = await signMessage(depsMock.signer, message),
         action$ = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
@@ -946,10 +947,7 @@ describe('transport epic', () => {
       expect.assertions(1);
 
       const roomId = partnerRoomId,
-        signed = await signMessage(partnerSigner, {
-          type: MessageType.PROCESSED,
-          message_identifier: makeMessageId(),
-        }),
+        signed = await signMessage(partnerSigner, processed),
         message = encodeJsonMessage(signed),
         action$ = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
@@ -998,10 +996,7 @@ describe('transport epic', () => {
 
       const roomId = partnerRoomId,
         // signed by ourselves
-        signed = await signMessage(depsMock.signer, {
-          type: MessageType.PROCESSED,
-          message_identifier: makeMessageId(),
-        }),
+        signed = await signMessage(depsMock.signer, processed),
         message = encodeJsonMessage(signed),
         action$ = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
@@ -1071,10 +1066,6 @@ describe('transport epic', () => {
     expect.assertions(5);
 
     const roomId = partnerRoomId,
-      processed: Processed = {
-        type: MessageType.PROCESSED,
-        message_identifier: makeMessageId(),
-      },
       message = await signMessage(partnerSigner, processed),
       text = encodeJsonMessage(message),
       action = messageReceived(
@@ -1128,11 +1119,7 @@ describe('transport epic', () => {
   test('matrixMessageGlobalSendEpic', async () => {
     expect.assertions(5);
 
-    const processed: Processed = {
-        type: MessageType.PROCESSED,
-        message_identifier: makeMessageId(),
-      },
-      message = await signMessage(partnerSigner, processed),
+    const message = await signMessage(partnerSigner, processed),
       text = encodeJsonMessage(message),
       state$ = of(
         [
