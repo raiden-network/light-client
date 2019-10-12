@@ -11,7 +11,7 @@ import { channelAmounts } from '../channels/utils';
  * @param presences - latest Presences mapping
  * @param tokenNetwork - tokenNetwork where the channel is
  * @param partner - possibly a partner on given tokenNetwork
- * @param amount - amount of tokens to check if channel can route
+ * @param value - amount of tokens to check if channel can route
  * @returns true if channel can route, string containing reason if not
  */
 export function channelCanRoute(
@@ -19,7 +19,7 @@ export function channelCanRoute(
   presences: Presences,
   tokenNetwork: Address,
   partner: Address,
-  amount: UInt<32>,
+  value: UInt<32>,
 ): true | string {
   if (!(partner in presences) || !presences[partner].payload.available)
     return `path: partner "${partner}" not available in transport`;
@@ -29,7 +29,7 @@ export function channelCanRoute(
   if (channel.state !== ChannelState.open)
     return `path: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`;
   const { ownCapacity: capacity } = channelAmounts(channel);
-  if (capacity.lt(amount))
+  if (capacity.lt(value))
     return `path: channel with "${partner}" don't have enough capacity=${capacity.toString()}`;
   return true;
 }

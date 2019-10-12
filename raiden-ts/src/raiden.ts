@@ -77,10 +77,10 @@ import {
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './transfers/utils';
 import { pathFind, pathFound, pathFindFailed } from './path/actions';
+import { Paths, RaidenPaths } from './path/types';
 import { patchSignSend } from './utils/ethers';
 import { losslessParse } from './utils/data';
 import { RaidenConfig, defaultConfig } from './config';
-import { Metadata } from './messages/types';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -706,35 +706,35 @@ export class Raiden {
    *
    * @param token - Token address on currently configured token network registry
    * @param target - Target address (must be getAvailability before)
-   * @param amount - Amount to try to transfer
+   * @param value - Amount to try to transfer
    * @param options - Optional parameters for transfer:
    *    <ul>
    *      <li>paymentId - payment identifier, a random one will be generated if missing</li>
    *      <li>secret - Secret to register, a random one will be generated if missing</li>
    *      <li>secrethash - Must match secret, if both provided, or else, secret must be
    *          informed to target by other means, and reveal can't be performed</li>
-   *      <li>metadata - Used to specify possible routes instead of querying PFS.</li>
+   *      <li>paths - Used to specify possible routes & fees instead of querying PFS.</li>
    *    </ul>
    * @returns A promise to transfer's secrethash (unique id) when it's accepted
    */
   public async transfer(
     token: string,
     target: string,
-    amount: BigNumberish,
+    value: BigNumberish,
     options: {
       paymentId?: BigNumberish;
       secret?: string;
       secrethash?: string;
-      metadata?: { readonly routes: { readonly route: string[] }[] };
+      paths?: RaidenPaths;
     } = {},
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const value = decode(UInt(32), amount);
+    const decodedValue = decode(UInt(32), value);
     const paymentId = options.paymentId ? decode(UInt(8), options.paymentId) : makePaymentId();
-    const metadata = options.metadata ? decode(Metadata, options.metadata) : undefined;
+    const paths = options.paths ? decode(Paths, options.paths) : undefined;
 
     if (options.secret !== undefined && !Secret.is(options.secret))
       throw new Error('Invalid options.secret');
@@ -763,18 +763,18 @@ export class Raiden {
         ),
         map(action => {
           if (isActionOf(pathFindFailed, action)) throw action.payload;
-          return action.payload.metadata;
+          return action.payload.paths;
         }),
       ),
-      // request pathFind; even if metadata was provided, send it for validation
+      // request pathFind; even if paths were provided, send it again for validation
       // this is done at 'merge' subscription time (i.e. when above action filter is subscribed)
       defer(() => {
-        this.store.dispatch(pathFind({ metadata }, { tokenNetwork, target, value }));
+        this.store.dispatch(pathFind({ paths }, { tokenNetwork, target, value: decodedValue }));
         return EMPTY;
       }),
     )
       .pipe(
-        mergeMap(metadata =>
+        mergeMap(paths =>
           merge(
             // wait for transfer response
             this.action$.pipe(
@@ -785,15 +785,15 @@ export class Raiden {
                 return secrethash;
               }),
             ),
-            // request transfer with returned/validated metadata at 'merge' subscription time
+            // request transfer with returned/validated paths at 'merge' subscription time
             defer(() => {
               this.store.dispatch(
                 transfer(
                   {
                     tokenNetwork,
                     target,
-                    amount: value,
-                    metadata,
+                    value: decodedValue,
+                    paths,
                     paymentId,
                     secret,
                   },
@@ -812,20 +812,24 @@ export class Raiden {
    * Request a path from PFS
    *
    * If a direct route is possible, it'll be returned. Else if PFS is set up, a request will be
-   * performed and the cleaned/validated result metadata containing the 'routes' will be resolved.
+   * performed and the cleaned/validated path results will be resolved.
    * Else, if no route can be found, promise is rejected with respective error.
    *
    * @param token - Token address on currently configured token network registry
    * @param target - Target address (must be getAvailability before)
-   * @param amount - Minimum capacity required on routes
-   * @returns A promise to returned routes metadata
+   * @param value - Minimum capacity required on routes
+   * @returns A promise to returned routes/paths result
    */
-  public async findRoutes(token: string, target: string, amount: BigNumberish): Promise<Metadata> {
+  public async findRoutes(
+    token: string,
+    target: string,
+    value: BigNumberish,
+  ): Promise<RaidenPaths> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const value = decode(UInt(32), amount);
+    const decodedValue = decode(UInt(32), value);
 
     const promise = this.action$
       .pipe(
@@ -834,15 +838,15 @@ export class Raiden {
           action =>
             action.meta.tokenNetwork === tokenNetwork &&
             action.meta.target === target &&
-            action.meta.value.eq(amount),
+            action.meta.value.eq(value),
         ),
         map(action => {
           if (isActionOf(pathFindFailed, action)) throw action.payload;
-          return action.payload.metadata;
+          return action.payload.paths;
         }),
       )
       .toPromise();
-    this.store.dispatch(pathFind({}, { tokenNetwork, target, value }));
+    this.store.dispatch(pathFind({}, { tokenNetwork, target, value: decodedValue }));
     return promise;
   }
 }

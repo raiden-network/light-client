@@ -86,7 +86,7 @@ export function transfersReducer(
         balanceProof: getBalanceProofFromEnvelopeMessage(transfer),
       },
     };
-    const sentTransfer: SentTransfer = { transfer: timed(transfer) };
+    const sentTransfer: SentTransfer = { transfer: timed(transfer), fee: action.payload.fee };
 
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
