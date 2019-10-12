@@ -10,6 +10,7 @@ import {
   map,
   withLatestFrom,
   timeout,
+  debounceTime,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
@@ -162,6 +163,7 @@ export const pfsCapacityUpdateEpic = (
   action$.pipe(
     filter(isActionOf(channelDeposited)),
     filter(action => action.payload.participant === address),
+    debounceTime(10e3),
     withLatestFrom(state$, config$),
     filter(([, , { pfsRoom }]) => !!pfsRoom), // ignore actions while/if config.pfsRoom isn't set
     mergeMap(([action, state, { revealTimeout, pfsRoom }]) => {
