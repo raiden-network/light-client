@@ -166,7 +166,7 @@ export const pfsCapacityUpdateEpic = (
     filter(([, , { pfsRoom }]) => !!pfsRoom), // ignore actions while/if config.pfsRoom isn't set
     mergeMap(([action, state, { revealTimeout, pfsRoom }]) => {
       const channel = state.channels[action.meta.tokenNetwork][action.meta.partner];
-      if (channel.state !== ChannelState.open) return EMPTY;
+      if (!channel || channel.state !== ChannelState.open) return EMPTY;
 
       const { ownCapacity, partnerCapacity } = channelAmounts(channel);
 

@@ -84,6 +84,7 @@ declare module 'matrix-js-sdk' {
 
     public _http: any;
 
+    public baseUrl: string;
     public deviceId: string | null;
     public credentials: { userId: string | null };
 
