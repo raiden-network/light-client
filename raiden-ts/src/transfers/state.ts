@@ -11,7 +11,7 @@ import {
   RefundTransfer,
   Metadata,
 } from '../messages/types';
-import { Address, Timed, Hash } from '../utils/types';
+import { Address, Timed, Hash, Int } from '../utils/types';
 
 /**
  * This struct holds the relevant messages exchanged in a transfer
@@ -22,6 +22,7 @@ export const SentTransfer = t.readonly(
     t.type({
       /** -> outgoing locked transfer */
       transfer: Timed(Signed(LockedTransfer)),
+      fee: Int(32),
     }),
     t.partial({
       /** <- incoming processed for locked transfer */
@@ -108,9 +109,10 @@ export interface RaidenSentTransfer {
   token: Address; // token address
   tokenNetwork: Address; // token network address
   channelId: BigNumber; // channel identifier in which the transfer went through
-  amount: BigNumber; // amount to transfer
+  value: BigNumber; // target transfer amount
+  fee: BigNumber; // fee paid to mediators
+  amount: BigNumber; // total transfer amount, equals value + fee
   expirationBlock: number; // blockNumber in which this transfer expires (if doesn't succeed)
-  fee: BigNumber; // not supported yet, so always Zero
   startedAt: Date; // time of transfer start
   changedAt: Date; // time of current/last state (if transfer completed, end timestamp)
   /**

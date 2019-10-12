@@ -106,9 +106,13 @@ function makeAndSignTransfer(
         return EMPTY;
       }
 
-      // assume metadata is valid and recipient is first hop of first route
-      const metadata: Metadata = action.payload.metadata,
-        recipient = metadata.routes[0].route[0];
+      // assume paths are valid and recipient is first hop of first route
+      // compose metadata from it, and use first path fee
+      const metadata: Metadata = {
+          routes: action.payload.paths.paths.map(({ path }) => ({ route: path })),
+        },
+        fee = action.payload.paths.paths[0].fee,
+        recipient = action.payload.paths.paths[0].path[0];
 
       const channel: Channel | undefined = state.channels[action.payload.tokenNetwork][recipient];
       // check below shouldn't fail because of route validation in pathFindServiceEpic
@@ -116,14 +120,27 @@ function makeAndSignTransfer(
       if (!channel || channel.state !== ChannelState.open) throw new Error('not open');
 
       const lock: Lock = {
-          amount: action.payload.amount,
+          amount: action.payload.value.add(fee) as UInt<32>, // fee is added to the lock amount
           expiration: bigNumberify(state.blockNumber + revealTimeout * 2) as UInt<32>,
           secrethash: action.meta.secrethash,
         },
         locks: Lock[] = [...(channel.own.locks || []), lock],
         locksroot = getLocksroot(locks),
-        fee = action.payload.fee || (Zero as UInt<32>),
         token = findKey(state.tokens, tn => tn === action.payload.tokenNetwork)! as Address;
+
+      console.log(
+        'Signing transfer of value',
+        action.payload.value.toString(),
+        'of token',
+        token,
+        ', to',
+        action.payload.target,
+        ', through routes',
+        action.payload.paths,
+        ', paying',
+        fee.toString(),
+        'in fees.',
+      );
 
       const message: LockedTransfer = {
         type: MessageType.LOCKED_TRANSFER,
@@ -138,7 +155,7 @@ function makeAndSignTransfer(
         locked_amount: (channel.own.balanceProof
           ? channel.own.balanceProof.lockedAmount
           : Zero
-        ).add(action.payload.amount) as UInt<32>,
+        ).add(lock.amount) as UInt<32>,
         locksroot,
         payment_identifier: action.payload.paymentId,
         token,
@@ -146,7 +163,7 @@ function makeAndSignTransfer(
         lock,
         target: action.payload.target,
         initiator: address,
-        fee,
+        fee: Zero as UInt<32>, // fee in transfer not used at the moment
         metadata,
       };
       return from(signMessage(signer, message)).pipe(
@@ -154,7 +171,7 @@ function makeAndSignTransfer(
           // besides transferSigned, also yield transferSecret (for registering) if we know it
           if (action.payload.secret)
             yield transferSecret({ secret: action.payload.secret }, action.meta);
-          yield transferSigned({ message: signed }, action.meta);
+          yield transferSigned({ message: signed, fee }, action.meta);
           // messageSend LockedTransfer handled by transferSignedRetryMessageEpic
         }),
       );
@@ -745,7 +762,7 @@ export const initQueuePendingEnvelopeMessagesEpic = (
         yield matrixRequestMonitorPresence(undefined, { address: sent.transfer[1].target });
         // Processed not received yet for LockedTransfer
         if (!sent.transferProcessed)
-          yield transferSigned({ message: sent.transfer[1] }, { secrethash });
+          yield transferSigned({ message: sent.transfer[1], fee: sent.fee }, { secrethash });
         // already unlocked, but Processed not received yet for Unlock
         if (sent.unlock) yield transferUnlocked({ message: sent.unlock[1] }, { secrethash });
         // lock expired, but Processed not received yet for LockExpired
@@ -809,7 +826,9 @@ export const transferSecretRequestedEpic = (
       // proceed only if we know the secret and the transfer
       if (!(message.secrethash in state.secrets) || !(message.secrethash in state.sent)) return;
 
-      const transfer = state.sent[message.secrethash].transfer[1];
+      const transfer = state.sent[message.secrethash].transfer[1],
+        fee = state.sent[message.secrethash].fee,
+        value = transfer.lock.amount.sub(fee) as UInt<32>;
       if (
         transfer.target !== action.meta.address || // reveal only to target
         !transfer.payment_identifier.eq(message.payment_identifier)
@@ -820,11 +839,10 @@ export const transferSecretRequestedEpic = (
         !message.expiration.gt(state.blockNumber)
       ) {
         console.warn('SecretRequest for expired transfer', message, transfer);
-      } else if (!message.amount.gte(transfer.lock.amount.mul(9).div(10))) {
-        // FIXME: TMP! accept transfers deduced up to 10% what was sent
+      } else if (!message.amount.gte(value)) {
         console.warn('SecretRequest for amount too small!', message, transfer);
       } /* accept request */ else {
-        if (!message.amount.eq(transfer.lock.amount))
+        if (!message.amount.eq(value))
           console.warn('Accepted SecretRequest for amount different than sent', message, transfer);
         yield transferSecretRequest({ message }, { secrethash: message.secrethash });
       }

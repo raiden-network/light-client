@@ -14,8 +14,6 @@ import {
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
-import { isLeft } from 'fp-ts/lib/Either';
-import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { bigNumberify } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
@@ -29,11 +27,11 @@ import { signMessage } from '../messages/utils';
 import { channelDeposited } from '../channels/actions';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
-import { Address, UInt } from '../utils/types';
-import { losslessStringify } from '../utils/data';
+import { Address, UInt, Int, decode } from '../utils/types';
+import { losslessStringify, losslessParse } from '../utils/data';
 import { pathFind, pathFound, pathFindFailed } from './actions';
 import { channelCanRoute } from './utils';
-import { PathResults } from './types';
+import { PathResults, Paths } from './types';
 
 /**
  * Check if a transfer can be made and return a set of paths for it.
@@ -59,14 +57,17 @@ export const pathFindServiceEpic = (
               if (!(tokenNetwork in state.channels))
                 throw new Error(`PFS: unknown tokenNetwork ${tokenNetwork}`);
               if (!(target in presences) || !presences[target].payload.available)
-                throw new Error(`PFS: target ${target} not available in transport`);
-              // if pathFind received a metadata, pass it through to validation/cleanup
-              if (action.payload.metadata) return of(action.payload.metadata);
+                throw new Error(`PFS: target ${target} not online`);
+              // if pathFind received a set of paths, pass it through to validation/cleanup
+              if (action.payload.paths) return of(action.payload.paths);
               // else, if possible, use a direct transfer
               else if (
                 channelCanRoute(state, presences, tokenNetwork, target, action.meta.value) === true
               )
-                return of({ routes: [{ route: [state.address, target] }] });
+                return of({
+                  paths: [{ path: [state.address, target], fee: Zero as Int<32> }],
+                  feedbackToken: undefined,
+                });
               // else, request a route from PFS
               else if (pfs !== null) {
                 // from all channels
@@ -82,64 +83,67 @@ export const pathFindServiceEpic = (
                 }).pipe(
                   timeout(httpTimeout),
                   mergeMap(async response => {
+                    const text = await response.text();
                     if (!response.ok)
                       throw new Error(
-                        `PFS: paths request: code=${
-                          response.status
-                        } => body=${await response.text()}`,
+                        `PFS: paths request: code=${response.status} => body="${text}"`,
                       );
-                    const decoded = PathResults.decode(await response.json());
-                    if (isLeft(decoded)) throw ThrowReporter.report(decoded);
-                    return decoded.right;
+                    return decode(PathResults, losslessParse(text));
                   }),
-                  map(({ result }) => ({
-                    routes: result
-                      .slice()
-                      .sort(({ estimated_fee: a }, { estimated_fee: b }) => a - b)
-                      .map(({ path }) => ({ route: path })),
-                  })),
+                  map(
+                    (results: PathResults): Paths => ({
+                      paths: results.result.map(r => ({ path: r.path, fee: r.estimated_fee })),
+                      feedbackToken: results.feedback_token,
+                    }),
+                  ),
                 );
               } else {
                 throw new Error(`PFS disabled and no direct route available`);
               }
             }),
             withLatestFrom(statePresencesConfig$),
-            // validate/cleanup received routes/metadata
-            map(([{ routes: result }, [state, presences]]) => {
-              const routes: { route: readonly Address[] }[] = [],
+            // validate/cleanup received routes/paths/results
+            map(([results, [state, presences]]) => {
+              const filteredPaths: Paths['paths'] = [],
                 invalidatedRecipients = new Set<Address>();
-              for (let { route } of result) {
+              // eslint-disable-next-line prefer-const
+              for (let { path, fee } of results.paths) {
                 // if route has us as first hop, cleanup/shift
-                if (route[0] === state.address) route = route.slice(1);
-                const recipient = route[0];
+                if (path[0] === state.address) path = path.slice(1);
+                const recipient = path[0];
                 // if this recipient was already invalidated in a previous iteration, skip
                 if (invalidatedRecipients.has(recipient)) continue;
                 // if we already found some valid route, allow only new routes through this peer
-                const canTransferOrReason = !routes.length
+                const canTransferOrReason = !filteredPaths.length
                   ? channelCanRoute(
                       state,
                       presences,
                       action.meta.tokenNetwork,
                       recipient,
-                      action.meta.value,
+                      action.meta.value.add(fee) as UInt<32>,
                     )
-                  : recipient !== routes[0].route[0]
+                  : recipient !== filteredPaths[0].path[0]
                   ? 'path: already selected another recipient'
+                  : fee.gt(filteredPaths[0].fee)
+                  ? 'path: already selected a smaller fee'
                   : true;
                 if (canTransferOrReason !== true) {
-                  console.debug(
-                    'Invalidated received route! Reason:',
+                  console.log(
+                    'Invalidated received route. Reason:',
                     canTransferOrReason,
                     'Route:',
-                    route,
+                    path,
                   );
                   invalidatedRecipients.add(recipient);
                   continue;
                 }
-                routes.push({ route });
+                filteredPaths.push({ path, fee });
               }
-              if (!routes.length) throw new Error(`PFS: validated routes are empty`);
-              return pathFound({ metadata: { routes } }, action.meta);
+              if (!filteredPaths.length) throw new Error(`PFS: no valid routes found`);
+              return pathFound(
+                { paths: { paths: filteredPaths, feedbackToken: results.feedbackToken } },
+                action.meta,
+              );
             }),
             catchError(err => of(pathFindFailed(err, action.meta))),
           ),
