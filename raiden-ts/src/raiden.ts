@@ -79,6 +79,7 @@ import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer, getSecrethash } from './transfers/utils';
 import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { patchSignSend } from './utils/ethers';
+import { losslessParse } from './utils/data';
 import { RaidenConfig, defaultConfig } from './config';
 import { Metadata } from './messages/types';
 
@@ -404,7 +405,7 @@ export class Raiden {
       const loaded = Object.assign(
         {},
         loadedState,
-        JSON.parse((await storageOrState.getItem(ns)) || 'null'),
+        losslessParse((await storageOrState.getItem(ns)) || 'null'),
       );
 
       loadedState = decodeRaidenState(loaded);
