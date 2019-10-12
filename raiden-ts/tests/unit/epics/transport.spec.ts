@@ -689,7 +689,7 @@ describe('transport epic', () => {
         // we should wait a little before leaving rooms
         expect(matrix.leave).not.toHaveBeenCalled();
 
-        advance(60e3);
+        advance(200e3);
 
         expect(matrix.leave).toHaveBeenCalledTimes(1);
         expect(matrix.leave).toHaveBeenCalledWith(roomId);
@@ -725,7 +725,7 @@ describe('transport epic', () => {
         // we should wait a little before leaving rooms
         expect(matrix.leave).not.toHaveBeenCalled();
 
-        advance(60e3);
+        advance(200e3);
 
         // even after some time, discovery room isn't left
         expect(matrix.leave).not.toHaveBeenCalled();
@@ -751,7 +751,7 @@ describe('transport epic', () => {
         // we should wait a little before leaving rooms
         expect(matrix.leave).not.toHaveBeenCalled();
 
-        advance(60e3);
+        advance(200e3);
 
         // even after some time, partner's room isn't left
         expect(matrix.leave).not.toHaveBeenCalled();
