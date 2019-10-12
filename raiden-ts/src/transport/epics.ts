@@ -675,7 +675,7 @@ export const matrixLeaveUnknownRoomsEpic = (
     switchMap(matrix =>
       fromEvent<Room>(matrix, 'Room').pipe(map(room => ({ matrix, roomId: room.roomId }))),
     ),
-    delay(30e3), // this room may become known later for some reason, so wait a little
+    delay(180e3), // this room may become known later for some reason, so wait a little
     withLatestFrom(state$, config$),
     // filter for leave events to us
     filter(([{ matrix, roomId }, state, config]) => {
