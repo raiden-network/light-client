@@ -6,14 +6,16 @@ patchEthersDefineReadOnly();
 
 import { Wallet } from 'ethers';
 import { AddressZero } from 'ethers/constants';
+import { bigNumberify } from 'ethers/utils';
 import { MatrixClient } from 'matrix-js-sdk';
 
-import { Address, Hash, UInt } from 'raiden-ts/utils/types';
+import { Address, Hash, UInt, Int } from 'raiden-ts/utils/types';
 import { initialState, RaidenState } from 'raiden-ts/state';
 import { HumanStandardToken } from 'raiden-ts/contracts/HumanStandardToken';
 import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
 import { Metadata, Processed, MessageType } from 'raiden-ts/messages/types';
 import { makeMessageId, makePaymentId } from 'raiden-ts/transfers/utils';
+import { Paths } from 'raiden-ts/path/types';
 
 import { makeMatrix, MockRaidenEpicDeps, MockedContract } from './mocks';
 
@@ -41,9 +43,11 @@ export const epicFixtures = function(
   txHash: Hash;
   matrixServer: string;
   userId: string;
-  metadata: Metadata;
   processed: Processed;
   paymentId: UInt<8>;
+  fee: Int<32>;
+  paths: Paths;
+  metadata: Metadata;
 } {
   const wallet = new Wallet('0x3333333333333333333333333333333333333333333333333333333333333333'),
     token = '0x0000000000000000000000000000000000010001' as Address,
@@ -65,9 +69,11 @@ export const epicFixtures = function(
     targetUserId = `@${target.toLowerCase()}:${matrixServer}`,
     matrix = makeMatrix(userId, matrixServer),
     txHash = '0x0000000000000000000000000000000000000020111111111111111111111111' as Hash,
-    metadata = { routes: [{ route: [partner] }] },
     processed: Processed = { type: MessageType.PROCESSED, message_identifier: makeMessageId() },
-    paymentId = makePaymentId();
+    paymentId = makePaymentId(),
+    fee = bigNumberify(3) as Int<32>,
+    paths = { paths: [{ path: [partner], fee }] },
+    metadata = { routes: [{ route: [partner] }] };
 
   depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async _token =>
     _token === token ? tokenNetwork : AddressZero,
@@ -99,8 +105,10 @@ export const epicFixtures = function(
       blockNumber: 125,
     },
     partnerSigner: wallet,
-    metadata,
     processed,
     paymentId,
+    fee,
+    paths,
+    metadata,
   };
 };
