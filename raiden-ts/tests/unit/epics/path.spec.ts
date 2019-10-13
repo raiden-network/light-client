@@ -2,7 +2,7 @@
 import { of, BehaviorSubject } from 'rxjs';
 import { bigNumberify } from 'ethers/utils';
 
-import { UInt } from 'raiden-ts/utils/types';
+import { UInt, Int } from 'raiden-ts/utils/types';
 import {
   newBlock,
   tokenMonitored,
@@ -20,6 +20,8 @@ import { MessageType } from 'raiden-ts/messages/types';
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps } from '../mocks';
+import { Zero } from 'ethers/constants';
+import { losslessStringify } from 'raiden-ts/utils/data';
 
 describe('PFS: pathFindServiceEpic', () => {
   const depsMock = raidenEpicDeps();
@@ -35,20 +37,22 @@ describe('PFS: pathFindServiceEpic', () => {
     state,
     partnerUserId,
     targetUserId,
+    fee,
   } = epicFixtures(depsMock);
 
   const openBlock = 121,
     state$ = new BehaviorSubject(state);
 
-  const fetch = jest.fn(async () => ({
-    ok: true,
-    status: 200,
-    json: jest.fn(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async () => ({ result: [{ path: [partner, target], estimated_fee: 0 }] } as any),
-    ),
-    text: jest.fn(async () => ''),
-  }));
+  const result = { result: [{ path: [partner, target], estimated_fee: 3 }] },
+    fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: jest.fn(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async () => result as any,
+      ),
+      text: jest.fn(async () => losslessStringify(result)),
+    }));
   Object.assign(global, { fetch });
 
   afterEach(() => {
@@ -124,7 +128,7 @@ describe('PFS: pathFindServiceEpic', () => {
         matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
         matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
         pathFind(
-          { metadata: { routes: [{ route: [depsMock.address, partner, target] }] } },
+          { paths: { paths: [{ path: [depsMock.address, partner, target], fee }] } },
           { tokenNetwork, target, value },
         ),
       );
@@ -134,7 +138,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFound(
-        { metadata: { routes: [{ route: [partner, target] }] } },
+        { paths: { paths: [{ path: [partner, target], fee }] } },
         { tokenNetwork, target, value },
       ),
     );
@@ -155,7 +159,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFound(
-        { metadata: { routes: [{ route: [partner] }] } },
+        { paths: { paths: [{ path: [partner], fee: Zero as Int<32> }] } },
         { tokenNetwork, target: partner, value },
       ),
     );
@@ -175,7 +179,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFound(
-        { metadata: { routes: [{ route: [partner, target] }] } },
+        { paths: { paths: [{ path: [partner, target], fee }] } },
         { tokenNetwork, target, value },
       ),
     );
@@ -213,14 +217,13 @@ describe('PFS: pathFindServiceEpic', () => {
         pathFind({}, { tokenNetwork, target, value }),
       );
 
+    // expected 'result', not 'paths'
+    const paths = { paths: [{ path: [partner, target], estimated_fee: 0 }] };
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: jest.fn(async () => ({
-        // expected 'result', not 'paths'
-        paths: [{ path: [partner, target], estimated_fee: 0 }],
-      })),
-      text: jest.fn(async () => ''),
+      json: jest.fn(async () => paths),
+      text: jest.fn(async () => losslessStringify(paths)),
     });
 
     await expect(
@@ -238,34 +241,32 @@ describe('PFS: pathFindServiceEpic', () => {
         pathFind({}, { tokenNetwork, target, value }),
       );
 
+    const result = {
+      result: [
+        // token isn't a valid channel, should be removed from output
+        { path: [token, target], estimated_fee: 0 },
+        // another route going through token, also should be removed
+        { path: [token, partner, target], estimated_fee: 0 },
+        // valid route
+        { path: [partner, target], estimated_fee: 1 },
+        // another "valid" route through partner, filtered out because different fee
+        { path: [partner, token, target], estimated_fee: 2 },
+        // another invalid route, but we already selected partner first
+        { path: [tokenNetwork, target], estimated_fee: 3 },
+      ],
+    };
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: jest.fn(async () => ({
-        result: [
-          // token isn't a valid channel, should be removed from output
-          { path: [token, target], estimated_fee: 0 },
-          // another route going through token, also should be removed
-          { path: [token, partner, target], estimated_fee: 0 },
-          { path: [partner, target], estimated_fee: 1 },
-          // another "valid" route through partner
-          { path: [partner, token, target], estimated_fee: 2 },
-          // another invalid route, but we already selected partner first
-          { path: [tokenNetwork, target], estimated_fee: 3 },
-        ],
-      })),
-      text: jest.fn(async () => ''),
+      json: jest.fn(async () => result),
+      text: jest.fn(async () => losslessStringify(result)),
     });
 
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFound(
-        {
-          metadata: {
-            routes: [{ route: [partner, target] }, { route: [partner, token, target] }],
-          },
-        },
+        { paths: { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] } },
         { tokenNetwork, target, value },
       ),
     );
@@ -303,7 +304,7 @@ describe('PFS: pathFindServiceEpic', () => {
         matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
         matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
         pathFind(
-          { metadata: { routes: [{ route: [depsMock.address, partner, target] }] } },
+          { paths: { paths: [{ path: [depsMock.address, partner, target], fee }] } },
           { tokenNetwork, target, value },
         ),
       );

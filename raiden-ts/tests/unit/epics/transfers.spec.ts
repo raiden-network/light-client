@@ -94,8 +94,9 @@ describe('transfers epic', () => {
     matrixServer,
     partnerUserId,
     partnerSigner,
-    metadata,
     paymentId,
+    fee,
+    paths,
   } = epicFixtures(depsMock);
 
   afterEach(() => {
@@ -105,7 +106,7 @@ describe('transfers epic', () => {
   describe('transfer: request', () => {
     const secret = makeSecret(),
       secrethash = getSecrethash(secret),
-      amount = bigNumberify(10) as UInt<32>,
+      value = bigNumberify(10) as UInt<32>,
       openBlock = 121;
 
     test('transferSigned success and cached', async () => {
@@ -125,11 +126,11 @@ describe('transfers epic', () => {
           ),
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
           transfer(
-            { tokenNetwork, target: partner, amount, secret, metadata, paymentId },
+            { tokenNetwork, target: partner, value, secret, paths, paymentId },
             { secrethash },
           ),
           // double transfer to test caching
-          transfer({ tokenNetwork, target: partner, amount, metadata, paymentId }, { secrethash }),
+          transfer({ tokenNetwork, target: partner, value, paths, paymentId }, { secrethash }),
         ),
         state$ = new BehaviorSubject(
           [
@@ -203,6 +204,7 @@ describe('transfers epic', () => {
                 message_identifier: expect.any(BigNumber),
                 signature: expect.any(String),
               }),
+              fee,
             },
             meta: { secrethash },
           },
@@ -224,9 +226,9 @@ describe('transfers epic', () => {
             {
               tokenNetwork,
               target: partner,
-              amount,
+              value,
               secret,
-              metadata: { routes: [{ route: [closingPartner] }] },
+              paths: { paths: [{ path: [closingPartner], fee }] },
               paymentId,
             },
             { secrethash },
@@ -269,7 +271,7 @@ describe('transfers epic', () => {
   describe('transfer: epics depending on pending transfer', () => {
     const secret = makeSecret(),
       secrethash = getSecrethash(secret),
-      amount = bigNumberify(10) as UInt<32>,
+      value = bigNumberify(10) as UInt<32>,
       openBlock = 121;
 
     let transferingState: RaidenState, signedTransfer: Signed<LockedTransfer>;
@@ -282,7 +284,7 @@ describe('transfers epic', () => {
       const action$: Observable<RaidenAction> = of(
           matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
           transfer(
-            { tokenNetwork, target: partner, amount, secret, metadata, paymentId },
+            { tokenNetwork, target: partner, value, secret, paths, paymentId },
             { secrethash },
           ),
         ),
@@ -347,7 +349,7 @@ describe('transfers epic', () => {
                 message: expect.objectContaining({
                   type: MessageType.UNLOCK,
                   locksroot: keccak256([]),
-                  transferred_amount: amount,
+                  transferred_amount: value.add(fee),
                   locked_amount: Zero,
                   message_identifier: expect.any(BigNumber),
                   signature: expect.any(String),
@@ -725,7 +727,7 @@ describe('transfers epic', () => {
             // 'of' is cold and'll fire these events on every subscription. For inner observable,
             // only messageSent is relevant and'll confirm messageSend with message=signedTransfer
             action$ = of(
-              transferSigned({ message: signedTransfer }, { secrethash }),
+              transferSigned({ message: signedTransfer, fee }, { secrethash }),
               messageSent({ message: signedTransfer }, { address: partner }),
             );
 
@@ -962,7 +964,7 @@ describe('transfers epic', () => {
             .toPromise(),
         ).resolves.toEqual([
           matrixRequestMonitorPresence(undefined, { address: partner }),
-          transferSigned({ message: signedTransfer }, { secrethash }),
+          transferSigned({ message: signedTransfer, fee }, { secrethash }),
         ]);
       });
 
@@ -1057,7 +1059,7 @@ describe('transfers epic', () => {
             message_identifier: makeMessageId(),
             payment_identifier: signedTransfer.payment_identifier,
             secrethash,
-            amount,
+            amount: value,
             expiration: signedTransfer.lock.expiration,
           },
           signed = await signMessage(partnerSigner, message),
@@ -1080,8 +1082,8 @@ describe('transfers epic', () => {
             message_identifier: makeMessageId(),
             payment_identifier: signedTransfer.payment_identifier,
             secrethash,
-            amount,
-            expiration: amount, // invalid expiration
+            amount: value,
+            expiration: value, // invalid expiration
           },
           signed = await signMessage(partnerSigner, message),
           action$ = of(
@@ -1106,7 +1108,7 @@ describe('transfers epic', () => {
           message_identifier: makeMessageId(),
           payment_identifier: signedTransfer.payment_identifier,
           secrethash,
-          amount,
+          amount: value,
           expiration: signedTransfer.lock.expiration,
         },
         signed = await signMessage(partnerSigner, request),
@@ -1540,7 +1542,7 @@ describe('transfers epic', () => {
     describe('withdraw request', () => {
       const state$ = new BehaviorSubject(transferingState),
         partnerDeposit = bigNumberify(30) as UInt<32>,
-        transferredAmount = amount,
+        transferredAmount = value.add(fee),
         withdrawableAmount = partnerDeposit.add(transferredAmount) as UInt<32>;
 
       /* state$ holds the state when a transfer unlocked and completed */
