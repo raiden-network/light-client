@@ -22,6 +22,7 @@ import { RaidenConfig } from 'raiden-ts/config';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
+import { losslessStringify } from 'raiden-ts/utils/data';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
@@ -463,7 +464,9 @@ describe('Raiden', () => {
 
     test('invalid amount', async () => {
       expect.assertions(1);
-      await expect(raiden.transfer(token, partner, -1)).rejects.toThrowError(/Invalid amount/i);
+      await expect(raiden.transfer(token, partner, -1)).rejects.toThrowError(
+        /Invalid value.*UInt/i,
+      );
     });
 
     test("secret and secrethash doesn't match", async () => {
@@ -492,7 +495,7 @@ describe('Raiden', () => {
     test('invalid provided paymentId', async () => {
       expect.assertions(1);
       await expect(raiden.transfer(token, partner, 23, { paymentId: -1 })).rejects.toThrowError(
-        /Invalid.*paymentId\b/i,
+        /Invalid value.*UInt/i,
       );
     });
 
@@ -500,15 +503,15 @@ describe('Raiden', () => {
       expect.assertions(1);
       await expect(
         raiden.transfer(token, partner, 23, {
-          metadata: { routes: [{ route: ['0xnotAnAddress'] }] },
+          paths: { paths: [{ path: ['0xnotAnAddress'], fee: 0 }] },
         }),
-      ).rejects.toThrowError(/Invalid.*metadata\b/i);
+      ).rejects.toThrowError(/Invalid value.*Address/i);
     });
 
     test('target not available', async () => {
       expect.assertions(1);
       await expect(raiden.transfer(token, partner, 21)).rejects.toThrowError(
-        /\btarget.*not available\b/i,
+        /\btarget.*not online\b/i,
       );
     });
 
@@ -593,19 +596,22 @@ describe('Raiden', () => {
 
         const pfs = 'http://pfs';
         raiden.config({ pfs });
+        const result = {
+          result: [
+            // first returned route is invalid and should be filtered
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [tokenNetwork, target], estimated_fee: 0 },
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [partner, target], estimated_fee: 0 },
+          ],
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          feedback_token: '0xfeedback',
+        };
         fetch.mockResolvedValueOnce({
           ok: true,
           status: 200,
-          json: jest.fn(async () => ({
-            result: [
-              // first returned route is invalid and should be filtered
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              { path: [tokenNetwork, target], estimated_fee: 0 },
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              { path: [partner, target], estimated_fee: 0 },
-            ],
-          })),
-          text: jest.fn(async () => ''),
+          json: jest.fn(async () => result),
+          text: jest.fn(async () => losslessStringify(result)),
         });
 
         const transfers: { [h: string]: RaidenSentTransfer } = {};
@@ -698,23 +704,26 @@ describe('Raiden', () => {
     test('success', async () => {
       expect.assertions(4);
 
+      const result = {
+        result: [
+          // first returned route is invalid and should be filtered
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [tokenNetwork, target], estimated_fee: 0 },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [raiden.address, partner, target], estimated_fee: 0 },
+        ],
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        feedback_token: '0xfeedback',
+      };
       fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: jest.fn(async () => ({
-          result: [
-            // first returned route is invalid and should be filtered
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            { path: [tokenNetwork, target], estimated_fee: 0 },
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            { path: [raiden.address, partner, target], estimated_fee: 0 },
-          ],
-        })),
-        text: jest.fn(async () => ''),
+        json: jest.fn(async () => result),
+        text: jest.fn(async () => losslessStringify(result)),
       });
 
-      await expect(raiden.findRoutes(token, target, 23)).resolves.toEqual({
-        routes: [{ route: [partner, target] }],
+      await expect(raiden.findRoutes(token, target, 23)).resolves.toMatchObject({
+        paths: [{ path: [partner, target], fee: bigNumberify(0) }],
       });
 
       expect(fetch).toHaveBeenCalledWith(
@@ -726,23 +735,26 @@ describe('Raiden', () => {
     test('fail: filtered no capacity routes', async () => {
       expect.assertions(3);
 
+      const result = {
+        result: [
+          // first returned route is invalid and should be filtered
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [tokenNetwork, target], estimated_fee: 0 },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [raiden.address, partner, target], estimated_fee: 0 },
+        ],
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        feedback_token: '0xfeedback',
+      };
       fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: jest.fn(async () => ({
-          result: [
-            // first returned route is invalid and should be filtered
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            { path: [tokenNetwork, target], estimated_fee: 0 },
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            { path: [raiden.address, partner, target], estimated_fee: 0 },
-          ],
-        })),
-        text: jest.fn(async () => ''),
+        json: jest.fn(async () => result),
+        text: jest.fn(async () => losslessStringify(result)),
       });
 
       await expect(raiden.findRoutes(token, target, 201)).rejects.toThrowError(
-        /validated routes.*empty/,
+        /no valid routes found/,
       );
     });
   });
