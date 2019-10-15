@@ -42,7 +42,6 @@ import {
   matrixMessageSendEpic,
   matrixMessageReceivedEpic,
   matrixMessageReceivedUpdateRoomEpic,
-  matrixStartEpic,
   deliveredEpic,
   matrixMessageGlobalSendEpic,
 } from 'raiden-ts/transport/epics';
@@ -85,35 +84,6 @@ describe('transport epic', () => {
       const promise = matrixMonitorChannelPresenceEpic(action$).toPromise();
       await expect(promise).resolves.toEqual(
         matrixRequestMonitorPresence(undefined, { address: partner }),
-      );
-    });
-  });
-
-  describe('matrixStartEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
-    test('startClient called on MATRIX_SETUP', async () => {
-      expect.assertions(4);
-      expect(matrix.startClient).not.toHaveBeenCalled();
-      await expect(
-        matrixStartEpic(
-          of(
-            matrixSetup({
-              server: matrixServer,
-              setup: { userId, accessToken, deviceId, displayName },
-            }),
-          ),
-          EMPTY,
-          depsMock,
-        ).toPromise(),
-      ).resolves.toBeUndefined();
-      expect(matrix.startClient).toHaveBeenCalledTimes(1);
-      expect(matrix.startClient).toHaveBeenCalledWith(
-        expect.objectContaining({ initialSyncLimit: 0 }),
       );
     });
   });
