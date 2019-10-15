@@ -18,6 +18,7 @@ import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
 import { Storage, Secret, Address } from 'raiden-ts/utils/types';
 import { ContractsInfo } from 'raiden-ts/types';
+import { RaidenConfig } from 'raiden-ts/config';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
@@ -26,15 +27,17 @@ import { matrixSetup } from 'raiden-ts/transport/actions';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
-  let accounts: string[];
-  let info: ContractsInfo;
-  let chainId: number;
-  let registry: Address;
-  let snapId: number | undefined;
-  let raiden: Raiden;
-  let storage: jest.Mocked<Storage>;
-  let token: string, tokenNetwork: string;
-  let partner: string;
+  let accounts: string[],
+    info: ContractsInfo,
+    chainId: number,
+    registry: Address,
+    snapId: number | undefined,
+    raiden: Raiden,
+    storage: jest.Mocked<Storage>,
+    token: string,
+    tokenNetwork: string,
+    partner: string;
+  const config: Partial<RaidenConfig> = { settleTimeout: 20, revealTimeout: 5 };
 
   let httpBackend: MockMatrixRequestFn;
   const matrixServer = 'matrix.raiden.test';
@@ -68,7 +71,7 @@ describe('Raiden', () => {
     httpBackend = new MockMatrixRequestFn(matrixServer);
     request(httpBackend.requestFn.bind(httpBackend));
 
-    raiden = await Raiden.create(provider, 0, storage, info);
+    raiden = await Raiden.create(provider, 0, storage, info, config);
     // wait token register to be fetched
     await raiden.getTokenList();
   });
@@ -82,12 +85,12 @@ describe('Raiden', () => {
     expect.assertions(5);
 
     // token address not found as an account in provider
-    await expect(Raiden.create(provider, token, storage, info)).rejects.toThrow(
+    await expect(Raiden.create(provider, token, storage, info, config)).rejects.toThrow(
       /Account.*not found in provider/i,
     );
 
     // neither account index, address nor private key
-    await expect(Raiden.create(provider, '0x1234', storage, info)).rejects.toThrow(
+    await expect(Raiden.create(provider, '0x1234', storage, info, config)).rejects.toThrow(
       /account must be either.*address or private key/i,
     );
 
@@ -98,6 +101,7 @@ describe('Raiden', () => {
         '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         JSON.stringify({ ...initialState, address: token }),
         info,
+        config,
       ),
     ).rejects.toThrow(/Mismatch between provided account and loaded state/i);
 
@@ -107,6 +111,7 @@ describe('Raiden', () => {
         1,
         JSON.stringify({ ...initialState, address: accounts[1], chainId, registry: token }),
         info,
+        config,
       ),
     ).rejects.toThrow(/Mismatch between network or registry address and loaded state/i);
 
@@ -116,6 +121,7 @@ describe('Raiden', () => {
       accounts[1],
       { ...initialState, address: accounts[1], chainId, registry },
       info,
+      config,
     );
     expect(raiden1).toBeInstanceOf(Raiden);
     raiden1.stop();
@@ -174,11 +180,13 @@ describe('Raiden', () => {
   describe('openChannel', () => {
     test('tx fail', async () => {
       expect.assertions(1);
-      // settleTimeout < min of 500
-      await expect(raiden.openChannel(token, partner, { settleTimeout: 499 })).rejects.toThrow();
+      // settleTimeout < min
+      await expect(
+        raiden.openChannel(token, partner, { settleTimeout: config.settleTimeout! - 1 }),
+      ).rejects.toThrow();
     });
 
-    test('success with default settleTimeout=500', async () => {
+    test('success with default settleTimeout=20', async () => {
       expect.assertions(2);
       await expect(raiden.openChannel(token, partner)).resolves.toMatch(/^0x/);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
@@ -190,7 +198,7 @@ describe('Raiden', () => {
             state: ChannelState.open,
             ownDeposit: Zero,
             partnerDeposit: Zero,
-            settleTimeout: 500,
+            settleTimeout: 20,
             balance: Zero,
           },
         },
@@ -245,7 +253,7 @@ describe('Raiden', () => {
     beforeEach(async () => {
       await raiden.openChannel(token, partner);
       await raiden.depositChannel(token, partner, 200);
-      raiden1 = await Raiden.create(provider, partner, undefined, info);
+      raiden1 = await Raiden.create(provider, partner, undefined, info, config);
     });
 
     afterEach(() => {
@@ -338,7 +346,7 @@ describe('Raiden', () => {
 
     test('success', async () => {
       expect.assertions(3);
-      await provider.mine(501);
+      await provider.mine(config.settleTimeout! + 1);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
         [token]: {
           [partner]: {
@@ -413,6 +421,7 @@ describe('Raiden', () => {
         accounts[2],
         { ...initialState, address: accounts[2], chainId, registry },
         info,
+        config,
       );
       expect(raiden1).toBeInstanceOf(Raiden);
 
@@ -507,6 +516,7 @@ describe('Raiden', () => {
           partner,
           { ...initialState, address: partner, chainId, registry },
           info,
+          config,
         );
         await new Promise(resolve => setTimeout(resolve, 1000));
         await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
@@ -548,6 +558,7 @@ describe('Raiden', () => {
             target,
             { ...initialState, address: target, chainId, registry },
             info,
+            config,
           );
 
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -618,12 +629,14 @@ describe('Raiden', () => {
         partner,
         { ...initialState, address: partner, chainId, registry },
         info,
+        config,
       );
       raiden2 = await Raiden.create(
         provider,
         target,
         { ...initialState, address: target, chainId, registry },
         info,
+        config,
       );
 
       // await client's matrix initialization
