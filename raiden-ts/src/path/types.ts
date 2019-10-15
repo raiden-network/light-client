@@ -29,29 +29,17 @@ export interface PathResults extends t.TypeOf<typeof PathResults> {}
 /**
  * Codec for raiden-ts internal representation of a PFS result/routes
  */
-export const Paths = t.readonly(
-  t.intersection([
+export const Paths = t.array(
+  t.readonly(
     t.type({
-      paths: t.array(
-        t.readonly(
-          t.type({
-            path: t.readonlyArray(Address),
-            fee: Int(32),
-          }),
-        ),
-      ),
+      path: t.readonlyArray(Address),
+      fee: Int(32),
     }),
-    t.partial({
-      feedbackToken: t.string,
-    }),
-  ]),
+  ),
 );
-export interface Paths extends t.TypeOf<typeof Paths> {}
+export type Paths = t.TypeOf<typeof Paths>;
 
 /**
  * Public Raiden interface for routes data
  */
-export interface RaidenPaths {
-  readonly paths: { readonly path: readonly string[]; readonly fee: BigNumberish }[];
-  readonly feedbackToken?: string;
-}
+export type RaidenPaths = { readonly path: readonly string[]; readonly fee: BigNumberish }[];

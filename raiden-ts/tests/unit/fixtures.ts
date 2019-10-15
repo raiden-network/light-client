@@ -72,7 +72,7 @@ export const epicFixtures = function(
     processed: Processed = { type: MessageType.PROCESSED, message_identifier: makeMessageId() },
     paymentId = makePaymentId(),
     fee = bigNumberify(3) as Int<32>,
-    paths = { paths: [{ path: [partner], fee }] },
+    paths = [{ path: [partner], fee }],
     metadata = { routes: [{ route: [partner] }] };
 
   depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async _token =>

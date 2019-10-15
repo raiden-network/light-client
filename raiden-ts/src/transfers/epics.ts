@@ -109,10 +109,10 @@ function makeAndSignTransfer(
       // assume paths are valid and recipient is first hop of first route
       // compose metadata from it, and use first path fee
       const metadata: Metadata = {
-          routes: action.payload.paths.paths.map(({ path }) => ({ route: path })),
+          routes: action.payload.paths.map(({ path }) => ({ route: path })),
         },
-        fee = action.payload.paths.paths[0].fee,
-        recipient = action.payload.paths.paths[0].path[0];
+        fee = action.payload.paths[0].fee,
+        recipient = action.payload.paths[0].path[0];
 
       const channel: Channel | undefined = state.channels[action.payload.tokenNetwork][recipient];
       // check below shouldn't fail because of route validation in pathFindServiceEpic

@@ -64,10 +64,7 @@ export const pathFindServiceEpic = (
               else if (
                 channelCanRoute(state, presences, tokenNetwork, target, action.meta.value) === true
               )
-                return of({
-                  paths: [{ path: [state.address, target], fee: Zero as Int<32> }],
-                  feedbackToken: undefined,
-                });
+                return of([{ path: [state.address, target], fee: Zero as Int<32> }]);
               // else, request a route from PFS
               else if (pfs !== null) {
                 // from all channels
@@ -91,10 +88,8 @@ export const pathFindServiceEpic = (
                     return decode(PathResults, losslessParse(text));
                   }),
                   map(
-                    (results: PathResults): Paths => ({
-                      paths: results.result.map(r => ({ path: r.path, fee: r.estimated_fee })),
-                      feedbackToken: results.feedback_token,
-                    }),
+                    (results: PathResults): Paths =>
+                      results.result.map(r => ({ path: r.path, fee: r.estimated_fee })),
                   ),
                 );
               } else {
@@ -103,11 +98,11 @@ export const pathFindServiceEpic = (
             }),
             withLatestFrom(statePresencesConfig$),
             // validate/cleanup received routes/paths/results
-            map(([results, [state, presences]]) => {
-              const filteredPaths: Paths['paths'] = [],
+            map(([paths, [state, presences]]) => {
+              const filteredPaths: Paths = [],
                 invalidatedRecipients = new Set<Address>();
               // eslint-disable-next-line prefer-const
-              for (let { path, fee } of results.paths) {
+              for (let { path, fee } of paths) {
                 // if route has us as first hop, cleanup/shift
                 if (path[0] === state.address) path = path.slice(1);
                 const recipient = path[0];
@@ -140,10 +135,7 @@ export const pathFindServiceEpic = (
                 filteredPaths.push({ path, fee });
               }
               if (!filteredPaths.length) throw new Error(`PFS: no valid routes found`);
-              return pathFound(
-                { paths: { paths: filteredPaths, feedbackToken: results.feedbackToken } },
-                action.meta,
-              );
+              return pathFound({ paths: filteredPaths }, action.meta);
             }),
             catchError(err => of(pathFindFailed(err, action.meta))),
           ),
