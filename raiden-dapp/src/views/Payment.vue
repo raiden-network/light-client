@@ -87,7 +87,7 @@
             class="payment__pay-button"
           ></action-button>
         </template>
-        <v-card class="payment__deposit-dialog">
+        <v-card class="payment__route-dialog">
           <find-routes
             v-if="findingRoutes"
             @cancel="findingRoutes = false"
@@ -120,7 +120,7 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import { emptyDescription, StepDescription, Token } from '@/model/types';
+import { emptyDescription, StepDescription, Token, Route } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
@@ -131,7 +131,7 @@ import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannel, ChannelState } from 'raiden-ts';
+import { RaidenChannel, ChannelState, RaidenPaths } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -245,7 +245,7 @@ export default class Payment extends Mixins(NavigationMixin) {
     this.depositing = false;
   }
 
-  async transfer(route: any) {
+  async transfer(route?: Route) {
     this.steps = [
       (this.$t('payment.steps.transfer') as any) as StepDescription
     ];
@@ -259,8 +259,12 @@ export default class Payment extends Mixins(NavigationMixin) {
       await this.$raiden.transfer(
         address,
         this.target,
-        BalanceUtils.parse(this.amount, decimals!)
+        BalanceUtils.parse(this.amount, decimals!),
+        route
+          ? ({ paths: [{ path: route.path, fee: route.fee }] } as RaidenPaths)
+          : undefined
       );
+
       this.done = true;
       this.dismissProgress();
     } catch (e) {

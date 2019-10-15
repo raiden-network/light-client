@@ -56,7 +56,10 @@
     },
     "hops": "Hops",
     "fees-in": "Fees in {token}",
-    "total-amount": "{totalAmount} {token}"
+    "total-amount": "{totalAmount} {token}",
+    "error": {
+      "title": "Ops, something went wrong"
+    }
   },
   "stepper": {
     "steps": {
