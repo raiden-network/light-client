@@ -27,7 +27,7 @@
           ></v-img>
         </v-flex>
         <v-flex xs3 align-center class="payment__capacity__deposit-column">
-          <v-dialog v-model="depositing" max-width="450">
+          <v-dialog v-model="depositing" max-width="625">
             <template #activator="{ on }">
               <v-btn
                 @click="depositing = true"
@@ -77,7 +77,7 @@
 
       <v-spacer></v-spacer>
 
-      <v-dialog v-model="findingRoutes" max-width="450">
+      <v-dialog v-model="findingRoutes" max-width="625">
         <template #activator="{ on }">
           <action-button
             :enabled="valid"
@@ -163,12 +163,11 @@ export default class Payment extends Mixins(NavigationMixin) {
   valid: boolean = false;
   loading: boolean = false;
   done: boolean = false;
+  depositing: boolean = false;
+  findingRoutes: boolean = false;
 
   errorTitle: string = '';
   error: string = '';
-
-  depositing: boolean = false;
-  findingRoutes: boolean = false;
 
   steps: StepDescription[] = [];
   doneStep: StepDescription = emptyDescription();
@@ -246,7 +245,7 @@ export default class Payment extends Mixins(NavigationMixin) {
     this.depositing = false;
   }
 
-  async transfer() {
+  async transfer(route: any) {
     this.steps = [
       (this.$t('payment.steps.transfer') as any) as StepDescription
     ];
