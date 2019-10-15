@@ -222,36 +222,14 @@ export const initMatrixEpic = (
             matrix$.next(matrix);
             matrix$.complete();
           }),
+          switchMap(() => matrix$),
+          delay(1e3), // wait 1s before starting matrix, so event listeners can be registered
+          mergeMap(matrix => matrix.startClient({ initialSyncLimit: 0 })),
           ignoreElements(),
         ),
         of(matrixSetup({ server, setup })),
       ),
     ),
-  );
-
-/**
- * Start MatrixClient sync polling when detecting MatrixSetupAction, **after** init time fromEvents
- * were already registered.
- * This is required to ensure init-time events registering are done before initial sync, to avoid
- * losing one-shot events, like invitations.
- *
- * @param action$ - Observable of matrixSetup actions
- * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
- * @returns Empty observable (whole side-effect on matrix instance)
- */
-export const matrixStartEpic = (
-  action$: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
-  { matrix$ }: RaidenEpicDeps,
-): Observable<RaidenAction> =>
-  action$.pipe(
-    filter(isActionOf(matrixSetup)),
-    switchMap(() => matrix$),
-    tap(matrix => console.log('MATRIX client', matrix)),
-    delay(1e3), // wait 1s before starting matrix, so event listeners can be registered
-    mergeMap(matrix => matrix.startClient({ initialSyncLimit: 0 })),
-    ignoreElements(),
   );
 
 /**
