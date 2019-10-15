@@ -72,7 +72,7 @@ export class TestProvider extends Web3Provider {
     ).deploy(
       secretRegistryContract.address,
       this.network.chainId,
-      500,
+      20,
       555428,
       10,
     )) as TokenNetworkRegistry;
