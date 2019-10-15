@@ -425,7 +425,13 @@ describe('Raiden', () => {
       );
       expect(raiden1).toBeInstanceOf(Raiden);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await raiden1 client matrix initialization
+      await raiden1.action$
+        .pipe(
+          filter(isActionOf(matrixSetup)),
+          first(),
+        )
+        .toPromise();
 
       await expect(raiden.getAvailability(accounts[2])).resolves.toMatchObject({
         userId: `@${accounts[2].toLowerCase()}:${matrixServer}`,
@@ -518,7 +524,15 @@ describe('Raiden', () => {
           info,
           config,
         );
-        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // await raiden1 client matrix initialization
+        await raiden1.action$
+          .pipe(
+            filter(isActionOf(matrixSetup)),
+            first(),
+          )
+          .toPromise();
+
         await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
           userId: `@${partner.toLowerCase()}:${matrixServer}`,
           available: true,
@@ -559,12 +573,16 @@ describe('Raiden', () => {
             { ...initialState, address: target, chainId, registry },
             info,
             config,
-          );
+          ),
+          matrix2Promise = raiden2.action$
+            .pipe(
+              filter(isActionOf(matrixSetup)),
+              first(),
+            )
+            .toPromise();
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        await raiden1.openChannel(token, target);
-        await raiden1.depositChannel(token, target, 200);
+        // await raiden2 client matrix initialization
+        await matrix2Promise;
 
         await expect(raiden.getAvailability(target)).resolves.toMatchObject({
           userId: `@${target.toLowerCase()}:${matrixServer}`,
@@ -617,6 +635,8 @@ describe('Raiden', () => {
   describe('findRoutes', () => {
     const pfs = 'http://pfs';
     let raiden1: Raiden, raiden2: Raiden, target: string;
+
+    beforeAll(() => jest.setTimeout(60e3));
 
     beforeEach(async () => {
       target = accounts[2];
