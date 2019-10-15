@@ -503,7 +503,7 @@ describe('Raiden', () => {
       expect.assertions(1);
       await expect(
         raiden.transfer(token, partner, 23, {
-          paths: { paths: [{ path: ['0xnotAnAddress'], fee: 0 }] },
+          paths: [{ path: ['0xnotAnAddress'], fee: 0 }],
         }),
       ).rejects.toThrowError(/Invalid value.*Address/i);
     });
@@ -722,9 +722,9 @@ describe('Raiden', () => {
         text: jest.fn(async () => losslessStringify(result)),
       });
 
-      await expect(raiden.findRoutes(token, target, 23)).resolves.toMatchObject({
-        paths: [{ path: [partner, target], fee: bigNumberify(0) }],
-      });
+      await expect(raiden.findRoutes(token, target, 23)).resolves.toEqual([
+        { path: [partner, target], fee: bigNumberify(0) },
+      ]);
 
       expect(fetch).toHaveBeenCalledWith(
         expect.stringMatching(new RegExp(`^${pfs}/.*/${tokenNetwork}/paths$`)),

@@ -128,7 +128,7 @@ describe('PFS: pathFindServiceEpic', () => {
         matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
         matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
         pathFind(
-          { paths: { paths: [{ path: [depsMock.address, partner, target], fee }] } },
+          { paths: [{ path: [depsMock.address, partner, target], fee }] },
           { tokenNetwork, target, value },
         ),
       );
@@ -137,10 +137,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFound(
-        { paths: { paths: [{ path: [partner, target], fee }] } },
-        { tokenNetwork, target, value },
-      ),
+      pathFound({ paths: [{ path: [partner, target], fee }] }, { tokenNetwork, target, value }),
     );
   });
 
@@ -159,7 +156,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFound(
-        { paths: { paths: [{ path: [partner], fee: Zero as Int<32> }] } },
+        { paths: [{ path: [partner], fee: Zero as Int<32> }] },
         { tokenNetwork, target: partner, value },
       ),
     );
@@ -178,10 +175,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFound(
-        { paths: { paths: [{ path: [partner, target], fee }] } },
-        { tokenNetwork, target, value },
-      ),
+      pathFound({ paths: [{ path: [partner, target], fee }] }, { tokenNetwork, target, value }),
     );
   });
 
@@ -266,7 +260,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFound(
-        { paths: { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] } },
+        { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] },
         { tokenNetwork, target, value },
       ),
     );
@@ -304,7 +298,7 @@ describe('PFS: pathFindServiceEpic', () => {
         matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
         matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
         pathFind(
-          { paths: { paths: [{ path: [depsMock.address, partner, target], fee }] } },
+          { paths: [{ path: [depsMock.address, partner, target], fee }] },
           { tokenNetwork, target, value },
         ),
       );

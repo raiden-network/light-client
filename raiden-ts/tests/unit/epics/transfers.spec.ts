@@ -228,7 +228,7 @@ describe('transfers epic', () => {
               target: partner,
               value,
               secret,
-              paths: { paths: [{ path: [closingPartner], fee }] },
+              paths: [{ path: [closingPartner], fee }],
               paymentId,
             },
             { secrethash },
