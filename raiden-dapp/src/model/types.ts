@@ -1,4 +1,4 @@
-import { BigNumberish, Network } from 'ethers/utils';
+import { BigNumber, BigNumberish, Network } from 'ethers/utils';
 
 export interface Token {
   readonly address: string;
@@ -48,6 +48,13 @@ export interface StepDescription {
   readonly label: string;
   readonly title: string;
   readonly description: string;
+}
+
+export interface Route {
+  readonly key: number;
+  readonly hops: number;
+  readonly path: string[];
+  readonly fee: BigNumber;
 }
 
 export const emptyDescription = (): StepDescription => ({

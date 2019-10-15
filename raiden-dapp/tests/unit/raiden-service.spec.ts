@@ -32,6 +32,9 @@ describe('RaidenService', () => {
     send: jest.fn(),
     sendAsync: jest.fn()
   };
+  const path = {
+    paths: [{ path: ['0xmediator'], fee: new BigNumber(1 ** 10) }]
+  };
 
   const mockRaiden = (extras: {} = {}) =>
     Object.assign(
@@ -693,10 +696,12 @@ describe('RaidenService', () => {
       await raidenService.connect();
       await flushPromises();
 
-      await expect(raidenService.transfer('0xtoken', '0xpartner', One))
+      await expect(raidenService.transfer('0xtoken', '0xpartner', One, path))
         .resolves;
       expect(transfer).toHaveBeenCalledTimes(1);
-      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One);
+      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One, {
+        paths: path
+      });
     });
 
     test('should throw if the transfer fails', async () => {
@@ -713,10 +718,12 @@ describe('RaidenService', () => {
       await flushPromises();
 
       await expect(
-        raidenService.transfer('0xtoken', '0xpartner', One)
+        raidenService.transfer('0xtoken', '0xpartner', One, path)
       ).rejects.toBeInstanceOf(TransferFailed);
       expect(transfer).toHaveBeenCalledTimes(1);
-      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One);
+      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One, {
+        paths: path
+      });
     });
   });
 

@@ -1,4 +1,9 @@
-import { Raiden, RaidenChannel, RaidenSentTransfer } from 'raiden-ts';
+import {
+  Raiden,
+  RaidenChannel,
+  RaidenSentTransfer,
+  RaidenPaths
+} from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
@@ -15,7 +20,6 @@ import { Zero } from 'ethers/constants';
 import { exhaustMap, filter, first } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import { ConfigProvider } from './config-provider';
-import { Metadata } from 'raiden-ts/dist/messages';
 
 export default class RaidenService {
   private _raiden?: Raiden;
@@ -270,10 +274,17 @@ export default class RaidenService {
     await asyncPool(6, tokens, fetchToken);
   }
 
-  async transfer(token: string, target: string, amount: BigNumber) {
+  async transfer(
+    token: string,
+    target: string,
+    amount: BigNumber,
+    paths?: RaidenPaths
+  ) {
     try {
       await this.raiden.getAvailability(target);
-      const secretHash = await this.raiden.transfer(token, target, amount);
+      const secretHash = await this.raiden.transfer(token, target, amount, {
+        paths: paths
+      });
 
       // Wait for transaction to be completed
       await this.raiden.transfers$
@@ -289,8 +300,12 @@ export default class RaidenService {
     }
   }
 
-  async findRoutes(token: string, target: string, amount: BigNumber) {
-    let routes: Metadata | null = null;
+  async findRoutes(
+    token: string,
+    target: string,
+    amount: BigNumber
+  ): Promise<RaidenPaths> {
+    let routes: RaidenPaths;
 
     try {
       routes = await this.raiden.findRoutes(token, target, amount);

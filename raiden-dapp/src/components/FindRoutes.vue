@@ -3,9 +3,10 @@
     <v-layout class="find-routes__wrapper" align-center justify-center>
       <v-flex xs12>
         <h2 v-if="busy">{{ $t('find-routes.busy-title') }}</h2>
+        <h2 v-else-if="!busy && error">{{ $t('find-routes.error.title') }}</h2>
         <h2 v-else>{{ $t('find-routes.title') }}</h2>
 
-        <p v-if="!busy">{{ $t('find-routes.description') }}</p>
+        <p v-if="!busy && !error">{{ $t('find-routes.description') }}</p>
 
         <v-layout
           v-if="busy"
@@ -19,6 +20,9 @@
             class="stepper__card__content--progress"
             indeterminate
           ></v-progress-circular>
+        </v-layout>
+        <v-layout v-else-if="!busy && error">
+          <p>{{ error }}</p>
         </v-layout>
         <v-layout v-else align-center justify-center>
           <v-form>
@@ -44,11 +48,13 @@
                     <v-checkbox v-model="props.selected" primary></v-checkbox>
                   </td>
                   <td class="text-right">{{ props.item.hops }}</td>
-                  <td class="text-right">{{ props.item.fee }}</td>
+                  <td class="text-right">
+                    {{ convertToUnits(props.item.fee, token.decimals) }}
+                  </td>
                 </tr>
               </template>
             </v-data-table>
-            <p>
+            <p class="find-routes__total-amount">
               {{
                 $t('find-routes.total-amount', {
                   totalAmount: convertToUnits(totalAmount, token.decimals),
@@ -79,11 +85,12 @@
 </template>
 
 <script lang="ts">
-import { BigNumber } from 'ethers/utils';
-
+import { BigNumber, BigNumberish } from 'ethers/utils';
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+import { RaidenPaths } from 'raiden-ts';
+
 import { BalanceUtils } from '@/utils/balance-utils';
-import { Token } from '@/model/types';
+import { Token, Route } from '@/model/types';
 
 @Component({})
 export default class FindRoutes extends Vue {
@@ -99,7 +106,8 @@ export default class FindRoutes extends Vue {
   busy: boolean = false;
   error: string = '';
   headers: { text: string; align: string; value: string }[] = [];
-  selected: { key: number }[] = [];
+  selected: Route[] = [];
+  routes: Route[] = [];
   convertToUnits = BalanceUtils.toUnits;
 
   mounted() {
@@ -117,6 +125,8 @@ export default class FindRoutes extends Vue {
         value: 'fee'
       }
     ];
+
+    this.findRoutes();
   }
 
   get totalAmount(): BigNumber {
@@ -126,56 +136,49 @@ export default class FindRoutes extends Vue {
 
     if (this.routes.length && selected) {
       const selectedRoute = this.routes.find(
-        route => route.key === selected.key
+        (route: Route) => route.key === selected.key
       );
 
-      const fees: BigNumber = BalanceUtils.parse(selectedRoute!.fee, decimals!);
       // Return payable amount plus fees
-      return payment.add(fees);
+      const { fee } = selectedRoute!;
+      return payment.add(fee);
     }
 
     return payment;
   }
 
-  get routes(): { key: number; hops: number; fee: string }[] {
+  async findRoutes(): Promise<void> {
     const { address, decimals } = this.token;
     this.busy = true;
 
     try {
-      const fee = BalanceUtils.toUnits(
-        new BigNumber(0.23423 * 10 ** 10),
-        this.token.decimals!
-      );
-      const fee2 = BalanceUtils.toUnits(
-        new BigNumber(0.34123 * 10 ** 10),
-        this.token.decimals!
-      );
-      this.busy = false;
-
-      return [
-        {
-          key: 0,
-          hops: 0,
-          fee: fee2
-        },
-        { key: 1, hops: 3, fee: fee }
-      ];
-      /*
       // Fetch available routes from PFS
-      this.routes = await this.$raiden.findRoutes(
+      const fetchedRoutes: RaidenPaths = await this.$raiden.findRoutes(
         address,
         this.target,
         BalanceUtils.parse(this.amount, decimals!)
       );
-      */
 
-      // Sort routes by cheapest fees
-      // Pre select the cheapest route
+      if (fetchedRoutes && fetchedRoutes.paths) {
+        // Convert to Route type
+        this.routes = fetchedRoutes.paths.map(
+          ({ path, fee }, index: number) =>
+            ({
+              key: index,
+              hops: path.length - 1,
+              fee,
+              path
+            } as Route)
+        );
+
+        // Pre select the cheapest route
+        this.selected = [this.routes[0]];
+      }
     } catch (e) {
       this.error = e.message;
     }
 
-    return [];
+    this.busy = false;
   }
 
   @Emit()
@@ -184,9 +187,9 @@ export default class FindRoutes extends Vue {
   }
 
   @Emit()
-  confirm() {
+  confirm(): Route {
     const [selectedRoute] = this.selected;
-    return this.routes.filter(route => route.key === selectedRoute.key);
+    return selectedRoute;
   }
 }
 </script>
