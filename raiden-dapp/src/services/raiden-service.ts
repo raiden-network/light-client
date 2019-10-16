@@ -281,7 +281,6 @@ export default class RaidenService {
     paths: RaidenPaths
   ) {
     try {
-      await this.raiden.getAvailability(target);
       const secretHash = await this.raiden.transfer(token, target, amount, {
         paths: paths
       });
@@ -308,6 +307,7 @@ export default class RaidenService {
     let routes: RaidenPaths;
 
     try {
+      await this.raiden.getAvailability(target);
       routes = await this.raiden.findRoutes(token, target, amount);
     } catch (e) {
       throw new FindRoutesFailed(e);
