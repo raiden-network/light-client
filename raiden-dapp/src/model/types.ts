@@ -55,6 +55,7 @@ export interface Route {
   readonly hops: number;
   readonly path: string[];
   readonly fee: BigNumber;
+  readonly displayFee: string;
 }
 
 export const emptyDescription = (): StepDescription => ({

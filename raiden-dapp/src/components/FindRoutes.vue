@@ -49,7 +49,7 @@
                   </td>
                   <td class="text-right">{{ props.item.hops }}</td>
                   <td class="text-right">
-                    {{ convertToUnits(props.item.fee, token.decimals) }}
+                    {{ props.item.displayFee }}
                   </td>
                 </tr>
               </template>
@@ -121,7 +121,7 @@ export default class FindRoutes extends Vue {
           token: this.token.symbol
         }) as string,
         align: 'right',
-        value: 'fee'
+        value: 'displayFee'
       }
     ];
 
@@ -165,6 +165,7 @@ export default class FindRoutes extends Vue {
             ({
               key: index,
               hops: path.length - 1,
+              displayFee: BalanceUtils.toUnits(fee as BigNumber, decimals!),
               fee,
               path
             } as Route)
