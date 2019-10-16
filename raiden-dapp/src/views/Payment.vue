@@ -131,7 +131,7 @@ import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannel, ChannelState, RaidenPaths } from 'raiden-ts';
+import { RaidenChannel, ChannelState } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -245,7 +245,7 @@ export default class Payment extends Mixins(NavigationMixin) {
     this.depositing = false;
   }
 
-  async transfer(route?: Route) {
+  async transfer(route: Route) {
     this.steps = [
       (this.$t('payment.steps.transfer') as any) as StepDescription
     ];
@@ -260,9 +260,7 @@ export default class Payment extends Mixins(NavigationMixin) {
         address,
         this.target,
         BalanceUtils.parse(this.amount, decimals!),
-        route
-          ? ({ paths: [{ path: route.path, fee: route.fee }] } as RaidenPaths)
-          : undefined
+        [{ path: route.path, fee: route.fee }]
       );
 
       this.done = true;

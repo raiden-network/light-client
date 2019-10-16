@@ -278,7 +278,7 @@ export default class RaidenService {
     token: string,
     target: string,
     amount: BigNumber,
-    paths?: RaidenPaths
+    paths: RaidenPaths
   ) {
     try {
       await this.raiden.getAvailability(target);

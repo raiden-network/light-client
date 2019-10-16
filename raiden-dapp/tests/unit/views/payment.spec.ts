@@ -4,7 +4,7 @@ jest.useFakeTimers();
 
 import { Token } from '@/model/types';
 import { addElemWithDataAppToBody } from '../utils/dialog';
-import { ChannelState, RaidenPaths } from 'raiden-ts';
+import { ChannelState } from 'raiden-ts';
 import { mockInput } from '../utils/interaction-utils';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
@@ -76,9 +76,12 @@ describe('Payment.vue', () => {
     raiden = new RaidenService(store) as Mocked<RaidenService>;
     raiden.fetchTokenData = jest.fn().mockResolvedValue(undefined);
 
-    raiden.findRoutes = jest.fn().mockResolvedValue({
-      paths: [{ path: ['0xaddr'], fee: new BigNumber(1 ** 8) }]
-    } as RaidenPaths);
+    raiden.findRoutes = jest.fn().mockResolvedValue([
+      {
+        path: ['0xaddr'],
+        fee: new BigNumber(1 ** 8)
+      }
+    ]);
 
     router.currentRoute = TestData.mockRoute({
       token: '0xtoken'

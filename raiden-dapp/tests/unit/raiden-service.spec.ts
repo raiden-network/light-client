@@ -32,9 +32,7 @@ describe('RaidenService', () => {
     send: jest.fn(),
     sendAsync: jest.fn()
   };
-  const path = {
-    paths: [{ path: ['0xmediator'], fee: new BigNumber(1 ** 10) }]
-  };
+  const path = [{ path: ['0xmediator'], fee: new BigNumber(1 ** 10) }];
 
   const mockRaiden = (extras: {} = {}) =>
     Object.assign(

@@ -87,7 +87,6 @@
 <script lang="ts">
 import { BigNumber, BigNumberish } from 'ethers/utils';
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
-import { RaidenPaths } from 'raiden-ts';
 
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Token, Route } from '@/model/types';
@@ -153,15 +152,15 @@ export default class FindRoutes extends Vue {
 
     try {
       // Fetch available routes from PFS
-      const fetchedRoutes: RaidenPaths = await this.$raiden.findRoutes(
+      const fetchedRoutes = await this.$raiden.findRoutes(
         address,
         this.target,
         BalanceUtils.parse(this.amount, decimals!)
       );
 
-      if (fetchedRoutes && fetchedRoutes.paths) {
-        // Convert to Route type
-        this.routes = fetchedRoutes.paths.map(
+      if (fetchedRoutes) {
+        // Convert to displayable Route type
+        this.routes = fetchedRoutes.map(
           ({ path, fee }, index: number) =>
             ({
               key: index,
