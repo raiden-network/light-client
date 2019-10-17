@@ -129,18 +129,13 @@ export default class FindRoutes extends Vue {
   }
 
   get totalAmount(): BigNumber {
-    const [selected] = this.selected;
+    const [selectedRoute] = this.selected;
     const { decimals } = this.token;
     const payment: BigNumber = BalanceUtils.parse(this.amount, decimals!);
 
-    if (this.routes.length && selected) {
-      const selectedRoute = this.routes.find(
-        (route: Route) => route.key === selected.key
-      );
-
+    if (selectedRoute) {
       // Return payable amount plus fees
-      const { fee } = selectedRoute!;
-      return payment.add(fee);
+      return payment.add(selectedRoute.fee);
     }
 
     return payment;
