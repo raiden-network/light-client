@@ -188,8 +188,8 @@ export default class FindRoutes extends Vue {
 
   @Emit()
   confirm(): Route {
-    const [selectedRoute] = this.selected;
-    return selectedRoute;
+    const [route] = this.selected;
+    return route;
   }
 }
 </script>

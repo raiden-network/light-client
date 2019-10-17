@@ -251,8 +251,10 @@ export default class Payment extends Mixins(NavigationMixin) {
     ];
     this.doneStep = (this.$t('payment.steps.done') as any) as StepDescription;
     this.errorTitle = this.$t('payment.error.title') as string;
+    this.findingRoutes = false;
 
     const { address, decimals } = this.token;
+    const { path, fee } = route;
 
     try {
       this.loading = true;
@@ -260,7 +262,7 @@ export default class Payment extends Mixins(NavigationMixin) {
         address,
         this.target,
         BalanceUtils.parse(this.amount, decimals!),
-        [{ path: route.path, fee: route.fee }]
+        [{ path, fee }]
       );
 
       this.done = true;
