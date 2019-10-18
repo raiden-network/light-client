@@ -1,4 +1,9 @@
-import { Raiden, RaidenChannel, RaidenSentTransfer } from 'raiden-ts';
+import {
+  Raiden,
+  RaidenChannel,
+  RaidenSentTransfer,
+  RaidenPaths
+} from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
@@ -269,10 +274,16 @@ export default class RaidenService {
     await asyncPool(6, tokens, fetchToken);
   }
 
-  async transfer(token: string, target: string, amount: BigNumber) {
+  async transfer(
+    token: string,
+    target: string,
+    amount: BigNumber,
+    paths: RaidenPaths
+  ) {
     try {
-      await this.raiden.getAvailability(target);
-      const secretHash = await this.raiden.transfer(token, target, amount);
+      const secretHash = await this.raiden.transfer(token, target, amount, {
+        paths: paths
+      });
 
       // Wait for transaction to be completed
       await this.raiden.transfers$
@@ -286,6 +297,23 @@ export default class RaidenService {
     } catch (e) {
       throw new TransferFailed(e);
     }
+  }
+
+  async findRoutes(
+    token: string,
+    target: string,
+    amount: BigNumber
+  ): Promise<RaidenPaths> {
+    let routes: RaidenPaths;
+
+    try {
+      await this.raiden.getAvailability(target);
+      routes = await this.raiden.findRoutes(token, target, amount);
+    } catch (e) {
+      throw new FindRoutesFailed(e);
+    }
+
+    return routes;
   }
 }
 
@@ -302,3 +330,5 @@ export class EnsResolveFailed extends Error {}
 export class TransferFailed extends Error {}
 
 export class RaidenInitializationFailed extends Error {}
+
+export class FindRoutesFailed extends Error {}

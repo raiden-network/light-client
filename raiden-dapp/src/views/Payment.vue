@@ -27,7 +27,7 @@
           ></v-img>
         </v-flex>
         <v-flex xs3 align-center class="payment__capacity__deposit-column">
-          <v-dialog v-model="depositing" max-width="450">
+          <v-dialog v-model="depositing" max-width="625">
             <template #activator="{ on }">
               <v-btn
                 @click="depositing = true"
@@ -77,12 +77,27 @@
 
       <v-spacer></v-spacer>
 
-      <action-button
-        :enabled="valid"
-        @click="transfer()"
-        :text="$t('payment.pay-button')"
-        class="payment__pay-button"
-      ></action-button>
+      <v-dialog v-model="findingRoutes" max-width="625">
+        <template #activator="{ on }">
+          <action-button
+            :enabled="valid"
+            @click="findingRoutes = true"
+            :text="$t('payment.pay-button')"
+            v-on="on"
+            class="payment__pay-button"
+          ></action-button>
+        </template>
+        <v-card class="payment__route-dialog">
+          <find-routes
+            v-if="findingRoutes"
+            @cancel="findingRoutes = false"
+            @confirm="transfer($event)"
+            :token="token"
+            :amount="amount"
+            :target="target"
+          ></find-routes>
+        </v-card>
+      </v-dialog>
 
       <stepper
         :display="loading"
@@ -105,7 +120,7 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import { emptyDescription, StepDescription, Token } from '@/model/types';
+import { emptyDescription, StepDescription, Token, Route } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
@@ -113,6 +128,7 @@ import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
+import FindRoutes from '@/components/FindRoutes.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
 import { RaidenChannel, ChannelState } from 'raiden-ts';
@@ -130,7 +146,8 @@ import { getAddress, getAmount } from '@/utils/query-params';
     AddressInput,
     AmountInput,
     Stepper,
-    ErrorScreen
+    ErrorScreen,
+    FindRoutes
   },
   computed: {
     ...mapState(['defaultAccount']),
@@ -146,9 +163,16 @@ export default class Payment extends Mixins(NavigationMixin) {
   valid: boolean = false;
   loading: boolean = false;
   done: boolean = false;
+  depositing: boolean = false;
+  findingRoutes: boolean = false;
 
   errorTitle: string = '';
   error: string = '';
+
+  steps: StepDescription[] = [];
+  doneStep: StepDescription = emptyDescription();
+
+  convertToUnits = BalanceUtils.toUnits;
 
   channels!: (tokenAddress: string) => RaidenChannel[];
 
@@ -176,13 +200,6 @@ export default class Payment extends Mixins(NavigationMixin) {
     }
     return Zero;
   }
-
-  depositing: boolean = false;
-
-  steps: StepDescription[] = [];
-  doneStep: StepDescription = emptyDescription();
-
-  convertToUnits = BalanceUtils.toUnits;
 
   async created() {
     const { amount, target } = this.$route.query;
@@ -228,22 +245,26 @@ export default class Payment extends Mixins(NavigationMixin) {
     this.depositing = false;
   }
 
-  async transfer() {
+  async transfer(route: Route) {
     this.steps = [
       (this.$t('payment.steps.transfer') as any) as StepDescription
     ];
     this.doneStep = (this.$t('payment.steps.done') as any) as StepDescription;
     this.errorTitle = this.$t('payment.error.title') as string;
+    this.findingRoutes = false;
 
     const { address, decimals } = this.token;
+    const { path, fee } = route;
 
     try {
       this.loading = true;
       await this.$raiden.transfer(
         address,
         this.target,
-        BalanceUtils.parse(this.amount, decimals!)
+        BalanceUtils.parse(this.amount, decimals!),
+        [{ path, fee }]
       );
+
       this.done = true;
       this.dismissProgress();
     } catch (e) {
