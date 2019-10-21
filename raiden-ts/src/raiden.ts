@@ -47,14 +47,20 @@ import goerliDeploy from './deployment/deployment_goerli.json';
 
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
-import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode } from './utils/types';
-import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
+import { RaidenState, makeInitialState, encodeRaidenState, decodeRaidenState } from './state';
+import { RaidenConfig } from './config';
 import { RaidenChannels } from './channels/state';
 import { channelAmounts } from './channels/utils';
 import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
-import { RaidenAction, RaidenEvents, RaidenEvent, raidenShutdown } from './actions';
+import {
+  RaidenAction,
+  RaidenEvents,
+  RaidenEvent,
+  raidenShutdown,
+  raidenConfigUpdate,
+} from './actions';
 import {
   channelOpened,
   channelOpenFailed,
@@ -78,9 +84,9 @@ import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './transfers/utils';
 import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { Paths, RaidenPaths } from './path/types';
+import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { losslessParse } from './utils/data';
-import { RaidenConfig, defaultConfig } from './config';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -145,7 +151,6 @@ export class Raiden {
     signer: Signer,
     contractsInfo: ContractsInfo,
     state: RaidenState,
-    config: RaidenConfig,
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
@@ -246,7 +251,7 @@ export class Raiden {
     this.deps = {
       stateOutput$: state$,
       actionOutput$: action$,
-      config$: new BehaviorSubject<RaidenConfig>(config),
+      config$: new BehaviorSubject<RaidenConfig>(state.config),
       matrix$: new AsyncSubject<MatrixClient>(),
       provider,
       network,
@@ -380,14 +385,8 @@ export class Raiden {
     }
     const address = (await signer.getAddress()) as Address;
 
-    // use TokenNetworkRegistry deployment block as initial blockNumber, or 0
-    let loadedState: RaidenState = {
-      ...initialState,
-      blockNumber: contracts.TokenNetworkRegistry.block_number || 0,
-      address,
-      chainId: network.chainId,
-      registry: contracts.TokenNetworkRegistry.address,
-    };
+    // build an initial state and default config!
+    let loadedState = makeInitialState({ network, address, contractsInfo: contracts }, { config });
 
     // type guard
     function isStorage(storageOrState: unknown): storageOrState is Storage {
@@ -434,17 +433,7 @@ export class Raiden {
     )
       throw new Error(`Mismatch between network or registry address and loaded state`);
 
-    const raidenConfig: RaidenConfig = {
-      ...defaultConfig.default,
-      ...{
-        discoveryRoom: `raiden_${network.name || network.chainId}_discovery`,
-        pfsRoom: `raiden_${network.name || network.chainId}_path_finding`,
-      },
-      ...defaultConfig[network.name],
-      ...config,
-    };
-
-    const raiden = new Raiden(provider, network, signer, contracts, loadedState, raidenConfig);
+    const raiden = new Raiden(provider, network, signer, contracts, loadedState);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
@@ -460,25 +449,49 @@ export class Raiden {
     return this.store.getState();
   }
 
+  /**
+   * Get current account address
+   *
+   * @returns Instance address
+   */
   public get address(): Address {
     return this.deps.address;
   }
 
+  /**
+   * Get current network from provider
+   *
+   * @returns Network object containing blockchain's name & chainId
+   */
   public get network(): Network {
     return this.deps.network;
   }
 
+  /**
+   * Returns a promise to current block number, as seen in provider and state
+   *
+   * @returns Promise to current block number
+   */
   public async getBlockNumber(): Promise<number> {
     return this.deps.provider.blockNumber || (await this.deps.provider.getBlockNumber());
   }
 
-  public config(newConfig: Partial<RaidenConfig>) {
-    this.deps.config$.pipe(first()).subscribe((currentConfig: RaidenConfig) =>
-      this.deps.config$.next({
-        ...currentConfig,
-        ...newConfig,
-      }),
-    );
+  /**
+   * Getter for current Raiden Config
+   *
+   * @returns Current Raiden config
+   */
+  public get config(): RaidenConfig {
+    return this.state.config;
+  }
+
+  /**
+   * Update Raiden Config with a partial (shallow) object
+   *
+   * @param config - Partial object containing keys and values to update in config
+   */
+  public updateConfig(config: Partial<RaidenConfig>) {
+    this.store.dispatch(raidenConfigUpdate({ config }));
   }
 
   /**

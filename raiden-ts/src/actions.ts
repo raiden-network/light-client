@@ -5,6 +5,7 @@ import { pick } from 'lodash';
 import { ActionType, createStandardAction, getType, Action } from 'typesafe-actions';
 import { ShutdownReason } from './constants';
 
+import { RaidenConfig } from './config';
 import * as ChannelsActions from './channels/actions';
 import * as TransportActions from './transport/actions';
 import * as MessagesActions from './messages/actions';
@@ -15,8 +16,13 @@ export const raidenShutdown = createStandardAction('raidenShutdown')<{
   reason: ShutdownReason | Error;
 }>();
 
+export const raidenConfigUpdate = createStandardAction('raidenConfigUpdate')<{
+  config: Partial<RaidenConfig>;
+}>();
+
 export const RaidenActions = {
   raidenShutdown,
+  raidenConfigUpdate,
   ...ChannelsActions,
   ...TransportActions,
   ...MessagesActions,

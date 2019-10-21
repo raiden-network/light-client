@@ -1,4 +1,6 @@
 import * as t from 'io-ts';
+import { Network } from 'ethers/utils';
+import { DeepPartial } from 'redux';
 
 /**
  * A Raiden configuration object with required parameters and
@@ -38,31 +40,36 @@ export const RaidenConfig = t.readonly(
 );
 export interface RaidenConfig extends t.TypeOf<typeof RaidenConfig> {}
 
-export const defaultConfig: {
-  [network: string]: Partial<RaidenConfig>;
-  default: RaidenConfig;
-} = {
-  goerli: {
-    pfs: 'https://pfs-goerli.services-dev.raiden.network',
-  },
-  ropsten: {
-    pfs: 'https://pfs-ropsten.services-dev.raiden.network',
-  },
-  kovan: {
-    pfs: 'https://pfs-kovan.services-dev.raiden.network',
-  },
-  rinkeby: {
-    pfs: 'https://pfs-rinkeby.services-dev.raiden.network',
-  },
-  default: {
+/**
+ * Create a RaidenConfig from some common options and an optional overwrites partial
+ *
+ * @param obj - Object containing common parameters for config
+ * @param obj.network - ether's Network object for the current blockchain
+ * @param overwrites - A partial object to overwrite top-level properties of the returned config
+ * @returns A full config object
+ */
+export function makeDefaultConfig(
+  { network }: { network: Network },
+  overwrites: DeepPartial<RaidenConfig> = {},
+): RaidenConfig {
+  const pfs: { [networkName: string]: string } = {
+    goerli: 'https://pfs-goerli.services-dev.raiden.network',
+    ropsten: 'https://pfs-ropsten.services-dev.raiden.network',
+    kovan: 'https://pfs-kovan.services-dev.raiden.network',
+    rinkeby: 'https://pfs-rinkeby.services-dev.raiden.network',
+  };
+  return {
     matrixServerLookup:
       'https://raw.githubusercontent.com/raiden-network/raiden-transport/master/known_servers.test.yaml',
     settleTimeout: 500,
     revealTimeout: 50,
     httpTimeout: 30e3,
-    pfs: null,
-    discoveryRoom: null,
-    pfsRoom: null,
+    pfs: pfs[network.name] || null,
+    discoveryRoom: `raiden_${
+      network.name !== 'unknown' ? network.name : network.chainId
+    }_discovery`,
+    pfsRoom: `raiden_${network.name !== 'unknown' ? network.name : network.chainId}_path_finding`,
     matrixExcessRooms: 3,
-  },
-};
+    ...overwrites,
+  };
+}
