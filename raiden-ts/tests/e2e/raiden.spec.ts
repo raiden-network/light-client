@@ -595,7 +595,7 @@ describe('Raiden', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         const pfs = 'http://pfs';
-        raiden.config({ pfs });
+        raiden.updateConfig({ pfs });
         const result = {
           result: [
             // first returned route is invalid and should be filtered
@@ -693,7 +693,7 @@ describe('Raiden', () => {
       });
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      raiden.config({ pfs });
+      raiden.updateConfig({ pfs });
     });
 
     afterEach(() => {

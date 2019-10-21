@@ -74,21 +74,6 @@ export const Channel = t.intersection([
 export type Channel = t.TypeOf<typeof Channel>;
 
 /**
- * Channels is a mapping from tokenNetwork -> partner -> Channel
- * As in: { [tokenNetwork: Address]: { [partner: Address]: Channel } }
- * It's used as codec and type for 'channels' key in RaidenState
- * We use t.string instead of the Address branded codecs because specialized types can't be used
- * as index mapping keys.
- */
-export const Channels = t.readonly(
-  t.record(
-    t.string /* tokenNetwork: Address */,
-    t.readonly(t.record(t.string /* partner: Address */, Channel)),
-  ),
-);
-export type Channels = t.TypeOf<typeof Channels>;
-
-/**
  * Public exposed channels interface (Raiden.channels$)
  *
  * This should be only used as a public view of the internal channel state

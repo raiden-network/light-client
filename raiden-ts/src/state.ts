@@ -1,9 +1,13 @@
 import * as t from 'io-ts';
 import { AddressZero } from 'ethers/constants';
+import { DeepPartial } from 'redux';
+import { Network, getNetwork } from 'ethers/utils';
 
+import { RaidenConfig, makeDefaultConfig } from './config';
+import { ContractsInfo } from './types';
 import { losslessParse, losslessStringify } from './utils/data';
 import { Address, Secret, decode } from './utils/types';
-import { Channels } from './channels/state';
+import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
 
@@ -15,7 +19,13 @@ export const RaidenState = t.readonly(
     chainId: t.number,
     registry: Address,
     blockNumber: t.number,
-    channels: Channels,
+    config: RaidenConfig,
+    channels: t.readonly(
+      t.record(
+        t.string /* tokenNetwork: Address */,
+        t.readonly(t.record(t.string /* partner: Address */, Channel)),
+      ),
+    ),
     tokens: t.readonly(t.record(t.string /* token: Address */, Address)),
     transport: t.readonly(
       t.partial({
@@ -77,14 +87,44 @@ export function decodeRaidenState(data: unknown): RaidenState {
   return decode(RaidenState, data);
 }
 
-export const initialState: RaidenState = {
+/**
+ * Create an initial RaidenState from common parameters (including default config)
+ *
+ * @param obj - Object containing common parameters for state
+ * @param obj.network - ether's Network object for the current blockchain
+ * @param obj.address - current account's address
+ * @param overwrites - A partial object to overwrite top-level properties of the returned config
+ * @returns A full config object
+ */
+export function makeInitialState(
+  {
+    network,
+    address,
+    contractsInfo,
+  }: { network: Network; address: Address; contractsInfo: ContractsInfo },
+  overwrites: DeepPartial<RaidenState> = {},
+): RaidenState {
+  return {
+    address,
+    chainId: network.chainId,
+    registry: contractsInfo.TokenNetworkRegistry.address,
+    blockNumber: contractsInfo.TokenNetworkRegistry.block_number || 0,
+    config: makeDefaultConfig({ network }, overwrites.config),
+    channels: {},
+    tokens: {},
+    transport: {},
+    secrets: {},
+    sent: {},
+  };
+}
+
+/**
+ * state constant used as default state reducer parameter only.
+ * To build an actual initial state at runtime, use [[makeInitialState]] instead.
+ */
+export const initialState = makeInitialState({
+  network: getNetwork('unspecified'),
   address: AddressZero as Address,
-  chainId: 0,
-  registry: AddressZero as Address,
-  blockNumber: 0,
-  channels: {},
-  tokens: {},
-  transport: {},
-  secrets: {},
-  sent: {},
-};
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  contractsInfo: { TokenNetworkRegistry: { address: AddressZero as Address, block_number: 0 } },
+});
