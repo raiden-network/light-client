@@ -1,6 +1,6 @@
 import { first, filter } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
-import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256 } from 'ethers/utils';
+import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
 import { getType, isActionOf } from 'typesafe-actions';
 import { get } from 'lodash';
 
@@ -12,7 +12,7 @@ import { request } from 'matrix-js-sdk';
 import 'raiden-ts/polyfills';
 import { Raiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
-import { initialState } from 'raiden-ts/state';
+import { makeInitialState } from 'raiden-ts/state';
 import { raidenShutdown } from 'raiden-ts/actions';
 import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
@@ -29,15 +29,14 @@ import { losslessStringify } from 'raiden-ts/utils/data';
 describe('Raiden', () => {
   const provider = new TestProvider();
   let accounts: string[],
-    info: ContractsInfo,
-    chainId: number,
-    registry: Address,
+    contractsInfo: ContractsInfo,
     snapId: number | undefined,
     raiden: Raiden,
     storage: jest.Mocked<Storage>,
     token: string,
     tokenNetwork: string,
-    partner: string;
+    partner: string,
+    network: Network;
   const config: Partial<RaidenConfig> = { settleTimeout: 20, revealTimeout: 5 };
 
   let httpBackend: MockMatrixRequestFn;
@@ -55,12 +54,11 @@ describe('Raiden', () => {
   beforeAll(async () => {
     jest.setTimeout(20e3);
 
-    info = await provider.deployRegistry();
-    ({ token, tokenNetwork } = await provider.deployTokenNetwork(info));
-    registry = info.TokenNetworkRegistry.address;
+    contractsInfo = await provider.deployRegistry();
+    ({ token, tokenNetwork } = await provider.deployTokenNetwork(contractsInfo));
     accounts = await provider.listAccounts();
     partner = accounts[1];
-    chainId = (await provider.getNetwork()).chainId;
+    network = await provider.getNetwork();
   });
 
   beforeEach(async () => {
@@ -72,7 +70,7 @@ describe('Raiden', () => {
     httpBackend = new MockMatrixRequestFn(matrixServer);
     request(httpBackend.requestFn.bind(httpBackend));
 
-    raiden = await Raiden.create(provider, 0, storage, info, config);
+    raiden = await Raiden.create(provider, 0, storage, contractsInfo, config);
     // wait token register to be fetched
     await raiden.getTokenList();
   });
@@ -86,23 +84,24 @@ describe('Raiden', () => {
     expect.assertions(5);
 
     // token address not found as an account in provider
-    await expect(Raiden.create(provider, token, storage, info, config)).rejects.toThrow(
+    await expect(Raiden.create(provider, token, storage, contractsInfo, config)).rejects.toThrow(
       /Account.*not found in provider/i,
     );
 
     // neither account index, address nor private key
-    await expect(Raiden.create(provider, '0x1234', storage, info, config)).rejects.toThrow(
-      /account must be either.*address or private key/i,
-    );
+    await expect(
+      Raiden.create(provider, '0x1234', storage, contractsInfo, config),
+    ).rejects.toThrow(/account must be either.*address or private key/i);
 
     // from hex-encoded private key, initial unknown state (decodable) but invalid address inside
     expect(
       Raiden.create(
         provider,
         '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        JSON.stringify({ ...initialState, address: token }),
-        info,
-        config,
+        JSON.stringify(
+          makeInitialState({ network, contractsInfo, address: token as Address }, { config }),
+        ),
+        contractsInfo,
       ),
     ).rejects.toThrow(/Mismatch between provided account and loaded state/i);
 
@@ -110,9 +109,20 @@ describe('Raiden', () => {
       Raiden.create(
         provider,
         1,
-        JSON.stringify({ ...initialState, address: accounts[1], chainId, registry: token }),
-        info,
-        config,
+        JSON.stringify(
+          makeInitialState(
+            {
+              network,
+              contractsInfo: {
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                TokenNetworkRegistry: { address: token as Address, block_number: 0 },
+              },
+              address: accounts[1] as Address,
+            },
+            { config },
+          ),
+        ),
+        contractsInfo,
       ),
     ).rejects.toThrow(/Mismatch between network or registry address and loaded state/i);
 
@@ -120,8 +130,8 @@ describe('Raiden', () => {
     const raiden1 = await Raiden.create(
       provider,
       accounts[1],
-      { ...initialState, address: accounts[1], chainId, registry },
-      info,
+      makeInitialState({ network, contractsInfo, address: accounts[1] as Address }, { config }),
+      contractsInfo,
       config,
     );
     expect(raiden1).toBeInstanceOf(Raiden);
@@ -140,8 +150,23 @@ describe('Raiden', () => {
   test('getBlockNumber', async () => {
     expect.assertions(1);
     await expect(raiden.getBlockNumber()).resolves.toBeGreaterThanOrEqual(
-      info.TokenNetworkRegistry.block_number,
+      contractsInfo.TokenNetworkRegistry.block_number,
     );
+  });
+
+  test('config', async () => {
+    expect.assertions(2);
+    expect(raiden.config).toMatchObject({
+      discoveryRoom: 'raiden_1338_discovery',
+      pfsRoom: 'raiden_1338_path_finding',
+      pfs: null,
+      settleTimeout: 20,
+      revealTimeout: 5,
+    });
+    raiden.updateConfig({ revealTimeout: 8 });
+    expect(raiden.config).toMatchObject({
+      revealTimeout: 8,
+    });
   });
 
   test('getBalance', async () => {
@@ -254,7 +279,7 @@ describe('Raiden', () => {
     beforeEach(async () => {
       await raiden.openChannel(token, partner);
       await raiden.depositChannel(token, partner, 200);
-      raiden1 = await Raiden.create(provider, partner, undefined, info, config);
+      raiden1 = await Raiden.create(provider, partner, undefined, contractsInfo, config);
     });
 
     afterEach(() => {
@@ -400,7 +425,7 @@ describe('Raiden', () => {
         .toPromise();
       await provider.mine(5);
       // deploy a new token & tokenNetwork
-      const { token, tokenNetwork } = await provider.deployTokenNetwork(info);
+      const { token, tokenNetwork } = await provider.deployTokenNetwork(contractsInfo);
       await expect(promise).resolves.toMatchObject({
         type: getType(tokenMonitored),
         payload: { fromBlock: expect.any(Number), token, tokenNetwork },
@@ -420,9 +445,8 @@ describe('Raiden', () => {
       const raiden1 = await Raiden.create(
         provider,
         accounts[2],
-        { ...initialState, address: accounts[2], chainId, registry },
-        info,
-        config,
+        makeInitialState({ network, contractsInfo, address: accounts[2] as Address }, { config }),
+        contractsInfo,
       );
       expect(raiden1).toBeInstanceOf(Raiden);
 
@@ -523,9 +547,8 @@ describe('Raiden', () => {
         raiden1 = await Raiden.create(
           provider,
           partner,
-          { ...initialState, address: partner, chainId, registry },
-          info,
-          config,
+          makeInitialState({ network, contractsInfo, address: partner as Address }, { config }),
+          contractsInfo,
         );
 
         // await raiden1 client matrix initialization
@@ -573,9 +596,8 @@ describe('Raiden', () => {
           raiden2 = await Raiden.create(
             provider,
             target,
-            { ...initialState, address: target, chainId, registry },
-            info,
-            config,
+            makeInitialState({ network, contractsInfo, address: target as Address }, { config }),
+            contractsInfo,
           ),
           matrix2Promise = raiden2.action$
             .pipe(
@@ -653,16 +675,14 @@ describe('Raiden', () => {
       raiden1 = await Raiden.create(
         provider,
         partner,
-        { ...initialState, address: partner, chainId, registry },
-        info,
-        config,
+        makeInitialState({ network, contractsInfo, address: partner as Address }, { config }),
+        contractsInfo,
       );
       raiden2 = await Raiden.create(
         provider,
         target,
-        { ...initialState, address: target, chainId, registry },
-        info,
-        config,
+        makeInitialState({ network, contractsInfo, address: target as Address }, { config }),
+        contractsInfo,
       );
 
       // await client's matrix initialization

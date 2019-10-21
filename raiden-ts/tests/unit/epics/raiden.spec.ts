@@ -51,8 +51,8 @@ import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog, makeSignature } from '../mocks';
 
 describe('raiden epic', () => {
-  const depsMock = raidenEpicDeps();
-  const {
+  let depsMock = raidenEpicDeps();
+  let {
     token,
     tokenNetworkContract,
     tokenNetwork,
@@ -80,6 +80,29 @@ describe('raiden epic', () => {
       status: 200,
       text: jest.fn(async () => `- ${matrixServer}`),
     })),
+  });
+
+  beforeEach(() => {
+    depsMock = raidenEpicDeps();
+    ({
+      token,
+      tokenNetworkContract,
+      tokenNetwork,
+      channelId,
+      partner,
+      settleTimeout,
+      isFirstParticipant,
+      txHash,
+      state,
+      matrixServer,
+      userId,
+      accessToken,
+      deviceId,
+      displayName,
+      partnerRoomId,
+      partnerUserId,
+      matrix,
+    } = epicFixtures(depsMock));
   });
 
   afterEach(() => {

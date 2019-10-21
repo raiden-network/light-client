@@ -1,11 +1,11 @@
-import { cloneDeep, get } from 'lodash';
+import { get } from 'lodash';
 import { set } from 'lodash/fp';
 
-import { Zero, One } from 'ethers/constants';
-import { bigNumberify, keccak256 } from 'ethers/utils';
+import { Zero, One, AddressZero } from 'ethers/constants';
+import { bigNumberify, keccak256, getNetwork } from 'ethers/utils';
 
 import { raidenReducer } from 'raiden-ts/reducer';
-import { RaidenState, initialState } from 'raiden-ts/state';
+import { RaidenState, makeInitialState } from 'raiden-ts/state';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { raidenShutdown } from 'raiden-ts/actions';
 import {
@@ -75,7 +75,17 @@ describe('raidenReducer', () => {
     isFirstParticipant = true;
 
   beforeEach(() => {
-    state = cloneDeep({ ...initialState, address, blockNumber: 1337 });
+    state = makeInitialState(
+      {
+        network: getNetwork('unspecified'),
+        address,
+        contractsInfo: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          TokenNetworkRegistry: { address: AddressZero as Address, block_number: 0 },
+        },
+      },
+      { blockNumber: 1337 },
+    );
   });
 
   test('newBlock', () => {
