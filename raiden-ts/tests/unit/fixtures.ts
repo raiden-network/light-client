@@ -10,7 +10,7 @@ import { bigNumberify } from 'ethers/utils';
 import { MatrixClient } from 'matrix-js-sdk';
 
 import { Address, Hash, UInt, Int } from 'raiden-ts/utils/types';
-import { initialState, RaidenState } from 'raiden-ts/state';
+import { RaidenState } from 'raiden-ts/state';
 import { HumanStandardToken } from 'raiden-ts/contracts/HumanStandardToken';
 import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
 import { Metadata, Processed, MessageType } from 'raiden-ts/messages/types';
@@ -99,11 +99,7 @@ export const epicFixtures = function(
     matrixServer,
     userId,
     txHash,
-    state: {
-      ...initialState,
-      address: depsMock.address,
-      blockNumber: 125,
-    },
+    state: depsMock.stateOutput$.value,
     partnerSigner: wallet,
     processed,
     paymentId,

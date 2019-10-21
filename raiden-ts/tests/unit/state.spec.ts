@@ -3,6 +3,7 @@ import { bigNumberify } from 'ethers/utils';
 import { ChannelState } from 'raiden-ts/channels';
 import { decodeRaidenState, encodeRaidenState, RaidenState } from 'raiden-ts/state';
 import { Address, UInt } from 'raiden-ts/utils/types';
+import { makeDefaultConfig } from 'raiden-ts/config';
 
 describe('RaidenState codecs', () => {
   const address = '0x1111111111111111111111111111111111111111' as Address,
@@ -18,6 +19,7 @@ describe('RaidenState codecs', () => {
       chainId,
       registry,
       blockNumber: 123,
+      config: makeDefaultConfig({ network: { name: 'testnet', chainId } }),
       channels: {
         [tokenNetwork]: {
           [partner]: {
@@ -41,6 +43,7 @@ describe('RaidenState codecs', () => {
       chainId,
       registry,
       blockNumber: 123,
+      config: expect.anything(),
       channels: {
         [tokenNetwork]: {
           [partner]: {
@@ -75,6 +78,7 @@ describe('RaidenState codecs', () => {
         chainId,
         registry,
         blockNumber: 123,
+        config: makeDefaultConfig({ network: { name: 'testnet', chainId } }),
         channels: {
           [tokenNetwork]: {
             [partner]: {
@@ -98,6 +102,7 @@ describe('RaidenState codecs', () => {
         chainId,
         registry,
         blockNumber: 123,
+        config: makeDefaultConfig({ network: { name: 'testnet', chainId } }),
         channels: {
           [tokenNetwork]: {
             [partner]: {
@@ -121,6 +126,7 @@ describe('RaidenState codecs', () => {
       chainId,
       registry,
       blockNumber: 123,
+      config: expect.anything(),
       channels: {
         [tokenNetwork]: {
           [partner]: {
