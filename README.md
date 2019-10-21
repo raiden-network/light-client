@@ -142,45 +142,42 @@ If you didn't use Raiden before, you can
 
 ### Try Out the Raiden Demo dApp
 
-These step-by-step instructions will guide you through the process for trying the Raiden dApp hosted at [https://lightclient.raiden.network/](https://lightclient.raiden.network/). We will be using the Ropsten testnet and MetaMask wallet in this example.
+These step-by-step instructions will guide you through the process for trying the Raiden dApp hosted at [https://lightclient.raiden.network/](https://lightclient.raiden.network/). We will be using the Goerli testnet and MetaMask wallet in this example.
 
 __Prerequisites__
 
-You need to have MetaMask installed for your browser.
+You need to have MetaMask installed for your browser. Visit [MetaMask's website](https://metamask.io/) to download and install MetaMask.
 
-1. Visit the [MetaMask website](https://metamask.io/) to download and install MetaMask.
-2. Select the Ropsten Test Network when you've logged in to your MetaMask.
+__Step 1: Acquire ETH__
+1. Visit the Goerli faucet at [htts://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog)
+2. Follow the instructions on the faucet's website to acquire Goerli ETH
 
+__Step 2: Acquire TTT (TestToken)__
+1. Visit [this page on Etherscan](https://goerli.etherscan.io/address/0x3ed0daedc3217615bde34fedd023bc81ae49251b#writeContract) where you can write to the TTT contract
+2. Enter your MetaMask and choose the Goerli account with ETH
+3. Go back to Etherscan and click "Connect to Web3"
+4. Scroll down to the "mint" field and enter ```1000000000000000000000```
+5. Click the "Write" button and confirm the transaction in MetaMask
 
-__Step 1: Acquire and Wrap ETH__
+![Etherscan TTT acquisition](https://drive.google.com/uc?export=view&id=1M81D3dsWnHCDeP25rY0RpGS9DsPg2lUa)
 
-1. Visit the Ropsten faucet at [https://faucet.ropsten.be](https://faucet.ropsten.be).
-2. Enter the wallet address associated with your Ropsten Test Network.
-3. Click the __"Send me test Ether"__ button, you will receive a total of 1 ETH.
-4. Visit [https://0x.org/portal/weth](https://0x.org/portal/weth), this is where you will be wrapping your ETH to WETH.
-5. Click __"Confirm"__ when *0x Poral* asks to connect to your MetaMask.
-6. Click the __"WRAP"__ button in *0x Portal* next to the ETH Token.
-7. Enter the amount of ETH you would like to wrap and click __"Convert"__.
-
-__Step 2: Connect to the Raiden Demo dApp__
-
-1. Visit the Raiden Demo dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/).
-2. Click __Connect__ to connect the dApp to your MetaMask.
-3. Select your newly wrapped token in the list of available tokens.
+__Step 3: Connect to the Raiden dApp__
+1. Visit the Raiden Demo dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
+2. Click __Connect__ to connect the dApp to your MetaMask
+3. Select the TTT Token from the list of available tokens
 
 __Step 3: Select a Hub and Open a Channel__
-
-1. Enter the address ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub, this will connect you to a Raiden test node.
-2. Enter the amount of wrapped ETH (WETH) you want to deposit when opening a channel.
+1. Enter the address ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub, this will connect you to a Raiden test node
+2. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
 3. Sign the deposit with your MetaMask.
 4. Click __Open Channel__.
 5. Sign again with your MetaMask when prompted for "Open Channel", "Approve" and "Set Total Deposit".
 
 You can now start making payments. To do so, simply:
 
-1. Enter the address of the receiver (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```) of your payment.
-2. Enter the amount you want to pay.
-3. Click __Send Payment__.
+1. Enter the address of the receiver (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```) of your payment
+2. Enter the amount you want to pay
+3. Click __Send Payment__
 
 ### Prerequisites
 
