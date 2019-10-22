@@ -52,7 +52,7 @@ describe('Raiden', () => {
   Object.assign(global, { fetch });
 
   beforeAll(async () => {
-    jest.setTimeout(20e3);
+    jest.setTimeout(40e3);
 
     contractsInfo = await provider.deployRegistry();
     ({ token, tokenNetwork } = await provider.deployTokenNetwork(contractsInfo));
@@ -117,6 +117,8 @@ describe('Raiden', () => {
               contractsInfo: {
                 // eslint-disable-next-line @typescript-eslint/camelcase
                 TokenNetworkRegistry: { address: token as Address, block_number: 0 },
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                ServiceRegistry: { address: partner as Address, block_number: 1 },
               },
               address: accounts[1] as Address,
             },
@@ -469,7 +471,7 @@ describe('Raiden', () => {
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toEqual({
         [token]: {},
       });
-    }, 60e3);
+    }, 90e3);
   });
 
   describe('events$', () => {
@@ -748,7 +750,7 @@ describe('Raiden', () => {
     const pfs = 'http://pfs';
     let raiden1: Raiden, raiden2: Raiden, target: string;
 
-    beforeAll(() => jest.setTimeout(60e3));
+    beforeAll(() => jest.setTimeout(90e3));
 
     beforeEach(async () => {
       target = accounts[2];

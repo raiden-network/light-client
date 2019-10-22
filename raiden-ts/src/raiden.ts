@@ -1,7 +1,7 @@
-import { Signer, Contract } from 'ethers';
+import { Signer } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, BigNumber, BigNumberish, ParamType } from 'ethers/utils';
+import { Network, BigNumber, BigNumberish } from 'ethers/utils';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
@@ -41,18 +41,19 @@ import {
 } from 'rxjs/operators';
 
 import './polyfills';
-import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
-import { TokenNetwork } from './contracts/TokenNetwork';
-import { HumanStandardToken } from './contracts/HumanStandardToken';
-
-import TokenNetworkRegistryAbi from './abi/TokenNetworkRegistry.json';
-import TokenNetworkAbi from './abi/TokenNetwork.json';
-import HumanStandardTokenAbi from './abi/HumanStandardToken.json';
+import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
+import { TokenNetworkFactory } from './contracts/TokenNetworkFactory';
+import { HumanStandardTokenFactory } from './contracts/HumanStandardTokenFactory';
+import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 import goerliDeploy from './deployment/deployment_goerli.json';
+import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
+import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
+import kovanServicesDeploy from './deployment/deployment_services_kovan.json';
+import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
 
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
@@ -274,22 +275,19 @@ export class Raiden {
       signer,
       address,
       contractsInfo,
-      registryContract: new Contract(
+      registryContract: TokenNetworkRegistryFactory.connect(
         contractsInfo.TokenNetworkRegistry.address,
-        TokenNetworkRegistryAbi as ParamType[],
         signer,
-      ) as TokenNetworkRegistry,
-      getTokenNetworkContract: memoize(
-        (address: Address) =>
-          new Contract(address, TokenNetworkAbi as ParamType[], signer) as TokenNetwork,
       ),
-      getTokenContract: memoize(
-        (address: Address) =>
-          new Contract(
-            address,
-            HumanStandardTokenAbi as ParamType[],
-            signer,
-          ) as HumanStandardToken,
+      getTokenNetworkContract: memoize((address: Address) =>
+        TokenNetworkFactory.connect(address, signer),
+      ),
+      getTokenContract: memoize((address: Address) =>
+        HumanStandardTokenFactory.connect(address, signer),
+      ),
+      serviceRegistryContract: ServiceRegistryFactory.connect(
+        contractsInfo.ServiceRegistry.address,
+        signer,
       ),
     };
     // minimum blockNumber of contracts deployment as start scan block
@@ -359,16 +357,28 @@ export class Raiden {
     if (!contracts) {
       switch (network.name) {
         case 'rinkeby':
-          contracts = (rinkebyDeploy.contracts as unknown) as ContractsInfo;
+          contracts = ({
+            ...rinkebyDeploy.contracts,
+            ...rinkebyServicesDeploy.contracts,
+          } as unknown) as ContractsInfo;
           break;
         case 'ropsten':
-          contracts = (ropstenDeploy.contracts as unknown) as ContractsInfo;
+          contracts = ({
+            ...ropstenDeploy.contracts,
+            ...ropstenServicesDeploy.contracts,
+          } as unknown) as ContractsInfo;
           break;
         case 'kovan':
-          contracts = (kovanDeploy.contracts as unknown) as ContractsInfo;
+          contracts = ({
+            ...kovanDeploy.contracts,
+            ...kovanServicesDeploy.contracts,
+          } as unknown) as ContractsInfo;
           break;
         case 'goerli':
-          contracts = (goerliDeploy.contracts as unknown) as ContractsInfo;
+          contracts = ({
+            ...goerliDeploy.contracts,
+            ...goerliServicesDeploy.contracts,
+          } as unknown) as ContractsInfo;
           break;
         default:
           throw new Error(

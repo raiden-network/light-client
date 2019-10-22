@@ -6,6 +6,7 @@ import { Network } from 'ethers/utils';
 import { MatrixClient } from 'matrix-js-sdk';
 
 import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
+import { ServiceRegistry } from './contracts/ServiceRegistry';
 import { TokenNetwork } from './contracts/TokenNetwork';
 import { HumanStandardToken } from './contracts/HumanStandardToken';
 
@@ -21,6 +22,7 @@ interface Info {
 
 export interface ContractsInfo {
   TokenNetworkRegistry: Info;
+  ServiceRegistry: Info;
 }
 
 export interface RaidenEpicDeps {
@@ -36,4 +38,5 @@ export interface RaidenEpicDeps {
   registryContract: TokenNetworkRegistry;
   getTokenNetworkContract: (address: Address) => TokenNetwork;
   getTokenContract: (address: Address) => HumanStandardToken;
+  serviceRegistryContract: ServiceRegistry;
 }

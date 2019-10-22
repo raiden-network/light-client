@@ -82,6 +82,8 @@ describe('raidenReducer', () => {
         contractsInfo: {
           // eslint-disable-next-line @typescript-eslint/camelcase
           TokenNetworkRegistry: { address: AddressZero as Address, block_number: 0 },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          ServiceRegistry: { address: AddressZero as Address, block_number: 0 },
         },
       },
       { blockNumber: 1337 },

@@ -7,6 +7,7 @@ patchMatrixGetNetwork();
 import { BehaviorSubject, Subject, AsyncSubject, of } from 'rxjs';
 import { MatrixClient } from 'matrix-js-sdk';
 import { EventEmitter } from 'events';
+import { memoize } from 'lodash';
 
 jest.mock('ethers/providers');
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
@@ -18,10 +19,12 @@ import { Wallet } from 'ethers/wallet';
 import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
 import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
 import { HumanStandardToken } from 'raiden-ts/contracts/HumanStandardToken';
+import { ServiceRegistry } from 'raiden-ts/contracts/ServiceRegistry';
 
-import TokenNetworkRegistryAbi from 'raiden-ts/abi/TokenNetworkRegistry.json';
-import TokenNetworkAbi from 'raiden-ts/abi/TokenNetwork.json';
-import HumanStandardTokenAbi from 'raiden-ts/abi/HumanStandardToken.json';
+import { TokenNetworkRegistryFactory } from 'raiden-ts/contracts/TokenNetworkRegistryFactory';
+import { TokenNetworkFactory } from 'raiden-ts/contracts/TokenNetworkFactory';
+import { HumanStandardTokenFactory } from 'raiden-ts/contracts/HumanStandardTokenFactory';
+import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
 
 import 'raiden-ts/polyfills';
 import { RaidenEpicDeps, ContractsInfo } from 'raiden-ts/types';
@@ -105,9 +108,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   const address = signer.address as Address;
 
   const registryAddress = '0xregistry';
-  const registryContract = new Contract(
+  const registryContract = TokenNetworkRegistryFactory.connect(
     registryAddress,
-    TokenNetworkRegistryAbi,
     signer,
   ) as MockedContract<TokenNetworkRegistry>;
   for (const func in registryContract.functions) {
@@ -117,40 +119,46 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     async (token: string) => token + 'Network',
   );
 
-  const tokenNetworkContracts: { [address: string]: MockedContract<TokenNetwork> } = {};
-  const getTokenNetworkContract = (address: string): MockedContract<TokenNetwork> => {
-    if (!(address in tokenNetworkContracts)) {
-      const tokenNetworkContract = new Contract(
-        address,
-        TokenNetworkAbi,
-        signer,
-      ) as MockedContract<TokenNetwork>;
+  const getTokenNetworkContract = memoize(
+    (address: string): MockedContract<TokenNetwork> => {
+      const tokenNetworkContract = TokenNetworkFactory.connect(address, signer) as MockedContract<
+        TokenNetwork
+      >;
       for (const func in tokenNetworkContract.functions) {
         jest.spyOn(tokenNetworkContract.functions, func as keyof TokenNetwork['functions']);
       }
-      tokenNetworkContracts[address] = tokenNetworkContract;
-    }
-    return tokenNetworkContracts[address];
-  };
+      return tokenNetworkContract;
+    },
+  );
 
-  const tokenContracts: { [address: string]: MockedContract<HumanStandardToken> } = {};
-  const getTokenContract = (address: string): MockedContract<HumanStandardToken> => {
-    if (!(address in tokenContracts)) {
-      const tokenContract = new Contract(address, HumanStandardTokenAbi, signer) as MockedContract<
+  const getTokenContract = memoize(
+    (address: string): MockedContract<HumanStandardToken> => {
+      const tokenContract = HumanStandardTokenFactory.connect(address, signer) as MockedContract<
         HumanStandardToken
       >;
       for (const func in tokenContract.functions) {
         jest.spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions']);
       }
-      tokenContracts[address] = tokenContract;
-    }
-    return tokenContracts[address];
-  };
+      return tokenContract;
+    },
+  );
+
+  const serviceRegistryContract = ServiceRegistryFactory.connect(
+    registryAddress,
+    signer,
+  ) as MockedContract<ServiceRegistry>;
+  for (const func in registryContract.functions) {
+    jest.spyOn(registryContract.functions, func as keyof TokenNetworkRegistry['functions']);
+  }
 
   const contractsInfo: ContractsInfo = {
       TokenNetworkRegistry: {
         address: registryContract.address as Address,
-        block_number: 100, // eslint-disable-line
+        block_number: 100,
+      },
+      ServiceRegistry: {
+        address: serviceRegistryContract.address as Address,
+        block_number: 101,
       },
     },
     initialState = makeInitialState(
@@ -171,6 +179,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     registryContract,
     getTokenNetworkContract,
     getTokenContract,
+    serviceRegistryContract,
   };
 }
 
