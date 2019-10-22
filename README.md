@@ -50,17 +50,17 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
 - [About The Project](#about-the-project)
 - [Architecture](#architecture)
   - [Raiden Light Client SDK](#raiden-light-client-sdk)
-  - [Raiden dApp](#raiden-dapp)
   - [Architecture diagram](#architecture-diagram)
 - [Getting Started](#getting-started)
   - [Learn about Raiden](#learn-about-raiden)
-  - [Prerequisites](#prerequisites)
-  - [SDK Installation](#sdk-installation)
-  - [dApp Installation](#dapp-installation)
-    - [Build the Raiden SDK](#build-the-raiden-sdk)
-    - [Install the dApp Dependencies](#install-the-dapp-dependencies)
-    - [Running the dApp locally](#running-the-dapp-locally)
-- [Try Out the Raiden Demo dApp](#try-out-the-raiden-demo-dapp)
+  - [Try Out the Raiden Demo dApp](#try-out-the-raiden-demo-dapp)
+  - [Start Developing](#start-developing)
+    - [Prerequisites](#prerequisites)
+    - [SDK Installation](#sdk-installation)
+    - [dApp Installation](#dapp-installation)
+      - [Build the Raiden SDK](#build-the-raiden-sdk)
+      - [Install the dApp Dependencies](#install-the-dapp-dependencies)
+      - [Running the dApp locally](#running-the-dapp-locally)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
 - [License](#license)
@@ -97,9 +97,6 @@ Its target audience is blockchain and dApp developers looking into interacting w
 
 Look at the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) for more information. Also, a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [project's Wiki page](https://github.com/raiden-network/light-client/wiki/SDK-Development). Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
-### Raiden dApp
-
-The Raiden dApp is the demo and first dApp user of the SDK. It's a single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and [vuetify](https://vuetifyjs.com) as UI framework which uses Material Design as the design guideline.
 
 ### Architecture diagram
 
@@ -140,11 +137,54 @@ If you didn't use Raiden before, you can
 * Learn more by watching explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
 * Read the blog posts on [Medium](https://medium.com/@raiden_network)
 
-### Prerequisites
+### Try Out the Raiden Demo dApp
+
+The Raiden dApp is the demo and first dApp user of the SDK. It's a single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and [vuetify](https://vuetifyjs.com) as UI framework which uses Material Design as the design guideline.
+
+These step-by-step instructions will guide you through the process for trying out the Raiden demo dApp. The dApp is hosted at [https://lightclient.raiden.network/](https://lightclient.raiden.network/) and we will be using the Goerli testnet and MetaMask wallet in this example.
+
+__Prerequisites__
+
+You need to have MetaMask installed for your browser. If you don't have MetaMask, [visit their website](https://metamask.io/) to download and install it.
+
+__Step 1: Acquire ETH__
+1. Go to the Goerli faucet at [htts://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/)
+2. Follow the instructions on how to acquire Goerli ETH on respective website
+
+__Step 2: Acquire TTT (TestToken)__
+1. Visit [this page on Etherscan](https://goerli.etherscan.io/address/0x3ed0daedc3217615bde34fedd023bc81ae49251b#writeContract) where you'll be able to write to the TTT contract
+2. Open your MetaMask and choose your Goerli account with ETH
+3. Go back to Etherscan and click "Connect to Web3"
+4. Scroll down to the "mint" field and enter ```1000000000000000000000```
+5. Click the "Write" button and confirm the transaction in MetaMask. MetaMask will show the transaction status as "Confirmed" when it has succeeded
+
+![Etherscan TTT acquisition](https://drive.google.com/uc?export=view&id=1M81D3dsWnHCDeP25rY0RpGS9DsPg2lUa)
+
+__Step 3: Connect to the Raiden dApp__
+1. Visit the Raiden demo dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
+2. Click __Connect__ to connect the dApp to your MetaMask
+3. Select the TTT Token from the list of available tokens
+
+__Step 3: Select a Hub and Open a Channel__
+1. Enter the address ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub, this will connect you to a Raiden test node
+2. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
+3. Sign the deposit with your MetaMask.
+4. Click __Open Channel__.
+5. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
+
+You can now start making payments. To do so, simply:
+
+1. Enter the address of the receiver of your payment (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```)
+2. Enter the amount you want to pay
+3. Click __Send Payment__
+
+### Start Developing
+
+#### Prerequisites
 
 To run the code in this repository, you must have Node.js 10+ on your computer and a web3-enabled browser (e.g. Firefox with Metamask extension), as well as some ETH on the account.
 
-### SDK Installation
+#### SDK Installation
 
 ```bash
 npm install raiden-ts
@@ -181,14 +221,14 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 
 You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) and within the [SDK Documentation](https://lightclient.raiden.network/docs/).
 
-### dApp Installation
+#### dApp Installation
 
 ```bash
 git clone https://github.com/raiden-network/light-client.git
 cd light-client/raiden-dapp
 ```
 
-#### Build the Raiden SDK
+##### Build the Raiden SDK
 
  First you need to build the sdk. For this you have to go to the `raiden` directory and run the following commands.
 
@@ -198,7 +238,7 @@ npm install
 npm run build
 ```
 
-#### Install the dApp Dependencies
+##### Install the dApp Dependencies
 
 Then you need to install the wallet app dependencies.
 
@@ -209,7 +249,7 @@ npm install --save raiden-ts
 
 This will also create a symbolic link in `raiden-dapp/node_modules/raiden-ts` to `raiden-ts`.
 
-#### Running the dApp locally
+##### Running the dApp locally
 
 To start the development server you have to run the following command.
 
@@ -219,44 +259,6 @@ npm run serve
 
 After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp. It requires either MetaMask to be installed on your browser or some other web3 provider (e.g. Wallet apps with dApp support).
 
-## Try Out the Raiden Demo dApp
-
-These step-by-step instructions will guide you through the process for trying out the Raiden demo dApp. The dApp is hosted at [https://lightclient.raiden.network/](https://lightclient.raiden.network/) and we will be using the Goerli testnet and MetaMask wallet in this example.
-
-__Prerequisites__
-
-You need to have MetaMask installed for your browser. If you don't have MetaMask, [visit their website](https://metamask.io/) to download and install it.
-
-__Step 1: Acquire ETH__
-1. Go to the Goerli faucet at [htts://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog)
-2. Follow the instructions on how to acquire Goerli ETH from the faucet
-
-__Step 2: Acquire TTT (TestToken)__
-1. Visit [this page on Etherscan](https://goerli.etherscan.io/address/0x3ed0daedc3217615bde34fedd023bc81ae49251b#writeContract) where you'll be able to write to the TTT contract
-2. Open your MetaMask and choose your Goerli account with ETH
-3. Go back to Etherscan and click "Connect to Web3"
-4. Scroll down to the "mint" field and enter ```1000000000000000000000```
-5. Click the "Write" button and confirm the transaction in MetaMask
-
-![Etherscan TTT acquisition](https://drive.google.com/uc?export=view&id=1M81D3dsWnHCDeP25rY0RpGS9DsPg2lUa)
-
-__Step 3: Connect to the Raiden dApp__
-1. Visit the Raiden demo dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
-2. Click __Connect__ to connect the dApp to your MetaMask
-3. Select the TTT Token from the list of available tokens
-
-__Step 3: Select a Hub and Open a Channel__
-1. Enter the address ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub, this will connect you to a Raiden test node
-2. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
-3. Sign the deposit with your MetaMask.
-4. Click __Open Channel__.
-5. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
-
-You can now start making payments. To do so, simply:
-
-1. Enter the address of the receiver of your payment (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```)
-2. Enter the amount you want to pay
-3. Click __Send Payment__
 
 ## Roadmap and Timeline
 We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1). 
