@@ -21,7 +21,9 @@ module.exports = {
       "ignoreWhenEmpty": true,
       "ignores": ["pre", "textarea"],
       "allowEmptyLines": false
-    }]
+    }],
+    "vue/v-bind-style": ["error", "shorthand"],
+    "vue/v-on-style": ["error", "shorthand"],
   },
   parserOptions: {
     parser: '@typescript-eslint/parser',
