@@ -56,9 +56,9 @@ export function makeDefaultConfig(
 ): RaidenConfig {
   const pfs: { [networkName: string]: string } = {
     goerli: 'https://pfs-goerli.services-test.raiden.network',
-    ropsten: 'https://pfs-ropsten.services-dev.raiden.network',
-    kovan: 'https://pfs-kovan.services-dev.raiden.network',
-    rinkeby: 'https://pfs-rinkeby.services-dev.raiden.network',
+    ropsten: 'https://pfs-ropsten.services-test.raiden.network',
+    kovan: 'https://pfs-kovan.services-test.raiden.network',
+    rinkeby: 'https://pfs-rinkeby.services-test.raiden.network',
   };
   return {
     matrixServerLookup:
