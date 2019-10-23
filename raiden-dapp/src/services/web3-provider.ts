@@ -14,6 +14,9 @@ export class Web3Provider {
 
     if (provider && provider.isMetaMask) {
       provider.autoRefreshOnNetworkChange = false;
+      provider.on('networkChanged', () =>
+        window.location.replace(window.location.origin)
+      );
     }
 
     return provider;
