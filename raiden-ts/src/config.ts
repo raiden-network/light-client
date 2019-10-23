@@ -11,7 +11,6 @@ import { DeepPartial } from 'redux';
  * - revealTimeout - Timeout for secrets to be revealed
  * - settleTimeout - Timeout for channels to be settled
  * - httpTimeout - Used in http fetch requests
- * - pfs - Path Finding Service URL, set to null to disable
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10% safety margin.
@@ -20,6 +19,7 @@ import { DeepPartial } from 'redux';
  * - matrixServer? - Specify a matrix server to use.
  * - logger? - String specifying the console log level of redux-logger. Use '' to disable.
  *             Defaults to 'debug' if undefined and process.env.NODE_ENV === 'development'
+ * - pfs - Path Finding Service URL, set to null to disable
  */
 export const RaidenConfig = t.readonly(
   t.intersection([
@@ -28,7 +28,6 @@ export const RaidenConfig = t.readonly(
       revealTimeout: t.number,
       settleTimeout: t.number,
       httpTimeout: t.number,
-      pfs: t.union([t.string, t.null]),
       discoveryRoom: t.union([t.string, t.null]),
       pfsRoom: t.union([t.string, t.null]),
       pfsSafetyMargin: t.number,
@@ -37,6 +36,7 @@ export const RaidenConfig = t.readonly(
     t.partial({
       matrixServer: t.string,
       logger: t.keyof({ ['']: null, debug: null, log: null, info: null, warn: null, error: null }),
+      pfs: t.union([t.string, t.null]),
     }),
   ]),
 );

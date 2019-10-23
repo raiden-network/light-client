@@ -74,7 +74,7 @@ export const pathFindServiceEpic = (
               )
                 return of([{ path: [state.address, target], fee: Zero as Int<32> }]);
               // else, request a route from PFS
-              else if (pfs !== null) {
+              else if (pfs !== null && pfs !== undefined) {
                 // from all channels
                 return fromFetch(`${pfs}/api/v1/${tokenNetwork}/paths`, {
                   method: 'POST',
