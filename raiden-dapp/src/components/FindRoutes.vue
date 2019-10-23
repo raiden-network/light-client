@@ -67,15 +67,17 @@
                 @click="cancel()"
                 light
                 class="text-capitalize find-routes__buttons__cancel"
-                >{{ $t('general.buttons.cancel') }}</v-btn
               >
+                {{ $t('general.buttons.cancel') }}
+              </v-btn>
               <v-btn
                 :disabled="selected.length === 0"
                 @click="confirm()"
                 light
                 class="text-capitalize find-routes__buttons__confirm"
-                >{{ $t('general.buttons.pay') }}</v-btn
               >
+                {{ $t('general.buttons.pay') }}
+              </v-btn>
             </v-layout>
           </v-form>
         </v-layout>

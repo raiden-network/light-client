@@ -4,9 +4,9 @@
       <v-layout class="payment__capacity" justify-center>
         <v-flex xs7 class="payment__capacity_capacity-column">
           <v-layout column>
-            <span class="payment__capacity__label">{{
-              $t('payment.capacity-label')
-            }}</span>
+            <span class="payment__capacity__label">
+              {{ $t('payment.capacity-label') }}
+            </span>
             <span
               v-if="typeof token.decimals === 'number'"
               class="payment__capacity__amount"
@@ -34,8 +34,9 @@
                 v-on="on"
                 text
                 class="payment__capacity__deposit"
-                >{{ $t('payment.deposit-button') }}</v-btn
               >
+                {{ $t('payment.deposit-button') }}
+              </v-btn>
             </template>
             <v-card class="payment__deposit-dialog">
               <channel-deposit
