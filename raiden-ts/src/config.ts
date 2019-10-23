@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import { Network } from 'ethers/utils';
 import { DeepPartial } from 'redux';
+import { Address } from './utils/types';
 
 /**
  * A Raiden configuration object with required parameters and
@@ -19,7 +20,8 @@ import { DeepPartial } from 'redux';
  * - matrixServer? - Specify a matrix server to use.
  * - logger? - String specifying the console log level of redux-logger. Use '' to disable.
  *             Defaults to 'debug' if undefined and process.env.NODE_ENV === 'development'
- * - pfs - Path Finding Service URL, set to null to disable
+ * - pfs - Path Finding Service URL or Address. Set to null to disable, or leave undefined to
+ *             enable automatic fetching from ServiceRegistry.
  */
 export const RaidenConfig = t.readonly(
   t.intersection([
@@ -36,7 +38,7 @@ export const RaidenConfig = t.readonly(
     t.partial({
       matrixServer: t.string,
       logger: t.keyof({ ['']: null, debug: null, log: null, info: null, warn: null, error: null }),
-      pfs: t.union([t.string, t.null]),
+      pfs: t.union([Address, t.string, t.null]),
     }),
   ]),
 );

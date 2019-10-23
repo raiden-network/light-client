@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 import { BigNumberish } from 'ethers/utils';
-import { Address, Int } from '../utils/types';
+import { Address, Int, UInt } from '../utils/types';
 
 /**
  * Codec for PFS API returned data
@@ -43,3 +43,21 @@ export type Paths = t.TypeOf<typeof Paths>;
  * Public Raiden interface for routes data
  */
 export type RaidenPaths = { readonly path: readonly string[]; readonly fee: BigNumberish }[];
+
+/**
+ * A PFS server/service instance info
+ */
+export const PFS = t.readonly(
+  t.type({
+    address: Address,
+    url: t.string,
+    rtt: t.number,
+    price: UInt(32),
+  }),
+);
+export interface PFS extends t.TypeOf<typeof PFS> {}
+
+/**
+ * Public Raiden interface for PFS info
+ */
+export type RaidenPFS = { address: string; url: string; rtt: number; price: BigNumberish };
