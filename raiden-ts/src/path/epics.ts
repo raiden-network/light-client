@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Observable, of, combineLatest, from, EMPTY } from 'rxjs';
+import { Observable, of, combineLatest, from, EMPTY, merge, timer } from 'rxjs';
 import {
   filter,
   mergeMap,
@@ -11,11 +11,18 @@ import {
   withLatestFrom,
   timeout,
   debounceTime,
+  pluck,
+  distinctUntilChanged,
+  groupBy,
+  switchMap,
+  mapTo,
+  scan,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
-import { bigNumberify } from 'ethers/utils';
+import { bigNumberify, BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
+import { Event } from 'ethers/contract';
 
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
@@ -29,7 +36,8 @@ import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
 import { Address, UInt, Int, decode } from '../utils/types';
 import { losslessStringify, losslessParse } from '../utils/data';
-import { pathFind, pathFound, pathFindFailed } from './actions';
+import { getEventsStream } from '../utils/ethers';
+import { pathFind, pathFound, pathFindFailed, pfsListUpdated } from './actions';
 import { channelCanRoute } from './utils';
 import { PathResults, Paths } from './types';
 
@@ -202,4 +210,77 @@ export const pfsCapacityUpdateEpic = (
       console.error('Error trying to generate & sign PFSCapacityUpdate', err);
       return EMPTY;
     }),
+  );
+
+/**
+ * Fetch & monitors ServiceRegistry's RegisteredService events, keep track of valid_till expiration
+ * and aggregate list of valid service addresses
+ *
+ * Notice this epic only deals with the events & addresses, and don't fetch URLs, which need to be
+ * fetched on-demand, as well as querying PFS's info endpoint.
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps object
+ * @returns Observable of pfsListUpdated actions
+ */
+export const pfsServiceRegistryMonitorEpic = (
+  {  }: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
+): Observable<ActionType<typeof pfsListUpdated>> =>
+  state$.pipe(
+    pluck('blockNumber'),
+    distinctUntilChanged(),
+    publishReplay(1, undefined, blockNumber$ =>
+      config$.pipe(
+        // monitors config.pfs, and only monitors contract if it's undefined
+        pluck('pfs'),
+        distinctUntilChanged(),
+        switchMap(pfs =>
+          pfs !== undefined
+            ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or set
+              EMPTY
+            : // type of elements emitted by getEventsStream (past and new events coming from contract):
+              // [service, valid_till, deposit_amount, deposit_contract, Event]
+              getEventsStream<[Address, BigNumber, UInt<32>, Address, Event]>(
+                serviceRegistryContract,
+                [serviceRegistryContract.filters.RegisteredService(null, null, null, null)],
+                of(contractsInfo.ServiceRegistry.block_number), // at boot, always fetch from deploy block
+                blockNumber$, // ...up to current blockNumber, then monitor for new events
+              ).pipe(
+                groupBy(([service]) => service),
+                mergeMap(grouped$ =>
+                  grouped$.pipe(
+                    // switchMap ensures new events for each server (grouped$) picks most recent valid_till
+                    switchMap(([service, valid_till]) =>
+                      valid_till.lt(Math.floor(Date.now() / 1000))
+                        ? // this event already expired
+                          EMPTY
+                        : // ^S-------s| emits service+valid=true, then with valid=false after valid_till
+                          merge(
+                            of({ service, valid: true }),
+                            timer(new Date(valid_till.toNumber())).pipe(
+                              mapTo({ service, valid: false }),
+                            ),
+                          ),
+                    ),
+                  ),
+                ),
+                scan(
+                  (acc, { service, valid }) =>
+                    !valid && acc.includes(service)
+                      ? acc.filter(s => s !== service)
+                      : valid && !acc.includes(service)
+                      ? [...acc, service]
+                      : acc,
+                  [] as Address[],
+                ),
+                distinctUntilChanged(),
+                debounceTime(1e3), // debounce burst of updates on initial fetch
+                map(pfsList => pfsListUpdated({ pfsList })),
+              ),
+        ),
+      ),
+    ),
   );

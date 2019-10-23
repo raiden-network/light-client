@@ -16,3 +16,5 @@ export const pathFound = createStandardAction('pathFound')<{ paths: Paths }, Pat
 export const pathFindFailed = createStandardAction('pathFindFailed').map(
   (payload: Error, meta: PathId) => ({ payload, error: true, meta }),
 );
+
+export const pfsListUpdated = createStandardAction('pfsListUpdated')<{ pfsList: Address[] }>();
