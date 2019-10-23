@@ -52,7 +52,7 @@ export const pathFindServiceEpic = (
         concatMap(action =>
           statePresencesConfig$.pipe(
             first(),
-            mergeMap(([state, presences, { pfs, httpTimeout }]) => {
+            mergeMap(([state, presences, { pfs, httpTimeout, pfsSafetyMargin }]) => {
               const { tokenNetwork, target } = action.meta;
               if (!(tokenNetwork in state.channels))
                 throw new Error(`PFS: unknown tokenNetwork ${tokenNetwork}`);
@@ -92,9 +92,7 @@ export const pathFindServiceEpic = (
                       results.result.map(r => ({
                         path: r.path,
                         // Add PFS safety margin to estimated fees
-                        fee: r.estimated_fee.mul(state.config.pfsSafetyMargin * 10).div(10) as Int<
-                          32
-                        >,
+                        fee: r.estimated_fee.mul(pfsSafetyMargin * 10).div(10) as Int<32>,
                       })),
                   ),
                 );

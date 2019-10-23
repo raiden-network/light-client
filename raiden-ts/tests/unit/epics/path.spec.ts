@@ -43,7 +43,7 @@ describe('PFS: pathFindServiceEpic', () => {
   const openBlock = 121,
     state$ = new BehaviorSubject(state);
 
-  const result = { result: [{ path: [partner, target], estimated_fee: 3 }] },
+  const result = { result: [{ path: [partner, target], estimated_fee: 1234 }] },
     fetch = jest.fn(async () => ({
       ok: true,
       status: 200,
@@ -73,7 +73,7 @@ describe('PFS: pathFindServiceEpic', () => {
           {
             id: channelId,
             participant: depsMock.address,
-            totalDeposit: bigNumberify(500) as UInt<32>,
+            totalDeposit: bigNumberify(50000000) as UInt<32>,
             txHash,
           },
           { tokenNetwork, partner },
@@ -172,10 +172,23 @@ describe('PFS: pathFindServiceEpic', () => {
         pathFind({}, { tokenNetwork, target, value }),
       );
 
+    const { pfsSafetyMargin } = depsMock.config$.value;
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFound({ paths: [{ path: [partner, target], fee }] }, { tokenNetwork, target, value }),
+      pathFound(
+        {
+          paths: [
+            {
+              path: [partner, target],
+              fee: bigNumberify(1234)
+                .mul(pfsSafetyMargin * 10)
+                .div(10) as Int<32>,
+            },
+          ],
+        },
+        { tokenNetwork, target, value },
+      ),
     );
   });
 
@@ -293,7 +306,7 @@ describe('PFS: pathFindServiceEpic', () => {
   test('fail provided route but not enough capacity', async () => {
     expect.assertions(1);
 
-    const value = bigNumberify(800) as UInt<32>,
+    const value = bigNumberify(80000000) as UInt<32>,
       action$ = of(
         matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
         matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),

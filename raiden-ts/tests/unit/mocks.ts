@@ -153,7 +153,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
         block_number: 100, // eslint-disable-line
       },
     },
-    initialState = makeInitialState({ network, address, contractsInfo }, { blockNumber: 125 });
+    initialState = makeInitialState(
+      { network, address, contractsInfo },
+      { blockNumber: 125, config: { pfsSafetyMargin: 1.1 } },
+    );
 
   return {
     stateOutput$: new BehaviorSubject<RaidenState>(initialState),
