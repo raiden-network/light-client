@@ -25,15 +25,6 @@ new Vue({
   vuetify,
   router,
   store,
-
-  created() {
-    if (sessionStorage.redirect) {
-      const redirect = sessionStorage.redirect;
-      delete sessionStorage.redirect;
-      this.$router.push(redirect);
-    }
-  },
-
   i18n,
   render: h => h(App)
 }).$mount('#app');
