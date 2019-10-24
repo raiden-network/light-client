@@ -52,16 +52,22 @@
             </template>
             <span>{{ defaultAccount }}</span>
           </v-tooltip>
-          <v-tooltip v-model="copied" bottom dark activator="#copyBtn">
-            <span>{{ $t('app-header.copy-success') }}</span>
+          <v-tooltip bottom dark close-delay="1500">
+            <template v-slot:activator="{ on }">
+              <v-btn id="copyBtn" @click="copy()" v-on="on" text icon>
+                <v-img
+                  :src="require('../assets/copy_icon.svg')"
+                  class="app-header__bottom__address__copy"
+                  contain
+                ></v-img>
+              </v-btn>
+            </template>
+            <span>
+              {{
+                copied ? $t('app-header.copy-success') : $t('app-header.copy')
+              }}
+            </span>
           </v-tooltip>
-          <v-btn id="copyBtn" @click="copy()" text icon>
-            <v-img
-              :src="require('../assets/copy_icon.svg')"
-              class="app-header__bottom__address__copy"
-              contain
-            ></v-img>
-          </v-btn>
         </div>
       </v-flex>
       <v-flex xs6>
