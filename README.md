@@ -224,7 +224,7 @@ You can find more detailed information on how to use the SDK in the [Raiden Ligh
 #### dApp Installation
 
 ```bash
-git clone https://github.com/raiden-network/light-client.git
+git clone --recurse-submodules https://github.com/raiden-network/light-client.git
 cd light-client/raiden-dapp
 ```
 
