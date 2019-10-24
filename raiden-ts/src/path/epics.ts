@@ -92,7 +92,9 @@ export const pathFindServiceEpic = (
                       results.result.map(r => ({
                         path: r.path,
                         // Add PFS safety margin to estimated fees
-                        fee: r.estimated_fee.mul(pfsSafetyMargin * 10).div(10) as Int<32>,
+                        fee: r.estimated_fee
+                          .mul(Math.round(pfsSafetyMargin * 1e6))
+                          .div(1e6) as Int<32>,
                       })),
                   ),
                 );

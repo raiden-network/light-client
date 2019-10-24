@@ -9,7 +9,16 @@ import { createEpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
-import { debounce, findKey, transform, constant, memoize, pick, isEmpty } from 'lodash';
+import {
+  debounce,
+  findKey,
+  transform,
+  constant,
+  memoize,
+  pick,
+  isEmpty,
+  merge as _merge,
+} from 'lodash';
 import {
   Observable,
   Subject,
@@ -400,7 +409,7 @@ export class Raiden {
       const ns = `raiden_${network.name || network.chainId}_${
         contracts.TokenNetworkRegistry.address
       }_${address}`;
-      const loaded = Object.assign(
+      const loaded = _merge(
         {},
         loadedState,
         losslessParse((await storageOrState.getItem(ns)) || 'null'),
