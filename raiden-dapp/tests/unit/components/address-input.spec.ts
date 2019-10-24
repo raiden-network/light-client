@@ -200,7 +200,7 @@ describe('AddressInput', function() {
       await wrapper.vm.$nextTick();
 
       const messages = wrapper.find('.v-messages__message');
-      expect(messages.exists()).toBe(false);
+      expect(messages.text()).toEqual('');
     });
   });
 
