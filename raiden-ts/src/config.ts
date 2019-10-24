@@ -14,6 +14,7 @@ import { DeepPartial } from 'redux';
  * - pfs - Path Finding Service URL, set to null to disable
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
+ * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10% safety margin.
  * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
  *                       Leave LRU beyond this threshold.
  * - matrixServer? - Specify a matrix server to use.
@@ -30,6 +31,7 @@ export const RaidenConfig = t.readonly(
       pfs: t.union([t.string, t.null]),
       discoveryRoom: t.union([t.string, t.null]),
       pfsRoom: t.union([t.string, t.null]),
+      pfsSafetyMargin: t.number,
       matrixExcessRooms: t.number,
     }),
     t.partial({
@@ -53,10 +55,10 @@ export function makeDefaultConfig(
   overwrites: DeepPartial<RaidenConfig> = {},
 ): RaidenConfig {
   const pfs: { [networkName: string]: string } = {
-    goerli: 'https://pfs-goerli.services-dev.raiden.network',
-    ropsten: 'https://pfs-ropsten.services-dev.raiden.network',
-    kovan: 'https://pfs-kovan.services-dev.raiden.network',
-    rinkeby: 'https://pfs-rinkeby.services-dev.raiden.network',
+    goerli: 'https://pfs-goerli.services-test.raiden.network',
+    ropsten: 'https://pfs-ropsten.services-test.raiden.network',
+    kovan: 'https://pfs-kovan.services-test.raiden.network',
+    rinkeby: 'https://pfs-rinkeby.services-test.raiden.network',
   };
   return {
     matrixServerLookup:
@@ -70,6 +72,7 @@ export function makeDefaultConfig(
     }_discovery`,
     pfsRoom: `raiden_${network.name !== 'unknown' ? network.name : network.chainId}_path_finding`,
     matrixExcessRooms: 3,
+    pfsSafetyMargin: 1.0,
     ...overwrites,
   };
 }

@@ -30,7 +30,13 @@ export default class RaidenService {
     account: string | number = 0
   ): Promise<Raiden> {
     try {
-      return await Raiden.create(provider, account, window.localStorage);
+      return await Raiden.create(
+        provider,
+        account,
+        window.localStorage,
+        undefined,
+        { pfsSafetyMargin: 1.1 }
+      );
     } catch (e) {
       throw new RaidenInitializationFailed(e);
     }
