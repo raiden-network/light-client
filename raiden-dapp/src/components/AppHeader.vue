@@ -53,7 +53,7 @@
             <span>{{ defaultAccount }}</span>
           </v-tooltip>
           <v-tooltip bottom dark close-delay="1500">
-            <template v-slot:activator="{ on }">
+            <template #activator="{ on }">
               <v-btn id="copyBtn" @click="copy()" v-on="on" text icon>
                 <v-img
                   :src="require('../assets/copy_icon.svg')"
