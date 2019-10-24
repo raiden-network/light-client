@@ -6,6 +6,7 @@
       :hint="hint"
       :value="address"
       :error-messages="errorMessages"
+      :rules="isAddressValid"
       :class="{
         'address-input--invalid': !valid && touched,
         'address-input--hint-visible': hint.length > 0,
@@ -84,6 +85,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   touched: boolean = false;
   hint: string = '';
   errorMessages: string[] = [''];
+  busy: boolean = false;
+
+  get isAddressValid() {
+    // v-text-field interprets strings returned from a validation rule
+    // as the input being invalid. Since the :rules prop does not support
+    // async rules we have to workaround with a reactive prop
+    return [() => (this.errorMessages.length === 0 && !this.busy) || ''];
+  }
 
   mounted() {
     if (this.isChecksumAddress(this.value)) {
@@ -165,7 +174,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       clearTimeout(this.timeout);
       this.timeout = 0;
     }
-
+    this.busy = true;
     this.timeout = (setTimeout(() => {
       this.$raiden
         .ensResolve(url)
@@ -182,6 +191,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
             this.checkForErrors();
           }
           this.timeout = 0;
+          this.busy = false;
         })
         .catch(() => {
           this.errorMessages.push(this.$t(
@@ -190,6 +200,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           this.input(undefined);
           this.checkForErrors();
           this.timeout = 0;
+          this.busy = false;
         });
     }, 800) as unknown) as number;
   }
