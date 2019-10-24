@@ -49,6 +49,18 @@ describe('AddressInput', function() {
     expect(messages.text()).toBe('');
   });
 
+  it('should set busy flag when fetching ens domain', async () => {
+    wrapper = vueFactory('', excludeAddress, blockAddress);
+    mockInput(wrapper, 'test.eth');
+    const busy = jest.spyOn(wrapper.vm.$data, 'busy', 'set');
+
+    await wrapper.vm.$nextTick();
+    jest.runAllTimers();
+    await flushPromises();
+
+    expect(busy).toHaveBeenCalledTimes(1);
+  });
+
   it('should show a this address cannot be an empty message', async () => {
     wrapper = vueFactory('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x21b');
