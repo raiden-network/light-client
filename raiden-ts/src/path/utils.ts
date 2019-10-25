@@ -3,6 +3,7 @@ import * as t from 'io-ts';
 import { Observable, from, of, EMPTY } from 'rxjs';
 import { mergeMap, map, timeout, withLatestFrom, catchError, toArray } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
+import { memoize } from 'lodash';
 
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
@@ -10,6 +11,7 @@ import { Address, UInt, decode } from '../utils/types';
 import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
+import { ServiceRegistry } from '../contracts/ServiceRegistry';
 import { PFS } from './types';
 
 /**
@@ -41,6 +43,11 @@ export function channelCanRoute(
     return `path: channel with "${partner}" don't have enough capacity=${capacity.toString()}`;
   return true;
 }
+
+const serviceRegistryToken = memoize(
+  async (serviceRegistryContract: ServiceRegistry) =>
+    serviceRegistryContract.functions.token() as Promise<Address>,
+);
 
 /**
  * Returns a cold observable which fetch PFS info & validate for a given server address or URL
@@ -79,16 +86,20 @@ export function pfsInfo(
       const start = Date.now();
       return fromFetch(`${url}/api/v1/info`).pipe(
         timeout(httpTimeout),
-        mergeMap(res => res.json()),
-        map(json => {
-          const info = decode(PathInfo, json);
-          return {
-            address: info.payment_address,
-            url,
-            rtt: Date.now() - start,
-            price: info.price_info,
-          };
-        }),
+        mergeMap(
+          async res =>
+            [
+              decode(PathInfo, await res.json()),
+              await serviceRegistryToken(serviceRegistryContract),
+            ] as const,
+        ),
+        map(([info, token]) => ({
+          address: info.payment_address,
+          url,
+          rtt: Date.now() - start,
+          price: info.price_info,
+          token,
+        })),
       );
     }),
   );

@@ -53,6 +53,7 @@ export const PFS = t.readonly(
     url: t.string,
     rtt: t.number,
     price: UInt(32),
+    token: Address,
   }),
 );
 export interface PFS extends t.TypeOf<typeof PFS> {}
@@ -60,4 +61,10 @@ export interface PFS extends t.TypeOf<typeof PFS> {}
 /**
  * Public Raiden interface for PFS info
  */
-export type RaidenPFS = { address: string; url: string; rtt: number; price: BigNumberish };
+export interface RaidenPFS {
+  address: string;
+  url: string;
+  rtt: number;
+  price: BigNumberish;
+  token: string;
+}
