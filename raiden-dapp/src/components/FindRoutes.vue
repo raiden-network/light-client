@@ -1,93 +1,91 @@
 <template>
-  <v-layout column class="find-routes">
-    <v-layout class="find-routes__wrapper" align-center justify-center>
-      <v-flex xs12>
-        <h2 v-if="busy">{{ $t('find-routes.busy-title') }}</h2>
-        <h2 v-else-if="!busy && error">{{ $t('find-routes.error.title') }}</h2>
-        <h2 v-else>{{ $t('find-routes.title') }}</h2>
+  <v-row class="find-routes" align="center" justify="center" no-gutters>
+    <v-col cols="12">
+      <h2 v-if="busy">{{ $t('find-routes.busy-title') }}</h2>
+      <h2 v-else-if="!busy && error">{{ $t('find-routes.error.title') }}</h2>
+      <h2 v-else>{{ $t('find-routes.title') }}</h2>
 
-        <p v-if="!busy && !error">{{ $t('find-routes.description') }}</p>
+      <p v-if="!busy && !error">{{ $t('find-routes.description') }}</p>
 
-        <v-layout
-          v-if="busy"
-          align-center
-          justify-center
-          class="find-routes__spinner-wrapper"
-        >
-          <v-progress-circular
-            :size="110"
-            :width="7"
-            class="stepper__card__content--progress"
-            indeterminate
-          ></v-progress-circular>
-        </v-layout>
-        <v-layout v-else-if="!busy && error">
-          <p>{{ error }}</p>
-        </v-layout>
-        <v-layout v-else align-center justify-center>
-          <v-form>
-            <v-data-table
-              v-model="selected"
-              :headers="headers"
-              :items="routes"
-              dense
-              disable-pagination
-              hide-default-footer
-              show-select
-              single-select
-              sort-by="fee"
-              item-key="key"
-              class="find-routes__table"
+      <v-row
+        v-if="busy"
+        align="center"
+        justify="center"
+        class="find-routes__spinner-wrapper"
+      >
+        <v-progress-circular
+          :size="110"
+          :width="7"
+          class="stepper__card__content--progress"
+          indeterminate
+        ></v-progress-circular>
+      </v-row>
+      <v-row v-else-if="!busy && error">
+        <p>{{ error }}</p>
+      </v-row>
+      <v-row v-else align="center" justify="center">
+        <v-form>
+          <v-data-table
+            v-model="selected"
+            :headers="headers"
+            :items="routes"
+            dense
+            disable-pagination
+            hide-default-footer
+            show-select
+            single-select
+            sort-by="fee"
+            item-key="key"
+            class="find-routes__table"
+          >
+            <template v-slot:items="props">
+              <tr
+                :active="props.selected"
+                @click="props.selected = !props.selected"
+              >
+                <td>
+                  <v-checkbox v-model="props.selected" primary></v-checkbox>
+                </td>
+                <td class="text-right">{{ props.item.hops }}</td>
+                <td class="text-right">
+                  {{ props.item.displayFee }}
+                </td>
+              </tr>
+            </template>
+          </v-data-table>
+          <p class="find-routes__total-amount">
+            {{
+              $t('find-routes.total-amount', {
+                totalAmount: convertToUnits(totalAmount, token.decimals),
+                token: token.symbol
+              })
+            }}
+          </p>
+          <v-row align="end" justify="center" class="find-routes__buttons">
+            <v-btn
+              @click="cancel()"
+              light
+              class="text-capitalize find-routes__buttons__cancel"
             >
-              <template v-slot:items="props">
-                <tr
-                  :active="props.selected"
-                  @click="props.selected = !props.selected"
-                >
-                  <td>
-                    <v-checkbox v-model="props.selected" primary></v-checkbox>
-                  </td>
-                  <td class="text-right">{{ props.item.hops }}</td>
-                  <td class="text-right">
-                    {{ props.item.displayFee }}
-                  </td>
-                </tr>
-              </template>
-            </v-data-table>
-            <p class="find-routes__total-amount">
-              {{
-                $t('find-routes.total-amount', {
-                  totalAmount: convertToUnits(totalAmount, token.decimals),
-                  token: token.symbol
-                })
-              }}
-            </p>
-            <v-layout align-end justify-center class="find-routes__buttons">
-              <v-btn
-                @click="cancel()"
-                light
-                class="text-capitalize find-routes__buttons__cancel"
-              >
-                {{ $t('general.buttons.cancel') }}
-              </v-btn>
-              <v-btn
-                :disabled="selected.length === 0"
-                @click="confirm()"
-                light
-                class="text-capitalize find-routes__buttons__confirm"
-              >
-                {{ $t('general.buttons.pay') }}
-              </v-btn>
-            </v-layout>
-          </v-form>
-        </v-layout>
-      </v-flex>
-    </v-layout>
-  </v-layout>
+              {{ $t('general.buttons.cancel') }}
+            </v-btn>
+            <v-btn
+              :disabled="selected.length === 0"
+              @click="confirm()"
+              light
+              class="text-capitalize find-routes__buttons__confirm"
+            >
+              {{ $t('general.buttons.pay') }}
+            </v-btn>
+          </v-row>
+        </v-form>
+      </v-row>
+    </v-col>
+  </v-row>
 </template>
 
 <script lang="ts">
-import { BigNumber, BigNumberish } from 'ethers/utils';
+import { BigNumber } from 'ethers/utils';
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 
 import { BalanceUtils } from '@/utils/balance-utils';
@@ -199,8 +197,7 @@ export default class FindRoutes extends Vue {
   box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
 }
 
-.find-routes__wrapper > * {
-  width: 250px;
+.find-routes > * {
   text-align: center;
 }
 

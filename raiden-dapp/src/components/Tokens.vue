@@ -1,109 +1,112 @@
 <template>
-  <v-layout column justify-space-between fill-height>
-    <list-header
-      :header="$t('tokens.connected.header')"
-      class="connected-tokens__header"
-    ></list-header>
-    <v-layout justify-center fill-height>
-      <v-flex xs12>
-        <v-list class="connected-tokens__tokens" expand>
-          <v-list-group
-            v-for="(token, index) in tokens"
-            :key="token.token"
-            class="connected-tokens__tokens__token"
-            no-action
-          >
-            <template #activator>
-              <v-list-item :id="`token-${index}`">
-                <v-list-item-avatar class="list-blockie">
-                  <img
-                    :src="$blockie(token.address)"
-                    :alt="$t('tokens.connected.token.blockie-alt')"
-                  />
-                </v-list-item-avatar>
-                <v-list-item-content>
-                  <v-list-item-title
-                    class="connected-tokens__tokens__token__info"
-                  >
-                    {{
-                      $t('tokens.connected.token.token-info', {
-                        symbol: token.symbol,
-                        name: token.name
-                      })
-                    }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle
-                    class="connected-tokens__tokens__token__address"
-                  >
-                    {{ token.address }}
-                  </v-list-item-subtitle>
-                </v-list-item-content>
-              </v-list-item>
-            </template>
-            <div
-              :id="`expanded-area-${index}`"
-              class="connected-tokens__tokens__token__expanded"
+  <v-row class="fill-height">
+    <v-col cols="12" class="fill-height">
+      <list-header
+        :header="$t('tokens.connected.header')"
+        class="connected-tokens__header"
+      ></list-header>
+
+      <v-row justify="center" no-gutters>
+        <v-col cols="12">
+          <v-list class="connected-tokens__tokens" expand>
+            <v-list-group
+              v-for="(token, index) in tokens"
+              :key="token.token"
+              class="connected-tokens__tokens__token"
+              no-action
             >
-              <v-layout justify-center>
-                <v-btn
-                  :disabled="token.open === 0"
-                  :id="`pay-${index}`"
-                  :to="`/payment/${token.address}`"
-                  class="text-capitalize connected-tokens__tokens__token__button"
-                >
-                  {{ $t('general.buttons.pay') }}
-                </v-btn>
-                <v-btn
-                  :id="`leave-${index}`"
-                  @click="leaveNetwork(token)"
-                  class="text-capitalize connected-tokens__tokens__token__button leave"
-                >
-                  {{ $t('tokens.connected.token.buttons.disconnect') }}
-                </v-btn>
-                <v-btn
-                  :to="`/channels/${token.address}`"
-                  class="text-capitalize connected-tokens__tokens__token__button"
-                >
-                  {{ $t('tokens.connected.token.buttons.view-channels') }}
-                </v-btn>
-              </v-layout>
-            </div>
-          </v-list-group>
-        </v-list>
-      </v-flex>
-    </v-layout>
+              <template #activator>
+                <v-list-item :id="`token-${index}`">
+                  <v-list-item-avatar class="list-blockie">
+                    <img
+                      :src="$blockie(token.address)"
+                      :alt="$t('tokens.connected.token.blockie-alt')"
+                    />
+                  </v-list-item-avatar>
+                  <v-list-item-content>
+                    <v-list-item-title
+                      class="connected-tokens__tokens__token__info"
+                    >
+                      {{
+                        $t('tokens.connected.token.token-info', {
+                          symbol: token.symbol,
+                          name: token.name
+                        })
+                      }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle
+                      class="connected-tokens__tokens__token__address"
+                    >
+                      {{ token.address }}
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                </v-list-item>
+              </template>
+              <div
+                :id="`expanded-area-${index}`"
+                class="connected-tokens__tokens__token__expanded"
+              >
+                <v-row justify="center" align="center" no-gutters>
+                  <v-btn
+                    :disabled="token.open === 0"
+                    :id="`pay-${index}`"
+                    :to="`/payment/${token.address}`"
+                    class="text-capitalize connected-tokens__tokens__token__button"
+                  >
+                    {{ $t('general.buttons.pay') }}
+                  </v-btn>
+                  <v-btn
+                    :id="`leave-${index}`"
+                    @click="leaveNetwork(token)"
+                    class="text-capitalize connected-tokens__tokens__token__button leave"
+                  >
+                    {{ $t('tokens.connected.token.buttons.disconnect') }}
+                  </v-btn>
+                  <v-btn
+                    :to="`/channels/${token.address}`"
+                    class="text-capitalize connected-tokens__tokens__token__button"
+                  >
+                    {{ $t('tokens.connected.token.buttons.view-channels') }}
+                  </v-btn>
+                </v-row>
+              </div>
+            </v-list-group>
+          </v-list>
+        </v-col>
+      </v-row>
 
-    <action-button
-      @click="navigateToTokenSelect()"
-      :text="$t('tokens.connect-new')"
-      class="connected-tokens__button"
-      enabled
-    ></action-button>
+      <action-button
+        @click="navigateToTokenSelect()"
+        :text="$t('tokens.connect-new')"
+        class="connected-tokens__button"
+        enabled
+      ></action-button>
 
-    <confirmation-dialog
-      :display="leaveModalVisible"
-      @confirm="leaveConfirmed()"
-      @cancel="leaveCancelled()"
-    >
-      <template #header>
-        {{ $t('tokens.disconnect-dialog.header') }}
-      </template>
-      <i18n
-        v-if="selectedToken"
-        path="tokens.disconnect-dialog.confirmation-message"
-        tag="div"
+      <confirmation-dialog
+        :display="leaveModalVisible"
+        @confirm="leaveConfirmed()"
+        @cancel="leaveCancelled()"
       >
-        <b place="symbol">{{ selectedToken.symbol }}</b>
-        <span
-          place="address"
-          class="connected-tokens__tokens__token__leave__address"
+        <template #header>
+          {{ $t('tokens.disconnect-dialog.header') }}
+        </template>
+        <i18n
+          v-if="selectedToken"
+          path="tokens.disconnect-dialog.confirmation-message"
+          tag="div"
         >
-          {{ selectedToken.address }}
-        </span>
-      </i18n>
-    </confirmation-dialog>
-    <stepper :display="loading" :steps="steps" :doneStep="doneStep"></stepper>
-  </v-layout>
+          <b place="symbol">{{ selectedToken.symbol }}</b>
+          <span
+            place="address"
+            class="connected-tokens__tokens__token__leave__address"
+          >
+            {{ selectedToken.address }}
+          </span>
+        </i18n>
+      </confirmation-dialog>
+      <stepper :display="loading" :steps="steps" :doneStep="doneStep"></stepper>
+    </v-col>
+  </v-row>
 </template>
 
 <script lang="ts">
@@ -170,6 +173,9 @@ export default class Tokens extends Mixins(BlockieMixin, NavigationMixin) {
   background-color: transparent !important;
   padding-bottom: 0;
   padding-top: 0;
+  max-height: 420px;
+  height: 420px;
+  overflow-y: scroll;
 }
 
 .connected-tokens__tokens ::v-deep .v-avatar {
@@ -204,7 +210,7 @@ export default class Tokens extends Mixins(BlockieMixin, NavigationMixin) {
 
 .connected-tokens__tokens__token__expanded {
   background-color: $expanded-area-background;
-  padding: 25px;
+  padding: 25px 0;
 }
 
 .connected-tokens__tokens__token__button.leave {

@@ -1,53 +1,51 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="open-channel">
-    <v-layout column justify-space-between fill-height>
-      <v-layout align-center justify-center>
-        <v-flex xs10>
-          <amount-input
-            v-model="deposit"
-            :token="token"
-            :max="token.balance"
-            limit
-          ></amount-input>
-        </v-flex>
-      </v-layout>
+    <v-row align="center" justify="center">
+      <v-col cols="10">
+        <amount-input
+          v-model="deposit"
+          :token="token"
+          :max="token.balance"
+          limit
+        ></amount-input>
+      </v-col>
+    </v-row>
 
-      <divider></divider>
+    <divider></divider>
 
-      <token-information :token="token"></token-information>
+    <token-information :token="token"></token-information>
 
-      <divider></divider>
+    <divider></divider>
 
-      <v-layout align-center justify-center class="open-channel__hub">
-        <v-flex xs2 class="open-channel__hub__label text-left">
-          {{ $t('open-channel.hub') }}
-        </v-flex>
-        <v-flex xs8 class="open-channel__hub__address text-left">
-          {{ partner }}
-        </v-flex>
-      </v-layout>
+    <v-row align="center" justify="center" class="open-channel__hub">
+      <v-col cols="2" class="open-channel__hub__label text-left">
+        {{ $t('open-channel.hub') }}
+      </v-col>
+      <v-col cols="8" class="open-channel__hub__address text-left">
+        {{ partner }}
+      </v-col>
+    </v-row>
 
-      <action-button
-        :enabled="valid"
-        @click="openChannel()"
-        :text="$t('open-channel.open-button')"
-      ></action-button>
+    <action-button
+      :enabled="valid"
+      @click="openChannel()"
+      :text="$t('open-channel.open-button')"
+    ></action-button>
 
-      <stepper
-        :display="loading"
-        :steps="steps"
-        :done-step="doneStep"
-        :current="current"
-        :done="done"
-      ></stepper>
+    <stepper
+      :display="loading"
+      :steps="steps"
+      :done-step="doneStep"
+      :current="current"
+      :done="done"
+    ></stepper>
 
-      <error-screen
-        :description="error"
-        @dismiss="error = ''"
-        :title="$t('open-channel.error.title')"
-        :button-label="$t('open-channel.error.button')"
-      ></error-screen>
-    </v-layout>
+    <error-screen
+      :description="error"
+      @dismiss="error = ''"
+      :title="$t('open-channel.error.title')"
+      :button-label="$t('open-channel.error.button')"
+    ></error-screen>
   </v-form>
 </template>
 
@@ -199,6 +197,8 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 .open-channel {
   height: 100%;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .open-channel__hub {

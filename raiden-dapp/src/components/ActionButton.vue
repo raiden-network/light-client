@@ -1,6 +1,11 @@
 <template>
-  <v-layout class="action-button" align-center justify-center>
-    <v-flex xs10 class="text-center">
+  <v-row
+    class="action-button"
+    no-gutters
+    align-content="center"
+    justify="center"
+  >
+    <v-col cols="10" class="text-center">
       <v-btn
         :disabled="!enabled"
         @click="click()"
@@ -11,8 +16,8 @@
       >
         {{ text }}
       </v-btn>
-    </v-flex>
-  </v-layout>
+    </v-col>
+  </v-row>
 </template>
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
