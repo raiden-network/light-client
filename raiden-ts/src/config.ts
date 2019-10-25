@@ -56,19 +56,12 @@ export function makeDefaultConfig(
   { network }: { network: Network },
   overwrites: DeepPartial<RaidenConfig> = {},
 ): RaidenConfig {
-  const pfs: { [networkName: string]: string } = {
-    goerli: 'https://pfs-goerli.services-test.raiden.network',
-    ropsten: 'https://pfs-ropsten.services-test.raiden.network',
-    kovan: 'https://pfs-kovan.services-test.raiden.network',
-    rinkeby: 'https://pfs-rinkeby.services-test.raiden.network',
-  };
   return {
     matrixServerLookup:
       'https://raw.githubusercontent.com/raiden-network/raiden-transport/master/known_servers.test.yaml',
     settleTimeout: 500,
     revealTimeout: 50,
     httpTimeout: 30e3,
-    pfs: pfs[network.name] || null,
     discoveryRoom: `raiden_${
       network.name !== 'unknown' ? network.name : network.chainId
     }_discovery`,
