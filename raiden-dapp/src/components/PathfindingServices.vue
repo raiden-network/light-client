@@ -1,15 +1,42 @@
 <template>
-  <v-layout column class="pathfinding-services">
-    <v-layout>
-      <v-flex xs12>
+  <div class="pathfinding-services fill-height">
+    <v-row no-gutters>
+      <v-col cols="12">
         <h2>
           {{ $t('pathfinding-services.title') }}
         </h2>
-      </v-flex>
-    </v-layout>
-    <v-layout class="pathfinding-services__wrapper" align-center justify-center>
-      <v-flex xs12>
+      </v-col>
+    </v-row>
+    <v-row
+      no-gutters
+      class="pathfinding-services__wrapper"
+      align="center"
+      justify="center"
+    >
+      <v-col cols="12">
+        <v-row
+          v-if="loading"
+          align="center"
+          justify="center"
+          class="pathfinding-services__loading"
+        >
+          <v-progress-circular
+            indeterminate
+            color="primary"
+          ></v-progress-circular>
+        </v-row>
+        <v-row
+          v-else-if="error"
+          align="center"
+          justify="center"
+          class="pathfinding-services__error"
+        >
+          <span>
+            {{ error }}
+          </span>
+        </v-row>
         <v-data-table
+          v-else
           v-model="selected"
           :headers="headers"
           :items="services"
@@ -22,18 +49,25 @@
           item-key="service"
           class="pathfinding-services__table"
         >
-          <template #item.service="{ item }">
+          <template #item.address="{ item }">
             <v-tooltip bottom>
               <template #activator="{ on }">
                 <span v-on="on">
-                  {{ item.service | truncate(8) }}
+                  {{ item.address | truncate(8) }}
                 </span>
               </template>
-              <span>{{ item.service }}</span>
+              <span>{{ item.address }}</span>
             </v-tooltip>
           </template>
-          <template #item.pfs="{ item }">
-            {{ item.pfs }}
+          <template #item.url="{ item }">
+            <v-tooltip bottom>
+              <template #activator="{ on }">
+                <span v-on="on">
+                  {{ item.url | truncate(38) }}
+                </span>
+              </template>
+              <span>{{ item.url }}</span>
+            </v-tooltip>
           </template>
           <template #item.rtt="{ item }">
             {{ $t('pathfinding-services.rtt', { time: item.rtt }) }}
@@ -42,9 +76,9 @@
             {{ item.price }}
           </template>
         </v-data-table>
-        <v-layout
-          align-end
-          justify-center
+        <v-row
+          align="end"
+          justify="center"
           class="pathfinding-services__buttons"
         >
           <v-btn
@@ -62,72 +96,76 @@
           >
             {{ $t('general.buttons.confirm') }}
           </v-btn>
-        </v-layout>
-      </v-flex>
-    </v-layout>
-  </v-layout>
+        </v-row>
+      </v-col>
+    </v-row>
+  </div>
 </template>
 
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
-import { BigNumberish } from 'ethers/utils';
+import { RaidenPFS } from 'raiden-ts';
 
-type PathfindingService = {
-  service: string;
-  pfs: string;
-  rtt: number;
-  price: BigNumberish;
-};
 @Component({})
 export default class PathfindingServices extends Vue {
-  selected: PathfindingService[] = [];
-  headers: { text: string; align: string; value: string }[] = [
-    {
-      text: 'Address',
-      value: 'service',
-      align: 'left'
-    },
-    {
-      text: 'URL',
-      value: 'pfs',
-      align: 'left'
-    },
-    {
-      text: 'RTT',
-      value: 'rtt',
-      align: 'right'
-    },
-    {
-      text: 'Price',
-      value: 'price',
-      align: 'right'
-    }
-  ];
-  services: PathfindingService[] = [
-    {
-      service: '0x32bBc8ba52FB6F61C24809FdeDA1baa5E55e55EA',
-      pfs: 'https://pfs-goerli.services-test.raiden.network',
-      rtt: 5,
-      price: 1000
-    },
-    {
-      service: '0x0149F4a522342c26Db77fCF03E872595e6a19250',
-      pfs: 'https://pfs-goerli.awesome-services.org',
-      rtt: 6,
-      price: 1500
-    }
-  ];
+  headers: { text: string; align: string; value: string }[] = [];
 
-  clicked(selected: PathfindingService) {
+  error: string = '';
+  loading: boolean = false;
+
+  selected: RaidenPFS[] = [];
+  services: RaidenPFS[] = [];
+
+  mounted() {
+    this.headers = [
+      {
+        text: this.$t('pathfinding-services.headers.address') as string,
+        value: 'address',
+        align: 'left'
+      },
+      {
+        text: this.$t('pathfinding-services.headers.url') as string,
+        value: 'url',
+        align: 'left'
+      },
+      {
+        text: this.$t('pathfinding-services.headers.rtt') as string,
+        value: 'rtt',
+        align: 'right'
+      },
+      {
+        text: this.$t('pathfinding-services.headers.price') as string,
+        value: 'price',
+        align: 'right'
+      }
+    ];
+    this.fetchServices();
+  }
+
+  async fetchServices() {
+    this.loading = true;
+    try {
+      this.services = await this.$raiden.fetchServices();
+    } catch (e) {
+      this.error = e.message;
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  clicked(selected: RaidenPFS) {
     this.selected = [];
     this.selected.push(selected);
   }
 
   @Emit()
-  cancel() {}
+  cancel() {
+    this.loading = false;
+    this.error = '';
+  }
 
   @Emit()
-  confirm(): PathfindingService {
+  confirm(): RaidenPFS {
     const [service] = this.selected;
     return service;
   }
@@ -145,6 +183,16 @@ export default class PathfindingServices extends Vue {
 .pathfinding-services__wrapper > * {
   width: 250px;
   text-align: center;
+}
+
+.pathfinding-services__loading {
+  height: 72px;
+}
+
+.pathfinding-services__error {
+  height: 86px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 .pathfinding-services__table {

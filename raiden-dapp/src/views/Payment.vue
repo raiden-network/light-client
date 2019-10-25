@@ -100,6 +100,7 @@
         <v-card class="payment__route-dialog">
           <pathfinding-services
             @cancel="serviceSelection = false"
+            @confirm="findRoutes($event)"
           ></pathfinding-services>
         </v-card>
       </v-dialog>
@@ -110,6 +111,7 @@
             v-if="findingRoutes"
             @cancel="findingRoutes = false"
             @confirm="transfer($event)"
+            :pfs="raidenPFS"
             :token="token"
             :amount="amount"
             :target="target"
@@ -151,7 +153,7 @@ import FindRoutes from '@/components/FindRoutes.vue';
 import DownArrow from '@/components/icons/DownArrow.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannel, ChannelState } from 'raiden-ts';
+import { RaidenChannel, ChannelState, RaidenPFS } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -192,6 +194,7 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
   depositing: boolean = false;
   findingRoutes: boolean = false;
   serviceSelection: boolean = false;
+  raidenPFS: RaidenPFS | null = null;
 
   errorTitle: string = '';
   error: string = '';
@@ -226,6 +229,12 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
       return withBiggestCapacity.capacity;
     }
     return Zero;
+  }
+
+  findRoutes(raidenPFS: RaidenPFS) {
+    this.chooseService = false;
+    this.raidenPFS = raidenPFS;
+    this.findingRoutes = true;
   }
 
   async created() {

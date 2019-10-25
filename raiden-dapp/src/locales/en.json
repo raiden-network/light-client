@@ -265,6 +265,12 @@
   },
   "pathfinding-services": {
     "title": "Select Pathfinding Service",
-    "rtt": "{time} ms"
+    "rtt": "{time} ms",
+    "headers": {
+      "address": "Address",
+      "url": "URL",
+      "rtt": "RTT",
+      "price": "Price"
+    }
   }
 }
