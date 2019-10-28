@@ -73,7 +73,32 @@
             {{ $t('pathfinding-services.rtt', { time: item.rtt }) }}
           </template>
           <template #item.price="{ item }">
-            {{ item.price }}
+            <v-tooltip bottom>
+              <template #activator="{ on }">
+                <span v-on="on">
+                  {{
+                    $t('pathfinding-services.price', {
+                      amount: truncate(
+                        convertToUnits(item.price, token(item.token).decimals),
+                        8
+                      ),
+                      symbol: token(item.token).symbol
+                    })
+                  }}
+                </span>
+              </template>
+              <span>
+                {{
+                  $t('pathfinding-services.price', {
+                    amount: convertToUnits(
+                      item.price,
+                      token(item.token).decimals
+                    ),
+                    symbol: token(item.token).symbol
+                  })
+                }}
+              </span>
+            </v-tooltip>
           </template>
         </v-data-table>
         <v-row
@@ -105,6 +130,9 @@
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
 import { RaidenPFS } from 'raiden-ts';
+import { Token, TokenModel } from '@/model/types';
+import { BalanceUtils } from '@/utils/balance-utils';
+import Filters from '@/filters';
 
 @Component({})
 export default class PathfindingServices extends Vue {
@@ -115,6 +143,9 @@ export default class PathfindingServices extends Vue {
 
   selected: RaidenPFS[] = [];
   services: RaidenPFS[] = [];
+
+  convertToUnits = BalanceUtils.toUnits;
+  truncate = Filters.truncate;
 
   mounted() {
     this.headers = [
@@ -146,11 +177,20 @@ export default class PathfindingServices extends Vue {
     this.loading = true;
     try {
       this.services = await this.$raiden.fetchServices();
+      const tokens = this.services
+        .map(value => value.token)
+        .filter((value, index, array) => array.indexOf(value) === index);
+
+      await this.$raiden.fetchTokenData(tokens);
     } catch (e) {
       this.error = e.message;
     } finally {
       this.loading = false;
     }
+  }
+
+  token(address: string): Token {
+    return this.$store.getters.token(address) || ({ address } as Token);
   }
 
   clicked(selected: RaidenPFS) {

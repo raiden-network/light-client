@@ -266,6 +266,7 @@
   "pathfinding-services": {
     "title": "Select Pathfinding Service",
     "rtt": "{time} ms",
+    "price": "{amount} {symbol}",
     "headers": {
       "address": "Address",
       "url": "URL",
