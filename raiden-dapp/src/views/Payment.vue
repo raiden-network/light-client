@@ -1,119 +1,119 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="payment">
-    <v-layout column justify-space-between fill-height>
-      <v-layout class="payment__capacity" justify-center>
-        <v-flex xs7 class="payment__capacity_capacity-column">
-          <v-layout column>
-            <span class="payment__capacity__label">
-              {{ $t('payment.capacity-label') }}
-            </span>
-            <span
-              v-if="typeof token.decimals === 'number'"
-              class="payment__capacity__amount"
+    <v-row class="payment__capacity" justify="center" no-gutters>
+      <v-col cols="7" class="payment__capacity_capacity-column">
+        <v-row class="payment__capacity__label">
+          {{ $t('payment.capacity-label') }}
+        </v-row>
+        <v-row
+          v-if="typeof token.decimals === 'number'"
+          class="payment__capacity__amount"
+        >
+          {{
+            $t('payment.capacity-amount', {
+              capacity: convertToUnits(capacity, token.decimals),
+              token: token.symbol
+            })
+          }}
+        </v-row>
+        <v-row v-else class="payment__capacity__amount"></v-row>
+        <v-img
+          :src="require('../assets/down_arrow.svg')"
+          max-width="18px"
+          class="payment__capacity__arrow"
+        ></v-img>
+      </v-col>
+      <v-col
+        cols="3"
+        class="payment__capacity__deposit-column"
+        align-self="center"
+      >
+        <v-dialog v-model="depositing" max-width="625">
+          <template #activator="{ on }">
+            <v-btn
+              @click="depositing = true"
+              v-on="on"
+              text
+              class="payment__capacity__deposit"
             >
-              {{
-                $t('payment.capacity-amount', {
-                  capacity: convertToUnits(capacity, token.decimals),
-                  token: token.symbol
-                })
-              }}
-            </span>
-            <span v-else class="payment__capacity__amount"></span>
-          </v-layout>
-          <v-img
-            :src="require('../assets/down_arrow.svg')"
-            max-width="18px"
-            class="payment__capacity__arrow"
-          ></v-img>
-        </v-flex>
-        <v-flex xs3 align-center class="payment__capacity__deposit-column">
-          <v-dialog v-model="depositing" max-width="625">
-            <template #activator="{ on }">
-              <v-btn
-                @click="depositing = true"
-                v-on="on"
-                text
-                class="payment__capacity__deposit"
-              >
-                {{ $t('payment.deposit-button') }}
-              </v-btn>
-            </template>
-            <v-card class="payment__deposit-dialog">
-              <channel-deposit
-                @cancel="depositing = false"
-                @confirm="deposit($event)"
-                :token="token"
-                identifier="0"
-              ></channel-deposit>
-            </v-card>
-          </v-dialog>
-        </v-flex>
-      </v-layout>
+              {{ $t('payment.deposit-button') }}
+            </v-btn>
+          </template>
+          <v-card class="payment__deposit-dialog">
+            <channel-deposit
+              @cancel="depositing = false"
+              @confirm="deposit($event)"
+              :token="token"
+              identifier="0"
+            ></channel-deposit>
+          </v-card>
+        </v-dialog>
+      </v-col>
+    </v-row>
 
-      <v-layout align-center justify-center class="payment__recipient">
-        <v-flex xs10>
-          <div class="payment__recipient__label">
-            {{ $t('payment.recipient-label') }}
-          </div>
-          <address-input
-            v-model="target"
-            :exclude="[token.address, defaultAccount]"
-            :block="blockedHubs"
-          ></address-input>
-        </v-flex>
-      </v-layout>
+    <v-row align="center" justify="center" class="payment__recipient">
+      <v-col cols="10">
+        <div class="payment__recipient__label">
+          {{ $t('payment.recipient-label') }}
+        </div>
+        <address-input
+          v-model="target"
+          :exclude="[token.address, defaultAccount]"
+          :block="blockedHubs"
+        ></address-input>
+      </v-col>
+    </v-row>
 
-      <v-layout align-center justify-center>
-        <v-flex xs10>
-          <amount-input
-            v-model="amount"
-            :token="token"
-            :label="$t('payment.amount-label')"
-            :placeholder="$t('payment.amount-placeholder')"
-            :max="capacity"
-            limit
-          ></amount-input>
-        </v-flex>
-      </v-layout>
+    <v-row align="center" justify="center">
+      <v-col cols="10">
+        <amount-input
+          v-model="amount"
+          :token="token"
+          :label="$t('payment.amount-label')"
+          :placeholder="$t('payment.amount-placeholder')"
+          :max="capacity"
+          limit
+        ></amount-input>
+      </v-col>
+    </v-row>
 
-      <v-spacer></v-spacer>
+    <v-spacer></v-spacer>
 
-      <v-dialog v-model="findingRoutes" max-width="625">
-        <template #activator="{ on }">
-          <action-button
-            :enabled="valid"
-            @click="findingRoutes = true"
-            :text="$t('payment.pay-button')"
-            v-on="on"
-            class="payment__pay-button"
-          ></action-button>
-        </template>
-        <v-card class="payment__route-dialog">
-          <find-routes
-            v-if="findingRoutes"
-            @cancel="findingRoutes = false"
-            @confirm="transfer($event)"
-            :token="token"
-            :amount="amount"
-            :target="target"
-          ></find-routes>
-        </v-card>
-      </v-dialog>
+    <v-dialog v-model="findingRoutes" max-width="625">
+      <template #activator="{ on }">
+        <action-button
+          :enabled="valid"
+          @click="findingRoutes = true"
+          :text="$t('payment.pay-button')"
+          v-on="on"
+          class="payment__pay-button"
+        ></action-button>
+      </template>
+      <v-card class="payment__route-dialog">
+        <find-routes
+          v-if="findingRoutes"
+          @cancel="findingRoutes = false"
+          @confirm="transfer($event)"
+          :token="token"
+          :amount="amount"
+          :target="target"
+        ></find-routes>
+      </v-card>
+    </v-dialog>
 
-      <stepper
-        :display="loading"
-        :steps="steps"
-        :done-step="doneStep"
-        :done="done"
-      ></stepper>
+    <stepper
+      :display="loading"
+      :steps="steps"
+      :done-step="doneStep"
+      :done="done"
+    ></stepper>
 
-      <error-screen
-        :description="error"
-        @dismiss="error = ''"
-        :title="errorTitle"
-        :button-label="$t('payment.error.button')"
-      ></error-screen>
-    </v-layout>
+    <error-screen
+      :description="error"
+      @dismiss="error = ''"
+      :title="errorTitle"
+      :button-label="$t('payment.error.button')"
+    ></error-screen>
   </v-form>
 </template>
 
@@ -288,6 +288,8 @@ export default class Payment extends Mixins(NavigationMixin) {
 .payment {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .payment__capacity {

@@ -1,5 +1,5 @@
 <template>
-  <v-layout justify-space-around class="channel-actions">
+  <v-row justify="space-around" class="channel-actions">
     <v-btn
       :id="`deposit-${index}`"
       :disabled="channel.state !== 'open'"
@@ -24,7 +24,7 @@
     >
       {{ $t('channel-actions.settle') }}
     </v-btn>
-  </v-layout>
+  </v-row>
 </template>
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';

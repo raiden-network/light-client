@@ -1,11 +1,11 @@
 <template>
-  <v-layout align-start justify-center class="token-information">
-    <v-flex xs2>
+  <v-row align="start" justify="center" no-gutters class="token-information">
+    <v-col cols="2">
       <div class="token-information__label">
         {{ $t('token-information.title') }}
       </div>
-    </v-flex>
-    <v-flex xs8>
+    </v-col>
+    <v-col cols="8">
       <div class="token-information__description">
         {{
           $t('token-information.description', {
@@ -17,8 +17,8 @@
       <div>
         {{ token.address }}
       </div>
-    </v-flex>
-  </v-layout>
+    </v-col>
+  </v-row>
 </template>
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';

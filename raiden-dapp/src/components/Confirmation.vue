@@ -1,16 +1,19 @@
 <template>
-  <v-layout column class="confirmation">
-    <v-layout align-center justify-center>
-      <v-flex xs12>
-        <h1 class="confirmation__text__header"><slot name="header"></slot></h1>
-      </v-flex>
-    </v-layout>
-    <v-layout align-center justify-cenetr>
-      <v-flex xs12>
+  <v-row class="confirmation" no-gutters>
+    <v-row align="center" justify="center">
+      <h1 class="confirmation__text__header"><slot name="header"></slot></h1>
+    </v-row>
+    <v-row align="center" justify="center">
+      <v-col cols="12">
         <p class="confirmation__text__message"><slot></slot></p>
-      </v-flex>
-    </v-layout>
-    <v-layout align-end justify-center class="confirmation__buttons">
+      </v-col>
+    </v-row>
+    <v-row
+      align="end"
+      justify="center"
+      class="confirmation__buttons"
+      no-gutters
+    >
       <v-btn
         :id="`cancel-${identifier}`"
         @click="cancel()"
@@ -25,8 +28,8 @@
       >
         {{ positiveAction }}
       </v-btn>
-    </v-layout>
-  </v-layout>
+    </v-row>
+  </v-row>
 </template>
 
 <script lang="ts">

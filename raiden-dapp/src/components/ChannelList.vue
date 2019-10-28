@@ -1,6 +1,6 @@
 <template>
-  <v-layout class="channel-list">
-    <v-flex xs12>
+  <v-row class="channel-list" no-gutters>
+    <v-col cols="12">
       <v-list class="channel-list__channels">
         <v-list-group
           v-for="(channel, index) in channels"
@@ -99,8 +99,8 @@
           </div>
         </v-list-group>
       </v-list>
-    </v-flex>
-  </v-layout>
+    </v-col>
+  </v-row>
 </template>
 
 <script lang="ts">
@@ -245,7 +245,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 }
 
 .channel-list__channels__channel__lifecycle {
-  margin-bottom: 30px;
+  margin-bottom: 16px;
 }
 
 .channel-list__channels__channel__icon {
