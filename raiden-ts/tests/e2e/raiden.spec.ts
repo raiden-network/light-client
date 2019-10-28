@@ -12,7 +12,7 @@ import { request } from 'matrix-js-sdk';
 import 'raiden-ts/polyfills';
 import { Raiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
-import { makeInitialState } from 'raiden-ts/state';
+import { makeInitialState, RaidenState } from 'raiden-ts/state';
 import { raidenShutdown } from 'raiden-ts/actions';
 import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
@@ -307,6 +307,78 @@ describe('Raiden', () => {
           },
         },
       });
+    });
+
+    test('raiden instance fetches new events which happened while it was offline', async () => {
+      expect.assertions(7);
+
+      // wait for raiden1 to pick up main tokenNetwork channel
+      await expect(
+        raiden1.state$
+          .pipe(first(state => !!get(state.channels, [tokenNetwork, raiden.address])))
+          .toPromise(),
+      ).resolves.toMatchObject({
+        tokens: {
+          [token]: tokenNetwork,
+        },
+        channels: {
+          [tokenNetwork]: { [raiden.address]: { state: ChannelState.open } },
+        },
+      });
+
+      let raidenState: RaidenState | undefined;
+      raiden.state$.subscribe(state => (raidenState = state));
+      raiden.stop();
+      expect(raidenState!.tokens).toEqual({ [token]: tokenNetwork });
+      // expect & save block when raiden was stopped
+      expect(raidenState).toMatchObject({ blockNumber: expect.any(Number) });
+      const stopBlock = raidenState!.blockNumber;
+
+      // edge case 1: ChannelClosed event happens right after raiden is stopped
+      await raiden1.closeChannel(token, raiden.address);
+      await provider.mine(2);
+
+      // deploy new token network while raiden is offline (raiden1/partner isn't)
+      const { token: newToken, tokenNetwork: newTokenNetwork } = await provider.deployTokenNetwork(
+        contractsInfo,
+      );
+      await provider.mine(4);
+
+      // open a new channel from partner to main instance on the new tokenNetwork
+      // edge case 2: ChannelOpened at exact block when raiden is restarted
+      await raiden1.openChannel(newToken, raiden.address);
+      const restartBlock = provider.blockNumber;
+
+      raidenState = undefined;
+      raiden = await Raiden.create(provider, 0, storage, contractsInfo, config);
+      raiden.state$.subscribe(state => (raidenState = state));
+
+      // ensure after hot boot, state is rehydrated and contains (only) previous token
+      expect(raidenState).toBeDefined();
+      expect(raidenState!.tokens).toEqual({ [token]: tokenNetwork });
+
+      // wait token & channel on it to be fetched, even if it happened while we were offline
+      await expect(
+        raiden.state$
+          .pipe(
+            filter(state => state.tokens[newToken] === newTokenNetwork),
+            first(state => !!get(state.channels, [newTokenNetwork, partner])),
+          )
+          .toPromise(),
+      ).resolves.toMatchObject({
+        tokens: {
+          [token]: tokenNetwork,
+          [newToken]: newTokenNetwork,
+        },
+        channels: {
+          // test edge case 1: channel closed at stop block is picked up correctly
+          [tokenNetwork]: { [partner]: { state: ChannelState.closed, closeBlock: stopBlock + 1 } },
+          // test edge case 2: channel opened at restart block is picked up correctly
+          [newTokenNetwork]: { [partner]: { state: ChannelState.open, openBlock: restartBlock } },
+        },
+      });
+      // test sync state$ subscribe
+      expect(get(raidenState!.channels, [newTokenNetwork, partner])).toBeDefined();
     });
   });
 
