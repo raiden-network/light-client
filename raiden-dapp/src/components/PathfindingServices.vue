@@ -40,7 +40,7 @@
           v-model="selected"
           :headers="headers"
           :items="services"
-          @click:row="clicked($event)"
+          @click:row="setSelected($event)"
           dense
           disable-pagination
           hide-default-footer
@@ -130,7 +130,7 @@
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
 import { RaidenPFS } from 'raiden-ts';
-import { Token, TokenModel } from '@/model/types';
+import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import Filters from '@/filters';
 
@@ -177,6 +177,9 @@ export default class PathfindingServices extends Vue {
     this.loading = true;
     try {
       this.services = await this.$raiden.fetchServices();
+      if (this.services.length > 0) {
+        this.setSelected(this.services[0]);
+      }
       const tokens = this.services
         .map(value => value.token)
         .filter((value, index, array) => array.indexOf(value) === index);
@@ -193,7 +196,7 @@ export default class PathfindingServices extends Vue {
     return this.$store.getters.token(address) || ({ address } as Token);
   }
 
-  clicked(selected: RaidenPFS) {
+  setSelected(selected: RaidenPFS) {
     this.selected = [];
     this.selected.push(selected);
   }
