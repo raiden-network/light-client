@@ -87,16 +87,24 @@
 
       <v-spacer></v-spacer>
 
-      <v-dialog v-model="findingRoutes" max-width="625">
+      <v-dialog v-model="serviceSelection" max-width="625">
         <template #activator="{ on }">
           <action-button
             :enabled="valid"
-            @click="findingRoutes = true"
+            @click="serviceSelection = true"
             :text="$t('general.buttons.continue')"
             v-on="on"
             class="payment__pay-button"
           ></action-button>
         </template>
+        <v-card class="payment__route-dialog">
+          <pathfinding-services
+            @cancel="serviceSelection = false"
+          ></pathfinding-services>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog v-model="findingRoutes" max-width="625">
         <v-card class="payment__route-dialog">
           <find-routes
             v-if="findingRoutes"
@@ -149,9 +157,11 @@ import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { getAddress, getAmount } from '@/utils/query-params';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import PathfindingServices from '@/components/PathfindingServices.vue';
 
 @Component({
   components: {
+    PathfindingServices,
     ChannelDeposit,
     ActionButton,
     TokenInformation,
@@ -181,6 +191,7 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
   done: boolean = false;
   depositing: boolean = false;
   findingRoutes: boolean = false;
+  serviceSelection: boolean = false;
 
   errorTitle: string = '';
   error: string = '';

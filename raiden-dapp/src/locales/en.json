@@ -3,7 +3,8 @@
     "buttons": {
       "cancel": "Cancel",
       "pay": "Pay",
-      "continue": "Continue"
+      "continue": "Continue",
+      "confirm": "Confirm"
     }
   },
   "address-input": {
@@ -261,5 +262,9 @@
   "token-information": {
     "title": "Token",
     "description": "{symbol} | {name}"
+  },
+  "pathfinding-services": {
+    "title": "Select Pathfinding Service",
+    "rtt": "{time} ms"
   }
 }
