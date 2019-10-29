@@ -166,11 +166,11 @@ describe('raiden epic', () => {
             ignoreElements(),
           );
         m.expect(merge(emitBlock$, raidenRootEpic(action$, state$, depsMock))).toBeObservable(
-          m.cold('bct-------B-|', {
+          m.cold('b(tc)-----B-|', {
             b: newBlock({ blockNumber: 633 }),
+            t: tokenMonitored({ token, tokenNetwork }),
             // ensure channelMonitored is emitted by init even for 'settling' channel
             c: channelMonitored({ id: channelId }, { tokenNetwork, partner }),
-            t: tokenMonitored({ token, tokenNetwork }),
             B: newBlock({ blockNumber: 635 }),
           }),
         );
@@ -186,7 +186,8 @@ describe('raiden epic', () => {
 
       action$.subscribe(action => state$.next(raidenReducer(state$.value, action)));
 
-      depsMock.provider.resetEventsBlock(126);
+      state$.next(raidenReducer(state$.value, newBlock({ blockNumber: 126 })));
+      depsMock.provider.resetEventsBlock(state$.value.blockNumber);
 
       depsMock.provider.getLogs.mockResolvedValueOnce([
         makeLog({
@@ -203,8 +204,6 @@ describe('raiden epic', () => {
           toArray(),
         )
         .toPromise();
-
-      action$.next(newBlock({ blockNumber: 126 }));
 
       depsMock.provider.resetEventsBlock(127);
       action$.next(newBlock({ blockNumber: 127 }));
@@ -230,6 +229,9 @@ describe('raiden epic', () => {
           toBlock: 126,
         }),
       );
+
+      action$.complete();
+      state$.complete();
     });
 
     test('ShutdownReason.ACCOUNT_CHANGED', async () => {
