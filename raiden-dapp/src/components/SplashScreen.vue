@@ -1,7 +1,7 @@
 <template>
-  <v-container fluid fill-height class="splash-screen">
-    <v-layout align-center justify-center>
-      <v-flex xs8 md6 lg4>
+  <v-container fluid class="splash-screen fill-height">
+    <v-row align="center" justify="center" no-gutters>
+      <v-col cols="4" lg="4" md="6" sm="8">
         <div class="splash-screen__wrapper display-3">
           <div class="splash-screen__logo-container">
             <v-img
@@ -42,8 +42,8 @@
             :reason="accessDenied"
           ></no-access-message>
         </div>
-      </v-flex>
-    </v-layout>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 

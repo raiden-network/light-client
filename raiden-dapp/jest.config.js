@@ -1,4 +1,5 @@
 module.exports = {
+  setupFiles: ['./jest.setup.js'],
   moduleFileExtensions: ['js', 'jsx', 'json', 'vue', 'ts', 'tsx', 'node'],
   transform: {
     '^.+\\.vue$': 'vue-jest',

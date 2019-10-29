@@ -1,6 +1,6 @@
 import { createStandardAction } from 'typesafe-actions';
 
-import { Address, UInt, Secret, Hash } from '../utils/types';
+import { Address, UInt, Int, Secret, Hash } from '../utils/types';
 import { SignedBalanceProof } from '../channels/types';
 import {
   LockedTransfer,
@@ -13,8 +13,8 @@ import {
   RefundTransfer,
   WithdrawRequest,
   WithdrawConfirmation,
-  Metadata,
 } from '../messages/types';
+import { Paths } from '../path/types';
 
 type TransferId = { secrethash: Hash };
 
@@ -23,10 +23,9 @@ export const transfer = createStandardAction('transfer')<
   {
     tokenNetwork: Address;
     target: Address;
-    amount: UInt<32>;
-    metadata: Metadata;
-    paymentId?: UInt<8>;
-    fee?: UInt<32>;
+    value: UInt<32>;
+    paths: Paths;
+    paymentId: UInt<8>;
     secret?: Secret;
   },
   TransferId
@@ -34,7 +33,7 @@ export const transfer = createStandardAction('transfer')<
 
 /** A LockedTransfer was signed and should be sent to partner */
 export const transferSigned = createStandardAction('transferSigned')<
-  { message: Signed<LockedTransfer> },
+  { message: Signed<LockedTransfer>; fee: Int<32> },
   TransferId
 >();
 

@@ -33,6 +33,7 @@ import {
   first,
   timeout,
   publishReplay,
+  pluck,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
@@ -210,36 +211,25 @@ export const initMatrixEpic = (
         mapTo({ matrix, server, setup }), // return triplet again
       ),
     ),
-    tap(({ matrix }) => {
-      // like Promise.resolve for AsyncSubjects
-      matrix$.next(matrix);
-      matrix$.complete();
-    }),
-    map(({ server, setup }) => matrixSetup({ server, setup })),
-  );
-
-/**
- * Start MatrixClient sync polling when detecting MatrixSetupAction, **after** init time fromEvents
- * were already registered.
- * This is required to ensure init-time events registering are done before initial sync, to avoid
- * losing one-shot events, like invitations.
- *
- * @param action$ - Observable of matrixSetup actions
- * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
- * @returns Empty observable (whole side-effect on matrix instance)
- */
-export const matrixStartEpic = (
-  action$: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
-  { matrix$ }: RaidenEpicDeps,
-): Observable<RaidenAction> =>
-  action$.pipe(
-    filter(isActionOf(matrixSetup)),
-    switchMap(() => matrix$),
-    tap(matrix => console.log('MATRIX client', matrix)),
-    mergeMap(matrix => matrix.startClient({ initialSyncLimit: 0 })),
-    ignoreElements(),
+    mergeMap(({ matrix, server, setup }) =>
+      merge(
+        // wait for matrixSetup to be persisted in state, then resolves matrix$ with instance
+        state$.pipe(
+          pluck('transport', 'matrix', 'server'),
+          filter((_server): _server is string => !!_server),
+          take(1),
+          tap(() => {
+            matrix$.next(matrix);
+            matrix$.complete();
+          }),
+          switchMap(() => matrix$),
+          delay(1e3), // wait 1s before starting matrix, so event listeners can be registered
+          mergeMap(matrix => matrix.startClient({ initialSyncLimit: 0 })),
+          ignoreElements(),
+        ),
+        of(matrixSetup({ server, setup })),
+      ),
+    ),
   );
 
 /**
@@ -663,7 +653,7 @@ export const matrixLeaveUnknownRoomsEpic = (
     switchMap(matrix =>
       fromEvent<Room>(matrix, 'Room').pipe(map(room => ({ matrix, roomId: room.roomId }))),
     ),
-    delay(30e3), // this room may become known later for some reason, so wait a little
+    delay(180e3), // this room may become known later for some reason, so wait a little
     withLatestFrom(state$, config$),
     // filter for leave events to us
     filter(([{ matrix, roomId }, state, config]) => {
@@ -835,7 +825,7 @@ export const matrixMessageSendEpic = (
  */
 export const matrixMessageGlobalSendEpic = (
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { matrix$, config$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   // actual output observable, gets/wait for the user to be in a room, and then sendMessage
@@ -843,8 +833,8 @@ export const matrixMessageGlobalSendEpic = (
     filter(isActionOf(messageGlobalSend)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
-    withLatestFrom(state$, config$),
-    mergeMap(([{ action, matrix }, state, config]) => {
+    withLatestFrom(config$),
+    mergeMap(([{ action, matrix }, config]) => {
       const globalRooms = globalRoomNames(config);
       if (!globalRooms.includes(action.meta.roomName)) {
         console.warn(
@@ -854,7 +844,7 @@ export const matrixMessageGlobalSendEpic = (
         );
         return EMPTY;
       }
-      const serverName = getServerName(state.transport!.matrix!.server),
+      const serverName = getServerName(matrix.baseUrl),
         roomAlias = `#${action.meta.roomName}:${serverName}`;
       return getRoom$(matrix, roomAlias).pipe(
         // send message!

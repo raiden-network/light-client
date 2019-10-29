@@ -1,4 +1,6 @@
 import * as t from 'io-ts';
+import { Network } from 'ethers/utils';
+import { DeepPartial } from 'redux';
 
 /**
  * A Raiden configuration object with required parameters and
@@ -12,6 +14,7 @@ import * as t from 'io-ts';
  * - pfs - Path Finding Service URL, set to null to disable
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
+ * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10% safety margin.
  * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
  *                       Leave LRU beyond this threshold.
  * - matrixServer? - Specify a matrix server to use.
@@ -28,6 +31,7 @@ export const RaidenConfig = t.readonly(
       pfs: t.union([t.string, t.null]),
       discoveryRoom: t.union([t.string, t.null]),
       pfsRoom: t.union([t.string, t.null]),
+      pfsSafetyMargin: t.number,
       matrixExcessRooms: t.number,
     }),
     t.partial({
@@ -38,31 +42,37 @@ export const RaidenConfig = t.readonly(
 );
 export interface RaidenConfig extends t.TypeOf<typeof RaidenConfig> {}
 
-export const defaultConfig: {
-  [network: string]: Partial<RaidenConfig>;
-  default: RaidenConfig;
-} = {
-  goerli: {
-    pfs: 'https://pfs-goerli.services-dev.raiden.network',
-  },
-  ropsten: {
-    pfs: 'https://pfs-ropsten.services-dev.raiden.network',
-  },
-  kovan: {
-    pfs: 'https://pfs-kovan.services-dev.raiden.network',
-  },
-  rinkeby: {
-    pfs: 'https://pfs-rinkeby.services-dev.raiden.network',
-  },
-  default: {
+/**
+ * Create a RaidenConfig from some common options and an optional overwrites partial
+ *
+ * @param obj - Object containing common parameters for config
+ * @param obj.network - ether's Network object for the current blockchain
+ * @param overwrites - A partial object to overwrite top-level properties of the returned config
+ * @returns A full config object
+ */
+export function makeDefaultConfig(
+  { network }: { network: Network },
+  overwrites: DeepPartial<RaidenConfig> = {},
+): RaidenConfig {
+  const pfs: { [networkName: string]: string } = {
+    goerli: 'https://pfs-goerli.services-test.raiden.network',
+    ropsten: 'https://pfs-ropsten.services-test.raiden.network',
+    kovan: 'https://pfs-kovan.services-test.raiden.network',
+    rinkeby: 'https://pfs-rinkeby.services-test.raiden.network',
+  };
+  return {
     matrixServerLookup:
       'https://raw.githubusercontent.com/raiden-network/raiden-transport/master/known_servers.test.yaml',
     settleTimeout: 500,
     revealTimeout: 50,
     httpTimeout: 30e3,
-    pfs: null,
-    discoveryRoom: null,
-    pfsRoom: null,
+    pfs: pfs[network.name] || null,
+    discoveryRoom: `raiden_${
+      network.name !== 'unknown' ? network.name : network.chainId
+    }_discovery`,
+    pfsRoom: `raiden_${network.name !== 'unknown' ? network.name : network.chainId}_path_finding`,
     matrixExcessRooms: 3,
-  },
-};
+    pfsSafetyMargin: 1.0,
+    ...overwrites,
+  };
+}

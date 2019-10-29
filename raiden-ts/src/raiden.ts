@@ -1,16 +1,24 @@
 import { Signer, Contract } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, BigNumber, bigNumberify, BigNumberish, ParamType } from 'ethers/utils';
+import { Network, BigNumber, BigNumberish, ParamType } from 'ethers/utils';
 
 import { MatrixClient } from 'matrix-js-sdk';
-
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
-import { createEpicMiddleware } from 'redux-observable';
+import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
-import { debounce, findKey, transform, constant, memoize, pick, isEmpty } from 'lodash';
+import {
+  debounce,
+  findKey,
+  transform,
+  constant,
+  memoize,
+  pick,
+  isEmpty,
+  merge as _merge,
+} from 'lodash';
 import {
   Observable,
   Subject,
@@ -48,14 +56,20 @@ import goerliDeploy from './deployment/deployment_goerli.json';
 
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
-import { Address, PrivateKey, Secret, Storage, Hash, UInt } from './utils/types';
-import { RaidenState, initialState, encodeRaidenState, decodeRaidenState } from './state';
+import { RaidenState, makeInitialState, encodeRaidenState, decodeRaidenState } from './state';
+import { RaidenConfig } from './config';
 import { RaidenChannels } from './channels/state';
 import { channelAmounts } from './channels/utils';
 import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
-import { RaidenAction, RaidenEvents, RaidenEvent, raidenShutdown } from './actions';
+import {
+  RaidenAction,
+  RaidenEvents,
+  RaidenEvent,
+  raidenShutdown,
+  raidenConfigUpdate,
+} from './actions';
 import {
   channelOpened,
   channelOpenFailed,
@@ -76,11 +90,12 @@ import {
   matrixRequestMonitorPresence,
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
-import { makeSecret, raidenSentTransfer, getSecrethash } from './transfers/utils';
+import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './transfers/utils';
 import { pathFind, pathFound, pathFindFailed } from './path/actions';
+import { Paths, RaidenPaths } from './path/types';
+import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { patchSignSend } from './utils/ethers';
-import { RaidenConfig, defaultConfig } from './config';
-import { Metadata } from './messages/types';
+import { losslessParse } from './utils/data';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -139,13 +154,19 @@ export class Raiden {
     symbol?: string;
   }>;
 
+  private epicMiddleware?: EpicMiddleware<
+    RaidenAction,
+    RaidenAction,
+    RaidenState,
+    RaidenEpicDeps
+  > | null;
+
   public constructor(
     provider: JsonRpcProvider,
     network: Network,
     signer: Signer,
     contractsInfo: ContractsInfo,
     state: RaidenState,
-    config: RaidenConfig,
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
@@ -246,7 +267,7 @@ export class Raiden {
     this.deps = {
       stateOutput$: state$,
       actionOutput$: action$,
-      config$: new BehaviorSubject<RaidenConfig>(config),
+      config$: new BehaviorSubject<RaidenConfig>(state.config),
       matrix$: new AsyncSubject<MatrixClient>(),
       provider,
       network,
@@ -272,7 +293,7 @@ export class Raiden {
       ),
     };
     // minimum blockNumber of contracts deployment as start scan block
-    const epicMiddleware = createEpicMiddleware<
+    this.epicMiddleware = createEpicMiddleware<
       RaidenAction,
       RaidenAction,
       RaidenState,
@@ -282,10 +303,8 @@ export class Raiden {
     this.store = createStore(
       raidenReducer,
       state,
-      applyMiddleware(...middlewares, epicMiddleware),
+      applyMiddleware(...middlewares, this.epicMiddleware),
     );
-
-    epicMiddleware.run(raidenRootEpic);
   }
 
   /**
@@ -380,14 +399,8 @@ export class Raiden {
     }
     const address = (await signer.getAddress()) as Address;
 
-    // use TokenNetworkRegistry deployment block as initial blockNumber, or 0
-    let loadedState: RaidenState = {
-      ...initialState,
-      blockNumber: contracts.TokenNetworkRegistry.block_number || 0,
-      address,
-      chainId: network.chainId,
-      registry: contracts.TokenNetworkRegistry.address,
-    };
+    // build an initial state and default config!
+    let loadedState = makeInitialState({ network, address, contractsInfo: contracts }, { config });
 
     // type guard
     function isStorage(storageOrState: unknown): storageOrState is Storage {
@@ -401,10 +414,10 @@ export class Raiden {
       const ns = `raiden_${network.name || network.chainId}_${
         contracts.TokenNetworkRegistry.address
       }_${address}`;
-      const loaded = Object.assign(
+      const loaded = _merge(
         {},
         loadedState,
-        JSON.parse((await storageOrState.getItem(ns)) || 'null'),
+        losslessParse((await storageOrState.getItem(ns)) || 'null'),
       );
 
       loadedState = decodeRaidenState(loaded);
@@ -434,25 +447,42 @@ export class Raiden {
     )
       throw new Error(`Mismatch between network or registry address and loaded state`);
 
-    const raidenConfig: RaidenConfig = {
-      ...defaultConfig.default,
-      ...{
-        discoveryRoom: `raiden_${network.name || network.chainId}_discovery`,
-        pfsRoom: `raiden_${network.name || network.chainId}_path_finding`,
-      },
-      ...defaultConfig[network.name],
-      ...config,
-    };
-
-    const raiden = new Raiden(provider, network, signer, contracts, loadedState, raidenConfig);
+    const raiden = new Raiden(provider, network, signer, contracts, loadedState);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
+  }
+
+  /**
+   * Starts redux/observables by subscribing to all epics and emitting initial state and action
+   *
+   * No event should be emitted before start is called
+   */
+  public start(): void {
+    if (!this.epicMiddleware) throw new Error('Already started or stopped!');
+    this.epicMiddleware.run(raidenRootEpic);
+    // prevent start from being called again, turns this.started to true
+    this.epicMiddleware = undefined;
+    // dispatch a first, noop action, to next first state$ as current/initial state
+    this.store.dispatch(raidenConfigUpdate({ config: {} }));
+  }
+
+  /**
+   * Gets the running state of the instance
+   *
+   * @returns undefined if not yet started, true if running, false if already stopped
+   */
+  public get started(): boolean | undefined {
+    // !epicMiddleware -> undefined | null -> undefined ? true/started : null/stopped;
+    if (!this.epicMiddleware) return this.epicMiddleware === undefined;
+    // else -> !!epicMiddleware -> not yet started -> returns undefined
   }
 
   /**
    * Triggers all epics to be unsubscribed
    */
   public stop(): void {
+    // start still can't be called again, but turns this.started to false
+    this.epicMiddleware = null;
     this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
   }
 
@@ -460,25 +490,49 @@ export class Raiden {
     return this.store.getState();
   }
 
+  /**
+   * Get current account address
+   *
+   * @returns Instance address
+   */
   public get address(): Address {
     return this.deps.address;
   }
 
+  /**
+   * Get current network from provider
+   *
+   * @returns Network object containing blockchain's name & chainId
+   */
   public get network(): Network {
     return this.deps.network;
   }
 
+  /**
+   * Returns a promise to current block number, as seen in provider and state
+   *
+   * @returns Promise to current block number
+   */
   public async getBlockNumber(): Promise<number> {
     return this.deps.provider.blockNumber || (await this.deps.provider.getBlockNumber());
   }
 
-  public config(newConfig: Partial<RaidenConfig>) {
-    this.deps.config$.pipe(first()).subscribe((currentConfig: RaidenConfig) =>
-      this.deps.config$.next({
-        ...currentConfig,
-        ...newConfig,
-      }),
-    );
+  /**
+   * Getter for current Raiden Config
+   *
+   * @returns Current Raiden config
+   */
+  public get config(): RaidenConfig {
+    return this.state.config;
+  }
+
+  /**
+   * Update Raiden Config with a partial (shallow) object
+   *
+   * @param config - Partial object containing keys and values to update in config
+   */
+  public updateConfig(config: Partial<RaidenConfig>) {
+    this.store.dispatch(raidenConfigUpdate({ config }));
   }
 
   /**
@@ -568,20 +622,21 @@ export class Raiden {
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
-   * @param deposit - Number of tokens to deposit on channel
+   * @param amount - Number of tokens to deposit on channel
    * @returns txHash of setTotalDeposit call, iff it succeeded
    */
   public async depositChannel(
     token: string,
     partner: string,
-    deposit: BigNumberish,
+    amount: BigNumberish,
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
-    deposit = bigNumberify(deposit);
-    if (!UInt(32).is(deposit)) throw new Error('invalid deposit: must be 0 < amount < 2^256');
+
+    const deposit = decode(UInt(32), amount);
+
     const promise = this.action$
       .pipe(
         filter(isActionOf([channelDeposited, channelDepositFailed])),
@@ -705,37 +760,35 @@ export class Raiden {
    *
    * @param token - Token address on currently configured token network registry
    * @param target - Target address (must be getAvailability before)
-   * @param amount - Amount to try to transfer
+   * @param value - Amount to try to transfer
    * @param options - Optional parameters for transfer:
    *    <ul>
    *      <li>paymentId - payment identifier, a random one will be generated if missing</li>
    *      <li>secret - Secret to register, a random one will be generated if missing</li>
    *      <li>secrethash - Must match secret, if both provided, or else, secret must be
    *          informed to target by other means, and reveal can't be performed</li>
-   *      <li>metadata - Used to specify possible routes instead of querying PFS.</li>
+   *      <li>paths - Used to specify possible routes & fees instead of querying PFS.</li>
    *    </ul>
    * @returns A promise to transfer's secrethash (unique id) when it's accepted
    */
   public async transfer(
     token: string,
     target: string,
-    amount: BigNumberish,
+    value: BigNumberish,
     options: {
       paymentId?: BigNumberish;
       secret?: string;
       secrethash?: string;
-      metadata?: { readonly routes: { readonly route: string[] }[] };
+      paths?: RaidenPaths;
     } = {},
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const value = bigNumberify(amount);
-    if (!UInt(32).is(value)) throw new Error('Invalid amount');
-
-    const paymentId = !options.paymentId ? undefined : bigNumberify(options.paymentId);
-    if (paymentId && !UInt(8).is(paymentId)) throw new Error('Invalid options.paymentId');
+    const decodedValue = decode(UInt(32), value);
+    const paymentId = options.paymentId ? decode(UInt(8), options.paymentId) : makePaymentId();
+    const paths = options.paths ? decode(Paths, options.paths) : undefined;
 
     if (options.secret !== undefined && !Secret.is(options.secret))
       throw new Error('Invalid options.secret');
@@ -752,9 +805,6 @@ export class Raiden {
     if (secret && getSecrethash(secret) !== secrethash)
       throw new Error('Provided secrethash must match the sha256 hash of provided secret');
 
-    const metadata = options.metadata;
-    if (metadata && !Metadata.is(metadata)) throw new Error('Invalid options.metadata');
-
     return merge(
       // wait for pathFind response
       this.action$.pipe(
@@ -767,18 +817,18 @@ export class Raiden {
         ),
         map(action => {
           if (isActionOf(pathFindFailed, action)) throw action.payload;
-          return action.payload.metadata;
+          return action.payload.paths;
         }),
       ),
-      // request pathFind; even if metadata was provided, send it for validation
+      // request pathFind; even if paths were provided, send it again for validation
       // this is done at 'merge' subscription time (i.e. when above action filter is subscribed)
       defer(() => {
-        this.store.dispatch(pathFind({ metadata }, { tokenNetwork, target, value }));
+        this.store.dispatch(pathFind({ paths }, { tokenNetwork, target, value: decodedValue }));
         return EMPTY;
       }),
     )
       .pipe(
-        mergeMap(metadata =>
+        mergeMap(paths =>
           merge(
             // wait for transfer response
             this.action$.pipe(
@@ -789,15 +839,15 @@ export class Raiden {
                 return secrethash;
               }),
             ),
-            // request transfer with returned/validated metadata at 'merge' subscription time
+            // request transfer with returned/validated paths at 'merge' subscription time
             defer(() => {
               this.store.dispatch(
                 transfer(
                   {
                     tokenNetwork,
                     target,
-                    amount: value,
-                    metadata,
+                    value: decodedValue,
+                    paths,
                     paymentId,
                     secret,
                   },
@@ -816,21 +866,24 @@ export class Raiden {
    * Request a path from PFS
    *
    * If a direct route is possible, it'll be returned. Else if PFS is set up, a request will be
-   * performed and the cleaned/validated result metadata containing the 'routes' will be resolved.
+   * performed and the cleaned/validated path results will be resolved.
    * Else, if no route can be found, promise is rejected with respective error.
    *
    * @param token - Token address on currently configured token network registry
    * @param target - Target address (must be getAvailability before)
-   * @param amount - Minimum capacity required on routes
-   * @returns A promise to returned routes metadata
+   * @param value - Minimum capacity required on routes
+   * @returns A promise to returned routes/paths result
    */
-  public async findRoutes(token: string, target: string, amount: BigNumberish): Promise<Metadata> {
+  public async findRoutes(
+    token: string,
+    target: string,
+    value: BigNumberish,
+  ): Promise<RaidenPaths> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const value = bigNumberify(amount);
-    if (!UInt(32).is(value)) throw new Error('Invalid amount');
+    const decodedValue = decode(UInt(32), value);
 
     const promise = this.action$
       .pipe(
@@ -839,15 +892,15 @@ export class Raiden {
           action =>
             action.meta.tokenNetwork === tokenNetwork &&
             action.meta.target === target &&
-            action.meta.value.eq(amount),
+            action.meta.value.eq(value),
         ),
         map(action => {
           if (isActionOf(pathFindFailed, action)) throw action.payload;
-          return action.payload.metadata;
+          return action.payload.paths;
         }),
       )
       .toPromise();
-    this.store.dispatch(pathFind({}, { tokenNetwork, target, value }));
+    this.store.dispatch(pathFind({}, { tokenNetwork, target, value: decodedValue }));
     return promise;
   }
 }

@@ -1,10 +1,10 @@
 module.exports = {
   root: true,
   env: {
-    node: true
+    node: true,
   },
   plugins: [
-    'vuetify'
+    'vuetify',
   ],
   extends: [
     'plugin:vue/recommended',
@@ -17,13 +17,22 @@ module.exports = {
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
     'vuetify/no-deprecated-classes': 'error',
+    'vuetify/grid-unknown-attributes': 'error',
+    'vuetify/no-legacy-grid': 'error',
+    'vue/multiline-html-element-content-newline': ["error", {
+      "ignoreWhenEmpty": true,
+      "ignores": ["pre", "textarea"],
+      "allowEmptyLines": false
+    }],
+    "vue/v-bind-style": ["error", "shorthand"],
+    "vue/v-on-style": ["error", "shorthand"],
   },
   parserOptions: {
-    parser: '@typescript-eslint/parser'
+    parser: '@typescript-eslint/parser',
   },
   settings: {
     'vue-i18n': {
-      localeDir: './src/locales/*.json'
-    }
-  }
+      localeDir: './src/locales/*.json',
+    },
+  },
 };

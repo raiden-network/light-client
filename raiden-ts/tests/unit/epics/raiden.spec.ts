@@ -51,8 +51,8 @@ import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog, makeSignature } from '../mocks';
 
 describe('raiden epic', () => {
-  const depsMock = raidenEpicDeps();
-  const {
+  let depsMock = raidenEpicDeps();
+  let {
     token,
     tokenNetworkContract,
     tokenNetwork,
@@ -80,6 +80,29 @@ describe('raiden epic', () => {
       status: 200,
       text: jest.fn(async () => `- ${matrixServer}`),
     })),
+  });
+
+  beforeEach(() => {
+    depsMock = raidenEpicDeps();
+    ({
+      token,
+      tokenNetworkContract,
+      tokenNetwork,
+      channelId,
+      partner,
+      settleTimeout,
+      isFirstParticipant,
+      txHash,
+      state,
+      matrixServer,
+      userId,
+      accessToken,
+      deviceId,
+      displayName,
+      partnerRoomId,
+      partnerUserId,
+      matrix,
+    } = epicFixtures(depsMock));
   });
 
   afterEach(() => {
@@ -143,11 +166,11 @@ describe('raiden epic', () => {
             ignoreElements(),
           );
         m.expect(merge(emitBlock$, raidenRootEpic(action$, state$, depsMock))).toBeObservable(
-          m.cold('bct-------B-|', {
+          m.cold('b(tc)-----B-|', {
             b: newBlock({ blockNumber: 633 }),
+            t: tokenMonitored({ token, tokenNetwork }),
             // ensure channelMonitored is emitted by init even for 'settling' channel
             c: channelMonitored({ id: channelId }, { tokenNetwork, partner }),
-            t: tokenMonitored({ token, tokenNetwork }),
             B: newBlock({ blockNumber: 635 }),
           }),
         );
@@ -163,7 +186,8 @@ describe('raiden epic', () => {
 
       action$.subscribe(action => state$.next(raidenReducer(state$.value, action)));
 
-      depsMock.provider.resetEventsBlock(126);
+      state$.next(raidenReducer(state$.value, newBlock({ blockNumber: 126 })));
+      depsMock.provider.resetEventsBlock(state$.value.blockNumber);
 
       depsMock.provider.getLogs.mockResolvedValueOnce([
         makeLog({
@@ -180,8 +204,6 @@ describe('raiden epic', () => {
           toArray(),
         )
         .toPromise();
-
-      action$.next(newBlock({ blockNumber: 126 }));
 
       depsMock.provider.resetEventsBlock(127);
       action$.next(newBlock({ blockNumber: 127 }));
@@ -207,6 +229,9 @@ describe('raiden epic', () => {
           toBlock: 126,
         }),
       );
+
+      action$.complete();
+      state$.complete();
     });
 
     test('ShutdownReason.ACCOUNT_CHANGED', async () => {

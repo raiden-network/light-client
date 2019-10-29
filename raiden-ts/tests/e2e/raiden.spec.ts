@@ -1,6 +1,6 @@
 import { first, filter } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
-import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256 } from 'ethers/utils';
+import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
 import { getType, isActionOf } from 'typesafe-actions';
 import { get } from 'lodash';
 
@@ -12,29 +12,32 @@ import { request } from 'matrix-js-sdk';
 import 'raiden-ts/polyfills';
 import { Raiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
-import { initialState } from 'raiden-ts/state';
+import { makeInitialState, RaidenState } from 'raiden-ts/state';
 import { raidenShutdown } from 'raiden-ts/actions';
 import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
 import { Storage, Secret, Address } from 'raiden-ts/utils/types';
 import { ContractsInfo } from 'raiden-ts/types';
+import { RaidenConfig } from 'raiden-ts/config';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
+import { losslessStringify } from 'raiden-ts/utils/data';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 describe('Raiden', () => {
   const provider = new TestProvider();
-  let accounts: string[];
-  let info: ContractsInfo;
-  let chainId: number;
-  let registry: Address;
-  let snapId: number | undefined;
-  let raiden: Raiden;
-  let storage: jest.Mocked<Storage>;
-  let token: string, tokenNetwork: string;
-  let partner: string;
+  let accounts: string[],
+    contractsInfo: ContractsInfo,
+    snapId: number | undefined,
+    raiden: Raiden,
+    storage: jest.Mocked<Storage>,
+    token: string,
+    tokenNetwork: string,
+    partner: string,
+    network: Network;
+  const config: Partial<RaidenConfig> = { settleTimeout: 20, revealTimeout: 5 };
 
   let httpBackend: MockMatrixRequestFn;
   const matrixServer = 'matrix.raiden.test';
@@ -51,12 +54,11 @@ describe('Raiden', () => {
   beforeAll(async () => {
     jest.setTimeout(20e3);
 
-    info = await provider.deployRegistry();
-    ({ token, tokenNetwork } = await provider.deployTokenNetwork(info));
-    registry = info.TokenNetworkRegistry.address;
+    contractsInfo = await provider.deployRegistry();
+    ({ token, tokenNetwork } = await provider.deployTokenNetwork(contractsInfo));
     accounts = await provider.listAccounts();
     partner = accounts[1];
-    chainId = (await provider.getNetwork()).chainId;
+    network = await provider.getNetwork();
   });
 
   beforeEach(async () => {
@@ -68,7 +70,8 @@ describe('Raiden', () => {
     httpBackend = new MockMatrixRequestFn(matrixServer);
     request(httpBackend.requestFn.bind(httpBackend));
 
-    raiden = await Raiden.create(provider, 0, storage, info);
+    raiden = await Raiden.create(provider, 0, storage, contractsInfo, config);
+    raiden.start();
     // wait token register to be fetched
     await raiden.getTokenList();
   });
@@ -79,25 +82,27 @@ describe('Raiden', () => {
   });
 
   test('create from other params and RaidenState', async () => {
-    expect.assertions(5);
+    expect.assertions(8);
 
     // token address not found as an account in provider
-    await expect(Raiden.create(provider, token, storage, info)).rejects.toThrow(
+    await expect(Raiden.create(provider, token, storage, contractsInfo, config)).rejects.toThrow(
       /Account.*not found in provider/i,
     );
 
     // neither account index, address nor private key
-    await expect(Raiden.create(provider, '0x1234', storage, info)).rejects.toThrow(
-      /account must be either.*address or private key/i,
-    );
+    await expect(
+      Raiden.create(provider, '0x1234', storage, contractsInfo, config),
+    ).rejects.toThrow(/account must be either.*address or private key/i);
 
     // from hex-encoded private key, initial unknown state (decodable) but invalid address inside
     expect(
       Raiden.create(
         provider,
         '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        JSON.stringify({ ...initialState, address: token }),
-        info,
+        JSON.stringify(
+          makeInitialState({ network, contractsInfo, address: token as Address }, { config }),
+        ),
+        contractsInfo,
       ),
     ).rejects.toThrow(/Mismatch between provided account and loaded state/i);
 
@@ -105,8 +110,20 @@ describe('Raiden', () => {
       Raiden.create(
         provider,
         1,
-        JSON.stringify({ ...initialState, address: accounts[1], chainId, registry: token }),
-        info,
+        JSON.stringify(
+          makeInitialState(
+            {
+              network,
+              contractsInfo: {
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                TokenNetworkRegistry: { address: token as Address, block_number: 0 },
+              },
+              address: accounts[1] as Address,
+            },
+            { config },
+          ),
+        ),
+        contractsInfo,
       ),
     ).rejects.toThrow(/Mismatch between network or registry address and loaded state/i);
 
@@ -114,11 +131,18 @@ describe('Raiden', () => {
     const raiden1 = await Raiden.create(
       provider,
       accounts[1],
-      { ...initialState, address: accounts[1], chainId, registry },
-      info,
+      makeInitialState({ network, contractsInfo, address: accounts[1] as Address }, { config }),
+      contractsInfo,
+      config,
     );
     expect(raiden1).toBeInstanceOf(Raiden);
+
+    // test Raiden.started, not yet started
+    expect(raiden1.started).toBeUndefined();
+    raiden1.start();
+    expect(raiden1.started).toBe(true);
     raiden1.stop();
+    expect(raiden1.started).toBe(false);
   });
 
   test('address', () => {
@@ -133,8 +157,23 @@ describe('Raiden', () => {
   test('getBlockNumber', async () => {
     expect.assertions(1);
     await expect(raiden.getBlockNumber()).resolves.toBeGreaterThanOrEqual(
-      info.TokenNetworkRegistry.block_number,
+      contractsInfo.TokenNetworkRegistry.block_number,
     );
+  });
+
+  test('config', async () => {
+    expect.assertions(2);
+    expect(raiden.config).toMatchObject({
+      discoveryRoom: 'raiden_1338_discovery',
+      pfsRoom: 'raiden_1338_path_finding',
+      pfs: null,
+      settleTimeout: 20,
+      revealTimeout: 5,
+    });
+    raiden.updateConfig({ revealTimeout: 8 });
+    expect(raiden.config).toMatchObject({
+      revealTimeout: 8,
+    });
   });
 
   test('getBalance', async () => {
@@ -174,11 +213,13 @@ describe('Raiden', () => {
   describe('openChannel', () => {
     test('tx fail', async () => {
       expect.assertions(1);
-      // settleTimeout < min of 500
-      await expect(raiden.openChannel(token, partner, { settleTimeout: 499 })).rejects.toThrow();
+      // settleTimeout < min
+      await expect(
+        raiden.openChannel(token, partner, { settleTimeout: config.settleTimeout! - 1 }),
+      ).rejects.toThrow();
     });
 
-    test('success with default settleTimeout=500', async () => {
+    test('success with default settleTimeout=20', async () => {
       expect.assertions(2);
       await expect(raiden.openChannel(token, partner)).resolves.toMatch(/^0x/);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
@@ -190,7 +231,7 @@ describe('Raiden', () => {
             state: ChannelState.open,
             ownDeposit: Zero,
             partnerDeposit: Zero,
-            settleTimeout: 500,
+            settleTimeout: 20,
             balance: Zero,
           },
         },
@@ -245,7 +286,8 @@ describe('Raiden', () => {
     beforeEach(async () => {
       await raiden.openChannel(token, partner);
       await raiden.depositChannel(token, partner, 200);
-      raiden1 = await Raiden.create(provider, partner, undefined, info);
+      raiden1 = await Raiden.create(provider, partner, undefined, contractsInfo, config);
+      raiden1.start();
     });
 
     afterEach(() => {
@@ -273,6 +315,79 @@ describe('Raiden', () => {
           },
         },
       });
+    });
+
+    test('raiden instance fetches new events which happened while it was offline', async () => {
+      expect.assertions(7);
+
+      // wait for raiden1 to pick up main tokenNetwork channel
+      await expect(
+        raiden1.state$
+          .pipe(first(state => !!get(state.channels, [tokenNetwork, raiden.address])))
+          .toPromise(),
+      ).resolves.toMatchObject({
+        tokens: {
+          [token]: tokenNetwork,
+        },
+        channels: {
+          [tokenNetwork]: { [raiden.address]: { state: ChannelState.open } },
+        },
+      });
+
+      let raidenState: RaidenState | undefined;
+      raiden.state$.subscribe(state => (raidenState = state));
+      raiden.stop();
+      expect(raidenState!.tokens).toEqual({ [token]: tokenNetwork });
+      // expect & save block when raiden was stopped
+      expect(raidenState).toMatchObject({ blockNumber: expect.any(Number) });
+      const stopBlock = raidenState!.blockNumber;
+
+      // edge case 1: ChannelClosed event happens right after raiden is stopped
+      await raiden1.closeChannel(token, raiden.address);
+      await provider.mine(2);
+
+      // deploy new token network while raiden is offline (raiden1/partner isn't)
+      const { token: newToken, tokenNetwork: newTokenNetwork } = await provider.deployTokenNetwork(
+        contractsInfo,
+      );
+      await provider.mine(4);
+
+      // open a new channel from partner to main instance on the new tokenNetwork
+      // edge case 2: ChannelOpened at exact block when raiden is restarted
+      await raiden1.openChannel(newToken, raiden.address);
+      const restartBlock = provider.blockNumber;
+
+      raidenState = undefined;
+      raiden = await Raiden.create(provider, 0, storage, contractsInfo, config);
+      raiden.state$.subscribe(state => (raidenState = state));
+      raiden.start();
+
+      // ensure after hot boot, state is rehydrated and contains (only) previous token
+      expect(raidenState).toBeDefined();
+      expect(raidenState!.tokens).toEqual({ [token]: tokenNetwork });
+
+      // wait token & channel on it to be fetched, even if it happened while we were offline
+      await expect(
+        raiden.state$
+          .pipe(
+            filter(state => state.tokens[newToken] === newTokenNetwork),
+            first(state => !!get(state.channels, [newTokenNetwork, partner])),
+          )
+          .toPromise(),
+      ).resolves.toMatchObject({
+        tokens: {
+          [token]: tokenNetwork,
+          [newToken]: newTokenNetwork,
+        },
+        channels: {
+          // test edge case 1: channel closed at stop block is picked up correctly
+          [tokenNetwork]: { [partner]: { state: ChannelState.closed, closeBlock: stopBlock + 1 } },
+          // test edge case 2: channel opened at restart block is picked up correctly
+          [newTokenNetwork]: { [partner]: { state: ChannelState.open, openBlock: restartBlock } },
+        },
+      });
+      // test sync state$ subscribe
+      expect(get(raidenState!.channels, [newTokenNetwork, partner])).toBeDefined();
     });
   });
 
@@ -338,7 +453,7 @@ describe('Raiden', () => {
 
     test('success', async () => {
       expect.assertions(3);
-      await provider.mine(501);
+      await provider.mine(config.settleTimeout! + 1);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
         [token]: {
           [partner]: {
@@ -391,7 +506,7 @@ describe('Raiden', () => {
         .toPromise();
       await provider.mine(5);
       // deploy a new token & tokenNetwork
-      const { token, tokenNetwork } = await provider.deployTokenNetwork(info);
+      const { token, tokenNetwork } = await provider.deployTokenNetwork(contractsInfo);
       await expect(promise).resolves.toMatchObject({
         type: getType(tokenMonitored),
         payload: { fromBlock: expect.any(Number), token, tokenNetwork },
@@ -411,12 +526,19 @@ describe('Raiden', () => {
       const raiden1 = await Raiden.create(
         provider,
         accounts[2],
-        { ...initialState, address: accounts[2], chainId, registry },
-        info,
+        makeInitialState({ network, contractsInfo, address: accounts[2] as Address }, { config }),
+        contractsInfo,
       );
       expect(raiden1).toBeInstanceOf(Raiden);
+      raiden1.start();
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await raiden1 client matrix initialization
+      await raiden1.action$
+        .pipe(
+          filter(isActionOf(matrixSetup)),
+          first(),
+        )
+        .toPromise();
 
       await expect(raiden.getAvailability(accounts[2])).resolves.toMatchObject({
         userId: `@${accounts[2].toLowerCase()}:${matrixServer}`,
@@ -448,7 +570,9 @@ describe('Raiden', () => {
 
     test('invalid amount', async () => {
       expect.assertions(1);
-      await expect(raiden.transfer(token, partner, -1)).rejects.toThrowError(/Invalid amount/i);
+      await expect(raiden.transfer(token, partner, -1)).rejects.toThrowError(
+        /Invalid value.*UInt/i,
+      );
     });
 
     test("secret and secrethash doesn't match", async () => {
@@ -477,7 +601,7 @@ describe('Raiden', () => {
     test('invalid provided paymentId', async () => {
       expect.assertions(1);
       await expect(raiden.transfer(token, partner, 23, { paymentId: -1 })).rejects.toThrowError(
-        /Invalid.*paymentId\b/i,
+        /Invalid value.*UInt/i,
       );
     });
 
@@ -485,15 +609,15 @@ describe('Raiden', () => {
       expect.assertions(1);
       await expect(
         raiden.transfer(token, partner, 23, {
-          metadata: { routes: [{ route: ['0xnotAnAddress'] }] },
+          paths: [{ path: ['0xnotAnAddress'], fee: 0 }],
         }),
-      ).rejects.toThrowError(/Invalid.*metadata\b/i);
+      ).rejects.toThrowError(/Invalid value.*Address/i);
     });
 
     test('target not available', async () => {
       expect.assertions(1);
       await expect(raiden.transfer(token, partner, 21)).rejects.toThrowError(
-        /\btarget.*not available\b/i,
+        /\btarget.*not online\b/i,
       );
     });
 
@@ -505,10 +629,19 @@ describe('Raiden', () => {
         raiden1 = await Raiden.create(
           provider,
           partner,
-          { ...initialState, address: partner, chainId, registry },
-          info,
+          makeInitialState({ network, contractsInfo, address: partner as Address }, { config }),
+          contractsInfo,
         );
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        raiden1.start();
+
+        // await raiden1 client matrix initialization
+        await raiden1.action$
+          .pipe(
+            filter(isActionOf(matrixSetup)),
+            first(),
+          )
+          .toPromise();
+
         await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
           userId: `@${partner.toLowerCase()}:${matrixServer}`,
           available: true,
@@ -546,14 +679,19 @@ describe('Raiden', () => {
           raiden2 = await Raiden.create(
             provider,
             target,
-            { ...initialState, address: target, chainId, registry },
-            info,
-          );
+            makeInitialState({ network, contractsInfo, address: target as Address }, { config }),
+            contractsInfo,
+          ),
+          matrix2Promise = raiden2.action$
+            .pipe(
+              filter(isActionOf(matrixSetup)),
+              first(),
+            )
+            .toPromise();
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        await raiden1.openChannel(token, target);
-        await raiden1.depositChannel(token, target, 200);
+        raiden2.start();
+        // await raiden2 client matrix initialization
+        await matrix2Promise;
 
         await expect(raiden.getAvailability(target)).resolves.toMatchObject({
           userId: `@${target.toLowerCase()}:${matrixServer}`,
@@ -563,20 +701,23 @@ describe('Raiden', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         const pfs = 'http://pfs';
-        raiden.config({ pfs });
+        raiden.updateConfig({ pfs });
+        const result = {
+          result: [
+            // first returned route is invalid and should be filtered
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [tokenNetwork, target], estimated_fee: 0 },
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            { path: [partner, target], estimated_fee: 0 },
+          ],
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          feedback_token: '0xfeedback',
+        };
         fetch.mockResolvedValueOnce({
           ok: true,
           status: 200,
-          json: jest.fn(async () => ({
-            result: [
-              // first returned route is invalid and should be filtered
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              { path: [tokenNetwork, target], estimated_fee: 0 },
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              { path: [partner, target], estimated_fee: 0 },
-            ],
-          })),
-          text: jest.fn(async () => ''),
+          json: jest.fn(async () => result),
+          text: jest.fn(async () => losslessStringify(result)),
         });
 
         const transfers: { [h: string]: RaidenSentTransfer } = {};
@@ -607,6 +748,8 @@ describe('Raiden', () => {
     const pfs = 'http://pfs';
     let raiden1: Raiden, raiden2: Raiden, target: string;
 
+    beforeAll(() => jest.setTimeout(60e3));
+
     beforeEach(async () => {
       target = accounts[2];
 
@@ -616,15 +759,17 @@ describe('Raiden', () => {
       raiden1 = await Raiden.create(
         provider,
         partner,
-        { ...initialState, address: partner, chainId, registry },
-        info,
+        makeInitialState({ network, contractsInfo, address: partner as Address }, { config }),
+        contractsInfo,
       );
       raiden2 = await Raiden.create(
         provider,
         target,
-        { ...initialState, address: target, chainId, registry },
-        info,
+        makeInitialState({ network, contractsInfo, address: target as Address }, { config }),
+        contractsInfo,
       );
+      raiden1.start();
+      raiden2.start();
 
       // await client's matrix initialization
       await Promise.all([
@@ -654,7 +799,7 @@ describe('Raiden', () => {
       });
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      raiden.config({ pfs });
+      raiden.updateConfig({ pfs });
     });
 
     afterEach(() => {
@@ -665,24 +810,27 @@ describe('Raiden', () => {
     test('success', async () => {
       expect.assertions(4);
 
+      const result = {
+        result: [
+          // first returned route is invalid and should be filtered
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [tokenNetwork, target], estimated_fee: 0 },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [raiden.address, partner, target], estimated_fee: 0 },
+        ],
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        feedback_token: '0xfeedback',
+      };
       fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: jest.fn(async () => ({
-          result: [
-            // first returned route is invalid and should be filtered
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            { path: [tokenNetwork, target], estimated_fee: 0 },
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            { path: [raiden.address, partner, target], estimated_fee: 0 },
-          ],
-        })),
-        text: jest.fn(async () => ''),
+        json: jest.fn(async () => result),
+        text: jest.fn(async () => losslessStringify(result)),
       });
 
-      await expect(raiden.findRoutes(token, target, 23)).resolves.toEqual({
-        routes: [{ route: [partner, target] }],
-      });
+      await expect(raiden.findRoutes(token, target, 23)).resolves.toEqual([
+        { path: [partner, target], fee: bigNumberify(0) },
+      ]);
 
       expect(fetch).toHaveBeenCalledWith(
         expect.stringMatching(new RegExp(`^${pfs}/.*/${tokenNetwork}/paths$`)),
@@ -693,23 +841,26 @@ describe('Raiden', () => {
     test('fail: filtered no capacity routes', async () => {
       expect.assertions(3);
 
+      const result = {
+        result: [
+          // first returned route is invalid and should be filtered
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [tokenNetwork, target], estimated_fee: 0 },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [raiden.address, partner, target], estimated_fee: 0 },
+        ],
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        feedback_token: '0xfeedback',
+      };
       fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: jest.fn(async () => ({
-          result: [
-            // first returned route is invalid and should be filtered
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            { path: [tokenNetwork, target], estimated_fee: 0 },
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            { path: [raiden.address, partner, target], estimated_fee: 0 },
-          ],
-        })),
-        text: jest.fn(async () => ''),
+        json: jest.fn(async () => result),
+        text: jest.fn(async () => losslessStringify(result)),
       });
 
       await expect(raiden.findRoutes(token, target, 201)).rejects.toThrowError(
-        /validated routes.*empty/,
+        /no valid routes found/,
       );
     });
   });

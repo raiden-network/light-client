@@ -1,13 +1,13 @@
 <template>
-  <v-layout justify-center>
+  <v-row justify="center">
     <v-dialog v-model="display" persistent max-width="625">
       <v-card>
         <v-card-title>
-          <v-flex>
+          <v-col>
             <h1 class="confirmation-dialog__header">
               <slot name="header"></slot>
             </h1>
-          </v-flex>
+          </v-col>
         </v-card-title>
         <v-card-text>
           <p class="confirmation-dialog__message"><slot></slot></p>
@@ -28,7 +28,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </v-layout>
+  </v-row>
 </template>
 
 <script lang="ts">

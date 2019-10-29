@@ -32,6 +32,7 @@ describe('RaidenService', () => {
     send: jest.fn(),
     sendAsync: jest.fn()
   };
+  const path = [{ path: ['0xmediator'], fee: new BigNumber(1 ** 10) }];
 
   const mockRaiden = (extras: {} = {}) =>
     Object.assign(
@@ -275,7 +276,8 @@ describe('RaidenService', () => {
       channels$: stub,
       getBalance: jest.fn().mockResolvedValue(Zero),
       events$: new BehaviorSubject({}),
-      stop: jest.fn().mockReturnValue(null),
+      stop: jest.fn(),
+      start: jest.fn(),
       getTokenList: jest.fn().mockResolvedValue([])
     };
 
@@ -288,6 +290,7 @@ describe('RaidenService', () => {
     expect(store.commit).toHaveBeenCalledTimes(5);
     raidenService.disconnect();
     expect(raidenMock.stop).toHaveBeenCalledTimes(1);
+    expect(raidenMock.start).toHaveBeenCalledTimes(1);
   });
 
   it('should resolve successfully on channel close', async function() {
@@ -501,7 +504,8 @@ describe('RaidenService', () => {
       factory.mockResolvedValue(
         mockRaiden({
           getTokenList,
-          getTokenInfo
+          getTokenInfo,
+          start: jest.fn()
         })
       );
     });
@@ -518,17 +522,9 @@ describe('RaidenService', () => {
 
       expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
       expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
-      expect(store.commit).toHaveBeenNthCalledWith(
-        3,
-        'updateTokens',
-        expect.objectContaining({
-          [mockToken1]: { address: mockToken1 },
-          [mockToken2]: { address: mockToken2 }
-        })
-      );
-      expect(store.commit).toHaveBeenNthCalledWith(4, 'network', undefined);
-      expect(store.commit).toHaveBeenNthCalledWith(5, 'loadComplete');
-      expect(store.commit).toHaveBeenCalledTimes(5);
+      expect(store.commit).toHaveBeenNthCalledWith(3, 'network', undefined);
+      expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
+      expect(store.commit).toHaveBeenCalledTimes(4);
     });
 
     test('fetch should fetch contracts that are not cached', async () => {
@@ -552,15 +548,15 @@ describe('RaidenService', () => {
       await raidenService.connect();
       await flushPromises();
 
-      expect(store.commit).toHaveBeenCalledTimes(5);
+      expect(store.commit).toHaveBeenCalledTimes(4);
 
       expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
       expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
-      expect(store.commit).toHaveBeenNthCalledWith(5, 'loadComplete');
+      expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
 
       await raidenService.fetchTokenData(['0xtoken1']);
 
-      expect(store.commit).toHaveBeenNthCalledWith(6, 'updateTokens', {
+      expect(store.commit).toHaveBeenNthCalledWith(5, 'updateTokens', {
         [mockToken1]: tokens[mockToken1]
       });
     });
@@ -649,7 +645,8 @@ describe('RaidenService', () => {
       getBalance: jest.fn().mockResolvedValue(Zero),
       events$: subject,
       getTokenList: jest.fn().mockResolvedValue([]),
-      stop: jest.fn().mockReturnValue(null)
+      start: jest.fn(),
+      stop: jest.fn()
     };
 
     factory.mockResolvedValue(raidenMock);
@@ -693,10 +690,12 @@ describe('RaidenService', () => {
       await raidenService.connect();
       await flushPromises();
 
-      await expect(raidenService.transfer('0xtoken', '0xpartner', One))
+      await expect(raidenService.transfer('0xtoken', '0xpartner', One, path))
         .resolves;
       expect(transfer).toHaveBeenCalledTimes(1);
-      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One);
+      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One, {
+        paths: path
+      });
     });
 
     test('should throw if the transfer fails', async () => {
@@ -713,10 +712,12 @@ describe('RaidenService', () => {
       await flushPromises();
 
       await expect(
-        raidenService.transfer('0xtoken', '0xpartner', One)
+        raidenService.transfer('0xtoken', '0xpartner', One, path)
       ).rejects.toBeInstanceOf(TransferFailed);
       expect(transfer).toHaveBeenCalledTimes(1);
-      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One);
+      expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One, {
+        paths: path
+      });
     });
   });
 

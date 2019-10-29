@@ -89,13 +89,13 @@ With the SDK we want to make your life as a dApp dev easier:
 
 ## Architecture
 
-### [Raiden Light Client SDK](./raiden/README.md)
+### [Raiden Light Client SDK](./raiden-ts/README.md)
 
 This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and the Raiden Network.
 
 Its target audience is blockchain and dApp developers looking into interacting with and performing transfers through the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows it to reach the majority of current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other future languages and environments.
 
-Look at the [Raiden Light Client SDK folder of this repository](./raiden/README.md) for more information. Also, a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [project's Wiki page](https://github.com/raiden-network/light-client/wiki/SDK-Development). Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
+Look at the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) for more information. Also, a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [project's Wiki page](https://github.com/raiden-network/light-client/wiki/SDK-Development). Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
 
 ### Architecture diagram
@@ -219,12 +219,12 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 # }
 ```
 
-You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden/README.md) and within the [SDK Documentation](https://lightclient.raiden.network/docs/).
+You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) and within the [SDK Documentation](https://lightclient.raiden.network/docs/).
 
 #### dApp Installation
 
 ```bash
-git clone https://github.com/raiden-network/light-client.git
+git clone --recurse-submodules https://github.com/raiden-network/light-client.git
 cd light-client/raiden-dapp
 ```
 
@@ -233,7 +233,7 @@ cd light-client/raiden-dapp
  First you need to build the sdk. For this you have to go to the `raiden` directory and run the following commands.
 
 ```bash
-cd ../raiden
+cd ../raiden-ts
 npm install
 npm run build
 ```
@@ -244,10 +244,10 @@ Then you need to install the wallet app dependencies.
 
 ```bash
 cd ../raiden-dapp
-npm install --save raiden
+npm install --save raiden-ts
 ```
 
-This will also create a symbolic link in `raiden-dapp/node_modules/raiden` to `raiden`.
+This will also create a symbolic link in `raiden-dapp/node_modules/raiden-ts` to `raiden-ts`.
 
 ##### Running the dApp locally
 

@@ -1,6 +1,11 @@
-import { Raiden, RaidenChannel, RaidenSentTransfer } from 'raiden-ts';
+import {
+  Raiden,
+  RaidenChannel,
+  RaidenSentTransfer,
+  RaidenPaths
+} from 'raiden-ts';
 import { Store } from 'vuex';
-import { RootState, Tokens } from '@/types';
+import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import {
@@ -25,7 +30,13 @@ export default class RaidenService {
     account: string | number = 0
   ): Promise<Raiden> {
     try {
-      return await Raiden.create(provider, account, window.localStorage);
+      return await Raiden.create(
+        provider,
+        account,
+        window.localStorage,
+        undefined,
+        { pfsSafetyMargin: 1.1 }
+      );
     } catch (e) {
       throw new RaidenInitializationFailed(e);
     }
@@ -107,22 +118,13 @@ export default class RaidenService {
           }
         });
 
-        const initialTokens = await raiden.getTokenList();
-        if (initialTokens.length) {
-          this.store.commit(
-            'updateTokens',
-            initialTokens.reduce(
-              (acc, token) => ({ ...acc, [token]: { address: token } }),
-              {} as Tokens
-            )
-          );
-        }
-
         raiden.channels$.subscribe(value => {
           this.store.commit('updateChannels', value);
         });
 
         this.store.commit('network', raiden.network);
+
+        raiden.start();
       }
     } catch (e) {
       console.error(e);
@@ -269,10 +271,16 @@ export default class RaidenService {
     await asyncPool(6, tokens, fetchToken);
   }
 
-  async transfer(token: string, target: string, amount: BigNumber) {
+  async transfer(
+    token: string,
+    target: string,
+    amount: BigNumber,
+    paths: RaidenPaths
+  ) {
     try {
-      await this.raiden.getAvailability(target);
-      const secretHash = await this.raiden.transfer(token, target, amount);
+      const secretHash = await this.raiden.transfer(token, target, amount, {
+        paths: paths
+      });
 
       // Wait for transaction to be completed
       await this.raiden.transfers$
@@ -286,6 +294,23 @@ export default class RaidenService {
     } catch (e) {
       throw new TransferFailed(e);
     }
+  }
+
+  async findRoutes(
+    token: string,
+    target: string,
+    amount: BigNumber
+  ): Promise<RaidenPaths> {
+    let routes: RaidenPaths;
+
+    try {
+      await this.raiden.getAvailability(target);
+      routes = await this.raiden.findRoutes(token, target, amount);
+    } catch (e) {
+      throw new FindRoutesFailed(e);
+    }
+
+    return routes;
   }
 }
 
@@ -302,3 +327,5 @@ export class EnsResolveFailed extends Error {}
 export class TransferFailed extends Error {}
 
 export class RaidenInitializationFailed extends Error {}
+
+export class FindRoutesFailed extends Error {}

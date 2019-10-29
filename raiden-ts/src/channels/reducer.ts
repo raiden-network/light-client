@@ -20,7 +20,7 @@ import {
   tokenMonitored,
   channelWithdrawn,
 } from './actions';
-import { Channel, Channels, ChannelState } from './state';
+import { Channel, ChannelState } from './state';
 
 // state.blockNumber specific reducer, handles only newBlock action
 function blockNumber(state: number = initialState.blockNumber, action: RaidenAction) {
@@ -36,7 +36,7 @@ function tokens(state: RaidenState['tokens'] = initialState.tokens, action: Raid
 }
 
 // handles all channel actions and requests
-function channels(state: Channels = initialState.channels, action: RaidenAction) {
+function channels(state: RaidenState['channels'] = initialState.channels, action: RaidenAction) {
   if (isActionOf(channelOpen, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
     if (get(path, state)) return state; // there's already a channel with partner

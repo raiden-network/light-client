@@ -24,12 +24,12 @@ import TokenNetworkAbi from 'raiden-ts/abi/TokenNetwork.json';
 import HumanStandardTokenAbi from 'raiden-ts/abi/HumanStandardToken.json';
 
 import 'raiden-ts/polyfills';
-import { RaidenEpicDeps } from 'raiden-ts/types';
+import { RaidenEpicDeps, ContractsInfo } from 'raiden-ts/types';
 import { RaidenAction } from 'raiden-ts/actions';
-import { RaidenState, initialState } from 'raiden-ts/state';
+import { RaidenState, makeInitialState } from 'raiden-ts/state';
 import { Address, Signature } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
-import { RaidenConfig, defaultConfig } from 'raiden-ts/config';
+import { RaidenConfig } from 'raiden-ts/config';
 
 export type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -147,23 +147,25 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     return tokenContracts[address];
   };
 
-  return {
-    stateOutput$: new BehaviorSubject<RaidenState>(initialState),
-    actionOutput$: new Subject<RaidenAction>(),
-    config$: new BehaviorSubject<RaidenConfig>({
-      ...defaultConfig.default,
-      discoveryRoom: `raiden_${network.name}_discovery`,
-      pfsRoom: `raiden_${network.name}_path_finding`,
-    }),
-    matrix$: new AsyncSubject<MatrixClient>(),
-    address,
-    network,
-    contractsInfo: {
+  const contractsInfo: ContractsInfo = {
       TokenNetworkRegistry: {
         address: registryContract.address as Address,
         block_number: 100, // eslint-disable-line
       },
     },
+    initialState = makeInitialState(
+      { network, address, contractsInfo },
+      { blockNumber: 125, config: { pfsSafetyMargin: 1.1 } },
+    );
+
+  return {
+    stateOutput$: new BehaviorSubject<RaidenState>(initialState),
+    actionOutput$: new Subject<RaidenAction>(),
+    config$: new BehaviorSubject<RaidenConfig>(initialState.config),
+    matrix$: new AsyncSubject<MatrixClient>(),
+    address,
+    network,
+    contractsInfo,
     provider,
     signer,
     registryContract,

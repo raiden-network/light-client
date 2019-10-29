@@ -17,9 +17,9 @@
         </div>
         <div class="error-screen__content__message">{{ description }}</div>
         <div v-if="buttonLabel">
-          <v-btn @click="dismiss()" class="error-screen__content__button">{{
-            buttonLabel
-          }}</v-btn>
+          <v-btn @click="dismiss()" class="error-screen__content__button">
+            {{ buttonLabel }}
+          </v-btn>
         </div>
       </div>
     </div>
