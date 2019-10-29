@@ -8,11 +8,13 @@
         class="payment__actions"
       >
         <v-col cols="2" class="payment__channels">
-          <router-link :to="channelLink" tag="v-btn">
-            <v-btn v-on="on" text class="payment__channel-button">
-              {{ $t('payment.channel-button') }}
-            </v-btn>
-          </router-link>
+          <v-btn
+            @click="navigateToChannels(token.address)"
+            text
+            class="payment__channel-button"
+          >
+            {{ $t('payment.channel-button') }}
+          </v-btn>
         </v-col>
         <v-col cols="6" class="payment__token-networks">
           <div class="payment__token-networks__amount">
@@ -193,11 +195,6 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
   channelWithBiggestCapacity!: (
     tokenAddress: string
   ) => RaidenChannel | undefined;
-
-  get channelLink(): string {
-    const { token: address } = this.$route.params;
-    return `/channels/${address}`;
-  }
 
   get token(): Token {
     const { token: address } = this.$route.params;

@@ -32,7 +32,7 @@ export default class NavigationMixin extends Vue {
     this.$router.push({
       name: RouteNames.CHANNELS,
       params: {
-        token: token,
+        token: token
       }
     });
   }
