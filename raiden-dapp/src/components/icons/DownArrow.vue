@@ -1,0 +1,46 @@
+<template>
+  <svg
+    width="11.5px"
+    height="5.5px"
+    viewBox="0 0 18 9"
+    version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+  >
+    <g
+      id="Symbols"
+      stroke="none"
+      stroke-width="1"
+      fill="none"
+      fill-rule="evenodd"
+      stroke-linecap="round"
+    >
+      <g
+        id="card/blue-copy"
+        transform="translate(-301.000000, -86.000000)"
+        stroke="#FFFFFF"
+        stroke-width="2"
+      >
+        <polyline
+          id="Path-2"
+          transform="translate(310.000000, 90.000000) rotate(-360.000000) translate(-310.000000, -90.000000) "
+          points="302 87 310 93 318 87"
+        />
+      </g>
+    </g>
+  </svg>
+</template>
+
+<script lang="ts">
+export default {
+  name: 'DownArrow'
+};
+</script>
+
+<style lang="scss" scoped>
+@import '../../scss/colors';
+
+g {
+  stroke: $primary-color !important;
+}
+</style>

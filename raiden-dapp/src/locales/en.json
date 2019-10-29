@@ -2,7 +2,8 @@
   "general": {
     "buttons": {
       "cancel": "Cancel",
-      "pay": "Pay"
+      "pay": "Pay",
+      "continue": "Continue"
     }
   },
   "address-input": {
@@ -177,8 +178,8 @@
     "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
   },
   "payment": {
-    "pay-button": "Send payment",
     "deposit-button": "Deposit",
+    "channel-button": "Channels",
     "capacity-label": "Capacity",
     "capacity-amount": "{capacity} {token}",
     "recipient-label": "Recipient",

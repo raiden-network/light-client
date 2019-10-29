@@ -1,39 +1,50 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="payment">
-    <v-layout column justify-space-between fill-height>
-      <v-layout class="payment__capacity" justify-center>
-        <v-flex xs7 class="payment__capacity_capacity-column">
-          <v-layout column>
-            <span class="payment__capacity__label">
-              {{ $t('payment.capacity-label') }}
+    <v-container fluid class="payment__settings">
+      <v-row
+        align="center"
+        justify="center"
+        no-gutters
+        class="payment__actions"
+      >
+        <v-col cols="2" class="payment__channels">
+          <router-link :to="channelLink" tag="v-btn">
+            <v-btn v-on="on" text class="payment__channel-button">
+              {{ $t('payment.channel-button') }}
+            </v-btn>
+          </router-link>
+        </v-col>
+        <v-col cols="6" justify="center" class="payment__token-networks">
+          <div class="payment__token-networks__amount">
+            {{
+              $t('payment.capacity-amount', {
+                capacity: convertToUnits(capacity, token.decimals),
+                token: token.symbol
+              })
+            }}
+          </div>
+          <div
+            @click="showTokenNetworks = true"
+            class="payment__token-networks__dropdown"
+          >
+            <span>{{ token.name }}</span>
+            <span>
+              <down-arrow />
             </span>
-            <span
-              v-if="typeof token.decimals === 'number'"
-              class="payment__capacity__amount"
-            >
-              {{
-                $t('payment.capacity-amount', {
-                  capacity: convertToUnits(capacity, token.decimals),
-                  token: token.symbol
-                })
-              }}
-            </span>
-            <span v-else class="payment__capacity__amount"></span>
-          </v-layout>
-          <v-img
-            :src="require('../assets/down_arrow.svg')"
-            max-width="18px"
-            class="payment__capacity__arrow"
-          ></v-img>
-        </v-flex>
-        <v-flex xs3 align-center class="payment__capacity__deposit-column">
+          </div>
+          <token-overlay
+            :show="showTokenNetworks"
+            @cancel="showTokenNetworks = false"
+          />
+        </v-col>
+        <v-col cols="2" class="payment__deposit">
           <v-dialog v-model="depositing" max-width="625">
             <template #activator="{ on }">
               <v-btn
                 @click="depositing = true"
                 v-on="on"
                 text
-                class="payment__capacity__deposit"
+                class="payment__deposit-button"
               >
                 {{ $t('payment.deposit-button') }}
               </v-btn>
@@ -47,34 +58,30 @@
               ></channel-deposit>
             </v-card>
           </v-dialog>
-        </v-flex>
-      </v-layout>
+        </v-col>
+      </v-row>
 
-      <v-layout align-center justify-center class="payment__recipient">
-        <v-flex xs10>
-          <div class="payment__recipient__label">
-            {{ $t('payment.recipient-label') }}
-          </div>
+      <v-row justify="center" align="center" class="payment__recipient">
+        <v-col cols="10">
           <address-input
             v-model="target"
             :exclude="[token.address, defaultAccount]"
             :block="blockedHubs"
           ></address-input>
-        </v-flex>
-      </v-layout>
+        </v-col>
+      </v-row>
 
-      <v-layout align-center justify-center>
-        <v-flex xs10>
+      <v-row justify="center" align="center">
+        <v-col cols="10">
           <amount-input
             v-model="amount"
             :token="token"
-            :label="$t('payment.amount-label')"
             :placeholder="$t('payment.amount-placeholder')"
             :max="capacity"
             limit
           ></amount-input>
-        </v-flex>
-      </v-layout>
+        </v-col>
+      </v-row>
 
       <v-spacer></v-spacer>
 
@@ -83,7 +90,7 @@
           <action-button
             :enabled="valid"
             @click="findingRoutes = true"
-            :text="$t('payment.pay-button')"
+            :text="$t('general.buttons.continue')"
             v-on="on"
             class="payment__pay-button"
           ></action-button>
@@ -99,21 +106,21 @@
           ></find-routes>
         </v-card>
       </v-dialog>
+    </v-container>
 
-      <stepper
-        :display="loading"
-        :steps="steps"
-        :done-step="doneStep"
-        :done="done"
-      ></stepper>
+    <stepper
+      :display="loading"
+      :steps="steps"
+      :done-step="doneStep"
+      :done="done"
+    ></stepper>
 
-      <error-screen
-        :description="error"
-        @dismiss="error = ''"
-        :title="errorTitle"
-        :button-label="$t('payment.error.button')"
-      ></error-screen>
-    </v-layout>
+    <error-screen
+      :description="error"
+      @dismiss="error = ''"
+      :title="errorTitle"
+      :button-label="$t('payment.error.button')"
+    ></error-screen>
   </v-form>
 </template>
 
@@ -126,10 +133,12 @@ import { BalanceUtils } from '@/utils/balance-utils';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
 import Divider from '@/components/Divider.vue';
+import TokenOverlay from '@/components/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
+import DownArrow from '@/components/icons/DownArrow.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
 import { RaidenChannel, ChannelState } from 'raiden-ts';
@@ -137,6 +146,7 @@ import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { getAddress, getAmount } from '@/utils/query-params';
+import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({
   components: {
@@ -148,14 +158,17 @@ import { getAddress, getAmount } from '@/utils/query-params';
     AmountInput,
     Stepper,
     ErrorScreen,
-    FindRoutes
+    FindRoutes,
+    DownArrow,
+    TokenOverlay
   },
   computed: {
     ...mapState(['defaultAccount']),
     ...mapGetters(['channelWithBiggestCapacity', 'channels'])
   }
 })
-export default class Payment extends Mixins(NavigationMixin) {
+export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
+  showTokenNetworks: boolean = false;
   target: string = '';
 
   defaultAccount!: string;
@@ -180,6 +193,11 @@ export default class Payment extends Mixins(NavigationMixin) {
   channelWithBiggestCapacity!: (
     tokenAddress: string
   ) => RaidenChannel | undefined;
+
+  get channelLink(): string {
+    const { token: address } = this.$route.params;
+    return `/channels/${address}`;
+  }
 
   get token(): Token {
     const { token: address } = this.$route.params;
@@ -290,49 +308,8 @@ export default class Payment extends Mixins(NavigationMixin) {
   height: 100%;
 }
 
-.payment__capacity {
-  position: relative;
-  background-image: linear-gradient(180deg, #050505 0%, #0a1923 100%);
-}
-
-.payment__capacity__deposit-column {
-  justify-content: flex-end;
-  display: flex;
-}
-
-.payment__capacity_capacity-column {
-  align-self: center;
-}
-
-.payment__capacity__arrow {
-  position: absolute;
-  left: calc(50% - 9px);
-  bottom: 10px;
-}
-
-.payment__capacity__label {
-  color: $secondary-color;
-  font-size: 13px;
-  font-weight: bold;
-  letter-spacing: 3px;
-  line-height: 15px;
-  text-transform: uppercase;
-}
-
-.payment__capacity__amount {
-  color: $color-white;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 19px;
-  padding-left: 11px;
+.payment__actions {
   margin-top: 10px;
-}
-
-.payment__capacity__deposit {
-  color: $primary-color;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 21px;
 }
 
 .payment__recipient {
@@ -355,5 +332,45 @@ export default class Payment extends Mixins(NavigationMixin) {
 
 .payment__pay-button {
   margin-bottom: 24px;
+}
+
+.payment__channel-button,
+.payment__deposit-button {
+  color: $primary-color;
+  text-transform: none;
+}
+
+.payment__token-networks__amount {
+  color: $color-white;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 19px;
+  padding-left: 11px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.payment__token-networks__dropdown {
+  color: $primary-color;
+  font-size: 16px;
+  margin-top: 5px;
+  cursor: pointer;
+  text-align: center;
+
+  &:hover {
+    color: $secondary-color;
+
+    & ::v-deep g {
+      stroke: $secondary-color !important;
+    }
+  }
+
+  & > span {
+    display: inline-block;
+
+    &:last-child {
+      margin-left: 5px;
+    }
+  }
 }
 </style>
