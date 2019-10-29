@@ -90,9 +90,10 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
+
 import BlockieMixin from '@/mixins/blockie-mixin';
-import { RouteNames } from '@/route-names';
 import NavigationMixin from '@/mixins/navigation-mixin';
+import { RouteNames } from '@/route-names';
 
 @Component({
   computed: {

@@ -10,7 +10,7 @@
       <v-row>
         <v-col cols="12">
           <v-list class="token-list">
-            <v-list-item @click="navigateToSelectHub(token.address)">
+            <v-list-item @click="navigateToTokenSelect()">
               <v-col cols="2">
                 <v-list-item-avatar>
                   <v-btn class="mx-2" fab dark small color="primary">
@@ -38,7 +38,8 @@
           <v-list v-for="(token, i) in tokens" :key="i" class="token-list">
             <v-list-item
               :key="token.address"
-              @click="navigateToSelectHub(token.address)"
+              :to="`/payment/${token.address}`"
+              @click="cancel()"
             >
               <v-col cols="2">
                 <v-list-item-avatar>
@@ -89,6 +90,7 @@ import { Component, Mixins, Prop, Emit } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 
 import BlockieMixin from '@/mixins/blockie-mixin';
+import NavigationMixin from '@/mixins/navigation-mixin';
 import { TokenModel, Token } from '../model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import Filters from '@/filters';
@@ -98,7 +100,7 @@ import Filters from '@/filters';
     ...mapGetters(['tokens', 'allTokens'])
   }
 })
-export default class Payment extends Mixins(BlockieMixin) {
+export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
   @Prop({ required: true, type: Boolean })
   show!: boolean;
 
