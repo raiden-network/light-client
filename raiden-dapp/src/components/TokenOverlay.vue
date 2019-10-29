@@ -7,9 +7,9 @@
         </v-btn>
       </v-row>
 
-      <v-row>
+      <v-row id="connectNew">
         <v-col cols="12">
-          <v-list class="token-list">
+          <v-list class="item-list">
             <v-list-item @click="navigateToTokenSelect()">
               <v-col cols="2">
                 <v-list-item-avatar>
@@ -33,9 +33,9 @@
         </v-col>
       </v-row>
 
-      <v-row>
+      <v-row id="tokenList">
         <v-col cols="12">
-          <v-list v-for="(token, i) in tokens" :key="i" class="token-list">
+          <v-list v-for="(token, i) in tokens" :key="i" class="item-list">
             <v-list-item
               :key="token.address"
               :to="`/payment/${token.address}`"
@@ -145,7 +145,7 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
     margin: 15px;
   }
 
-  .token-list {
+  .item-list {
     height: 100%;
     background-color: transparent !important;
     padding-bottom: 0;
