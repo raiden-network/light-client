@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Observable, of, combineLatest, from, EMPTY, merge, timer } from 'rxjs';
+import { Observable, of, combineLatest, from, EMPTY, merge } from 'rxjs';
 import {
   filter,
   mergeMap,
@@ -15,15 +15,15 @@ import {
   distinctUntilChanged,
   groupBy,
   switchMap,
-  mapTo,
   scan,
   startWith,
   tap,
+  delay,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { bigNumberify, BigNumber } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { Zero, Two } from 'ethers/constants';
 import { Event } from 'ethers/contract';
 import { isNil } from 'lodash';
 
@@ -288,19 +288,17 @@ export const pfsServiceRegistryMonitorEpic = (
                 groupBy(([service]) => service),
                 mergeMap(grouped$ =>
                   grouped$.pipe(
-                    // switchMap ensures new events for each server (grouped$) picks most recent valid_till
-                    switchMap(([service, valid_till]) =>
-                      valid_till.lt(Math.floor(Date.now() / 1000))
-                        ? // this event already expired
-                          EMPTY
-                        : // ^S-------s| emits service+valid=true, then with valid=false after valid_till
-                          merge(
-                            of({ service, valid: true }),
-                            timer(new Date(valid_till.toNumber())).pipe(
-                              mapTo({ service, valid: false }),
-                            ),
-                          ),
-                    ),
+                    // switchMap ensures new events for each server (grouped$) picks latest event
+                    switchMap(([service, valid_till]) => {
+                      const now = Date.now(),
+                        validTill = valid_till.mul(1000); // milliseconds valid_till
+                      if (validTill.lt(now)) return EMPTY; // this event already expired
+                      // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
+                      const end$ = validTill.sub(now).lt(Two.pow(31))
+                        ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
+                        : EMPTY;
+                      return merge(of({ service, valid: true }), end$);
+                    }),
                   ),
                 ),
                 scan(

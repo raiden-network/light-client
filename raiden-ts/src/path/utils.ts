@@ -8,6 +8,7 @@ import { memoize } from 'lodash';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { Address, UInt, decode } from '../utils/types';
+import { losslessParse } from '../utils/data';
 import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
@@ -89,7 +90,7 @@ export function pfsInfo(
         mergeMap(
           async res =>
             [
-              decode(PathInfo, await res.json()),
+              decode(PathInfo, losslessParse(await res.text())),
               await serviceRegistryToken(serviceRegistryContract),
             ] as const,
         ),
