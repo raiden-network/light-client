@@ -5,7 +5,7 @@ import {
   RaidenPaths
 } from 'raiden-ts';
 import { Store } from 'vuex';
-import { RootState, Tokens } from '@/types';
+import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import {
@@ -118,22 +118,13 @@ export default class RaidenService {
           }
         });
 
-        const initialTokens = await raiden.getTokenList();
-        if (initialTokens.length) {
-          this.store.commit(
-            'updateTokens',
-            initialTokens.reduce(
-              (acc, token) => ({ ...acc, [token]: { address: token } }),
-              {} as Tokens
-            )
-          );
-        }
-
         raiden.channels$.subscribe(value => {
           this.store.commit('updateChannels', value);
         });
 
         this.store.commit('network', raiden.network);
+
+        raiden.start();
       }
     } catch (e) {
       console.error(e);
