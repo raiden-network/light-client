@@ -93,7 +93,7 @@ With the SDK we want to make your life as a dApp dev easier:
 
 This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and the Raiden Network.
 
-Its target audience is blockchain and dApp developers looking into interacting with and performing payments through the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows it to reach the majority of current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other future languages and environments.
+Its target audience is blockchain and dApp developers looking into interacting with and performing transfers through the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows it to reach the majority of current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other future languages and environments.
 
 Look at the [Raiden Light Client SDK folder of this repository](./raiden/README.md) for more information. Also, a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [project's Wiki page](https://github.com/raiden-network/light-client/wiki/SDK-Development). Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
@@ -172,11 +172,11 @@ __Step 3: Select a Hub and Open a Channel__
 4. Click __Open Channel__.
 5. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
 
-You can now start making payments. To do so, simply:
+You can now start making transfers. To do so, simply:
 
-1. Enter the address of the receiver of your payment (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```)
-2. Enter the amount you want to pay
-3. Click __Send Payment__
+1. Enter the address of the node receiving your transfer (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```)
+2. Enter the amount you want to transfer
+3. Click __Transfer__
 
 ### Start Developing
 
@@ -263,7 +263,7 @@ After the development server starts you have to navigate to `http://localhost:80
 ## Roadmap and Timeline
 We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1). 
 
-With the [first testnet release](https://github.com/raiden-network/light-client/releases) we have reached milestone 0, where the SDK and dApp are able to send payments, but will not be able to receive payments.
+With the [first testnet release](https://github.com/raiden-network/light-client/releases) we have reached milestone 0, where the SDK and dApp are able to send transfers, but will not be able to receive transfers.
 
 ## Contributing
 
