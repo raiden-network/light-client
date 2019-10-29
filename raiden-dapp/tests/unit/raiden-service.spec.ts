@@ -276,7 +276,8 @@ describe('RaidenService', () => {
       channels$: stub,
       getBalance: jest.fn().mockResolvedValue(Zero),
       events$: new BehaviorSubject({}),
-      stop: jest.fn().mockReturnValue(null),
+      stop: jest.fn(),
+      start: jest.fn(),
       getTokenList: jest.fn().mockResolvedValue([])
     };
 
@@ -289,6 +290,7 @@ describe('RaidenService', () => {
     expect(store.commit).toHaveBeenCalledTimes(5);
     raidenService.disconnect();
     expect(raidenMock.stop).toHaveBeenCalledTimes(1);
+    expect(raidenMock.start).toHaveBeenCalledTimes(1);
   });
 
   it('should resolve successfully on channel close', async function() {
@@ -502,7 +504,8 @@ describe('RaidenService', () => {
       factory.mockResolvedValue(
         mockRaiden({
           getTokenList,
-          getTokenInfo
+          getTokenInfo,
+          start: jest.fn()
         })
       );
     });
@@ -519,17 +522,9 @@ describe('RaidenService', () => {
 
       expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
       expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
-      expect(store.commit).toHaveBeenNthCalledWith(
-        3,
-        'updateTokens',
-        expect.objectContaining({
-          [mockToken1]: { address: mockToken1 },
-          [mockToken2]: { address: mockToken2 }
-        })
-      );
-      expect(store.commit).toHaveBeenNthCalledWith(4, 'network', undefined);
-      expect(store.commit).toHaveBeenNthCalledWith(5, 'loadComplete');
-      expect(store.commit).toHaveBeenCalledTimes(5);
+      expect(store.commit).toHaveBeenNthCalledWith(3, 'network', undefined);
+      expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
+      expect(store.commit).toHaveBeenCalledTimes(4);
     });
 
     test('fetch should fetch contracts that are not cached', async () => {
@@ -553,15 +548,15 @@ describe('RaidenService', () => {
       await raidenService.connect();
       await flushPromises();
 
-      expect(store.commit).toHaveBeenCalledTimes(5);
+      expect(store.commit).toHaveBeenCalledTimes(4);
 
       expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
       expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
-      expect(store.commit).toHaveBeenNthCalledWith(5, 'loadComplete');
+      expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
 
       await raidenService.fetchTokenData(['0xtoken1']);
 
-      expect(store.commit).toHaveBeenNthCalledWith(6, 'updateTokens', {
+      expect(store.commit).toHaveBeenNthCalledWith(5, 'updateTokens', {
         [mockToken1]: tokens[mockToken1]
       });
     });
@@ -650,7 +645,8 @@ describe('RaidenService', () => {
       getBalance: jest.fn().mockResolvedValue(Zero),
       events$: subject,
       getTokenList: jest.fn().mockResolvedValue([]),
-      stop: jest.fn().mockReturnValue(null)
+      start: jest.fn(),
+      stop: jest.fn()
     };
 
     factory.mockResolvedValue(raidenMock);
