@@ -77,16 +77,15 @@ export const initNewBlockEpic = (
  * @returns Observable of tokenMonitored actions
  */
 export const initMonitorRegistryEpic = (
-  action$: Observable<RaidenAction>,
+  {  }: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { registryContract, contractsInfo }: RaidenEpicDeps,
 ): Observable<ActionType<typeof tokenMonitored>> =>
   state$.pipe(
     publishReplay(1, undefined, state$ =>
-      action$.pipe(
-        first(isActionOf(newBlock)),
-        withLatestFrom(state$),
-        switchMap(([{ payload: { blockNumber } }, state]) =>
+      state$.pipe(
+        first(),
+        switchMap(state =>
           merge(
             // monitor old (in case of empty tokens) and new registered tokens
             // and starts monitoring every registered token
@@ -96,7 +95,7 @@ export const initMonitorRegistryEpic = (
               isEmpty(state.tokens)
                 ? of(contractsInfo.TokenNetworkRegistry.block_number)
                 : undefined,
-              isEmpty(state.tokens) ? of(blockNumber) : undefined,
+              isEmpty(state.tokens) ? state$.pipe(pluck('blockNumber')) : undefined,
             ).pipe(
               withLatestFrom(state$),
               map(([[token, tokenNetwork, event], state]) =>

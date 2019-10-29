@@ -5,7 +5,7 @@ import { Network, BigNumber, BigNumberish, ParamType } from 'ethers/utils';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
-import { createEpicMiddleware } from 'redux-observable';
+import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
@@ -154,6 +154,13 @@ export class Raiden {
     symbol?: string;
   }>;
 
+  private epicMiddleware?: EpicMiddleware<
+    RaidenAction,
+    RaidenAction,
+    RaidenState,
+    RaidenEpicDeps
+  > | null;
+
   public constructor(
     provider: JsonRpcProvider,
     network: Network,
@@ -286,7 +293,7 @@ export class Raiden {
       ),
     };
     // minimum blockNumber of contracts deployment as start scan block
-    const epicMiddleware = createEpicMiddleware<
+    this.epicMiddleware = createEpicMiddleware<
       RaidenAction,
       RaidenAction,
       RaidenState,
@@ -296,10 +303,8 @@ export class Raiden {
     this.store = createStore(
       raidenReducer,
       state,
-      applyMiddleware(...middlewares, epicMiddleware),
+      applyMiddleware(...middlewares, this.epicMiddleware),
     );
-
-    epicMiddleware.run(raidenRootEpic);
   }
 
   /**
@@ -448,9 +453,36 @@ export class Raiden {
   }
 
   /**
+   * Starts redux/observables by subscribing to all epics and emitting initial state and action
+   *
+   * No event should be emitted before start is called
+   */
+  public start(): void {
+    if (!this.epicMiddleware) throw new Error('Already started or stopped!');
+    this.epicMiddleware.run(raidenRootEpic);
+    // prevent start from being called again, turns this.started to true
+    this.epicMiddleware = undefined;
+    // dispatch a first, noop action, to next first state$ as current/initial state
+    this.store.dispatch(raidenConfigUpdate({ config: {} }));
+  }
+
+  /**
+   * Gets the running state of the instance
+   *
+   * @returns undefined if not yet started, true if running, false if already stopped
+   */
+  public get started(): boolean | undefined {
+    // !epicMiddleware -> undefined | null -> undefined ? true/started : null/stopped;
+    if (!this.epicMiddleware) return this.epicMiddleware === undefined;
+    // else -> !!epicMiddleware -> not yet started -> returns undefined
+  }
+
+  /**
    * Triggers all epics to be unsubscribed
    */
   public stop(): void {
+    // start still can't be called again, but turns this.started to false
+    this.epicMiddleware = null;
     this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
   }
 

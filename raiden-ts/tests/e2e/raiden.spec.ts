@@ -71,6 +71,7 @@ describe('Raiden', () => {
     request(httpBackend.requestFn.bind(httpBackend));
 
     raiden = await Raiden.create(provider, 0, storage, contractsInfo, config);
+    raiden.start();
     // wait token register to be fetched
     await raiden.getTokenList();
   });
@@ -81,7 +82,7 @@ describe('Raiden', () => {
   });
 
   test('create from other params and RaidenState', async () => {
-    expect.assertions(5);
+    expect.assertions(8);
 
     // token address not found as an account in provider
     await expect(Raiden.create(provider, token, storage, contractsInfo, config)).rejects.toThrow(
@@ -135,7 +136,13 @@ describe('Raiden', () => {
       config,
     );
     expect(raiden1).toBeInstanceOf(Raiden);
+
+    // test Raiden.started, not yet started
+    expect(raiden1.started).toBeUndefined();
+    raiden1.start();
+    expect(raiden1.started).toBe(true);
     raiden1.stop();
+    expect(raiden1.started).toBe(false);
   });
 
   test('address', () => {
@@ -280,6 +287,7 @@ describe('Raiden', () => {
       await raiden.openChannel(token, partner);
       await raiden.depositChannel(token, partner, 200);
       raiden1 = await Raiden.create(provider, partner, undefined, contractsInfo, config);
+      raiden1.start();
     });
 
     afterEach(() => {
@@ -352,6 +360,7 @@ describe('Raiden', () => {
       raidenState = undefined;
       raiden = await Raiden.create(provider, 0, storage, contractsInfo, config);
       raiden.state$.subscribe(state => (raidenState = state));
+      raiden.start();
 
       // ensure after hot boot, state is rehydrated and contains (only) previous token
       expect(raidenState).toBeDefined();
@@ -521,6 +530,7 @@ describe('Raiden', () => {
         contractsInfo,
       );
       expect(raiden1).toBeInstanceOf(Raiden);
+      raiden1.start();
 
       // await raiden1 client matrix initialization
       await raiden1.action$
@@ -622,6 +632,7 @@ describe('Raiden', () => {
           makeInitialState({ network, contractsInfo, address: partner as Address }, { config }),
           contractsInfo,
         );
+        raiden1.start();
 
         // await raiden1 client matrix initialization
         await raiden1.action$
@@ -678,6 +689,7 @@ describe('Raiden', () => {
             )
             .toPromise();
 
+        raiden2.start();
         // await raiden2 client matrix initialization
         await matrix2Promise;
 
@@ -756,6 +768,8 @@ describe('Raiden', () => {
         makeInitialState({ network, contractsInfo, address: target as Address }, { config }),
         contractsInfo,
       );
+      raiden1.start();
+      raiden2.start();
 
       // await client's matrix initialization
       await Promise.all([

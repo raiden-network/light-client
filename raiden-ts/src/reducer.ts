@@ -1,4 +1,6 @@
 import { isActionOf } from 'typesafe-actions';
+import { isEmpty } from 'lodash/fp';
+
 import { channelsReducer } from './channels/reducer';
 import { transportReducer } from './transport/reducer';
 import { transfersReducer } from './transfers/reducer';
@@ -9,8 +11,10 @@ import { RaidenState, initialState } from './state';
 // update state.config on raidenConfigUpdate action
 const configReducer = (state: RaidenState = initialState, action: RaidenAction) => {
   if (isActionOf(raidenConfigUpdate, action)) {
-    return { ...state, config: { ...state.config, ...action.payload.config } };
-  } else return state;
+    if (!isEmpty(action.payload.config))
+      return { ...state, config: { ...state.config, ...action.payload.config } };
+  }
+  return state;
 };
 
 const raidenReducers = {
