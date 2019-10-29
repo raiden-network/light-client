@@ -109,26 +109,14 @@ export class TestProvider extends Web3Provider {
     const serviceRegistryDeployBlock = serviceRegistryContract.deployTransaction.blockNumber;
 
     // mint CTK to deployer
-    console.warn(
-      '1',
-      await (await tokenContract.functions.mintFor(parseUnits('1000', 18), address)).wait(),
-    );
+    await (await tokenContract.functions.mintFor(parseUnits('1000', 18), address)).wait();
     // approve service registry transfering amount from deployer
-    console.warn(
-      '2',
-      await (await tokenContract.functions.approve(
-        serviceRegistryContract.address,
-        amount,
-      )).wait(),
-    );
+    await (await tokenContract.functions.approve(serviceRegistryContract.address, amount)).wait();
     await this.mine();
     // deposit amount tokens to service registry
-    console.warn('3', await (await serviceRegistryContract.functions.deposit(amount)).wait());
+    await (await serviceRegistryContract.functions.deposit(amount)).wait();
     // setURL for service registry
-    console.warn(
-      '4',
-      await (await serviceRegistryContract.functions.setURL('https://pfs.raiden.test')).wait(),
-    );
+    await (await serviceRegistryContract.functions.setURL('https://pfs.raiden.test')).wait();
 
     return {
       TokenNetworkRegistry: {

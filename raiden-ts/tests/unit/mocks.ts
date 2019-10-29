@@ -33,6 +33,7 @@ import { RaidenState, makeInitialState } from 'raiden-ts/state';
 import { Address, Signature } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
 import { RaidenConfig } from 'raiden-ts/config';
+import { pluck, distinctUntilChanged } from 'rxjs/operators';
 
 export type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -48,6 +49,7 @@ export interface MockRaidenEpicDeps extends RaidenEpicDeps {
   registryContract: MockedContract<TokenNetworkRegistry>;
   getTokenNetworkContract: (address: string) => MockedContract<TokenNetwork>;
   getTokenContract: (address: string) => MockedContract<HumanStandardToken>;
+  serviceRegistryContract: MockedContract<ServiceRegistry>;
 }
 
 /**
@@ -147,9 +149,13 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     registryAddress,
     signer,
   ) as MockedContract<ServiceRegistry>;
-  for (const func in registryContract.functions) {
-    jest.spyOn(registryContract.functions, func as keyof TokenNetworkRegistry['functions']);
+  for (const func in serviceRegistryContract.functions) {
+    jest.spyOn(serviceRegistryContract.functions, func as keyof ServiceRegistry['functions']);
   }
+  serviceRegistryContract.functions.token.mockResolvedValue(
+    '0x0800000000000000000000000000000000000008',
+  );
+  serviceRegistryContract.functions.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
   const contractsInfo: ContractsInfo = {
       TokenNetworkRegistry: {
@@ -163,13 +169,23 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     },
     initialState = makeInitialState(
       { network, address, contractsInfo },
-      { blockNumber: 125, config: { pfsSafetyMargin: 1.1 } },
+      { blockNumber: 125, config: { pfsSafetyMargin: 1.1, pfs: 'https://pfs.raiden.test' } },
     );
 
+  const stateOutput$ = new BehaviorSubject<RaidenState>(initialState),
+    config$ = new BehaviorSubject<RaidenConfig>(initialState.config);
+
+  stateOutput$
+    .pipe(
+      pluck('config'),
+      distinctUntilChanged(),
+    )
+    .subscribe(config$);
+
   return {
-    stateOutput$: new BehaviorSubject<RaidenState>(initialState),
+    stateOutput$,
     actionOutput$: new Subject<RaidenAction>(),
-    config$: new BehaviorSubject<RaidenConfig>(initialState.config),
+    config$,
     matrix$: new AsyncSubject<MatrixClient>(),
     address,
     network,
