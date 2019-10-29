@@ -1,7 +1,7 @@
 <template>
-  <v-layout column class="channel-lifecycle">
-    <v-layout justify-center>
-      <v-flex>
+  <v-col class="channel-lifecycle">
+    <v-row justify="center" no-gutters>
+      <v-col>
         <v-stepper :value="step" class="no-shadow channel-lifecycle__stepper">
           <v-stepper-header>
             <v-stepper-step step="1">
@@ -21,10 +21,10 @@
             </v-stepper-step>
           </v-stepper-header>
         </v-stepper>
-      </v-flex>
-    </v-layout>
-    <v-layout justify-center>
-      <v-flex xs8 class="channel-lifecycle__description">
+      </v-col>
+    </v-row>
+    <v-row justify="center" no-gutters>
+      <v-col cols="8" class="channel-lifecycle__description">
         <div v-if="step === 1" class="channel-lifecycle__description__text">
           {{ $t('stepper.steps.open.description') }}
         </div>
@@ -34,9 +34,9 @@
         <div v-if="step === 3" class="channel-lifecycle__description__text">
           {{ $t('stepper.steps.settleable.description') }}
         </div>
-      </v-flex>
-    </v-layout>
-  </v-layout>
+      </v-col>
+    </v-row>
+  </v-col>
 </template>
 
 <script lang="ts">

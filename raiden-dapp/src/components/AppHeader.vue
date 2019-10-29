@@ -1,7 +1,7 @@
 <template>
-  <v-layout v-if="!loading && defaultAccount" class="app-header" column>
-    <v-layout class="app-header__top" justify-center align-center>
-      <v-flex xs12>
+  <div v-if="!loading && defaultAccount" class="app-header">
+    <v-row class="app-header__top" justify="center" align="center" no-gutters>
+      <v-col cols="12">
         <div class="app-header__top__content">
           <div class="app-header__top__content__back">
             <v-btn
@@ -19,14 +19,14 @@
             </v-btn>
           </div>
           <v-spacer></v-spacer>
-          <v-layout column align-center justify-center>
+          <v-col align-self="center">
             <div class="app-header__top__content__title">
               {{ $route.meta.title }}
             </div>
             <div class="app-header__top__content__network">
               {{ network }}
             </div>
-          </v-layout>
+          </v-col>
           <v-spacer></v-spacer>
           <div>
             <v-img
@@ -39,10 +39,10 @@
             ></v-img>
           </div>
         </div>
-      </v-flex>
-    </v-layout>
-    <v-layout class="app-header__bottom" align-center>
-      <v-flex xs6>
+      </v-col>
+    </v-row>
+    <v-row class="app-header__bottom" align="center" no-gutters>
+      <v-col cols="6">
         <div class="app-header__bottom__address text-left">
           <v-tooltip bottom>
             <template #activator="{ on }">
@@ -69,22 +69,22 @@
             </span>
           </v-tooltip>
         </div>
-      </v-flex>
-      <v-flex xs6>
+      </v-col>
+      <v-col cols="6">
         <div class="app-header__bottom__balance text-right">
           {{ accountBalance | decimals }}
           <span class="app-header__bottom__balance__currency">
             {{ $t('app-header.currency') }}
           </span>
         </div>
-      </v-flex>
-    </v-layout>
+      </v-col>
+    </v-row>
     <textarea
       ref="copy"
       v-model="defaultAccount"
       class="app-header__copy-area"
     ></textarea>
-  </v-layout>
+  </div>
 </template>
 
 <script lang="ts">
@@ -191,6 +191,7 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
 .app-header__top__content__network {
   font-size: 12px;
   font-weight: 500;
+  text-align: center;
   color: $secondary-text-color;
 }
 

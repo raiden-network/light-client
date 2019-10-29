@@ -1,24 +1,22 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="select-hub">
-    <v-layout column justify-space-between fill-height>
-      <v-layout align-center justify-center>
-        <v-flex xs10>
-          <address-input
-            v-model="partner"
-            :exclude="[token.address, defaultAccount]"
-          ></address-input>
-        </v-flex>
-      </v-layout>
+    <v-row align="center" justify="center" no-gutters>
+      <v-col cols="10">
+        <address-input
+          v-model="partner"
+          :exclude="[token.address, defaultAccount]"
+        ></address-input>
+      </v-col>
+    </v-row>
 
-      <divider></divider>
-      <token-information :token="token"></token-information>
+    <divider></divider>
+    <token-information :token="token"></token-information>
 
-      <action-button
-        :enabled="valid"
-        @click="selectHub()"
-        :text="$t('select-hub.select-button')"
-      ></action-button>
-    </v-layout>
+    <action-button
+      :enabled="valid"
+      @click="selectHub()"
+      :text="$t('select-hub.select-button')"
+    ></action-button>
   </v-form>
 </template>
 
@@ -78,5 +76,7 @@ export default class SelectHub extends Mixins(NavigationMixin) {
 .select-hub {
   height: 100%;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 </style>

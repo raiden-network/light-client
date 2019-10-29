@@ -1,7 +1,12 @@
 <template>
-  <v-layout column class="channel-deposit">
-    <v-layout class="channel-deposit__wrapper" align-center justify-center>
-      <v-flex xs12>
+  <v-col class="channel-deposit">
+    <v-row
+      class="channel-deposit__wrapper"
+      align="center"
+      justify="center"
+      no-gutters
+    >
+      <v-col cols="12">
         <v-form v-model="valid">
           <amount-input
             v-model="deposit"
@@ -11,9 +16,14 @@
             limit
           ></amount-input>
         </v-form>
-      </v-flex>
-    </v-layout>
-    <v-layout align-end justify-center class="channel-deposit__buttons">
+      </v-col>
+    </v-row>
+    <v-row
+      align="end"
+      justify="center"
+      class="channel-deposit__buttons"
+      no-gutters
+    >
       <v-btn
         :id="`cancel-${identifier}`"
         @click="cancel()"
@@ -31,8 +41,8 @@
       >
         {{ $t('channel-deposit.buttons.confirm') }}
       </v-btn>
-    </v-layout>
-  </v-layout>
+    </v-row>
+  </v-col>
 </template>
 
 <script lang="ts">

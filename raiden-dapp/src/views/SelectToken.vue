@@ -5,8 +5,8 @@
       class="select-token__header"
     ></list-header>
 
-    <v-layout justify-center class="select-token__tokens__wrapper">
-      <v-flex xs12>
+    <v-row no-gutters justify="center" class="select-token__tokens__wrapper">
+      <v-col cols="12">
         <recycle-scroller
           :items="allTokens"
           v-slot="{ item }"
@@ -59,8 +59,8 @@
             </v-list-item-action-text>
           </v-list-item>
         </recycle-scroller>
-      </v-flex>
-    </v-layout>
+      </v-col>
+    </v-row>
   </div>
 </template>
 
@@ -97,6 +97,7 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 
 .select-token__tokens__wrapper {
   height: calc(100% - 150px);
+  overflow-y: scroll;
 }
 
 .select-token__tokens {

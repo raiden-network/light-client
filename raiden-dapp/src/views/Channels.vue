@@ -1,6 +1,6 @@
 <template>
   <div class="channels">
-    <v-layout justify-center>
+    <v-row justify="center">
       <Transition name="fade-transition" mode="out-in">
         <div
           v-show="visible"
@@ -8,7 +8,7 @@
           class="channels__overlay"
         ></div>
       </Transition>
-    </v-layout>
+    </v-row>
     <list-header
       v-if="open.length > 0"
       :header="$t('channels.open.header')"

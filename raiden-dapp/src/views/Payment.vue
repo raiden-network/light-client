@@ -14,7 +14,7 @@
             </v-btn>
           </router-link>
         </v-col>
-        <v-col cols="6" justify="center" class="payment__token-networks">
+        <v-col cols="6" class="payment__token-networks">
           <div class="payment__token-networks__amount">
             {{
               $t('payment.capacity-amount', {

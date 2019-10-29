@@ -9,7 +9,7 @@
       <div id="application-content">
         <app-header></app-header>
         <v-content>
-          <v-container fluid fill-height class="application__container">
+          <v-container fluid class="application__container fill-height">
             <router-view></router-view>
           </v-container>
         </v-content>

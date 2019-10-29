@@ -17,6 +17,8 @@ module.exports = {
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
     'vuetify/no-deprecated-classes': 'error',
+    'vuetify/grid-unknown-attributes': 'error',
+    'vuetify/no-legacy-grid': 'error',
     'vue/multiline-html-element-content-newline': ["error", {
       "ignoreWhenEmpty": true,
       "ignores": ["pre", "textarea"],
