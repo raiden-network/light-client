@@ -134,14 +134,10 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   selectedChannel: RaidenChannel | null = null;
 
   @Emit()
-  message(message: string) {
-    return message;
-  }
+  message(_message: string) {}
 
   @Emit()
-  visibleChanged(element: string) {
-    return element;
-  }
+  visibleChanged(_element: string) {}
 
   displayFormat = Filters.displayFormat;
   capitalizeFirst = Filters.capitalizeFirst;

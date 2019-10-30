@@ -110,9 +110,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 
   @Emit()
-  public input(value?: string) {
-    return value;
-  }
+  public input(_value?: string) {}
 
   isChecksumAddress(address: string): boolean {
     const tokenAddress = address;
