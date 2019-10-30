@@ -109,9 +109,10 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     }
   }
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
   @Emit()
-  public input(value?: string) {}
+  public input(value?: string) {
+    return value;
+  }
 
   isChecksumAddress(address: string): boolean {
     const tokenAddress = address;
