@@ -154,7 +154,8 @@ export default class FindRoutes extends Vue {
       const fetchedRoutes = await this.$raiden.findRoutes(
         address,
         this.target,
-        BalanceUtils.parse(this.amount, decimals!)
+        BalanceUtils.parse(this.amount, decimals!),
+        this.pfs ? this.pfs : undefined
       );
 
       if (fetchedRoutes) {
