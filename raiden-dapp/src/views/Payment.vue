@@ -1,105 +1,114 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="payment">
-    <v-row class="payment__capacity" justify="center" no-gutters>
-      <v-col cols="7" class="payment__capacity_capacity-column">
-        <v-row class="payment__capacity__label">
-          {{ $t('payment.capacity-label') }}
-        </v-row>
-        <v-row
-          v-if="typeof token.decimals === 'number'"
-          class="payment__capacity__amount"
-        >
-          {{
-            $t('payment.capacity-amount', {
-              capacity: convertToUnits(capacity, token.decimals),
-              token: token.symbol
-            })
-          }}
-        </v-row>
-        <v-row v-else class="payment__capacity__amount"></v-row>
-        <v-img
-          :src="require('../assets/down_arrow.svg')"
-          max-width="18px"
-          class="payment__capacity__arrow"
-        ></v-img>
-      </v-col>
-      <v-col
-        cols="3"
-        class="payment__capacity__deposit-column"
-        align-self="center"
+    <v-container fluid class="payment__settings">
+      <v-row
+        align="center"
+        justify="center"
+        no-gutters
+        class="payment__actions"
       >
-        <v-dialog v-model="depositing" max-width="625">
-          <template #activator="{ on }">
-            <v-btn
-              @click="depositing = true"
-              v-on="on"
-              text
-              class="payment__capacity__deposit"
-            >
-              {{ $t('payment.deposit-button') }}
-            </v-btn>
-          </template>
-          <v-card class="payment__deposit-dialog">
-            <channel-deposit
-              @cancel="depositing = false"
-              @confirm="deposit($event)"
-              :token="token"
-              identifier="0"
-            ></channel-deposit>
-          </v-card>
-        </v-dialog>
-      </v-col>
-    </v-row>
+        <v-col cols="2" class="payment__channels">
+          <v-btn
+            @click="navigateToChannels(token.address)"
+            text
+            class="payment__channel-button"
+          >
+            {{ $t('payment.channel-button') }}
+          </v-btn>
+        </v-col>
+        <v-col cols="6" class="payment__token-networks">
+          <div class="payment__token-networks__amount">
+            {{
+              $t('payment.capacity-amount', {
+                capacity: convertToUnits(capacity, token.decimals),
+                token: token.symbol
+              })
+            }}
+          </div>
+          <div
+            @click="showTokenNetworks = true"
+            class="payment__token-networks__dropdown"
+          >
+            <span>{{ token.name }}</span>
+            <span>
+              <down-arrow />
+            </span>
+          </div>
+          <token-overlay
+            :show="showTokenNetworks"
+            @cancel="showTokenNetworks = false"
+          />
+        </v-col>
+        <v-col cols="2" class="payment__deposit">
+          <v-dialog v-model="depositing" max-width="625">
+            <template #activator="{ on }">
+              <v-btn
+                @click="depositing = true"
+                v-on="on"
+                text
+                class="payment__deposit-button"
+              >
+                {{ $t('payment.deposit-button') }}
+              </v-btn>
+            </template>
+            <v-card class="payment__deposit-dialog">
+              <channel-deposit
+                @cancel="depositing = false"
+                @confirm="deposit($event)"
+                :token="token"
+                identifier="0"
+              ></channel-deposit>
+            </v-card>
+          </v-dialog>
+        </v-col>
+      </v-row>
 
-    <v-row align="center" justify="center" class="payment__recipient">
-      <v-col cols="10">
-        <div class="payment__recipient__label">
-          {{ $t('payment.recipient-label') }}
-        </div>
-        <address-input
-          v-model="target"
-          :exclude="[token.address, defaultAccount]"
-          :block="blockedHubs"
-        ></address-input>
-      </v-col>
-    </v-row>
+      <v-row justify="center" align="center" class="payment__recipient">
+        <v-col cols="10">
+          <address-input
+            v-model="target"
+            :exclude="[token.address, defaultAccount]"
+            :block="blockedHubs"
+          ></address-input>
+        </v-col>
+      </v-row>
 
-    <v-row align="center" justify="center">
-      <v-col cols="10">
-        <amount-input
-          v-model="amount"
-          :token="token"
-          :label="$t('payment.amount-label')"
-          :placeholder="$t('payment.amount-placeholder')"
-          :max="capacity"
-          limit
-        ></amount-input>
-      </v-col>
-    </v-row>
+      <v-row justify="center" align="center">
+        <v-col cols="10">
+          <amount-input
+            v-model="amount"
+            :token="token"
+            :placeholder="$t('payment.amount-placeholder')"
+            :max="capacity"
+            limit
+          ></amount-input>
+        </v-col>
+      </v-row>
 
-    <v-spacer></v-spacer>
+      <v-spacer></v-spacer>
 
-    <v-dialog v-model="findingRoutes" max-width="625">
-      <template #activator="{ on }">
-        <action-button
-          :enabled="valid"
-          @click="findingRoutes = true"
-          :text="$t('payment.pay-button')"
-          v-on="on"
-          class="payment__pay-button"
-        ></action-button>
-      </template>
-      <v-card class="payment__route-dialog">
-        <find-routes
-          v-if="findingRoutes"
-          @cancel="findingRoutes = false"
-          @confirm="transfer($event)"
-          :token="token"
-          :amount="amount"
-          :target="target"
-        ></find-routes>
-      </v-card>
-    </v-dialog>
+      <v-dialog v-model="findingRoutes" max-width="625">
+        <template #activator="{ on }">
+          <action-button
+            :enabled="valid"
+            @click="findingRoutes = true"
+            :text="$t('general.buttons.continue')"
+            v-on="on"
+            class="payment__pay-button"
+          ></action-button>
+        </template>
+        <v-card class="payment__route-dialog">
+          <find-routes
+            v-if="findingRoutes"
+            @cancel="findingRoutes = false"
+            @confirm="transfer($event)"
+            :token="token"
+            :amount="amount"
+            :target="target"
+          ></find-routes>
+        </v-card>
+      </v-dialog>
+    </v-container>
 
     <stepper
       :display="loading"
@@ -126,10 +135,12 @@ import { BalanceUtils } from '@/utils/balance-utils';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
 import Divider from '@/components/Divider.vue';
+import TokenOverlay from '@/components/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
+import DownArrow from '@/components/icons/DownArrow.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
 import { RaidenChannel, ChannelState } from 'raiden-ts';
@@ -137,6 +148,7 @@ import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { getAddress, getAmount } from '@/utils/query-params';
+import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({
   components: {
@@ -148,14 +160,17 @@ import { getAddress, getAmount } from '@/utils/query-params';
     AmountInput,
     Stepper,
     ErrorScreen,
-    FindRoutes
+    FindRoutes,
+    DownArrow,
+    TokenOverlay
   },
   computed: {
     ...mapState(['defaultAccount']),
     ...mapGetters(['channelWithBiggestCapacity', 'channels'])
   }
 })
-export default class Payment extends Mixins(NavigationMixin) {
+export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
+  showTokenNetworks: boolean = false;
   target: string = '';
 
   defaultAccount!: string;
@@ -288,53 +303,10 @@ export default class Payment extends Mixins(NavigationMixin) {
 .payment {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
 
-.payment__capacity {
-  position: relative;
-  background-image: linear-gradient(180deg, #050505 0%, #0a1923 100%);
-}
-
-.payment__capacity__deposit-column {
-  justify-content: flex-end;
-  display: flex;
-}
-
-.payment__capacity_capacity-column {
-  align-self: center;
-}
-
-.payment__capacity__arrow {
-  position: absolute;
-  left: calc(50% - 9px);
-  bottom: 10px;
-}
-
-.payment__capacity__label {
-  color: $secondary-color;
-  font-size: 13px;
-  font-weight: bold;
-  letter-spacing: 3px;
-  line-height: 15px;
-  text-transform: uppercase;
-}
-
-.payment__capacity__amount {
-  color: $color-white;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 19px;
-  padding-left: 11px;
+.payment__actions {
   margin-top: 10px;
-}
-
-.payment__capacity__deposit {
-  color: $primary-color;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 21px;
 }
 
 .payment__recipient {
@@ -357,5 +329,45 @@ export default class Payment extends Mixins(NavigationMixin) {
 
 .payment__pay-button {
   margin-bottom: 24px;
+}
+
+.payment__channel-button,
+.payment__deposit-button {
+  color: $primary-color;
+  text-transform: none;
+}
+
+.payment__token-networks__amount {
+  color: $color-white;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 19px;
+  padding-left: 11px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.payment__token-networks__dropdown {
+  color: $primary-color;
+  font-size: 16px;
+  margin-top: 5px;
+  cursor: pointer;
+  text-align: center;
+
+  &:hover {
+    color: $secondary-color;
+
+    & ::v-deep g {
+      stroke: $secondary-color !important;
+    }
+  }
+
+  & > span {
+    display: inline-block;
+
+    &:last-child {
+      margin-left: 5px;
+    }
+  }
 }
 </style>

@@ -21,6 +21,7 @@ import { BigNumber } from 'ethers/utils';
 import { $identicon } from '../utils/mocks';
 
 import Mocked = jest.Mocked;
+import { RouteNames } from '@/route-names';
 
 Vue.use(Vuetify);
 
@@ -69,6 +70,7 @@ describe('Payment.vue', () => {
   beforeEach(() => {
     loading.mockReset();
     done.mockReset();
+    router.push = jest.fn().mockResolvedValue(null);
   });
 
   beforeAll(async () => {
@@ -264,5 +266,28 @@ describe('Payment.vue', () => {
     expect(loading).toHaveBeenNthCalledWith(2, false);
     expect(done).toBeCalledTimes(0);
     expect(wrapper.vm.$data.error).toEqual('failure');
+  });
+
+  test('should navigate to channel list', async () => {
+    // click on channels button
+    wrapper.find('.payment__channel-button').trigger('click');
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.CHANNELS
+      })
+    );
+  });
+
+  test('should show token overlay', async () => {
+    // click on channels button
+    wrapper.find('.payment__token-networks__dropdown').trigger('click');
+
+    await flushPromises();
+    jest.advanceTimersByTime(2000);
+
+    const tokenOverlay = wrapper.find('.v-overlay--active');
+    expect(tokenOverlay.exists()).toBe(true);
   });
 });

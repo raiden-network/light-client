@@ -28,6 +28,15 @@ export default class NavigationMixin extends Vue {
     });
   }
 
+  navigateToChannels(token: string) {
+    this.$router.push({
+      name: RouteNames.CHANNELS,
+      params: {
+        token: token
+      }
+    });
+  }
+
   navigateToSelectPaymentTarget(token: string) {
     this.$router.push({
       name: RouteNames.PAYMENT,

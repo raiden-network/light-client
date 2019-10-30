@@ -26,6 +26,9 @@ module.exports = {
     }],
     "vue/v-bind-style": ["error", "shorthand"],
     "vue/v-on-style": ["error", "shorthand"],
+    'vue-i18n/no-raw-text': ['error', {
+      "ignoreNodes": ['v-icon'],
+    }]
   },
   parserOptions: {
     parser: '@typescript-eslint/parser',

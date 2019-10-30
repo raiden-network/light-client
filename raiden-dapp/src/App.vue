@@ -116,12 +116,11 @@ export default class App extends Vue {
   left: 0;
   right: 0;
   width: 220px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0 0 27px;
+  margin: 27px auto 27px auto;
 
   a {
     color: #646464;
+    text-decoration: none;
   }
 }
 </style>
