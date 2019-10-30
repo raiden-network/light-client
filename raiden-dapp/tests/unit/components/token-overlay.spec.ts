@@ -1,5 +1,4 @@
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
-import flushPromises from 'flush-promises';
 import Vuex, { Store } from 'vuex';
 import Vuetify from 'vuetify';
 
@@ -12,13 +11,11 @@ describe('TokenOverlay.vue', () => {
   addElemWithDataAppToBody();
 
   let wrapper: Wrapper<TokenOverlay>;
-  let navigateToTokenSelect: jest.Mock<any, any>;
 
   beforeEach(() => {
     const localVue = createLocalVue();
     localVue.use(Vuex);
     localVue.use(Vuetify);
-    navigateToTokenSelect = jest.fn().mockResolvedValue(null);
     wrapper = mount(TokenOverlay, {
       localVue,
       store: new Store({
