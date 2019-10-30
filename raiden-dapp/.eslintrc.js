@@ -28,6 +28,12 @@ module.exports = {
     "vue/v-on-style": ["error", "shorthand"],
     'vue-i18n/no-raw-text': ['error', {
       "ignoreNodes": ['v-icon'],
+    }],
+    "@typescript-eslint/no-unused-vars": ["error", {
+      "vars": "all",
+      "args": "after-used",
+      "ignoreRestSiblings": false,
+      "argsIgnorePattern": "^_"
     }]
   },
   parserOptions: {

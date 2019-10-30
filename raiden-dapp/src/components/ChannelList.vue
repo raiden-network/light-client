@@ -133,13 +133,11 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   token!: Token;
   selectedChannel: RaidenChannel | null = null;
 
-  // noinspection JSUnusedLocalSymbols
   @Emit()
-  message(message: string) {}
+  message(_message: string) {}
 
-  // noinspection JSUnusedLocalSymbols
   @Emit()
-  visibleChanged(element: string) {}
+  visibleChanged(_element: string) {}
 
   displayFormat = Filters.displayFormat;
   capitalizeFirst = Filters.capitalizeFirst;

@@ -104,7 +104,6 @@ import { mapGetters } from 'vuex';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { TokenModel, Token } from '../model/types';
-import { BalanceUtils } from '@/utils/balance-utils';
 import Filters from '@/filters';
 
 @Component({

@@ -109,11 +109,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     }
   }
 
-  // noinspection JSUnusedLocalSymbols
   @Emit()
-  public input(value?: string) {}
+  public input(_value?: string) {}
 
-  // noinspection JSMethodCanBeStatic
   isChecksumAddress(address: string): boolean {
     const tokenAddress = address;
     return (

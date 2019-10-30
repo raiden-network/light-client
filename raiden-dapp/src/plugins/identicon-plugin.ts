@@ -1,7 +1,7 @@
 import _Vue from 'vue';
 import { IdenticonCache } from '@/services/identicon-cache';
 
-export function IdenticonPlugin(Vue: typeof _Vue, options?: any): void {
+export function IdenticonPlugin(Vue: typeof _Vue, _options?: any): void {
   Vue.prototype.$identicon = new IdenticonCache();
 }
 

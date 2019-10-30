@@ -1,12 +1,9 @@
 /* istanbul ignore file */
 import Vue from 'vue';
-import Router, { Route } from 'vue-router';
-import { Dictionary } from 'vue-router/types/router';
+import Router from 'vue-router';
 
 import Home from './views/Home.vue';
 import { RouteNames } from '@/route-names';
-import store from './store';
-import { Tokens } from './types';
 
 Vue.use(Router);
 
