@@ -60,7 +60,6 @@ function postBuild() {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir);
     const contractsDir = path.join(cwd, '../src/contracts');
     fs.readdirSync(contractsDir)
-      .filter(fileName => fileName.endsWith('.d.ts'))
       .forEach(fileName =>
         fs.copyFileSync(path.join(contractsDir, fileName), path.join(dir, fileName)),
       );

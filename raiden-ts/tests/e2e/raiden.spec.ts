@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { first, filter } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
@@ -23,8 +24,7 @@ import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfer
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
 import { losslessStringify } from 'raiden-ts/utils/data';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -36,7 +36,11 @@ describe('Raiden', () => {
     token: string,
     tokenNetwork: string,
     partner: string,
-    network: Network;
+    network: Network,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    pfsInfoResponse: any,
+    pfsAddress: string,
+    pfsUrl: string;
   const config: Partial<RaidenConfig> = { settleTimeout: 20, revealTimeout: 5 };
 
   let httpBackend: MockMatrixRequestFn;
@@ -52,13 +56,38 @@ describe('Raiden', () => {
   Object.assign(global, { fetch });
 
   beforeAll(async () => {
-    jest.setTimeout(20e3);
+    jest.setTimeout(40e3);
 
     contractsInfo = await provider.deployRegistry();
     ({ token, tokenNetwork } = await provider.deployTokenNetwork(contractsInfo));
     accounts = await provider.listAccounts();
     partner = accounts[1];
     network = await provider.getNetwork();
+
+    const serviceRegistryContract = ServiceRegistryFactory.connect(
+        contractsInfo.ServiceRegistry.address,
+        provider,
+      ),
+      events = await provider.getLogs({
+        ...serviceRegistryContract.filters.RegisteredService(null, null, null, null),
+        fromBlock: 0,
+        toBlock: 'latest',
+      }),
+      parsed = serviceRegistryContract.interface.parseLog(events[0]);
+    pfsAddress = parsed.values[0] as string;
+    pfsUrl = await serviceRegistryContract.functions.urls(pfsAddress);
+
+    pfsInfoResponse = {
+      message: 'pfs message',
+      network_info: {
+        chain_id: network.chainId,
+        registry_address: contractsInfo.TokenNetworkRegistry.address,
+      },
+      operator: 'pfs operator',
+      payment_address: pfsAddress,
+      price_info: 2,
+      version: '0.4.1',
+    };
   });
 
   beforeEach(async () => {
@@ -117,6 +146,8 @@ describe('Raiden', () => {
               contractsInfo: {
                 // eslint-disable-next-line @typescript-eslint/camelcase
                 TokenNetworkRegistry: { address: token as Address, block_number: 0 },
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                ServiceRegistry: { address: partner as Address, block_number: 1 },
               },
               address: accounts[1] as Address,
             },
@@ -162,14 +193,14 @@ describe('Raiden', () => {
   });
 
   test('config', async () => {
-    expect.assertions(2);
+    expect.assertions(3);
     expect(raiden.config).toMatchObject({
       discoveryRoom: 'raiden_1338_discovery',
       pfsRoom: 'raiden_1338_path_finding',
-      pfs: null,
       settleTimeout: 20,
       revealTimeout: 5,
     });
+    expect(raiden.config.pfs).toBeUndefined();
     raiden.updateConfig({ revealTimeout: 8 });
     expect(raiden.config).toMatchObject({
       revealTimeout: 8,
@@ -469,7 +500,7 @@ describe('Raiden', () => {
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toEqual({
         [token]: {},
       });
-    }, 60e3);
+    }, 90e3);
   });
 
   describe('events$', () => {
@@ -652,6 +683,14 @@ describe('Raiden', () => {
 
       afterEach(() => raiden1.stop());
 
+      test('fail: direct channel without enough capacity, pfs disabled', async () => {
+        expect.assertions(2);
+        raiden.updateConfig({ pfs: null });
+        await expect(raiden.transfer(token, partner, 201)).rejects.toThrowError(
+          /no direct route/i,
+        );
+      });
+
       test('success: direct route', async () => {
         expect.assertions(4);
 
@@ -665,14 +704,7 @@ describe('Raiden', () => {
         expect(transfers[secrethash].status).toBe(RaidenSentTransferStatus.pending);
       });
 
-      test('fail: direct channel without enough capacity, pfs disabled', async () => {
-        expect.assertions(2);
-        await expect(raiden.transfer(token, partner, 201)).rejects.toThrowError(
-          /no direct route/i,
-        );
-      });
-
-      test('success: pfs route', async () => {
+      test('success: auto pfs route', async () => {
         expect.assertions(7);
 
         const target = accounts[2],
@@ -700,8 +732,16 @@ describe('Raiden', () => {
         });
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        const pfs = 'http://pfs';
-        raiden.updateConfig({ pfs });
+        // auto pfs mode
+        raiden.updateConfig({ pfs: undefined });
+
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: jest.fn(async () => pfsInfoResponse),
+          text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+        });
+
         const result = {
           result: [
             // first returned route is invalid and should be filtered
@@ -735,7 +775,7 @@ describe('Raiden', () => {
         });
 
         expect(fetch).toHaveBeenCalledWith(
-          expect.stringMatching(new RegExp(`^${pfs}/.*/${tokenNetwork}/paths$`)),
+          expect.stringMatching(new RegExp(`^${pfsUrl}/.*/${tokenNetwork}/paths$`)),
           expect.objectContaining({ method: 'POST' }),
         );
 
@@ -744,11 +784,45 @@ describe('Raiden', () => {
     });
   });
 
+  describe('findPFS', () => {
+    test('fail config.pfs not in auto mode', async () => {
+      expect.assertions(2);
+
+      raiden.updateConfig({ pfs: null }); // disabled pfs
+      await expect(raiden.findPFS()).rejects.toThrowError("pfs isn't auto");
+
+      raiden.updateConfig({ pfs: pfsUrl }); // pfs set
+      await expect(raiden.findPFS()).rejects.toThrowError("pfs isn't auto");
+    });
+
+    test('success', async () => {
+      expect.assertions(1);
+
+      // pfsInfo
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => pfsInfoResponse),
+        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      });
+
+      raiden.updateConfig({ pfs: undefined });
+      await expect(raiden.findPFS()).resolves.toEqual([
+        {
+          address: pfsAddress,
+          url: pfsUrl,
+          rtt: expect.any(Number),
+          price: expect.any(BigNumber),
+          token: expect.any(String),
+        },
+      ]);
+    });
+  });
+
   describe('findRoutes', () => {
-    const pfs = 'http://pfs';
     let raiden1: Raiden, raiden2: Raiden, target: string;
 
-    beforeAll(() => jest.setTimeout(60e3));
+    beforeAll(() => jest.setTimeout(90e3));
 
     beforeEach(async () => {
       target = accounts[2];
@@ -799,7 +873,14 @@ describe('Raiden', () => {
       });
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      raiden.updateConfig({ pfs });
+      raiden.updateConfig({ pfs: pfsUrl });
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => pfsInfoResponse),
+        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      });
     });
 
     afterEach(() => {
@@ -807,7 +888,7 @@ describe('Raiden', () => {
       raiden2.stop();
     });
 
-    test('success', async () => {
+    test('success with config.pfs', async () => {
       expect.assertions(4);
 
       const result = {
@@ -833,7 +914,57 @@ describe('Raiden', () => {
       ]);
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringMatching(new RegExp(`^${pfs}/.*/${tokenNetwork}/paths$`)),
+        expect.stringMatching(new RegExp(`^${pfsUrl}/.*/${tokenNetwork}/paths$`)),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+
+    test('success with findPFS', async () => {
+      expect.assertions(6);
+
+      // config.pfs in auto mode
+      raiden.updateConfig({ pfs: undefined });
+
+      const pfss = await raiden.findPFS();
+      expect(pfss).toEqual([
+        {
+          address: pfsAddress,
+          url: pfsUrl,
+          rtt: expect.any(Number),
+          price: expect.any(BigNumber),
+          token: expect.any(String),
+        },
+      ]);
+
+      const result = {
+        result: [
+          // first returned route is invalid and should be filtered
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [tokenNetwork, target], estimated_fee: 0 },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          { path: [raiden.address, partner, target], estimated_fee: 0 },
+        ],
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        feedback_token: '0xfeedback',
+      };
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => result),
+        text: jest.fn(async () => losslessStringify(result)),
+      });
+
+      await expect(raiden.findRoutes(token, target, 23, { pfs: pfss[0] })).resolves.toEqual([
+        { path: [partner, target], fee: bigNumberify(0) },
+      ]);
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`^${pfsUrl}/.*/info`)),
+        expect.anything(),
+      );
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`^${pfsUrl}/.*/${tokenNetwork}/paths$`)),
         expect.objectContaining({ method: 'POST' }),
       );
     });

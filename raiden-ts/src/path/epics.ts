@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { Observable, of, combineLatest, from, EMPTY } from 'rxjs';
+import { Observable, of, combineLatest, from, EMPTY, merge } from 'rxjs';
 import {
   filter,
   mergeMap,
@@ -11,11 +11,21 @@ import {
   withLatestFrom,
   timeout,
   debounceTime,
+  pluck,
+  distinctUntilChanged,
+  groupBy,
+  switchMap,
+  scan,
+  startWith,
+  tap,
+  delay,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
-import { bigNumberify } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { bigNumberify, BigNumber } from 'ethers/utils';
+import { Zero, Two } from 'ethers/constants';
+import { Event } from 'ethers/contract';
+import { isNil } from 'lodash';
 
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
@@ -29,8 +39,9 @@ import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
 import { Address, UInt, Int, decode } from '../utils/types';
 import { losslessStringify, losslessParse } from '../utils/data';
-import { pathFind, pathFound, pathFindFailed } from './actions';
-import { channelCanRoute } from './utils';
+import { getEventsStream } from '../utils/ethers';
+import { pathFind, pathFound, pathFindFailed, pfsListUpdated } from './actions';
+import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
 import { PathResults, Paths } from './types';
 
 /**
@@ -38,21 +49,31 @@ import { PathResults, Paths } from './types';
  *
  * @param action$ - Observable of pathFind actions
  * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps object
  * @returns Observable of pathFound|pathFindFailed actions
  */
 export const pathFindServiceEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, config$ }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<ActionType<typeof pathFound | typeof pathFindFailed>> =>
-  combineLatest(state$, getPresences$(action$), config$).pipe(
-    publishReplay(1, undefined, statePresencesConfig$ => {
+  combineLatest(
+    state$,
+    getPresences$(action$),
+    deps.config$, // don't need to be cached, but here to avoid separate withLatestFrom
+    action$.pipe(
+      filter(isActionOf(pfsListUpdated)),
+      pluck('payload', 'pfsList'),
+      startWith([] as readonly Address[]),
+    ),
+  ).pipe(
+    publishReplay(1, undefined, cached$ => {
       return action$.pipe(
         filter(isActionOf(pathFind)),
         concatMap(action =>
-          statePresencesConfig$.pipe(
+          cached$.pipe(
             first(),
-            mergeMap(([state, presences, { pfs, httpTimeout, pfsSafetyMargin }]) => {
+            mergeMap(([state, presences, { pfs: configPfs, httpTimeout, pfsSafetyMargin }]) => {
               const { tokenNetwork, target } = action.meta;
               if (!(tokenNetwork in state.channels))
                 throw new Error(`PFS: unknown tokenNetwork ${tokenNetwork}`);
@@ -63,21 +84,46 @@ export const pathFindServiceEpic = (
               // else, if possible, use a direct transfer
               else if (
                 channelCanRoute(state, presences, tokenNetwork, target, action.meta.value) === true
-              )
+              ) {
                 return of([{ path: [state.address, target], fee: Zero as Int<32> }]);
-              // else, request a route from PFS
-              else if (pfs !== null) {
-                // from all channels
-                return fromFetch(`${pfs}/api/v1/${tokenNetwork}/paths`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: losslessStringify({
-                    from: address,
-                    to: target,
-                    value: UInt(32).encode(action.meta.value),
-                    max_paths: 10,
-                  }),
-                }).pipe(
+              } else if (!action.payload.pfs && configPfs === null) {
+                // pfs not specified in action and disabled (null) in config
+                throw new Error(`PFS disabled and no direct route available`);
+              } else {
+                // else, request a route from PFS.
+                // pfs$ - Observable which emits one PFS info and then completes
+                const pfs$ = action.payload.pfs
+                  ? // first, honor action.payload.pfs
+                    of(action.payload.pfs)
+                  : !isNil(configPfs)
+                  ? // or if config.pfs isn't disabled nor auto (undefined), use it
+                    // configPfs is addr or url, so fetch pfsInfo from it
+                    pfsInfo(configPfs, deps)
+                  : // else (config.pfs undefined, auto mode)
+                    cached$.pipe(
+                      pluck(3), // get cached pfsList (4th combined value)
+                      // if needed, wait for list to be populated
+                      first(pfsList => pfsList.length > 0),
+                      // fetch pfsInfo from whole list & sort it
+                      mergeMap(pfsList => pfsListInfo(pfsList, deps)),
+                      tap(pfss => console.log('Auto-selecting best PFS from:', pfss)),
+                      // pop best ranked
+                      pluck(0),
+                    );
+                return pfs$.pipe(
+                  // TODO: use pfs.price to create & sign IOU
+                  mergeMap(pfs =>
+                    fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: losslessStringify({
+                        from: deps.address,
+                        to: target,
+                        value: UInt(32).encode(action.meta.value),
+                        max_paths: 10,
+                      }),
+                    }),
+                  ),
                   timeout(httpTimeout),
                   mergeMap(async response => {
                     const text = await response.text();
@@ -98,11 +144,9 @@ export const pathFindServiceEpic = (
                       })),
                   ),
                 );
-              } else {
-                throw new Error(`PFS disabled and no direct route available`);
               }
             }),
-            withLatestFrom(statePresencesConfig$),
+            withLatestFrom(cached$),
             // validate/cleanup received routes/paths/results
             map(([paths, [state, presences]]) => {
               const filteredPaths: Paths = [],
@@ -202,4 +246,75 @@ export const pfsCapacityUpdateEpic = (
       console.error('Error trying to generate & sign PFSCapacityUpdate', err);
       return EMPTY;
     }),
+  );
+
+/**
+ * Fetch & monitors ServiceRegistry's RegisteredService events, keep track of valid_till expiration
+ * and aggregate list of valid service addresses
+ *
+ * Notice this epic only deals with the events & addresses, and don't fetch URLs, which need to be
+ * fetched on-demand through [[pfsInfo]] & [[pfsListInfo]].
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps object
+ * @returns Observable of pfsListUpdated actions
+ */
+export const pfsServiceRegistryMonitorEpic = (
+  {  }: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
+): Observable<ActionType<typeof pfsListUpdated>> =>
+  state$.pipe(
+    pluck('blockNumber'),
+    distinctUntilChanged(),
+    publishReplay(1, undefined, blockNumber$ =>
+      config$.pipe(
+        // monitors config.pfs, and only monitors contract if it's undefined
+        pluck('pfs'),
+        distinctUntilChanged(),
+        switchMap(pfs =>
+          pfs !== undefined
+            ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or set
+              EMPTY
+            : // type of elements emitted by getEventsStream (past and new events coming from contract):
+              // [service, valid_till, deposit_amount, deposit_contract, Event]
+              getEventsStream<[Address, BigNumber, UInt<32>, Address, Event]>(
+                serviceRegistryContract,
+                [serviceRegistryContract.filters.RegisteredService(null, null, null, null)],
+                of(contractsInfo.ServiceRegistry.block_number), // at boot, always fetch from deploy block
+                blockNumber$, // ...up to current blockNumber, then monitor for new events
+              ).pipe(
+                groupBy(([service]) => service),
+                mergeMap(grouped$ =>
+                  grouped$.pipe(
+                    // switchMap ensures new events for each server (grouped$) picks latest event
+                    switchMap(([service, valid_till]) => {
+                      const now = Date.now(),
+                        validTill = valid_till.mul(1000); // milliseconds valid_till
+                      if (validTill.lt(now)) return EMPTY; // this event already expired
+                      // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
+                      const end$ = validTill.sub(now).lt(Two.pow(31))
+                        ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
+                        : EMPTY;
+                      return merge(of({ service, valid: true }), end$);
+                    }),
+                  ),
+                ),
+                scan(
+                  (acc, { service, valid }) =>
+                    !valid && acc.includes(service)
+                      ? acc.filter(s => s !== service)
+                      : valid && !acc.includes(service)
+                      ? [...acc, service]
+                      : acc,
+                  [] as readonly Address[],
+                ),
+                distinctUntilChanged(),
+                debounceTime(1e3), // debounce burst of updates on initial fetch
+                map(pfsList => pfsListUpdated({ pfsList })),
+              ),
+        ),
+      ),
+    ),
   );

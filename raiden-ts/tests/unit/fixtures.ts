@@ -7,48 +7,20 @@ patchEthersDefineReadOnly();
 import { Wallet } from 'ethers';
 import { AddressZero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
-import { MatrixClient } from 'matrix-js-sdk';
 
-import { Address, Hash, UInt, Int } from 'raiden-ts/utils/types';
-import { RaidenState } from 'raiden-ts/state';
-import { HumanStandardToken } from 'raiden-ts/contracts/HumanStandardToken';
-import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
-import { Metadata, Processed, MessageType } from 'raiden-ts/messages/types';
+import { Address, Hash, Int } from 'raiden-ts/utils/types';
+import { Processed, MessageType } from 'raiden-ts/messages/types';
 import { makeMessageId, makePaymentId } from 'raiden-ts/transfers/utils';
-import { Paths } from 'raiden-ts/path/types';
 
-import { makeMatrix, MockRaidenEpicDeps, MockedContract } from './mocks';
+import { makeMatrix, MockRaidenEpicDeps } from './mocks';
 
-export const epicFixtures = function(
-  depsMock: MockRaidenEpicDeps,
-): {
-  token: Address;
-  tokenNetwork: Address;
-  partner: Address;
-  target: Address;
-  matrix: jest.Mocked<MatrixClient>;
-  channelId: number;
-  settleTimeout: number;
-  isFirstParticipant: boolean;
-  tokenContract: MockedContract<HumanStandardToken>;
-  tokenNetworkContract: MockedContract<TokenNetwork>;
-  accessToken: string;
-  deviceId: string;
-  displayName: string;
-  partnerRoomId: string;
-  partnerUserId: string;
-  targetUserId: string;
-  state: RaidenState;
-  partnerSigner: Wallet;
-  txHash: Hash;
-  matrixServer: string;
-  userId: string;
-  processed: Processed;
-  paymentId: UInt<8>;
-  fee: Int<32>;
-  paths: Paths;
-  metadata: Metadata;
-} {
+/**
+ * Composes several constants used across epics
+ *
+ * @param depsMock - RaidenEpicDeps mock object constructed through raidenEpicDeps
+ * @returns Diverse constant values and objects
+ */
+export function epicFixtures(depsMock: MockRaidenEpicDeps) {
   const wallet = new Wallet('0x3333333333333333333333333333333333333333333333333333333333333333'),
     token = '0x0000000000000000000000000000000000010001' as Address,
     tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,
@@ -73,7 +45,20 @@ export const epicFixtures = function(
     paymentId = makePaymentId(),
     fee = bigNumberify(3) as Int<32>,
     paths = [{ path: [partner], fee }],
-    metadata = { routes: [{ route: [partner] }] };
+    metadata = { routes: [{ route: [partner] }] },
+    pfsAddress = '0x0900000000000000000000000000000000000009' as Address,
+    pfsTokenAddress = '0x0800000000000000000000000000000000000008' as Address,
+    pfsInfoResponse = {
+      message: 'pfs message',
+      network_info: {
+        chain_id: depsMock.network.chainId,
+        registry_address: depsMock.contractsInfo.TokenNetworkRegistry.address,
+      },
+      operator: 'pfs operator',
+      payment_address: pfsAddress,
+      price_info: 2,
+      version: '0.4.1',
+    };
 
   depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async _token =>
     _token === token ? tokenNetwork : AddressZero,
@@ -106,5 +91,8 @@ export const epicFixtures = function(
     fee,
     paths,
     metadata,
+    pfsAddress,
+    pfsTokenAddress,
+    pfsInfoResponse,
   };
-};
+}

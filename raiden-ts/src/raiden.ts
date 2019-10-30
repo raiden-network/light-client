@@ -1,7 +1,7 @@
-import { Signer, Contract } from 'ethers';
+import { Signer } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, BigNumber, BigNumberish, ParamType } from 'ethers/utils';
+import { Network, BigNumber, BigNumberish } from 'ethers/utils';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
@@ -28,6 +28,7 @@ import {
   merge,
   defer,
   EMPTY,
+  ReplaySubject,
 } from 'rxjs';
 import {
   first,
@@ -41,18 +42,19 @@ import {
 } from 'rxjs/operators';
 
 import './polyfills';
-import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
-import { TokenNetwork } from './contracts/TokenNetwork';
-import { HumanStandardToken } from './contracts/HumanStandardToken';
-
-import TokenNetworkRegistryAbi from './abi/TokenNetworkRegistry.json';
-import TokenNetworkAbi from './abi/TokenNetwork.json';
-import HumanStandardTokenAbi from './abi/HumanStandardToken.json';
+import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
+import { TokenNetworkFactory } from './contracts/TokenNetworkFactory';
+import { HumanStandardTokenFactory } from './contracts/HumanStandardTokenFactory';
+import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import kovanDeploy from './deployment/deployment_kovan.json';
 import goerliDeploy from './deployment/deployment_goerli.json';
+import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
+import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
+import kovanServicesDeploy from './deployment/deployment_services_kovan.json';
+import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
 
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
@@ -91,8 +93,9 @@ import {
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './transfers/utils';
-import { pathFind, pathFound, pathFindFailed } from './path/actions';
-import { Paths, RaidenPaths } from './path/types';
+import { pathFind, pathFound, pathFindFailed, pfsListUpdated } from './path/actions';
+import { Paths, RaidenPaths, PFS, RaidenPFS } from './path/types';
+import { pfsListInfo } from './path/utils';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { losslessParse } from './utils/data';
@@ -135,6 +138,11 @@ export class Raiden {
    * Expose ether's Provider.resolveName for ENS support
    */
   public readonly resolveName: (name: string) => Promise<Address>;
+
+  /**
+   * Store latest seen pfsListUpdated action payload for findPFS
+   */
+  private readonly pfsList$: ReplaySubject<readonly Address[]>;
 
   /**
    * Get constant token details from token contract, caches it.
@@ -253,6 +261,17 @@ export class Raiden {
       return { totalSupply, decimals, name, symbol };
     });
 
+    // pipe pfsListUpdated action payloead to pfsList$ replay subject, to keep latest seen emission
+    // around. Epics don't need this, as they can monitor/multicast action$ directly
+    const pfsList$ = new ReplaySubject<readonly Address[]>(1);
+    this.pfsList$ = pfsList$;
+    action$
+      .pipe(
+        filter(isActionOf(pfsListUpdated)),
+        pluck('payload', 'pfsList'),
+      )
+      .subscribe(pfsList$);
+
     const middlewares: Middleware[] = [
       createLogger({
         level: () =>
@@ -274,22 +293,19 @@ export class Raiden {
       signer,
       address,
       contractsInfo,
-      registryContract: new Contract(
+      registryContract: TokenNetworkRegistryFactory.connect(
         contractsInfo.TokenNetworkRegistry.address,
-        TokenNetworkRegistryAbi as ParamType[],
         signer,
-      ) as TokenNetworkRegistry,
-      getTokenNetworkContract: memoize(
-        (address: Address) =>
-          new Contract(address, TokenNetworkAbi as ParamType[], signer) as TokenNetwork,
       ),
-      getTokenContract: memoize(
-        (address: Address) =>
-          new Contract(
-            address,
-            HumanStandardTokenAbi as ParamType[],
-            signer,
-          ) as HumanStandardToken,
+      getTokenNetworkContract: memoize((address: Address) =>
+        TokenNetworkFactory.connect(address, signer),
+      ),
+      getTokenContract: memoize((address: Address) =>
+        HumanStandardTokenFactory.connect(address, signer),
+      ),
+      serviceRegistryContract: ServiceRegistryFactory.connect(
+        contractsInfo.ServiceRegistry.address,
+        signer,
       ),
     };
     // minimum blockNumber of contracts deployment as start scan block
@@ -359,16 +375,28 @@ export class Raiden {
     if (!contracts) {
       switch (network.name) {
         case 'rinkeby':
-          contracts = (rinkebyDeploy.contracts as unknown) as ContractsInfo;
+          contracts = ({
+            ...rinkebyDeploy.contracts,
+            ...rinkebyServicesDeploy.contracts,
+          } as unknown) as ContractsInfo;
           break;
         case 'ropsten':
-          contracts = (ropstenDeploy.contracts as unknown) as ContractsInfo;
+          contracts = ({
+            ...ropstenDeploy.contracts,
+            ...ropstenServicesDeploy.contracts,
+          } as unknown) as ContractsInfo;
           break;
         case 'kovan':
-          contracts = (kovanDeploy.contracts as unknown) as ContractsInfo;
+          contracts = ({
+            ...kovanDeploy.contracts,
+            ...kovanServicesDeploy.contracts,
+          } as unknown) as ContractsInfo;
           break;
         case 'goerli':
-          contracts = (goerliDeploy.contracts as unknown) as ContractsInfo;
+          contracts = ({
+            ...goerliDeploy.contracts,
+            ...goerliServicesDeploy.contracts,
+          } as unknown) as ContractsInfo;
           break;
         default:
           throw new Error(
@@ -768,6 +796,10 @@ export class Raiden {
    *      <li>secrethash - Must match secret, if both provided, or else, secret must be
    *          informed to target by other means, and reveal can't be performed</li>
    *      <li>paths - Used to specify possible routes & fees instead of querying PFS.</li>
+   *      <li>pfs - Use this PFS instead of configured or automatically choosen ones.
+   *          Is ignored if paths were already provided. If neither are set and config.pfs is not
+   *          disabled (null), use it if set or if undefined (auto mode), fetches the best
+   *          PFS from ServiceRegistry and automatically fetch routes from it.</li>
    *    </ul>
    * @returns A promise to transfer's secrethash (unique id) when it's accepted
    */
@@ -780,15 +812,17 @@ export class Raiden {
       secret?: string;
       secrethash?: string;
       paths?: RaidenPaths;
+      pfs?: RaidenPFS;
     } = {},
   ): Promise<Hash> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const decodedValue = decode(UInt(32), value);
-    const paymentId = options.paymentId ? decode(UInt(8), options.paymentId) : makePaymentId();
-    const paths = options.paths ? decode(Paths, options.paths) : undefined;
+    const decodedValue = decode(UInt(32), value),
+      paymentId = options.paymentId ? decode(UInt(8), options.paymentId) : makePaymentId(),
+      paths = options.paths ? decode(Paths, options.paths) : undefined,
+      pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
 
     if (options.secret !== undefined && !Secret.is(options.secret))
       throw new Error('Invalid options.secret');
@@ -823,7 +857,9 @@ export class Raiden {
       // request pathFind; even if paths were provided, send it again for validation
       // this is done at 'merge' subscription time (i.e. when above action filter is subscribed)
       defer(() => {
-        this.store.dispatch(pathFind({ paths }, { tokenNetwork, target, value: decodedValue }));
+        this.store.dispatch(
+          pathFind({ paths, pfs }, { tokenNetwork, target, value: decodedValue }),
+        );
         return EMPTY;
       }),
     )
@@ -872,18 +908,22 @@ export class Raiden {
    * @param token - Token address on currently configured token network registry
    * @param target - Target address (must be getAvailability before)
    * @param value - Minimum capacity required on routes
+   * @param options - Optional parameters
+   * @param options.pfs - Use this PFS instead of configured or automatically choosen ones
    * @returns A promise to returned routes/paths result
    */
   public async findRoutes(
     token: string,
     target: string,
     value: BigNumberish,
+    options: { pfs?: RaidenPFS } = {},
   ): Promise<RaidenPaths> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const decodedValue = decode(UInt(32), value);
+    const decodedValue = decode(UInt(32), value),
+      pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
 
     const promise = this.action$
       .pipe(
@@ -900,8 +940,28 @@ export class Raiden {
         }),
       )
       .toPromise();
-    this.store.dispatch(pathFind({}, { tokenNetwork, target, value: decodedValue }));
+    this.store.dispatch(pathFind({ pfs }, { tokenNetwork, target, value: decodedValue }));
     return promise;
+  }
+
+  /**
+   * Returns a sorted array of info of available PFS
+   *
+   * It uses data polled from ServiceRegistry, which is available only when config.pfs is
+   * undefined, instead of set or disabled (null), and will reject if not.
+   * It can reject if the validated list is empty, meaning we can be out-of-sync (we're outdated or
+   * they are) with PFSs deployment, or no PFS is available on this TokenNetwork/blockchain.
+   *
+   * @returns Promise to array of PFS, which is the interface which describes a PFS
+   */
+  public async findPFS(): Promise<PFS[]> {
+    if (this.config.pfs !== undefined) throw new Error("config.pfs isn't auto (undefined)");
+    return this.pfsList$
+      .pipe(
+        first(),
+        mergeMap(pfsList => pfsListInfo(pfsList, this.deps)),
+      )
+      .toPromise();
   }
 }
 

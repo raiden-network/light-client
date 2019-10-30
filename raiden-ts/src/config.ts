@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import { Network } from 'ethers/utils';
 import { DeepPartial } from 'redux';
+import { Address } from './utils/types';
 
 /**
  * A Raiden configuration object with required parameters and
@@ -11,7 +12,6 @@ import { DeepPartial } from 'redux';
  * - revealTimeout - Timeout for secrets to be revealed
  * - settleTimeout - Timeout for channels to be settled
  * - httpTimeout - Used in http fetch requests
- * - pfs - Path Finding Service URL, set to null to disable
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10% safety margin.
@@ -20,6 +20,8 @@ import { DeepPartial } from 'redux';
  * - matrixServer? - Specify a matrix server to use.
  * - logger? - String specifying the console log level of redux-logger. Use '' to disable.
  *             Defaults to 'debug' if undefined and process.env.NODE_ENV === 'development'
+ * - pfs - Path Finding Service URL or Address. Set to null to disable, or leave undefined to
+ *             enable automatic fetching from ServiceRegistry.
  */
 export const RaidenConfig = t.readonly(
   t.intersection([
@@ -28,7 +30,6 @@ export const RaidenConfig = t.readonly(
       revealTimeout: t.number,
       settleTimeout: t.number,
       httpTimeout: t.number,
-      pfs: t.union([t.string, t.null]),
       discoveryRoom: t.union([t.string, t.null]),
       pfsRoom: t.union([t.string, t.null]),
       pfsSafetyMargin: t.number,
@@ -37,6 +38,7 @@ export const RaidenConfig = t.readonly(
     t.partial({
       matrixServer: t.string,
       logger: t.keyof({ ['']: null, debug: null, log: null, info: null, warn: null, error: null }),
+      pfs: t.union([Address, t.string, t.null]),
     }),
   ]),
 );
@@ -54,19 +56,12 @@ export function makeDefaultConfig(
   { network }: { network: Network },
   overwrites: DeepPartial<RaidenConfig> = {},
 ): RaidenConfig {
-  const pfs: { [networkName: string]: string } = {
-    goerli: 'https://pfs-goerli.services-test.raiden.network',
-    ropsten: 'https://pfs-ropsten.services-test.raiden.network',
-    kovan: 'https://pfs-kovan.services-test.raiden.network',
-    rinkeby: 'https://pfs-rinkeby.services-test.raiden.network',
-  };
   return {
     matrixServerLookup:
       'https://raw.githubusercontent.com/raiden-network/raiden-transport/master/known_servers.test.yaml',
     settleTimeout: 500,
     revealTimeout: 50,
     httpTimeout: 30e3,
-    pfs: pfs[network.name] || null,
     discoveryRoom: `raiden_${
       network.name !== 'unknown' ? network.name : network.chainId
     }_discovery`,
