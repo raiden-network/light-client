@@ -3,16 +3,26 @@ version: 1
 update_configs:
   - package_manager: "javascript"
     directory: "/raiden-ts"
-    update_schedule: "weekly"
+    update_schedule: "live"
     default_labels:
       - "dependencies"
     commit_message:
       prefix: "dependencies"
+    version_requirement_updates: "increase_versions"
+    default_reviewers:
+      - "kelsos"
+      - "andrevmatos"
+      - "nephix"
 
   - package_manager: "javascript"
     directory: "/raiden-dapp"
-    update_schedule: "weekly"
+    update_schedule: "live"
     default_labels:
       - "dependencies"
     commit_message:
       prefix: "dependencies"
+    version_requirement_updates: "increase_versions"
+    default_reviewers:
+      - "kelsos"
+      - "andrevmatos"
+      - "nephix"
