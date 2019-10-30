@@ -2,14 +2,14 @@
   <v-overlay :value="show" absolute opacity="1.0" class="token-network-overlay">
     <v-container class="container">
       <v-row no-gutters justify="end">
-        <v-btn @click="cancel" icon class="close-button">
+        <v-btn @click="cancel" icon class="token-network-overlay__close-button">
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-row>
 
-      <v-row id="connectNew">
+      <v-row id="connect-new">
         <v-col cols="12">
-          <v-list class="item-list">
+          <v-list class="connect-new__item-list">
             <v-list-item @click="navigateToTokenSelect()">
               <v-col cols="2">
                 <v-list-item-avatar>
@@ -18,7 +18,11 @@
                   </v-btn>
                 </v-list-item-avatar>
               </v-col>
-              <v-col cols="10" align-self="center" class="connect-new-token">
+              <v-col
+                cols="10"
+                align-self="center"
+                class="connect-new__connect-new-token"
+              >
                 {{ $t('tokens.connect-new') }}
               </v-col>
             </v-list-item>
@@ -28,14 +32,22 @@
 
       <v-row>
         <v-col cols="2" align-self="center"></v-col>
-        <v-col cols="10" align-self="center" class="header">
+        <v-col
+          cols="10"
+          align-self="center"
+          class="token-network-overlay__header"
+        >
           {{ $t('tokens.connected.header') }}
         </v-col>
       </v-row>
 
-      <v-row id="tokenList">
+      <v-row class="token-list">
         <v-col cols="12">
-          <v-list v-for="(token, i) in tokens" :key="i" class="item-list">
+          <v-list
+            v-for="(token, i) in tokens"
+            :key="i"
+            class="token-list__item-list"
+          >
             <v-list-item
               :key="token.address"
               :to="`/payment/${token.address}`"
@@ -52,7 +64,7 @@
               </v-col>
               <v-col cols="8">
                 <v-list-item-content>
-                  <v-list-item-title class="token-title">
+                  <v-list-item-title class="token-list__token-title">
                     {{
                       $t('select-token.tokens.token.token-information', {
                         symbol: token.symbol,
@@ -60,7 +72,7 @@
                       })
                     }}
                   </v-list-item-title>
-                  <v-list-item-subtitle class="token-address">
+                  <v-list-item-subtitle class="token-list__token-address">
                     <v-tooltip bottom>
                       <template #activator="{ on }">
                         <span v-on="on">{{ token.address | truncate }}</span>
@@ -72,7 +84,7 @@
               </v-col>
               <v-col cols="2">
                 <v-list-item-action-text>
-                  <span class="token-balance">
+                  <span class="token-list__token-balance">
                     {{ getBalance(token) }}
                   </span>
                 </v-list-item-action-text>
@@ -122,7 +134,7 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
 
 .token-network-overlay {
   ::v-deep .v-overlay__scrim {
-    background: linear-gradient(0deg, #050505 0%, #0a1923 100%) !important;
+    background: linear-gradient(180deg, #050505 0%, #0a1923 100%) !important;
   }
 
   ::v-deep .v-overlay__content {
@@ -141,11 +153,12 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
     padding: 0 !important;
   }
 
-  .close-button {
+  .token-network-overlay__close-button {
     margin: 15px;
   }
 
-  .item-list {
+  .token-list__item-list,
+  .connect-new__item-list {
     height: 100%;
     background-color: transparent !important;
     padding-bottom: 0;
@@ -156,20 +169,20 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
     }
   }
 
-  .connect-new-token,
-  .header,
-  .token-title {
+  .connect-new__connect-new-token,
+  .token-network-overlay__header,
+  .token-list__token-title {
     font-weight: bold;
     line-height: 20px;
     font-size: 16px;
   }
 
-  .header {
+  .token-network-overlay__header {
     color: $primary-color;
     text-transform: uppercase;
   }
 
-  .token-balance {
+  .token-list__token-balance {
     color: $color-white;
     font-family: Roboto, sans-serif;
     font-size: 16px;
@@ -179,7 +192,7 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
     padding-right: 20px;
   }
 
-  .token-address {
+  .token-list__token-address {
     color: #696969 !important;
     line-height: 20px;
     font-size: 16px;

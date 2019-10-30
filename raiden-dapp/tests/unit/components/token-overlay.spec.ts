@@ -48,12 +48,12 @@ describe('TokenOverlay.vue', () => {
   });
 
   test('should hide if close button is clicked', () => {
-    wrapper.find('.close-button').trigger('click');
+    wrapper.find('.token-network-overlay__close-button').trigger('click');
     expect(wrapper.find('.v-overlay--active').exists()).toBe(false);
   });
 
   test('should display connect new token list item', () => {
-    const connectNewToken = wrapper.find('#connectNew v-list-item');
+    const connectNewToken = wrapper.find('#connect-new v-list-item');
     expect(connectNewToken.exists()).toBe(true);
   });
 });
