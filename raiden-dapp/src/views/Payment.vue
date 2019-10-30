@@ -87,16 +87,14 @@
 
       <v-spacer></v-spacer>
 
+      <action-button
+        :enabled="valid"
+        @click="findingRoutes = true"
+        :text="$t('general.buttons.continue')"
+        class="payment__pay-button"
+      ></action-button>
+
       <v-dialog v-model="findingRoutes" max-width="625">
-        <template #activator="{ on }">
-          <action-button
-            :enabled="valid"
-            @click="findingRoutes = true"
-            :text="$t('general.buttons.continue')"
-            v-on="on"
-            class="payment__pay-button"
-          ></action-button>
-        </template>
         <v-card class="payment__route-dialog">
           <find-routes
             v-if="findingRoutes"
