@@ -2,7 +2,8 @@ import {
   Raiden,
   RaidenChannel,
   RaidenSentTransfer,
-  RaidenPaths
+  RaidenPaths,
+  RaidenPFS
 } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState } from '@/types';
@@ -299,18 +300,36 @@ export default class RaidenService {
   async findRoutes(
     token: string,
     target: string,
-    amount: BigNumber
+    amount: BigNumber,
+    raidenPFS?: RaidenPFS
   ): Promise<RaidenPaths> {
     let routes: RaidenPaths;
 
     try {
       await this.raiden.getAvailability(target);
-      routes = await this.raiden.findRoutes(token, target, amount);
+      routes = await this.raiden.findRoutes(token, target, amount, {
+        pfs: raidenPFS
+      });
     } catch (e) {
       throw new FindRoutesFailed(e);
     }
 
     return routes;
+  }
+
+  async fetchServices(): Promise<RaidenPFS[]> {
+    let raidenPFS: RaidenPFS[];
+    try {
+      raidenPFS = await this.raiden.findPFS();
+    } catch (e) {
+      throw new PFSRequestFailed(e);
+    }
+
+    return raidenPFS;
+  }
+
+  noPfsSelected(): boolean {
+    return this.raiden.config.pfs === undefined;
   }
 }
 
@@ -329,3 +348,5 @@ export class TransferFailed extends Error {}
 export class RaidenInitializationFailed extends Error {}
 
 export class FindRoutesFailed extends Error {}
+
+export class PFSRequestFailed extends Error {}

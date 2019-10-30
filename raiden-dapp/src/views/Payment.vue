@@ -87,21 +87,29 @@
 
       <v-spacer></v-spacer>
 
+      <action-button
+        :enabled="valid"
+        @click="proceedWithPathfinding()"
+        :text="$t('general.buttons.continue')"
+        class="payment__pay-button"
+      ></action-button>
+
+      <v-dialog v-model="serviceSelection" max-width="625">
+        <v-card class="payment__route-dialog">
+          <pathfinding-services
+            @cancel="serviceSelection = false"
+            @confirm="findRoutes($event)"
+          ></pathfinding-services>
+        </v-card>
+      </v-dialog>
+
       <v-dialog v-model="findingRoutes" max-width="625">
-        <template #activator="{ on }">
-          <action-button
-            :enabled="valid"
-            @click="findingRoutes = true"
-            :text="$t('general.buttons.continue')"
-            v-on="on"
-            class="payment__pay-button"
-          ></action-button>
-        </template>
         <v-card class="payment__route-dialog">
           <find-routes
             v-if="findingRoutes"
             @cancel="findingRoutes = false"
             @confirm="transfer($event)"
+            :pfs="raidenPFS"
             :token="token"
             :amount="amount"
             :target="target"
@@ -143,15 +151,17 @@ import FindRoutes from '@/components/FindRoutes.vue';
 import DownArrow from '@/components/icons/DownArrow.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannel, ChannelState } from 'raiden-ts';
+import { RaidenChannel, ChannelState, RaidenPFS } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { getAddress, getAmount } from '@/utils/query-params';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import PathfindingServices from '@/components/PathfindingServices.vue';
 
 @Component({
   components: {
+    PathfindingServices,
     ChannelDeposit,
     ActionButton,
     TokenInformation,
@@ -181,6 +191,8 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
   done: boolean = false;
   depositing: boolean = false;
   findingRoutes: boolean = false;
+  serviceSelection: boolean = false;
+  raidenPFS: RaidenPFS | null = null;
 
   errorTitle: string = '';
   error: string = '';
@@ -215,6 +227,20 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
       return withBiggestCapacity.capacity;
     }
     return Zero;
+  }
+
+  proceedWithPathfinding() {
+    if (this.$raiden.noPfsSelected()) {
+      this.serviceSelection = true;
+    } else {
+      this.findRoutes();
+    }
+  }
+
+  findRoutes(raidenPFS: RaidenPFS | null = null) {
+    this.serviceSelection = false;
+    this.raidenPFS = raidenPFS;
+    this.findingRoutes = true;
   }
 
   async created() {

@@ -90,6 +90,7 @@ import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Token, Route } from '@/model/types';
+import { RaidenPFS } from 'raiden-ts';
 
 @Component({})
 export default class FindRoutes extends Vue {
@@ -101,6 +102,9 @@ export default class FindRoutes extends Vue {
 
   @Prop({ required: true })
   target!: string;
+
+  @Prop({ required: true })
+  pfs!: RaidenPFS | null;
 
   busy: boolean = false;
   error: string = '';
@@ -150,7 +154,8 @@ export default class FindRoutes extends Vue {
       const fetchedRoutes = await this.$raiden.findRoutes(
         address,
         this.target,
-        BalanceUtils.parse(this.amount, decimals!)
+        BalanceUtils.parse(this.amount, decimals!),
+        this.pfs ? this.pfs : undefined
       );
 
       if (fetchedRoutes) {
