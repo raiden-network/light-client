@@ -91,7 +91,7 @@
         <template #activator="{ on }">
           <action-button
             :enabled="valid"
-            @click="serviceSelection = true"
+            @click="proceedWithPathfinding()"
             :text="$t('general.buttons.continue')"
             v-on="on"
             class="payment__pay-button"
@@ -231,8 +231,16 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
     return Zero;
   }
 
-  findRoutes(raidenPFS: RaidenPFS) {
-    this.chooseService = false;
+  proceedWithPathfinding() {
+    if (this.$raiden.noPfsSelected()) {
+      this.serviceSelection = true;
+    } else {
+      this.findRoutes();
+    }
+  }
+
+  findRoutes(raidenPFS: RaidenPFS | null = null) {
+    this.serviceSelection = false;
     this.raidenPFS = raidenPFS;
     this.findingRoutes = true;
   }

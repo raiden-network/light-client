@@ -327,6 +327,10 @@ export default class RaidenService {
 
     return raidenPFS;
   }
+
+  noPfsSelected(): boolean {
+    return this.raiden.config.pfs === undefined;
+  }
 }
 
 export class ChannelSettleFailed extends Error {}
