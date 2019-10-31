@@ -15,7 +15,7 @@
     "test:unit": "vue-cli-service test:unit"
   },
   "dependencies": {
-    "core-js": "^2.6.9",
+    "core-js": "^3.3.6",
     "ethereum-blockies-base64": "^1.0.2",
     "ethers": "^4.0.37",
     "lodash": "^4.17.15",
