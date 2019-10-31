@@ -13,9 +13,9 @@ import RaidenService, {
   ChannelDepositFailed,
   ChannelOpenFailed
 } from '@/services/raiden-service';
-import store from '@/store';
+import store from '@/store/index';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import { RouteNames } from '@/route-names';
+import { RouteNames } from '@/router/route-names';
 import Mocked = jest.Mocked;
 import { Token } from '@/model/types';
 import { Tokens } from '@/types';

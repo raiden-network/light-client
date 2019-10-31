@@ -2,7 +2,7 @@ jest.mock('@/services/raiden-service');
 
 import Mocked = jest.Mocked;
 
-import store from '@/store';
+import store from '@/store/index';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';

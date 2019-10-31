@@ -1,4 +1,4 @@
-import store, { defaultState } from '@/store';
+import store, { defaultState } from '@/store/index';
 import { TestData } from './data/mock-data';
 import { DeniedReason, emptyTokenModel, Token } from '@/model/types';
 import { Tokens } from '@/types';

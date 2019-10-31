@@ -3,7 +3,7 @@ jest.useFakeTimers();
 
 import flushPromises from 'flush-promises';
 import { $identicon } from '../utils/mocks';
-import store from '@/store';
+import store from '@/store/index';
 import { mount, Wrapper } from '@vue/test-utils';
 import AddressInput from '@/components/AddressInput.vue';
 import Vue from 'vue';
@@ -50,6 +50,9 @@ describe('AddressInput', function() {
   });
 
   it('should set busy flag when fetching ens domain', async () => {
+    raiden.ensResolve = jest
+      .fn()
+      .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
     wrapper = vueFactory('', excludeAddress, blockAddress);
     mockInput(wrapper, 'test.eth');
     const busy = jest.spyOn(wrapper.vm.$data, 'busy', 'set');

@@ -11,13 +11,16 @@ describe('TokenOverlay.vue', () => {
   addElemWithDataAppToBody();
 
   let wrapper: Wrapper<TokenOverlay>;
+  let vuetify: typeof Vuetify;
 
   beforeEach(() => {
     const localVue = createLocalVue();
+    vuetify = new Vuetify();
     localVue.use(Vuex);
     localVue.use(Vuetify);
     wrapper = mount(TokenOverlay, {
       localVue,
+      vuetify,
       store: new Store({
         getters: {
           allTokens: jest.fn().mockReturnValue([TestData.token]),

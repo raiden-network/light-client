@@ -1,6 +1,6 @@
 import Loading from '@/components/SplashScreen.vue';
 import { mount, Wrapper } from '@vue/test-utils';
-import store from '@/store';
+import store from '@/store/index';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 

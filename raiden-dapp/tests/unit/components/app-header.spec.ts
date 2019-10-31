@@ -1,6 +1,6 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import AppHeader from '@/components/AppHeader.vue';
-import store from '@/store';
+import store from '@/store/index';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { TestData } from '../data/mock-data';

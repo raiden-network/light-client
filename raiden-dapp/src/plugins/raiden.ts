@@ -1,6 +1,6 @@
 import _Vue from 'vue';
 import RaidenService from '@/services/raiden-service';
-import store from '@/store';
+import store from '@/store/index';
 
 export function RaidenPlugin(Vue: typeof _Vue, _options?: any): void {
   Vue.prototype.$raiden = new RaidenService(store);

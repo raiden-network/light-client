@@ -45,7 +45,8 @@ describe('RaidenService', () => {
         transfers$: of({}).pipe(delay(1000)),
         getTokenBalance: jest.fn().mockResolvedValue(Zero),
         getTokenList: jest.fn().mockResolvedValue(['0xtoken']),
-        getTokenInfo: jest.fn().mockResolvedValue(null)
+        getTokenInfo: jest.fn().mockResolvedValue(null),
+        start: jest.fn()
       },
       extras
     );
@@ -248,7 +249,7 @@ describe('RaidenService', () => {
 
     await raidenService.fetchTokenData(['0xtoken']);
     expect(store.commit).toHaveBeenNthCalledWith(
-      6,
+      5,
       'updateTokens',
       expect.objectContaining({
         '0xtoken': {
