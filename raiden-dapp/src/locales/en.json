@@ -2,7 +2,7 @@
   "general": {
     "buttons": {
       "cancel": "Cancel",
-      "pay": "Pay",
+      "transfer": "Transfer",
       "continue": "Continue",
       "confirm": "Confirm"
     }
@@ -53,7 +53,7 @@
   "find-routes": {
     "busy-title": "Searching available routes",
     "title": "Select a route",
-    "description": "Mediators require a small fee to forward your payment. Please select one below:",
+    "description": "Mediators require a small fee to forward your token transfer. Please select one below:",
     "buttons": {
       "confirm": "Continue"
     },
@@ -178,7 +178,7 @@
   "application": {
     "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
   },
-  "payment": {
+  "transfer": {
     "deposit-button": "Deposit",
     "channel-button": "Channels",
     "capacity-label": "Capacity",
@@ -188,7 +188,7 @@
     "amount-placeholder": "Specify amount...",
     "error": {
       "button": "Dismiss",
-      "title": "Payment unsuccessful. Please retry.",
+      "title": "Token transfer unsuccessful. Please retry.",
       "deposit-title": "Deposit was unsuccessful. Please retry."
     },
     "steps": {
@@ -254,7 +254,7 @@
       "done": {
         "label": "Done",
         "title": "New Channel opened",
-        "description": "A new channel has been opened successfully. You may now select a payment target."
+        "description": "A new channel has been opened successfully. You may now select a transfer target."
       }
     },
     "confirmation": "Channel opening is in progress, are you sure you want to leave?"

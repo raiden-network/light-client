@@ -50,7 +50,7 @@
           >
             <v-list-item
               :key="token.address"
-              :to="`/payment/${token.address}`"
+              :to="`/transfer/${token.address}`"
               @click="cancel()"
             >
               <v-col cols="2">
@@ -103,7 +103,7 @@ import { mapGetters } from 'vuex';
 
 import BlockieMixin from '@/mixins/blockie-mixin';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import { TokenModel, Token } from '../model/types';
+import { TokenModel, Token } from '@/model/types';
 import Filters from '@/filters';
 
 @Component({
@@ -111,7 +111,10 @@ import Filters from '@/filters';
     ...mapGetters(['tokens', 'allTokens'])
   }
 })
-export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
+export default class TokenOverlay extends Mixins(
+  BlockieMixin,
+  NavigationMixin
+) {
   @Prop({ required: true, type: Boolean })
   show!: boolean;
 

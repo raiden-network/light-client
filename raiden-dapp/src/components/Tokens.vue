@@ -49,11 +49,11 @@
                 <v-row justify="center" align="center" no-gutters>
                   <v-btn
                     :disabled="token.open === 0"
-                    :id="`pay-${index}`"
-                    :to="`/payment/${token.address}`"
+                    :id="`transfer-${index}`"
+                    :to="`/transfer/${token.address}`"
                     class="text-capitalize connected-tokens__tokens__token__button"
                   >
-                    {{ $t('general.buttons.pay') }}
+                    {{ $t('general.buttons.transfer') }}
                   </v-btn>
                   <v-btn
                     :id="`leave-${index}`"

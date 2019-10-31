@@ -10,7 +10,7 @@ import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
-import Payment from '@/views/Payment.vue';
+import Transfer from '@/views/Transfer.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
 import store from '@/store';
 import VueRouter from 'vue-router';
@@ -25,10 +25,10 @@ import { RouteNames } from '@/route-names';
 
 Vue.use(Vuetify);
 
-describe('Payment.vue', () => {
+describe('Transfer.vue', () => {
   addElemWithDataAppToBody();
 
-  let wrapper: Wrapper<Payment>;
+  let wrapper: Wrapper<Transfer>;
   let router: Mocked<VueRouter>;
   let raiden: Mocked<RaidenService>;
   let loading: jest.SpyInstance;
@@ -46,7 +46,7 @@ describe('Payment.vue', () => {
   function vueFactory(
     router: VueRouter,
     raiden: RaidenService
-  ): Wrapper<Payment> {
+  ): Wrapper<Transfer> {
     const localVue = createLocalVue();
     vuetify = new Vuetify();
 
@@ -64,7 +64,7 @@ describe('Payment.vue', () => {
         $t: (msg: string) => msg
       }
     };
-    return mount(Payment, options);
+    return mount(Transfer, options);
   }
 
   beforeEach(() => {
@@ -270,7 +270,7 @@ describe('Payment.vue', () => {
 
   test('should navigate to channel list', async () => {
     // click on channels button
-    wrapper.find('.payment__channel-button').trigger('click');
+    wrapper.find('.transfer__channel-button').trigger('click');
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
@@ -282,7 +282,7 @@ describe('Payment.vue', () => {
 
   test('should show token overlay', async () => {
     // click on channels button
-    wrapper.find('.payment__token-networks__dropdown').trigger('click');
+    wrapper.find('.transfer__token-networks__dropdown').trigger('click');
 
     await flushPromises();
     jest.advanceTimersByTime(2000);
