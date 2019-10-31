@@ -64,7 +64,7 @@
     "sass-loader": "^7.3.1",
     "source-map-loader": "^0.2.4",
     "ts-jest": "^23.10.5",
-    "typescript": "~3.5.3",
+    "typescript": "~3.6.4",
     "vue-cli-plugin-i18n": "^0.6.0",
     "vue-cli-plugin-vuetify": "^0.6.3",
     "vue-jest": "^3.0.5",
