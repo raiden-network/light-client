@@ -75,7 +75,7 @@
               light
               class="text-capitalize find-routes__buttons__confirm"
             >
-              {{ $t('general.buttons.pay') }}
+              {{ $t('general.buttons.transfer') }}
             </v-btn>
           </v-row>
         </v-form>
@@ -135,14 +135,14 @@ export default class FindRoutes extends Vue {
   get totalAmount(): BigNumber {
     const [selectedRoute] = this.selected;
     const { decimals } = this.token;
-    const payment: BigNumber = BalanceUtils.parse(this.amount, decimals!);
+    const transfer: BigNumber = BalanceUtils.parse(this.amount, decimals!);
 
     if (selectedRoute) {
-      // Return payable amount plus fees
-      return payment.add(selectedRoute.fee);
+      // Return transferable amount plus fees
+      return transfer.add(selectedRoute.fee);
     }
 
-    return payment;
+    return transfer;
   }
 
   async findRoutes(): Promise<void> {

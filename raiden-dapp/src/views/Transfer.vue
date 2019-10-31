@@ -1,25 +1,25 @@
 <template>
-  <v-form v-model="valid" autocomplete="off" class="payment">
-    <v-container fluid class="payment__settings">
+  <v-form v-model="valid" autocomplete="off" class="transfer">
+    <v-container fluid class="transfer__settings">
       <v-row
         align="center"
         justify="center"
         no-gutters
-        class="payment__actions"
+        class="transfer__actions"
       >
-        <v-col cols="2" class="payment__channels">
+        <v-col cols="2" class="transfer__channels">
           <v-btn
             @click="navigateToChannels(token.address)"
             text
-            class="payment__channel-button"
+            class="transfer__channel-button"
           >
-            {{ $t('payment.channel-button') }}
+            {{ $t('transfer.channel-button') }}
           </v-btn>
         </v-col>
-        <v-col cols="6" class="payment__token-networks">
-          <div class="payment__token-networks__amount">
+        <v-col cols="6" class="transfer__token-networks">
+          <div class="transfer__token-networks__amount">
             {{
-              $t('payment.capacity-amount', {
+              $t('transfer.capacity-amount', {
                 capacity: convertToUnits(capacity, token.decimals),
                 token: token.symbol
               })
@@ -27,7 +27,7 @@
           </div>
           <div
             @click="showTokenNetworks = true"
-            class="payment__token-networks__dropdown"
+            class="transfer__token-networks__dropdown"
           >
             <span>{{ token.name }}</span>
             <span>
@@ -39,19 +39,19 @@
             @cancel="showTokenNetworks = false"
           />
         </v-col>
-        <v-col cols="2" class="payment__deposit">
+        <v-col cols="2" class="transfer__deposit">
           <v-dialog v-model="depositing" max-width="625">
             <template #activator="{ on }">
               <v-btn
                 @click="depositing = true"
                 v-on="on"
                 text
-                class="payment__deposit-button"
+                class="transfer__deposit-button"
               >
-                {{ $t('payment.deposit-button') }}
+                {{ $t('transfer.deposit-button') }}
               </v-btn>
             </template>
-            <v-card class="payment__deposit-dialog">
+            <v-card class="transfer__deposit-dialog">
               <channel-deposit
                 @cancel="depositing = false"
                 @confirm="deposit($event)"
@@ -63,7 +63,7 @@
         </v-col>
       </v-row>
 
-      <v-row justify="center" align="center" class="payment__recipient">
+      <v-row justify="center" align="center" class="transfer__recipient">
         <v-col cols="10">
           <address-input
             v-model="target"
@@ -78,7 +78,7 @@
           <amount-input
             v-model="amount"
             :token="token"
-            :placeholder="$t('payment.amount-placeholder')"
+            :placeholder="$t('transfer.amount-placeholder')"
             :max="capacity"
             limit
           ></amount-input>
@@ -91,11 +91,11 @@
         :enabled="valid"
         @click="proceedWithPathfinding()"
         :text="$t('general.buttons.continue')"
-        class="payment__pay-button"
+        class="transfer__action-button"
       ></action-button>
 
       <v-dialog v-model="serviceSelection" max-width="625">
-        <v-card class="payment__route-dialog">
+        <v-card class="transfer__route-dialog">
           <pathfinding-services
             @cancel="serviceSelection = false"
             @confirm="findRoutes($event)"
@@ -104,7 +104,7 @@
       </v-dialog>
 
       <v-dialog v-model="findingRoutes" max-width="625">
-        <v-card class="payment__route-dialog">
+        <v-card class="transfer__route-dialog">
           <find-routes
             v-if="findingRoutes"
             @cancel="findingRoutes = false"
@@ -129,7 +129,7 @@
       :description="error"
       @dismiss="error = ''"
       :title="errorTitle"
-      :button-label="$t('payment.error.button')"
+      :button-label="$t('transfer.error.button')"
     ></error-screen>
   </v-form>
 </template>
@@ -179,7 +179,7 @@ import PathfindingServices from '@/components/PathfindingServices.vue';
     ...mapGetters(['channelWithBiggestCapacity', 'channels'])
   }
 })
-export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
+export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   showTokenNetworks: boolean = false;
   target: string = '';
 
@@ -264,11 +264,13 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
   }
 
   async deposit(amount: BigNumber) {
-    this.steps = [(this.$t('payment.steps.deposit') as any) as StepDescription];
+    this.steps = [
+      (this.$t('transfer.steps.deposit') as any) as StepDescription
+    ];
     this.doneStep = (this.$t(
-      'payment.steps.deposit-done'
+      'transfer.steps.deposit-done'
     ) as any) as StepDescription;
-    this.errorTitle = this.$t('payment.error.deposit-title') as string;
+    this.errorTitle = this.$t('transfer.error.deposit-title') as string;
 
     this.loading = true;
 
@@ -289,10 +291,10 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
 
   async transfer(route: Route) {
     this.steps = [
-      (this.$t('payment.steps.transfer') as any) as StepDescription
+      (this.$t('transfer.steps.transfer') as any) as StepDescription
     ];
-    this.doneStep = (this.$t('payment.steps.done') as any) as StepDescription;
-    this.errorTitle = this.$t('payment.error.title') as string;
+    this.doneStep = (this.$t('transfer.steps.done') as any) as StepDescription;
+    this.errorTitle = this.$t('transfer.error.title') as string;
     this.findingRoutes = false;
 
     const { address, decimals } = this.token;
@@ -326,25 +328,25 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '../scss/colors';
-.payment {
+.transfer {
   width: 100%;
   height: 100%;
 }
 
-.payment__actions {
+.transfer__actions {
   margin-top: 10px;
 }
 
-.payment__recipient {
+.transfer__recipient {
   margin-top: 75px;
 }
 
-.payment__recipient,
-.payment__amount {
+.transfer__recipient,
+.transfer__amount {
   max-height: 150px;
 }
 
-.payment__recipient__label {
+.transfer__recipient__label {
   color: $secondary-color;
   font-size: 13px;
   font-weight: bold;
@@ -353,17 +355,17 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
   text-transform: uppercase;
 }
 
-.payment__pay-button {
+.transfer__action-button {
   margin-bottom: 24px;
 }
 
-.payment__channel-button,
-.payment__deposit-button {
+.transfer__channel-button,
+.transfer__deposit-button {
   color: $primary-color;
   text-transform: none;
 }
 
-.payment__token-networks__amount {
+.transfer__token-networks__amount {
   color: $color-white;
   font-size: 24px;
   font-weight: bold;
@@ -373,7 +375,7 @@ export default class Payment extends Mixins(BlockieMixin, NavigationMixin) {
   text-align: center;
 }
 
-.payment__token-networks__dropdown {
+.transfer__token-networks__dropdown {
   color: $primary-color;
   font-size: 16px;
   margin-top: 5px;

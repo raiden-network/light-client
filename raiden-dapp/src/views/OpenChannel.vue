@@ -147,7 +147,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
       this.done = true;
       setTimeout(() => {
         this.loading = false;
-        this.navigateToSelectPaymentTarget(address);
+        this.navigateToSelectTransferTarget(address);
       }, 2000);
     } catch (e) {
       this.error = '';

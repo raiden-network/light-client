@@ -24,12 +24,12 @@ const router = new Router({
       redirect: '/'
     },
     {
-      path: '/payment/:token',
-      name: RouteNames.PAYMENT,
+      path: '/transfer/:token',
+      name: RouteNames.TRANSFER,
       meta: {
         title: 'Send'
       },
-      component: () => import('./views/Payment.vue')
+      component: () => import('./views/Transfer.vue')
     },
     {
       path: '/connect',

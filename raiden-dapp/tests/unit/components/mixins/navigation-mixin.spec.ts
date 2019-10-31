@@ -82,12 +82,12 @@ describe('NavigationMixin', function() {
   });
 
   test('navigate to payment target', () => {
-    wrapper.vm.navigateToSelectPaymentTarget('0xtoken');
+    wrapper.vm.navigateToSelectTransferTarget('0xtoken');
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.PAYMENT,
+        name: RouteNames.TRANSFER,
         params: {
           token: '0xtoken'
         }
@@ -97,7 +97,7 @@ describe('NavigationMixin', function() {
 
   describe('back navigation', () => {
     test('from select target', async () => {
-      wrapper.vm.$route.name = RouteNames.PAYMENT;
+      wrapper.vm.$route.name = RouteNames.TRANSFER;
       wrapper.vm.onBackClicked();
 
       expect(router.push).toHaveBeenCalledTimes(1);

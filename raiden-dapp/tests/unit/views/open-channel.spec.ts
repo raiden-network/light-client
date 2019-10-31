@@ -148,7 +148,7 @@ describe('OpenChannel.vue', function() {
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.PAYMENT
+          name: RouteNames.TRANSFER
         })
       );
       expect(loading).toHaveBeenCalledTimes(2);
