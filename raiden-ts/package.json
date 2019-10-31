@@ -72,7 +72,7 @@
     "typechain": "^0.3.21",
     "typedoc": "^0.15.0",
     "typedoc-plugin-markdown": "^2.2.6",
-    "typescript": "3.5.3",
+    "typescript": "3.6.4",
     "vuepress": "^1.1.0"
   },
   "dependencies": {
