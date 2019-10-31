@@ -76,7 +76,7 @@ The Raiden client code is available [here](https://github.com/raiden-network/rai
 <img 
       width='750px' 
       alt='' 
-      src="https://user-images.githubusercontent.com/35398162/58000403-f9900280-7ad8-11e9-9af3-f0c5817689ab.png" />
+      src="https://user-images.githubusercontent.com/43838780/67964837-438d2080-fc01-11e9-93a7-c38129b7d566.png" />
 </center>
 
 The goal of the Raiden Light Client SDK is to provide an easy-to-use framework, which can be integrated by any JavaScript developer. The SDK will simplify the process of embedding and using the Raiden Network for token transfers in decentralized applications
