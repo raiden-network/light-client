@@ -49,11 +49,9 @@ import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
-import kovanDeploy from './deployment/deployment_kovan.json';
 import goerliDeploy from './deployment/deployment_goerli.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
-import kovanServicesDeploy from './deployment/deployment_services_kovan.json';
 import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
 
 import { ContractsInfo, RaidenEpicDeps } from './types';
@@ -384,12 +382,6 @@ export class Raiden {
           contracts = ({
             ...ropstenDeploy.contracts,
             ...ropstenServicesDeploy.contracts,
-          } as unknown) as ContractsInfo;
-          break;
-        case 'kovan':
-          contracts = ({
-            ...kovanDeploy.contracts,
-            ...kovanServicesDeploy.contracts,
           } as unknown) as ContractsInfo;
           break;
         case 'goerli':
