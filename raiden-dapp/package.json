@@ -60,7 +60,7 @@
     "eslint-plugin-vuetify": "^1.0.0-beta.4",
     "flush-promises": "^1.0.2",
     "jest-junit": "^8.0.0",
-    "sass": "^1.23.2",
+    "sass": "^1.23.3",
     "sass-loader": "^7.3.1",
     "source-map-loader": "^0.2.4",
     "ts-jest": "^23.10.5",
