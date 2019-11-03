@@ -88,7 +88,7 @@
     "redux-logger": "^3.0.6",
     "redux-observable": "^1.2.0",
     "rxjs": "^6.5.3",
-    "typesafe-actions": "^4.4.2"
+    "typesafe-actions": "^5.1.0"
   },
   "peerDependencies": {
     "ethers": "^4.0.37"
