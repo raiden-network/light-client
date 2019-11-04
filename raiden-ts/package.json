@@ -83,7 +83,7 @@
     "isomorphic-fetch": "^2.2.1",
     "lodash": "^4.17.15",
     "lossless-json": "^1.0.3",
-    "matrix-js-sdk": "^2.4.2",
+    "matrix-js-sdk": "^2.4.3",
     "redux": "^4.0.4",
     "redux-logger": "^3.0.6",
     "redux-observable": "^1.2.0",
