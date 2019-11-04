@@ -32,6 +32,9 @@
       "rxjs/*": [
         "node_modules/rxjs/*"
       ],
+      "ethers": [
+        "node_modules/ethers/"
+      ],
       "ethers/*": [
         "node_modules/ethers/*"
       ]
