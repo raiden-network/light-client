@@ -39,7 +39,7 @@
     "@types/lodash": "^4.14.144",
     "@types/tiny-async-pool": "^1.0.0",
     "@types/vue-i18n": "^7.0.0",
-    "@types/webpack": "^4.39.7",
+    "@types/webpack": "^4.39.8",
     "@vue/cli": "^3.11.0",
     "@vue/cli-plugin-babel": "^3.11.0",
     "@vue/cli-plugin-eslint": "^3.11.0",
