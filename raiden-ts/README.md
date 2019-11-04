@@ -17,16 +17,18 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 > **INFO:** The Light Client SDK is **work in progress**, doesn't work for token transfers yet and currently can only be used on the Ethereum **Testnets**.
 
 ## Table of Contents
+- [Table of Contents](#table-of-contents)
 - [About The Project](#about-the-project)
+  - [Architecture diagram](#architecture-diagram)
 - [Getting Started](#getting-started)
-  * [Connecting to a Raiden test network](#connecting-to-a-raiden-test-network)
-  * [Using the SDK in a private chain or a development environment](#using-the-sdk-in-a-private-chain-or-a-development-environment)
-  * [Subscribing to channel$ observable and opening your first channel](#subscribing-to-channel-observable-and-opening-your-first-channel)
-  * [Funding a channel](#funding-a-channel)
-  * [Paying through a channel](#paying-through-a-channel)
-  * [Closing a channel](#closing-a-channel)
-  * [Settling a channel](#settling-a-channel)
-  * [Other methods](#other-methods)
+  - [Connecting to a Raiden test network](#connecting-to-a-raiden-test-network)
+  - [Using the SDK in a private chain or a development environment](#using-the-sdk-in-a-private-chain-or-a-development-environment)
+  - [Subscribing to channel$ observable and opening your first channel](#subscribing-to-channel-observable-and-opening-your-first-channel)
+  - [Funding a channel](#funding-a-channel)
+  - [Transferring via a channel](#transferring-via-a-channel)
+  - [Closing a channel](#closing-a-channel)
+  - [Settling a channel](#settling-a-channel)
+  - [Other methods](#other-methods)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -157,7 +159,7 @@ const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
 
 ### Funding a channel
 
-If you intend to perform payments via a channel, you need to first lock a given amount of tokens in it. Note that these tokens aren't paid yet to the partner, and the custody is fully yours. It just locks this amount on-chain so your partner can be sure a given payment can be claimed.
+If you intend to perform transfers via a channel, you need to first lock a given amount of tokens in it. Note that these tokens aren't transferred yet to the partner, and the custody is fully yours. It just locks this amount on-chain so your partner can be sure a given transfer can be claimed.
 
 ```typescript
 raiden.depositChannel('0xtoken', '0xpartner', 100);
@@ -181,9 +183,9 @@ raiden.depositChannel('0xtoken', '0xpartner', 100);
 # }
 ```
 
-### Paying through a channel
+### Transferring via a channel
 
-This is where the fun begins: off-chain payments!
+This is where the fun begins: off-chain transfers!
 
 The main point of information about past and pending transfers is the `transfers$: Observable<RaidenSentTransfer>` observable. It'll first emit all known past transfers at subscription time (history), then emit again each time a transfer state changes, allowing you to keep track of the transfer status. The [Raiden.transfer](https://github.com/raiden-network/light-client/blob/dfe87e1886b12fc9f85857b01e28db5e81cc5070/raiden-ts/src/raiden.ts#L693) method is used to initiate an outgoing transfer, and returned Promise will reject with an Error if transfer signature prompt is cancelled or resolve with the `secrethash` value (a transfer unique key) as soon as it's registered. You can use this `secrethash` property of the objects emitted by `transfers$` as a unique key to keep track of specific transfers.
 
@@ -273,7 +275,7 @@ await raiden.closeChannel('0xtoken', '0xpartner')
 
 ### Settling a channel
 
-As we can't perform a cooperative close yet, once your channel is closed, there is a grace period of `settleTimeout` blocks during which the counterpart can claim a higher signed balance proof sent by you. As the Light Client doesn't receive payments yet, there's no need to worry here, only the tokens you paid can be claimed by your partner. After `settleTimeout` blocks, your channel's state automatically becomes `settleable`, which is like `closed` but when settle can be called:
+As we can't perform a cooperative close yet, once your channel is closed, there is a grace period of `settleTimeout` blocks during which the counterpart can claim a higher signed balance proof sent by you. As the Light Client doesn't receive transfers yet, there's no need to worry here, only the tokens you transferred can be claimed by your partner. After `settleTimeout` blocks, your channel's state automatically becomes `settleable`, which is like `closed` but when settle can be called:
 
 ```typescript
 await raiden.settleChannel('0xtoken', '0xpartner')
