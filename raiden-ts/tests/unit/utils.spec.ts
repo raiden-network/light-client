@@ -84,19 +84,18 @@ describe('getEventsStream', () => {
       filter: registryContract.filters.TokenNetworkCreated(pastTokenAddr, pastTokenNetworkAddr),
     });
 
+    // ensure getEventsStream will need to wait for next block
+    provider.resetEventsBlock((undefined as unknown) as number);
     provider.getLogs.mockResolvedValueOnce([pastLog]);
 
-    const promise = getEventsStream<TokenNetworkCreatedEvent>(
-      registryContract,
-      [filter],
-      of(1),
-      of(1336),
-    )
+    const promise = getEventsStream<TokenNetworkCreatedEvent>(registryContract, [filter], of(1))
       .pipe(
         take(2),
         toArray(),
       )
       .toPromise();
+
+    provider.emit('block', 1336);
 
     const tokenAddr = '0x0000000000000000000000000000000000000001',
       tokenNetworkAddr = '0x0000000000000000000000000000000000000002';

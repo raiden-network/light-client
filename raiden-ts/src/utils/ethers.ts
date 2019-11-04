@@ -4,9 +4,8 @@ import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 import { getNetwork as parseNetwork } from 'ethers/utils/networks';
 import { flatten, sortBy } from 'lodash';
-
-import { Observable, fromEventPattern, merge, from, of, defer, EMPTY, combineLatest } from 'rxjs';
-import { filter, first, map, switchMap, mergeMap } from 'rxjs/operators';
+import { Observable, fromEventPattern, merge, from, of, EMPTY, combineLatest, defer } from 'rxjs';
+import { filter, first, map, switchMap, mergeMap, share } from 'rxjs/operators';
 
 /**
  * Like rxjs' fromEvent, but event can be an EventFilter
@@ -39,27 +38,33 @@ export function fromEthersEvent<T>(
  * @param contract - Contract source instance for filters, connected to a provider
  * @param filters - array of OR filters from tokenNetwork
  * @param fromBlock$ - Observable of a past blockNumber since when to fetch past events
- * @param lastSeenBlock$ - Observable of latest seen block, to be used as toBlock of pastEvents.
- *      lastSeenBlock + 1 is supposed to be first one fetched by contract.on newEvents$
- *      Both fromBlock$ and lastSeenBlock$ need to be set to fetch pastEvents$
+ *                     If not provided, last resetEventsBlock is automatically used.
  * @returns Observable of contract's events
  */
 export function getEventsStream<T extends any[]>(
   contract: Contract,
   filters: EventFilter[],
   fromBlock$?: Observable<number>,
-  lastSeenBlock$?: Observable<number>,
 ): Observable<T> {
   const provider = contract.provider as JsonRpcProvider;
 
   // past events (in the closed-interval=[fromBlock, lastSeenBlock]),
   // fetch once, sort by blockNumber, emit all, complete
-  let pastEvents$: Observable<T> = EMPTY;
-  if (fromBlock$ && lastSeenBlock$) {
-    pastEvents$ = combineLatest(
-      fromBlock$,
-      defer(() => (provider.blockNumber ? of(provider.blockNumber) : lastSeenBlock$)),
-    ).pipe(
+  let pastEvents$: Observable<T> = EMPTY,
+    // of(constant) ensures newEvents$ is registered immediately if fromBlock$ not provided
+    nextBlock$: Observable<number> = of(-1);
+  if (fromBlock$) {
+    // if fetching pastEvents$, nextBlock$ is used to sync/avoid intersection between Events$
+    // pastEvents$ => [fromBlock$, nextBlock$], newEvents$ => ]nextBlock$, ...latest]
+    nextBlock$ = defer(() =>
+      provider.blockNumber
+        ? of(provider.blockNumber)
+        : fromEthersEvent<number>(provider, 'block').pipe(
+            first(),
+            map(b => provider.blockNumber || b),
+          ),
+    ).pipe(share());
+    pastEvents$ = combineLatest(fromBlock$, nextBlock$).pipe(
       first(),
       switchMap(([fromBlock, toBlock]) =>
         Promise.all(filters.map(filter => provider.getLogs({ ...filter, fromBlock, toBlock }))),
@@ -93,7 +98,8 @@ export function getEventsStream<T extends any[]>(
   // new events (in open-interval=]lastSeenBlock, latest])
   // where lastSeenBlock is the currentBlock at call time
   // doesn't complete, keep emitting events for each new block (if any) until unsubscription
-  const newEvents$: Observable<T> = from(filters).pipe(
+  const newEvents$: Observable<T> = nextBlock$.pipe(
+    mergeMap(() => from(filters)),
     mergeMap(filter => fromEthersEvent(contract, filter, (...args) => args as T)),
   );
 

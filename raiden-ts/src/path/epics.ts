@@ -262,59 +262,52 @@ export const pfsCapacityUpdateEpic = (
  */
 export const pfsServiceRegistryMonitorEpic = (
   {  }: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof pfsListUpdated>> =>
-  state$.pipe(
-    pluck('blockNumber'),
+  config$.pipe(
+    // monitors config.pfs, and only monitors contract if it's undefined
+    pluck('pfs'),
     distinctUntilChanged(),
-    publishReplay(1, undefined, blockNumber$ =>
-      config$.pipe(
-        // monitors config.pfs, and only monitors contract if it's undefined
-        pluck('pfs'),
-        distinctUntilChanged(),
-        switchMap(pfs =>
-          pfs !== undefined
-            ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or set
-              EMPTY
-            : // type of elements emitted by getEventsStream (past and new events coming from contract):
-              // [service, valid_till, deposit_amount, deposit_contract, Event]
-              getEventsStream<[Address, BigNumber, UInt<32>, Address, Event]>(
-                serviceRegistryContract,
-                [serviceRegistryContract.filters.RegisteredService(null, null, null, null)],
-                of(contractsInfo.ServiceRegistry.block_number), // at boot, always fetch from deploy block
-                blockNumber$, // ...up to current blockNumber, then monitor for new events
-              ).pipe(
-                groupBy(([service]) => service),
-                mergeMap(grouped$ =>
-                  grouped$.pipe(
-                    // switchMap ensures new events for each server (grouped$) picks latest event
-                    switchMap(([service, valid_till]) => {
-                      const now = Date.now(),
-                        validTill = valid_till.mul(1000); // milliseconds valid_till
-                      if (validTill.lt(now)) return EMPTY; // this event already expired
-                      // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
-                      const end$ = validTill.sub(now).lt(Two.pow(31))
-                        ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
-                        : EMPTY;
-                      return merge(of({ service, valid: true }), end$);
-                    }),
-                  ),
-                ),
-                scan(
-                  (acc, { service, valid }) =>
-                    !valid && acc.includes(service)
-                      ? acc.filter(s => s !== service)
-                      : valid && !acc.includes(service)
-                      ? [...acc, service]
-                      : acc,
-                  [] as readonly Address[],
-                ),
-                distinctUntilChanged(),
-                debounceTime(1e3), // debounce burst of updates on initial fetch
-                map(pfsList => pfsListUpdated({ pfsList })),
+    switchMap(pfs =>
+      pfs !== undefined
+        ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or set
+          EMPTY
+        : // type of elements emitted by getEventsStream (past and new events coming from contract):
+          // [service, valid_till, deposit_amount, deposit_contract, Event]
+          getEventsStream<[Address, BigNumber, UInt<32>, Address, Event]>(
+            serviceRegistryContract,
+            [serviceRegistryContract.filters.RegisteredService(null, null, null, null)],
+            of(contractsInfo.ServiceRegistry.block_number), // at boot, always fetch from deploy block
+          ).pipe(
+            groupBy(([service]) => service),
+            mergeMap(grouped$ =>
+              grouped$.pipe(
+                // switchMap ensures new events for each server (grouped$) picks latest event
+                switchMap(([service, valid_till]) => {
+                  const now = Date.now(),
+                    validTill = valid_till.mul(1000); // milliseconds valid_till
+                  if (validTill.lt(now)) return EMPTY; // this event already expired
+                  // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
+                  const end$ = validTill.sub(now).lt(Two.pow(31))
+                    ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
+                    : EMPTY;
+                  return merge(of({ service, valid: true }), end$);
+                }),
               ),
-        ),
-      ),
+            ),
+            scan(
+              (acc, { service, valid }) =>
+                !valid && acc.includes(service)
+                  ? acc.filter(s => s !== service)
+                  : valid && !acc.includes(service)
+                  ? [...acc, service]
+                  : acc,
+              [] as readonly Address[],
+            ),
+            distinctUntilChanged(),
+            debounceTime(1e3), // debounce burst of updates on initial fetch
+            map(pfsList => pfsListUpdated({ pfsList })),
+          ),
     ),
   );

@@ -207,6 +207,7 @@ describe('raiden epic', () => {
 
       depsMock.provider.resetEventsBlock(127);
       action$.next(newBlock({ blockNumber: 127 }));
+
       depsMock.provider.emit(
         depsMock.registryContract.filters.TokenNetworkCreated(null, null),
         makeLog({
@@ -364,7 +365,13 @@ describe('raiden epic', () => {
     const settleTimeoutEncoded = defaultAbiCoder.encode(['uint256'], [settleTimeout]);
 
     test('first tokenMonitored with past$ ChannelOpened event', async () => {
-      const action = tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
+      expect.assertions(2);
+
+      const action = tokenMonitored({
+          token,
+          tokenNetwork,
+          fromBlock: depsMock.contractsInfo.TokenNetworkRegistry.block_number + 1,
+        }),
         curState = raidenReducer(state, action);
       // give time to multicast to register
       const action$ = of<RaidenAction>(action).pipe(delay(1)),
@@ -383,15 +390,23 @@ describe('raiden epic', () => {
         }),
       ]);
 
-      await expect(
-        tokenMonitoredEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
-      ).resolves.toMatchObject({
+      const promise = tokenMonitoredEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      await expect(promise).resolves.toMatchObject({
         type: getType(channelOpened),
         payload: { id: channelId, settleTimeout, openBlock: 121 },
         meta: { tokenNetwork, partner },
       });
+
+      expect(depsMock.provider.getLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          address: tokenNetworkContract.address,
+          fromBlock: depsMock.contractsInfo.TokenNetworkRegistry.block_number + 1,
+          toBlock: depsMock.provider.blockNumber,
+        }),
+      );
     });
 
     test('already tokenMonitored with new$ ChannelOpened event', async () => {
