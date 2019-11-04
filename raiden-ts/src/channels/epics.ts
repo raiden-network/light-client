@@ -13,7 +13,6 @@ import {
   first,
   publishReplay,
   switchMap,
-  pluck,
 } from 'rxjs/operators';
 import { isActionOf, ActionType } from 'typesafe-actions';
 import { findKey, get, isEmpty, negate } from 'lodash';
@@ -95,7 +94,6 @@ export const initMonitorRegistryEpic = (
               isEmpty(state.tokens)
                 ? of(contractsInfo.TokenNetworkRegistry.block_number)
                 : undefined,
-              isEmpty(state.tokens) ? state$.pipe(pluck('blockNumber')) : undefined,
             ).pipe(
               withLatestFrom(state$),
               map(([[token, tokenNetwork, event], state]) =>
@@ -207,57 +205,51 @@ export const initMonitorProviderEpic = (
  */
 export const tokenMonitoredEpic = (
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { address, getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelOpened>> =>
-  state$.pipe(
-    pluck('blockNumber'),
-    publishReplay(1, undefined, blockNumber$ =>
-      action$.pipe(
-        filter(isActionOf(tokenMonitored)),
-        groupBy(action => action.payload.tokenNetwork),
-        mergeMap(grouped$ =>
-          grouped$.pipe(
-            exhaustMap(action => {
-              const tokenNetworkContract = getTokenNetworkContract(action.payload.tokenNetwork);
+  action$.pipe(
+    filter(isActionOf(tokenMonitored)),
+    groupBy(action => action.payload.tokenNetwork),
+    mergeMap(grouped$ =>
+      grouped$.pipe(
+        exhaustMap(action => {
+          const tokenNetworkContract = getTokenNetworkContract(action.payload.tokenNetwork);
 
-              // type of elements emitted by getEventsStream (past and new events coming from
-              // contract): [channelId, partner1, partner2, settleTimeout, Event]
-              type ChannelOpenedEvent = [BigNumber, Address, Address, BigNumber, Event];
+          // type of elements emitted by getEventsStream (past and new events coming from
+          // contract): [channelId, partner1, partner2, settleTimeout, Event]
+          type ChannelOpenedEvent = [BigNumber, Address, Address, BigNumber, Event];
 
-              const filters = [
-                tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
-                tokenNetworkContract.filters.ChannelOpened(null, null, address, null),
-              ];
+          const filters = [
+            tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
+            tokenNetworkContract.filters.ChannelOpened(null, null, address, null),
+          ];
 
-              return getEventsStream<ChannelOpenedEvent>(
-                tokenNetworkContract,
-                filters,
-                // if first time monitoring this token network,
-                // fetch TokenNetwork's pastEvents since registry deployment as fromBlock$
-                action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-                action.payload.fromBlock ? blockNumber$ : undefined,
-              ).pipe(
-                filter(([, p1, p2]) => p1 === address || p2 === address),
-                map(([id, p1, p2, settleTimeout, event]) =>
-                  channelOpened(
-                    {
-                      id: id.toNumber(),
-                      settleTimeout: settleTimeout.toNumber(),
-                      openBlock: event.blockNumber!,
-                      isFirstParticipant: address === p1,
-                      txHash: event.transactionHash! as Hash,
-                    },
-                    {
-                      tokenNetwork: tokenNetworkContract.address as Address,
-                      partner: address === p1 ? p2 : p1,
-                    },
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
+          return getEventsStream<ChannelOpenedEvent>(
+            tokenNetworkContract,
+            filters,
+            // if first time monitoring this token network,
+            // fetch TokenNetwork's pastEvents since registry deployment as fromBlock$
+            action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+          ).pipe(
+            filter(([, p1, p2]) => p1 === address || p2 === address),
+            map(([id, p1, p2, settleTimeout, event]) =>
+              channelOpened(
+                {
+                  id: id.toNumber(),
+                  settleTimeout: settleTimeout.toNumber(),
+                  openBlock: event.blockNumber!,
+                  isFirstParticipant: address === p1,
+                  txHash: event.transactionHash! as Hash,
+                },
+                {
+                  tokenNetwork: tokenNetworkContract.address as Address,
+                  partner: address === p1 ? p2 : p1,
+                },
+              ),
+            ),
+          );
+        }),
       ),
     ),
   );
@@ -279,7 +271,7 @@ export const tokenMonitoredEpic = (
  */
 export const channelMonitoredEpic = (
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {  }: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<
   ActionType<
@@ -289,145 +281,134 @@ export const channelMonitoredEpic = (
     | typeof channelSettled
   >
 > =>
-  state$.pipe(
-    pluck('blockNumber'),
-    publishReplay(1, undefined, blockNumber$ =>
-      action$.pipe(
-        filter(isActionOf(channelMonitored)),
-        groupBy(
-          action => `${action.payload.id}#${action.meta.partner}@${action.meta.tokenNetwork}`,
-        ),
-        mergeMap(grouped$ =>
-          grouped$.pipe(
-            exhaustMap(action => {
-              const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
+  action$.pipe(
+    filter(isActionOf(channelMonitored)),
+    groupBy(action => `${action.payload.id}#${action.meta.partner}@${action.meta.tokenNetwork}`),
+    mergeMap(grouped$ =>
+      grouped$.pipe(
+        exhaustMap(action => {
+          const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
 
-              // type of elements emitted by getEventsStream (past and new events coming from
-              // contract): [channelId, participant, totalDeposit, Event]
-              type ChannelNewDepositEvent = [BigNumber, Address, UInt<32>, Event];
-              // [channelId, participant, totalWithdraw, Event]
-              type ChannelWithdrawEvent = [BigNumber, Address, UInt<32>, Event];
-              // [channelId, participant, nonce, balanceHash, Event]
-              type ChannelClosedEvent = [BigNumber, Address, UInt<8>, Hash, Event];
-              // [channelId, part1_amount, part1_locksroot, part2_amount, part2_locksroot Event]
-              type ChannelSettledEvent = [BigNumber, UInt<32>, Hash, UInt<32>, Hash, Event];
+          // type of elements emitted by getEventsStream (past and new events coming from
+          // contract): [channelId, participant, totalDeposit, Event]
+          type ChannelNewDepositEvent = [BigNumber, Address, UInt<32>, Event];
+          // [channelId, participant, totalWithdraw, Event]
+          type ChannelWithdrawEvent = [BigNumber, Address, UInt<32>, Event];
+          // [channelId, participant, nonce, balanceHash, Event]
+          type ChannelClosedEvent = [BigNumber, Address, UInt<8>, Hash, Event];
+          // [channelId, part1_amount, part1_locksroot, part2_amount, part2_locksroot Event]
+          type ChannelSettledEvent = [BigNumber, UInt<32>, Hash, UInt<32>, Hash, Event];
 
-              // TODO: instead of one filter for each event, optimize to one filter per channel
-              // it requires ethers to support OR filters for topics:
-              // https://github.com/ethers-io/ethers.js/issues/437
-              // can we hook to provider.on directly and decoding the events ourselves?
-              const depositFilter = tokenNetworkContract.filters.ChannelNewDeposit(
-                  action.payload.id,
-                  null,
-                  null,
-                ),
-                withdrawFilter = tokenNetworkContract.filters.ChannelWithdraw(
-                  action.payload.id,
-                  null,
-                  null,
-                ),
-                closedFilter = tokenNetworkContract.filters.ChannelClosed(
-                  action.payload.id,
-                  null,
-                  null,
-                  null,
-                ),
-                settledFilter = tokenNetworkContract.filters.ChannelSettled(
-                  action.payload.id,
-                  null,
-                  null,
-                  null,
-                  null,
-                );
+          // TODO: instead of one filter for each event, optimize to one filter per channel
+          // it requires ethers to support OR filters for topics:
+          // https://github.com/ethers-io/ethers.js/issues/437
+          // can we hook to provider.on directly and decoding the events ourselves?
+          const depositFilter = tokenNetworkContract.filters.ChannelNewDeposit(
+              action.payload.id,
+              null,
+              null,
+            ),
+            withdrawFilter = tokenNetworkContract.filters.ChannelWithdraw(
+              action.payload.id,
+              null,
+              null,
+            ),
+            closedFilter = tokenNetworkContract.filters.ChannelClosed(
+              action.payload.id,
+              null,
+              null,
+              null,
+            ),
+            settledFilter = tokenNetworkContract.filters.ChannelSettled(
+              action.payload.id,
+              null,
+              null,
+              null,
+              null,
+            );
 
-              return merge(
-                getEventsStream<ChannelNewDepositEvent>(
-                  tokenNetworkContract,
-                  [depositFilter],
-                  // if channelMonitored triggered by ChannelOpenedAction,
-                  // fetch Channel's pastEvents since channelOpened blockNumber as fromBlock$
-                  action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-                  action.payload.fromBlock ? blockNumber$ : undefined,
-                ).pipe(
-                  map(([id, participant, totalDeposit, event]) =>
-                    channelDeposited(
-                      {
-                        id: id.toNumber(),
-                        participant,
-                        totalDeposit,
-                        txHash: event.transactionHash! as Hash,
-                      },
-                      action.meta,
-                    ),
-                  ),
+          return merge(
+            getEventsStream<ChannelNewDepositEvent>(
+              tokenNetworkContract,
+              [depositFilter],
+              // if channelMonitored triggered by ChannelOpenedAction,
+              // fetch Channel's pastEvents since channelOpened blockNumber as fromBlock$
+              action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+            ).pipe(
+              map(([id, participant, totalDeposit, event]) =>
+                channelDeposited(
+                  {
+                    id: id.toNumber(),
+                    participant,
+                    totalDeposit,
+                    txHash: event.transactionHash! as Hash,
+                  },
+                  action.meta,
                 ),
-                getEventsStream<ChannelWithdrawEvent>(
-                  tokenNetworkContract,
-                  [withdrawFilter],
-                  action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-                  action.payload.fromBlock ? blockNumber$ : undefined,
-                ).pipe(
-                  map(([id, participant, totalWithdraw, event]) =>
-                    channelWithdrawn(
-                      {
-                        id: id.toNumber(),
-                        participant,
-                        totalWithdraw,
-                        txHash: event.transactionHash! as Hash,
-                      },
-                      action.meta,
-                    ),
-                  ),
+              ),
+            ),
+            getEventsStream<ChannelWithdrawEvent>(
+              tokenNetworkContract,
+              [withdrawFilter],
+              action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+            ).pipe(
+              map(([id, participant, totalWithdraw, event]) =>
+                channelWithdrawn(
+                  {
+                    id: id.toNumber(),
+                    participant,
+                    totalWithdraw,
+                    txHash: event.transactionHash! as Hash,
+                  },
+                  action.meta,
                 ),
-                getEventsStream<ChannelClosedEvent>(
-                  tokenNetworkContract,
-                  [closedFilter],
-                  action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-                  action.payload.fromBlock ? blockNumber$ : undefined,
-                ).pipe(
-                  map(([id, participant, , , event]) =>
-                    channelClosed(
-                      {
-                        id: id.toNumber(),
-                        participant,
-                        closeBlock: event.blockNumber!,
-                        txHash: event.transactionHash! as Hash,
-                      },
-                      action.meta,
-                    ),
-                  ),
+              ),
+            ),
+            getEventsStream<ChannelClosedEvent>(
+              tokenNetworkContract,
+              [closedFilter],
+              action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+            ).pipe(
+              map(([id, participant, , , event]) =>
+                channelClosed(
+                  {
+                    id: id.toNumber(),
+                    participant,
+                    closeBlock: event.blockNumber!,
+                    txHash: event.transactionHash! as Hash,
+                  },
+                  action.meta,
                 ),
-                getEventsStream<ChannelSettledEvent>(
-                  tokenNetworkContract,
-                  [settledFilter],
-                  action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-                  action.payload.fromBlock ? blockNumber$ : undefined,
-                ).pipe(
-                  map(([id, , , , , event]) =>
-                    channelSettled(
-                      {
-                        id: id.toNumber(),
-                        settleBlock: event.blockNumber!,
-                        txHash: event.transactionHash! as Hash,
-                      },
-                      action.meta,
-                    ),
-                  ),
+              ),
+            ),
+            getEventsStream<ChannelSettledEvent>(
+              tokenNetworkContract,
+              [settledFilter],
+              action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
+            ).pipe(
+              map(([id, , , , , event]) =>
+                channelSettled(
+                  {
+                    id: id.toNumber(),
+                    settleBlock: event.blockNumber!,
+                    txHash: event.transactionHash! as Hash,
+                  },
+                  action.meta,
                 ),
-              ).pipe(
-                // takeWhile tends to broad input to generic Action. We need to narrow it by hand
-                takeWhile<
-                  ActionType<
-                    | typeof channelDeposited
-                    | typeof channelWithdrawn
-                    | typeof channelClosed
-                    | typeof channelSettled
-                  >
-                >(negate(isActionOf(channelSettled)), true),
-              );
-            }),
-          ),
-        ),
+              ),
+            ),
+          ).pipe(
+            // takeWhile tends to broad input to generic Action. We need to narrow it by hand
+            takeWhile<
+              ActionType<
+                | typeof channelDeposited
+                | typeof channelWithdrawn
+                | typeof channelClosed
+                | typeof channelSettled
+              >
+            >(negate(isActionOf(channelSettled)), true),
+          );
+        }),
       ),
     ),
   );

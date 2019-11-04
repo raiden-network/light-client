@@ -94,13 +94,21 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     });
   };
 
+  let blockNumber = 125;
   Object.assign(provider, { network });
+  Object.defineProperty(provider, 'blockNumber', { get: () => blockNumber });
   jest.spyOn(provider, 'getNetwork').mockImplementation(async () => network);
   jest.spyOn(provider, 'resolveName').mockImplementation(async addressOrName => addressOrName);
   jest.spyOn(provider, 'getLogs').mockResolvedValue([]);
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([]);
   // See: https://github.com/cartant/rxjs-marbles/issues/11
-  jest.spyOn(provider, 'getBlockNumber').mockReturnValue((of(120) as unknown) as Promise<number>);
+  jest
+    .spyOn(provider, 'getBlockNumber')
+    .mockImplementation(async () => (of(blockNumber) as unknown) as Promise<number>);
+  // use provider.resetEventsBlock used to set current block number for provider
+  jest
+    .spyOn(provider, 'resetEventsBlock')
+    .mockImplementation((number: number) => (blockNumber = number));
   mockEthersEventEmitter(provider);
 
   const signer = new Wallet(
@@ -169,7 +177,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     },
     initialState = makeInitialState(
       { network, address, contractsInfo },
-      { blockNumber: 125, config: { pfsSafetyMargin: 1.1, pfs: 'https://pfs.raiden.test' } },
+      { blockNumber, config: { pfsSafetyMargin: 1.1, pfs: 'https://pfs.raiden.test' } },
     );
 
   const stateOutput$ = new BehaviorSubject<RaidenState>(initialState),
