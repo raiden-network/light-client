@@ -83,7 +83,12 @@ export function pfsInfo(
   return url$.pipe(
     withLatestFrom(config$),
     mergeMap(([url, { httpTimeout }]) => {
-      if (!url || !url.includes('://')) throw new Error(`Invalid URL: ${url}`);
+      if (!url) throw new Error(`Empty URL: ${url}`);
+      else if (url.includes('://') && !url.startsWith('https://'))
+        throw new Error(`Invalid URL schema: ${url}`);
+      // default to https for domain-only urls
+      else if (!url.includes('://')) url = `https://${url}`;
+
       const start = Date.now();
       return fromFetch(`${url}/api/v1/info`).pipe(
         timeout(httpTimeout),

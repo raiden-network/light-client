@@ -254,7 +254,7 @@ describe('PFS: pathFindServiceEpic', () => {
   });
 
   test('success request pfs from pfsList', async () => {
-    expect.assertions(1);
+    expect.assertions(4);
     // put config.pfs into auto mode
     state$.next(raidenReducer(state$.value, raidenConfigUpdate({ config: { pfs: undefined } })));
 
@@ -263,19 +263,23 @@ describe('PFS: pathFindServiceEpic', () => {
       pfsAddress2 = '0x0800000000000000000000000000000000000092' as Address,
       pfsAddress3 = '0x0800000000000000000000000000000000000093' as Address,
       pfsAddress4 = '0x0800000000000000000000000000000000000094' as Address,
+      pfsAddress5 = '0x0800000000000000000000000000000000000095' as Address,
       action$ = of(
         pfsListUpdated({
-          pfsList: [pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress4, pfsAddress],
+          pfsList: [pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress4, pfsAddress5, pfsAddress],
         }),
         matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
         matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
-    // pfsAddress1 urls call will fail
-    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('not_a_url');
+    // pfsAddress1&2 urls call will fail
+    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('');
+    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('http://not.https.url');
+    // pfsAddress3 will be accepted with default https:// schema
+    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('domain.only.url');
 
-    const pfsInfoResponse2 = { ...pfsInfoResponse, payment_address: pfsAddress2 };
+    const pfsInfoResponse3 = { ...pfsInfoResponse, payment_address: pfsAddress3 };
     fetch.mockImplementationOnce(
       async () =>
         new Promise(resolve =>
@@ -284,29 +288,29 @@ describe('PFS: pathFindServiceEpic', () => {
               resolve({
                 ok: true,
                 status: 200,
-                json: jest.fn(async () => pfsInfoResponse2),
-                text: jest.fn(async () => losslessStringify(pfsInfoResponse2)),
+                json: jest.fn(async () => pfsInfoResponse3),
+                text: jest.fn(async () => losslessStringify(pfsInfoResponse3)),
               }),
             23, // higher rtt for this PFS
           ),
         ),
     );
 
-    // 3 & 4, test sorting by price info
-    const pfsInfoResponse3 = { ...pfsInfoResponse, payment_address: pfsAddress3, price_info: 5 };
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse3),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse3)),
-    });
-
-    const pfsInfoResponse4 = { ...pfsInfoResponse, payment_address: pfsAddress4, price_info: 10 };
+    // 4 & 5, test sorting by price info
+    const pfsInfoResponse4 = { ...pfsInfoResponse, payment_address: pfsAddress4, price_info: 5 };
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse4),
       text: jest.fn(async () => losslessStringify(pfsInfoResponse4)),
+    });
+
+    const pfsInfoResponse5 = { ...pfsInfoResponse, payment_address: pfsAddress5, price_info: 10 };
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse5),
+      text: jest.fn(async () => losslessStringify(pfsInfoResponse5)),
     });
 
     // pfsAddress succeeds main response
@@ -334,6 +338,15 @@ describe('PFS: pathFindServiceEpic', () => {
         },
         { tokenNetwork, target, value },
       ),
+    );
+    expect(fetch).toHaveBeenCalledTimes(4 + 1); // 3,4,5,0 addresses, + paths for chosen one
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/^https:\/\/domain.only.url\/.*\/info/),
+      expect.anything(),
+    );
+    expect(fetch).toHaveBeenLastCalledWith(
+      expect.stringMatching(/^https:\/\/.*\/paths$/),
+      expect.anything(),
     );
   });
 
