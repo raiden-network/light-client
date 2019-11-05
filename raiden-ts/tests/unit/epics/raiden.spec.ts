@@ -208,15 +208,19 @@ describe('raiden epic', () => {
       depsMock.provider.resetEventsBlock(127);
       action$.next(newBlock({ blockNumber: 127 }));
 
-      depsMock.provider.emit(
-        depsMock.registryContract.filters.TokenNetworkCreated(null, null),
-        makeLog({
-          blockNumber: 127,
-          filter: depsMock.registryContract.filters.TokenNetworkCreated(
-            otherToken,
-            otherTokenNetwork,
+      setTimeout(
+        () =>
+          depsMock.provider.emit(
+            depsMock.registryContract.filters.TokenNetworkCreated(null, null),
+            makeLog({
+              blockNumber: 127,
+              filter: depsMock.registryContract.filters.TokenNetworkCreated(
+                otherToken,
+                otherTokenNetwork,
+              ),
+            }),
           ),
-        }),
+        10,
       );
 
       await expect(output).resolves.toEqual([

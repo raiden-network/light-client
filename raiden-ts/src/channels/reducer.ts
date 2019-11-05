@@ -141,9 +141,10 @@ function channels(state: RaidenState['channels'] = initialState.channels, action
     const channel: Channel | undefined = get(path, state);
     if (
       !channel ||
-      ![ChannelState.closed, ChannelState.settleable, ChannelState.settling].includes(
-        channel.state,
-      )
+      channel.state === ChannelState.opening ||
+      channel.state === ChannelState.open ||
+      channel.state === ChannelState.closing ||
+      channel.id !== action.payload.id
     )
       return state;
     return unset(path, state);

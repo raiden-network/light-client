@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Contract, EventFilter, Event } from 'ethers';
-import { Provider, JsonRpcProvider, Listener } from 'ethers/providers';
+import { Contract, Event } from 'ethers';
+import { Provider, JsonRpcProvider, Listener, EventType, Filter, Log } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 import { getNetwork as parseNetwork } from 'ethers/utils/networks';
 import { flatten, sortBy } from 'lodash';
@@ -17,8 +17,8 @@ import { filter, first, map, switchMap, mergeMap, share } from 'rxjs/operators';
  * @returns Observable of target.on(event) events
  */
 export function fromEthersEvent<T>(
-  target: Provider | Contract,
-  event: EventFilter | string,
+  target: Provider,
+  event: EventType,
   resultSelector?: (...args: any[]) => T, // eslint-disable-line
 ): Observable<T> {
   return fromEventPattern<T>(
@@ -43,10 +43,30 @@ export function fromEthersEvent<T>(
  */
 export function getEventsStream<T extends any[]>(
   contract: Contract,
-  filters: EventFilter[],
+  filters: Filter[],
   fromBlock$?: Observable<number>,
 ): Observable<T> {
   const provider = contract.provider as JsonRpcProvider;
+
+  const logToEvent = (log: Log): T | undefined => {
+    // parse log into [...args, event: Event] array,
+    // the same that contract.on events/callbacks
+    const parsed = contract.interface.parseLog(log);
+    if (!parsed) return;
+    const args = Array.prototype.slice.call(parsed.values);
+    // not all parameters quite needed right now, but let's comply with the interface
+    const event: Event = {
+      ...log,
+      ...parsed,
+      args,
+      removeListener: () => {},
+      getBlock: () => provider.getBlock(log.blockHash!),
+      getTransaction: () => provider.getTransaction(log.transactionHash!),
+      getTransactionReceipt: () => provider.getTransactionReceipt(log.transactionHash!),
+      decode: (data: string, topics?: string[]) => parsed.decode(data, topics || log.topics),
+    };
+    return [...args, event] as T;
+  };
 
   // past events (in the closed-interval=[fromBlock, lastSeenBlock]),
   // fetch once, sort by blockNumber, emit all, complete
@@ -72,25 +92,7 @@ export function getEventsStream<T extends any[]>(
       // flatten array of each getLogs query response and sort them
       // emit log array elements as separate logs into stream (unwind)
       mergeMap(logs => from(sortBy(flatten(logs), ['blockNumber']))),
-      map(log => {
-        // parse log into [...args, event: Event] array,
-        // the same that contract.on events/callbacks
-        const parsed = contract.interface.parseLog(log);
-        if (!parsed) return;
-        const args = Array.prototype.slice.call(parsed.values);
-        // not all parameters quite needed right now, but let's comply with the interface
-        const event: Event = {
-          ...log,
-          ...parsed,
-          args,
-          removeListener: () => {},
-          getBlock: () => provider.getBlock(log.blockHash!),
-          getTransaction: () => provider.getTransaction(log.transactionHash!),
-          getTransactionReceipt: () => provider.getTransactionReceipt(log.transactionHash!),
-          decode: undefined,
-        };
-        return [...args, event];
-      }),
+      map(logToEvent),
       filter((event): event is T => !!event),
     );
   }
@@ -100,7 +102,9 @@ export function getEventsStream<T extends any[]>(
   // doesn't complete, keep emitting events for each new block (if any) until unsubscription
   const newEvents$: Observable<T> = nextBlock$.pipe(
     mergeMap(() => from(filters)),
-    mergeMap(filter => fromEthersEvent(contract, filter, (...args) => args as T)),
+    mergeMap(filter => fromEthersEvent<Log>(provider, filter)),
+    map(logToEvent),
+    filter((event): event is T => !!event),
   );
 
   return merge(pastEvents$, newEvents$);

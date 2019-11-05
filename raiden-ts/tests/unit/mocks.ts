@@ -85,12 +85,20 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
         if (cbs) cbs.delete(callback);
         return target;
       });
+    jest.spyOn(target, 'listenerCount').mockImplementation((event?: EventType): number => {
+      if (event && listeners.has(event)) return listeners.get(getEventTag(event))!.size;
+      else if (event) return 0;
+      let count = 0;
+      for (const cbs of listeners.values()) count += cbs.size;
+      return count;
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     jest.spyOn(target, 'emit').mockImplementation((event: EventType, ...args: any[]) => {
       event = getEventTag(event);
-      const cbs = listeners.get(event);
-      if (cbs) cbs.forEach(cb => cb(...args));
-      return !!cbs;
+      if (event === '*') {
+        for (const cbs of listeners.values()) for (const cb of cbs) cb(...args);
+      } else if (listeners.has(event)) listeners.get(event)!.forEach(cb => cb(...args));
+      return true;
     });
   };
 
