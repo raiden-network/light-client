@@ -1030,6 +1030,7 @@ export const deliveredEpic = (
         type: MessageType.DELIVERED,
         delivered_message_identifier: msgId,
       };
+      console.log(`Signing "${delivered.type}" for "${message.type}" with id=${msgId.toString()}`);
       return from(signMessage(signer, delivered)).pipe(
         tap(signed => cache.put(key, signed)),
         map(signed => messageSend({ message: signed }, action.meta)),
