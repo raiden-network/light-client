@@ -25,7 +25,6 @@ import { isActionOf, ActionType } from 'typesafe-actions';
 import { bigNumberify, BigNumber } from 'ethers/utils';
 import { Zero, Two } from 'ethers/constants';
 import { Event } from 'ethers/contract';
-import { isNil } from 'lodash';
 
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
@@ -95,7 +94,7 @@ export const pathFindServiceEpic = (
                 const pfs$ = action.payload.pfs
                   ? // first, honor action.payload.pfs
                     of(action.payload.pfs)
-                  : !isNil(configPfs)
+                  : configPfs != null
                   ? // or if config.pfs isn't disabled nor auto (undefined), use it
                     // configPfs is addr or url, so fetch pfsInfo from it
                     pfsInfo(configPfs, deps)
