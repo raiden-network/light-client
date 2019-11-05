@@ -152,6 +152,7 @@ export class Raiden {
    * @returns token info
    */
   public getTokenInfo: (
+    this: Raiden,
     token: string,
   ) => Promise<{
     totalSupply: BigNumber;
@@ -246,7 +247,7 @@ export class Raiden {
 
     this.events$ = action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
 
-    this.getTokenInfo = memoize(async (token: string) => {
+    this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
       if (!Address.is(token)) throw new Error('Invalid address');
       if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
       const tokenContract = this.deps.getTokenContract(token);
