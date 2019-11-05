@@ -1,5 +1,5 @@
 import { Component, Vue } from 'vue-property-decorator';
-import { RouteNames } from '@/route-names';
+import { RouteNames } from '@/router/route-names';
 
 @Component
 export default class NavigationMixin extends Vue {

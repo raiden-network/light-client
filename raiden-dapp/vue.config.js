@@ -9,8 +9,6 @@ module.exports = {
         .pre()
         .use('source-map-loader')
         .loader('source-map-loader');
-
-      config.devtool = 'eval-source-map';
     }
     config.module
       .rule('i18n')
@@ -32,5 +30,8 @@ module.exports = {
       localeDir: 'locales',
       enableInSFC: true
     }
+  },
+  configureWebpack: {
+    devtool: 'eval-source-map'
   }
 };

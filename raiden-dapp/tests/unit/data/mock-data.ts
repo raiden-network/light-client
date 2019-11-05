@@ -9,7 +9,7 @@ import {
   RaidenChannels
 } from 'raiden-ts';
 import { Route } from 'vue-router';
-import { RouteNames } from '@/route-names';
+import { RouteNames } from '@/router/route-names';
 import { Tokens } from '@/types';
 
 export class TestData {

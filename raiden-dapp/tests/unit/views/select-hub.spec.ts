@@ -7,9 +7,9 @@ import SelectHub from '@/views/SelectHub.vue';
 import VueRouter, { Route } from 'vue-router';
 import { mockInput } from '../utils/interaction-utils';
 import Mocked = jest.Mocked;
-import { RouteNames } from '@/route-names';
+import { RouteNames } from '@/router/route-names';
 import Vue from 'vue';
-import store from '@/store';
+import store from '@/store/index';
 import { $identicon } from '../utils/mocks';
 import flushPromises from 'flush-promises';
 

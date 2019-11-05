@@ -2,7 +2,7 @@ jest.mock('@/services/raiden-service');
 
 import { addElemWithDataAppToBody } from '../utils/dialog';
 import { $identicon } from '../utils/mocks';
-import store from '@/store';
+import store from '@/store/index';
 import Vue from 'vue';
 import Vuex, { Store } from 'vuex';
 import Vuetify from 'vuetify';

@@ -10,11 +10,11 @@ import Vuetify from 'vuetify';
 import { addElemWithDataAppToBody } from '../utils/dialog';
 import Filters from '@/filters';
 import Vue from 'vue';
-import store from '@/store';
+import store from '@/store/index';
 import { $identicon } from '../utils/mocks';
 import RaidenService from '@/services/raiden-service';
 import Mocked = jest.Mocked;
-import { RouteNames } from '@/route-names';
+import { RouteNames } from '@/router/route-names';
 import VueRouter from 'vue-router';
 
 Vue.use(Vuetify);

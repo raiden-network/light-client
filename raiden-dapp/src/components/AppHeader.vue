@@ -91,7 +91,7 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
 import BlockieMixin from '@/mixins/blockie-mixin';
-import { RouteNames } from '@/route-names';
+import { RouteNames } from '@/router/route-names';
 import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({

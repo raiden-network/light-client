@@ -7,6 +7,8 @@ import RaidenService, {
   ChannelDepositFailed,
   ChannelOpenFailed,
   ChannelSettleFailed,
+  FindRoutesFailed,
+  PFSRequestFailed,
   TransferFailed
 } from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
@@ -45,7 +47,8 @@ describe('RaidenService', () => {
         transfers$: of({}).pipe(delay(1000)),
         getTokenBalance: jest.fn().mockResolvedValue(Zero),
         getTokenList: jest.fn().mockResolvedValue(['0xtoken']),
-        getTokenInfo: jest.fn().mockResolvedValue(null)
+        getTokenInfo: jest.fn().mockResolvedValue(null),
+        start: jest.fn()
       },
       extras
     );
@@ -248,7 +251,7 @@ describe('RaidenService', () => {
 
     await raidenService.fetchTokenData(['0xtoken']);
     expect(store.commit).toHaveBeenNthCalledWith(
-      6,
+      5,
       'updateTokens',
       expect.objectContaining({
         '0xtoken': {
@@ -731,5 +734,89 @@ describe('RaidenService', () => {
 
     expect(await raidenService.ensResolve('domain.eth')).toEqual(AddressZero);
     expect(resolveName).toHaveBeenCalledTimes(1);
+  });
+
+  test('get PFS list', async () => {
+    const findPFS = jest.fn().mockResolvedValueOnce([]);
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(mockRaiden({ findPFS }));
+    await raidenService.connect();
+    await flushPromises();
+    await expect(raidenService.fetchServices()).resolves.toEqual([]);
+  });
+
+  test('get PFS list fails', async () => {
+    const findPFS = jest.fn().mockRejectedValue(new Error('failed'));
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(mockRaiden({ findPFS }));
+    await raidenService.connect();
+    await flushPromises();
+    await expect(raidenService.fetchServices()).rejects.toBeInstanceOf(
+      PFSRequestFailed
+    );
+  });
+
+  test('find routes: no availability', async () => {
+    const getAvailability = jest
+      .fn()
+      .mockRejectedValue(new Error('target offline'));
+    const findRoutes = jest
+      .fn()
+      .mockRejectedValue(new Error('should not reach findRoutes'));
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(mockRaiden({ getAvailability, findRoutes }));
+    await raidenService.connect();
+    await flushPromises();
+    await expect(
+      raidenService.findRoutes(AddressZero, AddressZero, One)
+    ).rejects.toBeInstanceOf(FindRoutesFailed);
+    await expect(
+      raidenService.findRoutes(AddressZero, AddressZero, One)
+    ).rejects.toThrowError('target offline');
+  });
+
+  test('find routes: no routes', async () => {
+    const getAvailability = jest.fn().mockResolvedValue(AddressZero);
+    const findRoutes = jest.fn().mockRejectedValue(new Error('no path'));
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(mockRaiden({ getAvailability, findRoutes }));
+    await raidenService.connect();
+    await flushPromises();
+    await expect(
+      raidenService.findRoutes(AddressZero, AddressZero, One)
+    ).rejects.toBeInstanceOf(FindRoutesFailed);
+    await expect(
+      raidenService.findRoutes(AddressZero, AddressZero, One)
+    ).rejects.toThrowError('no path');
+  });
+
+  test('find routes: success', async () => {
+    const getAvailability = jest.fn().mockResolvedValueOnce(AddressZero);
+    const findRoutes = jest.fn().mockResolvedValueOnce([]);
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(mockRaiden({ getAvailability, findRoutes }));
+    await raidenService.connect();
+    await flushPromises();
+    await expect(
+      raidenService.findRoutes(AddressZero, AddressZero, One)
+    ).resolves.toEqual([]);
+  });
+
+  test('no pfs set', async () => {
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(mockRaiden({ config: {} }));
+    await raidenService.connect();
+    await flushPromises();
+    expect(raidenService.noPfsSelected()).toBe(true);
+  });
+
+  test('pfs is set in config', async () => {
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(
+      mockRaiden({ config: { pfs: 'https://pfs.service' } })
+    );
+    await raidenService.connect();
+    await flushPromises();
+    expect(raidenService.noPfsSelected()).toBe(false);
   });
 });

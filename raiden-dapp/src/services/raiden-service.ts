@@ -128,7 +128,6 @@ export default class RaidenService {
         raiden.start();
       }
     } catch (e) {
-      console.error(e);
       let deniedReason: DeniedReason;
       if (e.message && e.message.indexOf('No deploy info provided') > -1) {
         deniedReason = DeniedReason.UNSUPPORTED_NETWORK;
@@ -170,7 +169,6 @@ export default class RaidenService {
         address: tokenAddress
       };
     } catch (e) {
-      console.error(e);
       return null;
     }
   }

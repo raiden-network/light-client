@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import PathfindingServices from '@/components/PathfindingServices.vue';
-import store from '@/store';
+import store from '@/store/index';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { RaidenPFS } from 'raiden-ts';

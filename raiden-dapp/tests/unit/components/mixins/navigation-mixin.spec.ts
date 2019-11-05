@@ -1,6 +1,6 @@
 jest.mock('vue-router');
 
-import { RouteNames } from '@/route-names';
+import { RouteNames } from '@/router/route-names';
 import { createLocalVue, shallowMount, Wrapper } from '@vue/test-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import VueRouter from 'vue-router';

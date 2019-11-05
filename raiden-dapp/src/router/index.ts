@@ -2,8 +2,8 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 
-import Home from './views/Home.vue';
-import { RouteNames } from '@/route-names';
+import Home from '../views/Home.vue';
+import { RouteNames } from '@/router/route-names';
 
 Vue.use(Router);
 
@@ -29,7 +29,7 @@ const router = new Router({
       meta: {
         title: 'Send'
       },
-      component: () => import('./views/Transfer.vue')
+      component: () => import('../views/Transfer.vue')
     },
     {
       path: '/connect',
@@ -37,7 +37,7 @@ const router = new Router({
       meta: {
         title: 'Select token'
       },
-      component: () => import('./views/SelectToken.vue')
+      component: () => import('../views/SelectToken.vue')
     },
     {
       path: '/connect/:token',
@@ -45,7 +45,7 @@ const router = new Router({
       meta: {
         title: 'Select hub'
       },
-      component: () => import('./views/SelectHub.vue')
+      component: () => import('../views/SelectHub.vue')
     },
     {
       path: '/connect/:token/:partner',
@@ -53,7 +53,7 @@ const router = new Router({
       meta: {
         title: 'Open channel'
       },
-      component: () => import('./views/OpenChannel.vue')
+      component: () => import('../views/OpenChannel.vue')
     },
     {
       path: '/channels/:token',
@@ -61,7 +61,7 @@ const router = new Router({
       meta: {
         title: 'Channels'
       },
-      component: () => import('./views/Channels.vue')
+      component: () => import('../views/Channels.vue')
     }
   ]
 });

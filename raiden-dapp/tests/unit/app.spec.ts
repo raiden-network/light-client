@@ -9,7 +9,7 @@ import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import VueRouter from 'vue-router';
 import flushPromises from 'flush-promises';
-import store from '@/store';
+import store from '@/store/index';
 
 Vue.use(Vuex);
 Vue.use(Vuetify);

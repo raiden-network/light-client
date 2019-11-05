@@ -12,7 +12,7 @@ import Vuetify from 'vuetify';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
 import Transfer from '@/views/Transfer.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
-import store from '@/store';
+import store from '@/store/index';
 import VueRouter from 'vue-router';
 import { TestData } from '../data/mock-data';
 import RaidenService from '@/services/raiden-service';
@@ -21,7 +21,7 @@ import { BigNumber } from 'ethers/utils';
 import { $identicon } from '../utils/mocks';
 
 import Mocked = jest.Mocked;
-import { RouteNames } from '@/route-names';
+import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuetify);
 
@@ -54,6 +54,7 @@ describe('Transfer.vue', () => {
       localVue,
       vuetify,
       store,
+      stubs: ['router-link'],
       mocks: {
         $router: router,
         $route: TestData.mockRoute({
