@@ -322,6 +322,7 @@ export async function signMessage<M extends Message>(
   message: M,
 ): Promise<Signed<M>> {
   if (isSigned(message)) return message;
+  console.log(`Signing message "${message.type}"`, message);
   const signature = (await signer.signMessage(arrayify(packMessage(message)))) as Signature;
   return { ...message, signature };
 }
