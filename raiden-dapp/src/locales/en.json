@@ -200,7 +200,7 @@
       "done": {
         "label": "Done",
         "title": "Send Successful",
-        "description": "Your transfer was successful"
+        "description": "Your transfer was successful. You may get prompted to sign additional messages in order to acknowledge delivered messages from the target."
       },
       "deposit": {
         "label": "Deposit",
