@@ -102,7 +102,7 @@ describe('getEventsStream', () => {
     const log = makeLog({
       filter: registryContract.filters.TokenNetworkCreated(tokenAddr, tokenNetworkAddr),
     });
-    provider.emit(filter, log);
+    setTimeout(() => provider.emit(filter, log), 10);
 
     const events = await promise;
 

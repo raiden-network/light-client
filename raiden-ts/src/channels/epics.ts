@@ -20,6 +20,7 @@ import { findKey, get, isEmpty, negate } from 'lodash';
 import { BigNumber, hexlify, concat } from 'ethers/utils';
 import { Event } from 'ethers/contract';
 import { HashZero, Zero } from 'ethers/constants';
+import { Filter } from 'ethers/providers';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction, raidenShutdown } from '../actions';
@@ -299,10 +300,6 @@ export const channelMonitoredEpic = (
           // [channelId, part1_amount, part1_locksroot, part2_amount, part2_locksroot Event]
           type ChannelSettledEvent = [BigNumber, UInt<32>, Hash, UInt<32>, Hash, Event];
 
-          // TODO: instead of one filter for each event, optimize to one filter per channel
-          // it requires ethers to support OR filters for topics:
-          // https://github.com/ethers-io/ethers.js/issues/437
-          // can we hook to provider.on directly and decoding the events ourselves?
           const depositFilter = tokenNetworkContract.filters.ChannelNewDeposit(
               action.payload.id,
               null,
@@ -325,80 +322,95 @@ export const channelMonitoredEpic = (
               null,
               null,
               null,
-            );
+            ),
+            mergedFilter: Filter = {
+              address: tokenNetworkContract.address,
+              topics: [
+                [
+                  depositFilter.topics![0],
+                  withdrawFilter.topics![0],
+                  closedFilter.topics![0],
+                  settledFilter.topics![0],
+                ],
+                [settledFilter.topics![1]],
+              ],
+            };
 
-          return merge(
-            getEventsStream<ChannelNewDepositEvent>(
-              tokenNetworkContract,
-              [depositFilter],
-              // if channelMonitored triggered by ChannelOpenedAction,
-              // fetch Channel's pastEvents since channelOpened blockNumber as fromBlock$
-              action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-            ).pipe(
-              map(([id, participant, totalDeposit, event]) =>
-                channelDeposited(
-                  {
-                    id: id.toNumber(),
-                    participant,
-                    totalDeposit,
-                    txHash: event.transactionHash! as Hash,
-                  },
-                  action.meta,
-                ),
-              ),
-            ),
-            getEventsStream<ChannelWithdrawEvent>(
-              tokenNetworkContract,
-              [withdrawFilter],
-              action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-            ).pipe(
-              map(([id, participant, totalWithdraw, event]) =>
-                channelWithdrawn(
-                  {
-                    id: id.toNumber(),
-                    participant,
-                    totalWithdraw,
-                    txHash: event.transactionHash! as Hash,
-                  },
-                  action.meta,
-                ),
-              ),
-            ),
-            getEventsStream<ChannelClosedEvent>(
-              tokenNetworkContract,
-              [closedFilter],
-              action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-            ).pipe(
-              map(([id, participant, , , event]) =>
-                channelClosed(
-                  {
-                    id: id.toNumber(),
-                    participant,
-                    closeBlock: event.blockNumber!,
-                    txHash: event.transactionHash! as Hash,
-                  },
-                  action.meta,
-                ),
-              ),
-            ),
-            getEventsStream<ChannelSettledEvent>(
-              tokenNetworkContract,
-              [settledFilter],
-              action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
-            ).pipe(
-              map(([id, , , , , event]) =>
-                channelSettled(
-                  {
-                    id: id.toNumber(),
-                    settleBlock: event.blockNumber!,
-                    txHash: event.transactionHash! as Hash,
-                  },
-                  action.meta,
-                ),
-              ),
-            ),
+          /**
+           * Guards that an event data tuple matches the type of a given filter
+           *
+           * Type must be explicitly passed as generic type parameter, and a corresponding filter
+           * as first parameter
+           *
+           * @param filter - Filter of an event of type T
+           * @param data - event data tuple, where last element is the Event object
+           * @returns Truty if event data matches filter
+           */
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          function isEvent<T extends any[]>(filter: Filter, data: any[]): data is T {
+            const event = data[data.length - 1] as Event;
+            if (!event || !event.topics || !filter.topics) return false;
+            const topic0 = filter.topics[0];
+            return Array.isArray(topic0)
+              ? topic0.includes(event.topics[0])
+              : topic0 === event.topics[0];
+          }
+
+          return getEventsStream<
+            | ChannelNewDepositEvent
+            | ChannelWithdrawEvent
+            | ChannelClosedEvent
+            | ChannelSettledEvent
+          >(
+            tokenNetworkContract,
+            [mergedFilter],
+            // if channelMonitored triggered by ChannelOpenedAction,
+            // fetch Channel's pastEvents since channelOpened blockNumber as fromBlock$
+            action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
           ).pipe(
-            // takeWhile tends to broad input to generic Action. We need to narrow it by hand
+            mergeMap(function*(data) {
+              if (isEvent<ChannelNewDepositEvent>(depositFilter, data)) {
+                yield channelDeposited(
+                  {
+                    id: data[0].toNumber(),
+                    participant: data[1],
+                    totalDeposit: data[2],
+                    txHash: data[3].transactionHash! as Hash,
+                  },
+                  action.meta,
+                );
+              } else if (isEvent<ChannelWithdrawEvent>(withdrawFilter, data)) {
+                yield channelWithdrawn(
+                  {
+                    id: data[0].toNumber(),
+                    participant: data[1],
+                    totalWithdraw: data[2],
+                    txHash: data[3].transactionHash! as Hash,
+                  },
+                  action.meta,
+                );
+              } else if (isEvent<ChannelClosedEvent>(closedFilter, data)) {
+                yield channelClosed(
+                  {
+                    id: data[0].toNumber(),
+                    participant: data[1],
+                    closeBlock: data[4].blockNumber!,
+                    txHash: data[4].transactionHash! as Hash,
+                  },
+                  action.meta,
+                );
+              } else if (isEvent<ChannelSettledEvent>(settledFilter, data)) {
+                yield channelSettled(
+                  {
+                    id: data[0].toNumber(),
+                    settleBlock: data[5].blockNumber!,
+                    txHash: data[5].transactionHash! as Hash,
+                  },
+                  action.meta,
+                );
+              }
+            }),
+            // takeWhile tends to broad input to generic Action. We need to narrow it explicitly
             takeWhile<
               ActionType<
                 | typeof channelDeposited

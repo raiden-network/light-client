@@ -308,7 +308,7 @@ describe('channels epic', () => {
         .toPromise();
 
       depsMock.provider.emit(
-        tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
+        '*',
         makeLog({
           blockNumber: 125,
           filter: tokenNetworkContract.filters.ChannelNewDeposit(channelId, partner, null),
@@ -349,7 +349,7 @@ describe('channels epic', () => {
 
       // even though multiple channelMonitored events were fired, blockchain fires a single event
       depsMock.provider.emit(
-        tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
+        '*',
         makeLog({
           blockNumber: 125,
           filter: tokenNetworkContract.filters.ChannelNewDeposit(
@@ -369,7 +369,7 @@ describe('channels epic', () => {
         meta: { tokenNetwork, partner },
       });
 
-      expect(depsMock.provider.on).toHaveBeenCalledTimes(4); // one for each event
+      expect(depsMock.provider.on).toHaveBeenCalledTimes(1); // mergedFilter
     });
 
     test('new$ partner ChannelWithdraw event', async () => {
@@ -399,7 +399,7 @@ describe('channels epic', () => {
         .toPromise();
 
       depsMock.provider.emit(
-        tokenNetworkContract.filters.ChannelWithdraw(channelId, null, null),
+        '*',
         makeLog({
           blockNumber: closeBlock,
           transactionHash: txHash,
@@ -433,7 +433,7 @@ describe('channels epic', () => {
         .toPromise();
 
       depsMock.provider.emit(
-        tokenNetworkContract.filters.ChannelClosed(channelId, null, null, null),
+        '*',
         makeLog({
           blockNumber: closeBlock,
           transactionHash: txHash,
@@ -471,26 +471,10 @@ describe('channels epic', () => {
         .pipe(takeUntil(timer(100)))
         .toPromise();
 
-      expect(
-        tokenNetworkContract.listenerCount(
-          tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
-        ),
-      ).toBe(1);
-
-      expect(
-        tokenNetworkContract.listenerCount(
-          tokenNetworkContract.filters.ChannelClosed(channelId, null, null, null),
-        ),
-      ).toBe(1);
-
-      expect(
-        tokenNetworkContract.listenerCount(
-          tokenNetworkContract.filters.ChannelSettled(channelId, null, null, null, null),
-        ),
-      ).toBe(1);
+      expect(depsMock.provider.listenerCount()).toBe(1);
 
       depsMock.provider.emit(
-        tokenNetworkContract.filters.ChannelSettled(channelId, null, null, null, null),
+        '*',
         makeLog({
           blockNumber: settleBlock,
           transactionHash: txHash,
@@ -504,38 +488,8 @@ describe('channels epic', () => {
       );
 
       // ensure ChannelSettledAction completed channel monitoring and unsubscribed from events
-      expect(depsMock.provider.removeListener).toHaveBeenCalledWith(
-        tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
-        expect.anything(),
-      );
-
-      expect(depsMock.provider.removeListener).toHaveBeenCalledWith(
-        tokenNetworkContract.filters.ChannelClosed(channelId, null, null, null),
-        expect.anything(),
-      );
-
-      expect(depsMock.provider.removeListener).toHaveBeenCalledWith(
-        tokenNetworkContract.filters.ChannelSettled(channelId, null, null, null, null),
-        expect.anything(),
-      );
-
-      expect(
-        tokenNetworkContract.listenerCount(
-          tokenNetworkContract.filters.ChannelNewDeposit(channelId, null, null),
-        ),
-      ).toBe(0);
-
-      expect(
-        tokenNetworkContract.listenerCount(
-          tokenNetworkContract.filters.ChannelClosed(channelId, null, null, null),
-        ),
-      ).toBe(0);
-
-      expect(
-        tokenNetworkContract.listenerCount(
-          tokenNetworkContract.filters.ChannelSettled(channelId, null, null, null, null),
-        ),
-      ).toBe(0);
+      expect(depsMock.provider.removeListener).toHaveBeenCalledTimes(1);
+      expect(depsMock.provider.listenerCount()).toBe(0);
     });
   });
 
