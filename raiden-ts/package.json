@@ -45,7 +45,7 @@
   "devDependencies": {
     "@types/events": "^3.0.0",
     "@types/isomorphic-fetch": "0.0.35",
-    "@types/jest": "^24.0.21",
+    "@types/jest": "^24.0.22",
     "@types/lodash": "^4.14.144",
     "@types/lossless-json": "^1.0.0",
     "@types/memdown": "^3.0.0",
