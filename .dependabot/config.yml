@@ -3,7 +3,7 @@ version: 1
 update_configs:
   - package_manager: "javascript"
     directory: "/raiden-ts"
-    update_schedule: "live"
+    update_schedule: "weekly"
     default_labels:
       - "dependencies"
     commit_message:
@@ -16,7 +16,7 @@ update_configs:
 
   - package_manager: "javascript"
     directory: "/raiden-dapp"
-    update_schedule: "live"
+    update_schedule: "weekly"
     default_labels:
       - "dependencies"
     commit_message:
