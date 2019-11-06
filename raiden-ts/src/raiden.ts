@@ -971,7 +971,7 @@ export class Raiden {
 
     // Check whether we are on a test network
     const { name } = await this.deps.provider.getNetwork();
-    if (!['goerli', 'rinkeby', 'ropsten'].includes(name)) {
+    if (name === 'homestead') {
       throw new Error('Minting is only allowed on test networks.');
     }
 
