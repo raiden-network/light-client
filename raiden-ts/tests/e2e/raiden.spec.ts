@@ -995,4 +995,48 @@ describe('Raiden', () => {
       );
     });
   });
+
+  describe('mint', () => {
+    afterEach(() => {
+      raiden.stop();
+    });
+
+    test('should throw exception if invalid address', async () => {
+      raiden = await Raiden.create(
+        new TestProvider({ network_id: 1 }),
+        0,
+        storage,
+        contractsInfo,
+        config,
+      );
+      raiden.start();
+      expect(raiden.mint('0xTokenNetwork', 0.05 ** 10)).rejects.toThrowError('Invalid address');
+    });
+
+    test('should throw exception on main net', async () => {
+      raiden = await Raiden.create(
+        new TestProvider({ network_id: 1 }),
+        0,
+        storage,
+        contractsInfo,
+        config,
+      );
+      raiden.start();
+      expect(
+        raiden.mint('0x3a989D97388a39A0B5796306C615d10B7416bE77', 0.05 ** 10),
+      ).rejects.toThrowError('Minting is only allowed on test networks.');
+    });
+
+    test('should return transaction if minted successfully', async () => {
+      raiden = await Raiden.create(
+        new TestProvider({ network_id: 5 }),
+        0,
+        storage,
+        contractsInfo,
+        config,
+      );
+      raiden.start();
+      expect(raiden.mint('0x3a989D97388a39A0B5796306C615d10B7416bE77', 0.05 ** 10)).resolves;
+    });
+  });
 });

@@ -1,4 +1,5 @@
-import { Signer } from 'ethers';
+import { CustomTokenFactory } from './contracts/CustomTokenFactory';
+import { Signer, ContractTransaction } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish } from 'ethers/utils';
@@ -954,6 +955,29 @@ export class Raiden {
         mergeMap(pfsList => pfsListInfo(pfsList, this.deps)),
       )
       .toPromise();
+  }
+
+  /**
+   * Mints the amount of tokens of the provided token address.
+   * Throws an error if executed on main net.
+   *
+   * @param tokenAddress - Address of the token to be minted
+   * @param amount - Amount to be minted
+   * @returns transaction
+   */
+  public async mint(tokenAddress: string, amount: BigNumberish): Promise<ContractTransaction> {
+    // Check whether address is valid
+    if (!Address.is(tokenAddress)) throw new Error('Invalid address');
+
+    // Check whether we are on a test network
+    const { name } = await this.deps.provider.getNetwork();
+    if (!['goerli', 'rinkeby', 'ropsten'].includes(name)) {
+      throw new Error('Minting is only allowed on test networks.');
+    }
+
+    // Mint token
+    const customTokenContract = CustomTokenFactory.connect(tokenAddress, this.deps.signer);
+    return customTokenContract.functions.mint(decode(UInt(32), amount));
   }
 }
 
