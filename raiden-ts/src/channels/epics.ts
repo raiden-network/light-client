@@ -370,41 +370,45 @@ export const channelMonitoredEpic = (
           ).pipe(
             mergeMap(function*(data) {
               if (isEvent<ChannelNewDepositEvent>(depositFilter, data)) {
+                const [id, participant, totalDeposit, event] = data;
                 yield channelDeposited(
                   {
-                    id: data[0].toNumber(),
-                    participant: data[1],
-                    totalDeposit: data[2],
-                    txHash: data[3].transactionHash! as Hash,
+                    id: id.toNumber(),
+                    participant,
+                    totalDeposit,
+                    txHash: event.transactionHash! as Hash,
                   },
                   action.meta,
                 );
               } else if (isEvent<ChannelWithdrawEvent>(withdrawFilter, data)) {
+                const [id, participant, totalWithdraw, event] = data;
                 yield channelWithdrawn(
                   {
-                    id: data[0].toNumber(),
-                    participant: data[1],
-                    totalWithdraw: data[2],
-                    txHash: data[3].transactionHash! as Hash,
+                    id: id.toNumber(),
+                    participant,
+                    totalWithdraw,
+                    txHash: event.transactionHash! as Hash,
                   },
                   action.meta,
                 );
               } else if (isEvent<ChannelClosedEvent>(closedFilter, data)) {
+                const [id, participant, , , event] = data;
                 yield channelClosed(
                   {
-                    id: data[0].toNumber(),
-                    participant: data[1],
-                    closeBlock: data[4].blockNumber!,
-                    txHash: data[4].transactionHash! as Hash,
+                    id: id.toNumber(),
+                    participant,
+                    closeBlock: event.blockNumber!,
+                    txHash: event.transactionHash! as Hash,
                   },
                   action.meta,
                 );
               } else if (isEvent<ChannelSettledEvent>(settledFilter, data)) {
+                const [id, , , , , event] = data;
                 yield channelSettled(
                   {
-                    id: data[0].toNumber(),
-                    settleBlock: data[5].blockNumber!,
-                    txHash: data[5].transactionHash! as Hash,
+                    id: id.toNumber(),
+                    settleBlock: event.blockNumber!,
+                    txHash: event.transactionHash! as Hash,
                   },
                   action.meta,
                 );
