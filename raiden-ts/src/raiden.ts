@@ -1,4 +1,3 @@
-import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 import { Signer, ContractTransaction } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
@@ -47,6 +46,7 @@ import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFac
 import { TokenNetworkFactory } from './contracts/TokenNetworkFactory';
 import { HumanStandardTokenFactory } from './contracts/HumanStandardTokenFactory';
 import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
+import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
