@@ -38,7 +38,7 @@
     "@kazupon/vue-i18n-loader": "^0.4.1",
     "@mdi/font": "^4.5.95",
     "@types/jest": "^24.0.22",
-    "@types/lodash": "^4.14.144",
+    "@types/lodash": "^4.14.145",
     "@types/tiny-async-pool": "^1.0.0",
     "@types/vue-i18n": "^7.0.0",
     "@types/webpack": "^4.39.8",
