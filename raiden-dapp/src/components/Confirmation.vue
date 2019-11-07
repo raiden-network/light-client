@@ -16,15 +16,15 @@
     >
       <v-btn
         :id="`cancel-${identifier}`"
-        @click="cancel()"
         class="text-capitalize confirmation__buttons__cancel"
+        @click="cancel()"
       >
         {{ $t('confirmation.buttons.cancel') }}
       </v-btn>
       <v-btn
         :id="`confirm-${identifier}`"
-        @click="confirm()"
         class="text-capitalize confirmation__buttons__confirm"
+        @click="confirm()"
       >
         {{ positiveAction }}
       </v-btn>

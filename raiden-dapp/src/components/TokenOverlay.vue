@@ -2,7 +2,7 @@
   <v-overlay :value="show" absolute opacity="1.0" class="token-network-overlay">
     <v-container class="container">
       <v-row no-gutters justify="end">
-        <v-btn @click="cancel" icon class="token-network-overlay__close-button">
+        <v-btn icon class="token-network-overlay__close-button" @click="cancel">
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-row>

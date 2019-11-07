@@ -28,8 +28,8 @@
 
     <action-button
       :enabled="valid"
-      @click="openChannel()"
       :text="$t('open-channel.open-button')"
+      @click="openChannel()"
     ></action-button>
 
     <stepper
@@ -42,9 +42,9 @@
 
     <error-screen
       :description="error"
-      @dismiss="error = ''"
       :title="$t('open-channel.error.title')"
       :button-label="$t('open-channel.error.button')"
+      @dismiss="error = ''"
     ></error-screen>
   </v-form>
 </template>

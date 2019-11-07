@@ -4,8 +4,8 @@
       <Transition name="fade-transition" mode="out-in">
         <div
           v-show="visible"
-          @click="visible = ''"
           class="channels__overlay"
+          @click="visible = ''"
         ></div>
       </Transition>
     </v-row>
@@ -47,7 +47,7 @@
     ></channel-list>
     <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
       {{ message }}
-      <v-btn @click="snackbar = false" color="primary" text>
+      <v-btn color="primary" text @click="snackbar = false">
         {{ $t('channels.snackbar-close') }}
       </v-btn>
     </v-snackbar>

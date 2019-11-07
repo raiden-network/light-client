@@ -2,10 +2,10 @@
   <v-app dark>
     <splash-screen
       v-if="inaccessible"
-      @connect="connect()"
       :connecting="connecting"
+      @connect="connect()"
     ></splash-screen>
-    <div id="application-wrapper" v-else>
+    <div v-else id="application-wrapper">
       <div id="application-content">
         <app-header></app-header>
         <v-content>

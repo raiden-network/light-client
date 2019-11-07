@@ -14,8 +14,8 @@
 
     <action-button
       :enabled="valid"
-      @click="selectHub()"
       :text="$t('select-hub.select-button')"
+      @click="selectHub()"
     ></action-button>
   </v-form>
 </template>

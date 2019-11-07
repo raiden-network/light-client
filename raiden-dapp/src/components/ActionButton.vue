@@ -8,11 +8,11 @@
     <v-col cols="10" class="text-center">
       <v-btn
         :disabled="!enabled"
-        @click="click()"
         :loading="loading"
         class="text-capitalize action-button__button"
         depressed
         large
+        @click="click()"
       >
         {{ text }}
       </v-btn>

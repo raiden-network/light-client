@@ -40,7 +40,6 @@
           v-model="selected"
           :headers="headers"
           :items="services"
-          @click:row="setSelected($event)"
           dense
           disable-pagination
           hide-default-footer
@@ -48,6 +47,7 @@
           sort-by="price"
           item-key="service"
           class="pathfinding-services__table"
+          @click:row="setSelected($event)"
         >
           <template #item.address="{ item }">
             <v-tooltip bottom>
@@ -107,17 +107,17 @@
           class="pathfinding-services__buttons"
         >
           <v-btn
-            @click="cancel()"
             light
             class="text-capitalize pathfinding-services__buttons__cancel"
+            @click="cancel()"
           >
             {{ $t('general.buttons.cancel') }}
           </v-btn>
           <v-btn
             :disabled="selected.length === 0"
-            @click="confirm()"
             light
             class="text-capitalize pathfinding-services__buttons__confirm"
+            @click="confirm()"
           >
             {{ $t('general.buttons.confirm') }}
           </v-btn>

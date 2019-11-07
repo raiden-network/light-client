@@ -48,8 +48,8 @@
               >
                 <v-row justify="center" align="center" no-gutters>
                   <v-btn
-                    :disabled="token.open === 0"
                     :id="`transfer-${index}`"
+                    :disabled="token.open === 0"
                     :to="`/transfer/${token.address}`"
                     class="text-capitalize connected-tokens__tokens__token__button"
                   >
@@ -57,8 +57,8 @@
                   </v-btn>
                   <v-btn
                     :id="`leave-${index}`"
-                    @click="leaveNetwork(token)"
                     class="text-capitalize connected-tokens__tokens__token__button leave"
+                    @click="leaveNetwork(token)"
                   >
                     {{ $t('tokens.connected.token.buttons.disconnect') }}
                   </v-btn>
@@ -76,10 +76,10 @@
       </v-row>
 
       <action-button
-        @click="navigateToTokenSelect()"
         :text="$t('tokens.connect-new')"
         class="connected-tokens__button"
         enabled
+        @click="navigateToTokenSelect()"
       ></action-button>
 
       <confirmation-dialog
@@ -104,7 +104,11 @@
           </span>
         </i18n>
       </confirmation-dialog>
-      <stepper :display="loading" :steps="steps" :doneStep="doneStep"></stepper>
+      <stepper
+        :display="loading"
+        :steps="steps"
+        :done-step="doneStep"
+      ></stepper>
     </v-col>
   </v-row>
 </template>

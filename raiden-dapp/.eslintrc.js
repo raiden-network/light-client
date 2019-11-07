@@ -34,7 +34,15 @@ module.exports = {
       "args": "after-used",
       "ignoreRestSiblings": false,
       "argsIgnorePattern": "^_"
-    }]
+    }],
+    'vue/v-slot-style': [
+      'error',
+      {
+        atComponent: 'shorthand',
+        default: 'shorthand',
+        named: 'shorthand'
+      }
+    ]
   },
   parserOptions: {
     parser: '@typescript-eslint/parser',
