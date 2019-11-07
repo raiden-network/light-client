@@ -8,7 +8,7 @@
     <v-row no-gutters justify="center" class="select-token__tokens__wrapper">
       <v-col cols="12">
         <recycle-scroller
-          v-slot="{ item }"
+          #default="{ item }"
           :items="allTokens"
           :buffer="20"
           :item-size="105"

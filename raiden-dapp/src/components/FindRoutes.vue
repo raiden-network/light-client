@@ -38,7 +38,7 @@
             item-key="key"
             class="find-routes__table"
           >
-            <template v-slot:items="props">
+            <template #items="props">
               <tr
                 :active="props.selected"
                 @click="props.selected = !props.selected"
