@@ -26,18 +26,18 @@
     >
       <v-btn
         :id="`cancel-${identifier}`"
-        @click="cancel()"
         light
         class="text-capitalize channel-deposit__buttons__cancel"
+        @click="cancel()"
       >
         {{ $t('general.buttons.cancel') }}
       </v-btn>
       <v-btn
         :id="`confirm-${identifier}`"
         :disabled="!valid"
-        @click="confirm()"
         light
         class="text-capitalize channel-deposit__buttons__confirm"
+        @click="confirm()"
       >
         {{ $t('channel-deposit.buttons.confirm') }}
       </v-btn>

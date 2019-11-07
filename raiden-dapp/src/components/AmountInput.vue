@@ -10,11 +10,11 @@
       :disabled="disabled"
       :rules="rules"
       :value="amount"
+      :placeholder="placeholder"
+      autocomplete="off"
       @paste="onPaste($event)"
       @keypress="checkIfValid($event)"
       @input="onInput($event)"
-      :placeholder="placeholder"
-      autocomplete="off"
     >
       <div slot="append" class="amount-input__token-symbol">
         {{ token.symbol || 'TKN' }}

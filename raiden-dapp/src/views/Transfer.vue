@@ -9,9 +9,9 @@
       >
         <v-col cols="2" class="transfer__channels">
           <v-btn
-            @click="navigateToChannels(token.address)"
             text
             class="transfer__channel-button"
+            @click="navigateToChannels(token.address)"
           >
             {{ $t('transfer.channel-button') }}
           </v-btn>
@@ -26,8 +26,8 @@
             }}
           </div>
           <div
-            @click="showTokenNetworks = true"
             class="transfer__token-networks__dropdown"
+            @click="showTokenNetworks = true"
           >
             <span>{{ token.name }}</span>
             <span>
@@ -43,20 +43,20 @@
           <v-dialog v-model="depositing" max-width="625">
             <template #activator="{ on }">
               <v-btn
-                @click="depositing = true"
-                v-on="on"
                 text
                 class="transfer__deposit-button"
+                @click="depositing = true"
+                v-on="on"
               >
                 {{ $t('transfer.deposit-button') }}
               </v-btn>
             </template>
             <v-card class="transfer__deposit-dialog">
               <channel-deposit
-                @cancel="depositing = false"
-                @confirm="deposit($event)"
                 :token="token"
                 identifier="0"
+                @cancel="depositing = false"
+                @confirm="deposit($event)"
               ></channel-deposit>
             </v-card>
           </v-dialog>
@@ -89,9 +89,9 @@
 
       <action-button
         :enabled="valid"
-        @click="proceedWithPathfinding()"
         :text="$t('general.buttons.continue')"
         class="transfer__action-button"
+        @click="proceedWithPathfinding()"
       ></action-button>
 
       <v-dialog v-model="serviceSelection" max-width="625">
@@ -107,12 +107,12 @@
         <v-card class="transfer__route-dialog">
           <find-routes
             v-if="findingRoutes"
-            @cancel="findingRoutes = false"
-            @confirm="transfer($event)"
             :pfs="raidenPFS"
             :token="token"
             :amount="amount"
             :target="target"
+            @cancel="findingRoutes = false"
+            @confirm="transfer($event)"
           ></find-routes>
         </v-card>
       </v-dialog>
@@ -127,9 +127,9 @@
 
     <error-screen
       :description="error"
-      @dismiss="error = ''"
       :title="errorTitle"
       :button-label="$t('transfer.error.button')"
+      @dismiss="error = ''"
     ></error-screen>
   </v-form>
 </template>

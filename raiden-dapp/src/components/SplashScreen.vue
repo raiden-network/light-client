@@ -26,11 +26,11 @@
         </div>
         <div class="splash-screen__button">
           <action-button
-            :text="$t('splash-screen.connect-button')"
             v-if="injectedProvider"
-            @click="connect()"
+            :text="$t('splash-screen.connect-button')"
             :enabled="!connecting"
             :loading="connecting"
+            @click="connect()"
           ></action-button>
           <span v-else class="splash-screen__no-provider">
             {{ $t('splash-screen.no-provider') }}

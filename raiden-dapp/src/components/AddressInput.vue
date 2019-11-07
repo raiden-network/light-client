@@ -13,15 +13,15 @@
         'address-input--untouched': !touched
       }"
       :placeholder="$t('address-input.input.placeholder')"
+      persistent-hint
       @blur="$emit('blur')"
       @focus="$emit('focus')"
       @input="updateValue"
       @change="updateValue"
-      persistent-hint
     >
       <template #append>
         <div class="address-input__status__paste-button">
-          <v-btn @click="paste()" text>
+          <v-btn text @click="paste()">
             <span
               class="address-input__status__paste-button__text text-capitalize"
             >

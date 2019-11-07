@@ -63,17 +63,17 @@
           </p>
           <v-row align="end" justify="center" class="find-routes__buttons">
             <v-btn
-              @click="cancel()"
               light
               class="text-capitalize find-routes__buttons__cancel"
+              @click="cancel()"
             >
               {{ $t('general.buttons.cancel') }}
             </v-btn>
             <v-btn
               :disabled="selected.length === 0"
-              @click="confirm()"
               light
               class="text-capitalize find-routes__buttons__confirm"
+              @click="confirm()"
             >
               {{ $t('general.buttons.transfer') }}
             </v-btn>

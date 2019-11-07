@@ -6,11 +6,11 @@
           <div class="app-header__top__content__back">
             <v-btn
               v-if="canGoBack"
-              @click="onBackClicked()"
               height="40px"
               width="40px"
               text
               icon
+              @click="onBackClicked()"
             >
               <v-img
                 :src="require('../assets/back_arrow.svg')"
@@ -54,7 +54,7 @@
           </v-tooltip>
           <v-tooltip bottom dark close-delay="1500">
             <template #activator="{ on }">
-              <v-btn id="copyBtn" @click="copy()" v-on="on" text icon>
+              <v-btn id="copyBtn" text icon @click="copy()" v-on="on">
                 <v-img
                   :src="require('../assets/copy_icon.svg')"
                   class="app-header__bottom__address__copy"

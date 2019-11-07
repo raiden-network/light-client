@@ -8,8 +8,8 @@
     <v-row no-gutters justify="center" class="select-token__tokens__wrapper">
       <v-col cols="12">
         <recycle-scroller
-          :items="allTokens"
           v-slot="{ item }"
+          :items="allTokens"
           :buffer="20"
           :item-size="105"
           key-field="address"
@@ -17,8 +17,8 @@
         >
           <v-list-item
             :key="item.address"
-            @click="navigateToSelectHub(item.address)"
             class="select-token__tokens__token"
+            @click="navigateToSelectHub(item.address)"
           >
             <v-list-item-avatar class="select-token__tokens__token__blockie">
               <img
