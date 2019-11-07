@@ -91,6 +91,7 @@
         :enabled="valid"
         :text="$t('general.buttons.continue')"
         class="transfer__action-button"
+        :sticky="true"
         @click="proceedWithPathfinding()"
       ></action-button>
 
