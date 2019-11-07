@@ -1,4 +1,4 @@
-import { Signer, ContractTransaction } from 'ethers';
+import { Signer } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish } from 'ethers/utils';
@@ -959,25 +959,33 @@ export class Raiden {
 
   /**
    * Mints the amount of tokens of the provided token address.
-   * Throws an error if executed on main net.
+   * Throws an error, if
+   * <ol>
+   *  <li>Executed on main net</li>
+   *  <li>`token` is not a valid address</li>
+   *  <li>Token could not be minted</li>
+   * </ol>
    *
-   * @param tokenAddress - Address of the token to be minted
+   * @param token - Address of the token to be minted
    * @param amount - Amount to be minted
    * @returns transaction
    */
-  public async mint(tokenAddress: string, amount: BigNumberish): Promise<ContractTransaction> {
+  public async mint(token: string, amount: BigNumberish): Promise<Hash> {
     // Check whether address is valid
-    if (!Address.is(tokenAddress)) throw new Error('Invalid address');
+    if (!Address.is(token)) throw new Error('Invalid address.');
 
     // Check whether we are on a test network
-    const { name } = await this.deps.provider.getNetwork();
-    if (name === 'homestead') {
+    if (this.deps.network.name === 'homestead') {
       throw new Error('Minting is only allowed on test networks.');
     }
 
     // Mint token
-    const customTokenContract = CustomTokenFactory.connect(tokenAddress, this.deps.signer);
-    return customTokenContract.functions.mint(decode(UInt(32), amount));
+    const customTokenContract = CustomTokenFactory.connect(token, this.deps.signer);
+    const tx = await customTokenContract.functions.mint(decode(UInt(32), amount));
+    const receipt = await tx.wait();
+    if (!receipt.status) throw new Error('Failed to mint token.');
+
+    return tx.hash as Hash;
   }
 }
 
