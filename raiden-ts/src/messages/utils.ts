@@ -29,9 +29,10 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
 };
 
 // raiden_contracts.constants.MessageTypeId
-enum MessageTypeId {
+export enum MessageTypeId {
   BALANCE_PROOF = 1,
   WITHDRAW = 3,
+  IOU = 5,
 }
 
 /**

@@ -47,6 +47,7 @@ import { TokenNetworkFactory } from './contracts/TokenNetworkFactory';
 import { HumanStandardTokenFactory } from './contracts/HumanStandardTokenFactory';
 import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 import { CustomTokenFactory } from './contracts/CustomTokenFactory';
+import { UserDepositFactory } from './contracts/UserDepositFactory';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
@@ -92,7 +93,15 @@ import {
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './transfers/utils';
-import { pathFind, pathFound, pathFindFailed, pfsListUpdated } from './path/actions';
+import {
+  pathFind,
+  pathFound,
+  pathFindFailed,
+  pfsListUpdated,
+  udcBalanceUpdate,
+  udcBalanceFetchFailed,
+  udcBalanceFetch,
+} from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS } from './path/types';
 import { pfsListInfo } from './path/utils';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode } from './utils/types';
@@ -307,6 +316,7 @@ export class Raiden {
         contractsInfo.ServiceRegistry.address,
         signer,
       ),
+      userDepositContract: UserDepositFactory.connect(contractsInfo.UserDeposit.address, signer),
     };
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
@@ -987,6 +997,28 @@ export class Raiden {
     if (!receipt.status) throw new Error('Failed to mint token.');
 
     return tx.hash as Hash;
+  }
+
+  /**
+   * Returns the accounts available balance for paying the Services.
+   *
+   * It gets the balance from the contract and then subtracts the amount in non-expired IOUs.
+   *
+   * @returns Promise to the available balance.
+   */
+  public async getUDCBalance(): Promise<BigNumberish> {
+    const promise = this.action$
+      .pipe(
+        filter(isActionOf([udcBalanceUpdate, udcBalanceFetchFailed])),
+        first(),
+        map(action => {
+          if (isActionOf(udcBalanceFetchFailed, action)) throw action.payload;
+          return action.payload.balance;
+        }),
+      )
+      .toPromise();
+    this.store.dispatch(udcBalanceFetch({}));
+    return promise;
   }
 }
 
