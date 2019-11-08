@@ -46,6 +46,7 @@ import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFac
 import { TokenNetworkFactory } from './contracts/TokenNetworkFactory';
 import { HumanStandardTokenFactory } from './contracts/HumanStandardTokenFactory';
 import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
+import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
@@ -955,6 +956,37 @@ export class Raiden {
         mergeMap(pfsList => pfsListInfo(pfsList, this.deps)),
       )
       .toPromise();
+  }
+
+  /**
+   * Mints the amount of tokens of the provided token address.
+   * Throws an error, if
+   * <ol>
+   *  <li>Executed on main net</li>
+   *  <li>`token` is not a valid address</li>
+   *  <li>Token could not be minted</li>
+   * </ol>
+   *
+   * @param token - Address of the token to be minted
+   * @param amount - Amount to be minted
+   * @returns transaction
+   */
+  public async mint(token: string, amount: BigNumberish): Promise<Hash> {
+    // Check whether address is valid
+    if (!Address.is(token)) throw new Error('Invalid address.');
+
+    // Check whether we are on a test network
+    if (this.deps.network.name === 'homestead') {
+      throw new Error('Minting is only allowed on test networks.');
+    }
+
+    // Mint token
+    const customTokenContract = CustomTokenFactory.connect(token, this.deps.signer);
+    const tx = await customTokenContract.functions.mint(decode(UInt(32), amount));
+    const receipt = await tx.wait();
+    if (!receipt.status) throw new Error('Failed to mint token.');
+
+    return tx.hash as Hash;
   }
 }
 

@@ -329,6 +329,14 @@ export default class RaidenService {
   noPfsSelected(): boolean {
     return this.raiden.config.pfs === undefined;
   }
+
+  async mint(token: string, amount: BigNumber): Promise<string> {
+    try {
+      return await this.raiden.mint(token, amount);
+    } catch (e) {
+      throw new MintTokenFailed(e);
+    }
+  }
 }
 
 export class ChannelSettleFailed extends Error {}
@@ -348,3 +356,5 @@ export class RaidenInitializationFailed extends Error {}
 export class FindRoutesFailed extends Error {}
 
 export class PFSRequestFailed extends Error {}
+
+export class MintTokenFailed extends Error {}
