@@ -19,21 +19,21 @@ module.exports = {
     'vuetify/no-deprecated-classes': 'error',
     'vuetify/grid-unknown-attributes': 'error',
     'vuetify/no-legacy-grid': 'error',
-    'vue/multiline-html-element-content-newline': ["error", {
-      "ignoreWhenEmpty": true,
-      "ignores": ["pre", "textarea"],
-      "allowEmptyLines": false
+    'vue/multiline-html-element-content-newline': ['error', {
+      'ignoreWhenEmpty': true,
+      'ignores': ['pre', 'textarea'],
+      'allowEmptyLines': false
     }],
-    "vue/v-bind-style": ["error", "shorthand"],
-    "vue/v-on-style": ["error", "shorthand"],
+    'vue/v-bind-style': ['error', 'shorthand'],
+    'vue/v-on-style': ['error', 'shorthand'],
     'vue-i18n/no-raw-text': ['error', {
-      "ignoreNodes": ['v-icon'],
+      'ignoreNodes': ['v-icon'],
     }],
-    "@typescript-eslint/no-unused-vars": ["error", {
-      "vars": "all",
-      "args": "after-used",
-      "ignoreRestSiblings": false,
-      "argsIgnorePattern": "^_"
+    '@typescript-eslint/no-unused-vars': ['error', {
+      'vars': 'all',
+      'args': 'after-used',
+      'ignoreRestSiblings': false,
+      'argsIgnorePattern': '^_'
     }],
     'vue/v-slot-style': [
       'error',
@@ -42,7 +42,11 @@ module.exports = {
         default: 'shorthand',
         named: 'shorthand'
       }
-    ]
+    ],
+    'vue-i18n/no-unused-keys': ['error', {
+      'src': ['./src'],
+      'extensions': ['.ts', '.vue']
+    }]
   },
   parserOptions: {
     parser: '@typescript-eslint/parser',
