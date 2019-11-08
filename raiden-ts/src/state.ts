@@ -10,6 +10,7 @@ import { Address, Secret, decode } from './utils/types';
 import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
+import { IOU } from './path/types';
 
 // types
 
@@ -51,6 +52,12 @@ export const RaidenState = t.readonly(
       ),
     ),
     sent: SentTransfers,
+    iou: t.readonly(
+      t.record(
+        t.string /* tokenNetwork: Address */,
+        t.record(t.string /* service: Address */, IOU),
+      ),
+    ),
   }),
 );
 
@@ -115,6 +122,7 @@ export function makeInitialState(
     transport: {},
     secrets: {},
     sent: {},
+    iou: {},
   };
 }
 
@@ -130,5 +138,9 @@ export const initialState = makeInitialState({
     TokenNetworkRegistry: { address: AddressZero as Address, block_number: 0 },
     // eslint-disable-next-line @typescript-eslint/camelcase
     ServiceRegistry: { address: AddressZero as Address, block_number: 0 },
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    UserDeposit: { address: AddressZero as Address, block_number: 0 },
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    OneToN: { address: AddressZero as Address, block_number: 0 },
   },
 });

@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 import { BigNumberish } from 'ethers/utils';
-import { Address, Int, UInt } from '../utils/types';
+import { Address, Int, UInt, Signature } from '../utils/types';
 
 /**
  * Codec for PFS API returned data
@@ -68,3 +68,43 @@ export interface RaidenPFS {
   price: BigNumberish;
   token: string;
 }
+
+/**
+ * An IOU used to pay the services
+ */
+export const IOU = t.readonly(
+  t.type({
+    sender: Address,
+    receiver: Address,
+    amount: UInt(32),
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    expiration_block: UInt(32),
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    one_to_n_address: Address,
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    chain_id: UInt(32),
+    signature: Signature,
+  }),
+);
+
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IOU extends t.TypeOf<typeof IOU> {}
+
+export interface RaidenIOU {
+  sender: string;
+  receiver: string;
+  amount: BigNumberish;
+  expiration_block: BigNumberish;
+  one_to_n_address: string;
+  chain_id: BigNumberish;
+  signature: string;
+}
+
+export const LastIOUResults = t.readonly(
+  t.type({
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    last_iou: IOU,
+  }),
+);
+
+export interface LastIOUResults extends t.TypeOf<typeof LastIOUResults> {}

@@ -9,6 +9,7 @@ import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
 import { ServiceRegistry } from './contracts/ServiceRegistry';
 import { TokenNetwork } from './contracts/TokenNetwork';
 import { HumanStandardToken } from './contracts/HumanStandardToken';
+import { UserDeposit } from './contracts/UserDeposit';
 
 import { RaidenAction } from './actions';
 import { RaidenState } from './state';
@@ -23,6 +24,8 @@ interface Info {
 export interface ContractsInfo {
   TokenNetworkRegistry: Info;
   ServiceRegistry: Info;
+  UserDeposit: Info;
+  OneToN: Info;
 }
 
 export interface RaidenEpicDeps {
@@ -39,4 +42,5 @@ export interface RaidenEpicDeps {
   getTokenNetworkContract: (address: Address) => TokenNetwork;
   getTokenContract: (address: Address) => HumanStandardToken;
   serviceRegistryContract: ServiceRegistry;
+  userDepositContract: UserDeposit;
 }
