@@ -64,13 +64,10 @@ const makeIOU = (sender: Address, receiver: Address, chainId: UInt<32>, oneToNAd
     signature: HashZero as Signature,
   } as IOU);
 
-const updateIOU = (iou: IOU, price: UInt<32>, blockNumber: number) =>
+const updateIOU = (iou: IOU, price: UInt<32>) =>
   ({
     ...iou,
     amount: iou.amount.add(price),
-    expiration_block: iou.expiration_block.lt(bigNumberify(blockNumber).add(7 * 24 * 60 * 4))
-      ? bigNumberify(blockNumber).add(7 * 24 * 60 * 4)
-      : iou.expiration_block.add(50),
   } as IOU);
 
 const signIOU$ = (iou: IOU, signer: Signer) =>
@@ -147,7 +144,7 @@ const prepareNextIOU$ = (
         }),
       )
   ).pipe(
-    map(iou => updateIOU(iou, pfs.price, state.blockNumber)),
+    map(iou => updateIOU(iou, pfs.price)),
     mergeMap(iou => signIOU$(iou, deps.signer)),
   );
 };
@@ -243,11 +240,7 @@ export const pathFindServiceEpic = (
                             }
                           : undefined,
                       }),
-                    }).pipe(
-                      tap(response => {
-                        //TODO: on success update state
-                      }),
-                    ),
+                    }),
                   ),
                   timeout(httpTimeout),
                   mergeMap(async response => {
@@ -460,7 +453,7 @@ export const udcBalanceEpic = (
               new Array<IOU>(),
             )
             .reduce((acc, iou) => acc.add(iou.amount), Zero);
-          return udcBalanceUpdate({ balance: balance.sub(owedAmount) });
+          return udcBalanceUpdate({ balance: balance.sub(owedAmount) as UInt<32> });
         }),
         catchError(error => of(udcBalanceFetchFailed(error))),
       );

@@ -2,7 +2,6 @@ import { createStandardAction } from 'typesafe-actions';
 
 import { Address, UInt } from '../utils/types';
 import { Paths, PFS } from './types';
-import { BigNumberish } from 'ethers/utils';
 
 type PathId = {
   tokenNetwork: Address;
@@ -25,7 +24,7 @@ export const pfsListUpdated = createStandardAction('pfsListUpdated')<{
 export const udcBalanceFetch = createStandardAction('udcBalanceFetch')<{}>();
 
 export const udcBalanceUpdate = createStandardAction('udcBalanceUpdate')<{
-  balance: BigNumberish;
+  balance: UInt<32>;
 }>();
 
 export const udcBalanceFetchFailed = createStandardAction('udcBalanceFetchFailed').map(
