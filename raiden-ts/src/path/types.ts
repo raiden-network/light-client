@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 import { BigNumberish } from 'ethers/utils';
-import { Address, Int, UInt, Signature } from '../utils/types';
+import { Address, Int, UInt } from '../utils/types';
 
 /**
  * Codec for PFS API returned data
@@ -83,7 +83,6 @@ export const IOU = t.readonly(
     one_to_n_address: Address,
     // eslint-disable-next-line @typescript-eslint/camelcase
     chain_id: UInt(32),
-    signature: Signature,
   }),
 );
 
