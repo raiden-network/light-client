@@ -75,23 +75,21 @@ const makeIOU = (
   chainId: UInt<32>,
   oneToNAddress: Address,
   blockNumber: number,
-) =>
-  ({
-    sender: sender,
-    receiver: receiver,
-    chain_id: chainId,
-    amount: Zero as UInt<32>,
-    one_to_n_address: oneToNAddress,
-    expiration_block: bigNumberify(blockNumber).add(2 * 10 ** 5),
-  } as IOU);
+): IOU => ({
+  sender: sender,
+  receiver: receiver,
+  chain_id: chainId,
+  amount: Zero as UInt<32>,
+  one_to_n_address: oneToNAddress,
+  expiration_block: bigNumberify(blockNumber).add(2 * 10 ** 5) as UInt<32>,
+});
 
-const updateIOU = (iou: IOU, price: UInt<32>) =>
-  ({
-    ...iou,
-    amount: iou.amount.add(price),
-  } as IOU);
+const updateIOU = (iou: IOU, price: UInt<32>): IOU => ({
+  ...iou,
+  amount: iou.amount.add(price) as UInt<32>,
+});
 
-const signIOU$ = (iou: IOU, signer: Signer) =>
+const signIOU$ = (iou: IOU, signer: Signer): Observable<Signed<IOU>> =>
   from(signer.signMessage(
     concat([
       encode(iou.one_to_n_address, 20),
@@ -102,7 +100,7 @@ const signIOU$ = (iou: IOU, signer: Signer) =>
       encode(iou.amount, 32),
       encode(iou.expiration_block, 32),
     ]),
-  ) as Promise<Signature>).pipe(map(signature => ({ ...iou, signature } as Signed<IOU>)));
+  ) as Promise<Signature>).pipe(map(signature => ({ ...iou, signature })));
 
 const makeAndSignLastIOURequest$ = (sender: Address, receiver: Address, signer: Signer) =>
   defer(() => {
@@ -132,7 +130,7 @@ const prepareNextIOU$ = (
   deps: RaidenEpicDeps,
   httpTimeout: number,
   tokenNetwork: Address,
-) => {
+): Observable<Signed<IOU>> => {
   const cachedIOU: IOU | undefined = get(state.path, ['iou', tokenNetwork, pfs.address]);
   return (cachedIOU
     ? of(cachedIOU)
@@ -246,9 +244,9 @@ export const pathFindServiceEpic = (
                 return pfs$.pipe(
                   mergeMap(pfs =>
                     pfs.price.isZero()
-                      ? of([undefined, pfs] as [undefined, PFS])
+                      ? of<[undefined, PFS]>([undefined, pfs])
                       : prepareNextIOU$(state, pfs, deps, httpTimeout, tokenNetwork).pipe(
-                          map(signedIou => [signedIou, pfs] as [Signed<IOU>, PFS]),
+                          map((signedIou): [Signed<IOU>, PFS] => [signedIou, pfs]),
                         ),
                   ),
                   mergeMap(([signedIOU, pfs]) =>
@@ -270,34 +268,32 @@ export const pathFindServiceEpic = (
                           : undefined,
                       }),
                     }).pipe(
-                      map(
-                        response =>
-                          [
-                            response,
-                            {
-                              serviceAddress: pfs.address,
-                              signedIOU: signedIOU,
-                            } as IOUPayload,
-                          ] as [Response, IOUPayload],
-                      ),
+                      map((response): [Response, IOUPayload] => [
+                        response,
+                        {
+                          serviceAddress: pfs.address,
+                          signedIOU: signedIOU,
+                        },
+                      ]),
                     ),
                   ),
                   timeout(httpTimeout),
-                  mergeMap(async ([response, payload]) => {
-                    const text = await response.text();
-                    const data = losslessParse(text);
-                    if (!response.ok) {
-                      throw new InvalidPFSRequestError(
-                        `PFS: paths request: code=${response.status} => body="${text}"`,
-                        decode(PathError, data).error_code,
-                        payload,
-                      );
-                    }
-                    return [decode(PathResults, data), payload] as [
-                      PathResults,
-                      IOUPayload | undefined,
-                    ];
-                  }),
+                  mergeMap(
+                    async ([response, payload]): Promise<
+                      [PathResults, IOUPayload | undefined]
+                    > => {
+                      const text = await response.text();
+                      const data = losslessParse(text);
+                      if (!response.ok) {
+                        throw new InvalidPFSRequestError(
+                          `PFS: paths request: code=${response.status} => body="${text}"`,
+                          decode(PathError, data).error_code,
+                          payload,
+                        );
+                      }
+                      return [decode(PathResults, data), payload];
+                    },
+                  ),
                   map(([results, iou]): [Paths, IOUPayload | undefined] => [
                     results.result.map(r => ({
                       path: r.path,
