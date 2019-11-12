@@ -92,31 +92,8 @@
         :text="$t('general.buttons.continue')"
         class="transfer__action-button"
         :sticky="true"
-        @click="proceedWithPathfinding()"
+        @click="navigateToTransferSteps(target, amount)"
       ></action-button>
-
-      <v-dialog v-model="serviceSelection" max-width="625">
-        <v-card class="transfer__route-dialog">
-          <pathfinding-services
-            @cancel="serviceSelection = false"
-            @confirm="findRoutes($event)"
-          ></pathfinding-services>
-        </v-card>
-      </v-dialog>
-
-      <v-dialog v-model="findingRoutes" max-width="625">
-        <v-card class="transfer__route-dialog">
-          <find-routes
-            v-if="findingRoutes"
-            :pfs="raidenPFS"
-            :token="token"
-            :amount="amount"
-            :target="target"
-            @cancel="findingRoutes = false"
-            @confirm="transfer($event)"
-          ></find-routes>
-        </v-card>
-      </v-dialog>
     </v-container>
 
     <stepper
@@ -228,20 +205,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
       return withBiggestCapacity.capacity;
     }
     return Zero;
-  }
-
-  proceedWithPathfinding() {
-    if (this.$raiden.noPfsSelected()) {
-      this.serviceSelection = true;
-    } else {
-      this.findRoutes();
-    }
-  }
-
-  findRoutes(raidenPFS: RaidenPFS | null = null) {
-    this.serviceSelection = false;
-    this.raidenPFS = raidenPFS;
-    this.findingRoutes = true;
   }
 
   async created() {

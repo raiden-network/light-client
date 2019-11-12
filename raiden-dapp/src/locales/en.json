@@ -53,15 +53,11 @@
   "find-routes": {
     "busy-title": "Searching available routes",
     "title": "Select a route",
-    "description": "Mediators require a small fee to forward your token transfer. Please select one below:",
-    "buttons": {
-      "confirm": "Continue"
-    },
+    "description": "Mediators require a small fee to forward your token transfer. Please select a route below:",
     "hops": "Hops",
     "fees-in": "Fees in {token}",
-    "total-amount": "{totalAmount} {token}",
     "error": {
-      "title": "Ops, something went wrong"
+      "title": "Oops, something went wrong"
     }
   },
   "stepper": {
@@ -192,6 +188,17 @@
       "deposit-title": "Deposit was unsuccessful. Please retry."
     },
     "steps": {
+      "request-route": {
+        "title": "Request route",
+        "in-progress": "Transfering tokens for route request",
+        "done": "Transfer for route request completed"
+      },
+      "select-route": {
+        "title": "Select route"
+      },
+      "confirm-transfer": {
+        "title": "Confirm transfer"
+      },
       "transfer": {
         "label": "Transfer",
         "title": "Sending Tokens",
@@ -268,9 +275,8 @@
     "rtt": "{time} ms",
     "price": "{amount} {symbol}",
     "headers": {
-      "address": "Address",
-      "url": "URL",
-      "rtt": "RTT",
+      "host": "Host",
+      "rtt": "Ping",
       "price": "Price"
     }
   }

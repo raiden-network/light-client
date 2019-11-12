@@ -1,9 +1,7 @@
 <template>
   <v-row class="find-routes" align="center" justify="center" no-gutters>
     <v-col cols="12">
-      <h2 v-if="busy">{{ $t('find-routes.busy-title') }}</h2>
-      <h2 v-else-if="!busy && error">{{ $t('find-routes.error.title') }}</h2>
-      <h2 v-else>{{ $t('find-routes.title') }}</h2>
+      <h2 v-if="!busy && error">{{ $t('find-routes.error.title') }}</h2>
 
       <p v-if="!busy && !error">{{ $t('find-routes.description') }}</p>
 
@@ -37,6 +35,7 @@
             sort-by="fee"
             item-key="key"
             class="find-routes__table"
+            @item-selected="select($event)"
           >
             <template #items="props">
               <tr
@@ -53,31 +52,6 @@
               </tr>
             </template>
           </v-data-table>
-          <p class="find-routes__total-amount">
-            {{
-              $t('find-routes.total-amount', {
-                totalAmount: convertToUnits(totalAmount, token.decimals),
-                token: token.symbol
-              })
-            }}
-          </p>
-          <v-row align="end" justify="center" class="find-routes__buttons">
-            <v-btn
-              light
-              class="text-capitalize find-routes__buttons__cancel"
-              @click="cancel()"
-            >
-              {{ $t('general.buttons.cancel') }}
-            </v-btn>
-            <v-btn
-              :disabled="selected.length === 0"
-              light
-              class="text-capitalize find-routes__buttons__confirm"
-              @click="confirm()"
-            >
-              {{ $t('general.buttons.transfer') }}
-            </v-btn>
-          </v-row>
         </v-form>
       </v-row>
     </v-col>
@@ -132,19 +106,6 @@ export default class FindRoutes extends Vue {
     this.findRoutes();
   }
 
-  get totalAmount(): BigNumber {
-    const [selectedRoute] = this.selected;
-    const { decimals } = this.token;
-    const transfer: BigNumber = BalanceUtils.parse(this.amount, decimals!);
-
-    if (selectedRoute) {
-      // Return transferable amount plus fees
-      return transfer.add(selectedRoute.fee);
-    }
-
-    return transfer;
-  }
-
   async findRoutes(): Promise<void> {
     const { address, decimals } = this.token;
     this.busy = true;
@@ -172,7 +133,9 @@ export default class FindRoutes extends Vue {
         );
 
         // Pre select the cheapest route
-        this.selected = [this.routes[0]];
+        const [route] = this.routes;
+        this.selected = [route];
+        this.select({ item: route, value: true });
       }
     } catch (e) {
       this.error = e.message;
@@ -182,25 +145,20 @@ export default class FindRoutes extends Vue {
   }
 
   @Emit()
-  cancel() {
-    this.busy = false;
-  }
+  select({ item, value }: { item: Route; value: boolean }): Route | null {
+    // A route got selected
+    if (value) {
+      return item;
+    }
 
-  @Emit()
-  confirm(): Route {
-    const [route] = this.selected;
-    return route;
+    // A route was unselected
+    return null;
   }
 }
 </script>
 
 <style scoped lang="scss">
 @import '../scss/colors';
-.find-routes {
-  padding: 20px;
-  background-color: $dialog-background;
-  box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
-}
 
 .find-routes > * {
   text-align: center;
