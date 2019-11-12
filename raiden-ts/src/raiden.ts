@@ -269,7 +269,7 @@ export class Raiden {
       from(this.deps.userDepositContract.functions.balances(address))
         .pipe(
           map(balance => {
-            const owedAmount = Object.values(state.iou)
+            const owedAmount = Object.values(state.path.iou)
               .reduce(
                 (acc, value) =>
                   acc.concat(

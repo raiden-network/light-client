@@ -124,7 +124,7 @@ const prepareNextIOU$ = (
   httpTimeout: number,
   tokenNetwork: Address,
 ) => {
-  const cachedIOU: IOU | undefined = get(state.iou, [tokenNetwork, pfs.address]);
+  const cachedIOU: IOU | undefined = get(state.path, ['iou', tokenNetwork, pfs.address]);
   return (cachedIOU
     ? of(cachedIOU)
     : makeAndSignLastIOURequest$(state.address, pfs.address, deps.signer).pipe(
