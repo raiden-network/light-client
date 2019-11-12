@@ -93,20 +93,13 @@ import {
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './transfers/utils';
-import {
-  pathFind,
-  pathFound,
-  pathFindFailed,
-  pfsListUpdated,
-  udcBalanceUpdate,
-  udcBalanceFetchFailed,
-  udcBalanceFetch,
-} from './path/actions';
-import { Paths, RaidenPaths, PFS, RaidenPFS } from './path/types';
+import { pathFind, pathFound, pathFindFailed, pfsListUpdated } from './path/actions';
+import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { losslessParse } from './utils/data';
+import { Zero } from 'ethers/constants';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -170,6 +163,8 @@ export class Raiden {
     name?: string;
     symbol?: string;
   }>;
+
+  public getUDCBalance: () => Promise<BigNumberish>;
 
   private epicMiddleware?: EpicMiddleware<
     RaidenAction,
@@ -269,6 +264,26 @@ export class Raiden {
       ]);
       return { totalSupply, decimals, name, symbol };
     });
+
+    this.getUDCBalance = async () =>
+      from(this.deps.userDepositContract.functions.balances(address))
+        .pipe(
+          map(balance => {
+            const owedAmount = Object.values(state.iou)
+              .reduce(
+                (acc, value) =>
+                  acc.concat(
+                    Object.values(value).filter(value =>
+                      value.expiration_block.lte(state.blockNumber),
+                    ),
+                  ),
+                new Array<IOU>(),
+              )
+              .reduce((acc, iou) => acc.add(iou.amount), Zero);
+            return balance.sub(owedAmount);
+          }),
+        )
+        .toPromise();
 
     // pipe pfsListUpdated action payloead to pfsList$ replay subject, to keep latest seen emission
     // around. Epics don't need this, as they can monitor/multicast action$ directly
@@ -997,28 +1012,6 @@ export class Raiden {
     if (!receipt.status) throw new Error('Failed to mint token.');
 
     return tx.hash as Hash;
-  }
-
-  /**
-   * Returns the accounts available balance for paying the Services.
-   *
-   * It gets the balance from the contract and then subtracts the amount in non-expired IOUs.
-   *
-   * @returns Promise to the available balance.
-   */
-  public async getUDCBalance(): Promise<BigNumberish> {
-    const promise = this.action$
-      .pipe(
-        filter(isActionOf([udcBalanceUpdate, udcBalanceFetchFailed])),
-        first(),
-        map(action => {
-          if (isActionOf(udcBalanceFetchFailed, action)) throw action.payload;
-          return action.payload.balance;
-        }),
-      )
-      .toPromise();
-    this.store.dispatch(udcBalanceFetch({}));
-    return promise;
   }
 }
 

@@ -140,7 +140,5 @@ export const initialState = makeInitialState({
     ServiceRegistry: { address: AddressZero as Address, block_number: 0 },
     // eslint-disable-next-line @typescript-eslint/camelcase
     UserDeposit: { address: AddressZero as Address, block_number: 0 },
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    OneToN: { address: AddressZero as Address, block_number: 0 },
   },
 });

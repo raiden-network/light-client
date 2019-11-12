@@ -1,7 +1,7 @@
 import { createStandardAction } from 'typesafe-actions';
 
-import { Signed, Message } from './types';
-import { Address } from '../utils/types';
+import { Message } from './types';
+import { Address, Signed } from '../utils/types';
 
 /** One-shot send payload.message to meta.address user in transport */
 export const messageSend = createStandardAction('messageSend')<

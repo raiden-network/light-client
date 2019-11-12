@@ -25,7 +25,6 @@ export interface ContractsInfo {
   TokenNetworkRegistry: Info;
   ServiceRegistry: Info;
   UserDeposit: Info;
-  OneToN: Info;
 }
 
 export interface RaidenEpicDeps {

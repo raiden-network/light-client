@@ -7,10 +7,10 @@ import { keccak256, RLP, verifyMessage } from 'ethers/utils';
 import { arrayify, concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
-import { Address, Hash, HexString, Signature, UInt } from '../utils/types';
+import { Address, Hash, HexString, Signature, UInt, Signed } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { SignedBalanceProof } from '../channels/types';
-import { EnvelopeMessage, Message, MessageType, Metadata, Signed } from './types';
+import { EnvelopeMessage, Message, MessageType, Metadata } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,

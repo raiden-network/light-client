@@ -23,7 +23,7 @@ import {
 import { fromFetch } from 'rxjs/fetch';
 import { ActionType, isActionOf } from 'typesafe-actions';
 import { BigNumber, bigNumberify, hexDataLength, hexlify, toUtf8Bytes } from 'ethers/utils';
-import { HashZero, Two, Zero } from 'ethers/constants';
+import { Two, Zero } from 'ethers/constants';
 import { Event } from 'ethers/contract';
 
 import { RaidenAction } from '../actions';
@@ -36,32 +36,31 @@ import { MessageTypeId, signMessage } from '../messages/utils';
 import { channelDeposited } from '../channels/actions';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
-import { Address, decode, Int, Signature, UInt } from '../utils/types';
+import { Address, decode, Int, Signature, UInt, Signed } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
-import {
-  pathFind,
-  pathFindFailed,
-  pathFound,
-  pfsListUpdated,
-  udcBalanceFetch,
-  udcBalanceFetchFailed,
-  udcBalanceUpdate,
-} from './actions';
+import { pathFind, pathFindFailed, pathFound, pfsListUpdated } from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
 import { concat } from 'ethers/utils/bytes';
 import { Signer } from 'ethers';
+import { memoize } from 'lodash/fp';
+import { UserDeposit } from '../contracts/UserDeposit';
 
-const makeIOU = (sender: Address, receiver: Address, chainId: UInt<32>, oneToNAddress: Address) =>
+const makeIOU = (
+  sender: Address,
+  receiver: Address,
+  chainId: UInt<32>,
+  oneToNAddress: Address,
+  blockNumber: number,
+) =>
   ({
     sender: sender,
     receiver: receiver,
     chain_id: chainId,
     amount: Zero as UInt<32>,
     one_to_n_address: oneToNAddress,
-    expiration_block: Zero as UInt<32>,
-    signature: HashZero as Signature,
+    expiration_block: bigNumberify(blockNumber).add(2 * 10 ** 5),
   } as IOU);
 
 const updateIOU = (iou: IOU, price: UInt<32>) =>
@@ -81,7 +80,7 @@ const signIOU$ = (iou: IOU, signer: Signer) =>
       encode(iou.amount, 32),
       encode(iou.expiration_block, 32),
     ]),
-  ) as Promise<Signature>).pipe(map(signature => ({ ...iou, signature } as IOU)));
+  ) as Promise<Signature>).pipe(map(signature => ({ ...iou, signature } as Signed<IOU>)));
 
 const makeAndSignLastIOURequest$ = (sender: Address, receiver: Address, signer: Signer) =>
   defer(() => {
@@ -112,7 +111,7 @@ const prepareNextIOU$ = (
   httpTimeout: number,
   tokenNetwork: Address,
 ) => {
-  const cachedIOU: IOU = get(state.iou, [tokenNetwork, pfs.address]);
+  const cachedIOU: IOU | undefined = get(state.iou, [tokenNetwork, pfs.address]);
   return (cachedIOU
     ? of(cachedIOU)
     : makeAndSignLastIOURequest$(state.address, pfs.address, deps.signer).pipe(
@@ -130,12 +129,17 @@ const prepareNextIOU$ = (
         timeout(httpTimeout),
         mergeMap(async response => {
           const text = await response.text();
+          const oneToNAddress = memoize(
+            async (userDepositContract: UserDeposit) =>
+              userDepositContract.functions.one_to_n_address() as Promise<Address>,
+          );
           if (response.status === 404) {
             return makeIOU(
               state.address,
               pfs.address,
               bigNumberify(state.chainId) as UInt<32>,
-              deps.contractsInfo.OneToN.address,
+              await oneToNAddress(deps.userDepositContract),
+              state.blockNumber,
             );
           }
           if (!response.ok)
@@ -218,10 +222,11 @@ export const pathFindServiceEpic = (
                 return pfs$.pipe(
                   mergeMap(pfs =>
                     pfs.price.isZero()
-                      ? of(undefined)
-                      : prepareNextIOU$(state, pfs, deps, httpTimeout, tokenNetwork),
+                      ? of([undefined, pfs] as [undefined, PFS])
+                      : prepareNextIOU$(state, pfs, deps, httpTimeout, tokenNetwork).pipe(
+                          map(iou => [iou, pfs] as [Signed<IOU>, PFS]),
+                        ),
                   ),
-                  withLatestFrom(pfs$),
                   mergeMap(([iou, pfs]) =>
                     fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {
                       method: 'POST',
@@ -240,37 +245,43 @@ export const pathFindServiceEpic = (
                             }
                           : undefined,
                       }),
-                    }),
+                    }).pipe(
+                      map(response => [response, iou] as [Response, Signed<IOU> | undefined]),
+                    ),
                   ),
                   timeout(httpTimeout),
-                  mergeMap(async response => {
+                  mergeMap(async ([response, iou]) => {
                     const text = await response.text();
                     if (!response.ok)
                       throw new Error(
-                        `PFS: paths request: code=${response.status} => body="${text}"`,
+                        `PFS: paths request: code=${response.status} => body="${text}" ${iou}`,
                       );
-                    return decode(PathResults, losslessParse(text));
+                    return [decode(PathResults, losslessParse(text)), iou] as [
+                      PathResults,
+                      Signed<IOU> | undefined,
+                    ];
                   }),
-                  map(
-                    (results: PathResults): Paths =>
-                      results.result.map(r => ({
-                        path: r.path,
-                        // Add PFS safety margin to estimated fees
-                        fee: r.estimated_fee
-                          .mul(Math.round(pfsSafetyMargin * 1e6))
-                          .div(1e6) as Int<32>,
-                      })),
-                  ),
+                  map(([results, iou]): [Paths, Signed<IOU> | undefined] => [
+                    results.result.map(r => ({
+                      path: r.path,
+                      // Add PFS safety margin to estimated fees
+                      fee: r.estimated_fee.mul(Math.round(pfsSafetyMargin * 1e6)).div(1e6) as Int<
+                        32
+                      >,
+                    })),
+                    iou,
+                  ]),
                 );
               }
             }),
             withLatestFrom(cached$),
             // validate/cleanup received routes/paths/results
-            map(([paths, [state, presences]]) => {
+            map(([[paths, iou], [state, presences]]) => {
+              console.log(iou);
               const filteredPaths: Paths = [],
                 invalidatedRecipients = new Set<Address>();
               // eslint-disable-next-line prefer-const
-              for (let { path, fee } of paths) {
+              for (let { path, fee } of paths as Paths) {
                 // if route has us as first hop, cleanup/shift
                 if (path[0] === state.address) path = path.slice(1);
                 const recipient = path[0];
@@ -429,34 +440,3 @@ export const pfsServiceRegistryMonitorEpic = (
           ),
     ),
   );
-
-export const udcBalanceEpic = (
-  action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-  { userDepositContract }: RaidenEpicDeps,
-): Observable<ActionType<typeof udcBalanceUpdate | typeof udcBalanceFetchFailed>> => {
-  return action$.pipe(
-    filter(isActionOf(udcBalanceFetch)),
-    debounceTime(10e3),
-    withLatestFrom(state$),
-    mergeMap(([{}, state]) => {
-      return from(userDepositContract.balances(state.address)).pipe(
-        map(balance => {
-          const owedAmount = Object.values(state.iou)
-            .reduce(
-              (acc, value) =>
-                acc.concat(
-                  Object.values(value).filter(value =>
-                    value.expiration_block.lte(state.blockNumber),
-                  ),
-                ),
-              new Array<IOU>(),
-            )
-            .reduce((acc, iou) => acc.add(iou.amount), Zero);
-          return udcBalanceUpdate({ balance: balance.sub(owedAmount) as UInt<32> });
-        }),
-        catchError(error => of(udcBalanceFetchFailed(error))),
-      );
-    }),
-  );
-};

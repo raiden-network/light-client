@@ -193,3 +193,24 @@ export type Timed<T> = [number, T];
 export function timed<T>(v: T): Timed<T> {
   return [Date.now(), v];
 }
+
+// generic type codec for messages that must be signed
+// use it like: Codec = Signed(Message)
+// The t.TypeOf<typeof codec> will be Signed<Message>, defined later
+export const Signed = memoize<
+  <C extends t.Mixed>(
+    codec: C,
+  ) => t.IntersectionC<
+    [
+      C,
+      t.ReadonlyC<
+        t.TypeC<{
+          signature: typeof Signature;
+        }>
+      >,
+    ]
+  >
+>(<C extends t.Mixed>(codec: C) =>
+  t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),
+);
+export type Signed<M> = M & { signature: Signature };

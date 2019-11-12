@@ -1,6 +1,6 @@
 import { createStandardAction } from 'typesafe-actions';
 
-import { Address, UInt, Int, Secret, Hash } from '../utils/types';
+import { Address, UInt, Int, Secret, Hash, Signed } from '../utils/types';
 import { SignedBalanceProof } from '../channels/types';
 import {
   LockedTransfer,
@@ -8,7 +8,6 @@ import {
   SecretRequest,
   SecretReveal,
   Unlock,
-  Signed,
   LockExpired,
   RefundTransfer,
   WithdrawRequest,
