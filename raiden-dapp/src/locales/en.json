@@ -199,6 +199,10 @@
       "confirm-transfer": {
         "title": "Confirm transfer"
       },
+      "call-to-action": {
+        "1": "Pay Route Request",
+        "2": "Confirm Mediation Fees"
+      },
       "transfer": {
         "label": "Transfer",
         "title": "Sending Tokens",

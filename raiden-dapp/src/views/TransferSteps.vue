@@ -94,11 +94,12 @@
     </v-overlay>
 
     <action-button
-      :text="$t('general.buttons.continue')"
       :enabled="continueBtnEnabled"
       sticky
+      :text="$t(`transfer.steps.call-to-action.${step}`)"
       @click="handleStep()"
-    ></action-button>
+    >
+    </action-button>
   </v-container>
 </template>
 
