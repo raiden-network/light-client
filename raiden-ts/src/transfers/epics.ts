@@ -25,7 +25,7 @@ import { findKey, get } from 'lodash';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
-import { Address, Hash, UInt } from '../utils/types';
+import { Address, Hash, UInt, Signed } from '../utils/types';
 import { LruCache } from '../utils/lru';
 import { messageReceived, messageSend, messageSent } from '../messages/actions';
 import {
@@ -36,7 +36,6 @@ import {
   RefundTransfer,
   SecretRequest,
   SecretReveal,
-  Signed,
   Unlock,
   WithdrawExpired,
   WithdrawConfirmation,

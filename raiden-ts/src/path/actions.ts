@@ -1,12 +1,17 @@
 import { createStandardAction } from 'typesafe-actions';
 
-import { Address, UInt } from '../utils/types';
-import { Paths, PFS } from './types';
+import { Address, UInt, Signed } from '../utils/types';
+import { Paths, PFS, IOU } from './types';
 
 type PathId = {
   tokenNetwork: Address;
   target: Address;
   value: UInt<32>;
+};
+
+type ServiceId = {
+  tokenNetwork: Address;
+  serviceAddress: Address;
 };
 
 export const pathFind = createStandardAction('pathFind')<{ paths?: Paths; pfs?: PFS }, PathId>();
@@ -21,12 +26,9 @@ export const pfsListUpdated = createStandardAction('pfsListUpdated')<{
   pfsList: readonly Address[];
 }>();
 
-export const udcBalanceFetch = createStandardAction('udcBalanceFetch')<{}>();
-
-export const udcBalanceUpdate = createStandardAction('udcBalanceUpdate')<{
-  balance: UInt<32>;
-}>();
-
-export const udcBalanceFetchFailed = createStandardAction('udcBalanceFetchFailed').map(
-  (payload: Error) => ({ payload, error: true }),
-);
+export const persistIOU = createStandardAction('persistIOU')<
+  {
+    signedIOU: Signed<IOU>;
+  },
+  ServiceId
+>();

@@ -90,16 +90,6 @@ export const IOU = t.readonly(
 // eslint-disable-next-line @typescript-eslint/interface-name-prefix
 export interface IOU extends t.TypeOf<typeof IOU> {}
 
-export interface RaidenIOU {
-  sender: string;
-  receiver: string;
-  amount: BigNumberish;
-  expiration_block: BigNumberish;
-  one_to_n_address: string;
-  chain_id: BigNumberish;
-  signature: string;
-}
-
 export const LastIOUResults = t.readonly(
   t.type({
     // eslint-disable-next-line @typescript-eslint/camelcase
@@ -108,3 +98,25 @@ export const LastIOUResults = t.readonly(
 );
 
 export interface LastIOUResults extends t.TypeOf<typeof LastIOUResults> {}
+
+/**
+ * Codec for PFS API returned error
+ */
+export const PathError = t.readonly(
+  t.intersection([
+    t.type({
+      errors: t.string,
+      /* eslint-disable-next-line @typescript-eslint/camelcase */
+      error_code: t.number,
+    }),
+    t.partial({
+      /* eslint-disable-next-line @typescript-eslint/camelcase */
+      error_details: t.type({
+        from_: Address,
+        to: Address,
+        value: UInt(32),
+      }),
+    }),
+  ]),
+);
+export interface PathError extends t.TypeOf<typeof PathError> {}

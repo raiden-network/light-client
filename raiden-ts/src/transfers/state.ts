@@ -2,7 +2,6 @@ import * as t from 'io-ts';
 import { BigNumber } from 'ethers/utils';
 
 import {
-  Signed,
   LockedTransfer,
   Processed,
   SecretReveal,
@@ -11,7 +10,7 @@ import {
   RefundTransfer,
   Metadata,
 } from '../messages/types';
-import { Address, Timed, Hash, Int } from '../utils/types';
+import { Address, Timed, Hash, Int, Signed } from '../utils/types';
 
 /**
  * This struct holds the relevant messages exchanged in a transfer

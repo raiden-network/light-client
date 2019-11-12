@@ -42,7 +42,7 @@ import { find, get, minBy, sortBy } from 'lodash';
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { createClient, MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
 
-import { Address } from '../utils/types';
+import { Address, Signed } from '../utils/types';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { channelMonitored } from '../channels/actions';
@@ -53,7 +53,6 @@ import {
   Processed,
   SecretRequest,
   SecretReveal,
-  Signed,
 } from '../messages/types';
 import {
   decodeJsonMessage,
