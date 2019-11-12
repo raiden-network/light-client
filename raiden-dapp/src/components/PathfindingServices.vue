@@ -13,10 +13,7 @@
           justify="center"
           class="pathfinding-services__loading"
         >
-          <v-progress-circular
-            indeterminate
-            color="primary"
-          ></v-progress-circular>
+          <spinner />
         </v-row>
         <v-row
           v-else-if="error"
@@ -107,8 +104,9 @@ import { RaidenPFS } from 'raiden-ts';
 import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import Filters from '@/filters';
+import Spinner from '@/components/Spinner.vue';
 
-@Component({})
+@Component({ components: { Spinner } })
 export default class PathfindingServices extends Vue {
   headers: { text: string; align: string; value: string }[] = [];
 
@@ -192,10 +190,6 @@ export default class PathfindingServices extends Vue {
 .pathfinding-services__wrapper > * {
   width: 250px;
   text-align: center;
-}
-
-.pathfinding-services__loading {
-  height: 72px;
 }
 
 .pathfinding-services__error {

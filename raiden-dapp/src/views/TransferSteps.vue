@@ -72,36 +72,51 @@
           </v-stepper-content>
 
           <v-stepper-content step="3">
-            <v-row justify="center" align="center">
-              <v-col cols="12">
-                <p>
-                  {{ $t('transfer.steps.confirm-transfer.total-amount') }}
-                </p>
-                <h2 v-if="step === 3">
-                  {{
-                    $t('transfer.steps.confirm-transfer.token-amount', {
-                      totalAmount: convertToUnits(totalAmount, token.decimals),
-                      token: token.symbol
-                    })
-                  }}
-                </h2>
-              </v-col>
-            </v-row>
+            <div v-if="step === 3 && !processingTransfer" class="total-amount">
+              <p>
+                {{ $t('transfer.steps.confirm-transfer.total-amount') }}
+              </p>
+              <h2>
+                {{
+                  $t('transfer.steps.confirm-transfer.token-amount', {
+                    totalAmount: convertToUnits(totalAmount, token.decimals),
+                    token: token.symbol
+                  })
+                }}
+              </h2>
+            </div>
+            <div
+              v-if="processingTransfer"
+              class="transfer-steps__processing-transfer"
+            >
+              <v-row justify="center" class="processing-transfer__spinner">
+                <spinner />
+              </v-row>
+              <p class="transfer-steps__processing-transfer__title">
+                {{ this.$t('transfer.steps.transfer.title') }}
+              </p>
+              <p class="transfer-steps__processing-transfer__description">
+                {{ this.$t('transfer.steps.transfer.description') }}
+              </p>
+            </div>
           </v-stepper-content>
         </v-stepper-items>
       </v-stepper>
     </v-row>
 
-    <v-overlay
-      v-if="step === 1"
-      :value="pfsFeesConfirmed"
-      class="confirmation-overlay"
-    >
-      <h2 v-if="!pfsFeesPaid">
-        {{ this.$t('transfer.steps.request-route.in-progress') }}
-      </h2>
-      <h2 v-else>{{ this.$t('transfer.steps.request-route.in-progress') }}</h2>
-    </v-overlay>
+    <stepper
+      :display="processingTransfer"
+      :steps="steps"
+      :done-step="doneStep"
+      :done="transferDone"
+    ></stepper>
+
+    <error-screen
+      :description="error"
+      :title="errorTitle"
+      :button-label="$t('transfer.error.button')"
+      @dismiss="error = ''"
+    ></error-screen>
 
     <action-button
       :enabled="continueBtnEnabled"
@@ -119,14 +134,26 @@ import { RaidenPFS } from 'raiden-ts';
 import { BigNumber } from 'ethers/utils';
 
 import { BalanceUtils } from '@/utils/balance-utils';
-import { Token, Route } from '@/model/types';
+import { Token, Route, emptyDescription, StepDescription } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import PathfindingServices from '@/components/PathfindingServices.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
 import ActionButton from '@/components/ActionButton.vue';
+import Spinner from '@/components/Spinner.vue';
+import Stepper from '@/components/Stepper.vue';
+import ErrorScreen from '@/components/ErrorScreen.vue';
 
-@Component({ components: { PathfindingServices, ActionButton, FindRoutes } })
+@Component({
+  components: {
+    PathfindingServices,
+    ActionButton,
+    FindRoutes,
+    Spinner,
+    Stepper,
+    ErrorScreen
+  }
+})
 export default class TransferSteps extends Mixins(
   BlockieMixin,
   NavigationMixin
@@ -137,22 +164,30 @@ export default class TransferSteps extends Mixins(
   pfsFeesConfirmed: boolean = false;
   pfsFeesPaid: boolean = false;
   mediationFeesConfirmed: boolean = false;
+  processingTransfer: boolean = false;
+  transferDone: boolean = false;
+  errorTitle: string = '';
+  error: string = '';
+  steps: StepDescription[] = [];
+  doneStep: StepDescription = emptyDescription();
 
   convertToUnits = BalanceUtils.toUnits;
 
   handleStep() {
     if (this.step === 1 && this.selectedPfs && !this.pfsFeesConfirmed) {
       this.pfsFeesConfirmed = true;
-
-      // Do the PFS payment here
-      setTimeout(() => {
-        this.step = 2;
-      }, 3000);
+      this.step = 2;
+      return;
     }
 
     if (this.step === 2 && this.selectedRoute) {
       this.mediationFeesConfirmed = true;
       this.step = 3;
+      return;
+    }
+
+    if (this.step === 3 && this.selectedRoute && this.selectedPfs) {
+      this.transfer();
     }
   }
 
@@ -178,6 +213,14 @@ export default class TransferSteps extends Mixins(
       return this.selectedRoute !== null;
     }
 
+    if (this.step == 3) {
+      return (
+        this.selectedRoute !== null &&
+        this.selectedPfs !== null &&
+        !this.processingTransfer
+      );
+    }
+
     return false;
   }
 
@@ -195,6 +238,40 @@ export default class TransferSteps extends Mixins(
   setRoute(route: Route) {
     this.selectedRoute = route;
   }
+
+  async transfer() {
+    const { address, decimals } = this.token;
+    const { path, fee } = this.selectedRoute!;
+    this.steps = [
+      (this.$t('transfer.steps.transfer') as any) as StepDescription
+    ];
+    this.doneStep = (this.$t('transfer.steps.done') as any) as StepDescription;
+    this.errorTitle = this.$t('transfer.error.title') as string;
+
+    try {
+      this.processingTransfer = true;
+      await this.$raiden.transfer(
+        address,
+        this.target,
+        BalanceUtils.parse(this.amount, decimals!),
+        [{ path, fee }]
+      );
+
+      this.transferDone = true;
+      this.dismissProgress();
+    } catch (e) {
+      this.processingTransfer = false;
+      this.error = e.message;
+    }
+  }
+
+  private dismissProgress() {
+    setTimeout(() => {
+      this.processingTransfer = false;
+      this.transferDone = false;
+      this.navigateToSelectTransferTarget(this.token.address);
+    }, 2000);
+  }
 }
 </script>
 
@@ -210,6 +287,24 @@ export default class TransferSteps extends Mixins(
   box-shadow: none;
   width: 100%;
   position: relative;
+
+  &__processing-transfer {
+    &__title {
+      font-size: 36px;
+      font-weight: bold;
+      line-height: 38px;
+      text-align: center;
+    }
+    &__description {
+      font-size: 16px;
+      line-height: 21px;
+      text-align: center;
+      margin-top: 2rem;
+    }
+    &__spinner {
+      margin: 3rem 0;
+    }
+  }
 }
 
 .transfer-steps__header {
@@ -253,16 +348,7 @@ export default class TransferSteps extends Mixins(
   }
 }
 
-.confirmation-overlay {
-  &.v-overlay--active {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    backdrop-filter: blur(4px);
-    background-color: rgba($color-white, 0.15);
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-  }
+.total-amount {
+  text-align: center;
 }
 </style>
