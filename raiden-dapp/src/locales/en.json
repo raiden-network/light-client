@@ -189,19 +189,20 @@
     },
     "steps": {
       "request-route": {
-        "title": "Request route",
+        "title": "Request Route",
         "in-progress": "Transfering tokens for route request",
         "done": "Transfer for route request completed"
       },
       "select-route": {
-        "title": "Select route"
+        "title": "Select Route"
       },
       "confirm-transfer": {
-        "title": "Confirm transfer"
+        "title": "Confirm Transfer"
       },
       "call-to-action": {
         "1": "Pay Route Request",
-        "2": "Confirm Mediation Fees"
+        "2": "Confirm Mediation Fees",
+        "3": "Confirm Transfer"
       },
       "transfer": {
         "label": "Transfer",
