@@ -32,3 +32,5 @@ export const persistIOU = createStandardAction('persistIOU')<
   },
   ServiceId
 >();
+
+export const clearIOU = createStandardAction('clearIOU')<{}, ServiceId>();

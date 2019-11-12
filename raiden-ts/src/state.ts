@@ -6,7 +6,7 @@ import { Network, getNetwork } from 'ethers/utils';
 import { RaidenConfig, makeDefaultConfig } from './config';
 import { ContractsInfo } from './types';
 import { losslessParse, losslessStringify } from './utils/data';
-import { Address, Secret, decode } from './utils/types';
+import { Address, Secret, decode, Signed } from './utils/types';
 import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
@@ -52,12 +52,14 @@ export const RaidenState = t.readonly(
       ),
     ),
     sent: SentTransfers,
-    iou: t.readonly(
-      t.record(
-        t.string /* tokenNetwork: Address */,
-        t.record(t.string /* service: Address */, IOU),
+    path: t.type({
+      iou: t.readonly(
+        t.record(
+          t.string /* tokenNetwork: Address */,
+          t.record(t.string /* service: Address */, Signed(IOU)),
+        ),
       ),
-    ),
+    }),
   }),
 );
 
@@ -122,7 +124,9 @@ export function makeInitialState(
     transport: {},
     secrets: {},
     sent: {},
-    iou: {},
+    path: {
+      iou: {},
+    },
   };
 }
 

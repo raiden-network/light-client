@@ -2,6 +2,7 @@ import { isActionOf } from 'typesafe-actions';
 import { isEmpty } from 'lodash/fp';
 
 import { channelsReducer } from './channels/reducer';
+import { pathReducer } from './path/reducer';
 import { transportReducer } from './transport/reducer';
 import { transfersReducer } from './transfers/reducer';
 
@@ -20,6 +21,7 @@ const configReducer = (state: RaidenState = initialState, action: RaidenAction) 
 const raidenReducers = {
   configReducer,
   channelsReducer,
+  pathReducer,
   transportReducer,
   transfersReducer,
 };
