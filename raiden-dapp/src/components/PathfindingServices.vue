@@ -187,44 +187,35 @@ export default class PathfindingServices extends Vue {
 <style scoped lang="scss">
 @import '../scss/colors';
 
-.pathfinding-services__wrapper > * {
-  width: 250px;
-  text-align: center;
-}
-
-.pathfinding-services__error {
-  height: 86px;
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
-.pathfinding-services__table {
-  margin-bottom: 20px;
-}
-
-.pathfinding-services__table {
-  &.v-data-table {
-    background-color: transparent !important;
-  }
-  ::v-deep tr:hover {
-    background: $primary-disabled-color !important;
+.pathfinding-services {
+  &__wrapper > * {
+    width: 250px;
+    text-align: center;
   }
 
-  ::v-deep .v-icon {
-    color: $primary-color;
+  &__error {
+    height: 86px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
-  ::v-deep th {
-    color: rgba($color-white, 0.5);
-    font-size: 15px;
-  }
-}
 
-.pathfinding-services__table .pathfinding-services__buttons button {
-  height: 35px;
-  width: 135px;
-  color: white;
-  border-radius: 29px;
-  margin-left: 15px;
-  margin-right: 15px;
+  &__table {
+    margin-bottom: 20px;
+
+    &.v-data-table {
+      background-color: transparent !important;
+    }
+    ::v-deep tr:hover {
+      background: $primary-disabled-color !important;
+    }
+
+    ::v-deep .v-icon {
+      color: $primary-color;
+    }
+    ::v-deep th {
+      color: rgba($color-white, 0.5);
+      font-size: 15px;
+    }
+  }
 }
 </style>

@@ -11,12 +11,7 @@
         justify="center"
         class="find-routes__spinner-wrapper"
       >
-        <v-progress-circular
-          :size="110"
-          :width="7"
-          class="stepper__card__content--progress"
-          indeterminate
-        ></v-progress-circular>
+        <spinner />
       </v-row>
       <v-row v-else-if="!busy && error">
         <p>{{ error }}</p>
@@ -63,10 +58,11 @@ import { BigNumber } from 'ethers/utils';
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 
 import { BalanceUtils } from '@/utils/balance-utils';
+import Spinner from '@/components/Spinner.vue';
 import { Token, Route } from '@/model/types';
 import { RaidenPFS } from 'raiden-ts';
 
-@Component({})
+@Component({ components: { Spinner } })
 export default class FindRoutes extends Vue {
   @Prop({ required: true })
   token!: Token;
@@ -159,66 +155,31 @@ export default class FindRoutes extends Vue {
 <style scoped lang="scss">
 @import '../scss/colors';
 
-.find-routes > * {
-  text-align: center;
-}
+.find-routes {
+  & > * {
+    text-align: center;
+  }
 
-.find-routes__table {
-  margin-bottom: 20px;
-}
+  &__table {
+    margin-bottom: 20px;
 
-.find-routes__table.v-data-table {
-  background-color: transparent !important;
-}
+    &.v-data-table {
+      background-color: transparent !important;
+    }
 
-.find-routes__table ::v-deep tr.v-data-table__selected {
-  background: transparent !important;
-}
+    ::v-deep tr.v-data-table__selected {
+      background: transparent !important;
+    }
+    ::v-deep tr:hover {
+      background: $primary-disabled-color !important;
+    }
+    ::v-deep .v-icon {
+      color: $primary-color;
+    }
+  }
 
-.find-routes__table ::v-deep tr:hover {
-  background: $primary-disabled-color !important;
-}
-
-.find-routes__table ::v-deep .v-icon {
-  color: $primary-color;
-}
-
-.find-routes__buttons {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-}
-
-.find-routes__spinner-wrapper {
-  margin: 20px;
-}
-
-.find-routes__buttons button {
-  height: 35px;
-  width: 135px;
-  color: white;
-  border-radius: 29px;
-  margin-left: 15px;
-  margin-right: 15px;
-}
-
-.find-routes__buttons__cancel {
-  background-color: transparent !important;
-  border: 2px solid $primary-color;
-}
-
-.find-routes__buttons__confirm {
-  background-color: $primary-color !important;
-  color: #ffffff;
-}
-
-.stepper__card__content--progress {
-  color: $secondary-color;
-}
-
-.theme--light.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
-  background-color: $primary-disabled-color !important;
-  color: #c4c4c4 !important;
+  &__spinner-wrapper {
+    margin: 20px;
+  }
 }
 </style>

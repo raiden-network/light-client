@@ -72,7 +72,10 @@
           </v-stepper-content>
 
           <v-stepper-content step="3">
-            <div v-if="step === 3 && !processingTransfer" class="total-amount">
+            <div
+              v-if="step === 3 && !processingTransfer"
+              class="transfer-steps__total-amount"
+            >
               <p>
                 {{ $t('transfer.steps.confirm-transfer.total-amount') }}
               </p>
@@ -278,15 +281,56 @@ export default class TransferSteps extends Mixins(
 <style lang="scss" scoped>
 @import '../scss/colors';
 
-.transfer-steps__container {
-  height: 100%;
-}
-
 .transfer-steps {
   background: transparent;
   box-shadow: none;
   width: 100%;
   position: relative;
+
+  &__container {
+    height: 100%;
+  }
+
+  &__header {
+    max-width: 528px;
+    margin: 0 auto;
+    box-shadow: none;
+  }
+
+  &__step {
+    ::v-deep .v-stepper__label {
+      display: block !important;
+    }
+
+    &.active {
+      ::v-deep .v-stepper__step__step {
+        border-color: $primary-color !important;
+        background: $primary-color !important;
+      }
+
+      ::v-deep .v-stepper__label {
+        color: $primary-color;
+        font-weight: bold;
+      }
+    }
+
+    ::v-deep .v-stepper__step__step {
+      height: 12px;
+      min-width: 12px;
+      width: 12px;
+      margin-top: 6px;
+      background: transparent !important;
+      border: 2px solid #646464 !important;
+    }
+  }
+
+  &__divider {
+    border: 1px solid #646464 !important;
+    margin: 35px -82px 0 !important;
+    &.active {
+      border-color: $primary-color !important;
+    }
+  }
 
   &__processing-transfer {
     &__title {
@@ -305,50 +349,9 @@ export default class TransferSteps extends Mixins(
       margin: 3rem 0;
     }
   }
-}
 
-.transfer-steps__header {
-  max-width: 528px;
-  margin: 0 auto;
-  box-shadow: none;
-}
-
-.transfer-steps__step {
-  ::v-deep .v-stepper__label {
-    display: block !important;
+  &__total-amount {
+    text-align: center;
   }
-
-  &.active {
-    ::v-deep .v-stepper__step__step {
-      border-color: $primary-color !important;
-      background: $primary-color !important;
-    }
-
-    ::v-deep .v-stepper__label {
-      color: $primary-color;
-      font-weight: bold;
-    }
-  }
-
-  ::v-deep .v-stepper__step__step {
-    height: 12px;
-    min-width: 12px;
-    width: 12px;
-    margin-top: 6px;
-    background: transparent !important;
-    border: 2px solid #646464 !important;
-  }
-}
-
-.transfer-steps__divider {
-  border: 1px solid #646464 !important;
-  margin: 35px -82px 0 !important;
-  &.active {
-    border-color: $primary-color !important;
-  }
-}
-
-.total-amount {
-  text-align: center;
 }
 </style>
