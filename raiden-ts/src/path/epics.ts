@@ -48,11 +48,34 @@ import {
   pfsListUpdated,
 } from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
-import { IOU, LastIOUResults, PathError, PathResults, Paths, PFS } from './types';
+import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
 import { concat } from 'ethers/utils/bytes';
 import { Signer } from 'ethers';
 import { memoize } from 'lodash/fp';
 import { UserDeposit } from '../contracts/UserDeposit';
+import * as t from 'io-ts';
+
+/**
+ * Codec for PFS API returned error
+ */
+const PathError = t.readonly(
+  t.intersection([
+    t.type({
+      errors: t.string,
+      /* eslint-disable-next-line @typescript-eslint/camelcase */
+      error_code: t.number,
+    }),
+    t.partial({
+      /* eslint-disable-next-line @typescript-eslint/camelcase */
+      error_details: t.type({
+        from_: Address,
+        to: Address,
+        value: UInt(32),
+      }),
+    }),
+  ]),
+);
+interface PathError extends t.TypeOf<typeof PathError> {}
 
 type IOUPayload = {
   serviceAddress: Address;
@@ -72,6 +95,7 @@ class InvalidPFSRequestError extends Error {
 const makeIOU = (
   sender: Address,
   receiver: Address,
+  amount: UInt<32>,
   chainId: UInt<32>,
   oneToNAddress: Address,
   blockNumber: number,
@@ -79,7 +103,7 @@ const makeIOU = (
   sender: sender,
   receiver: receiver,
   chain_id: chainId,
-  amount: Zero as UInt<32>,
+  amount: amount,
   one_to_n_address: oneToNAddress,
   expiration_block: bigNumberify(blockNumber).add(2 * 10 ** 5) as UInt<32>,
 });
@@ -157,6 +181,7 @@ const prepareNextIOU$ = (
             return makeIOU(
               state.address,
               pfs.address,
+              pfs.price,
               bigNumberify(state.chainId) as UInt<32>,
               await oneToNAddress(deps.userDepositContract),
               state.blockNumber,
