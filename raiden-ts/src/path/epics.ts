@@ -36,10 +36,17 @@ import { MessageTypeId, signMessage } from '../messages/utils';
 import { channelDeposited } from '../channels/actions';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
-import { Address, decode, Int, Signature, UInt, Signed } from '../utils/types';
+import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
-import { pathFind, pathFindFailed, pathFound, persistIOU, pfsListUpdated } from './actions';
+import {
+  clearIOU,
+  pathFind,
+  pathFindFailed,
+  pathFound,
+  persistIOU,
+  pfsListUpdated,
+} from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
 import { IOU, LastIOUResults, PathError, PathResults, Paths, PFS } from './types';
 import { concat } from 'ethers/utils/bytes';
@@ -49,14 +56,16 @@ import { UserDeposit } from '../contracts/UserDeposit';
 
 type IOUPayload = {
   serviceAddress: Address;
-  signedIOU: Signed<IOU>;
+  signedIOU?: Signed<IOU>;
 };
 
-class NoRouteFoundError extends Error {
+class InvalidPFSRequestError extends Error {
   readonly payload: IOUPayload;
-  constructor(message: string, payload: IOUPayload) {
+  readonly errorCode: number;
+  constructor(message: string, errorCode: number, payload: IOUPayload) {
     super(message);
     this.payload = payload;
+    this.errorCode = errorCode;
   }
 }
 
@@ -178,7 +187,9 @@ export const pathFindServiceEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<ActionType<typeof pathFound | typeof pathFindFailed | typeof persistIOU>> =>
+): Observable<
+  ActionType<typeof pathFound | typeof pathFindFailed | typeof persistIOU | typeof clearIOU>
+> =>
   combineLatest(
     state$,
     getPresences$(action$),
@@ -263,13 +274,11 @@ export const pathFindServiceEpic = (
                         response =>
                           [
                             response,
-                            signedIOU
-                              ? ({
-                                  serviceAddress: pfs.address,
-                                  signedIOU: signedIOU,
-                                } as IOUPayload)
-                              : undefined,
-                          ] as [Response, IOUPayload | undefined],
+                            {
+                              serviceAddress: pfs.address,
+                              signedIOU: signedIOU,
+                            } as IOUPayload,
+                          ] as [Response, IOUPayload],
                       ),
                     ),
                   ),
@@ -278,11 +287,11 @@ export const pathFindServiceEpic = (
                     const text = await response.text();
                     const data = losslessParse(text);
                     if (!response.ok) {
-                      const errorMessage = `PFS: paths request: code=${response.status} => body="${text}"`;
-                      if (payload && decode(PathError, data).error_code === 2201) {
-                        throw new NoRouteFoundError(errorMessage, payload);
-                      }
-                      throw new Error(errorMessage);
+                      throw new InvalidPFSRequestError(
+                        `PFS: paths request: code=${response.status} => body="${text}"`,
+                        decode(PathError, data).error_code,
+                        payload,
+                      );
                     }
                     return [decode(PathResults, data), payload] as [
                       PathResults,
@@ -308,7 +317,7 @@ export const pathFindServiceEpic = (
               if (payload) {
                 const { signedIOU, serviceAddress } = payload as IOUPayload;
                 yield persistIOU(
-                  { signedIOU },
+                  { signedIOU: signedIOU! },
                   { tokenNetwork: action.meta.tokenNetwork, serviceAddress },
                 );
               }
@@ -351,12 +360,23 @@ export const pathFindServiceEpic = (
               yield pathFound({ paths: filteredPaths }, action.meta);
             }),
             catchError(function*(err) {
-              if (err instanceof NoRouteFoundError) {
-                const { signedIOU, serviceAddress } = err.payload;
-                yield persistIOU(
-                  { signedIOU },
-                  { tokenNetwork: action.meta.tokenNetwork, serviceAddress },
-                );
+              if (err instanceof InvalidPFSRequestError) {
+                if (err.errorCode === 2201) {
+                  const { signedIOU, serviceAddress } = err.payload;
+                  yield persistIOU(
+                    { signedIOU: signedIOU! },
+                    { tokenNetwork: action.meta.tokenNetwork, serviceAddress },
+                  );
+                } else {
+                  const { serviceAddress } = err.payload;
+                  yield clearIOU(
+                    {},
+                    {
+                      tokenNetwork: action.meta.tokenNetwork,
+                      serviceAddress,
+                    },
+                  );
+                }
               }
               yield pathFindFailed(err, action.meta);
             }),
