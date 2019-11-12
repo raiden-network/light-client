@@ -274,7 +274,7 @@ export class Raiden {
                 (acc, value) =>
                   acc.concat(
                     Object.values(value).filter(value =>
-                      value.expiration_block.lte(state.blockNumber),
+                      value.expiration_block.gte(state.blockNumber),
                     ),
                   ),
                 new Array<IOU>(),
