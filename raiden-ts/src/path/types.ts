@@ -97,25 +97,3 @@ export const LastIOUResults = t.readonly(
 );
 
 export interface LastIOUResults extends t.TypeOf<typeof LastIOUResults> {}
-
-/**
- * Codec for PFS API returned error
- */
-export const PathError = t.readonly(
-  t.intersection([
-    t.type({
-      errors: t.string,
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      error_code: t.number,
-    }),
-    t.partial({
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      error_details: t.type({
-        from_: Address,
-        to: Address,
-        value: UInt(32),
-      }),
-    }),
-  ]),
-);
-export interface PathError extends t.TypeOf<typeof PathError> {}
