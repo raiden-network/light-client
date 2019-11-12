@@ -116,7 +116,7 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import { emptyDescription, StepDescription, Token, Route } from '@/model/types';
+import { emptyDescription, StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
@@ -125,21 +125,18 @@ import TokenOverlay from '@/components/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
-import FindRoutes from '@/components/FindRoutes.vue';
 import DownArrow from '@/components/icons/DownArrow.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannel, ChannelState, RaidenPFS } from 'raiden-ts';
+import { RaidenChannel, ChannelState } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { getAddress, getAmount } from '@/utils/query-params';
 import BlockieMixin from '@/mixins/blockie-mixin';
-import PathfindingServices from '@/components/PathfindingServices.vue';
 
 @Component({
   components: {
-    PathfindingServices,
     ChannelDeposit,
     ActionButton,
     TokenInformation,
@@ -148,7 +145,6 @@ import PathfindingServices from '@/components/PathfindingServices.vue';
     AmountInput,
     Stepper,
     ErrorScreen,
-    FindRoutes,
     DownArrow,
     TokenOverlay
   },
@@ -168,9 +164,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   loading: boolean = false;
   done: boolean = false;
   depositing: boolean = false;
-  findingRoutes: boolean = false;
-  serviceSelection: boolean = false;
-  raidenPFS: RaidenPFS | null = null;
 
   errorTitle: string = '';
   error: string = '';
@@ -251,34 +244,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
     }
     this.loading = false;
     this.depositing = false;
-  }
-
-  async transfer(route: Route) {
-    this.steps = [
-      (this.$t('transfer.steps.transfer') as any) as StepDescription
-    ];
-    this.doneStep = (this.$t('transfer.steps.done') as any) as StepDescription;
-    this.errorTitle = this.$t('transfer.error.title') as string;
-    this.findingRoutes = false;
-
-    const { address, decimals } = this.token;
-    const { path, fee } = route;
-
-    try {
-      this.loading = true;
-      await this.$raiden.transfer(
-        address,
-        this.target,
-        BalanceUtils.parse(this.amount, decimals!),
-        [{ path, fee }]
-      );
-
-      this.done = true;
-      this.dismissProgress();
-    } catch (e) {
-      this.loading = false;
-      this.error = e.message;
-    }
   }
 
   private dismissProgress() {
