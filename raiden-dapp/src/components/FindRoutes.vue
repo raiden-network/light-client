@@ -85,7 +85,6 @@ export default class FindRoutes extends Vue {
   headers: { text: string; align: string; value: string }[] = [];
   selected: Route[] = [];
   routes: Route[] = [];
-  convertToUnits = BalanceUtils.toUnits;
 
   mounted() {
     this.headers = [

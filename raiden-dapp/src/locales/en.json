@@ -197,12 +197,14 @@
         "title": "Select Route"
       },
       "confirm-transfer": {
-        "title": "Confirm Transfer"
+        "title": "Confirm Transfer",
+        "total-amount": "Total Amount",
+        "token-amount": "{totalAmount} {token}"
       },
       "call-to-action": {
         "1": "Pay Route Request",
         "2": "Confirm Mediation Fees",
-        "3": "Confirm Transfer"
+        "3": "Transfer"
       },
       "transfer": {
         "label": "Transfer",

@@ -72,11 +72,21 @@
           </v-stepper-content>
 
           <v-stepper-content step="3">
-            <v-card
-              class="mb-12"
-              color="grey lighten-1"
-              height="400px"
-            ></v-card>
+            <v-row justify="center" align="center">
+              <v-col cols="12">
+                <p>
+                  {{ $t('transfer.steps.confirm-transfer.total-amount') }}
+                </p>
+                <h2 v-if="step === 3">
+                  {{
+                    $t('transfer.steps.confirm-transfer.token-amount', {
+                      totalAmount: convertToUnits(totalAmount, token.decimals),
+                      token: token.symbol
+                    })
+                  }}
+                </h2>
+              </v-col>
+            </v-row>
           </v-stepper-content>
         </v-stepper-items>
       </v-stepper>
@@ -106,7 +116,9 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { RaidenPFS } from 'raiden-ts';
+import { BigNumber } from 'ethers/utils';
 
+import { BalanceUtils } from '@/utils/balance-utils';
 import { Token, Route } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
@@ -125,6 +137,8 @@ export default class TransferSteps extends Mixins(
   pfsFeesConfirmed: boolean = false;
   pfsFeesPaid: boolean = false;
   mediationFeesConfirmed: boolean = false;
+
+  convertToUnits = BalanceUtils.toUnits;
 
   handleStep() {
     if (this.step === 1 && this.selectedPfs && !this.pfsFeesConfirmed) {
@@ -147,11 +161,11 @@ export default class TransferSteps extends Mixins(
     return this.$store.state.tokens[address] || ({ address } as Token);
   }
 
-  get target(): String {
+  get target(): string {
     return this.$route.params.target;
   }
 
-  get amount(): String {
+  get amount(): string {
     return this.$route.params.amount;
   }
 
@@ -165,6 +179,13 @@ export default class TransferSteps extends Mixins(
     }
 
     return false;
+  }
+
+  get totalAmount(): BigNumber {
+    const { decimals } = this.token;
+    const transfer: BigNumber = BalanceUtils.parse(this.amount, decimals!);
+
+    return transfer.add(this.selectedRoute!.fee);
   }
 
   setPFS(pfs: RaidenPFS) {
