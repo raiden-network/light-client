@@ -14,7 +14,7 @@
         <spinner />
       </v-row>
       <v-row v-else-if="!busy && error">
-        <p>{{ error }}</p>
+        <p class="find-routes__error">{{ error }}</p>
       </v-row>
       <v-row v-else align="center" justify="center">
         <v-form>
@@ -41,9 +41,7 @@
                   <v-checkbox v-model="props.selected" primary></v-checkbox>
                 </td>
                 <td class="text-right">{{ props.item.hops }}</td>
-                <td class="text-right">
-                  {{ props.item.displayFee }}
-                </td>
+                <td class="text-right">{{ props.item.displayFee }}</td>
               </tr>
             </template>
           </v-data-table>

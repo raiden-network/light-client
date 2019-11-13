@@ -14,10 +14,3 @@ import { Component, Vue } from 'vue-property-decorator';
 @Component({})
 export default class Spinner extends Vue {}
 </script>
-
-<style lang="scss" scoped>
-@import '../scss/colors';
-.spinner {
-  color: $secondary-color;
-}
-</style>

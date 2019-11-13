@@ -11,7 +11,6 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
 import Transfer from '@/views/Transfer.vue';
-import FindRoutes from '@/components/FindRoutes.vue';
 import store from '@/store/index';
 import VueRouter from 'vue-router';
 import { TestData } from '../data/mock-data';
@@ -122,121 +121,29 @@ describe('Transfer.vue', () => {
     expect((wrapper.vm as any).token).toEqual(token);
   });
 
-  test('should finish reset load and done after successful transfer', async () => {
-    const route = [{ key: 0, hops: 0, fee: new BigNumber(1 ** 8) }];
-    raiden.transfer = jest.fn().mockResolvedValue(null);
-
+  test('should go to stepper if target and amount inputs are valid', async () => {
     const addressInput = wrapper.findAll('input').at(0);
     const amountInput = wrapper.findAll('input').at(1);
 
     mockInput(addressInput, '0x32bBc8ba52FB6F61C24809FdeDA1baa5E55e55EA');
     mockInput(amountInput, '0.01');
-
     wrapper.setData({
       valid: true
     });
 
     const button = wrapper.find('.action-button__button');
     expect(button.attributes()['disabled']).toBeUndefined();
+    button.trigger('click');
 
-    wrapper.setData({
-      valid: true,
-      findingRoutes: true
-    });
-
-    const findRoutesDialog = wrapper.find(FindRoutes);
-    expect(findRoutesDialog.is(FindRoutes)).toBe(true);
-
+    await wrapper.vm.$nextTick();
     await flushPromises();
-    jest.advanceTimersByTime(2000);
 
-    // Select a route
-    findRoutesDialog.find('.v-data-table__checkbox').trigger('click');
-    findRoutesDialog.setData({
-      selected: route
-    });
-
-    // Continue with route
-    const payButton = findRoutesDialog.find('.find-routes__buttons__confirm');
-    expect(payButton.attributes()['disabled']).toBeUndefined();
-    payButton.trigger('click');
-
-    // Check emmitted route
-    expect(raiden.findRoutes).toHaveBeenCalledTimes(1);
-    expect(findRoutesDialog.emitted()).toEqual({ confirm: [route] });
-
-    wrapper.setData({
-      findingRoutes: false
-    });
-
-    await flushPromises();
-    jest.advanceTimersByTime(2000);
-
-    expect(raiden.transfer).toHaveBeenCalledTimes(1);
-
-    expect(loading).toHaveBeenCalledTimes(2);
-    expect(loading).toHaveBeenNthCalledWith(1, true);
-    expect(loading).toHaveBeenNthCalledWith(2, false);
-    expect(done).toBeCalledTimes(2);
-    expect(done).toHaveBeenNthCalledWith(1, true);
-    expect(done).toHaveBeenNthCalledWith(2, false);
-  });
-
-  test('should finish reset load and done after failed transfer', async () => {
-    raiden.transfer = jest.fn().mockRejectedValue(new Error('failure'));
-
-    const addressInput = wrapper.findAll('input').at(0);
-    const amountInput = wrapper.findAll('input').at(1);
-    const route = [{ key: 0, hops: 0, fee: new BigNumber(1 ** 8) }];
-
-    mockInput(addressInput, '0x32bBc8ba52FB6F61C24809FdeDA1baa5E55e55EA');
-    mockInput(amountInput, '0.1');
-
-    wrapper.setData({
-      valid: true
-    });
-
-    const button = wrapper.find('.action-button__button');
-    expect(button.attributes()['disabled']).toBeUndefined();
-
-    wrapper.setData({
-      valid: true,
-      findingRoutes: true
-    });
-
-    const findRoutesDialog = wrapper.find(FindRoutes);
-    expect(findRoutesDialog.is(FindRoutes)).toBe(true);
-
-    await flushPromises();
-    jest.advanceTimersByTime(2000);
-
-    // Select a route
-    findRoutesDialog.find('.v-data-table__checkbox').trigger('click');
-    findRoutesDialog.setData({
-      selected: route
-    });
-
-    // Continue with route
-    const payButton = findRoutesDialog.find('.find-routes__buttons__confirm');
-    expect(payButton.attributes()['disabled']).toBeUndefined();
-    payButton.trigger('click');
-
-    // Check emmitted route
-    //expect(raiden.findRoutes).toHaveBeenCalledTimes(1);
-    expect(findRoutesDialog.emitted()).toEqual({ confirm: [route] });
-
-    wrapper.setData({
-      findingRoutes: false
-    });
-
-    await flushPromises();
-    jest.advanceTimersByTime(2000);
-
-    expect(loading).toHaveBeenCalledTimes(2);
-    expect(loading).toHaveBeenNthCalledWith(1, true);
-    expect(loading).toHaveBeenNthCalledWith(2, false);
-    expect(done).toBeCalledTimes(0);
-    expect(wrapper.vm.$data.error).toEqual('failure');
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.TRANSFER_STEPS
+      })
+    );
   });
 
   test('should deposit successfully', async () => {
