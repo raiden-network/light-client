@@ -270,15 +270,13 @@ export class Raiden {
         .pipe(
           map(balance => {
             const owedAmount = Object.values(state.path.iou)
-              .reduce(
-                (acc, value) =>
-                  acc.concat(
-                    Object.values(value).filter(value =>
-                      value.expiration_block.gte(state.blockNumber),
-                    ),
-                  ),
-                new Array<IOU>(),
-              )
+              .reduce((acc, value) => {
+                const nonExpiredIOUs = Object.values(value).filter(value =>
+                  value.expiration_block.gte(state.blockNumber),
+                );
+                acc.push(...nonExpiredIOUs);
+                return acc;
+              }, new Array<IOU>())
               .reduce((acc, iou) => acc.add(iou.amount), Zero);
             return balance.sub(owedAmount);
           }),
