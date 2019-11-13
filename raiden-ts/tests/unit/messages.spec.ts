@@ -10,7 +10,6 @@ import {
   SecretReveal,
   SecretRequest,
   Unlock,
-  Signed,
   Metadata,
   ToDevice,
   WithdrawRequest,
@@ -27,7 +26,7 @@ import {
   createMessageHash,
   createMetadataHash,
 } from 'raiden-ts/messages/utils';
-import { Address, Hash, Secret, UInt } from 'raiden-ts/utils/types';
+import { Address, Hash, Secret, UInt, Signed } from 'raiden-ts/utils/types';
 import { bigNumberify } from 'ethers/utils';
 import { HashZero, One, Zero } from 'ethers/constants';
 

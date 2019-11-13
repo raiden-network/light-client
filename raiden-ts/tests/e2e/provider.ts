@@ -15,6 +15,7 @@ import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
 import { CustomToken } from 'raiden-ts/contracts/CustomToken';
 import { ServiceRegistry } from 'raiden-ts/contracts/ServiceRegistry';
 import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
+import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
 
 export class TestProvider extends Web3Provider {
   public constructor(opts?: GanacheServerOptions) {
@@ -118,6 +119,14 @@ export class TestProvider extends Web3Provider {
     // setURL for service registry
     await (await serviceRegistryContract.functions.setURL('https://pfs.raiden.test')).wait();
 
+    const userDepositContract = (await new ContractFactory(
+      Contracts.contracts.UserDeposit.abi,
+      Contracts.contracts.UserDeposit.bin,
+      signer,
+    ).deploy(tokenContract.address, 1e10)) as UserDeposit;
+    await userDepositContract.deployed();
+    const userDepositDeployBlock = userDepositContract.deployTransaction.blockNumber;
+
     return {
       TokenNetworkRegistry: {
         address: registryContract.address as Address,
@@ -126,6 +135,10 @@ export class TestProvider extends Web3Provider {
       ServiceRegistry: {
         address: serviceRegistryContract.address as Address,
         block_number: serviceRegistryDeployBlock!,
+      },
+      UserDeposit: {
+        address: userDepositContract.address as Address,
+        block_number: userDepositDeployBlock!,
       },
     };
   }

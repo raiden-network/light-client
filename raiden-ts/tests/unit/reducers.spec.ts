@@ -26,7 +26,7 @@ import {
 } from 'raiden-ts/channels/actions';
 import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden-ts/transport/actions';
 import { ChannelState, Lock } from 'raiden-ts/channels';
-import { Address, Hash, Secret, UInt, Int } from 'raiden-ts/utils/types';
+import { Address, Hash, Secret, UInt, Int, Signed } from 'raiden-ts/utils/types';
 import {
   transferSecret,
   transferSigned,
@@ -43,7 +43,6 @@ import {
 import {
   LockedTransfer,
   MessageType,
-  Signed,
   Processed,
   Unlock,
   LockExpired,
@@ -84,6 +83,8 @@ describe('raidenReducer', () => {
           TokenNetworkRegistry: { address: AddressZero as Address, block_number: 0 },
           // eslint-disable-next-line @typescript-eslint/camelcase
           ServiceRegistry: { address: AddressZero as Address, block_number: 0 },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          UserDeposit: { address: AddressZero as Address, block_number: 0 },
         },
       },
       { blockNumber: 1337 },

@@ -19,8 +19,8 @@ import { getType } from 'typesafe-actions';
 import { range } from 'lodash';
 import { createClient } from 'matrix-js-sdk';
 
-import { UInt, Address } from 'raiden-ts/utils/types';
-import { MessageType, Signed, Processed, Delivered } from 'raiden-ts/messages/types';
+import { UInt, Address, Signed } from 'raiden-ts/utils/types';
+import { MessageType, Processed, Delivered } from 'raiden-ts/messages/types';
 import { RaidenAction, raidenShutdown } from 'raiden-ts/actions';
 import { RaidenState } from 'raiden-ts/state';
 import {
