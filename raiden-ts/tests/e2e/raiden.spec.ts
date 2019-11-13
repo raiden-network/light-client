@@ -148,6 +148,8 @@ describe('Raiden', () => {
                 TokenNetworkRegistry: { address: token as Address, block_number: 0 },
                 // eslint-disable-next-line @typescript-eslint/camelcase
                 ServiceRegistry: { address: partner as Address, block_number: 1 },
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                UserDeposit: { address: partner as Address, block_number: 2 },
               },
               address: accounts[1] as Address,
             },

@@ -25,6 +25,7 @@ import { TokenNetworkRegistryFactory } from 'raiden-ts/contracts/TokenNetworkReg
 import { TokenNetworkFactory } from 'raiden-ts/contracts/TokenNetworkFactory';
 import { HumanStandardTokenFactory } from 'raiden-ts/contracts/HumanStandardTokenFactory';
 import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
+import { UserDepositFactory } from 'raiden-ts/contracts/UserDepositFactory';
 
 import 'raiden-ts/polyfills';
 import { RaidenEpicDeps, ContractsInfo } from 'raiden-ts/types';
@@ -34,6 +35,7 @@ import { Address, Signature } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
 import { RaidenConfig } from 'raiden-ts/config';
 import { pluck, distinctUntilChanged } from 'rxjs/operators';
+import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
 
 export type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -173,6 +175,14 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   );
   serviceRegistryContract.functions.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
+  const userDepositContract = UserDepositFactory.connect(address, signer) as MockedContract<
+    UserDeposit
+  >;
+
+  for (const func in userDepositContract.functions) {
+    jest.spyOn(userDepositContract.functions, func as keyof UserDeposit['functions']);
+  }
+
   const contractsInfo: ContractsInfo = {
       TokenNetworkRegistry: {
         address: registryContract.address as Address,
@@ -181,6 +191,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       ServiceRegistry: {
         address: serviceRegistryContract.address as Address,
         block_number: 101,
+      },
+      UserDeposit: {
+        address: userDepositContract.address as Address,
+        block_number: 102,
       },
     },
     initialState = makeInitialState(
@@ -212,6 +226,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     getTokenNetworkContract,
     getTokenContract,
     serviceRegistryContract,
+    userDepositContract,
   };
 }
 

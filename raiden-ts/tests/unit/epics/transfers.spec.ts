@@ -21,7 +21,6 @@ import { RaidenAction } from 'raiden-ts/actions';
 import { RaidenState } from 'raiden-ts/state';
 import {
   MessageType,
-  Signed,
   Processed,
   Delivered,
   LockedTransfer,
@@ -74,7 +73,7 @@ import {
 } from 'raiden-ts/transfers/epics';
 import { matrixPresenceUpdate, matrixRequestMonitorPresence } from 'raiden-ts/transport/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
-import { UInt, Address, Hash } from 'raiden-ts/utils/types';
+import { UInt, Address, Hash, Signed } from 'raiden-ts/utils/types';
 import { makeMessageId, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 
 import { epicFixtures } from '../fixtures';
