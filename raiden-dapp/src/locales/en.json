@@ -68,7 +68,7 @@
       },
       "closed": {
         "title": "Closed",
-        "description": "Please wait until your channel is settleable. \nhis may take up some time."
+        "description": "Please wait until your channel is settleable. \nthis may take some time."
       },
       "settleable": {
         "title": "Settleable",
