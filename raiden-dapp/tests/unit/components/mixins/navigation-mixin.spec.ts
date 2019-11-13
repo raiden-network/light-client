@@ -95,6 +95,21 @@ describe('NavigationMixin', function() {
     );
   });
 
+  test('navigate to transfer steps', () => {
+    wrapper.vm.navigateToTransferSteps('0xtarget', '100');
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.TRANSFER_STEPS,
+        params: {
+          target: '0xtarget',
+          amount: '100'
+        }
+      })
+    );
+  });
+
   describe('back navigation', () => {
     test('from select target', async () => {
       wrapper.vm.$route.name = RouteNames.TRANSFER;
@@ -157,6 +172,30 @@ describe('NavigationMixin', function() {
           name: RouteNames.SELECT_HUB,
           params: {
             token: '0xtoken'
+          }
+        })
+      );
+    });
+
+    test('from transfer steps', async () => {
+      wrapper.vm.$route.name = RouteNames.TRANSFER_STEPS;
+      wrapper.vm.$route.params = {
+        token: '0xtoken',
+        target: '0xtarget',
+        amount: '100'
+      };
+      wrapper.vm.onBackClicked();
+
+      expect(router.push).toHaveBeenCalledTimes(1);
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.TRANSFER,
+          params: {
+            token: '0xtoken'
+          },
+          query: {
+            target: '0xtarget',
+            amount: '100'
           }
         })
       );
