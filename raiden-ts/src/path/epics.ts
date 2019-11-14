@@ -362,8 +362,11 @@ export const pathFindServiceEpic = (
                 }
                 filteredPaths.push({ path, fee });
               }
-              if (!filteredPaths.length) throw new Error(`PFS: no valid routes found`);
-              yield pathFound({ paths: filteredPaths }, action.meta);
+              if (!filteredPaths.length) {
+                yield pathFindFailed(new Error(`PFS: no valid routes found`), action.meta);
+              } else {
+                yield pathFound({ paths: filteredPaths }, action.meta);
+              }
             }),
             catchError(function*(err) {
               const iou = err.iou;
