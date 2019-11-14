@@ -1,12 +1,5 @@
 <template>
   <div class="pathfinding-services fill-height">
-    <v-row no-gutters>
-      <v-col cols="12">
-        <h2>
-          {{ $t('pathfinding-services.title') }}
-        </h2>
-      </v-col>
-    </v-row>
     <v-row
       no-gutters
       class="pathfinding-services__wrapper"
@@ -20,10 +13,7 @@
           justify="center"
           class="pathfinding-services__loading"
         >
-          <v-progress-circular
-            indeterminate
-            color="primary"
-          ></v-progress-circular>
+          <spinner />
         </v-row>
         <v-row
           v-else-if="error"
@@ -44,10 +34,11 @@
           disable-pagination
           hide-default-footer
           single-select
+          show-select
           sort-by="price"
           item-key="service"
           class="pathfinding-services__table"
-          @click:row="setSelected($event)"
+          @item-selected="select($event)"
         >
           <template #item.address="{ item }">
             <v-tooltip bottom>
@@ -59,11 +50,11 @@
               <span>{{ item.address }}</span>
             </v-tooltip>
           </template>
-          <template #item.url="{ item }">
+          <template #item.host="{ item }">
             <v-tooltip bottom>
               <template #activator="{ on }">
                 <span v-on="on">
-                  {{ item.url | truncate(38) }}
+                  {{ item.url.replace('https://', '') | truncate(28) }}
                 </span>
               </template>
               <span>{{ item.url }}</span>
@@ -101,27 +92,6 @@
             </v-tooltip>
           </template>
         </v-data-table>
-        <v-row
-          align="end"
-          justify="center"
-          class="pathfinding-services__buttons"
-        >
-          <v-btn
-            light
-            class="text-capitalize pathfinding-services__buttons__cancel"
-            @click="cancel()"
-          >
-            {{ $t('general.buttons.cancel') }}
-          </v-btn>
-          <v-btn
-            :disabled="selected.length === 0"
-            light
-            class="text-capitalize pathfinding-services__buttons__confirm"
-            @click="confirm()"
-          >
-            {{ $t('general.buttons.confirm') }}
-          </v-btn>
-        </v-row>
       </v-col>
     </v-row>
   </div>
@@ -130,11 +100,13 @@
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
 import { RaidenPFS } from 'raiden-ts';
+
 import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import Filters from '@/filters';
+import Spinner from '@/components/Spinner.vue';
 
-@Component({})
+@Component({ components: { Spinner } })
 export default class PathfindingServices extends Vue {
   headers: { text: string; align: string; value: string }[] = [];
 
@@ -150,13 +122,8 @@ export default class PathfindingServices extends Vue {
   mounted() {
     this.headers = [
       {
-        text: this.$t('pathfinding-services.headers.address') as string,
-        value: 'address',
-        align: 'left'
-      },
-      {
-        text: this.$t('pathfinding-services.headers.url') as string,
-        value: 'url',
+        text: this.$t('pathfinding-services.headers.host') as string,
+        value: 'host',
         align: 'left'
       },
       {
@@ -173,12 +140,31 @@ export default class PathfindingServices extends Vue {
     this.fetchServices();
   }
 
+  @Emit()
+  select({
+    item,
+    value
+  }: {
+    item: RaidenPFS;
+    value: boolean;
+  }): RaidenPFS | null {
+    // A PFS service got selected
+    if (value) {
+      return item;
+    }
+
+    // A PFS service was unselected
+    return null;
+  }
+
   async fetchServices() {
     this.loading = true;
     try {
       this.services = await this.$raiden.fetchServices();
       if (this.services.length > 0) {
-        this.setSelected(this.services[0]);
+        const [preSelectedPfs] = this.services;
+        this.selected = [preSelectedPfs];
+        this.select({ item: preSelectedPfs, value: true });
       }
       const tokens = this.services
         .map(value => value.token)
@@ -195,81 +181,41 @@ export default class PathfindingServices extends Vue {
   token(address: string): Token {
     return this.$store.getters.token(address) || ({ address } as Token);
   }
-
-  setSelected(selected: RaidenPFS) {
-    this.selected = [];
-    this.selected.push(selected);
-  }
-
-  @Emit()
-  cancel() {
-    this.loading = false;
-    this.error = '';
-  }
-
-  @Emit()
-  confirm(): RaidenPFS {
-    const [service] = this.selected;
-    return service;
-  }
 }
 </script>
 
 <style scoped lang="scss">
 @import '../scss/colors';
+
 .pathfinding-services {
-  padding: 20px;
-  background-color: $dialog-background;
-  box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
-}
+  &__wrapper > * {
+    width: 250px;
+    text-align: center;
+  }
 
-.pathfinding-services__wrapper > * {
-  width: 250px;
-  text-align: center;
-}
+  &__error {
+    height: 86px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 
-.pathfinding-services__loading {
-  height: 72px;
-}
+  &__table {
+    margin-bottom: 20px;
 
-.pathfinding-services__error {
-  height: 86px;
-  padding-left: 16px;
-  padding-right: 16px;
-}
+    &.v-data-table {
+      background-color: transparent !important;
+    }
+    ::v-deep tr:hover {
+      background: $primary-disabled-color !important;
+    }
 
-.pathfinding-services__table {
-  margin-bottom: 20px;
-}
-
-.pathfinding-services__table.v-data-table {
-  background-color: transparent !important;
-}
-
-.pathfinding-services__table ::v-deep tr:hover {
-  background: $primary-disabled-color !important;
-}
-
-.pathfinding-services__table ::v-deep .v-icon {
-  color: $primary-color;
-}
-
-.pathfinding-services__buttons button {
-  height: 35px;
-  width: 135px;
-  color: white;
-  border-radius: 29px;
-  margin-left: 15px;
-  margin-right: 15px;
-}
-
-.pathfinding-services__buttons__cancel {
-  background-color: transparent !important;
-  border: 2px solid $primary-color;
-}
-
-.pathfinding-services__buttons__confirm {
-  background-color: $primary-color !important;
-  color: #ffffff;
+    ::v-deep .v-icon {
+      color: $primary-color;
+    }
+    ::v-deep th {
+      color: rgba($color-white, 0.5);
+      font-size: 15px;
+    }
+  }
 }
 </style>

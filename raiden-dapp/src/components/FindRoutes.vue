@@ -1,9 +1,7 @@
 <template>
   <v-row class="find-routes" align="center" justify="center" no-gutters>
     <v-col cols="12">
-      <h2 v-if="busy">{{ $t('find-routes.busy-title') }}</h2>
-      <h2 v-else-if="!busy && error">{{ $t('find-routes.error.title') }}</h2>
-      <h2 v-else>{{ $t('find-routes.title') }}</h2>
+      <h2 v-if="!busy && error">{{ $t('find-routes.error.title') }}</h2>
 
       <p v-if="!busy && !error">{{ $t('find-routes.description') }}</p>
 
@@ -13,15 +11,10 @@
         justify="center"
         class="find-routes__spinner-wrapper"
       >
-        <v-progress-circular
-          :size="110"
-          :width="7"
-          class="stepper__card__content--progress"
-          indeterminate
-        ></v-progress-circular>
+        <spinner />
       </v-row>
       <v-row v-else-if="!busy && error">
-        <p>{{ error }}</p>
+        <p class="find-routes__error">{{ error }}</p>
       </v-row>
       <v-row v-else align="center" justify="center">
         <v-form>
@@ -37,6 +30,7 @@
             sort-by="fee"
             item-key="key"
             class="find-routes__table"
+            @item-selected="select($event)"
           >
             <template #items="props">
               <tr
@@ -47,37 +41,10 @@
                   <v-checkbox v-model="props.selected" primary></v-checkbox>
                 </td>
                 <td class="text-right">{{ props.item.hops }}</td>
-                <td class="text-right">
-                  {{ props.item.displayFee }}
-                </td>
+                <td class="text-right">{{ props.item.displayFee }}</td>
               </tr>
             </template>
           </v-data-table>
-          <p class="find-routes__total-amount">
-            {{
-              $t('find-routes.total-amount', {
-                totalAmount: convertToUnits(totalAmount, token.decimals),
-                token: token.symbol
-              })
-            }}
-          </p>
-          <v-row align="end" justify="center" class="find-routes__buttons">
-            <v-btn
-              light
-              class="text-capitalize find-routes__buttons__cancel"
-              @click="cancel()"
-            >
-              {{ $t('general.buttons.cancel') }}
-            </v-btn>
-            <v-btn
-              :disabled="selected.length === 0"
-              light
-              class="text-capitalize find-routes__buttons__confirm"
-              @click="confirm()"
-            >
-              {{ $t('general.buttons.transfer') }}
-            </v-btn>
-          </v-row>
         </v-form>
       </v-row>
     </v-col>
@@ -89,10 +56,11 @@ import { BigNumber } from 'ethers/utils';
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 
 import { BalanceUtils } from '@/utils/balance-utils';
+import Spinner from '@/components/Spinner.vue';
 import { Token, Route } from '@/model/types';
 import { RaidenPFS } from 'raiden-ts';
 
-@Component({})
+@Component({ components: { Spinner } })
 export default class FindRoutes extends Vue {
   @Prop({ required: true })
   token!: Token;
@@ -111,7 +79,6 @@ export default class FindRoutes extends Vue {
   headers: { text: string; align: string; value: string }[] = [];
   selected: Route[] = [];
   routes: Route[] = [];
-  convertToUnits = BalanceUtils.toUnits;
 
   mounted() {
     this.headers = [
@@ -130,19 +97,6 @@ export default class FindRoutes extends Vue {
     ];
 
     this.findRoutes();
-  }
-
-  get totalAmount(): BigNumber {
-    const [selectedRoute] = this.selected;
-    const { decimals } = this.token;
-    const transfer: BigNumber = BalanceUtils.parse(this.amount, decimals!);
-
-    if (selectedRoute) {
-      // Return transferable amount plus fees
-      return transfer.add(selectedRoute.fee);
-    }
-
-    return transfer;
   }
 
   async findRoutes(): Promise<void> {
@@ -172,7 +126,9 @@ export default class FindRoutes extends Vue {
         );
 
         // Pre select the cheapest route
-        this.selected = [this.routes[0]];
+        const [route] = this.routes;
+        this.selected = [route];
+        this.select({ item: route, value: true });
       }
     } catch (e) {
       this.error = e.message;
@@ -182,86 +138,46 @@ export default class FindRoutes extends Vue {
   }
 
   @Emit()
-  cancel() {
-    this.busy = false;
-  }
+  select({ item, value }: { item: Route; value: boolean }): Route | null {
+    // A route got selected
+    if (value) {
+      return item;
+    }
 
-  @Emit()
-  confirm(): Route {
-    const [route] = this.selected;
-    return route;
+    // A route was unselected
+    return null;
   }
 }
 </script>
 
 <style scoped lang="scss">
 @import '../scss/colors';
+
 .find-routes {
-  padding: 20px;
-  background-color: $dialog-background;
-  box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
-}
+  & > * {
+    text-align: center;
+  }
 
-.find-routes > * {
-  text-align: center;
-}
+  &__table {
+    margin-bottom: 20px;
 
-.find-routes__table {
-  margin-bottom: 20px;
-}
+    &.v-data-table {
+      background-color: transparent !important;
+    }
 
-.find-routes__table.v-data-table {
-  background-color: transparent !important;
-}
+    ::v-deep tr.v-data-table__selected {
+      background: transparent !important;
+    }
+    ::v-deep tr:hover {
+      background: $primary-disabled-color !important;
+    }
+    ::v-deep .v-icon {
+      color: $primary-color;
+    }
+  }
 
-.find-routes__table ::v-deep tr.v-data-table__selected {
-  background: transparent !important;
-}
-
-.find-routes__table ::v-deep tr:hover {
-  background: $primary-disabled-color !important;
-}
-
-.find-routes__table ::v-deep .v-icon {
-  color: $primary-color;
-}
-
-.find-routes__buttons {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-}
-
-.find-routes__spinner-wrapper {
-  margin: 20px;
-}
-
-.find-routes__buttons button {
-  height: 35px;
-  width: 135px;
-  color: white;
-  border-radius: 29px;
-  margin-left: 15px;
-  margin-right: 15px;
-}
-
-.find-routes__buttons__cancel {
-  background-color: transparent !important;
-  border: 2px solid $primary-color;
-}
-
-.find-routes__buttons__confirm {
-  background-color: $primary-color !important;
-  color: #ffffff;
-}
-
-.stepper__card__content--progress {
-  color: $secondary-color;
-}
-
-.theme--light.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
-  background-color: $primary-disabled-color !important;
-  color: #c4c4c4 !important;
+  &__spinner-wrapper {
+    margin: 20px;
+  }
 }
 </style>

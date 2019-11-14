@@ -65,7 +65,7 @@ describe('PathfindingService.vue', () => {
     jest.resetAllMocks();
   });
 
-  test('user selects PFS service from available and confirms', async () => {
+  test('user selects PFS service from available', async () => {
     $raiden.fetchServices.mockResolvedValueOnce([raidenPFS, raidenPFS2]);
     const wrapper = createWrapper();
     await wrapper.vm.$nextTick();
@@ -81,18 +81,8 @@ describe('PathfindingService.vue', () => {
       .at(1)
       .trigger('click');
     await wrapper.vm.$nextTick();
-    wrapper.find('.pathfinding-services__buttons__confirm').trigger('click');
-    expect(wrapper.emitted().confirm).toBeTruthy();
-    expect(wrapper.emitted().confirm[0][0]).toEqual(raidenPFS2);
-  });
-
-  test('the user cancels the selection', async () => {
-    $raiden.fetchServices.mockResolvedValueOnce([raidenPFS]);
-    const wrapper = createWrapper();
-    await wrapper.vm.$nextTick();
-    await flushPromises();
-    wrapper.find('.pathfinding-services__buttons__cancel').trigger('click');
-    expect(wrapper.emitted().cancel).toBeTruthy();
+    expect(wrapper.emitted().select).toBeTruthy();
+    expect(wrapper.emitted().select[0][0]).toEqual(raidenPFS);
   });
 
   test('the request fails with some error', async () => {

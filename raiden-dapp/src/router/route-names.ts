@@ -1,5 +1,6 @@
 export enum RouteNames {
   TRANSFER = 'transfer',
+  TRANSFER_STEPS = 'transfer-steps',
   SELECT_TOKEN = 'select-token',
   SELECT_HUB = 'select-hub',
   HOME = 'home',

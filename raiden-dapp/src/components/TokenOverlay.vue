@@ -135,6 +135,9 @@ export default class TokenOverlay extends Mixins(
 @import '../scss/colors';
 
 .token-network-overlay {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+
   ::v-deep .v-overlay__scrim {
     background: linear-gradient(180deg, #050505 0%, #0a1923 100%) !important;
   }

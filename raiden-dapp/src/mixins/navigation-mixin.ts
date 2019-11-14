@@ -37,11 +37,20 @@ export default class NavigationMixin extends Vue {
     });
   }
 
-  navigateToSelectTransferTarget(token: string) {
-    this.$router.push({
+  navigateToSelectTransferTarget(
+    token: string,
+    target?: string,
+    amount?: string
+  ) {
+    const route = {
       name: RouteNames.TRANSFER,
-      params: { token: token }
-    });
+      params: { token: token },
+      query: {}
+    };
+    if (target && amount) {
+      route.query = { target, amount };
+    }
+    this.$router.push(route);
   }
 
   navigateToTokenSelect() {
@@ -50,8 +59,22 @@ export default class NavigationMixin extends Vue {
     });
   }
 
+  navigateToTransferSteps(target: string, amount: string) {
+    this.$router.push({
+      name: RouteNames.TRANSFER_STEPS,
+      params: { target, amount }
+    });
+  }
+
   onBackClicked() {
     switch (this.$route.name) {
+      case RouteNames.TRANSFER_STEPS:
+        this.navigateToSelectTransferTarget(
+          this.$route.params.token,
+          this.$route.params.target,
+          this.$route.params.amount
+        );
+        break;
       case RouteNames.TRANSFER:
       case RouteNames.CHANNELS:
       case RouteNames.SELECT_TOKEN:
