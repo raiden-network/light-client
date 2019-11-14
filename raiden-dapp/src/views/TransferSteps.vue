@@ -282,7 +282,7 @@ export default class TransferSteps extends Mixins(
 @import '../scss/colors';
 
 .transfer-steps {
-  background: transparent;
+  background: transparent !important;
   box-shadow: none;
   width: 100%;
   position: relative;
