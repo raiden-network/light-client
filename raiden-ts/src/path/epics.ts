@@ -77,17 +77,12 @@ const PathError = t.readonly(
 );
 interface PathError extends t.TypeOf<typeof PathError> {}
 
-type IOUPayload = {
-  serviceAddress: Address;
-  signedIOU?: Signed<IOU>;
-};
-
 class InvalidPFSRequestError extends Error {
-  readonly payload: IOUPayload;
+  readonly iou: Signed<IOU> | undefined;
   readonly errorCode: number;
-  constructor(message: string, errorCode: number, payload: IOUPayload) {
+  constructor(message: string, errorCode: number, iou: Signed<IOU> | undefined) {
     super(message);
-    this.payload = payload;
+    this.iou = iou;
     this.errorCode = errorCode;
   }
 }
@@ -236,12 +231,15 @@ export const pathFindServiceEpic = (
               if (!(target in presences) || !presences[target].payload.available)
                 throw new Error(`PFS: target ${target} not online`);
               // if pathFind received a set of paths, pass it through to validation/cleanup
-              if (action.payload.paths) return of(action.payload.paths);
+              if (action.payload.paths) return of({ paths: action.payload.paths, iou: undefined });
               // else, if possible, use a direct transfer
               else if (
                 channelCanRoute(state, presences, tokenNetwork, target, action.meta.value) === true
               ) {
-                return of([{ path: [state.address, target], fee: Zero as Int<32> }]);
+                return of({
+                  paths: [{ path: [state.address, target], fee: Zero as Int<32> }],
+                  iou: undefined,
+                });
               } else if (!action.payload.pfs && configPfs === null) {
                 // pfs not specified in action and disabled (null) in config
                 throw new Error(`PFS disabled and no direct route available`);
@@ -269,12 +267,12 @@ export const pathFindServiceEpic = (
                 return pfs$.pipe(
                   mergeMap(pfs =>
                     pfs.price.isZero()
-                      ? of<[undefined, PFS]>([undefined, pfs])
+                      ? of([undefined, pfs] as const)
                       : prepareNextIOU$(state, pfs, deps, httpTimeout, tokenNetwork).pipe(
-                          map((signedIou): [Signed<IOU>, PFS] => [signedIou, pfs]),
+                          map(iou => [iou, pfs] as const),
                         ),
                   ),
-                  mergeMap(([signedIOU, pfs]) =>
+                  mergeMap(([iou, pfs]) =>
                     fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -283,44 +281,32 @@ export const pathFindServiceEpic = (
                         to: target,
                         value: UInt(32).encode(action.meta.value),
                         max_paths: 10,
-                        iou: signedIOU
+                        iou: iou
                           ? {
-                              ...signedIOU,
-                              amount: UInt(32).encode(signedIOU.amount),
-                              expiration_block: UInt(32).encode(signedIOU.expiration_block),
-                              chain_id: UInt(32).encode(signedIOU.chain_id),
+                              ...iou,
+                              amount: UInt(32).encode(iou.amount),
+                              expiration_block: UInt(32).encode(iou.expiration_block),
+                              chain_id: UInt(32).encode(iou.chain_id),
                             }
                           : undefined,
                       }),
-                    }).pipe(
-                      map((response): [Response, IOUPayload] => [
-                        response,
-                        {
-                          serviceAddress: pfs.address,
-                          signedIOU: signedIOU,
-                        },
-                      ]),
-                    ),
+                    }).pipe(map(response => [response, iou] as const)),
                   ),
                   timeout(httpTimeout),
-                  mergeMap(
-                    async ([response, payload]): Promise<
-                      [PathResults, IOUPayload | undefined]
-                    > => {
-                      const text = await response.text();
-                      const data = losslessParse(text);
-                      if (!response.ok) {
-                        throw new InvalidPFSRequestError(
-                          `PFS: paths request: code=${response.status} => body="${text}"`,
-                          decode(PathError, data).error_code,
-                          payload,
-                        );
-                      }
-                      return [decode(PathResults, data), payload];
-                    },
-                  ),
-                  map(([results, iou]): [Paths, IOUPayload | undefined] => [
-                    results.result.map(r => ({
+                  mergeMap(async ([response, iou]) => {
+                    const text = await response.text();
+                    const data = losslessParse(text);
+                    if (!response.ok) {
+                      throw new InvalidPFSRequestError(
+                        `PFS: paths request: code=${response.status} => body="${text}"`,
+                        decode(PathError, data).error_code,
+                        iou,
+                      );
+                    }
+                    return [decode(PathResults, data), iou] as const;
+                  }),
+                  map(([results, iou]) => ({
+                    paths: results.result.map(r => ({
                       path: r.path,
                       // Add PFS safety margin to estimated fees
                       fee: r.estimated_fee.mul(Math.round(pfsSafetyMargin * 1e6)).div(1e6) as Int<
@@ -328,24 +314,23 @@ export const pathFindServiceEpic = (
                       >,
                     })),
                     iou,
-                  ]),
+                  })),
                 );
               }
             }),
             withLatestFrom(cached$),
             // validate/cleanup received routes/paths/results
-            mergeMap(function*([[paths, payload], [state, presences]]) {
-              if (payload) {
-                const { signedIOU, serviceAddress } = payload as IOUPayload;
+            mergeMap(function*([{ paths, iou }, [state, presences]]) {
+              if (iou) {
                 yield persistIOU(
-                  { signedIOU: signedIOU! },
-                  { tokenNetwork: action.meta.tokenNetwork, serviceAddress },
+                  { iou },
+                  { tokenNetwork: action.meta.tokenNetwork, serviceAddress: iou.receiver },
                 );
               }
               const filteredPaths: Paths = [],
                 invalidatedRecipients = new Set<Address>();
               // eslint-disable-next-line prefer-const
-              for (let { path, fee } of paths as Paths) {
+              for (let { path, fee } of paths) {
                 // if route has us as first hop, cleanup/shift
                 if (path[0] === state.address) path = path.slice(1);
                 const recipient = path[0];
@@ -381,22 +366,18 @@ export const pathFindServiceEpic = (
               yield pathFound({ paths: filteredPaths }, action.meta);
             }),
             catchError(function*(err) {
-              if (err instanceof InvalidPFSRequestError) {
+              const iou = err.iou;
+              if (err instanceof InvalidPFSRequestError && iou) {
                 if (err.errorCode === 2201) {
-                  const { signedIOU, serviceAddress } = err.payload;
                   yield persistIOU(
-                    { signedIOU: signedIOU! },
-                    { tokenNetwork: action.meta.tokenNetwork, serviceAddress },
+                    { iou },
+                    { tokenNetwork: action.meta.tokenNetwork, serviceAddress: iou.receiver },
                   );
                 } else {
-                  const { serviceAddress } = err.payload;
-                  yield clearIOU(
-                    {},
-                    {
-                      tokenNetwork: action.meta.tokenNetwork,
-                      serviceAddress,
-                    },
-                  );
+                  yield clearIOU(undefined, {
+                    tokenNetwork: action.meta.tokenNetwork,
+                    serviceAddress: iou.receiver,
+                  });
                 }
               }
               yield pathFindFailed(err, action.meta);

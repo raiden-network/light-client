@@ -16,7 +16,7 @@ import { set, unset } from 'lodash/fp';
 function path(state: RaidenState['path'] = initialState.path, action: RaidenAction) {
   if (isActionOf(persistIOU, action)) {
     const path = ['iou', action.meta.tokenNetwork, action.meta.serviceAddress];
-    return set(path, action.payload.signedIOU, state);
+    return set(path, action.payload.iou, state);
   } else if (isActionOf(clearIOU, action)) {
     const path = ['iou', action.meta.tokenNetwork, action.meta.serviceAddress];
     return unset(path, state);
