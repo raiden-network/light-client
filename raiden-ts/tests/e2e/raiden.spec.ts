@@ -744,6 +744,13 @@ describe('Raiden', () => {
           text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
         });
 
+        fetch.mockResolvedValueOnce({
+          ok: true,
+          status: 404,
+          json: jest.fn(async () => {}),
+          text: jest.fn(async () => losslessStringify({})),
+        });
+
         const result = {
           result: [
             // first returned route is invalid and should be filtered
@@ -893,6 +900,13 @@ describe('Raiden', () => {
     test('success with config.pfs', async () => {
       expect.assertions(4);
 
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 404,
+        json: jest.fn(async () => {}),
+        text: jest.fn(async () => losslessStringify({})),
+      });
+
       const result = {
         result: [
           // first returned route is invalid and should be filtered
@@ -922,7 +936,7 @@ describe('Raiden', () => {
     });
 
     test('success with findPFS', async () => {
-      expect.assertions(6);
+      expect.assertions(7);
 
       // config.pfs in auto mode
       raiden.updateConfig({ pfs: undefined });
@@ -937,6 +951,13 @@ describe('Raiden', () => {
           token: expect.any(String),
         },
       ]);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 404,
+        json: jest.fn(async () => {}),
+        text: jest.fn(async () => losslessStringify({})),
+      });
 
       const result = {
         result: [
@@ -966,6 +987,11 @@ describe('Raiden', () => {
       );
 
       expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`^${pfsUrl}/.*/iou`)),
+        expect.anything(),
+      );
+
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringMatching(new RegExp(`^${pfsUrl}/.*/${tokenNetwork}/paths$`)),
         expect.objectContaining({ method: 'POST' }),
       );
@@ -973,6 +999,13 @@ describe('Raiden', () => {
 
     test('fail: filtered no capacity routes', async () => {
       expect.assertions(3);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 404,
+        json: jest.fn(async () => {}),
+        text: jest.fn(async () => losslessStringify({})),
+      });
 
       const result = {
         result: [
