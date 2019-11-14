@@ -28,9 +28,9 @@ export const pfsListUpdated = createStandardAction('pfsListUpdated')<{
 
 export const persistIOU = createStandardAction('persistIOU')<
   {
-    signedIOU: Signed<IOU>;
+    iou: Signed<IOU>;
   },
   ServiceId
 >();
 
-export const clearIOU = createStandardAction('clearIOU')<{}, ServiceId>();
+export const clearIOU = createStandardAction('clearIOU')<undefined, ServiceId>();
