@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^2.7.0",
-    "@typescript-eslint/parser": "^2.6.1",
+    "@typescript-eslint/parser": "^2.7.0",
     "@kazupon/vue-i18n-loader": "^0.4.1",
     "@mdi/font": "^4.5.95",
     "@types/jest": "^24.0.22",
