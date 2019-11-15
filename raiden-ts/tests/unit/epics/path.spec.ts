@@ -196,6 +196,13 @@ describe('PFS: pathFindServiceEpic', () => {
         ),
       );
 
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {}),
+      text: jest.fn(async () => losslessStringify({})),
+    });
+
     const { pfsSafetyMargin } = depsMock.config$.value;
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
@@ -231,6 +238,13 @@ describe('PFS: pathFindServiceEpic', () => {
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
       text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+    });
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {}),
+      text: jest.fn(async () => losslessStringify({})),
     });
 
     const { pfsSafetyMargin } = depsMock.config$.value;
@@ -321,6 +335,13 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
     });
 
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {}),
+      text: jest.fn(async () => losslessStringify({})),
+    });
+
     const { pfsSafetyMargin } = depsMock.config$.value;
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
@@ -397,6 +418,13 @@ describe('PFS: pathFindServiceEpic', () => {
     });
 
     fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {}),
+      text: jest.fn(async () => losslessStringify({})),
+    });
+
+    fetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
       json: jest.fn(async () => ({ error_code: 1337, errors: 'No route' })),
@@ -470,6 +498,13 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
     });
 
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {}),
+      text: jest.fn(async () => losslessStringify({})),
+    });
+
     const result = {
       result: [
         // token isn't a valid channel, should be removed from output
@@ -525,6 +560,13 @@ describe('PFS: pathFindServiceEpic', () => {
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
       text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+    });
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {}),
+      text: jest.fn(async () => losslessStringify({})),
     });
 
     const result = { result: [{ path: [partner, target], estimated_fee: 1 }] };

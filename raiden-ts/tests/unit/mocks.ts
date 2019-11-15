@@ -52,6 +52,7 @@ export interface MockRaidenEpicDeps extends RaidenEpicDeps {
   getTokenNetworkContract: (address: string) => MockedContract<TokenNetwork>;
   getTokenContract: (address: string) => MockedContract<HumanStandardToken>;
   serviceRegistryContract: MockedContract<ServiceRegistry>;
+  userDepositContract: MockedContract<UserDeposit>;
 }
 
 /**
@@ -182,6 +183,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   for (const func in userDepositContract.functions) {
     jest.spyOn(userDepositContract.functions, func as keyof UserDeposit['functions']);
   }
+
+  userDepositContract.functions.one_to_n_address.mockResolvedValue(
+    '0x0900000000000000000000000000000000000009',
+  );
 
   const contractsInfo: ContractsInfo = {
       TokenNetworkRegistry: {
