@@ -26,8 +26,8 @@ import {
   pathFind,
   pathFindFailed,
   pfsListUpdated,
-  persistIOU,
-  clearIOU,
+  iouPersist,
+  iouClear,
 } from 'raiden-ts/path/actions';
 import { RaidenState } from 'raiden-ts/state';
 import { messageGlobalSend } from 'raiden-ts/messages/actions';
@@ -356,7 +356,7 @@ describe('PFS: pathFindServiceEpic', () => {
         .pipe(toArray())
         .toPromise(),
     ).resolves.toMatchObject([
-      persistIOU(
+      iouPersist(
         {
           iou: expect.objectContaining({
             amount: bigNumberify(4),
@@ -548,7 +548,7 @@ describe('PFS: pathFindServiceEpic', () => {
     state$.next(
       raidenReducer(
         state$.value,
-        persistIOU({ iou }, { tokenNetwork, serviceAddress: iou.receiver }),
+        iouPersist({ iou }, { tokenNetwork, serviceAddress: iou.receiver }),
       ),
     );
 
@@ -585,7 +585,7 @@ describe('PFS: pathFindServiceEpic', () => {
         .pipe(toArray())
         .toPromise(),
     ).resolves.toMatchObject([
-      persistIOU(
+      iouPersist(
         {
           iou: expect.objectContaining({
             amount: bigNumberify(102),
@@ -783,7 +783,7 @@ describe('PFS: pathFindServiceEpic', () => {
         .pipe(toArray())
         .toPromise(),
     ).resolves.toMatchObject([
-      persistIOU(
+      iouPersist(
         {
           iou: expect.objectContaining({
             amount: bigNumberify(102),
@@ -937,7 +937,7 @@ describe('PFS: pathFindServiceEpic', () => {
         .pipe(toArray())
         .toPromise(),
     ).resolves.toMatchObject([
-      clearIOU(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
+      iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
       pathFindFailed(
         expect.objectContaining({
           message: expect.stringContaining('The IOU is already claimed'),
@@ -1206,7 +1206,7 @@ describe('PFS: reducer', () => {
 
     const newState = raidenReducer(
       state,
-      persistIOU({ iou }, { tokenNetwork, serviceAddress: iou.receiver }),
+      iouPersist({ iou }, { tokenNetwork, serviceAddress: iou.receiver }),
     );
 
     expect(newState.path.iou).toMatchObject({
@@ -1217,7 +1217,7 @@ describe('PFS: reducer', () => {
 
     const lastState = raidenReducer(
       newState,
-      clearIOU(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
+      iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
     );
 
     expect(lastState.path.iou).toMatchObject({

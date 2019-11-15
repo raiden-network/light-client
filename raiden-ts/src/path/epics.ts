@@ -47,11 +47,11 @@ import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
 import {
-  clearIOU,
+  iouClear,
   pathFind,
   pathFindFailed,
   pathFound,
-  persistIOU,
+  iouPersist,
   pfsListUpdated,
 } from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
@@ -224,7 +224,7 @@ export const pathFindServiceEpic = (
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<
-  ActionType<typeof pathFound | typeof pathFindFailed | typeof persistIOU | typeof clearIOU>
+  ActionType<typeof pathFound | typeof pathFindFailed | typeof iouPersist | typeof iouClear>
 > =>
   combineLatest(
     state$,
@@ -340,7 +340,7 @@ export const pathFindServiceEpic = (
             // validate/cleanup received routes/paths/results
             mergeMap(function*([{ paths, iou }, [state, presences]]) {
               if (iou) {
-                yield persistIOU(
+                yield iouPersist(
                   { iou },
                   { tokenNetwork: action.meta.tokenNetwork, serviceAddress: iou.receiver },
                 );
@@ -390,12 +390,12 @@ export const pathFindServiceEpic = (
               const iou = err.iou;
               if (err instanceof InvalidPFSRequestError && iou) {
                 if (err.errorCode === 2201) {
-                  yield persistIOU(
+                  yield iouPersist(
                     { iou },
                     { tokenNetwork: action.meta.tokenNetwork, serviceAddress: iou.receiver },
                   );
                 } else {
-                  yield clearIOU(undefined, {
+                  yield iouClear(undefined, {
                     tokenNetwork: action.meta.tokenNetwork,
                     serviceAddress: iou.receiver,
                   });

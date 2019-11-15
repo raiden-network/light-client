@@ -26,11 +26,11 @@ export const pfsListUpdated = createStandardAction('pfsListUpdated')<{
   pfsList: readonly Address[];
 }>();
 
-export const persistIOU = createStandardAction('persistIOU')<
+export const iouPersist = createStandardAction('iouPersist')<
   {
     iou: Signed<IOU>;
   },
   ServiceId
 >();
 
-export const clearIOU = createStandardAction('clearIOU')<undefined, ServiceId>();
+export const iouClear = createStandardAction('iouClear')<undefined, ServiceId>();
