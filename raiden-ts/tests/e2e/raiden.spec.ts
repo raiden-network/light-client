@@ -243,6 +243,14 @@ describe('Raiden', () => {
     });
   });
 
+  describe('getUDCBalances', () => {
+    // TODO: After UDC deposit function becomes available enhance the tests
+    test('no balance', async () => {
+      expect.assertions(1);
+      await expect(raiden.getUDCBalance()).resolves.toEqual(Zero);
+    });
+  });
+
   describe('openChannel', () => {
     test('tx fail', async () => {
       expect.assertions(1);
