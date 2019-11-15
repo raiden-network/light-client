@@ -55,6 +55,11 @@ import { memoize } from 'lodash/fp';
 import { UserDeposit } from '../contracts/UserDeposit';
 import * as t from 'io-ts';
 
+const oneToNAddress = memoize(
+  async (userDepositContract: UserDeposit) =>
+    userDepositContract.functions.one_to_n_address() as Promise<Address>,
+);
+
 /**
  * Codec for PFS API returned error
  */
@@ -75,7 +80,6 @@ const PathError = t.readonly(
     }),
   ]),
 );
-interface PathError extends t.TypeOf<typeof PathError> {}
 
 class InvalidPFSRequestError extends Error {
   readonly iou: Signed<IOU> | undefined;
@@ -168,10 +172,6 @@ const prepareNextIOU$ = (
         timeout(httpTimeout),
         mergeMap(async response => {
           const text = await response.text();
-          const oneToNAddress = memoize(
-            async (userDepositContract: UserDeposit) =>
-              userDepositContract.functions.one_to_n_address() as Promise<Address>,
-          );
           if (response.status === 404) {
             return makeIOU(
               state.address,
