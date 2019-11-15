@@ -61,6 +61,7 @@ import { Signer } from 'ethers';
 import { memoize } from 'lodash/fp';
 import { UserDeposit } from '../contracts/UserDeposit';
 import * as t from 'io-ts';
+import get from 'lodash/get';
 
 const oneToNAddress = memoize(
   async (userDepositContract: UserDeposit) =>
