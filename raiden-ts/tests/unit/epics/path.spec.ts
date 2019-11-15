@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { of, BehaviorSubject, EMPTY, timer } from 'rxjs';
-import { first, takeUntil } from 'rxjs/operators';
+import { first, takeUntil, toArray } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
 import { getType } from 'typesafe-actions';
 
-import { UInt, Int, Address } from 'raiden-ts/utils/types';
+import { UInt, Int, Address, Signature } from 'raiden-ts/utils/types';
 import {
   newBlock,
   tokenMonitored,
@@ -21,7 +21,14 @@ import {
   pfsCapacityUpdateEpic,
   pfsServiceRegistryMonitorEpic,
 } from 'raiden-ts/path/epics';
-import { pathFound, pathFind, pathFindFailed, pfsListUpdated } from 'raiden-ts/path/actions';
+import {
+  pathFound,
+  pathFind,
+  pathFindFailed,
+  pfsListUpdated,
+  persistIOU,
+  clearIOU,
+} from 'raiden-ts/path/actions';
 import { RaidenState } from 'raiden-ts/state';
 import { messageGlobalSend } from 'raiden-ts/messages/actions';
 import { MessageType } from 'raiden-ts/messages/types';
@@ -48,6 +55,7 @@ describe('PFS: pathFindServiceEpic', () => {
     pfsAddress,
     pfsTokenAddress,
     pfsInfoResponse,
+    iou,
   } = epicFixtures(depsMock);
 
   const openBlock = 121,
@@ -344,8 +352,18 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const { pfsSafetyMargin } = depsMock.config$.value;
     await expect(
-      pathFindServiceEpic(action$, state$, depsMock).toPromise(),
-    ).resolves.toMatchObject(
+      pathFindServiceEpic(action$, state$, depsMock)
+        .pipe(toArray())
+        .toPromise(),
+    ).resolves.toMatchObject([
+      persistIOU(
+        {
+          iou: expect.objectContaining({
+            amount: bigNumberify(4),
+          }),
+        },
+        { tokenNetwork, serviceAddress: iou.receiver },
+      ),
       pathFound(
         {
           paths: [
@@ -359,8 +377,8 @@ describe('PFS: pathFindServiceEpic', () => {
         },
         { tokenNetwork, target, value },
       ),
-    );
-    expect(fetch).toHaveBeenCalledTimes(4 + 1); // 3,4,5,0 addresses, + paths for chosen one
+    ]);
+    expect(fetch).toHaveBeenCalledTimes(4 + 1 + 1); // 3,4,5,0 addresses, + last iou + paths for chosen one
     expect(fetch).toHaveBeenCalledWith(
       expect.stringMatching(/^https:\/\/domain.only.url\/.*\/info/),
       expect.anything(),
@@ -479,6 +497,107 @@ describe('PFS: pathFindServiceEpic', () => {
         },
       ),
     );
+  });
+
+  test('success with free pfs and valid route', async () => {
+    expect.assertions(1);
+
+    const value = bigNumberify(100) as UInt<32>,
+      action$ = of(
+        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        pathFind({}, { tokenNetwork, target, value }),
+      );
+
+    const freePfsInfoResponse = { ...pfsInfoResponse, price_info: 0 };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => freePfsInfoResponse),
+      text: jest.fn(async () => losslessStringify(freePfsInfoResponse)),
+    });
+
+    const result = {
+      result: [
+        // valid route
+        { path: [partner, target], estimated_fee: 1 },
+      ],
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => result),
+      text: jest.fn(async () => losslessStringify(result)),
+    });
+
+    await expect(
+      pathFindServiceEpic(action$, state$, depsMock).toPromise(),
+    ).resolves.toMatchObject(
+      pathFound(
+        { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] },
+        { tokenNetwork, target, value },
+      ),
+    );
+  });
+
+  test('success with cached iou and valid route', async () => {
+    expect.assertions(1);
+
+    state$.next(
+      raidenReducer(
+        state$.value,
+        persistIOU({ iou }, { tokenNetwork, serviceAddress: iou.receiver }),
+      ),
+    );
+
+    const value = bigNumberify(100) as UInt<32>,
+      action$ = of(
+        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        pathFind({}, { tokenNetwork, target, value }),
+      );
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+    });
+
+    const result = {
+      result: [
+        // valid route
+        { path: [partner, target], estimated_fee: 1 },
+      ],
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => result),
+      text: jest.fn(async () => losslessStringify(result)),
+    });
+
+    await expect(
+      pathFindServiceEpic(action$, state$, depsMock)
+        .pipe(toArray())
+        .toPromise(),
+    ).resolves.toMatchObject([
+      persistIOU(
+        {
+          iou: expect.objectContaining({
+            amount: bigNumberify(102),
+          }),
+        },
+        { tokenNetwork, serviceAddress: iou.receiver },
+      ),
+      pathFound(
+        { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] },
+        { tokenNetwork, target, value },
+      ),
+    ]);
   });
 
   test('success from config but filter out invalid pfs result routes', async () => {
@@ -612,6 +731,220 @@ describe('PFS: pathFindServiceEpic', () => {
         { tokenNetwork, target, value },
       ),
     );
+  });
+
+  test('fail no route between nodes', async () => {
+    expect.assertions(1);
+
+    const value = bigNumberify(100) as UInt<32>,
+      action$ = of(
+        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        pathFind({}, { tokenNetwork, target, value }),
+      );
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+    });
+
+    const lastIOUResult = {
+      last_iou: {
+        ...iou,
+        chain_id: UInt(32).encode(iou.chain_id),
+        amount: UInt(32).encode(iou.amount),
+        expiration_block: UInt(32).encode(iou.expiration_block),
+      },
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => lastIOUResult),
+      text: jest.fn(async () => losslessStringify(lastIOUResult)),
+    });
+
+    const errorResult = {
+      errors: 'No route between nodes found.',
+      error_code: 2201,
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      json: jest.fn(async () => errorResult),
+      text: jest.fn(async () => losslessStringify(errorResult)),
+    });
+
+    await expect(
+      pathFindServiceEpic(action$, state$, depsMock)
+        .pipe(toArray())
+        .toPromise(),
+    ).resolves.toMatchObject([
+      persistIOU(
+        {
+          iou: expect.objectContaining({
+            amount: bigNumberify(102),
+          }),
+        },
+        { tokenNetwork, serviceAddress: iou.receiver },
+      ),
+      pathFindFailed(
+        expect.objectContaining({
+          message: expect.stringContaining('No route between nodes found.'),
+        }),
+        { tokenNetwork, target, value },
+      ),
+    ]);
+  });
+
+  test('fail last iou server error', async () => {
+    expect.assertions(1);
+
+    const value = bigNumberify(100) as UInt<32>,
+      action$ = of(
+        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        pathFind({}, { tokenNetwork, target, value }),
+      );
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+    });
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: jest.fn(async () => {}),
+      text: jest.fn(async () => losslessStringify({})),
+    });
+
+    await expect(
+      pathFindServiceEpic(action$, state$, depsMock)
+        .pipe(toArray())
+        .toPromise(),
+    ).resolves.toMatchObject([
+      pathFindFailed(
+        expect.objectContaining({
+          message: expect.stringContaining('last IOU request: code=500'),
+        }),
+        { tokenNetwork, target, value },
+      ),
+    ]);
+  });
+
+  test('fail last iou invalid signature', async () => {
+    expect.assertions(1);
+
+    const value = bigNumberify(100) as UInt<32>,
+      action$ = of(
+        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        pathFind({}, { tokenNetwork, target, value }),
+      );
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+    });
+
+    const lastIOUResult = {
+      last_iou: {
+        ...iou,
+        chain_id: UInt(32).encode(iou.chain_id),
+        amount: UInt(32).encode(iou.amount),
+        expiration_block: UInt(32).encode(iou.expiration_block),
+        signature: '0x87ea2a9c6834513dcabfca011c4422eb02a824b8bbbfc8f555d6a6dd2ebbbe953e1a47ad27b9715d8c8cf2da833f7b7d6c8f9bdb997591b7234999901f042caf1f' as Signature,
+      },
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => lastIOUResult),
+      text: jest.fn(async () => losslessStringify(lastIOUResult)),
+    });
+
+    await expect(
+      pathFindServiceEpic(action$, state$, depsMock)
+        .pipe(toArray())
+        .toPromise(),
+    ).resolves.toMatchObject([
+      pathFindFailed(
+        expect.objectContaining({
+          message: expect.stringContaining('last iou signature mismatch'),
+        }),
+        { tokenNetwork, target, value },
+      ),
+    ]);
+  });
+
+  test('fail iou already claimed', async () => {
+    expect.assertions(1);
+
+    const value = bigNumberify(100) as UInt<32>,
+      action$ = of(
+        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        pathFind({}, { tokenNetwork, target, value }),
+      );
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+    });
+
+    const lastIOUResult = {
+      last_iou: {
+        ...iou,
+        chain_id: UInt(32).encode(iou.chain_id),
+        amount: UInt(32).encode(iou.amount),
+        expiration_block: UInt(32).encode(iou.expiration_block),
+      },
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => lastIOUResult),
+      text: jest.fn(async () => losslessStringify(lastIOUResult)),
+    });
+
+    const result = {
+      errors:
+        'The IOU is already claimed. Please start new session with different `expiration_block`.',
+      error_code: 2105,
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: jest.fn(async () => result),
+      text: jest.fn(async () => losslessStringify(result)),
+    });
+
+    await expect(
+      pathFindServiceEpic(action$, state$, depsMock)
+        .pipe(toArray())
+        .toPromise(),
+    ).resolves.toMatchObject([
+      clearIOU(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
+      pathFindFailed(
+        expect.objectContaining({
+          message: expect.stringContaining('The IOU is already claimed'),
+        }),
+        { tokenNetwork, target, value },
+      ),
+    ]);
   });
 
   test('fail pfs disabled', async () => {
@@ -861,5 +1194,34 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
     );
 
     await expect(promise).resolves.toBeUndefined();
+  });
+});
+
+describe('PFS: reducer', () => {
+  test('persist and clear', () => {
+    expect.assertions(2);
+
+    const depsMock = raidenEpicDeps();
+    const { iou, state, tokenNetwork } = epicFixtures(depsMock);
+
+    const newState = raidenReducer(
+      state,
+      persistIOU({ iou }, { tokenNetwork, serviceAddress: iou.receiver }),
+    );
+
+    expect(newState.path.iou).toMatchObject({
+      [tokenNetwork]: {
+        [iou.receiver]: iou,
+      },
+    });
+
+    const lastState = raidenReducer(
+      newState,
+      clearIOU(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
+    );
+
+    expect(lastState.path.iou).toMatchObject({
+      [tokenNetwork]: {},
+    });
   });
 });

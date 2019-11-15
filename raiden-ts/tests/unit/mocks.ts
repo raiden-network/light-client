@@ -185,7 +185,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   }
 
   userDepositContract.functions.one_to_n_address.mockResolvedValue(
-    '0x0900000000000000000000000000000000000009',
+    '0x0A0000000000000000000000000000000000000a',
   );
 
   const contractsInfo: ContractsInfo = {
