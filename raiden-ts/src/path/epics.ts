@@ -22,7 +22,14 @@ import {
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { ActionType, isActionOf } from 'typesafe-actions';
-import { BigNumber, bigNumberify, hexDataLength, hexlify, toUtf8Bytes } from 'ethers/utils';
+import {
+  BigNumber,
+  bigNumberify,
+  hexDataLength,
+  hexlify,
+  toUtf8Bytes,
+  verifyMessage,
+} from 'ethers/utils';
 import { Two, Zero } from 'ethers/constants';
 import { Event } from 'ethers/contract';
 
@@ -112,18 +119,21 @@ const updateIOU = (iou: IOU, price: UInt<32>): IOU => ({
   amount: iou.amount.add(price) as UInt<32>,
 });
 
+const packIOU = (iou: IOU) =>
+  concat([
+    encode(iou.one_to_n_address, 20),
+    encode(iou.chain_id, 32),
+    encode(MessageTypeId.IOU, 32),
+    encode(iou.sender, 20),
+    encode(iou.receiver, 20),
+    encode(iou.amount, 32),
+    encode(iou.expiration_block, 32),
+  ]);
+
 const signIOU$ = (iou: IOU, signer: Signer): Observable<Signed<IOU>> =>
-  from(signer.signMessage(
-    concat([
-      encode(iou.one_to_n_address, 20),
-      encode(iou.chain_id, 32),
-      encode(MessageTypeId.IOU, 32),
-      encode(iou.sender, 20),
-      encode(iou.receiver, 20),
-      encode(iou.amount, 32),
-      encode(iou.expiration_block, 32),
-    ]),
-  ) as Promise<Signature>).pipe(map(signature => ({ ...iou, signature })));
+  from(signer.signMessage(packIOU(iou)) as Promise<Signature>).pipe(
+    map(signature => ({ ...iou, signature })),
+  );
 
 const makeAndSignLastIOURequest$ = (sender: Address, receiver: Address, signer: Signer) =>
   defer(() => {
@@ -184,7 +194,14 @@ const prepareNextIOU$ = (
           }
           if (!response.ok)
             throw new Error(`PFS: last IOU request: code=${response.status} => body="${text}"`);
-          return decode(LastIOUResults, losslessParse(text)).last_iou;
+
+          const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
+          const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
+          if (signer !== state.address)
+            throw new Error(
+              `PFS: last iou signature mismatch: signer=${signer} instead of us ${state.address}`,
+            );
+          return lastIou;
         }),
       )
   ).pipe(

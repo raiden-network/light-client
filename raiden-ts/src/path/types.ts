@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 import { BigNumberish } from 'ethers/utils';
-import { Address, Int, UInt } from '../utils/types';
+import { Address, Int, Signed, UInt } from '../utils/types';
 
 /**
  * Codec for PFS API returned data
@@ -92,7 +92,7 @@ export interface IOU extends t.TypeOf<typeof IOU> {}
 export const LastIOUResults = t.readonly(
   t.type({
     // eslint-disable-next-line @typescript-eslint/camelcase
-    last_iou: IOU,
+    last_iou: Signed(IOU),
   }),
 );
 
