@@ -46,6 +46,62 @@
 
         <v-stepper-items>
           <v-stepper-content step="1">
+            <v-row
+              justify="center"
+              align-content="center"
+              no-gutters=""
+              class="udc-balance__container"
+            >
+              <v-col cols="10">
+                <span class="udc-balance__amount">
+                  <!-- TODO: Compute correct token and UDC balance -->
+                  {{
+                    this.$t('transfer.steps.request-route.udc-amount', {
+                      amount: 0,
+                      token: 'SVT'
+                    })
+                  }}
+                </span>
+                <v-dialog
+                  v-model="showMintDeposit"
+                  max-width="425"
+                  class="udc-balance__dialog-container"
+                >
+                  <template #activator="{ on }">
+                    <v-btn
+                      text
+                      icon
+                      x-large
+                      class="udc-balance__deposit"
+                      @click="showMintDeposit = true"
+                      v-on="on"
+                    >
+                      <v-icon color="primary">play_for_work</v-icon>
+                    </v-btn>
+                  </template>
+                  <mint-deposit-dialog
+                    @cancel="showMintDeposit = false"
+                    @done="showMintDeposit = false"
+                  />
+                </v-dialog>
+              </v-col>
+            </v-row>
+            <v-row
+              justify="center"
+              no-gutters=""
+              class="udc-balance__container"
+            >
+              <v-col cols="10">
+                <span class="udc-balance__description">
+                  <!-- TODO: Compute correct token -->
+                  {{
+                    this.$t('transfer.steps.request-route.udc-description', {
+                      token: 'SVT'
+                    })
+                  }}
+                </span>
+              </v-col>
+            </v-row>
             <v-row justify="center">
               <v-col cols="10">
                 <pathfinding-services
@@ -107,6 +163,20 @@
       </v-stepper>
     </v-row>
 
+    <v-overlay
+      v-if="step === 1"
+      :value="pfsFeesConfirmed"
+      class="confirmation-overlay"
+    >
+      <spinner v-if="!pfsFeesPaid" />
+      <checkmark v-else class="confirmation-overlay__checkmark" />
+
+      <h2 v-if="!pfsFeesPaid">
+        {{ this.$t('transfer.steps.request-route.in-progress') }}
+      </h2>
+      <h2 v-else>{{ this.$t('transfer.steps.request-route.done') }}</h2>
+    </v-overlay>
+
     <stepper
       :display="processingTransfer"
       :steps="steps"
@@ -124,6 +194,7 @@
     <action-button
       :enabled="continueBtnEnabled"
       sticky
+      arrow
       :text="$t(`transfer.steps.call-to-action.${step}`)"
       @click="handleStep()"
     >
@@ -144,6 +215,8 @@ import PathfindingServices from '@/components/PathfindingServices.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import Spinner from '@/components/Spinner.vue';
+import MintDepositDialog from '@/components/MintDepositDialog.vue';
+import Checkmark from '@/components/Checkmark.vue';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
 
@@ -154,7 +227,9 @@ import ErrorScreen from '@/components/ErrorScreen.vue';
     FindRoutes,
     Spinner,
     Stepper,
-    ErrorScreen
+    ErrorScreen,
+    Checkmark,
+    MintDepositDialog
   }
 })
 export default class TransferSteps extends Mixins(
@@ -166,6 +241,7 @@ export default class TransferSteps extends Mixins(
   selectedRoute: Route | null = null;
   pfsFeesConfirmed: boolean = false;
   pfsFeesPaid: boolean = false;
+  showMintDeposit: boolean = false;
   mediationFeesConfirmed: boolean = false;
   processingTransfer: boolean = false;
   transferDone: boolean = false;
@@ -176,9 +252,23 @@ export default class TransferSteps extends Mixins(
 
   convertToUnits = BalanceUtils.toUnits;
 
-  handleStep() {
+  async handleStep() {
     if (this.step === 1 && this.selectedPfs && !this.pfsFeesConfirmed) {
       this.pfsFeesConfirmed = true;
+
+      try {
+        // TODO: deposit to UDC
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      } catch (e) {
+        // TODO: Show error and return? Remove if uncessesary
+      }
+
+      this.pfsFeesPaid = true;
+
+      // Show checkmark for a bit
+      await new Promise(resolve => setTimeout(resolve, 3500));
+
+      // Go to next step
       this.step = 2;
       return;
     }
@@ -209,6 +299,7 @@ export default class TransferSteps extends Mixins(
 
   get continueBtnEnabled() {
     if (this.step == 1) {
+      // TODO: Only enable button if sufficient RDN/SVT is available to pay PFS
       return this.selectedPfs !== null;
     }
 
@@ -353,5 +444,57 @@ export default class TransferSteps extends Mixins(
   &__total-amount {
     text-align: center;
   }
+
+  .udc-balance {
+    &__container {
+      text-align: center;
+    }
+
+    &__amount {
+      font-size: 24px;
+      font-weight: bold;
+      font-family: Roboto, sans-serif;
+      color: $color-white;
+      vertical-align: middle;
+    }
+
+    &__description {
+      font-size: 16px;
+      font-family: Roboto, sans-serif;
+      color: $secondary-text-color;
+    }
+
+    &__deposit {
+      vertical-align: middle;
+    }
+  }
+}
+
+.confirmation-overlay {
+  text-align: center;
+
+  &.v-overlay--active {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    backdrop-filter: blur(4px);
+    background-color: rgba($color-white, 0.15);
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+
+  & ::v-deep .spinner {
+    margin: 2em;
+  }
+
+  &__checkmark {
+    margin: 2em;
+  }
+}
+
+.v-dialog__content--active {
+  background-color: rgba($color-white, 0.15);
+  backdrop-filter: blur(4px);
 }
 </style>

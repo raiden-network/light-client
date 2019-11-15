@@ -174,6 +174,10 @@
   "application": {
     "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
   },
+  "mint-deposit-dialog": {
+    "button": "Mint and deposit",
+    "available": "Available {currency} to pay for on-chain transaction: {balance} {currency}"
+  },
   "transfer": {
     "deposit-button": "Deposit",
     "channel-button": "Channels",
@@ -189,7 +193,11 @@
     },
     "steps": {
       "request-route": {
-        "title": "Request Route"
+        "title": "Request Route",
+        "udc-amount": "{amount} {token}",
+        "udc-description": "{token} Balance",
+        "in-progress": "Transfering tokens for route request",
+        "done": "Transfer for route request completed"
       },
       "select-route": {
         "title": "Select Route"
