@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
+import * as t from 'io-ts';
 import { combineLatest, defer, EMPTY, from, merge, Observable, of } from 'rxjs';
 import {
   catchError,
@@ -22,17 +23,13 @@ import {
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { ActionType, isActionOf } from 'typesafe-actions';
-import {
-  BigNumber,
-  bigNumberify,
-  hexDataLength,
-  hexlify,
-  toUtf8Bytes,
-  verifyMessage,
-} from 'ethers/utils';
-import { Two, Zero } from 'ethers/constants';
+import { Signer } from 'ethers';
 import { Event } from 'ethers/contract';
+import { BigNumber, bigNumberify, toUtf8Bytes, verifyMessage, concat } from 'ethers/utils';
+import { Two, Zero } from 'ethers/constants';
+import { memoize, get } from 'lodash';
 
+import { UserDeposit } from '../contracts/UserDeposit';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
@@ -56,12 +53,6 @@ import {
 } from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
-import { concat } from 'ethers/utils/bytes';
-import { Signer } from 'ethers';
-import { memoize } from 'lodash/fp';
-import { UserDeposit } from '../contracts/UserDeposit';
-import * as t from 'io-ts';
-import get from 'lodash/get';
 
 const oneToNAddress = memoize(
   async (userDepositContract: UserDeposit) =>
@@ -88,16 +79,6 @@ const PathError = t.readonly(
     }),
   ]),
 );
-
-class InvalidPFSRequestError extends Error {
-  readonly iou: Signed<IOU> | undefined;
-  readonly errorCode: number;
-  constructor(message: string, errorCode: number, iou: Signed<IOU> | undefined) {
-    super(message);
-    this.iou = iou;
-    this.errorCode = errorCode;
-  }
-}
 
 const makeIOU = (
   sender: Address,
@@ -138,23 +119,10 @@ const signIOU$ = (iou: IOU, signer: Signer): Observable<Signed<IOU>> =>
 
 const makeAndSignLastIOURequest$ = (sender: Address, receiver: Address, signer: Signer) =>
   defer(() => {
-    const payload = {
-      sender,
-      receiver,
-      timestamp: new Date(Date.now()).toISOString().split('.')[0],
-    };
-
-    const timestamp = hexlify(toUtf8Bytes(payload.timestamp));
-    const messageHash = concat([
-      encode(payload.sender, 20),
-      encode(payload.receiver, 20),
-      encode(timestamp, hexDataLength(timestamp)),
-    ]);
-    return from(signer.signMessage(messageHash) as Promise<Signature>).pipe(
-      map(signature => ({
-        ...payload,
-        signature,
-      })),
+    const timestamp = new Date().toISOString().split('.')[0],
+      message = concat([sender, receiver, toUtf8Bytes(timestamp)]);
+    return from(signer.signMessage(message) as Promise<Signature>).pipe(
+      map(signature => ({ sender, receiver, timestamp, signature })),
     );
   });
 
@@ -285,12 +253,12 @@ export const pathFindServiceEpic = (
                 return pfs$.pipe(
                   mergeMap(pfs =>
                     pfs.price.isZero()
-                      ? of([undefined, pfs] as const)
+                      ? of({ pfs, iou: undefined })
                       : prepareNextIOU$(state, pfs, deps, httpTimeout, tokenNetwork).pipe(
-                          map(iou => [iou, pfs] as const),
+                          map(iou => ({ pfs, iou })),
                         ),
                   ),
-                  mergeMap(([iou, pfs]) =>
+                  mergeMap(({ pfs, iou }) =>
                     fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -308,101 +276,106 @@ export const pathFindServiceEpic = (
                             }
                           : undefined,
                       }),
-                    }).pipe(map(response => [response, iou] as const)),
+                    }).pipe(map(response => ({ response, iou }))),
                   ),
                   timeout(httpTimeout),
-                  mergeMap(async ([response, iou]) => {
-                    const text = await response.text();
-                    const data = losslessParse(text);
-                    if (!response.ok) {
-                      throw new InvalidPFSRequestError(
-                        `PFS: paths request: code=${response.status} => body="${text}"`,
-                        decode(PathError, data).error_code,
-                        iou,
-                      );
-                    }
-                    return [decode(PathResults, data), iou] as const;
-                  }),
-                  map(([results, iou]) => ({
-                    paths: results.result.map(r => ({
-                      path: r.path,
-                      // Add PFS safety margin to estimated fees
-                      fee: r.estimated_fee.mul(Math.round(pfsSafetyMargin * 1e6)).div(1e6) as Int<
-                        32
-                      >,
-                    })),
+                  mergeMap(async ({ response, iou }) => ({
+                    response,
+                    text: await response.text(),
                     iou,
                   })),
+                  map(({ response, text, iou }) => {
+                    // any decode error here will throw early and end up in catchError
+                    const data = losslessParse(text);
+                    if (!response.ok) {
+                      return { error: decode(PathError, data), iou };
+                    }
+                    return {
+                      paths: decode(PathResults, data).result.map(
+                        r =>
+                          ({
+                            path: r.path,
+                            // Add PFS safety margin to estimated fees
+                            fee: r.estimated_fee
+                              .mul(Math.round(pfsSafetyMargin * 1e6))
+                              .div(1e6) as Int<32>,
+                          } as const),
+                      ),
+                      iou,
+                    };
+                  }),
                 );
               }
             }),
             withLatestFrom(cached$),
             // validate/cleanup received routes/paths/results
-            mergeMap(function*([{ paths, iou }, [state, presences]]) {
-              if (iou) {
-                yield iouPersist(
-                  { iou },
-                  { tokenNetwork: action.meta.tokenNetwork, serviceAddress: iou.receiver },
-                );
-              }
-              const filteredPaths: Paths = [],
-                invalidatedRecipients = new Set<Address>();
-              // eslint-disable-next-line prefer-const
-              for (let { path, fee } of paths) {
-                // if route has us as first hop, cleanup/shift
-                if (path[0] === state.address) path = path.slice(1);
-                const recipient = path[0];
-                // if this recipient was already invalidated in a previous iteration, skip
-                if (invalidatedRecipients.has(recipient)) continue;
-                // if we already found some valid route, allow only new routes through this peer
-                const canTransferOrReason = !filteredPaths.length
-                  ? channelCanRoute(
-                      state,
-                      presences,
-                      action.meta.tokenNetwork,
-                      recipient,
-                      action.meta.value.add(fee) as UInt<32>,
-                    )
-                  : recipient !== filteredPaths[0].path[0]
-                  ? 'path: already selected another recipient'
-                  : fee.gt(filteredPaths[0].fee)
-                  ? 'path: already selected a smaller fee'
-                  : true;
-                if (canTransferOrReason !== true) {
-                  console.log(
-                    'Invalidated received route. Reason:',
-                    canTransferOrReason,
-                    'Route:',
-                    path,
-                  );
-                  invalidatedRecipients.add(recipient);
-                  continue;
-                }
-                filteredPaths.push({ path, fee });
-              }
-              if (!filteredPaths.length) {
-                yield pathFindFailed(new Error(`PFS: no valid routes found`), action.meta);
-              } else {
-                yield pathFound({ paths: filteredPaths }, action.meta);
-              }
-            }),
-            catchError(function*(err) {
-              const iou = err.iou;
-              if (err instanceof InvalidPFSRequestError && iou) {
-                if (err.errorCode === 2201) {
-                  yield iouPersist(
-                    { iou },
-                    { tokenNetwork: action.meta.tokenNetwork, serviceAddress: iou.receiver },
-                  );
-                } else {
-                  yield iouClear(undefined, {
-                    tokenNetwork: action.meta.tokenNetwork,
-                    serviceAddress: iou.receiver,
-                  });
-                }
-              }
-              yield pathFindFailed(err, action.meta);
-            }),
+            mergeMap(([data, [state, presences]]) =>
+              // looks like mergeMap with generator doesn't handle exceptions correctly
+              // use from+iterator from iife generator instead
+              from(
+                (function*() {
+                  const { iou } = data;
+                  if (iou) {
+                    // if not error or error_code of "no route found", iou accepted => persist
+                    if (data.paths || data.error.error_code === 2201)
+                      yield iouPersist(
+                        { iou },
+                        { tokenNetwork: action.meta.tokenNetwork, serviceAddress: iou.receiver },
+                      );
+                    // else (error and error_code of "iou rejected"), clear
+                    else
+                      yield iouClear(undefined, {
+                        tokenNetwork: action.meta.tokenNetwork,
+                        serviceAddress: iou.receiver,
+                      });
+                  }
+                  // if error, don't proceed
+                  if (!data.paths) {
+                    throw new Error(
+                      `PFS: paths request: code=${data.error.error_code} => errors="${data.error.errors}"`,
+                    );
+                  }
+                  const filteredPaths: Paths = [],
+                    invalidatedRecipients = new Set<Address>();
+                  // eslint-disable-next-line prefer-const
+                  for (let { path, fee } of data.paths) {
+                    // if route has us as first hop, cleanup/shift
+                    if (path[0] === state.address) path = path.slice(1);
+                    const recipient = path[0];
+                    // if this recipient was already invalidated in a previous iteration, skip
+                    if (invalidatedRecipients.has(recipient)) continue;
+                    // if we already found some valid route, allow only new routes through this peer
+                    const canTransferOrReason = !filteredPaths.length
+                      ? channelCanRoute(
+                          state,
+                          presences,
+                          action.meta.tokenNetwork,
+                          recipient,
+                          action.meta.value.add(fee) as UInt<32>,
+                        )
+                      : recipient !== filteredPaths[0].path[0]
+                      ? 'path: already selected another recipient'
+                      : fee.gt(filteredPaths[0].fee)
+                      ? 'path: already selected a smaller fee'
+                      : true;
+                    if (canTransferOrReason !== true) {
+                      console.log(
+                        'Invalidated received route. Reason:',
+                        canTransferOrReason,
+                        'Route:',
+                        path,
+                      );
+                      invalidatedRecipients.add(recipient);
+                      continue;
+                    }
+                    filteredPaths.push({ path, fee });
+                  }
+                  if (!filteredPaths.length) throw new Error(`PFS: no valid routes found`);
+                  yield pathFound({ paths: filteredPaths }, action.meta);
+                })(),
+              ),
+            ),
+            catchError(err => of(pathFindFailed(err, action.meta))),
           ),
         ),
       );

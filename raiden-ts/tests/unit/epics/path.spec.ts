@@ -453,7 +453,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFindFailed(
-        expect.objectContaining({ message: expect.stringContaining('paths request: code=404') }),
+        expect.objectContaining({ message: expect.stringContaining('paths request: code=1337') }),
         { tokenNetwork, target, value },
       ),
     );
