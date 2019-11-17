@@ -2,6 +2,7 @@ import { Signer } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { Middleware, applyMiddleware, createStore, Store } from 'redux';
@@ -99,7 +100,6 @@ import { pfsListInfo } from './path/utils';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { losslessParse } from './utils/data';
-import { Zero } from 'ethers/constants';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -163,8 +163,6 @@ export class Raiden {
     name?: string;
     symbol?: string;
   }>;
-
-  public getUDCBalance: () => Promise<BigNumberish>;
 
   private epicMiddleware?: EpicMiddleware<
     RaidenAction,
@@ -264,24 +262,6 @@ export class Raiden {
       ]);
       return { totalSupply, decimals, name, symbol };
     });
-
-    this.getUDCBalance = async () =>
-      from(this.deps.userDepositContract.functions.balances(address))
-        .pipe(
-          map(balance => {
-            const owedAmount = Object.values(state.path.iou)
-              .reduce((acc, value) => {
-                const nonExpiredIOUs = Object.values(value).filter(value =>
-                  value.expiration_block.gte(state.blockNumber),
-                );
-                acc.push(...nonExpiredIOUs);
-                return acc;
-              }, new Array<IOU>())
-              .reduce((acc, iou) => acc.add(iou.amount), Zero);
-            return balance.sub(owedAmount);
-          }),
-        )
-        .toPromise();
 
     // pipe pfsListUpdated action payloead to pfsList$ replay subject, to keep latest seen emission
     // around. Epics don't need this, as they can monitor/multicast action$ directly
@@ -1010,6 +990,26 @@ export class Raiden {
     if (!receipt.status) throw new Error('Failed to mint token.');
 
     return tx.hash as Hash;
+  }
+
+  /**
+   * Fetches balance of UserDeposit Contract for SDK's account minus cached spent IOUs
+   *
+   * @returns Promise to UDC remaining capacity
+   */
+  public async getUDCCapacity(): Promise<BigNumber> {
+    const balance = await this.deps.userDepositContract.functions.balances(this.deps.address),
+      blockNumber = this.state.blockNumber,
+      owedAmount = Object.values(this.state.path.iou)
+        .reduce((acc, value) => {
+          const nonExpiredIOUs = Object.values(value).filter(value =>
+            value.expiration_block.gte(blockNumber),
+          );
+          acc.push(...nonExpiredIOUs);
+          return acc;
+        }, new Array<IOU>())
+        .reduce((acc, iou) => acc.add(iou.amount), Zero);
+    return balance.sub(owedAmount);
   }
 }
 
