@@ -25,6 +25,7 @@ import { ConfigProvider } from './config-provider';
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
+  private _userDepositTokenAddress: string = '';
 
   private static async createRaiden(
     provider: any,
@@ -54,6 +55,11 @@ export default class RaidenService {
   constructor(store: Store<RootState>) {
     this._raiden = undefined;
     this.store = store;
+  }
+
+  get userDepositTokenAddress(): string {
+    if (!this._userDepositTokenAddress) throw new Error('address empty');
+    return this._userDepositTokenAddress;
   }
 
   async ensResolve(name: string): Promise<string> {
@@ -94,6 +100,8 @@ export default class RaidenService {
 
         this.store.commit('account', await this.getAccount());
         this.store.commit('balance', await this.getBalance());
+
+        this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
 
         // update connected tokens data on each newBlock
         raiden.events$
@@ -336,6 +344,14 @@ export default class RaidenService {
     } catch (e) {
       throw new MintTokenFailed(e);
     }
+  }
+
+  async depositToUDC(amount: BigNumber): Promise<void> {
+    await this.raiden.depositToUDC(amount);
+  }
+
+  async getUDCCapacity(): Promise<BigNumber> {
+    return this.raiden.getUDCCapacity();
   }
 }
 

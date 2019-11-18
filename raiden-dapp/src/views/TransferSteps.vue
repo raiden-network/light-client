@@ -54,11 +54,13 @@
             >
               <v-col cols="10">
                 <span class="udc-balance__amount">
-                  <!-- TODO: Compute correct token and UDC balance -->
                   {{
                     this.$t('transfer.steps.request-route.udc-amount', {
-                      amount: 0,
-                      token: 'SVT'
+                      amount: convertToUnits(
+                        udcCapacity,
+                        udcToken.decimals || 18
+                      ),
+                      token: udcToken.symbol || 'SVT'
                     })
                   }}
                 </span>
@@ -93,10 +95,9 @@
             >
               <v-col cols="10">
                 <span class="udc-balance__description">
-                  <!-- TODO: Compute correct token -->
                   {{
                     this.$t('transfer.steps.request-route.udc-description', {
-                      token: 'SVT'
+                      token: udcToken.symbol || 'SVT'
                     })
                   }}
                 </span>
@@ -219,6 +220,7 @@ import MintDepositDialog from '@/components/MintDepositDialog.vue';
 import Checkmark from '@/components/Checkmark.vue';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
+import { Zero } from 'ethers/constants';
 
 @Component({
   components: {
@@ -251,6 +253,11 @@ export default class TransferSteps extends Mixins(
   doneStep: StepDescription = emptyDescription();
 
   convertToUnits = BalanceUtils.toUnits;
+  udcCapacity: BigNumber = Zero;
+
+  mounted() {
+    this.$raiden.getUDCCapacity().then(value => (this.udcCapacity = value));
+  }
 
   async handleStep() {
     if (this.step === 1 && this.selectedPfs && !this.pfsFeesConfirmed) {
@@ -289,6 +296,11 @@ export default class TransferSteps extends Mixins(
     return this.$store.state.tokens[address] || ({ address } as Token);
   }
 
+  get udcToken(): Token {
+    const address = this.$raiden.userDepositTokenAddress;
+    return this.$store.state.tokens[address] || ({ address } as Token);
+  }
+
   get target(): string {
     return this.$route.params.target;
   }
@@ -299,8 +311,10 @@ export default class TransferSteps extends Mixins(
 
   get continueBtnEnabled() {
     if (this.step == 1) {
-      // TODO: Only enable button if sufficient RDN/SVT is available to pay PFS
-      return this.selectedPfs !== null;
+      return (
+        this.selectedPfs !== null &&
+        this.udcCapacity.gte(this.selectedPfs.price)
+      );
     }
 
     if (this.step == 2) {
