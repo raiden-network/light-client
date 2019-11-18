@@ -17,7 +17,7 @@ import { makeInitialState, RaidenState } from 'raiden-ts/state';
 import { raidenShutdown } from 'raiden-ts/actions';
 import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
-import { Storage, Secret, Address, Hash } from 'raiden-ts/utils/types';
+import { Storage, Secret, Address } from 'raiden-ts/utils/types';
 import { ContractsInfo } from 'raiden-ts/types';
 import { RaidenConfig } from 'raiden-ts/config';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
@@ -244,10 +244,16 @@ describe('Raiden', () => {
   });
 
   describe('getUDCCapacity', () => {
-    // TODO: After UDC deposit function becomes available enhance the tests
     test('no balance', async () => {
       expect.assertions(1);
       await expect(raiden.getUDCCapacity()).resolves.toEqual(Zero);
+    });
+
+    test('mint and deposit', async () => {
+      expect.assertions(1);
+      await raiden.mint(await raiden.userDepositTokenAddress(), 10);
+      await raiden.depositToUDC(10);
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(bigNumberify(10));
     });
   });
 
@@ -1040,23 +1046,13 @@ describe('Raiden', () => {
   });
 
   describe('mint', () => {
-    afterEach(() => {
-      raiden.stop();
-    });
-
     test('should throw exception if invalid address', async () => {
-      raiden = await Raiden.create(
-        new TestProvider({ network_id: 1 }),
-        0,
-        storage,
-        contractsInfo,
-        config,
-      );
-      raiden.start();
-      expect(raiden.mint('0xTokenNetwork', 0.05 ** 10)).rejects.toThrowError('Invalid address');
+      expect.assertions(1);
+      await expect(raiden.mint('0xTokenNetwork', 50)).rejects.toThrowError('Invalid address');
     });
 
     test('should throw exception on main net', async () => {
+      expect.assertions(1);
       raiden = await Raiden.create(
         new TestProvider({ network_id: 1 }),
         0,
@@ -1065,23 +1061,33 @@ describe('Raiden', () => {
         config,
       );
       raiden.start();
-      expect(
-        raiden.mint('0x3a989D97388a39A0B5796306C615d10B7416bE77', 0.05 ** 10),
+      await expect(
+        raiden.mint('0x3a989D97388a39A0B5796306C615d10B7416bE77', 50),
       ).rejects.toThrowError('Minting is only allowed on test networks.');
+      raiden.stop();
     });
 
     test('should return transaction if minted successfully', async () => {
-      raiden = await Raiden.create(
-        new TestProvider({ network_id: 5 }),
-        0,
-        storage,
-        contractsInfo,
-        config,
-      );
-      raiden.start();
-      expect(
-        raiden.mint('0x3a989D97388a39A0B5796306C615d10B7416bE77', 0.05 ** 10),
-      ).resolves.toBeInstanceOf(Hash);
+      expect.assertions(1);
+      await expect(raiden.mint(token, 50)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+    });
+  });
+
+  describe('depositToUDC', () => {
+    test('deposit 0 tokens', async () => {
+      expect.assertions(1);
+      await expect(raiden.depositToUDC(0)).rejects.toThrow('Please deposit a positive amount.');
+    });
+
+    test('deposit without a token balance', async () => {
+      expect.assertions(1);
+      await expect(raiden.depositToUDC(100)).rejects.toThrow('Insufficient token balance (0).');
+    });
+
+    test('deposit success', async () => {
+      expect.assertions(1);
+      await raiden.mint(await raiden.userDepositTokenAddress(), 10);
+      await expect(raiden.depositToUDC(10)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
     });
   });
 });
