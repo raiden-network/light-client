@@ -1,7 +1,7 @@
 import { Signer } from 'ethers';
 import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, BigNumber, BigNumberish } from 'ethers/utils';
+import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
@@ -139,6 +139,11 @@ export class Raiden {
    * Expose ether's Provider.resolveName for ENS support
    */
   public readonly resolveName: (name: string) => Promise<Address>;
+
+  /**
+   * The address of the token that is used to pay the services.
+   */
+  public userDepositTokenAddress: () => Promise<Address>;
 
   /**
    * Store latest seen pfsListUpdated action payload for findPFS
@@ -311,6 +316,11 @@ export class Raiden {
       ),
       userDepositContract: UserDepositFactory.connect(contractsInfo.UserDeposit.address, signer),
     };
+
+    this.userDepositTokenAddress = memoize(
+      async () => (await this.deps.userDepositContract.functions.token()) as Address,
+    );
+
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
       RaidenAction,
@@ -1010,6 +1020,53 @@ export class Raiden {
         }, new Array<IOU>())
         .reduce((acc, iou) => acc.add(iou.amount), Zero);
     return balance.sub(owedAmount);
+  }
+
+  /**
+   * Deposits the amount to the UserDeposit contract with the target/signer as a beneficiary.
+   * The deposited amount can be used as a collateral in order to sign valid IOUs that will
+   * be accepted by the Services.
+   *
+   * Throws an error, in the following cases:
+   * <ol>
+   *  <li>The amount specified equals to zero</li>
+   *  <li>The target has an insufficient token balance</li>
+   *  <li>The "approve" transaction fails with an error</li>
+   *  <li>The "deposit" transaction fails with an error</li>
+   * </ol>
+   *
+   * @param amount - The amount to deposit on behalf of the target/beneficiary.
+   * @returns transaction hash
+   */
+  public async depositToUDC(amount: BigNumberish): Promise<Hash> {
+    const depositAmount = bigNumberify(amount);
+
+    if (depositAmount.isZero()) throw new Error('Please deposit a positive amount.');
+
+    const { userDepositContract, address } = this.deps;
+
+    const tokenAddress = await this.userDepositTokenAddress();
+    const serviceToken = HumanStandardTokenFactory.connect(tokenAddress, this.deps.signer);
+    const balance = await serviceToken.functions.balanceOf(address);
+
+    if (balance.lt(amount)) throw new Error(`Insufficient token balance (${balance}).`);
+
+    const approveTx = await serviceToken.functions.approve(
+      userDepositContract.address,
+      depositAmount,
+    );
+    const approveReceipt = await approveTx.wait();
+    if (!approveReceipt.status) throw new Error('Approve transaction failed.');
+
+    const currentUDCBalance = await userDepositContract.functions.balances(address);
+    const depositTx = await userDepositContract.functions.deposit(
+      address,
+      currentUDCBalance.add(depositAmount),
+    );
+    const depositReceipt = await depositTx.wait();
+    if (!depositReceipt.status) throw new Error('Deposit transaction failed.');
+
+    return depositTx.hash as Hash;
   }
 }
 
