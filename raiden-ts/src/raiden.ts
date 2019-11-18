@@ -1046,7 +1046,7 @@ export class Raiden {
     const { userDepositContract, address } = this.deps;
 
     const tokenAddress = await this.userDepositTokenAddress();
-    const serviceToken = CustomTokenFactory.connect(tokenAddress, this.deps.signer);
+    const serviceToken = HumanStandardTokenFactory.connect(tokenAddress, this.deps.signer);
     const balance = await serviceToken.functions.balanceOf(address);
 
     if (balance.lt(amount)) throw new Error(`Insufficient token balance (${balance}).`);
