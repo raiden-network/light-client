@@ -4,7 +4,7 @@
       <v-icon>mdi-close</v-icon>
     </v-btn>
     <v-card-text>
-      <v-row justify="center" no-gutters>
+      <v-row v-if="!error" justify="center" no-gutters>
         <v-col cols="4">
           <!-- TODO: Tried to use AmountInput but seems to have a different purpose, design is still off -->
           <!-- TODO: pass correct token symbol instead of hardcoded SVT suffix -->
@@ -12,10 +12,13 @@
             v-model="amount"
             autofocus
             type="number"
-            suffix="SVT"
+            :suffix="udcToken.symbol || 'SVT'"
             class="mint-deposit-dialog__amount"
           />
         </v-col>
+      </v-row>
+      <v-row v-else>
+        {{ error }}
       </v-row>
       <v-row class="mint-deposit-dialog__available">
         {{
@@ -46,6 +49,8 @@ import { Component, Vue, Emit } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
+import { BalanceUtils } from '@/utils/balance-utils';
+import { Token } from '@/model/types';
 
 @Component({
   components: { ActionButton },
@@ -56,20 +61,30 @@ import ActionButton from '@/components/ActionButton.vue';
 export default class MintDepositDialog extends Vue {
   amount: string = '10';
   loading: boolean = false;
+  error: string = '';
+
+  get udcToken(): Token {
+    const address = this.$raiden.userDepositTokenAddress;
+    return this.$store.state.tokens[address] || ({ address } as Token);
+  }
 
   @Emit()
   cancel() {}
 
   async mintDeposit() {
     this.loading = true;
-
-    // TODO: mint via
-    //await this.$raiden.mint(token, amount)
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    // TODO: deposit
+    try {
+      const tokenAddress = this.$raiden.userDepositTokenAddress;
+      const token = this.$store.state.tokens[tokenAddress];
+      const depositAmount = BalanceUtils.parse(this.amount, token.decimals);
+      await this.$raiden.mint(tokenAddress, depositAmount);
+      await this.$raiden.depositToUDC(depositAmount);
+      this.$emit('done');
+    } catch (e) {
+      this.error = e.message;
+    }
 
     this.loading = false;
-    this.$emit('done');
   }
 }
 </script>
