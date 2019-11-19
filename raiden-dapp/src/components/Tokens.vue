@@ -228,6 +228,7 @@ export default class Tokens extends Mixins(BlockieMixin, NavigationMixin) {
   border-radius: 29px;
   margin-right: 10px;
   margin-left: 10px;
+  letter-spacing: 0;
   background-color: $primary-color !important;
 }
 
