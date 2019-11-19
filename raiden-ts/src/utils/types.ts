@@ -32,7 +32,6 @@ export function decode<C extends t.Mixed>(codec: C, data: C['_I']): C['_A'] {
 const isStringifiable = (u: unknown): u is { toString: () => string } =>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   u !== null && u !== undefined && typeof (u as any)['toString'] === 'function';
-const isBigNumber = (u: unknown): u is BigNumber => u && (u as any)['_ethersType'] === 'BigNumber';
 /**
  * Codec of ethers.utils.BigNumber objects
  * Input can be anything bigNumberify-able: number, string, LosslessNumber or BigNumber
@@ -41,9 +40,9 @@ const isBigNumber = (u: unknown): u is BigNumber => u && (u as any)['_ethersType
  */
 export const BigNumberC = new t.Type<BigNumber, LosslessNumber>(
   'BigNumber',
-  isBigNumber,
+  BigNumber.isBigNumber,
   (u, c) => {
-    if (isBigNumber(u)) return t.success(u);
+    if (BigNumber.isBigNumber(u)) return t.success(u);
     try {
       if (isStringifiable(u)) return t.success(bigNumberify(u.toString()));
     } catch (err) {
