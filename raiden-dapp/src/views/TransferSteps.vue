@@ -83,7 +83,7 @@
                   </template>
                   <mint-deposit-dialog
                     @cancel="showMintDeposit = false"
-                    @done="showMintDeposit = false"
+                    @done="mintDone()"
                   />
                 </v-dialog>
               </v-col>
@@ -118,10 +118,8 @@
               <v-col cols="10">
                 <find-routes
                   v-if="step === 2"
-                  :pfs="selectedPfs"
-                  :token="token"
-                  :amount="amount"
-                  :target="target"
+                  :token="udcToken"
+                  :routes="routes"
                   @select="setRoute($event)"
                 ></find-routes>
               </v-col>
@@ -221,6 +219,8 @@ import Checkmark from '@/components/Checkmark.vue';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
 import { Zero } from 'ethers/constants';
+import { getAddress, getAmount } from '@/utils/query-params';
+import AddressUtils from '@/utils/address-utils';
 
 @Component({
   components: {
@@ -241,6 +241,7 @@ export default class TransferSteps extends Mixins(
   step: number = 1;
   selectedPfs: RaidenPFS | null = null;
   selectedRoute: Route | null = null;
+  routes: Route[] = [];
   pfsFeesConfirmed: boolean = false;
   pfsFeesPaid: boolean = false;
   showMintDeposit: boolean = false;
@@ -255,28 +256,83 @@ export default class TransferSteps extends Mixins(
   convertToUnits = BalanceUtils.toUnits;
   udcCapacity: BigNumber = Zero;
 
-  mounted() {
+  amount: string = '';
+  target: string = '';
+
+  private updateUDCCapacity() {
     this.$raiden.getUDCCapacity().then(value => (this.udcCapacity = value));
+  }
+
+  async created() {
+    const { amount } = this.$route.query;
+    const { target } = this.$route.params;
+
+    this.amount = getAmount(amount);
+    this.target = getAddress(target);
+
+    const { token: address } = this.$route.params;
+
+    if (!AddressUtils.checkAddressChecksum(address)) {
+      this.navigateToHome();
+      return;
+    }
+
+    await this.$raiden.fetchTokenData([address]);
+
+    if (typeof this.token.decimals !== 'number') {
+      this.navigateToHome();
+    }
+  }
+
+  mounted() {
+    this.updateUDCCapacity();
+  }
+
+  mintDone() {
+    this.showMintDeposit = false;
+    this.updateUDCCapacity();
+  }
+
+  async findRoutes(): Promise<void> {
+    const { address, decimals } = this.token;
+
+    try {
+      // Fetch available routes from PFS
+      const fetchedRoutes = await this.$raiden.findRoutes(
+        address,
+        this.target,
+        BalanceUtils.parse(this.amount, decimals!),
+        this.selectedPfs ? this.selectedPfs : undefined
+      );
+
+      if (fetchedRoutes) {
+        // Convert to displayable Route type
+        this.routes = fetchedRoutes.map(
+          ({ path, fee }, index: number) =>
+            ({
+              key: index,
+              hops: path.length - 1,
+              displayFee: BalanceUtils.toUnits(fee as BigNumber, decimals!),
+              fee,
+              path
+            } as Route)
+        );
+      }
+    } catch (e) {
+      this.error = e.message;
+    }
   }
 
   async handleStep() {
     if (this.step === 1 && this.selectedPfs && !this.pfsFeesConfirmed) {
       this.pfsFeesConfirmed = true;
-
-      try {
-        // TODO: deposit to UDC
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      } catch (e) {
-        // TODO: Show error and return? Remove if uncessesary
-      }
-
+      await this.findRoutes();
       this.pfsFeesPaid = true;
 
-      // Show checkmark for a bit
-      await new Promise(resolve => setTimeout(resolve, 3500));
+      setTimeout(() => {
+        this.step = 2;
+      }, 2000);
 
-      // Go to next step
-      this.step = 2;
       return;
     }
 
@@ -299,14 +355,6 @@ export default class TransferSteps extends Mixins(
   get udcToken(): Token {
     const address = this.$raiden.userDepositTokenAddress;
     return this.$store.state.tokens[address] || ({ address } as Token);
-  }
-
-  get target(): string {
-    return this.$route.params.target;
-  }
-
-  get amount(): string {
-    return this.$route.params.amount;
   }
 
   get continueBtnEnabled() {

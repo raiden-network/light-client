@@ -176,7 +176,8 @@
   },
   "mint-deposit-dialog": {
     "button": "Mint and deposit",
-    "available": "Available {currency} to pay for on-chain transaction: {balance} {currency}"
+    "available": "Available {currency} to pay for on-chain transaction: {balance} {currency}",
+    "error": "The mint and deposit operation failed."
   },
   "transfer": {
     "deposit-button": "Deposit",
@@ -196,8 +197,8 @@
         "title": "Request Route",
         "udc-amount": "{amount} {token}",
         "udc-description": "{token} Balance",
-        "in-progress": "Transfering tokens for route request",
-        "done": "Transfer for route request completed"
+        "in-progress": "Please sign the request payment",
+        "done": "Route request payment complete"
       },
       "select-route": {
         "title": "Select Route"

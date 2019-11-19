@@ -4,21 +4,21 @@
       <v-icon>mdi-close</v-icon>
     </v-btn>
     <v-card-text>
-      <v-row v-if="!error" justify="center" no-gutters>
+      <v-row justify="center" no-gutters>
         <v-col cols="4">
-          <!-- TODO: Tried to use AmountInput but seems to have a different purpose, design is still off -->
-          <!-- TODO: pass correct token symbol instead of hardcoded SVT suffix -->
           <v-text-field
             v-model="amount"
             autofocus
-            type="number"
+            type="text"
             :suffix="udcToken.symbol || 'SVT'"
             class="mint-deposit-dialog__amount"
           />
         </v-col>
       </v-row>
-      <v-row v-else>
-        {{ error }}
+      <v-row v-if="error">
+        <v-col cols="12" class="text-center error--text">
+          {{ $t('mint-deposit-dialog.error') }}
+        </v-col>
       </v-row>
       <v-row class="mint-deposit-dialog__available">
         {{
@@ -34,7 +34,7 @@
         sticky
         arrow
         :loading="loading"
-        :enabled="amount.length && !loading"
+        :enabled="valid && !loading"
         :text="$t('mint-deposit-dialog.button')"
         class="mint-deposit-dialog__action"
         @click="mintDeposit()"
@@ -61,17 +61,22 @@ import { Token } from '@/model/types';
 export default class MintDepositDialog extends Vue {
   amount: string = '10';
   loading: boolean = false;
-  error: string = '';
+  error: boolean = false;
 
   get udcToken(): Token {
     const address = this.$raiden.userDepositTokenAddress;
     return this.$store.state.tokens[address] || ({ address } as Token);
   }
 
+  get valid(): boolean {
+    return /^[1-9]\d*$/.test(this.amount);
+  }
+
   @Emit()
   cancel() {}
 
   async mintDeposit() {
+    this.error = false;
     this.loading = true;
     try {
       const tokenAddress = this.$raiden.userDepositTokenAddress;
@@ -81,7 +86,7 @@ export default class MintDepositDialog extends Vue {
       await this.$raiden.depositToUDC(depositAmount);
       this.$emit('done');
     } catch (e) {
-      this.error = e.message;
+      this.error = true;
     }
 
     this.loading = false;
@@ -103,15 +108,25 @@ export default class MintDepositDialog extends Vue {
     color: $color-white;
 
     & ::v-deep input {
-      text-align: center;
+      text-align: right;
     }
 
     & ::v-deep .v-input__slot::before {
       border: none !important;
     }
 
+    & ::v-deep .v-input__slot::after {
+      border: none !important;
+    }
+
     & ::v-deep .v-text-field__details {
       display: none;
+    }
+
+    & ::v-deep .v-text-field__suffix {
+      padding-left: 8px;
+      color: white;
+      padding-right: 18px;
     }
   }
 

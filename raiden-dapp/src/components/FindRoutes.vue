@@ -1,22 +1,9 @@
 <template>
   <v-row class="find-routes" align="center" justify="center" no-gutters>
     <v-col cols="12">
-      <h2 v-if="!busy && error">{{ $t('find-routes.error.title') }}</h2>
+      <p>{{ $t('find-routes.description') }}</p>
 
-      <p v-if="!busy && !error">{{ $t('find-routes.description') }}</p>
-
-      <v-row
-        v-if="busy"
-        align="center"
-        justify="center"
-        class="find-routes__spinner-wrapper"
-      >
-        <spinner />
-      </v-row>
-      <v-row v-else-if="!busy && error">
-        <p class="find-routes__error">{{ error }}</p>
-      </v-row>
-      <v-row v-else align="center" justify="center">
+      <v-row align="center" justify="center">
         <v-form>
           <v-data-table
             v-model="selected"
@@ -52,33 +39,19 @@
 </template>
 
 <script lang="ts">
-import { BigNumber } from 'ethers/utils';
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 
-import { BalanceUtils } from '@/utils/balance-utils';
 import Spinner from '@/components/Spinner.vue';
 import { Token, Route } from '@/model/types';
-import { RaidenPFS } from 'raiden-ts';
 
 @Component({ components: { Spinner } })
 export default class FindRoutes extends Vue {
   @Prop({ required: true })
   token!: Token;
-
   @Prop({ required: true })
-  amount!: string;
-
-  @Prop({ required: true })
-  target!: string;
-
-  @Prop({ required: true })
-  pfs!: RaidenPFS | null;
-
-  busy: boolean = false;
-  error: string = '';
+  routes: Route[] = [];
   headers: { text: string; align: string; value: string }[] = [];
   selected: Route[] = [];
-  routes: Route[] = [];
 
   mounted() {
     this.headers = [
@@ -100,41 +73,10 @@ export default class FindRoutes extends Vue {
   }
 
   async findRoutes(): Promise<void> {
-    const { address, decimals } = this.token;
-    this.busy = true;
-
-    try {
-      // Fetch available routes from PFS
-      const fetchedRoutes = await this.$raiden.findRoutes(
-        address,
-        this.target,
-        BalanceUtils.parse(this.amount, decimals!),
-        this.pfs ? this.pfs : undefined
-      );
-
-      if (fetchedRoutes) {
-        // Convert to displayable Route type
-        this.routes = fetchedRoutes.map(
-          ({ path, fee }, index: number) =>
-            ({
-              key: index,
-              hops: path.length - 1,
-              displayFee: BalanceUtils.toUnits(fee as BigNumber, decimals!),
-              fee,
-              path
-            } as Route)
-        );
-
-        // Pre select the cheapest route
-        const [route] = this.routes;
-        this.selected = [route];
-        this.select({ item: route, value: true });
-      }
-    } catch (e) {
-      this.error = e.message;
-    }
-
-    this.busy = false;
+    // Pre select the cheapest route
+    const [route] = this.routes;
+    this.selected = [route];
+    this.select({ item: route, value: true });
   }
 
   @Emit()
