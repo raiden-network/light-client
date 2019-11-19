@@ -117,7 +117,6 @@ const LockedTransferBase = t.readonly(
       lock: Lock,
       target: Address,
       initiator: Address,
-      fee: UInt(32),
       metadata: Metadata,
     }),
     EnvelopeMessage,

@@ -162,7 +162,6 @@ function makeAndSignTransfer(
         lock,
         target: action.payload.target,
         initiator: address,
-        fee: Zero as UInt<32>, // fee in transfer not used at the moment
         metadata,
       };
       return from(signMessage(signer, message)).pipe(

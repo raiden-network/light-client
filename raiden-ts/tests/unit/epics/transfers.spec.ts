@@ -1454,7 +1454,6 @@ describe('transfers epic', () => {
           lock: signedTransfer.lock,
           locksroot: signedTransfer.locksroot,
           metadata: { routes: [{ route: [depsMock.address] }] },
-          fee: Zero as UInt<32>,
         };
         refund = await signMessage(partnerSigner, message);
         action = messageReceived(
