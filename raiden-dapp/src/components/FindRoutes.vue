@@ -171,6 +171,12 @@ export default class FindRoutes extends Vue {
     ::v-deep tr:hover {
       background: $primary-disabled-color !important;
     }
+    ::v-deep tr th {
+      border: none !important;
+    }
+    ::v-deep tr td {
+      text-align: left !important;
+    }
     ::v-deep .v-icon {
       color: $primary-color;
     }

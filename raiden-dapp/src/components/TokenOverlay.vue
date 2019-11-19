@@ -151,7 +151,7 @@ export default class TokenOverlay extends Mixins(
   }
 
   ::v-deep .v-list-item {
-    padding: 0;
+    padding: 0px 0px 0px 48px;
   }
 
   .container {
@@ -170,7 +170,7 @@ export default class TokenOverlay extends Mixins(
     padding-top: 0;
 
     & ::v-deep .col-10 {
-      padding-left: 5px;
+      padding-left: 11px;
     }
   }
 
@@ -185,6 +185,7 @@ export default class TokenOverlay extends Mixins(
   .token-network-overlay__header {
     color: $primary-color;
     text-transform: uppercase;
+    padding-left: 58px;
   }
 
   .token-list__token-balance {
