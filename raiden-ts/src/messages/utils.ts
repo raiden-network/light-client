@@ -88,7 +88,6 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
         encode(message.initiator, 20),
         encode(message.lock.secrethash, 32),
         encode(message.lock.amount, 32),
-        encode(message.fee, 32),
       ]);
 
       if (message.type === MessageType.LOCKED_TRANSFER)

@@ -56,7 +56,6 @@ describe('sign/verify, pack & encode/decode ', () => {
       },
       target: '0x811957b07304d335B271feeBF46754696694b09e' as Address,
       initiator: '0x540B51eDc5900B8012091cc7c83caf2cb243aa86' as Address,
-      fee: Zero as UInt<32>,
       metadata: {
         routes: [
           {
@@ -70,23 +69,23 @@ describe('sign/verify, pack & encode/decode ', () => {
     };
 
     expect(createMessageHash(message)).toEqual(
-      '0x095a9cd18a990af080bab703e5004602b13ac8e2e4295421b73bd99c3c778967',
+      '0xb6ab946232e2b8271c21a921389b8fc8537ebb05e25e7d5eca95e25ce82c7da5',
     );
 
     expect(packMessage(message)).toEqual(
-      '0xe82ae5475589b828d3644e1b56546f93cd27d1a400000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000053a1d9479b298eb0a60edaf962f4cf092465456ad7a0265dfe28a0fe3a2a8ecef4e0000000000000000000000000000000000000000000000000000000000000001095a9cd18a990af080bab703e5004602b13ac8e2e4295421b73bd99c3c778967',
+      '0xe82ae5475589b828d3644e1b56546f93cd27d1a400000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000053a1d9479b298eb0a60edaf962f4cf092465456ad7a0265dfe28a0fe3a2a8ecef4e0000000000000000000000000000000000000000000000000000000000000001b6ab946232e2b8271c21a921389b8fc8537ebb05e25e7d5eca95e25ce82c7da5',
     );
 
     const signed = await signMessage(signer, message);
     expect(Signed(LockedTransfer).is(signed)).toBe(true);
     expect(signed.signature).toBe(
-      '0x81a29e70b8f36379a3c0939f1e23c66a75a820dddfa87319d5022431cdc5ad0471281e13437ae58f0d3feb80f0193ede01f2721c82610c8f0b782ec723e85be21c',
+      '0xa4beb47c2067e196de4cd9d5643d1c7af37caf4ac87de346e10ac27351505d405272f3d68960322bd53d1ea95460e4dd323dbef7c862fa6596444a57732ddb2b1c',
     );
     expect(getMessageSigner(signed)).toBe(address);
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"LockedTransfer","chain_id":337,"message_identifier":123456,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","lock":{"amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x811957b07304d335B271feeBF46754696694b09e","initiator":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","fee":0,"metadata":{"routes":[{"route":["0x2A915FDA69746F515b46C520eD511401d5CCD5e2","0x811957b07304d335B271feeBF46754696694b09e"]}]},"signature":"0x81a29e70b8f36379a3c0939f1e23c66a75a820dddfa87319d5022431cdc5ad0471281e13437ae58f0d3feb80f0193ede01f2721c82610c8f0b782ec723e85be21c"}',
+      '{"type":"LockedTransfer","chain_id":337,"message_identifier":123456,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","lock":{"amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x811957b07304d335B271feeBF46754696694b09e","initiator":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","metadata":{"routes":[{"route":["0x2A915FDA69746F515b46C520eD511401d5CCD5e2","0x811957b07304d335B271feeBF46754696694b09e"]}]},"signature":"0xa4beb47c2067e196de4cd9d5643d1c7af37caf4ac87de346e10ac27351505d405272f3d68960322bd53d1ea95460e4dd323dbef7c862fa6596444a57732ddb2b1c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -114,7 +113,6 @@ describe('sign/verify, pack & encode/decode ', () => {
       },
       target: '0x540B51eDc5900B8012091cc7c83caf2cb243aa86' as Address,
       initiator: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
-      fee: Zero as UInt<32>,
       metadata: {
         routes: [
           {
@@ -125,23 +123,23 @@ describe('sign/verify, pack & encode/decode ', () => {
     };
 
     expect(createMessageHash(message)).toEqual(
-      '0x50e01fec6308b0a39230f2adf47ea697b2e581472760171b35d0a6a9ea8633bb',
+      '0x8f6c25d8592b493d55a37b116b919b87172e444287d09081f7c7661762ea1074',
     );
 
     expect(packMessage(message)).toEqual(
-      '0xe82ae5475589b828d3644e1b56546f93cd27d1a400000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000053ad11d651b5158961173ce2ce735c1d2ca57e8d784b9e3ad3451a446a09653fac2000000000000000000000000000000000000000000000000000000000000000150e01fec6308b0a39230f2adf47ea697b2e581472760171b35d0a6a9ea8633bb',
+      '0xe82ae5475589b828d3644e1b56546f93cd27d1a400000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000053ad11d651b5158961173ce2ce735c1d2ca57e8d784b9e3ad3451a446a09653fac200000000000000000000000000000000000000000000000000000000000000018f6c25d8592b493d55a37b116b919b87172e444287d09081f7c7661762ea1074',
     );
 
     const signed = await signMessage(signer, message);
     expect(Signed(RefundTransfer).is(signed)).toBe(true);
     expect(signed.signature).toBe(
-      '0x7ec958b5d0accea573474e21298bcb38c35b48f54a1fafcf0beba7ed48e2a9f21f28742471124e3f15fee445c46b130756dc9d4115563b1a420266caec65c6c71c',
+      '0x8ed40b851cf583eee2c454ce8d6366a79cd6900293de3e055074521f5f99090f6ea64db3110914911ac4f7412e37b1277616006dde6932d011def114b942e40b1b',
     );
     expect(getMessageSigner(signed)).toBe(address);
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"RefundTransfer","chain_id":337,"message_identifier":123457,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","locksroot":"0x0000000000000000000000000000000000000000000000000000000000000000","lock":{"amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","initiator":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","fee":0,"metadata":{"routes":[{"route":["0x540B51eDc5900B8012091cc7c83caf2cb243aa86"]}]},"signature":"0x7ec958b5d0accea573474e21298bcb38c35b48f54a1fafcf0beba7ed48e2a9f21f28742471124e3f15fee445c46b130756dc9d4115563b1a420266caec65c6c71c"}',
+      '{"type":"RefundTransfer","chain_id":337,"message_identifier":123457,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","locksroot":"0x0000000000000000000000000000000000000000000000000000000000000000","lock":{"amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","initiator":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","metadata":{"routes":[{"route":["0x540B51eDc5900B8012091cc7c83caf2cb243aa86"]}]},"signature":"0x8ed40b851cf583eee2c454ce8d6366a79cd6900293de3e055074521f5f99090f6ea64db3110914911ac4f7412e37b1277616006dde6932d011def114b942e40b1b"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -363,7 +361,6 @@ describe('sign/verify, pack & encode/decode ', () => {
       },
       target: '0x811957b07304d335B271feeBF46754696694b09e' as Address,
       initiator: '0x540B51eDc5900B8012091cc7c83caf2cb243aa86' as Address,
-      fee: Zero as UInt<32>,
       metadata: {
         routes: [
           {

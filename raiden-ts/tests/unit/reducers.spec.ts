@@ -715,7 +715,6 @@ describe('raidenReducer', () => {
         lock,
         target: partner,
         initiator: address,
-        fee: Zero as UInt<32>,
         metadata: { routes: [{ route: [partner] }] },
         signature: makeSignature(),
       };
@@ -949,7 +948,6 @@ describe('raidenReducer', () => {
         locked_amount: transfer.locked_amount, // "forgot" to decrease locked_amount
         lock: transfer.lock,
         locksroot: transfer.locksroot,
-        fee: Zero as UInt<32>,
         metadata: { routes: [{ route: [partner] }] },
         signature: makeSignature(),
       };
