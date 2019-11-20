@@ -330,6 +330,7 @@ export default class TransferSteps extends Mixins(
       this.pfsFeesPaid = true;
 
       setTimeout(() => {
+        console.log('sda');
         this.step = 2;
       }, 2000);
 

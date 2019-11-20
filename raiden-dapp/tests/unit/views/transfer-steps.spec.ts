@@ -2,7 +2,7 @@ jest.useFakeTimers();
 
 import { mount } from '@vue/test-utils';
 import { bigNumberify } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { One } from 'ethers/constants';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { RaidenPFS } from 'raiden-ts';
@@ -23,7 +23,7 @@ describe('TransferSteps.vue', () => {
   let vuetify: typeof Vuetify;
   let processingTransfer: jest.SpyInstance;
   let transferDone: jest.SpyInstance;
-  let $raiden = { transfer: jest.fn() };
+
   let router: Mocked<VueRouter>;
   const raidenPFS: RaidenPFS = {
     address: '0x94DEe8e391410A9ebbA791B187df2d993212c849',
@@ -40,6 +40,22 @@ describe('TransferSteps.vue', () => {
     path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77']
   } as Route;
 
+  let $raiden = {
+    transfer: jest.fn(),
+    fetchTokenData: jest.fn().mockResolvedValue(undefined),
+    fetchServices: jest.fn().mockResolvedValue([raidenPFS]),
+    getUDCCapacity: jest
+      .fn()
+      .mockResolvedValue(bigNumberify('1000000000000000000')),
+    userDepositTokenAddress: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
+    findRoutes: jest.fn().mockResolvedValue([
+      {
+        path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
+        fee: bigNumberify(100)
+      }
+    ])
+  };
+
   function createWrapper(data: any) {
     vuetify = new Vuetify();
     return mount(TransferSteps, {
@@ -51,11 +67,14 @@ describe('TransferSteps.vue', () => {
         $route: {
           params: {
             target: '0xtarget',
-            amount: '100000',
             token: '0x3a989D97388a39A0B5796306C615d10B7416bE77'
+          },
+          query: {
+            amount: '100000'
           }
         },
-        $t: (msg: string) => msg,
+        $t: (msg: string, args: object) =>
+          `${msg} args: ${JSON.stringify(args)}`,
         $raiden
       },
       data: function() {
@@ -73,7 +92,7 @@ describe('TransferSteps.vue', () => {
         name: 'ServiceToken',
         symbol: 'SVT',
         decimals: 18,
-        balance: Zero
+        balance: One
       } as Token
     } as Tokens);
   });
@@ -93,10 +112,12 @@ describe('TransferSteps.vue', () => {
       step: 1,
       selectedPfs: raidenPFS
     });
-
+    await flushPromises();
     const button = wrapper.find('.action-button__button');
     expect(button.attributes()['disabled']).toBeUndefined();
     button.trigger('click');
+    await flushPromises();
+    jest.runOnlyPendingTimers();
     expect(wrapper.vm.$data.step).toBe(2);
   });
 

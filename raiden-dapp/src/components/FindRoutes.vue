@@ -49,7 +49,7 @@ export default class FindRoutes extends Vue {
   @Prop({ required: true })
   token!: Token;
   @Prop({ required: true })
-  routes: Route[] = [];
+  routes!: Route[];
   headers: { text: string; align: string; value: string }[] = [];
   selected: Route[] = [];
 
@@ -69,10 +69,10 @@ export default class FindRoutes extends Vue {
       }
     ];
 
-    this.findRoutes();
+    this.selectRoute();
   }
 
-  async findRoutes(): Promise<void> {
+  async selectRoute(): Promise<void> {
     // Pre select the cheapest route
     const [route] = this.routes;
     this.selected = [route];

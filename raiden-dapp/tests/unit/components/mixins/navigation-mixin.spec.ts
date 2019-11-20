@@ -103,7 +103,9 @@ describe('NavigationMixin', function() {
       expect.objectContaining({
         name: RouteNames.TRANSFER_STEPS,
         params: {
-          target: '0xtarget',
+          target: '0xtarget'
+        },
+        query: {
           amount: '100'
         }
       })
