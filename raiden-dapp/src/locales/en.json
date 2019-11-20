@@ -289,7 +289,7 @@
     "rtt": "{time} ms",
     "price": "{amount} {symbol}",
     "headers": {
-      "host": "Host",
+      "host": "PFS",
       "rtt": "Ping",
       "price": "Price"
     }

@@ -129,12 +129,12 @@ export default class PathfindingServices extends Vue {
       {
         text: this.$t('pathfinding-services.headers.rtt') as string,
         value: 'rtt',
-        align: 'right'
+        align: 'left'
       },
       {
         text: this.$t('pathfinding-services.headers.price') as string,
         value: 'price',
-        align: 'right'
+        align: 'left'
       }
     ];
     this.fetchServices();
@@ -205,6 +205,7 @@ export default class PathfindingServices extends Vue {
     &.v-data-table {
       background-color: transparent !important;
     }
+
     ::v-deep tr:hover {
       background: $primary-disabled-color !important;
     }
@@ -212,9 +213,10 @@ export default class PathfindingServices extends Vue {
     ::v-deep .v-icon {
       color: $primary-color;
     }
+
     ::v-deep th {
-      color: rgba($color-white, 0.5);
-      font-size: 15px;
+      color: #646464 !important;
+      font-size: 16px;
     }
   }
 }

@@ -103,7 +103,7 @@
                 </span>
               </v-col>
             </v-row>
-            <v-row justify="center">
+            <v-row justify="center" class="transfer-steps__step__content">
               <v-col cols="10">
                 <pathfinding-services
                   v-if="step === 1"
@@ -114,7 +114,7 @@
           </v-stepper-content>
 
           <v-stepper-content step="2">
-            <v-row justify="center">
+            <v-row justify="center" class="transfer-steps__step__content">
               <v-col cols="10">
                 <find-routes
                   v-if="step === 2"
@@ -454,6 +454,10 @@ export default class TransferSteps extends Mixins(
   &__step {
     ::v-deep .v-stepper__label {
       display: block !important;
+    }
+
+    &__content {
+      margin-top: 45px;
     }
 
     &.active {
