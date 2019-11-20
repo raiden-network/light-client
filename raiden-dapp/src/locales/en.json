@@ -51,11 +51,8 @@
     }
   },
   "find-routes": {
-    "busy-title": "Searching available routes",
-    "title": "Select a route",
-    "description": "Mediators require a small fee to forward your token transfer. Please select a route below:",
     "hops": "Hops",
-    "fees-in": "Fees in {token}",
+    "price": "Price",
     "error": {
       "title": "Oops, something went wrong"
     }

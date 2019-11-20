@@ -1,7 +1,8 @@
 <template>
   <v-row class="find-routes" align="center" justify="center" no-gutters>
     <v-col cols="12">
-      <p>{{ $t('find-routes.description') }}</p>
+      <h3 class="find-routes__title">{{ domain }}</h3>
+      <div class="find-routes__subtitle">{{ subdomain }}</div>
 
       <v-row align="center" justify="center">
         <v-form>
@@ -19,17 +20,11 @@
             class="find-routes__table"
             @item-selected="select($event)"
           >
-            <template #items="props">
-              <tr
-                :active="props.selected"
-                @click="props.selected = !props.selected"
-              >
-                <td>
-                  <v-checkbox v-model="props.selected" primary></v-checkbox>
-                </td>
-                <td class="text-right">{{ props.item.hops }}</td>
-                <td class="text-right">{{ props.item.displayFee }}</td>
-              </tr>
+            <template #items.hops="{ item }">
+              {{ item.hops }}
+            </template>
+            <template #item.displayFee="{ item }">
+              {{ item.displayFee }} {{ token.symbol }}
             </template>
           </v-data-table>
         </v-form>
@@ -50,8 +45,27 @@ export default class FindRoutes extends Vue {
   token!: Token;
   @Prop({ required: true })
   routes!: Route[];
+  @Prop({ required: true })
+  pfsUrl!: string;
   headers: { text: string; align: string; value: string }[] = [];
   selected: Route[] = [];
+
+  get domain(): string {
+    const [tld, domain] = this.pfsUrl.split('.').reverse();
+    return `${domain}.${tld}`;
+  }
+
+  get subdomain(): string {
+    const url = this.pfsUrl;
+    let start = url.indexOf('://');
+    if (start >= 0) {
+      start += 3;
+    } else {
+      start = 0;
+    }
+    const end = url.indexOf(this.domain) - 1;
+    return url.substring(start, end);
+  }
 
   mounted() {
     this.headers = [
@@ -61,10 +75,8 @@ export default class FindRoutes extends Vue {
         value: 'hops'
       },
       {
-        text: this.$t('find-routes.fees-in', {
-          token: this.token.symbol
-        }) as string,
-        align: 'right',
+        text: this.$t('find-routes.price') as string,
+        align: 'left',
         value: 'displayFee'
       }
     ];
@@ -100,8 +112,22 @@ export default class FindRoutes extends Vue {
     text-align: center;
   }
 
+  &__title {
+    font-size: 24px;
+    line-height: 28px;
+    font-weight: bold;
+  }
+
+  &__subtitle {
+    margin-top: 5px;
+    font-size: 16px;
+    line-height: 19px;
+    color: #646464;
+  }
+
   &__table {
     margin-bottom: 20px;
+    margin-top: 45px;
 
     &.v-data-table {
       background-color: transparent !important;
@@ -115,8 +141,13 @@ export default class FindRoutes extends Vue {
     }
     ::v-deep tr th {
       border: none !important;
+      color: #969696 !important;
+      font-size: 16px;
+      line-height: 19px;
     }
     ::v-deep tr td {
+      font-size: 16px;
+      line-height: 19px;
       text-align: left !important;
     }
     ::v-deep .v-icon {

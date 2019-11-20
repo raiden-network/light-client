@@ -41,7 +41,8 @@ describe('FindRoutes.vue', () => {
       },
       propsData: {
         token,
-        routes
+        routes,
+        pfsUrl: 'http://pfs.test.raiden.network'
       }
     });
   }

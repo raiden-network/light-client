@@ -120,6 +120,7 @@
                   v-if="step === 2"
                   :token="udcToken"
                   :routes="routes"
+                  :pfs-url="selectedPfs.url"
                   @select="setRoute($event)"
                 ></find-routes>
               </v-col>
@@ -295,38 +296,40 @@ export default class TransferSteps extends Mixins(
 
   async findRoutes(): Promise<void> {
     const { address, decimals } = this.token;
+    // Fetch available routes from PFS
+    const fetchedRoutes = await this.$raiden.findRoutes(
+      address,
+      this.target,
+      BalanceUtils.parse(this.amount, decimals!),
+      this.selectedPfs ? this.selectedPfs : undefined
+    );
 
-    try {
-      // Fetch available routes from PFS
-      const fetchedRoutes = await this.$raiden.findRoutes(
-        address,
-        this.target,
-        BalanceUtils.parse(this.amount, decimals!),
-        this.selectedPfs ? this.selectedPfs : undefined
+    if (fetchedRoutes) {
+      // Convert to displayable Route type
+      this.routes = fetchedRoutes.map(
+        ({ path, fee }, index: number) =>
+          ({
+            key: index,
+            hops: path.length - 1,
+            displayFee: BalanceUtils.toUnits(fee as BigNumber, decimals!),
+            fee,
+            path
+          } as Route)
       );
-
-      if (fetchedRoutes) {
-        // Convert to displayable Route type
-        this.routes = fetchedRoutes.map(
-          ({ path, fee }, index: number) =>
-            ({
-              key: index,
-              hops: path.length - 1,
-              displayFee: BalanceUtils.toUnits(fee as BigNumber, decimals!),
-              fee,
-              path
-            } as Route)
-        );
-      }
-    } catch (e) {
-      this.error = e.message;
     }
   }
 
   async handleStep() {
     if (this.step === 1 && this.selectedPfs && !this.pfsFeesConfirmed) {
       this.pfsFeesConfirmed = true;
-      await this.findRoutes();
+      try {
+        await this.findRoutes();
+      } catch (e) {
+        this.pfsFeesConfirmed = false;
+        this.error = e.message;
+        return;
+      }
+
       this.pfsFeesPaid = true;
 
       setTimeout(() => {
