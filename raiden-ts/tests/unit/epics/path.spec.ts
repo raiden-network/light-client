@@ -359,7 +359,7 @@ describe('PFS: pathFindServiceEpic', () => {
       iouPersist(
         {
           iou: expect.objectContaining({
-            amount: bigNumberify(4),
+            amount: bigNumberify(2),
           }),
         },
         { tokenNetwork, serviceAddress: iou.receiver },
