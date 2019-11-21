@@ -61,37 +61,28 @@ const oneToNAddress = memoize(
 
 /**
  * Codec for PFS API returned error
+ *
+ * May contain other fields like error_details, but we don't care about them (for now)
  */
 const PathError = t.readonly(
-  t.intersection([
-    t.type({
-      errors: t.string,
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      error_code: t.number,
-    }),
-    t.partial({
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      error_details: t.type({
-        from_: Address,
-        to: Address,
-        value: UInt(32),
-      }),
-    }),
-  ]),
+  t.type({
+    /* eslint-disable-next-line @typescript-eslint/camelcase */
+    error_code: t.number,
+    errors: t.string,
+  }),
 );
 
 const makeIOU = (
   sender: Address,
   receiver: Address,
-  amount: UInt<32>,
-  chainId: UInt<32>,
+  chainId: number,
   oneToNAddress: Address,
   blockNumber: number,
 ): IOU => ({
   sender: sender,
   receiver: receiver,
-  chain_id: chainId,
-  amount: amount,
+  chain_id: bigNumberify(chainId) as UInt<32>,
+  amount: Zero as UInt<32>,
   one_to_n_address: oneToNAddress,
   expiration_block: bigNumberify(blockNumber).add(2 * 10 ** 5) as UInt<32>,
 });
@@ -127,55 +118,61 @@ const makeAndSignLastIOURequest$ = (sender: Address, receiver: Address, signer: 
   });
 
 const prepareNextIOU$ = (
-  state: RaidenState,
   pfs: PFS,
-  deps: RaidenEpicDeps,
-  httpTimeout: number,
   tokenNetwork: Address,
+  state$: Observable<RaidenState>,
+  deps: RaidenEpicDeps,
 ): Observable<Signed<IOU>> => {
-  const cachedIOU: IOU | undefined = get(state.path, ['iou', tokenNetwork, pfs.address]);
-  return (cachedIOU
-    ? of(cachedIOU)
-    : makeAndSignLastIOURequest$(state.address, pfs.address, deps.signer).pipe(
-        mergeMap(payload =>
-          fromFetch(
-            `${pfs.url}/api/v1/${tokenNetwork}/payment/iou?${new URLSearchParams(
-              payload,
-            ).toString()}`,
-            {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
-            },
-          ),
-        ),
-        timeout(httpTimeout),
-        mergeMap(async response => {
-          const text = await response.text();
-          if (response.status === 404) {
-            return makeIOU(
-              state.address,
-              pfs.address,
-              pfs.price,
-              bigNumberify(state.chainId) as UInt<32>,
-              await oneToNAddress(deps.userDepositContract),
-              state.blockNumber,
-            );
-          }
-          if (!response.ok)
-            throw new Error(`PFS: last IOU request: code=${response.status} => body="${text}"`);
+  return state$.pipe(
+    withLatestFrom(deps.config$),
+    first(),
+    switchMap(([state, { httpTimeout }]) => {
+      const cachedIOU: IOU | undefined = get(state.path.iou, [tokenNetwork, pfs.address]);
+      return (cachedIOU
+        ? of(cachedIOU)
+        : makeAndSignLastIOURequest$(deps.address, pfs.address, deps.signer).pipe(
+            mergeMap(payload =>
+              fromFetch(
+                `${pfs.url}/api/v1/${tokenNetwork}/payment/iou?${new URLSearchParams(
+                  payload,
+                ).toString()}`,
+                {
+                  method: 'GET',
+                  headers: { 'Content-Type': 'application/json' },
+                },
+              ).pipe(timeout(httpTimeout)),
+            ),
+            withLatestFrom(state$),
+            mergeMap(async ([response, { blockNumber }]) => {
+              if (response.status === 404) {
+                return makeIOU(
+                  deps.address,
+                  pfs.address,
+                  deps.network.chainId,
+                  await oneToNAddress(deps.userDepositContract),
+                  blockNumber,
+                );
+              }
+              const text = await response.text();
+              if (!response.ok)
+                throw new Error(
+                  `PFS: last IOU request: code=${response.status} => body="${text}"`,
+                );
 
-          const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
-          const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
-          if (signer !== state.address)
-            throw new Error(
-              `PFS: last iou signature mismatch: signer=${signer} instead of us ${state.address}`,
-            );
-          return lastIou;
-        }),
-      )
-  ).pipe(
-    map(iou => updateIOU(iou, pfs.price)),
-    mergeMap(iou => signIOU$(iou, deps.signer)),
+              const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
+              const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
+              if (signer !== deps.address)
+                throw new Error(
+                  `PFS: last iou signature mismatch: signer=${signer} instead of us ${deps.address}`,
+                );
+              return lastIou;
+            }),
+          )
+      ).pipe(
+        map(iou => updateIOU(iou, pfs.price)),
+        mergeMap(iou => signIOU$(iou, deps.signer)),
+      );
+    }),
   );
 };
 
@@ -254,9 +251,12 @@ export const pathFindServiceEpic = (
                   mergeMap(pfs =>
                     pfs.price.isZero()
                       ? of({ pfs, iou: undefined })
-                      : prepareNextIOU$(state, pfs, deps, httpTimeout, tokenNetwork).pipe(
-                          map(iou => ({ pfs, iou })),
-                        ),
+                      : prepareNextIOU$(
+                          pfs,
+                          tokenNetwork,
+                          cached$.pipe(pluck(0)) /* cached state$ */,
+                          deps,
+                        ).pipe(map(iou => ({ pfs, iou }))),
                   ),
                   mergeMap(({ pfs, iou }) =>
                     fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {
