@@ -1041,7 +1041,7 @@ export class Raiden {
   public async depositToUDC(amount: BigNumberish): Promise<Hash> {
     const depositAmount = bigNumberify(amount);
 
-    if (depositAmount.isZero()) throw new Error('Please deposit a positive amount.');
+    if (!depositAmount.gt(Zero)) throw new Error('Please deposit a positive amount.');
 
     const { userDepositContract, address } = this.deps;
 
