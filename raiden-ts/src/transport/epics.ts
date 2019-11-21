@@ -9,6 +9,8 @@ import {
   timer,
   throwError,
   merge,
+  defer,
+  concat,
 } from 'rxjs';
 import {
   catchError,
@@ -34,6 +36,7 @@ import {
   timeout,
   publishReplay,
   pluck,
+  repeatWhen,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
@@ -510,42 +513,121 @@ export const matrixCreateRoomEpic = (
   );
 
 /**
- * Invites users coming online to rooms we may have with them
+ * Invites users coming online to main room we may have with them
+ *
+ * This also keeps retrying inviting every config.httpTimeout (default=30s) while user doesn't
+ * accept our invite or don't invite or write to us to/in another room.
  *
  * @param action$ - Observable of matrixPresenceUpdate actions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps
+ * @param deps.matrix$ - MatrixClient AsyncSubject
+ * @param deps.config$ - RaidenConfig BehaviorSubject
  * @returns Empty observable (whole side-effect on matrix instance)
  */
 export const matrixInviteEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { matrix$ }: RaidenEpicDeps,
+  { matrix$, config$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
-  action$.pipe(
-    filter(isActionOf(matrixPresenceUpdate)),
-    filter(action => action.payload.available),
-    // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
-    mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
-    withLatestFrom(state$),
-    mergeMap(([{ action, matrix }, state]) => {
-      const roomId: string | undefined = get(state, [
-        'transport',
-        'matrix',
-        'rooms',
-        action.meta.address,
-        0,
-      ]);
-      if (roomId) {
-        const room = matrix.getRoom(roomId);
-        if (room) {
-          const member = room.getMember(action.payload.userId);
-          if (!member) return from(matrix.invite(roomId, action.payload.userId));
-        }
-      }
-      return EMPTY;
-    }),
-    ignoreElements(),
+  state$.pipe(
+    publishReplay(1, undefined, state$ =>
+      action$.pipe(
+        filter(isActionOf(matrixPresenceUpdate)),
+        groupBy(a => a.meta.address),
+        mergeMap(grouped$ =>
+          // grouped$ is one observable of presence actions per partners address
+          grouped$.pipe(
+            // action comes only after matrix$ is started, so it's safe to use withLatestFrom
+            withLatestFrom(matrix$),
+            // switchMap on new presence action for address
+            switchMap(([action, matrix]) =>
+              !action.payload.available
+                ? // if not available, do nothing (and unsubscribe from previous observable)
+                  EMPTY
+                : state$.pipe(
+                    map(
+                      state =>
+                        get(state, ['transport', 'matrix', 'rooms', action.meta.address, 0]) as
+                          | string
+                          | undefined,
+                    ),
+                    distinctUntilChanged(),
+                    switchMap(roomId =>
+                      concat(
+                        of(roomId),
+                        !roomId
+                          ? EMPTY
+                          : // re-trigger invite loop if user leaves
+                            fromEvent<RoomMember>(
+                              matrix,
+                              'RoomMember.membership',
+                              ({  }: MatrixEvent, member: RoomMember) => member,
+                            ).pipe(
+                              filter(
+                                member =>
+                                  member.roomId === roomId &&
+                                  member.userId === action.payload.userId &&
+                                  member.membership === 'leave',
+                              ),
+                              mapTo(roomId),
+                            ),
+                      ),
+                    ),
+                    // switchMap on main roomId change
+                    switchMap(roomId =>
+                      !roomId
+                        ? // if roomId not set, do nothing and unsubscribe
+                          EMPTY
+                        : // inner retrier observable
+                          defer(() => {
+                            const room = matrix.getRoom(roomId);
+                            return room
+                              ? // use room already present in matrix instance
+                                of(room)
+                              : // wait for room
+                                fromEvent<Room>(matrix, 'Room').pipe(
+                                  filter(room => room.roomId === roomId),
+                                  take(1),
+                                );
+                          }).pipe(
+                            // stop if user already a room member
+                            filter(room => {
+                              const member = room.getMember(action.payload.userId);
+                              return !member || member.membership !== 'join';
+                            }),
+                            withLatestFrom(config$),
+                            mergeMap(([room, { httpTimeout }]) =>
+                              // defer here ensures invite is re-done on repeat (re-subscription)
+                              defer(() => matrix.invite(room.roomId, action.payload.userId)).pipe(
+                                // while shouldn't stop (by unsubscribe or takeUntil)
+                                repeatWhen(completed$ => completed$.pipe(delay(httpTimeout))),
+                                takeUntil(
+                                  // stop repeat+defer loop above when user joins
+                                  fromEvent<RoomMember>(
+                                    matrix,
+                                    'RoomMember.membership',
+                                    ({  }: MatrixEvent, member: RoomMember) => member,
+                                  ).pipe(
+                                    filter(
+                                      member =>
+                                        member.roomId === room.roomId &&
+                                        member.userId === action.payload.userId &&
+                                        member.membership === 'join',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                    ),
+                  ),
+            ),
+          ),
+        ),
+        ignoreElements(),
+      ),
+    ),
   );
 
 /**
