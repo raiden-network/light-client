@@ -37,6 +37,7 @@ import {
   publishReplay,
   pluck,
   repeatWhen,
+  exhaustMap,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
@@ -64,6 +65,7 @@ import {
   signMessage,
 } from '../messages/utils';
 import { messageSend, messageReceived, messageSent, messageGlobalSend } from '../messages/actions';
+import { transferSigned } from '../transfers/actions';
 import { RaidenState } from '../state';
 import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
 import { LruCache } from '../utils/lru';
@@ -463,10 +465,10 @@ export const matrixPresenceUpdateEpic = (
   );
 
 /**
- * Upon receiving a MessageSendAction, ensure there's a room for the given address
- * Requires address to have its presence monitored.
+ * Create room (if needed) for a transfer's target, channel's partner or, as a fallback, for any
+ * recipient of a messageSend action
  *
- * @param action$ - Observable of messageSend actions
+ * @param action$ - Observable of transferSigned|channelMonitored|messageSend actions
  * @param state$ - Observable of RaidenStates
  * @param matrix$ - RaidenEpicDeps members
  * @returns Observable of matrixRoom actions
@@ -480,32 +482,45 @@ export const matrixCreateRoomEpic = (
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
     // but working inside concatMap, which is called only at outer next and subscribe delayed
     publishReplay(1, undefined, presencesStateReplay$ =>
-      // actual output observable, handles MessageSendAction serially and create room if needed
+      // actual output observable, selects addresses of interest from actions
       action$.pipe(
-        filter(isActionOf(messageSend)),
-        // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
-        mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
-        // concatMap is used to prevent bursts of messages for a given address (eg. on startup)
-        // of creating multiple rooms for same address
-        concatMap(({ action, matrix }) =>
-          // presencesStateReplay$+take(1) acts like withLatestFrom with cached result
-          presencesStateReplay$.pipe(
-            // wait for user to be monitored
-            filter(([presences]) => action.meta.address in presences),
-            take(1),
-            // if there's already a room state for address and it's present in matrix, skip
-            filter(
-              ([, state]) => !get(state.transport, ['matrix', 'rooms', action.meta.address, 0]),
+        // ensure there's a room for address of interest for each of these actions
+        filter(isActionOf([transferSigned, channelMonitored, messageSend])),
+        map(action =>
+          isActionOf(transferSigned, action)
+            ? action.payload.message.target
+            : isActionOf(channelMonitored, action)
+            ? action.meta.partner
+            : action.meta.address,
+        ),
+        // groupby+mergeMap ensures different addresses are processed in parallel, and also
+        // prevents one stuck address observable (e.g. presence delayed) from holding whole queue
+        groupBy(address => address),
+        mergeMap(grouped$ =>
+          grouped$.pipe(
+            // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
+            mergeMap(address => matrix$.pipe(map(matrix => ({ address, matrix })))),
+            // exhaustMap is used to prevent bursts of actions for a given address (eg. on startup)
+            // of creating multiple rooms for same address, so we ignore new address items while
+            // previous is being processed. If user roams, matrixInviteEpic will re-invite
+            exhaustMap(({ address, matrix }) =>
+              // presencesStateReplay$+take(1) acts like withLatestFrom with cached result
+              presencesStateReplay$.pipe(
+                // wait for user to be monitored
+                filter(([presences]) => address in presences),
+                take(1),
+                // if there's already a room in state for address, skip
+                filter(([, state]) => !get(state.transport, ['matrix', 'rooms', address, 0])),
+                // else, create a room, invite known user and persist roomId in state
+                mergeMap(([presences]) =>
+                  matrix.createRoom({
+                    visibility: 'private',
+                    invite: [presences[address].payload.userId],
+                  }),
+                ),
+                map(({ room_id: roomId }) => matrixRoom({ roomId }, { address })),
+              ),
             ),
-            // else, create a room, invite known user and dispatch the respective MatrixRoomAction
-            // to store it in state
-            mergeMap(([presences]) =>
-              matrix.createRoom({
-                visibility: 'private',
-                invite: [presences[action.meta.address].payload.userId],
-              }),
-            ),
-            map(({ room_id: roomId }) => matrixRoom({ roomId }, action.meta)),
           ),
         ),
       ),
