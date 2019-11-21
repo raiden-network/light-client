@@ -97,7 +97,7 @@ import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './
 import { pathFind, pathFound, pathFindFailed, pfsListUpdated } from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
-import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode } from './utils/types';
+import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode, isntNil } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { losslessParse } from './utils/data';
 
@@ -247,8 +247,8 @@ export class Raiden {
               { acc: { ...acc, [secrethash]: sent }, changed: sent },
         { acc: {} },
       ),
-      filter(({ changed }) => !!changed), // filter out if reference didn't change from last emit
-      map(({ changed }) => changed!), // get the changed object only
+      pluck('changed'),
+      filter(isntNil), // filter out if reference didn't change from last emit
       // from here, we get SentTransfer objects which changed from previous state (all on first)
       map(raidenSentTransfer),
     );

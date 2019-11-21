@@ -7,6 +7,8 @@ import { flatten, sortBy } from 'lodash';
 import { Observable, fromEventPattern, merge, from, of, EMPTY, combineLatest, defer } from 'rxjs';
 import { filter, first, map, switchMap, mergeMap, share } from 'rxjs/operators';
 
+import { isntNil } from './types';
+
 /**
  * Like rxjs' fromEvent, but event can be an EventFilter
  *
@@ -93,7 +95,7 @@ export function getEventsStream<T extends any[]>(
       // emit log array elements as separate logs into stream (unwind)
       mergeMap(logs => from(sortBy(flatten(logs), ['blockNumber']))),
       map(logToEvent),
-      filter((event): event is T => !!event),
+      filter(isntNil),
     );
   }
 
@@ -104,7 +106,7 @@ export function getEventsStream<T extends any[]>(
     mergeMap(() => from(filters)),
     mergeMap(filter => fromEthersEvent<Log>(provider, filter)),
     map(logToEvent),
-    filter((event): event is T => !!event),
+    filter(isntNil),
   );
 
   return merge(pastEvents$, newEvents$);

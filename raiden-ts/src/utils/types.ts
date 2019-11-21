@@ -29,6 +29,17 @@ export function decode<C extends t.Mixed>(codec: C, data: C['_I']): C['_A'] {
   return decoded.right;
 }
 
+/**
+ * Test for value's non-nulliness
+ * Like lodash's negate(isNil), but also works as type guard (e.g. useful for filters)
+ *
+ * @param value - to be tested
+ * @returns true if value is not null nor undefined
+ */
+export function isntNil<T>(value: T): value is NonNullable<T> {
+  return value != null;
+}
+
 const isStringifiable = (u: unknown): u is { toString: () => string } =>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   u !== null && u !== undefined && typeof (u as any)['toString'] === 'function';
