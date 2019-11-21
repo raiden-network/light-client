@@ -492,7 +492,7 @@ export const matrixCreateRoomEpic = (
             take(1),
             // if there's already a room state for address and it's present in matrix, skip
             filter(
-              ([, state]) => !get(state, ['transport', 'matrix', 'rooms', action.meta.address, 0]),
+              ([, state]) => !get(state.transport, ['matrix', 'rooms', action.meta.address, 0]),
             ),
             // else, create a room, invite known user and dispatch the respective MatrixRoomAction
             // to store it in state
@@ -559,47 +559,48 @@ export const matrixInviteEpic = (
 export const matrixHandleInvitesEpic = (
   action$: Observable<RaidenAction>,
   {  }: Observable<RaidenState>,
-  { matrix$ }: RaidenEpicDeps,
+  { matrix$, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof matrixRoom>> =>
-  matrix$.pipe(
-    // when matrix finishes initialization, register to matrix invite events
-    switchMap(matrix =>
-      fromEvent<{ event: MatrixEvent; member: RoomMember; matrix: MatrixClient }>(
-        matrix,
-        'RoomMember.membership',
-        (event, member) => ({ event, member, matrix }),
-      ),
-    ),
-    filter(
-      // filter for invite events to us
-      ({ member, matrix }) =>
-        member.userId === matrix.getUserId() && member.membership === 'invite',
-    ),
-    withLatestFrom(getPresences$(action$)),
-    mergeMap(([{ event, member, matrix }, presences]) => {
-      const sender = event.getSender(),
-        cachedPresence = find(presences, p => p.payload.userId === sender),
-        senderPresence$ = cachedPresence
-          ? of(cachedPresence)
-          : action$.pipe(
-              // as these membership events can come up quite early, we delay continue processing
-              // them a while, to see if the sender is of interest to us (presence monitored)
-              filter(isActionOf(matrixPresenceUpdate)),
-              filter(a => a.payload.userId === sender),
+  getPresences$(action$).pipe(
+    publishReplay(1, undefined, presences$ =>
+      matrix$.pipe(
+        // when matrix finishes initialization, register to matrix invite events
+        switchMap(matrix =>
+          fromEvent<{ event: MatrixEvent; member: RoomMember; matrix: MatrixClient }>(
+            matrix,
+            'RoomMember.membership',
+            (event, member) => ({ event, member, matrix }),
+          ),
+        ),
+        filter(
+          // filter for invite events to us
+          ({ member, matrix }) =>
+            member.userId === matrix.getUserId() && member.membership === 'invite',
+        ),
+        withLatestFrom(config$),
+        mergeMap(([{ event, member, matrix }, { httpTimeout }]) => {
+          const sender = event.getSender(),
+            senderPresence$ = presences$.pipe(
+              map(presences => find(presences, p => p.payload.userId === sender)),
+              filter(isntNil),
               take(1),
               // Don't wait more than some arbitrary time for this sender presence update to show
               // up; completes without emitting anything otherwise, ending this pipeline.
               // This also works as a filter to continue processing invites only for monitored
               // users, as it'll complete without emitting if no MatrixPresenceUpdateAction is
               // found for sender in time
-              takeUntil(timer(30e3)),
+              takeUntil(timer(httpTimeout)),
             );
-      return senderPresence$.pipe(map(senderPresence => ({ matrix, member, senderPresence })));
-    }),
-    mergeMap(({ matrix, member, senderPresence }) =>
-      // join room and emit MatrixRoomAction to make it default/first option for sender address
-      from(matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
-        map(() => matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
+          return senderPresence$.pipe(map(senderPresence => ({ matrix, member, senderPresence })));
+        }),
+        mergeMap(({ matrix, member, senderPresence }) =>
+          // join room and emit MatrixRoomAction to make it default/first option for sender address
+          from(matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
+            map(() =>
+              matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address }),
+            ),
+          ),
+        ),
       ),
     ),
   );
@@ -899,7 +900,7 @@ export const matrixMessageReceivedEpic = (
               roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
             ),
         ),
-        mergeMap(([{ event, room }]) =>
+        mergeMap(([{ event, room }, { httpTimeout }]) =>
           presencesStateReplay$.pipe(
             filter(([presences, state]) => {
               const presence = find(presences, ['payload.userId', event.getSender()]);
@@ -915,7 +916,7 @@ export const matrixMessageReceivedEpic = (
             take(1),
             // take up to an arbitrary timeout to presence status for the sender
             // AND the room in which this message was sent to be in sender's address room queue
-            takeUntil(timer(30e3)),
+            takeUntil(timer(httpTimeout)),
             mergeMap(function*([presences]) {
               const presence = find(presences, ['payload.userId', event.getSender()])!;
               for (const line of (event.event.content.body || '').split('\n')) {
