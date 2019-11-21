@@ -276,9 +276,11 @@ export const pathFindServiceEpic = (
                             }
                           : undefined,
                       }),
-                    }).pipe(map(response => ({ response, iou }))),
+                    }).pipe(
+                      timeout(httpTimeout),
+                      map(response => ({ response, iou })),
+                    ),
                   ),
-                  timeout(httpTimeout),
                   mergeMap(async ({ response, iou }) => ({
                     response,
                     text: await response.text(),
