@@ -74,6 +74,21 @@ describe('RaidenService', () => {
     window.ethereum = undefined;
   });
 
+  test('after connect user deposit address should be available', async () => {
+    expect.assertions(1);
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(mockRaiden());
+    await raidenService.connect();
+    await flushPromises();
+    expect(raidenService.userDepositTokenAddress).toEqual('0xuserdeposittoken');
+  });
+
+  test('user deposit address should throw if not connected', async () => {
+    expect.assertions(1);
+    const udcAddress = () => raidenService.userDepositTokenAddress;
+    expect(udcAddress).toThrowError('address empty');
+  });
+
   it('should throw an error if raiden is not initialized when calling getAccount', async () => {
     expect.assertions(1);
     await expect(raidenService.getAccount()).rejects.toThrowError(

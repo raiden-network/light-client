@@ -346,10 +346,12 @@ export default class RaidenService {
     }
   }
 
+  /* istanbul ignore next */
   async depositToUDC(amount: BigNumber): Promise<void> {
     await this.raiden.depositToUDC(amount);
   }
 
+  /* istanbul ignore next */
   async getUDCCapacity(): Promise<BigNumber> {
     return this.raiden.getUDCCapacity();
   }
