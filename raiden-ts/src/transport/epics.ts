@@ -42,7 +42,7 @@ import { find, get, minBy, sortBy } from 'lodash';
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { createClient, MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
 
-import { Address, Signed } from '../utils/types';
+import { Address, Signed, isntNil } from '../utils/types';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { channelMonitored } from '../channels/actions';
@@ -333,10 +333,10 @@ export const matrixMonitorPresenceEpic = (
             .then(presence => ({ ...presence, user_id: userId }))
             .catch(err => {
               console.log('Error fetching user presence, ignoring:', err);
-              return { presence: '', user_id: userId };
+              return undefined;
             }),
         ),
-        filter(presence => !!presence && !!presence.presence),
+        filter(isntNil),
         toArray(),
         // for all matched/verified users, get its presence through dedicated API
         // it's required because, as the user events could already have been handled and
@@ -435,7 +435,7 @@ export const matrixPresenceUpdateEpic = (
       const displayName$: Observable<string | undefined> = user.displayName
         ? of(user.displayName)
         : from(matrix.getProfileInfo(userId, 'displayname')).pipe(
-            map(profile => profile.displayname),
+            pluck('displayname'),
             catchError(() => of(undefined)),
           );
 

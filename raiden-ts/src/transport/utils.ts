@@ -6,6 +6,7 @@ import { MatrixClient, Room } from 'matrix-js-sdk';
 
 import { RaidenAction } from '../actions';
 import { RaidenConfig } from '../config';
+import { isntNil } from '../utils/types';
 import { Presences } from './types';
 import { matrixPresenceUpdate } from './actions';
 
@@ -41,7 +42,7 @@ export const getPresences$ = memoize(
  * @returns Array of room names
  */
 export function globalRoomNames(config: RaidenConfig) {
-  return [config.discoveryRoom, config.pfsRoom].filter((g): g is string => !!g);
+  return [config.discoveryRoom, config.pfsRoom].filter(isntNil);
 }
 
 /**
