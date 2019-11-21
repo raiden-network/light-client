@@ -44,7 +44,7 @@ import { isActionOf, ActionType } from 'typesafe-actions';
 import { find, get, minBy, sortBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
-import { createClient, MatrixClient, MatrixEvent, User, Room, RoomMember } from 'matrix-js-sdk';
+import { createClient, MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
 
 import { Address, Signed, isntNil } from '../utils/types';
 import { RaidenEpicDeps } from '../types';
@@ -84,6 +84,57 @@ import { getPresences$, getRoom$, roomMatch, globalRoomNames } from './utils';
 // still there, so we consider the user as available/online then
 const AVAILABLE = ['online', 'unavailable'];
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
+
+/**
+ * Search user directory for valid users matching a given address and return latest
+ *
+ * @param matrix - Matrix client to search users from
+ * @param address - Address of interest
+ * @returns Observable of user with most recent presence
+ */
+function searchAddressPresence$(matrix: MatrixClient, address: Address) {
+  return defer(() =>
+    // search for any user containing the address of interest in its userId
+    matrix.searchUserDirectory({ term: address.toLowerCase() }),
+  ).pipe(
+    // for every result matches, verify displayName signature is address of interest
+    mergeMap(function*({ results }) {
+      for (const user of results) {
+        if (!user.display_name) continue;
+        try {
+          const match = userRe.exec(user.user_id);
+          if (!match || getAddress(match[1]) !== address) continue;
+          const recovered = verifyMessage(user.user_id, user.display_name);
+          if (!recovered || recovered !== address) continue;
+        } catch (err) {
+          continue;
+        }
+        yield user.user_id;
+      }
+    }),
+    mergeMap(userId =>
+      getUserPresence(matrix, userId)
+        .then(presence => ({ ...presence, user_id: userId }))
+        .catch(err => {
+          console.log('Error fetching user presence, ignoring:', err);
+          return undefined;
+        }),
+    ),
+    filter(isntNil),
+    toArray(),
+    // for all matched/verified users, get its presence through dedicated API
+    // it's required because, as the user events could already have been handled
+    // and filtered out by matrixPresenceUpdateEpic because it wasn't yet a
+    // user-of-interest, we could have missed presence updates, then we need to
+    // fetch it here directly, and from now on, that other epic will monitor its
+    // updates, and sort by most recently seen user
+    map(presences => {
+      if (!presences.length)
+        throw new Error(`Could not find any user with valid signature for ${address}`);
+      return minBy(presences, 'last_active_ago')!;
+    }),
+  );
+}
 
 /**
  * Initialize matrix transport
@@ -274,100 +325,35 @@ export const matrixMonitorPresenceEpic = (
 ): Observable<
   ActionType<typeof matrixPresenceUpdate | typeof matrixRequestMonitorPresenceFailed>
 > =>
-  action$.pipe(
-    filter(isActionOf(matrixRequestMonitorPresence)),
-    // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
-    mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
-    withLatestFrom(getPresences$(action$)),
-    // TODO: groupBy(address)+concatMap serialize presence fetching
-    mergeMap(([{ action, matrix }, presences]) => {
-      if (action.meta.address in presences)
-        // we already monitored/saw this user's presence
-        return of(presences[action.meta.address]);
-
-      const validUsers: User[] = [];
-      for (const user of matrix.getUsers()) {
-        if (!user.displayName) continue;
-        if (!user.presence) continue;
-        let recovered: Address | undefined;
-        try {
-          const match = userRe.exec(user.userId);
-          if (!match || getAddress(match[1]) !== action.meta.address) continue;
-          recovered = verifyMessage(user.userId, user.displayName) as Address | undefined;
-          if (!recovered || recovered !== action.meta.address) continue;
-        } catch (err) {
-          continue;
-        }
-        validUsers.push(user);
-      }
-      // IFF we see a cached/stored user (matrix.getUsers), with displayName and presence already
-      // populated, which displayName signature verifies to our address of interest,
-      // then construct and return the MatrixPresenceUpdateAction from the stored data
-      if (validUsers.length > 0) {
-        const user = minBy(validUsers, 'lastPresenceTs')!;
-        return of(
-          matrixPresenceUpdate(
-            { userId: user.userId, available: AVAILABLE.includes(user.presence!) },
-            action.meta,
-          ),
-        );
-      }
-
-      // if anything failed up to here, go the slow path: searchUserDirectory + getUserPresence
-      return from(
-        // search user directory for any user containing the address of interest in its userId
-        matrix.searchUserDirectory({ term: action.meta.address.toLowerCase() }),
-      ).pipe(
-        // for every result matches, verify displayName signature is address of interest
-        mergeMap(function*({ results }) {
-          for (const user of results) {
-            if (!user.display_name) continue;
-            try {
-              const match = userRe.exec(user.user_id);
-              if (!match || getAddress(match[1]) !== action.meta.address) continue;
-              const recovered = verifyMessage(user.user_id, user.display_name);
-              if (!recovered || recovered !== action.meta.address) continue;
-            } catch (err) {
-              continue;
-            }
-            yield user.user_id;
-          }
-        }),
-        mergeMap(userId =>
-          getUserPresence(matrix, userId)
-            .then(presence => ({ ...presence, user_id: userId }))
-            .catch(err => {
-              console.log('Error fetching user presence, ignoring:', err);
-              return undefined;
-            }),
-        ),
-        filter(isntNil),
-        toArray(),
-        // for all matched/verified users, get its presence through dedicated API
-        // it's required because, as the user events could already have been handled and
-        // filtered out by matrixPresenceUpdateEpic because it wasn't yet a user-of-interest,
-        // we could have missed presence updates, then we need to fetch it here directly,
-        // and from now on, that other epic will monitor its updates, and sort by most recently
-        // seen user
-        map(presences => {
-          if (!presences.length)
-            throw new Error(
-              `Could not find any user with valid signature for ${action.meta.address}`,
-            );
-          return minBy(presences, 'last_active_ago')!;
-        }),
-        map(({ presence, user_id: userId }) =>
-          matrixPresenceUpdate(
-            {
-              userId,
-              available: AVAILABLE.includes(presence),
-            },
-            action.meta,
+  getPresences$(action$).pipe(
+    publishReplay(1, undefined, presences$ =>
+      action$.pipe(
+        filter(isActionOf(matrixRequestMonitorPresence)),
+        // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
+        mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
+        groupBy(({ action }) => action.meta.address),
+        mergeMap(grouped$ =>
+          grouped$.pipe(
+            withLatestFrom(presences$),
+            // if we're already fetching presence for this address, no need to fetch again
+            exhaustMap(([{ action, matrix }, presences]) =>
+              action.meta.address in presences
+                ? // we already monitored/saw this user's presence
+                  of(presences[action.meta.address])
+                : searchAddressPresence$(matrix, action.meta.address).pipe(
+                    map(({ presence, user_id: userId }) =>
+                      matrixPresenceUpdate(
+                        { userId, available: AVAILABLE.includes(presence) },
+                        action.meta,
+                      ),
+                    ),
+                    catchError(err => of(matrixRequestMonitorPresenceFailed(err, action.meta))),
+                  ),
+            ),
           ),
         ),
-        catchError(err => of(matrixRequestMonitorPresenceFailed(err, action.meta))),
-      );
-    }),
+      ),
+    ),
   );
 
 /**
@@ -396,18 +382,18 @@ export const matrixPresenceUpdateEpic = (
     // parse peer address from userId
     map(({ event, matrix }) => {
       // as 'event' is emitted after user is (created and) updated, getUser always returns it
-      const user = matrix.getUser(event.getSender())!,
-        match = userRe.exec(user.userId),
+      const user = matrix.getUser(event.getSender());
+      if (!user || !user.presence) return;
+      const match = userRe.exec(user.userId),
         peerAddress = match && match[1];
+      if (!peerAddress) return;
       // getAddress will convert any valid address into checksummed-format
-      return {
-        user,
-        matrix,
-        peerAddress: (peerAddress && getAddress(peerAddress)) as Address | undefined,
-      };
+      const address = getAddress(peerAddress) as Address | undefined;
+      if (!address) return;
+      return { matrix, user, address };
     }),
     // filter out events without userId in the right format (startWith hex-address)
-    filter(({ user, peerAddress }) => !!(user.presence && peerAddress)),
+    filter(isntNil),
     withLatestFrom(
       // observable of all addresses whose presence monitoring was requested since init
       action$.pipe(
@@ -420,11 +406,10 @@ export const matrixPresenceUpdateEpic = (
     ),
     // filter out events from users we don't care about
     // i.e.: presence monitoring never requested
-    filter(([{ peerAddress }, toMonitor]) => toMonitor.has(peerAddress!)),
-    mergeMap(([{ user, matrix, peerAddress }, , presences]) => {
+    filter(([{ address }, toMonitor]) => toMonitor.has(address)),
+    mergeMap(([{ matrix, user, address }, , presences]) => {
       // first filter can't tell typescript this property will always be set!
       const userId = user.userId,
-        address = peerAddress!,
         presence = user.presence!,
         available = AVAILABLE.includes(presence);
 
@@ -450,7 +435,7 @@ export const matrixPresenceUpdateEpic = (
           if (!displayName) throw new Error(`Could not get displayName of "${userId}"`);
           // ecrecover address, validating displayName is the signature of the userId
           const recovered = verifyMessage(userId, displayName) as Address | undefined;
-          if (!recovered || recovered !== peerAddress)
+          if (!recovered || recovered !== address)
             throw new Error(
               `Could not verify displayName signature of "${userId}": got "${recovered}"`,
             );
