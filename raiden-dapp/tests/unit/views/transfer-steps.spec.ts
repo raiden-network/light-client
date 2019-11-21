@@ -23,8 +23,8 @@ describe('TransferSteps.vue', () => {
   let vuetify: typeof Vuetify;
   let processingTransfer: jest.SpyInstance;
   let transferDone: jest.SpyInstance;
-
   let router: Mocked<VueRouter>;
+
   const raidenPFS: RaidenPFS = {
     address: '0x94DEe8e391410A9ebbA791B187df2d993212c849',
     price: 100,
@@ -32,6 +32,7 @@ describe('TransferSteps.vue', () => {
     token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
     url: 'https://pfs-goerli-with-fee.services-test.raiden.network'
   };
+
   const route = {
     displayFee: '0.0000000000000001',
     fee: bigNumberify(100),
@@ -103,11 +104,13 @@ describe('TransferSteps.vue', () => {
   });
 
   test('should render 3 steps', async () => {
+    expect.assertions(1);
     const wrapper = createWrapper({});
     expect(wrapper.findAll('.transfer-steps__step').length).toBe(3);
   });
 
   test('should enable continue button and let user proceed to 2nd step', async () => {
+    expect.assertions(2);
     const wrapper = createWrapper({
       step: 1,
       selectedPfs: raidenPFS
@@ -121,10 +124,29 @@ describe('TransferSteps.vue', () => {
     expect(wrapper.vm.$data.step).toBe(2);
   });
 
+  test('should show error if fetching paths fails', async () => {
+    expect.assertions(3);
+    const wrapper = createWrapper({
+      step: 1,
+      selectedPfs: raidenPFS
+    });
+    $raiden.findRoutes.mockRejectedValueOnce(new Error('failed'));
+    await flushPromises();
+    const button = wrapper.find('.action-button__button');
+    expect(button.attributes()['disabled']).toBeUndefined();
+    button.trigger('click');
+    await flushPromises();
+    jest.runOnlyPendingTimers();
+    expect(wrapper.vm.$data.step).toBe(1);
+    expect(wrapper.vm.$data.error).toEqual('failed');
+  });
+
   test('should enable continue button and let user proceed to 3rd step', async () => {
+    expect.assertions(2);
     const wrapper = createWrapper({
       step: 2,
       selectedPfs: raidenPFS,
+      routes: [route],
       selectedRoute: route
     });
 
@@ -189,6 +211,7 @@ describe('TransferSteps.vue', () => {
       step: 3,
       selectedPfs: raidenPFS,
       selectedRoute: route,
+      route: [route],
       processingTransfer: false
     });
 

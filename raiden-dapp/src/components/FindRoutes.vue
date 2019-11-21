@@ -37,7 +37,7 @@
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 
 import Spinner from '@/components/Spinner.vue';
-import { Token, Route } from '@/model/types';
+import { Route, Token } from '@/model/types';
 
 @Component({ components: { Spinner } })
 export default class FindRoutes extends Vue {
@@ -48,7 +48,6 @@ export default class FindRoutes extends Vue {
   @Prop({ required: true })
   pfsUrl!: string;
   headers: { text: string; align: string; value: string }[] = [];
-  selected: Route[] = [];
 
   get domain(): string {
     const [tld, domain] = this.pfsUrl.split('.').reverse();
@@ -81,13 +80,7 @@ export default class FindRoutes extends Vue {
       }
     ];
 
-    this.selectRoute();
-  }
-
-  async selectRoute(): Promise<void> {
-    // Pre select the cheapest route
     const [route] = this.routes;
-    this.selected = [route];
     this.select({ item: route, value: true });
   }
 

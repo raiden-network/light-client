@@ -5,40 +5,40 @@
         <v-stepper-header class="transfer-steps__header">
           <v-stepper-step
             :complete="selectedPfs !== null"
+            :class="{ active: step >= 1 }"
             complete-icon=""
             step=""
             class="transfer-steps__step"
-            :class="{ active: step >= 1 }"
           >
             {{ this.$t('transfer.steps.request-route.title') }}
           </v-stepper-step>
 
           <v-divider
-            class="transfer-steps__divider"
             :class="{ active: step >= 2 }"
+            class="transfer-steps__divider"
           ></v-divider>
 
           <v-stepper-step
             :complete="step >= 2"
+            :class="{ active: step >= 2 }"
             complete-icon=""
             step=""
             class="transfer-steps__step"
-            :class="{ active: step >= 2 }"
           >
             {{ this.$t('transfer.steps.select-route.title') }}
           </v-stepper-step>
 
           <v-divider
-            class="transfer-steps__divider"
             :class="{ active: step >= 3 }"
+            class="transfer-steps__divider"
           ></v-divider>
 
           <v-stepper-step
             :complete="step >= 3"
+            :class="{ active: step >= 3 }"
             complete-icon=""
             step=""
             class="transfer-steps__step"
-            :class="{ active: step >= 3 }"
           >
             {{ this.$t('transfer.steps.confirm-transfer.title') }}
           </v-stepper-step>
@@ -193,9 +193,9 @@
 
     <action-button
       :enabled="continueBtnEnabled"
+      :text="$t(`transfer.steps.call-to-action.${step}`)"
       sticky
       arrow
-      :text="$t(`transfer.steps.call-to-action.${step}`)"
       @click="handleStep()"
     >
     </action-button>
@@ -333,7 +333,6 @@ export default class TransferSteps extends Mixins(
       this.pfsFeesPaid = true;
 
       setTimeout(() => {
-        console.log('sda');
         this.step = 2;
       }, 2000);
 
@@ -387,7 +386,6 @@ export default class TransferSteps extends Mixins(
   get totalAmount(): BigNumber {
     const { decimals } = this.token;
     const transfer: BigNumber = BalanceUtils.parse(this.amount, decimals!);
-
     return transfer.add(this.selectedRoute!.fee);
   }
 
