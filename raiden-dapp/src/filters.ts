@@ -35,12 +35,14 @@ export default class Filters {
     const deposit = parseFloat(units);
     if (deposit === 0) {
       return '0.0';
-    } else if (deposit < 0.00001) {
-      return '<0.00001';
+    } else if (deposit < 0.000001) {
+      return '<0.000001';
     } else {
-      const splitted = split(units, '.');
-      if (splitted[1] && splitted[1].length > 5) {
-        return units.substr(0, units.indexOf('.') + 6);
+      const [integerPart, decimalPart] = split(units, '.');
+
+      if (decimalPart && decimalPart.length > 6) {
+        let newDecimal = decimalPart.substring(0, 6);
+        return `≈${integerPart}.${newDecimal}`;
       } else {
         return units;
       }
