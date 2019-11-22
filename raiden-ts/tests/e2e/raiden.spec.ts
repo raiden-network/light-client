@@ -214,32 +214,18 @@ describe('Raiden', () => {
     await expect(raiden.getBalance()).resolves.toEqual(parseEther('5'));
   });
 
-  describe('getTokenBalance', () => {
-    test('non-monitored token', async () => {
-      expect.assertions(1);
-      await expect(raiden.getTokenBalance(partner)).rejects.toThrow();
-    });
-
-    test('success', async () => {
-      expect.assertions(1);
-      await expect(raiden.getTokenBalance(token)).resolves.toEqual(parseUnits('1000', 18));
-    });
+  test('getTokenBalance', async () => {
+    expect.assertions(1);
+    await expect(raiden.getTokenBalance(token)).resolves.toEqual(parseUnits('1000', 18));
   });
 
-  describe('getTokenInfo', () => {
-    test('non-monitored token', async () => {
-      expect.assertions(1);
-      await expect(raiden.getTokenInfo(partner)).rejects.toThrow();
-    });
-
-    test('success', async () => {
-      expect.assertions(1);
-      await expect(raiden.getTokenInfo(token)).resolves.toEqual({
-        totalSupply: expect.any(BigNumber),
-        decimals: 18,
-        name: 'TestToken1',
-        symbol: 'TK1',
-      });
+  test('getTokenInfo', async () => {
+    expect.assertions(1);
+    await expect(raiden.getTokenInfo(token)).resolves.toEqual({
+      totalSupply: expect.any(BigNumber),
+      decimals: 18,
+      name: 'TestToken1',
+      symbol: 'TK1',
     });
   });
 

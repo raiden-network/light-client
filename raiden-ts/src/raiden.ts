@@ -257,7 +257,6 @@ export class Raiden {
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
       if (!Address.is(token)) throw new Error('Invalid address');
-      if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
       const tokenContract = this.deps.getTokenContract(token);
       const [totalSupply, decimals, name, symbol] = await Promise.all([
         tokenContract.functions.totalSupply(),
@@ -592,7 +591,6 @@ export class Raiden {
   public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
     address = address || this.address;
     if (!Address.is(address) || !Address.is(token)) throw new Error('Invalid address');
-    if (!(token in this.state.tokens)) throw new Error(`token "${token}" not monitored`);
     const tokenContract = this.deps.getTokenContract(token);
 
     return tokenContract.functions.balanceOf(address);
