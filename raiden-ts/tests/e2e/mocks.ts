@@ -78,6 +78,8 @@ export class MockMatrixRequestFn {
     };
 
     this.endpoints['/join'] = ({}, callback) => this.respond(callback, 200, {});
+    this.endpoints['/createRoom'] = ({}, callback) =>
+      this.respond(callback, 200, { room_id: `!${Math.random()}:${server}` });
     this.endpoints['/versions'] = ({}, callback) => this.respond(callback, 200, {});
   }
 

@@ -3,8 +3,8 @@
 import { patchVerifyMessage } from '../patches';
 patchVerifyMessage();
 
-import { AsyncSubject, BehaviorSubject, of, timer, EMPTY, Subject } from 'rxjs';
-import { first, tap, takeUntil, toArray } from 'rxjs/operators';
+import { BehaviorSubject, of, timer, EMPTY, Subject } from 'rxjs';
+import { first, tap, takeUntil, toArray, delay } from 'rxjs/operators';
 import { fakeSchedulers } from 'rxjs-marbles/jest';
 import { getType } from 'typesafe-actions';
 import { verifyMessage, BigNumber } from 'ethers/utils';
@@ -53,24 +53,45 @@ import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps } from '../mocks';
 
 describe('transport epic', () => {
-  const depsMock = raidenEpicDeps();
-  const {
-    token,
-    tokenNetwork,
-    channelId,
-    partner,
-    state,
-    matrixServer,
-    partnerRoomId,
-    partnerUserId,
-    partnerSigner,
-    matrix,
-    userId,
-    accessToken,
-    deviceId,
-    displayName,
-    processed,
-  } = epicFixtures(depsMock);
+  let depsMock: ReturnType<typeof raidenEpicDeps>,
+    token: ReturnType<typeof epicFixtures>['token'],
+    tokenNetwork: ReturnType<typeof epicFixtures>['tokenNetwork'],
+    channelId: ReturnType<typeof epicFixtures>['channelId'],
+    partner: ReturnType<typeof epicFixtures>['partner'],
+    state: ReturnType<typeof epicFixtures>['state'],
+    matrixServer: ReturnType<typeof epicFixtures>['matrixServer'],
+    partnerRoomId: ReturnType<typeof epicFixtures>['partnerRoomId'],
+    partnerUserId: ReturnType<typeof epicFixtures>['partnerUserId'],
+    partnerSigner: ReturnType<typeof epicFixtures>['partnerSigner'],
+    matrix: ReturnType<typeof epicFixtures>['matrix'],
+    userId: ReturnType<typeof epicFixtures>['userId'],
+    accessToken: ReturnType<typeof epicFixtures>['accessToken'],
+    deviceId: ReturnType<typeof epicFixtures>['deviceId'],
+    displayName: ReturnType<typeof epicFixtures>['displayName'],
+    processed: ReturnType<typeof epicFixtures>['processed'];
+
+  beforeEach(() => {
+    depsMock = raidenEpicDeps();
+    ({
+      token,
+      tokenNetwork,
+      channelId,
+      partner,
+      state,
+      matrixServer,
+      partnerRoomId,
+      partnerUserId,
+      partnerSigner,
+      matrix,
+      userId,
+      accessToken,
+      deviceId,
+      displayName,
+      processed,
+    } = epicFixtures(depsMock));
+    depsMock.matrix$.next(matrix);
+    depsMock.matrix$.complete();
+  });
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -89,12 +110,6 @@ describe('transport epic', () => {
   });
 
   describe('matrixShutdownEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
     test('stopClient called on action$ completion', async () => {
       expect.assertions(3);
       expect(matrix.stopClient).not.toHaveBeenCalled();
@@ -106,25 +121,13 @@ describe('transport epic', () => {
   });
 
   describe('matrixMonitorPresenceEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
     test('fails when users does not have displayName', async () => {
       expect.assertions(1);
-      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })),
+      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })).pipe(
+          delay(0),
+        ),
         state$ = of(state);
 
-      matrix.getUsers.mockImplementationOnce(() => [
-        {
-          userId: partnerUserId,
-          displayName: undefined,
-          presence: 'online',
-          lastPresenceTs: 123,
-        },
-      ]);
       matrix.searchUserDirectory.mockImplementationOnce(async () => ({
         limited: false,
         results: [{ user_id: partnerUserId }],
@@ -142,17 +145,11 @@ describe('transport epic', () => {
 
     test('fails when users does not have valid addresses', async () => {
       expect.assertions(1);
-      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })),
+      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })).pipe(
+          delay(0),
+        ),
         state$ = of(state);
 
-      matrix.getUsers.mockImplementationOnce(() => [
-        {
-          userId: `@${token}:${matrixServer}`,
-          displayName: 'display_name',
-          presence: 'online',
-          lastPresenceTs: 123,
-        },
-      ]);
       matrix.searchUserDirectory.mockImplementationOnce(async () => ({
         limited: false,
         results: [{ user_id: `@invalidUser:${matrixServer}`, display_name: 'display_name' }],
@@ -170,17 +167,11 @@ describe('transport epic', () => {
 
     test('fails when users does not have presence or unknown address', async () => {
       expect.assertions(1);
-      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })),
+      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })).pipe(
+          delay(0),
+        ),
         state$ = of(state);
 
-      matrix.getUsers.mockImplementationOnce(() => [
-        {
-          userId: partnerUserId,
-          displayName: 'display_name',
-          presence: undefined,
-          lastPresenceTs: 123,
-        },
-      ]);
       (verifyMessage as jest.Mock).mockReturnValueOnce(token);
       matrix.searchUserDirectory.mockImplementationOnce(async () => ({
         limited: false,
@@ -199,24 +190,14 @@ describe('transport epic', () => {
 
     test('fails when verifyMessage throws', async () => {
       expect.assertions(1);
-      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })),
+      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })).pipe(
+          delay(0),
+        ),
         state$ = of(state);
-
-      matrix.getUsers.mockImplementationOnce(() => [
-        {
-          userId: partnerUserId,
-          displayName: 'display_name',
-          presence: 'online',
-          lastPresenceTs: 123,
-        },
-      ]);
       matrix.searchUserDirectory.mockImplementationOnce(async () => ({
         limited: false,
         results: [{ user_id: partnerUserId, display_name: 'display_name' }],
       }));
-      (verifyMessage as jest.Mock).mockImplementationOnce(() => {
-        throw new Error('invalid signature');
-      });
       (verifyMessage as jest.Mock).mockImplementationOnce(() => {
         throw new Error('invalid signature');
       });
@@ -233,44 +214,29 @@ describe('transport epic', () => {
 
     test('success with previously monitored user', async () => {
       expect.assertions(1);
-      const action$ = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-          matrixRequestMonitorPresence(undefined, { address: partner }),
+      const presence = matrixPresenceUpdate(
+          { userId: partnerUserId, available: false },
+          { address: partner },
         ),
+        action$ = new Subject<RaidenAction>(),
         state$ = of(state);
-      await expect(
-        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toMatchObject({
-        type: getType(matrixPresenceUpdate),
-        payload: { userId: partnerUserId, available: true, ts: expect.any(Number) },
-        meta: { address: partner },
-      });
-    });
 
-    test('success with matrix cached user', async () => {
-      expect.assertions(1);
-      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })),
-        state$ = of(state);
-      matrix.getUsers.mockImplementationOnce(() => [
-        {
-          userId: partnerUserId,
-          displayName: 'partner_display_name',
-          presence: 'online',
-          lastPresenceTs: 123,
-        },
-      ]);
-      await expect(
-        matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toMatchObject({
-        type: getType(matrixPresenceUpdate),
-        payload: { userId: partnerUserId, available: true, ts: expect.any(Number) },
-        meta: { address: partner },
-      });
+      const promise = matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise();
+
+      action$.next(presence);
+      setTimeout(() => {
+        action$.next(matrixRequestMonitorPresence(undefined, { address: partner }));
+        action$.complete();
+      }, 5);
+
+      await expect(promise).resolves.toBe(presence);
     });
 
     test('success with searchUserDirectory and getUserPresence', async () => {
       expect.assertions(1);
-      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })),
+      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })).pipe(
+          delay(0),
+        ),
         state$ = of(state);
       await expect(
         matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
@@ -283,7 +249,9 @@ describe('transport epic', () => {
 
     test('success even if some getUserPresence fails', async () => {
       expect.assertions(1);
-      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })),
+      const action$ = of(matrixRequestMonitorPresence(undefined, { address: partner })).pipe(
+          delay(0),
+        ),
         state$ = of(state);
 
       matrix.searchUserDirectory.mockImplementationOnce(async () => ({
@@ -306,12 +274,6 @@ describe('transport epic', () => {
   });
 
   describe('matrixPresenceUpdateEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
     test('success presence update', async () => {
       expect.assertions(1);
       const action$ = of(
@@ -421,12 +383,6 @@ describe('transport epic', () => {
   });
 
   describe('matrixCreateRoomEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
     test('success: concurrent messages create single room', async () => {
       expect.assertions(2);
       const action$ = of(
@@ -461,12 +417,6 @@ describe('transport epic', () => {
   });
 
   describe('matrixInviteEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
     test('do not invite if there is no room for user', async () => {
       expect.assertions(2);
       const action$ = of(
@@ -483,8 +433,8 @@ describe('transport epic', () => {
       expect(matrix.invite).not.toHaveBeenCalled();
     });
 
-    test('invite if there is room for user', async () => {
-      expect.assertions(3);
+    test('invite if there is room for user', () => {
+      expect.assertions(2);
       const action$ = of(
           matrixPresenceUpdate(
             { userId: partnerUserId, available: true, ts: 123 },
@@ -494,21 +444,37 @@ describe('transport epic', () => {
         roomId = partnerRoomId,
         state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
 
-      const promise = matrixInviteEpic(action$, state$, depsMock).toPromise();
+      matrix.invite.mockResolvedValueOnce(true);
+      // partner joins when they're invited the second time
+      matrix.invite.mockImplementationOnce(async () => {
+        matrix.emit(
+          'RoomMember.membership',
+          {},
+          { roomId, userId: partnerUserId, membership: 'join' },
+        );
+        return true;
+      });
 
-      await expect(promise).resolves.toBeUndefined();
-      expect(matrix.invite).toHaveBeenCalledTimes(1);
+      // epic needs to wait for the room to become available
+      matrix.getRoom.mockReturnValueOnce(null);
+
+      const sub = matrixInviteEpic(action$, state$, depsMock).subscribe();
+
+      matrix.emit('Room', { roomId, getMember: jest.fn(() => ({ membership: 'leave' })) });
+      matrix.emit(
+        'RoomMember.membership',
+        {},
+        { roomId, userId: partnerUserId, membership: 'leave' },
+      );
+
+      expect(matrix.invite).toHaveBeenCalledTimes(2);
       expect(matrix.invite).toHaveBeenCalledWith(roomId, partnerUserId);
+
+      sub.unsubscribe();
     });
   });
 
   describe('matrixHandleInvitesEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
     test('accept & join from previous presence', async () => {
       expect.assertions(3);
       const action$ = of(
@@ -599,12 +565,6 @@ describe('transport epic', () => {
   });
 
   describe('matrixLeaveExcessRoomsEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
     test('leave rooms behind threshold', async () => {
       expect.assertions(3);
       const roomId = partnerRoomId,
@@ -635,13 +595,7 @@ describe('transport epic', () => {
   });
 
   describe('matrixLeaveUnknownRoomsEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-
-      jest.useFakeTimers();
-    });
+    beforeEach(() => jest.useFakeTimers());
 
     test(
       'leave unknown rooms',
@@ -732,12 +686,6 @@ describe('transport epic', () => {
   });
 
   describe('matrixCleanLeftRoomsEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
     test('clean left rooms', async () => {
       expect.assertions(1);
 
@@ -759,12 +707,6 @@ describe('transport epic', () => {
   });
 
   describe('matrixMessageSendEpic', () => {
-    beforeEach(() => {
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
-    });
-
     test('send: all needed objects in place', async () => {
       expect.assertions(3);
 
@@ -862,9 +804,6 @@ describe('transport epic', () => {
           }),
         ].reduce(raidenReducer, state),
       );
-      depsMock.matrix$ = new AsyncSubject();
-      depsMock.matrix$.next(matrix);
-      depsMock.matrix$.complete();
     });
 
     test('receive: success on late presence and late room', async () => {
