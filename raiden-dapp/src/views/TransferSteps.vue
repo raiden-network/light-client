@@ -5,40 +5,40 @@
         <v-stepper-header class="transfer-steps__header">
           <v-stepper-step
             :complete="selectedPfs !== null"
+            :class="{ active: step >= 1 }"
             complete-icon=""
             step=""
             class="transfer-steps__step"
-            :class="{ active: step >= 1 }"
           >
             {{ this.$t('transfer.steps.request-route.title') }}
           </v-stepper-step>
 
           <v-divider
-            class="transfer-steps__divider"
             :class="{ active: step >= 2 }"
+            class="transfer-steps__divider"
           ></v-divider>
 
           <v-stepper-step
             :complete="step >= 2"
+            :class="{ active: step >= 2 }"
             complete-icon=""
             step=""
             class="transfer-steps__step"
-            :class="{ active: step >= 2 }"
           >
             {{ this.$t('transfer.steps.select-route.title') }}
           </v-stepper-step>
 
           <v-divider
-            class="transfer-steps__divider"
             :class="{ active: step >= 3 }"
+            class="transfer-steps__divider"
           ></v-divider>
 
           <v-stepper-step
             :complete="step >= 3"
+            :class="{ active: step >= 3 }"
             complete-icon=""
             step=""
             class="transfer-steps__step"
-            :class="{ active: step >= 3 }"
           >
             {{ this.$t('transfer.steps.confirm-transfer.title') }}
           </v-stepper-step>
@@ -46,7 +46,64 @@
 
         <v-stepper-items>
           <v-stepper-content step="1">
-            <v-row justify="center">
+            <v-row
+              justify="center"
+              align-content="center"
+              no-gutters=""
+              class="udc-balance__container"
+            >
+              <v-col cols="10">
+                <span class="udc-balance__amount">
+                  {{
+                    this.$t('transfer.steps.request-route.udc-amount', {
+                      amount: convertToUnits(
+                        udcCapacity,
+                        udcToken.decimals || 18
+                      ),
+                      token: udcToken.symbol || 'SVT'
+                    })
+                  }}
+                </span>
+                <v-dialog
+                  v-model="showMintDeposit"
+                  max-width="425"
+                  class="udc-balance__dialog-container"
+                >
+                  <template #activator="{ on }">
+                    <v-btn
+                      text
+                      icon
+                      x-large
+                      class="udc-balance__deposit"
+                      @click="showMintDeposit = true"
+                      v-on="on"
+                    >
+                      <v-icon color="primary">play_for_work</v-icon>
+                    </v-btn>
+                  </template>
+                  <mint-deposit-dialog
+                    @cancel="showMintDeposit = false"
+                    @done="mintDone()"
+                  />
+                </v-dialog>
+              </v-col>
+            </v-row>
+            <v-row
+              justify="center"
+              no-gutters=""
+              class="udc-balance__container"
+            >
+              <v-col cols="10">
+                <span class="udc-balance__description">
+                  {{
+                    this.$t('transfer.steps.request-route.udc-description', {
+                      token: udcToken.symbol || 'SVT'
+                    })
+                  }}
+                </span>
+              </v-col>
+            </v-row>
+            <v-row justify="center" class="transfer-steps__step__content">
               <v-col cols="10">
                 <pathfinding-services
                   v-if="step === 1"
@@ -57,14 +114,13 @@
           </v-stepper-content>
 
           <v-stepper-content step="2">
-            <v-row justify="center">
+            <v-row justify="center" class="transfer-steps__step__content">
               <v-col cols="10">
                 <find-routes
                   v-if="step === 2"
-                  :pfs="selectedPfs"
-                  :token="token"
-                  :amount="amount"
-                  :target="target"
+                  :token="udcToken"
+                  :routes="routes"
+                  :pfs-url="selectedPfs.url"
                   @select="setRoute($event)"
                 ></find-routes>
               </v-col>
@@ -107,6 +163,20 @@
       </v-stepper>
     </v-row>
 
+    <v-overlay
+      v-if="step === 1"
+      :value="pfsFeesConfirmed"
+      class="confirmation-overlay"
+    >
+      <spinner v-if="!pfsFeesPaid" />
+      <checkmark v-else class="confirmation-overlay__checkmark" />
+
+      <h2 v-if="!pfsFeesPaid">
+        {{ this.$t('transfer.steps.request-route.in-progress') }}
+      </h2>
+      <h2 v-else>{{ this.$t('transfer.steps.request-route.done') }}</h2>
+    </v-overlay>
+
     <stepper
       :display="processingTransfer"
       :steps="steps"
@@ -123,8 +193,9 @@
 
     <action-button
       :enabled="continueBtnEnabled"
-      sticky
       :text="$t(`transfer.steps.call-to-action.${step}`)"
+      sticky
+      arrow
       @click="handleStep()"
     >
     </action-button>
@@ -144,8 +215,13 @@ import PathfindingServices from '@/components/PathfindingServices.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import Spinner from '@/components/Spinner.vue';
+import MintDepositDialog from '@/components/MintDepositDialog.vue';
+import Checkmark from '@/components/Checkmark.vue';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
+import { Zero } from 'ethers/constants';
+import { getAddress, getAmount } from '@/utils/query-params';
+import AddressUtils from '@/utils/address-utils';
 
 @Component({
   components: {
@@ -154,7 +230,9 @@ import ErrorScreen from '@/components/ErrorScreen.vue';
     FindRoutes,
     Spinner,
     Stepper,
-    ErrorScreen
+    ErrorScreen,
+    Checkmark,
+    MintDepositDialog
   }
 })
 export default class TransferSteps extends Mixins(
@@ -164,8 +242,10 @@ export default class TransferSteps extends Mixins(
   step: number = 1;
   selectedPfs: RaidenPFS | null = null;
   selectedRoute: Route | null = null;
+  routes: Route[] = [];
   pfsFeesConfirmed: boolean = false;
   pfsFeesPaid: boolean = false;
+  showMintDeposit: boolean = false;
   mediationFeesConfirmed: boolean = false;
   processingTransfer: boolean = false;
   transferDone: boolean = false;
@@ -175,11 +255,87 @@ export default class TransferSteps extends Mixins(
   doneStep: StepDescription = emptyDescription();
 
   convertToUnits = BalanceUtils.toUnits;
+  udcCapacity: BigNumber = Zero;
 
-  handleStep() {
+  amount: string = '';
+  target: string = '';
+
+  private updateUDCCapacity() {
+    this.$raiden.getUDCCapacity().then(value => (this.udcCapacity = value));
+  }
+
+  async created() {
+    const { amount } = this.$route.query;
+    const { target } = this.$route.params;
+
+    this.amount = getAmount(amount);
+    this.target = getAddress(target);
+
+    const { token: address } = this.$route.params;
+
+    if (!AddressUtils.checkAddressChecksum(address)) {
+      this.navigateToHome();
+      return;
+    }
+
+    await this.$raiden.fetchTokenData([address]);
+
+    if (typeof this.token.decimals !== 'number') {
+      this.navigateToHome();
+    }
+  }
+
+  mounted() {
+    this.updateUDCCapacity();
+  }
+
+  mintDone() {
+    this.showMintDeposit = false;
+    this.updateUDCCapacity();
+  }
+
+  async findRoutes(): Promise<void> {
+    const { address, decimals } = this.token;
+    // Fetch available routes from PFS
+    const fetchedRoutes = await this.$raiden.findRoutes(
+      address,
+      this.target,
+      BalanceUtils.parse(this.amount, decimals!),
+      this.selectedPfs ? this.selectedPfs : undefined
+    );
+
+    if (fetchedRoutes) {
+      // Convert to displayable Route type
+      this.routes = fetchedRoutes.map(
+        ({ path, fee }, index: number) =>
+          ({
+            key: index,
+            hops: path.length - 1,
+            displayFee: BalanceUtils.toUnits(fee as BigNumber, decimals!),
+            fee,
+            path
+          } as Route)
+      );
+    }
+  }
+
+  async handleStep() {
     if (this.step === 1 && this.selectedPfs && !this.pfsFeesConfirmed) {
       this.pfsFeesConfirmed = true;
-      this.step = 2;
+      try {
+        await this.findRoutes();
+      } catch (e) {
+        this.pfsFeesConfirmed = false;
+        this.error = e.message;
+        return;
+      }
+
+      this.pfsFeesPaid = true;
+
+      setTimeout(() => {
+        this.step = 2;
+      }, 2000);
+
       return;
     }
 
@@ -199,17 +355,17 @@ export default class TransferSteps extends Mixins(
     return this.$store.state.tokens[address] || ({ address } as Token);
   }
 
-  get target(): string {
-    return this.$route.params.target;
-  }
-
-  get amount(): string {
-    return this.$route.params.amount;
+  get udcToken(): Token {
+    const address = this.$raiden.userDepositTokenAddress;
+    return this.$store.state.tokens[address] || ({ address } as Token);
   }
 
   get continueBtnEnabled() {
     if (this.step == 1) {
-      return this.selectedPfs !== null;
+      return (
+        this.selectedPfs !== null &&
+        this.udcCapacity.gte(this.selectedPfs.price)
+      );
     }
 
     if (this.step == 2) {
@@ -230,7 +386,6 @@ export default class TransferSteps extends Mixins(
   get totalAmount(): BigNumber {
     const { decimals } = this.token;
     const transfer: BigNumber = BalanceUtils.parse(this.amount, decimals!);
-
     return transfer.add(this.selectedRoute!.fee);
   }
 
@@ -302,6 +457,10 @@ export default class TransferSteps extends Mixins(
       display: block !important;
     }
 
+    &__content {
+      margin-top: 45px;
+    }
+
     &.active {
       ::v-deep .v-stepper__step__step {
         border-color: $primary-color !important;
@@ -353,5 +512,57 @@ export default class TransferSteps extends Mixins(
   &__total-amount {
     text-align: center;
   }
+
+  .udc-balance {
+    &__container {
+      text-align: center;
+    }
+
+    &__amount {
+      font-size: 24px;
+      font-weight: bold;
+      font-family: Roboto, sans-serif;
+      color: $color-white;
+      vertical-align: middle;
+    }
+
+    &__description {
+      font-size: 16px;
+      font-family: Roboto, sans-serif;
+      color: $secondary-text-color;
+    }
+
+    &__deposit {
+      vertical-align: middle;
+    }
+  }
+}
+
+.confirmation-overlay {
+  text-align: center;
+
+  &.v-overlay--active {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    backdrop-filter: blur(4px);
+    background-color: rgba($color-white, 0.15);
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+
+  & ::v-deep .spinner {
+    margin: 2em;
+  }
+
+  &__checkmark {
+    margin: 2em;
+  }
+}
+
+.v-dialog__content--active {
+  background-color: rgba($color-white, 0.15);
+  backdrop-filter: blur(4px);
 }
 </style>

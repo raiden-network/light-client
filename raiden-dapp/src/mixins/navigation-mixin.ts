@@ -62,7 +62,8 @@ export default class NavigationMixin extends Vue {
   navigateToTransferSteps(target: string, amount: string) {
     this.$router.push({
       name: RouteNames.TRANSFER_STEPS,
-      params: { target, amount }
+      params: { target },
+      query: { amount }
     });
   }
 

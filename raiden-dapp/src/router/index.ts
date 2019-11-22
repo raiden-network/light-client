@@ -32,7 +32,7 @@ const router = new Router({
       component: () => import('../views/Transfer.vue')
     },
     {
-      path: '/transfer/:token/start',
+      path: '/transfer/:token/:target',
       name: RouteNames.TRANSFER_STEPS,
       meta: {
         title: 'Send'

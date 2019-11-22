@@ -12,6 +12,7 @@ export class Web3Provider {
       provider = window.web3.currentProvider;
     }
 
+    /* istanbul ignore next */
     if (provider && provider.isMetaMask) {
       provider.autoRefreshOnNetworkChange = false;
       provider.on('networkChanged', () =>

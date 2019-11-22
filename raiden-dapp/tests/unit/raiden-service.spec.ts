@@ -36,7 +36,7 @@ describe('RaidenService', () => {
   };
   const path = [{ path: ['0xmediator'], fee: new BigNumber(1 ** 10) }];
 
-  const mockRaiden = (extras: {} = {}) =>
+  const mockRaiden = (overrides: {} = {}) =>
     Object.assign(
       {
         address: '123',
@@ -48,9 +48,14 @@ describe('RaidenService', () => {
         getTokenBalance: jest.fn().mockResolvedValue(Zero),
         getTokenList: jest.fn().mockResolvedValue(['0xtoken']),
         getTokenInfo: jest.fn().mockResolvedValue(null),
-        start: jest.fn()
+        getUDCCapacity: jest.fn().mockResolvedValue(Zero),
+        userDepositTokenAddress: jest
+          .fn()
+          .mockResolvedValue('0xuserdeposittoken'),
+        start: jest.fn().mockReturnValue(null),
+        stop: jest.fn().mockReturnValue(null)
       },
-      extras
+      overrides
     );
 
   beforeEach(() => {
@@ -67,6 +72,21 @@ describe('RaidenService', () => {
   afterEach(() => {
     window.web3 = undefined;
     window.ethereum = undefined;
+  });
+
+  test('after connect user deposit address should be available', async () => {
+    expect.assertions(1);
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(mockRaiden());
+    await raidenService.connect();
+    await flushPromises();
+    expect(raidenService.userDepositTokenAddress).toEqual('0xuserdeposittoken');
+  });
+
+  test('user deposit address should throw if not connected', async () => {
+    expect.assertions(1);
+    const udcAddress = () => raidenService.userDepositTokenAddress;
+    expect(udcAddress).toThrowError('address empty');
   });
 
   it('should throw an error if raiden is not initialized when calling getAccount', async () => {
@@ -275,14 +295,10 @@ describe('RaidenService', () => {
       sendAsync: jest.fn()
     });
     const stub = new BehaviorSubject({});
-    const raidenMock = {
+    const raidenMock = mockRaiden({
       channels$: stub,
-      getBalance: jest.fn().mockResolvedValue(Zero),
-      events$: new BehaviorSubject({}),
-      stop: jest.fn(),
-      start: jest.fn(),
       getTokenList: jest.fn().mockResolvedValue([])
-    };
+    });
 
     factory.mockResolvedValue(raidenMock);
     stub.next({});
@@ -565,6 +581,8 @@ describe('RaidenService', () => {
     });
 
     test('check connected token balances on a new block', async () => {
+      expect.assertions(2);
+
       const mockStore = store as any;
 
       mockStore.state = {
@@ -597,15 +615,13 @@ describe('RaidenService', () => {
         name: 'Token 1',
         symbol: 'TKN1'
       };
-      const raidenMock = {
-        channels$: new BehaviorSubject({}),
-        getBalance: jest.fn().mockResolvedValue(Zero),
+
+      const raidenMock = mockRaiden({
         getTokenBalance: jest.fn().mockResolvedValue(One),
         events$: subject,
-        stop: jest.fn().mockReturnValue(null),
         getTokenList: jest.fn().mockResolvedValue([mockToken1]),
         getTokenInfo: jest.fn().mockResolvedValue(testToken)
-      };
+      });
 
       factory.mockResolvedValue(raidenMock);
       await raidenService.connect();
@@ -613,8 +629,9 @@ describe('RaidenService', () => {
       subject.next({ type: 'newBlock' });
       await flushPromises();
 
+      expect(store.commit).toHaveBeenCalledTimes(5);
       expect(store.commit).toHaveBeenNthCalledWith(
-        7,
+        5,
         'updateTokens',
         expect.objectContaining({
           [mockToken1]: {
@@ -643,14 +660,10 @@ describe('RaidenService', () => {
     });
 
     const subject = new BehaviorSubject({});
-    const raidenMock = {
-      channels$: new BehaviorSubject({}),
-      getBalance: jest.fn().mockResolvedValue(Zero),
+    const raidenMock = mockRaiden({
       events$: subject,
-      getTokenList: jest.fn().mockResolvedValue([]),
-      start: jest.fn(),
-      stop: jest.fn()
-    };
+      getTokenList: jest.fn().mockResolvedValue([])
+    });
 
     factory.mockResolvedValue(raidenMock);
     await raidenService.connect();
@@ -658,7 +671,7 @@ describe('RaidenService', () => {
     subject.next({ type: 'raidenShutdown' });
     await flushPromises();
 
-    expect(store.commit).toHaveBeenCalledTimes(6);
+    expect(store.commit).toHaveBeenCalledTimes(5);
     expect(store.commit).toHaveBeenLastCalledWith('reset');
   });
 

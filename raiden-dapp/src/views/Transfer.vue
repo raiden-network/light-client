@@ -91,7 +91,8 @@
         :enabled="valid"
         :text="$t('general.buttons.continue')"
         class="transfer__action-button"
-        :sticky="true"
+        sticky
+        arrow
         @click="navigateToTransferSteps(target, amount)"
       ></action-button>
     </v-container>

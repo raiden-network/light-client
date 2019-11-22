@@ -51,11 +51,8 @@
     }
   },
   "find-routes": {
-    "busy-title": "Searching available routes",
-    "title": "Select a route",
-    "description": "Mediators require a small fee to forward your token transfer. Please select a route below:",
     "hops": "Hops",
-    "fees-in": "Fees in {token}",
+    "price": "Price",
     "error": {
       "title": "Oops, something went wrong"
     }
@@ -174,6 +171,11 @@
   "application": {
     "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
   },
+  "mint-deposit-dialog": {
+    "button": "Mint and deposit",
+    "available": "Available {currency} to pay for on-chain transaction: {balance} {currency}",
+    "error": "The mint and deposit operation failed."
+  },
   "transfer": {
     "deposit-button": "Deposit",
     "channel-button": "Channels",
@@ -189,7 +191,11 @@
     },
     "steps": {
       "request-route": {
-        "title": "Request Route"
+        "title": "Request Route",
+        "udc-amount": "{amount} {token}",
+        "udc-description": "{token} Balance",
+        "in-progress": "Sign the message to pay for the route request",
+        "done": "Route request payment complete"
       },
       "select-route": {
         "title": "Select Route"
@@ -280,7 +286,7 @@
     "rtt": "{time} ms",
     "price": "{amount} {symbol}",
     "headers": {
-      "host": "Host",
+      "host": "PFS",
       "rtt": "Ping",
       "price": "Price"
     }

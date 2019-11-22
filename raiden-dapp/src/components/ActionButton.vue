@@ -17,6 +17,7 @@
         @click="click()"
       >
         {{ text }}
+        <v-icon v-if="arrow" right>keyboard_arrow_right</v-icon>
       </v-btn>
     </v-col>
   </v-row>
@@ -37,6 +38,9 @@ export default class ActionButton extends Vue {
 
   @Prop({ type: Boolean, default: false })
   sticky?: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  arrow?: boolean;
 
   @Emit()
   click() {}
