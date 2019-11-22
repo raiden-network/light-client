@@ -137,6 +137,65 @@ function searchAddressPresence$(matrix: MatrixClient, address: Address) {
 }
 
 /**
+ * Returns an observable which keeps inviting userId to roomId while user doesn't join
+ *
+ * If user already joined, completes immediatelly.
+ *
+ * @param matrix - client instance
+ * @param roomId - room to invite user to
+ * @param userId - user to be invited
+ * @param config$ - Observable of config object containing httpTimeout used as iteration delay
+ * @returns Cold observable which keep inviting user if needed and then completes.
+ */
+function inviteLoop$(
+  matrix: MatrixClient,
+  roomId: string,
+  userId: string,
+  config$: Observable<{ httpTimeout: number }>,
+) {
+  return defer(() => {
+    const room = matrix.getRoom(roomId);
+    return room
+      ? // use room already present in matrix instance
+        of(room)
+      : // wait for room
+        fromEvent<Room>(matrix, 'Room').pipe(
+          filter(room => room.roomId === roomId),
+          take(1),
+        );
+  }).pipe(
+    // stop if user already a room member
+    filter(room => {
+      const member = room.getMember(userId);
+      return !member || member.membership !== 'join';
+    }),
+    withLatestFrom(config$),
+    mergeMap(([, { httpTimeout }]) =>
+      // defer here ensures invite is re-done on repeat (re-subscription)
+      defer(() => matrix.invite(roomId, userId)).pipe(
+        // while shouldn't stop (by unsubscribe or takeUntil)
+        repeatWhen(completed$ => completed$.pipe(delay(httpTimeout))),
+        takeUntil(
+          // stop repeat+defer loop above when user joins
+          fromEvent<RoomMember>(
+            matrix,
+            'RoomMember.membership',
+            ({  }: MatrixEvent, member: RoomMember) => member,
+          ).pipe(
+            filter(
+              member =>
+                member.roomId === roomId &&
+                member.userId === userId &&
+                member.membership === 'join',
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
  * Initialize matrix transport
  * The matrix client instance will be outputed to RaidenEpicDeps.matrix$ AsyncSubject
  * The setup info (including credentials, for persistence) will be the matrixSetup output action
@@ -579,47 +638,8 @@ export const matrixInviteEpic = (
                       !roomId
                         ? // if roomId not set, do nothing and unsubscribe
                           EMPTY
-                        : // inner retrier observable
-                          defer(() => {
-                            const room = matrix.getRoom(roomId);
-                            return room
-                              ? // use room already present in matrix instance
-                                of(room)
-                              : // wait for room
-                                fromEvent<Room>(matrix, 'Room').pipe(
-                                  filter(room => room.roomId === roomId),
-                                  take(1),
-                                );
-                          }).pipe(
-                            // stop if user already a room member
-                            filter(room => {
-                              const member = room.getMember(action.payload.userId);
-                              return !member || member.membership !== 'join';
-                            }),
-                            withLatestFrom(config$),
-                            mergeMap(([room, { httpTimeout }]) =>
-                              // defer here ensures invite is re-done on repeat (re-subscription)
-                              defer(() => matrix.invite(room.roomId, action.payload.userId)).pipe(
-                                // while shouldn't stop (by unsubscribe or takeUntil)
-                                repeatWhen(completed$ => completed$.pipe(delay(httpTimeout))),
-                                takeUntil(
-                                  // stop repeat+defer loop above when user joins
-                                  fromEvent<RoomMember>(
-                                    matrix,
-                                    'RoomMember.membership',
-                                    ({  }: MatrixEvent, member: RoomMember) => member,
-                                  ).pipe(
-                                    filter(
-                                      member =>
-                                        member.roomId === room.roomId &&
-                                        member.userId === action.payload.userId &&
-                                        member.membership === 'join',
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
+                        : // while subscribed and user didn't join, invite every httpTimeout=30s
+                          inviteLoop$(matrix, roomId, action.payload.userId, config$),
                     ),
                   ),
             ),
