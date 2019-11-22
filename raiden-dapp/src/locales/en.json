@@ -180,7 +180,6 @@
     "deposit-button": "Deposit",
     "channel-button": "Channels",
     "capacity-label": "Capacity",
-    "capacity-amount": "{capacity} {token}",
     "recipient-label": "Recipient",
     "amount-label": "Amount",
     "amount-placeholder": "Specify amount...",
@@ -192,7 +191,6 @@
     "steps": {
       "request-route": {
         "title": "Request Route",
-        "udc-amount": "{amount} {token}",
         "udc-description": "{token} Balance",
         "in-progress": "Sign the message to pay for the route request",
         "done": "Route request payment complete"
@@ -202,8 +200,7 @@
       },
       "confirm-transfer": {
         "title": "Confirm Transfer",
-        "total-amount": "Total Amount",
-        "token-amount": "{totalAmount} {token}"
+        "total-amount": "Total Amount"
       },
       "call-to-action": {
         "1": "Pay Route Request",
@@ -284,7 +281,6 @@
   "pathfinding-services": {
     "title": "Select Pathfinding Service",
     "rtt": "{time} ms",
-    "price": "{amount} {symbol}",
     "headers": {
       "host": "PFS",
       "rtt": "Ping",

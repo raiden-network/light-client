@@ -23,8 +23,9 @@
             <template #items.hops="{ item }">
               {{ item.hops }}
             </template>
-            <template #item.displayFee="{ item }">
-              {{ item.displayFee }} {{ token.symbol }}
+            <template #item.fee="{ item }">
+              {{ item.fee | displayFormat(token.decimals) }}
+              {{ token.symbol }}
             </template>
           </v-data-table>
         </v-form>
@@ -47,6 +48,7 @@ export default class FindRoutes extends Vue {
   routes!: Route[];
   @Prop({ required: true })
   pfsUrl!: string;
+  selected: Route[] = [];
   headers: { text: string; align: string; value: string }[] = [];
 
   get domain(): string {
@@ -76,11 +78,12 @@ export default class FindRoutes extends Vue {
       {
         text: this.$t('find-routes.price') as string,
         align: 'left',
-        value: 'displayFee'
+        value: 'fee'
       }
     ];
 
     const [route] = this.routes;
+    this.selected = [route];
     this.select({ item: route, value: true });
   }
 

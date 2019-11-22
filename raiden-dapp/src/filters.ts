@@ -31,7 +31,7 @@ export default class Filters {
   }
 
   static displayFormat(amount: BigNumber, decimals: number): string {
-    const units = BalanceUtils.toUnits(amount, decimals);
+    const units = BalanceUtils.toUnits(amount, decimals || 18);
     const deposit = parseFloat(units);
     if (deposit === 0) {
       return '0.0';
@@ -59,3 +59,6 @@ Vue.filter('decimals', Filters.decimals);
 Vue.filter('upper', Filters.upper);
 Vue.filter('displayFormat', Filters.displayFormat);
 Vue.filter('capitalizeFirst', Filters.capitalizeFirst);
+Vue.filter('toUnits', (wei: BigNumber, decimals?: number) =>
+  BalanceUtils.toUnits(wei, decimals || 18)
+);
