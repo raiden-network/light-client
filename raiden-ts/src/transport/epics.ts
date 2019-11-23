@@ -40,6 +40,7 @@ import {
   exhaustMap,
   throwIfEmpty,
   switchMapTo,
+  retryWhen,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
@@ -254,18 +255,20 @@ function matrixRTT$(
  */
 function fetchSortedMatrixServers$(matrixServerLookup: string, httpTimeout: number) {
   return fromFetch(matrixServerLookup).pipe(
-    mergeMap(async response => {
-      if (!response.ok)
-        throw Error(
-          `Could not fetch server list from "${matrixServerLookup}" => ${response.status}`,
-        );
-      return response.text();
-    }),
+    mergeMap(response =>
+      !response.ok
+        ? throwError(
+            new Error(
+              `Could not fetch server list from "${matrixServerLookup}" => ${response.status}`,
+            ),
+          )
+        : response.text(),
+    ),
     timeout(httpTimeout),
-    mergeMap(text => from(yamlListToArray(text))),
+    mergeMap(text => yamlListToArray(text)),
     mergeMap(server => matrixRTT$(server, httpTimeout)),
     toArray(),
-    mergeMap(rtts => from(sortBy(rtts, ['rtt']))),
+    mergeMap(rtts => sortBy(rtts, ['rtt'])),
     filter(({ rtt }) => !isNaN(rtt)),
     throwIfEmpty(() => new Error('Could not contact any matrix servers')),
   );
@@ -401,31 +404,27 @@ export const initMatrixEpic = (
         servers$Array.push(fetchSortedMatrixServers$(matrixServerLookup, httpTimeout));
       }
 
-      let lastError: Error | undefined;
+      let lastError: Error;
       const andSuppress = (err: Error) => ((lastError = err), EMPTY);
 
-      // here's where the retry magic happens: serially...
-      return from(servers$Array).pipe(
-        // ...for each observable of servers
-        concatMap(servers$ =>
-          servers$.pipe(
-            // ...for each server in observable
-            concatMap(({ server, setup }) =>
-              // ...try setting up client and validates its credential
-              setupMatrixClient$(server, setup, { address, signer, config$ }).pipe(
-                // store and suppress any 'setupMatrixClient$' error
-                catchError(andSuppress),
-              ),
-            ),
-            // store and suppress any 'servers$' error (e.g. fromFetch's error)
+      // on [re-]subscription (defer), pops next observable and subscribe to it
+      return defer(() => servers$Array.shift() || EMPTY).pipe(
+        catchError(andSuppress), // servers$ may error, so store lastError
+        concatMap(({ server, setup }) =>
+          // serially, try setting up client and validate its credential
+          setupMatrixClient$(server, setup, { address, signer, config$ }).pipe(
+            // store and suppress any 'setupMatrixClient$' error
             catchError(andSuppress),
           ),
         ),
-        // because errors above are suppressed, 'first' can only throw 'no element in sequence'
-        // but also completing/unsubscribing queue if ONE item passes!
+        // on first setupMatrixClient$'s success, emit, complete and unsubscribe
         first(),
-        // replaces 'first' error with stored lastError and re-throw
-        catchError(() => throwError(lastError)),
+        // with errors suppressed, only possible error here is 'no element in sequence'
+        retryWhen(err$ =>
+          // if there're more servers$ observables in queue, emit once to retry from defer;
+          // else, errors output with lastError to unsubscribe
+          err$.pipe(mergeMap(() => (servers$Array.length ? of(null) : throwError(lastError)))),
+        ),
       );
     }),
     // on success
