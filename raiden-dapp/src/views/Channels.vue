@@ -129,6 +129,8 @@ export default class Channels extends Mixins(NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '../scss/dimensions';
+@import '../scss/scroll';
+
 .channels__overlay {
   position: fixed;
   top: 0;
@@ -150,5 +152,6 @@ export default class Channels extends Mixins(NavigationMixin) {
 .channels {
   width: 100%;
   height: 100%;
+  @extend .themed-scrollbar;
 }
 </style>

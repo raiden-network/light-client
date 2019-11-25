@@ -1,0 +1,19 @@
+@import 'colors';
+
+::-webkit-scrollbar {
+  width: 8px
+}
+
+::-webkit-scrollbar-track {
+  background: $card-background;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $secondary-color;
+}
+
+
+.themed-scrollbar {
+  scrollbar-color: $secondary-color $card-background;
+  scrollbar-width: thin;
+}

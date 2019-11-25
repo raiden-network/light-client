@@ -136,6 +136,7 @@ export default class TokenOverlay extends Mixins(
 
 <style lang="scss" scoped>
 @import '../scss/colors';
+@import '../scss/scroll';
 
 .token-network-overlay {
   border-bottom-left-radius: 10px;

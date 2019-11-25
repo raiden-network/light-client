@@ -1,5 +1,5 @@
 <template>
-  <v-row class="fill-height">
+  <v-row class="fill-height" no-gutters>
     <v-col cols="12" class="fill-height">
       <list-header
         :header="$t('tokens.connected.header')"
@@ -168,6 +168,7 @@ export default class Tokens extends Mixins(BlockieMixin, NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '../scss/colors';
+@import '../scss/scroll';
 
 .connected-tokens__header {
   margin-top: 115px;
@@ -179,7 +180,7 @@ export default class Tokens extends Mixins(BlockieMixin, NavigationMixin) {
   padding-top: 0;
   max-height: 420px;
   height: 420px;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 .connected-tokens__tokens ::v-deep .v-avatar {

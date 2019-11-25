@@ -86,6 +86,9 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
+@import '../scss/scroll';
+@import '../scss/colors';
+
 .select-token {
   height: 100%;
   width: 100%;
@@ -97,7 +100,8 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 
 .select-token__tokens__wrapper {
   height: calc(100% - 150px);
-  overflow-y: scroll;
+  overflow-y: auto;
+  @extend .themed-scrollbar;
 }
 
 .select-token__tokens {
