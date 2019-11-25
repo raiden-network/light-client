@@ -17,7 +17,7 @@
       </v-row>
       <v-row v-if="error">
         <v-col cols="12" class="text-center error--text">
-          {{ $t('mint-deposit-dialog.error') }}
+          {{ error }}
         </v-col>
       </v-row>
       <v-row class="mint-deposit-dialog__available">
@@ -61,7 +61,7 @@ import { Token } from '@/model/types';
 export default class MintDepositDialog extends Vue {
   amount: string = '10';
   loading: boolean = false;
-  error: boolean = false;
+  error: string = '';
 
   get udcToken(): Token {
     const address = this.$raiden.userDepositTokenAddress;
@@ -76,17 +76,26 @@ export default class MintDepositDialog extends Vue {
   cancel() {}
 
   async mintDeposit() {
-    this.error = false;
+    this.error = '';
     this.loading = true;
+
+    const tokenAddress = this.$raiden.userDepositTokenAddress;
+    const token: Token = this.$store.state.tokens[tokenAddress];
+    const depositAmount = BalanceUtils.parse(this.amount, token.decimals!);
+
     try {
-      const tokenAddress = this.$raiden.userDepositTokenAddress;
-      const token = this.$store.state.tokens[tokenAddress];
-      const depositAmount = BalanceUtils.parse(this.amount, token.decimals);
-      await this.$raiden.mint(tokenAddress, depositAmount);
+      if (depositAmount.gt(token.balance!)) {
+        await this.$raiden.mint(tokenAddress, depositAmount);
+      }
+
       await this.$raiden.depositToUDC(depositAmount);
       this.$emit('done');
     } catch (e) {
-      this.error = true;
+      if (typeof e.message === 'string') {
+        this.error = e.message;
+      } else {
+        this.error = JSON.stringify(e.message);
+      }
     }
 
     this.loading = false;

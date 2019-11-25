@@ -338,12 +338,9 @@ export default class RaidenService {
     return this.raiden.config.pfs === undefined;
   }
 
+  /* istanbul ignore next */
   async mint(token: string, amount: BigNumber): Promise<string> {
-    try {
-      return await this.raiden.mint(token, amount);
-    } catch (e) {
-      throw new MintTokenFailed(e);
-    }
+    return await this.raiden.mint(token, amount);
   }
 
   /* istanbul ignore next */
