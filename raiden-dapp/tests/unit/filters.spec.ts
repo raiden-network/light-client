@@ -53,11 +53,25 @@ describe('filters', function() {
     test('display zero if deposit is zero', () => {
       expect(Filters.displayFormat(Zero, 18)).toEqual('0.0');
     });
+
+    test('throw no exception if no decimals specified (18 assumed)', () => {
+      expect(
+        Filters.displayFormat(new BigNumber('11100000000000000001'))
+      ).toEqual('≈11.100000');
+    });
   });
 
   describe('capitalizeFirst', function() {
     it('should capitalize the first letter', function() {
       expect(Filters.capitalizeFirst('test')).toEqual('Test');
+    });
+  });
+
+  describe('toUnits', () => {
+    test('does not throw is undefined decimals but assumes 18 decimals', () => {
+      expect(Filters.toUnits(new BigNumber('11100000000000000001'))).toEqual(
+        '11.100000000000000001'
+      );
     });
   });
 });

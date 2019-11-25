@@ -30,7 +30,7 @@ export default class Filters {
     return value.toLocaleUpperCase();
   }
 
-  static displayFormat(amount: BigNumber, decimals: number): string {
+  static displayFormat(amount: BigNumber, decimals?: number): string {
     const units = BalanceUtils.toUnits(amount, decimals || 18);
     const deposit = parseFloat(units);
     if (deposit === 0) {
@@ -52,6 +52,9 @@ export default class Filters {
   static capitalizeFirst(value: string): string {
     return capitalize(value);
   }
+
+  static toUnits = (wei: BigNumber, decimals?: number) =>
+    BalanceUtils.toUnits(wei, decimals || 18);
 }
 
 Vue.filter('truncate', Filters.truncate);
@@ -59,6 +62,4 @@ Vue.filter('decimals', Filters.decimals);
 Vue.filter('upper', Filters.upper);
 Vue.filter('displayFormat', Filters.displayFormat);
 Vue.filter('capitalizeFirst', Filters.capitalizeFirst);
-Vue.filter('toUnits', (wei: BigNumber, decimals?: number) =>
-  BalanceUtils.toUnits(wei, decimals || 18)
-);
+Vue.filter('toUnits', Filters.toUnits);
