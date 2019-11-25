@@ -32,16 +32,16 @@ describe('filters', function() {
   });
 
   describe('displayFormat', function() {
-    it('should display a smaller icon if the amount is less than 0.00001', function() {
+    it('should display a smaller icon if the amount is less than 0.000001', function() {
       expect(Filters.displayFormat(new BigNumber(10 ** 3), 18)).toEqual(
-        '<0.00001'
+        '<0.000001'
       );
     });
 
-    it('should display the amount cutoff at 5 decimal points', function() {
+    it('should display the amount rounded at 5 decimal points', function() {
       expect(
         Filters.displayFormat(new BigNumber(1111110100000000), 18)
-      ).toEqual('0.00111');
+      ).toEqual('≈0.001111');
     });
 
     it('should return the number formatted as it is if not enough decimals', function() {
@@ -53,11 +53,25 @@ describe('filters', function() {
     test('display zero if deposit is zero', () => {
       expect(Filters.displayFormat(Zero, 18)).toEqual('0.0');
     });
+
+    test('throw no exception if no decimals specified (18 assumed)', () => {
+      expect(
+        Filters.displayFormat(new BigNumber('11100000000000000001'))
+      ).toEqual('≈11.100000');
+    });
   });
 
   describe('capitalizeFirst', function() {
     it('should capitalize the first letter', function() {
       expect(Filters.capitalizeFirst('test')).toEqual('Test');
+    });
+  });
+
+  describe('toUnits', () => {
+    test('does not throw is undefined decimals but assumes 18 decimals', () => {
+      expect(Filters.toUnits(new BigNumber('11100000000000000001'))).toEqual(
+        '11.100000000000000001'
+      );
     });
   });
 });

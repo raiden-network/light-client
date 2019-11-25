@@ -174,9 +174,7 @@ describe('TransferSteps.vue', () => {
 
     // Displays total amount
     const totalAmount = wrapper.find('.transfer-steps__total-amount h2');
-    expect(totalAmount.text()).toContain(
-      'transfer.steps.confirm-transfer.token-amount'
-    );
+    expect(totalAmount.text()).toMatch(/≈100000.000000.*\n.*SVT/);
 
     // Confirmation btn is enabled
     const button = wrapper.find('.action-button__button');
@@ -224,9 +222,7 @@ describe('TransferSteps.vue', () => {
 
     // Displays total amount
     const totalAmount = wrapper.find('.transfer-steps__total-amount h2');
-    expect(totalAmount.text()).toContain(
-      'transfer.steps.confirm-transfer.token-amount'
-    );
+    expect(totalAmount.text()).toMatch(/≈100000.000000.*\n.*SVT/);
 
     // Confirmation btn is enabled
     const button = wrapper.find('.action-button__button');

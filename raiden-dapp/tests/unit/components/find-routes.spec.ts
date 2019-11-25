@@ -6,8 +6,10 @@ import { RaidenPaths } from 'raiden-ts';
 import { bigNumberify } from 'ethers/utils';
 import { Token } from '@/model/types';
 import { Zero } from 'ethers/constants';
+import Filters from '@/filters';
 
 Vue.use(Vuetify);
+Vue.filter('dispayFormat', Filters.displayFormat);
 
 describe('FindRoutes.vue', () => {
   let vuetify: typeof Vuetify;

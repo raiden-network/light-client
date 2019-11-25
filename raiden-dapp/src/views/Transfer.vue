@@ -18,12 +18,18 @@
         </v-col>
         <v-col cols="6" class="transfer__token-networks">
           <div class="transfer__token-networks__amount">
-            {{
-              $t('transfer.capacity-amount', {
-                capacity: convertToUnits(capacity, token.decimals),
-                token: token.symbol
-              })
-            }}
+            <v-tooltip top>
+              <template #activator="{ on }">
+                <span v-on="on">
+                  {{ capacity | displayFormat(token.decimals) }}
+                  {{ token.symbol || '' }}
+                </span>
+              </template>
+              <span>
+                {{ capacity | toUnits(token.decimals) }}
+                {{ token.symbol || '' }}
+              </span>
+            </v-tooltip>
           </div>
           <div
             class="transfer__token-networks__dropdown"
@@ -118,7 +124,6 @@ import { Component, Mixins } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
 import { emptyDescription, StepDescription, Token } from '@/model/types';
-import { BalanceUtils } from '@/utils/balance-utils';
 import Stepper from '@/components/Stepper.vue';
 import ErrorScreen from '@/components/ErrorScreen.vue';
 import Divider from '@/components/Divider.vue';
@@ -171,8 +176,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
   steps: StepDescription[] = [];
   doneStep: StepDescription = emptyDescription();
-
-  convertToUnits = BalanceUtils.toUnits;
 
   channels!: (tokenAddress: string) => RaidenChannel[];
 

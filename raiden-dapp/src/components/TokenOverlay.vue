@@ -62,7 +62,7 @@
                   />
                 </v-list-item-avatar>
               </v-col>
-              <v-col cols="8">
+              <v-col cols="7">
                 <v-list-item-content>
                   <v-list-item-title class="token-list__token-title">
                     {{
@@ -82,12 +82,14 @@
                   </v-list-item-subtitle>
                 </v-list-item-content>
               </v-col>
-              <v-col cols="2">
-                <v-list-item-action-text>
-                  <span class="token-list__token-balance">
-                    {{ getBalance(token) }}
-                  </span>
-                </v-list-item-action-text>
+              <v-col cols="3">
+                <v-row justify="end">
+                  <v-list-item-action-text>
+                    <span class="token-list__token-balance">
+                      {{ getBalance(token) }}
+                    </span>
+                  </v-list-item-action-text>
+                </v-row>
               </v-col>
             </v-list-item>
           </v-list>
@@ -105,6 +107,7 @@ import BlockieMixin from '@/mixins/blockie-mixin';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { TokenModel, Token } from '@/model/types';
 import Filters from '@/filters';
+import { Zero } from 'ethers/constants';
 
 @Component({
   computed: {
@@ -123,7 +126,7 @@ export default class TokenOverlay extends Mixins(
 
   getBalance(token: TokenModel) {
     const { balance, decimals } = this.$store.getters.token(token.address);
-    return Filters.displayFormat(balance, decimals);
+    return Filters.displayFormat(balance || Zero, decimals);
   }
 
   @Emit()
@@ -151,7 +154,7 @@ export default class TokenOverlay extends Mixins(
   }
 
   ::v-deep .v-list-item {
-    padding: 0px 0px 0px 48px;
+    padding: 0 0 0 48px;
   }
 
   .container {

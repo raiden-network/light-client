@@ -53,17 +53,18 @@
               class="udc-balance__container"
             >
               <v-col cols="10">
-                <span class="udc-balance__amount">
-                  {{
-                    this.$t('transfer.steps.request-route.udc-amount', {
-                      amount: convertToUnits(
-                        udcCapacity,
-                        udcToken.decimals || 18
-                      ),
-                      token: udcToken.symbol || 'SVT'
-                    })
-                  }}
-                </span>
+                <v-tooltip top>
+                  <template #activator="{ on }">
+                    <span class="udc-balance__amount" v-on="on">
+                      {{ udcCapacity | displayFormat(udcToken.decimals) }}
+                      {{ udcToken.symbol || '' }}
+                    </span>
+                  </template>
+                  <span>
+                    {{ udcCapacity | toUnits(udcToken.decimals) }}
+                    {{ udcToken.symbol || '' }}
+                  </span>
+                </v-tooltip>
                 <v-dialog
                   v-model="showMintDeposit"
                   max-width="425"
@@ -96,8 +97,8 @@
               <v-col cols="10">
                 <span class="udc-balance__description">
                   {{
-                    this.$t('transfer.steps.request-route.udc-description', {
-                      token: udcToken.symbol || 'SVT'
+                    $t('transfer.steps.request-route.udc-description', {
+                      token: udcToken.symbol || ''
                     })
                   }}
                 </span>
@@ -136,12 +137,18 @@
                 {{ $t('transfer.steps.confirm-transfer.total-amount') }}
               </p>
               <h2>
-                {{
-                  $t('transfer.steps.confirm-transfer.token-amount', {
-                    totalAmount: convertToUnits(totalAmount, token.decimals),
-                    token: token.symbol
-                  })
-                }}
+                <v-tooltip top>
+                  <template #activator="{ on }">
+                    <span v-on="on">
+                      {{ totalAmount | displayFormat(token.decimals) }}
+                      {{ token.symbol }}
+                    </span>
+                  </template>
+                  <span>
+                    {{ totalAmount | toUnits(token.decimals) }}
+                    {{ token.symbol }}
+                  </span>
+                </v-tooltip>
               </h2>
             </div>
             <div
@@ -253,8 +260,6 @@ export default class TransferSteps extends Mixins(
   error: string = '';
   steps: StepDescription[] = [];
   doneStep: StepDescription = emptyDescription();
-
-  convertToUnits = BalanceUtils.toUnits;
   udcCapacity: BigNumber = Zero;
 
   amount: string = '';
@@ -311,7 +316,6 @@ export default class TransferSteps extends Mixins(
           ({
             key: index,
             hops: path.length - 1,
-            displayFee: BalanceUtils.toUnits(fee as BigNumber, decimals!),
             fee,
             path
           } as Route)
