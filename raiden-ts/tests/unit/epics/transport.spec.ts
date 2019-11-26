@@ -128,9 +128,12 @@ describe('transport epic', () => {
           ),
         );
 
-      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
-        type: getType(matrixSetup),
-        payload: {
+      await expect(
+        initMatrixEpic(action$, state$, depsMock)
+          .pipe(first())
+          .toPromise(),
+      ).resolves.toEqual(
+        matrixSetup({
           server: matrixServer,
           setup: {
             userId,
@@ -138,8 +141,8 @@ describe('transport epic', () => {
             deviceId: expect.any(String),
             displayName: expect.any(String),
           },
-        },
-      });
+        }),
+      );
       // ensure if stored setup works, servers list don't need to be fetched
       expect(fetch).not.toHaveBeenCalled();
     });
@@ -151,9 +154,12 @@ describe('transport epic', () => {
       // set config
       depsMock.config$.next({ ...state.config, matrixServer });
 
-      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
-        type: getType(matrixSetup),
-        payload: {
+      await expect(
+        initMatrixEpic(action$, state$, depsMock)
+          .pipe(first())
+          .toPromise(),
+      ).resolves.toEqual(
+        matrixSetup({
           server: matrixServer,
           setup: {
             userId,
@@ -161,8 +167,8 @@ describe('transport epic', () => {
             deviceId: expect.any(String),
             displayName: expect.any(String),
           },
-        },
-      });
+        }),
+      );
       expect(fetch).not.toHaveBeenCalled();
     });
 
@@ -186,9 +192,12 @@ describe('transport epic', () => {
       // set config
       depsMock.config$.next({ ...state.config, matrixServer });
 
-      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
-        type: getType(matrixSetup),
-        payload: {
+      await expect(
+        initMatrixEpic(action$, state$, depsMock)
+          .pipe(first())
+          .toPromise(),
+      ).resolves.toEqual(
+        matrixSetup({
           server: matrixServer,
           setup: {
             userId,
@@ -196,17 +205,20 @@ describe('transport epic', () => {
             deviceId: expect.any(String),
             displayName: expect.any(String),
           },
-        },
-      });
+        }),
+      );
       expect(fetch).not.toHaveBeenCalled();
     });
 
     test('matrix fetch servers list', async () => {
       const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of(state);
-      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
-        type: getType(matrixSetup),
-        payload: {
+      await expect(
+        initMatrixEpic(action$, state$, depsMock)
+          .pipe(first())
+          .toPromise(),
+      ).resolves.toEqual(
+        matrixSetup({
           server: `https://${matrixServer}`,
           setup: {
             userId,
@@ -214,8 +226,8 @@ describe('transport epic', () => {
             deviceId: expect.any(String),
             displayName: expect.any(String),
           },
-        },
-      });
+        }),
+      );
       expect(fetch).toHaveBeenCalledTimes(2); // list + rtt
     });
 
