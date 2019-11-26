@@ -36,7 +36,7 @@
           single-select
           show-select
           sort-by="price"
-          item-key="service"
+          item-key="address"
           class="pathfinding-services__table"
           @item-selected="select($event)"
         >
