@@ -1,13 +1,13 @@
 <template>
   <div class="channels">
     <v-row justify="center">
-      <Transition name="fade-transition" mode="out-in">
+      <transition name="fade-transition" mode="out-in">
         <div
           v-show="visible"
           class="channels__overlay"
           @click="visible = ''"
         ></div>
-      </Transition>
+      </transition>
     </v-row>
     <list-header
       v-if="open.length > 0"
