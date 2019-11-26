@@ -169,6 +169,11 @@ export default class TokenOverlay extends Mixins(
 
   .token-list {
     height: calc(100% - 230px);
+
+    &__item-list {
+      overflow-y: auto;
+      @extend .themed-scrollbar;
+    }
   }
 
   .token-list__item-list,
@@ -181,11 +186,6 @@ export default class TokenOverlay extends Mixins(
     & ::v-deep .col-10 {
       padding-left: 11px;
     }
-  }
-
-  .token-list__item-list {
-    overflow-y: auto;
-    @extend .themed-scrollbar;
   }
 
   .connect-new__connect-new-token,
