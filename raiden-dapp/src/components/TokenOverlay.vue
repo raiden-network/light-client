@@ -1,6 +1,6 @@
 <template>
   <v-overlay :value="show" absolute opacity="1.0" class="token-network-overlay">
-    <v-container class="container">
+    <v-container class="token-network__container">
       <v-row no-gutters justify="end">
         <v-btn icon class="token-network-overlay__close-button" @click="cancel">
           <v-icon>mdi-close</v-icon>
@@ -42,7 +42,7 @@
       </v-row>
 
       <v-row class="token-list">
-        <v-col cols="12">
+        <v-col cols="12" class="fill-height">
           <v-list
             v-for="(token, i) in tokens"
             :key="i"
@@ -136,6 +136,7 @@ export default class TokenOverlay extends Mixins(
 
 <style lang="scss" scoped>
 @import '../scss/colors';
+@import '../scss/scroll';
 
 .token-network-overlay {
   border-bottom-left-radius: 10px;
@@ -157,12 +158,22 @@ export default class TokenOverlay extends Mixins(
     padding: 0 0 0 48px;
   }
 
-  .container {
+  .token-network__container {
     padding: 0 !important;
+    height: 100%;
   }
 
   .token-network-overlay__close-button {
     margin: 15px;
+  }
+
+  .token-list {
+    height: calc(100% - 230px);
+
+    &__item-list {
+      overflow-y: auto;
+      @extend .themed-scrollbar;
+    }
   }
 
   .token-list__item-list,
