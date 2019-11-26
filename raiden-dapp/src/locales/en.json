@@ -203,9 +203,17 @@
         "total-amount": "Total Amount"
       },
       "call-to-action": {
-        "1": "Pay Route Request",
-        "2": "Confirm Mediation Fees",
-        "3": "Confirm"
+        "1": {
+          "default": "Transfer Route Request",
+          "amount": "Transfer {amount} {symbol}"
+        },
+        "2": {
+          "default": "Confirm Mediation Fees",
+          "amount": "Confirm {amount} {symbol}"
+        },
+        "3": {
+          "amount": "Transfer {amount} {symbol}"
+        }
       },
       "transfer": {
         "label": "Transfer",
