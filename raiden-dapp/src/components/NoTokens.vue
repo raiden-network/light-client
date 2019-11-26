@@ -22,13 +22,13 @@ export default class NoTokens extends Mixins(NavigationMixin) {}
 <style lang="scss" scoped>
 .new-token {
   text-align: center;
-}
 
-.new-token__button {
-  padding: 0;
-}
+  &__button {
+    padding: 0;
+  }
 
-.new-token__header {
-  padding: 15px 0px 35px 0px;
+  &__header {
+    padding: 15px 0px 35px 0px;
+  }
 }
 </style>

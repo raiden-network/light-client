@@ -1,5 +1,5 @@
 <template>
-  <NoTokens v-if="!tokens.length" />
+  <no-tokens v-if="!tokens.length" />
 </template>
 
 <script lang="ts">
