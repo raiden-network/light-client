@@ -200,7 +200,7 @@
 
     <action-button
       :enabled="continueBtnEnabled"
-      :text="$t(`transfer.steps.call-to-action.${step}`)"
+      :text="callToActionText"
       sticky
       arrow
       @click="handleStep()"
@@ -229,6 +229,7 @@ import ErrorScreen from '@/components/ErrorScreen.vue';
 import { Zero } from 'ethers/constants';
 import { getAddress, getAmount } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
+import Filter from '@/filters';
 
 @Component({
   components: {
@@ -264,6 +265,38 @@ export default class TransferSteps extends Mixins(
 
   amount: string = '';
   target: string = '';
+
+  get callToActionText() {
+    const amountLocalized = `transfer.steps.call-to-action.${this.step}.amount`;
+    if (this.step === 1 && this.selectedPfs) {
+      return this.$t(amountLocalized, {
+        amount: Filter.displayFormat(
+          this.selectedPfs.price as BigNumber,
+          this.udcToken.decimals
+        ),
+        symbol: this.udcToken.symbol
+      });
+    }
+
+    if (this.step === 2 && this.selectedRoute) {
+      return this.$t(amountLocalized, {
+        amount: Filter.displayFormat(
+          this.selectedRoute.fee as BigNumber,
+          this.token.decimals
+        ),
+        symbol: this.token.symbol
+      });
+    }
+
+    if (this.step === 3) {
+      return this.$t(amountLocalized, {
+        amount: Filter.displayFormat(this.totalAmount, this.token.decimals),
+        symbol: this.token.symbol
+      });
+    }
+
+    return this.$t(`transfer.steps.call-to-action.${this.step}.default`);
+  }
 
   private updateUDCCapacity() {
     this.$raiden.getUDCCapacity().then(value => (this.udcCapacity = value));

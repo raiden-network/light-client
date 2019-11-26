@@ -199,8 +199,19 @@ export default class PathfindingServices extends Vue {
     }
 
     ::v-deep th {
-      color: #646464 !important;
       font-size: 16px;
+      border: none !important;
+    }
+
+    ::v-deep td {
+      border: none !important;
+      padding-top: 5px;
+      padding-bottom: 5px;
+    }
+
+    ::v-deep .v-data-table__selected,
+    ::v-deep tbody tr:hover {
+      background: rgba($disabled-text-color, 0.1) !important;
     }
   }
 }
