@@ -794,17 +794,37 @@ describe('Raiden', () => {
   });
 
   describe('findPFS', () => {
-    test('fail config.pfs not in auto mode', async () => {
-      expect.assertions(2);
+    test('fail config.pfs disabled', async () => {
+      expect.assertions(1);
 
       raiden.updateConfig({ pfs: null }); // disabled pfs
-      await expect(raiden.findPFS()).rejects.toThrowError("pfs isn't auto");
-
-      raiden.updateConfig({ pfs: pfsUrl }); // pfs set
-      await expect(raiden.findPFS()).rejects.toThrowError("pfs isn't auto");
+      await expect(raiden.findPFS()).rejects.toThrowError('PFS disabled in config');
     });
 
-    test('success', async () => {
+    test('success: config.pfs set', async () => {
+      expect.assertions(1);
+
+      // pfsInfo
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => pfsInfoResponse),
+        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      });
+
+      raiden.updateConfig({ pfs: pfsUrl }); // pfs set
+      await expect(raiden.findPFS()).resolves.toEqual([
+        {
+          address: pfsAddress,
+          url: pfsUrl,
+          rtt: expect.any(Number),
+          price: expect.any(BigNumber),
+          token: expect.any(String),
+        },
+      ]);
+    });
+
+    test('success: auto', async () => {
       expect.assertions(1);
 
       // pfsInfo
@@ -883,13 +903,6 @@ describe('Raiden', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       raiden.updateConfig({ pfs: pfsUrl });
-
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: jest.fn(async () => pfsInfoResponse),
-        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
-      });
     });
 
     afterEach(() => {
@@ -899,6 +912,13 @@ describe('Raiden', () => {
 
     test('success with config.pfs', async () => {
       expect.assertions(4);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => pfsInfoResponse),
+        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      });
 
       fetch.mockResolvedValueOnce({
         ok: true,
@@ -937,6 +957,13 @@ describe('Raiden', () => {
 
     test('success with findPFS', async () => {
       expect.assertions(7);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => pfsInfoResponse),
+        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      });
 
       // config.pfs in auto mode
       raiden.updateConfig({ pfs: undefined });
@@ -1002,6 +1029,13 @@ describe('Raiden', () => {
 
       fetch.mockResolvedValueOnce({
         ok: true,
+        status: 200,
+        json: jest.fn(async () => pfsInfoResponse),
+        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      });
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
         status: 404,
         json: jest.fn(async () => {}),
         text: jest.fn(async () => losslessStringify({})),
@@ -1028,6 +1062,18 @@ describe('Raiden', () => {
       await expect(raiden.findRoutes(token, target, 201)).rejects.toThrowError(
         /no valid routes found/,
       );
+    });
+
+    test('directRoute', async () => {
+      expect.assertions(5);
+
+      await expect(raiden.directRoute(token, target, 23)).resolves.toBeUndefined();
+
+      await expect(raiden.directRoute(token, partner, 201)).resolves.toBeUndefined();
+
+      await expect(raiden.directRoute(token, partner, 23)).resolves.toEqual([
+        { path: [partner], fee: bigNumberify(0) },
+      ]);
     });
   });
 
