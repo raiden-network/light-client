@@ -320,6 +320,27 @@ export default class TransferSteps extends Mixins(
 
     if (typeof this.token.decimals !== 'number') {
       this.navigateToHome();
+      return;
+    }
+
+    const directRoutes = await this.$raiden.directRoute(
+      address,
+      this.target,
+      BalanceUtils.parse(this.amount, this.token.decimals)
+    );
+
+    if (directRoutes) {
+      const [route] = directRoutes;
+
+      this.selectedRoute = {
+        key: 0,
+        fee: Zero,
+        displayFee: '0',
+        path: [...route.path],
+        hops: 0
+      };
+
+      this.transfer();
     }
   }
 

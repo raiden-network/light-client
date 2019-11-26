@@ -4,7 +4,7 @@ import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, BigNumberish } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import { exhaustMap, filter, first } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
@@ -293,6 +293,15 @@ export default class RaidenService {
 
   noPfsSelected(): boolean {
     return this.raiden.config.pfs === undefined;
+  }
+
+  /* istanbul ignore next */
+  async directRoute(
+    token: string,
+    target: string,
+    value: BigNumberish
+  ): Promise<RaidenPaths | undefined> {
+    return await this.raiden.directRoute(token, target, value);
   }
 
   /* istanbul ignore next */
