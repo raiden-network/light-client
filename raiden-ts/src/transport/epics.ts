@@ -47,7 +47,9 @@ import { isActionOf, ActionType } from 'typesafe-actions';
 import { find, get, minBy, sortBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
+
 import { createClient, MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
+import matrixLogger from 'matrix-js-sdk/lib/logger';
 
 import { Address, Signed, isntNil } from '../utils/types';
 import { RaidenEpicDeps } from '../types';
@@ -446,6 +448,19 @@ export const initMatrixEpic = (
         ),
         // emit matrixSetup in parallel to be persisted in state
         of(matrixSetup({ server, setup })),
+        // monitor config.logger & disable or re-enable matrix's logger accordingly
+        config$.pipe(
+          pluck('logger'),
+          distinctUntilChanged(),
+          tap(logger =>
+            matrixLogger.setLevel(
+              logger !== '' && (logger !== undefined || process.env.NODE_ENV === 'development')
+                ? 'debug'
+                : 'error',
+            ),
+          ),
+          ignoreElements(),
+        ),
       ),
     ),
   );

@@ -772,3 +772,8 @@ declare module 'matrix-js-sdk' {
 declare module 'matrix-js-sdk/lib/utils' {
   export function encodeUri(pathTemplate: string, variables: { [fragment: string]: any }): string;
 }
+
+declare module 'matrix-js-sdk/lib/logger' {
+  const logger: { setLevel: (level: string) => void; };
+  export = logger;
+}
