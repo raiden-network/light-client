@@ -118,17 +118,20 @@ export function pfsInfo(
  * Throws if no server can be validated, meaning either there's none in the current network or
  * we're out-of-sync (outdated or ahead of PFS's deployment network version).
  *
- * @param pfsList - Array of PFS addresses, as notified by pfsListUpdated action
+ * @param pfsList - Array of PFS addresses or URLs
  * @param deps - RaidenEpicDeps array
  * @returns Observable of online, validated & sorted PFS info array
  */
-export function pfsListInfo(pfsList: readonly Address[], deps: RaidenEpicDeps): Observable<PFS[]> {
+export function pfsListInfo(
+  pfsList: readonly (string | Address)[],
+  deps: RaidenEpicDeps,
+): Observable<PFS[]> {
   return from(pfsList).pipe(
     mergeMap(
-      addr =>
-        pfsInfo(addr, deps).pipe(
+      addrOrUrl =>
+        pfsInfo(addrOrUrl, deps).pipe(
           catchError(err => {
-            console.warn(`Error trying to fetch PFS info for "${addr}" - ignoring:`, err);
+            console.warn(`Error trying to fetch PFS info for "${addrOrUrl}" - ignoring:`, err);
             return EMPTY;
           }),
         ),

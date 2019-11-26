@@ -14,7 +14,10 @@ type ServiceId = {
   serviceAddress: Address;
 };
 
-export const pathFind = createStandardAction('pathFind')<{ paths?: Paths; pfs?: PFS }, PathId>();
+export const pathFind = createStandardAction('pathFind')<
+  { paths?: Paths; pfs?: PFS | null },
+  PathId
+>();
 
 export const pathFound = createStandardAction('pathFound')<{ paths: Paths }, PathId>();
 
