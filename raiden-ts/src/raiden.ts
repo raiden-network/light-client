@@ -280,12 +280,10 @@ export class Raiden {
 
     const middlewares: Middleware[] = [
       createLogger({
-        level: () =>
-          this.deps.config$.value.logger !== undefined
-            ? this.deps.config$.value.logger
-            : process.env.NODE_ENV === 'development'
-            ? 'debug'
-            : '',
+        predicate: () =>
+          this.deps.config$.value.logger !== '' &&
+          (this.deps.config$.value.logger !== undefined || process.env.NODE_ENV === 'development'),
+        level: () => this.deps.config$.value.logger || 'debug',
       }),
     ];
 

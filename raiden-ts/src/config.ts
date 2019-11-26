@@ -37,7 +37,14 @@ export const RaidenConfig = t.readonly(
     }),
     t.partial({
       matrixServer: t.string,
-      logger: t.keyof({ ['']: null, debug: null, log: null, info: null, warn: null, error: null }),
+      logger: t.keyof({
+        ['']: null,
+        trace: null,
+        debug: null,
+        info: null,
+        warn: null,
+        error: null,
+      }),
       pfs: t.union([Address, t.string, t.null]),
     }),
   ]),
