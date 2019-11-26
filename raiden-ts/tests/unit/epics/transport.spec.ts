@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
+jest.mock('matrix-js-sdk');
+
+import { createClient } from 'matrix-js-sdk';
 
 import { patchVerifyMessage } from '../patches';
 patchVerifyMessage();
 
-import { BehaviorSubject, of, timer, EMPTY, Subject } from 'rxjs';
+import { BehaviorSubject, of, timer, EMPTY, Subject, Observable } from 'rxjs';
 import { first, tap, takeUntil, toArray, delay } from 'rxjs/operators';
 import { fakeSchedulers } from 'rxjs-marbles/jest';
 import { getType } from 'typesafe-actions';
@@ -29,6 +32,7 @@ import {
 } from 'raiden-ts/messages/actions';
 
 import {
+  initMatrixEpic,
   matrixMonitorChannelPresenceEpic,
   matrixShutdownEpic,
   matrixMonitorPresenceEpic,
@@ -70,6 +74,13 @@ describe('transport epic', () => {
     displayName: ReturnType<typeof epicFixtures>['displayName'],
     processed: ReturnType<typeof epicFixtures>['processed'];
 
+  const fetch = jest.fn(async () => ({
+    ok: true,
+    status: 200,
+    text: jest.fn(async () => `- ${matrixServer}`),
+  }));
+  Object.assign(global, { fetch });
+
   beforeEach(() => {
     depsMock = raidenEpicDeps();
     ({
@@ -91,10 +102,172 @@ describe('transport epic', () => {
     } = epicFixtures(depsMock));
     depsMock.matrix$.next(matrix);
     depsMock.matrix$.complete();
+
+    (createClient as jest.Mock).mockReturnValue(matrix);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('initMatrixEpic', () => {
+    test('matrix stored setup', async () => {
+      const action$ = EMPTY as Observable<RaidenAction>,
+        state$ = of(
+          raidenReducer(
+            state,
+            matrixSetup({
+              server: matrixServer,
+              setup: {
+                userId,
+                accessToken,
+                deviceId,
+                displayName,
+              },
+            }),
+          ),
+        );
+
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
+        type: getType(matrixSetup),
+        payload: {
+          server: matrixServer,
+          setup: {
+            userId,
+            accessToken: expect.any(String),
+            deviceId: expect.any(String),
+            displayName: expect.any(String),
+          },
+        },
+      });
+      // ensure if stored setup works, servers list don't need to be fetched
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    test('matrix server config set without stored setup', async () => {
+      const action$ = EMPTY as Observable<RaidenAction>,
+        state$ = of(state);
+
+      // set config
+      depsMock.config$.next({ ...state.config, matrixServer });
+
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
+        type: getType(matrixSetup),
+        payload: {
+          server: matrixServer,
+          setup: {
+            userId,
+            accessToken: expect.any(String),
+            deviceId: expect.any(String),
+            displayName: expect.any(String),
+          },
+        },
+      });
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    test('matrix server config set same as stored setup', async () => {
+      const action$ = EMPTY as Observable<RaidenAction>,
+        state$ = of(
+          raidenReducer(
+            state,
+            matrixSetup({
+              server: matrixServer,
+              setup: {
+                userId,
+                accessToken,
+                deviceId,
+                displayName,
+              },
+            }),
+          ),
+        );
+
+      // set config
+      depsMock.config$.next({ ...state.config, matrixServer });
+
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
+        type: getType(matrixSetup),
+        payload: {
+          server: matrixServer,
+          setup: {
+            userId,
+            accessToken: expect.any(String),
+            deviceId: expect.any(String),
+            displayName: expect.any(String),
+          },
+        },
+      });
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    test('matrix fetch servers list', async () => {
+      const action$ = EMPTY as Observable<RaidenAction>,
+        state$ = of(state);
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).resolves.toEqual({
+        type: getType(matrixSetup),
+        payload: {
+          server: `https://${matrixServer}`,
+          setup: {
+            userId,
+            accessToken: expect.any(String),
+            deviceId: expect.any(String),
+            displayName: expect.any(String),
+          },
+        },
+      });
+      expect(fetch).toHaveBeenCalledTimes(2); // list + rtt
+    });
+
+    test('matrix throws if can not fetch servers list', async () => {
+      expect.assertions(2);
+      const action$ = EMPTY as Observable<RaidenAction>,
+        state$ = of(
+          raidenReducer(
+            state,
+            matrixSetup({
+              server: '///', // invalid server name, should suppress and try servers list
+              setup: {
+                userId,
+                accessToken,
+                deviceId,
+                displayName,
+              },
+            }),
+          ),
+        );
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: jest.fn(async () => ''),
+      });
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).rejects.toThrow(
+        'Could not fetch server list',
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('matrix throws if can not contact any server from list', async () => {
+      expect.assertions(2);
+      const action$ = EMPTY as Observable<RaidenAction>,
+        state$ = of(state);
+      // mock*Once is a stack. this 'fetch' will be for the servers list
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: jest.fn(async () => `- ${matrixServer}`),
+      });
+      // and this one for matrixRTT. 404 will reject it
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: jest.fn(async () => ''),
+      });
+      await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).rejects.toThrow(
+        'Could not contact any matrix servers',
+      );
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('matrixMonitorChannelPresenceEpic', () => {

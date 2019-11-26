@@ -38,6 +38,9 @@ import {
   pluck,
   repeatWhen,
   exhaustMap,
+  throwIfEmpty,
+  switchMapTo,
+  retryWhen,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { isActionOf, ActionType } from 'typesafe-actions';
@@ -67,7 +70,7 @@ import {
 import { messageSend, messageReceived, messageSent, messageGlobalSend } from '../messages/actions';
 import { transferSigned } from '../transfers/actions';
 import { RaidenState } from '../state';
-import { getServerName, getUserPresence, matrixRTT, yamlListToArray } from '../utils/matrix';
+import { getServerName, getUserPresence } from '../utils/matrix';
 import { LruCache } from '../utils/lru';
 import {
   matrixPresenceUpdate,
@@ -196,6 +199,173 @@ function inviteLoop$(
 }
 
 /**
+ * From a yaml list string, return as Array
+ * E.g. yamlListToArray(`
+ * # comment
+ *   - test1
+ *   - test2
+ *   - test3
+ * `) === ['test1', 'test2', 'test3']
+ *
+ * @param yml - String containing only YAML list
+ * @returns List of strings inside yml-encoded text
+ */
+function yamlListToArray(yml: string): string[] {
+  // match all strings starting with optional spaces followed by a dash + space
+  // capturing only the content of the list item, trimming spaces
+  const reg = /^\s*-\s*(.+?)\s*$/gm;
+  const results: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = reg.exec(yml))) {
+    results.push(match[1]);
+  }
+  return results;
+}
+
+/**
+ * Given a server name (schema defaults to https:// and is prepended if missing), returns HTTP GET
+ * round trip time (time to response)
+ *
+ * @param server - Server name with or without schema
+ * @param httpTimeout - Optional timeout for the HTTP request
+ * @returns Promise to a { server, rtt } object, where `rtt` may be NaN
+ */
+function matrixRTT$(
+  server: string,
+  httpTimeout: number,
+): Observable<{ server: string; rtt: number }> {
+  if (!server.includes('://')) server = 'https://' + server;
+  return defer(() => {
+    const start = Date.now();
+    return fromFetch(server + '/_matrix/client/versions').pipe(
+      timeout(httpTimeout),
+      map(({ ok }) => (ok ? Date.now() : NaN)),
+      catchError(() => of(NaN)),
+      map(end => ({ server, rtt: end - start })),
+    );
+  });
+}
+
+/**
+ * Returns an observable of servers, sorted by response time
+ *
+ * @param matrixServerLookup - URL containing an YAML list of servers url
+ * @param httpTimeout - httpTimeout to limit queries
+ * @returns Observable of { server, rtt } objects, emitted in increasing rtt order
+ */
+function fetchSortedMatrixServers$(matrixServerLookup: string, httpTimeout: number) {
+  return fromFetch(matrixServerLookup).pipe(
+    mergeMap(response =>
+      !response.ok
+        ? throwError(
+            new Error(
+              `Could not fetch server list from "${matrixServerLookup}" => ${response.status}`,
+            ),
+          )
+        : response.text(),
+    ),
+    timeout(httpTimeout),
+    mergeMap(text => yamlListToArray(text)),
+    mergeMap(server => matrixRTT$(server, httpTimeout)),
+    toArray(),
+    mergeMap(rtts => sortBy(rtts, ['rtt'])),
+    filter(({ rtt }) => !isNaN(rtt)),
+    throwIfEmpty(() => new Error('Could not contact any matrix servers')),
+  );
+}
+
+/**
+ * Validate and setup a MatrixClient connected to server, possibly using previous 'setup' data
+ * May error if anything goes wrong.
+ *
+ * @param server - server URL, with schema
+ * @param setup - optional previous setup/credentials data
+ * @param deps - RaidenEpicDeps-like/partial object
+ * @param deps.address - Our address (to compose matrix user)
+ * @param deps.signer - Signer to be used to sign password and displayName
+ * @param deps.config$ - Used to calculate global rooms to join
+ * @returns Observable of one { matrix, server, setup } object
+ */
+function setupMatrixClient$(
+  server: string,
+  setup: RaidenMatrixSetup | undefined,
+  {
+    address,
+    signer,
+    config$,
+  }: {
+    address: RaidenEpicDeps['address'];
+    signer: RaidenEpicDeps['signer'];
+    config$: RaidenEpicDeps['config$']; // better than the extra type imports
+  },
+) {
+  const serverName = getServerName(server);
+  if (!serverName) throw new Error(`Could not get serverName from "${server}"`);
+
+  return defer(() => {
+    if (setup) {
+      // if matrixSetup was already issued before, and credentials are already in state
+      const matrix = createClient({
+        baseUrl: server,
+        userId: setup.userId,
+        accessToken: setup.accessToken,
+        deviceId: setup.deviceId,
+      });
+      return of({ matrix, server, setup });
+    } else {
+      const matrix = createClient({ baseUrl: server });
+      const userName = address.toLowerCase(),
+        userId = `@${userName}:${serverName}`;
+
+      // create password as signature of serverName, then try login or register
+      return from(signer.signMessage(serverName)).pipe(
+        mergeMap(password =>
+          from(matrix.loginWithPassword(userName, password)).pipe(
+            catchError(() => matrix.register(userName, password)),
+          ),
+        ),
+        mergeMap(({ access_token, device_id }) => {
+          // matrix.register implementation doesn't set returned credentials
+          // which would require an unnecessary additional login request if we didn't
+          // set it here, and login doesn't set deviceId, so we set all credential
+          // parameters again here after successful login or register
+          matrix.deviceId = device_id;
+          matrix._http.opts.accessToken = access_token;
+          matrix.credentials = { userId };
+
+          // displayName must be signature of full userId for our messages to be accepted
+          return from(signer.signMessage(userId)).pipe(
+            map(signedUserId => ({
+              matrix,
+              server,
+              setup: {
+                userId,
+                accessToken: access_token,
+                deviceId: device_id,
+                displayName: signedUserId,
+              } as RaidenMatrixSetup,
+            })),
+          );
+        }),
+      );
+    }
+  }).pipe(
+    withLatestFrom(config$),
+    // the APIs below are authenticated, and therefore also act as validator
+    mergeMap(([{ matrix, server, setup }, config]) =>
+      // ensure displayName is set even on restarts
+      from(matrix.setDisplayName(setup.displayName)).pipe(
+        mergeMap(() => globalRoomNames(config)),
+        map(globalRoom => `#${globalRoom}:${serverName}`),
+        mergeMap(alias => matrix.joinRoom(alias)),
+        toArray(), // wait all joinRoom promises to complete
+        mapTo({ matrix, server, setup }), // return triplet again
+      ),
+    ),
+  );
+}
+
+/**
  * Initialize matrix transport
  * The matrix client instance will be outputed to RaidenEpicDeps.matrix$ AsyncSubject
  * The setup info (including credentials, for persistence) will be the matrixSetup output action
@@ -211,123 +381,56 @@ export const initMatrixEpic = (
   { address, signer, matrix$, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof matrixSetup>> =>
   state$.pipe(
-    first(),
+    first(), // at startup
     withLatestFrom(config$),
     mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout }]) => {
       const server: string | undefined = get(state, ['transport', 'matrix', 'server']),
         setup: RaidenMatrixSetup | undefined = get(state, ['transport', 'matrix', 'setup']);
 
-      if (server && (!matrixServer || matrixServer === server)) {
-        // reuse server&setup from state iff set and either matrixServer equal or undefined
-        return of({ server, setup });
-      } else if (matrixServer) {
-        // [re]auth on [new] server if matrixServer is set and different from state or first run
-        return of({ server: matrixServer, setup: undefined });
-      } else {
-        // fetch servers list and use the one with shortest http round trip time (rtt)
-        return fromFetch(matrixServerLookup).pipe(
-          mergeMap(response => {
-            if (!response.ok)
-              return throwError(
-                new Error(
-                  `Could not fetch server list from "${matrixServerLookup}" => ${response.status}`,
-                ),
-              );
-            return response.text();
-          }),
-          timeout(httpTimeout),
-          mergeMap(text => from(yamlListToArray(text))),
-          mergeMap(server => matrixRTT(server, httpTimeout)),
-          toArray(),
-          map(rtts => sortBy(rtts, ['rtt'])),
-          map(rtts => {
-            if (!rtts[0] || typeof rtts[0].rtt !== 'number' || isNaN(rtts[0].rtt))
-              throw new Error(`Could not contact any matrix servers: ${JSON.stringify(rtts)}`);
-            return rtts[0].server;
-          }),
-          map(server => ({
-            server: server.includes('://') ? server : `https://${server}`,
-            setup: undefined,
-          })),
-        );
-      }
-    }),
-    mergeMap(function({
-      server,
-      setup,
-    }): Observable<{ matrix: MatrixClient; server: string; setup: RaidenMatrixSetup }> {
-      let { userId, accessToken, deviceId }: Partial<RaidenMatrixSetup> = setup || {};
-      if (setup) {
-        // if matrixSetup was already issued before, and credentials are already in state
-        const matrix = createClient({
-          baseUrl: server,
-          userId,
-          accessToken,
-          deviceId,
-        });
-        return of({ matrix, server, setup });
-      } else {
-        const serverName = getServerName(server);
-        if (!serverName) return throwError(new Error(`Could not get serverName from "${server}"`));
-        const matrix = createClient({ baseUrl: server });
-        const userName = address.toLowerCase();
-        userId = `@${userName}:${serverName}`;
+      const servers$Array: Observable<{ server: string; setup?: RaidenMatrixSetup }>[] = [];
 
-        // create password as signature of serverName, then try login or register
-        return from(signer.signMessage(serverName)).pipe(
-          mergeMap(password =>
-            from(matrix.loginWithPassword(userName, password)).pipe(
-              catchError(() => from(matrix.register(userName, password))),
-            ),
-          ),
-          tap(result => {
-            // matrix.register implementation doesn't set returned credentials
-            // which would require an unnecessary additional login request if we didn't
-            // set it here, and login doesn't set deviceId, so we set all credential
-            // parameters again here after successful login or register
-            matrix.deviceId = result.device_id;
-            matrix._http.opts.accessToken = result.access_token;
-            matrix.credentials = {
-              userId: result.user_id,
-            };
-            // set vars for later MatrixSetupAction
-            accessToken = result.access_token;
-            deviceId = result.device_id;
-          }),
-          // displayName must be signature of full userId for our messages to be accepted
-          mergeMap(() => signer.signMessage(userId!)),
-          map(signedUserId => ({
-            matrix,
-            server,
-            setup: {
-              userId: userId!,
-              accessToken: accessToken!,
-              deviceId: deviceId!,
-              displayName: signedUserId,
-            },
-          })),
-        );
+      if (matrixServer) {
+        // if config.matrixServer is set, we must use it (possibly re-using stored credentials,
+        // if matching), not fetch from lookup address
+        if (matrixServer === server) servers$Array.push(of({ server, setup }));
+        else servers$Array.push(of({ server: matrixServer }));
+      } else {
+        // previously used server
+        if (server) servers$Array.push(of({ server, setup }));
+
+        // fetched servers list
+        // notice it may include stored server again, but no stored setup, which could be the
+        // cause of the  first failure, so we allow it to try again (not necessarily first)
+        servers$Array.push(fetchSortedMatrixServers$(matrixServerLookup, httpTimeout));
       }
-    }),
-    withLatestFrom(config$),
-    mergeMap(([{ matrix, server, setup }, config]) =>
-      // ensure displayName is set even on restarts
-      from(matrix.setDisplayName(setup.displayName)).pipe(
-        mergeMap(() =>
-          merge(
-            // ensure we joined global rooms
-            ...globalRoomNames(config).map(globalRoom =>
-              from(matrix.joinRoom(`#${globalRoom}:${getServerName(server)}`)),
-            ),
+
+      let lastError: Error;
+      const andSuppress = (err: Error) => ((lastError = err), EMPTY);
+
+      // on [re-]subscription (defer), pops next observable and subscribe to it
+      return defer(() => servers$Array.shift() || EMPTY).pipe(
+        catchError(andSuppress), // servers$ may error, so store lastError
+        concatMap(({ server, setup }) =>
+          // serially, try setting up client and validate its credential
+          setupMatrixClient$(server, setup, { address, signer, config$ }).pipe(
+            // store and suppress any 'setupMatrixClient$' error
+            catchError(andSuppress),
           ),
         ),
-        toArray(), // wait all promises to complete
-        mapTo({ matrix, server, setup }), // return triplet again
-      ),
-    ),
+        // on first setupMatrixClient$'s success, emit, complete and unsubscribe
+        first(),
+        // with errors suppressed, only possible error here is 'no element in sequence'
+        retryWhen(err$ =>
+          // if there're more servers$ observables in queue, emit once to retry from defer;
+          // else, errors output with lastError to unsubscribe
+          err$.pipe(mergeMap(() => (servers$Array.length ? of(null) : throwError(lastError)))),
+        ),
+      );
+    }),
+    // on success
     mergeMap(({ matrix, server, setup }) =>
       merge(
-        // wait for matrixSetup to be persisted in state, then resolves matrix$ with instance
+        // wait for matrixSetup to be persisted in state, then resolves matrix$ with client
         state$.pipe(
           pluck('transport', 'matrix', 'server'),
           filter((_server): _server is string => !!_server),
@@ -336,11 +439,12 @@ export const initMatrixEpic = (
             matrix$.next(matrix);
             matrix$.complete();
           }),
-          switchMap(() => matrix$),
+          switchMapTo(matrix$),
           delay(1e3), // wait 1s before starting matrix, so event listeners can be registered
           mergeMap(matrix => matrix.startClient({ initialSyncLimit: 0 })),
           ignoreElements(),
         ),
+        // emit matrixSetup in parallel to be persisted in state
         of(matrixSetup({ server, setup })),
       ),
     ),
