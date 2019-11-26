@@ -14,37 +14,39 @@
       :header="$t('channels.open.header')"
       class="channels__header"
     ></list-header>
-    <channel-list
-      :visible="visible"
-      :token="token"
-      :channels="open"
-      @visible-changed="visible = $event"
-      @message="showMessage($event)"
-    ></channel-list>
-    <list-header
-      v-if="closed.length > 0"
-      :header="$t('channels.closed.header')"
-      class="channels__header"
-    ></list-header>
-    <channel-list
-      :visible="visible"
-      :token="token"
-      :channels="closed"
-      @visible-changed="visible = $event"
-      @message="showMessage($event)"
-    ></channel-list>
-    <list-header
-      v-if="settleable.length > 0"
-      :header="$t('channels.settleable.header')"
-      class="channels__header"
-    ></list-header>
-    <channel-list
-      :visible="visible"
-      :token="token"
-      :channels="settleable"
-      @visible-changed="visible = $event"
-      @message="showMessage($event)"
-    ></channel-list>
+    <div class="channels__wrapper">
+      <channel-list
+        :visible="visible"
+        :token="token"
+        :channels="open"
+        @visible-changed="visible = $event"
+        @message="showMessage($event)"
+      ></channel-list>
+      <list-header
+        v-if="closed.length > 0"
+        :header="$t('channels.closed.header')"
+        class="channels__header"
+      ></list-header>
+      <channel-list
+        :visible="visible"
+        :token="token"
+        :channels="closed"
+        @visible-changed="visible = $event"
+        @message="showMessage($event)"
+      ></channel-list>
+      <list-header
+        v-if="settleable.length > 0"
+        :header="$t('channels.settleable.header')"
+        class="channels__header"
+      ></list-header>
+      <channel-list
+        :visible="visible"
+        :token="token"
+        :channels="settleable"
+        @visible-changed="visible = $event"
+        @message="showMessage($event)"
+      ></channel-list>
+    </div>
     <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
       {{ message }}
       <v-btn color="primary" text @click="snackbar = false">
@@ -131,27 +133,34 @@ export default class Channels extends Mixins(NavigationMixin) {
 @import '../scss/dimensions';
 @import '../scss/scroll';
 
-.channels__overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(30, 30, 30, 0.75);
-  z-index: 10;
-}
-
-.channels__header {
-  padding-top: $list-header-padding-top;
-}
-
-.channels:first-child {
-  padding-top: $first-child-padding;
-}
-
 .channels {
   width: 100%;
   height: 100%;
-  @extend .themed-scrollbar;
+  overflow: hidden;
+
+  &:first-child {
+    padding-top: 50px;
+  }
+
+  &__overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(30, 30, 30, 0.75);
+    z-index: 10;
+  }
+
+  &__wrapper {
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    @extend .themed-scrollbar;
+  }
+
+  &__header {
+    padding-top: $list-header-padding-top;
+  }
 }
 </style>

@@ -181,6 +181,7 @@ export default class Tokens extends Mixins(BlockieMixin, NavigationMixin) {
   max-height: 420px;
   height: 420px;
   overflow-y: auto;
+  @extend .themed-scrollbar;
 }
 
 .connected-tokens__tokens ::v-deep .v-avatar {
