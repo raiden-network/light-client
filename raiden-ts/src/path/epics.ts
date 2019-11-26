@@ -213,6 +213,7 @@ export const pathFindServiceEpic = (
                 throw new Error(`PFS: unknown tokenNetwork ${tokenNetwork}`);
               if (!(target in presences) || !presences[target].payload.available)
                 throw new Error(`PFS: target ${target} not online`);
+
               // if pathFind received a set of paths, pass it through to validation/cleanup
               if (action.payload.paths) return of({ paths: action.payload.paths, iou: undefined });
               // else, if possible, use a direct transfer
@@ -223,7 +224,10 @@ export const pathFindServiceEpic = (
                   paths: [{ path: [state.address, target], fee: Zero as Int<32> }],
                   iou: undefined,
                 });
-              } else if (!action.payload.pfs && configPfs === null) {
+              } else if (
+                action.payload.pfs === null || // explicitly disabled in action
+                (!action.payload.pfs && configPfs === null) // disabled in config and not provided
+              ) {
                 // pfs not specified in action and disabled (null) in config
                 throw new Error(`PFS disabled and no direct route available`);
               } else {

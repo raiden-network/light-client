@@ -30,6 +30,7 @@ import {
   defer,
   EMPTY,
   ReplaySubject,
+  of,
 } from 'rxjs';
 import {
   first,
@@ -920,7 +921,7 @@ export class Raiden {
     target: string,
     value: BigNumberish,
     options: { pfs?: RaidenPFS } = {},
-  ): Promise<RaidenPaths> {
+  ): Promise<Paths> {
     if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
@@ -935,7 +936,7 @@ export class Raiden {
           action =>
             action.meta.tokenNetwork === tokenNetwork &&
             action.meta.target === target &&
-            action.meta.value.eq(value),
+            action.meta.value.eq(decodedValue),
         ),
         map(action => {
           if (isActionOf(pathFindFailed, action)) throw action.payload;
@@ -944,6 +945,46 @@ export class Raiden {
       )
       .toPromise();
     this.store.dispatch(pathFind({ pfs }, { tokenNetwork, target, value: decodedValue }));
+    return promise;
+  }
+
+  /**
+   * Checks if a direct transfer of token to target could be performed and returns it on a
+   * single-element array of Paths
+   *
+   * @param token - Token address on currently configured token network registry
+   * @param target - Target address (must be getAvailability before)
+   * @param value - Minimum capacity required on route
+   * @returns Promise to a [Raiden]Paths array containing the single, direct route, or undefined
+   */
+  public async directRoute(
+    token: string,
+    target: string,
+    value: BigNumberish,
+  ): Promise<Paths | undefined> {
+    if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
+    const tokenNetwork = this.state.tokens[token];
+    if (!tokenNetwork) throw new Error('Unknown token network');
+
+    const decodedValue = decode(UInt(32), value);
+
+    const promise = this.action$
+      .pipe(
+        filter(isActionOf([pathFound, pathFindFailed])),
+        first(
+          action =>
+            action.meta.tokenNetwork === tokenNetwork &&
+            action.meta.target === target &&
+            action.meta.value.eq(decodedValue),
+        ),
+        map(action => {
+          if (isActionOf(pathFindFailed, action)) return undefined;
+          return action.payload.paths;
+        }),
+      )
+      .toPromise();
+    // dispatch a pathFind with pfs disabled, to force checking for a direct route
+    this.store.dispatch(pathFind({ pfs: null }, { tokenNetwork, target, value: decodedValue }));
     return promise;
   }
 
@@ -958,12 +999,12 @@ export class Raiden {
    * @returns Promise to array of PFS, which is the interface which describes a PFS
    */
   public async findPFS(): Promise<PFS[]> {
-    if (this.config.pfs !== undefined) throw new Error("config.pfs isn't auto (undefined)");
-    return this.pfsList$
-      .pipe(
-        first(),
-        mergeMap(pfsList => pfsListInfo(pfsList, this.deps)),
-      )
+    if (this.config.pfs === null) throw new Error('PFS disabled in config');
+    return (this.config.pfs
+      ? of<readonly (string | Address)[]>([this.config.pfs])
+      : this.pfsList$.pipe(first())
+    )
+      .pipe(mergeMap(pfsList => pfsListInfo(pfsList, this.deps)))
       .toPromise();
   }
 
