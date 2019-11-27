@@ -425,7 +425,7 @@ export const pfsCapacityUpdateEpic = (
           : (Zero as UInt<8>),
         updating_capacity: ownCapacity,
         other_capacity: partnerCapacity,
-        reveal_timeout: revealTimeout,
+        reveal_timeout: bigNumberify(revealTimeout) as UInt<32>,
       };
 
       return from(signMessage(signer, message)).pipe(

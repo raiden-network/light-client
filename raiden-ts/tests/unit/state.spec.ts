@@ -49,8 +49,8 @@ describe('RaidenState codecs', () => {
         [tokenNetwork]: {
           [partner]: {
             state: 'open',
-            own: { deposit: 200 },
-            partner: { deposit: 210 },
+            own: { deposit: '200' },
+            partner: { deposit: '210' },
             id: 17,
             settleTimeout: 500,
             openBlock: 121,
@@ -135,8 +135,8 @@ describe('RaidenState codecs', () => {
         [tokenNetwork]: {
           [partner]: {
             state: ChannelState.open,
-            own: { deposit: bigNumberify(200) as UInt<32> },
-            partner: { deposit: bigNumberify(210) as UInt<32> },
+            own: { deposit: bigNumberify(200) },
+            partner: { deposit: bigNumberify(210) },
             id: 17,
             settleTimeout: 500,
             openBlock: 121,

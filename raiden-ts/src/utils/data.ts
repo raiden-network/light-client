@@ -2,7 +2,7 @@
 import { Two } from 'ethers/constants';
 import { BigNumber, bigNumberify } from 'ethers/utils';
 import { Arrayish, hexlify, isArrayish, hexZeroPad, hexDataLength } from 'ethers/utils/bytes';
-import { LosslessNumber, parse } from 'lossless-json';
+import * as LosslessJSON from 'lossless-json';
 
 import { BigNumberC, HexString } from './types';
 
@@ -38,27 +38,45 @@ export function encode<S extends number = number>(
   return hex;
 }
 
-const isLosslessNumber = (u: unknown): u is LosslessNumber =>
+const isLosslessNumber = (u: unknown): u is LosslessJSON.LosslessNumber =>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  u && (u as any)['isLosslessNumber'] === true;
+  u != null && (u as any)['isLosslessNumber'];
 /**
  * Opportunistic JSON.parse regarding numbers
  * If possible to decode a JSON number as JS number (i.e. value < 2^53) and return 'number',
- * otherwise returns LosslessNumber object, which can be decoded as BigNumber by BigNumberC
+ * otherwise returns BigNumber object
  * Throws if handled invalid JSON
  *
  * @param text - JSON string to parse
  * @returns Decoded object
  */
 export function losslessParse(text: string): any {
-  return parse(text, ({}, value) => {
+  return LosslessJSON.parse(text, ({}, value) => {
     if (isLosslessNumber(value)) {
       try {
         return value.valueOf(); // return number, if possible, or throw if > 2^53
-      } catch (e) {} // else, pass to return LosslessNumber, which can be decoded by BigNumberC
+      } catch (e) {
+        // else, convert early to BigNumber
+        return bigNumberify(value.toString());
+      }
     }
     return value;
   });
 }
 
-export { stringify as losslessStringify } from 'lossless-json';
+/**
+ * Stringify object losslessly, by converting BigNumbers to 'string's
+ *
+ * @param value - Object to be serialized as a string
+ * @param replacer - Replacer function. Leave default to stringify BigNumbers
+ * @param space - indentation spaces
+ * @returns serialized representation of value
+ */
+export function losslessStringify(
+  value: any,
+  replacer: ((key: string, value: any) => any) | (string | number)[] = ({}, value: any) =>
+    BigNumber.isBigNumber(value) ? value.toString() : value,
+  space?: string | number,
+) {
+  return LosslessJSON.stringify(value, replacer, space);
+}
