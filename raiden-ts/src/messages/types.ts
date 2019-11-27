@@ -242,7 +242,7 @@ export const PFSCapacityUpdate = t.readonly(
     other_nonce: UInt(8),
     updating_capacity: UInt(32),
     other_capacity: UInt(32),
-    reveal_timeout: t.number,
+    reveal_timeout: UInt(32),
   }),
 );
 export interface PFSCapacityUpdate extends t.TypeOf<typeof PFSCapacityUpdate> {}

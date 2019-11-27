@@ -2,7 +2,6 @@
 import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress, isHexString, hexDataLength } from 'ethers/utils';
 import { Two, Zero } from 'ethers/constants';
-import { LosslessNumber } from 'lossless-json';
 import { memoize } from 'lodash';
 import { isLeft } from 'fp-ts/lib/Either';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
@@ -40,28 +39,26 @@ export function isntNil<T>(value: T): value is NonNullable<T> {
   return value != null;
 }
 
-const isStringifiable = (u: unknown): u is { toString: () => string } =>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  u !== null && u !== undefined && typeof (u as any)['toString'] === 'function';
 /**
  * Codec of ethers.utils.BigNumber objects
+ *
  * Input can be anything bigNumberify-able: number, string, LosslessNumber or BigNumber
- * Output is LosslessNumber, so we can JSON-serialize with 'number' types bigger than JS VM limits
- * of ±2^53, as Raiden full-client/python stdlib json encode/decode longs as json number.
+ * Output is string, so we can JSON-serialize with 'number's types bigger than JS VM limits
+ * of ±2^53, as Raiden python client stdlib json encode longs as string.
  */
-export const BigNumberC = new t.Type<BigNumber, LosslessNumber>(
+export const BigNumberC = new t.Type<BigNumber, string>(
   'BigNumber',
   BigNumber.isBigNumber,
   (u, c) => {
     if (BigNumber.isBigNumber(u)) return t.success(u);
     try {
-      if (isStringifiable(u)) return t.success(bigNumberify(u.toString()));
+      // decode by trying to bigNumberify string representation of anything
+      return t.success(bigNumberify((u as any).toString()));
     } catch (err) {
       return t.failure(u, c, err.message);
     }
-    return t.failure(u, c);
   },
-  a => new LosslessNumber(a.toString()),
+  a => a.toString(),
 );
 
 // sized brands interfaces must derive from this interface

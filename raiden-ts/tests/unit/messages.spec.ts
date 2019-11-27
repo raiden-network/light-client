@@ -85,7 +85,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"LockedTransfer","chain_id":337,"message_identifier":123456,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","lock":{"amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x811957b07304d335B271feeBF46754696694b09e","initiator":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","metadata":{"routes":[{"route":["0x2A915FDA69746F515b46C520eD511401d5CCD5e2","0x811957b07304d335B271feeBF46754696694b09e"]}]},"signature":"0xa4beb47c2067e196de4cd9d5643d1c7af37caf4ac87de346e10ac27351505d405272f3d68960322bd53d1ea95460e4dd323dbef7c862fa6596444a57732ddb2b1c"}',
+      '{"type":"LockedTransfer","chain_id":"337","message_identifier":"123456","payment_identifier":"1","nonce":"1","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":"1338","transferred_amount":"0","locked_amount":"10","recipient":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","lock":{"amount":"10","expiration":"1","secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x811957b07304d335B271feeBF46754696694b09e","initiator":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","metadata":{"routes":[{"route":["0x2A915FDA69746F515b46C520eD511401d5CCD5e2","0x811957b07304d335B271feeBF46754696694b09e"]}]},"signature":"0xa4beb47c2067e196de4cd9d5643d1c7af37caf4ac87de346e10ac27351505d405272f3d68960322bd53d1ea95460e4dd323dbef7c862fa6596444a57732ddb2b1c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -139,7 +139,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"RefundTransfer","chain_id":337,"message_identifier":123457,"payment_identifier":1,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"recipient":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","locksroot":"0x0000000000000000000000000000000000000000000000000000000000000000","lock":{"amount":10,"expiration":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","initiator":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","metadata":{"routes":[{"route":["0x540B51eDc5900B8012091cc7c83caf2cb243aa86"]}]},"signature":"0x8ed40b851cf583eee2c454ce8d6366a79cd6900293de3e055074521f5f99090f6ea64db3110914911ac4f7412e37b1277616006dde6932d011def114b942e40b1b"}',
+      '{"type":"RefundTransfer","chain_id":"337","message_identifier":"123457","payment_identifier":"1","nonce":"1","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","token":"0xc778417E063141139Fce010982780140Aa0cD5Ab","channel_identifier":"1338","transferred_amount":"0","locked_amount":"10","recipient":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","locksroot":"0x0000000000000000000000000000000000000000000000000000000000000000","lock":{"amount":"10","expiration":"1","secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"},"target":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","initiator":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","metadata":{"routes":[{"route":["0x540B51eDc5900B8012091cc7c83caf2cb243aa86"]}]},"signature":"0x8ed40b851cf583eee2c454ce8d6366a79cd6900293de3e055074521f5f99090f6ea64db3110914911ac4f7412e37b1277616006dde6932d011def114b942e40b1b"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -178,7 +178,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"Unlock","chain_id":337,"message_identifier":123457,"payment_identifier":1,"secret":"0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e","nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":1338,"transferred_amount":0,"locked_amount":10,"locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","signature":"0xd153bbef8ca5462e62ba5dceda7929fc2ee7d866e983c033afe59e7f7958b8d80c734d5fba96028e8fb689300ca3c6a47764c0c0d6fbfffca9cf70729efb8e7e1c"}',
+      '{"type":"Unlock","chain_id":"337","message_identifier":"123457","payment_identifier":"1","secret":"0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e","nonce":"1","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":"1338","transferred_amount":"0","locked_amount":"10","locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","signature":"0xd153bbef8ca5462e62ba5dceda7929fc2ee7d866e983c033afe59e7f7958b8d80c734d5fba96028e8fb689300ca3c6a47764c0c0d6fbfffca9cf70729efb8e7e1c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -217,7 +217,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"LockExpired","chain_id":337,"nonce":1,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","message_identifier":123457,"channel_identifier":1338,"secrethash":"0xfdd5831261497a4de31cb31d29b3cafe1fd2dfcdadf3c4a72ed0af9bb106934d","transferred_amount":0,"locked_amount":10,"recipient":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","signature":"0xdd978b011c21327d9228f8ef179646df9029e14d91df38c41da9ded4819c5e304e5a9d14fe861b475816679597b66b0b08edea0e65e9674abf03dd3876ad9d801c"}',
+      '{"type":"LockExpired","chain_id":"337","nonce":"1","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","message_identifier":"123457","channel_identifier":"1338","secrethash":"0xfdd5831261497a4de31cb31d29b3cafe1fd2dfcdadf3c4a72ed0af9bb106934d","transferred_amount":"0","locked_amount":"10","recipient":"0x540B51eDc5900B8012091cc7c83caf2cb243aa86","locksroot":"0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b","signature":"0xdd978b011c21327d9228f8ef179646df9029e14d91df38c41da9ded4819c5e304e5a9d14fe861b475816679597b66b0b08edea0e65e9674abf03dd3876ad9d801c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -247,7 +247,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"SecretRequest","message_identifier":123456,"payment_identifier":1,"secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8","amount":10,"expiration":1,"signature":"0x4a8d01db29004aa733809bc1b27c11009364c4fff847b211d48d520472ea78e5584a4fea6ea9438f09e9da6c0e60fb2a8f21a614afb41e702fb6db6981e822b41b"}',
+      '{"type":"SecretRequest","message_identifier":"123456","payment_identifier":"1","secrethash":"0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8","amount":"10","expiration":"1","signature":"0x4a8d01db29004aa733809bc1b27c11009364c4fff847b211d48d520472ea78e5584a4fea6ea9438f09e9da6c0e60fb2a8f21a614afb41e702fb6db6981e822b41b"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -274,7 +274,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"RevealSecret","message_identifier":123456,"secret":"0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e","signature":"0x758eace7b5443a3afb5daf06eda3d2d024ca4d2cdbd0e72b36bcc9408d5bbf0d32153f53fc180c4145fd7b6b3038554484b9d3a56382b03bfed5f3ce01c5ea1b1b"}',
+      '{"type":"RevealSecret","message_identifier":"123456","secret":"0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e","signature":"0x758eace7b5443a3afb5daf06eda3d2d024ca4d2cdbd0e72b36bcc9408d5bbf0d32153f53fc180c4145fd7b6b3038554484b9d3a56382b03bfed5f3ce01c5ea1b1b"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -298,7 +298,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"Delivered","delivered_message_identifier":123456,"signature":"0x5770d597b270ad9d1225c901b1ef6bfd8782b15d7541379619c5dae02c5c03c1196291b042a4fea9dbddcb1c6bcd2a5ee19180e8dc881c2e9298757e84ad190b1c"}',
+      '{"type":"Delivered","delivered_message_identifier":"123456","signature":"0x5770d597b270ad9d1225c901b1ef6bfd8782b15d7541379619c5dae02c5c03c1196291b042a4fea9dbddcb1c6bcd2a5ee19180e8dc881c2e9298757e84ad190b1c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -322,7 +322,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"Processed","message_identifier":123456,"signature":"0xdc1647ec6cdd805d8d4af231c5d5b2105bda2e5c7e81b9a6314f37aef9e5db8e62c253189ddb9886201427e1908876aa68d7a3ec6c45aaa3b1de4587efc70a3f1c"}',
+      '{"type":"Processed","message_identifier":"123456","signature":"0xdc1647ec6cdd805d8d4af231c5d5b2105bda2e5c7e81b9a6314f37aef9e5db8e62c253189ddb9886201427e1908876aa68d7a3ec6c45aaa3b1de4587efc70a3f1c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -423,7 +423,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"ToDevice","message_identifier":123456,"signature":"0x26674d7687baf09d21185664daf85cf6a9f9671d61f00e85d32621a721c3b4e251197dafe01d6930f1d86177e119dd0948f206d352204eb986b286b6b76a541d1b"}',
+      '{"type":"ToDevice","message_identifier":"123456","signature":"0x26674d7687baf09d21185664daf85cf6a9f9671d61f00e85d32621a721c3b4e251197dafe01d6930f1d86177e119dd0948f206d352204eb986b286b6b76a541d1b"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -460,7 +460,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"WithdrawRequest","chain_id":337,"message_identifier":123456,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":1338,"participant":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","total_withdraw":10000000000000000000,"nonce":135,"expiration":182811,"signature":"0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c"}',
+      '{"type":"WithdrawRequest","chain_id":"337","message_identifier":"123456","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":"1338","participant":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","total_withdraw":"10000000000000000000","nonce":"135","expiration":"182811","signature":"0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -497,7 +497,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"WithdrawConfirmation","chain_id":337,"message_identifier":123456,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":1338,"participant":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","total_withdraw":10000000000000000000,"nonce":135,"expiration":182811,"signature":"0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c"}',
+      '{"type":"WithdrawConfirmation","chain_id":"337","message_identifier":"123456","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":"1338","participant":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","total_withdraw":"10000000000000000000","nonce":"135","expiration":"182811","signature":"0x5e0326b79f9ef19d6224317d54d17a55b4e1ebfc4d962388876d4575c421c4d238d50a892cd5e48d648c31c4f6ec5cb3947511a4dfe80c539875d859b1f31a0e1c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
@@ -534,7 +534,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"WithdrawExpired","chain_id":337,"message_identifier":123456,"token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":1338,"participant":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","total_withdraw":10000000000000000000,"nonce":135,"expiration":182811,"signature":"0xb4b2a079e00b9cfb05a3452500f052d3f1b549f3b3836c8698e6d6e71d65a34d2a52141562385b037b0a05f39484af153e84da84f6f507ebf83bc4f87183b7331c"}',
+      '{"type":"WithdrawExpired","chain_id":"337","message_identifier":"123456","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":"1338","participant":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","total_withdraw":"10000000000000000000","nonce":"135","expiration":"182811","signature":"0xb4b2a079e00b9cfb05a3452500f052d3f1b549f3b3836c8698e6d6e71d65a34d2a52141562385b037b0a05f39484af153e84da84f6f507ebf83bc4f87183b7331c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
