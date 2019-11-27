@@ -5,7 +5,8 @@
       "transfer": "Transfer",
       "continue": "Continue",
       "confirm": "Confirm"
-    }
+    },
+    "offline": "Please connect to the internet."
   },
   "address-input": {
     "paste-button": "Paste",

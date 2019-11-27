@@ -20,6 +20,7 @@
         {{ $t('application.privacy-policy') }}
       </a>
     </div>
+    <offline-snackbar />
   </v-app>
 </template>
 
@@ -27,12 +28,13 @@
 import { Component, Vue } from 'vue-property-decorator';
 import SplashScreen from '@/components/SplashScreen.vue';
 import AppHeader from '@/components/AppHeader.vue';
+import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import { mapState } from 'vuex';
 import { DeniedReason } from '@/model/types';
 
 @Component({
   computed: mapState(['loading', 'accessDenied']),
-  components: { AppHeader, SplashScreen }
+  components: { AppHeader, SplashScreen, OfflineSnackbar }
 })
 export default class App extends Vue {
   name: string;
