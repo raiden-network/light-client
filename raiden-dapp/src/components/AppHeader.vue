@@ -110,7 +110,11 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
   private timeout: number = 0;
 
   get canGoBack(): boolean {
-    return this.$route.name !== RouteNames.HOME;
+    const routesWithoutBackBtn: string[] = [
+      RouteNames.HOME,
+      RouteNames.TRANSFER
+    ];
+    return !routesWithoutBackBtn.includes(this.$route.name!);
   }
 
   copy() {
