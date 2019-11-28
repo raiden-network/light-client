@@ -13,7 +13,7 @@ import NoTokens from '@/components/NoTokens.vue';
   computed: mapGetters(['tokens']),
   components: { NoTokens }
 })
-export default class AppCore extends Mixins(NavigationMixin) {
+export default class Home extends Mixins(NavigationMixin) {
   tokens!: TokenModel[];
 
   mounted() {

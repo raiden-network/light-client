@@ -7,7 +7,7 @@ import store from '@/store/index';
 import VueRouter from 'vue-router';
 import { RouteNames } from '@/router/route-names';
 import Vuetify from 'vuetify';
-import AppCore from '@/components/AppCore.vue';
+import Home from '@/views/Home.vue';
 import NoTokens from '@/components/NoTokens.vue';
 import { TestData } from '../data/mock-data';
 import { RaidenChannel, RaidenChannels } from 'raiden-ts';
@@ -16,13 +16,13 @@ import { Tokens } from '@/types';
 Vue.use(Vuex);
 Vue.use(Vuetify);
 
-describe('AppCore.vue', () => {
-  let wrapper: Wrapper<AppCore>;
+describe('Home.vue', () => {
+  let wrapper: Wrapper<Home>;
   let mockedRouter: Mocked<VueRouter>;
   let vuetify: typeof Vuetify;
 
   const vueFactory = () =>
-    mount(AppCore, {
+    mount(Home, {
       vuetify,
       store,
       mocks: {
