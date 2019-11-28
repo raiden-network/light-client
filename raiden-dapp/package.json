@@ -23,7 +23,7 @@
     "raiden-ts": "file:../raiden-ts",
     "register-service-worker": "^1.6.2",
     "rxjs": "^6.5.3",
-    "tiny-async-pool": "^1.0.4",
+    "tiny-async-pool": "^1.1.0",
     "vue": "^2.6.10",
     "vue-class-component": "^7.1.0",
     "vue-i18n": "^8.15.0",
