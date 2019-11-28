@@ -12,13 +12,13 @@ describe('IdenticonCache', function() {
     generator.mockReturnValue('1');
   });
 
-  it('should generate the icon if the icon is not cached', function() {
+  test('should generate the icon if the icon is not cached', function() {
     let icon = cache.getIdenticon('0xaddr');
     expect(makeBlockie).toHaveBeenCalledTimes(1);
     expect(icon).toEqual('1');
   });
 
-  it('should fetch the icon if it is already cached', function() {
+  test('should fetch the icon if it is already cached', function() {
     let icon = cache.getIdenticon('0xaddr');
     let icon2 = cache.getIdenticon('0xaddr');
     expect(makeBlockie).toHaveBeenCalledTimes(1);

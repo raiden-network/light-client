@@ -97,12 +97,12 @@ describe('OpenChannel.vue', function() {
       service.openChannel.mockReset();
     });
 
-    it('should not be disabled after load', async function() {
+    test('should not be disabled after load', async function() {
       await flushPromises();
       expect(button.element.getAttribute('disabled')).toBeFalsy();
     });
 
-    it('should show an error if channel opening failed', async () => {
+    test('should show an error if channel opening failed', async () => {
       service.openChannel.mockRejectedValueOnce(
         new ChannelOpenFailed('open: transaction failed')
       );
@@ -115,7 +115,7 @@ describe('OpenChannel.vue', function() {
       await flushPromises();
     });
 
-    it('should had an error if deposit failed', async () => {
+    test('should had an error if deposit failed', async () => {
       service.openChannel.mockRejectedValueOnce(
         new ChannelDepositFailed('deposit: transaction failed')
       );
@@ -128,7 +128,7 @@ describe('OpenChannel.vue', function() {
       await flushPromises();
     });
 
-    it('should show an error if any error happens during channel opening', async () => {
+    test('should show an error if any error happens during channel opening', async () => {
       service.openChannel.mockRejectedValueOnce(new Error('unknown'));
       mockInput(wrapper, '0.1');
       button.trigger('click');
@@ -138,7 +138,7 @@ describe('OpenChannel.vue', function() {
       await flushPromises();
     });
 
-    it('should navigate to send on success', async () => {
+    test('should navigate to send on success', async () => {
       const loading = jest.spyOn(wrapper.vm.$data, 'loading', 'set');
       service.openChannel.mockResolvedValue(undefined);
       button.trigger('click');

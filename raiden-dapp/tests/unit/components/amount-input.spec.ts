@@ -30,13 +30,13 @@ describe('AmountInput.vue', function() {
       await wrapper.vm.$nextTick();
     });
 
-    it('should show no validation messages', () => {
+    test('should show no validation messages', () => {
       const messages = wrapper.find('.v-messages__message');
       expect(wrapper.props().value).toEqual('0.00');
       expect(messages.exists()).toBe(false);
     });
 
-    it('should show an amount cannot be empty message', async function() {
+    test('should show an amount cannot be empty message', async function() {
       mockInput(wrapper, '');
       await wrapper.vm.$nextTick();
       await flushPromises();
@@ -47,7 +47,7 @@ describe('AmountInput.vue', function() {
       expect(messages.text()).toEqual('amount-input.error.empty');
     });
 
-    it('should show no error if a valid amount is added', async function() {
+    test('should show no error if a valid amount is added', async function() {
       mockInput(wrapper, '1.2');
       await wrapper.vm.$nextTick();
       expect(wrapper.emitted().input).toBeTruthy();
@@ -62,7 +62,7 @@ describe('AmountInput.vue', function() {
       wrapper = vueFactory({ limit: true, value: '' });
     });
 
-    it('should display an error if the amount is smaller than the limit', async function() {
+    test('should display an error if the amount is smaller than the limit', async function() {
       mockInput(wrapper, '2.4');
       await wrapper.vm.$nextTick();
       await flushPromises();
@@ -73,7 +73,7 @@ describe('AmountInput.vue', function() {
       expect(messages.text()).toEqual('amount-input.error.not-enough-funds');
     });
 
-    it('should display an error if the amount has more decimals than supported', async function() {
+    test('should display an error if the amount has more decimals than supported', async function() {
       mockInput(wrapper, '1.42345678');
       await wrapper.vm.$nextTick();
       await flushPromises();

@@ -6,12 +6,12 @@ describe('web3Provider', function() {
     window.ethereum = undefined;
   });
 
-  it('should return null when no provider is detected', async function() {
+  test('should return null when no provider is detected', async function() {
     const status = await Web3Provider.provider();
     expect(status).toBe(null);
   });
 
-  it('should throw when the user denies access to the provider', async function() {
+  test('should throw when the user denies access to the provider', async function() {
     window.ethereum = {
       enable: jest.fn().mockRejectedValue('denied')
     };
@@ -24,7 +24,7 @@ describe('web3Provider', function() {
     }
   });
 
-  it('should return the provider after the user allows connection to the provider', async function() {
+  test('should return the provider after the user allows connection to the provider', async function() {
     window.ethereum = {
       enable: jest.fn().mockResolvedValue(true)
     };
@@ -33,7 +33,7 @@ describe('web3Provider', function() {
     expect(status).toBe(window.ethereum);
   });
 
-  it('should check for legacy web3 providers', async function() {
+  test('should check for legacy web3 providers', async function() {
     window.web3 = {
       currentProvider: {}
     };

@@ -26,7 +26,7 @@ describe('ChannelDeposit.vue', function() {
     });
   });
 
-  it('should emit a cancel event when cancel pressed', function() {
+  test('should emit a cancel event when cancel pressed', function() {
     wrapper
       .findAll('button')
       .at(0)
@@ -34,7 +34,7 @@ describe('ChannelDeposit.vue', function() {
     expect(wrapper.emitted().cancel).toBeTruthy();
   });
 
-  it('should emit a confirm event when confirm pressed', function() {
+  test('should emit a confirm event when confirm pressed', function() {
     mockInput(wrapper, '0.5');
     wrapper
       .findAll('button')

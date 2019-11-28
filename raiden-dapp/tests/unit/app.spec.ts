@@ -24,7 +24,7 @@ describe('App.vue', () => {
     $raiden.disconnect = jest.fn();
   });
 
-  it('should call connect on component creation and disconnect on destruction', async () => {
+  test('should call connect on component creation and disconnect on destruction', async () => {
     const wrapper = shallowMount(App, {
       store,
       mocks: {

@@ -41,7 +41,7 @@ describe('AddressInput', function() {
     raiden = new RaidenService(store) as Mocked<RaidenService>;
   });
 
-  it('should show no validation messages', () => {
+  test('should show no validation messages', () => {
     wrapper = vueFactory('', excludeAddress, blockAddress);
     const messages = wrapper.find('.v-messages__message');
     expect(wrapper.props().value).toBe('');
@@ -49,7 +49,7 @@ describe('AddressInput', function() {
     expect(messages.text()).toBe('');
   });
 
-  it('should set busy flag when fetching ens domain', async () => {
+  test('should set busy flag when fetching ens domain', async () => {
     raiden.ensResolve = jest
       .fn()
       .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
@@ -64,7 +64,7 @@ describe('AddressInput', function() {
     expect(busy).toHaveBeenCalledTimes(1);
   });
 
-  it('should show a this address cannot be an empty message', async () => {
+  test('should show a this address cannot be an empty message', async () => {
     wrapper = vueFactory('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x21b');
     await wrapper.vm.$nextTick();
@@ -80,7 +80,7 @@ describe('AddressInput', function() {
     expect(messages.text()).toBe('address-input.error.empty');
   });
 
-  it('should should show a no valid address message', async () => {
+  test('should should show a no valid address message', async () => {
     wrapper = vueFactory('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x21b');
     await wrapper.vm.$nextTick();
@@ -90,7 +90,7 @@ describe('AddressInput', function() {
     expect(messages.text()).toBe('address-input.error.invalid-address');
   });
 
-  it('should should show a not checksum format message if address not in checksum format', async () => {
+  test('should should show a not checksum format message if address not in checksum format', async () => {
     wrapper = vueFactory('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
     await wrapper.vm.$nextTick();
@@ -186,7 +186,7 @@ describe('AddressInput', function() {
   });
 
   describe('exclude & block address', () => {
-    it('should show error message if excluded address is entered', async () => {
+    test('should show error message if excluded address is entered', async () => {
       wrapper = vueFactory('', excludeAddress, blockAddress);
       mockInput(wrapper, excludeAddress);
       await wrapper.vm.$nextTick();
@@ -198,7 +198,7 @@ describe('AddressInput', function() {
       );
     });
 
-    it('should show error message if blocked address is entered', async () => {
+    test('should show error message if blocked address is entered', async () => {
       wrapper = vueFactory('', excludeAddress, blockAddress);
       mockInput(wrapper, blockAddress);
       await wrapper.vm.$nextTick();
@@ -208,7 +208,7 @@ describe('AddressInput', function() {
       expect(messages.text()).toBe('address-input.error.channel-not-open');
     });
 
-    it('should not show error message if there is no exclude or block prop', async () => {
+    test('should not show error message if there is no exclude or block prop', async () => {
       wrapper = vueFactory();
 
       mockInput(wrapper, excludeAddress);
