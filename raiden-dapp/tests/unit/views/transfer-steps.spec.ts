@@ -2,10 +2,10 @@ jest.useFakeTimers();
 
 import { mount } from '@vue/test-utils';
 import { bigNumberify } from 'ethers/utils';
-import { One } from 'ethers/constants';
+import { One, Zero } from 'ethers/constants';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
-import { RaidenPFS } from 'raiden-ts';
+import { RaidenPaths, RaidenPFS } from 'raiden-ts';
 import flushPromises from 'flush-promises';
 import Mocked = jest.Mocked;
 import VueRouter from 'vue-router';
@@ -41,6 +41,11 @@ describe('TransferSteps.vue', () => {
     path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77']
   } as Route;
 
+  const freeRoute = {
+    path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
+    fee: Zero
+  } as Route;
+
   let $raiden = {
     transfer: jest.fn(),
     fetchTokenData: jest.fn().mockResolvedValue(undefined),
@@ -49,6 +54,7 @@ describe('TransferSteps.vue', () => {
       .fn()
       .mockResolvedValue(bigNumberify('1000000000000000000')),
     userDepositTokenAddress: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
+    directRoute: jest.fn().mockResolvedValue(undefined),
     findRoutes: jest.fn().mockResolvedValue([
       {
         path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
@@ -101,6 +107,7 @@ describe('TransferSteps.vue', () => {
   beforeEach(() => {
     router = new VueRouter() as Mocked<VueRouter>;
     router.push = jest.fn().mockResolvedValue(null);
+    $raiden.transfer.mockClear();
   });
 
   test('should render 3 steps', async () => {
@@ -203,7 +210,7 @@ describe('TransferSteps.vue', () => {
   });
 
   test('should show error if token transfer failed', async () => {
-    $raiden.transfer = jest.fn().mockRejectedValue(new Error('failure'));
+    $raiden.transfer.mockRejectedValueOnce(new Error('failure'));
 
     const wrapper = createWrapper({
       step: 3,
@@ -239,5 +246,48 @@ describe('TransferSteps.vue', () => {
     expect(processingTransfer).toHaveBeenNthCalledWith(2, false);
     expect(transferDone).toBeCalledTimes(0);
     expect(wrapper.vm.$data.error).toEqual('failure');
+  });
+
+  test('skip to transfer if a direct route is available', async () => {
+    expect.assertions(2);
+    $raiden.directRoute.mockResolvedValueOnce([freeRoute] as RaidenPaths);
+    $raiden.transfer.mockResolvedValueOnce(undefined);
+    const wrapper = createWrapper({});
+    await flushPromises();
+    expect(wrapper.vm.$data.step).toBe(1);
+    expect($raiden.transfer).toHaveBeenCalledTimes(1);
+  });
+
+  test('skip to transfer if a free route is available', async () => {
+    expect.assertions(2);
+    $raiden.findRoutes.mockResolvedValue([freeRoute]);
+    $raiden.transfer.mockResolvedValueOnce(undefined);
+
+    const wrapper = createWrapper({
+      step: 1,
+      selectedPfs: raidenPFS,
+      processingTransfer: false
+    });
+
+    await flushPromises();
+    wrapper.find('.action-button__button').trigger('click');
+    await flushPromises();
+    expect(wrapper.vm.$data.step).toBe(1);
+    expect($raiden.transfer).toHaveBeenCalledTimes(1);
+  });
+
+  test('skip pfs selection if free pfs is found', async () => {
+    $raiden.findRoutes.mockResolvedValue([freeRoute]);
+    const wrapper = createWrapper({
+      step: 1,
+      processingTransfer: false
+    });
+
+    // @ts-ignore
+    wrapper.vm.setPFS([{ ...raidenPFS, price: Zero } as RaidenPFS, true]);
+    await flushPromises();
+    jest.advanceTimersByTime(2000);
+    expect(wrapper.vm.$data.step).toBe(2);
+    expect($raiden.transfer).toHaveBeenCalledTimes(1);
   });
 });

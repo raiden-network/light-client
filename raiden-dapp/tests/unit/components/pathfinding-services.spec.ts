@@ -82,7 +82,7 @@ describe('PathfindingService.vue', () => {
       .trigger('click');
     await wrapper.vm.$nextTick();
     expect(wrapper.emitted().select).toBeTruthy();
-    expect(wrapper.emitted().select[0][0]).toEqual(raidenPFS);
+    expect(wrapper.emitted().select[0][0]).toEqual([raidenPFS, false]);
   });
 
   test('the request fails with some error', async () => {

@@ -198,6 +198,7 @@
         "title": "Request Route",
         "udc-description": "{token} Balance",
         "in-progress": "Sign the message to pay for the route request",
+        "searching-for-route": "Searching for route...",
         "done": "Route request payment complete"
       },
       "select-route": {
