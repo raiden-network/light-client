@@ -1,7 +1,6 @@
 jest.mock('vuex');
 
 import { DeniedReason, Token, TokenModel } from '@/model/types';
-import { TestData } from './data/mock-data';
 import RaidenService, {
   ChannelCloseFailed,
   ChannelDepositFailed,
@@ -433,66 +432,6 @@ describe('RaidenService', () => {
       ).rejects.toBeInstanceOf(ChannelSettleFailed);
       expect(settleChannel).toHaveBeenCalledTimes(1);
       expect(settleChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
-    });
-  });
-
-  describe('leaveNetwork', function() {
-    beforeEach(() => {
-      Object.defineProperty(store, 'getters', {
-        get: jest.fn().mockReturnValue({
-          channels: jest
-            .fn()
-            .mockReturnValue([TestData.openChannel, TestData.settlingChannel])
-        })
-      });
-
-      providerMock.mockResolvedValue(mockProvider);
-    });
-
-    it('should attempt to close the channels but it will fail and return the result', async function() {
-      expect.assertions(2);
-      const closeChannel = jest.fn().mockRejectedValue(new Error('txfailed'));
-
-      factory.mockResolvedValue(
-        mockRaiden({
-          closeChannel
-        })
-      );
-
-      await raidenService.connect();
-      await flushPromises();
-
-      await expect(raidenService.leaveNetwork('0xtoken')).resolves.toEqual({
-        closed: 0,
-        failed: 2
-      });
-      expect(closeChannel).toHaveBeenCalledTimes(2);
-    });
-
-    it('should attempt to close the channels and it will succeed returning the result', async function() {
-      expect.assertions(5);
-      const closeChannel = jest.fn().mockResolvedValue('0xtxhash');
-
-      factory.mockResolvedValue(
-        mockRaiden({
-          closeChannel
-        })
-      );
-
-      await raidenService.connect();
-      await flushPromises();
-
-      const progress = jest.fn();
-      await expect(
-        raidenService.leaveNetwork('0xtoken', progress)
-      ).resolves.toEqual({
-        closed: 2,
-        failed: 0
-      });
-      expect(closeChannel).toHaveBeenCalledTimes(2);
-      expect(progress).toHaveBeenCalledTimes(2);
-      expect(progress).toHaveBeenNthCalledWith(1, { current: 1, total: 2 });
-      expect(progress).toHaveBeenLastCalledWith({ current: 2, total: 2 });
     });
   });
 

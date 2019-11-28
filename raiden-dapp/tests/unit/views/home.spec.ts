@@ -1,63 +1,72 @@
-jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
-
-import RaidenService from '@/services/raiden-service';
-import Vue from 'vue';
-import Vuex, { Store } from 'vuex';
-import Vuetify from 'vuetify';
-import { createLocalVue, shallowMount, Wrapper } from '@vue/test-utils';
-import Home from '@/views/Home.vue';
-import { RootState } from '@/types';
-import AppCore from '@/components/AppCore.vue';
-import { defaultState } from '@/store';
-import { DeniedReason } from '@/model/types';
-
 import Mocked = jest.Mocked;
+import { mount, Wrapper } from '@vue/test-utils';
+import Vue from 'vue';
+import Vuex from 'vuex';
+import store from '@/store/index';
+import VueRouter from 'vue-router';
+import { RouteNames } from '@/router/route-names';
+import Vuetify from 'vuetify';
+import Home from '@/views/Home.vue';
+import NoTokens from '@/components/NoTokens.vue';
+import { TestData } from '../data/mock-data';
+import { RaidenChannel, RaidenChannels } from 'raiden-ts';
+import { Tokens } from '@/types';
 
+Vue.use(Vuex);
 Vue.use(Vuetify);
 
-describe('Home.vue', function() {
+describe('Home.vue', () => {
   let wrapper: Wrapper<Home>;
-  let service: Mocked<RaidenService>;
-  let store: Store<RootState>;
+  let mockedRouter: Mocked<VueRouter>;
+  let vuetify: typeof Vuetify;
 
-  function vueFactory(
-    service: RaidenService,
-    store: Store<RootState>,
-    data: {} = {}
-  ): Wrapper<Home> {
-    const localVue = createLocalVue();
-    localVue.use(Vuex);
-    return shallowMount(Home, {
-      localVue,
-      store: store,
+  const vueFactory = () =>
+    mount(Home, {
+      vuetify,
+      store,
       mocks: {
-        $raiden: service
-      },
-      propsData: data
-    });
-  }
-
-  beforeEach(() => {
-    store = new Store<RootState>({
-      state: defaultState(),
-      mutations: {
-        failed(state: RootState) {
-          state.providerDetected = false;
-        },
-        denied(state: RootState) {
-          state.accessDenied = DeniedReason.UNSUPPORTED_NETWORK;
-        }
+        $router: mockedRouter,
+        $t: (msg: string) => msg
       }
     });
-    wrapper = vueFactory(service, store);
+
+  beforeEach(() => {
+    mockedRouter = new VueRouter() as Mocked<VueRouter>;
+    mockedRouter.push = jest.fn().mockResolvedValue(null);
+    vuetify = new Vuetify();
   });
 
-  afterEach(() => {
-    jest.resetAllMocks();
+  describe('without connected tokens', () => {
+    test('should display NoTokens component if user has no connected tokens', () => {
+      wrapper = vueFactory();
+
+      expect(wrapper.find(NoTokens).exists()).toBeTruthy();
+      expect(mockedRouter.push).toHaveBeenCalledTimes(0);
+    });
   });
 
-  it('should display app core if everything is ok', function() {
-    expect(wrapper.find(AppCore)).toBeTruthy();
+  describe('with connected tokens', () => {
+    test('should redirect to Transfer view if user has connected tokens', () => {
+      store.commit('updateTokens', {
+        [TestData.token.address]: TestData.token
+      } as Tokens);
+      store.commit('updateChannels', {
+        [TestData.token.address]: {
+          [TestData.openChannel.partner]: {
+            ...TestData.openChannel,
+            token: TestData.token.address
+          } as RaidenChannel
+        }
+      } as RaidenChannels);
+      vueFactory();
+
+      expect(mockedRouter.push).toHaveBeenCalledTimes(1);
+      expect(mockedRouter.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.TRANSFER
+        })
+      );
+    });
   });
 });

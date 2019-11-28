@@ -33,12 +33,6 @@ export interface TokenModel extends AccTokenModel {
   readonly settling: number;
   readonly settled: number;
 }
-
-export interface LeaveNetworkResult {
-  readonly closed: number;
-  readonly failed: number;
-}
-
 export interface Progress {
   readonly current: number;
   readonly total: number;
