@@ -48,7 +48,3 @@ export default class UpdateSnackbar extends Vue {
   }
 }
 </script>
-
-<style scoped lang="scss">
-@import '../scss/colors';
-</style>
