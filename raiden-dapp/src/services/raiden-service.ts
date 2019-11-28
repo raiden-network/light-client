@@ -1,21 +1,9 @@
-import {
-  Raiden,
-  RaidenChannel,
-  RaidenSentTransfer,
-  RaidenPaths,
-  RaidenPFS
-} from 'raiden-ts';
+import { Raiden, RaidenSentTransfer, RaidenPaths, RaidenPFS } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
-import {
-  DeniedReason,
-  LeaveNetworkResult,
-  Progress,
-  Token,
-  TokenModel
-} from '@/model/types';
+import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import { exhaustMap, filter, first } from 'rxjs/operators';
@@ -212,37 +200,6 @@ export default class RaidenService {
     }
   }
 
-  async leaveNetwork(
-    address: string,
-    progress?: (progress: Progress) => void
-  ): Promise<LeaveNetworkResult> {
-    const channels: RaidenChannel[] = this.store.getters.channels(address);
-    const result = {
-      closed: 0,
-      failed: 0
-    };
-
-    const total = channels.length;
-    for (let i = 0; i < total; i++) {
-      if (progress) {
-        progress({
-          current: i + 1,
-          total: total
-        });
-      }
-
-      const channel = channels[i];
-      try {
-        await this.closeChannel(channel.token, channel.partner);
-        result.closed += 1;
-      } catch (e) {
-        result.failed += 1;
-      }
-    }
-
-    return result;
-  }
-
   async closeChannel(token: string, partner: string) {
     try {
       await this.raiden.closeChannel(token, partner);
@@ -371,5 +328,3 @@ export class RaidenInitializationFailed extends Error {}
 export class FindRoutesFailed extends Error {}
 
 export class PFSRequestFailed extends Error {}
-
-export class MintTokenFailed extends Error {}
