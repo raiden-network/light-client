@@ -284,24 +284,19 @@ describe('PFS: pathFindServiceEpic', () => {
       pfsAddress1 = '0x0800000000000000000000000000000000000091' as Address,
       pfsAddress2 = '0x0800000000000000000000000000000000000092' as Address,
       pfsAddress3 = '0x0800000000000000000000000000000000000093' as Address,
-      pfsAddress4 = '0x0800000000000000000000000000000000000094' as Address,
-      pfsAddress5 = '0x0800000000000000000000000000000000000095' as Address,
       action$ = of(
         pfsListUpdated({
-          pfsList: [pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress4, pfsAddress5, pfsAddress],
+          pfsList: [pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress],
         }),
         matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
         matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
-    // pfsAddress1&2 urls call will fail
-    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('');
-    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('http://not.https.url');
-    // pfsAddress3 will be accepted with default https:// schema
+    // pfsAddress1 will be accepted with default https:// schema
     depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('domain.only.url');
 
-    const pfsInfoResponse3 = { ...pfsInfoResponse, payment_address: pfsAddress3 };
+    const pfsInfoResponse1 = { ...pfsInfoResponse, payment_address: pfsAddress1 };
     fetch.mockImplementationOnce(
       async () =>
         new Promise(resolve =>
@@ -310,29 +305,29 @@ describe('PFS: pathFindServiceEpic', () => {
               resolve({
                 ok: true,
                 status: 200,
-                json: jest.fn(async () => pfsInfoResponse3),
-                text: jest.fn(async () => losslessStringify(pfsInfoResponse3)),
+                json: jest.fn(async () => pfsInfoResponse1),
+                text: jest.fn(async () => losslessStringify(pfsInfoResponse1)),
               }),
             23, // higher rtt for this PFS
           ),
         ),
     );
 
-    // 4 & 5, test sorting by price info
-    const pfsInfoResponse4 = { ...pfsInfoResponse, payment_address: pfsAddress4, price_info: 5 };
+    // 2 & 3, test sorting by price info
+    const pfsInfoResponse2 = { ...pfsInfoResponse, payment_address: pfsAddress2, price_info: 5 };
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: jest.fn(async () => pfsInfoResponse4),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse4)),
+      json: jest.fn(async () => pfsInfoResponse2),
+      text: jest.fn(async () => losslessStringify(pfsInfoResponse2)),
     });
 
-    const pfsInfoResponse5 = { ...pfsInfoResponse, payment_address: pfsAddress5, price_info: 10 };
+    const pfsInfoResponse3 = { ...pfsInfoResponse, payment_address: pfsAddress3, price_info: 10 };
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: jest.fn(async () => pfsInfoResponse5),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse5)),
+      json: jest.fn(async () => pfsInfoResponse3),
+      text: jest.fn(async () => losslessStringify(pfsInfoResponse3)),
     });
 
     // pfsAddress succeeds main response
@@ -378,7 +373,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { tokenNetwork, target, value },
       ),
     ]);
-    expect(fetch).toHaveBeenCalledTimes(4 + 1 + 1); // 3,4,5,0 addresses, + last iou + paths for chosen one
+    expect(fetch).toHaveBeenCalledTimes(4 + 1 + 1); // 1,2,3,0 addresses, + last iou + paths for chosen one
     expect(fetch).toHaveBeenCalledWith(
       expect.stringMatching(/^https:\/\/domain.only.url\/.*\/info/),
       expect.anything(),
@@ -397,14 +392,19 @@ describe('PFS: pathFindServiceEpic', () => {
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
         pfsListUpdated({
-          pfsList: [pfsAddress],
+          pfsList: [pfsAddress, pfsAddress, pfsAddress],
         }),
         matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
         matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
-    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('not_a_url');
+    // invalid url
+    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('""');
+    // empty url
+    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('');
+    // invalid schema
+    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('http://not.https.url');
 
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
