@@ -11,6 +11,7 @@
 </template>
 
 <script lang="ts">
+/* istanbul ignore file */
 import { Component, Vue } from 'vue-property-decorator';
 import BlurredOverlay from '@/components/BlurredOverlay.vue';
 
