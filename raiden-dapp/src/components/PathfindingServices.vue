@@ -131,10 +131,10 @@ export default class PathfindingServices extends Vue {
   }: {
     item: RaidenPFS;
     value: boolean;
-  }): RaidenPFS | null {
+  }): [RaidenPFS, boolean] | null {
     // A PFS service got selected
     if (value) {
-      return item;
+      return [item, this.services.length === 1];
     }
 
     // A PFS service was unselected

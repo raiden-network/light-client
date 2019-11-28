@@ -174,12 +174,16 @@
       v-if="step === 1"
       :value="pfsFeesConfirmed"
       class="confirmation-overlay"
+      :class="{ 'v-overlay--dark': freePfs && pfsFeesConfirmed }"
     >
       <spinner v-if="!pfsFeesPaid" />
       <checkmark v-else class="confirmation-overlay__checkmark" />
 
-      <h2 v-if="!pfsFeesPaid">
+      <h2 v-if="!pfsFeesPaid && !freePfs">
         {{ this.$t('transfer.steps.request-route.in-progress') }}
+      </h2>
+      <h2 v-else-if="freePfs">
+        {{ this.$t('transfer.steps.request-route.searching-for-route') }}
       </h2>
       <h2 v-else>{{ this.$t('transfer.steps.request-route.done') }}</h2>
     </v-overlay>
@@ -212,7 +216,7 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { RaidenPFS } from 'raiden-ts';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, bigNumberify } from 'ethers/utils';
 
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Token, Route, emptyDescription, StepDescription } from '@/model/types';
@@ -253,6 +257,7 @@ export default class TransferSteps extends Mixins(
   routes: Route[] = [];
   pfsFeesConfirmed: boolean = false;
   pfsFeesPaid: boolean = false;
+  freePfs: boolean = false;
   showMintDeposit: boolean = false;
   mediationFeesConfirmed: boolean = false;
   processingTransfer: boolean = false;
@@ -364,7 +369,6 @@ export default class TransferSteps extends Mixins(
     );
 
     if (fetchedRoutes) {
-      // Convert to displayable Route type
       this.routes = fetchedRoutes.map(
         ({ path, fee }, index: number) =>
           ({
@@ -374,6 +378,13 @@ export default class TransferSteps extends Mixins(
             path
           } as Route)
       );
+
+      const [route] = this.routes;
+
+      if (route && route.fee.isZero()) {
+        this.selectedRoute = route;
+        this.transfer();
+      }
     }
   }
 
@@ -447,8 +458,13 @@ export default class TransferSteps extends Mixins(
     return transfer.add(this.selectedRoute!.fee);
   }
 
-  setPFS(pfs: RaidenPFS) {
+  setPFS(payload: [RaidenPFS, boolean]) {
+    const [pfs, single] = payload;
     this.selectedPfs = pfs;
+    this.freePfs = bigNumberify(pfs.price).isZero();
+    if (pfs && single && this.freePfs) {
+      this.handleStep();
+    }
   }
 
   setRoute(route: Route) {
@@ -608,6 +624,10 @@ export default class TransferSteps extends Mixins(
     background-color: rgba($color-white, 0.15);
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
+  }
+
+  &.v-overlay--dark {
+    background-color: $card-background;
   }
 
   & ::v-deep .spinner {
