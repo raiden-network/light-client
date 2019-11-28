@@ -8,6 +8,10 @@
     },
     "offline": "Please connect to the internet."
   },
+  "update": {
+    "available": "A new version is available.",
+    "update": "Refresh"
+  },
   "address-input": {
     "paste-button": "Paste",
     "input": {
