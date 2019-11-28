@@ -188,9 +188,9 @@ export const pathFindServiceEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<
-  ActionType<typeof pathFound | typeof pathFindFailed | typeof iouPersist | typeof iouClear>
-> =>
+): Observable<ActionType<
+  typeof pathFound | typeof pathFindFailed | typeof iouPersist | typeof iouClear
+>> =>
   combineLatest(
     state$,
     getPresences$(action$),
@@ -455,8 +455,8 @@ export const pfsCapacityUpdateEpic = (
  * @returns Observable of pfsListUpdated actions
  */
 export const pfsServiceRegistryMonitorEpic = (
-  {  }: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
+  {}: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
   { serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof pfsListUpdated>> =>
   config$.pipe(

@@ -1262,12 +1262,14 @@ describe('transfers epic', () => {
       let action$: Observable<RaidenAction> = of(transferUnlock(undefined, { secrethash }));
       const state$ = new BehaviorSubject(transferingState);
 
-      const unlock = (await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-        .pipe(
-          tap(action => state$.next(raidenReducer(state$.value, action))),
-          filter(isActionOf(transferUnlocked)),
-        )
-        .toPromise()).payload.message;
+      const unlock = (
+        await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(action => state$.next(raidenReducer(state$.value, action))),
+            filter(isActionOf(transferUnlocked)),
+          )
+          .toPromise()
+      ).payload.message;
 
       const message: Processed = {
           type: MessageType.PROCESSED,

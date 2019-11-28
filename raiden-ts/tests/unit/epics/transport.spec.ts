@@ -732,10 +732,7 @@ describe('transport epic', () => {
         roomId = partnerRoomId;
 
       const promise = matrixHandleInvitesEpic(action$, state$, depsMock)
-        .pipe(
-          first(),
-          takeUntil(timer(100)),
-        )
+        .pipe(first(), takeUntil(timer(100)))
         .toPromise();
 
       matrix.emit(

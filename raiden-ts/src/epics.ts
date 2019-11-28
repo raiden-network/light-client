@@ -48,12 +48,7 @@ export const raidenRootEpic = (
   limitedAction$.subscribe(deps.actionOutput$);
 
   // wire state.config to deps.config$ BehaviorSubject
-  limitedState$
-    .pipe(
-      pluck('config'),
-      distinctUntilChanged(),
-    )
-    .subscribe(deps.config$);
+  limitedState$.pipe(pluck('config'), distinctUntilChanged()).subscribe(deps.config$);
 
   // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
   return from(Object.values(RaidenEpics)).pipe(

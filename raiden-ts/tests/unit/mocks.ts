@@ -210,12 +210,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   const stateOutput$ = new BehaviorSubject<RaidenState>(initialState),
     config$ = new BehaviorSubject<RaidenConfig>(initialState.config);
 
-  stateOutput$
-    .pipe(
-      pluck('config'),
-      distinctUntilChanged(),
-    )
-    .subscribe(config$);
+  stateOutput$.pipe(pluck('config'), distinctUntilChanged()).subscribe(config$);
 
   return {
     stateOutput$,

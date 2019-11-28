@@ -19,7 +19,9 @@ export const matrixRequestMonitorPresence = createStandardAction('matrixRequestM
  * Monitored user meta.address presence updated.
  * First event for this address also works as 'success' for matrixRequestMonitorPresence
  */
-export const matrixPresenceUpdate = createStandardAction('matrixPresenceUpdate').map(
+export const matrixPresenceUpdate = createStandardAction(
+  'matrixPresenceUpdate',
+).map(
   (
     { userId, available, ts }: { userId: string; available: boolean; ts?: number },
     meta: { address: Address },
