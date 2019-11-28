@@ -15,9 +15,10 @@ if (
       );
     },
     registered(registration: ServiceWorkerRegistration) {
+      // Check periodically for updates every minute
       setInterval(() => {
         registration.update();
-      }, 1000);
+      }, 1000 * 60);
       console.log('Service worker has been registered.');
     },
     cached() {
