@@ -89,9 +89,9 @@ export const transferExpired = createStandardAction('transferExpired')<
  * e.g. user rejected sign promopt. It should eventually get prompted again, on a future newBlock
  * action which sees this transfer should be expired but sent.lockExpired didn't get set yet.
  */
-export const transferExpireFailed = createStandardAction('transferExpireFailed').map(
-  (payload: Error, meta: TransferId) => ({ payload, error: true, meta }),
-);
+export const transferExpireFailed = createStandardAction(
+  'transferExpireFailed',
+).map((payload: Error, meta: TransferId) => ({ payload, error: true, meta }));
 
 /** Partner acknowledge they received and processed our LockExpired */
 export const transferExpireProcessed = createStandardAction('transferExpireProcessed')<
@@ -130,9 +130,9 @@ export const transferred = createStandardAction('transferred')<
  * Promises) that the transfer failed and won't be paid (eventually, locked amount will be
  * recovered by expiring the lock).
  */
-export const transferFailed = createStandardAction('transferFailed').map(
-  (payload: Error, meta: TransferId) => ({ payload, error: true, meta }),
-);
+export const transferFailed = createStandardAction(
+  'transferFailed',
+).map((payload: Error, meta: TransferId) => ({ payload, error: true, meta }));
 
 /** A pending transfer isn't needed anymore and should be cleared from state */
 export const transferClear = createStandardAction('transferClear')<undefined, TransferId>();

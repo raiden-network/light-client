@@ -441,17 +441,15 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<
-  ActionType<
-    | typeof transferSigned
-    | typeof transferSecret
-    | typeof transferUnlocked
-    | typeof transferFailed
-    | typeof transferExpired
-    | typeof transferExpireFailed
-    | typeof withdrawSendConfirmation
-  >
-> =>
+): Observable<ActionType<
+  | typeof transferSigned
+  | typeof transferSecret
+  | typeof transferUnlocked
+  | typeof transferFailed
+  | typeof transferExpired
+  | typeof transferExpireFailed
+  | typeof withdrawSendConfirmation
+>> =>
   state$.pipe(
     publishReplay(1, undefined, state$ => {
       const withdrawCache = new LruCache<string, Signed<WithdrawConfirmation>>(32);
@@ -681,53 +679,60 @@ export const transferAutoExpireEpic = (
     filter(isActionOf(newBlock)),
     withLatestFrom(state$),
     // exhaustMap ignores new blocks while previous request batch is still pending
-    exhaustMap(([{ payload: { blockNumber } }, state]) => {
-      const requests$: Observable<
-        ActionType<typeof transferExpire | typeof transferFailed>
-      >[] = [];
+    exhaustMap(
+      ([
+        {
+          payload: { blockNumber },
+        },
+        state,
+      ]) => {
+        const requests$: Observable<
+          ActionType<typeof transferExpire | typeof transferFailed>
+        >[] = [];
 
-      for (const [key, sent] of Object.entries(state.sent)) {
-        if (
-          sent.unlock ||
-          sent.lockExpired ||
-          sent.channelClosed ||
-          sent.transfer[1].lock.expiration.gte(blockNumber)
-        )
-          continue;
-        const secrethash = key as Hash;
-        // this observable acts like a Promise: emits request once, completes on success/failure
-        const requestAndWait$ = merge(
-          // output once tranferExpire
-          of(transferExpire(undefined, { secrethash })),
-          // but wait until respective success/failure action is seen before completing
-          action$.pipe(
-            filter(
-              a =>
-                isActionOf([transferExpired, transferExpireFailed], a) &&
-                a.meta.secrethash === secrethash,
-            ),
-            take(1),
-            // don't output success/failure action, just wait for first match to complete
-            ignoreElements(),
-          ),
-        );
-        requests$.push(requestAndWait$);
-        // notify users that this transfer failed definitely
-        requests$.push(
-          of(
-            transferFailed(
-              new Error(
-                `transfer expired at block=${sent.transfer[1].lock.expiration.toString()}`,
+        for (const [key, sent] of Object.entries(state.sent)) {
+          if (
+            sent.unlock ||
+            sent.lockExpired ||
+            sent.channelClosed ||
+            sent.transfer[1].lock.expiration.gte(blockNumber)
+          )
+            continue;
+          const secrethash = key as Hash;
+          // this observable acts like a Promise: emits request once, completes on success/failure
+          const requestAndWait$ = merge(
+            // output once tranferExpire
+            of(transferExpire(undefined, { secrethash })),
+            // but wait until respective success/failure action is seen before completing
+            action$.pipe(
+              filter(
+                a =>
+                  isActionOf([transferExpired, transferExpireFailed], a) &&
+                  a.meta.secrethash === secrethash,
               ),
-              { secrethash },
+              take(1),
+              // don't output success/failure action, just wait for first match to complete
+              ignoreElements(),
             ),
-          ),
-        );
-      }
+          );
+          requests$.push(requestAndWait$);
+          // notify users that this transfer failed definitely
+          requests$.push(
+            of(
+              transferFailed(
+                new Error(
+                  `transfer expired at block=${sent.transfer[1].lock.expiration.toString()}`,
+                ),
+                { secrethash },
+              ),
+            ),
+          );
+        }
 
-      // process all requests before completing and restart handling newBlocks (in exhaustMap)
-      return merge(...requests$);
-    }),
+        // process all requests before completing and restart handling newBlocks (in exhaustMap)
+        return merge(...requests$);
+      },
+    ),
   );
 
 /**
@@ -738,16 +743,14 @@ export const transferAutoExpireEpic = (
  * @returns Observable of transferSigned|transferUnlocked actions
  */
 export const initQueuePendingEnvelopeMessagesEpic = (
-  {  }: Observable<RaidenAction>,
+  {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<
-  ActionType<
-    | typeof matrixRequestMonitorPresence
-    | typeof transferSigned
-    | typeof transferUnlocked
-    | typeof transferExpired
-  >
-> =>
+): Observable<ActionType<
+  | typeof matrixRequestMonitorPresence
+  | typeof transferSigned
+  | typeof transferUnlocked
+  | typeof transferExpired
+>> =>
   state$.pipe(
     first(),
     mergeMap(function*(state) {
@@ -1112,7 +1115,7 @@ export const transferRefundedEpic = (
  */
 export const transferReceivedReplyProcessedEpic = (
   action$: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
+  {}: Observable<RaidenState>,
   { signer }: RaidenEpicDeps,
 ): Observable<ActionType<typeof messageSend>> => {
   const cache = new LruCache<string, Signed<Processed>>(32);

@@ -89,10 +89,7 @@ describe('getEventsStream', () => {
     provider.getLogs.mockResolvedValueOnce([pastLog]);
 
     const promise = getEventsStream<TokenNetworkCreatedEvent>(registryContract, [filter], of(1))
-      .pipe(
-        take(2),
-        toArray(),
-      )
+      .pipe(take(2), toArray())
       .toPromise();
 
     provider.emit('block', 1336);

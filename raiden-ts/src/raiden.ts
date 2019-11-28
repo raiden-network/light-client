@@ -273,10 +273,7 @@ export class Raiden {
     const pfsList$ = new ReplaySubject<readonly Address[]>(1);
     this.pfsList$ = pfsList$;
     action$
-      .pipe(
-        filter(isActionOf(pfsListUpdated)),
-        pluck('payload', 'pfsList'),
-      )
+      .pipe(filter(isActionOf(pfsListUpdated)), pluck('payload', 'pfsList'))
       .subscribe(pfsList$);
 
     const middlewares: Middleware[] = [

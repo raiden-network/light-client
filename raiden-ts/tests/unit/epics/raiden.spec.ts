@@ -136,9 +136,9 @@ describe('raiden epic', () => {
          * run before the return of the function.
          */
         // See: https://github.com/cartant/rxjs-marbles/issues/11
-        depsMock.provider.getBlockNumber.mockReturnValueOnce((of(633) as unknown) as Promise<
-          number
-        >);
+        depsMock.provider.getBlockNumber.mockReturnValueOnce(
+          (of(633) as unknown) as Promise<number>,
+        );
         const action$ = m.cold('--b-------d|', {
             b: newBlock({ blockNumber: 634 }),
             d: raidenShutdown({ reason: ShutdownReason.STOP }),

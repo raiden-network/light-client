@@ -73,8 +73,5 @@ export function getRoom$(matrix: MatrixClient, roomIdOrAlias: string): Observabl
   let room: Room | null | undefined = matrix.getRoom(roomIdOrAlias);
   if (!room) room = matrix.getRooms().find(roomMatch(roomIdOrAlias));
   if (room) return of(room);
-  return fromEvent<Room>(matrix, 'Room').pipe(
-    filter(roomMatch(roomIdOrAlias)),
-    take(1),
-  );
+  return fromEvent<Room>(matrix, 'Room').pipe(filter(roomMatch(roomIdOrAlias)), take(1));
 }
