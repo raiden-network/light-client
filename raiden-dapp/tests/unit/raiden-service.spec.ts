@@ -753,22 +753,4 @@ describe('RaidenService', () => {
       raidenService.findRoutes(AddressZero, AddressZero, One)
     ).resolves.toEqual([]);
   });
-
-  test('no pfs set', async () => {
-    providerMock.mockResolvedValue(mockProvider);
-    factory.mockResolvedValue(mockRaiden({ config: {} }));
-    await raidenService.connect();
-    await flushPromises();
-    expect(raidenService.noPfsSelected()).toBe(true);
-  });
-
-  test('pfs is set in config', async () => {
-    providerMock.mockResolvedValue(mockProvider);
-    factory.mockResolvedValue(
-      mockRaiden({ config: { pfs: 'https://pfs.service' } })
-    );
-    await raidenService.connect();
-    await flushPromises();
-    expect(raidenService.noPfsSelected()).toBe(false);
-  });
 });
