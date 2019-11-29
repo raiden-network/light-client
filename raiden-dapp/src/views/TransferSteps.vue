@@ -119,7 +119,7 @@
               <v-col cols="10">
                 <find-routes
                   v-if="step === 2"
-                  :token="udcToken"
+                  :token="token"
                   :routes="routes"
                   :pfs-url="selectedPfs.url"
                   @select="setRoute($event)"
