@@ -110,13 +110,13 @@ describe('TransferSteps.vue', () => {
     $raiden.transfer.mockClear();
   });
 
-  test('should render 3 steps', async () => {
+  test('renders 3 steps', async () => {
     expect.assertions(1);
     const wrapper = createWrapper({});
     expect(wrapper.findAll('.transfer-steps__step').length).toBe(3);
   });
 
-  test('should enable continue button and let user proceed to 2nd step', async () => {
+  test('enables the continue button and allows the user to proceed', async () => {
     expect.assertions(2);
     const wrapper = createWrapper({
       step: 1,
@@ -131,7 +131,7 @@ describe('TransferSteps.vue', () => {
     expect(wrapper.vm.$data.step).toBe(2);
   });
 
-  test('should show error if fetching paths fails', async () => {
+  test('shows an error when the paths fail to fetch', async () => {
     expect.assertions(3);
     const wrapper = createWrapper({
       step: 1,
@@ -148,7 +148,7 @@ describe('TransferSteps.vue', () => {
     expect(wrapper.vm.$data.error).toEqual('failed');
   });
 
-  test('should enable continue button and let user proceed to 3rd step', async () => {
+  test('enables the continue button and lets the user to proceed to the 3rd step', async () => {
     expect.assertions(2);
     const wrapper = createWrapper({
       step: 2,
@@ -163,7 +163,7 @@ describe('TransferSteps.vue', () => {
     expect(wrapper.vm.$data.step).toBe(3);
   });
 
-  test('should enable final confirmation button and allow token transfer', async () => {
+  test('enables the final confirmation button and allows the token transfer', async () => {
     $raiden.transfer.mockResolvedValue(null);
     const wrapper = createWrapper({
       step: 3,
@@ -209,7 +209,7 @@ describe('TransferSteps.vue', () => {
     );
   });
 
-  test('should show error if token transfer failed', async () => {
+  test('shows an error when the token transfer fails', async () => {
     $raiden.transfer.mockRejectedValueOnce(new Error('failure'));
 
     const wrapper = createWrapper({

@@ -23,7 +23,7 @@ export default class Filters {
     return parseFloat(value).toFixed(decimals);
   }
 
-  static upper(value: string) {
+  static upper(value?: string) {
     if (!value) {
       return '';
     }

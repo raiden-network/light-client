@@ -13,13 +13,13 @@ describe('plugins', () => {
     localVue = createLocalVue();
   });
 
-  test('should install identicon cache', () => {
+  test('installs the identicon cache', () => {
     expect(localVue.prototype.$identicon).toBeUndefined();
     localVue.use(IdenticonPlugin);
     expect(localVue.prototype.$identicon).toBeInstanceOf(IdenticonCache);
   });
 
-  test('should install RaidenService', () => {
+  test('installs the RaidenService', () => {
     expect(localVue.prototype.$raiden).toBeUndefined();
     localVue.use(RaidenPlugin);
     expect(localVue.prototype.$raiden).toBeInstanceOf(RaidenService);

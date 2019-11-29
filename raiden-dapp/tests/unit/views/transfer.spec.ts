@@ -117,11 +117,11 @@ describe('Transfer.vue', () => {
     done = jest.spyOn(wrapper.vm.$data, 'done', 'set');
   });
 
-  test('should populate the data properties on create', async () => {
+  test('populates the data properties when created', async () => {
     expect((wrapper.vm as any).token).toEqual(token);
   });
 
-  test('should go to stepper if target and amount inputs are valid', async () => {
+  test('goes to stepper when the target and amount inputs are valid', async () => {
     const addressInput = wrapper.findAll('input').at(0);
     const amountInput = wrapper.findAll('input').at(1);
 
@@ -146,7 +146,7 @@ describe('Transfer.vue', () => {
     );
   });
 
-  test('should deposit successfully', async () => {
+  test('deposits successfully', async () => {
     raiden.deposit = jest.fn().mockResolvedValue(null);
     // @ts-ignore
     await wrapper.vm.deposit(One);
@@ -162,7 +162,7 @@ describe('Transfer.vue', () => {
     expect(done).toHaveBeenNthCalledWith(2, false);
   });
 
-  test('should handle deposit failure', async () => {
+  test('populates the error property when deposit fails', async () => {
     raiden.deposit = jest.fn().mockRejectedValue(new Error('failure'));
     // @ts-ignore
     await wrapper.vm.deposit(One);
@@ -176,7 +176,7 @@ describe('Transfer.vue', () => {
     expect(wrapper.vm.$data.error).toEqual('failure');
   });
 
-  test('should navigate to channel list', async () => {
+  test('navigates to the "ChannelList" when the user presses the channel button', async () => {
     // click on channels button
     wrapper.find('.transfer__channel-button').trigger('click');
 
@@ -188,7 +188,7 @@ describe('Transfer.vue', () => {
     );
   });
 
-  test('should show token overlay', async () => {
+  test('shows the "TokenOverlay" when the user presses the token networks dropdown', async () => {
     // click on channels button
     wrapper.find('.transfer__token-networks__dropdown').trigger('click');
 

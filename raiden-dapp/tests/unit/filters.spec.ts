@@ -4,57 +4,57 @@ import { Zero } from 'ethers/constants';
 
 describe('filters', () => {
   describe('truncate', () => {
-    test('should return the same value if it is smaller than', () => {
+    test('returns the same value when its length is less than the truncation limit', () => {
       expect(Filters.truncate('123')).toEqual('123');
     });
 
-    test('should return the value truncated', () => {
+    test('returns the value truncated when it exceeds the truncation limit', () => {
       expect(Filters.truncate('12345678', 4)).toEqual('12...78');
     });
   });
   describe('decimals', () => {
-    test('should return a number formatted to 3 decimals', () => {
+    test('returns a number formatted to 3 decimals', () => {
       expect(Filters.decimals('1.23444444')).toEqual('1.234');
     });
-    test('should return a number formatted to 2 decimals', () => {
+    test('returns a number formatted to 2 decimals', () => {
       expect(Filters.decimals('1.23456789', 2)).toEqual('1.23');
     });
   });
 
   describe('upper', () => {
-    test('should return empty if undefined', () => {
-      expect(Filters.upper('')).toEqual('');
+    test('returns an empty string when the value is undefined', () => {
+      expect(Filters.upper(undefined)).toEqual('');
     });
 
-    test('should return the text to uppercase', () => {
+    test('returns the text to uppercase', () => {
       expect(Filters.upper('aaaa')).toEqual('AAAA');
     });
   });
 
   describe('displayFormat', () => {
-    test('should display a smaller icon if the amount is less than 0.000001', () => {
+    test('returns the number prefixed with "<" when the number is less than 0.000001', () => {
       expect(Filters.displayFormat(new BigNumber(10 ** 3), 18)).toEqual(
         '<0.000001'
       );
     });
 
-    test('should display the amount rounded at 5 decimal points', () => {
+    test('returns the number prefixed with "≈" rounded at 6 decimal places', () => {
       expect(
         Filters.displayFormat(new BigNumber(1111110100000000), 18)
       ).toEqual('≈0.001111');
     });
 
-    test('should return the number formatted as it is if not enough decimals', () => {
+    test('returns the number formatted as it is when there are not enough non-zero decimal places', () => {
       expect(
         Filters.displayFormat(new BigNumber('11100000000000000000'), 18)
       ).toEqual('11.1');
     });
 
-    test('display zero if deposit is zero', () => {
+    test('returns zero the number is zero', () => {
       expect(Filters.displayFormat(Zero, 18)).toEqual('0.0');
     });
 
-    test('throw no exception if no decimals specified (18 assumed)', () => {
+    test('throws no exception when there are no decimal places specified ', () => {
       expect(
         Filters.displayFormat(new BigNumber('11100000000000000001'))
       ).toEqual('≈11.100000');
@@ -62,13 +62,13 @@ describe('filters', () => {
   });
 
   describe('capitalizeFirst', () => {
-    test('should capitalize the first letter', () => {
+    test('returns the text with the first letter capitalized', () => {
       expect(Filters.capitalizeFirst('test')).toEqual('Test');
     });
   });
 
   describe('toUnits', () => {
-    test('does not throw is undefined decimals but assumes 18 decimals', () => {
+    test('throws no exception when there are no decimal places specified', () => {
       expect(Filters.toUnits(new BigNumber('11100000000000000001'))).toEqual(
         '11.100000000000000001'
       );

@@ -80,7 +80,7 @@ describe('Channels.vue', () => {
     );
   });
 
-  test('dismiss the confirmation when overlay is pressed', () => {
+  test('dismiss the confirmation when the user presses the overlay', () => {
     wrapper = createWrapper();
     wrapper.setData({
       visible: 'channel-278-deposit'
@@ -91,7 +91,7 @@ describe('Channels.vue', () => {
     expect(wrapper.vm.$data['visible']).toBe('');
   });
 
-  test('navigate home if address is not in checksum format', async () => {
+  test('navigate to home when the address is not in checksum format', async () => {
     wrapper = createWrapper('0xd0a1e359811322d97991e03f863a0c30c2cf029c', true);
     await wrapper.vm.$nextTick();
     await flushPromises();
@@ -104,7 +104,7 @@ describe('Channels.vue', () => {
     );
   });
 
-  test('navigate home if token is not found', async () => {
+  test('navigate to home when the token cannot be found', async () => {
     wrapper = createWrapper('0x111157460c0F41EfD9107239B7864c062aA8B978', true);
     await wrapper.vm.$nextTick();
     await flushPromises();

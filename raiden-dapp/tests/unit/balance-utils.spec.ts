@@ -11,41 +11,35 @@ describe('BalanceUtils', () => {
     symbol: ''
   };
 
-  test('should return true if the number of decimals is greater than the token supported', () => {
+  test('returns true when the number of decimal places is greater than what the token supports', () => {
     expect(
       BalanceUtils.decimalsOverflow('0.000000000000000000001', token.decimals!)
     ).toBe(true);
   });
 
-  test('should return true if the number of decimals is greater than the token supported and the integer part is non-zero', () => {
+  test('return true when the number of decimal places is greater than what the token supports, and the integer part is non-zero', () => {
     expect(
       BalanceUtils.decimalsOverflow('1.000000000000000000001', token.decimals!)
     ).toBe(true);
   });
 
-  test('should return false if the number of decimals is greater than the token supported', () => {
+  test('returns false when the number of decimal places is greater than what the token supports', () => {
     expect(BalanceUtils.decimalsOverflow('0.00001', token.decimals!)).toBe(
       false
     );
   });
 
-  test('should return false if the number of decimals is greater than the token supported and the integer part is non-zero', () => {
+  test('returns false when the number of decimal places is greater than what the token supports, and the integer part is non-zero', () => {
     expect(BalanceUtils.decimalsOverflow('1.00001', token.decimals!)).toBe(
       false
     );
   });
 
-  test('should return false if the number (comma) of decimals is greater than the token supported and the integer part is non-zero', () => {
-    expect(BalanceUtils.decimalsOverflow('1,00001', token.decimals!)).toBe(
-      false
-    );
-  });
-
-  test('should return false if the number is integer', () => {
+  test('return false when the number is an integer', () => {
     expect(BalanceUtils.decimalsOverflow('100', token.decimals!)).toBe(false);
   });
 
-  test('should return false if the number is zero', () => {
+  test('returns false when the number is zero', () => {
     expect(BalanceUtils.decimalsOverflow('0', token.decimals!)).toBe(false);
   });
 });

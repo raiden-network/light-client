@@ -39,7 +39,7 @@ describe('Home.vue', () => {
   });
 
   describe('without connected tokens', () => {
-    test('should display NoTokens component if user has no connected tokens', () => {
+    test('show the "NoTokens" component when the user has no connected tokens', () => {
       wrapper = vueFactory();
 
       expect(wrapper.find(NoTokens).exists()).toBeTruthy();
@@ -48,7 +48,7 @@ describe('Home.vue', () => {
   });
 
   describe('with connected tokens', () => {
-    test('should redirect to Transfer view if user has connected tokens', () => {
+    test('redirect to the "Transfer" view when the user has connected tokens', () => {
       store.commit('updateTokens', {
         [TestData.token.address]: TestData.token
       } as Tokens);

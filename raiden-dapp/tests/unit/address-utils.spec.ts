@@ -1,17 +1,17 @@
 import AddressUtils from '@/utils/address-utils';
 
 describe('AddressUtils', () => {
-  test('should return false if string is not an address', () => {
+  test('returns false when the string is not an address', () => {
     expect(AddressUtils.isAddress('x')).toBe(false);
   });
 
-  test('should return true if the string is a valid address', () => {
+  test('returns true when the string is a valid address', () => {
     expect(
       AddressUtils.isAddress('0x82641569b2062b545431cf6d7f0a418582865ba7')
     ).toBe(true);
   });
 
-  test('should return false when the address is not in checksum format', () => {
+  test('returns false when the address is not in checksum format', () => {
     expect(
       AddressUtils.checkAddressChecksum(
         '0x82641569b2062b545431cf6d7f0a418582865ba7'
@@ -19,7 +19,7 @@ describe('AddressUtils', () => {
     ).toBe(false);
   });
 
-  test('should return true when the address is already in checksum format', () => {
+  test('returns true when the address is already in checksum format', () => {
     expect(
       AddressUtils.checkAddressChecksum(
         '0x82641569b2062B545431cF6D7F0A418582865ba7'
@@ -27,7 +27,7 @@ describe('AddressUtils', () => {
     ).toBe(true);
   });
 
-  test('should return false if the input is not an address', () => {
+  test('returns false when the input is not an address', () => {
     expect(AddressUtils.checkAddressChecksum('5')).toBe(false);
   });
 });
