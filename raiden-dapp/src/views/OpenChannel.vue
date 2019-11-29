@@ -6,6 +6,7 @@
           v-model="deposit"
           :token="token"
           :max="token.balance"
+          :allow-zero="true"
           limit
         ></amount-input>
       </v-col>
