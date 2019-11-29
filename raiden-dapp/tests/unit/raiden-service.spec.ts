@@ -27,8 +27,8 @@ Vue.use(Vuex);
 describe('RaidenService', () => {
   let raidenService: RaidenService;
   let store: Mocked<Store<RootState>>;
-  let providerMock: jest.Mock<any, any>;
-  let factory: jest.Mock<any, any>;
+  let providerMock: jest.Mock;
+  let factory: jest.Mock;
   const mockProvider = {
     send: jest.fn(),
     sendAsync: jest.fn()
@@ -154,7 +154,7 @@ describe('RaidenService', () => {
     ).rejects.toThrowError('Raiden instance was not initialized');
   });
 
-  test('should resolve when channel open and deposit are successful', async function() {
+  test('should resolve when channel open and deposit are successful', async () => {
     providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockResolvedValue('0xtxhash');
     const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
@@ -184,7 +184,7 @@ describe('RaidenService', () => {
     expect(progress).toHaveBeenCalledTimes(2);
   });
 
-  test('should return true and open channel open but skip deposit if balance is zero', async function() {
+  test('should return true and open channel open but skip deposit if balance is zero', async () => {
     providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockResolvedValue('0xtxhash');
     const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
@@ -207,7 +207,7 @@ describe('RaidenService', () => {
     expect(progress).toHaveBeenCalledTimes(2);
   });
 
-  test('should throw an exception when channel open fails', async function() {
+  test('should throw an exception when channel open fails', async () => {
     expect.assertions(1);
     providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockRejectedValue('failed');
@@ -227,7 +227,7 @@ describe('RaidenService', () => {
     ).rejects.toBeInstanceOf(ChannelOpenFailed);
   });
 
-  test('should throw an exception when the deposit fails', async function() {
+  test('should throw an exception when the deposit fails', async () => {
     expect.assertions(3);
     providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockResolvedValue('0xtxhash');
@@ -249,7 +249,7 @@ describe('RaidenService', () => {
     expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
   });
 
-  test('should return a token object from getTokenBalance if everything is good', async function() {
+  test('should return a token object from getTokenBalance if everything is good', async () => {
     providerMock.mockResolvedValue(mockProvider);
     const balance = new BigNumber('1000000000000000000');
     const tokenBalance = jest.fn().mockResolvedValue(balance);
@@ -288,7 +288,7 @@ describe('RaidenService', () => {
     expect(tokenInfo).toHaveBeenCalledWith('0xtoken');
   });
 
-  test('should start updating channels in store on connect', async function() {
+  test('should start updating channels in store on connect', async () => {
     providerMock.mockResolvedValue({
       send: jest.fn(),
       sendAsync: jest.fn()
@@ -311,7 +311,7 @@ describe('RaidenService', () => {
     expect(raidenMock.start).toHaveBeenCalledTimes(1);
   });
 
-  test('should resolve successfully on channel close', async function() {
+  test('should resolve successfully on channel close', async () => {
     const closeChannel = jest.fn().mockResolvedValue('0xthash');
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(
@@ -328,7 +328,7 @@ describe('RaidenService', () => {
     expect(closeChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
   });
 
-  test('should throw an exception if close fails', async function() {
+  test('should throw an exception if close fails', async () => {
     expect.assertions(3);
     const closeChannel = jest.fn().mockRejectedValue(new Error('txfailed'));
     providerMock.mockResolvedValue(mockProvider);
@@ -348,7 +348,7 @@ describe('RaidenService', () => {
     expect(closeChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
   });
 
-  test('should successfully resolve if deposit is successful', async function() {
+  test('should successfully resolve if deposit is successful', async () => {
     expect.assertions(2);
     const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
     providerMock.mockResolvedValue(mockProvider);
@@ -371,7 +371,7 @@ describe('RaidenService', () => {
     );
   });
 
-  test('should throw if deposit failed', async function() {
+  test('should throw if deposit failed', async () => {
     expect.assertions(3);
     const depositChannel = jest.fn().mockRejectedValue('txfailed');
     providerMock.mockResolvedValue(mockProvider);
@@ -396,8 +396,8 @@ describe('RaidenService', () => {
     );
   });
 
-  describe('settleChannel', function() {
-    test('should resolve when settle succeeds', async function() {
+  describe('settleChannel', () => {
+    test('should resolve when settle succeeds', async () => {
       const settleChannel = jest.fn().mockResolvedValue('txhash');
       providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(
@@ -415,7 +415,7 @@ describe('RaidenService', () => {
       expect(settleChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
     });
 
-    test('should throw if the settle fails', async function() {
+    test('should throw if the settle fails', async () => {
       const settleChannel = jest.fn().mockRejectedValue('txfailed');
       providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(
@@ -435,7 +435,7 @@ describe('RaidenService', () => {
     });
   });
 
-  describe('token caching', function() {
+  describe('token caching', () => {
     const mockToken1 = '0xtoken1';
     const mockToken2 = '0xtoken2';
 

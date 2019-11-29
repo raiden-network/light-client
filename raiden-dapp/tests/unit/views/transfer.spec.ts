@@ -42,7 +42,7 @@ describe('Transfer.vue', () => {
     name: 'Test Token'
   };
 
-  function vueFactory(
+  function createWrapper(
     router: VueRouter,
     raiden: RaidenService
   ): Wrapper<Transfer> {
@@ -110,7 +110,7 @@ describe('Transfer.vue', () => {
     store.commit('updateTokens', { '0xtoken': token });
     store.commit('account', '0x1234567890');
 
-    wrapper = vueFactory(router, raiden);
+    wrapper = createWrapper(router, raiden);
 
     await flushPromises();
     loading = jest.spyOn(wrapper.vm.$data, 'loading', 'set');

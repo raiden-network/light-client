@@ -6,7 +6,7 @@ import Vue from 'vue';
 
 Vue.use(Vuetify);
 
-describe('ChannelLifeCycle.vue', function() {
+describe('ChannelLifeCycle.vue', () => {
   let vuetify: typeof Vuetify;
   function createWrapper(
     channelState: ChannelState

@@ -15,7 +15,7 @@ import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
 
-describe('SelectHub.vue', function() {
+describe('SelectHub.vue', () => {
   addElemWithDataAppToBody();
 
   let wrapper: Wrapper<SelectHub>;

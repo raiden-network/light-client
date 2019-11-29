@@ -24,7 +24,7 @@ import { parseUnits } from 'ethers/utils';
 
 Vue.use(Vuetify);
 
-describe('OpenChannel.vue', function() {
+describe('OpenChannel.vue', () => {
   let service: Mocked<RaidenService>;
   let wrapper: Wrapper<OpenChannel>;
   let button: Wrapper<Vue>;
@@ -97,7 +97,7 @@ describe('OpenChannel.vue', function() {
       service.openChannel.mockReset();
     });
 
-    test('should not be disabled after load', async function() {
+    test('should not be disabled after load', async () => {
       await flushPromises();
       expect(button.element.getAttribute('disabled')).toBeFalsy();
     });

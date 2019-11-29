@@ -32,73 +32,73 @@ describe('store', () => {
     store.replaceState(defaultState());
   });
 
-  test('should change the loading state after a loadComplete mutation', function() {
+  test('should change the loading state after a loadComplete mutation', () => {
     expect(store.state.loading).toBe(true);
     store.commit('loadComplete');
     expect(store.state.loading).toBe(false);
   });
 
-  test('should change the providerDetected state after a noProvider mutation', function() {
+  test('should change the providerDetected state after a noProvider mutation', () => {
     expect(store.state.providerDetected).toBe(true);
     store.commit('noProvider');
     expect(store.state.providerDetected).toBe(false);
   });
 
-  test('should change the accountBalance state after a balance mutation', function() {
+  test('should change the accountBalance state after a balance mutation', () => {
     expect(store.state.accountBalance).toBe('0.0');
     store.commit('balance', '12.0');
     expect(store.state.accountBalance).toBe('12.0');
   });
 
-  test('should change the defaultAccount state after a account mutation', function() {
+  test('should change the defaultAccount state after a account mutation', () => {
     expect(store.state.defaultAccount).toBe('');
     store.commit('account', 'test');
     expect(store.state.defaultAccount).toBe('test');
   });
 
-  test('should change the accessDenied state after an accessDenied mutation', function() {
+  test('should change the accessDenied state after an accessDenied mutation', () => {
     expect(store.state.accessDenied).toBe(DeniedReason.UNDEFINED);
     store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
     expect(store.state.accessDenied).toBe(DeniedReason.NO_ACCOUNT);
   });
 
-  test('should change the channel state after an updateChannel mutation', function() {
+  test('should change the channel state after an updateChannel mutation', () => {
     expect(store.state.channels).toEqual({});
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.state.channels).toEqual(TestData.mockChannels);
   });
 
-  test('should return a list of open channels and tokens', function() {
+  test('should return a list of open channels and tokens', () => {
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.getters.tokens).toEqual([model()]);
   });
 
-  test('should return an empty list if token is not found', function() {
+  test('should return an empty list if token is not found', () => {
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.getters.channels('0xNoAddress')).toEqual([]);
   });
 
-  test('should return two channels for token', function() {
+  test('should return two channels for token', () => {
     store.commit('updateChannels', TestData.mockChannels);
     expect(
       store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
     ).toEqual([TestData.openChannel, TestData.settlingChannel]);
   });
 
-  test('should change the tokens state when a updateTokens mutation is committed', function() {
+  test('should change the tokens state when a updateTokens mutation is committed', () => {
     const tokens = testTokens('0xtoken');
     store.commit('updateTokens', tokens);
     expect(store.state.tokens).toEqual(tokens);
   });
 
-  test('should have empty strings if name and symbol are undefined', function() {
+  test('should have empty strings if name and symbol are undefined', () => {
     const tokens = testTokens('0xd0A1E359811322d97991E03f863a0C30C2cF029C');
     store.commit('updateTokens', tokens);
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.getters.tokens).toEqual([model()]);
   });
 
-  test('should have name and symbol information', function() {
+  test('should have name and symbol information', () => {
     const tokens = testTokens(
       '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
       'Test Token',
@@ -110,7 +110,7 @@ describe('store', () => {
     expect(store.getters.tokens).toEqual([model('Test Token', 'TTT')]);
   });
 
-  test('return the cached tokens as an array', function() {
+  test('return the cached tokens as an array', () => {
     const tokens = testTokens(
       '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
       'Test Token',

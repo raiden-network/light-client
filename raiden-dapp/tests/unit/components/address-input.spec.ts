@@ -14,14 +14,18 @@ import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 
-describe('AddressInput', function() {
+describe('AddressInput', () => {
   let wrapper: Wrapper<AddressInput>;
   let raiden: Mocked<RaidenService>;
 
   const excludeAddress: string = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
   const blockAddress: string = '0x123456789009876543211234567890';
 
-  function vueFactory(value: string = '', excluded?: string, blocked?: string) {
+  function createWrapper(
+    value: string = '',
+    excluded?: string,
+    blocked?: string
+  ) {
     return mount(AddressInput, {
       sync: false,
       propsData: {
@@ -42,7 +46,7 @@ describe('AddressInput', function() {
   });
 
   test('should show no validation messages', () => {
-    wrapper = vueFactory('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress, blockAddress);
     const messages = wrapper.find('.v-messages__message');
     expect(wrapper.props().value).toBe('');
     expect(messages.exists()).toBe(true);
@@ -53,7 +57,7 @@ describe('AddressInput', function() {
     raiden.ensResolve = jest
       .fn()
       .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
-    wrapper = vueFactory('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, 'test.eth');
     const busy = jest.spyOn(wrapper.vm.$data, 'busy', 'set');
 
@@ -65,7 +69,7 @@ describe('AddressInput', function() {
   });
 
   test('should show a this address cannot be an empty message', async () => {
-    wrapper = vueFactory('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x21b');
     await wrapper.vm.$nextTick();
     mockInput(wrapper);
@@ -81,7 +85,7 @@ describe('AddressInput', function() {
   });
 
   test('should should show a no valid address message', async () => {
-    wrapper = vueFactory('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x21b');
     await wrapper.vm.$nextTick();
 
@@ -91,7 +95,7 @@ describe('AddressInput', function() {
   });
 
   test('should should show a not checksum format message if address not in checksum format', async () => {
-    wrapper = vueFactory('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
     await wrapper.vm.$nextTick();
 
@@ -101,7 +105,7 @@ describe('AddressInput', function() {
   });
 
   test('valid checksum address should fire input event', async () => {
-    wrapper = vueFactory('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
     await wrapper.vm.$nextTick();
 
@@ -112,7 +116,7 @@ describe('AddressInput', function() {
   });
 
   test('setting a valid address should render a blockie', async () => {
-    wrapper = vueFactory('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress, blockAddress);
     wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
@@ -120,7 +124,7 @@ describe('AddressInput', function() {
 
   describe('resolving ens names', () => {
     test('successfully resolved', async () => {
-      wrapper = vueFactory('', excludeAddress, blockAddress);
+      wrapper = createWrapper('', excludeAddress, blockAddress);
       raiden.ensResolve = jest
         .fn()
         .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
@@ -145,7 +149,7 @@ describe('AddressInput', function() {
     });
 
     test('could not resolve an address', async () => {
-      wrapper = vueFactory('', excludeAddress, blockAddress);
+      wrapper = createWrapper('', excludeAddress, blockAddress);
       raiden.ensResolve = jest.fn().mockResolvedValue(null);
 
       mockInput(wrapper, 'enstest.test');
@@ -164,7 +168,7 @@ describe('AddressInput', function() {
     });
 
     test('failed to resolve an address', async () => {
-      wrapper = vueFactory('', excludeAddress, blockAddress);
+      wrapper = createWrapper('', excludeAddress, blockAddress);
       raiden.ensResolve = jest
         .fn()
         .mockRejectedValue(Error('something went wrong'));
@@ -187,7 +191,7 @@ describe('AddressInput', function() {
 
   describe('exclude & block address', () => {
     test('should show error message if excluded address is entered', async () => {
-      wrapper = vueFactory('', excludeAddress, blockAddress);
+      wrapper = createWrapper('', excludeAddress, blockAddress);
       mockInput(wrapper, excludeAddress);
       await wrapper.vm.$nextTick();
 
@@ -199,7 +203,7 @@ describe('AddressInput', function() {
     });
 
     test('should show error message if blocked address is entered', async () => {
-      wrapper = vueFactory('', excludeAddress, blockAddress);
+      wrapper = createWrapper('', excludeAddress, blockAddress);
       mockInput(wrapper, blockAddress);
       await wrapper.vm.$nextTick();
 
@@ -209,7 +213,7 @@ describe('AddressInput', function() {
     });
 
     test('should not show error message if there is no exclude or block prop', async () => {
-      wrapper = vueFactory();
+      wrapper = createWrapper();
 
       mockInput(wrapper, excludeAddress);
       await wrapper.vm.$nextTick();
@@ -221,19 +225,19 @@ describe('AddressInput', function() {
 
   describe('internal value should react to model changes', () => {
     test('invalid value should not update address', () => {
-      wrapper = vueFactory('0xsdajlskdj');
+      wrapper = createWrapper('0xsdajlskdj');
       expect(wrapper.vm.$data.address).toBe('');
     });
 
     test('valid value should update address', () => {
-      wrapper = vueFactory('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
+      wrapper = createWrapper('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
       expect(wrapper.vm.$data.address).toBe(
         '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
       );
     });
 
     test('address should be updated on valid changes', async () => {
-      wrapper = vueFactory();
+      wrapper = createWrapper();
       expect(wrapper.vm.$data.address).toBe('');
       wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
       await wrapper.vm.$nextTick();
@@ -243,7 +247,7 @@ describe('AddressInput', function() {
     });
 
     test('address should not be updated on invalid changes', async () => {
-      wrapper = vueFactory();
+      wrapper = createWrapper();
       expect(wrapper.vm.$data.address).toBe('');
       wrapper.setProps({ value: '0x1aaaaaadshjd' });
       await wrapper.vm.$nextTick();

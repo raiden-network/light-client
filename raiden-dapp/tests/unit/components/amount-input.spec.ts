@@ -8,7 +8,7 @@ import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
 
-describe('AmountInput.vue', function() {
+describe('AmountInput.vue', () => {
   let wrapper: Wrapper<AmountInput>;
 
   const vueFactory = (params: {}): Wrapper<AmountInput> =>
@@ -24,7 +24,7 @@ describe('AmountInput.vue', function() {
       }
     });
 
-  describe('unlimited', function() {
+  describe('unlimited', () => {
     beforeEach(async () => {
       wrapper = vueFactory({ limit: false });
       await wrapper.vm.$nextTick();
@@ -36,7 +36,7 @@ describe('AmountInput.vue', function() {
       expect(messages.exists()).toBe(false);
     });
 
-    test('should show an amount cannot be empty message', async function() {
+    test('should show an amount cannot be empty message', async () => {
       mockInput(wrapper, '');
       await wrapper.vm.$nextTick();
       await flushPromises();
@@ -47,7 +47,7 @@ describe('AmountInput.vue', function() {
       expect(messages.text()).toEqual('amount-input.error.empty');
     });
 
-    test('should show no error if a valid amount is added', async function() {
+    test('should show no error if a valid amount is added', async () => {
       mockInput(wrapper, '1.2');
       await wrapper.vm.$nextTick();
       expect(wrapper.emitted().input).toBeTruthy();
@@ -57,12 +57,12 @@ describe('AmountInput.vue', function() {
     });
   });
 
-  describe('limited', function() {
+  describe('limited', () => {
     beforeEach(() => {
       wrapper = vueFactory({ limit: true, value: '' });
     });
 
-    test('should display an error if the amount is smaller than the limit', async function() {
+    test('should display an error if the amount is smaller than the limit', async () => {
       mockInput(wrapper, '2.4');
       await wrapper.vm.$nextTick();
       await flushPromises();
@@ -73,7 +73,7 @@ describe('AmountInput.vue', function() {
       expect(messages.text()).toEqual('amount-input.error.not-enough-funds');
     });
 
-    test('should display an error if the amount has more decimals than supported', async function() {
+    test('should display an error if the amount has more decimals than supported', async () => {
       mockInput(wrapper, '1.42345678');
       await wrapper.vm.$nextTick();
       await flushPromises();

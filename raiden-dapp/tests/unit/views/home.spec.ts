@@ -1,4 +1,5 @@
 jest.mock('vue-router');
+
 import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
