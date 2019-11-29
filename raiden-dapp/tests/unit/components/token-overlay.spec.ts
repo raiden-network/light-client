@@ -35,7 +35,7 @@ describe('TokenOverlay.vue', () => {
     });
   });
 
-  test('renders', () => {
+  test('render', () => {
     expect(wrapper.find('.v-overlay--active').exists()).toBe(true);
   });
 
@@ -58,18 +58,18 @@ describe('TokenOverlay.vue', () => {
       } as RaidenChannels);
     });
 
-    test('emits a cancel event when the user presses the close button', () => {
+    test('emit a cancel event when the user presses the close button', () => {
       wrapper.find('.token-network-overlay__close-button').trigger('click');
       expect(wrapper.emitted().cancel).toBeTruthy();
     });
 
-    test('hides the overlay when the show property changes', () => {
+    test('hide the overlay when the show property changes', () => {
       expect(wrapper.find('.v-overlay--active').exists()).toBe(true);
       wrapper.setProps({ show: false });
       expect(wrapper.find('.v-overlay--active').exists()).toBe(false);
     });
 
-    test('shows the "connect new token list" item', () => {
+    test('show the "connect new token list" item', () => {
       const connectNewToken = wrapper.find('#connect-new .v-list-item');
       expect(connectNewToken.exists()).toBe(true);
     });
@@ -90,7 +90,7 @@ describe('TokenOverlay.vue', () => {
       } as RaidenChannels);
     });
 
-    test('shows the balances as zero', () => {
+    test('show the balances as zero', () => {
       expect(wrapper.find('.token-list__token-balance').text()).toMatch('0.0');
     });
   });

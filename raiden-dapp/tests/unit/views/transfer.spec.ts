@@ -117,11 +117,11 @@ describe('Transfer.vue', () => {
     done = jest.spyOn(wrapper.vm.$data, 'done', 'set');
   });
 
-  test('populates the data properties when created', async () => {
+  test('populate the data properties when created', async () => {
     expect((wrapper.vm as any).token).toEqual(token);
   });
 
-  test('goes to stepper when the target and amount inputs are valid', async () => {
+  test('go to stepper when the target and amount inputs are valid', async () => {
     const addressInput = wrapper.findAll('input').at(0);
     const amountInput = wrapper.findAll('input').at(1);
 
@@ -146,7 +146,7 @@ describe('Transfer.vue', () => {
     );
   });
 
-  test('deposits successfully', async () => {
+  test('deposit successfully', async () => {
     raiden.deposit = jest.fn().mockResolvedValue(null);
     // @ts-ignore
     await wrapper.vm.deposit(One);
@@ -188,7 +188,7 @@ describe('Transfer.vue', () => {
     );
   });
 
-  test('shows the "TokenOverlay" when the user presses the token networks dropdown', async () => {
+  test('show the "TokenOverlay" when the user presses the token networks dropdown', async () => {
     // click on channels button
     wrapper.find('.transfer__token-networks__dropdown').trigger('click');
 

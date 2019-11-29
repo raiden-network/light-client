@@ -131,7 +131,7 @@ describe('TransferSteps.vue', () => {
     expect(wrapper.vm.$data.step).toBe(2);
   });
 
-  test('shows an error when the paths fail to fetch', async () => {
+  test('show an error when the paths fail to fetch', async () => {
     expect.assertions(3);
     const wrapper = createWrapper({
       step: 1,
@@ -209,7 +209,7 @@ describe('TransferSteps.vue', () => {
     );
   });
 
-  test('shows an error when the token transfer fails', async () => {
+  test('show an error when the token transfer fails', async () => {
     $raiden.transfer.mockRejectedValueOnce(new Error('failure'));
 
     const wrapper = createWrapper({

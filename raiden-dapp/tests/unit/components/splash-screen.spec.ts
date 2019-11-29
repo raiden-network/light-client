@@ -21,7 +21,7 @@ describe('SplashScreen.vue', () => {
     });
   });
 
-  test('shows the Raiden dApp name', () => {
+  test('show the Raiden dApp name', () => {
     expect(wrapper.vm.$data.name).toEqual('Raiden dApp');
   });
 });

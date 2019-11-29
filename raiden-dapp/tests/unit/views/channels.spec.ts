@@ -73,7 +73,7 @@ describe('Channels.vue', () => {
     router.push.mockReset();
   });
 
-  test('renders the test data', () => {
+  test('render the test data', () => {
     wrapper = createWrapper();
     expect(wrapper.findAll('.channel-list__channels__channel').length).toEqual(
       2

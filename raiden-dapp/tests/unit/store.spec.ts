@@ -172,7 +172,7 @@ describe('store', () => {
   });
 
   describe('channelWithBiggestCapacity', () => {
-    test('returns the open channel when there is only one open channel', () => {
+    test('return the open channel when there is only one open channel', () => {
       let mockChannels = TestData.mockChannels;
       store.commit('updateChannels', mockChannels);
       expect(
@@ -182,7 +182,7 @@ describe('store', () => {
       ).toEqual(TestData.openChannel);
     });
 
-    test('returns undefined when there are no channels', () => {
+    test('return undefined when there are no channels', () => {
       expect(
         store.getters.channelWithBiggestCapacity(
           '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
@@ -190,7 +190,7 @@ describe('store', () => {
       ).toBeUndefined();
     });
 
-    test('returns the channel with the biggest capacity when there are multiple channels open', () => {
+    test('return the channel with the biggest capacity when there are multiple channels open', () => {
       const biggestChannel = {
         ...TestData.openChannel,
         capacity: new BigNumber(20 ** 8),

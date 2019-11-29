@@ -73,7 +73,7 @@ describe('RaidenService', () => {
     window.ethereum = undefined;
   });
 
-  test('verifies that the user deposit address is available when the user connects', async () => {
+  test('verify that the user deposit address is available when the user connects', async () => {
     expect.assertions(1);
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden());
@@ -82,20 +82,20 @@ describe('RaidenService', () => {
     expect(raidenService.userDepositTokenAddress).toEqual('0xuserdeposittoken');
   });
 
-  test('throws when the user accesses the user deposit address before connecting', async () => {
+  test('throw when the user accesses the user deposit address before connecting', async () => {
     expect.assertions(1);
     const udcAddress = () => raidenService.userDepositTokenAddress;
     expect(udcAddress).toThrowError('address empty');
   });
 
-  test('throws an error when the user calls getAccount before connecting', async () => {
+  test('throw an error when the user calls getAccount before connecting', async () => {
     expect.assertions(1);
     await expect(raidenService.getAccount()).rejects.toThrowError(
       'Raiden instance was not initialized'
     );
   });
 
-  test('returns the account when the sdk is connected', async () => {
+  test('return the account when the sdk is connected', async () => {
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden());
     await raidenService.connect();
@@ -103,7 +103,7 @@ describe('RaidenService', () => {
     expect(await raidenService.getAccount()).toBe('123');
   });
 
-  test('commits a deniedAccess when the throws a denied access error', async () => {
+  test('commit a deniedAccess when the throws a denied access error', async () => {
     providerMock.mockRejectedValue('denied');
 
     await raidenService.connect();
@@ -117,7 +117,7 @@ describe('RaidenService', () => {
     expect(store.commit).toBeCalledWith('loadComplete');
   });
 
-  test('commits a deniedAccess when the user attempts to connect on an unsupported network', async () => {
+  test('commit a deniedAccess when the user attempts to connect on an unsupported network', async () => {
     providerMock.mockResolvedValue(mockProvider);
     factory.mockRejectedValue(
       new Error(
@@ -136,7 +136,7 @@ describe('RaidenService', () => {
     expect(store.commit).toBeCalledWith('loadComplete');
   });
 
-  test('commits an noProvider when there is no provider detected', async () => {
+  test('commit an noProvider when there is no provider detected', async () => {
     providerMock.mockResolvedValue(null);
 
     await raidenService.connect();
@@ -147,7 +147,7 @@ describe('RaidenService', () => {
     expect(store.commit).toBeCalledWith('loadComplete');
   });
 
-  test('throws an error when the user calls openChannel before calling connect', async () => {
+  test('throw an error when the user calls openChannel before calling connect', async () => {
     expect.assertions(1);
     await expect(
       raidenService.openChannel('0xaddr', '0xhub', new BigNumber(5000))
@@ -184,7 +184,7 @@ describe('RaidenService', () => {
     expect(progress).toHaveBeenCalledTimes(2);
   });
 
-  test('returns true and opens a channel but skips deposit when the balance is zero', async () => {
+  test('return true and opens a channel but skips deposit when the balance is zero', async () => {
     providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockResolvedValue('0xtxhash');
     const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
@@ -207,7 +207,7 @@ describe('RaidenService', () => {
     expect(progress).toHaveBeenCalledTimes(2);
   });
 
-  test('throws an exception when channel open fails', async () => {
+  test('throw an exception when channel open fails', async () => {
     expect.assertions(1);
     providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockRejectedValue('failed');
@@ -227,7 +227,7 @@ describe('RaidenService', () => {
     ).rejects.toBeInstanceOf(ChannelOpenFailed);
   });
 
-  test('throws an exception when the deposit fails', async () => {
+  test('throw an exception when the deposit fails', async () => {
     expect.assertions(3);
     providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockResolvedValue('0xtxhash');
@@ -249,7 +249,7 @@ describe('RaidenService', () => {
     expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
   });
 
-  test('returns a token object from getTokenBalance when there is no exception', async () => {
+  test('return a token object from getTokenBalance when there is no exception', async () => {
     providerMock.mockResolvedValue(mockProvider);
     const balance = new BigNumber('1000000000000000000');
     const tokenBalance = jest.fn().mockResolvedValue(balance);
@@ -328,7 +328,7 @@ describe('RaidenService', () => {
     expect(closeChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
   });
 
-  test('throws an exception when close fails', async () => {
+  test('throw an exception when close fails', async () => {
     expect.assertions(3);
     const closeChannel = jest.fn().mockRejectedValue(new Error('txfailed'));
     providerMock.mockResolvedValue(mockProvider);
@@ -371,7 +371,7 @@ describe('RaidenService', () => {
     );
   });
 
-  test('throws when deposit fails', async () => {
+  test('throw when deposit fails', async () => {
     expect.assertions(3);
     const depositChannel = jest.fn().mockRejectedValue('txfailed');
     providerMock.mockResolvedValue(mockProvider);
@@ -415,7 +415,7 @@ describe('RaidenService', () => {
       expect(settleChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
     });
 
-    test('throws when settle fails', async () => {
+    test('throw when settle fails', async () => {
       const settleChannel = jest.fn().mockRejectedValue('txfailed');
       providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(
@@ -597,7 +597,7 @@ describe('RaidenService', () => {
     expect(store.commit).toHaveBeenLastCalledWith('reset');
   });
 
-  test('updates the store with the proper reason when the factory throws an exception', async () => {
+  test('update the store with the proper reason when the factory throws an exception', async () => {
     providerMock.mockResolvedValue({
       send: jest.fn(),
       sendAsync: jest.fn()
@@ -636,7 +636,7 @@ describe('RaidenService', () => {
       });
     });
 
-    test('throws when a transfer fails', async () => {
+    test('throw when a transfer fails', async () => {
       const transfer = jest.fn().mockRejectedValue('txfailed');
       providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(
