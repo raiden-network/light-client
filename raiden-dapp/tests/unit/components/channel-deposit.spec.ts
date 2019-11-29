@@ -26,7 +26,7 @@ describe('ChannelDeposit.vue', () => {
     });
   });
 
-  test('should emit a cancel event when cancel pressed', () => {
+  test('emit a cancel event when the user presses cancel', () => {
     wrapper
       .findAll('button')
       .at(0)
@@ -34,7 +34,7 @@ describe('ChannelDeposit.vue', () => {
     expect(wrapper.emitted().cancel).toBeTruthy();
   });
 
-  test('should emit a confirm event when confirm pressed', () => {
+  test('emit a "confirm" event when the user presses confirm', () => {
     mockInput(wrapper, '0.5');
     wrapper
       .findAll('button')

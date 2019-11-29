@@ -45,7 +45,7 @@ describe('AddressInput', () => {
     raiden = new RaidenService(store) as Mocked<RaidenService>;
   });
 
-  test('should show no validation messages', () => {
+  test('show no validation messages by default', () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
     const messages = wrapper.find('.v-messages__message');
     expect(wrapper.props().value).toBe('');
@@ -53,7 +53,7 @@ describe('AddressInput', () => {
     expect(messages.text()).toBe('');
   });
 
-  test('should set busy flag when fetching ens domain', async () => {
+  test('set busy flag while fetching an ens domain', async () => {
     raiden.ensResolve = jest
       .fn()
       .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
@@ -68,7 +68,7 @@ describe('AddressInput', () => {
     expect(busy).toHaveBeenCalledTimes(1);
   });
 
-  test('should show a this address cannot be an empty message', async () => {
+  test('show an empty address message when the input is empty', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x21b');
     await wrapper.vm.$nextTick();
@@ -84,7 +84,7 @@ describe('AddressInput', () => {
     expect(messages.text()).toBe('address-input.error.empty');
   });
 
-  test('should should show a no valid address message', async () => {
+  test('show an error message when the input has an invalid address', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x21b');
     await wrapper.vm.$nextTick();
@@ -94,7 +94,7 @@ describe('AddressInput', () => {
     expect(messages.text()).toBe('address-input.error.invalid-address');
   });
 
-  test('should should show a not checksum format message if address not in checksum format', async () => {
+  test('show an error message when the input address is not in checksum format', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
     await wrapper.vm.$nextTick();
@@ -104,7 +104,7 @@ describe('AddressInput', () => {
     expect(messages.text()).toBe('address-input.error.no-checksum');
   });
 
-  test('valid checksum address should fire input event', async () => {
+  test('fire an input event when the input address is valid', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
     await wrapper.vm.$nextTick();
@@ -115,15 +115,15 @@ describe('AddressInput', () => {
     ]);
   });
 
-  test('setting a valid address should render a blockie', async () => {
+  test('render a blockie when the input address is valid', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
     wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
   });
 
-  describe('resolving ens names', () => {
-    test('successfully resolved', async () => {
+  describe('resolve an ens domain', () => {
+    test('with success', async () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
       raiden.ensResolve = jest
         .fn()
@@ -148,7 +148,7 @@ describe('AddressInput', () => {
       expect(wrapper.vm.$data.errorMessages).toHaveLength(0);
     });
 
-    test('could not resolve an address', async () => {
+    test('without success', async () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
       raiden.ensResolve = jest.fn().mockResolvedValue(null);
 
@@ -167,7 +167,7 @@ describe('AddressInput', () => {
       );
     });
 
-    test('failed to resolve an address', async () => {
+    test('with an error', async () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
       raiden.ensResolve = jest
         .fn()
@@ -189,8 +189,8 @@ describe('AddressInput', () => {
     });
   });
 
-  describe('exclude & block address', () => {
-    test('should show error message if excluded address is entered', async () => {
+  describe('exclude & block addresses', () => {
+    test('should show error message when the user enters an invalid or excluded address', async () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
       mockInput(wrapper, excludeAddress);
       await wrapper.vm.$nextTick();
@@ -202,7 +202,7 @@ describe('AddressInput', () => {
       );
     });
 
-    test('should show error message if blocked address is entered', async () => {
+    test('show an error message if the input has a blocked address', async () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
       mockInput(wrapper, blockAddress);
       await wrapper.vm.$nextTick();
@@ -212,7 +212,7 @@ describe('AddressInput', () => {
       expect(messages.text()).toBe('address-input.error.channel-not-open');
     });
 
-    test('should not show error message if there is no exclude or block prop', async () => {
+    test('show an error message if there is no exclude or block prop', async () => {
       wrapper = createWrapper();
 
       mockInput(wrapper, excludeAddress);
@@ -223,20 +223,20 @@ describe('AddressInput', () => {
     });
   });
 
-  describe('internal value should react to model changes', () => {
-    test('invalid value should not update address', () => {
+  describe('update model on value changes', () => {
+    test('do not update the model on an invalid value', () => {
       wrapper = createWrapper('0xsdajlskdj');
       expect(wrapper.vm.$data.address).toBe('');
     });
 
-    test('valid value should update address', () => {
+    test('update the model on a valid value', () => {
       wrapper = createWrapper('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
       expect(wrapper.vm.$data.address).toBe(
         '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
       );
     });
 
-    test('address should be updated on valid changes', async () => {
+    test('update the address on a valid value', async () => {
       wrapper = createWrapper();
       expect(wrapper.vm.$data.address).toBe('');
       wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
@@ -246,7 +246,7 @@ describe('AddressInput', () => {
       );
     });
 
-    test('address should not be updated on invalid changes', async () => {
+    test('do not update the address on an invalid value', async () => {
       wrapper = createWrapper();
       expect(wrapper.vm.$data.address).toBe('');
       wrapper.setProps({ value: '0x1aaaaaadshjd' });

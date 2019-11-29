@@ -29,7 +29,7 @@ describe('NoTokens.vue', () => {
     });
   });
 
-  test('should navigate to token select', () => {
+  test('navigate to token select when the user presses the connect button', () => {
     wrapper.find('button').trigger('click');
     expect(mockedRouter.push).toHaveBeenCalledTimes(1);
     expect(mockedRouter.push).toHaveBeenCalledWith(
