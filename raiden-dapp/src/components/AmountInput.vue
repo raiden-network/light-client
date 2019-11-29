@@ -56,6 +56,9 @@ export default class AmountInput extends Vue {
       return !!v || this.$parent.$t('amount-input.error.empty');
     },
     (v: string) =>
+      (v && !BalanceUtils.parse(v, this.token!.decimals!).isZero()) ||
+      this.$parent.$t('amount-input.error.zero'),
+    (v: string) =>
       !this.limit ||
       (v && this.noDecimalOverflow(v)) ||
       this.$parent.$t('amount-input.error.too-many-decimals', {
