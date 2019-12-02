@@ -439,13 +439,16 @@ export const channelMonitoredEpic = (
 export const channelOpenEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  { address, getTokenNetworkContract, config$, main, signer }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelOpenFailed>> =>
   action$.pipe(
     filter(isActionOf(channelOpen)),
     withLatestFrom(state$, config$),
     mergeMap(([action, state, config]) => {
-      const tokenNetwork = getTokenNetworkContract(action.meta.tokenNetwork);
+      const tokenNetwork =
+        main && action.payload.subkey
+          ? getTokenNetworkContract(action.meta.tokenNetwork).connect(signer)
+          : getTokenNetworkContract(action.meta.tokenNetwork);
       const channelState = get(state.channels, [
         action.meta.tokenNetwork,
         action.meta.partner,
@@ -460,7 +463,7 @@ export const channelOpenEpic = (
       // send openChannel transaction !!!
       return from(
         tokenNetwork.functions.openChannel(
-          state.address,
+          address,
           action.meta.partner,
           action.payload.settleTimeout || config.settleTimeout,
         ),
@@ -529,7 +532,7 @@ export const channelOpenedEpic = (
 export const channelDepositEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, getTokenContract, getTokenNetworkContract }: RaidenEpicDeps,
+  { address, getTokenContract, getTokenNetworkContract, main, signer }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelDepositFailed>> =>
   action$.pipe(
     filter(isActionOf(channelDeposit)),
@@ -542,8 +545,14 @@ export const channelDepositEpic = (
         const error = new Error(`token for tokenNetwork "${action.meta.tokenNetwork}" not found`);
         return of(channelDepositFailed(error, action.meta));
       }
-      const tokenContract = getTokenContract(token);
-      const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
+      const tokenContract =
+        main && action.payload.subkey
+          ? getTokenContract(token).connect(signer)
+          : getTokenContract(token);
+      const tokenNetworkContract =
+        main && action.payload.subkey
+          ? getTokenNetworkContract(action.meta.tokenNetwork).connect(signer)
+          : getTokenNetworkContract(action.meta.tokenNetwork);
       const channel: Channel = get(state.channels, [
         action.meta.tokenNetwork,
         action.meta.partner,
@@ -621,13 +630,16 @@ export const channelDepositEpic = (
 export const channelCloseEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, network, getTokenNetworkContract, signer }: RaidenEpicDeps,
+  { address, network, getTokenNetworkContract, main, signer }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelCloseFailed>> =>
   action$.pipe(
     filter(isActionOf(channelClose)),
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
-      const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
+      const tokenNetworkContract =
+        main && action.payload && action.payload.subkey
+          ? getTokenNetworkContract(action.meta.tokenNetwork).connect(signer)
+          : getTokenNetworkContract(action.meta.tokenNetwork);
       const channel: Channel = get(state.channels, [
         action.meta.tokenNetwork,
         action.meta.partner,
@@ -724,13 +736,16 @@ export const channelCloseEpic = (
 export const channelSettleEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, getTokenNetworkContract }: RaidenEpicDeps,
+  { address, getTokenNetworkContract, main, signer }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelSettleFailed>> =>
   action$.pipe(
     filter(isActionOf(channelSettle)),
     withLatestFrom(state$),
     mergeMap(([action, state]) => {
-      const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
+      const tokenNetworkContract =
+        main && action.payload && action.payload.subkey
+          ? getTokenNetworkContract(action.meta.tokenNetwork).connect(signer)
+          : getTokenNetworkContract(action.meta.tokenNetwork);
       const channel: Channel | undefined = get(state.channels, [
         action.meta.tokenNetwork,
         action.meta.partner,

@@ -47,4 +47,5 @@ export interface RaidenEpicDeps {
   getTokenContract: (address: Address) => HumanStandardToken;
   serviceRegistryContract: ServiceRegistry;
   userDepositContract: UserDeposit;
+  main?: { signer: Signer; address: Address };
 }

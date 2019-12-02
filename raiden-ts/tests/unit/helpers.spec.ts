@@ -1,5 +1,5 @@
 import { Network } from 'ethers/utils';
-import { JsonRpcProvider } from 'ethers/providers';
+import { JsonRpcProvider, JsonRpcSigner } from 'ethers/providers';
 
 import { getContracts, getSigner } from 'raiden-ts/raiden/helpers';
 import { Wallet } from 'ethers';
@@ -28,26 +28,54 @@ describe('getContracts', () => {
 });
 
 describe('getSigner', () => {
-  const walletAddress = '0x3333333333333333333333333333333333333333333333333333333333333333';
+  const walletPK = '0x3333333333333333333333333333333333333333333333333333333333333333';
 
   test("return account if account's provider is the expected provider", async () => {
     const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
-    const account = new Wallet(walletAddress, provider);
+    const account = new Wallet(walletPK, provider);
 
-    expect(await getSigner(account, provider)).toBe(account);
+    await expect(getSigner(account, provider)).resolves.toEqual({
+      signer: account,
+      address: account.address,
+      main: undefined,
+    });
   });
 
   test("connect account with provider if account's provider is different from entered provider", async () => {
     const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
-    const account = new Wallet(walletAddress);
+    const account = new Wallet(walletPK);
 
-    expect(await getSigner(account, provider)).toStrictEqual(account.connect(provider));
+    await expect(getSigner(account, provider)).resolves.toStrictEqual({
+      signer: account.connect(provider),
+      address: account.address,
+      main: undefined,
+    });
   });
 
   test('returns signer from provider if account is a number', async () => {
     const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
-    const account = 1;
+    const account = 0;
+    const address = '0x0000000000000000000000000000000000020001';
 
-    expect(await getSigner(account, provider)).toStrictEqual(provider.getSigner(account));
+    jest.spyOn(provider, 'send').mockResolvedValueOnce([address]);
+
+    await expect(getSigner(account, provider)).resolves.toStrictEqual({
+      signer: expect.any(JsonRpcSigner),
+      address,
+      main: undefined,
+    });
+  });
+
+  test('return subkey signer with main account', async () => {
+    const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
+    const account = new Wallet(walletPK, provider);
+
+    jest.spyOn(provider, 'getNetwork').mockResolvedValueOnce({ name: 'test', chainId: 1338 });
+
+    await expect(getSigner(account, provider, true)).resolves.toEqual({
+      signer: expect.any(Wallet),
+      address: expect.stringMatching(/^0x/),
+      main: { signer: account, address: account.address },
+    });
   });
 });

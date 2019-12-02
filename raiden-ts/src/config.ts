@@ -1,6 +1,8 @@
 import * as t from 'io-ts';
 import { Network } from 'ethers/utils';
+
 import { Address } from './utils/types';
+import { getNetworkName } from './utils/ethers';
 
 /**
  * A Raiden configuration object with required parameters and
@@ -68,10 +70,8 @@ export function makeDefaultConfig(
     settleTimeout: 500,
     revealTimeout: 50,
     httpTimeout: 30e3,
-    discoveryRoom: `raiden_${
-      network.name !== 'unknown' ? network.name : network.chainId
-    }_discovery`,
-    pfsRoom: `raiden_${network.name !== 'unknown' ? network.name : network.chainId}_path_finding`,
+    discoveryRoom: `raiden_${getNetworkName(network)}_discovery`,
+    pfsRoom: `raiden_${getNetworkName(network)}_path_finding`,
     matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0,
     ...overwrites,

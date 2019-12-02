@@ -151,3 +151,13 @@ export function patchSignSend(provider: JsonRpcProvider): void {
     return origSend.apply(this, [method, params]);
   };
 }
+
+/**
+ * Return a network name, if known, or stringified chainId otherwise
+ *
+ * @param network - Network to get name from
+ * @returns name or chainId as string
+ */
+export function getNetworkName(network: Network) {
+  return network.name !== 'unknown' ? network.name : network.chainId.toString();
+}
