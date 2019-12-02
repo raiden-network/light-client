@@ -141,6 +141,7 @@ export class Raiden {
     signer: Signer,
     contractsInfo: ContractsInfo,
     state: RaidenState,
+    main?: { address: Address; signer: Signer },
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
@@ -183,19 +184,23 @@ export class Raiden {
       contractsInfo,
       registryContract: TokenNetworkRegistryFactory.connect(
         contractsInfo.TokenNetworkRegistry.address,
-        signer,
+        main?.signer ?? signer,
       ),
       getTokenNetworkContract: memoize((address: Address) =>
-        TokenNetworkFactory.connect(address, signer),
+        TokenNetworkFactory.connect(address, main?.signer ?? signer),
       ),
       getTokenContract: memoize((address: Address) =>
-        HumanStandardTokenFactory.connect(address, signer),
+        HumanStandardTokenFactory.connect(address, main?.signer ?? signer),
       ),
       serviceRegistryContract: ServiceRegistryFactory.connect(
         contractsInfo.ServiceRegistry.address,
-        signer,
+        main?.signer ?? signer,
       ),
-      userDepositContract: UserDepositFactory.connect(contractsInfo.UserDeposit.address, signer),
+      userDepositContract: UserDepositFactory.connect(
+        contractsInfo.UserDeposit.address,
+        main?.signer ?? signer,
+      ),
+      main,
     };
 
     this.userDepositTokenAddress = memoize(
@@ -250,6 +255,7 @@ export class Raiden {
    *     state$ changes and update them on whichever persistency option is used
    * @param contracts - Contracts deployment info
    * @param config - Raiden configuration
+   * @param subkey - Whether to use a derived subkey or not
    * @returns Promise to Raiden SDK client instance
    **/
   public static async create(
@@ -258,6 +264,7 @@ export class Raiden {
     storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
     config?: Partial<RaidenConfig>,
+    subkey?: true,
   ): Promise<Raiden> {
     let provider: JsonRpcProvider;
     if (typeof connection === 'string') {
@@ -278,8 +285,7 @@ export class Raiden {
       contracts = getContracts(network);
     }
 
-    const signer: Signer = await getSigner(account, provider);
-    const address = (await signer.getAddress()) as Address;
+    const { signer, address, main } = await getSigner(account, provider, subkey);
 
     // Build initial state or parse from storage
     const { state, onState, onStateComplete } = await getState(
@@ -300,7 +306,7 @@ export class Raiden {
       `Mismatch between network or registry address and loaded state`,
     );
 
-    const raiden = new Raiden(provider, network, signer, contracts, state);
+    const raiden = new Raiden(provider, network, signer, contracts, state, main);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
@@ -344,12 +350,21 @@ export class Raiden {
   }
 
   /**
-   * Get current account address
+   * Get current account address (subkey's address, if subkey is being used)
    *
    * @returns Instance address
    */
   public get address(): Address {
     return this.deps.address;
+  }
+
+  /**
+   * Get main account address (if subkey is being used, undefined otherwise)
+   *
+   * @returns Main account address
+   */
+  public get mainAddress(): Address | undefined {
+    return this.deps.main?.address;
   }
 
   /**
@@ -395,7 +410,7 @@ export class Raiden {
    * @returns BigNumber of ETH balance
    */
   public getBalance(address?: string): Promise<BigNumber> {
-    address = address || this.address;
+    address = address ?? this.mainAddress ?? this.address;
     assert(Address.is(address), 'Invalid address');
     return this.deps.provider.getBalance(address);
   }
@@ -408,7 +423,7 @@ export class Raiden {
    * @returns BigNumber containing address's token balance
    */
   public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
-    address = address || this.address;
+    address = address ?? this.mainAddress ?? this.address;
     assert(Address.is(address) && Address.is(token), 'Invalid address');
     const tokenContract = this.deps.getTokenContract(token);
 
@@ -439,17 +454,20 @@ export class Raiden {
    * @param partner - Partner address
    * @param options - (optional) option parameter
    * @param options.settleTimeout - Custom, one-time settle timeout
+   * @param options.subkey - Whether to use the subkey for on-chain tx or main account (default)
    * @returns txHash of channelOpen call, iff it succeeded
    */
   public async openChannel(
     token: string,
     partner: string,
-    options: { settleTimeout?: number } = {},
+    options: { settleTimeout?: number; subkey?: true } = {},
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     assert(tokenNetwork, 'Unknown token network');
+    assert(!options.subkey || this.deps.main, "Can't send tx from subkey if not set");
+
     const promise = this.action$
       .pipe(
         filter(isActionOf([channelOpened, channelOpenFailed])),
@@ -464,7 +482,7 @@ export class Raiden {
       )
       .toPromise();
 
-    this.store.dispatch(channelOpen({ ...options }, { tokenNetwork, partner }));
+    this.store.dispatch(channelOpen(options, { tokenNetwork, partner }));
 
     return promise;
   }
@@ -475,17 +493,24 @@ export class Raiden {
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
    * @param amount - Number of tokens to deposit on channel
+   * @param options - tx options
+   * @param options.subkey - By default, if using subkey, main account is used to send transactions
+   *    (and is also the account used as source of the deposit tokens).
+   *    Set this to true if one wants to force sending the transaction with the subkey, and using
+   *    tokens held in the subkey.
    * @returns txHash of setTotalDeposit call, iff it succeeded
    */
   public async depositChannel(
     token: string,
     partner: string,
     amount: BigNumberish,
+    { subkey }: { subkey?: true } = {},
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     assert(tokenNetwork, 'Unknown token network');
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
     const deposit = decode(UInt(32), amount);
 
@@ -502,7 +527,7 @@ export class Raiden {
         }),
       )
       .toPromise();
-    this.store.dispatch(channelDeposit({ deposit }, { tokenNetwork, partner }));
+    this.store.dispatch(channelDeposit({ deposit, subkey }, { tokenNetwork, partner }));
     return promise;
   }
 
@@ -517,13 +542,22 @@ export class Raiden {
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
+   * @param options - tx options
+   * @param options.subkey - By default, if using subkey, main account is used to send transactions
+   *    Set this to true if one wants to force sending the transaction with the subkey
    * @returns txHash of closeChannel call, iff it succeeded
    */
-  public async closeChannel(token: string, partner: string): Promise<Hash> {
+  public async closeChannel(
+    token: string,
+    partner: string,
+    { subkey }: { subkey?: true } = {},
+  ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     assert(tokenNetwork, 'Unknown token network');
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+
     const promise = this.action$
       .pipe(
         filter(isActionOf([channelClosed, channelCloseFailed])),
@@ -537,7 +571,7 @@ export class Raiden {
         }),
       )
       .toPromise();
-    this.store.dispatch(channelClose(undefined, { tokenNetwork, partner }));
+    this.store.dispatch(channelClose(subkey ? { subkey } : undefined, { tokenNetwork, partner }));
     return promise;
   }
 
@@ -551,13 +585,22 @@ export class Raiden {
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
+   * @param options - tx options
+   * @param options.subkey - By default, if using subkey, main account is used to send transactions
+   *    Set this to true if one wants to force sending the transaction with the subkey
    * @returns txHash of settleChannel call, iff it succeeded
    */
-  public async settleChannel(token: string, partner: string): Promise<Hash> {
+  public async settleChannel(
+    token: string,
+    partner: string,
+    { subkey }: { subkey?: true } = {},
+  ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     assert(tokenNetwork, 'Unknown token network');
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+
     // wait for the corresponding success or error action
     const promise = this.action$
       .pipe(
@@ -572,7 +615,7 @@ export class Raiden {
         }),
       )
       .toPromise();
-    this.store.dispatch(channelSettle(undefined, { tokenNetwork, partner }));
+    this.store.dispatch(channelSettle(subkey ? { subkey } : undefined, { tokenNetwork, partner }));
     return promise;
   }
 
@@ -845,17 +888,30 @@ export class Raiden {
    *
    * @param token - Address of the token to be minted
    * @param amount - Amount to be minted
+   * @param options - tx options
+   * @param options.subkey - By default, if using subkey, main account is used to send transactions
+   *    Notice the beneficiary here is always the account that sends the transaction, as this is
+   *    expectedly also the account that will pay for e.g. future deposits.
+   *    Set this to true if one wants to force sending the transaction with the subkey
    * @returns transaction
    */
-  public async mint(token: string, amount: BigNumberish): Promise<Hash> {
+  public async mint(
+    token: string,
+    amount: BigNumberish,
+    { subkey }: { subkey?: true } = {},
+  ): Promise<Hash> {
     // Check whether address is valid
     assert(Address.is(token), 'Invalid address');
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
     // Check whether we are on a test network
     assert(this.deps.network.name !== 'homestead', 'Minting is only allowed on test networks.');
 
     // Mint token
-    const customTokenContract = CustomTokenFactory.connect(token, this.deps.signer);
+    const customTokenContract = CustomTokenFactory.connect(
+      token,
+      this.deps.main && !subkey ? this.deps.main.signer : this.deps.signer,
+    );
     const tx = await customTokenContract.functions.mint(decode(UInt(32), amount));
     const receipt = await tx.wait();
     if (!receipt.status) throw new Error('Failed to mint token.');
@@ -897,37 +953,118 @@ export class Raiden {
    * </ol>
    *
    * @param amount - The amount to deposit on behalf of the target/beneficiary.
+   * @param options - tx options
+   * @param options.subkey - By default, if using subkey, main account is used to send transactions
+   *    Set this to true if one wants to force sending the transaction with the subkey
    * @returns transaction hash
    */
-  public async depositToUDC(amount: BigNumberish): Promise<Hash> {
-    const depositAmount = bigNumberify(amount);
+  public async depositToUDC(
+    amount: BigNumberish,
+    { subkey }: { subkey?: true } = {},
+  ): Promise<Hash> {
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
+    const depositAmount = bigNumberify(amount);
     assert(depositAmount.gt(Zero), 'Please deposit a positive amount.');
 
-    const { userDepositContract, address } = this.deps;
+    const userDepositContract =
+      this.deps.main && subkey
+        ? this.deps.userDepositContract.connect(this.deps.signer)
+        : this.deps.userDepositContract;
 
-    const tokenAddress = await this.userDepositTokenAddress();
-    const serviceToken = HumanStandardTokenFactory.connect(tokenAddress, this.deps.signer);
-    const balance = await serviceToken.functions.balanceOf(address);
+    const serviceToken = await this.userDepositTokenAddress();
+    const serviceTokenContract =
+      this.deps.main && subkey
+        ? this.deps.getTokenContract(serviceToken).connect(this.deps.signer)
+        : this.deps.getTokenContract(serviceToken);
+    const balance = await serviceTokenContract.functions.balanceOf(this.address);
 
     assert(balance.gte(amount), `Insufficient token balance (${balance}).`);
 
-    const approveTx = await serviceToken.functions.approve(
+    const approveTx = await serviceTokenContract.functions.approve(
       userDepositContract.address,
       depositAmount,
     );
     const approveReceipt = await approveTx.wait();
     if (!approveReceipt.status) throw new Error('Approve transaction failed.');
 
-    const currentUDCBalance = await userDepositContract.functions.balances(address);
+    const currentUDCBalance = await userDepositContract.functions.balances(this.address);
     const depositTx = await userDepositContract.functions.deposit(
-      address,
+      this.address,
       currentUDCBalance.add(depositAmount),
     );
     const depositReceipt = await depositTx.wait();
     if (!depositReceipt.status) throw new Error('Deposit transaction failed.');
 
     return depositTx.hash as Hash;
+  }
+
+  /**
+   * Transfer value ETH on-chain to address.
+   * If subkey is being used, use main account by default, or subkey account if 'subkey' is true
+   * Example:
+   *   // transfer 0.1 ETH from main account to subkey account, when subkey is used
+   *   await raiden.transferOnchainBalance(raiden.address, parseEther('0.1'));
+   *   // transfer 0.1 ETH back from subkey account to main account
+   *   await raiden.transferOnchainBalance(raiden.mainAddress, parseEther('0.1'), true);
+   * TODO: expose a nice way to transfer ALL, considering gas price & limit
+   *
+   * @param to - Recipient address
+   * @param value - Amount of ETH (in Wei) to transfer. Use ethers/utils::parseEther if needed
+   * @param options - tx options
+   * @param options.subkey - By default, if using subkey, main account is used to send transactions
+   *    Set this to true if one wants to force sending the transaction with the subkey
+   * @returns transaction hash
+   */
+  public async transferOnchainBalance(
+    to: string,
+    value: BigNumberish,
+    { subkey }: { subkey?: true } = {},
+  ): Promise<Hash> {
+    assert(Address.is(to), 'Invalid address');
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+
+    const signer = this.deps.main && !subkey ? this.deps.main.signer : this.deps.signer;
+
+    const tx = await signer.sendTransaction({ to, value: bigNumberify(value) });
+    const receipt = await tx.wait();
+
+    if (!receipt.status) throw new Error('Failed to transfer balance');
+    return tx.hash! as Hash;
+  }
+
+  /**
+   * Transfer value tokens on-chain to address.
+   * If subkey is being used, use main account by default, or subkey account if 'subkey' is true
+   * TODO: expose a nice way to transfer ALL tokens
+   *
+   * @param token - Token address
+   * @param to - Recipient address
+   * @param value - Amount of tokens (in Wei) to transfer. Use ethers/utils::parseUnits if needed
+   * @param options - tx options
+   * @param options.subkey - By default, if using subkey, main account is used to send transactions
+   *    Set this to true if one wants to force sending the transaction with the subkey
+   * @returns transaction hash
+   */
+  public async transferOnchainTokens(
+    token: string,
+    to: string,
+    value: BigNumberish,
+    { subkey }: { subkey?: true } = {},
+  ): Promise<Hash> {
+    assert(Address.is(token) && Address.is(to), 'Invalid address');
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+
+    const contract =
+      this.deps.main && subkey
+        ? this.deps.getTokenContract(token).connect(this.deps.signer)
+        : this.deps.getTokenContract(token);
+
+    const tx = await contract.functions.transfer(to, bigNumberify(value));
+    const receipt = await tx.wait();
+
+    if (!receipt.status) throw new Error('Failed to transfer tokens');
+    return tx.hash! as Hash;
   }
 }
 

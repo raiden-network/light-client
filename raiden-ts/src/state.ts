@@ -6,11 +6,12 @@ import { debounce, merge as _merge } from 'lodash';
 import { RaidenConfig, makeDefaultConfig } from './config';
 import { ContractsInfo } from './types';
 import { losslessParse, losslessStringify } from './utils/data';
-import { Address, Secret, decode, Signed } from './utils/types';
+import { Address, Secret, decode, Signed, Storage } from './utils/types';
 import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
 import { IOU } from './path/types';
+import { getNetworkName } from './utils/ethers';
 
 // types
 
@@ -189,7 +190,7 @@ export const getState = async (
   let onStateComplete;
 
   if (storageOrState && isStorage(storageOrState)) {
-    const ns = `raiden_${network.name || network.chainId}_${
+    const ns = `raiden_${getNetworkName(network)}_${
       contracts.TokenNetworkRegistry.address
     }_${address}`;
     const loaded = _merge(

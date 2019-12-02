@@ -1,4 +1,4 @@
-import { Network } from 'ethers/utils';
+import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
 import { Signer, Wallet } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
 import { Observable, from } from 'rxjs';
@@ -12,7 +12,8 @@ import { SentTransfer, SentTransfers, RaidenSentTransfer } from '../transfers/st
 import { channelAmounts } from '../channels/utils';
 import { RaidenChannels, RaidenChannel, Channel } from '../channels/state';
 import { pluckDistinct } from '../utils/rx';
-import { Address, PrivateKey, isntNil } from '../utils/types';
+import { Address, PrivateKey, isntNil, Hash } from '../utils/types';
+import { getNetworkName } from '../utils/ethers';
 
 import ropstenDeploy from '../deployment/deployment_ropsten.json';
 import rinkebyDeploy from '../deployment/deployment_rinkeby.json';
@@ -54,15 +55,46 @@ export const getContracts = (network: Network): ContractsInfo => {
 };
 
 /**
+ * Generate, sign and return a subkey from provided main account
+ *
+ * @param network - Network to include in message
+ * @param main - Main signer to derive subkey from
+ * @returns Subkey's signer & address
+ */
+async function genSubkey(network: Network, main: Signer) {
+  const url = globalThis?.location?.origin ?? 'unknown';
+  const message = `=== RAIDEN SUBKEY GENERATION ===
+
+Network: ${getNetworkName(network)}
+Raiden dApp URL: ${url}
+
+WARNING: ensure this signature is being requested from Raiden dApp running at URL above by comparing it to your browser's url bar.
+Signing this message at any other address WILL give it FULL control of this subkey's funds, tokens and Raiden channels!`;
+
+  const signature = await main.signMessage(toUtf8Bytes(message));
+  const pk = sha256(signature) as Hash;
+  const signer = new Wallet(pk, main.provider);
+
+  return { signer, address: signer.address as Address };
+}
+
+/**
  * Returns a [[Signer]] based on the `account` and `provider`.
  * Throws an exception if the `account` is not a valid address or private key.
  *
  * @param account - an account used for signing
  * @param provider - a provider
+ * @param subkey - Whether to generate a subkey
  * @returns a [[Signer]] or [[Wallet]] that can be used for signing
  */
-export const getSigner = async (account: string | number | Signer, provider: JsonRpcProvider) => {
+export const getSigner = async (
+  account: string | number | Signer,
+  provider: JsonRpcProvider,
+  subkey?: true,
+) => {
   let signer;
+  let address: Address;
+  let main;
 
   if (Signer.isSigner(account)) {
     if (account.provider === provider) {
@@ -72,9 +104,11 @@ export const getSigner = async (account: string | number | Signer, provider: Jso
     } else {
       throw new Error(`Signer ${account} not connected to ${provider}`);
     }
+    address = (await signer.getAddress()) as Address;
   } else if (typeof account === 'number') {
     // index of account in provider
     signer = provider.getSigner(account);
+    address = (await signer.getAddress()) as Address;
   } else if (Address.is(account)) {
     // address
     const accounts = await provider.listAccounts();
@@ -82,14 +116,21 @@ export const getSigner = async (account: string | number | Signer, provider: Jso
       throw new Error(`Account "${account}" not found in provider, got=${accounts}`);
     }
     signer = provider.getSigner(account);
+    address = account;
   } else if (PrivateKey.is(account)) {
     // private key
     signer = new Wallet(account, provider);
+    address = signer.address as Address;
   } else {
     throw new Error('String account must be either a 0x-encoded address or private key');
   }
 
-  return signer;
+  if (subkey) {
+    main = { signer, address };
+    ({ signer, address } = await genSubkey(await provider.getNetwork(), main.signer));
+  }
+
+  return { signer, address, main };
 };
 
 /**

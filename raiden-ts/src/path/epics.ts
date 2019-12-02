@@ -221,7 +221,7 @@ export const pathFindServiceEpic = (
                 channelCanRoute(state, presences, tokenNetwork, target, action.meta.value) === true
               ) {
                 return of({
-                  paths: [{ path: [state.address, target], fee: Zero as Int<32> }],
+                  paths: [{ path: [deps.address, target], fee: Zero as Int<32> }],
                   iou: undefined,
                 });
               } else if (
@@ -346,7 +346,7 @@ export const pathFindServiceEpic = (
                   // eslint-disable-next-line prefer-const
                   for (let { path, fee } of data.paths) {
                     // if route has us as first hop, cleanup/shift
-                    if (path[0] === state.address) path = path.slice(1);
+                    if (path[0] === deps.address) path = path.slice(1);
                     const recipient = path[0];
                     // if this recipient was already invalidated in a previous iteration, skip
                     if (invalidatedRecipients.has(recipient)) continue;
