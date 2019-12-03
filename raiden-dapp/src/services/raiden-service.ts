@@ -314,6 +314,15 @@ export default class RaidenService {
   async getUDCCapacity(): Promise<BigNumber> {
     return this.raiden.getUDCCapacity();
   }
+
+  async getAvailability(address: string): Promise<boolean> {
+    try {
+      const { available } = await this.raiden.getAvailability(address);
+      return available;
+    } catch (e) {}
+
+    return false;
+  }
 }
 
 export class ChannelSettleFailed extends Error {}

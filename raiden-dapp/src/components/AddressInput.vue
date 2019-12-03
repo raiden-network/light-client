@@ -31,12 +31,20 @@
         </div>
       </template>
       <template #prepend-inner>
-        <img
+        <div
           v-if="value && isChecksumAddress(value)"
-          :src="$blockie(value)"
-          :alt="$t('address-input.blockie-alt')"
-          class="address-input__blockie address-input__prepend"
-        />
+          class="address-input__availability"
+          :class="{
+            'address-input__availability--online': available,
+            'address-input__availability--offline': !available
+          }"
+        >
+          <img
+            :src="$blockie(value)"
+            :alt="$t('address-input.blockie-alt')"
+            class="address-input__blockie address-input__prepend"
+          />
+        </div>
         <div v-else-if="timeout">
           <v-progress-circular
             size="22"
@@ -86,12 +94,23 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   hint: string = '';
   errorMessages: string[] = [''];
   busy: boolean = false;
+  available: boolean = false;
 
   get isAddressValid() {
     // v-text-field interprets strings returned from a validation rule
     // as the input being invalid. Since the :rules prop does not support
     // async rules we have to workaround with a reactive prop
-    return [() => (this.errorMessages.length === 0 && !this.busy) || ''];
+    return [
+      () => {
+        console.log(
+          this.errorMessages.length === 0 && !this.busy && this.available,
+          this.errorMessages.length === 0,
+          !this.busy,
+          this.available
+        );
+        return (this.errorMessages.length === 0 && this.available) || '';
+      }
+    ];
   }
 
   mounted() {
@@ -148,6 +167,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       ) as string);
     } else if (AddressUtils.checkAddressChecksum(value)) {
       this.input(value);
+      this.checkAvailability(value);
     } else if (
       !AddressUtils.isAddressLike(value) &&
       AddressUtils.isDomain(value)
@@ -164,6 +184,17 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     if (this.$refs.address) {
       this.touched = true;
       this.valid = this.errorMessages.length === 0;
+    }
+  }
+
+  private async checkAvailability(address: string) {
+    this.available = await this.$raiden.getAvailability(address);
+    if (!this.available) {
+      this.errorMessages.push(this.$t(
+        'address-input.error.target-offline'
+      ) as string);
+    } else {
+      this.errorMessages = [];
     }
   }
 
@@ -216,12 +247,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   box-sizing: border-box;
   height: 22px;
   width: 22px;
-  border: 1px solid #979797;
-  background-color: #d8d8d8;
-}
-
-.address-input__prepend {
-  margin-right: 10px;
 }
 
 .address-input {
@@ -234,6 +259,27 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     padding-top: 30px;
     padding-bottom: 30px;
     border: 0;
+  }
+
+  ::v-deep .v-input__prepend-inner {
+    margin-top: 0;
+  }
+
+  &__availability {
+    margin-right: 10px;
+    height: 26px;
+    width: 26px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 100%;
+
+    &--online {
+      box-shadow: 0 0 0 2px greenyellow;
+    }
+    &--offline {
+      box-shadow: 0 0 0 2px gray;
+    }
   }
 }
 
