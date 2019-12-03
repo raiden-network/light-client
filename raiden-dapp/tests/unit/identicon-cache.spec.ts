@@ -1,24 +1,25 @@
-import makeBlockie from 'ethereum-blockies-base64';
-import { IdenticonCache } from '@/services/identicon-cache';
 jest.mock('ethereum-blockies-base64');
 
-describe('IdenticonCache', function() {
+import makeBlockie from 'ethereum-blockies-base64';
+import { IdenticonCache } from '@/services/identicon-cache';
+
+describe('IdenticonCache', () => {
   let cache: IdenticonCache;
 
   beforeEach(() => {
     cache = new IdenticonCache();
-    const generator: jest.Mock<any> = makeBlockie as any;
+    const generator: jest.Mock = makeBlockie as any;
     generator.mockClear();
     generator.mockReturnValue('1');
   });
 
-  it('should generate the icon if the icon is not cached', function() {
+  test('generates the icon when there is no icon cached', () => {
     let icon = cache.getIdenticon('0xaddr');
     expect(makeBlockie).toHaveBeenCalledTimes(1);
     expect(icon).toEqual('1');
   });
 
-  it('should fetch the icon if it is already cached', function() {
+  test('fetches the icon from cache when it is already cached', () => {
     let icon = cache.getIdenticon('0xaddr');
     let icon2 = cache.getIdenticon('0xaddr');
     expect(makeBlockie).toHaveBeenCalledTimes(1);

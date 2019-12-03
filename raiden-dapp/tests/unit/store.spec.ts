@@ -32,73 +32,73 @@ describe('store', () => {
     store.replaceState(defaultState());
   });
 
-  it('should change the loading state after a loadComplete mutation', function() {
+  test('loadComplete mutation changes the loading state', () => {
     expect(store.state.loading).toBe(true);
     store.commit('loadComplete');
     expect(store.state.loading).toBe(false);
   });
 
-  it('should change the providerDetected state after a noProvider mutation', function() {
+  test('noProvider mutation changes the providerDetected state', () => {
     expect(store.state.providerDetected).toBe(true);
     store.commit('noProvider');
     expect(store.state.providerDetected).toBe(false);
   });
 
-  it('should change the accountBalance state after a balance mutation', function() {
+  test('balance mutation changes the accountBalance state', () => {
     expect(store.state.accountBalance).toBe('0.0');
     store.commit('balance', '12.0');
     expect(store.state.accountBalance).toBe('12.0');
   });
 
-  it('should change the defaultAccount state after a account mutation', function() {
+  test('account mutation changes the defaultAccount state', () => {
     expect(store.state.defaultAccount).toBe('');
     store.commit('account', 'test');
     expect(store.state.defaultAccount).toBe('test');
   });
 
-  it('should change the accessDenied state after an accessDenied mutation', function() {
+  test('accessDenied mutation changes the accessDenied state', () => {
     expect(store.state.accessDenied).toBe(DeniedReason.UNDEFINED);
     store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
     expect(store.state.accessDenied).toBe(DeniedReason.NO_ACCOUNT);
   });
 
-  it('should change the channel state after an updateChannel mutation', function() {
+  test('updateChannel mutation changes the channels state', () => {
     expect(store.state.channels).toEqual({});
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.state.channels).toEqual(TestData.mockChannels);
   });
 
-  it('should return a list of open channels and tokens', function() {
+  test('the tokens getter returns tokens that have channels', () => {
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.getters.tokens).toEqual([model()]);
   });
 
-  it('should return an empty list if token is not found', function() {
+  test('the channels getter returns an empty array when there are no channels', () => {
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.getters.channels('0xNoAddress')).toEqual([]);
   });
 
-  it('should return two channels for token', function() {
+  test('the channels getter returns an array of channels', () => {
     store.commit('updateChannels', TestData.mockChannels);
     expect(
       store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
     ).toEqual([TestData.openChannel, TestData.settlingChannel]);
   });
 
-  it('should change the tokens state when a updateTokens mutation is committed', function() {
+  test('updateTokens mutation updates the tokens', () => {
     const tokens = testTokens('0xtoken');
     store.commit('updateTokens', tokens);
     expect(store.state.tokens).toEqual(tokens);
   });
 
-  it('should have empty strings if name and symbol are undefined', function() {
+  test('the tokens getters returns tokens with empty strings when there is no name and symbol', () => {
     const tokens = testTokens('0xd0A1E359811322d97991E03f863a0C30C2cF029C');
     store.commit('updateTokens', tokens);
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.getters.tokens).toEqual([model()]);
   });
 
-  it('should have name and symbol information', function() {
+  test('the tokens getter returns tokens that include name and symbol information', () => {
     const tokens = testTokens(
       '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
       'Test Token',
@@ -110,7 +110,7 @@ describe('store', () => {
     expect(store.getters.tokens).toEqual([model('Test Token', 'TTT')]);
   });
 
-  test('return the cached tokens as an array', function() {
+  test('the allTokens getter returns the cached tokens as an array', () => {
     const tokens = testTokens(
       '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
       'Test Token',
@@ -129,13 +129,13 @@ describe('store', () => {
     ]);
   });
 
-  test('return null if a token is not cached', () => {
+  test('the token getter returns null when the token is not cached', () => {
     expect(
       store.getters.token('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
     ).toBeNull();
   });
 
-  test('return the token if it is cached', () => {
+  test('the token getter returns the token when it is cached', () => {
     const tokens = testTokens(
       '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
       'Test Token',
@@ -154,17 +154,17 @@ describe('store', () => {
     } as Token);
   });
 
-  test('chain without a name returns chain id', () => {
+  test('the network getter returns "Chain x" when there is no chain name', () => {
     store.commit('network', { name: '', chainId: 89 });
     expect(store.getters.network).toEqual('Chain 89');
   });
 
-  test('chain with a name returns chain id', () => {
+  test('the network getter returns the chain name when it exists', () => {
     store.commit('network', { name: 'Testnet', chainId: 89 });
     expect(store.getters.network).toEqual('Testnet');
   });
 
-  test('state should reset when reset mutation is committed', () => {
+  test('the reset mutation resets the state', () => {
     store.commit('loadComplete', false);
     expect(store.state.loading).toBe(false);
     store.commit('reset');
@@ -172,7 +172,7 @@ describe('store', () => {
   });
 
   describe('channelWithBiggestCapacity', () => {
-    test('returns the open channel if only one open channel', () => {
+    test('return the open channel when there is only one open channel', () => {
       let mockChannels = TestData.mockChannels;
       store.commit('updateChannels', mockChannels);
       expect(
@@ -182,7 +182,7 @@ describe('store', () => {
       ).toEqual(TestData.openChannel);
     });
 
-    test('returns undefined if no channel is found', () => {
+    test('return undefined when there are no channels', () => {
       expect(
         store.getters.channelWithBiggestCapacity(
           '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
@@ -190,7 +190,7 @@ describe('store', () => {
       ).toBeUndefined();
     });
 
-    test('returns the channel with the biggest capacity if there are multiple open', () => {
+    test('return the channel with the biggest capacity when there are multiple channels open', () => {
       const biggestChannel = {
         ...TestData.openChannel,
         capacity: new BigNumber(20 ** 8),
@@ -211,23 +211,23 @@ describe('store', () => {
         )
       ).toEqual(biggestChannel);
     });
+  });
 
-    test('when token has no channels getter should return an empty array', () => {
-      const channels = {
-        '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {}
-      };
-      store.commit('updateChannels', channels);
-      expect(
-        store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
-      ).toEqual([]);
-    });
+  test('the channels getter returns an empty array when the token has no channels', () => {
+    const channels = {
+      '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {}
+    };
+    store.commit('updateChannels', channels);
+    expect(
+      store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
+    ).toEqual([]);
+  });
 
-    test('when token has no channels token getter should return an empty array', () => {
-      const channels = {
-        '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {}
-      };
-      store.commit('updateChannels', channels);
-      expect(store.getters.tokens).toEqual([]);
-    });
+  test('the token getter returns an empty array when the token has no channels ', () => {
+    const channels = {
+      '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {}
+    };
+    store.commit('updateChannels', channels);
+    expect(store.getters.tokens).toEqual([]);
   });
 });

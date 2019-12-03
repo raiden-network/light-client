@@ -24,7 +24,7 @@ describe('App.vue', () => {
     $raiden.disconnect = jest.fn();
   });
 
-  it('should call connect on component creation and disconnect on destruction', async () => {
+  test('call connect on component creation and disconnect on destruction', async () => {
     const wrapper = shallowMount(App, {
       store,
       mocks: {
@@ -42,7 +42,7 @@ describe('App.vue', () => {
     expect($raiden.disconnect).toHaveBeenCalledTimes(1);
   });
 
-  test('connect works after initial failure', async () => {
+  test('connect can be called without error after failing initially', async () => {
     store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
     const wrapper = shallowMount(App, {
       store,

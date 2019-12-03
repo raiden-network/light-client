@@ -8,7 +8,7 @@ import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
 
-describe('AmountInput.vue', function() {
+describe('AmountInput.vue', () => {
   let wrapper: Wrapper<AmountInput>;
 
   const vueFactory = (params: {}): Wrapper<AmountInput> =>
@@ -24,19 +24,19 @@ describe('AmountInput.vue', function() {
       }
     });
 
-  describe('unlimited', function() {
+  describe('unlimited', () => {
     beforeEach(async () => {
       wrapper = vueFactory({ limit: false });
       await wrapper.vm.$nextTick();
     });
 
-    it('should show no validation messages', () => {
+    test('show no validation messages by default', () => {
       const messages = wrapper.find('.v-messages__message');
       expect(wrapper.props().value).toEqual('0.00');
       expect(messages.exists()).toBe(false);
     });
 
-    it('should show an amount cannot be empty message', async function() {
+    test('show an error message when the input is empty', async () => {
       mockInput(wrapper, '');
       await wrapper.vm.$nextTick();
       await flushPromises();
@@ -47,7 +47,7 @@ describe('AmountInput.vue', function() {
       expect(messages.text()).toEqual('amount-input.error.empty');
     });
 
-    it('should show no error if a valid amount is added', async function() {
+    test('show no error if the input is valid', async () => {
       mockInput(wrapper, '1.2');
       await wrapper.vm.$nextTick();
       expect(wrapper.emitted().input).toBeTruthy();
@@ -57,12 +57,12 @@ describe('AmountInput.vue', function() {
     });
   });
 
-  describe('limited', function() {
+  describe('limited', () => {
     beforeEach(() => {
       wrapper = vueFactory({ limit: true, value: '' });
     });
 
-    it('should display an error if the amount is smaller than the limit', async function() {
+    test('show an error if the amount is smaller than the limit', async () => {
       mockInput(wrapper, '2.4');
       await wrapper.vm.$nextTick();
       await flushPromises();
@@ -73,7 +73,7 @@ describe('AmountInput.vue', function() {
       expect(messages.text()).toEqual('amount-input.error.not-enough-funds');
     });
 
-    it('should display an error if the amount has more decimals than supported', async function() {
+    test('show an error if the amount has more decimals than supported', async () => {
       mockInput(wrapper, '1.42345678');
       await wrapper.vm.$nextTick();
       await flushPromises();
@@ -84,7 +84,7 @@ describe('AmountInput.vue', function() {
       expect(messages.text()).toEqual('amount-input.error.too-many-decimals');
     });
 
-    test('should not prevent keypress if allowed', () => {
+    test('do not prevent the keypress for an allowed key', () => {
       wrapper.find('input').setValue('');
       const event = {
         key: '1',
@@ -96,7 +96,7 @@ describe('AmountInput.vue', function() {
       expect(event.preventDefault).toHaveBeenCalledTimes(0);
     });
 
-    test('should prevent keypress if the key is not a number', () => {
+    test('prevent the keypress for a non-numeric key', () => {
       wrapper.find('input').setValue('');
       const event = {
         key: 'a',
@@ -108,7 +108,7 @@ describe('AmountInput.vue', function() {
       expect(event.preventDefault).toHaveBeenCalledTimes(1);
     });
 
-    test('should prevent keypress if the input is empty and the key is a dot', () => {
+    test('prevent the keypress for a dot when the input is empty', () => {
       wrapper.find('input').setValue('');
       const event = {
         key: '.',
@@ -120,7 +120,7 @@ describe('AmountInput.vue', function() {
       expect(event.preventDefault).toHaveBeenCalledTimes(1);
     });
 
-    test('should prevent keypress if the input is contains a dot and the key is a dot', () => {
+    test('prevent the keypress for a dot when a dot already exists', () => {
       wrapper.find('input').setValue('1.');
       const event = {
         key: '.',
@@ -132,7 +132,7 @@ describe('AmountInput.vue', function() {
       expect(event.preventDefault).toHaveBeenCalledTimes(1);
     });
 
-    test('pasting invalid value should preventDefault', () => {
+    test('call preventDefault when pasting an invalid value', () => {
       const event = {
         clipboardData: {
           getData: jest.fn().mockReturnValue('invalid')
@@ -145,7 +145,7 @@ describe('AmountInput.vue', function() {
       expect(event.preventDefault).toHaveBeenCalledTimes(1);
     });
 
-    test('pasting a valid value should select the previous value', () => {
+    test('select the previous value when pasting a valid value', () => {
       const event = {
         clipboardData: {
           getData: jest.fn().mockReturnValue('1.2')
@@ -165,18 +165,18 @@ describe('AmountInput.vue', function() {
     });
   });
 
-  describe('internal value should react to model changes', () => {
-    test('invalid value should not update internal amount', () => {
+  describe('update model on value changes', () => {
+    test('do not update the model on an invalid value', () => {
       wrapper = vueFactory({ value: '1.41asjdhlk' });
       expect(wrapper.vm.$data.amount).toBe('');
     });
 
-    test('valid value should update internal amount', () => {
+    test('update the model on a valid value', () => {
       wrapper = vueFactory({ value: '1.2' });
       expect(wrapper.vm.$data.amount).toBe('1.2');
     });
 
-    test('amount should be updated on valid changes', async () => {
+    test('update the amount on a valid value', async () => {
       wrapper = vueFactory({ value: '' });
       expect(wrapper.vm.$data.amount).toBe('');
       wrapper.setProps({ value: '1.2' });
@@ -184,7 +184,7 @@ describe('AmountInput.vue', function() {
       expect(wrapper.vm.$data.amount).toBe('1.2');
     });
 
-    test('amount should not update on invalid changes', async () => {
+    test('do not update the amount on an invalid value', async () => {
       wrapper = vueFactory({ value: '' });
       expect(wrapper.vm.$data.amount).toBe('');
       wrapper.setProps({ value: '1.2asddasd' });

@@ -7,7 +7,7 @@ import VueRouter from 'vue-router';
 import { TestData } from '../../data/mock-data';
 import Mocked = jest.Mocked;
 
-describe('NavigationMixin', function() {
+describe('NavigationMixin', () => {
   let wrapper: Wrapper<NavigationMixin>;
   let router: Mocked<VueRouter>;
 

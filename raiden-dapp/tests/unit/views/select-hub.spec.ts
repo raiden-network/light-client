@@ -15,7 +15,7 @@ import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
 
-describe('SelectHub.vue', function() {
+describe('SelectHub.vue', () => {
   addElemWithDataAppToBody();
 
   let wrapper: Wrapper<SelectHub>;
@@ -59,7 +59,7 @@ describe('SelectHub.vue', function() {
     store.commit('reset');
   });
 
-  test('when select hub is clicked with ', async () => {
+  test('navigate to "OpenChannel when the user selects a hub', async () => {
     const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
     const route = TestData.mockRoute({
       token: tokenAddress
@@ -77,7 +77,7 @@ describe('SelectHub.vue', function() {
     );
   });
 
-  test('when token address is not checksum should navigate to home', async () => {
+  test('navigate to "Home" when the token address is not in checksum format', async () => {
     const route = TestData.mockRoute({
       token: '0xtoken'
     });
@@ -92,7 +92,7 @@ describe('SelectHub.vue', function() {
     );
   });
 
-  test('when token cannot be found will navigate to home', async () => {
+  test('navigate to "Home" when the token cannot be found', async () => {
     const route = TestData.mockRoute({
       token: '0xc778417E063141139Fce010982780140Aa0cD5Ab'
     });
