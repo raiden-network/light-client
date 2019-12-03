@@ -188,12 +188,11 @@
       <h2 v-else>{{ this.$t('transfer.steps.request-route.done') }}</h2>
     </v-overlay>
 
-    <stepper
-      :display="processingTransfer"
-      :steps="steps"
-      :done-step="doneStep"
-      :done="transferDone"
-    ></stepper>
+    <v-dialog v-model="processingTransfer" max-width="310">
+      <transfer-progress-dialog
+        :in-progress="!transferDone"
+      ></transfer-progress-dialog>
+    </v-dialog>
 
     <error-screen
       :description="error"
@@ -219,7 +218,7 @@ import { RaidenPFS } from 'raiden-ts';
 import { BigNumber, bigNumberify } from 'ethers/utils';
 
 import { BalanceUtils } from '@/utils/balance-utils';
-import { Token, Route, emptyDescription, StepDescription } from '@/model/types';
+import { Token, Route } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import PathfindingServices from '@/components/PathfindingServices.vue';
@@ -234,9 +233,11 @@ import { Zero } from 'ethers/constants';
 import { getAddress, getAmount } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
 import Filter from '@/filters';
+import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
 
 @Component({
   components: {
+    TransferProgressDialog,
     PathfindingServices,
     ActionButton,
     FindRoutes,
@@ -264,8 +265,6 @@ export default class TransferSteps extends Mixins(
   transferDone: boolean = false;
   errorTitle: string = '';
   error: string = '';
-  steps: StepDescription[] = [];
-  doneStep: StepDescription = emptyDescription();
   udcCapacity: BigNumber = Zero;
 
   amount: string = '';
@@ -474,10 +473,6 @@ export default class TransferSteps extends Mixins(
   async transfer() {
     const { address, decimals } = this.token;
     const { path, fee } = this.selectedRoute!;
-    this.steps = [
-      (this.$t('transfer.steps.transfer') as any) as StepDescription
-    ];
-    this.doneStep = (this.$t('transfer.steps.done') as any) as StepDescription;
     this.errorTitle = this.$t('transfer.error.title') as string;
 
     try {
