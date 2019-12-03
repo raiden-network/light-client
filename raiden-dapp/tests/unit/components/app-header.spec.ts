@@ -34,7 +34,7 @@ describe('AppHeader.vue', () => {
     });
   });
 
-  test('should copy address to clipboard when copy pressed', async () => {
+  test('copy the address to the clipboard when the user presses the copy button', async () => {
     const copied = jest.spyOn(wrapper.vm.$data, 'copied', 'set');
     store.commit('loadComplete');
     store.commit('account', '0xaccc');

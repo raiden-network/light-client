@@ -59,8 +59,8 @@ import { encode } from '../utils/data';
  * @returns Observable of newBlock actions
  */
 export const initNewBlockEpic = (
-  {  }: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
+  {}: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
 ): Observable<ActionType<typeof newBlock>> =>
   from(provider.getBlockNumber()).pipe(
@@ -77,7 +77,7 @@ export const initNewBlockEpic = (
  * @returns Observable of tokenMonitored actions
  */
 export const initMonitorRegistryEpic = (
-  {  }: Observable<RaidenAction>,
+  {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { registryContract, contractsInfo }: RaidenEpicDeps,
 ): Observable<ActionType<typeof tokenMonitored>> =>
@@ -125,7 +125,7 @@ export const initMonitorRegistryEpic = (
  * @returns Observable of channelMonitored actions
  */
 export const initMonitorChannelsEpic = (
-  {  }: Observable<RaidenAction>,
+  {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
 ): Observable<ActionType<typeof channelMonitored>> =>
   state$.pipe(
@@ -152,8 +152,8 @@ export const initMonitorChannelsEpic = (
  * @returns Observable of raidenShutdown actions
  */
 export const initMonitorProviderEpic = (
-  {  }: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
+  {}: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
   { address, network, provider }: RaidenEpicDeps,
 ): Observable<ActionType<typeof raidenShutdown>> =>
   from(provider.listAccounts()).pipe(
@@ -206,7 +206,7 @@ export const initMonitorProviderEpic = (
  */
 export const tokenMonitoredEpic = (
   action$: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
+  {}: Observable<RaidenState>,
   { address, getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelOpened>> =>
   action$.pipe(
@@ -272,16 +272,11 @@ export const tokenMonitoredEpic = (
  */
 export const channelMonitoredEpic = (
   action$: Observable<RaidenAction>,
-  {  }: Observable<RaidenState>,
+  {}: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
-): Observable<
-  ActionType<
-    | typeof channelDeposited
-    | typeof channelWithdrawn
-    | typeof channelClosed
-    | typeof channelSettled
-  >
-> =>
+): Observable<ActionType<
+  typeof channelDeposited | typeof channelWithdrawn | typeof channelClosed | typeof channelSettled
+>> =>
   action$.pipe(
     filter(isActionOf(channelMonitored)),
     groupBy(action => `${action.payload.id}#${action.meta.partner}@${action.meta.tokenNetwork}`),

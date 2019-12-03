@@ -6,7 +6,7 @@ import Vue from 'vue';
 
 Vue.use(Vuetify);
 
-describe('ChannelLifeCycle.vue', function() {
+describe('ChannelLifeCycle.vue', () => {
   let vuetify: typeof Vuetify;
   function createWrapper(
     channelState: ChannelState
@@ -25,7 +25,7 @@ describe('ChannelLifeCycle.vue', function() {
     });
   }
 
-  test('channel is open', async () => {
+  test('channel is "open"', async () => {
     const wrapper = createWrapper(ChannelState.open);
     await wrapper.vm.$nextTick();
     const steps = wrapper.findAll('.v-stepper__step');
@@ -37,7 +37,7 @@ describe('ChannelLifeCycle.vue', function() {
     expect(dividers.at(1).classes()).not.toContain('active');
   });
 
-  test('channel is closed', async () => {
+  test('channel is "closed"', async () => {
     const wrapper = createWrapper(ChannelState.closed);
     await wrapper.vm.$nextTick();
     const steps = wrapper.findAll('.v-stepper__step');
@@ -49,7 +49,7 @@ describe('ChannelLifeCycle.vue', function() {
     expect(dividers.at(1).classes()).not.toContain('active');
   });
 
-  test('channel is settleable', async () => {
+  test('channel is "settleable"', async () => {
     const wrapper = createWrapper(ChannelState.settleable);
     await wrapper.vm.$nextTick();
     const steps = wrapper.findAll('.v-stepper__step');

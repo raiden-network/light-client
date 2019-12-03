@@ -50,6 +50,9 @@ const serviceRegistryToken = memoize(
     serviceRegistryContract.functions.token() as Promise<Address>,
 );
 
+// match an https:// or domain-only url
+const urlRegex = /^(?:https:\/\/)?[^\s\/$.?#&"']+\.[^\s\/$?#&"']+$/;
+
 /**
  * Returns a cold observable which fetch PFS info & validate for a given server address or URL
  *
@@ -84,13 +87,12 @@ export function pfsInfo(
     withLatestFrom(config$),
     mergeMap(([url, { httpTimeout }]) => {
       if (!url) throw new Error(`Empty URL: ${url}`);
-      else if (url.includes('://') && !url.startsWith('https://'))
-        throw new Error(`Invalid URL schema: ${url}`);
+      else if (!urlRegex.test(url)) throw new Error(`Invalid URL: ${url}`);
       // default to https for domain-only urls
-      else if (!url.includes('://')) url = `https://${url}`;
+      else if (!url.startsWith('https://')) url = `https://${url}`;
 
       const start = Date.now();
-      return fromFetch(`${url}/api/v1/info`).pipe(
+      return fromFetch(url + '/api/v1/info').pipe(
         timeout(httpTimeout),
         mergeMap(
           async res =>

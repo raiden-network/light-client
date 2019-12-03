@@ -16,7 +16,7 @@ describe('OfflineSnackbar.vue', () => {
       writable: true
     });
   });
-  test('Should not show snackbar when online', async () => {
+  test('do not show the snackbar when there is a working connection', async () => {
     // @ts-ignore
     window.navigator.onLine = true;
 
@@ -30,7 +30,7 @@ describe('OfflineSnackbar.vue', () => {
     expect(wrapper.find('.v-snack').exists()).toBe(false);
   });
 
-  test('Should show snackbar when offline', async () => {
+  test('show the snackbar when a working connection does not exist', async () => {
     // @ts-ignore
     window.navigator.onLine = false;
 

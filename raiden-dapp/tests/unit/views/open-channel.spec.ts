@@ -24,7 +24,7 @@ import { parseUnits } from 'ethers/utils';
 
 Vue.use(Vuetify);
 
-describe('OpenChannel.vue', function() {
+describe('OpenChannel.vue', () => {
   let service: Mocked<RaidenService>;
   let wrapper: Wrapper<OpenChannel>;
   let button: Wrapper<Vue>;
@@ -97,12 +97,12 @@ describe('OpenChannel.vue', function() {
       service.openChannel.mockReset();
     });
 
-    it('should not be disabled after load', async function() {
+    test('should not be disabled after load', async () => {
       await flushPromises();
       expect(button.element.getAttribute('disabled')).toBeFalsy();
     });
 
-    it('should show an error if channel opening failed', async () => {
+    test('show an error when a channel open fails', async () => {
       service.openChannel.mockRejectedValueOnce(
         new ChannelOpenFailed('open: transaction failed')
       );
@@ -115,7 +115,7 @@ describe('OpenChannel.vue', function() {
       await flushPromises();
     });
 
-    it('should had an error if deposit failed', async () => {
+    test('show an error when the deposit fails', async () => {
       service.openChannel.mockRejectedValueOnce(
         new ChannelDepositFailed('deposit: transaction failed')
       );
@@ -128,7 +128,7 @@ describe('OpenChannel.vue', function() {
       await flushPromises();
     });
 
-    it('should show an error if any error happens during channel opening', async () => {
+    test('show an error when any error occurs during channel opening', async () => {
       service.openChannel.mockRejectedValueOnce(new Error('unknown'));
       mockInput(wrapper, '0.1');
       button.trigger('click');
@@ -138,7 +138,7 @@ describe('OpenChannel.vue', function() {
       await flushPromises();
     });
 
-    it('should navigate to send on success', async () => {
+    test('navigate to the "Transfer" view when the channel opens', async () => {
       const loading = jest.spyOn(wrapper.vm.$data, 'loading', 'set');
       service.openChannel.mockResolvedValue(undefined);
       button.trigger('click');
@@ -164,7 +164,7 @@ describe('OpenChannel.vue', function() {
       store.commit('reset');
     });
 
-    test('navigating with non checksum token address', async () => {
+    test('navigate to "Home" when the address is not in checksum format', async () => {
       wrapper = createWrapper(
         {
           token: '0xc778417e063141139fce010982780140aa0cd5ab'
@@ -182,7 +182,7 @@ describe('OpenChannel.vue', function() {
       );
     });
 
-    test('partner address is non checksum', async () => {
+    test('navigate to "SelectToken" when partner address is not in checksum format', async () => {
       store.commit('updateTokens', {
         '0xc778417E063141139Fce010982780140Aa0cD5Ab': {
           address: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
@@ -207,7 +207,7 @@ describe('OpenChannel.vue', function() {
       );
     });
 
-    test('token was could not be found', async () => {
+    test('navigate to "Home" when token cannot be found', async () => {
       wrapper = createWrapper(
         {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
@@ -240,7 +240,7 @@ describe('OpenChannel.vue', function() {
       beforeRouteLeave = vm.beforeRouteLeave as NavigationGuard;
     });
 
-    test('wont block if not loading', () => {
+    test('do not block when it is not loading', () => {
       const next = jest.fn();
       const mockRoute = TestData.mockRoute();
       beforeRouteLeave(mockRoute, mockRoute, next);
@@ -248,7 +248,7 @@ describe('OpenChannel.vue', function() {
       expect(next).toHaveBeenCalledWith();
     });
 
-    test('requests user action and allow navigation on confirm', () => {
+    test('request the user to confirm and then navigate', () => {
       window.confirm = jest.fn().mockReturnValue(true);
       const next = jest.fn();
       const mockRoute = TestData.mockRoute();
@@ -260,7 +260,7 @@ describe('OpenChannel.vue', function() {
       expect(next).toHaveBeenCalledWith();
     });
 
-    test('requests user action and block navigation on cancel', () => {
+    test('request the user to confirm and block navigation on cancel', () => {
       window.confirm = jest.fn().mockReturnValue(false);
       const next = jest.fn();
       const mockRoute = TestData.mockRoute();

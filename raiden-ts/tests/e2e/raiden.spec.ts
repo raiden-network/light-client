@@ -566,12 +566,7 @@ describe('Raiden', () => {
       raiden1.start();
 
       // await raiden1 client matrix initialization
-      await raiden1.action$
-        .pipe(
-          filter(isActionOf(matrixSetup)),
-          first(),
-        )
-        .toPromise();
+      await raiden1.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
 
       await expect(raiden.getAvailability(accounts[2])).resolves.toMatchObject({
         userId: `@${accounts[2].toLowerCase()}:${matrixServer}`,
@@ -668,12 +663,7 @@ describe('Raiden', () => {
         raiden1.start();
 
         // await raiden1 client matrix initialization
-        await raiden1.action$
-          .pipe(
-            filter(isActionOf(matrixSetup)),
-            first(),
-          )
-          .toPromise();
+        await raiden1.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
 
         await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
           userId: `@${partner.toLowerCase()}:${matrixServer}`,
@@ -717,10 +707,7 @@ describe('Raiden', () => {
             contractsInfo,
           ),
           matrix2Promise = raiden2.action$
-            .pipe(
-              filter(isActionOf(matrixSetup)),
-              first(),
-            )
+            .pipe(filter(isActionOf(matrixSetup)), first())
             .toPromise();
 
         raiden2.start();
@@ -876,18 +863,8 @@ describe('Raiden', () => {
 
       // await client's matrix initialization
       await Promise.all([
-        raiden1.action$
-          .pipe(
-            filter(isActionOf(matrixSetup)),
-            first(),
-          )
-          .toPromise(),
-        raiden2.action$
-          .pipe(
-            filter(isActionOf(matrixSetup)),
-            first(),
-          )
-          .toPromise(),
+        raiden1.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise(),
+        raiden2.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise(),
       ]);
 
       await expect(raiden.getAvailability(partner)).resolves.toMatchObject({

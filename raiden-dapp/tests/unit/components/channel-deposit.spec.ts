@@ -9,7 +9,7 @@ import { BigNumber } from 'ethers/utils';
 
 Vue.use(Vuetify);
 
-describe('ChannelDeposit.vue', function() {
+describe('ChannelDeposit.vue', () => {
   addElemWithDataAppToBody();
 
   let wrapper: Wrapper<ChannelDeposit>;
@@ -26,7 +26,7 @@ describe('ChannelDeposit.vue', function() {
     });
   });
 
-  it('should emit a cancel event when cancel pressed', function() {
+  test('emit a cancel event when the user presses cancel', () => {
     wrapper
       .findAll('button')
       .at(0)
@@ -34,7 +34,7 @@ describe('ChannelDeposit.vue', function() {
     expect(wrapper.emitted().cancel).toBeTruthy();
   });
 
-  it('should emit a confirm event when confirm pressed', function() {
+  test('emit a "confirm" event when the user presses confirm', () => {
     mockInput(wrapper, '0.5');
     wrapper
       .findAll('button')

@@ -1,7 +1,6 @@
-import flushPromises from 'flush-promises';
-
 jest.mock('vue-router');
 
+import flushPromises from 'flush-promises';
 import { createLocalVue, mount, shallowMount, Wrapper } from '@vue/test-utils';
 import Channels from '@/views/Channels.vue';
 import Vuex from 'vuex';
@@ -30,7 +29,7 @@ describe('Channels.vue', () => {
   store.commit('updateChannels', TestData.mockChannels);
   store.commit('updateTokens', TestData.mockTokens);
 
-  function createFactory(
+  function createWrapper(
     token: string = '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
     shallow: boolean = false
   ) {
@@ -74,15 +73,15 @@ describe('Channels.vue', () => {
     router.push.mockReset();
   });
 
-  test('renders the test data', () => {
-    wrapper = createFactory();
+  test('render the test data', () => {
+    wrapper = createWrapper();
     expect(wrapper.findAll('.channel-list__channels__channel').length).toEqual(
       2
     );
   });
 
-  test('dismiss the confirmation when overlay is pressed', () => {
-    wrapper = createFactory();
+  test('dismiss the confirmation when the user presses the overlay', () => {
+    wrapper = createWrapper();
     wrapper.setData({
       visible: 'channel-278-deposit'
     });
@@ -92,8 +91,8 @@ describe('Channels.vue', () => {
     expect(wrapper.vm.$data['visible']).toBe('');
   });
 
-  test('navigate home if address is not in checksum format', async () => {
-    wrapper = createFactory('0xd0a1e359811322d97991e03f863a0c30c2cf029c', true);
+  test('navigate to home when the address is not in checksum format', async () => {
+    wrapper = createWrapper('0xd0a1e359811322d97991e03f863a0c30c2cf029c', true);
     await wrapper.vm.$nextTick();
     await flushPromises();
 
@@ -105,8 +104,8 @@ describe('Channels.vue', () => {
     );
   });
 
-  test('navigate home if token is not found', async () => {
-    wrapper = createFactory('0x111157460c0F41EfD9107239B7864c062aA8B978', true);
+  test('navigate to home when the token cannot be found', async () => {
+    wrapper = createWrapper('0x111157460c0F41EfD9107239B7864c062aA8B978', true);
     await wrapper.vm.$nextTick();
     await flushPromises();
 
