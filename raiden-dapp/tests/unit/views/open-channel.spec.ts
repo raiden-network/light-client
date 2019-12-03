@@ -97,9 +97,9 @@ describe('OpenChannel.vue', () => {
       service.openChannel.mockReset();
     });
 
-    test('should not be disabled after load', async () => {
+    test('should be disabled after load', async () => {
       await flushPromises();
-      expect(button.element.getAttribute('disabled')).toBeFalsy();
+      expect(button.element.getAttribute('disabled')).toBe('disabled');
     });
 
     test('show an error when a channel open fails', async () => {
@@ -108,6 +108,7 @@ describe('OpenChannel.vue', () => {
       );
 
       mockInput(wrapper, '0.1');
+      await wrapper.vm.$nextTick();
       button.trigger('click');
       await wrapper.vm.$nextTick();
       await flushPromises();
