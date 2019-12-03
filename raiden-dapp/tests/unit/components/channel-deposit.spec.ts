@@ -43,7 +43,7 @@ describe('ChannelDeposit.vue', () => {
       .at(1)
       .trigger('click');
     expect(wrapper.emitted().confirm).toBeTruthy();
-    
+
     const [events] = wrapper.emitted().confirm;
     const deposit: BigNumber = (events[0] as any) as BigNumber;
     expect(new BigNumber(0.5 * 10 ** 5).eq(deposit)).toBeTruthy();
