@@ -168,19 +168,6 @@ describe('ChannelList.vue', () => {
       raiden.deposit = jest.fn();
     });
 
-    test('dismiss the dialog when the deposit amount is zero', async () => {
-      raiden.deposit.mockResolvedValueOnce(undefined);
-      wrapper.find('#channel-278').trigger('click');
-      wrapper.find('#deposit-0').trigger('click');
-      elementVisibilityChanged(0, 'channel-278-deposit');
-      await wrapper.vm.$nextTick();
-      wrapper.find('#confirm-278').trigger('click');
-      elementVisibilityChanged(1);
-      await flushPromises();
-      expect(wrapper.vm.$data.selectedChannel).toBeNull();
-      expect(raiden.deposit).toHaveBeenCalledTimes(0);
-    });
-
     test('deposit to the channel when the user confirms the action', async () => {
       raiden.deposit.mockResolvedValueOnce(undefined);
       wrapper.find('#channel-278').trigger('click');

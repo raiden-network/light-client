@@ -34,13 +34,16 @@ describe('ChannelDeposit.vue', () => {
     expect(wrapper.emitted().cancel).toBeTruthy();
   });
 
-  test('emit a "confirm" event when the user presses confirm', () => {
+  test('emit a "confirm" event when the user presses confirm', async () => {
     mockInput(wrapper, '0.5');
+    await wrapper.vm.$nextTick();
+
     wrapper
       .findAll('button')
       .at(1)
       .trigger('click');
     expect(wrapper.emitted().confirm).toBeTruthy();
+
     const [events] = wrapper.emitted().confirm;
     const deposit: BigNumber = (events[0] as any) as BigNumber;
     expect(new BigNumber(0.5 * 10 ** 5).eq(deposit)).toBeTruthy();
