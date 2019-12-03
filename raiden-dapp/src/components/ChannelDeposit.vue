@@ -14,7 +14,6 @@
             :label="$t('channel-deposit.input.label')"
             :max="token.balance"
             limit
-            :allow-zero="true"
           ></amount-input>
         </v-form>
       </v-col>

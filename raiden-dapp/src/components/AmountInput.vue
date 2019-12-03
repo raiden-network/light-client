@@ -46,8 +46,6 @@ export default class AmountInput extends Vue {
   placeholder!: string;
   @Prop({ required: false, default: () => Zero })
   max!: BigNumber;
-  @Prop({ required: false, default: false })
-  allowZero!: boolean;
 
   valid: boolean = true;
   amount: string = '';
@@ -58,7 +56,6 @@ export default class AmountInput extends Vue {
       return !!v || this.$parent.$t('amount-input.error.empty');
     },
     (v: string) =>
-      this.allowZero ||
       (v && !BalanceUtils.parse(v, this.token!.decimals!).isZero()) ||
       this.$parent.$t('amount-input.error.zero'),
     (v: string) =>
