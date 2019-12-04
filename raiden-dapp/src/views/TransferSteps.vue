@@ -535,6 +535,15 @@ export default class TransferSteps extends Mixins(
       margin-top: 45px;
     }
 
+    ::v-deep .v-stepper__step__step {
+      height: 12px;
+      min-width: 12px;
+      width: 12px;
+      margin-top: 6px;
+      background: transparent !important;
+      border: 2px solid #646464 !important;
+    }
+
     &.active {
       ::v-deep .v-stepper__step__step {
         border-color: $primary-color !important;
@@ -545,15 +554,6 @@ export default class TransferSteps extends Mixins(
         color: $primary-color;
         font-weight: bold;
       }
-    }
-
-    ::v-deep .v-stepper__step__step {
-      height: 12px;
-      min-width: 12px;
-      width: 12px;
-      margin-top: 6px;
-      background: transparent !important;
-      border: 2px solid #646464 !important;
     }
   }
 

@@ -270,18 +270,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   font-size: 16px;
   line-height: 21px;
   text-align: left;
+  border: 1px solid transparent;
   .v-messages__wrapper {
     color: white;
-  }
-}
-
-.address-input ::v-deep .v-messages {
-  border: 1px solid transparent;
-  font-family: Roboto, sans-serif;
-  font-size: 14px;
-  line-height: 16px;
-
-  .v-messages__wrapper {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
