@@ -18,10 +18,10 @@
         </div>
       </v-col>
       <v-col cols="8">
-        <div class="splash-screen__text font-weight-light text-center">
+        <div class="splash-screen__disclaimer font-weight-light text-center">
           {{ $t('splash-screen.disclaimer') }}
-          <br />
-          <br />
+        </div>
+        <div class="splash-screen__matrix-sign font-weight-light text-center">
           {{ $t('splash-screen.matrix-sign') }}
         </div>
       </v-col>
@@ -111,9 +111,13 @@ export default class Loading extends Vue {
   }
 }
 
-.splash-screen__text,
+.splash-screen__disclaimer,
 .splash-screen__button {
   margin-top: 60px;
+}
+
+.splash-screen__matrix-sign {
+  margin-top: 30px;
 }
 
 .splash-screen__no-provider {
