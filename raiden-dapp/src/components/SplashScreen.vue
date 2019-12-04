@@ -104,6 +104,7 @@ export default class Loading extends Vue {
   display: flex;
   height: 100%;
   padding-left: 10px;
+  white-space: nowrap;
   @media only screen and (max-width: 1263px) {
     justify-content: center;
     padding: 30px 0px 0px 0px;
