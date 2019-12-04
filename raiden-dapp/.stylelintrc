@@ -1,0 +1,13 @@
+{
+ "plugins": ["stylelint-scss"],
+ "extends": "stylelint-config-recommended-scss",
+ "rules": {
+   "no-empty-source": null,
+   "selector-pseudo-element-no-unknown": [
+     true,
+     {
+       "ignorePseudoElements": ["v-deep"]
+     }
+   ]
+ }
+}
