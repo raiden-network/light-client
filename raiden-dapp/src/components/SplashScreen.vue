@@ -1,29 +1,31 @@
 <template>
-  <v-container fluid class="splash-screen fill-height">
-    <v-row align="center" justify="center" no-gutters>
-      <v-col cols="4" lg="4" md="6" sm="8">
-        <div class="splash-screen__wrapper display-3">
-          <div class="splash-screen__logo-container">
-            <v-img
-              :src="require('../assets/logo.svg')"
-              min-width="50px"
-              class="splash-screen__logo"
-              aspect-ratio="1"
-              contain
-            />
-          </div>
-          <div class="splash-screen__app-name">
-            <div>
-              {{ name }}
-            </div>
-          </div>
+  <v-container class="splash-screen fill-height">
+    <v-row no-gutters justify="center">
+      <v-col cols="8" xl="2" lg="2" md="8" sm="8">
+        <div class="splash-screen__logo-container">
+          <v-img
+            :src="require('../assets/logo.svg')"
+            min-width="50px"
+            class="splash-screen__logo"
+            aspect-ratio="1"
+            contain
+          />
         </div>
-        <div class="font-weight-light text-center splash-screen__disclaimer">
+      </v-col>
+      <v-col cols="8" xl="4" lg="5" md="8" sm="8">
+        <div class="splash-screen__app-name display-3">
+          {{ name }}
+        </div>
+      </v-col>
+      <v-col cols="8">
+        <div class="splash-screen__disclaimer font-weight-light text-center">
           {{ $t('splash-screen.disclaimer') }}
         </div>
-        <div class="font-weight-light text-center splash-screen__matrix_sign">
+        <div class="splash-screen__matrix-sign font-weight-light text-center">
           {{ $t('splash-screen.matrix-sign') }}
         </div>
+      </v-col>
+      <v-col cols="8">
         <div class="splash-screen__button">
           <action-button
             v-if="injectedProvider"
@@ -36,6 +38,8 @@
             {{ $t('splash-screen.no-provider') }}
           </span>
         </div>
+      </v-col>
+      <v-col cols="8">
         <div class="splash-screen__message">
           <no-access-message
             v-if="accessDenied"
@@ -80,51 +84,52 @@ export default class Loading extends Vue {
 </script>
 
 <style lang="scss" scoped>
+.splash-screen__logo-container {
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 10px;
+  @media only screen and (max-width: 1263px) {
+    justify-content: center;
+    padding: 0;
+  }
+}
+
 .splash-screen__logo {
   filter: invert(100%);
+  max-width: 6rem;
 }
 
-$name-horizontal-margin: 2rem;
 .splash-screen__app-name {
-  margin-left: $name-horizontal-margin;
-  margin-right: $name-horizontal-margin;
-}
-
-.splash-screen__wrapper__logo-container {
-  width: 8rem;
-  padding: 1.4rem;
-}
-
-.splash-screen__wrapper {
-  display: flex;
   align-items: center;
-  justify-content: center;
+  display: flex;
+  height: 100%;
+  padding-left: 10px;
+  white-space: nowrap;
+  @media only screen and (max-width: 1263px) {
+    justify-content: center;
+    padding: 30px 0px 0px 0px;
+  }
 }
 
-.splash-screen__disclaimer {
-  margin-top: 60px;
-  font-size: 16px;
-}
-
+.splash-screen__disclaimer,
 .splash-screen__button {
-  display: flex;
-  margin-top: 30px;
-  align-items: center;
-  justify-content: center;
+  margin-top: 60px;
 }
 
-.splash-screen__message {
-  margin-top: 40px;
-  height: 35px;
+.splash-screen__matrix-sign {
+  margin-top: 30px;
 }
 
 .splash-screen__no-provider {
-  font-weight: 500;
+  display: flex;
+  justify-content: center;
   font-size: 24px;
+  font-weight: 500;
+  text-align: center;
 }
 
-.splash-screen__matrix_sign {
-  margin-top: 90px;
-  color: rgba(255, 255, 255, 0.8);
+.splash-screen__message {
+  height: 35px;
+  margin-top: 40px;
 }
 </style>
