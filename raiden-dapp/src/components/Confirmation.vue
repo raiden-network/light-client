@@ -76,9 +76,6 @@ $background-color: #323232;
   color: #ffffff;
 }
 
-.confirmation__buttons {
-}
-
 .confirmation__buttons button {
   width: 135px !important;
   height: 35px !important;
