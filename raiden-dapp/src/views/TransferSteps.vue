@@ -188,15 +188,22 @@
       <h2 v-else>{{ this.$t('transfer.steps.request-route.done') }}</h2>
     </v-overlay>
 
-    <v-dialog v-model="processingTransfer" max-width="310">
+    <v-dialog
+      v-model="processingTransfer"
+      max-width="310"
+      transition="scale-transition"
+    >
       <transfer-progress-dialog
         :in-progress="!transferDone"
+        :error="error"
+        @dismiss="dismissProgress"
       ></transfer-progress-dialog>
     </v-dialog>
 
     <error-screen
+      v-if="!processingTransfer"
       :description="error"
-      :title="errorTitle"
+      :title="$t('transfer.error.title')"
       :button-label="$t('transfer.error.button')"
       @dismiss="error = ''"
     ></error-screen>
@@ -263,7 +270,6 @@ export default class TransferSteps extends Mixins(
   mediationFeesConfirmed: boolean = false;
   processingTransfer: boolean = false;
   transferDone: boolean = false;
-  errorTitle: string = '';
   error: string = '';
   udcCapacity: BigNumber = Zero;
 
@@ -473,7 +479,6 @@ export default class TransferSteps extends Mixins(
   async transfer() {
     const { address, decimals } = this.token;
     const { path, fee } = this.selectedRoute!;
-    this.errorTitle = this.$t('transfer.error.title') as string;
 
     try {
       this.processingTransfer = true;
@@ -487,17 +492,17 @@ export default class TransferSteps extends Mixins(
       this.transferDone = true;
       this.dismissProgress();
     } catch (e) {
-      this.processingTransfer = false;
       this.error = e.message;
     }
   }
 
-  private dismissProgress() {
+  private dismissProgress(delay: number = 3000) {
     setTimeout(() => {
+      this.error = '';
       this.processingTransfer = false;
       this.transferDone = false;
       this.navigateToSelectTransferTarget(this.token.address);
-    }, 2000);
+    }, delay);
   }
 }
 </script>

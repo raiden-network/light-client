@@ -1,6 +1,6 @@
 <template>
   <v-card class="transfer-progress-dialog">
-    <v-btn icon class="transfer-progress-dialog__close" @click="cancel">
+    <v-btn icon class="transfer-progress-dialog__close" @click="dismiss">
       <v-icon>mdi-close</v-icon>
     </v-btn>
     <v-card-text>
@@ -10,7 +10,10 @@
         justify="center"
       >
         <v-col cols="12">
-          <span v-if="inProgress">
+          <span v-if="error">
+            {{ $t('transfer.error.title') }}
+          </span>
+          <span v-else-if="inProgress">
             {{ $t('transfer.steps.transfer.title') }}
           </span>
           <span v-else>
@@ -20,7 +23,13 @@
       </v-row>
       <v-row align="center" justify="center">
         <v-col cols="6">
-          <div v-if="!inProgress">
+          <div v-if="error">
+            <v-img
+              :src="require('../assets/error.png')"
+              class="transfer-progress-dialog--error"
+            ></v-img>
+          </div>
+          <div v-else-if="!inProgress">
             <v-img
               :src="require('../assets/done.svg')"
               class="transfer-progress-dialog--done"
@@ -39,7 +48,10 @@
       <v-row>
         <v-col cols="12">
           <div class="transfer-progress-dialog__description">
-            <span v-if="inProgress">
+            <span v-if="error">
+              {{ error }}
+            </span>
+            <span v-else-if="inProgress">
               {{ $t('transfer.steps.transfer.description') }}
             </span>
             <span v-else>
@@ -58,10 +70,12 @@ import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 @Component({})
 export default class TransferProgressDialog extends Vue {
   @Prop({ required: true })
+  error!: string;
+  @Prop({ required: true })
   inProgress!: boolean;
 
   @Emit()
-  cancel() {}
+  dismiss() {}
 }
 </script>
 

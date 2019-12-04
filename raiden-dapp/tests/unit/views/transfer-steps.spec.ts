@@ -1,3 +1,5 @@
+import { addElemWithDataAppToBody } from '../utils/dialog';
+
 jest.useFakeTimers();
 
 import { mount } from '@vue/test-utils';
@@ -20,6 +22,7 @@ import { RouteNames } from '@/router/route-names';
 Vue.use(Vuetify);
 
 describe('TransferSteps.vue', () => {
+  addElemWithDataAppToBody();
   let vuetify: typeof Vuetify;
   let processingTransfer: jest.SpyInstance;
   let transferDone: jest.SpyInstance;
@@ -241,9 +244,8 @@ describe('TransferSteps.vue', () => {
     jest.advanceTimersByTime(2000);
 
     expect($raiden.transfer).toHaveBeenCalledTimes(1);
-    expect(processingTransfer).toHaveBeenCalledTimes(2);
+    expect(processingTransfer).toHaveBeenCalledTimes(1);
     expect(processingTransfer).toHaveBeenNthCalledWith(1, true);
-    expect(processingTransfer).toHaveBeenNthCalledWith(2, false);
     expect(transferDone).toBeCalledTimes(0);
     expect(wrapper.vm.$data.error).toEqual('failure');
   });

@@ -191,7 +191,7 @@
     "amount-placeholder": "Specify amount...",
     "error": {
       "button": "Dismiss",
-      "title": "Token transfer unsuccessful. Please retry.",
+      "title": "Token transfer unsuccessful.",
       "deposit-title": "Deposit was unsuccessful. Please retry."
     },
     "steps": {
