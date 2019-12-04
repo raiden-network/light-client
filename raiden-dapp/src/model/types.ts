@@ -8,6 +8,10 @@ export interface Token {
   readonly name?: string;
 }
 
+export interface Presence {
+  [address: string]: boolean;
+}
+
 export interface AccTokenModel {
   name: string;
   symbol: string;

@@ -52,7 +52,10 @@ export default class RaidenService {
 
   async ensResolve(name: string): Promise<string> {
     try {
-      return await this.raiden.resolveName(name);
+      const address = await this.raiden.resolveName(name);
+      const { available } = await this.raiden.getAvailability(address);
+      this.store.commit('updatePresence', { [address]: available });
+      return address;
     } catch (e) {
       throw new EnsResolveFailed(e);
     }
@@ -117,6 +120,15 @@ export default class RaidenService {
 
         raiden.channels$.subscribe(value => {
           this.store.commit('updateChannels', value);
+        });
+
+        // Update presences on matrix presence updates
+        raiden.events$.subscribe(value => {
+          if (value.type === 'matrixPresenceUpdate') {
+            this.store.commit('updatePresence', {
+              [value.meta.address]: value.payload.available
+            });
+          }
         });
 
         this.store.commit('network', raiden.network);
@@ -319,7 +331,9 @@ export default class RaidenService {
     try {
       const { available } = await this.raiden.getAvailability(address);
       return available;
-    } catch (e) {}
+    } catch (e) {
+      this.store.commit('updatePresence', { [address]: false });
+    }
 
     return false;
   }

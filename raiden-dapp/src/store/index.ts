@@ -8,7 +8,8 @@ import {
   emptyTokenModel,
   PlaceHolderNetwork,
   Token,
-  TokenModel
+  TokenModel,
+  Presence
 } from '@/model/types';
 import map from 'lodash/map';
 import flatMap from 'lodash/flatMap';
@@ -30,6 +31,7 @@ const _defaultState: RootState = {
   accessDenied: DeniedReason.UNDEFINED,
   channels: {},
   tokens: {},
+  presences: {},
   network: PlaceHolderNetwork
 };
 
@@ -65,6 +67,9 @@ const store: StoreOptions<RootState> = {
         else if (address in state.tokens)
           state.tokens[address] = { ...state.tokens[address], ...token };
         else state.tokens = { ...state.tokens, [address]: token };
+    },
+    updatePresence(_state: RootState, _presence: Presence) {
+      _state.presences = { ..._state.presences, ..._presence };
     },
     network(state: RootState, network: Network) {
       state.network = network;
@@ -126,6 +131,9 @@ const store: StoreOptions<RootState> = {
         value => value.state === ChannelState.open
       );
       return orderBy(openChannels, ['capacity'], ['desc'])[0];
+    },
+    presences: (state: RootState): Presence => {
+      return state.presences;
     }
   }
 };
