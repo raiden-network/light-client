@@ -541,7 +541,7 @@ export default class TransferSteps extends Mixins(
       width: 12px;
       margin-top: 6px;
       background: transparent !important;
-      border: 2px solid #646464 !important;
+      border: 2px solid $secondary-text-color !important;
     }
 
     &.active {
