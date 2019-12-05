@@ -318,8 +318,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   &:hover {
     color: $secondary-color;
 
-    & ::v-deep g {
-      stroke: $secondary-color !important;
+    ::v-deep {
+      g {
+        stroke: $secondary-color !important;
+      }
     }
   }
 

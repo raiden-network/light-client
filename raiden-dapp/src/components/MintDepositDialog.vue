@@ -116,26 +116,30 @@ export default class MintDepositDialog extends Vue {
     font-weight: bold;
     color: $color-white;
 
-    & ::v-deep input {
-      text-align: right;
-    }
+    ::v-deep {
+      input {
+        text-align: right;
+      }
 
-    & ::v-deep .v-input__slot::before {
-      border: none !important;
-    }
+      .v-input__slot {
+        &::before {
+          border: none !important;
+        }
 
-    & ::v-deep .v-input__slot::after {
-      border: none !important;
-    }
+        &::after {
+          border: none !important;
+        }
+      }
 
-    & ::v-deep .v-text-field__details {
-      display: none;
-    }
+      .v-text-field__details {
+        display: none;
+      }
 
-    & ::v-deep .v-text-field__suffix {
-      padding-left: 8px;
-      color: white;
-      padding-right: 18px;
+      .v-text-field__suffix {
+        padding-left: 8px;
+        color: white;
+        padding-right: 18px;
+      }
     }
   }
 

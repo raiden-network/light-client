@@ -510,6 +510,35 @@ export default class TransferSteps extends Mixins(
 <style lang="scss" scoped>
 @import '../scss/colors';
 
+.confirmation-overlay {
+  text-align: center;
+
+  &.v-overlay--active {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    backdrop-filter: blur(4px);
+    background-color: rgba($color-white, 0.15);
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+
+  &.v-overlay--dark {
+    background-color: $card-background;
+  }
+
+  ::v-deep {
+    .spinner {
+      margin: 2em;
+    }
+  }
+
+  &__checkmark {
+    margin: 2em;
+  }
+}
+
 .transfer-steps {
   background: transparent !important;
   box-shadow: none;
@@ -527,32 +556,36 @@ export default class TransferSteps extends Mixins(
   }
 
   &__step {
-    ::v-deep .v-stepper__label {
-      display: block !important;
+    ::v-deep {
+      .v-stepper__label {
+        display: block !important;
+      }
+
+      .v-stepper__step__step {
+        height: 12px;
+        min-width: 12px;
+        width: 12px;
+        margin-top: 6px;
+        background: transparent !important;
+        border: 2px solid $secondary-text-color !important;
+      }
     }
 
     &__content {
       margin-top: 45px;
     }
 
-    ::v-deep .v-stepper__step__step {
-      height: 12px;
-      min-width: 12px;
-      width: 12px;
-      margin-top: 6px;
-      background: transparent !important;
-      border: 2px solid $secondary-text-color !important;
-    }
-
     &.active {
-      ::v-deep .v-stepper__step__step {
-        border-color: $primary-color !important;
-        background: $primary-color !important;
-      }
+      ::v-deep {
+        .v-stepper__step__step {
+          border-color: $primary-color !important;
+          background: $primary-color !important;
+        }
 
-      ::v-deep .v-stepper__label {
-        color: $primary-color;
-        font-weight: bold;
+        .v-stepper__label {
+          color: $primary-color;
+          font-weight: bold;
+        }
       }
     }
   }
@@ -609,33 +642,6 @@ export default class TransferSteps extends Mixins(
     &__deposit {
       vertical-align: middle;
     }
-  }
-}
-
-.confirmation-overlay {
-  text-align: center;
-
-  &.v-overlay--active {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    backdrop-filter: blur(4px);
-    background-color: rgba($color-white, 0.15);
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-  }
-
-  &.v-overlay--dark {
-    background-color: $card-background;
-  }
-
-  & ::v-deep .spinner {
-    margin: 2em;
-  }
-
-  &__checkmark {
-    margin: 2em;
   }
 }
 

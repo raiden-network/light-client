@@ -142,20 +142,22 @@ export default class TokenOverlay extends Mixins(
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
 
-  ::v-deep .v-overlay__scrim {
-    background: linear-gradient(180deg, #050505 0%, #0a1923 100%) !important;
-  }
+  ::v-deep {
+    .v-overlay__scrim {
+      background: linear-gradient(180deg, #050505 0%, #0a1923 100%) !important;
+    }
 
-  ::v-deep .v-overlay__content {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 100%;
-  }
+    .v-overlay__content {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+    }
 
-  ::v-deep .v-list-item {
-    padding: 0 0 0 48px;
+    .v-list-item {
+      padding: 0 0 0 48px;
+    }
   }
 
   .token-network__container {
@@ -183,8 +185,10 @@ export default class TokenOverlay extends Mixins(
     padding-bottom: 0;
     padding-top: 0;
 
-    & ::v-deep .col-10 {
-      padding-left: 11px;
+    ::v-deep {
+      .col-10 {
+        padding-left: 11px;
+      }
     }
   }
 

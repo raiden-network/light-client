@@ -129,24 +129,33 @@ export default class FindRoutes extends Vue {
       background-color: transparent !important;
     }
 
-    ::v-deep th {
-      font-size: 16px;
-      border: none !important;
-    }
+    ::v-deep {
+      th {
+        font-size: 16px;
+        border: none !important;
+      }
 
-    ::v-deep td {
-      border: none !important;
-      padding-top: 5px;
-      padding-bottom: 5px;
-    }
+      td {
+        border: none !important;
+        padding-top: 5px;
+        padding-bottom: 5px;
+      }
 
-    ::v-deep .v-data-table__selected,
-    ::v-deep tbody tr:hover {
-      background: rgba($disabled-text-color, 0.1) !important;
-    }
+      .v-data-table__selected {
+        background: rgba($disabled-text-color, 0.1) !important;
+      }
 
-    ::v-deep .v-icon {
-      color: $primary-color;
+      tbody {
+        tr {
+          &:hover {
+            background: rgba($disabled-text-color, 0.1) !important;
+          }
+        }
+      }
+
+      .v-icon {
+        color: $primary-color;
+      }
     }
   }
 

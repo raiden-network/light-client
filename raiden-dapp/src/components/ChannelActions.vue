@@ -45,23 +45,45 @@ export default class ChannelActions extends Vue {
   width: 135px;
   border-radius: 29px;
 }
-.channel-action__button__primary {
-  background-color: $primary-color !important;
-}
+
 .channel-action__button__secondary {
   border: 2px solid $primary-color;
   background-color: $secondary-button-color !important;
+
+  &.theme--dark {
+    &.v-btn {
+      &.v-btn--disabled {
+        &:not(.v-btn--icon) {
+          &:not(.v-btn--text) {
+            &:not(.v-btn--outline) {
+              background-color: transparent !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  &.v-btn--disabled {
+    border-color: $primary-disabled-color;
+  }
 }
 
-.channel-action__button__secondary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
-  background-color: transparent !important;
-}
+.channel-action__button__primary {
+  background-color: $primary-color !important;
 
-.channel-action__button__primary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
-  background-color: $primary-disabled-color !important;
-}
-
-.channel-action__button__secondary.v-btn--disabled {
-  border-color: $primary-disabled-color;
+  &.theme--dark {
+    &.v-btn {
+      &.v-btn--disabled {
+        &:not(.v-btn--icon) {
+          &:not(.v-btn--text) {
+            &:not(.v-btn--outline) {
+              background-color: $primary-disabled-color !important;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 </style>

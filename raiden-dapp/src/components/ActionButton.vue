@@ -49,6 +49,16 @@ export default class ActionButton extends Vue {
 <style lang="scss" scoped>
 @import '../scss/colors';
 
+::v-deep {
+  .v-btn--disabled {
+    background-color: $primary-color !important;
+  }
+
+  .v-btn {
+    letter-spacing: 0 !important;
+  }
+}
+
 .action-button {
   &.sticky {
     margin: 0;
@@ -74,22 +84,24 @@ export default class ActionButton extends Vue {
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
   }
+
+  &:hover {
+    background-color: rgba($primary-color, 0.8) !important;
+  }
 }
 
-::v-deep .v-btn--disabled {
-  background-color: $primary-color !important;
-}
-
-.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
-  background-color: $primary-disabled-color !important;
-  color: $disabled-text-color !important;
-}
-
-.action-button__button:hover {
-  background-color: rgba($primary-color, 0.8) !important;
-}
-
-::v-deep .v-btn {
-  letter-spacing: 0 !important;
+.theme--dark {
+  .v-btn {
+    .v-btn--disabled {
+      &:not(.v-btn--icon) {
+        &:not(.v-btn--text) {
+          &:not(.v-btn--outline) {
+            background-color: $primary-disabled-color !important;
+            color: $disabled-text-color !important;
+          }
+        }
+      }
+    }
+  }
 }
 </style>
