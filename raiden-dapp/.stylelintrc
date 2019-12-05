@@ -8,6 +8,7 @@
      {
        "ignorePseudoElements": ["v-deep"]
      }
-   ]
+   ],
+   "scss/selector-nest-combinators": "always"
  }
 }
