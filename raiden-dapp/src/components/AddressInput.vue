@@ -272,7 +272,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   text-align: left;
   border: 1px solid transparent;
   .v-messages__wrapper {
-    color: white;
+    color: $color-white;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
