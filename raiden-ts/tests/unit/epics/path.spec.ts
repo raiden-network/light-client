@@ -207,7 +207,9 @@ describe('PFS: pathFindServiceEpic', () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 404,
-      json: jest.fn(async () => {}),
+      json: jest.fn(async () => {
+        /* error */
+      }),
       text: jest.fn(async () => losslessStringify({})),
     });
 
@@ -251,7 +253,9 @@ describe('PFS: pathFindServiceEpic', () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 404,
-      json: jest.fn(async () => {}),
+      json: jest.fn(async () => {
+        /* error */
+      }),
       text: jest.fn(async () => losslessStringify({})),
     });
 
@@ -341,7 +345,9 @@ describe('PFS: pathFindServiceEpic', () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 404,
-      json: jest.fn(async () => {}),
+      json: jest.fn(async () => {
+        /* error */
+      }),
       text: jest.fn(async () => losslessStringify({})),
     });
 
@@ -438,7 +444,9 @@ describe('PFS: pathFindServiceEpic', () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 404,
-      json: jest.fn(async () => {}),
+      json: jest.fn(async () => {
+        /* error */
+      }),
       text: jest.fn(async () => losslessStringify({})),
     });
 
@@ -620,7 +628,9 @@ describe('PFS: pathFindServiceEpic', () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 404,
-      json: jest.fn(async () => {}),
+      json: jest.fn(async () => {
+        /* error */
+      }),
       text: jest.fn(async () => losslessStringify({})),
     });
 
@@ -684,7 +694,9 @@ describe('PFS: pathFindServiceEpic', () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       status: 404,
-      json: jest.fn(async () => {}),
+      json: jest.fn(async () => {
+        /* error */
+      }),
       text: jest.fn(async () => losslessStringify({})),
     });
 
@@ -820,7 +832,9 @@ describe('PFS: pathFindServiceEpic', () => {
     fetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
-      json: jest.fn(async () => {}),
+      json: jest.fn(async () => {
+        /* error */
+      }),
       text: jest.fn(async () => losslessStringify({})),
     });
 
