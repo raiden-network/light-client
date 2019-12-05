@@ -219,6 +219,12 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 .channel-list__channels__channel {
   background-color: #141414;
   box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
+
+  ::v-deep {
+    .v-list-item {
+      height: 105px;
+    }
+  }
 }
 
 .channel-list__channels__channel__partner-address {
@@ -236,10 +242,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   background-color: transparent !important;
   padding-bottom: 0;
   padding-top: 0;
-}
-
-.channel-list__channels__channel ::v-deep .v-list-item {
-  height: 105px;
 }
 
 .channel-list__channels__channel__lifecycle {

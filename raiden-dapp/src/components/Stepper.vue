@@ -164,6 +164,7 @@ export default class Stepper extends Vue {
   height: 100%;
   background-color: #0f374b;
   position: relative;
+
   &:before {
     content: '';
     position: absolute;
@@ -179,29 +180,30 @@ export default class Stepper extends Vue {
     border-radius: 0 !important;
     transform: rotate(45deg);
   }
+
+  &:first-child {
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 14px;
+  }
+
+  &:last-child {
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 14px;
+
+    &:before {
+      content: '';
+      position: absolute;
+      margin-left: 0;
+      height: 0; /* button_inner_height / sqrt(2) */
+      width: 0; /* same as height */
+      border-radius: 0 !important;
+      transform: translate(-999em, -999em);
+    }
+  }
 }
 
 .stepper__card__steps__step__label {
   padding-left: 18px;
-}
-
-.stepper__card__steps__step:first-child {
-  border-bottom-left-radius: 0;
-  border-top-left-radius: 14px;
-}
-
-.stepper__card__steps__step:last-child {
-  border-bottom-right-radius: 0;
-  border-top-right-radius: 14px;
-  &:before {
-    content: '';
-    position: absolute;
-    margin-left: 0;
-    height: 0; /* button_inner_height / sqrt(2) */
-    width: 0; /* same as height */
-    border-radius: 0 !important;
-    transform: translate(-999em, -999em);
-  }
 }
 
 .stepper__card__content--progress {

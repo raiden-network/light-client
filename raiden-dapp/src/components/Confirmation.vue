@@ -76,15 +76,17 @@ $background-color: #323232;
   color: #ffffff;
 }
 
-.confirmation__buttons button {
-  width: 135px !important;
-  height: 35px !important;
-  font-size: 16px;
-  line-height: 21px;
-  text-align: center;
-  border-radius: 29px;
-  margin-left: 15px;
-  margin-right: 15px;
+.confirmation__buttons {
+  button {
+    width: 135px !important;
+    height: 35px !important;
+    font-size: 16px;
+    line-height: 21px;
+    text-align: center;
+    border-radius: 29px;
+    margin-left: 15px;
+    margin-right: 15px;
+  }
 }
 
 .confirmation__buttons__cancel {

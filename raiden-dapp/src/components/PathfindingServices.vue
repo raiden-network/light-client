@@ -172,9 +172,11 @@ export default class PathfindingServices extends Vue {
 @import '../scss/colors';
 
 .pathfinding-services {
-  &__wrapper > * {
-    width: 250px;
-    text-align: center;
+  &__wrapper {
+    & > * {
+      width: 250px;
+      text-align: center;
+    }
   }
 
   &__error {
@@ -190,28 +192,31 @@ export default class PathfindingServices extends Vue {
       background-color: transparent !important;
     }
 
-    ::v-deep tr:hover {
-      background: $primary-disabled-color !important;
-    }
+    ::v-deep {
+      tr {
+        &:hover {
+          background: $primary-disabled-color !important;
+        }
+      }
 
-    ::v-deep .v-icon {
-      color: $primary-color;
-    }
+      .v-icon {
+        color: $primary-color;
+      }
 
-    ::v-deep th {
-      font-size: 16px;
-      border: none !important;
-    }
+      th {
+        font-size: 16px;
+        border: none !important;
+      }
 
-    ::v-deep td {
-      border: none !important;
-      padding-top: 5px;
-      padding-bottom: 5px;
-    }
+      td {
+        border: none !important;
+        padding-top: 5px;
+        padding-bottom: 5px;
+      }
 
-    ::v-deep .v-data-table__selected,
-    ::v-deep tbody tr:hover {
-      background: rgba($disabled-text-color, 0.1) !important;
+      .v-data-table__selected {
+        background: rgba($disabled-text-color, 0.1) !important;
+      }
     }
   }
 }

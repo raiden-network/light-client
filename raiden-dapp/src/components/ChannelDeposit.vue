@@ -89,11 +89,13 @@ export default class ChannelDeposit extends Vue {
   box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
 }
 
-.channel-deposit__wrapper > * {
-  height: 150px;
-  font-size: 16px;
-  line-height: 21px;
-  text-align: center;
+.channel-deposit__wrapper {
+  & > * {
+    height: 150px;
+    font-size: 16px;
+    line-height: 21px;
+    text-align: center;
+  }
 }
 
 .channel-deposit__buttons {
@@ -101,15 +103,15 @@ export default class ChannelDeposit extends Vue {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-}
 
-.channel-deposit__buttons button {
-  height: 35px;
-  width: 135px;
-  color: white;
-  border-radius: 29px;
-  margin-left: 15px;
-  margin-right: 15px;
+  button {
+    height: 35px;
+    width: 135px;
+    color: white;
+    border-radius: 29px;
+    margin-left: 15px;
+    margin-right: 15px;
+  }
 }
 
 .channel-deposit__buttons__cancel {
@@ -122,8 +124,18 @@ export default class ChannelDeposit extends Vue {
   color: #ffffff;
 }
 
-.theme--light.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
-  background-color: $primary-disabled-color !important;
-  color: #c4c4c4 !important;
+.theme--light {
+  &.v-btn {
+    &.v-btn--disabled {
+      &:not(.v-btn--icon) {
+        &:not(.v-btn--text) {
+          &:not(.v-btn--outline) {
+            background-color: $primary-disabled-color !important;
+            color: #c4c4c4 !important;
+          }
+        }
+      }
+    }
+  }
 }
 </style>

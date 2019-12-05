@@ -109,6 +109,16 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
   background-color: transparent !important;
   padding-bottom: 0;
   padding-top: 0;
+
+  ::v-deep {
+    .v-list-item {
+      height: 105px;
+    }
+
+    .v-list-item__action-text {
+      height: 44px;
+    }
+  }
 }
 
 .select-token__tokens__token__balance {
@@ -119,14 +129,6 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
   line-height: 20px;
   height: 100%;
   padding-right: 20px;
-}
-
-.select-token__tokens ::v-deep .v-list-item {
-  height: 105px;
-}
-
-.select-token__tokens ::v-deep .v-list-item__action-text {
-  height: 44px;
 }
 
 .select-token__tokens__token {

@@ -173,53 +173,59 @@ $header-vertical-margin-mobile: 2rem;
     padding-bottom: 30px;
     border: 0;
   }
-}
 
-::v-deep .v-input__slot {
-  border: 1.5px solid transparent;
-}
+  ::v-deep {
+    .v-input__slot {
+      border-radius: 10px;
+      background-color: $input-background !important;
+      padding: 8px 16px;
+      max-height: 49px;
+      border: 1.5px solid transparent;
 
-.amount-input ::v-deep .v-input__slot {
-  border-radius: 10px;
-  background-color: $input-background !important;
-  padding: 8px 16px;
-  max-height: 49px;
-}
+      &::before,
+      &::after {
+        border-width: 0 0 0 0;
+      }
+    }
 
-.amount-input ::v-deep .v-input {
-  width: 100%;
-}
+    .v-input--is-focused {
+      .v-input__slot {
+        border: 1.5px solid $primary-color;
+      }
+    }
 
-.amount-input ::v-deep input {
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 20px;
-  caret-color: white !important;
-}
+    .v-input {
+      width: 100%;
+    }
 
-.amount-input ::v-deep input:focus {
-  outline: 0;
-}
+    input {
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 20px;
+      caret-color: white !important;
 
-.amount-input ::v-deep .v-messages {
-  border: 1px solid transparent;
-  font-family: Roboto, sans-serif;
-  font-size: 14px;
-  line-height: 16px;
+      &:focus {
+        outline: 0;
+      }
+    }
 
-  .v-messages__wrapper {
-    height: 25px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding-left: 20px;
-    justify-content: center;
-    color: white;
+    .v-messages {
+      border: 1px solid transparent;
+      font-family: Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 16px;
+
+      .v-messages__wrapper {
+        height: 25px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding-left: 20px;
+        justify-content: center;
+        color: white;
+      }
+    }
   }
-}
-
-::v-deep .v-input--is-focused .v-input__slot {
-  border: 1.5px solid $primary-color;
 }
 
 .amount-input__token-symbol {
@@ -229,14 +235,6 @@ $header-vertical-margin-mobile: 2rem;
   font-size: 14px;
   line-height: 27px;
   text-align: center;
-}
-
-::v-deep .v-text-field > .v-input__control > .v-input__slot::before {
-  border-width: 0 0 0 0;
-}
-
-::v-deep .v-text-field > .v-input__control > .v-input__slot::after {
-  border-width: 0 0 0 0;
 }
 
 .amount-input__label {

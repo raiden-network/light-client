@@ -235,84 +235,99 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     padding-bottom: 30px;
     border: 0;
   }
-}
 
-.address-input ::v-deep .v-text-field__details {
-  padding-top: 8px;
-}
+  ::v-deep {
+    .v-text-field__details {
+      padding-top: 8px;
+    }
 
-.address-input ::v-deep input {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  max-height: 49px;
-}
+    input {
+      color: #ffffff;
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      max-height: 49px;
 
-.address-input ::v-deep input:focus {
-  outline: 0;
-}
+      &:focus {
+        outline: 0;
+      }
+    }
 
-.address-input ::v-deep .v-input__slot {
-  border-radius: 10px;
-  background-color: $input-background;
-  padding: 8px 8px 8px 16px;
-  border: 1.5px solid transparent;
-  max-height: 49px;
-}
+    .v-input__slot {
+      border-radius: 10px;
+      background-color: $input-background;
+      padding: 8px 8px 8px 16px;
+      border: 1.5px solid transparent;
+      max-height: 49px;
+    }
 
-::v-deep .v-input--is-focused .v-input__slot {
-  border: 1.5px solid $primary-color;
-}
+    .v-input--is-focused {
+      .v-input__slot {
+        border: 1.5px solid $primary-color;
+      }
+    }
 
-.address-input ::v-deep .v-messages {
-  color: #323232 !important;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 21px;
-  text-align: left;
-  border: 1px solid transparent;
-  .v-messages__wrapper {
-    color: $color-white;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding-left: 20px;
-    justify-content: center;
+    .v-text-field {
+      & > .v-input__control {
+        & > .v-input__slot {
+          &::before,
+          &::after {
+            border-width: 0 0 0 0;
+          }
+        }
+      }
+    }
+
+    .v-messages {
+      color: #323232 !important;
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 21px;
+      text-align: left;
+      border: 1px solid transparent;
+
+      .v-messages__wrapper {
+        color: $color-white;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding-left: 20px;
+        justify-content: center;
+      }
+    }
   }
 }
 
 $dark_border: #323232;
 $dark_background: #323232;
 
-.address-input--invalid ::v-deep .v-messages {
-  border: none !important;
+.address-input--invalid {
+  ::v-deep {
+    .v-messages {
+      border: none !important;
+      &:after {
+        content: ' ';
+        position: absolute;
+        left: 50%;
+        bottom: 90%;
+        display: inline-block;
+        padding: 3px;
+      }
+    }
+  }
 }
 
-.address-input--invalid ::v-deep .v-messages:after {
-  content: ' ';
-  position: absolute;
-  left: 50%;
-  bottom: 90%;
-  display: inline-block;
-  padding: 3px;
-}
-
-.address-input--hint-visible ::v-deep .v-text-field__details {
-  padding-top: 0;
-  margin-top: 0;
+.address-input--hint-visible {
+  ::v-deep {
+    .v-text-field__details {
+      padding-top: 0;
+      margin-top: 0;
+    }
+  }
 }
 
 .address-input--untouched {
   caret-color: white !important;
   color: white !important;
-}
-
-::v-deep .v-text-field > .v-input__control > .v-input__slot::before {
-  border-width: 0 0 0 0;
-}
-
-::v-deep .v-text-field > .v-input__control > .v-input__slot::after {
-  border-width: 0 0 0 0;
 }
 
 .address-input__status__paste-button {
