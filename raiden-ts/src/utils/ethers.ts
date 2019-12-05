@@ -61,7 +61,9 @@ export function getEventsStream<T extends any[]>(
       ...log,
       ...parsed,
       args,
-      removeListener: () => {},
+      removeListener: () => {
+        /* getLogs don't install filter */
+      },
       getBlock: () => provider.getBlock(log.blockHash!),
       getTransaction: () => provider.getTransaction(log.transactionHash!),
       getTransactionReceipt: () => provider.getTransactionReceipt(log.transactionHash!),
