@@ -7,7 +7,7 @@ import store from '@/store/index';
 import { mount, Wrapper, createLocalVue } from '@vue/test-utils';
 import AddressInput from '@/components/AddressInput.vue';
 import Vue from 'vue';
-import Vuex, { Store } from 'vuex';
+import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import { mockInput } from '../utils/interaction-utils';
 
@@ -20,15 +20,11 @@ describe('AddressInput', () => {
   let getAvailability: jest.Mock<any, any>;
   const excludeAddress: string = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
   const blockAddress: string = '0x123456789009876543211234567890';
+  const onlineTarget: string = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
+  const offlineTarget: string = '0x39ff19161414E257AA29461dCD087F6a1AE362Fd';
 
   const localVue = createLocalVue();
   localVue.use(Vuex);
-
-  const mockedStore = new Store({
-    state: {
-      presences: { '0x1D36124C90f53d491b6832F1c073F43E2550E35b': true }
-    }
-  });
 
   function createWrapper(
     value: string = '',
@@ -36,7 +32,7 @@ describe('AddressInput', () => {
     blocked?: string
   ) {
     return mount(AddressInput, {
-      store: mockedStore,
+      store,
       propsData: {
         value,
         exclude: excluded ? [excluded] : undefined,
@@ -54,12 +50,10 @@ describe('AddressInput', () => {
   }
 
   beforeEach(() => {
-    ensResolve = jest
-      .fn()
-      .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
+    ensResolve = jest.fn().mockResolvedValue(onlineTarget);
     getAvailability = jest.fn().mockResolvedValue(true);
     store.commit('updatePresence', {
-      ['0x1D36124C90f53d491b6832F1c073F43E2550E35b']: true
+      [onlineTarget]: true
     });
   });
 
@@ -119,19 +113,17 @@ describe('AddressInput', () => {
 
   test('fire an input event when the input address is valid', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
-    mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
+    mockInput(wrapper, onlineTarget);
 
     await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted().input).toBeTruthy();
-    expect(wrapper.emitted().input[2]).toEqual([
-      '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-    ]);
+    expect(wrapper.emitted().input[2]).toEqual([onlineTarget]);
   });
 
   test('render a blockie when the input address is valid', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
-    wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
+    wrapper.setProps({ value: onlineTarget });
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
   });
@@ -149,9 +141,7 @@ describe('AddressInput', () => {
       await flushPromises();
 
       expect(wrapper.emitted().input).toBeTruthy();
-      expect(wrapper.emitted().input[0]).toEqual([
-        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-      ]);
+      expect(wrapper.emitted().input[0]).toEqual([onlineTarget]);
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(0);
     });
@@ -221,7 +211,7 @@ describe('AddressInput', () => {
     test('show not an error message if there is no exclude or block prop', async () => {
       wrapper = createWrapper('');
 
-      mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
+      mockInput(wrapper, onlineTarget);
       await wrapper.vm.$nextTick();
 
       const messages = wrapper.find('.v-messages__wrapper');
@@ -236,20 +226,16 @@ describe('AddressInput', () => {
     });
 
     test('update the model on a valid value', () => {
-      wrapper = createWrapper('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
-      expect(wrapper.vm.$data.address).toBe(
-        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-      );
+      wrapper = createWrapper(onlineTarget);
+      expect(wrapper.vm.$data.address).toBe(onlineTarget);
     });
 
     test('update the address on a valid value', async () => {
       wrapper = createWrapper();
       expect(wrapper.vm.$data.address).toBe('');
-      wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
+      wrapper.setProps({ value: onlineTarget });
       await wrapper.vm.$nextTick();
-      expect(wrapper.vm.$data.address).toBe(
-        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-      );
+      expect(wrapper.vm.$data.address).toBe(onlineTarget);
     });
 
     test('do not update the address on an invalid value', async () => {
@@ -258,6 +244,49 @@ describe('AddressInput', () => {
       wrapper.setProps({ value: '0x1aaaaaadshjd' });
       await wrapper.vm.$nextTick();
       expect(wrapper.vm.$data.address).toBe('');
+    });
+  });
+
+  describe('target availability', () => {
+    test('show target as online', async () => {
+      wrapper = createWrapper(onlineTarget);
+      await wrapper.vm.$nextTick();
+      expect(
+        wrapper.find('.address-input__availability--online').exists()
+      ).toBeTruthy();
+    });
+
+    test('show target as offline', async () => {
+      getAvailability = jest.fn().mockResolvedValue(false);
+      wrapper = createWrapper(offlineTarget);
+      await wrapper.vm.$nextTick();
+      expect(
+        wrapper.find('.address-input__availability--offline').exists()
+      ).toBeTruthy();
+    });
+
+    test('show target as offline when presence is not in state yet', async () => {
+      store.commit('reset');
+      getAvailability = jest.fn().mockImplementation(function() {
+        store.commit('updatePresence', { [offlineTarget]: false });
+      });
+      wrapper = createWrapper(offlineTarget);
+      await wrapper.vm.$nextTick();
+      expect(
+        wrapper.find('.address-input__availability--offline').exists()
+      ).toBeTruthy();
+    });
+
+    test('show target as online when presence is not in state yet', async () => {
+      store.commit('reset');
+      getAvailability = jest.fn().mockImplementation(function() {
+        store.commit('updatePresence', { [onlineTarget]: true });
+      });
+      wrapper = createWrapper(onlineTarget);
+      await wrapper.vm.$nextTick();
+      expect(
+        wrapper.find('.address-input__availability--online').exists()
+      ).toBeTruthy();
     });
   });
 });

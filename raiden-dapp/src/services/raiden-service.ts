@@ -116,19 +116,17 @@ export default class RaidenService {
               [value.payload.token]: { address: value.payload.token }
             });
           }
-        });
 
-        raiden.channels$.subscribe(value => {
-          this.store.commit('updateChannels', value);
-        });
-
-        // Update presences on matrix presence updates
-        raiden.events$.subscribe(value => {
+          // Update presences on matrix presence updates
           if (value.type === 'matrixPresenceUpdate') {
             this.store.commit('updatePresence', {
               [value.meta.address]: value.payload.available
             });
           }
+        });
+
+        raiden.channels$.subscribe(value => {
+          this.store.commit('updateChannels', value);
         });
 
         this.store.commit('network', raiden.network);
