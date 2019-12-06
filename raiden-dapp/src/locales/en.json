@@ -191,7 +191,7 @@
     "amount-placeholder": "Specify amount...",
     "error": {
       "button": "Dismiss",
-      "title": "Token transfer unsuccessful. Please retry.",
+      "title": "Token transfer unsuccessful.",
       "deposit-title": "Deposit was unsuccessful. Please retry."
     },
     "steps": {
@@ -223,12 +223,10 @@
         }
       },
       "transfer": {
-        "label": "Transfer",
-        "title": "Sending Tokens",
-        "description": "Please do not close the browser and confirm the transactions with MetaMask."
+        "title": "Transfering Tokens",
+        "description": "Sign the transaction in MetaMask and close this dialogue to continue using the dApp. Your transfer will finish in the background."
       },
       "done": {
-        "label": "Done",
         "title": "Send Successful",
         "description": "Your transfer was successful. You may get prompted to sign additional messages in order to acknowledge delivered messages from the target."
       },
