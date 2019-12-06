@@ -3,13 +3,11 @@
     <v-text-field
       id="address-input"
       ref="address"
-      :hint="hint"
       :value="address"
       :error-messages="errorMessages"
       :rules="isAddressValid"
       :class="{
         'address-input--invalid': !valid && touched,
-        'address-input--hint-visible': hint.length > 0,
         'address-input--untouched': !touched
       }"
       :placeholder="$t('address-input.input.placeholder')"
@@ -60,7 +58,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
+import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 
 import { Presence } from '@/model/types';
@@ -94,7 +92,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   valid: boolean = false;
   touched: boolean = false;
-  hint: string = '';
   errorMessages: string[] = [''];
   busy: boolean = false;
   available: boolean = false;
@@ -105,19 +102,27 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     // v-text-field interprets strings returned from a validation rule
     // as the input being invalid. Since the :rules prop does not support
     // async rules we have to workaround with a reactive prop
-    return [
-      () =>
-        (!this.busy &&
-          this.errorMessages.length === 0 &&
-          this.isAddressAvailable) ||
-        ''
-    ];
+    const isAddressValid =
+      !this.busy && this.errorMessages.length === 0 && this.isAddressAvailable;
+    if (isAddressValid) {
+      this.input(this.address);
+    }
+
+    return [() => isAddressValid || ''];
   }
 
   mounted() {
     if (this.isChecksumAddress(this.value)) {
       this.address = this.value;
       this.updateValue(this.value);
+    }
+  }
+
+  @Watch('value')
+  onChange(value: string) {
+    if (value !== this.address && this.isChecksumAddress(value)) {
+      this.address = value;
+      this.updateValue(value);
     }
   }
 
@@ -134,7 +139,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   updateValue(value?: string) {
     this.errorMessages = [];
-    this.hint = '';
     this.updateErrors(value);
     this.checkForErrors();
   }
@@ -229,7 +233,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
     this.busy = false;
     if (resolvedAddress) {
-      this.hint = resolvedAddress;
       this.address = resolvedAddress;
       this.updateValue(resolvedAddress);
       this.input(resolvedAddress);
@@ -358,11 +361,6 @@ $dark_background: #323232;
   bottom: 90%;
   display: inline-block;
   padding: 3px;
-}
-
-.address-input--hint-visible ::v-deep .v-text-field__details {
-  padding-top: 0;
-  margin-top: 0;
 }
 
 .address-input--untouched {

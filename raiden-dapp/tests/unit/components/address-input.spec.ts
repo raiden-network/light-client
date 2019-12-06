@@ -4,22 +4,31 @@ jest.useFakeTimers();
 import flushPromises from 'flush-promises';
 import { $identicon } from '../utils/mocks';
 import store from '@/store/index';
-import { mount, Wrapper } from '@vue/test-utils';
+import { mount, Wrapper, createLocalVue } from '@vue/test-utils';
 import AddressInput from '@/components/AddressInput.vue';
 import Vue from 'vue';
+import Vuex, { Store } from 'vuex';
 import Vuetify from 'vuetify';
 import { mockInput } from '../utils/interaction-utils';
-import RaidenService from '@/services/raiden-service';
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 
 describe('AddressInput', () => {
   let wrapper: Wrapper<AddressInput>;
-  let raiden: Mocked<RaidenService>;
 
+  let ensResolve: jest.Mock<any, any>;
+  let getAvailability: jest.Mock<any, any>;
   const excludeAddress: string = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
   const blockAddress: string = '0x123456789009876543211234567890';
+
+  const localVue = createLocalVue();
+  localVue.use(Vuex);
+
+  const mockedStore = new Store({
+    state: {
+      presences: { '0x1D36124C90f53d491b6832F1c073F43E2550E35b': true }
+    }
+  });
 
   function createWrapper(
     value: string = '',
@@ -27,14 +36,17 @@ describe('AddressInput', () => {
     blocked?: string
   ) {
     return mount(AddressInput, {
-      sync: false,
+      store: mockedStore,
       propsData: {
         value,
         exclude: excluded ? [excluded] : undefined,
         block: blocked ? [blocked] : undefined
       },
       mocks: {
-        $raiden: raiden,
+        $raiden: {
+          ensResolve,
+          getAvailability
+        },
         $identicon: $identicon(),
         $t: (msg: string) => msg
       }
@@ -42,7 +54,13 @@ describe('AddressInput', () => {
   }
 
   beforeEach(() => {
-    raiden = new RaidenService(store) as Mocked<RaidenService>;
+    ensResolve = jest
+      .fn()
+      .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
+    getAvailability = jest.fn().mockResolvedValue(true);
+    store.commit('updatePresence', {
+      ['0x1D36124C90f53d491b6832F1c073F43E2550E35b']: true
+    });
   });
 
   test('show no validation messages by default', () => {
@@ -54,18 +72,13 @@ describe('AddressInput', () => {
   });
 
   test('set busy flag while fetching an ens domain', async () => {
-    raiden.ensResolve = jest
-      .fn()
-      .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
     wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, 'test.eth');
     const busy = jest.spyOn(wrapper.vm.$data, 'busy', 'set');
-
     await wrapper.vm.$nextTick();
     jest.runAllTimers();
     await flushPromises();
-
-    expect(busy).toHaveBeenCalledTimes(1);
+    expect(busy).toHaveBeenCalledTimes(2);
   });
 
   test('show an empty address message when the input is empty', async () => {
@@ -107,10 +120,11 @@ describe('AddressInput', () => {
   test('fire an input event when the input address is valid', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
+
     await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted().input).toBeTruthy();
-    expect(wrapper.emitted().input[0]).toEqual([
+    expect(wrapper.emitted().input[2]).toEqual([
       '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
     ]);
   });
@@ -125,9 +139,6 @@ describe('AddressInput', () => {
   describe('resolve an ens domain', () => {
     test('with success', async () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
-      raiden.ensResolve = jest
-        .fn()
-        .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
       mockInput(wrapper, 'ens');
       await wrapper.vm.$nextTick();
       mockInput(wrapper, 'enstest');
@@ -137,9 +148,6 @@ describe('AddressInput', () => {
       jest.runAllTimers();
       await flushPromises();
 
-      expect(wrapper.vm.$data.hint).toEqual(
-        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-      );
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual([
         '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
@@ -149,15 +157,14 @@ describe('AddressInput', () => {
     });
 
     test('without success', async () => {
+      ensResolve = jest.fn().mockResolvedValue(null);
       wrapper = createWrapper('', excludeAddress, blockAddress);
-      raiden.ensResolve = jest.fn().mockResolvedValue(null);
 
       mockInput(wrapper, 'enstest.test');
       await wrapper.vm.$nextTick();
       jest.runAllTimers();
       await flushPromises();
 
-      expect(wrapper.vm.$data.hint).toEqual('');
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual([undefined]);
 
@@ -168,17 +175,14 @@ describe('AddressInput', () => {
     });
 
     test('with an error', async () => {
+      ensResolve = jest.fn().mockRejectedValue(Error('something went wrong'));
       wrapper = createWrapper('', excludeAddress, blockAddress);
-      raiden.ensResolve = jest
-        .fn()
-        .mockRejectedValue(Error('something went wrong'));
 
       mockInput(wrapper, 'enstest.test');
       await wrapper.vm.$nextTick();
       jest.runAllTimers();
       await flushPromises();
 
-      expect(wrapper.vm.$data.hint).toEqual('');
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual([undefined]);
 
@@ -194,6 +198,8 @@ describe('AddressInput', () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
       mockInput(wrapper, excludeAddress);
       await wrapper.vm.$nextTick();
+      jest.runAllTimers();
+      await flushPromises();
 
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
@@ -212,13 +218,13 @@ describe('AddressInput', () => {
       expect(messages.text()).toBe('address-input.error.channel-not-open');
     });
 
-    test('show an error message if there is no exclude or block prop', async () => {
-      wrapper = createWrapper();
+    test('show not an error message if there is no exclude or block prop', async () => {
+      wrapper = createWrapper('');
 
-      mockInput(wrapper, excludeAddress);
+      mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
       await wrapper.vm.$nextTick();
 
-      const messages = wrapper.find('.v-messages__message');
+      const messages = wrapper.find('.v-messages__wrapper');
       expect(messages.text()).toEqual('');
     });
   });

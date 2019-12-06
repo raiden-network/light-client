@@ -52,7 +52,10 @@ describe('RaidenService', () => {
           .fn()
           .mockResolvedValue('0xuserdeposittoken'),
         start: jest.fn().mockReturnValue(null),
-        stop: jest.fn().mockReturnValue(null)
+        stop: jest.fn().mockReturnValue(null),
+        getAvailability: jest
+          .fn()
+          .mockResolvedValue({ userId: '123', available: true, ts: 0 })
       },
       overrides
     );
