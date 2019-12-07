@@ -94,7 +94,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   touched: boolean = false;
   errorMessages: string[] = [''];
   busy: boolean = false;
-  available: boolean = false;
   presences!: Presence;
   isAddressAvailable: boolean = false;
 

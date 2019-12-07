@@ -4,10 +4,9 @@ jest.useFakeTimers();
 import flushPromises from 'flush-promises';
 import { $identicon } from '../utils/mocks';
 import store from '@/store/index';
-import { mount, Wrapper, createLocalVue } from '@vue/test-utils';
+import { mount, Wrapper } from '@vue/test-utils';
 import AddressInput from '@/components/AddressInput.vue';
 import Vue from 'vue';
-import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import { mockInput } from '../utils/interaction-utils';
 
@@ -22,9 +21,6 @@ describe('AddressInput', () => {
   const blockAddress: string = '0x123456789009876543211234567890';
   const onlineTarget: string = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
   const offlineTarget: string = '0x39ff19161414E257AA29461dCD087F6a1AE362Fd';
-
-  const localVue = createLocalVue();
-  localVue.use(Vuex);
 
   function createWrapper(
     value: string = '',

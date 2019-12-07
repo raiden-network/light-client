@@ -1,10 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#218] Matrix availability check to address inputs
+
 ### Changed
 - User can now dismiss/hide the transfer progress dialog.
 - Fix utility token display on PFS route selection.
-- [#218] Added matrix availability check to address input component
 
 ### Fixed
 
