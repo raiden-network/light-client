@@ -94,129 +94,129 @@ export default class Stepper extends Vue {
   bottom: 0;
   background: $background-gradient;
   z-index: 9000;
-}
 
-.stepper__card {
-  height: 700px;
-  width: 620px;
-  border-radius: 14px;
-  background-color: #141414;
-  box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
-  @include respond-to(handhelds) {
-    height: 100vh;
-    width: 100%;
-    border-radius: 0;
-  }
-}
+  &__card {
+    height: 700px;
+    width: 620px;
+    border-radius: 14px;
+    background-color: #141414;
+    box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
+    @include respond-to(handhelds) {
+      height: 100vh;
+      width: 100%;
+      border-radius: 0;
+    }
 
-.stepper__card__content {
-  padding-right: 120px;
-  padding-left: 120px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-evenly;
-}
+    &__content {
+      padding-right: 120px;
+      padding-left: 120px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-evenly;
 
-.stepper__card__content__title {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 32px;
-  font-weight: bold;
-  line-height: 38px;
-  text-align: center;
-}
+      &__title {
+        color: #ffffff;
+        font-family: Roboto, sans-serif;
+        font-size: 32px;
+        font-weight: bold;
+        line-height: 38px;
+        text-align: center;
+      }
 
-.stepper__card__content__description {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 21px;
-  text-align: center;
-  margin-top: 2rem;
-}
+      &__description {
+        color: #ffffff;
+        font-family: Roboto, sans-serif;
+        font-size: 16px;
+        line-height: 21px;
+        text-align: center;
+        margin-top: 2rem;
+      }
 
-.stepper__card__steps {
-  width: 100%;
-  align-items: center;
-  justify-content: space-evenly;
-  height: 40px;
-  display: flex;
-  flex-direction: row;
-}
+      &--progress {
+        color: $secondary-color;
+      }
 
-.stepper__card__steps__step {
-  letter-spacing: 2px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 21px;
-  text-align: center;
-  text-transform: uppercase;
-  color: $secondary-color;
-  border: 1.5px solid $secondary-color;
-  font-weight: 500;
-  width: 100%;
-  height: 100%;
-  background-color: #0f374b;
-  position: relative;
+      &--done {
+        border-radius: 50%;
+        width: 110px;
+      }
+    }
 
-  &:before {
-    content: '';
-    position: absolute;
-    z-index: 1;
-    right: -16px;
-    height: 28px;
-    width: 28px;
-    background: inherit;
-    border: inherit;
-    border-width: 2px 2px 0 0;
-    border-left-color: transparent;
-    border-bottom-color: transparent;
-    border-radius: 0 !important;
-    transform: rotate(45deg);
-  }
+    &__steps {
+      width: 100%;
+      align-items: center;
+      justify-content: space-evenly;
+      height: 40px;
+      display: flex;
+      flex-direction: row;
 
-  &:first-child {
-    border-bottom-left-radius: 0;
-    border-top-left-radius: 14px;
-  }
+      &__step {
+        letter-spacing: 2px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: Roboto, sans-serif;
+        font-size: 16px;
+        line-height: 21px;
+        text-align: center;
+        text-transform: uppercase;
+        color: $secondary-color;
+        border: 1.5px solid $secondary-color;
+        font-weight: 500;
+        width: 100%;
+        height: 100%;
+        background-color: #0f374b;
+        position: relative;
 
-  &:last-child {
-    border-bottom-right-radius: 0;
-    border-top-right-radius: 14px;
+        &:before {
+          content: '';
+          position: absolute;
+          z-index: 1;
+          right: -16px;
+          height: 28px;
+          width: 28px;
+          background: inherit;
+          border: inherit;
+          border-width: 2px 2px 0 0;
+          border-left-color: transparent;
+          border-bottom-color: transparent;
+          border-radius: 0 !important;
+          transform: rotate(45deg);
+        }
 
-    &:before {
-      content: '';
-      position: absolute;
-      margin-left: 0;
-      height: 0; /* button_inner_height / sqrt(2) */
-      width: 0; /* same as height */
-      border-radius: 0 !important;
-      transform: translate(-999em, -999em);
+        &:first-child {
+          border-bottom-left-radius: 0;
+          border-top-left-radius: 14px;
+        }
+
+        &:last-child {
+          border-bottom-right-radius: 0;
+          border-top-right-radius: 14px;
+
+          &:before {
+            content: '';
+            position: absolute;
+            margin-left: 0;
+            height: 0; /* button_inner_height / sqrt(2) */
+            width: 0; /* same as height */
+            border-radius: 0 !important;
+            transform: translate(-999em, -999em);
+          }
+        }
+
+        &__label {
+          padding-left: 18px;
+        }
+
+        &--active {
+          color: white;
+          background-color: $secondary-color;
+        }
+      }
     }
   }
-}
-
-.stepper__card__steps__step__label {
-  padding-left: 18px;
-}
-
-.stepper__card__content--progress {
-  color: $secondary-color;
-}
-
-.stepper__card__steps__step--active {
-  color: white;
-  background-color: $secondary-color;
-}
-
-.stepper__card__content--done {
-  border-radius: 50%;
-  width: 110px;
 }
 </style>

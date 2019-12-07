@@ -104,7 +104,7 @@ export default class FindRoutes extends Vue {
 @import '../scss/colors';
 
 .find-routes {
-  & > * {
+  > * {
     text-align: center;
   }
 
@@ -141,8 +141,10 @@ export default class FindRoutes extends Vue {
         padding-bottom: 5px;
       }
 
-      .v-data-table__selected {
-        background: rgba($disabled-text-color, 0.1) !important;
+      .v-data-table {
+        &__selected {
+          background: rgba($disabled-text-color, 0.1) !important;
+        }
       }
 
       tbody {

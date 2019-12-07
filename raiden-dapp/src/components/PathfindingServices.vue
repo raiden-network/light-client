@@ -173,7 +173,7 @@ export default class PathfindingServices extends Vue {
 
 .pathfinding-services {
   &__wrapper {
-    & > * {
+    > * {
       width: 250px;
       text-align: center;
     }
@@ -214,8 +214,10 @@ export default class PathfindingServices extends Vue {
         padding-bottom: 5px;
       }
 
-      .v-data-table__selected {
-        background: rgba($disabled-text-color, 0.1) !important;
+      .v-data-table {
+        &__selected {
+          background: rgba($disabled-text-color, 0.1) !important;
+        }
       }
     }
   }

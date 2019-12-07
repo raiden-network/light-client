@@ -199,27 +199,26 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
   width: 100%;
   display: flex;
   flex-direction: column;
-}
 
-.open-channel__hub {
-  max-height: 30px;
-}
+  &__hub {
+    max-height: 30px;
+    &__label {
+      color: #ffffff;
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 19px;
+      text-transform: uppercase;
+    }
 
-.open-channel__hub__label {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 19px;
-  text-transform: uppercase;
-}
-
-.open-channel__hub__address {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 20px;
-  overflow-x: hidden;
-  text-overflow: ellipsis;
+    &__address {
+      color: #ffffff;
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 20px;
+      overflow-x: hidden;
+      text-overflow: ellipsis;
+    }
+  }
 }
 </style>

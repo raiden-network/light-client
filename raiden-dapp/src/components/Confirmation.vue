@@ -53,49 +53,52 @@ export default class Confirmation extends Vue {
 <style scoped lang="scss">
 @import '../scss/colors';
 $background-color: #323232;
+
 .confirmation {
   height: 252px;
   padding: 25px;
   background-color: $background-color;
   box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
-}
 
-.confirmation__text__header {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 28px;
-  text-align: center;
-}
+  &__text {
+    &__header {
+      color: #ffffff;
+      font-family: Roboto, sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      line-height: 28px;
+      text-align: center;
+    }
 
-.confirmation__text__message {
-  padding-top: 10px;
-  text-align: center;
-  height: 100%;
-  color: #ffffff;
-}
-
-.confirmation__buttons {
-  button {
-    width: 135px !important;
-    height: 35px !important;
-    font-size: 16px;
-    line-height: 21px;
-    text-align: center;
-    border-radius: 29px;
-    margin-left: 15px;
-    margin-right: 15px;
+    &__message {
+      padding-top: 10px;
+      text-align: center;
+      height: 100%;
+      color: #ffffff;
+    }
   }
-}
 
-.confirmation__buttons__cancel {
-  background-color: transparent !important;
-  border: 2px solid $primary-color;
-  color: white;
-}
+  &__buttons {
+    button {
+      width: 135px !important;
+      height: 35px !important;
+      font-size: 16px;
+      line-height: 21px;
+      text-align: center;
+      border-radius: 29px;
+      margin-left: 15px;
+      margin-right: 15px;
+    }
 
-.confirmation__buttons__confirm {
-  background-color: $primary-color !important;
+    &__cancel {
+      background-color: transparent !important;
+      border: 2px solid $primary-color;
+      color: white;
+    }
+
+    &__confirm {
+      background-color: $primary-color !important;
+    }
+  }
 }
 </style>

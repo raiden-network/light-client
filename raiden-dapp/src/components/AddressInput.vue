@@ -211,24 +211,24 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 @import '../main';
 @import '../scss/colors';
 
-.address-input__blockie {
-  border-radius: 50%;
-  box-sizing: border-box;
-  height: 22px;
-  width: 22px;
-  border: 1px solid #979797;
-  background-color: #d8d8d8;
-}
-
-.address-input__prepend {
-  margin-right: 10px;
-}
-
 .address-input {
   display: flex;
   align-items: center;
   justify-content: center;
   border: 0;
+
+  &__blockie {
+    border-radius: 50%;
+    box-sizing: border-box;
+    height: 22px;
+    width: 22px;
+    border: 1px solid #979797;
+    background-color: #d8d8d8;
+  }
+
+  &__prepend {
+    margin-right: 10px;
+  }
 
   @include respond-to(handhelds) {
     padding-top: 30px;
@@ -237,10 +237,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 
   ::v-deep {
-    .v-text-field__details {
-      padding-top: 8px;
-    }
-
     input {
       color: #ffffff;
       font-family: Roboto, sans-serif;
@@ -252,26 +248,38 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       }
     }
 
-    .v-input__slot {
-      border-radius: 10px;
-      background-color: $input-background;
-      padding: 8px 8px 8px 16px;
-      border: 1.5px solid transparent;
-      max-height: 49px;
-    }
+    .v-input {
+      &__slot {
+        border-radius: 10px;
+        background-color: $input-background;
+        padding: 8px 8px 8px 16px;
+        border: 1.5px solid transparent;
+        max-height: 49px;
+      }
 
-    .v-input--is-focused {
-      .v-input__slot {
-        border: 1.5px solid $primary-color;
+      &--is-focused {
+        .v-input {
+          &__slot {
+            border: 1.5px solid $primary-color;
+          }
+        }
       }
     }
 
     .v-text-field {
-      & > .v-input__control {
-        & > .v-input__slot {
-          &::before,
-          &::after {
-            border-width: 0 0 0 0;
+      &__details {
+        padding-top: 8px;
+      }
+
+      > .v-input {
+        &__control {
+          > .v-input {
+            &__slot {
+              &::before,
+              &::after {
+                border-width: 0 0 0 0;
+              }
+            }
           }
         }
       }
@@ -285,7 +293,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       text-align: left;
       border: 1px solid transparent;
 
-      .v-messages__wrapper {
+      & &__wrapper {
         color: $color-white;
         display: flex;
         flex-direction: column;
@@ -295,47 +303,51 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       }
     }
   }
-}
 
-$dark_border: #323232;
-$dark_background: #323232;
+  &--invalid {
+    ::v-deep {
+      .v-messages {
+        border: none !important;
+        &:after {
+          content: ' ';
+          position: absolute;
+          left: 50%;
+          bottom: 90%;
+          display: inline-block;
+          padding: 3px;
+        }
+      }
+    }
+  }
 
-.address-input--invalid {
-  ::v-deep {
-    .v-messages {
-      border: none !important;
-      &:after {
-        content: ' ';
-        position: absolute;
-        left: 50%;
-        bottom: 90%;
-        display: inline-block;
-        padding: 3px;
+  &--hint-visible {
+    ::v-deep {
+      .v-text-field {
+        &__details {
+          padding-top: 0;
+          margin-top: 0;
+        }
+      }
+    }
+  }
+
+  &--untouched {
+    caret-color: white !important;
+    color: white !important;
+  }
+
+  &__status {
+    &__paste-button {
+      display: none;
+      margin-top: -6px;
+
+      &__text {
+        color: $primary-color;
       }
     }
   }
 }
 
-.address-input--hint-visible {
-  ::v-deep {
-    .v-text-field__details {
-      padding-top: 0;
-      margin-top: 0;
-    }
-  }
-}
-
-.address-input--untouched {
-  caret-color: white !important;
-  color: white !important;
-}
-
-.address-input__status__paste-button {
-  display: none;
-  margin-top: -6px;
-}
-
-.address-input__status__paste-button__text {
-  color: $primary-color;
-}
+$dark_border: #323232;
+$dark_background: #323232;
 </style>
