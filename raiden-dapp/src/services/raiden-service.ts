@@ -53,8 +53,7 @@ export default class RaidenService {
   async ensResolve(name: string): Promise<string> {
     try {
       const address = await this.raiden.resolveName(name);
-      const { available } = await this.raiden.getAvailability(address);
-      this.store.commit('updatePresence', { [address]: available });
+      await this.raiden.getAvailability(address);
       return address;
     } catch (e) {
       throw new EnsResolveFailed(e);
