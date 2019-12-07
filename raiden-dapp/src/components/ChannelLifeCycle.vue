@@ -89,9 +89,6 @@ $circle-size: 20px;
 .channel-lifecycle__stepper .v-divider {
   margin-right: -24px;
   border-width: 2px 0 0 0;
-}
-
-.channel-lifecycle__stepper .v-divider {
   border-color: $inactive-color !important;
 }
 
@@ -100,6 +97,7 @@ $circle-size: 20px;
 }
 
 .channel-lifecycle__stepper ::v-deep .v-stepper__label {
+  display: block;
   font-size: 16px;
   font-weight: bold;
   line-height: 19px;
@@ -140,10 +138,6 @@ $circle-size: 20px;
   .v-stepper__label {
     color: $inactive-color;
   }
-}
-
-.channel-lifecycle__stepper ::v-deep .v-stepper__label {
-  display: block;
 }
 
 .channel-lifecycle__description {

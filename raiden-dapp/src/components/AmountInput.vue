@@ -175,6 +175,10 @@ $header-vertical-margin-mobile: 2rem;
   }
 }
 
+::v-deep .v-input__slot {
+  border: 1.5px solid transparent;
+}
+
 .amount-input ::v-deep .v-input__slot {
   border-radius: 10px;
   background-color: $input-background !important;
@@ -212,10 +216,6 @@ $header-vertical-margin-mobile: 2rem;
     justify-content: center;
     color: white;
   }
-}
-
-::v-deep .v-input__slot {
-  border: 1.5px solid transparent;
 }
 
 ::v-deep .v-input--is-focused .v-input__slot {
