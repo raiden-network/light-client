@@ -264,72 +264,74 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 .transfer {
   width: 100%;
   height: 100%;
-}
 
-.transfer__actions {
-  margin-top: 10px;
-}
+  &__actions {
+    margin-top: 10px;
+  }
 
-.transfer__recipient {
-  margin-top: 75px;
-}
+  &__recipient {
+    margin-top: 75px;
 
-.transfer__recipient,
-.transfer__amount {
-  max-height: 150px;
-}
-
-.transfer__recipient__label {
-  color: $secondary-color;
-  font-size: 13px;
-  font-weight: bold;
-  letter-spacing: 3px;
-  line-height: 15px;
-  text-transform: uppercase;
-}
-
-.transfer__action-button {
-  margin-bottom: 24px;
-}
-
-.transfer__channel-button,
-.transfer__deposit-button {
-  color: $primary-color;
-  text-transform: none;
-}
-
-.transfer__token-networks__amount {
-  color: $color-white;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 19px;
-  padding-left: 11px;
-  margin-top: 10px;
-  text-align: center;
-}
-
-.transfer__token-networks__dropdown {
-  color: $primary-color;
-  font-size: 16px;
-  margin-top: 5px;
-  cursor: pointer;
-  text-align: center;
-
-  &:hover {
-    color: $secondary-color;
-
-    ::v-deep {
-      g {
-        stroke: $secondary-color !important;
-      }
+    &__label {
+      color: $secondary-color;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      line-height: 15px;
+      text-transform: uppercase;
     }
   }
 
-  & > span {
-    display: inline-block;
+  &__recipient,
+  &__amount {
+    max-height: 150px;
+  }
 
-    &:last-child {
-      margin-left: 5px;
+  &__action-button {
+    margin-bottom: 24px;
+  }
+
+  &__channel-button,
+  &__deposit-button {
+    color: $primary-color;
+    text-transform: none;
+  }
+
+  &__token-networks {
+    &__amount {
+      color: $color-white;
+      font-size: 24px;
+      font-weight: bold;
+      line-height: 19px;
+      padding-left: 11px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    &__dropdown {
+      color: $primary-color;
+      font-size: 16px;
+      margin-top: 5px;
+      cursor: pointer;
+      text-align: center;
+
+      &:hover {
+        color: $secondary-color;
+
+        ::v-deep {
+          g {
+            stroke: $secondary-color !important;
+          }
+        }
+      }
+
+      > span {
+        display: inline-block;
+
+        &:last-child {
+          margin-left: 5px;
+        }
+      }
     }
   }
 }

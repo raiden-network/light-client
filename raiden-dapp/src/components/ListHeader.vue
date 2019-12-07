@@ -18,22 +18,24 @@ export default class ListHeader extends Vue {
 </script>
 
 <style scoped lang="scss">
-.list-header__header {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 19px;
-  text-transform: uppercase;
-  padding-left: 20px;
-  padding-bottom: 8px;
-}
+.list-header {
+  &__header {
+    color: #ffffff;
+    font-family: Roboto, sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 19px;
+    text-transform: uppercase;
+    padding-left: 20px;
+    padding-bottom: 8px;
+  }
 
-.list-header__divider {
-  box-sizing: border-box;
-  height: 1px;
-  width: 100%;
-  border: 1.5px solid #0a6e87;
-  transform: scaleY(-1);
+  &__divider {
+    box-sizing: border-box;
+    height: 1px;
+    width: 100%;
+    border: 1.5px solid #0a6e87;
+    transform: scaleY(-1);
+  }
 }
 </style>

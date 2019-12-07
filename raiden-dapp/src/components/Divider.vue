@@ -19,12 +19,12 @@ export default class Divider extends Vue {}
   justify-content: center;
   padding-top: 20px;
   padding-bottom: 20px;
-}
 
-.divider__line {
-  box-sizing: border-box;
-  height: 1px;
-  width: 520px;
-  border: 1.5px solid $secondary-color;
+  &__line {
+    box-sizing: border-box;
+    height: 1px;
+    width: 520px;
+    border: 1.5px solid $secondary-color;
+  }
 }
 </style>

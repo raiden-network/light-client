@@ -34,8 +34,10 @@ export default class NoAccessMessage extends Vue {
 </script>
 
 <style scoped lang="scss">
-.no-access-message__message {
-  font-size: 16px;
-  line-height: 20px;
+.no-access-message {
+  &__message {
+    font-size: 16px;
+    line-height: 20px;
+  }
 }
 </style>

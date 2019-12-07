@@ -105,8 +105,10 @@ export default class App extends Vue {
   padding: 0 !important;
 }
 
-.application__container {
-  height: calc(100% - 8px);
+.application {
+  &__container {
+    height: calc(100% - 8px);
+  }
 }
 
 .v-application {

@@ -34,23 +34,23 @@ export default class TokenInformation extends Vue {
 .token-information {
   max-height: 55px;
   padding-top: 5px;
-}
 
-.token-information__label {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 19px;
-  text-transform: uppercase;
-}
+  &__label {
+    color: #ffffff;
+    font-family: Roboto, sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 19px;
+    text-transform: uppercase;
+  }
 
-.token-information__description {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 20px;
-  overflow-x: hidden;
-  text-overflow: ellipsis;
+  &__description {
+    color: #ffffff;
+    font-family: Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 20px;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+  }
 }
 </style>

@@ -204,52 +204,58 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 </script>
 
 <style scoped lang="scss">
-.channel-list__channels__channel__expanded-area {
-  background-color: #323232;
-  height: 250px;
+.channel-list {
+  &__channels {
+    background-color: transparent !important;
+    padding-bottom: 0;
+    padding-top: 0;
 
-  .channel-list__channels__channel__area-content {
-    padding: 20px;
-  }
+    &__channel {
+      $channel: &;
+      background-color: #141414;
+      box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
 
-  position: relative;
-  z-index: 20;
-}
+      ::v-deep {
+        .v-list-item {
+          height: 105px;
+        }
+      }
 
-.channel-list__channels__channel {
-  background-color: #141414;
-  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
+      &__expanded-area {
+        background-color: #323232;
+        height: 250px;
 
-  ::v-deep {
-    .v-list-item {
-      height: 105px;
+        /* stylelint-disable plugin/stylelint-bem-namics */
+        // see https://github.com/namics/stylelint-bem-namics/issues/13
+        #{$channel}__area-content {
+          padding: 20px;
+        }
+        /* stylelint-enable plugin/stylelint-bem-namics */
+
+        position: relative;
+        z-index: 20;
+      }
+
+      &__partner-address {
+        font-size: 16px;
+        line-height: 20px;
+      }
+
+      &__state-info {
+        color: #696969 !important;
+        font-size: 16px;
+        line-height: 20px;
+      }
+
+      &__lifecycle {
+        margin-bottom: 16px;
+      }
+
+      &__icon {
+        padding-left: 10px;
+        margin-right: 15px;
+      }
     }
   }
-}
-
-.channel-list__channels__channel__partner-address {
-  font-size: 16px;
-  line-height: 20px;
-}
-
-.channel-list__channels__channel__state-info {
-  color: #696969 !important;
-  font-size: 16px;
-  line-height: 20px;
-}
-
-.channel-list__channels {
-  background-color: transparent !important;
-  padding-bottom: 0;
-  padding-top: 0;
-}
-
-.channel-list__channels__channel__lifecycle {
-  margin-bottom: 16px;
-}
-
-.channel-list__channels__channel__icon {
-  padding-left: 10px;
-  margin-right: 15px;
 }
 </style>

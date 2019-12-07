@@ -138,91 +138,94 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
 @import '../main';
 @import '../scss/colors';
 
-.app-header__top__content__blockie {
-  border-radius: 50%;
-  box-sizing: border-box;
-  height: 36px;
-  width: 36px;
-  border: 1px solid #979797;
-  background-color: #d8d8d8;
-}
-
-.app-header__top__content__back {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 36px;
-  height: 36px;
-}
-
-.app-header__top__content__title {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 24px;
-  line-height: 28px;
-  text-align: center;
-}
-
-.app-header__bottom__address {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 19px;
-  display: flex;
-  align-items: center;
-}
-
-.app-header__bottom__balance {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 19px;
-}
-
-.app-header__top {
-  height: 80px;
-  width: 620px;
-  border-radius: 10px 10px 0 0;
-  background-color: $card-background;
-  box-shadow: 5px 5px 15px 0 rgba(0, 0, 0, 0.3);
-  @include respond-to(handhelds) {
-    width: 100%;
-    border-radius: 0;
-  }
-}
-
-.app-header__top__content__network {
-  font-size: 12px;
-  font-weight: 500;
-  text-align: center;
-  color: $secondary-text-color;
-}
-
 $row-horizontal-padding: 20px;
-.app-header__bottom {
-  padding-left: $row-horizontal-padding;
-  padding-right: $row-horizontal-padding;
-  height: 40px;
-  background-color: $error-tooltip-background;
-}
-
-.app-header__bottom__address__copy {
-  height: 12px;
-  width: 12px;
-}
-
 $header-content-horizontal-margin: 20px;
-.app-header__top__content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: $header-content-horizontal-margin;
-  margin-left: $header-content-horizontal-margin;
-}
 
-.app-header__copy-area {
-  position: absolute;
-  left: -999em;
+.app-header {
+  &__top {
+    height: 80px;
+    width: 620px;
+    border-radius: 10px 10px 0 0;
+    background-color: $card-background;
+    box-shadow: 5px 5px 15px 0 rgba(0, 0, 0, 0.3);
+    @include respond-to(handhelds) {
+      width: 100%;
+      border-radius: 0;
+    }
+
+    &__content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: $header-content-horizontal-margin;
+      margin-left: $header-content-horizontal-margin;
+
+      &__blockie {
+        border-radius: 50%;
+        box-sizing: border-box;
+        height: 36px;
+        width: 36px;
+        border: 1px solid #979797;
+        background-color: #d8d8d8;
+      }
+
+      &__back {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 36px;
+        height: 36px;
+      }
+
+      &__title {
+        color: #ffffff;
+        font-family: Roboto, sans-serif;
+        font-size: 24px;
+        line-height: 28px;
+        text-align: center;
+      }
+
+      &__network {
+        font-size: 12px;
+        font-weight: 500;
+        text-align: center;
+        color: $secondary-text-color;
+      }
+    }
+  }
+
+  &__bottom {
+    padding-left: $row-horizontal-padding;
+    padding-right: $row-horizontal-padding;
+    height: 40px;
+    background-color: $error-tooltip-background;
+
+    &__address {
+      color: #ffffff;
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 19px;
+      display: flex;
+      align-items: center;
+
+      &__copy {
+        height: 12px;
+        width: 12px;
+      }
+    }
+
+    &__balance {
+      color: #ffffff;
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 19px;
+    }
+  }
+
+  &__copy-area {
+    position: absolute;
+    left: -999em;
+  }
 }
 </style>
