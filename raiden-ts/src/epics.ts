@@ -1,4 +1,4 @@
-import { Observable, from, of } from 'rxjs';
+import { Observable, from, of, combineLatest } from 'rxjs';
 import {
   catchError,
   filter,
@@ -6,7 +6,8 @@ import {
   takeWhile,
   takeUntil,
   pluck,
-  distinctUntilChanged,
+  startWith,
+  map,
 } from 'rxjs/operators';
 import { isActionOf } from 'typesafe-actions';
 import { negate } from 'lodash';
@@ -14,11 +15,41 @@ import { negate } from 'lodash';
 import { RaidenState } from './state';
 import { RaidenEpicDeps } from './types';
 import { RaidenAction, raidenShutdown } from './actions';
+import { getPresences$ } from './transport/utils';
+import { pfsListUpdated } from './path/actions';
+import { Address } from './utils/types';
 
 import * as ChannelsEpics from './channels/epics';
 import * as TransportEpics from './transport/epics';
 import * as TransfersEpics from './transfers/epics';
 import * as PathFindEpics from './path/epics';
+
+/**
+ * This function maps cached/latest relevant values from action$ & state$
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @returns NEVER, to watch and dispose subject's subscription
+ */
+const getLatest$ = (action$: Observable<RaidenAction>, state$: Observable<RaidenState>) =>
+  combineLatest(
+    action$,
+    state$,
+    getPresences$(action$),
+    action$.pipe(
+      filter(isActionOf(pfsListUpdated)),
+      pluck('payload', 'pfsList'),
+      startWith([] as readonly Address[]),
+    ),
+  ).pipe(
+    map(([action, state, presences, pfsList]) => ({
+      action,
+      state,
+      config: state.config,
+      presences,
+      pfsList,
+    })),
+  );
 
 export const RaidenEpics = {
   ...ChannelsEpics,
@@ -41,14 +72,8 @@ export const raidenRootEpic = (
     // states pipeline, but ends when shutdownNotification emits
     limitedState$ = state$.pipe(takeUntil(shutdownNotification));
 
-  // wire state$ & action$ to output subjects, to expose them to Raiden public class,
-  // including complete notifications (these observables don't error, because error would end
-  // subscriptions at the returned observable instead of feed-backing them)
-  limitedState$.subscribe(deps.stateOutput$);
-  limitedAction$.subscribe(deps.actionOutput$);
-
-  // wire state.config to deps.config$ BehaviorSubject
-  limitedState$.pipe(pluck('config'), distinctUntilChanged()).subscribe(deps.config$);
+  // wire deps.latest$
+  getLatest$(limitedAction$, limitedState$).subscribe(deps.latest$);
 
   // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
   return from(Object.values(RaidenEpics)).pipe(

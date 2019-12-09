@@ -382,9 +382,8 @@ export const initMatrixEpic = (
   state$: Observable<RaidenState>,
   { address, signer, matrix$, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof matrixSetup>> =>
-  state$.pipe(
+  combineLatest(state$, config$).pipe(
     first(), // at startup
-    withLatestFrom(config$),
     mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout }]) => {
       const server: string | undefined = get(state, ['transport', 'matrix', 'server']),
         setup: RaidenMatrixSetup | undefined = get(state, ['transport', 'matrix', 'setup']);
