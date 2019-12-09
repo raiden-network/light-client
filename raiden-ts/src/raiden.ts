@@ -20,18 +20,7 @@ import {
   isEmpty,
   merge as _merge,
 } from 'lodash';
-import {
-  Observable,
-  Subject,
-  BehaviorSubject,
-  AsyncSubject,
-  from,
-  merge,
-  defer,
-  EMPTY,
-  ReplaySubject,
-  of,
-} from 'rxjs';
+import { Observable, AsyncSubject, from, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
 import {
   first,
   filter,
@@ -41,6 +30,7 @@ import {
   concatMap,
   mergeMap,
   pluck,
+  skip,
 } from 'rxjs/operators';
 
 import './polyfills';
@@ -95,12 +85,13 @@ import {
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './transfers/utils';
-import { pathFind, pathFound, pathFindFailed, pfsListUpdated } from './path/actions';
+import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
 import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode, isntNil } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { losslessParse } from './utils/data';
+import { pluckDistinct } from './utils/rx';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -147,11 +138,6 @@ export class Raiden {
   public userDepositTokenAddress: () => Promise<Address>;
 
   /**
-   * Store latest seen pfsListUpdated action payload for findPFS
-   */
-  private readonly pfsList$: ReplaySubject<readonly Address[]>;
-
-  /**
    * Get constant token details from token contract, caches it.
    * Rejects only if 'token' contract doesn't define totalSupply and decimals methods.
    * name and symbol may be undefined, as they aren't actually part of ERC20 standard, although
@@ -190,13 +176,14 @@ export class Raiden {
     // use next from latest known blockNumber as start block when polling
     provider.resetEventsBlock(state.blockNumber + 1);
 
-    const state$ = new BehaviorSubject<RaidenState>(state);
-    this.state$ = state$;
+    const latest$: RaidenEpicDeps['latest$'] = new ReplaySubject(1);
 
-    const action$ = new Subject<RaidenAction>();
-    this.action$ = action$;
+    // pipe cached state
+    this.state$ = latest$.pipe(pluckDistinct('state'));
+    // pipe action, skipping cached
+    this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
 
-    this.channels$ = state$.pipe(
+    this.channels$ = this.state$.pipe(
       map(state =>
         transform(
           // transform state.channels to token-partner-raidenChannel map
@@ -233,7 +220,7 @@ export class Raiden {
       ),
     );
 
-    this.transfers$ = state$.pipe(
+    this.transfers$ = this.state$.pipe(
       pluck('sent'),
       distinctUntilChanged(),
       concatMap(sent => from(Object.entries(sent))),
@@ -254,7 +241,7 @@ export class Raiden {
       map(raidenSentTransfer),
     );
 
-    this.events$ = action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
+    this.events$ = this.action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
       if (!Address.is(token)) throw new Error('Invalid address');
@@ -268,27 +255,18 @@ export class Raiden {
       return { totalSupply, decimals, name, symbol };
     });
 
-    // pipe pfsListUpdated action payloead to pfsList$ replay subject, to keep latest seen emission
-    // around. Epics don't need this, as they can monitor/multicast action$ directly
-    const pfsList$ = new ReplaySubject<readonly Address[]>(1);
-    this.pfsList$ = pfsList$;
-    action$
-      .pipe(filter(isActionOf(pfsListUpdated)), pluck('payload', 'pfsList'))
-      .subscribe(pfsList$);
-
     const middlewares: Middleware[] = [
       createLogger({
         predicate: () =>
-          this.deps.config$.value.logger !== '' &&
-          (this.deps.config$.value.logger !== undefined || process.env.NODE_ENV === 'development'),
-        level: () => this.deps.config$.value.logger || 'debug',
+          this.config.logger !== '' &&
+          (this.config.logger !== undefined || process.env.NODE_ENV === 'development'),
+        level: () => this.config.logger || 'debug',
       }),
     ];
 
     this.deps = {
-      stateOutput$: state$,
-      actionOutput$: action$,
-      config$: new BehaviorSubject<RaidenConfig>(state.config),
+      latest$,
+      config$: latest$.pipe(pluckDistinct('config')),
       matrix$: new AsyncSubject<MatrixClient>(),
       provider,
       network,
@@ -999,7 +977,10 @@ export class Raiden {
     if (this.config.pfs === null) throw new Error('PFS disabled in config');
     return (this.config.pfs
       ? of<readonly (string | Address)[]>([this.config.pfs])
-      : this.pfsList$.pipe(first())
+      : this.deps.latest$.pipe(
+          pluckDistinct('pfsList'),
+          first(v => v.length > 0),
+        )
     )
       .pipe(mergeMap(pfsList => pfsListInfo(pfsList, this.deps)))
       .toPromise();
