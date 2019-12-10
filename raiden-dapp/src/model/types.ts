@@ -8,7 +8,7 @@ export interface Token {
   readonly name?: string;
 }
 
-export interface Presence {
+export interface Presences {
   [address: string]: boolean;
 }
 

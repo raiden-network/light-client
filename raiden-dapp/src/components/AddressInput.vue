@@ -61,7 +61,7 @@
 import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 
-import { Presence } from '@/model/types';
+import { Presences } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
 
@@ -94,7 +94,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   touched: boolean = false;
   errorMessages: string[] = [''];
   busy: boolean = false;
-  presences!: Presence;
+  presences!: Presences;
   isAddressAvailable: boolean = false;
 
   get isAddressValid() {
@@ -168,7 +168,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       this.resolveEnsAddress(value);
     } else if (
       AddressUtils.checkAddressChecksum(value) &&
-      !Object.keys(this.presences).includes(value)
+      !(value in this.presences)
     ) {
       this.isAddressAvailable = false;
       this.checkAvailability(value);
