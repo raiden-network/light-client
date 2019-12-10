@@ -151,8 +151,10 @@ describe('transport epic', () => {
       const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of(state);
 
-      // set config
-      depsMock.config$.next({ ...state.config, matrixServer });
+      depsMock.latest$.pipe(first()).subscribe(l => {
+        const state = { ...l.state, config: { ...l.state.config, matrixServer } };
+        depsMock.latest$.next({ ...l, state, config: state.config });
+      });
 
       await expect(
         initMatrixEpic(action$, state$, depsMock)
@@ -190,7 +192,10 @@ describe('transport epic', () => {
         );
 
       // set config
-      depsMock.config$.next({ ...state.config, matrixServer });
+      depsMock.latest$.pipe(first()).subscribe(l => {
+        const state = { ...l.state, config: { ...l.state.config, matrixServer } };
+        depsMock.latest$.next({ ...l, state, config: state.config });
+      });
 
       await expect(
         initMatrixEpic(action$, state$, depsMock)
@@ -1233,7 +1238,7 @@ describe('transport epic', () => {
 
     await expect(
       matrixMessageGlobalSendEpic(
-        of(messageGlobalSend({ message }, { roomName: depsMock.config$.value.discoveryRoom! })),
+        of(messageGlobalSend({ message }, { roomName: state.config.discoveryRoom! })),
         state$,
         depsMock,
       ).toPromise(),

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { of, BehaviorSubject, EMPTY, timer } from 'rxjs';
-import { first, takeUntil, toArray } from 'rxjs/operators';
+import { first, takeUntil, toArray, pluck, withLatestFrom } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
 import { getType } from 'typesafe-actions';
@@ -59,7 +59,13 @@ describe('PFS: pathFindServiceEpic', () => {
   } = epicFixtures(depsMock);
 
   const openBlock = 121,
-    state$ = depsMock.stateOutput$;
+    state$ = new BehaviorSubject(state);
+
+  state$
+    .pipe(withLatestFrom(depsMock.latest$))
+    .subscribe(([state, l]) => depsMock.latest$.next({ ...l, state, config: state.config }));
+
+  afterAll(() => state$.complete());
 
   const result = { result: [{ path: [partner, target], estimated_fee: 1234 }] },
     fetch = jest.fn(async () => ({
@@ -194,7 +200,7 @@ describe('PFS: pathFindServiceEpic', () => {
           {
             pfs: {
               address: pfsAddress,
-              url: depsMock.config$.value.pfs!,
+              url: state.config.pfs!,
               rtt: 3,
               price: One as UInt<32>,
               token: pfsTokenAddress,
@@ -213,7 +219,7 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify({})),
     });
 
-    const { pfsSafetyMargin } = depsMock.config$.value;
+    const { pfsSafetyMargin } = state.config;
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
@@ -259,7 +265,7 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify({})),
     });
 
-    const { pfsSafetyMargin } = depsMock.config$.value;
+    const { pfsSafetyMargin } = state.config;
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
@@ -351,7 +357,7 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify({})),
     });
 
-    const { pfsSafetyMargin } = depsMock.config$.value;
+    const { pfsSafetyMargin } = state.config;
     await expect(
       pathFindServiceEpic(action$, state$, depsMock)
         .pipe(toArray())
@@ -965,9 +971,9 @@ describe('PFS: pathFindServiceEpic', () => {
     expect.assertions(1);
 
     // disable pfs
-    depsMock.config$.next({
-      ...depsMock.config$.value,
-      pfs: null,
+    depsMock.latest$.pipe(first()).subscribe(l => {
+      const state = { ...l.state, config: { ...l.state.config, pfs: null } };
+      depsMock.latest$.next({ ...l, state, config: state.config });
     });
 
     const value = bigNumberify(100) as UInt<32>,
@@ -1046,7 +1052,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
             signature: expect.any(String),
           }),
         },
-        { roomName: expect.stringMatching(depsMock.config$.value.pfsRoom!) },
+        { roomName: expect.stringMatching(state.config.pfsRoom!) },
       ),
     );
   });
@@ -1082,7 +1088,13 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
 describe('PFS: pfsServiceRegistryMonitorEpic', () => {
   const depsMock = raidenEpicDeps(),
     { state, pfsAddress } = epicFixtures(depsMock),
-    state$ = depsMock.stateOutput$;
+    state$ = new BehaviorSubject(state);
+
+  state$
+    .pipe(withLatestFrom(depsMock.latest$))
+    .subscribe(([state, l]) => depsMock.latest$.next({ ...l, state, config: state.config }));
+
+  afterAll(() => state$.complete());
 
   beforeEach(() => {
     state$.next(state); // reset state
@@ -1108,7 +1120,9 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
         [bigNumberify(Math.floor(Date.now() / 1000) + 1), Zero, AddressZero],
       );
 
-    expect(depsMock.config$.value.pfs).toBeUndefined();
+    await expect(
+      depsMock.config$.pipe(pluck('pfs'), first()).toPromise(),
+    ).resolves.toBeUndefined();
     const promise = pfsServiceRegistryMonitorEpic(EMPTY, state$, depsMock)
       .pipe(first())
       .toPromise();
@@ -1181,7 +1195,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
 
   test('noop if config.pfs is set', async () => {
     expect.assertions(2);
-    expect(depsMock.config$.value.pfs).toBeDefined();
+    await expect(depsMock.config$.pipe(pluck('pfs'), first()).toPromise()).resolves.toBeDefined();
 
     const validTill = bigNumberify(Math.floor(Date.now() / 1000) + 86400), // tomorrow
       registeredEncoded = defaultAbiCoder.encode(

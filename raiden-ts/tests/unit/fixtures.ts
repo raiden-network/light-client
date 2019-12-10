@@ -4,6 +4,7 @@
 import { patchEthersDefineReadOnly } from './patches';
 patchEthersDefineReadOnly();
 
+import { first } from 'rxjs/operators';
 import { Wallet } from 'ethers';
 import { AddressZero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
@@ -14,6 +15,8 @@ import { makeMessageId, makePaymentId } from 'raiden-ts/transfers/utils';
 
 import { makeMatrix, MockRaidenEpicDeps } from './mocks';
 import { IOU } from 'raiden-ts/path/types';
+import { RaidenState } from 'raiden-ts/state';
+import { pluckDistinct } from 'raiden-ts/utils/rx';
 
 /**
  * Composes several constants used across epics
@@ -70,6 +73,9 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
       signature: '0x87ea2a9c6834513dcabfca011c4422eb02a824b8bbbfc8f555d6a6dd2ebbbe953e1a47ad27b9715d8c8cf2da833f7b7d6c8f9bdb997591b7234999901f042caf1b' as Signature,
     } as Signed<IOU>;
 
+  let state!: RaidenState;
+  depsMock.latest$.pipe(pluckDistinct('state'), first()).subscribe(s => (state = s));
+
   depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async _token =>
     _token === token ? tokenNetwork : AddressZero,
   );
@@ -94,7 +100,7 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
     matrixServer,
     userId,
     txHash,
-    state: depsMock.stateOutput$.value,
+    state,
     partnerSigner: wallet,
     processed,
     paymentId,
