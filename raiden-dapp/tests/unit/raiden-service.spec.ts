@@ -52,7 +52,10 @@ describe('RaidenService', () => {
           .fn()
           .mockResolvedValue('0xuserdeposittoken'),
         start: jest.fn().mockReturnValue(null),
-        stop: jest.fn().mockReturnValue(null)
+        stop: jest.fn().mockReturnValue(null),
+        getAvailability: jest
+          .fn()
+          .mockResolvedValue({ userId: '123', available: true, ts: 0 })
       },
       overrides
     );
@@ -63,7 +66,8 @@ describe('RaidenService', () => {
     store = new Store({}) as Mocked<Store<RootState>>;
     store.commit = jest.fn();
     (store as any).state = {
-      tokens: {}
+      tokens: {},
+      presences: {}
     };
     raidenService = new RaidenService(store);
   });
@@ -736,6 +740,47 @@ describe('RaidenService', () => {
       await expect(
         raidenService.findRoutes(AddressZero, AddressZero, One)
       ).resolves.toEqual([]);
+    });
+  });
+
+  describe('availability', () => {
+    test('returns true when target is online', async () => {
+      const getAvailability = jest.fn().mockResolvedValue({ available: true });
+      providerMock.mockResolvedValue(mockProvider);
+      factory.mockResolvedValue(
+        mockRaiden({
+          getAvailability
+        })
+      );
+
+      await raidenService.connect();
+      await flushPromises();
+
+      const isAvailable = await raidenService.getAvailability('0xtarget');
+      expect(isAvailable).toBe(true);
+      expect(getAvailability).toHaveBeenCalledTimes(1);
+    });
+
+    test('returns false when target is offline', async () => {
+      const getAvailability = jest.fn().mockRejectedValue({});
+      providerMock.mockResolvedValue(mockProvider);
+      factory.mockResolvedValue(
+        mockRaiden({
+          getAvailability
+        })
+      );
+
+      await raidenService.connect();
+      await flushPromises();
+
+      const isAvailable = await raidenService.getAvailability('0xtarget');
+      expect(isAvailable).toBe(false);
+      expect(getAvailability).toHaveBeenCalledTimes(1);
+      expect(getAvailability).rejects;
+      expect(store.commit).toBeCalledTimes(5);
+      expect(store.commit).toBeCalledWith('updatePresence', {
+        ['0xtarget']: false
+      });
     });
   });
 });

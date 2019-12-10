@@ -39,7 +39,8 @@ describe('SelectHub.vue', () => {
         $router: router,
         $identicon: $identicon(),
         $raiden: {
-          fetchTokenData: jest.fn().mockResolvedValue(null)
+          fetchTokenData: jest.fn().mockResolvedValue(null),
+          getAvailability: jest.fn().mockResolvedValue(true)
         },
         $t: (msg: string) => msg
       }
@@ -53,10 +54,10 @@ describe('SelectHub.vue', () => {
   beforeEach(() => {
     router = new VueRouter() as Mocked<VueRouter>;
     router.push = jest.fn().mockResolvedValue(null);
-  });
-
-  beforeEach(() => {
     store.commit('reset');
+    store.commit('updatePresence', {
+      ['0x1D36124C90f53d491b6832F1c073F43E2550E35b']: true
+    });
   });
 
   test('navigate to "OpenChannel when the user selects a hub', async () => {

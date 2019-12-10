@@ -52,7 +52,9 @@ export default class RaidenService {
 
   async ensResolve(name: string): Promise<string> {
     try {
-      return await this.raiden.resolveName(name);
+      const address = await this.raiden.resolveName(name);
+      await this.raiden.getAvailability(address);
+      return address;
     } catch (e) {
       throw new EnsResolveFailed(e);
     }
@@ -111,6 +113,13 @@ export default class RaidenService {
           if (value.type === 'tokenMonitored') {
             this.store.commit('updateTokens', {
               [value.payload.token]: { address: value.payload.token }
+            });
+          }
+
+          // Update presences on matrix presence updates
+          if (value.type === 'matrixPresenceUpdate') {
+            this.store.commit('updatePresence', {
+              [value.meta.address]: value.payload.available
             });
           }
         });
@@ -313,6 +322,17 @@ export default class RaidenService {
   /* istanbul ignore next */
   async getUDCCapacity(): Promise<BigNumber> {
     return this.raiden.getUDCCapacity();
+  }
+
+  async getAvailability(address: string): Promise<boolean> {
+    try {
+      const { available } = await this.raiden.getAvailability(address);
+      return available;
+    } catch (e) {
+      this.store.commit('updatePresence', { [address]: false });
+    }
+
+    return false;
   }
 }
 

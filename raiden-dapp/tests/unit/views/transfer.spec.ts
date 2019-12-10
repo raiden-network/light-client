@@ -77,7 +77,7 @@ describe('Transfer.vue', () => {
     router = new VueRouter() as Mocked<VueRouter>;
     raiden = new RaidenService(store) as Mocked<RaidenService>;
     raiden.fetchTokenData = jest.fn().mockResolvedValue(undefined);
-
+    raiden.getAvailability = jest.fn().mockResolvedValue(true);
     raiden.findRoutes = jest.fn().mockResolvedValue([
       {
         path: ['0xaddr'],
@@ -109,6 +109,10 @@ describe('Transfer.vue', () => {
     });
     store.commit('updateTokens', { '0xtoken': token });
     store.commit('account', '0x1234567890');
+
+    store.commit('updatePresence', {
+      ['0x32bBc8ba52FB6F61C24809FdeDA1baa5E55e55EA']: true
+    });
 
     wrapper = createWrapper(router, raiden);
 

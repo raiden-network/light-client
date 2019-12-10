@@ -9,17 +9,18 @@ import AddressInput from '@/components/AddressInput.vue';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { mockInput } from '../utils/interaction-utils';
-import RaidenService from '@/services/raiden-service';
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 
 describe('AddressInput', () => {
   let wrapper: Wrapper<AddressInput>;
-  let raiden: Mocked<RaidenService>;
 
+  let ensResolve: jest.Mock<any, any>;
+  let getAvailability: jest.Mock<any, any>;
   const excludeAddress: string = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
   const blockAddress: string = '0x123456789009876543211234567890';
+  const onlineTarget: string = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
+  const offlineTarget: string = '0x39ff19161414E257AA29461dCD087F6a1AE362Fd';
 
   function createWrapper(
     value: string = '',
@@ -27,14 +28,17 @@ describe('AddressInput', () => {
     blocked?: string
   ) {
     return mount(AddressInput, {
-      sync: false,
+      store,
       propsData: {
         value,
         exclude: excluded ? [excluded] : undefined,
         block: blocked ? [blocked] : undefined
       },
       mocks: {
-        $raiden: raiden,
+        $raiden: {
+          ensResolve,
+          getAvailability
+        },
         $identicon: $identicon(),
         $t: (msg: string) => msg
       }
@@ -42,7 +46,11 @@ describe('AddressInput', () => {
   }
 
   beforeEach(() => {
-    raiden = new RaidenService(store) as Mocked<RaidenService>;
+    ensResolve = jest.fn().mockResolvedValue(onlineTarget);
+    getAvailability = jest.fn().mockResolvedValue(true);
+    store.commit('updatePresence', {
+      [onlineTarget]: true
+    });
   });
 
   test('show no validation messages by default', () => {
@@ -54,18 +62,13 @@ describe('AddressInput', () => {
   });
 
   test('set busy flag while fetching an ens domain', async () => {
-    raiden.ensResolve = jest
-      .fn()
-      .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
     wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, 'test.eth');
     const busy = jest.spyOn(wrapper.vm.$data, 'busy', 'set');
-
     await wrapper.vm.$nextTick();
     jest.runAllTimers();
     await flushPromises();
-
-    expect(busy).toHaveBeenCalledTimes(1);
+    expect(busy).toHaveBeenCalledTimes(2);
   });
 
   test('show an empty address message when the input is empty', async () => {
@@ -106,18 +109,17 @@ describe('AddressInput', () => {
 
   test('fire an input event when the input address is valid', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
-    mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
+    mockInput(wrapper, onlineTarget);
+
     await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted().input).toBeTruthy();
-    expect(wrapper.emitted().input[0]).toEqual([
-      '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-    ]);
+    expect(wrapper.emitted().input[2]).toEqual([onlineTarget]);
   });
 
   test('render a blockie when the input address is valid', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
-    wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
+    wrapper.setProps({ value: onlineTarget });
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
   });
@@ -125,9 +127,6 @@ describe('AddressInput', () => {
   describe('resolve an ens domain', () => {
     test('with success', async () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
-      raiden.ensResolve = jest
-        .fn()
-        .mockResolvedValue('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
       mockInput(wrapper, 'ens');
       await wrapper.vm.$nextTick();
       mockInput(wrapper, 'enstest');
@@ -137,27 +136,21 @@ describe('AddressInput', () => {
       jest.runAllTimers();
       await flushPromises();
 
-      expect(wrapper.vm.$data.hint).toEqual(
-        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-      );
       expect(wrapper.emitted().input).toBeTruthy();
-      expect(wrapper.emitted().input[0]).toEqual([
-        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-      ]);
+      expect(wrapper.emitted().input[0]).toEqual([onlineTarget]);
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(0);
     });
 
     test('without success', async () => {
+      ensResolve = jest.fn().mockResolvedValue(null);
       wrapper = createWrapper('', excludeAddress, blockAddress);
-      raiden.ensResolve = jest.fn().mockResolvedValue(null);
 
       mockInput(wrapper, 'enstest.test');
       await wrapper.vm.$nextTick();
       jest.runAllTimers();
       await flushPromises();
 
-      expect(wrapper.vm.$data.hint).toEqual('');
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual([undefined]);
 
@@ -168,17 +161,14 @@ describe('AddressInput', () => {
     });
 
     test('with an error', async () => {
+      ensResolve = jest.fn().mockRejectedValue(Error('something went wrong'));
       wrapper = createWrapper('', excludeAddress, blockAddress);
-      raiden.ensResolve = jest
-        .fn()
-        .mockRejectedValue(Error('something went wrong'));
 
       mockInput(wrapper, 'enstest.test');
       await wrapper.vm.$nextTick();
       jest.runAllTimers();
       await flushPromises();
 
-      expect(wrapper.vm.$data.hint).toEqual('');
       expect(wrapper.emitted().input).toBeTruthy();
       expect(wrapper.emitted().input[0]).toEqual([undefined]);
 
@@ -194,6 +184,8 @@ describe('AddressInput', () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
       mockInput(wrapper, excludeAddress);
       await wrapper.vm.$nextTick();
+      jest.runAllTimers();
+      await flushPromises();
 
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
@@ -212,13 +204,13 @@ describe('AddressInput', () => {
       expect(messages.text()).toBe('address-input.error.channel-not-open');
     });
 
-    test('show an error message if there is no exclude or block prop', async () => {
-      wrapper = createWrapper();
+    test('show not an error message if there is no exclude or block prop', async () => {
+      wrapper = createWrapper('');
 
-      mockInput(wrapper, excludeAddress);
+      mockInput(wrapper, onlineTarget);
       await wrapper.vm.$nextTick();
 
-      const messages = wrapper.find('.v-messages__message');
+      const messages = wrapper.find('.v-messages__wrapper');
       expect(messages.text()).toEqual('');
     });
   });
@@ -230,20 +222,16 @@ describe('AddressInput', () => {
     });
 
     test('update the model on a valid value', () => {
-      wrapper = createWrapper('0x1D36124C90f53d491b6832F1c073F43E2550E35b');
-      expect(wrapper.vm.$data.address).toBe(
-        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-      );
+      wrapper = createWrapper(onlineTarget);
+      expect(wrapper.vm.$data.address).toBe(onlineTarget);
     });
 
     test('update the address on a valid value', async () => {
       wrapper = createWrapper();
       expect(wrapper.vm.$data.address).toBe('');
-      wrapper.setProps({ value: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' });
+      wrapper.setProps({ value: onlineTarget });
       await wrapper.vm.$nextTick();
-      expect(wrapper.vm.$data.address).toBe(
-        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
-      );
+      expect(wrapper.vm.$data.address).toBe(onlineTarget);
     });
 
     test('do not update the address on an invalid value', async () => {
@@ -252,6 +240,49 @@ describe('AddressInput', () => {
       wrapper.setProps({ value: '0x1aaaaaadshjd' });
       await wrapper.vm.$nextTick();
       expect(wrapper.vm.$data.address).toBe('');
+    });
+  });
+
+  describe('target availability', () => {
+    test('show target as online', async () => {
+      wrapper = createWrapper(onlineTarget);
+      await wrapper.vm.$nextTick();
+      expect(
+        wrapper.find('.address-input__availability--online').exists()
+      ).toBeTruthy();
+    });
+
+    test('show target as offline', async () => {
+      getAvailability = jest.fn().mockResolvedValue(false);
+      wrapper = createWrapper(offlineTarget);
+      await wrapper.vm.$nextTick();
+      expect(
+        wrapper.find('.address-input__availability--offline').exists()
+      ).toBeTruthy();
+    });
+
+    test('show target as offline when presence is not in state yet', async () => {
+      store.commit('reset');
+      getAvailability = jest.fn().mockImplementation(function() {
+        store.commit('updatePresence', { [offlineTarget]: false });
+      });
+      wrapper = createWrapper(offlineTarget);
+      await wrapper.vm.$nextTick();
+      expect(
+        wrapper.find('.address-input__availability--offline').exists()
+      ).toBeTruthy();
+    });
+
+    test('show target as online when presence is not in state yet', async () => {
+      store.commit('reset');
+      getAvailability = jest.fn().mockImplementation(function() {
+        store.commit('updatePresence', { [onlineTarget]: true });
+      });
+      wrapper = createWrapper(onlineTarget);
+      await wrapper.vm.$nextTick();
+      expect(
+        wrapper.find('.address-input__availability--online').exists()
+      ).toBeTruthy();
     });
   });
 });
