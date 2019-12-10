@@ -4,7 +4,7 @@ import { patchEthersDefineReadOnly, patchMatrixGetNetwork } from './patches';
 patchEthersDefineReadOnly();
 patchMatrixGetNetwork();
 
-import { BehaviorSubject, Subject, AsyncSubject, of } from 'rxjs';
+import { AsyncSubject, of, BehaviorSubject } from 'rxjs';
 import { MatrixClient } from 'matrix-js-sdk';
 import { EventEmitter } from 'events';
 import { memoize } from 'lodash';
@@ -29,13 +29,13 @@ import { UserDepositFactory } from 'raiden-ts/contracts/UserDepositFactory';
 
 import 'raiden-ts/polyfills';
 import { RaidenEpicDeps, ContractsInfo } from 'raiden-ts/types';
-import { RaidenAction } from 'raiden-ts/actions';
-import { RaidenState, makeInitialState } from 'raiden-ts/state';
+import { makeInitialState } from 'raiden-ts/state';
 import { Address, Signature } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
-import { RaidenConfig } from 'raiden-ts/config';
-import { pluck, distinctUntilChanged } from 'rxjs/operators';
+import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
+import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
+import { Presences } from 'raiden-ts/transport/types';
 
 export type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -202,19 +202,22 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
         block_number: 102,
       },
     },
-    initialState = makeInitialState(
+    state = makeInitialState(
       { network, address, contractsInfo },
       { blockNumber, config: { pfsSafetyMargin: 1.1, pfs: 'https://pfs.raiden.test' } },
     );
 
-  const stateOutput$ = new BehaviorSubject<RaidenState>(initialState),
-    config$ = new BehaviorSubject<RaidenConfig>(initialState.config);
-
-  stateOutput$.pipe(pluck('config'), distinctUntilChanged()).subscribe(config$);
+  const latest$: RaidenEpicDeps['latest$'] = new BehaviorSubject({
+      action: raidenConfigUpdate({ config: {} }) as RaidenAction,
+      state,
+      config: state.config,
+      presences: {} as Presences,
+      pfsList: [] as readonly Address[],
+    }),
+    config$ = latest$.pipe(pluckDistinct('state', 'config'));
 
   return {
-    stateOutput$,
-    actionOutput$: new Subject<RaidenAction>(),
+    latest$,
     config$,
     matrix$: new AsyncSubject<MatrixClient>(),
     address,

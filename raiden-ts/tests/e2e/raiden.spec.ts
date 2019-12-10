@@ -840,7 +840,7 @@ describe('Raiden', () => {
   describe('findRoutes', () => {
     let raiden1: Raiden, raiden2: Raiden, target: string;
 
-    beforeAll(() => jest.setTimeout(90e3));
+    beforeAll(() => jest.setTimeout(50e3));
 
     beforeEach(async () => {
       target = accounts[2];
