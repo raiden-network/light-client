@@ -96,7 +96,7 @@ function makeAndSignTransfer(
   action: ActionType<typeof transfer>,
   { network, address, signer, config$ }: RaidenEpicDeps,
 ) {
-  return combineLatest(state$, config$).pipe(
+  return combineLatest([state$, config$]).pipe(
     first(),
     mergeMap(([state, { revealTimeout }]) => {
       if (action.meta.secrethash in state.sent) {
