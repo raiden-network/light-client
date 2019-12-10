@@ -29,10 +29,10 @@ import * as PathFindEpics from './path/epics';
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @returns NEVER, to watch and dispose subject's subscription
+ * @returns latest$ observable
  */
 const getLatest$ = (action$: Observable<RaidenAction>, state$: Observable<RaidenState>) =>
-  combineLatest(
+  combineLatest([
     action$,
     state$,
     getPresences$(action$),
@@ -41,7 +41,7 @@ const getLatest$ = (action$: Observable<RaidenAction>, state$: Observable<Raiden
       pluck('payload', 'pfsList'),
       startWith([] as readonly Address[]),
     ),
-  ).pipe(
+  ]).pipe(
     map(([action, state, presences, pfsList]) => ({
       action,
       state,
