@@ -1,14 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import {
-  combineLatest,
-  EMPTY,
-  from,
-  merge,
-  MonoTypeOperatorFunction,
-  Observable,
-  of,
-  OperatorFunction,
-} from 'rxjs';
+import { combineLatest, EMPTY, from, merge, MonoTypeOperatorFunction, Observable, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -90,26 +81,25 @@ function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
   else return One as UInt<8>;
 }
 
-function sendOnceAndWaitSent(
-  send: ActionType<typeof messageSend>,
+function dispatchAndWait<A extends RaidenAction>(
   action$: Observable<RaidenAction>,
+  request: A,
+  predicate: (action: RaidenAction) => boolean,
 ) {
   return merge(
-    of(send),
+    // output once
+    of(request),
+    // but wait until respective success/failure action is seen before completing
     action$.pipe(
-      filter(
-        a =>
-          isActionOf(messageSent, a) &&
-          a.payload.message === send.payload.message &&
-          a.meta.address === send.meta.address,
-      ),
+      filter(predicate),
       take(1),
-      // don't output messageSent, just wait for it before completing
+      // don't output success/failure action, just wait for first match to complete
       ignoreElements(),
     ),
   );
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 function retryUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOperatorFunction<T> {
   // Resubscribe/retry every 30s after messageSend succeeds with messageSent
   // Notice first (or any) messageSend can wait for a long time before succeeding, as it
@@ -130,7 +120,14 @@ function retrySendUntil(
   state$: Observable<RaidenState>,
   predicate: (state: RaidenState) => boolean,
 ) {
-  return sendOnceAndWaitSent(send, action$).pipe(retryUntil(state$.pipe(filter(predicate))));
+  return dispatchAndWait(
+    action$,
+    send,
+    a =>
+      isActionOf(messageSent, a) &&
+      a.payload.message === send.payload.message &&
+      a.meta.address === send.meta.address,
+  ).pipe(retryUntil(state$.pipe(filter(predicate))));
 }
 
 /**
@@ -676,20 +673,11 @@ function autoExpire(state: RaidenState, blockNumber: number, action$: Observable
       continue;
     const secrethash = key as Hash;
     // this observable acts like a Promise: emits request once, completes on success/failure
-    const requestAndWait$ = merge(
-      // output once tranferExpire
-      of(transferExpire(undefined, { secrethash })),
-      // but wait until respective success/failure action is seen before completing
-      action$.pipe(
-        filter(
-          a =>
-            isActionOf([transferExpired, transferExpireFailed], a) &&
-            a.meta.secrethash === secrethash,
-        ),
-        take(1),
-        // don't output success/failure action, just wait for first match to complete
-        ignoreElements(),
-      ),
+    const requestAndWait$ = dispatchAndWait(
+      action$,
+      transferExpire(undefined, { secrethash }),
+      a =>
+        isActionOf([transferExpired, transferExpireFailed], a) && a.meta.secrethash === secrethash,
     );
     requests$.push(requestAndWait$);
     // notify users that this transfer failed definitely
