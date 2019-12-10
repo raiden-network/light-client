@@ -9,7 +9,7 @@
 - Fix utility token display on PFS route selection.
 
 ### Fixed
-- [#704] Amount & Address input styles
+- [#704] Amount and address input styles
 
 ## [0.2] - 2019-11-29
 ### Added
