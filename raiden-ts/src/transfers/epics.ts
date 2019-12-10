@@ -17,7 +17,7 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
-import { ActionType, isActionOf } from 'typesafe-actions';
+import { ActionType, getType, isActionOf } from 'typesafe-actions';
 import { bigNumberify } from 'ethers/utils';
 import { Zero, One } from 'ethers/constants';
 import { findKey, get } from 'lodash';
@@ -68,6 +68,7 @@ import {
   withdrawSendConfirmation,
 } from './actions';
 import { getLocksroot, getSecrethash, makeMessageId } from './utils';
+import { Signer } from 'ethers';
 
 /**
  * Return the next nonce for a (possibly missing) balanceProof, or else BigNumber(1)
@@ -455,18 +456,71 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
       const withdrawCache = new LruCache<string, Signed<WithdrawConfirmation>>(32);
       return action$.pipe(
         filter(isActionOf([transfer, transferUnlock, transferExpire, withdrawReceiveRequest])),
-        concatMap(action =>
-          isActionOf(transfer, action)
-            ? makeAndSignTransfer(state$, action, deps)
-            : isActionOf(transferUnlock, action)
-            ? makeAndSignUnlock(state$, action, deps)
-            : isActionOf(transferExpire, action)
-            ? makeAndSignLockExpired(state$, action, deps)
-            : makeAndSignWithdrawConfirmation(state$, action, deps, withdrawCache),
-        ),
+        concatMap(action => {
+          switch (action.type) {
+            case getType(transfer): {
+              return makeAndSignTransfer(state$, action, deps);
+            }
+            case getType(transferUnlock): {
+              return makeAndSignUnlock(state$, action, deps);
+            }
+            case getType(transferExpire): {
+              return makeAndSignLockExpired(state$, action, deps);
+            }
+            default: {
+              return makeAndSignWithdrawConfirmation(state$, action, deps, withdrawCache);
+            }
+          }
+        }),
       );
     }),
   );
+
+const transferSignedRetryMessage = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  action: ActionType<typeof transferSigned>,
+) => {
+  const secrethash = action.meta.secrethash,
+    signed = action.payload.message,
+    send = messageSend({ message: signed }, { address: signed.recipient });
+  // emit Send once immediatelly, then wait until respective messageSent, then completes
+  const sendOnceAndWaitSent$ = merge(
+    of(send),
+    action$.pipe(
+      filter(
+        a =>
+          isActionOf(messageSent, a) &&
+          a.payload.message === send.payload.message &&
+          a.meta.address === send.meta.address,
+      ),
+      take(1),
+      // don't output messageSent, just wait for it before completing
+      ignoreElements(),
+    ),
+  );
+  return sendOnceAndWaitSent$.pipe(
+    // Resubscribe/retry every 30s after messageSend succeeds with messageSent
+    // Notice first (or any) messageSend can wait for a long time before succeeding, as it
+    // waits for address's user in transport to be online and joined room before actually
+    // sending the message. That's why repeatWhen emits/resubscribe only some time after
+    // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
+    // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
+    repeatWhen(completed$ => completed$.pipe(delay(30e3))),
+    // until transferProcessed received OR transfer completed OR channelClosed
+    takeUntil(
+      state$.pipe(
+        filter(
+          state =>
+            !!state.sent[secrethash].transferProcessed ||
+            !!state.sent[secrethash].unlockProcessed ||
+            !!state.sent[secrethash].lockExpiredProcessed ||
+            !!state.sent[secrethash].channelClosed,
+        ),
+      ),
+    ),
+  );
+};
 
 /**
  * Handles a transferSigned action and retry messageSend until transfer is gone (completed with
@@ -486,50 +540,56 @@ export const transferSignedRetryMessageEpic = (
     publishReplay(1, undefined, state$ =>
       action$.pipe(
         filter(isActionOf(transferSigned)),
-        mergeMap(action => {
-          const secrethash = action.meta.secrethash,
-            signed = action.payload.message,
-            send = messageSend({ message: signed }, { address: signed.recipient });
-          // emit Send once immediatelly, then wait until respective messageSent, then completes
-          const sendOnceAndWaitSent$ = merge(
-            of(send),
-            action$.pipe(
-              filter(
-                a =>
-                  isActionOf(messageSent, a) &&
-                  a.payload.message === send.payload.message &&
-                  a.meta.address === send.meta.address,
-              ),
-              take(1),
-              // don't output messageSent, just wait for it before completing
-              ignoreElements(),
-            ),
-          );
-          return sendOnceAndWaitSent$.pipe(
-            // Resubscribe/retry every 30s after messageSend succeeds with messageSent
-            // Notice first (or any) messageSend can wait for a long time before succeeding, as it
-            // waits for address's user in transport to be online and joined room before actually
-            // sending the message. That's why repeatWhen emits/resubscribe only some time after
-            // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-            // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
-            repeatWhen(completed$ => completed$.pipe(delay(30e3))),
-            // until transferProcessed received OR transfer completed OR channelClosed
-            takeUntil(
-              state$.pipe(
-                filter(
-                  state =>
-                    !!state.sent[secrethash].transferProcessed ||
-                    !!state.sent[secrethash].unlockProcessed ||
-                    !!state.sent[secrethash].lockExpiredProcessed ||
-                    !!state.sent[secrethash].channelClosed,
-                ),
-              ),
-            ),
-          );
-        }),
+        mergeMap(action => transferSignedRetryMessage(action$, state$, action)),
       ),
     ),
   );
+
+const transferUnlockRetryMessage = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  action: ActionType<typeof transferUnlocked>,
+  state: RaidenState,
+) => {
+  const secrethash = action.meta.secrethash;
+  if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
+  const unlock = action.payload.message,
+    transfer = state.sent[secrethash].transfer[1],
+    send = messageSend({ message: unlock }, { address: transfer.recipient });
+  // emit Send once immediatelly, then wait until respective messageSent, then completes
+  const sendOnceAndWaitSent$ = merge(
+    of(send),
+    action$.pipe(
+      filter(
+        a =>
+          isActionOf(messageSent, a) &&
+          a.payload.message === send.payload.message &&
+          a.meta.address === send.meta.address,
+      ),
+      take(1),
+      // don't output messageSent, just wait for it before completing
+      ignoreElements(),
+    ),
+  );
+  return sendOnceAndWaitSent$.pipe(
+    // Resubscribe/retry every 30s after messageSend succeeds with messageSent
+    // Notice first (or any) messageSend can wait for a long time before succeeding, as it
+    // waits for address's user in transport to be online and joined room before actually
+    // sending the message. That's why repeatWhen emits/resubscribe only some time after
+    // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
+    // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
+    repeatWhen(completed$ => completed$.pipe(delay(30e3))),
+    // until transferUnlockProcessed OR channelClosed
+    takeUntil(
+      state$.pipe(
+        filter(
+          state =>
+            !!state.sent[secrethash].unlockProcessed || !!state.sent[secrethash].channelClosed,
+        ),
+      ),
+    ),
+  );
+};
 
 /**
  * Handles a transferUnlocked action and retry messageSend until transfer is gone (completed with
@@ -550,50 +610,59 @@ export const transferUnlockedRetryMessageEpic = (
       action$.pipe(
         filter(isActionOf(transferUnlocked)),
         withLatestFrom(state$),
-        mergeMap(([action, state]) => {
-          const secrethash = action.meta.secrethash;
-          if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
-          const unlock = action.payload.message,
-            transfer = state.sent[secrethash].transfer[1],
-            send = messageSend({ message: unlock }, { address: transfer.recipient });
-          // emit Send once immediatelly, then wait until respective messageSent, then completes
-          const sendOnceAndWaitSent$ = merge(
-            of(send),
-            action$.pipe(
-              filter(
-                a =>
-                  isActionOf(messageSent, a) &&
-                  a.payload.message === send.payload.message &&
-                  a.meta.address === send.meta.address,
-              ),
-              take(1),
-              // don't output messageSent, just wait for it before completing
-              ignoreElements(),
-            ),
-          );
-          return sendOnceAndWaitSent$.pipe(
-            // Resubscribe/retry every 30s after messageSend succeeds with messageSent
-            // Notice first (or any) messageSend can wait for a long time before succeeding, as it
-            // waits for address's user in transport to be online and joined room before actually
-            // sending the message. That's why repeatWhen emits/resubscribe only some time after
-            // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-            // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
-            repeatWhen(completed$ => completed$.pipe(delay(30e3))),
-            // until transferUnlockProcessed OR channelClosed
-            takeUntil(
-              state$.pipe(
-                filter(
-                  state =>
-                    !!state.sent[secrethash].unlockProcessed ||
-                    !!state.sent[secrethash].channelClosed,
-                ),
-              ),
-            ),
-          );
-        }),
+        mergeMap(([action, state]) => transferUnlockRetryMessage(action$, state$, action, state)),
       ),
     ),
   );
+
+const expiredRetryMessages = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  action: ActionType<typeof transferExpired>,
+  state: RaidenState,
+) => {
+  const secrethash = action.meta.secrethash;
+  if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
+  const lockExpired = action.payload.message,
+    send = messageSend(
+      { message: lockExpired },
+      { address: state.sent[secrethash].transfer[1].recipient },
+    );
+  // emit Send once immediatelly, then wait until respective messageSent, then completes
+  const sendOnceAndWaitSent$ = merge(
+    of(send),
+    action$.pipe(
+      filter(
+        a =>
+          isActionOf(messageSent, a) &&
+          a.payload.message === send.payload.message &&
+          a.meta.address === send.meta.address,
+      ),
+      take(1),
+      // don't output messageSent, just wait for it before completing
+      ignoreElements(),
+    ),
+  );
+  return sendOnceAndWaitSent$.pipe(
+    // Resubscribe/retry every 30s after messageSend succeeds with messageSent
+    // Notice first (or any) messageSend can wait for a long time before succeeding, as it
+    // waits for address's user in transport to be online and joined room before actually
+    // sending the message. That's why repeatWhen emits/resubscribe only some time after
+    // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
+    // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
+    repeatWhen(completed$ => completed$.pipe(delay(30e3))),
+    // until transferExpireProcessed OR channelClosed
+    takeUntil(
+      state$.pipe(
+        filter(
+          state =>
+            !!state.sent[secrethash].lockExpiredProcessed ||
+            !!state.sent[secrethash].channelClosed,
+        ),
+      ),
+    ),
+  );
+};
 
 /**
  * Handles a transferExpired action and retry messageSend until transfer is gone (completed with
@@ -614,52 +683,54 @@ export const transferExpiredRetryMessageEpic = (
       action$.pipe(
         filter(isActionOf(transferExpired)),
         withLatestFrom(state$),
-        mergeMap(([action, state]) => {
-          const secrethash = action.meta.secrethash;
-          if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
-          const lockExpired = action.payload.message,
-            send = messageSend(
-              { message: lockExpired },
-              { address: state.sent[secrethash].transfer[1].recipient },
-            );
-          // emit Send once immediatelly, then wait until respective messageSent, then completes
-          const sendOnceAndWaitSent$ = merge(
-            of(send),
-            action$.pipe(
-              filter(
-                a =>
-                  isActionOf(messageSent, a) &&
-                  a.payload.message === send.payload.message &&
-                  a.meta.address === send.meta.address,
-              ),
-              take(1),
-              // don't output messageSent, just wait for it before completing
-              ignoreElements(),
-            ),
-          );
-          return sendOnceAndWaitSent$.pipe(
-            // Resubscribe/retry every 30s after messageSend succeeds with messageSent
-            // Notice first (or any) messageSend can wait for a long time before succeeding, as it
-            // waits for address's user in transport to be online and joined room before actually
-            // sending the message. That's why repeatWhen emits/resubscribe only some time after
-            // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-            // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
-            repeatWhen(completed$ => completed$.pipe(delay(30e3))),
-            // until transferExpireProcessed OR channelClosed
-            takeUntil(
-              state$.pipe(
-                filter(
-                  state =>
-                    !!state.sent[secrethash].lockExpiredProcessed ||
-                    !!state.sent[secrethash].channelClosed,
-                ),
-              ),
-            ),
-          );
-        }),
+        mergeMap(([action, state]) => expiredRetryMessages(action$, state$, action, state)),
       ),
     ),
   );
+
+function autoExpire(state: RaidenState, blockNumber: number, action$: Observable<RaidenAction>) {
+  const requests$: Observable<ActionType<typeof transferExpire | typeof transferFailed>>[] = [];
+
+  for (const [key, sent] of Object.entries(state.sent)) {
+    if (
+      sent.unlock ||
+      sent.lockExpired ||
+      sent.channelClosed ||
+      sent.transfer[1].lock.expiration.gte(blockNumber)
+    )
+      continue;
+    const secrethash = key as Hash;
+    // this observable acts like a Promise: emits request once, completes on success/failure
+    const requestAndWait$ = merge(
+      // output once tranferExpire
+      of(transferExpire(undefined, { secrethash })),
+      // but wait until respective success/failure action is seen before completing
+      action$.pipe(
+        filter(
+          a =>
+            isActionOf([transferExpired, transferExpireFailed], a) &&
+            a.meta.secrethash === secrethash,
+        ),
+        take(1),
+        // don't output success/failure action, just wait for first match to complete
+        ignoreElements(),
+      ),
+    );
+    requests$.push(requestAndWait$);
+    // notify users that this transfer failed definitely
+    requests$.push(
+      of(
+        transferFailed(
+          new Error(`transfer expired at block=${sent.transfer[1].lock.expiration.toString()}`),
+          { secrethash },
+        ),
+      ),
+    );
+  }
+
+  // process all requests before completing and restart handling newBlocks (in exhaustMap)
+  return merge(...requests$);
+}
 
 /**
  * Process newBlocks, emits transferExpire (request to compose&sign LockExpired for a transfer)
@@ -686,51 +757,7 @@ export const transferAutoExpireEpic = (
         },
         state,
       ]) => {
-        const requests$: Observable<
-          ActionType<typeof transferExpire | typeof transferFailed>
-        >[] = [];
-
-        for (const [key, sent] of Object.entries(state.sent)) {
-          if (
-            sent.unlock ||
-            sent.lockExpired ||
-            sent.channelClosed ||
-            sent.transfer[1].lock.expiration.gte(blockNumber)
-          )
-            continue;
-          const secrethash = key as Hash;
-          // this observable acts like a Promise: emits request once, completes on success/failure
-          const requestAndWait$ = merge(
-            // output once tranferExpire
-            of(transferExpire(undefined, { secrethash })),
-            // but wait until respective success/failure action is seen before completing
-            action$.pipe(
-              filter(
-                a =>
-                  isActionOf([transferExpired, transferExpireFailed], a) &&
-                  a.meta.secrethash === secrethash,
-              ),
-              take(1),
-              // don't output success/failure action, just wait for first match to complete
-              ignoreElements(),
-            ),
-          );
-          requests$.push(requestAndWait$);
-          // notify users that this transfer failed definitely
-          requests$.push(
-            of(
-              transferFailed(
-                new Error(
-                  `transfer expired at block=${sent.transfer[1].lock.expiration.toString()}`,
-                ),
-                { secrethash },
-              ),
-            ),
-          );
-        }
-
-        // process all requests before completing and restart handling newBlocks (in exhaustMap)
-        return merge(...requests$);
+        return autoExpire(state, blockNumber, action$);
       },
     ),
   );
@@ -852,6 +879,33 @@ export const transferSecretRequestedEpic = (
     }),
   );
 
+const secretReveal = (
+  state: RaidenState,
+  action: ActionType<typeof transferSecretRequest>,
+  signer: Signer,
+) => {
+  const target = state.sent[action.meta.secrethash].transfer[1].target;
+
+  let reveal$: Observable<Signed<SecretReveal>>;
+  if (state.sent[action.meta.secrethash].secretReveal)
+    reveal$ = of(state.sent[action.meta.secrethash].secretReveal![1]);
+  else {
+    const message: SecretReveal = {
+      type: MessageType.SECRET_REVEAL,
+      message_identifier: makeMessageId(),
+      secret: state.secrets[action.meta.secrethash].secret,
+    };
+    reveal$ = from(signMessage(signer, message));
+  }
+
+  return reveal$.pipe(
+    mergeMap(function*(message) {
+      yield transferSecretReveal({ message }, action.meta);
+      yield messageSend({ message }, { address: target });
+    }),
+  );
+};
+
 /**
  * Handles a transferSecretRequest action to send the respective secret to target
  * It both emits transferSecretReveal (to persist sent SecretReveal in state and indicate that
@@ -876,28 +930,7 @@ export const transferSecretRevealEpic = (
         concatMap(action =>
           state$.pipe(
             first(),
-            mergeMap(state => {
-              const target = state.sent[action.meta.secrethash].transfer[1].target;
-
-              let reveal$: Observable<Signed<SecretReveal>>;
-              if (state.sent[action.meta.secrethash].secretReveal)
-                reveal$ = of(state.sent[action.meta.secrethash].secretReveal![1]);
-              else {
-                const message: SecretReveal = {
-                  type: MessageType.SECRET_REVEAL,
-                  message_identifier: makeMessageId(),
-                  secret: state.secrets[action.meta.secrethash].secret,
-                };
-                reveal$ = from(signMessage(signer, message));
-              }
-
-              return reveal$.pipe(
-                mergeMap(function*(message) {
-                  yield transferSecretReveal({ message }, action.meta);
-                  yield messageSend({ message }, { address: target });
-                }),
-              );
-            }),
+            mergeMap(state => secretReveal(state, action, signer)),
           ),
         ),
       ),
