@@ -1,5 +1,14 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { combineLatest, EMPTY, from, merge, Observable, of } from 'rxjs';
+import {
+  combineLatest,
+  EMPTY,
+  from,
+  merge,
+  MonoTypeOperatorFunction,
+  Observable,
+  of,
+  OperatorFunction,
+} from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -19,28 +28,28 @@ import {
 } from 'rxjs/operators';
 import { ActionType, getType, isActionOf } from 'typesafe-actions';
 import { bigNumberify } from 'ethers/utils';
-import { Zero, One } from 'ethers/constants';
+import { One, Zero } from 'ethers/constants';
 import { findKey, get } from 'lodash';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
-import { Address, Hash, UInt, Signed } from '../utils/types';
+import { Address, Hash, Signed, UInt } from '../utils/types';
 import { LruCache } from '../utils/lru';
 import { messageReceived, messageSend, messageSent } from '../messages/actions';
 import {
   LockedTransfer,
   LockExpired,
   MessageType,
+  Metadata,
   Processed,
   RefundTransfer,
   SecretRequest,
   SecretReveal,
   Unlock,
-  WithdrawExpired,
   WithdrawConfirmation,
+  WithdrawExpired,
   WithdrawRequest,
-  Metadata,
 } from '../messages/types';
 import { getBalanceProofFromEnvelopeMessage, signMessage } from '../messages/utils';
 import { Channel, ChannelState } from '../channels/state';
@@ -79,6 +88,49 @@ import { Signer } from 'ethers';
 function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
   if (balanceProof) return balanceProof.nonce.add(1) as UInt<8>;
   else return One as UInt<8>;
+}
+
+function sendOnceAndWaitSent(
+  send: ActionType<typeof messageSend>,
+  action$: Observable<RaidenAction>,
+) {
+  return merge(
+    of(send),
+    action$.pipe(
+      filter(
+        a =>
+          isActionOf(messageSent, a) &&
+          a.payload.message === send.payload.message &&
+          a.meta.address === send.meta.address,
+      ),
+      take(1),
+      // don't output messageSent, just wait for it before completing
+      ignoreElements(),
+    ),
+  );
+}
+
+function retryUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOperatorFunction<T> {
+  // Resubscribe/retry every 30s after messageSend succeeds with messageSent
+  // Notice first (or any) messageSend can wait for a long time before succeeding, as it
+  // waits for address's user in transport to be online and joined room before actually
+  // sending the message. That's why repeatWhen emits/resubscribe only some time after
+  // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
+  // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
+  return input$ =>
+    input$.pipe(
+      repeatWhen(completed$ => completed$.pipe(delay(delayMs))),
+      takeUntil(notifier),
+    );
+}
+
+function retrySendUntil(
+  send: ActionType<typeof messageSend>,
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  predicate: (state: RaidenState) => boolean,
+) {
+  return sendOnceAndWaitSent(send, action$).pipe(retryUntil(state$.pipe(filter(predicate))));
 }
 
 /**
@@ -485,40 +537,15 @@ const transferSignedRetryMessage = (
     signed = action.payload.message,
     send = messageSend({ message: signed }, { address: signed.recipient });
   // emit Send once immediatelly, then wait until respective messageSent, then completes
-  const sendOnceAndWaitSent$ = merge(
-    of(send),
-    action$.pipe(
-      filter(
-        a =>
-          isActionOf(messageSent, a) &&
-          a.payload.message === send.payload.message &&
-          a.meta.address === send.meta.address,
-      ),
-      take(1),
-      // don't output messageSent, just wait for it before completing
-      ignoreElements(),
-    ),
-  );
-  return sendOnceAndWaitSent$.pipe(
-    // Resubscribe/retry every 30s after messageSend succeeds with messageSent
-    // Notice first (or any) messageSend can wait for a long time before succeeding, as it
-    // waits for address's user in transport to be online and joined room before actually
-    // sending the message. That's why repeatWhen emits/resubscribe only some time after
-    // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-    // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
-    repeatWhen(completed$ => completed$.pipe(delay(30e3))),
-    // until transferProcessed received OR transfer completed OR channelClosed
-    takeUntil(
-      state$.pipe(
-        filter(
-          state =>
-            !!state.sent[secrethash].transferProcessed ||
-            !!state.sent[secrethash].unlockProcessed ||
-            !!state.sent[secrethash].lockExpiredProcessed ||
-            !!state.sent[secrethash].channelClosed,
-        ),
-      ),
-    ),
+  return retrySendUntil(
+    send,
+    action$,
+    state$,
+    state =>
+      !!state.sent[secrethash].transferProcessed ||
+      !!state.sent[secrethash].unlockProcessed ||
+      !!state.sent[secrethash].lockExpiredProcessed ||
+      !!state.sent[secrethash].channelClosed,
   );
 };
 
@@ -557,37 +584,11 @@ const transferUnlockRetryMessage = (
     transfer = state.sent[secrethash].transfer[1],
     send = messageSend({ message: unlock }, { address: transfer.recipient });
   // emit Send once immediatelly, then wait until respective messageSent, then completes
-  const sendOnceAndWaitSent$ = merge(
-    of(send),
-    action$.pipe(
-      filter(
-        a =>
-          isActionOf(messageSent, a) &&
-          a.payload.message === send.payload.message &&
-          a.meta.address === send.meta.address,
-      ),
-      take(1),
-      // don't output messageSent, just wait for it before completing
-      ignoreElements(),
-    ),
-  );
-  return sendOnceAndWaitSent$.pipe(
-    // Resubscribe/retry every 30s after messageSend succeeds with messageSent
-    // Notice first (or any) messageSend can wait for a long time before succeeding, as it
-    // waits for address's user in transport to be online and joined room before actually
-    // sending the message. That's why repeatWhen emits/resubscribe only some time after
-    // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-    // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
-    repeatWhen(completed$ => completed$.pipe(delay(30e3))),
-    // until transferUnlockProcessed OR channelClosed
-    takeUntil(
-      state$.pipe(
-        filter(
-          state =>
-            !!state.sent[secrethash].unlockProcessed || !!state.sent[secrethash].channelClosed,
-        ),
-      ),
-    ),
+  return retrySendUntil(
+    send,
+    action$,
+    state$,
+    state => !!state.sent[secrethash].unlockProcessed || !!state.sent[secrethash].channelClosed,
   );
 };
 
@@ -629,38 +630,12 @@ const expiredRetryMessages = (
       { address: state.sent[secrethash].transfer[1].recipient },
     );
   // emit Send once immediatelly, then wait until respective messageSent, then completes
-  const sendOnceAndWaitSent$ = merge(
-    of(send),
-    action$.pipe(
-      filter(
-        a =>
-          isActionOf(messageSent, a) &&
-          a.payload.message === send.payload.message &&
-          a.meta.address === send.meta.address,
-      ),
-      take(1),
-      // don't output messageSent, just wait for it before completing
-      ignoreElements(),
-    ),
-  );
-  return sendOnceAndWaitSent$.pipe(
-    // Resubscribe/retry every 30s after messageSend succeeds with messageSent
-    // Notice first (or any) messageSend can wait for a long time before succeeding, as it
-    // waits for address's user in transport to be online and joined room before actually
-    // sending the message. That's why repeatWhen emits/resubscribe only some time after
-    // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-    // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
-    repeatWhen(completed$ => completed$.pipe(delay(30e3))),
-    // until transferExpireProcessed OR channelClosed
-    takeUntil(
-      state$.pipe(
-        filter(
-          state =>
-            !!state.sent[secrethash].lockExpiredProcessed ||
-            !!state.sent[secrethash].channelClosed,
-        ),
-      ),
-    ),
+  return retrySendUntil(
+    send,
+    action$,
+    state$,
+    state =>
+      !!state.sent[secrethash].lockExpiredProcessed || !!state.sent[secrethash].channelClosed,
   );
 };
 
