@@ -346,12 +346,12 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     .v-messages {
       color: #323232 !important;
       font-family: Roboto, sans-serif;
-      font-size: 16px;
+      font-size: 14px;
       line-height: 21px;
       text-align: left;
       border: 1px solid transparent;
 
-      & &__wrapper {
+      &__wrapper {
         color: $color-white;
         display: flex;
         flex-direction: column;

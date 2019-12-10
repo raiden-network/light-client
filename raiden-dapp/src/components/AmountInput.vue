@@ -184,11 +184,11 @@ $header-vertical-margin-mobile: 2rem;
         padding: 8px 16px;
         max-height: 49px;
         border: 1.5px solid transparent;
-      }
 
-      &::before,
-      &::after {
-        border-width: 0 0 0 0;
+        &::before,
+        &::after {
+          border-width: 0 0 0 0;
+        }
       }
 
       &--is-focused {
@@ -217,7 +217,7 @@ $header-vertical-margin-mobile: 2rem;
       font-size: 14px;
       line-height: 16px;
 
-      & &__wrapper {
+      &__wrapper {
         height: 25px;
         display: flex;
         flex-direction: column;
