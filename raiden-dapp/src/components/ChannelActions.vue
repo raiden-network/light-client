@@ -41,27 +41,67 @@ export default class ChannelActions extends Vue {
 <style lang="scss" scoped>
 @import '../scss/colors';
 
-.channel-action__button {
-  width: 135px;
-  border-radius: 29px;
-}
-.channel-action__button__primary {
-  background-color: $primary-color !important;
-}
-.channel-action__button__secondary {
-  border: 2px solid $primary-color;
-  background-color: $secondary-button-color !important;
-}
+.channel-action {
+  &__button {
+    width: 135px;
+    border-radius: 29px;
 
-.channel-action__button__secondary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
-  background-color: transparent !important;
-}
+    &__secondary {
+      border: 2px solid $primary-color;
+      background-color: $secondary-button-color !important;
 
-.channel-action__button__primary.theme--dark.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
-  background-color: $primary-disabled-color !important;
-}
+      &.theme {
+        &--dark {
+          &.v-btn {
+            &.v-btn {
+              &--disabled {
+                /* stylelint-disable */
+                // can't nest class inside nesting
+                &:not(.v-btn--icon) {
+                  &:not(.v-btn--text) {
+                    &:not(.v-btn--outline) {
+                      background-color: transparent !important;
+                    }
+                  }
+                }
+                /* stylelint-enable */
+              }
+            }
+          }
+        }
+      }
 
-.channel-action__button__secondary.v-btn--disabled {
-  border-color: $primary-disabled-color;
+      &.v-btn {
+        &--disabled {
+          border-color: $primary-disabled-color;
+        }
+      }
+    }
+
+    &__primary {
+      background-color: $primary-color !important;
+
+      &.theme {
+        &--dark {
+          &.v-btn {
+            &.v-btn {
+              &--disabled {
+                /* stylelint-disable */
+                // can't nest class inside nesting
+                &:not(.v-btn--icon) {
+                  &:not(.v-btn--text) {
+                    &:not(.v-btn--outline) {
+                      background-color: $primary-disabled-color !important;
+                    }
+                  }
+                }
+                /* stylelint-enable */
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 </style>

@@ -73,76 +73,76 @@ export default class ErrorScreen extends Vue {
     width: 100%;
     border-radius: 0;
   }
-}
 
-.error-screen__header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  width: 619px;
-  border-radius: 15px 15px 0 0;
-  background-color: $error-color;
+  &__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    width: 619px;
+    border-radius: 15px 15px 0 0;
+    background-color: $error-color;
 
-  .error-screen__header__title {
-    height: 19px;
-    width: 36px;
-    color: #ffffff;
-    font-family: Roboto, sans-serif;
-    font-size: 16px;
-    font-weight: bold;
-    line-height: 19px;
-    text-transform: uppercase;
+    & &__title {
+      height: 19px;
+      width: 36px;
+      color: #ffffff;
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 19px;
+      text-transform: uppercase;
+    }
   }
-}
 
-.error-screen__content {
-  padding-right: 40px;
-  padding-left: 40px;
-  height: calc(100% - 40px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-around;
-}
+  &__content {
+    padding-right: 40px;
+    padding-left: 40px;
+    height: calc(100% - 40px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
 
-.error-screen__content__icon {
-  height: 100px;
-  width: 100px;
-  background-color: #696969;
-  border-radius: 50%;
-}
+    &__icon {
+      height: 100px;
+      width: 100px;
+      background-color: #696969;
+      border-radius: 50%;
 
-.error-screen__content__icon__img {
-  color: #fbfbfb;
-  height: 100px;
-  width: 100px;
-}
+      &__img {
+        color: #fbfbfb;
+        height: 100px;
+        width: 100px;
+      }
+    }
 
-.error-screen__content__title {
-  width: 60%;
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 40px;
-  font-weight: bold;
-  line-height: 47px;
-  text-align: center;
-}
+    &__title {
+      width: 60%;
+      color: #ffffff;
+      font-family: Roboto, sans-serif;
+      font-size: 40px;
+      font-weight: bold;
+      line-height: 47px;
+      text-align: center;
+    }
 
-.error-screen__content__message {
-  width: 60%;
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 21px;
-  text-align: center;
-}
+    &__message {
+      width: 60%;
+      color: #ffffff;
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 21px;
+      text-align: center;
+    }
 
-.error-screen__content__button {
-  height: 40px;
-  width: 225px;
-  border-radius: 29px;
-  background-color: $primary-color !important;
+    &__button {
+      height: 40px;
+      width: 225px;
+      border-radius: 29px;
+      background-color: $primary-color !important;
+    }
+  }
 }
 </style>

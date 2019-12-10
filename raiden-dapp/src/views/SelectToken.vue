@@ -92,57 +92,59 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 .select-token {
   height: 100%;
   width: 100%;
-}
 
-.select-token__header {
-  margin-top: 115px;
-}
+  &__header {
+    margin-top: 115px;
+  }
 
-.select-token__tokens__wrapper {
-  height: calc(100% - 150px);
-  overflow-y: auto;
-  @extend .themed-scrollbar;
-}
+  &__tokens {
+    height: 100%;
+    background-color: transparent !important;
+    padding-bottom: 0;
+    padding-top: 0;
 
-.select-token__tokens {
-  height: 100%;
-  background-color: transparent !important;
-  padding-bottom: 0;
-  padding-top: 0;
-}
+    ::v-deep {
+      .v-list-item {
+        height: 105px;
 
-.select-token__tokens__token__balance {
-  color: #ffffff;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 20px;
-  height: 100%;
-  padding-right: 20px;
-}
+        &__action-text {
+          height: 44px;
+        }
+      }
+    }
 
-.select-token__tokens ::v-deep .v-list-item {
-  height: 105px;
-}
+    &__wrapper {
+      height: calc(100% - 150px);
+      overflow-y: auto;
+      @extend .themed-scrollbar;
+    }
 
-.select-token__tokens ::v-deep .v-list-item__action-text {
-  height: 44px;
-}
+    &__token {
+      background-color: rgba(0, 0, 0, 0.25);
+      box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
 
-.select-token__tokens__token {
-  background-color: rgba(0, 0, 0, 0.25);
-  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
-}
+      &__balance {
+        color: #ffffff;
+        font-family: Roboto, sans-serif;
+        font-size: 16px;
+        font-weight: bold;
+        line-height: 20px;
+        height: 100%;
+        padding-right: 20px;
+      }
 
-.select-token__tokens__token__info {
-  font-weight: bold;
-  line-height: 20px;
-  font-size: 16px;
-}
+      &__info {
+        font-weight: bold;
+        line-height: 20px;
+        font-size: 16px;
+      }
 
-.select-token__tokens__token__address {
-  color: #696969 !important;
-  line-height: 20px;
-  font-size: 16px;
+      &__address {
+        color: #696969 !important;
+        line-height: 20px;
+        font-size: 16px;
+      }
+    }
+  }
 }
 </style>

@@ -84,52 +84,54 @@ export default class Loading extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.splash-screen__logo-container {
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 10px;
-  @media only screen and (max-width: 1263px) {
-    justify-content: center;
-    padding: 0;
+.splash-screen {
+  &__logo-container {
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 10px;
+    @media only screen and (max-width: 1263px) {
+      justify-content: center;
+      padding: 0;
+    }
   }
-}
 
-.splash-screen__logo {
-  filter: invert(100%);
-  max-width: 6rem;
-}
-
-.splash-screen__app-name {
-  align-items: center;
-  display: flex;
-  height: 100%;
-  padding-left: 10px;
-  white-space: nowrap;
-  @media only screen and (max-width: 1263px) {
-    justify-content: center;
-    padding: 30px 0px 0px 0px;
+  &__logo {
+    filter: invert(100%);
+    max-width: 6rem;
   }
-}
 
-.splash-screen__disclaimer,
-.splash-screen__button {
-  margin-top: 60px;
-}
+  &__app-name {
+    align-items: center;
+    display: flex;
+    height: 100%;
+    padding-left: 10px;
+    white-space: nowrap;
+    @media only screen and (max-width: 1263px) {
+      justify-content: center;
+      padding: 30px 0px 0px 0px;
+    }
+  }
 
-.splash-screen__matrix-sign {
-  margin-top: 30px;
-}
+  &__disclaimer,
+  &__button {
+    margin-top: 60px;
+  }
 
-.splash-screen__no-provider {
-  display: flex;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 500;
-  text-align: center;
-}
+  &__matrix-sign {
+    margin-top: 30px;
+  }
 
-.splash-screen__message {
-  height: 35px;
-  margin-top: 40px;
+  &__no-provider {
+    display: flex;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  &__message {
+    height: 35px;
+    margin-top: 40px;
+  }
 }
 </style>

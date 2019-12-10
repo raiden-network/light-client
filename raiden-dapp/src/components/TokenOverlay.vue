@@ -142,28 +142,38 @@ export default class TokenOverlay extends Mixins(
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
 
-  ::v-deep .v-overlay__scrim {
-    background: linear-gradient(180deg, #050505 0%, #0a1923 100%) !important;
+  ::v-deep {
+    .v-overlay {
+      &__scrim {
+        background: linear-gradient(
+          180deg,
+          #050505 0%,
+          #0a1923 100%
+        ) !important;
+      }
+
+      &__content {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+      }
+    }
+
+    .v-list-item {
+      padding: 0 0 0 48px;
+    }
   }
 
-  ::v-deep .v-overlay__content {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 100%;
+  .token-network {
+    &__container {
+      padding: 0 !important;
+      height: 100%;
+    }
   }
 
-  ::v-deep .v-list-item {
-    padding: 0 0 0 48px;
-  }
-
-  .token-network__container {
-    padding: 0 !important;
-    height: 100%;
-  }
-
-  .token-network-overlay__close-button {
+  &__close-button {
     margin: 15px;
   }
 
@@ -173,49 +183,71 @@ export default class TokenOverlay extends Mixins(
     &__item-list {
       overflow-y: auto;
       @extend .themed-scrollbar;
+
+      height: 100%;
+      background-color: transparent !important;
+      padding-bottom: 0;
+      padding-top: 0;
+
+      ::v-deep {
+        .col-10 {
+          padding-left: 11px;
+        }
+      }
+    }
+
+    &__token-title {
+      font-weight: bold;
+      line-height: 20px;
+      font-size: 16px;
+    }
+
+    &__token-balance {
+      color: $color-white;
+      font-family: Roboto, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 20px;
+      height: 100%;
+      padding-right: 20px;
+    }
+
+    &__token-address {
+      color: #696969 !important;
+      line-height: 20px;
+      font-size: 16px;
     }
   }
 
-  .token-list__item-list,
-  .connect-new__item-list {
-    height: 100%;
-    background-color: transparent !important;
-    padding-bottom: 0;
-    padding-top: 0;
+  .connect-new {
+    &__item-list {
+      height: 100%;
+      background-color: transparent !important;
+      padding-bottom: 0;
+      padding-top: 0;
 
-    & ::v-deep .col-10 {
-      padding-left: 11px;
+      ::v-deep {
+        .col-10 {
+          padding-left: 11px;
+        }
+      }
+    }
+
+    &__connect-new-token {
+      font-weight: bold;
+      line-height: 20px;
+      font-size: 16px;
     }
   }
 
-  .connect-new__connect-new-token,
-  .token-network-overlay__header,
-  .token-list__token-title {
+  &__header {
     font-weight: bold;
     line-height: 20px;
     font-size: 16px;
-  }
 
-  .token-network-overlay__header {
     color: $primary-color;
     text-transform: uppercase;
     padding-left: 58px;
-  }
-
-  .token-list__token-balance {
-    color: $color-white;
-    font-family: Roboto, sans-serif;
-    font-size: 16px;
-    font-weight: bold;
-    line-height: 20px;
-    height: 100%;
-    padding-right: 20px;
-  }
-
-  .token-list__token-address {
-    color: #696969 !important;
-    line-height: 20px;
-    font-size: 16px;
   }
 }
 </style>

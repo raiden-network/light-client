@@ -87,43 +87,62 @@ export default class ChannelDeposit extends Vue {
   padding: 20px;
   background-color: $dialog-background;
   box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
+
+  &__wrapper {
+    > * {
+      height: 150px;
+      font-size: 16px;
+      line-height: 21px;
+      text-align: center;
+    }
+  }
+
+  &__buttons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+
+    button {
+      height: 35px;
+      width: 135px;
+      color: white;
+      border-radius: 29px;
+      margin-left: 15px;
+      margin-right: 15px;
+    }
+
+    &__cancel {
+      background-color: transparent !important;
+      border: 2px solid $primary-color;
+    }
+
+    &__confirm {
+      background-color: $primary-color !important;
+      color: #ffffff;
+    }
+  }
 }
 
-.channel-deposit__wrapper > * {
-  height: 150px;
-  font-size: 16px;
-  line-height: 21px;
-  text-align: center;
-}
-
-.channel-deposit__buttons {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-}
-
-.channel-deposit__buttons button {
-  height: 35px;
-  width: 135px;
-  color: white;
-  border-radius: 29px;
-  margin-left: 15px;
-  margin-right: 15px;
-}
-
-.channel-deposit__buttons__cancel {
-  background-color: transparent !important;
-  border: 2px solid $primary-color;
-}
-
-.channel-deposit__buttons__confirm {
-  background-color: $primary-color !important;
-  color: #ffffff;
-}
-
-.theme--light.v-btn.v-btn--disabled:not(.v-btn--icon):not(.v-btn--text):not(.v-btn--outline) {
-  background-color: $primary-disabled-color !important;
-  color: #c4c4c4 !important;
+.theme {
+  &--light {
+    &.v-btn {
+      &.v-btn {
+        &--disabled {
+          /* stylelint-disable */
+          // can't nest class inside nesting
+          &:not(.v-btn--icon) {
+            &:not(.v-btn--text) {
+              &:not(.v-btn--outline) {
+                background-color: $primary-disabled-color !important;
+                color: #c4c4c4 !important;
+              }
+            }
+          }
+          /* stylelint-enable */
+        }
+      }
+    }
+  }
 }
 </style>
