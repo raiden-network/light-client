@@ -84,7 +84,7 @@ export default class ErrorScreen extends Vue {
     border-radius: 15px 15px 0 0;
     background-color: $error-color;
 
-    & &__title {
+    &__title {
       height: 19px;
       width: 36px;
       color: #ffffff;
