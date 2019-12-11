@@ -6,16 +6,17 @@ import asyncPool from 'tiny-async-pool';
 
 import { Web3Provider } from 'ethers/providers';
 import { MaxUint256, AddressZero } from 'ethers/constants';
-import { ContractFactory, Contract } from 'ethers/contract';
-import { parseUnits } from 'ethers/utils';
+import { ContractFactory } from 'ethers/contract';
+import { parseUnits, ParamType } from 'ethers/utils';
 
 import { ContractsInfo } from 'raiden-ts/types';
 import { Address } from 'raiden-ts/utils/types';
 import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
 import { CustomToken } from 'raiden-ts/contracts/CustomToken';
 import { ServiceRegistry } from 'raiden-ts/contracts/ServiceRegistry';
-import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
+import { TokenNetworkRegistryFactory } from 'raiden-ts/contracts/TokenNetworkRegistryFactory';
 import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
+import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
 
 export class TestProvider extends Web3Provider {
   public constructor(opts?: GanacheServerOptions) {
@@ -63,14 +64,14 @@ export class TestProvider extends Web3Provider {
       signer = this.getSigner(address);
 
     const secretRegistryContract = await new ContractFactory(
-      Contracts.contracts.SecretRegistry.abi,
+      Contracts.contracts.SecretRegistry.abi as ParamType[],
       Contracts.contracts.SecretRegistry.bin,
       signer,
     ).deploy();
     await secretRegistryContract.deployed();
 
     const registryContract = (await new ContractFactory(
-      Contracts.contracts.TokenNetworkRegistry.abi,
+      Contracts.contracts.TokenNetworkRegistry.abi as ParamType[],
       Contracts.contracts.TokenNetworkRegistry.bin,
       signer,
     ).deploy(
@@ -85,7 +86,7 @@ export class TestProvider extends Web3Provider {
 
     // controller token for service registry
     const tokenContract = (await new ContractFactory(
-      Contracts.contracts.CustomToken.abi,
+      Contracts.contracts.CustomToken.abi as ParamType[],
       Contracts.contracts.CustomToken.bin,
       signer,
     ).deploy(parseUnits('1000000', 18), 18, `ControllerToken`, `CTK`)) as CustomToken;
@@ -93,7 +94,7 @@ export class TestProvider extends Web3Provider {
 
     const amount = 1e6;
     const serviceRegistryContract = (await new ContractFactory(
-      Contracts.contracts.ServiceRegistry.abi,
+      Contracts.contracts.ServiceRegistry.abi as ParamType[],
       Contracts.contracts.ServiceRegistry.bin,
       signer,
     ).deploy(
@@ -120,7 +121,7 @@ export class TestProvider extends Web3Provider {
     await (await serviceRegistryContract.functions.setURL('https://pfs.raiden.test')).wait();
 
     const userDepositContract = (await new ContractFactory(
-      Contracts.contracts.UserDeposit.abi,
+      Contracts.contracts.UserDeposit.abi as ParamType[],
       Contracts.contracts.UserDeposit.bin,
       signer,
     ).deploy(tokenContract.address, 1e10)) as UserDeposit;
@@ -152,20 +153,19 @@ export class TestProvider extends Web3Provider {
     const accounts = await this.listAccounts();
     const signer = this.getSigner(accounts[accounts.length - 1]);
 
-    const registryContract = new Contract(
+    const registryContract = TokenNetworkRegistryFactory.connect(
       info.TokenNetworkRegistry.address,
-      Contracts.contracts.TokenNetworkRegistry.abi,
       signer,
-    ) as TokenNetworkRegistry;
+    );
 
     const next =
       (await this.getLogs(registryContract.filters.TokenNetworkCreated(null, null))).length + 1;
 
-    const tokenContract = await new ContractFactory(
+    const tokenContract = (await new ContractFactory(
       Contracts.contracts.CustomToken.abi,
       Contracts.contracts.CustomToken.bin,
       signer,
-    ).deploy(parseUnits('1000000', 18), 18, `TestToken${next}`, `TK${next}`);
+    ).deploy(parseUnits('1000000', 18), 18, `TestToken${next}`, `TK${next}`)) as CustomToken;
     await tokenContract.deployed();
 
     const decimals = await tokenContract.functions.decimals();
