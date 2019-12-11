@@ -1,6 +1,5 @@
 import * as t from 'io-ts';
 import { AddressZero } from 'ethers/constants';
-import { DeepPartial } from 'redux';
 import { Network, getNetwork } from 'ethers/utils';
 
 import { RaidenConfig, makeDefaultConfig } from './config';
@@ -96,6 +95,12 @@ export function decodeRaidenState(data: unknown): RaidenState {
   return decode(RaidenState, data);
 }
 
+// Partial<RaidenState> which allows config: Partial<RaidenConfig>
+type PartialState = { config?: Partial<RaidenState['config']> } & Omit<
+  Partial<RaidenState>,
+  'config'
+>;
+
 /**
  * Create an initial RaidenState from common parameters (including default config)
  *
@@ -111,7 +116,7 @@ export function makeInitialState(
     address,
     contractsInfo,
   }: { network: Network; address: Address; contractsInfo: ContractsInfo },
-  overwrites: DeepPartial<RaidenState> = {},
+  overwrites: PartialState = {},
 ): RaidenState {
   return {
     address,

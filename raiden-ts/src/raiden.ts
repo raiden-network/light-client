@@ -5,7 +5,7 @@ import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
-import { Middleware, applyMiddleware, createStore, Store } from 'redux';
+import { applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
@@ -252,17 +252,10 @@ export class Raiden {
         tokenContract.functions.name().catch(constant(undefined)),
         tokenContract.functions.symbol().catch(constant(undefined)),
       ]);
+      // workaround for https://github.com/microsoft/TypeScript/issues/33752
+      if (!totalSupply || !decimals) throw new Error('Not a token contract');
       return { totalSupply, decimals, name, symbol };
     });
-
-    const middlewares: Middleware[] = [
-      createLogger({
-        predicate: () =>
-          this.config.logger !== '' &&
-          (this.config.logger !== undefined || process.env.NODE_ENV === 'development'),
-        level: () => this.config.logger || 'debug',
-      }),
-    ];
 
     this.deps = {
       latest$,
@@ -294,6 +287,13 @@ export class Raiden {
       async () => (await this.deps.userDepositContract.functions.token()) as Address,
     );
 
+    const loggerMiddleware = createLogger({
+      predicate: () =>
+        this.config.logger !== '' &&
+        (this.config.logger !== undefined || process.env.NODE_ENV === 'development'),
+      level: () => this.config.logger || 'debug',
+    });
+
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
       RaidenAction,
@@ -304,8 +304,9 @@ export class Raiden {
 
     this.store = createStore(
       raidenReducer,
-      state,
-      applyMiddleware(...middlewares, this.epicMiddleware),
+      // workaround for redux@4.0.4's error on DeepPartial<RaidenState>
+      state as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      applyMiddleware(loggerMiddleware, this.epicMiddleware),
     );
   }
 
