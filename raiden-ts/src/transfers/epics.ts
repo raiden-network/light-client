@@ -81,11 +81,11 @@ function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
   else return One as UInt<8>;
 }
 
-function dispatchAndWait<A extends RaidenAction>(
+function dispatchAndWait$<A extends RaidenAction>(
   action$: Observable<RaidenAction>,
   request: A,
   predicate: (action: RaidenAction) => boolean,
-) {
+): Observable<A> {
   return merge(
     // output once
     of(request),
@@ -114,13 +114,13 @@ function retryUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOpera
     );
 }
 
-function retrySendUntil(
+function retrySendUntil$(
   send: ActionType<typeof messageSend>,
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   predicate: (state: RaidenState) => boolean,
 ) {
-  return dispatchAndWait(
+  return dispatchAndWait$(
     action$,
     send,
     a =>
@@ -534,7 +534,7 @@ const transferSignedRetryMessage = (
     signed = action.payload.message,
     send = messageSend({ message: signed }, { address: signed.recipient });
   // emit Send once immediatelly, then wait until respective messageSent, then completes
-  return retrySendUntil(
+  return retrySendUntil$(
     send,
     action$,
     state$,
@@ -569,7 +569,7 @@ export const transferSignedRetryMessageEpic = (
     ),
   );
 
-const transferUnlockRetryMessage = (
+const transferUnlockRetryMessage$ = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   action: ActionType<typeof transferUnlocked>,
@@ -581,7 +581,7 @@ const transferUnlockRetryMessage = (
     transfer = state.sent[secrethash].transfer[1],
     send = messageSend({ message: unlock }, { address: transfer.recipient });
   // emit Send once immediatelly, then wait until respective messageSent, then completes
-  return retrySendUntil(
+  return retrySendUntil$(
     send,
     action$,
     state$,
@@ -608,12 +608,12 @@ export const transferUnlockedRetryMessageEpic = (
       action$.pipe(
         filter(isActionOf(transferUnlocked)),
         withLatestFrom(state$),
-        mergeMap(([action, state]) => transferUnlockRetryMessage(action$, state$, action, state)),
+        mergeMap(([action, state]) => transferUnlockRetryMessage$(action$, state$, action, state)),
       ),
     ),
   );
 
-const expiredRetryMessages = (
+const expiredRetryMessages$ = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   action: ActionType<typeof transferExpired>,
@@ -627,7 +627,7 @@ const expiredRetryMessages = (
       { address: state.sent[secrethash].transfer[1].recipient },
     );
   // emit Send once immediatelly, then wait until respective messageSent, then completes
-  return retrySendUntil(
+  return retrySendUntil$(
     send,
     action$,
     state$,
@@ -655,12 +655,12 @@ export const transferExpiredRetryMessageEpic = (
       action$.pipe(
         filter(isActionOf(transferExpired)),
         withLatestFrom(state$),
-        mergeMap(([action, state]) => expiredRetryMessages(action$, state$, action, state)),
+        mergeMap(([action, state]) => expiredRetryMessages$(action$, state$, action, state)),
       ),
     ),
   );
 
-function autoExpire(state: RaidenState, blockNumber: number, action$: Observable<RaidenAction>) {
+function autoExpire$(state: RaidenState, blockNumber: number, action$: Observable<RaidenAction>) {
   const requests$: Observable<ActionType<typeof transferExpire | typeof transferFailed>>[] = [];
 
   for (const [key, sent] of Object.entries(state.sent)) {
@@ -673,7 +673,7 @@ function autoExpire(state: RaidenState, blockNumber: number, action$: Observable
       continue;
     const secrethash = key as Hash;
     // this observable acts like a Promise: emits request once, completes on success/failure
-    const requestAndWait$ = dispatchAndWait(
+    const requestAndWait$ = dispatchAndWait$(
       action$,
       transferExpire(undefined, { secrethash }),
       a =>
@@ -720,7 +720,7 @@ export const transferAutoExpireEpic = (
         },
         state,
       ]) => {
-        return autoExpire(state, blockNumber, action$);
+        return autoExpire$(state, blockNumber, action$);
       },
     ),
   );
@@ -842,7 +842,7 @@ export const transferSecretRequestedEpic = (
     }),
   );
 
-const secretReveal = (
+const secretReveal$ = (
   state: RaidenState,
   action: ActionType<typeof transferSecretRequest>,
   signer: Signer,
@@ -893,7 +893,7 @@ export const transferSecretRevealEpic = (
         concatMap(action =>
           state$.pipe(
             first(),
-            mergeMap(state => secretReveal(state, action, signer)),
+            mergeMap(state => secretReveal$(state, action, signer)),
           ),
         ),
       ),
