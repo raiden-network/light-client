@@ -70,7 +70,7 @@
     "typechain-target-ethers": "^1.0.3",
     "typedoc": "0.15.0",
     "typedoc-plugin-markdown": "^2.2.14",
-    "typescript": "3.5.3",
+    "typescript": "^3.7.3",
     "vuepress": "^1.2.0"
   },
   "dependencies": {
