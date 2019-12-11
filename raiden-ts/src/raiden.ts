@@ -21,17 +21,7 @@ import {
   merge as _merge,
 } from 'lodash';
 import { Observable, AsyncSubject, from, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import {
-  first,
-  filter,
-  map,
-  distinctUntilChanged,
-  scan,
-  concatMap,
-  mergeMap,
-  pluck,
-  skip,
-} from 'rxjs/operators';
+import { first, filter, map, scan, concatMap, mergeMap, pluck, skip } from 'rxjs/operators';
 
 import './polyfills';
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
@@ -52,7 +42,7 @@ import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, makeInitialState, encodeRaidenState, decodeRaidenState } from './state';
 import { RaidenConfig } from './config';
-import { RaidenChannels } from './channels/state';
+import { RaidenChannels, RaidenChannel, Channel } from './channels/state';
 import { channelAmounts } from './channels/utils';
 import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
@@ -96,6 +86,92 @@ import { pluckDistinct } from './utils/rx';
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
   private readonly deps: RaidenEpicDeps;
+
+  /**
+   * Transforms the redux channel state to [[RaidenChannels]]
+   *
+   * @param state - current state
+   * @returns raiden channels
+   */
+  private mapTokenToPartner = (state: RaidenState): RaidenChannels =>
+    transform(
+      // transform state.channels to token-partner-raidenChannel map
+      state.channels,
+      (result: RaidenChannels, partnerChannelMap, tokenNetwork) => {
+        const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
+        if (!token) return; // shouldn't happen, token mapping is always bi-directional
+        result[token] = this.mapPartnerToChannel(partnerChannelMap, token, tokenNetwork);
+      },
+    );
+
+  /**
+   * Returns an object that maps partner addresses to their [[RaidenChannel]].
+   *
+   * @param partnerChannelMap - an object that maps partnerAddress to a channel
+   * @param token - a token address
+   * @param tokenNetwork - a token network
+   * @returns raiden channel
+   */
+  private mapPartnerToChannel = (
+    partnerChannelMap: {
+      [partner: string]: Channel;
+    },
+    token: Address,
+    tokenNetwork: string,
+  ): { [partner: string]: RaidenChannel } =>
+    transform(
+      // transform Channel to RaidenChannel, with more info
+      partnerChannelMap,
+      (partner2raidenChannel, channel, partner) => {
+        const {
+          ownDeposit,
+          partnerDeposit,
+          ownBalance: balance,
+          ownCapacity: capacity,
+        } = channelAmounts(channel);
+
+        partner2raidenChannel[partner] = {
+          state: channel.state,
+          ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
+          token,
+          tokenNetwork: tokenNetwork as Address,
+          partner: partner as Address,
+          ownDeposit,
+          partnerDeposit,
+          balance,
+          capacity,
+        };
+      },
+    );
+
+  /**
+   * Initializes the [[transfers$]] observable
+   *
+   * @param state$ - Observable of the current RaidenState
+   * @returns observable of sent and completed Raiden transfers
+   */
+  private initTransfersObservable = (
+    state$: Observable<RaidenState>,
+  ): Observable<RaidenSentTransfer> =>
+    state$.pipe(
+      pluckDistinct('sent'),
+      concatMap(sent => from(Object.entries(sent))),
+      /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
+       * changes from last time seen. It relies on value references changing only if needed */
+      scan<[string, SentTransfer], { acc: SentTransfers; changed?: SentTransfer }>(
+        ({ acc }, [secrethash, sent]) =>
+          // if ref didn't change, emit previous accumulator, without 'changed' value
+          acc[secrethash] === sent
+            ? { acc }
+            : // else, update ref in 'acc' and emit value in 'changed' prop
+              { acc: { ...acc, [secrethash]: sent }, changed: sent },
+        { acc: {} },
+      ),
+      pluck('changed'),
+      filter(isntNil), // filter out if reference didn't change from last emit
+      // from here, we get SentTransfer objects which changed from previous state (all on first)
+      map(raidenSentTransfer),
+    );
 
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
@@ -182,65 +258,8 @@ export class Raiden {
     this.state$ = latest$.pipe(pluckDistinct('state'));
     // pipe action, skipping cached
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
-
-    this.channels$ = this.state$.pipe(
-      map(state =>
-        transform(
-          // transform state.channels to token-partner-raidenChannel map
-          state.channels,
-          (result, partner2channel, tokenNetwork) => {
-            const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
-            if (!token) return; // shouldn't happen, token mapping is always bi-directional
-            result[token] = transform(
-              // transform Channel to RaidenChannel, with more info
-              partner2channel,
-              (partner2raidenChannel, channel, partner) => {
-                const {
-                  ownDeposit,
-                  partnerDeposit,
-                  ownBalance: balance,
-                  ownCapacity: capacity,
-                } = channelAmounts(channel);
-
-                partner2raidenChannel[partner] = {
-                  state: channel.state,
-                  ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
-                  token,
-                  tokenNetwork: tokenNetwork as Address,
-                  partner: partner as Address,
-                  ownDeposit,
-                  partnerDeposit,
-                  balance,
-                  capacity,
-                };
-              },
-            );
-          },
-        ),
-      ),
-    );
-
-    this.transfers$ = this.state$.pipe(
-      pluck('sent'),
-      distinctUntilChanged(),
-      concatMap(sent => from(Object.entries(sent))),
-      /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
-       * changes from last time seen. It relies on value references changing only if needed */
-      scan<[string, SentTransfer], { acc: SentTransfers; changed?: SentTransfer }>(
-        ({ acc }, [secrethash, sent]) =>
-          // if ref didn't change, emit previous accumulator, without 'changed' value
-          acc[secrethash] === sent
-            ? { acc }
-            : // else, update ref in 'acc' and emit value in 'changed' prop
-              { acc: { ...acc, [secrethash]: sent }, changed: sent },
-        { acc: {} },
-      ),
-      pluck('changed'),
-      filter(isntNil), // filter out if reference didn't change from last emit
-      // from here, we get SentTransfer objects which changed from previous state (all on first)
-      map(raidenSentTransfer),
-    );
-
+    this.channels$ = this.state$.pipe(map(state => this.mapTokenToPartner(state)));
+    this.transfers$ = this.initTransfersObservable(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
