@@ -12,13 +12,6 @@
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "baseUrl": ".",
-    "types": [
-      "webpack-env",
-      "jest",
-      "vuetify",
-      "webpack",
-      "webpack-env"
-    ],
     "paths": {
       "@/*": [
         "src/*"
@@ -46,8 +39,8 @@
       "scripthost"
     ],
     "typeRoots": [
-      "node_modules/@types",
-      "../raiden-ts/typings"
+      "./node_modules/@types",
+      "./node_modules/raiden-ts/typings"
     ]
   },
   "include": [
