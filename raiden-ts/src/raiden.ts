@@ -88,92 +88,6 @@ export class Raiden {
   private readonly deps: RaidenEpicDeps;
 
   /**
-   * Transforms the redux channel state to [[RaidenChannels]]
-   *
-   * @param state - current state
-   * @returns raiden channels
-   */
-  private mapTokenToPartner = (state: RaidenState): RaidenChannels =>
-    transform(
-      // transform state.channels to token-partner-raidenChannel map
-      state.channels,
-      (result: RaidenChannels, partnerChannelMap, tokenNetwork) => {
-        const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
-        if (!token) return; // shouldn't happen, token mapping is always bi-directional
-        result[token] = this.mapPartnerToChannel(partnerChannelMap, token, tokenNetwork);
-      },
-    );
-
-  /**
-   * Returns an object that maps partner addresses to their [[RaidenChannel]].
-   *
-   * @param partnerChannelMap - an object that maps partnerAddress to a channel
-   * @param token - a token address
-   * @param tokenNetwork - a token network
-   * @returns raiden channel
-   */
-  private mapPartnerToChannel = (
-    partnerChannelMap: {
-      [partner: string]: Channel;
-    },
-    token: Address,
-    tokenNetwork: string,
-  ): { [partner: string]: RaidenChannel } =>
-    transform(
-      // transform Channel to RaidenChannel, with more info
-      partnerChannelMap,
-      (partner2raidenChannel, channel, partner) => {
-        const {
-          ownDeposit,
-          partnerDeposit,
-          ownBalance: balance,
-          ownCapacity: capacity,
-        } = channelAmounts(channel);
-
-        partner2raidenChannel[partner] = {
-          state: channel.state,
-          ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
-          token,
-          tokenNetwork: tokenNetwork as Address,
-          partner: partner as Address,
-          ownDeposit,
-          partnerDeposit,
-          balance,
-          capacity,
-        };
-      },
-    );
-
-  /**
-   * Initializes the [[transfers$]] observable
-   *
-   * @param state$ - Observable of the current RaidenState
-   * @returns observable of sent and completed Raiden transfers
-   */
-  private initTransfersObservable = (
-    state$: Observable<RaidenState>,
-  ): Observable<RaidenSentTransfer> =>
-    state$.pipe(
-      pluckDistinct('sent'),
-      concatMap(sent => from(Object.entries(sent))),
-      /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
-       * changes from last time seen. It relies on value references changing only if needed */
-      scan<[string, SentTransfer], { acc: SentTransfers; changed?: SentTransfer }>(
-        ({ acc }, [secrethash, sent]) =>
-          // if ref didn't change, emit previous accumulator, without 'changed' value
-          acc[secrethash] === sent
-            ? { acc }
-            : // else, update ref in 'acc' and emit value in 'changed' prop
-              { acc: { ...acc, [secrethash]: sent }, changed: sent },
-        { acc: {} },
-      ),
-      pluck('changed'),
-      filter(isntNil), // filter out if reference didn't change from last emit
-      // from here, we get SentTransfer objects which changed from previous state (all on first)
-      map(raidenSentTransfer),
-    );
-
-  /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
    * must not be relied on, as its actions interfaces and structures can change without warning.
    */
@@ -330,6 +244,92 @@ export class Raiden {
   }
 
   /**
+   * Transforms the redux channel state to [[RaidenChannels]]
+   *
+   * @param state - current state
+   * @returns raiden channels
+   */
+  private mapTokenToPartner = (state: RaidenState): RaidenChannels =>
+    transform(
+      // transform state.channels to token-partner-raidenChannel map
+      state.channels,
+      (result: RaidenChannels, partnerChannelMap, tokenNetwork) => {
+        const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
+        if (!token) return; // shouldn't happen, token mapping is always bi-directional
+        result[token] = this.mapPartnerToChannel(partnerChannelMap, token, tokenNetwork);
+      },
+    );
+
+  /**
+   * Returns an object that maps partner addresses to their [[RaidenChannel]].
+   *
+   * @param partnerChannelMap - an object that maps partnerAddress to a channel
+   * @param token - a token address
+   * @param tokenNetwork - a token network
+   * @returns raiden channel
+   */
+  private mapPartnerToChannel = (
+    partnerChannelMap: {
+      [partner: string]: Channel;
+    },
+    token: Address,
+    tokenNetwork: string,
+  ): { [partner: string]: RaidenChannel } =>
+    transform(
+      // transform Channel to RaidenChannel, with more info
+      partnerChannelMap,
+      (partner2raidenChannel, channel, partner) => {
+        const {
+          ownDeposit,
+          partnerDeposit,
+          ownBalance: balance,
+          ownCapacity: capacity,
+        } = channelAmounts(channel);
+
+        partner2raidenChannel[partner] = {
+          state: channel.state,
+          ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
+          token,
+          tokenNetwork: tokenNetwork as Address,
+          partner: partner as Address,
+          ownDeposit,
+          partnerDeposit,
+          balance,
+          capacity,
+        };
+      },
+    );
+
+  /**
+   * Initializes the [[transfers$]] observable
+   *
+   * @param state$ - Observable of the current RaidenState
+   * @returns observable of sent and completed Raiden transfers
+   */
+  private initTransfersObservable = (
+    state$: Observable<RaidenState>,
+  ): Observable<RaidenSentTransfer> =>
+    state$.pipe(
+      pluckDistinct('sent'),
+      concatMap(sent => from(Object.entries(sent))),
+      /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
+       * changes from last time seen. It relies on value references changing only if needed */
+      scan<[string, SentTransfer], { acc: SentTransfers; changed?: SentTransfer }>(
+        ({ acc }, [secrethash, sent]) =>
+          // if ref didn't change, emit previous accumulator, without 'changed' value
+          acc[secrethash] === sent
+            ? { acc }
+            : // else, update ref in 'acc' and emit value in 'changed' prop
+              { acc: { ...acc, [secrethash]: sent }, changed: sent },
+        { acc: {} },
+      ),
+      pluck('changed'),
+      filter(isntNil), // filter out if reference didn't change from last emit
+      // from here, we get SentTransfer objects which changed from previous state (all on first)
+      map(raidenSentTransfer),
+    );
+
+  /**
    * Async helper factory to make a Raiden instance from more common parameters.
    *
    * An async factory is needed so we can do the needed async requests to construct the required
@@ -435,8 +435,8 @@ export class Raiden {
       return storageOrState && typeof (storageOrState as Storage).getItem === 'function';
     }
 
-    let onState: ((state: RaidenState) => void) | undefined = undefined,
-      onStateComplete: (() => void) | undefined = undefined;
+    let onState: ((state: RaidenState) => void) | undefined = undefined;
+    let onStateComplete: (() => void) | undefined = undefined;
 
     if (storageOrState && isStorage(storageOrState)) {
       const ns = `raiden_${network.name || network.chainId}_${
@@ -818,10 +818,10 @@ export class Raiden {
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const decodedValue = decode(UInt(32), value),
-      paymentId = options.paymentId ? decode(UInt(8), options.paymentId) : makePaymentId(),
-      paths = options.paths ? decode(Paths, options.paths) : undefined,
-      pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
+    const decodedValue = decode(UInt(32), value);
+    const paymentId = options.paymentId ? decode(UInt(8), options.paymentId) : makePaymentId();
+    const paths = options.paths ? decode(Paths, options.paths) : undefined;
+    const pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
 
     if (options.secret !== undefined && !Secret.is(options.secret))
       throw new Error('Invalid options.secret');
@@ -830,11 +830,11 @@ export class Raiden {
 
     // use provided secret or create one if no secrethash was provided
     const secret = options.secret
-        ? options.secret
-        : !options.secrethash
-        ? makeSecret()
-        : undefined,
-      secrethash = options.secrethash || getSecrethash(secret!);
+      ? options.secret
+      : !options.secrethash
+      ? makeSecret()
+      : undefined;
+    const secrethash = options.secrethash || getSecrethash(secret!);
     if (secret && getSecrethash(secret) !== secrethash)
       throw new Error('Provided secrethash must match the sha256 hash of provided secret');
 
@@ -921,8 +921,8 @@ export class Raiden {
     const tokenNetwork = this.state.tokens[token];
     if (!tokenNetwork) throw new Error('Unknown token network');
 
-    const decodedValue = decode(UInt(32), value),
-      pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
+    const decodedValue = decode(UInt(32), value);
+    const pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
 
     const promise = this.action$
       .pipe(
@@ -1043,17 +1043,17 @@ export class Raiden {
    * @returns Promise to UDC remaining capacity
    */
   public async getUDCCapacity(): Promise<BigNumber> {
-    const balance = await this.deps.userDepositContract.functions.balances(this.deps.address),
-      blockNumber = this.state.blockNumber,
-      owedAmount = Object.values(this.state.path.iou)
-        .reduce((acc, value) => {
-          const nonExpiredIOUs = Object.values(value).filter(value =>
-            value.expiration_block.gte(blockNumber),
-          );
-          acc.push(...nonExpiredIOUs);
-          return acc;
-        }, new Array<IOU>())
-        .reduce((acc, iou) => acc.add(iou.amount), Zero);
+    const balance = await this.deps.userDepositContract.functions.balances(this.deps.address);
+    const blockNumber = this.state.blockNumber;
+    const owedAmount = Object.values(this.state.path.iou)
+      .reduce((acc, value) => {
+        const nonExpiredIOUs = Object.values(value).filter(value =>
+          value.expiration_block.gte(blockNumber),
+        );
+        acc.push(...nonExpiredIOUs);
+        return acc;
+      }, new Array<IOU>())
+      .reduce((acc, iou) => acc.add(iou.amount), Zero);
     return balance.sub(owedAmount);
   }
 
