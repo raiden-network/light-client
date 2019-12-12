@@ -1,5 +1,4 @@
 import { Signer } from 'ethers';
-import { Wallet } from 'ethers/wallet';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
@@ -10,18 +9,9 @@ import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
-import {
-  debounce,
-  findKey,
-  transform,
-  constant,
-  memoize,
-  pick,
-  isEmpty,
-  merge as _merge,
-} from 'lodash';
-import { Observable, AsyncSubject, from, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import { first, filter, map, scan, concatMap, mergeMap, pluck, skip } from 'rxjs/operators';
+import { debounce, constant, memoize, isEmpty, merge as _merge } from 'lodash';
+import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
+import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
 
 import './polyfills';
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
@@ -31,20 +21,12 @@ import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 import { UserDepositFactory } from './contracts/UserDepositFactory';
 
-import ropstenDeploy from './deployment/deployment_ropsten.json';
-import rinkebyDeploy from './deployment/deployment_rinkeby.json';
-import goerliDeploy from './deployment/deployment_goerli.json';
-import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
-import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
-import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
-
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, makeInitialState, encodeRaidenState, decodeRaidenState } from './state';
 import { RaidenConfig } from './config';
-import { RaidenChannels, RaidenChannel, Channel } from './channels/state';
-import { channelAmounts } from './channels/utils';
-import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
+import { RaidenChannels } from './channels/state';
+import { RaidenSentTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import {
@@ -74,14 +56,15 @@ import {
   matrixRequestMonitorPresence,
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
-import { makeSecret, raidenSentTransfer, getSecrethash, makePaymentId } from './transfers/utils';
+import { makeSecret, getSecrethash, makePaymentId } from './transfers/utils';
 import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
-import { Address, PrivateKey, Secret, Storage, Hash, UInt, decode, isntNil } from './utils/types';
+import { Address, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { losslessParse } from './utils/data';
 import { pluckDistinct } from './utils/rx';
+import { getContracts, getSigner, initTransfersObservable, mapTokenToPartner } from './helpers';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -172,8 +155,8 @@ export class Raiden {
     this.state$ = latest$.pipe(pluckDistinct('state'));
     // pipe action, skipping cached
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
-    this.channels$ = this.state$.pipe(map(state => this.mapTokenToPartner(state)));
-    this.transfers$ = this.initTransfersObservable(this.state$);
+    this.channels$ = this.state$.pipe(map(state => mapTokenToPartner(state)));
+    this.transfers$ = initTransfersObservable(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
@@ -244,92 +227,6 @@ export class Raiden {
   }
 
   /**
-   * Transforms the redux channel state to [[RaidenChannels]]
-   *
-   * @param state - current state
-   * @returns raiden channels
-   */
-  private mapTokenToPartner = (state: RaidenState): RaidenChannels =>
-    transform(
-      // transform state.channels to token-partner-raidenChannel map
-      state.channels,
-      (result: RaidenChannels, partnerChannelMap, tokenNetwork) => {
-        const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
-        if (!token) return; // shouldn't happen, token mapping is always bi-directional
-        result[token] = this.mapPartnerToChannel(partnerChannelMap, token, tokenNetwork);
-      },
-    );
-
-  /**
-   * Returns an object that maps partner addresses to their [[RaidenChannel]].
-   *
-   * @param partnerChannelMap - an object that maps partnerAddress to a channel
-   * @param token - a token address
-   * @param tokenNetwork - a token network
-   * @returns raiden channel
-   */
-  private mapPartnerToChannel = (
-    partnerChannelMap: {
-      [partner: string]: Channel;
-    },
-    token: Address,
-    tokenNetwork: string,
-  ): { [partner: string]: RaidenChannel } =>
-    transform(
-      // transform Channel to RaidenChannel, with more info
-      partnerChannelMap,
-      (partner2raidenChannel, channel, partner) => {
-        const {
-          ownDeposit,
-          partnerDeposit,
-          ownBalance: balance,
-          ownCapacity: capacity,
-        } = channelAmounts(channel);
-
-        partner2raidenChannel[partner] = {
-          state: channel.state,
-          ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
-          token,
-          tokenNetwork: tokenNetwork as Address,
-          partner: partner as Address,
-          ownDeposit,
-          partnerDeposit,
-          balance,
-          capacity,
-        };
-      },
-    );
-
-  /**
-   * Initializes the [[transfers$]] observable
-   *
-   * @param state$ - Observable of the current RaidenState
-   * @returns observable of sent and completed Raiden transfers
-   */
-  private initTransfersObservable = (
-    state$: Observable<RaidenState>,
-  ): Observable<RaidenSentTransfer> =>
-    state$.pipe(
-      pluckDistinct('sent'),
-      concatMap(sent => from(Object.entries(sent))),
-      /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
-       * changes from last time seen. It relies on value references changing only if needed */
-      scan<[string, SentTransfer], { acc: SentTransfers; changed?: SentTransfer }>(
-        ({ acc }, [secrethash, sent]) =>
-          // if ref didn't change, emit previous accumulator, without 'changed' value
-          acc[secrethash] === sent
-            ? { acc }
-            : // else, update ref in 'acc' and emit value in 'changed' prop
-              { acc: { ...acc, [secrethash]: sent }, changed: sent },
-        { acc: {} },
-      ),
-      pluck('changed'),
-      filter(isntNil), // filter out if reference didn't change from last emit
-      // from here, we get SentTransfer objects which changed from previous state (all on first)
-      map(raidenSentTransfer),
-    );
-
-  /**
    * Async helper factory to make a Raiden instance from more common parameters.
    *
    * An async factory is needed so we can do the needed async requests to construct the required
@@ -379,52 +276,10 @@ export class Raiden {
 
     // if no ContractsInfo, try to populate from defaults
     if (!contracts) {
-      switch (network.name) {
-        case 'rinkeby':
-          contracts = ({
-            ...rinkebyDeploy.contracts,
-            ...rinkebyServicesDeploy.contracts,
-          } as unknown) as ContractsInfo;
-          break;
-        case 'ropsten':
-          contracts = ({
-            ...ropstenDeploy.contracts,
-            ...ropstenServicesDeploy.contracts,
-          } as unknown) as ContractsInfo;
-          break;
-        case 'goerli':
-          contracts = ({
-            ...goerliDeploy.contracts,
-            ...goerliServicesDeploy.contracts,
-          } as unknown) as ContractsInfo;
-          break;
-        default:
-          throw new Error(
-            `No deploy info provided nor recognized network: ${JSON.stringify(network)}`,
-          );
-      }
+      contracts = getContracts(network);
     }
 
-    let signer: Signer;
-    if (Signer.isSigner(account)) {
-      if (account.provider === provider) signer = account;
-      else if (account instanceof Wallet) signer = account.connect(provider);
-      else throw new Error(`Signer ${account} not connected to ${provider}`);
-    } else if (typeof account === 'number') {
-      // index of account in provider
-      signer = provider.getSigner(account);
-    } else if (Address.is(account)) {
-      // address
-      const accounts = await provider.listAccounts();
-      if (!accounts.includes(account))
-        throw new Error(`Account "${account}" not found in provider, got=${accounts}`);
-      signer = provider.getSigner(account);
-    } else if (PrivateKey.is(account)) {
-      // private key
-      signer = new Wallet(account, provider);
-    } else {
-      throw new Error('String account must be either a 0x-encoded address or private key');
-    }
+    const signer: Signer = await getSigner(account, provider);
     const address = (await signer.getAddress()) as Address;
 
     // build an initial state and default config!
