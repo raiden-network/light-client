@@ -31,7 +31,7 @@ import * as PathFindEpics from './path/epics';
  * @param state$ - Observable of RaidenStates
  * @returns latest$ observable
  */
-const getLatest$ = (action$: Observable<RaidenAction>, state$: Observable<RaidenState>) =>
+export const getLatest$ = (action$: Observable<RaidenAction>, state$: Observable<RaidenState>) =>
   combineLatest([
     action$,
     state$,

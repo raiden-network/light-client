@@ -10,7 +10,6 @@ import {
   ignoreElements,
   map,
   mergeMap,
-  publishReplay,
   repeatWhen,
   take,
   takeUntil,
@@ -69,6 +68,7 @@ import {
 } from './actions';
 import { getLocksroot, getSecrethash, makeMessageId } from './utils';
 import { Signer } from 'ethers';
+import { pluckDistinct } from '../utils/rx';
 
 /**
  * Return the next nonce for a (possibly missing) balanceProof, or else BigNumber(1)
@@ -220,8 +220,7 @@ function makeAndSignTransfer$(
  *
  * @param state$ - Observable of current state
  * @param action - transfer request action to be sent
- * @param deps
- * @param network,address,signer - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps
  * @returns Observable of transferSigned|transferSecret|transferFailed actions
  */
 function makeAndSignTransfer(
@@ -519,31 +518,29 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
   | typeof transferExpired
   | typeof transferExpireFailed
   | typeof withdrawSendConfirmation
->> =>
-  state$.pipe(
-    publishReplay(1, undefined, state$ => {
-      const withdrawCache = new LruCache<string, Signed<WithdrawConfirmation>>(32);
-      return action$.pipe(
-        filter(isActionOf([transfer, transferUnlock, transferExpire, withdrawReceiveRequest])),
-        concatMap(action => {
-          switch (action.type) {
-            case getType(transfer): {
-              return makeAndSignTransfer(state$, action, deps);
-            }
-            case getType(transferUnlock): {
-              return makeAndSignUnlock(state$, action, deps);
-            }
-            case getType(transferExpire): {
-              return makeAndSignLockExpired(state$, action, deps);
-            }
-            default: {
-              return makeAndSignWithdrawConfirmation(state$, action, deps, withdrawCache);
-            }
-          }
-        }),
-      );
+>> => {
+  const withdrawCache = new LruCache<string, Signed<WithdrawConfirmation>>(32);
+  const latestState$ = deps.latest$.pipe(pluckDistinct('state'));
+  return action$.pipe(
+    filter(isActionOf([transfer, transferUnlock, transferExpire, withdrawReceiveRequest])),
+    concatMap(action => {
+      switch (action.type) {
+        case getType(transfer): {
+          return makeAndSignTransfer(latestState$, action, deps);
+        }
+        case getType(transferUnlock): {
+          return makeAndSignUnlock(latestState$, action, deps);
+        }
+        case getType(transferExpire): {
+          return makeAndSignLockExpired(latestState$, action, deps);
+        }
+        default: {
+          return makeAndSignWithdrawConfirmation(latestState$, action, deps, withdrawCache);
+        }
+      }
     }),
   );
+};
 
 const transferSignedRetryMessage = (
   action$: Observable<RaidenAction>,
@@ -579,13 +576,12 @@ const transferSignedRetryMessage = (
 export const transferSignedRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
+  { latest$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof messageSend>> =>
-  state$.pipe(
-    publishReplay(1, undefined, state$ =>
-      action$.pipe(
-        filter(isActionOf(transferSigned)),
-        mergeMap(action => transferSignedRetryMessage(action$, state$, action)),
-      ),
+  action$.pipe(
+    filter(isActionOf(transferSigned)),
+    mergeMap(action =>
+      transferSignedRetryMessage(action$, latest$.pipe(pluckDistinct('state')), action),
     ),
   );
 
@@ -617,19 +613,19 @@ const transferUnlockRetryMessage$ = (
  *
  * @param action$ - Observable of transferUnlocked actions
  * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps
  * @returns Observable of messageSend actions
  */
 export const transferUnlockedRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
+  { latest$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof messageSend>> =>
-  state$.pipe(
-    publishReplay(1, undefined, state$ =>
-      action$.pipe(
-        filter(isActionOf(transferUnlocked)),
-        withLatestFrom(state$),
-        mergeMap(([action, state]) => transferUnlockRetryMessage$(action$, state$, action, state)),
-      ),
+  action$.pipe(
+    filter(isActionOf(transferUnlocked)),
+    withLatestFrom(latest$.pipe(pluckDistinct('state'))),
+    mergeMap(([action, state]) =>
+      transferUnlockRetryMessage$(action$, latest$.pipe(pluckDistinct('state')), action, state),
     ),
   );
 
@@ -669,14 +665,13 @@ const expiredRetryMessages$ = (
 export const transferExpiredRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
+  { latest$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof messageSend>> =>
-  state$.pipe(
-    publishReplay(1, undefined, state$ =>
-      action$.pipe(
-        filter(isActionOf(transferExpired)),
-        withLatestFrom(state$),
-        mergeMap(([action, state]) => expiredRetryMessages$(action$, state$, action, state)),
-      ),
+  action$.pipe(
+    filter(isActionOf(transferExpired)),
+    withLatestFrom(latest$.pipe(pluckDistinct('state'))),
+    mergeMap(([action, state]) =>
+      expiredRetryMessages$(action$, latest$.pipe(pluckDistinct('state')), action, state),
     ),
   );
 
@@ -904,18 +899,14 @@ const secretReveal$ = (
 export const transferSecretRevealEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { signer }: RaidenEpicDeps,
+  { signer, latest$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof transferSecretReveal | typeof messageSend>> =>
-  state$.pipe(
-    publishReplay(1, undefined, state$ =>
-      action$.pipe(
-        filter(isActionOf(transferSecretRequest)),
-        concatMap(action =>
-          state$.pipe(
-            first(),
-            mergeMap(state => secretReveal$(state, action, signer)),
-          ),
-        ),
+  action$.pipe(
+    filter(isActionOf(transferSecretRequest)),
+    concatMap(action =>
+      latest$.pipe(pluckDistinct('state')).pipe(
+        first(),
+        mergeMap(state => secretReveal$(state, action, signer)),
       ),
     ),
   );
