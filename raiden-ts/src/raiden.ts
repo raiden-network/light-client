@@ -63,7 +63,12 @@ import { pfsListInfo } from './path/utils';
 import { Address, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
-import { getContracts, getSigner, initTransfersObservable, mapTokenToPartner } from './helpers';
+import {
+  getContracts,
+  getSigner,
+  initTransfersObservable,
+  mapTokenToPartner,
+} from './raiden/helpers';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
