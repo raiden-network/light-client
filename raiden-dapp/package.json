@@ -10,10 +10,10 @@
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
     "test:e2e": "vue-cli-service test:e2e",
-    "lint": "vue-cli-service lint",
+    "lint": "vue-cli-service lint && stylelint --fix ./src/**/*.{vue,scss}",
     "build:raiden-package": "vue-cli-service build --mode raiden-package",
     "i18n:report": "vue-cli-service i18n:report --src './src/**/*.?(js|vue)' --locales './src/locales/**/*.json'",
-    "lint:check": "vue-cli-service lint --no-fix --max-warnings 0"
+    "lint:check": "vue-cli-service lint --no-fix --max-warnings 0 && stylelint ./src/**/*.{vue,scss}"
   },
   "dependencies": {
     "core-js": "^3.5.0",
