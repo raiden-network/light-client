@@ -72,7 +72,7 @@ export function pfsInfo(
     network_info: t.type({
       // literals will fail if trying to decode anything different from these constants
       chain_id: t.literal(network.chainId),
-      registry_address: t.literal(contractsInfo.TokenNetworkRegistry.address),
+      token_network_registry_address: t.literal(contractsInfo.TokenNetworkRegistry.address),
     }),
     operator: t.string,
     payment_address: Address,

@@ -56,7 +56,7 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
       message: 'pfs message',
       network_info: {
         chain_id: depsMock.network.chainId,
-        registry_address: depsMock.contractsInfo.TokenNetworkRegistry.address,
+        token_network_registry_address: depsMock.contractsInfo.TokenNetworkRegistry.address,
       },
       operator: 'pfs operator',
       payment_address: pfsAddress,
