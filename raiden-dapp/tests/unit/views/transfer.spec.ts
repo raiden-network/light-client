@@ -130,10 +130,13 @@ describe('Transfer.vue', () => {
     const amountInput = wrapper.findAll('input').at(1);
 
     mockInput(addressInput, '0x32bBc8ba52FB6F61C24809FdeDA1baa5E55e55EA');
+    await wrapper.vm.$nextTick();
     mockInput(amountInput, '0.01');
+    await wrapper.vm.$nextTick();
     wrapper.setData({
       valid: true
     });
+    await wrapper.vm.$nextTick();
 
     const button = wrapper.find('.action-button__button');
     expect(button.attributes()['disabled']).toBeUndefined();
