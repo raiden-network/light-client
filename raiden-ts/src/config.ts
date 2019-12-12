@@ -1,6 +1,5 @@
 import * as t from 'io-ts';
 import { Network } from 'ethers/utils';
-import { DeepPartial } from 'redux';
 import { Address } from './utils/types';
 
 /**
@@ -61,7 +60,7 @@ export interface RaidenConfig extends t.TypeOf<typeof RaidenConfig> {}
  */
 export function makeDefaultConfig(
   { network }: { network: Network },
-  overwrites: DeepPartial<RaidenConfig> = {},
+  overwrites: Partial<RaidenConfig> = {},
 ): RaidenConfig {
   return {
     matrixServerLookup:

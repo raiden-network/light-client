@@ -1,4 +1,3 @@
-/// <reference path="../typings/matrix-js-sdk/index.d.ts" />
 import { AsyncSubject, Subject, Observable } from 'rxjs';
 import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
