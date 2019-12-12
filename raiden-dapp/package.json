@@ -65,7 +65,7 @@
     "eslint-plugin-vue-i18n": "^0.3.0",
     "eslint-plugin-vuetify": "^1.0.0-beta.5",
     "flush-promises": "^1.0.2",
-    "jest-junit": "^9.0.0",
+    "jest-junit": "^10.0.0",
     "sass": "^1.23.7",
     "sass-loader": "^8.0.0",
     "source-map-loader": "^0.2.4",
