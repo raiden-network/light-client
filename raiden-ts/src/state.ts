@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import { AddressZero } from 'ethers/constants';
 import { Network, getNetwork } from 'ethers/utils';
+import { debounce, merge as _merge } from 'lodash';
 
 import { RaidenConfig, makeDefaultConfig } from './config';
 import { ContractsInfo } from './types';
@@ -151,3 +152,69 @@ export const initialState = makeInitialState({
     UserDeposit: { address: AddressZero as Address, block_number: 0 },
   },
 });
+
+/**
+ * Checks whether `storageOrState` is [[Storage]]
+ *
+ * @param storageOrState - either state or [[Storage]]
+ * @returns true if storageOrState is [[Storage]]
+ */
+const isStorage = (storageOrState: unknown): storageOrState is Storage =>
+  storageOrState && typeof (storageOrState as Storage).getItem === 'function';
+
+/**
+ * Loads state from `storageOrState`. Returns the initial [[RaidenState]] if
+ * `storageOrState` does not exist.
+ *
+ * @param network - current network
+ * @param contracts - current contracts
+ * @param address - current address of the signer
+ * @param storageOrState - either [[Storage]] or [[RaidenState]]
+ * @param config - raiden config
+ * @returns true if storageOrState is [[Storage]]
+ */
+export const getState = async (
+  network: Network,
+  contracts: ContractsInfo,
+  address: Address,
+  storageOrState?: unknown,
+  config?: Partial<RaidenConfig>,
+): Promise<{
+  state: RaidenState;
+  onState?: (state: RaidenState) => void;
+  onStateComplete?: () => void;
+}> => {
+  let loadedState = makeInitialState({ network, address, contractsInfo: contracts }, { config });
+  let onState;
+  let onStateComplete;
+
+  if (storageOrState && isStorage(storageOrState)) {
+    const ns = `raiden_${network.name || network.chainId}_${
+      contracts.TokenNetworkRegistry.address
+    }_${address}`;
+    const loaded = _merge(
+      {},
+      loadedState,
+      losslessParse((await storageOrState.getItem(ns)) || 'null'),
+    );
+
+    loadedState = decodeRaidenState(loaded);
+
+    // to be subscribed on raiden.state$
+    const debouncedState = debounce(
+      (state: RaidenState): void => {
+        storageOrState.setItem(ns, encodeRaidenState(state));
+      },
+      1000,
+      { maxWait: 5000 },
+    );
+    onState = debouncedState;
+    onStateComplete = () => debouncedState.flush();
+  } else if (storageOrState && RaidenState.is(storageOrState)) {
+    loadedState = storageOrState;
+  } else if (storageOrState) {
+    loadedState = decodeRaidenState(storageOrState);
+  }
+
+  return { state: loadedState, onState, onStateComplete };
+};

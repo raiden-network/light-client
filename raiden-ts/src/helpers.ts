@@ -5,14 +5,14 @@ import { Observable, from } from 'rxjs';
 import { filter, map, scan, concatMap, pluck } from 'rxjs/operators';
 import { findKey, transform, pick } from 'lodash';
 
-import { raidenSentTransfer } from './transfers/utils';
 import { RaidenState } from './state';
-import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
-import { RaidenChannels, RaidenChannel, Channel } from './channels/state';
-import { Address, PrivateKey, isntNil } from './utils/types';
 import { ContractsInfo } from './types';
+import { raidenSentTransfer } from './transfers/utils';
+import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
 import { channelAmounts } from './channels/utils';
+import { RaidenChannels, RaidenChannel, Channel } from './channels/state';
 import { pluckDistinct } from './utils/rx';
+import { Address, PrivateKey, isntNil } from './utils/types';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';

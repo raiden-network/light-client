@@ -9,7 +9,7 @@ import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
 import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
-import { debounce, constant, memoize, isEmpty, merge as _merge } from 'lodash';
+import { constant, memoize, isEmpty } from 'lodash';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
 import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
 
@@ -23,7 +23,7 @@ import { UserDepositFactory } from './contracts/UserDepositFactory';
 
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
-import { RaidenState, makeInitialState, encodeRaidenState, decodeRaidenState } from './state';
+import { RaidenState, getState } from './state';
 import { RaidenConfig } from './config';
 import { RaidenChannels } from './channels/state';
 import { RaidenSentTransfer } from './transfers/state';
@@ -62,7 +62,6 @@ import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
 import { Address, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { patchSignSend } from './utils/ethers';
-import { losslessParse } from './utils/data';
 import { pluckDistinct } from './utils/rx';
 import { getContracts, getSigner, initTransfersObservable, mapTokenToPartner } from './helpers';
 
@@ -282,55 +281,26 @@ export class Raiden {
     const signer: Signer = await getSigner(account, provider);
     const address = (await signer.getAddress()) as Address;
 
-    // build an initial state and default config!
-    let loadedState = makeInitialState({ network, address, contractsInfo: contracts }, { config });
+    // Build initial state or parse from storage
+    const { state, onState, onStateComplete } = await getState(
+      network,
+      contracts,
+      address,
+      storageOrState,
+      config,
+    );
 
-    // type guard
-    function isStorage(storageOrState: unknown): storageOrState is Storage {
-      return storageOrState && typeof (storageOrState as Storage).getItem === 'function';
-    }
-
-    let onState: ((state: RaidenState) => void) | undefined = undefined;
-    let onStateComplete: (() => void) | undefined = undefined;
-
-    if (storageOrState && isStorage(storageOrState)) {
-      const ns = `raiden_${network.name || network.chainId}_${
-        contracts.TokenNetworkRegistry.address
-      }_${address}`;
-      const loaded = _merge(
-        {},
-        loadedState,
-        losslessParse((await storageOrState.getItem(ns)) || 'null'),
-      );
-
-      loadedState = decodeRaidenState(loaded);
-
-      // to be subscribed on raiden.state$
-      const debouncedState = debounce(
-        (state: RaidenState): void => {
-          storageOrState.setItem(ns, encodeRaidenState(state));
-        },
-        1000,
-        { maxWait: 5000 },
-      );
-      onState = debouncedState;
-      onStateComplete = () => debouncedState.flush();
-    } else if (storageOrState && RaidenState.is(storageOrState)) {
-      loadedState = storageOrState;
-    } else if (storageOrState /* typeof storageOrState === unknown */) {
-      loadedState = decodeRaidenState(storageOrState);
-    }
-    if (address !== loadedState.address)
+    if (address !== state.address)
       throw new Error(
-        `Mismatch between provided account and loaded state: "${address}" !== "${loadedState.address}"`,
+        `Mismatch between provided account and loaded state: "${address}" !== "${state.address}"`,
       );
     if (
-      network.chainId !== loadedState.chainId ||
-      contracts.TokenNetworkRegistry.address !== loadedState.registry
+      network.chainId !== state.chainId ||
+      contracts.TokenNetworkRegistry.address !== state.registry
     )
       throw new Error(`Mismatch between network or registry address and loaded state`);
 
-    const raiden = new Raiden(provider, network, signer, contracts, loadedState);
+    const raiden = new Raiden(provider, network, signer, contracts, state);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
