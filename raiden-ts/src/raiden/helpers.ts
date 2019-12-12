@@ -98,9 +98,7 @@ export const getSigner = async (account: string | number | Signer, provider: Jso
  * @param state$ - Observable of the current RaidenState
  * @returns observable of sent and completed Raiden transfers
  */
-export const initTransfersObservable = (
-  state$: Observable<RaidenState>,
-): Observable<RaidenSentTransfer> =>
+export const initTransfers$ = (state$: Observable<RaidenState>): Observable<RaidenSentTransfer> =>
   state$.pipe(
     pluckDistinct('sent'),
     concatMap(sent => from(Object.entries(sent))),

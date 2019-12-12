@@ -63,12 +63,7 @@ import { pfsListInfo } from './path/utils';
 import { Address, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
-import {
-  getContracts,
-  getSigner,
-  initTransfersObservable,
-  mapTokenToPartner,
-} from './raiden/helpers';
+import { getContracts, getSigner, initTransfers$, mapTokenToPartner } from './raiden/helpers';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -160,7 +155,7 @@ export class Raiden {
     // pipe action, skipping cached
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
     this.channels$ = this.state$.pipe(map(state => mapTokenToPartner(state)));
-    this.transfers$ = initTransfersObservable(this.state$);
+    this.transfers$ = initTransfers$(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
