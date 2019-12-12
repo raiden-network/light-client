@@ -16,7 +16,7 @@
     "lint:check": "vue-cli-service lint --no-fix --max-warnings 0"
   },
   "dependencies": {
-    "core-js": "^3.4.5",
+    "core-js": "^3.5.0",
     "ethereum-blockies-base64": "^1.0.2",
     "ethers": "^4.0.39",
     "lodash": "^4.17.15",
