@@ -82,7 +82,7 @@
     "lodash": "^4.17.15",
     "@types/lodash": "^4.14.149",
     "lossless-json": "^1.0.3",
-    "matrix-js-sdk": "^2.4.5",
+    "matrix-js-sdk": "^2.4.6",
     "redux": "^4.0.4",
     "redux-logger": "^3.0.6",
     "redux-observable": "^1.2.0",
