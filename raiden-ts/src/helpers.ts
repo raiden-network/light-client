@@ -62,30 +62,34 @@ export const getContracts = (network: Network): ContractsInfo => {
  * @returns a [[Signer]] or [[Wallet]] that can be used for signing
  */
 export const getSigner = async (account: string | number | Signer, provider: JsonRpcProvider) => {
+  let signer;
+
   if (Signer.isSigner(account)) {
     if (account.provider === provider) {
-      return account;
+      signer = account;
     } else if (account instanceof Wallet) {
-      return account.connect(provider);
+      signer = account.connect(provider);
     } else {
       throw new Error(`Signer ${account} not connected to ${provider}`);
     }
   } else if (typeof account === 'number') {
     // index of account in provider
-    return provider.getSigner(account);
+    signer = provider.getSigner(account);
   } else if (Address.is(account)) {
     // address
     const accounts = await provider.listAccounts();
     if (!accounts.includes(account)) {
       throw new Error(`Account "${account}" not found in provider, got=${accounts}`);
     }
-    return provider.getSigner(account);
+    signer = provider.getSigner(account);
   } else if (PrivateKey.is(account)) {
     // private key
-    return new Wallet(account, provider);
+    signer = new Wallet(account, provider);
   } else {
     throw new Error('String account must be either a 0x-encoded address or private key');
   }
+
+  return signer;
 };
 
 /**
