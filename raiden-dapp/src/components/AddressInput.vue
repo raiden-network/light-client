@@ -292,7 +292,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   ::v-deep {
     input {
-      color: #ffffff;
+      color: $color-white;
+      caret-color: $color-white !important;
       font-family: Roboto, sans-serif;
       font-size: 16px;
       max-height: 49px;
