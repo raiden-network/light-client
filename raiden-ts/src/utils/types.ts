@@ -3,7 +3,7 @@ import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress, isHexString, hexDataLength } from 'ethers/utils';
 import { Two, Zero } from 'ethers/constants';
 import { memoize } from 'lodash';
-import { isLeft } from 'fp-ts/lib/Either';
+import { Either, Right } from 'fp-ts/lib/Either';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
 /* A Subset of DOM's Storage/localStorage interface which supports async/await */
@@ -14,8 +14,28 @@ export interface Storage {
 }
 
 /**
+ * Error for assertion functions/type guards
+ */
+export class AssertionError extends Error {}
+
+/**
+ * Type-safe assertion function (TS3.7)
+ *
+ * @param condition - Condition to validate as truthy
+ * @param msg - Message to throw if condition is falsy
+ */
+export function assert(condition: any, msg?: string): asserts condition {
+  if (!condition) {
+    throw new AssertionError(msg ?? 'AssertionError');
+  }
+}
+
+function reporterAssert<T>(value: Either<t.Errors, T>): asserts value is Right<T> {
+  ThrowReporter.report(value);
+}
+
+/**
  * Decode/validate like codec.decode, but throw or return right instead of Either
- * TODO: add assert signature after TS 3.7
  *
  * @param codec - io-ts codec to be used for decoding/validation
  * @param data - data to decode/validate
@@ -23,8 +43,7 @@ export interface Storage {
  */
 export function decode<C extends t.Mixed>(codec: C, data: C['_I']): C['_A'] {
   const decoded = codec.decode(data);
-  // report already throw, so the throw here is just for type narrowing in context
-  if (isLeft(decoded)) throw ThrowReporter.report(decoded);
+  reporterAssert(decoded);
   return decoded.right;
 }
 
