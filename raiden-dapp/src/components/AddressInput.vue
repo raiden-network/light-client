@@ -147,20 +147,20 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       this.input(value);
       this.errorMessages.push(this.$t('address-input.error.empty') as string);
     } else if (this.exclude.includes(value)) {
-      this.errorMessages.push(this.$t(
-        'address-input.error.invalid-excluded-address'
-      ) as string);
+      this.errorMessages.push(
+        this.$t('address-input.error.invalid-excluded-address') as string
+      );
     } else if (this.block.includes(value)) {
-      this.errorMessages.push(this.$t(
-        'address-input.error.channel-not-open'
-      ) as string);
+      this.errorMessages.push(
+        this.$t('address-input.error.channel-not-open') as string
+      );
     } else if (
       AddressUtils.isAddress(value) &&
       !AddressUtils.checkAddressChecksum(value)
     ) {
-      this.errorMessages.push(this.$t(
-        'address-input.error.no-checksum'
-      ) as string);
+      this.errorMessages.push(
+        this.$t('address-input.error.no-checksum') as string
+      );
     } else if (
       !AddressUtils.isAddressLike(value) &&
       AddressUtils.isDomain(value)
@@ -181,9 +181,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       this.isAddressAvailable = false;
       this.input(value);
       this.address = value;
-      this.errorMessages.push(this.$t(
-        'address-input.error.target-offline'
-      ) as string);
+      this.errorMessages.push(
+        this.$t('address-input.error.target-offline') as string
+      );
     } else if (
       AddressUtils.checkAddressChecksum(value) &&
       this.presences[value] === true
@@ -193,9 +193,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       this.input(value);
       this.address = value;
     } else {
-      this.errorMessages.push(this.$t(
-        'address-input.error.invalid-address'
-      ) as string);
+      this.errorMessages.push(
+        this.$t('address-input.error.invalid-address') as string
+      );
     }
   }
 
@@ -222,9 +222,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     try {
       resolvedAddress = await this.$raiden.ensResolve(url);
     } catch (e) {
-      this.errorMessages.push(this.$t(
-        'address-input.error.ens-resolve-failed'
-      ) as string);
+      this.errorMessages.push(
+        this.$t('address-input.error.ens-resolve-failed') as string
+      );
       this.input(undefined);
       this.checkForErrors();
       return;
@@ -236,9 +236,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       this.updateValue(resolvedAddress);
       this.input(resolvedAddress);
     } else {
-      this.errorMessages.push(this.$t(
-        'address-input.error.ens-resolve-failed'
-      ) as string);
+      this.errorMessages.push(
+        this.$t('address-input.error.ens-resolve-failed') as string
+      );
       this.input(undefined);
       this.checkForErrors();
     }
