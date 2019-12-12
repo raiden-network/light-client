@@ -81,7 +81,7 @@ describe('Raiden', () => {
       message: 'pfs message',
       network_info: {
         chain_id: network.chainId,
-        registry_address: contractsInfo.TokenNetworkRegistry.address,
+        token_network_registry_address: contractsInfo.TokenNetworkRegistry.address,
       },
       operator: 'pfs operator',
       payment_address: pfsAddress,
