@@ -78,10 +78,11 @@ import { makeMessageId, makeSecret, getSecrethash } from 'raiden-ts/transfers/ut
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps } from '../mocks';
+import { getLatest$ } from 'raiden-ts/epics';
 
 describe('transfers epic', () => {
-  const depsMock = raidenEpicDeps();
-  const {
+  let depsMock = raidenEpicDeps();
+  let {
     token,
     tokenNetwork,
     channelId,
@@ -97,6 +98,26 @@ describe('transfers epic', () => {
     fee,
     paths,
   } = epicFixtures(depsMock);
+
+  beforeEach(() => {
+    depsMock = raidenEpicDeps();
+    ({
+      token,
+      tokenNetwork,
+      channelId,
+      partner,
+      settleTimeout,
+      isFirstParticipant,
+      txHash,
+      state,
+      matrixServer,
+      partnerUserId,
+      partnerSigner,
+      paymentId,
+      fee,
+      paths,
+    } = epicFixtures(depsMock));
+  });
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -179,6 +200,8 @@ describe('transfers epic', () => {
           ].reduce(raidenReducer, state),
         );
 
+      getLatest$(action$, state$).subscribe(depsMock.latest$);
+
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
       const output = await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
@@ -254,6 +277,8 @@ describe('transfers epic', () => {
           ].reduce(raidenReducer, state),
         );
 
+      getLatest$(action$, state$).subscribe(depsMock.latest$);
+
       await expect(
         transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
           .pipe(first())
@@ -307,6 +332,8 @@ describe('transfers epic', () => {
           ].reduce(raidenReducer, state),
         );
 
+      getLatest$(action$, state$).subscribe(depsMock.latest$);
+
       const output = await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
         .pipe(toArray())
         .toPromise();
@@ -330,6 +357,8 @@ describe('transfers epic', () => {
             transferUnlock(undefined, { secrethash }),
           ),
           state$ = new BehaviorSubject(transferingState);
+
+        getLatest$(action$, state$).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -384,6 +413,8 @@ describe('transfers epic', () => {
             ].reduce(raidenReducer, transferingState),
           );
 
+        getLatest$(action$, state$).subscribe(depsMock.latest$);
+
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
         await expect(
@@ -416,6 +447,8 @@ describe('transfers epic', () => {
             ].reduce(raidenReducer, transferingState),
           );
 
+        getLatest$(action$, state$).subscribe(depsMock.latest$);
+
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
         await expect(
@@ -444,6 +477,8 @@ describe('transfers epic', () => {
               transferingState,
             ),
           );
+
+        getLatest$(action$, state$).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -478,6 +513,7 @@ describe('transfers epic', () => {
               transferingState,
             ),
           );
+        getLatest$(action$, state$).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -526,6 +562,7 @@ describe('transfers epic', () => {
               newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
             ].reduce(raidenReducer, transferingState),
           );
+        getLatest$(action$, state$).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -698,14 +735,18 @@ describe('transfers epic', () => {
         });
 
         // set state as unlocked
+        const expiredState = raidenReducer(
+          transferingState,
+          newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
+        );
+
+        depsMock.latest$.pipe(first()).subscribe(l => {
+          depsMock.latest$.next({ ...l, state: expiredState });
+        });
+
         const b = await transferGenerateAndSignEnvelopeMessageEpic(
           of(transferExpire(undefined, { secrethash })),
-          of(
-            raidenReducer(
-              transferingState,
-              newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
-            ),
-          ),
+          of(expiredState),
           depsMock,
         ).toPromise();
 
@@ -730,8 +771,12 @@ describe('transfers epic', () => {
               messageSent({ message: signedTransfer }, { address: partner }),
             );
 
+          depsMock.latest$.pipe(first()).subscribe(l => {
+            depsMock.latest$.next({ ...l, state: transferingState });
+          });
+
           let sent = 0;
-          transferSignedRetryMessageEpic(action$, state$).subscribe(() => sent++);
+          transferSignedRetryMessageEpic(action$, state$, depsMock).subscribe(() => sent++);
 
           // first messageSend is sent immediatelly
           advance(1);
@@ -742,9 +787,14 @@ describe('transfers epic', () => {
           // then, at 30 and 60s, 2 more retries
           expect(sent).toBe(3);
 
-          state$.next(
-            raidenReducer(state$.value, transferProcessed({ message: processed }, { secrethash })),
+          const processedState = raidenReducer(
+            state$.value,
+            transferProcessed({ message: processed }, { secrethash }),
           );
+          state$.next(processedState);
+          depsMock.latest$.pipe(first()).subscribe(l => {
+            depsMock.latest$.next({ ...l, state: processedState });
+          });
 
           // +30s and no new messageSend, as transferProcessed stopped retry
           for (let t = 0; t < 30; t += 10) advance(10e3);
@@ -769,7 +819,7 @@ describe('transfers epic', () => {
           ).pipe(delay(1));
 
           let sent = 0;
-          transferUnlockedRetryMessageEpic(action$, state$).subscribe(() => sent++);
+          transferUnlockedRetryMessageEpic(action$, state$, depsMock).subscribe(() => sent++);
 
           // first messageSend is sent immediatelly
           advance(1);
@@ -814,7 +864,7 @@ describe('transfers epic', () => {
           ).pipe(delay(1));
 
           let sent = 0;
-          transferExpiredRetryMessageEpic(action$, state$).subscribe(() => sent++);
+          transferExpiredRetryMessageEpic(action$, state$, depsMock).subscribe(() => sent++);
 
           // first messageSend is sent immediatelly
           advance(1);
@@ -990,17 +1040,22 @@ describe('transfers epic', () => {
       });
 
       test('transferExpired', async () => {
-        const state$ = new BehaviorSubject(
-            raidenReducer(
-              transferingState,
-              newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
-            ),
-          ),
-          expired = await transferGenerateAndSignEnvelopeMessageEpic(
-            of(transferExpire(undefined, { secrethash })),
-            state$,
-            depsMock,
-          ).toPromise();
+        const expiredState = raidenReducer(
+          transferingState,
+          newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
+        );
+
+        const state$ = new BehaviorSubject(expiredState);
+
+        depsMock.latest$.pipe(first()).subscribe(l => {
+          depsMock.latest$.next({ ...l, state: expiredState });
+        });
+
+        const expired = await transferGenerateAndSignEnvelopeMessageEpic(
+          of(transferExpire(undefined, { secrethash })),
+          state$,
+          depsMock,
+        ).toPromise();
 
         state$.next(raidenReducer(state$.value, expired));
 
@@ -1017,17 +1072,22 @@ describe('transfers epic', () => {
       });
 
       test('completed transfer is skipped', async () => {
-        const state$ = new BehaviorSubject(
-            raidenReducer(
-              transferingState,
-              newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
-            ),
-          ),
-          expired = await transferGenerateAndSignEnvelopeMessageEpic(
-            of(transferExpire(undefined, { secrethash })),
-            state$,
-            depsMock,
-          ).toPromise();
+        const expiredState = raidenReducer(
+          transferingState,
+          newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
+        );
+
+        const state$ = new BehaviorSubject(expiredState);
+
+        depsMock.latest$.pipe(first()).subscribe(l => {
+          depsMock.latest$.next({ ...l, state: expiredState });
+        });
+
+        const expired = await transferGenerateAndSignEnvelopeMessageEpic(
+          of(transferExpire(undefined, { secrethash })),
+          state$,
+          depsMock,
+        ).toPromise();
 
         // narrow down type of expired
         if (!isActionOf(transferExpired, expired)) throw new Error('not expired');
@@ -1113,6 +1173,8 @@ describe('transfers epic', () => {
         signed = await signMessage(partnerSigner, request),
         action$ = of(transferSecretRequest({ message: signed }, { secrethash })),
         state$ = new BehaviorSubject<RaidenState>(transferingState);
+
+      getLatest$(action$, state$).subscribe(depsMock.latest$);
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -1311,8 +1373,12 @@ describe('transfers epic', () => {
             newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
           ),
         );
+        const action$ = of(transferExpire(undefined, { secrethash }));
+
+        getLatest$(action$, state$).subscribe(depsMock.latest$);
+
         const expiredAction = await transferGenerateAndSignEnvelopeMessageEpic(
-          of(transferExpire(undefined, { secrethash })),
+          action$,
           state$,
           depsMock,
         ).toPromise();
@@ -1608,6 +1674,8 @@ describe('transfers epic', () => {
         });
 
         const action$ = of(withdrawRequestAction, withdrawRequestAction);
+
+        getLatest$(action$, state$).subscribe(depsMock.latest$);
 
         const output = await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
           .pipe(toArray())
