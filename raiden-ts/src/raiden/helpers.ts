@@ -5,21 +5,21 @@ import { Observable, from } from 'rxjs';
 import { filter, map, scan, concatMap, pluck } from 'rxjs/operators';
 import { findKey, transform, pick } from 'lodash';
 
-import { RaidenState } from './state';
-import { ContractsInfo } from './types';
-import { raidenSentTransfer } from './transfers/utils';
-import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
-import { channelAmounts } from './channels/utils';
-import { RaidenChannels, RaidenChannel, Channel } from './channels/state';
-import { pluckDistinct } from './utils/rx';
-import { Address, PrivateKey, isntNil } from './utils/types';
+import { RaidenState } from '../state';
+import { ContractsInfo } from '../types';
+import { raidenSentTransfer } from '../transfers/utils';
+import { SentTransfer, SentTransfers, RaidenSentTransfer } from '../transfers/state';
+import { channelAmounts } from '../channels/utils';
+import { RaidenChannels, RaidenChannel, Channel } from '../channels/state';
+import { pluckDistinct } from '../utils/rx';
+import { Address, PrivateKey, isntNil } from '../utils/types';
 
-import ropstenDeploy from './deployment/deployment_ropsten.json';
-import rinkebyDeploy from './deployment/deployment_rinkeby.json';
-import goerliDeploy from './deployment/deployment_goerli.json';
-import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
-import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
-import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
+import ropstenDeploy from '../deployment/deployment_ropsten.json';
+import rinkebyDeploy from '../deployment/deployment_rinkeby.json';
+import goerliDeploy from '../deployment/deployment_goerli.json';
+import ropstenServicesDeploy from '../deployment/deployment_services_ropsten.json';
+import rinkebyServicesDeploy from '../deployment/deployment_services_rinkeby.json';
+import goerliServicesDeploy from '../deployment/deployment_services_goerli.json';
 
 /**
  * Returns contract information depending on the passed [[Network]]. Currently, only
