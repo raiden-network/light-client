@@ -60,7 +60,7 @@ import { makeSecret, getSecrethash, makePaymentId } from './transfers/utils';
 import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
-import { Address, Secret, Storage, Hash, UInt, decode } from './utils/types';
+import { Address, Secret, Storage, Hash, UInt, decode, assert } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
 import { getContracts, getSigner, initTransfers$, mapTokenToPartner } from './raiden/helpers';
@@ -159,7 +159,7 @@ export class Raiden {
     this.events$ = this.action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
-      if (!Address.is(token)) throw new Error('Invalid address');
+      assert(Address.is(token), 'Invalid address');
       const tokenContract = this.deps.getTokenContract(token);
       const [totalSupply, decimals, name, symbol] = await Promise.all([
         tokenContract.functions.totalSupply(),
@@ -168,7 +168,7 @@ export class Raiden {
         tokenContract.functions.symbol().catch(constant(undefined)),
       ]);
       // workaround for https://github.com/microsoft/TypeScript/issues/33752
-      if (!totalSupply || !decimals) throw new Error('Not a token contract');
+      assert(totalSupply && decimals != null, 'Not a token contract');
       return { totalSupply, decimals, name, symbol };
     });
 
@@ -290,15 +290,15 @@ export class Raiden {
       config,
     );
 
-    if (address !== state.address)
-      throw new Error(
-        `Mismatch between provided account and loaded state: "${address}" !== "${state.address}"`,
-      );
-    if (
-      network.chainId !== state.chainId ||
-      contracts.TokenNetworkRegistry.address !== state.registry
-    )
-      throw new Error(`Mismatch between network or registry address and loaded state`);
+    assert(
+      address === state.address,
+      `Mismatch between provided account and loaded state: "${address}" !== "${state.address}"`,
+    );
+    assert(
+      network.chainId === state.chainId &&
+        contracts.TokenNetworkRegistry.address === state.registry,
+      `Mismatch between network or registry address and loaded state`,
+    );
 
     const raiden = new Raiden(provider, network, signer, contracts, state);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
@@ -311,7 +311,7 @@ export class Raiden {
    * No event should be emitted before start is called
    */
   public start(): void {
-    if (!this.epicMiddleware) throw new Error('Already started or stopped!');
+    assert(this.epicMiddleware, 'Already started or stopped!');
     this.epicMiddleware.run(raidenRootEpic);
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
@@ -396,7 +396,7 @@ export class Raiden {
    */
   public getBalance(address?: string): Promise<BigNumber> {
     address = address || this.address;
-    if (!Address.is(address)) throw new Error('Invalid address');
+    assert(Address.is(address), 'Invalid address');
     return this.deps.provider.getBalance(address);
   }
 
@@ -409,7 +409,7 @@ export class Raiden {
    */
   public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
     address = address || this.address;
-    if (!Address.is(address) || !Address.is(token)) throw new Error('Invalid address');
+    assert(Address.is(address) && Address.is(token), 'Invalid address');
     const tokenContract = this.deps.getTokenContract(token);
 
     return tokenContract.functions.balanceOf(address);
@@ -446,10 +446,10 @@ export class Raiden {
     partner: string,
     options: { settleTimeout?: number } = {},
   ): Promise<Hash> {
-    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
+    assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
-    if (!tokenNetwork) throw new Error('Unknown token network');
+    assert(tokenNetwork, 'Unknown token network');
     const promise = this.action$
       .pipe(
         filter(isActionOf([channelOpened, channelOpenFailed])),
@@ -482,10 +482,10 @@ export class Raiden {
     partner: string,
     amount: BigNumberish,
   ): Promise<Hash> {
-    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
+    assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
-    if (!tokenNetwork) throw new Error('Unknown token network');
+    assert(tokenNetwork, 'Unknown token network');
 
     const deposit = decode(UInt(32), amount);
 
@@ -520,10 +520,10 @@ export class Raiden {
    * @returns txHash of closeChannel call, iff it succeeded
    */
   public async closeChannel(token: string, partner: string): Promise<Hash> {
-    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
+    assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
-    if (!tokenNetwork) throw new Error('Unknown token network');
+    assert(tokenNetwork, 'Unknown token network');
     const promise = this.action$
       .pipe(
         filter(isActionOf([channelClosed, channelCloseFailed])),
@@ -554,10 +554,10 @@ export class Raiden {
    * @returns txHash of settleChannel call, iff it succeeded
    */
   public async settleChannel(token: string, partner: string): Promise<Hash> {
-    if (!Address.is(token) || !Address.is(partner)) throw new Error('Invalid address');
+    assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
     const tokenNetwork = state.tokens[token];
-    if (!tokenNetwork) throw new Error('Unknown token network');
+    assert(tokenNetwork, 'Unknown token network');
     // wait for the corresponding success or error action
     const promise = this.action$
       .pipe(
@@ -587,7 +587,7 @@ export class Raiden {
   public async getAvailability(
     address: string,
   ): Promise<{ userId: string; available: boolean; ts: number }> {
-    if (!Address.is(address)) throw new Error('Invalid address');
+    assert(Address.is(address), 'Invalid address');
     const promise = this.action$
       .pipe(
         filter(isActionOf([matrixPresenceUpdate, matrixRequestMonitorPresenceFailed])),
@@ -639,19 +639,20 @@ export class Raiden {
       pfs?: RaidenPFS;
     } = {},
   ): Promise<Hash> {
-    if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
+    assert(Address.is(token) && Address.is(target), 'Invalid address');
     const tokenNetwork = this.state.tokens[token];
-    if (!tokenNetwork) throw new Error('Unknown token network');
+    assert(tokenNetwork, 'Unknown token network');
 
     const decodedValue = decode(UInt(32), value);
     const paymentId = options.paymentId ? decode(UInt(8), options.paymentId) : makePaymentId();
     const paths = options.paths ? decode(Paths, options.paths) : undefined;
     const pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
 
-    if (options.secret !== undefined && !Secret.is(options.secret))
-      throw new Error('Invalid options.secret');
-    if (options.secrethash !== undefined && !Hash.is(options.secrethash))
-      throw new Error('Invalid options.secrethash');
+    assert(options.secret === undefined || Secret.is(options.secret), 'Invalid options.secret');
+    assert(
+      options.secrethash === undefined || Hash.is(options.secrethash),
+      'Invalid options.secrethash',
+    );
 
     // use provided secret or create one if no secrethash was provided
     const secret = options.secret
@@ -660,8 +661,10 @@ export class Raiden {
       ? makeSecret()
       : undefined;
     const secrethash = options.secrethash || getSecrethash(secret!);
-    if (secret && getSecrethash(secret) !== secrethash)
-      throw new Error('Provided secrethash must match the sha256 hash of provided secret');
+    assert(
+      !secret || getSecrethash(secret) === secrethash,
+      'Provided secrethash must match the sha256 hash of provided secret',
+    );
 
     return merge(
       // wait for pathFind response
@@ -742,9 +745,9 @@ export class Raiden {
     value: BigNumberish,
     options: { pfs?: RaidenPFS } = {},
   ): Promise<Paths> {
-    if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
+    assert(Address.is(token) && Address.is(target), 'Invalid address');
     const tokenNetwork = this.state.tokens[token];
-    if (!tokenNetwork) throw new Error('Unknown token network');
+    assert(tokenNetwork, 'Unknown token network');
 
     const decodedValue = decode(UInt(32), value);
     const pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
@@ -782,9 +785,9 @@ export class Raiden {
     target: string,
     value: BigNumberish,
   ): Promise<Paths | undefined> {
-    if (!Address.is(token) || !Address.is(target)) throw new Error('Invalid address');
+    assert(Address.is(token) && Address.is(target), 'Invalid address');
     const tokenNetwork = this.state.tokens[token];
-    if (!tokenNetwork) throw new Error('Unknown token network');
+    assert(tokenNetwork, 'Unknown token network');
 
     const decodedValue = decode(UInt(32), value);
 
@@ -819,7 +822,7 @@ export class Raiden {
    * @returns Promise to array of PFS, which is the interface which describes a PFS
    */
   public async findPFS(): Promise<PFS[]> {
-    if (this.config.pfs === null) throw new Error('PFS disabled in config');
+    assert(this.config.pfs !== null, 'PFS disabled in config');
     return (this.config.pfs
       ? of<readonly (string | Address)[]>([this.config.pfs])
       : this.deps.latest$.pipe(
@@ -846,12 +849,10 @@ export class Raiden {
    */
   public async mint(token: string, amount: BigNumberish): Promise<Hash> {
     // Check whether address is valid
-    if (!Address.is(token)) throw new Error('Invalid address.');
+    assert(Address.is(token), 'Invalid address');
 
     // Check whether we are on a test network
-    if (this.deps.network.name === 'homestead') {
-      throw new Error('Minting is only allowed on test networks.');
-    }
+    assert(this.deps.network.name !== 'homestead', 'Minting is only allowed on test networks.');
 
     // Mint token
     const customTokenContract = CustomTokenFactory.connect(token, this.deps.signer);
@@ -901,7 +902,7 @@ export class Raiden {
   public async depositToUDC(amount: BigNumberish): Promise<Hash> {
     const depositAmount = bigNumberify(amount);
 
-    if (!depositAmount.gt(Zero)) throw new Error('Please deposit a positive amount.');
+    assert(depositAmount.gt(Zero), 'Please deposit a positive amount.');
 
     const { userDepositContract, address } = this.deps;
 
@@ -909,7 +910,7 @@ export class Raiden {
     const serviceToken = HumanStandardTokenFactory.connect(tokenAddress, this.deps.signer);
     const balance = await serviceToken.functions.balanceOf(address);
 
-    if (balance.lt(amount)) throw new Error(`Insufficient token balance (${balance}).`);
+    assert(balance.gte(amount), `Insufficient token balance (${balance}).`);
 
     const approveTx = await serviceToken.functions.approve(
       userDepositContract.address,
