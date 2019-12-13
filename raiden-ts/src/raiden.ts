@@ -417,7 +417,7 @@ export class Raiden {
    * @returns BigNumber of ETH balance
    */
   public getBalance(address?: string): Promise<BigNumber> {
-    address = address ?? chooseOnchainAccount(this.deps).address;
+    address = address ?? chooseOnchainAccount(this.deps, this.config.subkey).address;
     assert(Address.is(address), 'Invalid address');
     return this.deps.provider.getBalance(address);
   }
@@ -430,7 +430,7 @@ export class Raiden {
    * @returns BigNumber containing address's token balance
    */
   public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
-    address = address ?? chooseOnchainAccount(this.deps).address;
+    address = address ?? chooseOnchainAccount(this.deps, this.config.subkey).address;
     assert(Address.is(address) && Address.is(token), 'Invalid address');
 
     const tokenContract = this.deps.getTokenContract(token);
