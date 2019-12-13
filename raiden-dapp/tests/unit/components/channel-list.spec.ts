@@ -191,6 +191,7 @@ describe('ChannelList.vue', () => {
       await flushPromises();
       mockInput(wrapper, '0.5');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       wrapper.find('#confirm-278').trigger('click');
       await wrapper.vm.$nextTick();
       elementVisibilityChanged(1);
@@ -215,6 +216,7 @@ describe('ChannelList.vue', () => {
       await flushPromises();
       mockInput(wrapper, '0.5');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       wrapper.find('#confirm-278').trigger('click');
       elementVisibilityChanged(1);
       await flushPromises();
@@ -237,6 +239,7 @@ describe('ChannelList.vue', () => {
       await flushPromises();
       mockInput(wrapper, '0.5');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       wrapper.find('#confirm-278').trigger('click');
       expect(wrapper.emitted()['visible-changed'][1][0]).toBe('');
       wrapper.setProps({
