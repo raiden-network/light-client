@@ -51,7 +51,7 @@ import { getAddress, verifyMessage } from 'ethers/utils';
 import { createClient, MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
 import matrixLogger from 'matrix-js-sdk/lib/logger';
 
-import { Address, Signed, isntNil } from '../utils/types';
+import { Address, Signed, isntNil, assert } from '../utils/types';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { channelMonitored } from '../channels/actions';
@@ -257,15 +257,13 @@ function matrixRTT$(
  */
 function fetchSortedMatrixServers$(matrixServerLookup: string, httpTimeout: number) {
   return fromFetch(matrixServerLookup).pipe(
-    mergeMap(response =>
-      !response.ok
-        ? throwError(
-            new Error(
-              `Could not fetch server list from "${matrixServerLookup}" => ${response.status}`,
-            ),
-          )
-        : response.text(),
-    ),
+    mergeMap(async response => {
+      assert(
+        response.ok,
+        `Could not fetch server list from "${matrixServerLookup}" => ${response.status}`,
+      );
+      return response.text();
+    }),
     timeout(httpTimeout),
     mergeMap(text => yamlListToArray(text)),
     mergeMap(server => matrixRTT$(server, httpTimeout)),

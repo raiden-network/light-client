@@ -1,3 +1,4 @@
+import './polyfills';
 import { Signer } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
@@ -13,7 +14,6 @@ import { constant, memoize, isEmpty } from 'lodash';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
 import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
 
-import './polyfills';
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
 import { TokenNetworkFactory } from './contracts/TokenNetworkFactory';
 import { HumanStandardTokenFactory } from './contracts/HumanStandardTokenFactory';
