@@ -1,3 +1,6 @@
+import { epicFixtures } from '../fixtures';
+import { raidenEpicDeps, makeLog } from '../mocks';
+
 import { marbles } from 'rxjs-marbles/jest';
 import { of, from, timer } from 'rxjs';
 import { first, takeUntil, toArray, delay } from 'rxjs/operators';
@@ -40,9 +43,6 @@ import {
   channelSettleableEpic,
 } from 'raiden-ts/channels/epics';
 import { raidenReducer } from 'raiden-ts/reducer';
-
-import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps, makeLog } from '../mocks';
 
 describe('channels epic', () => {
   const depsMock = raidenEpicDeps();
