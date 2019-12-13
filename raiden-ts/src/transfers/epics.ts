@@ -24,7 +24,7 @@ import { findKey, get } from 'lodash';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
-import { Address, Hash, Signed, UInt } from '../utils/types';
+import { Address, assert, Hash, Signed, UInt } from '../utils/types';
 import { LruCache } from '../utils/lru';
 import { messageReceived, messageSend, messageSent } from '../messages/actions';
 import {
@@ -154,7 +154,7 @@ function makeAndSignTransfer$(
   const channel: Channel | undefined = state.channels[action.payload.tokenNetwork][recipient];
   // check below shouldn't fail because of route validation in pathFindServiceEpic
   // used here mostly for type narrowing on channel union
-  if (!channel || channel.state !== ChannelState.open) throw new Error('not open');
+  assert(channel && channel.state === ChannelState.open, 'not open');
 
   const lock: Lock = {
     amount: action.payload.value.add(fee) as UInt<32>, // fee is added to the lock amount
@@ -244,15 +244,17 @@ function makeAndSignUnlock$(
   signer: Signer,
 ) {
   const secrethash = action.meta.secrethash;
-  if (!(secrethash in state.sent)) throw new Error('unknown transfer');
+  assert(secrethash in state.sent, 'unknown transfer');
   const transfer = state.sent[secrethash].transfer[1];
   const channel: Channel | undefined = get(state.channels, [
     transfer.token_network_address,
     transfer.recipient,
   ]);
   // shouldn't happen, channel close clears transfers, but unlock may already have been queued
-  if (!channel || channel.state !== ChannelState.open || !channel.own.balanceProof)
-    throw new Error('channel gone, not open or no balanceProof');
+  assert(
+    channel && channel.state === ChannelState.open && channel.own.balanceProof,
+    'channel gone, not open or no balanceProof',
+  );
 
   let signed$: Observable<Signed<Unlock>>;
   if (state.sent[secrethash].unlock) {
@@ -260,7 +262,7 @@ function makeAndSignUnlock$(
     signed$ = of(state.sent[secrethash].unlock![1]);
   } else {
     // don't forget to check after signature too, may have expired by then
-    if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired');
+    assert(transfer.lock.expiration.gt(state.blockNumber), 'lock expired');
 
     const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash);
     const locksroot = getLocksroot(locks);
@@ -286,8 +288,8 @@ function makeAndSignUnlock$(
   return signed$.pipe(
     withLatestFrom(state$),
     mergeMap(function*([signed, state]) {
-      if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired!');
-      if (state.sent[secrethash].channelClosed) throw new Error('channel closed!');
+      assert(transfer.lock.expiration.gt(state.blockNumber), 'lock expired!');
+      assert(!state.sent[secrethash].channelClosed, 'channel closed!');
       yield transferUnlocked({ message: signed }, action.meta);
       // messageSend Unlock handled by transferUnlockedRetryMessageEpic
       // we don't check if transfer was refunded. If partner refunded the transfer but still
@@ -328,22 +330,25 @@ function makeAndSignLockExpired$(
   signer: Signer,
 ) {
   const secrethash = action.meta.secrethash;
-  if (!(secrethash in state.sent)) throw new Error('unknown transfer');
+  assert(secrethash in state.sent, 'unknown transfer');
   const transfer = state.sent[secrethash].transfer[1];
   const channel: Channel | undefined = get(state.channels, [
     transfer.token_network_address,
     transfer.recipient,
   ]);
-  if (!channel || channel.state !== ChannelState.open || !channel.own.balanceProof)
-    throw new Error('channel gone, not open or no balanceProof');
+
+  assert(
+    channel && channel.state === ChannelState.open && channel.own.balanceProof,
+    'channel gone, not open or no balanceProof',
+  );
 
   let signed$: Observable<Signed<LockExpired>>;
   if (state.sent[secrethash].lockExpired) {
     // lockExpired already signed, use cached
     signed$ = of(state.sent[secrethash].lockExpired![1]);
   } else {
-    if (transfer.lock.expiration.gte(state.blockNumber)) throw new Error('lock not yet expired');
-    else if (state.sent[secrethash].unlock) throw new Error('transfer already unlocked');
+    assert(transfer.lock.expiration.lt(state.blockNumber), 'lock not yet expired');
+    assert(!state.sent[secrethash].unlock, 'transfer already unlocked');
 
     const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash);
     const locksroot = getLocksroot(locks);
@@ -407,23 +412,19 @@ function makeAndSignWithdrawConfirmation$(
   ]);
   // check channel is in valid state and requested total_withdraw is valid
   // withdrawable amount is: total_withdraw <= partner.deposit + own.transferredAmount
-  if (
-    !channel ||
-    channel.state !== ChannelState.open ||
-    !request.channel_identifier.eq(channel.id)
-  )
-    throw new Error('channel gone or not open');
-  else if (request.expiration.lte(state.blockNumber)) throw new Error('WithdrawRequest expired');
-  else if (
-    request.total_withdraw.gt(
+  assert(
+    channel && channel.state === ChannelState.open && request.channel_identifier.eq(channel.id),
+    'channel gone or not open',
+  );
+  assert(request.expiration.gt(state.blockNumber), 'WithdrawRequest expired');
+  assert(
+    request.total_withdraw.lte(
       channel.partner.deposit.add(
         channel.own.balanceProof ? channel.own.balanceProof.transferredAmount : Zero,
       ),
-    )
-  )
-    throw new Error(
-      'invalid total_withdraw, greater than partner.deposit + own.transferredAmount',
-    );
+    ),
+    'invalid total_withdraw, greater than partner.deposit + own.transferredAmount',
+  );
 
   let signed$: Observable<Signed<WithdrawConfirmation>>;
   const key = request.message_identifier.toString();
@@ -895,8 +896,9 @@ const secretReveal$ = (
  *
  * @param action$ - Observable of transferSecretRequest actions
  * @param state$ - Observable of RaidenStates
- * @param signer - RaidenEpicDeps signer
- * @param latest$ - RaidenEpicDeps latest
+ * @param deps - RaidenEpicDeps
+ * @param deps.signer - RaidenEpicDeps signer
+ * @param deps.latest$ - RaidenEpicDeps latest$
  * @returns Observable of transferSecretReveal|messageSend actions
  */
 export const transferSecretRevealEpic = (
