@@ -146,10 +146,10 @@ function makeAndSignTransfer$(
   // assume paths are valid and recipient is first hop of first route
   // compose metadata from it, and use first path fee
   const metadata: Metadata = {
-      routes: action.payload.paths.map(({ path }) => ({ route: path })),
-    },
-    fee = action.payload.paths[0].fee,
-    recipient = action.payload.paths[0].path[0];
+    routes: action.payload.paths.map(({ path }) => ({ route: path })),
+  };
+  const fee = action.payload.paths[0].fee;
+  const recipient = action.payload.paths[0].path[0];
 
   const channel: Channel | undefined = state.channels[action.payload.tokenNetwork][recipient];
   // check below shouldn't fail because of route validation in pathFindServiceEpic
@@ -157,13 +157,13 @@ function makeAndSignTransfer$(
   if (!channel || channel.state !== ChannelState.open) throw new Error('not open');
 
   const lock: Lock = {
-      amount: action.payload.value.add(fee) as UInt<32>, // fee is added to the lock amount
-      expiration: bigNumberify(state.blockNumber + revealTimeout * 2) as UInt<32>,
-      secrethash: action.meta.secrethash,
-    },
-    locks: Lock[] = [...(channel.own.locks || []), lock],
-    locksroot = getLocksroot(locks),
-    token = findKey(state.tokens, tn => tn === action.payload.tokenNetwork)! as Address;
+    amount: action.payload.value.add(fee) as UInt<32>, // fee is added to the lock amount
+    expiration: bigNumberify(state.blockNumber + revealTimeout * 2) as UInt<32>,
+    secrethash: action.meta.secrethash,
+  };
+  const locks: Lock[] = [...(channel.own.locks || []), lock];
+  const locksroot = getLocksroot(locks);
+  const token = findKey(state.tokens, tn => tn === action.payload.tokenNetwork)! as Address;
 
   console.log(
     'Signing transfer of value',
@@ -245,11 +245,11 @@ function makeAndSignUnlock$(
 ) {
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) throw new Error('unknown transfer');
-  const transfer = state.sent[secrethash].transfer[1],
-    channel: Channel | undefined = get(state.channels, [
-      transfer.token_network_address,
-      transfer.recipient,
-    ]);
+  const transfer = state.sent[secrethash].transfer[1];
+  const channel: Channel | undefined = get(state.channels, [
+    transfer.token_network_address,
+    transfer.recipient,
+  ]);
   // shouldn't happen, channel close clears transfers, but unlock may already have been queued
   if (!channel || channel.state !== ChannelState.open || !channel.own.balanceProof)
     throw new Error('channel gone, not open or no balanceProof');
@@ -262,8 +262,8 @@ function makeAndSignUnlock$(
     // don't forget to check after signature too, may have expired by then
     if (transfer.lock.expiration.lte(state.blockNumber)) throw new Error('lock expired');
 
-    const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash),
-      locksroot = getLocksroot(locks);
+    const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash);
+    const locksroot = getLocksroot(locks);
 
     const message: Unlock = {
       type: MessageType.UNLOCK,
@@ -329,11 +329,11 @@ function makeAndSignLockExpired$(
 ) {
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) throw new Error('unknown transfer');
-  const transfer = state.sent[secrethash].transfer[1],
-    channel: Channel | undefined = get(state.channels, [
-      transfer.token_network_address,
-      transfer.recipient,
-    ]);
+  const transfer = state.sent[secrethash].transfer[1];
+  const channel: Channel | undefined = get(state.channels, [
+    transfer.token_network_address,
+    transfer.recipient,
+  ]);
   if (!channel || channel.state !== ChannelState.open || !channel.own.balanceProof)
     throw new Error('channel gone, not open or no balanceProof');
 
@@ -345,8 +345,8 @@ function makeAndSignLockExpired$(
     if (transfer.lock.expiration.gte(state.blockNumber)) throw new Error('lock not yet expired');
     else if (state.sent[secrethash].unlock) throw new Error('transfer already unlocked');
 
-    const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash),
-      locksroot = getLocksroot(locks);
+    const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash);
+    const locksroot = getLocksroot(locks);
 
     const message: LockExpired = {
       type: MessageType.LOCK_EXPIRED,
@@ -547,9 +547,9 @@ const transferSignedRetryMessage = (
   state$: Observable<RaidenState>,
   action: ActionType<typeof transferSigned>,
 ) => {
-  const secrethash = action.meta.secrethash,
-    signed = action.payload.message,
-    send = messageSend({ message: signed }, { address: signed.recipient });
+  const secrethash = action.meta.secrethash;
+  const signed = action.payload.message;
+  const send = messageSend({ message: signed }, { address: signed.recipient });
   // emit Send once immediatelly, then wait until respective messageSent, then completes
   return retrySendUntil$(
     send,
@@ -571,6 +571,7 @@ const transferSignedRetryMessage = (
  *
  * @param action$ - Observable of transferSigned actions
  * @param state$ - Observable of RaidenStates
+ * @param latest$ - RaidenEpicDeps latest
  * @returns Observable of messageSend actions
  */
 export const transferSignedRetryMessageEpic = (
@@ -593,9 +594,9 @@ const transferUnlockRetryMessage$ = (
 ) => {
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
-  const unlock = action.payload.message,
-    transfer = state.sent[secrethash].transfer[1],
-    send = messageSend({ message: unlock }, { address: transfer.recipient });
+  const unlock = action.payload.message;
+  const transfer = state.sent[secrethash].transfer[1];
+  const send = messageSend({ message: unlock }, { address: transfer.recipient });
   // emit Send once immediatelly, then wait until respective messageSent, then completes
   return retrySendUntil$(
     send,
@@ -637,11 +638,11 @@ const expiredRetryMessages$ = (
 ) => {
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
-  const lockExpired = action.payload.message,
-    send = messageSend(
-      { message: lockExpired },
-      { address: state.sent[secrethash].transfer[1].recipient },
-    );
+  const lockExpired = action.payload.message;
+  const send = messageSend(
+    { message: lockExpired },
+    { address: state.sent[secrethash].transfer[1].recipient },
+  );
   // emit Send once immediatelly, then wait until respective messageSent, then completes
   return retrySendUntil$(
     send,
@@ -660,6 +661,7 @@ const expiredRetryMessages$ = (
  *
  * @param action$ - Observable of transferExpired actions
  * @param state$ - Observable of RaidenStates
+ * @param latest$ - RaidenEpicDeps latest
  * @returns Observable of messageSend actions
  */
 export const transferExpiredRetryMessageEpic = (
@@ -832,9 +834,9 @@ export const transferSecretRequestedEpic = (
       // proceed only if we know the secret and the transfer
       if (!(message.secrethash in state.secrets) || !(message.secrethash in state.sent)) return;
 
-      const transfer = state.sent[message.secrethash].transfer[1],
-        fee = state.sent[message.secrethash].fee,
-        value = transfer.lock.amount.sub(fee) as UInt<32>;
+      const transfer = state.sent[message.secrethash].transfer[1];
+      const fee = state.sent[message.secrethash].fee;
+      const value = transfer.lock.amount.sub(fee) as UInt<32>;
       if (
         transfer.target !== action.meta.address || // reveal only to target
         !transfer.payment_identifier.eq(message.payment_identifier)
@@ -894,6 +896,7 @@ const secretReveal$ = (
  * @param action$ - Observable of transferSecretRequest actions
  * @param state$ - Observable of RaidenStates
  * @param signer - RaidenEpicDeps signer
+ * @param latest$ - RaidenEpicDeps latest
  * @returns Observable of transferSecretReveal|messageSend actions
  */
 export const transferSecretRevealEpic = (
@@ -1042,8 +1045,8 @@ export const transferChannelClosedEpic = (
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       for (const [key, sent] of Object.entries(state.sent)) {
-        const secrethash = key as Hash,
-          transfer = sent.transfer[1];
+        const secrethash = key as Hash;
+        const transfer = sent.transfer[1];
         if (
           transfer.token_network_address !== action.meta.tokenNetwork ||
           transfer.recipient !== action.meta.partner
@@ -1140,8 +1143,8 @@ export const transferReceivedReplyProcessedEpic = (
         )
       )
         return EMPTY;
-      const msgId = message.message_identifier,
-        key = msgId.toString();
+      const msgId = message.message_identifier;
+      const key = msgId.toString();
       const cached = cache.get(key);
       if (cached) return of(messageSend({ message: cached }, action.meta));
 
