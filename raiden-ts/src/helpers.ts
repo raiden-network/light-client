@@ -65,7 +65,7 @@ async function genSubkey(network: Network, main: Signer) {
   const url = globalThis?.location?.origin ?? 'unknown';
   const message = `=== RAIDEN SUBKEY GENERATION ===
 
-Network: ${getNetworkName(network)}
+Network: ${getNetworkName(network).toUpperCase()}
 Raiden dApp URL: ${url}
 
 WARNING: ensure this signature is being requested from Raiden dApp running at URL above by comparing it to your browser's url bar.
