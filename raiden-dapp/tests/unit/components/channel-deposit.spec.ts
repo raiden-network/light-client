@@ -6,6 +6,7 @@ import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import { BigNumber } from 'ethers/utils';
+import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
 
@@ -37,6 +38,7 @@ describe('ChannelDeposit.vue', () => {
   test('emit a "confirm" event when the user presses confirm', async () => {
     mockInput(wrapper, '0.5');
     await wrapper.vm.$nextTick();
+    await flushPromises();
 
     wrapper
       .findAll('button')

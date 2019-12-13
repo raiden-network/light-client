@@ -41,7 +41,6 @@ describe('PathfindingService.vue', () => {
     return mount(PathfindingServices, {
       store,
       vuetify,
-      sync: false,
       mocks: {
         $t: (msg: string) => msg,
         $raiden

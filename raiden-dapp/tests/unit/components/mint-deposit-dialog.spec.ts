@@ -33,7 +33,6 @@ describe('MintDepositDialog.vue', () => {
     return mount(MintDepositDialog, {
       vuetify,
       store,
-      sync: false,
       mocks: {
         $t: (msg: string) => msg,
         $raiden

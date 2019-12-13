@@ -63,9 +63,10 @@ describe('TokenOverlay.vue', () => {
       expect(wrapper.emitted().cancel).toBeTruthy();
     });
 
-    test('hide the overlay when the show property changes', () => {
+    test('hide the overlay when the show property changes', async () => {
       expect(wrapper.find('.v-overlay--active').exists()).toBe(true);
       wrapper.setProps({ show: false });
+      await wrapper.vm.$nextTick();
       expect(wrapper.find('.v-overlay--active').exists()).toBe(false);
     });
 

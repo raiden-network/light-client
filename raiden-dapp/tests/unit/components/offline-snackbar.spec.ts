@@ -40,6 +40,7 @@ describe('OfflineSnackbar.vue', () => {
         $t: (msg: string) => msg
       }
     });
+    await wrapper.vm.$nextTick();
 
     expect(wrapper.find('.v-snack').exists()).toBe(true);
   });

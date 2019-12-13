@@ -71,7 +71,6 @@ describe('TransferSteps.vue', () => {
     return mount(TransferSteps, {
       store,
       vuetify,
-      sync: false,
       mocks: {
         $router: router,
         $route: {

@@ -36,7 +36,6 @@ describe('FindRoutes.vue', () => {
     vuetify = new Vuetify();
     return mount(FindRoutes, {
       vuetify,
-      sync: false,
       mocks: {
         $t: (msg: string) => msg,
         $raiden
