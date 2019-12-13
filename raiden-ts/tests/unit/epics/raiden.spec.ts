@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
+import { epicFixtures } from '../fixtures';
+import { raidenEpicDeps, makeLog, makeSignature } from '../mocks';
+
 import { marbles } from 'rxjs-marbles/jest';
 import {
   of,
@@ -52,9 +55,6 @@ import { ShutdownReason } from 'raiden-ts/constants';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
 import { encodeJsonMessage } from 'raiden-ts/messages/utils';
 import { messageSend, messageReceived } from 'raiden-ts/messages/actions';
-
-import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps, makeLog, makeSignature } from '../mocks';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
 
 describe('raiden epic', () => {
