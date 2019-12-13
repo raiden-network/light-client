@@ -1,8 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#172] Add derived subkey support
+
 ### Changed
-- Improve PFS url matching.
+- [#684] Support and require Typescript 3.7
+- [#593] Improve PFS url matching.
 
 ## [0.2] - 2019-11-29
 ### Added
