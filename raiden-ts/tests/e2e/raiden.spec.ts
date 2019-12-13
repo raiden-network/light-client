@@ -111,7 +111,7 @@ describe('Raiden', () => {
   });
 
   test('create from other params and RaidenState', async () => {
-    expect.assertions(7);
+    expect.assertions(10);
 
     // token address not found as an account in provider
     await expect(Raiden.create(provider, token, storage, contractsInfo, config)).rejects.toThrow(
@@ -124,7 +124,7 @@ describe('Raiden', () => {
     ).rejects.toThrow(/account must be either.*address or private key/i);
 
     // from hex-encoded private key, initial unknown state (decodable) but invalid address inside
-    expect(
+    await expect(
       Raiden.create(
         provider,
         '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -135,7 +135,7 @@ describe('Raiden', () => {
       ),
     ).rejects.toThrow(/Mismatch between provided account and loaded state/i);
 
-    expect(
+    await expect(
       Raiden.create(
         provider,
         1,
@@ -176,6 +176,11 @@ describe('Raiden', () => {
     expect(raiden1.started).toBe(true);
     raiden1.stop();
     expect(raiden1.started).toBe(false);
+
+    // success when creating using subkey
+    const raiden2 = await Raiden.create(provider, 0, storage, contractsInfo, config, true);
+    expect(raiden2).toBeInstanceOf(Raiden);
+    expect(raiden2.mainAddress).toBe(accounts[0]);
   });
 
   test('address', () => {
@@ -1106,5 +1111,87 @@ describe('Raiden', () => {
       await raiden.mint(await raiden.userDepositTokenAddress(), 10);
       await expect(raiden.depositToUDC(10)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
     });
+  });
+
+  test('subkey', async () => {
+    expect.assertions(27);
+    const sub = await Raiden.create(provider, 0, storage, contractsInfo, config, true);
+
+    const subStarted = sub.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
+    sub.start();
+    await subStarted;
+
+    expect(sub.mainAddress).toBe(raiden.address);
+    expect(sub.address).toMatch(/^0x/);
+
+    const mainBalance = await sub.getBalance(sub.mainAddress);
+    const subBalance = await sub.getBalance(sub.address);
+
+    expect(mainBalance.gt(Zero)).toBe(true);
+    expect(subBalance.isZero()).toBe(true);
+
+    // no parameters get main balance instead of sub balance
+    await expect(sub.getBalance()).resolves.toEqual(mainBalance);
+
+    const mainTokenBalance = await sub.getTokenBalance(token, sub.mainAddress);
+
+    // no gas to pay for tx with subkey
+    await expect(sub.openChannel(token, partner, { subkey: true })).rejects.toThrowError(
+      /doesn't have enough funds.*\bonly has: 0\b/,
+    );
+
+    await expect(sub.openChannel(token, partner)).resolves.toMatch(/^0x/);
+    await expect(sub.depositChannel(token, partner, 200)).resolves.toMatch(/^0x/);
+
+    // txs above should spend gas from main account
+    const newMainBalance = await sub.getBalance(sub.mainAddress);
+    expect(newMainBalance.gt(Zero)).toBe(true);
+    expect(newMainBalance.lt(mainBalance)).toBe(true);
+
+    // as well as tokens
+    const newMainTokenBalance = await sub.getTokenBalance(token, sub.mainAddress);
+    expect(newMainTokenBalance).toEqual(mainTokenBalance.sub(200));
+
+    await expect(sub.closeChannel(token, partner)).resolves.toMatch(/^0x/);
+    await provider.mine(config.settleTimeout! + 1);
+    await expect(sub.settleChannel(token, partner)).resolves.toMatch(/^0x/);
+
+    // settled tokens go to subkey
+    expect((await sub.getTokenBalance(token, sub.address)).eq(200)).toBe(true);
+
+    const bal = parseEther('0.1');
+    await expect(sub.transferOnchainBalance(sub.address, bal)).resolves.toMatch(/^0x/);
+
+    // sent ETH from main account to subkey, gas paid from main account
+    expect((await sub.getBalance()).lt(newMainTokenBalance.sub(bal))).toBe(true);
+    expect((await sub.getBalance(sub.address)).eq(bal)).toBe(true);
+
+    // now with subkey, as it has ETH
+    await expect(sub.openChannel(token, partner, { subkey: true })).resolves.toMatch(/^0x/);
+    // first deposit fails, as subkey has only 200 tokens settled from previous channel
+    await expect(sub.depositChannel(token, partner, 300, { subkey: true })).rejects.toThrow(
+      'revert',
+    );
+    await expect(sub.depositChannel(token, partner, 80, { subkey: true })).resolves.toMatch(/^0x/);
+
+    await provider.mine();
+
+    await expect(sub.closeChannel(token, partner, { subkey: true })).resolves.toMatch(/^0x/);
+    await provider.mine(config.settleTimeout! + 1);
+    await expect(sub.settleChannel(token, partner, { subkey: true })).resolves.toMatch(/^0x/);
+
+    // gas for close+settle paid from subkey
+    expect((await sub.getBalance(sub.address)).lt(bal)).toBe(true);
+    // settled tokens go to subkey
+    expect((await sub.getTokenBalance(token, sub.address)).eq(200)).toBe(true);
+
+    // transfer on chain from subkey to main account
+    await expect(
+      sub.transferOnchainTokens(token, sub.mainAddress!, 200, { subkey: true }),
+    ).resolves.toMatch(/^0x/);
+    expect((await sub.getTokenBalance(token, sub.address)).isZero()).toBe(true);
+    expect((await sub.getTokenBalance(token, sub.mainAddress)).eq(mainTokenBalance)).toBe(true);
+
+    sub.stop();
   });
 });
