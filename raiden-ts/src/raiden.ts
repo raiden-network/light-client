@@ -63,7 +63,14 @@ import { pfsListInfo } from './path/utils';
 import { Address, Secret, Storage, Hash, UInt, decode, assert } from './utils/types';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
-import { getContracts, getSigner, initTransfers$, mapTokenToPartner } from './raiden/helpers';
+import {
+  getContracts,
+  getSigner,
+  initTransfers$,
+  mapTokenToPartner,
+  chooseOnchainAccount,
+  getContractWithSigner,
+} from './helpers';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -410,7 +417,7 @@ export class Raiden {
    * @returns BigNumber of ETH balance
    */
   public getBalance(address?: string): Promise<BigNumber> {
-    address = address ?? this.mainAddress ?? this.address;
+    address = address ?? chooseOnchainAccount(this.deps).address;
     assert(Address.is(address), 'Invalid address');
     return this.deps.provider.getBalance(address);
   }
@@ -423,10 +430,10 @@ export class Raiden {
    * @returns BigNumber containing address's token balance
    */
   public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
-    address = address ?? this.mainAddress ?? this.address;
+    address = address ?? chooseOnchainAccount(this.deps).address;
     assert(Address.is(address) && Address.is(token), 'Invalid address');
-    const tokenContract = this.deps.getTokenContract(token);
 
+    const tokenContract = this.deps.getTokenContract(token);
     return tokenContract.functions.balanceOf(address);
   }
 
@@ -907,11 +914,9 @@ export class Raiden {
     // Check whether we are on a test network
     assert(this.deps.network.name !== 'homestead', 'Minting is only allowed on test networks.');
 
+    const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     // Mint token
-    const customTokenContract = CustomTokenFactory.connect(
-      token,
-      this.deps.main && !subkey ? this.deps.main.signer : this.deps.signer,
-    );
+    const customTokenContract = CustomTokenFactory.connect(token, signer);
     const tx = await customTokenContract.functions.mint(decode(UInt(32), amount));
     const receipt = await tx.wait();
     if (!receipt.status) throw new Error('Failed to mint token.');
@@ -967,16 +972,13 @@ export class Raiden {
     const depositAmount = bigNumberify(amount);
     assert(depositAmount.gt(Zero), 'Please deposit a positive amount.');
 
-    const userDepositContract =
-      this.deps.main && subkey
-        ? this.deps.userDepositContract.connect(this.deps.signer)
-        : this.deps.userDepositContract;
+    const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
-    const serviceToken = await this.userDepositTokenAddress();
-    const serviceTokenContract =
-      this.deps.main && subkey
-        ? this.deps.getTokenContract(serviceToken).connect(this.deps.signer)
-        : this.deps.getTokenContract(serviceToken);
+    const userDepositContract = getContractWithSigner(this.deps.userDepositContract, signer);
+    const serviceTokenContract = getContractWithSigner(
+      this.deps.getTokenContract(await this.userDepositTokenAddress()),
+      signer,
+    );
     const balance = await serviceTokenContract.functions.balanceOf(this.address);
 
     assert(balance.gte(amount), `Insufficient token balance (${balance}).`);
@@ -1024,7 +1026,7 @@ export class Raiden {
     assert(Address.is(to), 'Invalid address');
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
-    const signer = this.deps.main && !subkey ? this.deps.main.signer : this.deps.signer;
+    const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
     const tx = await signer.sendTransaction({ to, value: bigNumberify(value) });
     const receipt = await tx.wait();
@@ -1055,12 +1057,10 @@ export class Raiden {
     assert(Address.is(token) && Address.is(to), 'Invalid address');
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
-    const contract =
-      this.deps.main && subkey
-        ? this.deps.getTokenContract(token).connect(this.deps.signer)
-        : this.deps.getTokenContract(token);
+    const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
+    const tokenContract = getContractWithSigner(this.deps.getTokenContract(token), signer);
 
-    const tx = await contract.functions.transfer(to, bigNumberify(value));
+    const tx = await tokenContract.functions.transfer(to, bigNumberify(value));
     const receipt = await tx.wait();
 
     if (!receipt.status) throw new Error('Failed to transfer tokens');

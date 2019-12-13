@@ -1,7 +1,7 @@
 import { Network } from 'ethers/utils';
 import { JsonRpcProvider, JsonRpcSigner } from 'ethers/providers';
 
-import { getContracts, getSigner } from 'raiden-ts/raiden/helpers';
+import { getContracts, getSigner } from 'raiden-ts/helpers';
 import { Wallet } from 'ethers';
 
 describe('getContracts', () => {

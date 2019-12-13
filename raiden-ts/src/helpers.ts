@@ -1,26 +1,26 @@
+import { Signer, Wallet, Contract } from 'ethers';
 import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
-import { Signer, Wallet } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
 import { Observable, from } from 'rxjs';
 import { filter, map, scan, concatMap, pluck } from 'rxjs/operators';
 import { findKey, transform, pick } from 'lodash';
 
-import { RaidenState } from '../state';
-import { ContractsInfo } from '../types';
-import { raidenSentTransfer } from '../transfers/utils';
-import { SentTransfer, SentTransfers, RaidenSentTransfer } from '../transfers/state';
-import { channelAmounts } from '../channels/utils';
-import { RaidenChannels, RaidenChannel, Channel } from '../channels/state';
-import { pluckDistinct } from '../utils/rx';
-import { Address, PrivateKey, isntNil, Hash } from '../utils/types';
-import { getNetworkName } from '../utils/ethers';
+import { RaidenState } from './state';
+import { ContractsInfo, RaidenEpicDeps } from './types';
+import { raidenSentTransfer } from './transfers/utils';
+import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
+import { channelAmounts } from './channels/utils';
+import { RaidenChannels, RaidenChannel, Channel } from './channels/state';
+import { pluckDistinct } from './utils/rx';
+import { Address, PrivateKey, isntNil, Hash } from './utils/types';
+import { getNetworkName } from './utils/ethers';
 
-import ropstenDeploy from '../deployment/deployment_ropsten.json';
-import rinkebyDeploy from '../deployment/deployment_rinkeby.json';
-import goerliDeploy from '../deployment/deployment_goerli.json';
-import ropstenServicesDeploy from '../deployment/deployment_services_ropsten.json';
-import rinkebyServicesDeploy from '../deployment/deployment_services_rinkeby.json';
-import goerliServicesDeploy from '../deployment/deployment_services_goerli.json';
+import ropstenDeploy from './deployment/deployment_ropsten.json';
+import rinkebyDeploy from './deployment/deployment_rinkeby.json';
+import goerliDeploy from './deployment/deployment_goerli.json';
+import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
+import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
+import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
 
 /**
  * Returns contract information depending on the passed [[Network]]. Currently, only
@@ -216,3 +216,38 @@ export const mapTokenToPartner = (state: RaidenState): RaidenChannels =>
       result[token] = mapPartnerToChannel(partnerChannelMap, token, tokenNetwork);
     },
   );
+
+/**
+ * Return signer & address to use for on-chain txs depending on subkey param
+ *
+ * @param deps - RaidenEpicDeps subset
+ * @param subkey - Whether to prefer the subkey or the main key
+ * @returns Signer & Address to use for on-chain operations
+ */
+export function chooseOnchainAccount(
+  {
+    signer,
+    address,
+    main,
+  }: {
+    signer: RaidenEpicDeps['signer'];
+    address: RaidenEpicDeps['address'];
+    main?: RaidenEpicDeps['main'];
+  },
+  subkey?: boolean,
+) {
+  if (main && !subkey) return main;
+  return { signer, address };
+}
+
+/**
+ * Returns a contract instance with attached signer
+ *
+ * @param contract - Contract instance
+ * @param signer - Signer to use on contract
+ * @returns contract instance with signer
+ */
+export function getContractWithSigner<C extends Contract>(contract: C, signer: Signer): C {
+  if (contract.signer === signer) return contract;
+  return contract.connect(signer) as C;
+}
