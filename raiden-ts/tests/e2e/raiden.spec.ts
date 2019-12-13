@@ -1114,7 +1114,7 @@ describe('Raiden', () => {
   });
 
   test('subkey', async () => {
-    expect.assertions(27);
+    expect.assertions(28);
     const sub = await Raiden.create(provider, 0, storage, contractsInfo, config, true);
 
     const subStarted = sub.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
@@ -1166,7 +1166,7 @@ describe('Raiden', () => {
     expect((await sub.getBalance()).lt(newMainTokenBalance.sub(bal))).toBe(true);
     expect((await sub.getBalance(sub.address)).eq(bal)).toBe(true);
 
-    // now with subkey, as it has ETH
+    // now with subkey, as it has ETH, through on-chain method param
     await expect(sub.openChannel(token, partner, { subkey: true })).resolves.toMatch(/^0x/);
     // first deposit fails, as subkey has only 200 tokens settled from previous channel
     await expect(sub.depositChannel(token, partner, 300, { subkey: true })).rejects.toThrow(
@@ -1176,9 +1176,16 @@ describe('Raiden', () => {
 
     await provider.mine();
 
-    await expect(sub.closeChannel(token, partner, { subkey: true })).resolves.toMatch(/^0x/);
+    // test changing through config.subkey
+    sub.updateConfig({ subkey: true });
+
+    const closeTxHash = await sub.closeChannel(token, partner);
+    expect(closeTxHash).toMatch(/^0x/);
+    const closeTx = await provider.getTransaction(closeTxHash);
+    expect(closeTx.from).toBe(sub.address);
+
     await provider.mine(config.settleTimeout! + 1);
-    await expect(sub.settleChannel(token, partner, { subkey: true })).resolves.toMatch(/^0x/);
+    await expect(sub.settleChannel(token, partner)).resolves.toMatch(/^0x/);
 
     // gas for close+settle paid from subkey
     expect((await sub.getBalance(sub.address)).lt(bal)).toBe(true);
@@ -1186,10 +1193,8 @@ describe('Raiden', () => {
     expect((await sub.getTokenBalance(token, sub.address)).eq(200)).toBe(true);
 
     // transfer on chain from subkey to main account
-    await expect(
-      sub.transferOnchainTokens(token, sub.mainAddress!, 200, { subkey: true }),
-    ).resolves.toMatch(/^0x/);
-    expect((await sub.getTokenBalance(token, sub.address)).isZero()).toBe(true);
+    await expect(sub.transferOnchainTokens(token, sub.mainAddress!, 200)).resolves.toMatch(/^0x/);
+    expect((await sub.getTokenBalance(token)).isZero()).toBe(true);
     expect((await sub.getTokenBalance(token, sub.mainAddress)).eq(mainTokenBalance)).toBe(true);
 
     sub.stop();
