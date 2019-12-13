@@ -36,38 +36,41 @@ describe('Home.vue', () => {
     mockedRouter = new VueRouter() as Mocked<VueRouter>;
     mockedRouter.push = jest.fn().mockResolvedValue(null);
     vuetify = new Vuetify();
+    store.commit('reset');
   });
 
-  describe('without connected tokens', () => {
-    test('show the "NoTokens" component when the user has no connected tokens', () => {
-      wrapper = vueFactory();
+  test('show the "NoTokens" component when the user has no connected tokens', () => {
+    wrapper = vueFactory();
 
-      expect(wrapper.find(NoTokens).exists()).toBeTruthy();
-      expect(mockedRouter.push).toHaveBeenCalledTimes(0);
-    });
+    expect(wrapper.find(NoTokens).exists()).toBeTruthy();
+    expect(mockedRouter.push).toHaveBeenCalledTimes(0);
   });
 
-  describe('with connected tokens', () => {
-    test('redirect to the "Transfer" view when the user has connected tokens', () => {
-      store.commit('updateTokens', {
-        [TestData.token.address]: TestData.token
-      } as Tokens);
-      store.commit('updateChannels', {
-        [TestData.token.address]: {
-          [TestData.openChannel.partner]: {
-            ...TestData.openChannel,
-            token: TestData.token.address
-          } as RaidenChannel
-        }
-      } as RaidenChannels);
-      vueFactory();
+  test('redirect to the "Transfer" view when the user has connected tokens', async () => {
+    vueFactory();
 
-      expect(mockedRouter.push).toHaveBeenCalledTimes(1);
-      expect(mockedRouter.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.TRANSFER
-        })
-      );
-    });
+    expect(wrapper.find(NoTokens).exists()).toBeTruthy();
+    expect(mockedRouter.push).toHaveBeenCalledTimes(0);
+
+    store.commit('updateTokens', {
+      [TestData.token.address]: TestData.token
+    } as Tokens);
+    store.commit('updateChannels', {
+      [TestData.token.address]: {
+        [TestData.openChannel.partner]: {
+          ...TestData.openChannel,
+          token: TestData.token.address
+        } as RaidenChannel
+      }
+    } as RaidenChannels);
+
+    await wrapper.vm.$nextTick();
+
+    expect(mockedRouter.push).toHaveBeenCalledTimes(1);
+    expect(mockedRouter.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.TRANSFER
+      })
+    );
   });
 });
