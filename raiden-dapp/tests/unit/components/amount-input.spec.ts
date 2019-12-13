@@ -13,7 +13,6 @@ describe('AmountInput.vue', () => {
 
   const vueFactory = (params: {}): Wrapper<AmountInput> =>
     mount(AmountInput, {
-      sync: false,
       propsData: {
         label: 'Has Label',
         token: TestData.token,

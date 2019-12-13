@@ -114,7 +114,7 @@ describe('AddressInput', () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted().input).toBeTruthy();
-    expect(wrapper.emitted().input[2]).toEqual([onlineTarget]);
+    expect(wrapper.emitted().input[1]).toEqual([onlineTarget]);
   });
 
   test('render a blockie when the input address is valid', async () => {

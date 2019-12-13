@@ -109,6 +109,7 @@ describe('OpenChannel.vue', () => {
 
       mockInput(wrapper, '0.1');
       await wrapper.vm.$nextTick();
+      await flushPromises();
       button.trigger('click');
       await wrapper.vm.$nextTick();
       await flushPromises();
