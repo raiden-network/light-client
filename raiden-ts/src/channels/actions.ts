@@ -28,7 +28,7 @@ export const tokenMonitored = createStandardAction('tokenMonitored')<{
 
 /* Request a channel to be opened with meta={ tokenNetwork, partner } and payload.settleTimeout */
 export const channelOpen = createStandardAction('channelOpen')<
-  { settleTimeout?: number; subkey?: true },
+  { settleTimeout?: number; subkey?: boolean },
   ChannelId
 >();
 
@@ -57,7 +57,7 @@ export const channelMonitored = createStandardAction('channelMonitored')<
 
 /* Request a payload.deposit to be made to channel meta:ChannelId */
 export const channelDeposit = createStandardAction('channelDeposit')<
-  { deposit: UInt<32>; subkey?: true },
+  { deposit: UInt<32>; subkey?: boolean },
   ChannelId
 >();
 
@@ -80,7 +80,7 @@ export const channelWithdrawn = createStandardAction('channelWithdrawn')<
 
 /* Request channel meta:ChannelId to be closed */
 export const channelClose = createStandardAction('channelClose')<
-  { subkey?: true } | undefined,
+  { subkey?: boolean } | undefined,
   ChannelId
 >();
 
@@ -103,7 +103,7 @@ export const channelSettleable = createStandardAction('channelSettleable')<
 
 /* Request channel meta:ChannelId to be settled */
 export const channelSettle = createStandardAction('channelSettle')<
-  { subkey?: true } | undefined,
+  { subkey?: boolean } | undefined,
   ChannelId
 >();
 

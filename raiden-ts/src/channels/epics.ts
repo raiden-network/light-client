@@ -444,9 +444,9 @@ export const channelOpenEpic = (
   action$.pipe(
     filter(isActionOf(channelOpen)),
     withLatestFrom(state$, config$),
-    mergeMap(([action, state, config]) => {
+    mergeMap(([action, state, { settleTimeout, subkey: configSubkey }]) => {
       const tokenNetwork =
-        main && action.payload.subkey
+        main && (action.payload.subkey ?? configSubkey)
           ? getTokenNetworkContract(action.meta.tokenNetwork).connect(signer)
           : getTokenNetworkContract(action.meta.tokenNetwork);
       const channelState = get(state.channels, [
@@ -465,7 +465,7 @@ export const channelOpenEpic = (
         tokenNetwork.functions.openChannel(
           address,
           action.meta.partner,
-          action.payload.settleTimeout || config.settleTimeout,
+          action.payload.settleTimeout ?? settleTimeout,
         ),
       ).pipe(
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
@@ -532,12 +532,12 @@ export const channelOpenedEpic = (
 export const channelDepositEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, getTokenContract, getTokenNetworkContract, main, signer }: RaidenEpicDeps,
+  { address, getTokenContract, getTokenNetworkContract, main, signer, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelDepositFailed>> =>
   action$.pipe(
     filter(isActionOf(channelDeposit)),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
+    withLatestFrom(state$, config$),
+    mergeMap(([action, state, { subkey: configSubkey }]) => {
       const token = findKey(state.tokens, tn => tn === action.meta.tokenNetwork) as
         | Address
         | undefined;
@@ -546,11 +546,11 @@ export const channelDepositEpic = (
         return of(channelDepositFailed(error, action.meta));
       }
       const tokenContract =
-        main && action.payload.subkey
+        main && (action.payload.subkey ?? configSubkey)
           ? getTokenContract(token).connect(signer)
           : getTokenContract(token);
       const tokenNetworkContract =
-        main && action.payload.subkey
+        main && (action.payload.subkey ?? configSubkey)
           ? getTokenNetworkContract(action.meta.tokenNetwork).connect(signer)
           : getTokenNetworkContract(action.meta.tokenNetwork);
       const channel: Channel = get(state.channels, [
@@ -630,14 +630,14 @@ export const channelDepositEpic = (
 export const channelCloseEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, network, getTokenNetworkContract, main, signer }: RaidenEpicDeps,
+  { address, network, getTokenNetworkContract, main, signer, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelCloseFailed>> =>
   action$.pipe(
     filter(isActionOf(channelClose)),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
+    withLatestFrom(state$, config$),
+    mergeMap(([action, state, { subkey: configSubkey }]) => {
       const tokenNetworkContract =
-        main && action.payload && action.payload.subkey
+        main && (action.payload?.subkey ?? configSubkey)
           ? getTokenNetworkContract(action.meta.tokenNetwork).connect(signer)
           : getTokenNetworkContract(action.meta.tokenNetwork);
       const channel: Channel = get(state.channels, [
@@ -736,14 +736,14 @@ export const channelCloseEpic = (
 export const channelSettleEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, getTokenNetworkContract, main, signer }: RaidenEpicDeps,
+  { address, getTokenNetworkContract, main, signer, config$ }: RaidenEpicDeps,
 ): Observable<ActionType<typeof channelSettleFailed>> =>
   action$.pipe(
     filter(isActionOf(channelSettle)),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
+    withLatestFrom(state$, config$),
+    mergeMap(([action, state, { subkey: configSubkey }]) => {
       const tokenNetworkContract =
-        main && action.payload && action.payload.subkey
+        main && (action.payload?.subkey ?? configSubkey)
           ? getTokenNetworkContract(action.meta.tokenNetwork).connect(signer)
           : getTokenNetworkContract(action.meta.tokenNetwork);
       const channel: Channel | undefined = get(state.channels, [
