@@ -23,6 +23,8 @@ import { getNetworkName } from './utils/ethers';
  *             Defaults to 'debug' if undefined and process.env.NODE_ENV === 'development'
  * - pfs - Path Finding Service URL or Address. Set to null to disable, or leave undefined to
  *             enable automatic fetching from ServiceRegistry.
+ * - subkey - When using subkey, this sets the behavior when { subkey } option isn't explicitly set
+ *            in on-chain method calls. false (default) = use main key; true = use subkey
  */
 export const RaidenConfig = t.readonly(
   t.intersection([
@@ -47,6 +49,7 @@ export const RaidenConfig = t.readonly(
         error: null,
       }),
       pfs: t.union([Address, t.string, t.null]),
+      subkey: t.boolean,
     }),
   ]),
 );

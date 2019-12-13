@@ -460,7 +460,7 @@ export class Raiden {
   public async openChannel(
     token: string,
     partner: string,
-    options: { settleTimeout?: number; subkey?: true } = {},
+    options: { settleTimeout?: number; subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
@@ -504,7 +504,7 @@ export class Raiden {
     token: string,
     partner: string,
     amount: BigNumberish,
-    { subkey }: { subkey?: true } = {},
+    { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
@@ -550,7 +550,7 @@ export class Raiden {
   public async closeChannel(
     token: string,
     partner: string,
-    { subkey }: { subkey?: true } = {},
+    { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
@@ -593,7 +593,7 @@ export class Raiden {
   public async settleChannel(
     token: string,
     partner: string,
-    { subkey }: { subkey?: true } = {},
+    { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const state = this.state;
@@ -898,7 +898,7 @@ export class Raiden {
   public async mint(
     token: string,
     amount: BigNumberish,
-    { subkey }: { subkey?: true } = {},
+    { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     // Check whether address is valid
     assert(Address.is(token), 'Invalid address');
@@ -960,7 +960,7 @@ export class Raiden {
    */
   public async depositToUDC(
     amount: BigNumberish,
-    { subkey }: { subkey?: true } = {},
+    { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
@@ -1019,7 +1019,7 @@ export class Raiden {
   public async transferOnchainBalance(
     to: string,
     value: BigNumberish,
-    { subkey }: { subkey?: true } = {},
+    { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(to), 'Invalid address');
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
@@ -1050,7 +1050,7 @@ export class Raiden {
     token: string,
     to: string,
     value: BigNumberish,
-    { subkey }: { subkey?: true } = {},
+    { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(to), 'Invalid address');
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");

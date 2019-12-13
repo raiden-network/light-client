@@ -90,7 +90,7 @@ Signing this message at any other address WILL give it FULL control of this subk
 export const getSigner = async (
   account: string | number | Signer,
   provider: JsonRpcProvider,
-  subkey?: true,
+  subkey?: boolean,
 ) => {
   let signer;
   let address: Address;
