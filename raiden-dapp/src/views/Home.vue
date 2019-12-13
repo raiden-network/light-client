@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator';
+import { Component, Mixins, Watch } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import { TokenModel } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -16,9 +16,10 @@ import NoTokens from '@/components/NoTokens.vue';
 export default class Home extends Mixins(NavigationMixin) {
   tokens!: TokenModel[];
 
-  mounted() {
-    if (this.tokens.length) {
-      this.navigateToSelectTransferTarget(this.tokens[0].address);
+  @Watch('tokens')
+  onChange(tokens: TokenModel[]) {
+    if (tokens.length) {
+      this.navigateToSelectTransferTarget(tokens[0].address);
     }
   }
 }

@@ -10,6 +10,7 @@
 
 ### Fixed
 - [#704] Amount and address input styles
+- [#740] Fixed empty start screen on first time connect
 
 ## [0.2] - 2019-11-29
 ### Added
