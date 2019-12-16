@@ -2,15 +2,21 @@
 
 ## [Unreleased]
 ### Added
-- [#218] Matrix availability check to address inputs
+- [#218] Matrix availability check to address inputs.
 
 ### Changed
 - User can now dismiss/hide the transfer progress dialog.
 - Fix utility token display on PFS route selection.
 
 ### Fixed
-- [#704] Amount and address input styles
-- [#740] Fixed empty start screen on first time connect
+- [#712] Fix AddressInput.vue validity not updating on presence changes.
+- [#704] Amount and address input styles.
+- [#740] Fix empty start screen on first time connect.
+
+[#740]: https://github.com/raiden-network/light-client/issues/740
+[#712]: https://github.com/raiden-network/light-client/issues/712
+[#704]: https://github.com/raiden-network/light-client/issues/704
+[#218]: https://github.com/raiden-network/light-client/issues/218
 
 ## [0.2] - 2019-11-29
 ### Added
