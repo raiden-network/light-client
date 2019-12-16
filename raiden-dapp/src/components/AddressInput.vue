@@ -67,8 +67,6 @@ import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({ computed: { ...mapState(['presences']) } })
 export default class AddressInput extends Mixins(BlockieMixin) {
-  private timeout: number = 0;
-
   @Prop({})
   disabled!: boolean;
   @Prop({ required: true })
@@ -115,6 +113,15 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       this.address = this.value;
       this.updateValue(this.value);
     }
+  }
+
+  @Watch('presences')
+  onPresenceUpdate() {
+    if (!this.address) {
+      return;
+    }
+
+    this.updateValue(this.address);
   }
 
   @Watch('value')
