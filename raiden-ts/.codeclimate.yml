@@ -1,0 +1,14 @@
+version: "2"
+  argument-count:
+    file-lines:
+      config:
+        threshold: 500
+    method-complexity:
+      config:
+        threshold: 8
+    method-lines:
+      config:
+        threshold: 50
+    similar-code:
+      config:
+        threshold: 100
