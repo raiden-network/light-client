@@ -4,7 +4,7 @@ cd ../raiden-ts
 
 if [[ -d './docs' ]]
 then
- rm -rf docs
+    rm -rf docs
 fi
 
 npm run docs:generate
@@ -14,6 +14,7 @@ npm run docs:generate
 
 cp ../docs/config.js docs/.vuepress/config.js
 cp ../docs/palette.styl docs/.vuepress/styles/palette.styl
+cp -R ../docs/sdk-docs/. docs/
 
 npm run docs:build
 
