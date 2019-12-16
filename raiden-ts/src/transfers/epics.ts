@@ -130,6 +130,11 @@ function retrySendUntil$(
   ).pipe(retryUntil(state$.pipe(filter(predicate))));
 }
 
+function getChannelLocksroot(channel: Channel, secrethash: Hash) {
+  const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash);
+  return getLocksroot(locks);
+}
+
 function makeAndSignTransfer$(
   state: RaidenState,
   action: ActionType<typeof transfer>,
@@ -263,9 +268,7 @@ function makeAndSignUnlock$(
   } else {
     // don't forget to check after signature too, may have expired by then
     assert(transfer.lock.expiration.gt(state.blockNumber), 'lock expired');
-
-    const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash);
-    const locksroot = getLocksroot(locks);
+    const locksroot = getChannelLocksroot(channel, secrethash);
 
     const message: Unlock = {
       type: MessageType.UNLOCK,
@@ -350,8 +353,7 @@ function makeAndSignLockExpired$(
     assert(transfer.lock.expiration.lt(state.blockNumber), 'lock not yet expired');
     assert(!state.sent[secrethash].unlock, 'transfer already unlocked');
 
-    const locks: Lock[] = (channel.own.locks || []).filter(l => l.secrethash !== secrethash);
-    const locksroot = getLocksroot(locks);
+    const locksroot = getChannelLocksroot(channel, secrethash);
 
     const message: LockExpired = {
       type: MessageType.LOCK_EXPIRED,
@@ -552,16 +554,16 @@ const transferSignedRetryMessage = (
   const signed = action.payload.message;
   const send = messageSend({ message: signed }, { address: signed.recipient });
   // emit Send once immediatelly, then wait until respective messageSent, then completes
-  return retrySendUntil$(
-    send,
-    action$,
-    state$,
-    state =>
-      !!state.sent[secrethash].transferProcessed ||
-      !!state.sent[secrethash].unlockProcessed ||
-      !!state.sent[secrethash].lockExpiredProcessed ||
-      !!state.sent[secrethash].channelClosed,
-  );
+  const processedOrNotPossibleToSend = (state: RaidenState) => {
+    const transfer = state.sent[secrethash];
+    return (
+      !!transfer.transferProcessed ||
+      !!transfer.unlockProcessed ||
+      !!transfer.lockExpiredProcessed ||
+      !!transfer.channelClosed
+    );
+  };
+  return retrySendUntil$(send, action$, state$, processedOrNotPossibleToSend);
 };
 
 /**
@@ -598,13 +600,14 @@ const transferUnlockRetryMessage$ = (
   const unlock = action.payload.message;
   const transfer = state.sent[secrethash].transfer[1];
   const send = messageSend({ message: unlock }, { address: transfer.recipient });
+
   // emit Send once immediatelly, then wait until respective messageSent, then completes
-  return retrySendUntil$(
-    send,
-    action$,
-    state$,
-    state => !!state.sent[secrethash].unlockProcessed || !!state.sent[secrethash].channelClosed,
-  );
+  const unlockProcessedOrChannelClosed = (state: RaidenState) => {
+    const transfer = state.sent[secrethash];
+    return !!transfer.unlockProcessed || !!transfer.channelClosed;
+  };
+
+  return retrySendUntil$(send, action$, state$, unlockProcessedOrChannelClosed);
 };
 
 /**
@@ -644,14 +647,12 @@ const expiredRetryMessages$ = (
     { message: lockExpired },
     { address: state.sent[secrethash].transfer[1].recipient },
   );
+  const lockExpiredProcessedOrChannelClosed = (state: RaidenState) => {
+    const transfer = state.sent[secrethash];
+    return !!transfer.lockExpiredProcessed || !!transfer.channelClosed;
+  };
   // emit Send once immediatelly, then wait until respective messageSent, then completes
-  return retrySendUntil$(
-    send,
-    action$,
-    state$,
-    state =>
-      !!state.sent[secrethash].lockExpiredProcessed || !!state.sent[secrethash].channelClosed,
-  );
+  return retrySendUntil$(send, action$, state$, lockExpiredProcessedOrChannelClosed);
 };
 
 /**
