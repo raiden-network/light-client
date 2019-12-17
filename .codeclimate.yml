@@ -1,4 +1,5 @@
 version: "2"
+checks:
   argument-count:
     file-lines:
       config:
