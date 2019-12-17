@@ -21,6 +21,15 @@
         <div class="splash-screen__disclaimer font-weight-light text-center">
           {{ $t('splash-screen.disclaimer') }}
         </div>
+        <div
+          class="splash-screen__getting-started font-weight-light text-center"
+          v-html="
+            $t('splash-screen.getting-started', {
+              url:
+                'https://github.com/raiden-network/light-client#getting-started'
+            })
+          "
+        ></div>
         <div class="splash-screen__matrix-sign font-weight-light text-center">
           {{ $t('splash-screen.matrix-sign') }}
         </div>
@@ -85,6 +94,12 @@ export default class Loading extends Vue {
 
 <style lang="scss" scoped>
 .splash-screen {
+  ::v-deep {
+    a {
+      text-decoration: none;
+    }
+  }
+
   &__logo-container {
     display: flex;
     justify-content: flex-end;
@@ -117,6 +132,7 @@ export default class Loading extends Vue {
     margin-top: 60px;
   }
 
+  &__getting-started,
   &__matrix-sign {
     margin-top: 30px;
   }
