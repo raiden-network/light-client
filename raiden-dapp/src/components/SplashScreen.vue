@@ -21,15 +21,18 @@
         <div class="splash-screen__disclaimer font-weight-light text-center">
           {{ $t('splash-screen.disclaimer') }}
         </div>
-        <div
+        <i18n
+          path="splash-screen.getting-started.description"
+          tag="div"
           class="splash-screen__getting-started font-weight-light text-center"
-          v-html="
-            $t('splash-screen.getting-started', {
-              url:
-                'https://github.com/raiden-network/light-client#getting-started'
-            })
-          "
-        ></div>
+        >
+          <a
+            href="https://github.com/raiden-network/light-client#getting-started"
+            target="_blank"
+          >
+            {{ $t('splash-screen.getting-started.link-name') }}
+          </a>
+        </i18n>
         <div class="splash-screen__matrix-sign font-weight-light text-center">
           {{ $t('splash-screen.matrix-sign') }}
         </div>
