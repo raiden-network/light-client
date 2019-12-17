@@ -1,152 +1,196 @@
 # Raiden Light Client Development Guide
 
-Welcome! This guide serves as the guideline to contributing to the Raiden Light Client
-codebase. It's here to help you understand what development practises we use here
-and what are the requirements for a Pull Request to be opened against Raiden Light Client.
+Welcome! This guideline explains how to contribute to the Raiden Light Client
+codebase. It's here to help you to understand what development practises we use
+and what the requirements for a pull request are to be opened against Raiden Light Client repository.
+
+## Table of Contents
 
 - [Contributing](#contributing)
-  - [Creating an Issue](#creating-an-issue)
-  - [Creating a Pull Request](#creating-a-pull-request)
-  - [Pull Request Reviews](#pull-request-reviews)
-- [Development environment setup](#development-environment-setup)
-- [Development Guidelines](#development-guidelines)
-  - [Coding Style](#coding-style)
-  - [Workflow](#workflow)
+- [Creating an issue](#creating-an-issue)
+  - [Request features](#request-features)
+  - [Report bugs](#report-bugs)
+- [Creating a rull request](#creating-a-pull-request)
+  - [Installation](#installation)
+  - [Code style](#code-style)
+    - [Observables](#observables)
+    - [Vue components](#vue-components)
+    - [CSS naming](#css-naming)
+  - [Writing and running tests](#writing-and-running-tests)
+  - [Documentation](#documentation)
+  - [Committing rules](#committing-rules)
+  - [Change log entry](#change-log-entry)
+  - [Opening a pull request](#opening-a-pull-request)
+    - [Getting it reviewed](#getting-it-reviewed)
+    - [Contributing to other pull requests](#contributing-to-other-pull-requests)
+  - [Merging pull requests](#merging-pull-requests)
 
 ## Contributing
 
-There are two ways you can contribute to the development. You can either open
-an Issue or if you have programming abilities open a Pull Request.
+There are two ways for you to contribute. You can either open
+an issue or, if you have programming experience, open a pull request.
 
-### Creating an Issue
+## Creating an issue
 
-If you experience a problem while using the Raiden Light Client or want to request a feature
-then you should open an issue against the repository. All issues should
-contain:
+If you experience a problem while using the Raiden Light Client or want to request a feature,
+then you should open an issue against the repository.
 
-**For Feature Requests:**
+### Request features
 
-- A description of what you would like to see implemented.
-- An explanation of why you believe this would make a good addition to Raiden Light Client.
+If you want to submit a feature request, please use the **User Story** issue template and make sure that it contains the following aspects:
 
-**For Bugs:**
+- A description of what you would like to see implemented
+- An explanation of your use case
+
+### Report bugs
+
+If you have found a bug in the Light Client or the JS SDK, then please use the **Bug** issue template and provide the following infos:
 
 - A short description of the problem.
-- Detailed description of your system, SDK version, environment (e.g. Metamask), Wallet version if you are using the wallet.
-- What was the exact unexpected thing that occured.
-- What you were expecting to happen instead.
+- The steps you need take in order to reproduce the behavior
+- What was the expected result
+- What was the actual result
 
-### Creating a Pull Request
+## Creating a pull request
 
-If you have some coding abilities and would like to contribute to the actual
-codebase of Raiden then you can open a Pull Request(PR) against the repository.
+If you have coding experience and would like to contribute to codebase, then you can open a pull request against the repository.
 
 If you are interested in contributing make sure that there is an issue about it. Express interest, by picking the issue so that core developers know that you are working on the issue.
 
-All PRs should be:
+All pull requests should be:
 
 - Self-contained.
 - As short as possible and address a single issue or even a part of an issue.
-  Consider breaking long PRs into smaller ones.
+  Consider breaking long pull requests into smaller ones.
 
-In order for a Pull Request to get merged into the main repository you should
-have one approved review from one of the core developers of Raiden and also all
-Continuous Integration tests should be passing and the CI build should be
-green.
-
-Additionally you need to sign the raiden project CLA (Contributor License
-Agreement). Our CLA bot will help you with that after you created a pull
-request. If you or your employer do not hold the whole copyright of the
-authorship submitted we can not accept your contribution.
-
-For frequent contributors with write access to the repository we have a set of rules on Pull Requests to signal to our colleagues what the current state of the PR is. These are:
-
-- A ready for review Pull Request means that you consider your work done and it is currently ready for a reviewer to have a look at.
-- A draft Pull Request is considered work in progress and it is not yet ready for review.
-
-### Pull Request Reviews
-
-It is the responsibility of the author to ask for at least one person to review their Pull Request. That person should know the area of the code being changed. If the chosen reviewer does not feel confident in the review, they can then ask for someone else to additionally look at the code.
-
-All the developers in the team should perform Pull Request reviews. Make it a habit to check [this](https://github.com/raiden-network/light-client/pulls?q=is%3Apr+is%3Aopen+label%3A%22dev%3A+Please+Review%22) link often to help your fellow colleagues who have PRs open pending for review.
-
-We have a lot of tools that automatically check the quality of the code (eslint, prettier). All these are automatically ran by the CI. Therefore fixes related to linting are not usually part of PR reviews. Additionally reviewers are encouraged to not be nitpicky about the suggested changes they ask from the PR author. If something is indeed nitpicky then the reviewer is encouraged to state it beforehand. Example:
-
-> nitpick: I don't really think XYZ makes sense here. If possible it would be nice to have it changed to KLM
-
-The author of the PR can then choose to implement the nitpicks or ignore them.
-
-PR authors should make pull request reviews easier. Make them as small as possible and even if some code is touched it does not mean that it needs to be refactored. For example don't mix style/typing changes with a big PR.
-
-When a reviewer starts a PR review he should write a comment in the PR stating he is doing so. For example:
-
-> Reviewing this now
-
-This is to keep track of who is reviewing a PR and to also know when a PR review is ongoing.
-
-For complicated PRs that touch the core of the protocol at least 2 core developers are recommended to have a look and provide an opinion.
-
-When performing a PR review of non trivial PRs it is recommended to clone the branch locally, explore the changes with your editor, run tests and experiment with the changes so that a better understanding of the code change can be achieved and good constructive feedback given back to the author.
-
-## Development environment setup
-
-### Development external dependencies
+### Installation
 
 These are the required external dependencies for development:
 
 - Node >=10.13.0
-- A Web3 enabled browser (Either via Metamask or any other environment that can run dApps for the wallet).
-- Git for version control.
+- A Web3 enabled browser (e.g. through [MetaMask](https://metamask.io))
+- git
 
-### Get the code
+Start by getting the source code:
 
-Start by getting the source code
+```bash
+$ git clone --recurse-submodules https://github.com/raiden-network/light-client.git
+$ cd light-client
+```
 
-    git clone https://github.com/raiden-network/light-client.git
-    cd raiden
+### Code style
 
-#### Install system wide dependencies
+The code style is enforced by [ESLint](https://eslint.org), which means that in most cases you don't need to do anything other than running:
 
-##### Archlinux
+```bash
+$ npm run lint
+```
 
-All the required packages are available in community or extra:
+To automatically fix any fixable codestyle issue in the SDK or Light Client, you may add to the `lint` command the `--fix` option.
 
-    sudo pacman -Sy nodejs npm base-devel git
+#### Observables
 
-##### Debian/Ubuntu
+Functions that return observables should have `$` as suffix, e.g.:
 
-Then install the required packages:
+```javascript
+myFunction$(): Observable<RaidenAction>
+```
 
-    sudo apt-get install build-essential git libffi-dev libgmp-dev libssl-dev \
-    libtool pkg-config nodejs npm git
+#### Vue components
 
-### Testing
+When using custom vue components in templates make sure to use the kebab case name of the components.
 
-The unit tests use jest:
+👎 Don't do this:
+
+```html
+<template>
+  <v-container>
+    <NoValidProvider v-if="!providerDetected" />
+    <UserDenied v-else-if="userDenied" />
+    <WalletCore v-else />
+  </v-container>
+</template>
+```
+
+👍 For consistency you should use:
+
+```html
+<template>
+  <v-container>
+    <no-valid-provider v-if="!providerDetected" />
+    <user-denied v-else-if="userDenied" />
+    <wallet-core v-else />
+  </v-container>
+</template>
+```
+
+#### CSS naming
+
+For CSS naming we try to follow the [BEM](http://getbem.com/) methodology. Additionally, we use [SASS](https://sass-lang.com) to structure our style rules. Please nest related elements within their blocks.
+
+👎 Instead of writing:
+
+```CSS
+.my-block__my-element--my-modifier {
+    ...
+}
+```
+
+👍 Do this:
+
+```CSS
+.my-block {
+    ...
+
+    &__my-element {
+        ...
+
+        &--my-modifier {
+            ...
+        }
+    }
+}
+```
+
+Along with the naming, you should try to scope the styles in their respective components.
+
+### Writing and running tests
+
+When developing a feature, or a bug fix you should always start by writing a
+**test** for it, or by modifying existing tests to test for your feature.
+Once you see that test failing you should implement the feature and confirm
+that all your new tests pass.
+
+Your addition to the test suite should call into the innermost level possible
+to test your feature/bugfix. In particular, integration tests should be avoided
+in favor of unit tests whenever possible.
 
 For the sdk you have to run the following:
 
 ```bash
-    cd raiden
-    npm run test
+$ cd raiden-ts
+$ npm run test
 
 ```
 
-For the wallet:
+For the dApp:
 
 ```bash
-    cd raiden-wallet
-    npm run test:unit
+$ cd raiden-dapp
+$ npm run test:unit
 ```
 
 Tests are split in unit tests, and integration tests. The first are faster to execute while
 the latter test the whole system but are slower to run.
 
-### Testing on the CI
-
 By default whenever you make a Pull Request the linter tests, format checks, unit tests and all the integration tests will run.
 
-### Commiting Rules
+
+### Documentation
+
+In the SDK we use [Typedoc](https://typedoc.org) to generate it's [API documentation](https://lightclient.raiden.network/docs/classes/raiden.html). Therefore, please write [doc comments](https://typedoc.org/guides/doccomments/) for functions that are exposed.
+
+### Committing rules
 
 For an exhaustive guide read [this](http://chris.beams.io/posts/git-commit/)
 guide. It's all really good advice. Some rules that you should always follow though are:
@@ -160,174 +204,115 @@ information treat the first 80 characters as a title. Even Github itself does
 this. And the git history looks really nice and neat if these simple rules are
 followed.
 
-### Documentation
+### Change log entry
 
-Code should be documented.
+If your pull request adds or removes a feature or eliminates a bug, then it **has to** contain a change log entry as well. We use the [keep a changelog format](https://keepachangelog.com/en/1.0.0/) for ours.
 
-### Coding Style
-
-The code style is enforced by [prettier](https://prettier.io/) which means that in most of the cases you don't actually need to do anything more than running the appropriate task.
-
-To fix any fixable codestyle issue in either SDK or Wallet, you may just run the following command on the respective folder:
-
-```bash
-npm run lint
+We maintain two separate change logs, one for the SDK and another one for the dApp. They can be found at:
+```
+raiden-ts/CHANGELOG.md
+raiden-dapp/CHANGELOG.md
 ```
 
-Linting plugins available for modern IDEs are also useful in early spotting any mistakes and help keep the code quality level.
+Please categorize your entry according to the type of your change. The most commonly used ones are `Added`, `Fixed`.
 
-##### HTML formating
+👎 Instead of committing for a bug fix:
 
-There are some scenarios where prettier will break a template in a weird way:
-
-```html
-<template
-    ><section>
-        <div>
-        <div>
-            <div><p>paragraph</p></div>
-        </div>
-        </div>
-    </section></template
-    >
+```markdown
+### Added
+- A bug fix
 ```
 
-In this case you should go and add line breaks so that the template appears in proper way.
+👍 Do this:
 
-```html
-<template>
-    <section>
-        <div>
-            <div>
-                <div><p>paragraph</p></div>
-            </div>
-        </div>
-    </section>
-</template>
+```markdown
+### Fixed
+- [#777] Specific behavior
+
+...
+
+[#777]: https://github.com/raiden-network/light-client/issues/777
 ```
 
-##### Vue bindings
+### Opening a pull request
 
-For consistency reason the [shorthand](https://vuejs.org/v2/guide/syntax.html#Shorthands) vue bindings are used all across the wallet instead of the full syntax.
+In order for a Pull Request to get merged into the main repository you should
+have one approved review from one of the core developers of Raiden. Additionally, all
+continuous integration tasks should pass and the build should be green.
 
-```html
-<!-- full syntax -->
-<a v-bind:href="url"> ... </a>
+You also need to sign the raiden project CLA (Contributor License
+Agreement). Our CLA bot will help you with that after you created a pull
+request. If you or your employer do not hold the whole copyright of the
+authorship submitted we can not accept your contribution.
 
-<!-- shorthand -->
-<a :href="url"> ... </a>
-```
+For frequent contributors with write access to the repository we have a set of rules on pull requests to signal to our colleagues what their current state is:
 
-```html
-<!-- full syntax -->
-<a v-on:click="doSomething"> ... </a>
+- **Ready for review**: Means that you consider your work done and it is currently waiting for a review
+- **Draft**: Is considered work in progress and it is not yet ready for a review
 
-<!-- shorthand -->
-<a @click="doSomething"> ... </a>
-```
+#### Getting it reviewed
 
-```html
-<!-- full syntax -->
-<template v-slot:append> ... </template>
+It is the responsibility of the author to ask for at least one person for a review. The person should know the area of the code being changed. If the chosen reviewer does not feel confident in the review, they can then ask for someone else to additionally look at the code.
 
-<!-- shorthand -->
-<a #append> ... </a>
-```
+All the developers in the team should review [open pull requests](https://github.com/raiden-network/light-client/pulls) frequently.
 
-##### Vue components
+We have a lot of tools that automatically check the quality of the code (eslint, prettier). All these are automatically ran by the CI. Therefore, fixes related to linting are usually not included in reviews.
 
-When using custom vue components in templates make sure to use the kebab case name of the components.
+Additionally, reviewers should **not be nitpicky** about the suggested changes they ask from the author. If something is indeed nitpicky then the reviewer is encouraged to state it beforehand. Example:
 
-Don't do this:
+> nitpick: I don't really think XYZ makes sense here. If possible it would be nice to have it changed to KLM
 
-```html
-<template>
-  <v-container>
-    <NoValidProvider v-if="!providerDetected" />
-    <UserDenied v-else-if="userDenied" />
-    <WalletCore v-else />
-  </v-container>
-</template>
-```
+The author of the pull request can choose to implement the feedback or to ignore it.
 
-The for consistensy you should use:
+Authors should make pull request reviews easier. Make them **as small as possible** .
 
-```html
-<template>
-  <v-container>
-    <no-valid-provider v-if="!providerDetected" />
-    <user-denied v-else-if="userDenied" />
-    <wallet-core v-else />
-  </v-container>
-</template>
-```
+When a reviewer starts a review, he should write a comment in the pull request stating he is doing so. For example:
 
-##### CSS naming scheme
+> Reviewing this now
 
-For CSS naming we try to follow the [BEM](http://getbem.com/) methodology. Along with the naming,
-you should try to scope the styles in their respective components.
+This is to keep track of who is reviewing a pull request and to know about ongoing reviews.
 
-### Workflow
+For complicated pull requests, that touch the core of the protocol, at least 2 core developers are recommended to have a look and provide an opinion.
 
-When developing a feature, or a bug fix you should always start by writing a
-**test** for it, or by modifying existing tests to test for your feature.
-Once you see that test failing you should implement the feature and confirm
-that all your new tests pass.
+When you have trouble to do a review, it is recommended to clone the branch locally and explore the changes with your editor. Run tests and experiment with the changes, so that you can get a better understanding of the changes and give feedback to the author.
 
-Your addition to the test suite should call into the innermost level possible
-to test your feature/bugfix. In particular, integration tests should be avoided
-in favor of unit tests whenever possible.
-
-Afterwards you should open a Pull Request from your fork or feature branch
-against master. You will be given feedback from the core developers of raiden
-and you should try to incorporate that feedback into your branch. Once you do
-so and all tests pass your feature/fix will be merged.
-
-#### Contributing to other people's PRs
+#### Contributing to other pull requests
 
 If you are a core developer of Raiden with write privileges to the repository
 then you can add commits or rebase to master any Pull Request by other people.
 
-Let us take [this](https://github.com/raiden-network/raiden/pull/221) PR as an
+Let us take [this](https://github.com/raiden-network/raiden/pull/221) pull request as an
 example. The contributor has everything ready and all is looking good apart
 from a minor glitch. You can wait until he fixes it himself but you can always
-help him by contributing to his branch's PR:
+help him by contributing to his branch's pull request:
 
 ```bash
-git remote add hackaugusto git@github.com:hackaugusto/raiden.git
-git fetch hackaugusto
-git checkout travis_build
+$ git remote add hackaugusto git@github.com:hackaugusto/raiden.git
+$ git fetch hackaugusto
+$ git checkout travis_build
 ```
 
-Right now you are working on the contributor's Pull Request. **Make sure** to
+Right now you are working on the contributor's pull request. **Make sure** to
 coordinate to avoid any conflicts and always warn people beforehand if you are
 to work on their branch. Once you are done:
 
 ```bash
-git commit -m 'Add my contribution
+$ git commit -m 'Add my contribution
 
 The PR was missing something. I added it.'
-git push hackaugusto travis_build
+$ git push hackaugusto travis_build
 ```
 
-Congratulations, you have added to someone else's PR!
+### Merging pull requests
 
-#### Integrating Pull Requests
+Once your pull request got approved, it is **your responsibility** to merge it. When merging a pull request into the codebase, there are different options to go about it:
 
-When integrating a successful Pull Request into the codebase we have the option
-of using either a "Rebase and Merge" or to "Create a Merge commit".
-Unfortunately in Github the default option is to "Create a Merge commit". This
-is not our preferred option as in this way we can't be sure that the result of
-the merge will also have all tests passing, since there may be other patches
-merged since the PR opened. But there are many PRs which we definitely know
-won't have any conflicts and for which enforcing rebase would make no sense and
-only waste our time. As such we provide the option to use both at our own
-discretion. So the general guidelines are:
+- Rebase and Merge
+- Create a Merge commit
+- Squash and Merge
 
-- If there are patches that have been merged to master since the PR was opened,
-  on top of which our current PR may have different behaviour then use **Rebase
-  and Merge**.
-- If there are patches that have been merged to master since the PR was opened
-  which touch documentation, infrastucture or completely unrelated parts of the
-  code then you can freely use **Create a Merge Commit** and save the time of
-  rebasing.
+We do not enforce any specific way, but want to keep the git history **as flat as possible**.
+
+If you feel like the individual commits of your pull request are of importance, feel free to **Merge Commit** or **Rebase and Merge**.
+
+If your pull request contains a lot of unimportant commits, e.g. syncs with `master` or intermediate commits, then please use **Squash and Merge**.
