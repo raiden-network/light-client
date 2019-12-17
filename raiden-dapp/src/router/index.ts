@@ -27,7 +27,7 @@ const router = new Router({
       path: '/transfer/:token',
       name: RouteNames.TRANSFER,
       meta: {
-        title: 'Send'
+        title: 'Transfer'
       },
       component: () => import('../views/Transfer.vue')
     },
@@ -35,7 +35,7 @@ const router = new Router({
       path: '/transfer/:token/:target',
       name: RouteNames.TRANSFER_STEPS,
       meta: {
-        title: 'Send'
+        title: 'Transfer'
       },
       component: () => import('../views/TransferSteps.vue')
     },
@@ -43,7 +43,7 @@ const router = new Router({
       path: '/connect',
       name: RouteNames.SELECT_TOKEN,
       meta: {
-        title: 'Select token'
+        title: 'Select Token'
       },
       component: () => import('../views/SelectToken.vue')
     },
@@ -51,7 +51,7 @@ const router = new Router({
       path: '/connect/:token',
       name: RouteNames.SELECT_HUB,
       meta: {
-        title: 'Select hub'
+        title: 'Select Hub'
       },
       component: () => import('../views/SelectHub.vue')
     },
@@ -59,7 +59,7 @@ const router = new Router({
       path: '/connect/:token/:partner',
       name: RouteNames.OPEN_CHANNEL,
       meta: {
-        title: 'Open channel'
+        title: 'Open Channel'
       },
       component: () => import('../views/OpenChannel.vue')
     },
