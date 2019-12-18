@@ -972,14 +972,14 @@ export class Raiden {
     const depositAmount = bigNumberify(amount);
     assert(depositAmount.gt(Zero), 'Please deposit a positive amount.');
 
-    const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
+    const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
     const userDepositContract = getContractWithSigner(this.deps.userDepositContract, signer);
     const serviceTokenContract = getContractWithSigner(
       this.deps.getTokenContract(await this.userDepositTokenAddress()),
       signer,
     );
-    const balance = await serviceTokenContract.functions.balanceOf(this.address);
+    const balance = await serviceTokenContract.functions.balanceOf(address);
 
     assert(balance.gte(amount), `Insufficient token balance (${balance}).`);
 
