@@ -1,6 +1,6 @@
 <template>
   <v-overlay :value="show" absolute opacity="1.0" class="token-network-overlay">
-    <v-container class="token-network__container">
+    <v-container v-if="show" class="token-network__container">
       <v-row no-gutters justify="end">
         <v-btn icon class="token-network-overlay__close-button" @click="cancel">
           <v-icon>mdi-close</v-icon>
