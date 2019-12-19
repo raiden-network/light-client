@@ -31,6 +31,9 @@
   <a href="https://codecov.io/gh/raiden-network/light-client">
     <img src="https://codecov.io/gh/raiden-network/light-client/branch/master/graph/badge.svg?token=QzmREKozOH" alt="Codecov Badge">
   </a>
+  <a href="https://codeclimate.com/github/raiden-network/light-client/maintainability">
+    <img src="https://api.codeclimate.com/v1/badges/d59cce05c229296c848d/maintainability" />
+  </a>
   <a href="https://github.com/prettier/prettier">
     <img src="https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square" alt="code style: prettier">
   </a>
