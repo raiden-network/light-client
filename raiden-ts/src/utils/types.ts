@@ -3,7 +3,8 @@ import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress, isHexString, hexDataLength } from 'ethers/utils';
 import { Two, Zero } from 'ethers/constants';
 import { memoize } from 'lodash';
-import { Either, Right } from 'fp-ts/lib/Either';
+import { Either, Right, map } from 'fp-ts/lib/Either';
+import { pipe } from 'fp-ts/lib/pipeable';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
 /* A Subset of DOM's Storage/localStorage interface which supports async/await */
@@ -57,6 +58,31 @@ export function decode<C extends t.Mixed>(codec: C, data: C['_I']): C['_A'] {
 export function isntNil<T>(value: T): value is NonNullable<T> {
   return value != null;
 }
+
+const serializedErr = t.intersection([
+  t.type({ name: t.string, message: t.string }),
+  t.partial({ stack: t.string }),
+]);
+
+/**
+ * Simple Error codec
+ *
+ * This codec doesn't decode to an instance of the exact same error class object, but instead to
+ * a generic Error, but assigning 'name', 'stack' & 'message' properties, more as an informative
+ * object.
+ */
+export const ErrorCodec = new t.Type<Error, { name: string; message: string; stack?: string }>(
+  'Error',
+  (u: unknown): u is Error => u instanceof Error,
+  u => {
+    if (u instanceof Error) return t.success(u);
+    return pipe(
+      serializedErr.decode(u),
+      map(({ name, message, stack }) => Object.assign(new Error(message), { name, stack })),
+    );
+  },
+  e => ({ name: e.name, message: e.message, stack: e.stack }),
+);
 
 /**
  * Codec of ethers.utils.BigNumber objects
