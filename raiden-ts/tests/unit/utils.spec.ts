@@ -10,7 +10,17 @@ import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils'
 import { LosslessNumber } from 'lossless-json';
 
 import { fromEthersEvent, getEventsStream, patchSignSend } from 'raiden-ts/utils/ethers';
-import { Address, BigNumberC, HexString, UInt, Secret, Timed, timed } from 'raiden-ts/utils/types';
+import {
+  Address,
+  BigNumberC,
+  HexString,
+  UInt,
+  Secret,
+  Timed,
+  timed,
+  ErrorCodec,
+  decode,
+} from 'raiden-ts/utils/types';
 import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
@@ -255,6 +265,27 @@ describe('types', () => {
       data: TimedAddress = timed(address);
     expect(TimedAddress.is(data)).toBe(true);
     expect(TimedAddress.is(['invalid number', address])).toBe(false);
+  });
+
+  test('ErrorCodec', () => {
+    let err;
+    try {
+      throw new Error('error message');
+    } catch (e) {
+      err = e;
+    }
+    expect(ErrorCodec.is(err)).toBe(true);
+    const encoded = ErrorCodec.encode(err);
+    expect(encoded).toStrictEqual({
+      name: 'Error',
+      message: 'error message',
+      stack: expect.any(String),
+    });
+    expect(decode(ErrorCodec, err)).toBe(err);
+    const decoded = decode(ErrorCodec, encoded);
+    expect(decoded).toBeInstanceOf(Error);
+    expect(decoded.message).toBe('error message');
+    expect(decoded.stack).toBeTruthy();
   });
 });
 
