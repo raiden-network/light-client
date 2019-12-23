@@ -187,42 +187,9 @@ You can now start making transfers. To do so, simply:
 
 To run the code in this repository, you must have Node.js 10+ on your computer and a web3-enabled browser (e.g. Firefox with Metamask extension), as well as some ETH on the account.
 
-#### SDK Installation
+#### SDK Documentation
 
-```bash
-npm install raiden-ts
-```
-
-Then in your JavaScript or TypeScript project:
-
-```typescript
-import { Raiden } from 'raiden-ts';
-
-# async factory
-const raiden = await Raiden.create(web3.currentProvider, 0, localStorage);
-
-# subscribe to channels$ observable
-raiden.channels$.subscribe((channels) => console.log('# raiden channels:', channels));
-
-# open a Raiden payment channel!
-const openTxHash = await raiden.openChannel('0xtoken', '0xpartner');
-
-# output:
-# {
-#   '0xtoken': {
-#     '0xpartner': {
-#       state: 'open',
-#       totalDeposit: BigNumber(0),
-#       partnerDeposit: BigNumber(0),
-#       id: 123,
-#       settleTimeout: 500,
-#       openBlock: 5123
-#     }
-#   }
-# }
-```
-
-You can find more detailed information on how to use the SDK in the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) and within the [SDK Documentation](https://lightclient.raiden.network/docs/).
+Go to the [SDK Documentation](https://lightclient.raiden.network/docs/) for more information on how to install and use the SDK.
 
 #### dApp Installation
 
