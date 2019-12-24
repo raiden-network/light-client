@@ -1,12 +1,12 @@
 import { Observable, of, fromEvent } from 'rxjs';
 import { filter, scan, startWith, share, take } from 'rxjs/operators';
-import { isActionOf } from 'typesafe-actions';
 import { memoize, curry } from 'lodash';
 import { MatrixClient, Room } from 'matrix-js-sdk';
 
 import { RaidenAction } from '../actions';
 import { RaidenConfig } from '../config';
 import { isntNil } from '../utils/types';
+import { isActionOf } from '../utils/actions';
 import { Presences } from './types';
 import { matrixPresenceUpdate } from './actions';
 

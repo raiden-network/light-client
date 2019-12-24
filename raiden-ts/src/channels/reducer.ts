@@ -1,8 +1,8 @@
-import { isActionOf } from 'typesafe-actions';
 import { get, set, unset } from 'lodash/fp';
 import { Zero } from 'ethers/constants';
 
 import { UInt } from '../utils/types';
+import { isActionOf } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';

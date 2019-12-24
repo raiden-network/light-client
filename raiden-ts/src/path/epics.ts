@@ -22,7 +22,6 @@ import {
   withLatestFrom,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
-import { ActionType, isActionOf } from 'typesafe-actions';
 import { Signer } from 'ethers';
 import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, toUtf8Bytes, verifyMessage, concat } from 'ethers/utils';
@@ -41,6 +40,7 @@ import { channelDeposited } from '../channels/actions';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
+import { isActionOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
 import {
@@ -188,9 +188,7 @@ export const pathFindServiceEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<ActionType<
-  typeof pathFound | typeof pathFindFailed | typeof iouPersist | typeof iouClear
->> =>
+): Observable<pathFound | pathFindFailed | iouPersist | iouClear> =>
   combineLatest(
     state$,
     getPresences$(action$),
@@ -399,7 +397,7 @@ export const pfsCapacityUpdateEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { address, network, signer, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof messageGlobalSend>> =>
+): Observable<messageGlobalSend> =>
   action$.pipe(
     filter(isActionOf(channelDeposited)),
     filter(action => action.payload.participant === address),
@@ -458,7 +456,7 @@ export const pfsServiceRegistryMonitorEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof pfsListUpdated>> =>
+): Observable<pfsListUpdated> =>
   config$.pipe(
     // monitors config.pfs, and only monitors contract if it's undefined
     pluck('pfs'),

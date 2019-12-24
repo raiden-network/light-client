@@ -1,6 +1,6 @@
-import { isActionOf } from 'typesafe-actions';
 import { isEmpty } from 'lodash/fp';
 
+import { isActionOf } from './utils/actions';
 import { channelsReducer } from './channels/reducer';
 import { pathReducer } from './path/reducer';
 import { transportReducer } from './transport/reducer';
