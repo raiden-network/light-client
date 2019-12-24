@@ -5,7 +5,6 @@ import { Zero, HashZero, One } from 'ethers/constants';
 import { BehaviorSubject, of, EMPTY, Subject, Observable } from 'rxjs';
 import { fakeSchedulers } from 'rxjs-marbles/jest';
 import { first, tap, toArray, delay, filter } from 'rxjs/operators';
-import { getType, isActionOf, ActionType } from 'typesafe-actions';
 import { get } from 'lodash';
 
 import {
@@ -74,6 +73,7 @@ import {
 import { matrixPresenceUpdate, matrixRequestMonitorPresence } from 'raiden-ts/transport/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
 import { UInt, Address, Hash, Signed } from 'raiden-ts/utils/types';
+import { isActionOf, ActionType } from 'raiden-ts/utils/actions';
 import { makeMessageId, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 
 import { epicFixtures } from '../fixtures';
@@ -137,14 +137,25 @@ describe('transfers epic', () => {
         otherDeposit = bigNumberify(800) as UInt<32>,
         action$ = of(
           matrixPresenceUpdate(
-            { userId: `@${otherPartner1.toLowerCase()}:${matrixServer}`, available: true },
+            {
+              userId: `@${otherPartner1.toLowerCase()}:${matrixServer}`,
+              available: true,
+              ts: Date.now(),
+            },
             { address: otherPartner1 },
           ),
           matrixPresenceUpdate(
-            { userId: `@${otherPartner2.toLowerCase()}:${matrixServer}`, available: true },
+            {
+              userId: `@${otherPartner2.toLowerCase()}:${matrixServer}`,
+              available: true,
+              ts: Date.now(),
+            },
             { address: otherPartner2 },
           ),
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+          matrixPresenceUpdate(
+            { userId: partnerUserId, available: true, ts: Date.now() },
+            { address: partner },
+          ),
           transfer(
             { tokenNetwork, target: partner, value, secret, paths, paymentId },
             { secrethash },
@@ -214,12 +225,12 @@ describe('transfers epic', () => {
       expect(output).toEqual(
         expect.arrayContaining([
           {
-            type: getType(transferSecret),
+            type: transferSecret.type,
             payload: { secret },
             meta: { secrethash },
           },
           {
-            type: getType(transferSigned),
+            type: transferSigned.type,
             payload: {
               message: expect.objectContaining({
                 type: MessageType.LOCKED_TRANSFER,
@@ -243,7 +254,10 @@ describe('transfers epic', () => {
 
       const closingPartner = '0x0100000000000000000000000000000000000000' as Address,
         action$ = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+          matrixPresenceUpdate(
+            { userId: partnerUserId, available: true, ts: Date.now() },
+            { address: partner },
+          ),
           transfer(
             {
               tokenNetwork,
@@ -284,7 +298,7 @@ describe('transfers epic', () => {
           .pipe(first())
           .toPromise(),
       ).resolves.toMatchObject({
-        type: getType(transferFailed),
+        type: transferFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { secrethash },
@@ -306,7 +320,10 @@ describe('transfers epic', () => {
      */
     beforeEach(async () => {
       const action$: Observable<RaidenAction> = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+          matrixPresenceUpdate(
+            { userId: partnerUserId, available: true, ts: Date.now() },
+            { address: partner },
+          ),
           transfer(
             { tokenNetwork, target: partner, value, secret, paths, paymentId },
             { secrethash },
@@ -372,7 +389,7 @@ describe('transfers epic', () => {
         ).resolves.toEqual(
           expect.arrayContaining([
             {
-              type: getType(transferUnlocked),
+              type: transferUnlocked.type,
               payload: {
                 message: expect.objectContaining({
                   type: MessageType.UNLOCK,
@@ -423,7 +440,7 @@ describe('transfers epic', () => {
             .toPromise(),
         ).resolves.toEqual(
           expect.not.arrayContaining([
-            expect.objectContaining({ type: getType(transferUnlocked), meta: { secrethash } }),
+            expect.objectContaining({ type: transferUnlocked.type, meta: { secrethash } }),
           ]),
         );
 
@@ -457,7 +474,7 @@ describe('transfers epic', () => {
             .toPromise(),
         ).resolves.toEqual(
           expect.not.arrayContaining([
-            expect.objectContaining({ type: getType(transferUnlocked), meta: { secrethash } }),
+            expect.objectContaining({ type: transferUnlocked.type, meta: { secrethash } }),
           ]),
         );
 
@@ -488,7 +505,7 @@ describe('transfers epic', () => {
             .toPromise(),
         ).resolves.toEqual(
           expect.not.arrayContaining([
-            expect.objectContaining({ type: getType(transferUnlocked), meta: { secrethash } }),
+            expect.objectContaining({ type: transferUnlocked.type, meta: { secrethash } }),
           ]),
         );
 
@@ -527,7 +544,7 @@ describe('transfers epic', () => {
         ).resolves.toEqual(
           expect.arrayContaining([
             {
-              type: getType(transferExpired),
+              type: transferExpired.type,
               payload: {
                 message: expect.objectContaining({
                   type: MessageType.LOCK_EXPIRED,
@@ -573,7 +590,7 @@ describe('transfers epic', () => {
         ).resolves.toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              type: getType(transferExpireFailed),
+              type: transferExpireFailed.type,
               payload: expect.any(Error),
               meta: { secrethash },
             }),
@@ -606,7 +623,7 @@ describe('transfers epic', () => {
         ).resolves.toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              type: getType(transferExpireFailed),
+              type: transferExpireFailed.type,
               payload: expect.any(Error),
               meta: { secrethash },
             }),
@@ -643,7 +660,7 @@ describe('transfers epic', () => {
         ).resolves.toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              type: getType(transferExpireFailed),
+              type: transferExpireFailed.type,
               payload: expect.any(Error),
               meta: { secrethash: HashZero },
             }),
@@ -691,7 +708,7 @@ describe('transfers epic', () => {
         ).resolves.toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              type: getType(transferExpireFailed),
+              type: transferExpireFailed.type,
               payload: expect.any(Error),
               meta: { secrethash },
             }),
@@ -931,12 +948,12 @@ describe('transfers epic', () => {
       await expect(promise).resolves.toEqual(
         expect.arrayContaining([
           {
-            type: getType(transferExpire),
+            type: transferExpire.type,
             payload: undefined,
             meta: { secrethash },
           },
           {
-            type: getType(transferFailed),
+            type: transferFailed.type,
             payload: expect.any(Error),
             error: true,
             meta: { secrethash },
@@ -954,7 +971,7 @@ describe('transfers epic', () => {
           signed = await signMessage(partnerSigner, message),
           action$ = of(
             messageReceived(
-              { text: encodeJsonMessage(signed), message: signed },
+              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
               { address: partner },
             ),
           ),
@@ -973,7 +990,7 @@ describe('transfers epic', () => {
           signed = await signMessage(partnerSigner, message),
           action$ = of(
             messageReceived(
-              { text: encodeJsonMessage(signed), message: signed },
+              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
               { address: partner },
             ),
           ),
@@ -992,7 +1009,7 @@ describe('transfers epic', () => {
           signed = await signMessage(partnerSigner, message),
           action$ = of(
             messageReceived(
-              { text: encodeJsonMessage(signed), message: signed },
+              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
               { address: partner },
             ),
           ),
@@ -1124,7 +1141,7 @@ describe('transfers epic', () => {
           signed = await signMessage(partnerSigner, message),
           action$ = of(
             messageReceived(
-              { text: encodeJsonMessage(signed), message: signed },
+              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
               { address: partner },
             ),
           ),
@@ -1147,7 +1164,7 @@ describe('transfers epic', () => {
           signed = await signMessage(partnerSigner, message),
           action$ = of(
             messageReceived(
-              { text: encodeJsonMessage(signed), message: signed },
+              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
               { address: partner },
             ),
           ),
@@ -1188,14 +1205,14 @@ describe('transfers epic', () => {
       ).resolves.toEqual(
         expect.arrayContaining([
           {
-            type: getType(transferSecretReveal),
+            type: transferSecretReveal.type,
             payload: {
               message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
             },
             meta: { secrethash },
           },
           {
-            type: getType(messageSend),
+            type: messageSend.type,
             payload: {
               message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
             },
@@ -1220,7 +1237,7 @@ describe('transfers epic', () => {
           )
           .toPromise(),
       ).resolves.toMatchObject({
-        type: getType(transferSecretReveal),
+        type: transferSecretReveal.type,
         payload: { message: reveal },
         meta: { secrethash },
       });
@@ -1242,7 +1259,7 @@ describe('transfers epic', () => {
           signed = await signMessage(partnerSigner, reveal),
           action$ = of(
             messageReceived(
-              { text: encodeJsonMessage(signed), message: signed },
+              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
               { address: partner },
             ),
           ),
@@ -1271,7 +1288,7 @@ describe('transfers epic', () => {
           signed = await signMessage(depsMock.signer, reveal),
           action$ = of(
             messageReceived(
-              { text: encodeJsonMessage(signed), message: signed },
+              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
               { address: depsMock.address },
             ),
           ),
@@ -1309,7 +1326,7 @@ describe('transfers epic', () => {
           signed = await signMessage(depsMock.signer, reveal),
           action$ = of(
             messageReceived(
-              { text: encodeJsonMessage(signed), message: signed },
+              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
               { address: depsMock.address },
             ),
           );
@@ -1340,7 +1357,7 @@ describe('transfers epic', () => {
         signed = await signMessage(partnerSigner, message);
       action$ = of(
         messageReceived(
-          { text: encodeJsonMessage(signed), message: signed },
+          { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
           { address: partner },
         ),
       );
@@ -1401,6 +1418,7 @@ describe('transfers epic', () => {
             {
               text: encodeJsonMessage(signed),
               message: signed,
+              ts: Date.now(),
             },
             { address: partner },
           );
@@ -1422,6 +1440,7 @@ describe('transfers epic', () => {
             {
               text: encodeJsonMessage(signed),
               message: signed,
+              ts: Date.now(),
             },
             { address: depsMock.address },
           );
@@ -1525,7 +1544,7 @@ describe('transfers epic', () => {
         };
         refund = await signMessage(partnerSigner, message);
         action = messageReceived(
-          { text: encodeJsonMessage(refund), message: refund },
+          { text: encodeJsonMessage(refund), message: refund, ts: Date.now() },
           { address: partner },
         );
         // a message that won't be processed by this epic
@@ -1535,7 +1554,7 @@ describe('transfers epic', () => {
           },
           otherSigned = await signMessage(partnerSigner, other);
         otherAction = messageReceived(
-          { text: encodeJsonMessage(otherSigned), message: otherSigned },
+          { text: encodeJsonMessage(otherSigned), message: otherSigned, ts: Date.now() },
           { address: partner },
         );
       });
@@ -1555,7 +1574,7 @@ describe('transfers epic', () => {
 
         expect(output).toHaveLength(2);
         expect(output[0]).toMatchObject({
-          type: getType(messageSend),
+          type: messageSend.type,
           payload: {
             message: expect.objectContaining({
               type: MessageType.PROCESSED,
@@ -1582,7 +1601,7 @@ describe('transfers epic', () => {
           expect.arrayContaining([
             transferRefunded({ message: refund }, { secrethash }),
             {
-              type: getType(transferFailed),
+              type: transferFailed.type,
               payload: expect.any(Error),
               error: true,
               meta: { secrethash },
@@ -1652,7 +1671,7 @@ describe('transfers epic', () => {
           },
           signed = await signMessage(partnerSigner, request),
           messageReceivedAction = messageReceived(
-            { text: encodeJsonMessage(signed), message: signed },
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
             { address: partner },
           );
 
@@ -1663,7 +1682,7 @@ describe('transfers epic', () => {
         ).toPromise();
 
         expect(withdrawRequestAction).toMatchObject({
-          type: getType(withdrawReceiveRequest),
+          type: withdrawReceiveRequest.type,
           payload: { message: signed },
           meta: {
             tokenNetwork,
@@ -1684,7 +1703,7 @@ describe('transfers epic', () => {
         expect(output).toHaveLength(2);
         expect(output[0].payload).toEqual(output[1].payload);
         expect(output[0]).toEqual({
-          type: getType(withdrawSendConfirmation),
+          type: withdrawSendConfirmation.type,
           payload: {
             message: {
               ...request,
@@ -1704,7 +1723,7 @@ describe('transfers epic', () => {
         await expect(
           withdrawSendConfirmationEpic(of(withdrawConfirmationAction)).toPromise(),
         ).resolves.toMatchObject({
-          type: getType(messageSend),
+          type: messageSend.type,
           payload: { message: withdrawConfirmationAction.payload.message },
           meta: { address: partner },
         });
@@ -1731,7 +1750,7 @@ describe('transfers epic', () => {
           },
           signed = await signMessage(partnerSigner, request),
           messageReceivedAction = messageReceived(
-            { text: encodeJsonMessage(signed), message: signed },
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
             { address: partner },
           ),
           action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
@@ -1758,7 +1777,7 @@ describe('transfers epic', () => {
           },
           signed = await signMessage(partnerSigner, request),
           messageReceivedAction = messageReceived(
-            { text: encodeJsonMessage(signed), message: signed },
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
             { address: partner },
           ),
           action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
@@ -1787,7 +1806,7 @@ describe('transfers epic', () => {
           },
           signed = await signMessage(partnerSigner, request),
           messageReceivedAction = messageReceived(
-            { text: encodeJsonMessage(signed), message: signed },
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
             { address: partner },
           ),
           action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();

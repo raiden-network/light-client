@@ -9,7 +9,6 @@ patchVerifyMessage();
 import { BehaviorSubject, of, timer, EMPTY, Subject, Observable } from 'rxjs';
 import { first, tap, takeUntil, toArray, delay } from 'rxjs/operators';
 import { fakeSchedulers } from 'rxjs-marbles/jest';
-import { getType } from 'typesafe-actions';
 import { verifyMessage, BigNumber } from 'ethers/utils';
 
 import { RaidenAction } from 'raiden-ts/actions';
@@ -326,7 +325,7 @@ describe('transport epic', () => {
       await expect(
         matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(matrixRequestMonitorPresenceFailed),
+        type: matrixRequestMonitorPresenceFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { address: partner },
@@ -348,7 +347,7 @@ describe('transport epic', () => {
       await expect(
         matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(matrixRequestMonitorPresenceFailed),
+        type: matrixRequestMonitorPresenceFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { address: partner },
@@ -371,7 +370,7 @@ describe('transport epic', () => {
       await expect(
         matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(matrixRequestMonitorPresenceFailed),
+        type: matrixRequestMonitorPresenceFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { address: partner },
@@ -395,7 +394,7 @@ describe('transport epic', () => {
       await expect(
         matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(matrixRequestMonitorPresenceFailed),
+        type: matrixRequestMonitorPresenceFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { address: partner },
@@ -405,7 +404,7 @@ describe('transport epic', () => {
     test('success with previously monitored user', async () => {
       expect.assertions(1);
       const presence = matrixPresenceUpdate(
-          { userId: partnerUserId, available: false },
+          { userId: partnerUserId, available: false, ts: Date.now() },
           { address: partner },
         ),
         action$ = new Subject<RaidenAction>(),
@@ -431,7 +430,7 @@ describe('transport epic', () => {
       await expect(
         matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(matrixPresenceUpdate),
+        type: matrixPresenceUpdate.type,
         payload: { userId: partnerUserId, available: true, ts: expect.any(Number) },
         meta: { address: partner },
       });
@@ -456,7 +455,7 @@ describe('transport epic', () => {
       await expect(
         matrixMonitorPresenceEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(matrixPresenceUpdate),
+        type: matrixPresenceUpdate.type,
         payload: { userId: partnerUserId, available: true, ts: expect.any(Number) },
         meta: { address: partner },
       });
@@ -485,7 +484,7 @@ describe('transport epic', () => {
       });
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(matrixPresenceUpdate),
+        type: matrixPresenceUpdate.type,
         payload: { userId: partnerUserId, available: false, ts: expect.any(Number) },
         meta: { address: partner },
       });
@@ -597,7 +596,7 @@ describe('transport epic', () => {
         .toPromise();
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(matrixRoom),
+        type: matrixRoom.type,
         payload: { roomId: expect.stringMatching(new RegExp(`^!.*:${matrixServer}$`)) },
         meta: { address: partner },
       });
@@ -687,7 +686,7 @@ describe('transport epic', () => {
       );
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(matrixRoom),
+        type: matrixRoom.type,
         payload: { roomId },
         meta: { address: partner },
       });
@@ -715,11 +714,14 @@ describe('transport epic', () => {
       );
 
       action$.next(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
       );
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(matrixRoom),
+        type: matrixRoom.type,
         payload: { roomId },
         meta: { address: partner },
       });
@@ -772,7 +774,7 @@ describe('transport epic', () => {
       const promise = matrixLeaveExcessRoomsEpic(action$, state$, depsMock).toPromise();
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(matrixRoomLeave),
+        type: matrixRoomLeave.type,
         payload: { roomId },
         meta: { address: partner },
       });
@@ -886,7 +888,7 @@ describe('transport epic', () => {
       matrix.emit('Room.myMembership', { roomId }, 'leave');
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(matrixRoomLeave),
+        type: matrixRoomLeave.type,
         payload: { roomId },
         meta: { address: partner },
       });
@@ -901,7 +903,10 @@ describe('transport epic', () => {
         message = processed,
         signed = await signMessage(depsMock.signer, message),
         action$ = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+          matrixPresenceUpdate(
+            { userId: partnerUserId, available: true, ts: Date.now() },
+            { address: partner },
+          ),
           messageSend({ message: signed }, { address: partner }),
         ),
         state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
@@ -939,7 +944,10 @@ describe('transport epic', () => {
       const roomId = partnerRoomId,
         message = 'test message',
         action$ = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+          matrixPresenceUpdate(
+            { userId: partnerUserId, available: true, ts: Date.now() },
+            { address: partner },
+          ),
           messageSend({ message }, { address: partner }),
         ),
         state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
@@ -1019,7 +1027,10 @@ describe('transport epic', () => {
 
       // actions sees presence update for partner only later
       action$.next(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
       );
       // state includes room for partner only later
       state$.next(
@@ -1028,7 +1039,7 @@ describe('transport epic', () => {
 
       // then it resolves
       await expect(promise).resolves.toMatchObject({
-        type: getType(messageReceived),
+        type: messageReceived.type,
         payload: {
           text: message,
           ts: expect.any(Number),
@@ -1046,7 +1057,10 @@ describe('transport epic', () => {
         signed = await signMessage(partnerSigner, processed),
         message = encodeJsonMessage(signed),
         action$ = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+          matrixPresenceUpdate(
+            { userId: partnerUserId, available: true, ts: Date.now() },
+            { address: partner },
+          ),
         );
       state$.next(
         [matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, state$.value),
@@ -1071,7 +1085,7 @@ describe('transport epic', () => {
 
       // then it resolves
       await expect(promise).resolves.toMatchObject({
-        type: getType(messageReceived),
+        type: messageReceived.type,
         payload: {
           text: message,
           message: {
@@ -1095,7 +1109,10 @@ describe('transport epic', () => {
         signed = await signMessage(depsMock.signer, processed),
         message = encodeJsonMessage(signed),
         action$ = of(
-          matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
+          matrixPresenceUpdate(
+            { userId: partnerUserId, available: true, ts: Date.now() },
+            { address: partner },
+          ),
         );
       state$.next(
         [matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, state$.value),
@@ -1120,7 +1137,7 @@ describe('transport epic', () => {
 
       // then it resolves
       await expect(promise).resolves.toMatchObject({
-        type: getType(messageReceived),
+        type: messageReceived.type,
         payload: {
           text: message,
           message: undefined,
