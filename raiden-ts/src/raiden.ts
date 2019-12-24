@@ -7,7 +7,6 @@ import { Zero } from 'ethers/constants';
 import { MatrixClient } from 'matrix-js-sdk';
 import { applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
-import { isActionOf } from 'typesafe-actions';
 import { createLogger } from 'redux-logger';
 
 import { constant, memoize, isEmpty } from 'lodash';
@@ -61,6 +60,7 @@ import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
 import { Address, Secret, Storage, Hash, UInt, decode, assert } from './utils/types';
+import { isActionOf } from './utils/actions';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
 import {
@@ -164,7 +164,7 @@ export class Raiden {
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
     this.channels$ = this.state$.pipe(map(state => mapTokenToPartner(state)));
     this.transfers$ = initTransfers$(this.state$);
-    this.events$ = this.action$.pipe(filter(isActionOf(Object.values(RaidenEvents))));
+    this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
       assert(Address.is(token), 'Invalid address');

@@ -43,7 +43,6 @@ import {
   retryWhen,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
-import { isActionOf, ActionType } from 'typesafe-actions';
 import { find, get, minBy, sortBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
@@ -52,6 +51,7 @@ import { createClient, MatrixClient, MatrixEvent, Room, RoomMember } from 'matri
 import matrixLogger from 'matrix-js-sdk/lib/logger';
 
 import { Address, Signed, isntNil, assert } from '../utils/types';
+import { isActionOf } from '../utils/actions';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { channelMonitored } from '../channels/actions';
@@ -379,7 +379,7 @@ export const initMatrixEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { address, signer, matrix$, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof matrixSetup>> =>
+): Observable<matrixSetup> =>
   combineLatest([state$, config$]).pipe(
     first(), // at startup
     mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout }]) => {
@@ -497,9 +497,7 @@ export const matrixMonitorPresenceEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<ActionType<
-  typeof matrixPresenceUpdate | typeof matrixRequestMonitorPresenceFailed
->> =>
+): Observable<matrixPresenceUpdate | matrixRequestMonitorPresenceFailed> =>
   getPresences$(action$).pipe(
     publishReplay(1, undefined, presences$ =>
       action$.pipe(
@@ -518,7 +516,7 @@ export const matrixMonitorPresenceEpic = (
                 : searchAddressPresence$(matrix, action.meta.address).pipe(
                     map(({ presence, user_id: userId }) =>
                       matrixPresenceUpdate(
-                        { userId, available: AVAILABLE.includes(presence) },
+                        { userId, available: AVAILABLE.includes(presence), ts: Date.now() },
                         action.meta,
                       ),
                     ),
@@ -545,7 +543,7 @@ export const matrixPresenceUpdateEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof matrixPresenceUpdate>> =>
+): Observable<matrixPresenceUpdate> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix presence events
     switchMap(matrix =>
@@ -617,7 +615,10 @@ export const matrixPresenceUpdateEpic = (
           return recovered;
         }),
         map(address =>
-          matrixPresenceUpdate({ userId, available, ts: user.lastPresenceTs }, { address }),
+          matrixPresenceUpdate(
+            { userId, available, ts: user.lastPresenceTs ?? Date.now() },
+            { address },
+          ),
         ),
       );
     }),
@@ -637,7 +638,7 @@ export const matrixCreateRoomEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof matrixRoom>> =>
+): Observable<matrixRoom> =>
   combineLatest(getPresences$(action$), state$).pipe(
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
     // but working inside concatMap, which is called only at outer next and subscribe delayed
@@ -778,7 +779,7 @@ export const matrixHandleInvitesEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { matrix$, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof matrixRoom>> =>
+): Observable<matrixRoom> =>
   getPresences$(action$).pipe(
     publishReplay(1, undefined, presences$ =>
       matrix$.pipe(
@@ -837,7 +838,7 @@ export const matrixLeaveExcessRoomsEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof matrixRoomLeave>> =>
+): Observable<matrixRoomLeave> =>
   action$.pipe(
     // act whenever a new room is added to the address queue in state
     filter(isActionOf(matrixRoom)),
@@ -909,7 +910,7 @@ export const matrixCleanLeftRoomsEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof matrixRoomLeave>> =>
+): Observable<matrixRoomLeave> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix invite events
     switchMap(matrix =>
@@ -1091,7 +1092,7 @@ export const matrixMessageReceivedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { matrix$, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof messageReceived>> =>
+): Observable<messageReceived> =>
   combineLatest(getPresences$(action$), state$).pipe(
     // multicasting combined presences+state with a ReplaySubject makes it act as withLatestFrom
     // but working inside concatMap, called only at outer emit and subscription delayed
@@ -1154,7 +1155,7 @@ export const matrixMessageReceivedEpic = (
                   {
                     text: line,
                     message,
-                    ts: event.event.origin_server_ts,
+                    ts: event.event.origin_server_ts ?? Date.now(),
                     userId: presence.payload.userId,
                     roomId: room.roomId,
                   },
@@ -1179,7 +1180,7 @@ export const matrixMessageReceivedEpic = (
 export const matrixMessageReceivedUpdateRoomEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ActionType<typeof matrixRoom>> =>
+): Observable<matrixRoom> =>
   action$.pipe(
     filter(isActionOf(messageReceived)),
     withLatestFrom(state$),
@@ -1206,7 +1207,7 @@ export const matrixMessageReceivedUpdateRoomEpic = (
  */
 export const matrixMonitorChannelPresenceEpic = (
   action$: Observable<RaidenAction>,
-): Observable<ActionType<typeof matrixRequestMonitorPresence>> =>
+): Observable<matrixRequestMonitorPresence> =>
   action$.pipe(
     filter(isActionOf(channelMonitored)),
     map(action => matrixRequestMonitorPresence(undefined, { address: action.meta.partner })),
@@ -1224,7 +1225,7 @@ export const deliveredEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { signer }: RaidenEpicDeps,
-): Observable<ActionType<typeof messageSend>> => {
+): Observable<messageSend> => {
   const cache = new LruCache<string, Signed<Delivered>>(32);
   return action$.pipe(
     filter(isActionOf(messageReceived)),

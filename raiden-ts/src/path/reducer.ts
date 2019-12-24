@@ -6,12 +6,13 @@
  * @param action - RaidenAction to handle
  * @returns New RaidenState['path'] slice
  */
+import { set, unset } from 'lodash/fp';
+
 import { RaidenAction } from '../actions';
 import { initialState, RaidenState } from '../state';
 import { partialCombineReducers } from '../utils/redux';
-import { isActionOf } from 'typesafe-actions';
-import { iouClear, iouPersist } from '../path/actions';
-import { set, unset } from 'lodash/fp';
+import { isActionOf } from '../utils/actions';
+import { iouClear, iouPersist } from './actions';
 
 function path(state: RaidenState['path'] = initialState.path, action: RaidenAction) {
   if (isActionOf(iouPersist, action)) {

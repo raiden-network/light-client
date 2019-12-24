@@ -9,7 +9,6 @@ import {
   startWith,
   map,
 } from 'rxjs/operators';
-import { isActionOf } from 'typesafe-actions';
 import { negate } from 'lodash';
 
 import { RaidenState } from './state';
@@ -18,6 +17,7 @@ import { RaidenAction, raidenShutdown } from './actions';
 import { getPresences$ } from './transport/utils';
 import { pfsListUpdated } from './path/actions';
 import { Address } from './utils/types';
+import { isActionOf } from './utils/actions';
 
 import * as ChannelsEpics from './channels/epics';
 import * as TransportEpics from './transport/epics';
@@ -51,7 +51,7 @@ export const getLatest$ = (action$: Observable<RaidenAction>, state$: Observable
     })),
   );
 
-export const RaidenEpics = {
+const RaidenEpics = {
   ...ChannelsEpics,
   ...TransportEpics,
   ...TransfersEpics,

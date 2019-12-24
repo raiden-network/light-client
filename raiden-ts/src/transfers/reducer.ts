@@ -1,4 +1,3 @@
-import { isActionOf } from 'typesafe-actions';
 import { get, set, unset, mapValues } from 'lodash/fp';
 import { Zero, HashZero } from 'ethers/constants';
 import { hexlify } from 'ethers/utils';
@@ -11,6 +10,7 @@ import { channelClosed } from '../channels/actions';
 import { getLocksroot } from './utils';
 import { SignatureZero } from '../constants';
 import { timed, UInt, Signature, Hash } from '../utils/types';
+import { isActionOf } from '../utils/actions';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { SentTransfer } from './state';
 import {

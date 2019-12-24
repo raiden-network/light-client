@@ -14,7 +14,6 @@ import {
   publishReplay,
   switchMap,
 } from 'rxjs/operators';
-import { isActionOf, ActionType } from 'typesafe-actions';
 import { findKey, get, isEmpty, negate } from 'lodash';
 
 import { BigNumber, hexlify, concat } from 'ethers/utils';
@@ -48,6 +47,7 @@ import {
 import { SignatureZero, ShutdownReason } from '../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature } from '../utils/types';
+import { isActionOf } from '../utils/actions';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
 import { encode } from '../utils/data';
 
@@ -63,7 +63,7 @@ export const initNewBlockEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
-): Observable<ActionType<typeof newBlock>> =>
+): Observable<newBlock> =>
   from(provider.getBlockNumber()).pipe(
     mergeMap(blockNumber => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
     map(blockNumber => newBlock({ blockNumber })),
@@ -81,7 +81,7 @@ export const initMonitorRegistryEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { registryContract, contractsInfo }: RaidenEpicDeps,
-): Observable<ActionType<typeof tokenMonitored>> =>
+): Observable<tokenMonitored> =>
   state$.pipe(
     publishReplay(1, undefined, state$ =>
       state$.pipe(
@@ -128,7 +128,7 @@ export const initMonitorRegistryEpic = (
 export const initMonitorChannelsEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ActionType<typeof channelMonitored>> =>
+): Observable<channelMonitored> =>
   state$.pipe(
     first(),
     mergeMap(function*(state) {
@@ -156,7 +156,7 @@ export const initMonitorProviderEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, network, provider }: RaidenEpicDeps,
-): Observable<ActionType<typeof raidenShutdown>> =>
+): Observable<raidenShutdown> =>
   from(provider.listAccounts()).pipe(
     // at init time, check if our address is in provider's accounts list
     // if not, it means Signer is a local Wallet or another non-provider-side account
@@ -209,7 +209,7 @@ export const tokenMonitoredEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, getTokenNetworkContract }: RaidenEpicDeps,
-): Observable<ActionType<typeof channelOpened>> =>
+): Observable<channelOpened> =>
   action$.pipe(
     filter(isActionOf(tokenMonitored)),
     groupBy(action => action.payload.tokenNetwork),
@@ -275,9 +275,7 @@ export const channelMonitoredEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { getTokenNetworkContract }: RaidenEpicDeps,
-): Observable<ActionType<
-  typeof channelDeposited | typeof channelWithdrawn | typeof channelClosed | typeof channelSettled
->> =>
+): Observable<channelDeposited | channelWithdrawn | channelClosed | channelSettled> =>
   action$.pipe(
     filter(isActionOf(channelMonitored)),
     groupBy(action => `${action.payload.id}#${action.meta.partner}@${action.meta.tokenNetwork}`),
@@ -411,14 +409,10 @@ export const channelMonitoredEpic = (
               }
             }),
             // takeWhile tends to broad input to generic Action. We need to narrow it explicitly
-            takeWhile<
-              ActionType<
-                | typeof channelDeposited
-                | typeof channelWithdrawn
-                | typeof channelClosed
-                | typeof channelSettled
-              >
-            >(negate(isActionOf(channelSettled)), true),
+            takeWhile<channelDeposited | channelWithdrawn | channelClosed | channelSettled>(
+              negate(isActionOf(channelSettled)),
+              true,
+            ),
           );
         }),
       ),
@@ -441,7 +435,7 @@ export const channelOpenEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { signer, address, main, getTokenNetworkContract, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof channelOpenFailed>> =>
+): Observable<channelOpenFailed> =>
   action$.pipe(
     filter(isActionOf(channelOpen)),
     withLatestFrom(state$, config$),
@@ -498,7 +492,7 @@ export const channelOpenEpic = (
 export const channelOpenedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ActionType<typeof channelMonitored>> =>
+): Observable<channelMonitored> =>
   action$.pipe(
     filter(isActionOf(channelOpened)),
     withLatestFrom(state$),
@@ -538,7 +532,7 @@ export const channelDepositEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { signer, address, main, getTokenContract, getTokenNetworkContract, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof channelDepositFailed>> =>
+): Observable<channelDepositFailed> =>
   action$.pipe(
     filter(isActionOf(channelDeposit)),
     withLatestFrom(state$, config$),
@@ -637,7 +631,7 @@ export const channelCloseEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { signer, address, main, network, getTokenNetworkContract, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof channelCloseFailed>> =>
+): Observable<channelCloseFailed> =>
   action$.pipe(
     filter(isActionOf(channelClose)),
     withLatestFrom(state$, config$),
@@ -747,7 +741,7 @@ export const channelSettleEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { signer, address, main, getTokenNetworkContract, config$ }: RaidenEpicDeps,
-): Observable<ActionType<typeof channelSettleFailed>> =>
+): Observable<channelSettleFailed> =>
   action$.pipe(
     filter(isActionOf(channelSettle)),
     withLatestFrom(state$, config$),
@@ -837,7 +831,7 @@ export const channelSettleEpic = (
 export const channelSettleableEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<ActionType<typeof channelSettleable>> =>
+): Observable<channelSettleable> =>
   action$.pipe(
     filter(isActionOf(newBlock)),
     withLatestFrom(state$),
