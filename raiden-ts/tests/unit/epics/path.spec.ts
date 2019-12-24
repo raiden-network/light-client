@@ -3,7 +3,6 @@ import { of, BehaviorSubject, EMPTY, timer } from 'rxjs';
 import { first, takeUntil, toArray, pluck, withLatestFrom } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
-import { getType } from 'typesafe-actions';
 
 import { UInt, Int, Address, Signature } from 'raiden-ts/utils/types';
 import {
@@ -112,8 +111,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork: token, target, value }),
       );
 
@@ -132,8 +137,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: false }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: false, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -152,8 +163,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind(
           { paths: [{ path: [depsMock.address, partner, target], fee }] },
           { tokenNetwork, target, value },
@@ -173,8 +190,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target: partner, value }),
       );
 
@@ -194,8 +217,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind(
           {
             pfs: {
@@ -244,8 +273,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -298,8 +333,14 @@ describe('PFS: pathFindServiceEpic', () => {
         pfsListUpdated({
           pfsList: [pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress],
         }),
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -406,8 +447,14 @@ describe('PFS: pathFindServiceEpic', () => {
         pfsListUpdated({
           pfsList: [pfsAddress, pfsAddress, pfsAddress],
         }),
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -435,8 +482,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -478,8 +531,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -518,8 +577,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -568,8 +633,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -619,8 +690,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -676,8 +753,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -733,8 +816,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(80000000) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind(
           { paths: [{ path: [depsMock.address, partner, target], fee }] },
           { tokenNetwork, target, value },
@@ -756,8 +845,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -823,8 +918,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -863,8 +964,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -911,8 +1018,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -978,8 +1091,14 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate({ userId: partnerUserId, available: true }, { address: partner }),
-        matrixPresenceUpdate({ userId: targetUserId, available: true }, { address: target }),
+        matrixPresenceUpdate(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        matrixPresenceUpdate(
+          { userId: targetUserId, available: true, ts: Date.now() },
+          { address: target },
+        ),
         pathFind({}, { tokenNetwork, target, value }),
       );
 
@@ -1188,7 +1307,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
     );
 
     await expect(promise).resolves.toMatchObject({
-      type: getType(pfsListUpdated),
+      type: pfsListUpdated.type,
       payload: { pfsList: [pfsAddress] },
     });
   });

@@ -26,7 +26,6 @@ import {
 } from 'rxjs/operators';
 import { bigNumberify } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
-import { getType } from 'typesafe-actions';
 import { range } from 'lodash';
 
 import { UInt, Address, Signed } from 'raiden-ts/utils/types';
@@ -312,7 +311,7 @@ describe('raiden epic', () => {
         .toPromise();
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(channelOpened),
+        type: channelOpened.type,
         payload: { id: channelId, settleTimeout, openBlock: 121 },
         meta: { tokenNetwork, partner },
       });
@@ -351,7 +350,7 @@ describe('raiden epic', () => {
       );
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(channelOpened),
+        type: channelOpened.type,
         payload: { id: channelId, settleTimeout, openBlock: 125 },
         meta: { tokenNetwork, partner },
       });
@@ -392,7 +391,7 @@ describe('raiden epic', () => {
       const result = await promise;
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
-        type: getType(channelOpened),
+        type: channelOpened.type,
         payload: { id: channelId, settleTimeout, openBlock: 125 },
         meta: { tokenNetwork, partner },
       });
@@ -432,7 +431,7 @@ describe('raiden epic', () => {
       const output = await promise;
       expect(output).toHaveLength(2);
       expect(output[1]).toMatchObject({
-        type: getType(messageSend),
+        type: messageSend.type,
         payload: {
           message: {
             type: MessageType.DELIVERED,

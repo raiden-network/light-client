@@ -8,7 +8,6 @@ import { ContractTransaction } from 'ethers/contract';
 import { bigNumberify } from 'ethers/utils';
 import { Zero, HashZero } from 'ethers/constants';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
-import { getType } from 'typesafe-actions';
 import { range } from 'lodash';
 
 import { UInt } from 'raiden-ts/utils/types';
@@ -116,7 +115,7 @@ describe('channels epic', () => {
         state$ = of<RaidenState>(curState);
 
       await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject({
-        type: getType(channelOpenFailed),
+        type: channelOpenFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -147,7 +146,7 @@ describe('channels epic', () => {
       tokenNetworkContract.functions.openChannel.mockResolvedValueOnce(tx);
 
       await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject({
-        type: getType(channelOpenFailed),
+        type: channelOpenFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -235,7 +234,7 @@ describe('channels epic', () => {
         state$ = of<RaidenState>(curState);
 
       await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toMatchObject({
-        type: getType(channelMonitored),
+        type: channelMonitored.type,
         payload: { id: channelId, fromBlock: 125 },
         meta: { tokenNetwork, partner },
       });
@@ -285,7 +284,7 @@ describe('channels epic', () => {
           .pipe(first())
           .toPromise(),
       ).resolves.toMatchObject({
-        type: getType(channelDeposited),
+        type: channelDeposited.type,
         payload: { id: channelId, participant: depsMock.address, totalDeposit: deposit },
         meta: { tokenNetwork, partner },
       });
@@ -317,7 +316,7 @@ describe('channels epic', () => {
       );
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(channelDeposited),
+        type: channelDeposited.type,
         payload: { id: channelId, participant: partner, totalDeposit: deposit },
         meta: { tokenNetwork, partner },
       });
@@ -364,7 +363,7 @@ describe('channels epic', () => {
       const result = await promise;
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
-        type: getType(channelDeposited),
+        type: channelDeposited.type,
         payload: { id: channelId, participant: depsMock.address, totalDeposit: deposit },
         meta: { tokenNetwork, partner },
       });
@@ -409,7 +408,7 @@ describe('channels epic', () => {
       );
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(channelWithdrawn),
+        type: channelWithdrawn.type,
         payload: { id: channelId, participant: partner, totalWithdraw: withdraw, txHash },
         meta: { tokenNetwork, partner },
       });
@@ -443,7 +442,7 @@ describe('channels epic', () => {
       );
 
       await expect(promise).resolves.toMatchObject({
-        type: getType(channelClosed),
+        type: channelClosed.type,
         payload: { id: channelId, participant: partner, closeBlock, txHash },
         meta: { tokenNetwork, partner },
       });
@@ -505,7 +504,7 @@ describe('channels epic', () => {
       await expect(
         channelDepositEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(channelDepositFailed),
+        type: channelDepositFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -526,7 +525,7 @@ describe('channels epic', () => {
       await expect(
         channelDepositEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(channelDepositFailed),
+        type: channelDepositFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -562,7 +561,7 @@ describe('channels epic', () => {
       await expect(
         channelDepositEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(channelDepositFailed),
+        type: channelDepositFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -612,7 +611,7 @@ describe('channels epic', () => {
       await expect(
         channelDepositEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(channelDepositFailed),
+        type: channelDepositFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -698,7 +697,7 @@ describe('channels epic', () => {
 
       await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
         {
-          type: getType(channelCloseFailed),
+          type: channelCloseFailed.type,
           payload: expect.any(Error),
           error: true,
           meta: { tokenNetwork, partner },
@@ -718,7 +717,7 @@ describe('channels epic', () => {
 
       await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
         {
-          type: getType(channelCloseFailed),
+          type: channelCloseFailed.type,
           payload: expect.any(Error),
           error: true,
           meta: { tokenNetwork, partner },
@@ -754,7 +753,7 @@ describe('channels epic', () => {
 
       await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
         {
-          type: getType(channelCloseFailed),
+          type: channelCloseFailed.type,
           payload: expect.any(Error),
           error: true,
           meta: { tokenNetwork, partner },
@@ -821,7 +820,7 @@ describe('channels epic', () => {
       await expect(
         channelSettleEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(channelSettleFailed),
+        type: channelSettleFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -848,7 +847,7 @@ describe('channels epic', () => {
       await expect(
         channelSettleEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(channelSettleFailed),
+        type: channelSettleFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -891,7 +890,7 @@ describe('channels epic', () => {
       await expect(
         channelSettleEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: getType(channelSettleFailed),
+        type: channelSettleFailed.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
