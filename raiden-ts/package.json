@@ -75,7 +75,7 @@
   },
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "ethers": "^4.0.40",
+    "ethers": "^4.0.41",
     "fp-ts": "^2.3.1",
     "io-ts": "^2.0.2",
     "isomorphic-fetch": "^2.2.1",
@@ -90,7 +90,7 @@
     "typesafe-actions": "^4.4.2"
   },
   "peerDependencies": {
-    "ethers": "^4.0.40"
+    "ethers": "^4.0.41"
   },
   "files": [
     "/dist*",
