@@ -231,7 +231,7 @@ export class Raiden {
 
     this.store = createStore(
       raidenReducer,
-      // workaround for redux@4.0.4's error on DeepPartial<RaidenState>
+      // workaround for redux's PreloadedState issues with branded values
       state as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       applyMiddleware(loggerMiddleware, this.epicMiddleware),
     );
