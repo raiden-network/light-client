@@ -1,5 +1,12 @@
+/* eslint-disable @typescript-eslint/class-name-casing */
+/* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as t from 'io-ts';
+import { isMatchWith } from 'lodash';
+import { Observable } from 'rxjs';
+import { first, map } from 'rxjs/operators';
+
+import { ErrorCodec, BigNumberC } from './types';
 
 /**
  * The type of a generic action
@@ -256,4 +263,189 @@ export function createAction<
     { codec, type, is },
     error !== undefined ? { error } : null,
   ) as ActionCreator<TType, TPayload, TMeta, TError>;
+}
+
+/*** Async Actions ***/
+
+export type AsyncActionCreator<
+  TMeta extends t.Mixed,
+  TRequestType extends string,
+  TSuccessType extends string,
+  TFailureType extends string,
+  TRequestPayload extends t.Mixed | undefined,
+  TSuccessPayload extends t.Mixed | undefined,
+  TFailurePayload extends t.Mixed | undefined = typeof ErrorCodec
+> = {
+  request: ActionCreator<TRequestType, TRequestPayload, TMeta>;
+  success: ActionCreator<TSuccessType, TSuccessPayload, TMeta>;
+  failure: ActionCreator<TFailureType, TFailurePayload, TMeta, true>;
+};
+
+// overloads to account for the optional failure payload (defaults to ErrorCodec)
+export function createAsyncAction<
+  TMeta extends t.Mixed,
+  TRequestType extends string,
+  TSuccessType extends string,
+  TFailureType extends string,
+  TRequestPayload extends t.Mixed | undefined,
+  TSuccessPayload extends t.Mixed | undefined
+>(
+  meta: TMeta,
+  rtype: TRequestType,
+  stype: TSuccessType,
+  ftype: TFailureType,
+  rpayload: TRequestPayload,
+  spayload: TSuccessPayload,
+): AsyncActionCreator<
+  TMeta,
+  TRequestType,
+  TSuccessType,
+  TFailureType,
+  TRequestPayload,
+  TSuccessPayload,
+  typeof ErrorCodec
+>;
+export function createAsyncAction<
+  TMeta extends t.Mixed,
+  TRequestType extends string,
+  TSuccessType extends string,
+  TFailureType extends string,
+  TRequestPayload extends t.Mixed | undefined,
+  TSuccessPayload extends t.Mixed | undefined,
+  TFailurePayload extends t.Mixed | undefined
+>(
+  meta: TMeta,
+  rtype: TRequestType,
+  stype: TSuccessType,
+  ftype: TFailureType,
+  rpayload: TRequestPayload,
+  spayload: TSuccessPayload,
+  fpayload: TFailurePayload,
+): AsyncActionCreator<
+  TMeta,
+  TRequestType,
+  TSuccessType,
+  TFailureType,
+  TRequestPayload,
+  TSuccessPayload,
+  TFailurePayload
+>;
+
+/**
+ * Create a set of async actions
+ *
+ * Here, meta is first class citizen, as it's required and what links a request with its responses
+ * (success or failure).
+ * An 'isResponseOf' member function is provided which accepts 'meta' (e.g. from request) and
+ * returns a type guard function/filter which returns true only if passed a respective deep-equal
+ * 'meta' success|failure action.
+ *
+ * @param meta - Meta object common to these async actions
+ * @param rtype - Request literal string tag
+ * @param stype - Success literal string tag
+ * @param ftype - Failure literal string tag
+ * @param rpayload - Request payload codec
+ * @param spayload - Success payload codec
+ * @param args - Optional fpayload - Failure payload codec, defaults to ErrorCodec
+ * @returns Async actions
+ */
+export function createAsyncAction<
+  TMeta extends t.Mixed,
+  TRequestType extends string,
+  TSuccessType extends string,
+  TFailureType extends string,
+  TRequestPayload extends t.Mixed | undefined,
+  TSuccessPayload extends t.Mixed | undefined,
+  TFailurePayload extends t.Mixed | undefined = typeof ErrorCodec
+>(
+  meta: TMeta,
+  rtype: TRequestType,
+  stype: TSuccessType,
+  ftype: TFailureType,
+  rpayload: TRequestPayload,
+  spayload: TSuccessPayload,
+  ...args: TFailurePayload extends typeof ErrorCodec ? [TFailurePayload] | [] : [TFailurePayload]
+): AsyncActionCreator<
+  TMeta,
+  TRequestType,
+  TSuccessType,
+  TFailureType,
+  TRequestPayload,
+  TSuccessPayload,
+  TFailurePayload
+> {
+  const fpayload = args.length ? (args[0] as TFailurePayload) : ErrorCodec;
+  const request = createAction(rtype, rpayload, meta);
+  const success = createAction(stype, spayload, meta);
+  const failure = createAction(ftype, fpayload, meta, true) as ActionCreator<
+    TFailureType,
+    TFailurePayload,
+    TMeta,
+    true
+  >;
+  return { request, success, failure };
+}
+
+// curried overloads
+export function isResponseOf<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+  action: unknown,
+): action is ActionType<AAC['success'] | AAC['failure']>;
+export function isResponseOf<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+): (action: unknown) => action is ActionType<AAC['success'] | AAC['failure']>;
+
+/**
+ * Given an AsyncActionCreator and a respective 'meta' object, returns a type guard function for
+ * responses actions (success|failure) matching given 'meta'
+ *
+ * This function receives 2-3 params. If it receives 2, it returns the type guard function, to be
+ * used for filtering. Otherwise, it performs the check on the 3rd param.
+ *
+ * @param asyncAction - AsyncActionCreator object
+ * @param meta - meta object to filter matching actions
+ * @param args - curried last param
+ * @returns type guard function to filter deep-equal meta success|failure actions
+ */
+export function isResponseOf<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+>(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], ...args: [unknown] | []) {
+  const _isResponseOf = (action: unknown): action is ActionType<AAC['success'] | AAC['failure']> =>
+    isActionOf([asyncAction.success, asyncAction.failure], action) &&
+    // like isEqual, but for BigNumbers, use .eq
+    isMatchWith(action.meta, meta, (objVal, othVal) =>
+      // any is to avoid lodash's issue with undefined-returning isMatchWithCustomizer cb type
+      BigNumberC.is(objVal) && BigNumberC.is(othVal) ? objVal.eq(othVal) : (undefined as any),
+    );
+  if (args.length) return _isResponseOf(args[0]);
+  return _isResponseOf;
+}
+
+/**
+ * Watch a stream of actions and resolves on meta-matching success or rejects on failure
+ *
+ * @param asyncAction - async actions object to wait for
+ * @param meta - meta object of a request to wait for the respective response
+ * @param action$ - actions stream to watch for responses
+ * @returns Promise which rejects with payload in case of failure, or resolves payload otherwise
+ */
+export async function asyncActionToPromise<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>
+>(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], action$: Observable<Action>) {
+  return action$
+    .pipe(
+      first(isResponseOf<AAC>(asyncAction, meta)),
+      map(action => {
+        if (asyncAction.failure.is(action))
+          throw action.payload as ActionType<AAC['failure']>['payload'];
+        return action.payload as ActionType<AAC['success']>['payload'];
+      }),
+    )
+    .toPromise();
 }
