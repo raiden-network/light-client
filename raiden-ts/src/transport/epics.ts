@@ -74,14 +74,7 @@ import { transferSigned } from '../transfers/actions';
 import { RaidenState } from '../state';
 import { getServerName, getUserPresence } from '../utils/matrix';
 import { LruCache } from '../utils/lru';
-import {
-  matrixPresenceUpdate,
-  matrixRequestMonitorPresenceFailed,
-  matrixRoom,
-  matrixRoomLeave,
-  matrixSetup,
-  matrixRequestMonitorPresence,
-} from './actions';
+import { matrixRoom, matrixRoomLeave, matrixSetup, matrixPresence } from './actions';
 import { RaidenMatrixSetup } from './state';
 import { getPresences$, getRoom$, roomMatch, globalRoomNames } from './utils';
 
@@ -488,7 +481,7 @@ export const matrixShutdownEpic = (
  * IOW: every request should be followed by a presence update or a failed action, but presence
  * updates may happen later without new requests (e.g. when the user goes offline)
  *
- * @param action$ - Observable of matrixRequestMonitorPresence actions
+ * @param action$ - Observable of matrixPresence.request actions
  * @param state$ - Observable of RaidenStates
  * @param matrix$ - RaidenEpicDeps members
  * @returns Observable of presence updates or fail action
@@ -497,11 +490,11 @@ export const matrixMonitorPresenceEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<matrixPresenceUpdate | matrixRequestMonitorPresenceFailed> =>
+): Observable<matrixPresence.success | matrixPresence.failure> =>
   getPresences$(action$).pipe(
     publishReplay(1, undefined, presences$ =>
       action$.pipe(
-        filter(isActionOf(matrixRequestMonitorPresence)),
+        filter(isActionOf(matrixPresence.request)),
         // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
         mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
         groupBy(({ action }) => action.meta.address),
@@ -515,12 +508,12 @@ export const matrixMonitorPresenceEpic = (
                   of(presences[action.meta.address])
                 : searchAddressPresence$(matrix, action.meta.address).pipe(
                     map(({ presence, user_id: userId }) =>
-                      matrixPresenceUpdate(
+                      matrixPresence.success(
                         { userId, available: AVAILABLE.includes(presence), ts: Date.now() },
                         action.meta,
                       ),
                     ),
-                    catchError(err => of(matrixRequestMonitorPresenceFailed(err, action.meta))),
+                    catchError(err => of(matrixPresence.failure(err, action.meta))),
                   ),
             ),
           ),
@@ -543,7 +536,7 @@ export const matrixPresenceUpdateEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
-): Observable<matrixPresenceUpdate> =>
+): Observable<matrixPresence.success> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix presence events
     switchMap(matrix =>
@@ -570,7 +563,7 @@ export const matrixPresenceUpdateEpic = (
     withLatestFrom(
       // observable of all addresses whose presence monitoring was requested since init
       action$.pipe(
-        filter(isActionOf(matrixRequestMonitorPresence)),
+        filter(isActionOf(matrixPresence.request)),
         scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<Address>()),
         startWith(new Set<Address>()),
       ),
@@ -615,7 +608,7 @@ export const matrixPresenceUpdateEpic = (
           return recovered;
         }),
         map(address =>
-          matrixPresenceUpdate(
+          matrixPresence.success(
             { userId, available, ts: user.lastPresenceTs ?? Date.now() },
             { address },
           ),
@@ -694,7 +687,7 @@ export const matrixCreateRoomEpic = (
  * This also keeps retrying inviting every config.httpTimeout (default=30s) while user doesn't
  * accept our invite or don't invite or write to us to/in another room.
  *
- * @param action$ - Observable of matrixPresenceUpdate actions
+ * @param action$ - Observable of matrixPresence.success actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps
  * @param deps.matrix$ - MatrixClient AsyncSubject
@@ -709,7 +702,7 @@ export const matrixInviteEpic = (
   state$.pipe(
     publishReplay(1, undefined, state$ =>
       action$.pipe(
-        filter(isActionOf(matrixPresenceUpdate)),
+        filter(isActionOf(matrixPresence.success)),
         groupBy(a => a.meta.address),
         mergeMap(grouped$ =>
           // grouped$ is one observable of presence actions per partners address
@@ -1203,14 +1196,14 @@ export const matrixMessageReceivedUpdateRoomEpic = (
  * Channel monitoring triggers matrix presence monitoring for partner
  *
  * @param action$ - Observable of RaidenActions
- * @returns Observable of matrixRequestMonitorPresence actions
+ * @returns Observable of matrixPresence.request actions
  */
 export const matrixMonitorChannelPresenceEpic = (
   action$: Observable<RaidenAction>,
-): Observable<matrixRequestMonitorPresence> =>
+): Observable<matrixPresence.request> =>
   action$.pipe(
     filter(isActionOf(channelMonitor)),
-    map(action => matrixRequestMonitorPresence(undefined, { address: action.meta.partner })),
+    map(action => matrixPresence.request(undefined, { address: action.meta.partner })),
   );
 
 /**

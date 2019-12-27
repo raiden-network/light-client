@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/class-name-casing */
 import * as t from 'io-ts';
 
-import { createAction, ActionType } from '../utils/actions';
-import { Address, ErrorCodec } from '../utils/types';
+import { createAction, ActionType, createAsyncAction } from '../utils/actions';
+import { Address } from '../utils/types';
 import { RaidenMatrixSetup } from './state';
 
 const NodeId = t.type({ address: Address });
@@ -17,35 +18,20 @@ export const matrixSetup = createAction(
 );
 export interface matrixSetup extends ActionType<typeof matrixSetup> {}
 
-/* Request matrix to start monitoring presence updates for meta.address */
-export const matrixRequestMonitorPresence = createAction(
-  'matrixRequestMonitorPresence',
+export const matrixPresence = createAsyncAction(
+  NodeId,
+  'matrix/presence/request',
+  'matrix/presence/success',
+  'matrix/presence/failure',
   undefined,
-  NodeId,
-);
-export interface matrixRequestMonitorPresence
-  extends ActionType<typeof matrixRequestMonitorPresence> {}
-
-/**
- * Monitored user meta.address presence updated.
- * First event for this address also works as 'success' for matrixRequestMonitorPresence
- */
-export const matrixPresenceUpdate = createAction(
-  'matrixPresenceUpdate',
   t.type({ userId: t.string, available: t.boolean, ts: t.number }),
-  NodeId,
 );
-export interface matrixPresenceUpdate extends ActionType<typeof matrixPresenceUpdate> {}
 
-/* A matrixRequestMonitorPresence request action (with meta.address) failed with payload=Error */
-export const matrixRequestMonitorPresenceFailed = createAction(
-  'matrixRequestMonitorPresenceFailed',
-  ErrorCodec,
-  NodeId,
-  true,
-);
-export interface matrixRequestMonitorPresenceFailed
-  extends ActionType<typeof matrixRequestMonitorPresenceFailed> {}
+export namespace matrixPresence {
+  export interface request extends ActionType<typeof matrixPresence.request> {}
+  export interface success extends ActionType<typeof matrixPresence.success> {}
+  export interface failure extends ActionType<typeof matrixPresence.failure> {}
+}
 
 /* payload.roomId must go front on meta.address's room queue */
 export const matrixRoom = createAction('matrixRoom', t.type({ roomId: t.string }), NodeId);
