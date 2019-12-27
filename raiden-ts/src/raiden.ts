@@ -36,11 +36,7 @@ import {
   raidenConfigUpdate,
 } from './actions';
 import { channelOpen, channelDeposit, channelClose, channelSettle } from './channels/actions';
-import {
-  matrixPresenceUpdate,
-  matrixRequestMonitorPresenceFailed,
-  matrixRequestMonitorPresence,
-} from './transport/actions';
+import { matrixPresence } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, getSecrethash, makePaymentId } from './transfers/utils';
 import { pathFind } from './path/actions';
@@ -586,18 +582,9 @@ export class Raiden {
     address: string,
   ): Promise<{ userId: string; available: boolean; ts: number }> {
     assert(Address.is(address), 'Invalid address');
-    const promise = this.action$
-      .pipe(
-        filter(isActionOf([matrixPresenceUpdate, matrixRequestMonitorPresenceFailed])),
-        filter(action => action.meta.address === address),
-        first(),
-        map(action => {
-          if (isActionOf(matrixRequestMonitorPresenceFailed, action)) throw action.payload;
-          return action.payload;
-        }),
-      )
-      .toPromise();
-    this.store.dispatch(matrixRequestMonitorPresence(undefined, { address }));
+    const meta = { address };
+    const promise = asyncActionToPromise(matrixPresence, meta, this.action$);
+    this.store.dispatch(matrixPresence.request(undefined, meta));
     return promise;
   }
 

@@ -47,7 +47,7 @@ import { Channel, ChannelState } from '../channels/state';
 import { Lock, SignedBalanceProof } from '../channels/types';
 import { channelClose, newBlock } from '../channels/actions';
 import { RaidenConfig } from '../config';
-import { matrixRequestMonitorPresence } from '../transport/actions';
+import { matrixPresence } from '../transport/actions';
 import { pluckDistinct } from '../utils/rx';
 import {
   transfer,
@@ -822,9 +822,7 @@ export const transferAutoExpireEpic = (
 export const initQueuePendingEnvelopeMessagesEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<
-  matrixRequestMonitorPresence | transferSigned | transferUnlocked | transferExpired
-> =>
+): Observable<matrixPresence.request | transferSigned | transferUnlocked | transferExpired> =>
   state$.pipe(
     first(),
     mergeMap(function*(state) {
@@ -834,7 +832,7 @@ export const initQueuePendingEnvelopeMessagesEpic = (
         // transfer already completed or channelClosed
         if (sent.unlockProcessed || sent.lockExpiredProcessed || sent.channelClosed) continue;
         // on init, request monitor presence of any pending transfer target
-        yield matrixRequestMonitorPresence(undefined, { address: sent.transfer[1].target });
+        yield matrixPresence.request(undefined, { address: sent.transfer[1].target });
         // Processed not received yet for LockedTransfer
         if (!sent.transferProcessed)
           yield transferSigned({ message: sent.transfer[1], fee: sent.fee }, { secrethash });

@@ -69,7 +69,7 @@ import {
   withdrawRequestReceivedEpic,
   withdrawSendConfirmationEpic,
 } from 'raiden-ts/transfers/epics';
-import { matrixPresenceUpdate, matrixRequestMonitorPresence } from 'raiden-ts/transport/actions';
+import { matrixPresence } from 'raiden-ts/transport/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
 import { UInt, Address, Hash, Signed } from 'raiden-ts/utils/types';
 import { isActionOf, ActionType } from 'raiden-ts/utils/actions';
@@ -135,7 +135,7 @@ describe('transfers epic', () => {
         otherPartner2 = hexlify(randomBytes(20)) as Address,
         otherDeposit = bigNumberify(800) as UInt<32>,
         action$ = of(
-          matrixPresenceUpdate(
+          matrixPresence.success(
             {
               userId: `@${otherPartner1.toLowerCase()}:${matrixServer}`,
               available: true,
@@ -143,7 +143,7 @@ describe('transfers epic', () => {
             },
             { address: otherPartner1 },
           ),
-          matrixPresenceUpdate(
+          matrixPresence.success(
             {
               userId: `@${otherPartner2.toLowerCase()}:${matrixServer}`,
               available: true,
@@ -151,7 +151,7 @@ describe('transfers epic', () => {
             },
             { address: otherPartner2 },
           ),
-          matrixPresenceUpdate(
+          matrixPresence.success(
             { userId: partnerUserId, available: true, ts: Date.now() },
             { address: partner },
           ),
@@ -253,7 +253,7 @@ describe('transfers epic', () => {
 
       const closingPartner = '0x0100000000000000000000000000000000000000' as Address,
         action$ = of(
-          matrixPresenceUpdate(
+          matrixPresence.success(
             { userId: partnerUserId, available: true, ts: Date.now() },
             { address: partner },
           ),
@@ -319,7 +319,7 @@ describe('transfers epic', () => {
      */
     beforeEach(async () => {
       const action$: Observable<RaidenAction> = of(
-          matrixPresenceUpdate(
+          matrixPresence.success(
             { userId: partnerUserId, available: true, ts: Date.now() },
             { address: partner },
           ),
@@ -1028,7 +1028,7 @@ describe('transfers epic', () => {
             .pipe(toArray())
             .toPromise(),
         ).resolves.toEqual([
-          matrixRequestMonitorPresence(undefined, { address: partner }),
+          matrixPresence.request(undefined, { address: partner }),
           transferSigned({ message: signedTransfer, fee }, { secrethash }),
         ]);
       });
@@ -1049,7 +1049,7 @@ describe('transfers epic', () => {
             .toPromise(),
         ).resolves.toEqual(
           expect.arrayContaining([
-            matrixRequestMonitorPresence(undefined, { address: partner }),
+            matrixPresence.request(undefined, { address: partner }),
             unlocked,
           ]),
         );
@@ -1081,7 +1081,7 @@ describe('transfers epic', () => {
             .toPromise(),
         ).resolves.toEqual(
           expect.arrayContaining([
-            matrixRequestMonitorPresence(undefined, { address: partner }),
+            matrixPresence.request(undefined, { address: partner }),
             expired,
           ]),
         );

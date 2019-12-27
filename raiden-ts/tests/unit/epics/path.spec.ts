@@ -13,7 +13,7 @@ import {
   channelClose,
 } from 'raiden-ts/channels/actions';
 import { raidenConfigUpdate } from 'raiden-ts/actions';
-import { matrixPresenceUpdate } from 'raiden-ts/transport/actions';
+import { matrixPresence } from 'raiden-ts/transport/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
 import {
   pathFindServiceEpic,
@@ -104,11 +104,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -130,11 +130,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: false, ts: Date.now() },
           { address: target },
         ),
@@ -156,11 +156,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -186,11 +186,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -213,11 +213,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -269,11 +269,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -329,11 +329,11 @@ describe('PFS: pathFindServiceEpic', () => {
         pfsListUpdated({
           pfsList: [pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress],
         }),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -443,11 +443,11 @@ describe('PFS: pathFindServiceEpic', () => {
         pfsListUpdated({
           pfsList: [pfsAddress, pfsAddress, pfsAddress],
         }),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -478,11 +478,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -527,11 +527,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -573,11 +573,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -629,11 +629,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -686,11 +686,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -749,11 +749,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -812,11 +812,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(80000000) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -841,11 +841,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -914,11 +914,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -960,11 +960,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -1014,11 +1014,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
@@ -1087,11 +1087,11 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-        matrixPresenceUpdate(
+        matrixPresence.success(
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),

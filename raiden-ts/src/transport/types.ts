@@ -1,5 +1,5 @@
-import { matrixPresenceUpdate } from './actions';
+import { matrixPresence } from './actions';
 
 export interface Presences {
-  [address: string]: matrixPresenceUpdate;
+  [address: string]: matrixPresence.success;
 }
