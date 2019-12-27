@@ -37,7 +37,7 @@ import {
 } from './actions';
 import { channelOpen, channelDeposit, channelClose, channelSettle } from './channels/actions';
 import { matrixPresence } from './transport/actions';
-import { transfer, transferFailed, transferSigned } from './transfers/actions';
+import { transfer, transferSigned } from './transfers/actions';
 import { makeSecret, getSecrethash, makePaymentId } from './transfers/utils';
 import { pathFind } from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
@@ -673,17 +673,17 @@ export class Raiden {
           merge(
             // wait for transfer response
             this.action$.pipe(
-              filter(isActionOf([transferSigned, transferFailed])),
+              filter(isActionOf([transferSigned, transfer.failure])),
               first(action => action.meta.secrethash === secrethash),
               map(action => {
-                if (isActionOf(transferFailed, action)) throw action.payload;
+                if (transfer.failure.is(action)) throw action.payload;
                 return secrethash;
               }),
             ),
             // request transfer with returned/validated paths at 'merge' subscription time
             defer(() => {
               this.store.dispatch(
-                transfer(
+                transfer.request(
                   {
                     tokenNetwork,
                     target,
