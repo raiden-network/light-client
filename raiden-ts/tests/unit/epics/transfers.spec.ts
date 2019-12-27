@@ -10,11 +10,10 @@ import { get } from 'lodash';
 import {
   newBlock,
   tokenMonitored,
-  channelOpened,
-  channelDeposited,
+  channelOpen,
+  channelDeposit,
   channelClose,
-  channelClosed,
-  channelSettled,
+  channelSettle,
 } from 'raiden-ts/channels/actions';
 import { RaidenAction } from 'raiden-ts/actions';
 import { RaidenState } from 'raiden-ts/state';
@@ -167,11 +166,11 @@ describe('transfers epic', () => {
           [
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             // a couple of channels with unrelated partners, with larger deposits
-            channelOpened(
+            channelOpen.success(
               { id: channelId - 2, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner: otherPartner2 },
             ),
-            channelDeposited(
+            channelDeposit.success(
               {
                 id: channelId - 2,
                 participant: depsMock.address,
@@ -180,11 +179,11 @@ describe('transfers epic', () => {
               },
               { tokenNetwork, partner: otherPartner2 },
             ),
-            channelOpened(
+            channelOpen.success(
               { id: channelId - 1, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner: otherPartner1 },
             ),
-            channelDeposited(
+            channelDeposit.success(
               {
                 id: channelId - 1,
                 participant: depsMock.address,
@@ -194,11 +193,11 @@ describe('transfers epic', () => {
               { tokenNetwork, partner: otherPartner1 },
             ),
             // but transfer should prefer this direct channel
-            channelOpened(
+            channelOpen.success(
               { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner },
             ),
-            channelDeposited(
+            channelDeposit.success(
               {
                 id: channelId,
                 participant: depsMock.address,
@@ -274,11 +273,11 @@ describe('transfers epic', () => {
           [
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             // channel with closingPartner: closed
-            channelOpened(
+            channelOpen.success(
               { id: channelId + 1, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner: closingPartner },
             ),
-            channelClosed(
+            channelClose.success(
               {
                 id: channelId + 1,
                 participant: closingPartner,
@@ -332,11 +331,11 @@ describe('transfers epic', () => {
         state$ = new BehaviorSubject(
           [
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-            channelOpened(
+            channelOpen.success(
               { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
               { tokenNetwork, partner },
             ),
-            channelDeposited(
+            channelDeposit.success(
               {
                 id: channelId,
                 participant: depsMock.address,
@@ -417,12 +416,12 @@ describe('transfers epic', () => {
           action$ = of(transferUnlock(undefined, { secrethash })),
           state$ = of(
             [
-              channelClosed(
+              channelClose.success(
                 { id: channelId, participant: partner, closeBlock, txHash },
                 { tokenNetwork, partner },
               ),
               newBlock({ blockNumber: closeBlock + settleTimeout + 1 }),
-              channelSettled(
+              channelSettle.success(
                 { id: channelId, settleBlock: closeBlock + settleTimeout + 1, txHash },
                 { tokenNetwork, partner },
               ),
@@ -457,7 +456,7 @@ describe('transfers epic', () => {
           action$ = of(transferUnlock(undefined, { secrethash })),
           state$ = of(
             [
-              channelClosed(
+              channelClose.success(
                 { id: channelId, participant: partner, closeBlock, txHash },
                 { tokenNetwork, partner },
               ),
@@ -572,7 +571,7 @@ describe('transfers epic', () => {
           action$ = of(transferExpire(undefined, { secrethash })),
           state$ = of(
             [
-              channelClosed(
+              channelClose.success(
                 { id: channelId, participant: partner, closeBlock, txHash },
                 { tokenNetwork, partner },
               ),
@@ -1452,7 +1451,7 @@ describe('transfers epic', () => {
     });
 
     describe('transferChannelClosedEpic', () => {
-      const action = channelClose(undefined, { tokenNetwork, partner }),
+      const action = channelClose.request(undefined, { tokenNetwork, partner }),
         state$ = new BehaviorSubject(transferingState);
 
       beforeEach(() => state$.next(transferingState));
@@ -1511,7 +1510,7 @@ describe('transfers epic', () => {
       test('skip different channel', async () => {
         await expect(
           transferChannelClosedEpic(
-            of(channelClose(undefined, { tokenNetwork, partner: token })),
+            of(channelClose.request(undefined, { tokenNetwork, partner: token })),
             state$,
           ).toPromise(),
         ).resolves.toBeUndefined();
@@ -1634,7 +1633,7 @@ describe('transfers epic', () => {
       beforeEach(async () => {
         state$.next(
           [
-            channelDeposited(
+            channelDeposit.success(
               {
                 id: channelId,
                 participant: partner,
@@ -1812,7 +1811,10 @@ describe('transfers epic', () => {
           action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
 
         state$.next(
-          [channelClose(undefined, { tokenNetwork, partner })].reduce(raidenReducer, state$.value),
+          [channelClose.request(undefined, { tokenNetwork, partner })].reduce(
+            raidenReducer,
+            state$.value,
+          ),
         );
 
         await expect(

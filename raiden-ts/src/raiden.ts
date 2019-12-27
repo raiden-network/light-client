@@ -35,20 +35,7 @@ import {
   raidenShutdown,
   raidenConfigUpdate,
 } from './actions';
-import {
-  channelOpened,
-  channelOpenFailed,
-  channelOpen,
-  channelDeposited,
-  channelDepositFailed,
-  channelDeposit,
-  channelClosed,
-  channelCloseFailed,
-  channelClose,
-  channelSettled,
-  channelSettleFailed,
-  channelSettle,
-} from './channels/actions';
+import { channelOpen, channelDeposit, channelClose, channelSettle } from './channels/actions';
 import {
   matrixPresenceUpdate,
   matrixRequestMonitorPresenceFailed,
@@ -60,7 +47,7 @@ import { pathFind, pathFound, pathFindFailed } from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
 import { Address, Secret, Storage, Hash, UInt, decode, assert } from './utils/types';
-import { isActionOf } from './utils/actions';
+import { isActionOf, asyncActionToPromise } from './utils/actions';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
 import {
@@ -475,22 +462,11 @@ export class Raiden {
     assert(tokenNetwork, 'Unknown token network');
     assert(!options.subkey || this.deps.main, "Can't send tx from subkey if not set");
 
-    const promise = this.action$
-      .pipe(
-        filter(isActionOf([channelOpened, channelOpenFailed])),
-        filter(
-          action => action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
-        ),
-        first(),
-        map(action => {
-          if (isActionOf(channelOpenFailed, action)) throw action.payload;
-          return action.payload.txHash;
-        }),
-      )
-      .toPromise();
-
-    this.store.dispatch(channelOpen(options, { tokenNetwork, partner }));
-
+    const meta = { tokenNetwork, partner };
+    const promise = asyncActionToPromise(channelOpen, meta, this.action$).then(
+      ({ txHash }) => txHash, // pluck txHash
+    );
+    this.store.dispatch(channelOpen.request(options, meta));
     return promise;
   }
 
@@ -520,21 +496,11 @@ export class Raiden {
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
     const deposit = decode(UInt(32), amount);
-
-    const promise = this.action$
-      .pipe(
-        filter(isActionOf([channelDeposited, channelDepositFailed])),
-        filter(
-          action => action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
-        ),
-        first(),
-        map(action => {
-          if (isActionOf(channelDepositFailed, action)) throw action.payload;
-          return action.payload.txHash;
-        }),
-      )
-      .toPromise();
-    this.store.dispatch(channelDeposit({ deposit, subkey }, { tokenNetwork, partner }));
+    const meta = { tokenNetwork, partner };
+    const promise = asyncActionToPromise(channelDeposit, meta, this.action$).then(
+      ({ txHash }) => txHash,
+    );
+    this.store.dispatch(channelDeposit.request({ deposit, subkey }, meta));
     return promise;
   }
 
@@ -565,20 +531,11 @@ export class Raiden {
     assert(tokenNetwork, 'Unknown token network');
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
-    const promise = this.action$
-      .pipe(
-        filter(isActionOf([channelClosed, channelCloseFailed])),
-        filter(
-          action => action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
-        ),
-        first(),
-        map(action => {
-          if (isActionOf(channelCloseFailed, action)) throw action.payload;
-          return action.payload.txHash;
-        }),
-      )
-      .toPromise();
-    this.store.dispatch(channelClose(subkey ? { subkey } : undefined, { tokenNetwork, partner }));
+    const meta = { tokenNetwork, partner };
+    const promise = asyncActionToPromise(channelClose, meta, this.action$).then(
+      ({ txHash }) => txHash,
+    );
+    this.store.dispatch(channelClose.request(subkey ? { subkey } : undefined, meta));
     return promise;
   }
 
@@ -609,20 +566,11 @@ export class Raiden {
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
     // wait for the corresponding success or error action
-    const promise = this.action$
-      .pipe(
-        filter(isActionOf([channelSettled, channelSettleFailed])),
-        filter(
-          action => action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
-        ),
-        first(),
-        map(action => {
-          if (isActionOf(channelSettleFailed, action)) throw action.payload;
-          return action.payload.txHash;
-        }),
-      )
-      .toPromise();
-    this.store.dispatch(channelSettle(subkey ? { subkey } : undefined, { tokenNetwork, partner }));
+    const meta = { tokenNetwork, partner };
+    const promise = asyncActionToPromise(channelSettle, meta, this.action$).then(
+      ({ txHash }) => txHash,
+    );
+    this.store.dispatch(channelSettle.request(subkey ? { subkey } : undefined, meta));
     return promise;
   }
 

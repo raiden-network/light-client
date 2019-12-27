@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/class-name-casing */
 import * as t from 'io-ts';
 
-import { createAction, ActionType } from '../utils/actions';
-import { Address, Hash, UInt, ErrorCodec } from '../utils/types';
+import { createAction, ActionType, createAsyncAction } from '../utils/actions';
+import { Address, Hash, UInt } from '../utils/types';
 
 // interfaces need to be exported, and we need/want to support `import * as RaidenActions`
 const ChannelId = t.type({
@@ -36,18 +37,12 @@ export interface tokenMonitored extends ActionType<typeof tokenMonitored> {}
  * Channel actions receive ChannelId as 'meta' action property
  * This way, 'meta' can be used equally for request, success and error actions
  */
-
-/* Request a channel to be opened with meta={ tokenNetwork, partner } and payload.settleTimeout */
-export const channelOpen = createAction(
-  'channelOpen',
-  t.partial({ settleTimeout: t.number, subkey: t.boolean }),
+export const channelOpen = createAsyncAction(
   ChannelId,
-);
-export interface channelOpen extends ActionType<typeof channelOpen> {}
-
-/* A channel is detected on-chain. Also works as 'success' for channelOpen action */
-export const channelOpened = createAction(
-  'channelOpened',
+  'channel/open/request',
+  'channel/open/success',
+  'channel/open/failed',
+  t.partial({ settleTimeout: t.number, subkey: t.boolean }),
   t.type({
     id: t.number,
     settleTimeout: t.number,
@@ -55,104 +50,78 @@ export const channelOpened = createAction(
     isFirstParticipant: t.boolean,
     txHash: Hash,
   }),
-  ChannelId,
 );
-export interface channelOpened extends ActionType<typeof channelOpened> {}
-
-/* A channelOpen request action (with meta: ChannelId) failed with payload=Error */
-export const channelOpenFailed = createAction('channelOpenFailed', ErrorCodec, ChannelId, true);
-export interface channelOpenFailed extends ActionType<typeof channelOpenFailed> {}
+export namespace channelOpen {
+  export interface request extends ActionType<typeof channelOpen.request> {}
+  export interface success extends ActionType<typeof channelOpen.success> {}
+  export interface failure extends ActionType<typeof channelOpen.failure> {}
+}
 
 /* Channel with meta:ChannelId + payload.id should be monitored */
-export const channelMonitored = createAction(
-  'channelMonitored',
+export const channelMonitor = createAction(
+  'channel/monitor',
   t.intersection([t.type({ id: t.number }), t.partial({ fromBlock: t.number })]),
   ChannelId,
 );
-export interface channelMonitored extends ActionType<typeof channelMonitored> {}
+export interface channelMonitor extends ActionType<typeof channelMonitor> {}
 
-/* Request a payload.deposit to be made to channel meta:ChannelId */
-export const channelDeposit = createAction(
-  'channelDeposit',
+export const channelDeposit = createAsyncAction(
+  ChannelId,
+  'channel/deposit/request',
+  'channel/deposit/success',
+  'channel/deposit/failure',
   t.intersection([t.type({ deposit: UInt(32) }), t.partial({ subkey: t.boolean })]),
-  ChannelId,
-);
-export interface channelDeposit extends ActionType<typeof channelDeposit> {}
-
-/* A deposit is detected on-chain. Also works as 'success' for channelDeposit action */
-export const channelDeposited = createAction(
-  'channelDeposited',
   t.type({ id: t.number, participant: Address, totalDeposit: UInt(32), txHash: Hash }),
-  ChannelId,
 );
-export interface channelDeposited extends ActionType<typeof channelDeposited> {}
 
-/* A channelDeposit request action (with meta: ChannelId) failed with payload=Error */
-export const channelDepositFailed = createAction(
-  'channelDepositFailed',
-  ErrorCodec,
-  ChannelId,
-  true,
-);
-export interface channelDepositFailed extends ActionType<typeof channelDepositFailed> {}
+export namespace channelDeposit {
+  export interface request extends ActionType<typeof channelDeposit.request> {}
+  export interface success extends ActionType<typeof channelDeposit.success> {}
+  export interface failure extends ActionType<typeof channelDeposit.failure> {}
+}
 
 /* A withdraw is detected on-chain */
 export const channelWithdrawn = createAction(
-  'channelWithdrawn',
+  'channel/withdraw/success',
   t.type({ id: t.number, participant: Address, totalWithdraw: UInt(32), txHash: Hash }),
   ChannelId,
 );
 export interface channelWithdrawn extends ActionType<typeof channelWithdrawn> {}
 
-/* Request channel meta:ChannelId to be closed */
-export const channelClose = createAction(
-  'channelClose',
+export const channelClose = createAsyncAction(
+  ChannelId,
+  'channel/close/request',
+  'channel/close/success',
+  'channel/close/failure',
   t.union([t.partial({ subkey: t.boolean }), t.undefined]),
-  ChannelId,
-);
-export interface channelClose extends ActionType<typeof channelClose> {}
-
-/* A close channel event is detected on-chain. Also works as 'success' for channelClose action */
-export const channelClosed = createAction(
-  'channelClosed',
   t.type({ id: t.number, participant: Address, closeBlock: t.number, txHash: Hash }),
-  ChannelId,
 );
-export interface channelClosed extends ActionType<typeof channelClosed> {}
 
-/* A channelClose request action (with meta: ChannelId) failed with payload=Error */
-export const channelCloseFailed = createAction('channelCloseFailed', ErrorCodec, ChannelId, true);
-export interface channelCloseFailed extends ActionType<typeof channelCloseFailed> {}
+export namespace channelClose {
+  export interface request extends ActionType<typeof channelClose.request> {}
+  export interface success extends ActionType<typeof channelClose.success> {}
+  export interface failure extends ActionType<typeof channelClose.failure> {}
+}
 
 /* A channel meta:ChannelId becomes settleable, starting from payload.settleableBlock */
 export const channelSettleable = createAction(
-  'channelSettleable',
+  'channel/settleable',
   t.type({ settleableBlock: t.number }),
   ChannelId,
 );
 export interface channelSettleable extends ActionType<typeof channelSettleable> {}
 
-/* Request channel meta:ChannelId to be settled */
-export const channelSettle = createAction(
-  'channelSettle',
+export const channelSettle = createAsyncAction(
+  ChannelId,
+  'channel/settle/request',
+  'channel/settle/success',
+  'channel/settle/failure',
   t.union([t.partial({ subkey: t.boolean }), t.undefined]),
-  ChannelId,
-);
-export interface channelSettle extends ActionType<typeof channelSettle> {}
-
-/* A settle channel event is detected on-chain. Also works as 'success' for channelSettle action */
-export const channelSettled = createAction(
-  'channelSettled',
   t.type({ id: t.number, settleBlock: t.number, txHash: Hash }),
-  ChannelId,
 );
-export interface channelSettled extends ActionType<typeof channelSettled> {}
 
-/* A channelSettle request action (with meta: ChannelId) failed with payload=Error */
-export const channelSettleFailed = createAction(
-  'channelSettleFailed',
-  ErrorCodec,
-  ChannelId,
-  true,
-);
-export interface channelSettleFailed extends ActionType<typeof channelSettleFailed> {}
+export namespace channelSettle {
+  export interface request extends ActionType<typeof channelSettle.request> {}
+  export interface success extends ActionType<typeof channelSettle.success> {}
+  export interface failure extends ActionType<typeof channelSettle.failure> {}
+}

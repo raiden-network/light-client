@@ -4,11 +4,7 @@ import * as t from 'io-ts';
 import { from } from 'rxjs';
 import { bigNumberify } from 'ethers/utils';
 
-import {
-  channelDeposit,
-  channelDepositFailed,
-  channelMonitored,
-} from 'raiden-ts/channels/actions';
+import { channelDeposit, channelMonitor } from 'raiden-ts/channels/actions';
 import { Address, UInt, ErrorCodec, decode } from 'raiden-ts/utils/types';
 import {
   createAction,
@@ -25,26 +21,26 @@ describe('action factories not tested in reducers.spec.ts', () => {
   test('channelMonitor', () => {
     const id = 12,
       fromBlock = 5123;
-    expect(channelMonitored({ id, fromBlock }, { tokenNetwork, partner })).toEqual({
-      type: 'channelMonitored',
+    expect(channelMonitor({ id, fromBlock }, { tokenNetwork, partner })).toEqual({
+      type: channelMonitor.type,
       payload: { id, fromBlock },
       meta: { tokenNetwork, partner },
     });
   });
 
-  test('channelDeposit', () => {
+  test('channelDeposit request', () => {
     const deposit = bigNumberify(999) as UInt<32>;
-    expect(channelDeposit({ deposit }, { tokenNetwork, partner })).toEqual({
-      type: 'channelDeposit',
+    expect(channelDeposit.request({ deposit }, { tokenNetwork, partner })).toEqual({
+      type: channelDeposit.request.type,
       payload: { deposit },
       meta: { tokenNetwork, partner },
     });
   });
 
-  test('channelDepositFailed', () => {
+  test('channelDeposit failed', () => {
     const error = new Error('not enough funds');
-    expect(channelDepositFailed(error, { tokenNetwork, partner })).toEqual({
-      type: 'channelDepositFailed',
+    expect(channelDeposit.failure(error, { tokenNetwork, partner })).toEqual({
+      type: channelDeposit.failure.type,
       payload: error,
       meta: { tokenNetwork, partner },
       error: true,
