@@ -20,14 +20,7 @@ import {
   pfsCapacityUpdateEpic,
   pfsServiceRegistryMonitorEpic,
 } from 'raiden-ts/path/epics';
-import {
-  pathFound,
-  pathFind,
-  pathFindFailed,
-  pfsListUpdated,
-  iouPersist,
-  iouClear,
-} from 'raiden-ts/path/actions';
+import { pathFind, pfsListUpdated, iouPersist, iouClear } from 'raiden-ts/path/actions';
 import { RaidenState } from 'raiden-ts/state';
 import { messageGlobalSend } from 'raiden-ts/messages/actions';
 import { MessageType } from 'raiden-ts/messages/types';
@@ -119,13 +112,13 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork: token, target, value }),
+        pathFind.request({}, { tokenNetwork: token, target, value }),
       );
 
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({ message: expect.stringContaining('unknown tokenNetwork') }),
         { tokenNetwork: token, target, value },
       ),
@@ -145,13 +138,13 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: false, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({ message: expect.stringMatching(/target.*not online/i) }),
         { tokenNetwork, target, value },
       ),
@@ -171,7 +164,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind(
+        pathFind.request(
           { paths: [{ path: [depsMock.address, partner, target], fee }] },
           { tokenNetwork, target, value },
         ),
@@ -181,7 +174,10 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFound({ paths: [{ path: [partner, target], fee }] }, { tokenNetwork, target, value }),
+      pathFind.success(
+        { paths: [{ path: [partner, target], fee }] },
+        { tokenNetwork, target, value },
+      ),
     );
   });
 
@@ -198,14 +194,14 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target: partner, value }),
+        pathFind.request({}, { tokenNetwork, target: partner, value }),
       );
 
     // self should be taken out of route
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFound(
+      pathFind.success(
         { paths: [{ path: [partner], fee: Zero as Int<32> }] },
         { tokenNetwork, target: partner, value },
       ),
@@ -225,7 +221,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind(
+        pathFind.request(
           {
             pfs: {
               address: pfsAddress,
@@ -252,7 +248,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFound(
+      pathFind.success(
         {
           paths: [
             {
@@ -281,7 +277,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     fetch.mockResolvedValueOnce({
@@ -304,7 +300,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFound(
+      pathFind.success(
         {
           paths: [
             {
@@ -341,7 +337,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     // pfsAddress1 will be accepted with default https:// schema
@@ -412,7 +408,7 @@ describe('PFS: pathFindServiceEpic', () => {
         },
         { tokenNetwork, serviceAddress: iou.receiver },
       ),
-      pathFound(
+      pathFind.success(
         {
           paths: [
             {
@@ -455,7 +451,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     // invalid url
@@ -468,7 +464,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({
           message: expect.stringContaining('Could not validate any PFS info'),
         }),
@@ -490,7 +486,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     fetch.mockResolvedValueOnce({
@@ -519,7 +515,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({ message: expect.stringContaining('paths request: code=1337') }),
         { tokenNetwork, target, value },
       ),
@@ -539,7 +535,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     fetch.mockResolvedValueOnce({
@@ -561,7 +557,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({ message: expect.stringContaining('Invalid value') }),
         {
           tokenNetwork,
@@ -585,7 +581,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     const freePfsInfoResponse = { ...pfsInfoResponse, price_info: 0 };
@@ -614,7 +610,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFound(
+      pathFind.success(
         { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] },
         { tokenNetwork, target, value },
       ),
@@ -641,7 +637,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     fetch.mockResolvedValueOnce({
@@ -678,7 +674,7 @@ describe('PFS: pathFindServiceEpic', () => {
         },
         { tokenNetwork, serviceAddress: iou.receiver },
       ),
-      pathFound(
+      pathFind.success(
         { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] },
         { tokenNetwork, target, value },
       ),
@@ -698,7 +694,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     fetch.mockResolvedValueOnce({
@@ -741,7 +737,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFound(
+      pathFind.success(
         { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] },
         { tokenNetwork, target, value },
       ),
@@ -761,7 +757,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     state$.next(
@@ -800,7 +796,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({ message: expect.stringContaining('no valid routes found') }),
         {
           tokenNetwork,
@@ -824,7 +820,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind(
+        pathFind.request(
           { paths: [{ path: [depsMock.address, partner, target], fee }] },
           { tokenNetwork, target, value },
         ),
@@ -833,7 +829,7 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({ message: expect.stringContaining('no valid routes found') }),
         { tokenNetwork, target, value },
       ),
@@ -853,7 +849,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     fetch.mockResolvedValueOnce({
@@ -904,7 +900,7 @@ describe('PFS: pathFindServiceEpic', () => {
         },
         { tokenNetwork, serviceAddress: iou.receiver },
       ),
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({
           message: expect.stringContaining('No route between nodes found.'),
         }),
@@ -926,7 +922,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     fetch.mockResolvedValueOnce({
@@ -950,7 +946,7 @@ describe('PFS: pathFindServiceEpic', () => {
         .pipe(toArray())
         .toPromise(),
     ).resolves.toMatchObject([
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({
           message: expect.stringContaining('last IOU request: code=500'),
         }),
@@ -972,7 +968,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     fetch.mockResolvedValueOnce({
@@ -1004,7 +1000,7 @@ describe('PFS: pathFindServiceEpic', () => {
         .pipe(toArray())
         .toPromise(),
     ).resolves.toMatchObject([
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({
           message: expect.stringContaining('last iou signature mismatch'),
         }),
@@ -1026,7 +1022,7 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     fetch.mockResolvedValueOnce({
@@ -1071,7 +1067,7 @@ describe('PFS: pathFindServiceEpic', () => {
         .toPromise(),
     ).resolves.toMatchObject([
       iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({
           message: expect.stringContaining('The IOU is already claimed'),
         }),
@@ -1099,13 +1095,13 @@ describe('PFS: pathFindServiceEpic', () => {
           { userId: targetUserId, available: true, ts: Date.now() },
           { address: target },
         ),
-        pathFind({}, { tokenNetwork, target, value }),
+        pathFind.request({}, { tokenNetwork, target, value }),
       );
 
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFindFailed(
+      pathFind.failure(
         expect.objectContaining({ message: expect.stringContaining('PFS disabled') }),
         { tokenNetwork, target, value },
       ),

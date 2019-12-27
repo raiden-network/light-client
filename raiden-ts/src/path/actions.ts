@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/class-name-casing */
 import * as t from 'io-ts';
 
-import { createAction, ActionType } from '../utils/actions';
-import { Address, UInt, Signed, ErrorCodec } from '../utils/types';
+import { createAction, ActionType, createAsyncAction } from '../utils/actions';
+import { Address, UInt, Signed } from '../utils/types';
 import { Paths, PFS, IOU } from './types';
 
 const PathId = t.type({
@@ -16,18 +17,20 @@ const ServiceId = t.type({
   serviceAddress: Address,
 });
 
-export const pathFind = createAction(
-  'pathFind',
-  t.partial({ paths: Paths, pfs: t.union([PFS, t.null]) }),
+export const pathFind = createAsyncAction(
   PathId,
+  'path/find/request',
+  'path/find/success',
+  'path/find/failure',
+  t.partial({ paths: Paths, pfs: t.union([PFS, t.null]) }),
+  t.type({ paths: Paths }),
 );
-export interface pathFind extends ActionType<typeof pathFind> {}
 
-export const pathFound = createAction('pathFound', t.type({ paths: Paths }), PathId);
-export interface pathFound extends ActionType<typeof pathFound> {}
-
-export const pathFindFailed = createAction('pathFindFailed', ErrorCodec, PathId, true);
-export interface pathFindFailed extends ActionType<typeof pathFindFailed> {}
+export namespace pathFind {
+  export interface request extends ActionType<typeof pathFind.request> {}
+  export interface success extends ActionType<typeof pathFind.success> {}
+  export interface failure extends ActionType<typeof pathFind.failure> {}
+}
 
 export const pfsListUpdated = createAction(
   'pfsListUpdated',
