@@ -21,12 +21,7 @@ import {
   matrixSetup,
   matrixRoomLeave,
 } from 'raiden-ts/transport/actions';
-import {
-  messageSend,
-  messageReceived,
-  messageSent,
-  messageGlobalSend,
-} from 'raiden-ts/messages/actions';
+import { messageSend, messageReceived, messageGlobalSend } from 'raiden-ts/messages/actions';
 
 import {
   initMatrixEpic,
@@ -561,11 +556,11 @@ describe('transport epic', () => {
     test('success: concurrent messages create single room', async () => {
       expect.assertions(2);
       const action$ = of(
-          messageSend({ message: 'message1' }, { address: partner }),
-          messageSend({ message: 'message2' }, { address: partner }),
-          messageSend({ message: 'message3' }, { address: partner }),
-          messageSend({ message: 'message4' }, { address: partner }),
-          messageSend({ message: 'message5' }, { address: partner }),
+          messageSend.request({ message: 'message1' }, { address: partner, msgId: 'message1' }),
+          messageSend.request({ message: 'message2' }, { address: partner, msgId: 'message2' }),
+          messageSend.request({ message: 'message3' }, { address: partner, msgId: 'message3' }),
+          messageSend.request({ message: 'message4' }, { address: partner, msgId: 'message4' }),
+          messageSend.request({ message: 'message5' }, { address: partner, msgId: 'message5' }),
           matrixPresence.success(
             { userId: partnerUserId, available: true, ts: 123 },
             { address: partner },
@@ -893,7 +888,10 @@ describe('transport epic', () => {
             { userId: partnerUserId, available: true, ts: Date.now() },
             { address: partner },
           ),
-          messageSend({ message: signed }, { address: partner }),
+          messageSend.request(
+            { message: signed },
+            { address: partner, msgId: signed.message_identifier.toString() },
+          ),
         ),
         state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
 
@@ -913,7 +911,10 @@ describe('transport epic', () => {
       });
 
       expect(matrixMessageSendEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
-        messageSent({ message: signed }, { address: partner }),
+        messageSend.success(undefined, {
+          address: partner,
+          msgId: signed.message_identifier.toString(),
+        }),
       );
       expect(matrix.sendEvent).toHaveBeenCalledTimes(1);
       expect(matrix.sendEvent).toHaveBeenCalledWith(
@@ -934,7 +935,7 @@ describe('transport epic', () => {
             { userId: partnerUserId, available: true, ts: Date.now() },
             { address: partner },
           ),
-          messageSend({ message }, { address: partner }),
+          messageSend.request({ message }, { address: partner, msgId: message }),
         ),
         state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
 
@@ -1192,7 +1193,7 @@ describe('transport epic', () => {
 
     expect(output).toHaveLength(2);
     expect(output[0]).toEqual(
-      messageSend(
+      messageSend.request(
         {
           message: {
             type: MessageType.DELIVERED,
@@ -1200,7 +1201,7 @@ describe('transport epic', () => {
             signature: expect.any(String),
           },
         },
-        action.meta,
+        { address: action.meta.address, msgId: message.message_identifier.toString() },
       ),
     );
     expect(output[1].payload.message).toBe(output[0].payload.message);

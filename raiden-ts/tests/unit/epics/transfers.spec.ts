@@ -29,7 +29,7 @@ import {
   WithdrawRequest,
 } from 'raiden-ts/messages/types';
 import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
-import { messageSend, messageReceived, messageSent } from 'raiden-ts/messages/actions';
+import { messageSend, messageReceived } from 'raiden-ts/messages/actions';
 import {
   transfer,
   transferSigned,
@@ -781,10 +781,13 @@ describe('transfers epic', () => {
 
           const state$ = new BehaviorSubject<RaidenState>(transferingState),
             // 'of' is cold and'll fire these events on every subscription. For inner observable,
-            // only messageSent is relevant and'll confirm messageSend with message=signedTransfer
+            // only messageSend.success is relevant and'll confirm messageSend.request with message=signedTransfer
             action$ = of(
               transferSigned({ message: signedTransfer, fee }, { secrethash }),
-              messageSent({ message: signedTransfer }, { address: partner }),
+              messageSend.success(undefined, {
+                address: partner,
+                msgId: signedTransfer.message_identifier.toString(),
+              }),
             );
 
           depsMock.latest$.pipe(first()).subscribe(l => {
@@ -794,7 +797,7 @@ describe('transfers epic', () => {
           let sent = 0;
           transferSignedRetryMessageEpic(action$, state$, depsMock).subscribe(() => sent++);
 
-          // first messageSend is sent immediatelly
+          // first messageSend.request is sent immediatelly
           advance(1);
           expect(sent).toBe(1);
 
@@ -812,7 +815,7 @@ describe('transfers epic', () => {
             depsMock.latest$.next({ ...l, state: processedState });
           });
 
-          // +30s and no new messageSend, as transferProcessed stopped retry
+          // +30s and no new messageSend.request, as transferProcessed stopped retry
           for (let t = 0; t < 30; t += 10) advance(10e3);
           expect(sent).toBe(3);
         }),
@@ -828,16 +831,19 @@ describe('transfers epic', () => {
           );
 
           // 'of' is cold and'll fire these events on every subscription. For inner observable,
-          // only messageSent is relevant and will confirm messageSend with message=signedTransfer
+          // only messageSend.success is relevant and will confirm messageSend.request with message=signedTransfer
           const action$ = of(
             unlockedAction,
-            messageSent({ message: unlockedAction.payload.message }, { address: partner }),
+            messageSend.success(undefined, {
+              address: partner,
+              msgId: unlockedAction.payload.message.message_identifier.toString(),
+            }),
           ).pipe(delay(1));
 
           let sent = 0;
           transferUnlockedRetryMessageEpic(action$, state$, depsMock).subscribe(() => sent++);
 
-          // first messageSend is sent immediatelly
+          // first messageSend.request is sent immediatelly
           advance(1);
           expect(sent).toBe(1);
 
@@ -854,7 +860,7 @@ describe('transfers epic', () => {
             ),
           );
 
-          // +30s and no new messageSend, as transferUnlockProcessed stopped retry
+          // +30s and no new messageSend.request, as transferUnlockProcessed stopped retry
           for (let t = 0; t < 30; t += 10) advance(10e3);
           expect(sent).toBe(3);
         }),
@@ -873,16 +879,19 @@ describe('transfers epic', () => {
           );
 
           // 'of' is cold and'll fire these events on every subscription. For inner observable,
-          // only messageSent is relevant and will confirm messageSend with message=signedTransfer
+          // only messageSend.success is relevant and will confirm messageSend.request with message=signedTransfer
           const action$ = of(
             expiredAction,
-            messageSent({ message: expiredAction.payload.message }, { address: partner }),
+            messageSend.success(undefined, {
+              address: partner,
+              msgId: expiredAction.payload.message.message_identifier.toString(),
+            }),
           ).pipe(delay(1));
 
           let sent = 0;
           transferExpiredRetryMessageEpic(action$, state$, depsMock).subscribe(() => sent++);
 
-          // first messageSend is sent immediatelly
+          // first messageSend.request is sent immediatelly
           advance(1);
           expect(sent).toBe(1);
 
@@ -899,7 +908,7 @@ describe('transfers epic', () => {
             ),
           );
 
-          // +30s and no new messageSend, as transferExpireProcessed stopped retry
+          // +30s and no new messageSend.request, as transferExpireProcessed stopped retry
           for (let t = 0; t < 30; t += 10) advance(10e3);
           expect(sent).toBe(3);
         }),
@@ -1211,11 +1220,11 @@ describe('transfers epic', () => {
             meta: { secrethash },
           },
           {
-            type: messageSend.type,
+            type: messageSend.request.type,
             payload: {
               message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
             },
-            meta: { address: partner },
+            meta: { address: partner, msgId: expect.any(String) },
           },
         ]),
       );
@@ -1573,7 +1582,7 @@ describe('transfers epic', () => {
 
         expect(output).toHaveLength(2);
         expect(output[0]).toMatchObject({
-          type: messageSend.type,
+          type: messageSend.request.type,
           payload: {
             message: expect.objectContaining({
               type: MessageType.PROCESSED,
@@ -1722,7 +1731,7 @@ describe('transfers epic', () => {
         await expect(
           withdrawSendConfirmationEpic(of(withdrawConfirmationAction)).toPromise(),
         ).resolves.toMatchObject({
-          type: messageSend.type,
+          type: messageSend.request.type,
           payload: { message: withdrawConfirmationAction.payload.message },
           meta: { address: partner },
         });

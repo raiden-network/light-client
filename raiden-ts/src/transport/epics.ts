@@ -69,7 +69,7 @@ import {
   getMessageSigner,
   signMessage,
 } from '../messages/utils';
-import { messageSend, messageReceived, messageSent, messageGlobalSend } from '../messages/actions';
+import { messageSend, messageReceived, messageGlobalSend } from '../messages/actions';
 import { transferSigned } from '../transfers/actions';
 import { RaidenState } from '../state';
 import { getServerName, getUserPresence } from '../utils/matrix';
@@ -620,9 +620,9 @@ export const matrixPresenceUpdateEpic = (
 
 /**
  * Create room (if needed) for a transfer's target, channel's partner or, as a fallback, for any
- * recipient of a messageSend action
+ * recipient of a messageSend.request action
  *
- * @param action$ - Observable of transferSigned|channelMonitor|messageSend actions
+ * @param action$ - Observable of transferSigned|channelMonitor|messageSend.request actions
  * @param state$ - Observable of RaidenStates
  * @param matrix$ - RaidenEpicDeps members
  * @returns Observable of matrixRoom actions
@@ -639,7 +639,7 @@ export const matrixCreateRoomEpic = (
       // actual output observable, selects addresses of interest from actions
       action$.pipe(
         // ensure there's a room for address of interest for each of these actions
-        filter(isActionOf([transferSigned, channelMonitor, messageSend])),
+        filter(isActionOf([transferSigned, channelMonitor, messageSend.request])),
         map(action =>
           isActionOf(transferSigned, action)
             ? action.payload.message.target
@@ -933,12 +933,13 @@ export const matrixCleanLeftRoomsEpic = (
   );
 
 /**
- * Handles a [[messageSend]] action and send its message to the first room on queue for address
+ * Handles a [[messageSend.request]] action and send its message to the first room on queue for
+ * address
  *
- * @param action$ - Observable of messageSend actions
+ * @param action$ - Observable of messageSend.request actions
  * @param state$ - Observable of RaidenStates
  * @param matrix$ - RaidenEpicDeps members
- * @returns Observable of messageSent actions
+ * @returns Observable of messageSend.success actions
  */
 export const matrixMessageSendEpic = (
   action$: Observable<RaidenAction>,
@@ -951,7 +952,7 @@ export const matrixMessageSendEpic = (
     publishReplay(1, undefined, presencesStateReplay$ =>
       // actual output observable, gets/wait for the user to be in a room, and then sendMessage
       action$.pipe(
-        filter(isActionOf(messageSend)),
+        filter(isActionOf(messageSend.request)),
         // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
         mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
         groupBy(({ action }) => action.meta.address),
@@ -1018,7 +1019,7 @@ export const matrixMessageSendEpic = (
                     '',
                   );
                 }),
-                map(() => messageSent(action.payload, action.meta)),
+                map(() => messageSend.success(undefined, action.meta)),
               ),
             ),
           ),
@@ -1030,7 +1031,7 @@ export const matrixMessageSendEpic = (
 /**
  * Handles a [[messageGlobalSend]] action and send one-shot message to a global room
  *
- * @param action$ - Observable of messageSend actions
+ * @param action$ - Observable of messageGlobalSend actions
  * @param state$ - Observable of RaidenStates
  * @param matrix$ - RaidenEpicDeps members
  * @returns Empty observable (whole side-effect on matrix instance)
@@ -1209,16 +1210,16 @@ export const matrixMonitorChannelPresenceEpic = (
 /**
  * Sends Delivered for specific messages
  *
- * @param action$ - Observable of RaidenActions
+ * @param action$ - Observable of messageReceived actions
  * @param state$ - Observable of RaidenStates
  * @param signer - RaidenEpicDeps members
- * @returns Observable of messageSend actions
+ * @returns Observable of messageSend.request actions
  */
 export const deliveredEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { signer }: RaidenEpicDeps,
-): Observable<messageSend> => {
+): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Delivered>>(32);
   return action$.pipe(
     filter(isActionOf(messageReceived)),
@@ -1233,20 +1234,30 @@ export const deliveredEpic = (
         )
       )
         return EMPTY;
-      const msgId = message.message_identifier,
-        key = msgId.toString();
-      const cached = cache.get(key);
-      if (cached) return of(messageSend({ message: cached }, action.meta));
+      // defer causes the cache check to be performed at subscription time
+      return defer(() => {
+        const msgId = message.message_identifier;
+        const key = msgId.toString();
+        const cached = cache.get(key);
+        if (cached)
+          return of(
+            messageSend.request({ message: cached }, { address: action.meta.address, msgId: key }),
+          );
 
-      const delivered: Delivered = {
-        type: MessageType.DELIVERED,
-        delivered_message_identifier: msgId,
-      };
-      console.log(`Signing "${delivered.type}" for "${message.type}" with id=${msgId.toString()}`);
-      return from(signMessage(signer, delivered)).pipe(
-        tap(signed => cache.put(key, signed)),
-        map(signed => messageSend({ message: signed }, action.meta)),
-      );
+        const delivered: Delivered = {
+          type: MessageType.DELIVERED,
+          delivered_message_identifier: msgId,
+        };
+        console.log(
+          `Signing "${delivered.type}" for "${message.type}" with id=${msgId.toString()}`,
+        );
+        return from(signMessage(signer, delivered)).pipe(
+          tap(signed => cache.put(key, signed)),
+          map(signed =>
+            messageSend.request({ message: signed }, { address: action.meta.address, msgId: key }),
+          ),
+        );
+      });
     }),
   );
 };
