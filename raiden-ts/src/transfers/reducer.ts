@@ -6,7 +6,7 @@ import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
 import { Channel, ChannelState } from '../channels/state';
 import { SignedBalanceProof } from '../channels/types';
-import { channelClosed } from '../channels/actions';
+import { channelClose } from '../channels/actions';
 import { getLocksroot } from './utils';
 import { SignatureZero } from '../constants';
 import { timed, UInt, Signature, Hash } from '../utils/types';
@@ -228,7 +228,7 @@ export function transfersReducer(
         },
       },
     };
-  } else if (isActionOf(channelClosed, action)) {
+  } else if (isActionOf(channelClose.success, action)) {
     return {
       ...state,
       sent: mapValues(

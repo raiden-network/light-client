@@ -12,16 +12,10 @@ import {
   newBlock,
   tokenMonitored,
   channelOpen,
-  channelOpened,
-  channelOpenFailed,
-  channelDeposited,
+  channelDeposit,
   channelClose,
-  channelClosed,
-  channelCloseFailed,
   channelSettleable,
   channelSettle,
-  channelSettleFailed,
-  channelSettled,
   channelWithdrawn,
 } from 'raiden-ts/channels/actions';
 import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden-ts/transport/actions';
@@ -121,7 +115,7 @@ describe('raidenReducer', () => {
     test('new channelOpen', () => {
       const newState = raidenReducer(
         state,
-        channelOpen({ settleTimeout }, { tokenNetwork, partner }),
+        channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
       );
       expect(newState.channels).toMatchObject({
         [tokenNetwork]: {
@@ -134,10 +128,10 @@ describe('raidenReducer', () => {
       });
     });
 
-    test('channelOpened', () => {
+    test('channelOpen.success', () => {
       const newState = raidenReducer(
         state,
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
@@ -156,21 +150,21 @@ describe('raidenReducer', () => {
       });
     });
 
-    test('channelOpenFailed', () => {
+    test('channelOpen.failure', () => {
       const error = new Error('could not open channel');
       const newState = [
-        channelOpen({ settleTimeout }, { tokenNetwork, partner }),
-        channelOpenFailed(error, { tokenNetwork, partner }),
+        channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
+        channelOpen.failure(error, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       expect(newState.channels[tokenNetwork][partner]).toBeUndefined();
     });
   });
 
-  describe('channelDeposited', () => {
+  describe('channelDeposit success', () => {
     beforeEach(() => {
       state = raidenReducer(
         state,
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
@@ -181,7 +175,7 @@ describe('raidenReducer', () => {
       state = set(['channels', tokenNetwork, partner, 'state'], ChannelState.closed, state);
       const newState = raidenReducer(
         state,
-        channelDeposited(
+        channelDeposit.success(
           {
             id: channelId,
             participant: state.address,
@@ -198,7 +192,7 @@ describe('raidenReducer', () => {
       const deposit = bigNumberify(25) as UInt<32>;
       const newState = raidenReducer(
         state,
-        channelDeposited(
+        channelDeposit.success(
           {
             id: channelId,
             participant: address,
@@ -224,7 +218,7 @@ describe('raidenReducer', () => {
       const deposit = bigNumberify(26) as UInt<32>;
       const newState = raidenReducer(
         state,
-        channelDeposited(
+        channelDeposit.success(
           {
             id: channelId,
             participant: partner,
@@ -251,11 +245,11 @@ describe('raidenReducer', () => {
     const deposit = bigNumberify(500) as UInt<32>;
     beforeEach(() => {
       state = [
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
-        channelDeposited(
+        channelDeposit.success(
           {
             id: channelId,
             participant: state.address,
@@ -264,7 +258,7 @@ describe('raidenReducer', () => {
           },
           { tokenNetwork, partner },
         ),
-        channelDeposited(
+        channelDeposit.success(
           {
             id: channelId,
             participant: partner,
@@ -354,7 +348,7 @@ describe('raidenReducer', () => {
       // channel in open state
       state = raidenReducer(
         state,
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
@@ -363,32 +357,38 @@ describe('raidenReducer', () => {
 
     test('channel not in open state', () => {
       state = set(['channels', tokenNetwork, partner, 'state'], ChannelState.closed, state);
-      const newState = raidenReducer(state, channelClose(undefined, { tokenNetwork, partner }));
+      const newState = raidenReducer(
+        state,
+        channelClose.request(undefined, { tokenNetwork, partner }),
+      );
       expect(newState).toEqual(state);
     });
 
     test('unknown channel', () => {
       const newState = raidenReducer(
         state,
-        channelClose(undefined, { tokenNetwork, partner: token }),
+        channelClose.request(undefined, { tokenNetwork, partner: token }),
       );
       expect(newState).toEqual(state);
     });
 
-    test('channelClose puts channel in closing state', () => {
-      const newState = raidenReducer(state, channelClose(undefined, { tokenNetwork, partner }));
+    test('channelClose.request puts channel in closing state', () => {
+      const newState = raidenReducer(
+        state,
+        channelClose.request(undefined, { tokenNetwork, partner }),
+      );
       expect(newState.channels).toMatchObject({
         [tokenNetwork]: { [partner]: { state: ChannelState.closing, id: channelId } },
       });
     });
   });
 
-  describe('channelClosed', () => {
+  describe('channelClose.success', () => {
     beforeEach(() => {
       // channel in open state
       state = raidenReducer(
         state,
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
@@ -398,7 +398,7 @@ describe('raidenReducer', () => {
     test('unknown channel', () => {
       const newState = raidenReducer(
         state,
-        channelClosed(
+        channelClose.success(
           { id: channelId + 1, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
@@ -406,10 +406,10 @@ describe('raidenReducer', () => {
       expect(newState).toEqual(state);
     });
 
-    test('channelClosed puts channel in closed state', () => {
+    test('channelClose.success puts channel in closed state', () => {
       const newState = raidenReducer(
         state,
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
@@ -420,30 +420,30 @@ describe('raidenReducer', () => {
     });
   });
 
-  describe('channelCloseFailed', () => {
+  describe('channelClose.failure', () => {
     beforeEach(() => {
       // channel in closing state
       state = [
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
-        channelClose(undefined, { tokenNetwork, partner }),
+        channelClose.request(undefined, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
     });
 
     test('unknown channel', () => {
       const newState = raidenReducer(
         state,
-        channelClose(undefined, { tokenNetwork, partner: token }),
+        channelClose.request(undefined, { tokenNetwork, partner: token }),
       );
       expect(newState).toEqual(state);
     });
 
-    test("channelCloseFailed doesn't mutate state", () => {
+    test("channelClose.failure doesn't mutate state", () => {
       const newState = raidenReducer(
         state,
-        channelCloseFailed(new Error('channelClose failed'), { tokenNetwork, partner }),
+        channelClose.failure(new Error('channelClose failed'), { tokenNetwork, partner }),
       );
       expect(newState).toEqual(state);
     });
@@ -453,7 +453,7 @@ describe('raidenReducer', () => {
     beforeEach(() => {
       // channel in "open" state
       state = [
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
@@ -462,7 +462,7 @@ describe('raidenReducer', () => {
 
     test('unknown channel', () => {
       state = [
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
@@ -484,7 +484,7 @@ describe('raidenReducer', () => {
 
     test('channel.state becomes "settleable" `settleTimeout` blocks after closeBlock', () => {
       const newState = [
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
@@ -497,15 +497,15 @@ describe('raidenReducer', () => {
     });
   });
 
-  describe('channelSettle & channelSettleFailed', () => {
+  describe('channelSettle.request & channelSettle.failure', () => {
     beforeEach(() => {
       // channel in "closed" state
       state = [
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
@@ -519,49 +519,49 @@ describe('raidenReducer', () => {
       ].reduce(raidenReducer, state);
       const newState = [
         // no channel with partner=token
-        channelSettle(undefined, { tokenNetwork, partner: token }),
+        channelSettle.request(undefined, { tokenNetwork, partner: token }),
       ].reduce(raidenReducer, state);
       expect(newState).toEqual(state);
     });
 
     test('channel not in "settleable" state', () => {
       // still in "closed" state
-      const newState = [channelSettle(undefined, { tokenNetwork, partner })].reduce(
+      const newState = [channelSettle.request(undefined, { tokenNetwork, partner })].reduce(
         raidenReducer,
         state,
       );
       expect(newState).toEqual(state);
     });
 
-    test('channel.state becomes "settling" after "channelSettle"', () => {
+    test('channel.state becomes "settling" after "channelSettle.request"', () => {
       const newState = [
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
-        channelSettle(undefined, { tokenNetwork, partner }),
+        channelSettle.request(undefined, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       expect(newState.channels).toMatchObject({
         [tokenNetwork]: { [partner]: { state: ChannelState.settling, id: channelId } },
       });
     });
 
-    test("channelSettleFailed doesn't change state", () => {
+    test("channelSettle.failure doesn't change state", () => {
       const newState = [
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
-        channelSettle(undefined, { tokenNetwork, partner }),
+        channelSettle.request(undefined, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       const error = new Error('settle tx failed');
       const newState2 = raidenReducer(
         newState,
-        channelSettleFailed(error, { tokenNetwork, partner }),
+        channelSettle.failure(error, { tokenNetwork, partner }),
       );
       expect(newState2).toEqual(newState);
     });
   });
 
-  describe('channelSettled', () => {
+  describe('channelSettle.success', () => {
     beforeEach(() => {
       // channel starts in "opened" state
       state = [
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
@@ -570,7 +570,7 @@ describe('raidenReducer', () => {
 
     test('unknown channel', () => {
       state = [
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
@@ -578,7 +578,10 @@ describe('raidenReducer', () => {
       ].reduce(raidenReducer, state);
       const newState = [
         // no channel with partner=token
-        channelSettled({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner: token }),
+        channelSettle.success(
+          { id: channelId, settleBlock, txHash },
+          { tokenNetwork, partner: token },
+        ),
       ].reduce(raidenReducer, state);
       expect(newState).toEqual(state);
     });
@@ -586,33 +589,33 @@ describe('raidenReducer', () => {
     test('channel not in "closed|settleable|settling" state', () => {
       // still in "opened" state
       const newState = [
-        channelSettled({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
+        channelSettle.success({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       expect(newState).toEqual(state);
     });
 
     test('success: "closed" => gone', () => {
       const newState = [
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
-        channelSettled({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
+        channelSettle.success({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       expect(get(newState.channels, [tokenNetwork, partner])).toBeUndefined();
     });
 
     test('success: "settleable" => gone', () => {
       const newState = [
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
         newBlock({ blockNumber: settleBlock + 1 }),
-        channelSettled(
+        channelSettle.success(
           { id: channelId, settleBlock: settleBlock + 1, txHash },
           { tokenNetwork, partner },
         ),
@@ -622,16 +625,16 @@ describe('raidenReducer', () => {
 
     test('success: "settling" => gone', () => {
       const newState = [
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
         newBlock({ blockNumber: settleBlock + 1 }),
-        channelSettle(undefined, { tokenNetwork, partner }), // state=settling
+        channelSettle.request(undefined, { tokenNetwork, partner }), // state=settling
         newBlock({ blockNumber: settleBlock + 2 }),
-        channelSettled(
+        channelSettle.success(
           { id: channelId, settleBlock: settleBlock + 2, txHash },
           { tokenNetwork, partner },
         ),
@@ -723,7 +726,7 @@ describe('raidenReducer', () => {
       // channel is in open state
       state = raidenReducer(
         state,
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
@@ -973,10 +976,10 @@ describe('raidenReducer', () => {
       );
 
       expect(get(newState, ['sent', secrethash, 'transfer', 1])).toBe(transfer);
-      expect(get(newState, ['secrets', secrethash, 'channelClosed'])).toBeUndefined();
+      expect(get(newState, ['secrets', secrethash])).toBeUndefined();
 
       newState = [
-        channelClosed(
+        channelClose.success(
           { id: transfer.channel_identifier.toNumber(), participant: partner, closeBlock, txHash },
           { tokenNetwork, partner },
         ),

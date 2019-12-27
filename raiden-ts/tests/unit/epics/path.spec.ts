@@ -8,9 +8,9 @@ import { UInt, Int, Address, Signature } from 'raiden-ts/utils/types';
 import {
   newBlock,
   tokenMonitored,
-  channelOpened,
-  channelDeposited,
-  channelClosed,
+  channelOpen,
+  channelDeposit,
+  channelClose,
 } from 'raiden-ts/channels/actions';
 import { raidenConfigUpdate } from 'raiden-ts/actions';
 import { matrixPresenceUpdate } from 'raiden-ts/transport/actions';
@@ -88,11 +88,11 @@ describe('PFS: pathFindServiceEpic', () => {
       [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         // a couple of channels with unrelated partners, with larger deposits
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
-        channelDeposited(
+        channelDeposit.success(
           {
             id: channelId,
             participant: depsMock.address,
@@ -766,7 +766,7 @@ describe('PFS: pathFindServiceEpic', () => {
 
     state$.next(
       [
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: partner, closeBlock: 126, txHash },
           { tokenNetwork, partner },
         ),
@@ -1136,7 +1136,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
   beforeEach(async () => {
     openedState = [
       tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-      channelOpened(
+      channelOpen.success(
         { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
         { tokenNetwork, partner },
       ),
@@ -1144,11 +1144,11 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     ].reduce(raidenReducer, state);
   });
 
-  test('own channelDeposited triggers capacity update', async () => {
+  test('own channelDeposit.success triggers capacity update', async () => {
     expect.assertions(1);
 
     const deposit = bigNumberify(500) as UInt<32>,
-      action = channelDeposited(
+      action = channelDeposit.success(
         {
           id: channelId,
           participant: depsMock.address,
@@ -1180,7 +1180,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     expect.assertions(2);
 
     const deposit = bigNumberify(500) as UInt<32>,
-      action = channelDeposited(
+      action = channelDeposit.success(
         {
           id: channelId,
           participant: depsMock.address,

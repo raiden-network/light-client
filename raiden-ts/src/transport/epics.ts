@@ -54,7 +54,7 @@ import { Address, Signed, isntNil, assert } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
-import { channelMonitored } from '../channels/actions';
+import { channelMonitor } from '../channels/actions';
 import {
   Message,
   MessageType,
@@ -629,7 +629,7 @@ export const matrixPresenceUpdateEpic = (
  * Create room (if needed) for a transfer's target, channel's partner or, as a fallback, for any
  * recipient of a messageSend action
  *
- * @param action$ - Observable of transferSigned|channelMonitored|messageSend actions
+ * @param action$ - Observable of transferSigned|channelMonitor|messageSend actions
  * @param state$ - Observable of RaidenStates
  * @param matrix$ - RaidenEpicDeps members
  * @returns Observable of matrixRoom actions
@@ -646,11 +646,11 @@ export const matrixCreateRoomEpic = (
       // actual output observable, selects addresses of interest from actions
       action$.pipe(
         // ensure there's a room for address of interest for each of these actions
-        filter(isActionOf([transferSigned, channelMonitored, messageSend])),
+        filter(isActionOf([transferSigned, channelMonitor, messageSend])),
         map(action =>
           isActionOf(transferSigned, action)
             ? action.payload.message.target
-            : isActionOf(channelMonitored, action)
+            : isActionOf(channelMonitor, action)
             ? action.meta.partner
             : action.meta.address,
         ),
@@ -1209,7 +1209,7 @@ export const matrixMonitorChannelPresenceEpic = (
   action$: Observable<RaidenAction>,
 ): Observable<matrixRequestMonitorPresence> =>
   action$.pipe(
-    filter(isActionOf(channelMonitored)),
+    filter(isActionOf(channelMonitor)),
     map(action => matrixRequestMonitorPresence(undefined, { address: action.meta.partner })),
   );
 

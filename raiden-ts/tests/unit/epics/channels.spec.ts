@@ -16,20 +16,12 @@ import { RaidenState } from 'raiden-ts/state';
 import {
   newBlock,
   tokenMonitored,
-  channelMonitored,
+  channelMonitor,
   channelOpen,
-  channelOpened,
   channelDeposit,
-  channelDeposited,
   channelClose,
-  channelClosed,
   channelSettleable,
   channelSettle,
-  channelSettled,
-  channelOpenFailed,
-  channelDepositFailed,
-  channelCloseFailed,
-  channelSettleFailed,
   channelWithdrawn,
 } from 'raiden-ts/channels/actions';
 import {
@@ -69,11 +61,11 @@ describe('channels epic', () => {
       // state contains one channel in closed state
       const newState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock: 121, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
-        channelClosed(
+        channelClose.success(
           {
             id: channelId,
             participant: depsMock.address,
@@ -103,10 +95,10 @@ describe('channels epic', () => {
   describe('channelOpenEpic', () => {
     test('fails if channel.state !== opening', async () => {
       // there's a channel already opened in state
-      const action = channelOpen({ settleTimeout }, { tokenNetwork, partner }),
+      const action = channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
         curState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-          channelOpened(
+          channelOpen.success(
             { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
             { tokenNetwork, partner },
           ),
@@ -115,7 +107,7 @@ describe('channels epic', () => {
         state$ = of<RaidenState>(curState);
 
       await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject({
-        type: channelOpenFailed.type,
+        type: channelOpen.failure.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -123,7 +115,7 @@ describe('channels epic', () => {
     });
 
     test('tx fails', async () => {
-      const action = channelOpen({ settleTimeout }, { tokenNetwork, partner }),
+      const action = channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
         curState = [tokenMonitored({ token, tokenNetwork, fromBlock: 1 }), action].reduce(
           raidenReducer,
           state,
@@ -146,7 +138,7 @@ describe('channels epic', () => {
       tokenNetworkContract.functions.openChannel.mockResolvedValueOnce(tx);
 
       await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject({
-        type: channelOpenFailed.type,
+        type: channelOpen.failure.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -155,7 +147,7 @@ describe('channels epic', () => {
 
     test('success', async () => {
       // there's a channel already opened in state
-      const action = channelOpen({ settleTimeout }, { tokenNetwork, partner }),
+      const action = channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
         curState = [tokenMonitored({ token, tokenNetwork, fromBlock: 1 }), action].reduce(
           raidenReducer,
           state,
@@ -177,7 +169,7 @@ describe('channels epic', () => {
       };
       tokenNetworkContract.functions.openChannel.mockResolvedValueOnce(tx);
 
-      // result is undefined on success as the respective channelOpenedAction is emitted by the
+      // result is undefined on success as the respective channelOpen.success is emitted by the
       // tokenMonitoredEpic, which monitors the blockchain for ChannelOpened events
       await expect(
         channelOpenEpic(action$, state$, depsMock).toPromise(),
@@ -207,10 +199,10 @@ describe('channels epic', () => {
       // channel.state is 'opening'
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpen({ settleTimeout }, { tokenNetwork, partner }),
+        channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
-          channelOpened(
+          channelOpen.success(
             { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
             { tokenNetwork, partner },
           ),
@@ -220,9 +212,9 @@ describe('channels epic', () => {
       await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toBeUndefined();
     });
 
-    test('channelOpened triggers channel monitoring', async () => {
+    test('channelOpen.success triggers channel monitoring', async () => {
       // channel.state is 'opening'
-      const action = channelOpened(
+      const action = channelOpen.success(
           { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
@@ -234,7 +226,7 @@ describe('channels epic', () => {
         state$ = of<RaidenState>(curState);
 
       await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toMatchObject({
-        type: channelMonitored.type,
+        type: channelMonitor.type,
         payload: { id: channelId, fromBlock: 125 },
         meta: { tokenNetwork, partner },
       });
@@ -254,16 +246,16 @@ describe('channels epic', () => {
         [Zero, HashZero, Zero, HashZero],
       );
 
-    test('first channelMonitored with past$ own ChannelNewDeposit event', async () => {
+    test('first channelMonitor with past$ own ChannelNewDeposit event', async () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
-          channelMonitored({ id: channelId, fromBlock: openBlock }, { tokenNetwork, partner }),
+          channelMonitor({ id: channelId, fromBlock: openBlock }, { tokenNetwork, partner }),
         ).pipe(delay(1)), // give time to state multicast to register
         state$ = of<RaidenState>(curState);
 
@@ -284,17 +276,17 @@ describe('channels epic', () => {
           .pipe(first())
           .toPromise(),
       ).resolves.toMatchObject({
-        type: channelDeposited.type,
+        type: channelDeposit.success.type,
         payload: { id: channelId, participant: depsMock.address, totalDeposit: deposit },
         meta: { tokenNetwork, partner },
       });
     });
 
-    test('already channelMonitored with new$ partner ChannelNewDeposit event', async () => {
-      const action = channelMonitored({ id: channelId }, { tokenNetwork, partner }),
+    test('already channelMonitor with new$ partner ChannelNewDeposit event', async () => {
+      const action = channelMonitor({ id: channelId }, { tokenNetwork, partner }),
         curState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-          channelOpened(
+          channelOpen.success(
             { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
             { tokenNetwork, partner },
           ),
@@ -316,25 +308,23 @@ describe('channels epic', () => {
       );
 
       await expect(promise).resolves.toMatchObject({
-        type: channelDeposited.type,
+        type: channelDeposit.success.type,
         payload: { id: channelId, participant: partner, totalDeposit: deposit },
         meta: { tokenNetwork, partner },
       });
     });
 
-    test("ensure multiple channelMonitored don't produce duplicated events", async () => {
+    test("ensure multiple channelMonitor don't produce duplicated events", async () => {
       const multiple = 16;
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
       const action$ = from(
-          range(multiple).map(() =>
-            channelMonitored({ id: channelId }, { tokenNetwork, partner }),
-          ),
+          range(multiple).map(() => channelMonitor({ id: channelId }, { tokenNetwork, partner })),
         ),
         state$ = of<RaidenState>(curState);
 
@@ -346,7 +336,7 @@ describe('channels epic', () => {
         )
         .toPromise();
 
-      // even though multiple channelMonitored events were fired, blockchain fires a single event
+      // even though multiple channelMonitor events were fired, blockchain fires a single event
       depsMock.provider.emit(
         '*',
         makeLog({
@@ -363,7 +353,7 @@ describe('channels epic', () => {
       const result = await promise;
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
-        type: channelDeposited.type,
+        type: channelDeposit.success.type,
         payload: { id: channelId, participant: depsMock.address, totalDeposit: deposit },
         meta: { tokenNetwork, partner },
       });
@@ -374,11 +364,11 @@ describe('channels epic', () => {
     test('new$ partner ChannelWithdraw event', async () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
-        channelDeposited(
+        channelDeposit.success(
           {
             id: channelId,
             participant: partner,
@@ -389,7 +379,7 @@ describe('channels epic', () => {
         ),
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
-          channelMonitored({ id: channelId }, { tokenNetwork, partner }),
+          channelMonitor({ id: channelId }, { tokenNetwork, partner }),
         ),
         state$ = of<RaidenState>(curState);
 
@@ -417,13 +407,13 @@ describe('channels epic', () => {
     test('new$ partner ChannelClosed event', async () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
-          channelMonitored({ id: channelId }, { tokenNetwork, partner }),
+          channelMonitor({ id: channelId }, { tokenNetwork, partner }),
         ),
         state$ = of<RaidenState>(curState);
 
@@ -442,7 +432,7 @@ describe('channels epic', () => {
       );
 
       await expect(promise).resolves.toMatchObject({
-        type: channelClosed.type,
+        type: channelClose.success.type,
         payload: { id: channelId, participant: partner, closeBlock, txHash },
         meta: { tokenNetwork, partner },
       });
@@ -451,17 +441,17 @@ describe('channels epic', () => {
     test('new$ ChannelSettled event', async () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: depsMock.address, closeBlock, txHash },
           { tokenNetwork, partner },
         ), // channel is in "closed" state already
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
-          channelMonitored({ id: channelId }, { tokenNetwork, partner }),
+          channelMonitor({ id: channelId }, { tokenNetwork, partner }),
         ),
         state$ = of<RaidenState>(curState);
 
@@ -483,7 +473,7 @@ describe('channels epic', () => {
       );
 
       await expect(promise).resolves.toEqual(
-        channelSettled({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
+        channelSettle.success({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
       );
 
       // ensure ChannelSettledAction completed channel monitoring and unsubscribed from events
@@ -498,13 +488,15 @@ describe('channels epic', () => {
 
     test('fails if there is no token for tokenNetwork', async () => {
       // there's a channel already opened in state
-      const action$ = of<RaidenAction>(channelDeposit({ deposit }, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(
+          channelDeposit.request({ deposit }, { tokenNetwork, partner }),
+        ),
         state$ = of<RaidenState>(state);
 
       await expect(
         channelDepositEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: channelDepositFailed.type,
+        type: channelDeposit.failure.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -513,11 +505,11 @@ describe('channels epic', () => {
 
     test('fails if channel.state !== "open"', async () => {
       // there's a channel already opened in state
-      const action = channelDeposit({ deposit }, { tokenNetwork, partner }),
+      const action = channelDeposit.request({ deposit }, { tokenNetwork, partner }),
         // channel is in 'opening' state
         curState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-          channelOpen({ settleTimeout }, { tokenNetwork, partner }),
+          channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
         ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(action),
         state$ = of<RaidenState>(curState);
@@ -525,7 +517,7 @@ describe('channels epic', () => {
       await expect(
         channelDepositEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: channelDepositFailed.type,
+        type: channelDeposit.failure.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -536,12 +528,14 @@ describe('channels epic', () => {
       // there's a channel already opened in state
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelDeposit({ deposit }, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(
+          channelDeposit.request({ deposit }, { tokenNetwork, partner }),
+        ),
         state$ = of<RaidenState>(curState);
 
       const approveTx: ContractTransaction = {
@@ -561,7 +555,7 @@ describe('channels epic', () => {
       await expect(
         channelDepositEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: channelDepositFailed.type,
+        type: channelDeposit.failure.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -572,12 +566,14 @@ describe('channels epic', () => {
       // there's a channel already opened in state
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelDeposit({ deposit }, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(
+          channelDeposit.request({ deposit }, { tokenNetwork, partner }),
+        ),
         state$ = of<RaidenState>(curState);
 
       const approveTx: ContractTransaction = {
@@ -611,7 +607,7 @@ describe('channels epic', () => {
       await expect(
         channelDepositEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: channelDepositFailed.type,
+        type: channelDeposit.failure.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -622,12 +618,12 @@ describe('channels epic', () => {
       // there's a channel already opened in state
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
         // own initial deposit of 330
-        channelDeposited(
+        channelDeposit.success(
           {
             id: channelId,
             participant: depsMock.address,
@@ -637,7 +633,9 @@ describe('channels epic', () => {
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelDeposit({ deposit }, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(
+          channelDeposit.request({ deposit }, { tokenNetwork, partner }),
+        ),
         state$ = of<RaidenState>(curState);
 
       const approveTx: ContractTransaction = {
@@ -668,7 +666,7 @@ describe('channels epic', () => {
       };
       tokenNetworkContract.functions.setTotalDeposit.mockResolvedValueOnce(setTotalDepositTx);
 
-      // result is undefined on success as the respective channelDepositedAction is emitted by the
+      // result is undefined on success as the respective channelDeposit.success is emitted by the
       // channelMonitoredEpic, which monitors the blockchain for ChannelNewDeposit events
       await expect(
         channelDepositEpic(action$, state$, depsMock).toPromise(),
@@ -692,12 +690,12 @@ describe('channels epic', () => {
 
     test('fails if there is no open channel with partner on tokenNetwork', async () => {
       // there's a channel already opened in state
-      const action$ = of<RaidenAction>(channelClose(undefined, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(channelClose.request(undefined, { tokenNetwork, partner })),
         state$ = of<RaidenState>(state);
 
       await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
         {
-          type: channelCloseFailed.type,
+          type: channelClose.failure.type,
           payload: expect.any(Error),
           error: true,
           meta: { tokenNetwork, partner },
@@ -710,14 +708,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         // channel is in 'opening' state
-        channelOpen({ settleTimeout }, { tokenNetwork, partner }),
+        channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelClose(undefined, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(channelClose.request(undefined, { tokenNetwork, partner })),
         state$ = of<RaidenState>(curState);
 
       await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
         {
-          type: channelCloseFailed.type,
+          type: channelClose.failure.type,
           payload: expect.any(Error),
           error: true,
           meta: { tokenNetwork, partner },
@@ -729,12 +727,12 @@ describe('channels epic', () => {
       // there's a channel already opened in state
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelClose(undefined, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(channelClose.request(undefined, { tokenNetwork, partner })),
         state$ = of<RaidenState>(curState);
 
       const closeTx: ContractTransaction = {
@@ -753,7 +751,7 @@ describe('channels epic', () => {
 
       await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
         {
-          type: channelCloseFailed.type,
+          type: channelClose.failure.type,
           payload: expect.any(Error),
           error: true,
           meta: { tokenNetwork, partner },
@@ -765,12 +763,12 @@ describe('channels epic', () => {
       // there's a channel already opened in state
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelClose(undefined, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(channelClose.request(undefined, { tokenNetwork, partner })),
         state$ = of<RaidenState>(curState);
 
       const closeTx: ContractTransaction = {
@@ -787,7 +785,7 @@ describe('channels epic', () => {
       };
       tokenNetworkContract.functions.closeChannel.mockResolvedValueOnce(closeTx);
 
-      // result is undefined on success as the respective channelClosedAction is emitted by the
+      // result is undefined on success as the respective channelClose.success is emitted by the
       // channelMonitoredEpic, which monitors the blockchain for channel events
       await expect(
         channelCloseEpic(action$, state$, depsMock).toPromise(),
@@ -814,13 +812,15 @@ describe('channels epic', () => {
 
     test('fails if there is no channel with partner on tokenNetwork', async () => {
       // there's a channel already opened in state
-      const action$ = of<RaidenAction>(channelSettle(undefined, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(
+          channelSettle.request(undefined, { tokenNetwork, partner }),
+        ),
         state$ = of<RaidenState>(state);
 
       await expect(
         channelSettleEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: channelSettleFailed.type,
+        type: channelSettle.failure.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -831,23 +831,25 @@ describe('channels epic', () => {
       // there's a channel in closed state, but not yet settleable
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: depsMock.address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelSettle(undefined, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(
+          channelSettle.request(undefined, { tokenNetwork, partner }),
+        ),
         state$ = of<RaidenState>(curState);
 
       await expect(
         channelSettleEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: channelSettleFailed.type,
+        type: channelSettle.failure.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -858,19 +860,21 @@ describe('channels epic', () => {
       // there's a channel with partner in closed state and current block >= settleBlock
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: depsMock.address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelSettle(undefined, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(
+          channelSettle.request(undefined, { tokenNetwork, partner }),
+        ),
         state$ = of<RaidenState>(curState);
 
       const settleTx: ContractTransaction = {
@@ -890,7 +894,7 @@ describe('channels epic', () => {
       await expect(
         channelSettleEpic(action$, state$, depsMock).toPromise(),
       ).resolves.toMatchObject({
-        type: channelSettleFailed.type,
+        type: channelSettle.failure.type,
         payload: expect.any(Error),
         error: true,
         meta: { tokenNetwork, partner },
@@ -901,19 +905,21 @@ describe('channels epic', () => {
       // there's a channel with partner in closed state and current block >= settleBlock
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpened(
+        channelOpen.success(
           { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
-        channelClosed(
+        channelClose.success(
           { id: channelId, participant: depsMock.address, closeBlock, txHash },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelSettle(undefined, { tokenNetwork, partner })),
+      const action$ = of<RaidenAction>(
+          channelSettle.request(undefined, { tokenNetwork, partner }),
+        ),
         state$ = of<RaidenState>(curState);
 
       const settleTx: ContractTransaction = {

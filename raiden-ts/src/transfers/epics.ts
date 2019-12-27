@@ -45,7 +45,7 @@ import {
 import { getBalanceProofFromEnvelopeMessage, signMessage } from '../messages/utils';
 import { Channel, ChannelState } from '../channels/state';
 import { Lock, SignedBalanceProof } from '../channels/types';
-import { channelClose, channelClosed, newBlock } from '../channels/actions';
+import { channelClose, newBlock } from '../channels/actions';
 import { RaidenConfig } from '../config';
 import { matrixRequestMonitorPresence } from '../transport/actions';
 import { pluckDistinct } from '../utils/rx';
@@ -1108,7 +1108,7 @@ export const transferExpireProcessedEpic = (
  * Transfer is considered successful if secret was revealed (as it could be claimed on-chain),
  * else it's considered as failed as couldn't succeed inside expiration timeout
  *
- * @param action$ - Observable of channelClose|channelClosed actions
+ * @param action$ - Observable of channelClose.{requet,success} actions
  * @param state$ - Observable of RaidenStates
  * @returns Observable of transferred|transferFailed actions
  */
@@ -1117,7 +1117,7 @@ export const transferChannelClosedEpic = (
   state$: Observable<RaidenState>,
 ): Observable<transferred | transferFailed> =>
   action$.pipe(
-    filter(isActionOf([channelClose, channelClosed])),
+    filter(isActionOf([channelClose.request, channelClose.success])),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       for (const [key, sent] of Object.entries(state.sent)) {

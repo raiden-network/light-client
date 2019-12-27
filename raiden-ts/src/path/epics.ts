@@ -36,7 +36,7 @@ import { getPresences$ } from '../transport/utils';
 import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate } from '../messages/types';
 import { MessageTypeId, signMessage } from '../messages/utils';
-import { channelDeposited } from '../channels/actions';
+import { channelDeposit } from '../channels/actions';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
@@ -389,7 +389,7 @@ export const pathFindServiceEpic = (
 /**
  * Sends a [[PFSCapacityUpdate]] to PFS global room on new deposit on our side of channels
  *
- * @param action$ - Observable of channelDeposited actions
+ * @param action$ - Observable of channelDeposit.success actions
  * @param state$ - Observable of RaidenStates
  * @returns Observable of messageGlobalSend actions
  */
@@ -399,7 +399,7 @@ export const pfsCapacityUpdateEpic = (
   { address, network, signer, config$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
   action$.pipe(
-    filter(isActionOf(channelDeposited)),
+    filter(isActionOf(channelDeposit.success)),
     filter(action => action.payload.participant === address),
     debounceTime(10e3),
     withLatestFrom(state$, config$),

@@ -35,10 +35,10 @@ import { RaidenState } from 'raiden-ts/state';
 import {
   newBlock,
   tokenMonitored,
-  channelMonitored,
-  channelOpened,
-  channelDeposited,
-  channelClosed,
+  channelMonitor,
+  channelOpen,
+  channelDeposit,
+  channelClose,
   channelSettleable,
   channelSettle,
 } from 'raiden-ts/channels/actions';
@@ -104,15 +104,15 @@ describe('raiden epic', () => {
 
   describe('raiden initialization & shutdown', () => {
     test(
-      'init newBlock, tokenMonitored, channelMonitored events',
+      'init newBlock, tokenMonitored, channelMonitor events',
       marbles(m => {
         const newState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-          channelOpened(
+          channelOpen.success(
             { id: channelId, settleTimeout, openBlock: 121, isFirstParticipant, txHash },
             { tokenNetwork, partner },
           ),
-          channelDeposited(
+          channelDeposit.success(
             {
               id: channelId,
               participant: depsMock.address,
@@ -121,7 +121,7 @@ describe('raiden epic', () => {
             },
             { tokenNetwork, partner },
           ),
-          channelDeposited(
+          channelDeposit.success(
             {
               id: channelId,
               participant: partner,
@@ -131,7 +131,7 @@ describe('raiden epic', () => {
             { tokenNetwork, partner },
           ),
           newBlock({ blockNumber: 128 }),
-          channelClosed(
+          channelClose.success(
             { id: channelId, participant: partner, closeBlock: 128, txHash },
             { tokenNetwork, partner },
           ),
@@ -139,7 +139,7 @@ describe('raiden epic', () => {
           channelSettleable({ settleableBlock: 629 }, { tokenNetwork, partner }),
           newBlock({ blockNumber: 633 }),
           // channel is left in 'settling' state
-          channelSettle(undefined, { tokenNetwork, partner }),
+          channelSettle.request(undefined, { tokenNetwork, partner }),
         ].reduce(raidenReducer, state);
 
         /* this test requires mocked provider, or else emit is called with setTimeout and doesn't
@@ -162,8 +162,8 @@ describe('raiden epic', () => {
           m.cold('b(tc)-----B-|', {
             b: newBlock({ blockNumber: 633 }),
             t: tokenMonitored({ token, tokenNetwork }),
-            // ensure channelMonitored is emitted by init even for 'settling' channel
-            c: channelMonitored({ id: channelId }, { tokenNetwork, partner }),
+            // ensure channelMonitor is emitted by init even for 'settling' channel
+            c: channelMonitor({ id: channelId }, { tokenNetwork, partner }),
             B: newBlock({ blockNumber: 635 }),
           }),
         );
@@ -311,7 +311,7 @@ describe('raiden epic', () => {
         .toPromise();
 
       await expect(promise).resolves.toMatchObject({
-        type: channelOpened.type,
+        type: channelOpen.success.type,
         payload: { id: channelId, settleTimeout, openBlock: 121 },
         meta: { tokenNetwork, partner },
       });
@@ -350,7 +350,7 @@ describe('raiden epic', () => {
       );
 
       await expect(promise).resolves.toMatchObject({
-        type: channelOpened.type,
+        type: channelOpen.success.type,
         payload: { id: channelId, settleTimeout, openBlock: 125 },
         meta: { tokenNetwork, partner },
       });
@@ -391,7 +391,7 @@ describe('raiden epic', () => {
       const result = await promise;
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
-        type: channelOpened.type,
+        type: channelOpen.success.type,
         payload: { id: channelId, settleTimeout, openBlock: 125 },
         meta: { tokenNetwork, partner },
       });

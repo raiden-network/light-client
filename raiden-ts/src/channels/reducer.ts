@@ -8,14 +8,10 @@ import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
 import {
   channelClose,
-  channelClosed,
-  channelDeposited,
+  channelDeposit,
   channelOpen,
-  channelOpened,
-  channelOpenFailed,
   channelSettle,
   channelSettleable,
-  channelSettled,
   newBlock,
   tokenMonitored,
   channelWithdrawn,
@@ -37,7 +33,7 @@ function tokens(state: RaidenState['tokens'] = initialState.tokens, action: Raid
 
 // handles all channel actions and requests
 function channels(state: RaidenState['channels'] = initialState.channels, action: RaidenAction) {
-  if (isActionOf(channelOpen, action)) {
+  if (isActionOf(channelOpen.request, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
     if (get(path, state)) return state; // there's already a channel with partner
     const channel: Channel = {
@@ -46,7 +42,7 @@ function channels(state: RaidenState['channels'] = initialState.channels, action
       partner: { deposit: Zero as UInt<32> },
     };
     return set(path, channel, state);
-  } else if (isActionOf(channelOpened, action)) {
+  } else if (isActionOf(channelOpen.success, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner],
       channel: Channel = {
         state: ChannelState.open,
@@ -59,11 +55,11 @@ function channels(state: RaidenState['channels'] = initialState.channels, action
         /* txHash: action.txHash, */ // not needed in state for now, but comes in action
       };
     return set(path, channel, state);
-  } else if (isActionOf(channelOpenFailed, action)) {
+  } else if (isActionOf(channelOpen.failure, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
     if (get([...path, 'state'], state) !== ChannelState.opening) return state;
     return unset(path, state);
-  } else if (isActionOf(channelDeposited, action)) {
+  } else if (isActionOf(channelDeposit.success, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
     let channel: Channel | undefined = get(path, state);
     if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
@@ -107,13 +103,13 @@ function channels(state: RaidenState['channels'] = initialState.channels, action
         },
       };
     return set(path, channel, state);
-  } else if (isActionOf(channelClose, action)) {
+  } else if (isActionOf(channelClose.request, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
     let channel: Channel | undefined = get(path, state);
     if (!channel || channel.state !== ChannelState.open) return state;
     channel = { ...channel, state: ChannelState.closing };
     return set(path, channel, state);
-  } else if (isActionOf(channelClosed, action)) {
+  } else if (isActionOf(channelClose.success, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
     let channel: Channel | undefined = get(path, state);
     if (
@@ -130,13 +126,13 @@ function channels(state: RaidenState['channels'] = initialState.channels, action
     if (!channel || channel.state !== ChannelState.closed) return state;
     channel = { ...channel, state: ChannelState.settleable };
     return set(path, channel, state);
-  } else if (isActionOf(channelSettle, action)) {
+  } else if (isActionOf(channelSettle.request, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
     let channel: Channel | undefined = get(path, state);
     if (!channel || channel.state !== ChannelState.settleable) return state;
     channel = { ...channel, state: ChannelState.settling };
     return set(path, channel, state);
-  } else if (isActionOf(channelSettled, action)) {
+  } else if (isActionOf(channelSettle.success, action)) {
     const path = [action.meta.tokenNetwork, action.meta.partner];
     const channel: Channel | undefined = get(path, state);
     if (
