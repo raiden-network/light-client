@@ -431,7 +431,7 @@ describe('raiden epic', () => {
       const output = await promise;
       expect(output).toHaveLength(2);
       expect(output[1]).toMatchObject({
-        type: messageSend.type,
+        type: messageSend.request.type,
         payload: {
           message: {
             type: MessageType.DELIVERED,

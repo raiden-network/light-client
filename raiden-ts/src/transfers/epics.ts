@@ -1,5 +1,14 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { combineLatest, EMPTY, from, merge, MonoTypeOperatorFunction, Observable, of } from 'rxjs';
+import {
+  combineLatest,
+  EMPTY,
+  from,
+  merge,
+  MonoTypeOperatorFunction,
+  Observable,
+  of,
+  defer,
+} from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -25,9 +34,9 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { Address, assert, Hash, Signed, UInt } from '../utils/types';
-import { isActionOf } from '../utils/actions';
+import { isActionOf, isResponseOf } from '../utils/actions';
 import { LruCache } from '../utils/lru';
-import { messageReceived, messageSend, messageSent } from '../messages/actions';
+import { messageReceived, messageSend } from '../messages/actions';
 import {
   LockedTransfer,
   LockExpired,
@@ -111,8 +120,8 @@ function dispatchAndWait$<A extends RaidenAction>(
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function retryUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOperatorFunction<T> {
-  // Resubscribe/retry every 30s after messageSend succeeds with messageSent
-  // Notice first (or any) messageSend can wait for a long time before succeeding, as it
+  // Resubscribe/retry every 30s after messageSend succeeds
+  // Notice first (or any) messageSend.request can wait for a long time before succeeding, as it
   // waits for address's user in transport to be online and joined room before actually
   // sending the message. That's why repeatWhen emits/resubscribe only some time after
   // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
@@ -125,19 +134,14 @@ function retryUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOpera
 }
 
 function retrySendUntil$(
-  send: messageSend,
+  send: messageSend.request,
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   predicate: (state: RaidenState) => boolean,
-): Observable<messageSend> {
-  return dispatchAndWait$(
-    action$,
-    send,
-    a =>
-      isActionOf(messageSent, a) &&
-      a.payload.message === send.payload.message &&
-      a.meta.address === send.meta.address,
-  ).pipe(retryUntil(state$.pipe(filter(predicate))));
+): Observable<messageSend.request> {
+  return dispatchAndWait$(action$, send, isResponseOf(messageSend, send.meta)).pipe(
+    retryUntil(state$.pipe(filter(predicate))),
+  );
 }
 
 function getChannelLocksroot(channel: Channel, secrethash: Hash): Hash {
@@ -581,17 +585,20 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
  * @param action$ - Observable of transferSigned actions
  * @param state$ - Observable of RaidenStates
  * @param action - The {@link transferSigned} action
- * @returns - Observable of {@link messageSend} actions
+ * @returns - Observable of {@link messageSend.request} actions
  */
 const transferSignedRetryMessage$ = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   action: transferSigned,
-): Observable<messageSend> => {
+): Observable<messageSend.request> => {
   const secrethash = action.meta.secrethash;
   const signed = action.payload.message;
-  const send = messageSend({ message: signed }, { address: signed.recipient });
-  // emit Send once immediatelly, then wait until respective messageSent, then completes
+  const send = messageSend.request(
+    { message: signed },
+    { address: signed.recipient, msgId: signed.message_identifier.toString() },
+  );
+  // emit request once immediatelly, then wait until success, then retry every 30s
   const processedOrNotPossibleToSend = (state: RaidenState) => {
     const transfer = state.sent[secrethash];
     return (
@@ -605,21 +612,21 @@ const transferSignedRetryMessage$ = (
 };
 
 /**
- * Handles a transferSigned action and retry messageSend until transfer is gone (completed with
- * success or error) OR Processed message for LockedTransfer received.
+ * Handles a transferSigned action and retry messageSend.request until transfer is gone (completed
+ * with success or error) OR Processed message for LockedTransfer received.
  * transferSigned for pending LockedTransfer's may be re-emitted on startup for pending transfer,
  * to start retrying sending the message again until stop condition is met.
  *
  * @param action$ - Observable of transferSigned actions
  * @param state$ - Observable of RaidenStates
  * @param latest$ - RaidenEpicDeps latest
- * @returns Observable of messageSend actions
+ * @returns Observable of messageSend.request actions
  */
 export const transferSignedRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { latest$ }: RaidenEpicDeps,
-): Observable<messageSend> =>
+): Observable<messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferSigned)),
     mergeMap(action =>
@@ -634,21 +641,24 @@ export const transferSignedRetryMessageEpic = (
  * @param state$ - Observable of the latest RaidenStates
  * @param action - the transferUnlocked action
  * @param state - Contains the current state of the app
- * @returns Observable of {@link messageSend} actions
+ * @returns Observable of {@link messageSend.request} actions
  */
 const transferUnlockedRetryMessage$ = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   action: transferUnlocked,
   state: RaidenState,
-): Observable<messageSend> => {
+): Observable<messageSend.request> => {
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
   const unlock = action.payload.message;
   const transfer = state.sent[secrethash].transfer[1];
-  const send = messageSend({ message: unlock }, { address: transfer.recipient });
+  const send = messageSend.request(
+    { message: unlock },
+    { address: transfer.recipient, msgId: unlock.message_identifier.toString() },
+  );
 
-  // emit Send once immediatelly, then wait until respective messageSent, then completes
+  // emit request once immediatelly, then wait until respective success, then repeats until confirmed
   const unlockProcessedOrChannelClosed = (state: RaidenState) => {
     const transfer = state.sent[secrethash];
     return !!transfer.unlockProcessed || !!transfer.channelClosed;
@@ -658,21 +668,20 @@ const transferUnlockedRetryMessage$ = (
 };
 
 /**
- * Handles a transferUnlocked action and retry messageSend until transfer is gone (completed with
- * success or error).
+ * Handles a transferUnlocked action and retry messageSend until confirmed.
  * transferUnlocked for pending Unlock's may be re-emitted on startup for pending transfer, to
  * start retrying sending the message again until stop condition is met.
  *
  * @param action$ - Observable of transferUnlocked actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps
- * @returns Observable of messageSend actions
+ * @returns Observable of messageSend.request actions
  */
 export const transferUnlockedRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { latest$ }: RaidenEpicDeps,
-): Observable<messageSend> =>
+): Observable<messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferUnlocked)),
     withLatestFrom(latest$.pipe(pluckDistinct('state'))),
@@ -688,45 +697,48 @@ export const transferUnlockedRetryMessageEpic = (
  * @param state$ - Observable of RaidenStates
  * @param action - transferExpired action
  * @param state - The current state of the app
- * @returns Observable of {@link messageSend} actions
+ * @returns Observable of {@link messageSend.request} actions
  */
 const expiredRetryMessages$ = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   action: transferExpired,
   state: RaidenState,
-): Observable<messageSend> => {
+): Observable<messageSend.request> => {
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
   const lockExpired = action.payload.message;
-  const send = messageSend(
+  const send = messageSend.request(
     { message: lockExpired },
-    { address: state.sent[secrethash].transfer[1].recipient },
+    {
+      address: state.sent[secrethash].transfer[1].recipient,
+      msgId: lockExpired.message_identifier.toString(),
+    },
   );
   const lockExpiredProcessedOrChannelClosed = (state: RaidenState) => {
     const transfer = state.sent[secrethash];
     return !!transfer.lockExpiredProcessed || !!transfer.channelClosed;
   };
-  // emit Send once immediatelly, then wait until respective messageSent, then completes
+  // emit request once immediatelly, then wait until respective success, then retries until confirmed
   return retrySendUntil$(send, action$, state$, lockExpiredProcessedOrChannelClosed);
 };
 
 /**
- * Handles a transferExpired action and retry messageSend until transfer is gone (completed with
- * success or error).
+ * Handles a transferExpired action and retry messageSend.request until transfer is gone (completed
+ * with success or error).
  * transferExpired for pending LockExpired's may be re-emitted on startup for pending transfer, to
  * start retrying sending the message again until stop condition is met.
  *
  * @param action$ - Observable of transferExpired actions
  * @param state$ - Observable of RaidenStates
  * @param latest$ - RaidenEpicDeps latest
- * @returns Observable of messageSend actions
+ * @returns Observable of messageSend.request actions
  */
 export const transferExpiredRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { latest$ }: RaidenEpicDeps,
-): Observable<messageSend> =>
+): Observable<messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferExpired)),
     withLatestFrom(latest$.pipe(pluckDistinct('state'))),
@@ -930,13 +942,13 @@ export const transferSecretRequestedEpic = (
  * @param state - Contains the current state of the app
  * @param action - The {@link transferSecretRequest} action that
  * @param signer - The singer that will sign the message
- * @returns Observable of {@link transferSecretReveal} and {@link messageSend} actions
+ * @returns Observable of {@link transferSecretReveal} and {@link messageSend.request} actions
  */
 const secretReveal$ = (
   state: RaidenState,
   action: transferSecretRequest,
   signer: Signer,
-): Observable<transferSecretReveal | messageSend> => {
+): Observable<transferSecretReveal | messageSend.request> => {
   const target = state.sent[action.meta.secrethash].transfer[1].target;
 
   let reveal$: Observable<Signed<SecretReveal>>;
@@ -954,7 +966,10 @@ const secretReveal$ = (
   return reveal$.pipe(
     mergeMap(function*(message) {
       yield transferSecretReveal({ message }, action.meta);
-      yield messageSend({ message }, { address: target });
+      yield messageSend.request(
+        { message },
+        { address: target, msgId: message.message_identifier.toString() },
+      );
     }),
   );
 };
@@ -971,13 +986,13 @@ const secretReveal$ = (
  * @param deps - RaidenEpicDeps
  * @param deps.signer - RaidenEpicDeps signer
  * @param deps.latest$ - RaidenEpicDeps latest$
- * @returns Observable of transferSecretReveal|messageSend actions
+ * @returns Observable of transferSecretReveal|messageSend.request actions
  */
 export const transferSecretRevealEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { signer, latest$ }: RaidenEpicDeps,
-): Observable<transferSecretReveal | messageSend> =>
+): Observable<transferSecretReveal | messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferSecretRequest)),
     concatMap(action =>
@@ -1195,13 +1210,13 @@ export const transferRefundedEpic = (
  * @param action$ - Observable of messageReceived actions
  * @param state$ - Observable of RaidenStates
  * @param signer - RaidenEpicDeps members
- * @returns Observable of messageSend actions
+ * @returns Observable of messageSend.request actions
  */
 export const transferReceivedReplyProcessedEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { signer }: RaidenEpicDeps,
-): Observable<messageSend> => {
+): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Processed>>(32);
   return action$.pipe(
     filter(isActionOf(messageReceived)),
@@ -1217,19 +1232,27 @@ export const transferReceivedReplyProcessedEpic = (
         )
       )
         return EMPTY;
-      const msgId = message.message_identifier;
-      const key = msgId.toString();
-      const cached = cache.get(key);
-      if (cached) return of(messageSend({ message: cached }, action.meta));
+      // defer causes the cache check to be performed at subscription time
+      return defer(() => {
+        const msgId = message.message_identifier;
+        const key = msgId.toString();
+        const cached = cache.get(key);
+        if (cached)
+          return of(
+            messageSend.request({ message: cached }, { address: action.meta.address, msgId: key }),
+          );
 
-      const processed: Processed = {
-        type: MessageType.PROCESSED,
-        message_identifier: msgId,
-      };
-      return from(signMessage(signer, processed)).pipe(
-        tap(signed => cache.put(key, signed)),
-        map(signed => messageSend({ message: signed }, action.meta)),
-      );
+        const processed: Processed = {
+          type: MessageType.PROCESSED,
+          message_identifier: msgId,
+        };
+        return from(signMessage(signer, processed)).pipe(
+          tap(signed => cache.put(key, signed)),
+          map(signed =>
+            messageSend.request({ message: signed }, { address: action.meta.address, msgId: key }),
+          ),
+        );
+      });
     }),
   );
 };
@@ -1270,14 +1293,20 @@ export const withdrawRequestReceivedEpic = (
  * sendMessage when a [[withdrawSendConfirmation]] action is fired
  *
  * @param action$ - Observable of withdrawSendConfirmation actions
- * @returns Observable of messageSend actions
+ * @returns Observable of messageSend.request actions
  */
 export const withdrawSendConfirmationEpic = (
   action$: Observable<RaidenAction>,
-): Observable<messageSend> =>
+): Observable<messageSend.request> =>
   action$.pipe(
     filter(isActionOf(withdrawSendConfirmation)),
     map(action =>
-      messageSend({ message: action.payload.message }, { address: action.meta.partner }),
+      messageSend.request(
+        { message: action.payload.message },
+        {
+          address: action.meta.partner,
+          msgId: action.payload.message.message_identifier.toString(),
+        },
+      ),
     ),
   );
