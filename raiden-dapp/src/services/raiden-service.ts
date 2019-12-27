@@ -117,7 +117,7 @@ export default class RaidenService {
           }
 
           // Update presences on matrix presence updates
-          if (value.type === 'matrixPresenceUpdate') {
+          if (value.type === 'matrix/presence/success') {
             this.store.commit('updatePresence', {
               [value.meta.address]: value.payload.available
             });
