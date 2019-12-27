@@ -17,14 +17,14 @@ import {
   transferSigned,
   transferSecret,
   transferProcessed,
-  transferUnlocked,
-  transferExpired,
+  transferUnlock,
+  transferExpire,
   transferSecretReveal,
   transferRefunded,
   transferUnlockProcessed,
   transferExpireProcessed,
   transferClear,
-  withdrawSendConfirmation,
+  withdrawReceive,
 } from './actions';
 
 /**
@@ -116,7 +116,7 @@ export function transfersReducer(
         },
       },
     };
-  } else if (isActionOf(transferUnlocked, action)) {
+  } else if (isActionOf(transferUnlock.success, action)) {
     const unlock = action.payload.message,
       secrethash = action.meta.secrethash;
     if (!(secrethash in state.sent) || state.sent[secrethash].unlock) return state;
@@ -150,7 +150,7 @@ export function transfersReducer(
     state = set(channelPath, channel, state);
     state = set(['sent', secrethash], sentTransfer, state);
     return state;
-  } else if (isActionOf(transferExpired, action)) {
+  } else if (isActionOf(transferExpire.success, action)) {
     const lockExpired = action.payload.message,
       secrethash = action.meta.secrethash;
     if (
@@ -246,7 +246,7 @@ export function transfersReducer(
     state = unset(['sent', action.meta.secrethash], state);
     state = unset(['secrets', action.meta.secrethash], state);
     return state;
-  } else if (isActionOf(withdrawSendConfirmation, action)) {
+  } else if (isActionOf(withdrawReceive.success, action)) {
     const message = action.payload.message,
       channelPath = ['channels', action.meta.tokenNetwork, action.meta.partner];
     let channel: Channel | undefined = get(channelPath, state);

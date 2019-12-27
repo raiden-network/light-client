@@ -25,14 +25,14 @@ import {
   transferSecret,
   transferSigned,
   transferProcessed,
-  transferUnlocked,
+  transferUnlock,
   transferClear,
-  transferExpired,
+  transferExpire,
   transferSecretReveal,
   transferRefunded,
   transferUnlockProcessed,
   transferExpireProcessed,
-  withdrawSendConfirmation,
+  withdrawReceive,
 } from 'raiden-ts/transfers/actions';
 import {
   LockedTransfer,
@@ -847,7 +847,7 @@ describe('raidenReducer', () => {
           secret,
           signature: makeSignature(),
         },
-        newState = [transferUnlocked({ message: unlock }, { secrethash })].reduce(
+        newState = [transferUnlock.success({ message: unlock }, { secrethash })].reduce(
           raidenReducer,
           state,
         );
@@ -856,14 +856,14 @@ describe('raidenReducer', () => {
 
       newState = [
         transferSigned({ message: transfer, fee }, { secrethash }),
-        transferUnlocked({ message: unlock }, { secrethash }),
+        transferUnlock.success({ message: unlock }, { secrethash }),
       ].reduce(raidenReducer, newState);
 
       // invalid lock because locked_amount isn't right
       expect(get(newState, ['sent', secrethash, 'unlock'])).toBeUndefined();
 
       unlock = { ...unlock, locked_amount: Zero as UInt<32> };
-      newState = [transferUnlocked({ message: unlock }, { secrethash })].reduce(
+      newState = [transferUnlock.success({ message: unlock }, { secrethash })].reduce(
         raidenReducer,
         newState,
       );
@@ -898,7 +898,7 @@ describe('raidenReducer', () => {
           recipient: partner,
           signature: makeSignature(),
         },
-        newState = [transferExpired({ message: lockExpired }, { secrethash })].reduce(
+        newState = [transferExpire.success({ message: lockExpired }, { secrethash })].reduce(
           raidenReducer,
           state,
         );
@@ -907,14 +907,14 @@ describe('raidenReducer', () => {
 
       newState = [
         transferSigned({ message: transfer, fee }, { secrethash }),
-        transferExpired({ message: lockExpired }, { secrethash }),
+        transferExpire.success({ message: lockExpired }, { secrethash }),
       ].reduce(raidenReducer, newState);
 
       // invalid lock because locked_amount isn't right
       expect(get(newState, ['sent', secrethash, 'lockExpired'])).toBeUndefined();
 
       lockExpired = { ...lockExpired, locked_amount: Zero as UInt<32> };
-      newState = [transferExpired({ message: lockExpired }, { secrethash })].reduce(
+      newState = [transferExpire.success({ message: lockExpired }, { secrethash })].reduce(
         raidenReducer,
         newState,
       );
@@ -1005,7 +1005,7 @@ describe('raidenReducer', () => {
 
     // withdraw request is under transfer just to use its pending transfer setup/vars
     describe('withdraw request', () => {
-      test('withdrawSendConfirmation', () => {
+      test('withdrawReceive.success', () => {
         let confirmation: Signed<WithdrawConfirmation> = {
           type: MessageType.WITHDRAW_CONFIRMATION,
           message_identifier: makeMessageId(),
@@ -1025,7 +1025,7 @@ describe('raidenReducer', () => {
           get(
             raidenReducer(
               state,
-              withdrawSendConfirmation(
+              withdrawReceive.success(
                 { message: confirmation },
                 {
                   tokenNetwork,
@@ -1056,14 +1056,14 @@ describe('raidenReducer', () => {
           // now, a state with a preent own.balanceProof due to a completed transfer
           newState = [
             transferSigned({ message: transfer, fee }, { secrethash }),
-            transferUnlocked({ message: unlock }, { secrethash }),
+            transferUnlock.success({ message: unlock }, { secrethash }),
           ].reduce(raidenReducer, state),
           prevNonce = newState.channels[tokenNetwork][partner].own.balanceProof!.nonce;
 
         // forgot to update nonce, reducer must be noop
         let newState2 = raidenReducer(
           newState,
-          withdrawSendConfirmation(
+          withdrawReceive.success(
             { message: confirmation },
             {
               tokenNetwork,
@@ -1085,7 +1085,7 @@ describe('raidenReducer', () => {
 
         newState2 = raidenReducer(
           newState,
-          withdrawSendConfirmation(
+          withdrawReceive.success(
             { message: confirmation },
             {
               tokenNetwork,
