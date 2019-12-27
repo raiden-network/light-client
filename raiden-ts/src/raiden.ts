@@ -43,11 +43,11 @@ import {
 } from './transport/actions';
 import { transfer, transferFailed, transferSigned } from './transfers/actions';
 import { makeSecret, getSecrethash, makePaymentId } from './transfers/utils';
-import { pathFind, pathFound, pathFindFailed } from './path/actions';
+import { pathFind } from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
 import { Address, Secret, Storage, Hash, UInt, decode, assert } from './utils/types';
-import { isActionOf, asyncActionToPromise } from './utils/actions';
+import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
 import {
@@ -664,27 +664,20 @@ export class Raiden {
       'Provided secrethash must match the sha256 hash of provided secret',
     );
 
+    const pathFindMeta = { tokenNetwork, target, value: decodedValue };
     return merge(
       // wait for pathFind response
       this.action$.pipe(
-        filter(isActionOf([pathFound, pathFindFailed])),
-        first(
-          action =>
-            action.meta.tokenNetwork === tokenNetwork &&
-            action.meta.target === target &&
-            action.meta.value.eq(value),
-        ),
+        first(isResponseOf(pathFind, pathFindMeta)),
         map(action => {
-          if (isActionOf(pathFindFailed, action)) throw action.payload;
+          if (pathFind.failure.is(action)) throw action.payload;
           return action.payload.paths;
         }),
       ),
       // request pathFind; even if paths were provided, send it again for validation
       // this is done at 'merge' subscription time (i.e. when above action filter is subscribed)
       defer(() => {
-        this.store.dispatch(
-          pathFind({ paths, pfs }, { tokenNetwork, target, value: decodedValue }),
-        );
+        this.store.dispatch(pathFind.request({ paths, pfs }, pathFindMeta));
         return EMPTY;
       }),
     )
@@ -749,23 +742,11 @@ export class Raiden {
 
     const decodedValue = decode(UInt(32), value);
     const pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
-
-    const promise = this.action$
-      .pipe(
-        filter(isActionOf([pathFound, pathFindFailed])),
-        first(
-          action =>
-            action.meta.tokenNetwork === tokenNetwork &&
-            action.meta.target === target &&
-            action.meta.value.eq(decodedValue),
-        ),
-        map(action => {
-          if (isActionOf(pathFindFailed, action)) throw action.payload;
-          return action.payload.paths;
-        }),
-      )
-      .toPromise();
-    this.store.dispatch(pathFind({ pfs }, { tokenNetwork, target, value: decodedValue }));
+    const meta = { tokenNetwork, target, value: decodedValue };
+    const promise = asyncActionToPromise(pathFind, meta, this.action$).then(
+      ({ paths }) => paths, // pluck paths
+    );
+    this.store.dispatch(pathFind.request({ pfs }, meta));
     return promise;
   }
 
@@ -789,23 +770,13 @@ export class Raiden {
 
     const decodedValue = decode(UInt(32), value);
 
-    const promise = this.action$
-      .pipe(
-        filter(isActionOf([pathFound, pathFindFailed])),
-        first(
-          action =>
-            action.meta.tokenNetwork === tokenNetwork &&
-            action.meta.target === target &&
-            action.meta.value.eq(decodedValue),
-        ),
-        map(action => {
-          if (isActionOf(pathFindFailed, action)) return undefined;
-          return action.payload.paths;
-        }),
-      )
-      .toPromise();
+    const meta = { tokenNetwork, target, value: decodedValue };
+    const promise = asyncActionToPromise(pathFind, meta, this.action$).then(
+      ({ paths }) => paths, // pluck paths
+      () => undefined, // on reject, omit and return undefined instead
+    );
     // dispatch a pathFind with pfs disabled, to force checking for a direct route
-    this.store.dispatch(pathFind({ pfs: null }, { tokenNetwork, target, value: decodedValue }));
+    this.store.dispatch(pathFind.request({ pfs: null }, meta));
     return promise;
   }
 
