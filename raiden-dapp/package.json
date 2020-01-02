@@ -75,7 +75,7 @@
     "ts-jest": "^24.2.0",
     "typescript": "^3.7.4",
     "vue-cli-plugin-i18n": "^0.6.0",
-    "vue-cli-plugin-vuetify": "^2.0.2",
+    "vue-cli-plugin-vuetify": "^2.0.3",
     "vue-jest": "^3.0.5",
     "vue-template-compiler": "^2.6.11",
     "vuetify-loader": "^1.4.3"
