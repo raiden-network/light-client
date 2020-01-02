@@ -50,7 +50,7 @@
     "@types/redux-logger": "^3.0.7",
     "@types/tiny-async-pool": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^2.13.0",
-    "@typescript-eslint/parser": "^2.13.0",
+    "@typescript-eslint/parser": "^2.14.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.8.0",
     "eslint-plugin-jsdoc": "^18.4.4",
