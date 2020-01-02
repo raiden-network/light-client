@@ -3,7 +3,7 @@ import { AddressZero } from 'ethers/constants';
 import { Network, getNetwork } from 'ethers/utils';
 import { debounce, merge as _merge } from 'lodash';
 
-import { RaidenConfig, makeDefaultConfig } from './config';
+import { PartialRaidenConfig } from './config';
 import { ContractsInfo } from './types';
 import { losslessParse, losslessStringify } from './utils/data';
 import { Address, Secret, decode, Signed, Storage } from './utils/types';
@@ -21,7 +21,7 @@ export const RaidenState = t.readonly(
     chainId: t.number,
     registry: Address,
     blockNumber: t.number,
-    config: RaidenConfig,
+    config: PartialRaidenConfig,
     channels: t.readonly(
       t.record(
         t.string /* tokenNetwork: Address */,
@@ -97,11 +97,8 @@ export function decodeRaidenState(data: unknown): RaidenState {
   return decode(RaidenState, data);
 }
 
-// Partial<RaidenState> which allows config: Partial<RaidenConfig>
-type PartialState = { config?: Partial<RaidenState['config']> } & Omit<
-  Partial<RaidenState>,
-  'config'
->;
+// Partial<RaidenState> which allows 2nd-level config: PartialRaidenConfig
+type PartialState = { config?: PartialRaidenConfig } & Omit<Partial<RaidenState>, 'config'>;
 
 /**
  * Create an initial RaidenState from common parameters (including default config)
@@ -124,8 +121,8 @@ export function makeInitialState(
     address,
     chainId: network.chainId,
     registry: contractsInfo.TokenNetworkRegistry.address,
-    blockNumber: contractsInfo.TokenNetworkRegistry.block_number || 0,
-    config: makeDefaultConfig({ network }, overwrites.config),
+    blockNumber: contractsInfo.TokenNetworkRegistry.block_number,
+    config: overwrites.config ?? {},
     channels: {},
     tokens: {},
     transport: {},
@@ -179,7 +176,7 @@ export const getState = async (
   contracts: ContractsInfo,
   address: Address,
   storageOrState?: unknown,
-  config?: Partial<RaidenConfig>,
+  config?: PartialRaidenConfig,
 ): Promise<{
   state: RaidenState;
   onState?: (state: RaidenState) => void;

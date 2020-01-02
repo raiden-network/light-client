@@ -14,6 +14,7 @@ import { negate } from 'lodash';
 import { RaidenState } from './state';
 import { RaidenEpicDeps } from './types';
 import { RaidenAction, raidenShutdown } from './actions';
+import { makeDefaultConfig, PartialRaidenConfig, RaidenConfig } from './config';
 import { getPresences$ } from './transport/utils';
 import { pfsListUpdated } from './path/actions';
 import { Address } from './utils/types';
@@ -31,8 +32,15 @@ import * as PathFindEpics from './path/epics';
  * @param state$ - Observable of RaidenStates
  * @returns latest$ observable
  */
-export const getLatest$ = (action$: Observable<RaidenAction>, state$: Observable<RaidenState>) =>
-  combineLatest([
+export function getLatest$(
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { network }: { network: RaidenEpicDeps['network'] },
+) {
+  const defaultConfig = makeDefaultConfig({ network });
+  let lastConfig: [PartialRaidenConfig, RaidenConfig];
+
+  return combineLatest([
     action$,
     state$,
     getPresences$(action$),
@@ -42,14 +50,21 @@ export const getLatest$ = (action$: Observable<RaidenAction>, state$: Observable
       startWith([] as readonly Address[]),
     ),
   ]).pipe(
-    map(([action, state, presences, pfsList]) => ({
-      action,
-      state,
-      config: state.config,
-      presences,
-      pfsList,
-    })),
+    map(([action, state, presences, pfsList]) => {
+      // "memoize one" last merge of default and partial configs
+      const currentPartial = state.config;
+      if (lastConfig?.['0'] !== currentPartial)
+        lastConfig = [currentPartial, { ...defaultConfig, ...currentPartial }];
+      return {
+        action,
+        state,
+        config: lastConfig['1'],
+        presences,
+        pfsList,
+      };
+    }),
   );
+}
 
 const RaidenEpics = {
   ...ChannelsEpics,
@@ -73,7 +88,7 @@ export const raidenRootEpic = (
     limitedState$ = state$.pipe(takeUntil(shutdownNotification));
 
   // wire deps.latest$
-  getLatest$(limitedAction$, limitedState$).subscribe(deps.latest$);
+  getLatest$(limitedAction$, limitedState$, deps).subscribe(deps.latest$);
 
   // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
   return from(Object.values(RaidenEpics)).pipe(

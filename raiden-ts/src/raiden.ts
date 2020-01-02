@@ -23,7 +23,7 @@ import { UserDepositFactory } from './contracts/UserDepositFactory';
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
-import { RaidenConfig } from './config';
+import { RaidenConfig, makeDefaultConfig, PartialRaidenConfig } from './config';
 import { RaidenChannels } from './channels/state';
 import { RaidenSentTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
@@ -125,6 +125,10 @@ export class Raiden {
     RaidenEpicDeps
   > | null;
 
+  private readonly defaultConfig: RaidenConfig;
+  // for a given partial config, "memoize-one" full config (merge of default & partial configs)
+  private lastConfig?: [PartialRaidenConfig, RaidenConfig];
+
   public constructor(
     provider: JsonRpcProvider,
     network: Network,
@@ -148,6 +152,7 @@ export class Raiden {
     this.channels$ = this.state$.pipe(map(state => mapTokenToPartner(state)));
     this.transfers$ = initTransfers$(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
+    this.defaultConfig = makeDefaultConfig({ network });
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
       assert(Address.is(token), 'Invalid address');
@@ -270,7 +275,7 @@ export class Raiden {
     account: Signer | string | number,
     storageOrState?: Storage | RaidenState | unknown,
     contracts?: ContractsInfo,
-    config?: Partial<RaidenConfig>,
+    config?: PartialRaidenConfig,
     subkey?: true,
   ): Promise<Raiden> {
     let provider: JsonRpcProvider;
@@ -398,7 +403,11 @@ export class Raiden {
    * @returns Current Raiden config
    */
   public get config(): RaidenConfig {
-    return this.state.config;
+    // "memoize one" last merge of default and partial configs
+    const currentPartial = this.state.config;
+    if (this.lastConfig?.['0'] !== currentPartial)
+      this.lastConfig = [currentPartial, { ...this.defaultConfig, ...currentPartial }];
+    return this.lastConfig['1'];
   }
 
   /**
@@ -406,7 +415,7 @@ export class Raiden {
    *
    * @param config - Partial object containing keys and values to update in config
    */
-  public updateConfig(config: Partial<RaidenConfig>) {
+  public updateConfig(config: PartialRaidenConfig) {
     this.store.dispatch(raidenConfigUpdate({ config }));
   }
 

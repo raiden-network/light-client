@@ -11,7 +11,7 @@ import { first, tap, takeUntil, toArray, delay } from 'rxjs/operators';
 import { fakeSchedulers } from 'rxjs-marbles/jest';
 import { verifyMessage, BigNumber } from 'ethers/utils';
 
-import { RaidenAction } from 'raiden-ts/actions';
+import { RaidenAction, raidenConfigUpdate } from 'raiden-ts/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
 import { RaidenState } from 'raiden-ts/state';
 import { channelMonitor } from 'raiden-ts/channels/actions';
@@ -47,6 +47,7 @@ import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps } from '../mocks';
+import { pluckDistinct } from 'raiden-ts/utils/rx';
 
 describe('transport epic', () => {
   let depsMock: ReturnType<typeof raidenEpicDeps>,
@@ -141,11 +142,11 @@ describe('transport epic', () => {
 
     test('matrix server config set without stored setup', async () => {
       const action$ = EMPTY as Observable<RaidenAction>,
-        state$ = of(state);
+        state$ = depsMock.latest$.pipe(pluckDistinct('state'));
 
       depsMock.latest$.pipe(first()).subscribe(l => {
-        const state = { ...l.state, config: { ...l.state.config, matrixServer } };
-        depsMock.latest$.next({ ...l, state, config: state.config });
+        const state = raidenReducer(l.state, raidenConfigUpdate({ config: { matrixServer } }));
+        depsMock.latest$.next({ ...l, state, config: { ...l.config, ...state.config } });
       });
 
       await expect(
@@ -168,25 +169,23 @@ describe('transport epic', () => {
 
     test('matrix server config set same as stored setup', async () => {
       const action$ = EMPTY as Observable<RaidenAction>,
-        state$ = of(
-          raidenReducer(
-            state,
-            matrixSetup({
-              server: matrixServer,
-              setup: {
-                userId,
-                accessToken,
-                deviceId,
-                displayName,
-              },
-            }),
-          ),
-        );
+        state$ = depsMock.latest$.pipe(pluckDistinct('state'));
 
       // set config
       depsMock.latest$.pipe(first()).subscribe(l => {
-        const state = { ...l.state, config: { ...l.state.config, matrixServer } };
-        depsMock.latest$.next({ ...l, state, config: state.config });
+        const state = [
+          matrixSetup({
+            server: matrixServer,
+            setup: {
+              userId,
+              accessToken,
+              deviceId,
+              displayName,
+            },
+          }),
+          raidenConfigUpdate({ config: { matrixServer } }),
+        ].reduce(raidenReducer, l.state);
+        depsMock.latest$.next({ ...l, state, config: { ...l.config, ...state.config } });
       });
 
       await expect(
@@ -1240,9 +1239,14 @@ describe('transport epic', () => {
 
     expect(matrix.sendEvent).toHaveBeenCalledTimes(0);
 
+    let discoveryRoom!: string;
+    depsMock.latest$
+      .pipe(first())
+      .subscribe(({ config }) => (discoveryRoom = config.discoveryRoom!));
+
     await expect(
       matrixMessageGlobalSendEpic(
-        of(messageGlobalSend({ message }, { roomName: state.config.discoveryRoom! })),
+        of(messageGlobalSend({ message }, { roomName: discoveryRoom })),
         state$,
         depsMock,
       ).toPromise(),

@@ -5,7 +5,7 @@
 import * as t from 'io-ts';
 
 import { ShutdownReason } from './constants';
-import { RaidenConfig } from './config';
+import { PartialRaidenConfig } from './config';
 import { ActionType, createAction, Action } from './utils/actions';
 import { ErrorCodec } from './utils/types';
 
@@ -30,12 +30,7 @@ export interface raidenShutdown extends ActionType<typeof raidenShutdown> {}
 
 export const raidenConfigUpdate = createAction(
   'raidenConfigUpdate',
-  t.type({
-    config: t.intersection([
-      t.partial(RaidenConfig.type.types['0'].props),
-      RaidenConfig.type.types['1'],
-    ]),
-  }),
+  t.type({ config: PartialRaidenConfig }),
 );
 export interface raidenConfigUpdate extends ActionType<typeof raidenConfigUpdate> {}
 

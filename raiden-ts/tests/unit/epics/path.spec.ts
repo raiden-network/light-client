@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { of, BehaviorSubject, EMPTY, timer } from 'rxjs';
-import { first, takeUntil, toArray, pluck, withLatestFrom } from 'rxjs/operators';
+import { first, takeUntil, toArray, pluck } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
 
@@ -28,6 +28,8 @@ import { losslessStringify } from 'raiden-ts/utils/data';
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog } from '../mocks';
+import { getLatest$ } from 'raiden-ts/epics';
+import { pluckDistinct } from 'raiden-ts/utils/rx';
 
 describe('PFS: pathFindServiceEpic', () => {
   const depsMock = raidenEpicDeps();
@@ -53,9 +55,7 @@ describe('PFS: pathFindServiceEpic', () => {
   const openBlock = 121,
     state$ = new BehaviorSubject(state);
 
-  state$
-    .pipe(withLatestFrom(depsMock.latest$))
-    .subscribe(([state, l]) => depsMock.latest$.next({ ...l, state, config: state.config }));
+  getLatest$(of(raidenConfigUpdate({ config: {} })), state$, depsMock).subscribe(depsMock.latest$);
 
   afterAll(() => state$.complete());
 
@@ -244,7 +244,11 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify({})),
     });
 
-    const { pfsSafetyMargin } = state.config;
+    let pfsSafetyMargin!: number;
+    depsMock.latest$
+      .pipe(first())
+      .subscribe(({ config }) => (pfsSafetyMargin = config.pfsSafetyMargin));
+
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
@@ -296,7 +300,11 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify({})),
     });
 
-    const { pfsSafetyMargin } = state.config;
+    let pfsSafetyMargin!: number;
+    depsMock.latest$
+      .pipe(first())
+      .subscribe(({ config }) => (pfsSafetyMargin = config.pfsSafetyMargin));
+
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
@@ -394,7 +402,11 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify({})),
     });
 
-    const { pfsSafetyMargin } = state.config;
+    let pfsSafetyMargin!: number;
+    depsMock.latest$
+      .pipe(first())
+      .subscribe(({ config }) => (pfsSafetyMargin = config.pfsSafetyMargin));
+
     await expect(
       pathFindServiceEpic(action$, state$, depsMock)
         .pipe(toArray())
@@ -1077,13 +1089,14 @@ describe('PFS: pathFindServiceEpic', () => {
   });
 
   test('fail pfs disabled', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     // disable pfs
-    depsMock.latest$.pipe(first()).subscribe(l => {
-      const state = { ...l.state, config: { ...l.state.config, pfs: null } };
-      depsMock.latest$.next({ ...l, state, config: state.config });
-    });
+    state$.next(raidenReducer(state$.value, raidenConfigUpdate({ config: { pfs: null } })));
+
+    await expect(
+      depsMock.latest$.pipe(pluckDistinct('config', 'pfs'), first()).toPromise(),
+    ).resolves.toBeNull();
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
@@ -1156,6 +1169,9 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
       action$ = of(action),
       state$ = new BehaviorSubject<RaidenState>([action].reduce(raidenReducer, openedState));
 
+    let pfsRoom!: string;
+    depsMock.latest$.pipe(first()).subscribe(({ config }) => (pfsRoom = config.pfsRoom!));
+
     await expect(pfsCapacityUpdateEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
       messageGlobalSend(
         {
@@ -1167,7 +1183,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
             signature: expect.any(String),
           }),
         },
-        { roomName: expect.stringMatching(state.config.pfsRoom!) },
+        { roomName: expect.stringMatching(pfsRoom) },
       ),
     );
   });
@@ -1205,9 +1221,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
     { state, pfsAddress } = epicFixtures(depsMock),
     state$ = new BehaviorSubject(state);
 
-  state$
-    .pipe(withLatestFrom(depsMock.latest$))
-    .subscribe(([state, l]) => depsMock.latest$.next({ ...l, state, config: state.config }));
+  getLatest$(of(raidenConfigUpdate({ config: {} })), state$, depsMock).subscribe(depsMock.latest$);
 
   afterAll(() => state$.complete());
 

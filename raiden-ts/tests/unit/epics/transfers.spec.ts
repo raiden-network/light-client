@@ -207,7 +207,7 @@ describe('transfers epic', () => {
           ].reduce(raidenReducer, state),
         );
 
-      getLatest$(action$, state$).subscribe(depsMock.latest$);
+      getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -287,7 +287,7 @@ describe('transfers epic', () => {
           ].reduce(raidenReducer, state),
         );
 
-      getLatest$(action$, state$).subscribe(depsMock.latest$);
+      getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
       await expect(
         transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
@@ -345,7 +345,7 @@ describe('transfers epic', () => {
           ].reduce(raidenReducer, state),
         );
 
-      getLatest$(action$, state$).subscribe(depsMock.latest$);
+      getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
       const output = await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
         .pipe(toArray())
@@ -371,7 +371,7 @@ describe('transfers epic', () => {
           ),
           state$ = new BehaviorSubject(transferingState);
 
-        getLatest$(action$, state$).subscribe(depsMock.latest$);
+        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -426,7 +426,7 @@ describe('transfers epic', () => {
             ].reduce(raidenReducer, transferingState),
           );
 
-        getLatest$(action$, state$).subscribe(depsMock.latest$);
+        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -460,7 +460,7 @@ describe('transfers epic', () => {
             ].reduce(raidenReducer, transferingState),
           );
 
-        getLatest$(action$, state$).subscribe(depsMock.latest$);
+        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -491,7 +491,7 @@ describe('transfers epic', () => {
             ),
           );
 
-        getLatest$(action$, state$).subscribe(depsMock.latest$);
+        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -526,7 +526,7 @@ describe('transfers epic', () => {
               transferingState,
             ),
           );
-        getLatest$(action$, state$).subscribe(depsMock.latest$);
+        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -575,7 +575,7 @@ describe('transfers epic', () => {
               newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
             ].reduce(raidenReducer, transferingState),
           );
-        getLatest$(action$, state$).subscribe(depsMock.latest$);
+        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -1196,7 +1196,7 @@ describe('transfers epic', () => {
         action$ = of(transferSecretRequest({ message: signed }, { secrethash })),
         state$ = new BehaviorSubject<RaidenState>(transferingState);
 
-      getLatest$(action$, state$).subscribe(depsMock.latest$);
+      getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
@@ -1399,7 +1399,7 @@ describe('transfers epic', () => {
         );
         const action$ = of(transferExpire.request(undefined, { secrethash }));
 
-        getLatest$(action$, state$).subscribe(depsMock.latest$);
+        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
         const expiredAction = await transferGenerateAndSignEnvelopeMessageEpic(
           action$,
@@ -1701,7 +1701,7 @@ describe('transfers epic', () => {
 
         const action$ = of(withdrawRequestAction, withdrawRequestAction);
 
-        getLatest$(action$, state$).subscribe(depsMock.latest$);
+        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
         const output = await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
           .pipe(toArray())
