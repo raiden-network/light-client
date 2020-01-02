@@ -201,7 +201,24 @@ export class Raiden {
       predicate: () =>
         this.config.logger !== '' &&
         (this.config.logger !== undefined || process.env.NODE_ENV === 'development'),
-      level: () => this.config.logger || 'debug',
+      level: {
+        prevState: () =>
+          typeof this.config.logger === 'object'
+            ? this.config.logger['prevState'] ?? ''
+            : this.config.logger ?? 'debug',
+        action: () =>
+          typeof this.config.logger === 'object'
+            ? this.config.logger['action'] ?? ''
+            : this.config.logger ?? 'debug',
+        error: () =>
+          typeof this.config.logger === 'object'
+            ? this.config.logger['error'] ?? ''
+            : this.config.logger ?? 'debug',
+        nextState: () =>
+          typeof this.config.logger === 'object'
+            ? this.config.logger['nextState'] ?? ''
+            : this.config.logger ?? 'debug',
+      },
     });
 
     // minimum blockNumber of contracts deployment as start scan block

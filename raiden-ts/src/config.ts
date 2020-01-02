@@ -26,6 +26,14 @@ import { getNetworkName } from './utils/ethers';
  * - subkey - When using subkey, this sets the behavior when { subkey } option isn't explicitly set
  *            in on-chain method calls. false (default) = use main key; true = use subkey
  */
+const logLevels = t.keyof({
+  ['']: null,
+  trace: null,
+  debug: null,
+  info: null,
+  warn: null,
+  error: null,
+});
 export const RaidenConfig = t.readonly(
   t.intersection([
     t.type({
@@ -40,14 +48,15 @@ export const RaidenConfig = t.readonly(
     }),
     t.partial({
       matrixServer: t.string,
-      logger: t.keyof({
-        ['']: null,
-        trace: null,
-        debug: null,
-        info: null,
-        warn: null,
-        error: null,
-      }),
+      logger: t.union([
+        logLevels,
+        t.partial({
+          prevState: logLevels,
+          action: logLevels,
+          error: logLevels,
+          nextState: logLevels,
+        }),
+      ]),
       pfs: t.union([Address, t.string, t.null]),
       subkey: t.boolean,
     }),
