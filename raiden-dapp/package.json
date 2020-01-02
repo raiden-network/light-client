@@ -59,7 +59,7 @@
     "babel-core": "7.0.0-bridge.0",
     "babel-eslint": "^10.0.3",
     "eslint": "^5.16.0",
-    "eslint-plugin-jsdoc": "^18.4.4",
+    "eslint-plugin-jsdoc": "^19.2.0",
     "eslint-plugin-prettier": "^3.1.2",
     "eslint-plugin-vue": "^6.0.2",
     "eslint-plugin-vue-i18n": "^0.3.0",
