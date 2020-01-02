@@ -36,6 +36,8 @@ import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
 import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
 import { Presences } from 'raiden-ts/transport/types';
+import { makeDefaultConfig } from 'raiden-ts/config';
+import { map } from 'rxjs/operators';
 
 export type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -205,16 +207,20 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     state = makeInitialState(
       { network, address, contractsInfo },
       { blockNumber, config: { pfsSafetyMargin: 1.1, pfs: 'https://pfs.raiden.test' } },
-    );
+    ),
+    defaultConfig = makeDefaultConfig({ network });
 
   const latest$: RaidenEpicDeps['latest$'] = new BehaviorSubject({
       action: raidenConfigUpdate({ config: {} }) as RaidenAction,
       state,
-      config: state.config,
+      config: { ...defaultConfig, ...state.config },
       presences: {} as Presences,
       pfsList: [] as readonly Address[],
     }),
-    config$ = latest$.pipe(pluckDistinct('state', 'config'));
+    config$ = latest$.pipe(
+      pluckDistinct('state', 'config'),
+      map(config => ({ ...defaultConfig, ...config })),
+    );
 
   return {
     latest$,

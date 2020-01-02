@@ -19,7 +19,7 @@ import { ChannelState } from 'raiden-ts/channels/state';
 import { Storage, Secret, Address } from 'raiden-ts/utils/types';
 import { isActionOf } from 'raiden-ts/utils/actions';
 import { ContractsInfo } from 'raiden-ts/types';
-import { RaidenConfig } from 'raiden-ts/config';
+import { PartialRaidenConfig } from 'raiden-ts/config';
 import { RaidenSentTransfer, RaidenSentTransferStatus } from 'raiden-ts/transfers/state';
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
@@ -41,7 +41,7 @@ describe('Raiden', () => {
     pfsInfoResponse: any,
     pfsAddress: string,
     pfsUrl: string;
-  const config: Partial<RaidenConfig> = { settleTimeout: 20, revealTimeout: 5 };
+  const config: PartialRaidenConfig = { settleTimeout: 20, revealTimeout: 5 };
 
   let httpBackend: MockMatrixRequestFn;
   const matrixServer = 'matrix.raiden.test';
