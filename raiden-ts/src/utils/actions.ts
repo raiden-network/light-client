@@ -5,8 +5,9 @@ import * as t from 'io-ts';
 import { isMatchWith } from 'lodash';
 import { Observable } from 'rxjs';
 import { first, map } from 'rxjs/operators';
+import { Reducer } from 'redux';
 
-import { ErrorCodec, BigNumberC } from './types';
+import { ErrorCodec, BigNumberC, assert } from './types';
 
 /**
  * The type of a generic action
@@ -448,4 +449,58 @@ export async function asyncActionToPromise<
       }),
     )
     .toPromise();
+}
+
+// createReducer
+
+/**
+ * Create a reducer which can be extended with additional actions handlers
+ *
+ * Usage:
+ *   const incrementBy = createAction('INCREMENT_BY', t.number);
+ *   const reducer = createReducer(0).handleAction(incrementBy, (s, { payload }) => s + payload);
+ *   expect(reducer(2, incrementBy(3))).toBe(5);
+ *
+ * @param initialState - state for initialization (if no state is passed first)
+ * @returns A reducer function, extended with a handleAction method to extend it
+ */
+export function createReducer<S>(initialState: S) {
+  // generic handlers as a indexed type for `makeReducer`
+  type Handlers = {
+    [type: string]: [ActionCreator<any, any, any, any>, (state: S, action: Action) => S];
+  };
+  // a type which only property is the literal string tag and value, a tuple with AC & handler:
+  // { [ac.type]: [ac, (state: S, action: ActionType<AC>) => S] }
+  type Handler<AC> = AC extends ActionCreator<infer TType, any, any, any>
+    ? { [K in TType]: [AC, (state: S, action: ActionType<AC>) => S] }
+    : never;
+  // helper type to 'never' allow 'handle' to receive an already handled action
+  type NotHandled<
+    H extends Handlers,
+    AC extends ActionCreator<any, any, any, any>
+  > = H extends Handler<AC> ? never : AC;
+
+  // make a reducer function for given handlers
+  function makeReducer<H extends Handlers>(handlers: H) {
+    const reducer: Reducer<S, Action> = (state: S = initialState, action: Action) => {
+      if (action.type in handlers && handlers[action.type][0].is(action))
+        return handlers[action.type][1](state, action); // calls registered handler
+      return state; // fallback returns unchanged state
+    };
+    // circular dependency on generic params forbids an already handled action from being accepted
+    function handle<
+      AC extends ActionCreator<any, any, any, any> & NotHandled<H, AD>,
+      AD extends ActionCreator<any, any, any, any> = AC
+    >(ac: AC, handler: (state: S, action: ActionType<AC>) => S) {
+      assert(!(ac.type in handlers), 'Already handled');
+      return makeReducer({
+        ...handlers, // readonly extends previous handlers with new one
+        [ac.type]: [ac, handler],
+      } as H & Handler<AC>);
+    }
+    // grow reducer function with our `handle` extender
+    return Object.assign(reducer, { handle });
+  }
+  // initially makes a reducer which doesn't handle anything (just returns unchanged state)
+  return makeReducer({});
 }
