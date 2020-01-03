@@ -13,6 +13,7 @@ import {
   createAsyncAction,
   isResponseOf,
   asyncActionToPromise,
+  createReducer,
 } from 'raiden-ts/utils/actions';
 
 describe('action factories not tested in reducers.spec.ts', () => {
@@ -190,5 +191,25 @@ describe('utils/actions', () => {
 
     action$ = from([asyncAction.success(true, { id: 123 }), fail]);
     await expect(asyncActionToPromise(asyncAction, req.meta, action$)).resolves.toBe(true);
+  });
+
+  test('createReducer', () => {
+    const incrementBy = createAction('INCREMENT_BY', t.number);
+    const decrement = createAction('DECREMENT');
+    const noop = createAction('NOOP');
+
+    const reducer0 = createReducer(0);
+    expect(reducer0(10, incrementBy(5))).toBe(10);
+    expect(reducer0(9, decrement())).toBe(9);
+    expect(reducer0(8, noop())).toBe(8);
+
+    const reducer1 = reducer0
+      .handle(incrementBy, (s, { payload }) => s + payload)
+      .handle(decrement, s => s - 1);
+    expect(reducer1(undefined, incrementBy(5))).toBe(5);
+    expect(reducer1(9, decrement())).toBe(8);
+    expect(reducer1(8, noop())).toBe(8);
+
+    // const reducer2 = reducer1.handle(decrement, s => s); // forbidden, already handled
   });
 });
