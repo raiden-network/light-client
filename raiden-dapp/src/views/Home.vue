@@ -16,7 +16,7 @@ import NoTokens from '@/components/NoTokens.vue';
 export default class Home extends Mixins(NavigationMixin) {
   tokens!: TokenModel[];
 
-  @Watch('tokens')
+  @Watch('tokens', { immediate: true })
   onChange(tokens: TokenModel[]) {
     if (tokens.length) {
       this.navigateToSelectTransferTarget(tokens[0].address);
