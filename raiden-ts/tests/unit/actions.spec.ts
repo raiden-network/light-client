@@ -210,6 +210,15 @@ describe('utils/actions', () => {
     expect(reducer1(9, decrement())).toBe(8);
     expect(reducer1(8, noop())).toBe(8);
 
-    // const reducer2 = reducer1.handle(decrement, s => s); // forbidden, already handled
+    const sqrReducer = createReducer('').handle(
+      [decrement, noop],
+      (s, { type }) => `${s}:${type}`, // action is union of either decrement or noop
+    );
+    expect(sqrReducer(undefined, incrementBy(5))).toBe(''); // unhandled
+    expect(sqrReducer('', decrement())).toBe(`:${decrement.type}`);
+    expect(sqrReducer('_', noop())).toBe(`_:${noop.type}`);
+
+    // const reducer2 = reducer1.handle(decrement, s => s - 1); // forbidden, already handled
+    // const reducer3 = sqrReducer.handle(noop, s => s); // forbidden, already handled
   });
 });
