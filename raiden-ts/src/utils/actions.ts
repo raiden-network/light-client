@@ -457,17 +457,18 @@ export async function asyncActionToPromise<
  * Create a reducer which can be extended with additional actions handlers
  *
  * Usage:
- *   const incrementBy = createAction('INCREMENT_BY', t.number);
- *   const reducer = createReducer(0).handleAction(incrementBy, (s, { payload }) => s + payload);
- *   expect(reducer(2, incrementBy(3))).toBe(5);
+ *   const reducer = createReducer(State)
+ *      .handle(action, (s, a): State => ...)
+ *      .handle(...)
+ *      .handle(...);
  *
- * @param initialState - state for initialization (if no state is passed first)
- * @returns A reducer function, extended with a handleAction method to extend it
+ * @param initialState - state for initialization (if no state is passed on reducer call)
+ * @returns A reducer function, extended with a handle method to extend it
  */
-export function createReducer<S>(initialState: S) {
+export function createReducer<S, A extends Action = Action>(initialState: S) {
   // generic handlers as a indexed type for `makeReducer`
   type Handlers = {
-    [type: string]: [ActionCreator<any, any, any, any>, (state: S, action: Action) => S];
+    [type: string]: [ActionCreator<any, any, any, any>, (state: S, action: A) => S];
   };
   // a type which only property is the literal string tag and value, a tuple with AC & handler:
   // { [ac.type]: [ac, (state: S, action: ActionType<AC>) => S] }
@@ -479,10 +480,17 @@ export function createReducer<S>(initialState: S) {
     H extends Handlers,
     AC extends ActionCreator<any, any, any, any>
   > = H extends Handler<AC> ? never : AC;
+  // helper type to convert union of Handler into intersection:
+  // UnionToIntersection<Handler<AC1 | AC2>> = { [AC1.type]: [AC1...] } & { [AC2.type]: [AC2...] }
+  type UnionToIntersection<U> = (U extends any
+  ? (k: U) => void
+  : never) extends (k: infer I) => void
+    ? I
+    : never;
 
   // make a reducer function for given handlers
   function makeReducer<H extends Handlers>(handlers: H) {
-    const reducer: Reducer<S, Action> = (state: S = initialState, action: Action) => {
+    const reducer: Reducer<S, A> = (state: S = initialState, action: A) => {
       if (action.type in handlers && handlers[action.type][0].is(action))
         return handlers[action.type][1](state, action); // calls registered handler
       return state; // fallback returns unchanged state
@@ -491,12 +499,13 @@ export function createReducer<S>(initialState: S) {
     function handle<
       AC extends ActionCreator<any, any, any, any> & NotHandled<H, AD>,
       AD extends ActionCreator<any, any, any, any> = AC
-    >(ac: AC, handler: (state: S, action: ActionType<AC>) => S) {
-      assert(!(ac.type in handlers), 'Already handled');
-      return makeReducer({
-        ...handlers, // readonly extends previous handlers with new one
-        [ac.type]: [ac, handler],
-      } as H & Handler<AC>);
+    >(ac: AC | AC[], handler: (state: S, action: ActionType<AC>) => S) {
+      const arr = Array.isArray(ac) ? ac : [ac];
+      assert(!arr.some(a => a.type in handlers), 'Already handled');
+      return makeReducer(
+        Object.assign({}, handlers, ...arr.map(a => ({ [a.type]: [a, handler] }))) as H &
+          UnionToIntersection<Handler<AC>>,
+      );
     }
     // grow reducer function with our `handle` extender
     return Object.assign(reducer, { handle });
