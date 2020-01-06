@@ -55,7 +55,7 @@ describe('AddressInput', () => {
 
   test('show no validation messages by default', () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
-    const messages = wrapper.find('.v-messages__message');
+    const messages = wrapper.find('.v-messages__wrapper');
     expect(wrapper.props().value).toBe('');
     expect(messages.exists()).toBe(true);
     expect(messages.text()).toBe('');
