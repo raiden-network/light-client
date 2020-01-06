@@ -3,14 +3,13 @@ import { Zero, HashZero } from 'ethers/constants';
 import { hexlify } from 'ethers/utils';
 
 import { RaidenState, initialState } from '../state';
-import { RaidenAction } from '../actions';
 import { Channel, ChannelState } from '../channels/state';
 import { SignedBalanceProof } from '../channels/types';
 import { channelClose } from '../channels/actions';
 import { getLocksroot } from './utils';
 import { SignatureZero } from '../constants';
 import { timed, UInt, Signature, Hash } from '../utils/types';
-import { isActionOf } from '../utils/actions';
+import { createReducer } from '../utils/actions';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { SentTransfer } from './state';
 import {
@@ -252,7 +251,10 @@ function transferRefundedReducer(state: RaidenState, action: transferRefunded): 
   };
 }
 
-function closeSuccessReducer(state: RaidenState, action: channelClose.success): RaidenState {
+function channelCloseSuccessReducer(
+  state: RaidenState,
+  action: channelClose.success,
+): RaidenState {
   return {
     ...state,
     sent: mapValues(
@@ -316,38 +318,17 @@ function withdrawReceiveSuccessReducer(
 
 /**
  * Handles all transfers actions and requests
- *
- * @param state - Current RaidenState
- * @param action - RaidenAction to handle
- * @returns New RaidenState (or current, if action didn't change anything)
  */
-export function transfersReducer(
-  state: RaidenState = initialState,
-  action: RaidenAction,
-): RaidenState {
-  if (isActionOf(transferSecret, action)) {
-    return transferSecretReducer(state, action);
-  } else if (isActionOf(transferSigned, action)) {
-    return transferSignedReducer(state, action);
-  } else if (isActionOf(transferProcessed, action)) {
-    return transferProcessedReducer(state, action);
-  } else if (isActionOf(transferSecretReveal, action)) {
-    return transferSecretReveledReducer(state, action);
-  } else if (isActionOf(transferUnlock.success, action)) {
-    return transferUnlockSuccessReducer(state, action);
-  } else if (isActionOf(transferExpire.success, action)) {
-    return transferExpireSuccessReducer(state, action);
-  } else if (isActionOf(transferUnlockProcessed, action)) {
-    return transferUnlockProcessedReducer(state, action);
-  } else if (isActionOf(transferExpireProcessed, action)) {
-    return transferExpireProcessedReducer(state, action);
-  } else if (isActionOf(transferRefunded, action)) {
-    return transferRefundedReducer(state, action);
-  } else if (isActionOf(channelClose.success, action)) {
-    return closeSuccessReducer(state, action);
-  } else if (isActionOf(transferClear, action)) {
-    return transferClearReducer(state, action);
-  } else if (isActionOf(withdrawReceive.success, action)) {
-    return withdrawReceiveSuccessReducer(state, action);
-  } else return state;
-}
+export const transfersReducer = createReducer(initialState)
+  .handle(transferSecret, transferSecretReducer)
+  .handle(transferSigned, transferSignedReducer)
+  .handle(transferProcessed, transferProcessedReducer)
+  .handle(transferSecretReveal, transferSecretReveledReducer)
+  .handle(transferUnlock.success, transferUnlockSuccessReducer)
+  .handle(transferExpire.success, transferExpireSuccessReducer)
+  .handle(transferUnlockProcessed, transferUnlockProcessedReducer)
+  .handle(transferExpireProcessed, transferExpireProcessedReducer)
+  .handle(transferRefunded, transferRefundedReducer)
+  .handle(channelClose.success, channelCloseSuccessReducer)
+  .handle(transferClear, transferClearReducer)
+  .handle(withdrawReceive.success, withdrawReceiveSuccessReducer);

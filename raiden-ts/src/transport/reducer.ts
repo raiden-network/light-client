@@ -1,9 +1,8 @@
 import { get, getOr, isEmpty, set, unset } from 'lodash/fp';
 
 import { partialCombineReducers } from '../utils/redux';
-import { isActionOf } from '../utils/actions';
-import { RaidenState, initialState } from '../state';
-import { RaidenAction } from '../actions';
+import { createReducer } from '../utils/actions';
+import { initialState } from '../state';
 import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
 
 /**
@@ -14,11 +13,9 @@ import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
  * @param action - RaidenAction to handle
  * @returns New RaidenState['transport'] slice
  */
-function transport(
-  state: RaidenState['transport'] = initialState.transport,
-  action: RaidenAction,
-) {
-  if (isActionOf(matrixSetup, action)) {
+
+const transport = createReducer(initialState.transport)
+  .handle(matrixSetup, (state, action) => {
     return {
       ...state,
       matrix: {
@@ -26,7 +23,8 @@ function transport(
         ...action.payload,
       },
     };
-  } else if (isActionOf(matrixRoom, action)) {
+  })
+  .handle(matrixRoom, (state, action) => {
     const path = ['matrix', 'rooms', action.meta.address];
     return set(
       path,
@@ -36,7 +34,8 @@ function transport(
       ],
       state,
     );
-  } else if (isActionOf(matrixRoomLeave, action)) {
+  })
+  .handle(matrixRoomLeave, (state, action) => {
     const path = ['matrix', 'rooms', action.meta.address];
     state = set(
       path,
@@ -45,8 +44,7 @@ function transport(
     );
     if (isEmpty(get(path, state))) state = unset(path, state);
     return state;
-  } else return state;
-}
+  });
 
 /**
  * Nested/combined reducer for transport

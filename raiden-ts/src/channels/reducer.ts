@@ -2,7 +2,7 @@ import { get, set, unset } from 'lodash/fp';
 import { Zero } from 'ethers/constants';
 
 import { UInt } from '../utils/types';
-import { isActionOf } from '../utils/actions';
+import { createReducer, isActionOf } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
@@ -154,7 +154,7 @@ function channelCloseSuccessReducer(
   return set(path, channel, state);
 }
 
-function channelIsSettleableReducer(
+function channelSettleableReducer(
   state: RaidenState['channels'],
   action: channelSettleable,
 ): RaidenState['channels'] {
@@ -194,32 +194,17 @@ function channelSettleSuccessReducer(
 }
 
 // handles all channel actions and requests
-function channels(
-  state: RaidenState['channels'] = initialState.channels,
-  action: RaidenAction,
-): RaidenState['channels'] {
-  if (isActionOf(channelOpen.request, action)) {
-    return channelOpenRequestReducer(state, action);
-  } else if (isActionOf(channelOpen.success, action)) {
-    return channelOpenSuccessReducer(state, action);
-  } else if (isActionOf(channelOpen.failure, action)) {
-    return channelOpenFailureReducer(state, action);
-  } else if (isActionOf(channelDeposit.success, action)) {
-    return channelDepositSuccessReducer(state, action);
-  } else if (isActionOf(channelWithdrawn, action)) {
-    return channelWithdrawReducer(state, action);
-  } else if (isActionOf(channelClose.request, action)) {
-    return channelCloseRequestReducer(state, action);
-  } else if (isActionOf(channelClose.success, action)) {
-    return channelCloseSuccessReducer(state, action);
-  } else if (isActionOf(channelSettleable, action)) {
-    return channelIsSettleableReducer(state, action);
-  } else if (isActionOf(channelSettle.request, action)) {
-    return channelSettleRequestReducer(state, action);
-  } else if (isActionOf(channelSettle.success, action)) {
-    return channelSettleSuccessReducer(state, action);
-  } else return state;
-}
+const channels = createReducer(initialState.channels)
+  .handle(channelOpen.request, channelOpenRequestReducer)
+  .handle(channelOpen.success, channelOpenSuccessReducer)
+  .handle(channelOpen.failure, channelOpenFailureReducer)
+  .handle(channelDeposit.success, channelDepositSuccessReducer)
+  .handle(channelWithdrawn, channelWithdrawReducer)
+  .handle(channelClose.request, channelCloseRequestReducer)
+  .handle(channelClose.success, channelCloseSuccessReducer)
+  .handle(channelSettleable, channelSettleableReducer)
+  .handle(channelSettle.request, channelSettleRequestReducer)
+  .handle(channelSettle.success, channelSettleSuccessReducer);
 
 /**
  * Nested/combined reducer for channels
