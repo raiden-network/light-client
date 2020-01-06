@@ -26,3 +26,6 @@ flags:
   sdk:
     paths:
       - raiden-ts/
+
+comment:
+  after_n_builds: 2
