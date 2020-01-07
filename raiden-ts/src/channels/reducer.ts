@@ -106,17 +106,6 @@ function channelUpdateOnchainBalanceStateReducer(
   return set(path, channel, state);
 }
 
-function channelCloseRequestReducer(
-  state: RaidenState['channels'],
-  action: channelClose.request,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(path, state);
-  if (!channel || channel.state !== ChannelState.open) return state;
-  channel = { ...channel, state: ChannelState.closing };
-  return set(path, channel, state);
-}
-
 function channelCloseSuccessReducer(
   state: RaidenState['channels'],
   action: channelClose.success,
@@ -133,25 +122,22 @@ function channelCloseSuccessReducer(
   return set(path, channel, state);
 }
 
-function channelSettleableReducer(
+function channelUpdateStateReducer(
   state: RaidenState['channels'],
-  action: channelSettleable,
+  action: channelClose.request | channelSettle.request | channelSettleable,
 ): RaidenState['channels'] {
   const path = [action.meta.tokenNetwork, action.meta.partner];
   let channel: Channel | undefined = get(path, state);
-  if (!channel || channel.state !== ChannelState.closed) return state;
-  channel = { ...channel, state: ChannelState.settleable };
-  return set(path, channel, state);
-}
-
-function channelSettleRequestReducer(
-  state: RaidenState['channels'],
-  action: channelSettle.request,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(path, state);
-  if (!channel || channel.state !== ChannelState.settleable) return state;
-  channel = { ...channel, state: ChannelState.settling };
+  if (!channel) return state;
+  if (channelClose.request.is(action) && channel.state === ChannelState.open) {
+    channel = { ...channel, state: ChannelState.closing };
+  } else if (channelSettle.request.is(action) && channel.state === ChannelState.settleable) {
+    channel = { ...channel, state: ChannelState.settling };
+  } else if (channelSettleable.is(action) && channel.state === ChannelState.closed) {
+    channel = { ...channel, state: ChannelState.settleable };
+  } else {
+    return state;
+  }
   return set(path, channel, state);
 }
 
@@ -178,10 +164,11 @@ const channels = createReducer(initialState.channels)
   .handle(channelOpen.success, channelOpenSuccessReducer)
   .handle(channelOpen.failure, channelOpenFailureReducer)
   .handle([channelDeposit.success, channelWithdrawn], channelUpdateOnchainBalanceStateReducer)
-  .handle(channelClose.request, channelCloseRequestReducer)
+  .handle(
+    [channelClose.request, channelSettleable, channelSettle.request],
+    channelUpdateStateReducer,
+  )
   .handle(channelClose.success, channelCloseSuccessReducer)
-  .handle(channelSettleable, channelSettleableReducer)
-  .handle(channelSettle.request, channelSettleRequestReducer)
   .handle(channelSettle.success, channelSettleSuccessReducer);
 
 /**
