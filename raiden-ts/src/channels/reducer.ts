@@ -73,47 +73,26 @@ function channelOpenFailureReducer(
   return unset(path, state);
 }
 
-function channelDepositSuccessReducer(
+function channelUpdateOnchainBalanceStateReducer(
   state: RaidenState['channels'],
-  action: channelDeposit.success,
+  action: channelDeposit.success | channelWithdrawn,
 ): RaidenState['channels'] {
   const path = [action.meta.tokenNetwork, action.meta.partner];
   let channel: Channel | undefined = get(path, state);
   if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
     return state;
-  if (action.payload.participant === action.meta.partner)
-    channel = {
-      ...channel,
-      partner: {
-        ...channel.partner,
-        deposit: action.payload.totalDeposit,
-      },
-    };
-  else
-    channel = {
-      ...channel,
-      own: {
-        ...channel.own,
-        deposit: action.payload.totalDeposit,
-      },
-    };
-  return set(path, channel, state);
-}
 
-function channelWithdrawReducer(
-  state: RaidenState['channels'],
-  action: channelWithdrawn,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(path, state);
-  if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
-    return state;
+  const key = channelWithdrawn.is(action) ? 'withdraw' : 'deposit';
+  const total = channelWithdrawn.is(action)
+    ? action.payload.totalWithdraw
+    : action.payload.totalDeposit;
+
   if (action.payload.participant === action.meta.partner)
     channel = {
       ...channel,
       partner: {
         ...channel.partner,
-        withdraw: action.payload.totalWithdraw,
+        [key]: total,
       },
     };
   else
@@ -121,7 +100,7 @@ function channelWithdrawReducer(
       ...channel,
       own: {
         ...channel.own,
-        withdraw: action.payload.totalWithdraw,
+        [key]: total,
       },
     };
   return set(path, channel, state);
@@ -198,8 +177,7 @@ const channels = createReducer(initialState.channels)
   .handle(channelOpen.request, channelOpenRequestReducer)
   .handle(channelOpen.success, channelOpenSuccessReducer)
   .handle(channelOpen.failure, channelOpenFailureReducer)
-  .handle(channelDeposit.success, channelDepositSuccessReducer)
-  .handle(channelWithdrawn, channelWithdrawReducer)
+  .handle([channelDeposit.success, channelWithdrawn], channelUpdateOnchainBalanceStateReducer)
   .handle(channelClose.request, channelCloseRequestReducer)
   .handle(channelClose.success, channelCloseSuccessReducer)
   .handle(channelSettleable, channelSettleableReducer)
