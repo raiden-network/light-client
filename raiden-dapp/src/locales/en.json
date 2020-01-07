@@ -42,7 +42,8 @@
   "app-header": {
     "copy": "Copy",
     "copy-success": "Copied!",
-    "currency": "ETH"
+    "currency": "ETH",
+    "pending-transfers": "no pending transfers | 1 pending transfer | {amount} pending transfers"
   },
   "channel-actions": {
     "deposit": "Deposit",

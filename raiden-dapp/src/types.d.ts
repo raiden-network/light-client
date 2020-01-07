@@ -1,9 +1,10 @@
 import RaidenService from '@/services/raiden-service';
-import { RaidenChannels } from 'raiden-ts';
+import { RaidenChannels, RaidenSentTransfer } from 'raiden-ts';
 import { DeniedReason, Token, Presences } from '@/model/types';
 import { Network } from 'ethers/utils';
 
 export type Tokens = { [token: string]: Token };
+export type Transfers = { [secretHash: string]: RaidenSentTransfer };
 
 export interface RootState {
   loading: boolean;
@@ -15,6 +16,7 @@ export interface RootState {
   tokens: Tokens;
   network: Network;
   presences: Presences;
+  transfers: Transfers;
 }
 
 declare global {

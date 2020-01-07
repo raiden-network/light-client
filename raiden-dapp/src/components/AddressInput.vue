@@ -271,7 +271,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     height: 22px;
     width: 22px;
     border: 1px solid #979797;
-    background-color: #d8d8d8;
+    background-color: $color-gray;
   }
 
   &__availability {

@@ -128,6 +128,14 @@ export default class RaidenService {
           this.store.commit('updateChannels', value);
         });
 
+        // Subscribe to our pending transfers
+        raiden.transfers$.subscribe(async (transfer: RaidenSentTransfer) => {
+          const accountAddress = await this.getAccount();
+          if (transfer.initiator === accountAddress) {
+            this.store.commit('updateTransfers', transfer);
+          }
+        });
+
         this.store.commit('network', raiden.network);
 
         raiden.start();
