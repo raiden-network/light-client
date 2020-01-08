@@ -8,10 +8,10 @@ git clone --recurse-submodules https://github.com/raiden-network/light-client.gi
 
 ## Build the SDK
 
-Change to the `raiden-ts` directory, install the dependencies and build the SDK.
+Change to the `raiden-ts` directory inside your newly cloned project, install the dependencies and build the SDK.
 
 ```bash
-cd ../raiden-ts
+cd light-client/raiden-ts
 npm install
 npm run build
 ```
