@@ -11,7 +11,7 @@ After installing the SDK you can simply import Raiden to your JavaScript or Type
 ```typescript
 import { Raiden } from 'raiden-ts';
 
-# async factory
+// async factory
 const raiden = await Raiden.create(web3.currentProvider, 0, localStorage);
 ```
 
