@@ -234,17 +234,10 @@ describe('store', () => {
 
   test('return only pending transfers ', () => {
     [
-      { secrethash: '0x1', status: RaidenSentTransferStatus.closed },
-      { secrethash: '0x2', status: RaidenSentTransferStatus.expired },
-      { secrethash: '0x3', status: RaidenSentTransferStatus.expiring },
-      { secrethash: '0x4', status: RaidenSentTransferStatus.pending },
-      { secrethash: '0x5', status: RaidenSentTransferStatus.received },
-      { secrethash: '0x6', status: RaidenSentTransferStatus.refunded },
-      { secrethash: '0x7', status: RaidenSentTransferStatus.revealed },
-      { secrethash: '0x8', status: RaidenSentTransferStatus.unlocked },
-      { secrethash: '0x9', status: RaidenSentTransferStatus.unlocking }
+      { secrethash: '0x1', completed: true },
+      { secrethash: '0x2', completed: false }
     ].forEach(transfer => store.commit('updateTransfers', transfer));
     const { pendingTransfers } = store.getters;
-    expect(Object.keys(pendingTransfers).length).toEqual(7);
+    expect(Object.keys(pendingTransfers).length).toEqual(1);
   });
 });

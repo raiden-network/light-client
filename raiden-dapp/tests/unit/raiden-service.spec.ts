@@ -792,7 +792,7 @@ describe('RaidenService', () => {
       const dummyTransfer = {
         initiator: '123',
         secrethash: '0x1',
-        status: RaidenSentTransferStatus.closed
+        completed: false
       };
       const subject = new BehaviorSubject(dummyTransfer);
       providerMock.mockResolvedValue(mockProvider);
