@@ -1,8 +1,10 @@
+import { Reducer } from 'redux';
 import { get, set, unset, mapValues } from 'lodash/fp';
 import { Zero, HashZero } from 'ethers/constants';
 import { hexlify } from 'ethers/utils';
 
 import { RaidenState, initialState } from '../state';
+import { RaidenAction } from '../actions';
 import { Channel, ChannelState } from '../channels/state';
 import { SignedBalanceProof } from '../channels/types';
 import { channelClose } from '../channels/actions';
@@ -319,7 +321,7 @@ function withdrawReceiveSuccessReducer(
 /**
  * Handles all transfers actions and requests
  */
-export const transfersReducer = createReducer(initialState)
+export const transfersReducer: Reducer<RaidenState, RaidenAction> = createReducer(initialState)
   .handle(transferSecret, transferSecretReducer)
   .handle(transferSigned, transferSignedReducer)
   .handle(transferProcessed, transferProcessedReducer)

@@ -336,7 +336,7 @@ describe('raiden epic', () => {
         .toPromise();
 
       depsMock.provider.emit(
-        tokenNetworkContract.filters.ChannelOpened(null, depsMock.address, null, null),
+        tokenNetworkContract.filters.ChannelOpened(null, null, null, null),
         makeLog({
           blockNumber: 125,
           filter: tokenNetworkContract.filters.ChannelOpened(
@@ -375,7 +375,7 @@ describe('raiden epic', () => {
 
       // even though multiple tokenMonitored events were fired, blockchain fires a single event
       depsMock.provider.emit(
-        tokenNetworkContract.filters.ChannelOpened(null, depsMock.address, null, null),
+        tokenNetworkContract.filters.ChannelOpened(null, null, null, null),
         makeLog({
           blockNumber: 125,
           filter: tokenNetworkContract.filters.ChannelOpened(
@@ -397,7 +397,7 @@ describe('raiden epic', () => {
       });
 
       // one for channels with us, one for channels from us
-      expect(depsMock.provider.on).toHaveBeenCalledTimes(2);
+      expect(depsMock.provider.on).toHaveBeenCalledTimes(1);
     });
   });
 
