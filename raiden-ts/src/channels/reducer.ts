@@ -1,5 +1,6 @@
 import { get, set, unset } from 'lodash/fp';
 import { Zero } from 'ethers/constants';
+import { Reducer } from 'redux';
 
 import { UInt } from '../utils/types';
 import { createReducer, isActionOf } from '../utils/actions';
@@ -73,68 +74,32 @@ function channelOpenFailureReducer(
   return unset(path, state);
 }
 
-function channelDepositSuccessReducer(
+function channelUpdateOnchainBalanceStateReducer(
   state: RaidenState['channels'],
-  action: channelDeposit.success,
+  action: channelDeposit.success | channelWithdrawn,
 ): RaidenState['channels'] {
   const path = [action.meta.tokenNetwork, action.meta.partner];
   let channel: Channel | undefined = get(path, state);
   if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
     return state;
-  if (action.payload.participant === action.meta.partner)
-    channel = {
-      ...channel,
-      partner: {
-        ...channel.partner,
-        deposit: action.payload.totalDeposit,
-      },
-    };
-  else
-    channel = {
-      ...channel,
-      own: {
-        ...channel.own,
-        deposit: action.payload.totalDeposit,
-      },
-    };
-  return set(path, channel, state);
-}
 
-function channelWithdrawReducer(
-  state: RaidenState['channels'],
-  action: channelWithdrawn,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(path, state);
-  if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
-    return state;
-  if (action.payload.participant === action.meta.partner)
-    channel = {
-      ...channel,
-      partner: {
-        ...channel.partner,
-        withdraw: action.payload.totalWithdraw,
-      },
-    };
-  else
-    channel = {
-      ...channel,
-      own: {
-        ...channel.own,
-        withdraw: action.payload.totalWithdraw,
-      },
-    };
-  return set(path, channel, state);
-}
+  const key = channelWithdrawn.is(action) ? 'withdraw' : 'deposit';
+  const total = channelWithdrawn.is(action)
+    ? action.payload.totalWithdraw
+    : action.payload.totalDeposit;
 
-function channelCloseRequestReducer(
-  state: RaidenState['channels'],
-  action: channelClose.request,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(path, state);
-  if (!channel || channel.state !== ChannelState.open) return state;
-  channel = { ...channel, state: ChannelState.closing };
+  const isPartner = action.payload.participant === action.meta.partner;
+  const channelSide = isPartner ? 'partner' : 'own';
+  const channelEndData = isPartner ? channel.partner : channel.own;
+
+  channel = {
+    ...channel,
+    [channelSide]: {
+      ...channelEndData,
+      [key]: total,
+    },
+  };
+
   return set(path, channel, state);
 }
 
@@ -154,25 +119,22 @@ function channelCloseSuccessReducer(
   return set(path, channel, state);
 }
 
-function channelSettleableReducer(
+function channelUpdateStateReducer(
   state: RaidenState['channels'],
-  action: channelSettleable,
+  action: channelClose.request | channelSettle.request | channelSettleable,
 ): RaidenState['channels'] {
   const path = [action.meta.tokenNetwork, action.meta.partner];
   let channel: Channel | undefined = get(path, state);
-  if (!channel || channel.state !== ChannelState.closed) return state;
-  channel = { ...channel, state: ChannelState.settleable };
-  return set(path, channel, state);
-}
-
-function channelSettleRequestReducer(
-  state: RaidenState['channels'],
-  action: channelSettle.request,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(path, state);
-  if (!channel || channel.state !== ChannelState.settleable) return state;
-  channel = { ...channel, state: ChannelState.settling };
+  if (!channel) return state;
+  if (channelClose.request.is(action) && channel.state === ChannelState.open) {
+    channel = { ...channel, state: ChannelState.closing };
+  } else if (channelSettle.request.is(action) && channel.state === ChannelState.settleable) {
+    channel = { ...channel, state: ChannelState.settling };
+  } else if (channelSettleable.is(action) && channel.state === ChannelState.closed) {
+    channel = { ...channel, state: ChannelState.settleable };
+  } else {
+    return state;
+  }
   return set(path, channel, state);
 }
 
@@ -194,16 +156,18 @@ function channelSettleSuccessReducer(
 }
 
 // handles all channel actions and requests
-const channels = createReducer(initialState.channels)
+const channels: Reducer<RaidenState['channels'], RaidenAction> = createReducer(
+  initialState.channels,
+)
   .handle(channelOpen.request, channelOpenRequestReducer)
   .handle(channelOpen.success, channelOpenSuccessReducer)
   .handle(channelOpen.failure, channelOpenFailureReducer)
-  .handle(channelDeposit.success, channelDepositSuccessReducer)
-  .handle(channelWithdrawn, channelWithdrawReducer)
-  .handle(channelClose.request, channelCloseRequestReducer)
+  .handle([channelDeposit.success, channelWithdrawn], channelUpdateOnchainBalanceStateReducer)
+  .handle(
+    [channelClose.request, channelSettleable, channelSettle.request],
+    channelUpdateStateReducer,
+  )
   .handle(channelClose.success, channelCloseSuccessReducer)
-  .handle(channelSettleable, channelSettleableReducer)
-  .handle(channelSettle.request, channelSettleRequestReducer)
   .handle(channelSettle.success, channelSettleSuccessReducer);
 
 /**
