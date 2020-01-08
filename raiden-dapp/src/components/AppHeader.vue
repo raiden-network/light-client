@@ -80,7 +80,7 @@ import { mapGetters, mapState } from 'vuex';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import { RouteNames } from '@/router/route-names';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import HeaderIdenticon from '@/components/HeaderIdenticon';
+import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
 
 @Component({
   components: { HeaderIdenticon },
