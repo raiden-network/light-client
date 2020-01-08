@@ -14,11 +14,7 @@ import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
-import {
-  Raiden,
-  RaidenSentTransferStatus,
-  RaidenSentTransfer
-} from 'raiden-ts';
+import { Raiden, RaidenSentTransfer } from 'raiden-ts';
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
@@ -792,7 +788,7 @@ describe('RaidenService', () => {
       const dummyTransfer = {
         initiator: '123',
         secrethash: '0x1',
-        status: RaidenSentTransferStatus.closed
+        completed: false
       };
       const subject = new BehaviorSubject(dummyTransfer);
       providerMock.mockResolvedValue(mockProvider);

@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Added
 - [#218] Matrix availability check to address inputs.
+- [#585] Pending transfer badge icon
 
 ### Changed
 - User can now dismiss/hide the transfer progress dialog.
@@ -17,6 +18,7 @@
 [#712]: https://github.com/raiden-network/light-client/issues/712
 [#704]: https://github.com/raiden-network/light-client/issues/704
 [#218]: https://github.com/raiden-network/light-client/issues/218
+[#585]: https://github.com/raiden-network/light-client/issues/585
 
 ## [0.2] - 2019-11-29
 ### Added
