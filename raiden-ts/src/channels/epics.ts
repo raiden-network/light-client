@@ -212,16 +212,9 @@ export const tokenMonitoredEpic = (
 
           // type of elements emitted by getEventsStream (past and new events coming from
           // contract): [channelId, partner1, partner2, settleTimeout, Event]
-          type ChannelOpenedEvent = [BigNumber, Address, Address, BigNumber, Event];
-
-          const filters = [
-            tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
-            tokenNetworkContract.filters.ChannelOpened(null, null, address, null),
-          ];
-
-          return getEventsStream<ChannelOpenedEvent>(
+          return getEventsStream<[BigNumber, Address, Address, BigNumber, Event]>(
             tokenNetworkContract,
-            filters,
+            [tokenNetworkContract.filters.ChannelOpened(null, null, null, null)],
             // if first time monitoring this token network,
             // fetch TokenNetwork's pastEvents since registry deployment as fromBlock$
             action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
