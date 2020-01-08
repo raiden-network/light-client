@@ -5,8 +5,7 @@ import {
   ChannelState,
   RaidenChannel,
   RaidenChannels,
-  RaidenSentTransfer,
-  RaidenSentTransferStatus
+  RaidenSentTransfer
 } from 'raiden-ts';
 import {
   AccTokenModel,

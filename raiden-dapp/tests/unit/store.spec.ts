@@ -4,7 +4,6 @@ import { DeniedReason, emptyTokenModel, Token } from '@/model/types';
 import { Tokens } from '@/types';
 import { Zero } from 'ethers/constants';
 import { BigNumber } from 'ethers/utils';
-import { RaidenSentTransferStatus } from 'raiden-ts';
 
 describe('store', () => {
   const testTokens = (token: string, name?: string, symbol?: string) => {
