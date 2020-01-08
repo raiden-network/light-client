@@ -8,7 +8,7 @@ module.exports = {
         repo: 'raiden-network/light-client',
         lastUpdated: 'Last Updated',
         nav: [
-            { text: 'Docs', link: '/installing/' },
+            { text: 'Docs', link: '/prerequisites/' },
             { text: 'Raiden Network', link: 'https://raiden.network' },
             { text: 'Developer Portal', link: 'https://developer.raiden.network' }
         ],
@@ -18,7 +18,9 @@ module.exports = {
                 collapsable: false,
                 sidebarDepth: 0,
                 children: [
-                    '/installing/',
+                    '/prerequisites/',
+                    '/installing-sdk/',
+                    '/installing-dapp/',
                     '/connecting/'
                 ]
             },
