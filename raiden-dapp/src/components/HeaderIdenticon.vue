@@ -56,7 +56,6 @@ export default class HeaderIdenticon extends Mixins(BlockieMixin) {
   pendingTransfers!: Transfers;
 
   get pendingTransferAmount(): number {
-    console.log(this.pendingTransfers);
     return Object.keys(this.pendingTransfers).length;
   }
 }

@@ -14,7 +14,11 @@ import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
-import { Raiden } from 'raiden-ts';
+import {
+  Raiden,
+  RaidenSentTransferStatus,
+  RaidenSentTransfer
+} from 'raiden-ts';
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
@@ -67,7 +71,8 @@ describe('RaidenService', () => {
     store.commit = jest.fn();
     (store as any).state = {
       tokens: {},
-      presences: {}
+      presences: {},
+      transfers: {}
     };
     raidenService = new RaidenService(store);
   });
@@ -781,6 +786,33 @@ describe('RaidenService', () => {
       expect(store.commit).toBeCalledWith('updatePresence', {
         ['0xtarget']: false
       });
+    });
+
+    test('save transfers in store', async () => {
+      const dummyTransfer = {
+        initiator: '123',
+        secrethash: '0x1',
+        status: RaidenSentTransferStatus.closed
+      };
+      const subject = new BehaviorSubject(dummyTransfer);
+      providerMock.mockResolvedValue(mockProvider);
+      factory.mockResolvedValue(
+        mockRaiden({
+          transfers$: subject
+        })
+      );
+
+      await raidenService.connect();
+      await flushPromises();
+
+      expect(store.commit).toBeCalledTimes(5);
+      expect(store.commit).toHaveBeenNthCalledWith(
+        5,
+        'updateTransfers',
+        expect.objectContaining({
+          ...dummyTransfer
+        } as RaidenSentTransfer)
+      );
     });
   });
 });
