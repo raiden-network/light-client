@@ -1,5 +1,6 @@
 import { get, set, unset } from 'lodash/fp';
 import { Zero } from 'ethers/constants';
+import { Reducer } from 'redux';
 
 import { UInt } from '../utils/types';
 import { createReducer, isActionOf } from '../utils/actions';
@@ -155,7 +156,9 @@ function channelSettleSuccessReducer(
 }
 
 // handles all channel actions and requests
-const channels = createReducer(initialState.channels)
+const channels: Reducer<RaidenState['channels'], RaidenAction> = createReducer(
+  initialState.channels,
+)
   .handle(channelOpen.request, channelOpenRequestReducer)
   .handle(channelOpen.success, channelOpenSuccessReducer)
   .handle(channelOpen.failure, channelOpenFailureReducer)
