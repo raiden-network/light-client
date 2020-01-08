@@ -1,7 +1,13 @@
 import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
-import { RootState, Tokens } from '@/types';
-import { ChannelState, RaidenChannel, RaidenChannels } from 'raiden-ts';
+import { RootState, Tokens, Transfers } from '@/types';
+import {
+  ChannelState,
+  RaidenChannel,
+  RaidenChannels,
+  RaidenSentTransfer,
+  RaidenSentTransferStatus
+} from 'raiden-ts';
 import {
   AccTokenModel,
   DeniedReason,
@@ -31,6 +37,7 @@ const _defaultState: RootState = {
   accessDenied: DeniedReason.UNDEFINED,
   channels: {},
   tokens: {},
+  transfers: {},
   presences: {},
   network: PlaceHolderNetwork
 };
@@ -68,14 +75,17 @@ const store: StoreOptions<RootState> = {
           state.tokens[address] = { ...state.tokens[address], ...token };
         else state.tokens = { ...state.tokens, [address]: token };
     },
-    updatePresence(_state: RootState, _presence: Presences) {
-      _state.presences = { ..._state.presences, ..._presence };
+    updatePresence(state: RootState, presence: Presences) {
+      state.presences = { ...state.presences, ...presence };
     },
     network(state: RootState, network: Network) {
       state.network = network;
     },
     reset(state: RootState) {
       Object.assign(state, defaultState());
+    },
+    updateTransfers(state: RootState, transfer: RaidenSentTransfer) {
+      state.transfers = { ...state.transfers, [transfer.secrethash]: transfer };
     }
   },
   actions: {},
@@ -131,7 +141,21 @@ const store: StoreOptions<RootState> = {
         value => value.state === ChannelState.open
       );
       return orderBy(openChannels, ['capacity'], ['desc'])[0];
-    }
+    },
+    pendingTransfers: ({ transfers }: RootState) =>
+      Object.keys(transfers)
+        .filter(secretHash => {
+          const { status } = transfers[secretHash];
+          const isTransferPending =
+            status !== RaidenSentTransferStatus.unlocked && // success completed case
+            status !== RaidenSentTransferStatus.expired; // error completed case
+
+          return isTransferPending;
+        })
+        .reduce((pendingTransfers: Transfers, secretHash: string) => {
+          pendingTransfers[secretHash] = transfers[secretHash];
+          return pendingTransfers;
+        }, {})
   }
 };
 

@@ -23,21 +23,10 @@
             <div class="app-header__top__content__title">
               {{ $route.meta.title }}
             </div>
-            <div class="app-header__top__content__network">
-              {{ network }}
-            </div>
+            <div class="app-header__top__content__network">{{ network }}</div>
           </v-col>
           <v-spacer></v-spacer>
-          <div>
-            <v-img
-              :src="$blockie(defaultAccount)"
-              height="36"
-              width="36"
-              contain
-              aspect-ratio="1"
-              class="app-header__top__content__blockie"
-            ></v-img>
-          </div>
+          <header-identicon />
         </div>
       </v-col>
     </v-row>
@@ -46,9 +35,7 @@
         <div class="app-header__bottom__address text-left">
           <v-tooltip bottom>
             <template #activator="{ on }">
-              <span v-on="on">
-                {{ defaultAccount | truncate(8) }}
-              </span>
+              <span v-on="on">{{ defaultAccount | truncate(8) }}</span>
             </template>
             <span>{{ defaultAccount }}</span>
           </v-tooltip>
@@ -93,8 +80,10 @@ import { mapGetters, mapState } from 'vuex';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import { RouteNames } from '@/router/route-names';
 import NavigationMixin from '@/mixins/navigation-mixin';
+import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
 
 @Component({
+  components: { HeaderIdenticon },
   computed: {
     ...mapState(['loading', 'defaultAccount', 'accountBalance']),
     ...mapGetters(['network'])
@@ -159,15 +148,6 @@ $header-content-horizontal-margin: 20px;
       justify-content: center;
       margin-right: $header-content-horizontal-margin;
       margin-left: $header-content-horizontal-margin;
-
-      &__blockie {
-        border-radius: 50%;
-        box-sizing: border-box;
-        height: 36px;
-        width: 36px;
-        border: 1px solid #979797;
-        background-color: #d8d8d8;
-      }
 
       &__back {
         display: flex;

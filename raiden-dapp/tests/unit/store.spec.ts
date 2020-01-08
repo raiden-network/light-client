@@ -4,6 +4,7 @@ import { DeniedReason, emptyTokenModel, Token } from '@/model/types';
 import { Tokens } from '@/types';
 import { Zero } from 'ethers/constants';
 import { BigNumber } from 'ethers/utils';
+import { RaidenSentTransferStatus } from 'raiden-ts';
 
 describe('store', () => {
   const testTokens = (token: string, name?: string, symbol?: string) => {
@@ -223,11 +224,27 @@ describe('store', () => {
     ).toEqual([]);
   });
 
-  test('the token getter returns an empty array when the token has no channels ', () => {
+  test('the token getter returns an empty array when the token has no channels', () => {
     const channels = {
       '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {}
     };
     store.commit('updateChannels', channels);
     expect(store.getters.tokens).toEqual([]);
+  });
+
+  test('return only pending transfers ', () => {
+    [
+      { secrethash: '0x1', status: RaidenSentTransferStatus.closed },
+      { secrethash: '0x2', status: RaidenSentTransferStatus.expired },
+      { secrethash: '0x3', status: RaidenSentTransferStatus.expiring },
+      { secrethash: '0x4', status: RaidenSentTransferStatus.pending },
+      { secrethash: '0x5', status: RaidenSentTransferStatus.received },
+      { secrethash: '0x6', status: RaidenSentTransferStatus.refunded },
+      { secrethash: '0x7', status: RaidenSentTransferStatus.revealed },
+      { secrethash: '0x8', status: RaidenSentTransferStatus.unlocked },
+      { secrethash: '0x9', status: RaidenSentTransferStatus.unlocking }
+    ].forEach(transfer => store.commit('updateTransfers', transfer));
+    const { pendingTransfers } = store.getters;
+    expect(Object.keys(pendingTransfers).length).toEqual(7);
   });
 });
