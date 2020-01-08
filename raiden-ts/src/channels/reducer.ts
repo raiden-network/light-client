@@ -87,22 +87,18 @@ function channelUpdateOnchainBalanceStateReducer(
     ? action.payload.totalWithdraw
     : action.payload.totalDeposit;
 
-  if (action.payload.participant === action.meta.partner)
-    channel = {
-      ...channel,
-      partner: {
-        ...channel.partner,
-        [key]: total,
-      },
-    };
-  else
-    channel = {
-      ...channel,
-      own: {
-        ...channel.own,
-        [key]: total,
-      },
-    };
+  const isPartner = action.payload.participant === action.meta.partner;
+  const channelSide = isPartner ? 'partner' : 'own';
+  const channelEndData = isPartner ? channel.partner : channel.own;
+
+  channel = {
+    ...channel,
+    [channelSide]: {
+      ...channelEndData,
+      [key]: total,
+    },
+  };
+
   return set(path, channel, state);
 }
 
