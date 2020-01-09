@@ -22,7 +22,7 @@
     "lodash": "^4.17.15",
     "raiden-ts": "file:../raiden-ts",
     "register-service-worker": "^1.6.2",
-    "rxjs": "^6.5.3",
+    "rxjs": "^6.5.4",
     "tiny-async-pool": "^1.1.0",
     "vue": "^2.6.11",
     "vue-class-component": "^7.1.0",
