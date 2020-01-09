@@ -1,4 +1,4 @@
-import { Observable, from, of, EMPTY, merge, interval } from 'rxjs';
+import { Observable, from, of, EMPTY, merge, interval, defer, concat as concat$ } from 'rxjs';
 import {
   catchError,
   filter,
@@ -11,12 +11,12 @@ import {
   groupBy,
   exhaustMap,
   first,
-  publishReplay,
-  switchMap,
+  take,
+  mapTo,
 } from 'rxjs/operators';
 import { findKey, get, isEmpty, negate } from 'lodash';
 
-import { BigNumber, hexlify, concat } from 'ethers/utils';
+import { BigNumber, hexlify, concat, defaultAbiCoder } from 'ethers/utils';
 import { Event } from 'ethers/contract';
 import { HashZero, Zero } from 'ethers/constants';
 import { Filter } from 'ethers/providers';
@@ -62,52 +62,81 @@ export const initNewBlockEpic = (
   );
 
 /**
- * Monitor registry for new token networks and monitor them
+ * On first run, scan registry and token networks for registered TokenNetworks of interest
+ * (ones which has/had channels with us) and monitors them. On next runs, just monitors the
+ * previously monitored ones.
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param registryContract,contractsInfo - RaidenEpicDeps members
  * @returns Observable of tokenMonitored actions
  */
-export const initMonitorRegistryEpic = (
+export const initTokensRegistryEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { registryContract, contractsInfo }: RaidenEpicDeps,
+  { address, provider, registryContract, contractsInfo }: RaidenEpicDeps,
 ): Observable<tokenMonitored> =>
   state$.pipe(
-    publishReplay(1, undefined, state$ =>
-      state$.pipe(
-        first(),
-        switchMap(state =>
-          merge(
-            // monitor old (in case of empty tokens) and new registered tokens
-            // and starts monitoring every registered token
-            getEventsStream<[Address, Address, Event]>(
-              registryContract,
-              [registryContract.filters.TokenNetworkCreated(null, null)],
-              isEmpty(state.tokens)
-                ? of(contractsInfo.TokenNetworkRegistry.block_number)
-                : undefined,
-            ).pipe(
-              withLatestFrom(state$),
-              map(([[token, tokenNetwork, event], state]) =>
-                tokenMonitored({
-                  token,
-                  tokenNetwork,
-                  fromBlock: !(token in state.tokens) ? event.blockNumber : undefined,
-                }),
-              ),
-            ),
-            // monitor previously monitored tokens
-            from(Object.entries(state.tokens)).pipe(
-              map(([token, tokenNetwork]) =>
-                tokenMonitored({ token: token as Address, tokenNetwork }),
-              ),
-            ),
+    take(1),
+    mergeMap(state => {
+      const encodedAddress = defaultAbiCoder.encode(['address'], [address]);
+      // if tokens are already initialized, use it
+      if (!isEmpty(state.tokens))
+        return from(
+          Object.entries(state.tokens).map(([token, tokenNetwork]) =>
+            tokenMonitored({ token: token as Address, tokenNetwork }),
           ),
-        ),
-      ),
-    ),
+        );
+      // else, do an initial registry scan, from deploy to now
+      else
+        return defer(() =>
+          provider.getLogs({
+            ...registryContract.filters.TokenNetworkCreated(null, null),
+            fromBlock: contractsInfo.TokenNetworkRegistry.block_number,
+            toBlock: 'latest',
+          }),
+        ).pipe(
+          mergeMap(from),
+          map(log => ({ log, parsed: registryContract.interface.parseLog(log) })),
+          filter(({ parsed }) => !!parsed.values?.token_network_address),
+          // for each TokenNetwork found, scan for channels with us
+          mergeMap(
+            ({ log, parsed }) =>
+              concat$(
+                // concat channels opened by us and to us separately
+                // take(1) won't subscribe the later if something is found on former
+                defer(() =>
+                  provider.getLogs({
+                    address: parsed.values.token_network_address,
+                    topics: [null, null, encodedAddress] as string[], // channels from us
+                    fromBlock: log.blockNumber ?? contractsInfo.TokenNetworkRegistry.block_number,
+                    toBlock: 'latest',
+                  }),
+                ).pipe(mergeMap(from)),
+                defer(() =>
+                  provider.getLogs({
+                    address: parsed.values.token_network_address,
+                    topics: [null, null, null, encodedAddress] as string[], // channels to us
+                    fromBlock: log.blockNumber ?? contractsInfo.TokenNetworkRegistry.block_number,
+                    toBlock: 'latest',
+                  }),
+                ).pipe(mergeMap(from)),
+              ).pipe(
+                // if found at least one, register this TokenNetwork as of interest
+                // else, do nothing
+                take(1),
+                mapTo(
+                  tokenMonitored({
+                    token: parsed.values.token_address,
+                    tokenNetwork: parsed.values.token_network_address,
+                    fromBlock: log.blockNumber ?? contractsInfo.TokenNetworkRegistry.block_number,
+                  }),
+                ),
+              ),
+            5, // limit concurrency, don't hammer the node with hundreds of parallel getLogs
+          ),
+        );
+    }),
   );
 
 /**
@@ -214,6 +243,8 @@ export const tokenMonitoredEpic = (
           // contract): [channelId, partner1, partner2, settleTimeout, Event]
           return getEventsStream<[BigNumber, Address, Address, BigNumber, Event]>(
             tokenNetworkContract,
+            // it's cheaper for monitoring to fetch all channels and filter client-side,
+            // than to query/create/request 2 filters on every block (from and to us)
             [tokenNetworkContract.filters.ChannelOpened(null, null, null, null)],
             // if first time monitoring this token network,
             // fetch TokenNetwork's pastEvents since registry deployment as fromBlock$
