@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { first, filter } from 'rxjs/operators';
+import { first, filter, takeUntil } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
 import { get } from 'lodash';
@@ -25,6 +25,7 @@ import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
 import { losslessStringify } from 'raiden-ts/utils/data';
 import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
+import { timer } from 'rxjs';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -101,8 +102,7 @@ describe('Raiden', () => {
 
     raiden = await Raiden.create(provider, 0, storage, contractsInfo, config);
     raiden.start();
-    // wait token register to be fetched
-    await raiden.getTokenList();
+    await raiden.events$.pipe(first()).toPromise();
   });
 
   afterEach(() => {
@@ -234,6 +234,11 @@ describe('Raiden', () => {
     });
   });
 
+  test('getTokenList', async () => {
+    expect.assertions(1);
+    await expect(raiden.getTokenList()).resolves.toEqual([token]);
+  });
+
   describe('getUDCCapacity', () => {
     test('no balance', async () => {
       expect.assertions(1);
@@ -246,6 +251,12 @@ describe('Raiden', () => {
       await raiden.depositToUDC(10);
       await expect(raiden.getUDCCapacity()).resolves.toEqual(bigNumberify(10));
     });
+  });
+
+  test('monitorToken', async () => {
+    expect.assertions(2);
+    await expect(raiden.monitorToken(token)).resolves.toBe(tokenNetwork);
+    await expect(raiden.monitorToken(tokenNetwork)).rejects.toThrow('Unknown');
   });
 
   describe('openChannel', () => {
@@ -404,6 +415,9 @@ describe('Raiden', () => {
       expect(raidenState).toBeDefined();
       expect(raidenState!.tokens).toEqual({ [token]: tokenNetwork });
 
+      // newToken isn't of interest, needs to be explicitly monitored
+      raiden.monitorToken(newToken);
+
       // wait token & channel on it to be fetched, even if it happened while we were offline
       await expect(
         raiden.state$
@@ -537,18 +551,51 @@ describe('Raiden', () => {
     });
 
     test('tokenMonitored', async () => {
-      expect.assertions(1);
+      expect.assertions(4);
       await provider.mine(5);
       const promise = raiden.events$
         .pipe(first(value => value.type === 'tokenMonitored' && !!value.payload.fromBlock))
         .toPromise();
-      await provider.mine(5);
+
       // deploy a new token & tokenNetwork
       const { token, tokenNetwork } = await provider.deployTokenNetwork(contractsInfo);
+
+      await expect(
+        raiden.state$
+          .pipe(
+            filter(state => !!state.tokens?.[token]),
+            takeUntil(timer(10)),
+          )
+          .toPromise(),
+      ).resolves.toBeUndefined();
+
+      // promise should only resolve after we explicitly monitor this token
+      await expect(raiden.monitorToken(token)).resolves.toBe(tokenNetwork);
+
       await expect(promise).resolves.toMatchObject({
         type: tokenMonitored.type,
         payload: { fromBlock: expect.any(Number), token, tokenNetwork },
       });
+
+      // while partner is not yet initialized, open a channel with them
+      await raiden.openChannel(token, partner);
+
+      const raiden1 = await Raiden.create(provider, partner, undefined, contractsInfo, config);
+
+      const promise1 = raiden1.events$
+        .pipe(first(value => value.type === 'tokenMonitored' && !!value.payload.fromBlock))
+        .toPromise();
+
+      raiden1.start();
+
+      // promise1, contrary to promise, should resolve at initialization, upon first scan
+      // detects tokenNetwork as being of interest for having a channel with parner
+      await expect(promise1).resolves.toMatchObject({
+        type: tokenMonitored.type,
+        payload: { fromBlock: expect.any(Number), token, tokenNetwork },
+      });
+
+      raiden1.stop();
     });
   });
 

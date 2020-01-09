@@ -3,7 +3,7 @@ import { Zero } from 'ethers/constants';
 import { Reducer } from 'redux';
 
 import { UInt } from '../utils/types';
-import { createReducer, isActionOf } from '../utils/actions';
+import { createReducer } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
@@ -20,17 +20,16 @@ import {
 import { Channel, ChannelState } from './state';
 
 // state.blockNumber specific reducer, handles only newBlock action
-function blockNumber(state: number = initialState.blockNumber, action: RaidenAction) {
-  if (isActionOf(newBlock, action)) return action.payload.blockNumber;
-  else return state;
-}
+const blockNumber = createReducer(initialState.blockNumber).handle(
+  newBlock,
+  ({}, { payload }) => payload.blockNumber,
+);
 
 // state.tokens specific reducer, handles only tokenMonitored action
-function tokens(state: RaidenState['tokens'] = initialState.tokens, action: RaidenAction) {
-  if (isActionOf(tokenMonitored, action))
-    return set([action.payload.token], action.payload.tokenNetwork, state);
-  else return state;
-}
+const tokens = createReducer(initialState.tokens).handle(
+  tokenMonitored,
+  (state, { payload: { token, tokenNetwork } }) => ({ ...state, [token]: tokenNetwork }),
+);
 
 // Reducers for different actions
 function channelOpenRequestReducer(

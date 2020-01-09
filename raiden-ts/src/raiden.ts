@@ -2,14 +2,14 @@ import './polyfills';
 import { Signer } from 'ethers';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { Zero, AddressZero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
 import { createLogger } from 'redux-logger';
 
-import { constant, memoize, isEmpty } from 'lodash';
+import { constant, memoize } from 'lodash';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
 import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
 
@@ -35,7 +35,13 @@ import {
   raidenShutdown,
   raidenConfigUpdate,
 } from './actions';
-import { channelOpen, channelDeposit, channelClose, channelSettle } from './channels/actions';
+import {
+  channelOpen,
+  channelDeposit,
+  channelClose,
+  channelSettle,
+  tokenMonitored,
+} from './channels/actions';
 import { matrixPresence } from './transport/actions';
 import { transfer, transferSigned } from './transfers/actions';
 import { makeSecret, getSecrethash, makePaymentId } from './transfers/utils';
@@ -452,19 +458,50 @@ export class Raiden {
    * @returns Promise to list of token addresses
    */
   public async getTokenList(): Promise<Address[]> {
-    // here we assume there'll be at least one token registered on a registry
-    // so, if the list is empty (e.g. on first init), raidenInitializationEpic is still fetching
-    // the TokenNetworkCreated events from registry, so we wait until some token is found
-    return this.state$
-      .pipe(
-        first(state => !isEmpty(state.tokens)),
-        map(state => Object.keys(state.tokens) as Address[]),
-      )
-      .toPromise();
+    return this.deps.provider
+      .getLogs({
+        ...this.deps.registryContract.filters.TokenNetworkCreated(null, null),
+        fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
+        toBlock: 'latest',
+      })
+      .then(logs =>
+        logs
+          .map(log => this.deps.registryContract.interface.parseLog(log))
+          .filter(parsed => !!parsed.values?.token_address)
+          .map(parsed => parsed.values.token_address as Address),
+      );
   }
 
   /**
+   * Scans initially and start monitoring a token for channels with us, returning its Tokennetwork
+   * address
+   *
+   * Throws an exception if token isn't registered in current registry
+   *
+   * @param token - token address to monitor, must be registered in current token network registry
+   * @returns Address of TokenNetwork contract
+   */
+  public async monitorToken(token: string): Promise<Address> {
+    assert(Address.is(token), 'Invalid address');
+    const alreadyMonitoredTokens = this.state.tokens;
+    if (token in alreadyMonitoredTokens) return alreadyMonitoredTokens[token];
+    const tokenNetwork = (await this.deps.registryContract.token_to_token_networks(
+      token,
+    )) as Address;
+    assert(tokenNetwork && tokenNetwork !== AddressZero, 'Unknown token network');
+    this.store.dispatch(
+      tokenMonitored({
+        token,
+        tokenNetwork,
+        fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
+      }),
+    );
+    return tokenNetwork;
+  }
+  /**
    * Open a channel on the tokenNetwork for given token address with partner
+   *
+   * If token isn't yet monitored, starts monitoring it
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
@@ -479,9 +516,7 @@ export class Raiden {
     options: { settleTimeout?: number; subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
-    const state = this.state;
-    const tokenNetwork = state.tokens[token];
-    assert(tokenNetwork, 'Unknown token network');
+    const tokenNetwork = await this.monitorToken(token);
     assert(!options.subkey || this.deps.main, "Can't send tx from subkey if not set");
 
     const meta = { tokenNetwork, partner };
