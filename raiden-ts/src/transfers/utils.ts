@@ -4,8 +4,7 @@ import { keccak256, randomBytes, bigNumberify, sha256 } from 'ethers/utils';
 import { Hash, Secret, UInt, HexString } from '../utils/types';
 import { encode } from '../utils/data';
 import { Lock } from '../channels/types';
-import { SentTransfer } from './state';
-import { RaidenSentTransfer, RaidenSentTransferStatus } from './state';
+import { SentTransfer, RaidenSentTransfer, RaidenSentTransferStatus } from './state';
 
 /**
  * Get the locksroot of a given array of pending locks

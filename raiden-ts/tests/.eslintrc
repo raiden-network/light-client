@@ -1,0 +1,6 @@
+{
+	"rules": {
+		"import/order": "off",
+		"import/no-unresolved": "off"
+	}
+}
