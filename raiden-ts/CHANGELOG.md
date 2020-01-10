@@ -5,6 +5,7 @@
 - [#172] Add derived subkey support
 
 ### Changed
+- [#834] Optimize ethers events polling for several tokens
 - [#684] Support and require Typescript 3.7
 - [#593] Improve PFS url matching.
 
