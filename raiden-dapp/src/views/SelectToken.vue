@@ -10,7 +10,7 @@
         <recycle-scroller
           #default="{ item }"
           :items="allTokens"
-          :buffer="20"
+          :buffer="400"
           :item-size="105"
           key-field="address"
           class="select-token__tokens"
@@ -71,16 +71,17 @@ import { Token } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ListHeader from '@/components/ListHeader.vue';
+import Spinner from '@/components/Spinner.vue';
 
 @Component({
-  components: { ListHeader },
+  components: { Spinner, ListHeader },
   computed: mapGetters(['allTokens'])
 })
 export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
   allTokens!: Token[];
 
-  mounted() {
-    this.$raiden.fetchTokenData(Object.keys(this.$store.state.tokens));
+  async mounted() {
+    await this.$raiden.fetchTokenList();
   }
 }
 </script>
@@ -117,6 +118,11 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
       height: calc(100% - 150px);
       overflow-y: auto;
       @extend .themed-scrollbar;
+
+      .col {
+        height: 100%;
+        max-height: 1000px;
+      }
     }
 
     &__token {

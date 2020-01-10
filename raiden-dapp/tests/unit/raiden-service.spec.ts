@@ -16,7 +16,7 @@ import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
 import { Raiden, RaidenSentTransfer } from 'raiden-ts';
 import Vue from 'vue';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, bigNumberify } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
 import { One, Zero, AddressZero } from 'ethers/constants';
@@ -564,6 +564,47 @@ describe('RaidenService', () => {
           [mockToken1]: {
             ...testToken,
             balance: One
+          }
+        })
+      );
+    });
+
+    test('loads the token list', async () => {
+      providerMock.mockResolvedValue(mockProvider);
+      factory.mockResolvedValue(
+        mockRaiden({
+          getTokenList: jest.fn().mockResolvedValue([mockToken1, mockToken2]),
+          getTokenBalance: jest.fn().mockResolvedValueOnce(bigNumberify(100)),
+          getTokenInfo: jest.fn().mockResolvedValueOnce({
+            decimals: 0,
+            symbol: 'MKT',
+            name: 'Mock Token'
+          })
+        })
+      );
+      await raidenService.connect();
+      await flushPromises();
+      store.commit.mockReset();
+      await raidenService.fetchTokenList();
+      await flushPromises();
+      expect(store.commit).toBeCalledTimes(2);
+      expect(store.commit).toHaveBeenNthCalledWith(
+        1,
+        'updateTokens',
+        expect.objectContaining({
+          [mockToken1]: { address: mockToken1 }
+        })
+      );
+      expect(store.commit).toHaveBeenNthCalledWith(
+        2,
+        'updateTokens',
+        expect.objectContaining({
+          [mockToken1]: {
+            address: mockToken1,
+            balance: bigNumberify(100),
+            decimals: 0,
+            symbol: 'MKT',
+            name: 'Mock Token'
           }
         })
       );
