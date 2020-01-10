@@ -37,7 +37,7 @@ describe('SelectToken.vue', () => {
         $identicon: $identicon(),
         $raiden: {
           getToken: jest.fn().mockResolvedValue(TestData.token),
-          fetchTokenData: jest.fn().mockResolvedValue(null)
+          fetchTokenList: jest.fn().mockResolvedValue(null)
         },
         $t: (msg: string) => msg
       }

@@ -1,6 +1,6 @@
-import { Raiden, RaidenSentTransfer, RaidenPaths, RaidenPFS } from 'raiden-ts';
+import { Raiden, RaidenPaths, RaidenPFS, RaidenSentTransfer } from 'raiden-ts';
 import { Store } from 'vuex';
-import { RootState } from '@/types';
+import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
@@ -38,6 +38,20 @@ export default class RaidenService {
     } else {
       return this._raiden;
     }
+  }
+
+  async fetchTokenList() {
+    const allTokens = await this.raiden.getTokenList();
+    const toFetch: string[] = [];
+    const placeholders: Tokens = {};
+
+    for (const token of allTokens) {
+      toFetch.push(token);
+      placeholders[token] = { address: token };
+    }
+
+    this.store.commit('updateTokens', placeholders);
+    await this.fetchTokenData(toFetch);
   }
 
   constructor(store: Store<RootState>) {
@@ -154,6 +168,7 @@ export default class RaidenService {
 
     this.store.commit('loadComplete');
   }
+
   disconnect() {
     this.raiden.stop();
   }
