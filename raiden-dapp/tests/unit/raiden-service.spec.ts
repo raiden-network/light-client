@@ -14,13 +14,9 @@ import { Web3Provider } from '@/services/web3-provider';
 import Vuex, { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
-import {
-  Raiden,
-  RaidenSentTransferStatus,
-  RaidenSentTransfer
-} from 'raiden-ts';
+import { Raiden, RaidenSentTransfer } from 'raiden-ts';
 import Vue from 'vue';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, bigNumberify } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
 import { One, Zero, AddressZero } from 'ethers/constants';
@@ -572,6 +568,47 @@ describe('RaidenService', () => {
         })
       );
     });
+
+    test('loads the token list', async () => {
+      providerMock.mockResolvedValue(mockProvider);
+      factory.mockResolvedValue(
+        mockRaiden({
+          getTokenList: jest.fn().mockResolvedValue([mockToken1, mockToken2]),
+          getTokenBalance: jest.fn().mockResolvedValueOnce(bigNumberify(100)),
+          getTokenInfo: jest.fn().mockResolvedValueOnce({
+            decimals: 0,
+            symbol: 'MKT',
+            name: 'Mock Token'
+          })
+        })
+      );
+      await raidenService.connect();
+      await flushPromises();
+      store.commit.mockReset();
+      await raidenService.fetchTokenList();
+      await flushPromises();
+      expect(store.commit).toBeCalledTimes(2);
+      expect(store.commit).toHaveBeenNthCalledWith(
+        1,
+        'updateTokens',
+        expect.objectContaining({
+          [mockToken1]: { address: mockToken1 }
+        })
+      );
+      expect(store.commit).toHaveBeenNthCalledWith(
+        2,
+        'updateTokens',
+        expect.objectContaining({
+          [mockToken1]: {
+            address: mockToken1,
+            balance: bigNumberify(100),
+            decimals: 0,
+            symbol: 'MKT',
+            name: 'Mock Token'
+          }
+        })
+      );
+    });
   });
 
   test('clears the app state when it receives a raidenShutdown event', async () => {
@@ -792,7 +829,7 @@ describe('RaidenService', () => {
       const dummyTransfer = {
         initiator: '123',
         secrethash: '0x1',
-        status: RaidenSentTransferStatus.closed
+        completed: false
       };
       const subject = new BehaviorSubject(dummyTransfer);
       providerMock.mockResolvedValue(mockProvider);

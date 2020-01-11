@@ -1,8 +1,10 @@
+import { Reducer } from 'redux';
 import { get, set, unset, mapValues } from 'lodash/fp';
 import { Zero, HashZero } from 'ethers/constants';
 import { hexlify } from 'ethers/utils';
 
 import { RaidenState, initialState } from '../state';
+import { RaidenAction } from '../actions';
 import { Channel, ChannelState } from '../channels/state';
 import { SignedBalanceProof } from '../channels/types';
 import { channelClose } from '../channels/actions';
@@ -79,21 +81,6 @@ function transferSignedReducer(state: RaidenState, action: transferSigned): Raid
   state = set(channelPath, channel, state);
   state = set(['sent', secrethash], sentTransfer, state);
   return state;
-}
-
-function transferProcessedReducer(state: RaidenState, action: transferProcessed): RaidenState {
-  const secrethash = action.meta.secrethash;
-  if (!(secrethash in state.sent)) return state;
-  return {
-    ...state,
-    sent: {
-      ...state.sent,
-      [secrethash]: {
-        ...state.sent[secrethash],
-        transferProcessed: timed(action.payload.message),
-      },
-    },
-  };
 }
 
 function transferSecretReveledReducer(
@@ -200,52 +187,33 @@ function transferExpireSuccessReducer(
   return state;
 }
 
-function transferUnlockProcessedReducer(
+function transferStateReducer(
   state: RaidenState,
-  action: transferUnlockProcessed,
+  action: transferProcessed | transferUnlockProcessed | transferExpireProcessed | transferRefunded,
 ): RaidenState {
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) return state;
-  return {
-    ...state,
-    sent: {
-      ...state.sent,
-      [secrethash]: {
-        ...state.sent[secrethash],
-        unlockProcessed: timed(action.payload.message),
-      },
-    },
-  };
-}
 
-function transferExpireProcessedReducer(
-  state: RaidenState,
-  action: transferExpireProcessed,
-): RaidenState {
-  const secrethash = action.meta.secrethash;
-  if (!(secrethash in state.sent)) return state;
-  return {
-    ...state,
-    sent: {
-      ...state.sent,
-      [secrethash]: {
-        ...state.sent[secrethash],
-        lockExpiredProcessed: timed(action.payload.message),
-      },
-    },
-  };
-}
+  let key: 'transferProcessed' | 'unlockProcessed' | 'lockExpiredProcessed' | 'refund';
+  if (transferProcessed.is(action)) {
+    key = 'transferProcessed';
+  } else if (transferUnlockProcessed.is(action)) {
+    key = 'unlockProcessed';
+  } else if (transferExpireProcessed.is(action)) {
+    key = 'lockExpiredProcessed';
+  } else if (transferRefunded.is(action)) {
+    key = 'refund';
+  } else {
+    return state;
+  }
 
-function transferRefundedReducer(state: RaidenState, action: transferRefunded): RaidenState {
-  const secrethash = action.meta.secrethash;
-  if (!(secrethash in state.sent)) return state;
   return {
     ...state,
     sent: {
       ...state.sent,
       [secrethash]: {
         ...state.sent[secrethash],
-        refund: timed(action.payload.message),
+        [key]: timed(action.payload.message),
       },
     },
   };
@@ -319,16 +287,16 @@ function withdrawReceiveSuccessReducer(
 /**
  * Handles all transfers actions and requests
  */
-export const transfersReducer = createReducer(initialState)
+export const transfersReducer: Reducer<RaidenState, RaidenAction> = createReducer(initialState)
   .handle(transferSecret, transferSecretReducer)
   .handle(transferSigned, transferSignedReducer)
-  .handle(transferProcessed, transferProcessedReducer)
+  .handle(
+    [transferProcessed, transferUnlockProcessed, transferExpireProcessed, transferRefunded],
+    transferStateReducer,
+  )
   .handle(transferSecretReveal, transferSecretReveledReducer)
   .handle(transferUnlock.success, transferUnlockSuccessReducer)
   .handle(transferExpire.success, transferExpireSuccessReducer)
-  .handle(transferUnlockProcessed, transferUnlockProcessedReducer)
-  .handle(transferExpireProcessed, transferExpireProcessedReducer)
-  .handle(transferRefunded, transferRefundedReducer)
   .handle(channelClose.success, channelCloseSuccessReducer)
   .handle(transferClear, transferClearReducer)
   .handle(withdrawReceive.success, withdrawReceiveSuccessReducer);

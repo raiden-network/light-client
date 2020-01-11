@@ -3,32 +3,13 @@ import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog, makeSignature } from '../mocks';
 
 import { marbles } from 'rxjs-marbles/jest';
-import {
-  of,
-  from,
-  timer,
-  BehaviorSubject,
-  Subject,
-  Observable,
-  EMPTY,
-  merge,
-  ReplaySubject,
-} from 'rxjs';
-import {
-  first,
-  takeUntil,
-  toArray,
-  delay,
-  tap,
-  ignoreElements,
-  take,
-  finalize,
-} from 'rxjs/operators';
+import { of, from, timer, Observable, EMPTY, merge, ReplaySubject } from 'rxjs';
+import { first, takeUntil, toArray, delay, tap, ignoreElements } from 'rxjs/operators';
 import { bigNumberify } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { range } from 'lodash';
 
-import { UInt, Address, Signed } from 'raiden-ts/utils/types';
+import { UInt, Signed } from 'raiden-ts/utils/types';
 import { MessageType, Processed, Delivered } from 'raiden-ts/messages/types';
 import { RaidenAction, raidenShutdown } from 'raiden-ts/actions';
 import { RaidenState } from 'raiden-ts/state';
@@ -48,7 +29,7 @@ import { deliveredEpic } from 'raiden-ts/transport/epics';
 import {
   initMonitorProviderEpic,
   tokenMonitoredEpic,
-  initMonitorRegistryEpic,
+  initTokensRegistryEpic,
 } from 'raiden-ts/channels/epics';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
@@ -170,18 +151,7 @@ describe('raiden epic', () => {
       }),
     );
 
-    test('monitorRegistry: fetch past and new tokenNetworks', async () => {
-      expect.assertions(2);
-      const state$ = new BehaviorSubject(state),
-        action$ = new Subject<RaidenAction>(),
-        otherToken = '0x0000000000000000000000000000000000080001' as Address,
-        otherTokenNetwork = '0x0000000000000000000000000000000000090001' as Address;
-
-      action$.subscribe(action => state$.next(raidenReducer(state$.value, action)));
-
-      state$.next(raidenReducer(state$.value, newBlock({ blockNumber: 126 })));
-      depsMock.provider.resetEventsBlock(state$.value.blockNumber);
-
+    test('initTokensRegistryEpic: scan initially, monitor previous then', async () => {
       depsMock.provider.getLogs.mockResolvedValueOnce([
         makeLog({
           blockNumber: 121,
@@ -189,47 +159,73 @@ describe('raiden epic', () => {
         }),
       ]);
 
-      const output = initMonitorRegistryEpic(action$, state$, depsMock)
-        .pipe(
-          tap(action => state$.next(raidenReducer(state$.value, action))),
-          take(2),
-          finalize(() => (action$.complete(), state$.complete())),
-          toArray(),
-        )
-        .toPromise();
+      // without an open channel, TokenNetwork isn't of interest and shouldn't be monitored
+      await expect(
+        initTokensRegistryEpic(EMPTY, of(state), depsMock).toPromise(),
+      ).resolves.toBeUndefined();
 
-      depsMock.provider.resetEventsBlock(127);
-      action$.next(newBlock({ blockNumber: 127 }));
-
-      setTimeout(
-        () =>
-          depsMock.provider.emit(
-            depsMock.registryContract.filters.TokenNetworkCreated(null, null),
-            makeLog({
-              blockNumber: 127,
-              filter: depsMock.registryContract.filters.TokenNetworkCreated(
-                otherToken,
-                otherTokenNetwork,
-              ),
-            }),
-          ),
-        10,
-      );
-
-      await expect(output).resolves.toEqual([
-        tokenMonitored({ token, tokenNetwork, fromBlock: 121 }),
-        tokenMonitored({ token: otherToken, tokenNetwork: otherTokenNetwork, fromBlock: 127 }),
-      ]);
+      expect(depsMock.provider.getLogs).toHaveBeenCalledTimes(3);
       expect(depsMock.provider.getLogs).toHaveBeenCalledWith(
         expect.objectContaining({
           ...depsMock.registryContract.filters.TokenNetworkCreated(null, null),
           fromBlock: depsMock.contractsInfo.TokenNetworkRegistry.block_number,
-          toBlock: 126,
+          toBlock: 'latest',
         }),
       );
 
-      action$.complete();
-      state$.complete();
+      depsMock.provider.getLogs.mockClear();
+
+      // mocks getLogs for TokenNetworkCreated events
+      depsMock.provider.getLogs.mockResolvedValueOnce([
+        makeLog({
+          blockNumber: 121,
+          filter: depsMock.registryContract.filters.TokenNetworkCreated(token, tokenNetwork),
+        }),
+      ]);
+
+      // mocks getLogs for TokenNetworkCreated events
+      depsMock.provider.getLogs.mockResolvedValueOnce([
+        makeLog({
+          blockNumber: 122,
+          filter: tokenNetworkContract.filters.ChannelOpened(
+            channelId,
+            depsMock.address,
+            partner,
+            null,
+          ),
+          data: defaultAbiCoder.encode(['uint256'], [settleTimeout]),
+        }),
+      ]);
+
+      await expect(
+        initTokensRegistryEpic(EMPTY, of(state), depsMock)
+          .pipe(toArray())
+          .toPromise(),
+      ).resolves.toEqual([tokenMonitored({ token, tokenNetwork, fromBlock: 121 })]);
+
+      expect(depsMock.provider.getLogs).toHaveBeenCalledTimes(2);
+      expect(depsMock.provider.getLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          address: tokenNetwork,
+          topics: expect.arrayContaining([
+            expect.stringMatching(depsMock.address.substr(2).toLowerCase()),
+          ]),
+          toBlock: 'latest',
+        }),
+      );
+
+      depsMock.provider.getLogs.mockClear();
+
+      await expect(
+        initTokensRegistryEpic(
+          EMPTY,
+          of([tokenMonitored({ token, tokenNetwork })].reduce(raidenReducer, state)),
+          depsMock,
+        )
+          .pipe(toArray())
+          .toPromise(),
+      ).resolves.toEqual([tokenMonitored({ token, tokenNetwork })]);
+      expect(depsMock.provider.getLogs).toHaveBeenCalledTimes(0);
     });
 
     test('ShutdownReason.ACCOUNT_CHANGED', async () => {
@@ -336,7 +332,7 @@ describe('raiden epic', () => {
         .toPromise();
 
       depsMock.provider.emit(
-        tokenNetworkContract.filters.ChannelOpened(null, depsMock.address, null, null),
+        tokenNetworkContract.filters.ChannelOpened(null, null, null, null),
         makeLog({
           blockNumber: 125,
           filter: tokenNetworkContract.filters.ChannelOpened(
@@ -375,7 +371,7 @@ describe('raiden epic', () => {
 
       // even though multiple tokenMonitored events were fired, blockchain fires a single event
       depsMock.provider.emit(
-        tokenNetworkContract.filters.ChannelOpened(null, depsMock.address, null, null),
+        tokenNetworkContract.filters.ChannelOpened(null, null, null, null),
         makeLog({
           blockNumber: 125,
           filter: tokenNetworkContract.filters.ChannelOpened(
@@ -397,7 +393,7 @@ describe('raiden epic', () => {
       });
 
       // one for channels with us, one for channels from us
-      expect(depsMock.provider.on).toHaveBeenCalledTimes(2);
+      expect(depsMock.provider.on).toHaveBeenCalledTimes(1);
     });
   });
 

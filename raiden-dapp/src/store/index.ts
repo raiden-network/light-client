@@ -5,8 +5,7 @@ import {
   ChannelState,
   RaidenChannel,
   RaidenChannels,
-  RaidenSentTransfer,
-  RaidenSentTransferStatus
+  RaidenSentTransfer
 } from 'raiden-ts';
 import {
   AccTokenModel,
@@ -145,12 +144,10 @@ const store: StoreOptions<RootState> = {
     pendingTransfers: ({ transfers }: RootState) =>
       Object.keys(transfers)
         .filter(secretHash => {
-          const { status } = transfers[secretHash];
-          const isTransferPending =
-            status !== RaidenSentTransferStatus.unlocked && // success completed case
-            status !== RaidenSentTransferStatus.expired; // error completed case
+          const { completed } = transfers[secretHash];
 
-          return isTransferPending;
+          // return whether transfer is pending or not
+          return !completed;
         })
         .reduce((pendingTransfers: Transfers, secretHash: string) => {
           pendingTransfers[secretHash] = transfers[secretHash];
