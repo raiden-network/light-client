@@ -12,3 +12,6 @@ checks:
   similar-code:
     config:
       threshold: 100
+      plugins:
+        git-legal:
+          enabled: true
