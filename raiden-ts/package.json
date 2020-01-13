@@ -53,6 +53,7 @@
     "@typescript-eslint/parser": "^2.15.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.9.0",
+    "eslint-plugin-import": "^2.19.1",
     "eslint-plugin-jsdoc": "^20.0.5",
     "eslint-plugin-prettier": "^3.1.2",
     "ganache-cli": "6.7.0",
@@ -115,6 +116,10 @@
       "sourceType": "module"
     },
     "rules": {
+      "import/order": [
+        "error"
+      ],
+      "import/export": "off",
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/no-empty-interface": "off",
@@ -133,7 +138,10 @@
       "plugin:@typescript-eslint/recommended",
       "prettier/@typescript-eslint",
       "plugin:prettier/recommended",
-      "plugin:jsdoc/recommended"
+      "plugin:jsdoc/recommended",
+      "plugin:import/errors",
+      "plugin:import/warnings",
+      "plugin:import/typescript"
     ]
   },
   "eslintIgnore": [

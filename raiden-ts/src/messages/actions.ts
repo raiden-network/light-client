@@ -2,9 +2,9 @@
 /* eslint-disable @typescript-eslint/class-name-casing */
 import * as t from 'io-ts';
 
-import { Message } from './types';
 import { createAction, ActionType, createAsyncAction } from '../utils/actions';
 import { Address, Signed } from '../utils/types';
+import { Message } from './types';
 
 /** One-shot send payload.message to meta.address user in transport */
 export const messageSend = createAsyncAction(

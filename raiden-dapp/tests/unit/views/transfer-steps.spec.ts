@@ -13,10 +13,10 @@ import Mocked = jest.Mocked;
 import VueRouter from 'vue-router';
 
 import TransferSteps from '@/views/TransferSteps.vue';
-import { Route } from '@/model/types';
+import { Route, Token } from '@/model/types';
 import store from '@/store/index';
 import { Tokens } from '@/types';
-import { Token } from '@/model/types';
+
 import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuetify);

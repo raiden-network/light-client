@@ -25,6 +25,12 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction, raidenShutdown } from '../actions';
 import { Channel, ChannelState } from '../channels';
 import { RaidenState } from '../state';
+import { SignatureZero, ShutdownReason } from '../constants';
+import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
+import { Address, Hash, UInt, Signature } from '../utils/types';
+import { isActionOf } from '../utils/actions';
+import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
+import { encode } from '../utils/data';
 import {
   newBlock,
   tokenMonitored,
@@ -36,12 +42,6 @@ import {
   channelSettleable,
   channelWithdrawn,
 } from './actions';
-import { SignatureZero, ShutdownReason } from '../constants';
-import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
-import { Address, Hash, UInt, Signature } from '../utils/types';
-import { isActionOf } from '../utils/actions';
-import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
-import { encode } from '../utils/data';
 
 /**
  * Fetch current blockNumber, register for new block events and emit newBlock actions

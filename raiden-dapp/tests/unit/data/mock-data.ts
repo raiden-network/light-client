@@ -1,6 +1,6 @@
 import { Token } from '@/model/types';
-import { parseUnits } from 'ethers/utils';
-import { BigNumber } from 'ethers/utils';
+import { parseUnits, BigNumber } from 'ethers/utils';
+
 import { Zero } from 'ethers/constants';
 import {
   Address,

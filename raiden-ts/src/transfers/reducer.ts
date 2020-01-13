@@ -8,11 +8,11 @@ import { RaidenAction } from '../actions';
 import { Channel, ChannelState } from '../channels/state';
 import { SignedBalanceProof } from '../channels/types';
 import { channelClose } from '../channels/actions';
-import { getLocksroot } from './utils';
 import { SignatureZero } from '../constants';
 import { timed, UInt, Signature, Hash } from '../utils/types';
 import { createReducer } from '../utils/actions';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
+import { getLocksroot } from './utils';
 import { SentTransfer } from './state';
 import {
   transferSigned,
