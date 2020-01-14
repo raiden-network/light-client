@@ -18,6 +18,7 @@
     "contracts": "npm run contracts:pre && npm run contracts:build",
     "docs:generate": "typedoc --ignoreCompilerErrors --mode file --theme markdown --platform vuepress --out ./docs ./src",
     "docs:build": "vuepress build docs",
+    "docs:dev": "vuepress dev docs",
     "prepare": "npm run clean && npm run build"
   },
   "repository": {
