@@ -92,18 +92,22 @@ export default class ActionButton extends Vue {
 
 .theme {
   &--dark {
-    &.v-btn--disabled {
-      /* stylelint-disable */
-      // can't nest class inside nesting
-      &:not(.v-btn--icon) {
-        &:not(.v-btn--text) {
-          &:not(.v-btn--outline) {
-            background-color: $primary-disabled-color !important;
-            color: $disabled-text-color !important;
+    .v-btn {
+      &.v-btn {
+        &--disabled {
+          /* stylelint-disable */
+          // can't nest class inside nesting
+          &:not(.v-btn--icon) {
+            &:not(.v-btn--text) {
+              &:not(.v-btn--outline) {
+                background-color: $primary-disabled-color !important;
+                color: $disabled-text-color !important;
+              }
+            }
           }
+          /* stylelint-enable */
         }
       }
-      /* stylelint-enable */
     }
   }
 }
