@@ -93,7 +93,7 @@ export default class ActionButton extends Vue {
 .theme {
   &--dark {
     .v-btn {
-      .v-btn {
+      &.v-btn {
         &--disabled {
           /* stylelint-disable */
           // can't nest class inside nesting
