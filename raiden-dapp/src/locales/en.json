@@ -61,6 +61,7 @@
   "find-routes": {
     "hops": "Hops",
     "price": "Price",
+    "sub-title": "Route(s) provided by {subdomain} including number of hops and estimated fee",
     "error": {
       "title": "Oops, something went wrong"
     }
@@ -203,7 +204,7 @@
     "steps": {
       "request-route": {
         "title": "Request Route",
-        "udc-description": "{token} Balance",
+        "udc-description": "Balance to pay the Pathfinding Service",
         "in-progress": "Sign the message to pay for the route request",
         "searching-for-route": "Searching for route...",
         "done": "Route request payment complete"
@@ -222,7 +223,7 @@
         },
         "2": {
           "default": "Confirm Mediation Fees",
-          "amount": "Confirm {amount} {symbol}"
+          "amount": "Confirm Mediation Fee of {amount} {symbol}"
         },
         "3": {
           "amount": "Transfer {amount} {symbol}"
@@ -301,7 +302,7 @@
     "title": "Select Pathfinding Service",
     "rtt": "{time} ms",
     "headers": {
-      "host": "PFS",
+      "host": "Pathfinding Service",
       "rtt": "Ping",
       "price": "Price"
     }

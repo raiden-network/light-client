@@ -96,11 +96,7 @@
             >
               <v-col cols="10">
                 <span class="udc-balance__description">
-                  {{
-                    $t('transfer.steps.request-route.udc-description', {
-                      token: udcToken.symbol || ''
-                    })
-                  }}
+                  {{ $t('transfer.steps.request-route.udc-description') }}
                 </span>
               </v-col>
             </v-row>
@@ -496,7 +492,7 @@ export default class TransferSteps extends Mixins(
     }
   }
 
-  private dismissProgress(delay: number = 3000) {
+  private dismissProgress(delay: number = 6000) {
     setTimeout(() => {
       this.error = '';
       this.processingTransfer = false;
