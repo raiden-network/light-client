@@ -204,6 +204,7 @@
     "steps": {
       "request-route": {
         "title": "Request Route",
+        "tooltip": "Mint and deposit {token} to the User Deposit Contract to pay for PFS requests",
         "udc-description": "Balance to pay the Pathfinding Service",
         "in-progress": "Sign the message to pay for the route request",
         "searching-for-route": "Searching for route...",
