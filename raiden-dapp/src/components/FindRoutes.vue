@@ -2,8 +2,9 @@
   <v-row class="find-routes" align="center" justify="center" no-gutters>
     <v-col cols="12">
       <h3 class="find-routes__title">{{ domain }}</h3>
-      <div class="find-routes__subtitle">{{ subdomain }}</div>
-
+      <div class="find-routes__subtitle">
+        {{ $t('find-routes.sub-title', { subdomain }) }}
+      </div>
       <v-row align="center" justify="center">
         <v-form>
           <v-data-table

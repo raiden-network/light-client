@@ -14,6 +14,7 @@
 - [#712] Fix AddressInput.vue validity not updating on presence changes.
 - [#704] Amount and address input styles.
 - [#740] Fix empty start screen on first time connect.
+- [#642] Various UI improvements.
 - [#715] Fixed action button disabled color.
 
 [#740]: https://github.com/raiden-network/light-client/issues/740
@@ -21,6 +22,7 @@
 [#704]: https://github.com/raiden-network/light-client/issues/704
 [#218]: https://github.com/raiden-network/light-client/issues/218
 [#585]: https://github.com/raiden-network/light-client/issues/585
+[#642]: https://github.com/raiden-network/light-client/issues/642
 [#715]: https://github.com/raiden-network/light-client/issues/715
 
 ## [0.2] - 2019-11-29

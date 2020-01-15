@@ -70,17 +70,28 @@
                   max-width="425"
                   class="udc-balance__dialog-container"
                 >
-                  <template #activator="{ on }">
-                    <v-btn
-                      text
-                      icon
-                      x-large
-                      class="udc-balance__deposit"
-                      @click="showMintDeposit = true"
-                      v-on="on"
-                    >
-                      <v-icon color="primary">play_for_work</v-icon>
-                    </v-btn>
+                  <template #activator="{ on: menu }">
+                    <v-tooltip bottom>
+                      <template #activator="{ on: tooltip }">
+                        <v-btn
+                          text
+                          icon
+                          x-large
+                          class="udc-balance__deposit"
+                          @click="showMintDeposit = true"
+                          v-on="{ ...tooltip, ...menu }"
+                        >
+                          <v-icon color="primary">play_for_work</v-icon>
+                        </v-btn>
+                      </template>
+                      <span>
+                        {{
+                          $t('transfer.steps.request-route.tooltip', {
+                            token: udcToken.symbol
+                          })
+                        }}
+                      </span>
+                    </v-tooltip>
                   </template>
                   <mint-deposit-dialog
                     @cancel="showMintDeposit = false"
@@ -96,11 +107,7 @@
             >
               <v-col cols="10">
                 <span class="udc-balance__description">
-                  {{
-                    $t('transfer.steps.request-route.udc-description', {
-                      token: udcToken.symbol || ''
-                    })
-                  }}
+                  {{ $t('transfer.steps.request-route.udc-description') }}
                 </span>
               </v-col>
             </v-row>
@@ -496,7 +503,7 @@ export default class TransferSteps extends Mixins(
     }
   }
 
-  private dismissProgress(delay: number = 3000) {
+  private dismissProgress(delay: number = 6000) {
     setTimeout(() => {
       this.error = '';
       this.processingTransfer = false;
