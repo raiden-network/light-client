@@ -192,7 +192,7 @@ describe('TransferSteps.vue', () => {
     // Token transfer
     button.trigger('click');
     await flushPromises();
-    jest.advanceTimersByTime(5000);
+    jest.advanceTimersByTime(7000);
 
     expect($raiden.transfer).toHaveBeenCalledTimes(1);
     expect(processingTransfer).toHaveBeenCalledTimes(2);
