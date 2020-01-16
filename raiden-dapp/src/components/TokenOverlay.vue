@@ -50,8 +50,7 @@
           >
             <v-list-item
               :key="token.address"
-              :to="`/transfer/${token.address}`"
-              @click="cancel()"
+              @click="handleTokenClick(token.address)"
             >
               <v-col cols="2">
                 <v-list-item-avatar>
@@ -120,6 +119,15 @@ export default class TokenOverlay extends Mixins(
 
   allTokens!: Token[];
   tokens!: TokenModel[];
+
+  handleTokenClick(tokenAddress: string) {
+    const { token } = this.$route.params;
+    if (token === tokenAddress) {
+      this.cancel();
+    } else {
+      this.navigateToSelectTransferTarget(tokenAddress);
+    }
+  }
 
   getBalance(token: TokenModel) {
     const { balance, decimals } = this.$store.getters.token(token.address);
