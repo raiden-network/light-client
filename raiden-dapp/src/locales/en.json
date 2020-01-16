@@ -39,9 +39,11 @@
       "zero": "Please enter an amount larger than zero"
     }
   },
+  "address-display": {
+    "copy": "Click to copy",
+    "copied": "Copied!"
+  },
   "app-header": {
-    "copy": "Copy",
-    "copy-success": "Copied!",
     "currency": "ETH",
     "pending-transfers": "no pending transfers | 1 pending transfer | {amount} pending transfers"
   },
