@@ -1,5 +1,6 @@
 <template>
-  <v-overlay v-if="description !== ''" class="overlay" absolute="true">
+  <div v-if="description !== ''">
+    <blurred-overlay :show="true" />
     <raiden-dialog class="error-dialog bounce-animation" @close="dismiss">
       <v-row align="center" justify="center">
         <v-col cols="12">
@@ -26,15 +27,16 @@
         </v-col>
       </v-row>
     </raiden-dialog>
-  </v-overlay>
+  </div>
 </template>
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import RaidenDialog from '@/components/RaidenDialog.vue';
+import BlurredOverlay from '@/components/BlurredOverlay.vue';
 
 @Component({
-  components: { RaidenDialog }
+  components: { RaidenDialog, BlurredOverlay }
 })
 export default class ErrorDialog extends Vue {
   @Prop({ required: true })
@@ -65,14 +67,13 @@ export default class ErrorDialog extends Vue {
   }
 }
 
-.overlay {
-  backdrop-filter: blur(3px);
-  border-radius: 10px;
-  top: -120px;
-}
-
 .error-dialog {
   height: 441px;
+  left: 0;
+  margin: 0 auto;
+  position: absolute;
+  right: 0;
+  top: 12%;
   width: 310px;
 
   &__title {
