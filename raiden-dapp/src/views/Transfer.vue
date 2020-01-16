@@ -110,12 +110,11 @@
       :done="done"
     ></stepper>
 
-    <error-screen
+    <error-dialog
       :description="error"
       :title="errorTitle"
-      :button-label="$t('transfer.error.button')"
       @dismiss="error = ''"
-    ></error-screen>
+    ></error-dialog>
   </v-form>
 </template>
 
@@ -125,7 +124,7 @@ import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
 import { emptyDescription, StepDescription, Token } from '@/model/types';
 import Stepper from '@/components/Stepper.vue';
-import ErrorScreen from '@/components/ErrorScreen.vue';
+import ErrorDialog from '@/components/ErrorDialog.vue';
 import Divider from '@/components/Divider.vue';
 import TokenOverlay from '@/components/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
@@ -150,7 +149,7 @@ import BlockieMixin from '@/mixins/blockie-mixin';
     AddressInput,
     AmountInput,
     Stepper,
-    ErrorScreen,
+    ErrorDialog,
     DownArrow,
     TokenOverlay
   },
