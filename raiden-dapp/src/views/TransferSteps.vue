@@ -200,13 +200,13 @@
       ></transfer-progress-dialog>
     </v-dialog>
 
-    <error-screen
+    <error-dialog
       v-if="!processingTransfer"
       :description="error"
       :title="$t('transfer.error.title')"
-      :button-label="$t('transfer.error.button')"
       @dismiss="error = ''"
-    ></error-screen>
+    >
+    </error-dialog>
 
     <action-button
       :enabled="continueBtnEnabled"
@@ -235,7 +235,7 @@ import Spinner from '@/components/Spinner.vue';
 import MintDepositDialog from '@/components/MintDepositDialog.vue';
 import Checkmark from '@/components/Checkmark.vue';
 import Stepper from '@/components/Stepper.vue';
-import ErrorScreen from '@/components/ErrorScreen.vue';
+import ErrorDialog from '@/components/ErrorDialog.vue';
 import { Zero } from 'ethers/constants';
 import { getAddress, getAmount } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
@@ -250,7 +250,7 @@ import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
     FindRoutes,
     Spinner,
     Stepper,
-    ErrorScreen,
+    ErrorDialog,
     Checkmark,
     MintDepositDialog
   }

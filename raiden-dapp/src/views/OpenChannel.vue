@@ -40,12 +40,11 @@
       :done="done"
     ></stepper>
 
-    <error-screen
+    <error-dialog
       :description="error"
       :title="$t('open-channel.error.title')"
-      :button-label="$t('open-channel.error.button')"
       @dismiss="error = ''"
-    ></error-screen>
+    ></error-dialog>
   </v-form>
 </template>
 
@@ -63,7 +62,7 @@ import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { Route } from 'vue-router';
-import ErrorScreen from '@/components/ErrorScreen.vue';
+import ErrorDialog from '@/components/ErrorDialog.vue';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
@@ -74,7 +73,7 @@ import { getAmount } from '@/utils/query-params';
   components: {
     TokenInformation,
     Divider,
-    ErrorScreen,
+    ErrorDialog,
     Stepper,
     ActionButton,
     AmountInput
