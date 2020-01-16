@@ -21,7 +21,7 @@
                 <v-list-item-title
                   class="channel-list__channels__channel__partner-address"
                 >
-                  {{ channel.partner }}
+                  <address-display :address="channel.partner" />
                 </v-list-item-title>
                 <v-list-item-subtitle
                   class="channel-list__channels__channel__state-info"
@@ -111,6 +111,7 @@ import ChannelActions from '@/components/ChannelActions.vue';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
 import ChannelDeposit from '@/components/ChannelDeposit.vue';
 import Confirmation from '@/components/Confirmation.vue';
+import AddressDisplay from '@/components/AddressDisplay.vue';
 import { BigNumber } from 'ethers/utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import Filters from '@/filters';
@@ -120,7 +121,8 @@ import Filters from '@/filters';
     ChannelActions,
     ChannelLifeCycle,
     ChannelDeposit,
-    Confirmation
+    Confirmation,
+    AddressDisplay
   }
 })
 export default class ChannelList extends Mixins(BlockieMixin) {

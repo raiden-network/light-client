@@ -1,6 +1,5 @@
 import { mount, Wrapper } from '@vue/test-utils';
-import AppHeader from '@/components/AppHeader.vue';
-import store from '@/store/index';
+import AddressDisplay from '@/components/AddressDisplay.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { TestData } from '../data/mock-data';
@@ -10,17 +9,17 @@ import { addElemWithDataAppToBody } from '../utils/dialog';
 import { $identicon } from '../utils/mocks';
 
 Vue.use(Vuetify);
-Vue.filter('displayFormat', Filters.displayFormat);
+Vue.filter('truncate', Filters.truncate);
 
-describe('AppHeader.vue', () => {
+describe('AddressDisplay.vue', () => {
   addElemWithDataAppToBody();
 
-  let wrapper: Wrapper<AppHeader>;
+  let wrapper: Wrapper<AddressDisplay>;
 
   beforeAll(() => {
     jest.useFakeTimers();
-    wrapper = mount(AppHeader, {
-      store: store,
+    wrapper = mount(AddressDisplay, {
+      propsData: { address: '0x31aA9D3E2bd38d22CA3Ae9be7aae1D518fe46043' },
       mocks: {
         $route: TestData.mockRoute(
           {},
@@ -34,14 +33,11 @@ describe('AppHeader.vue', () => {
     });
   });
 
-  test('copy the address to the clipboard when the user presses the copy button', async () => {
+  test('copy the address to the clipboard when the user clicks on the address', async () => {
     const copied = jest.spyOn(wrapper.vm.$data, 'copied', 'set');
-    store.commit('loadComplete');
-    store.commit('account', '0xaccc');
-    await wrapper.vm.$nextTick();
     document.execCommand = jest.fn();
-    wrapper.find('button').trigger('click');
-    wrapper.find('button').trigger('click');
+    wrapper.find('.address__label').trigger('click');
+    wrapper.find('.address__label').trigger('click');
 
     await flushPromises();
     jest.runAllTimers();

@@ -22,7 +22,7 @@
         {{ $t('open-channel.hub') }}
       </v-col>
       <v-col cols="8" class="open-channel__hub__address text-left">
-        {{ partner }}
+        <address-display :address="partner" />
       </v-col>
     </v-row>
 
@@ -66,6 +66,7 @@ import { Route } from 'vue-router';
 import ErrorScreen from '@/components/ErrorScreen.vue';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
+import AddressDisplay from '@/components/AddressDisplay.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import { mapGetters } from 'vuex';
 import { getAmount } from '@/utils/query-params';
@@ -77,7 +78,8 @@ import { getAmount } from '@/utils/query-params';
     ErrorScreen,
     Stepper,
     ActionButton,
-    AmountInput
+    AmountInput,
+    AddressDisplay
   },
   computed: {
     ...mapGetters({

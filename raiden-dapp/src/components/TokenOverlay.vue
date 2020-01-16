@@ -50,8 +50,7 @@
           >
             <v-list-item
               :key="token.address"
-              :to="`/transfer/${token.address}`"
-              @click="cancel()"
+              @click="handleTokenClick(token.address)"
             >
               <v-col cols="2">
                 <v-list-item-avatar>
@@ -73,12 +72,7 @@
                     }}
                   </v-list-item-title>
                   <v-list-item-subtitle class="token-list__token-address">
-                    <v-tooltip bottom>
-                      <template #activator="{ on }">
-                        <span v-on="on">{{ token.address | truncate }}</span>
-                      </template>
-                      <span>{{ token.address }}</span>
-                    </v-tooltip>
+                    <address-display :address="token.address" />
                   </v-list-item-subtitle>
                 </v-list-item-content>
               </v-col>
@@ -106,10 +100,12 @@ import { mapGetters } from 'vuex';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { TokenModel, Token } from '@/model/types';
+import AddressDisplay from '@/components/AddressDisplay.vue';
 import Filters from '@/filters';
 import { Zero } from 'ethers/constants';
 
 @Component({
+  components: { AddressDisplay },
   computed: {
     ...mapGetters(['tokens', 'allTokens'])
   }
@@ -123,6 +119,15 @@ export default class TokenOverlay extends Mixins(
 
   allTokens!: Token[];
   tokens!: TokenModel[];
+
+  handleTokenClick(tokenAddress: string) {
+    const { token } = this.$route.params;
+    if (token === tokenAddress) {
+      this.cancel();
+    } else {
+      this.navigateToSelectTransferTarget(tokenAddress);
+    }
+  }
 
   getBalance(token: TokenModel) {
     const { balance, decimals } = this.$store.getters.token(token.address);

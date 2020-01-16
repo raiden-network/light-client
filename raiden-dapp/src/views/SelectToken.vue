@@ -39,14 +39,7 @@
               <v-list-item-subtitle
                 class="select-token__tokens__token__address"
               >
-                <v-tooltip bottom>
-                  <template #activator="{ on }">
-                    <span v-on="on">{{ item.address | truncate }}</span>
-                  </template>
-                  <span>
-                    {{ item.address }}
-                  </span>
-                </v-tooltip>
+                <address-display :address="item.address" />
               </v-list-item-subtitle>
             </v-list-item-content>
             <v-list-item-action-text>
@@ -72,9 +65,10 @@ import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ListHeader from '@/components/ListHeader.vue';
 import Spinner from '@/components/Spinner.vue';
+import AddressDisplay from '@/components/AddressDisplay.vue';
 
 @Component({
-  components: { Spinner, ListHeader },
+  components: { Spinner, ListHeader, AddressDisplay },
   computed: mapGetters(['allTokens'])
 })
 export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {

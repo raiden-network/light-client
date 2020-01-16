@@ -15,7 +15,7 @@
         }}
       </div>
       <div>
-        {{ token.address }}
+        <address-display :address="token.address" />
       </div>
     </v-col>
   </v-row>
@@ -23,8 +23,9 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Token } from '@/model/types';
+import AddressDisplay from '@/components/AddressDisplay.vue';
 
-@Component({})
+@Component({ components: { AddressDisplay } })
 export default class TokenInformation extends Vue {
   @Prop()
   token!: Token;
