@@ -18,7 +18,7 @@
   "dependencies": {
     "core-js": "^3.6.2",
     "ethereum-blockies-base64": "^1.0.2",
-    "ethers": "^4.0.42",
+    "ethers": "^4.0.43",
     "lodash": "^4.17.15",
     "raiden-ts": "file:../raiden-ts",
     "register-service-worker": "^1.6.2",
