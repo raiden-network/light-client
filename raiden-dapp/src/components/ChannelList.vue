@@ -44,9 +44,10 @@
             class="channel-list__channels__channel__expanded-area"
           >
             <div v-if="visible === `channel-${channel.id}-close`">
-              <confirmation
+              <confirmation-dialog
                 :identifier="channel.id"
                 :positive-action="$t('confirmation.buttons.close')"
+                :visible="closing"
                 @confirm="close()"
                 @cancel="dismiss()"
               >
@@ -55,12 +56,13 @@
                 </template>
 
                 {{ $t('channel-list.channel.close_dialog.description') }}
-              </confirmation>
+              </confirmation-dialog>
             </div>
             <div v-else-if="visible === `channel-${channel.id}-settle`">
-              <confirmation
+              <confirmation-dialog
                 :identifier="channel.id"
                 :positive-action="$t('confirmation.buttons.settle')"
+                :visible="settling"
                 @confirm="settle()"
                 @cancel="dismiss()"
               >
@@ -73,7 +75,7 @@
                     token: selectedChannel.token
                   })
                 }}
-              </confirmation>
+              </confirmation-dialog>
             </div>
             <div v-else-if="visible === `channel-${channel.id}-deposit`">
               <channel-deposit-dialog
@@ -111,7 +113,7 @@ import { Token } from '@/model/types';
 import ChannelActions from '@/components/ChannelActions.vue';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
 import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
-import Confirmation from '@/components/Confirmation.vue';
+import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import { BigNumber } from 'ethers/utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
@@ -122,7 +124,7 @@ import Filters from '@/filters';
     ChannelActions,
     ChannelLifeCycle,
     ChannelDepositDialog,
-    Confirmation,
+    ConfirmationDialog,
     AddressDisplay
   }
 })
@@ -143,6 +145,8 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   visibleChanged(_element: string) {}
 
   depositing = false;
+  closing = false;
+  settling = false;
   displayFormat = Filters.displayFormat;
   capitalizeFirst = Filters.capitalizeFirst;
 
@@ -156,6 +160,8 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   dismiss() {
     this.visibleChanged('');
     this.depositing = false;
+    this.closing = false;
+    this.settling = false;
   }
 
   onDeposit(channel: RaidenChannel) {
@@ -167,11 +173,13 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   onClose(channel: RaidenChannel) {
     this.selectedChannel = channel;
     this.visibleChanged(`channel-${channel.id}-close`);
+    this.closing = true;
   }
 
   onSettle(channel: RaidenChannel) {
     this.selectedChannel = channel;
     this.visibleChanged(`channel-${channel.id}-settle`);
+    this.settling = true;
   }
 
   async deposit(deposit: BigNumber) {

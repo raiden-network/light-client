@@ -31,6 +31,26 @@ export default class RaidenDialog extends Vue {
   background-color: $card-background;
   padding: 25px;
 
+  ::v-deep {
+    .v-card {
+      &__title {
+        color: $color-white;
+        font-family: Roboto, sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 28px;
+        justify-content: center;
+      }
+
+      &__text {
+        padding-top: 10px;
+        text-align: center;
+        height: 100%;
+        color: $color-white;
+      }
+    }
+  }
+
   &__close {
     position: absolute;
     right: 15px;
