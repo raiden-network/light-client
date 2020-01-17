@@ -33,7 +33,7 @@
     <v-row class="app-header__bottom" align="center" no-gutters>
       <v-col cols="6">
         <div class="app-header__bottom__address text-left">
-          <address-display :address="defaultAccount" icon="true" />
+          <address-display :address="defaultAccount" />
         </div>
       </v-col>
       <v-col cols="6">
