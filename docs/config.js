@@ -21,7 +21,8 @@ module.exports = {
                     '/prerequisites/',
                     '/installing-sdk/',
                     '/installing-dapp/',
-                    '/connecting/'
+                    '/connecting/',
+                    '/private-chain/'
                 ]
             },
             {
