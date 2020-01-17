@@ -5,20 +5,6 @@
         <p class="address__label" v-on="on" @click="copy">
           {{ address | truncate(8) }}
         </p>
-        <v-btn
-          v-if="icon"
-          id="copyBtn"
-          text
-          icon
-          @click.native="copy"
-          v-on="on"
-        >
-          <v-img
-            :src="require('../assets/copy_icon.svg')"
-            class="address__copy"
-            contain
-          ></v-img>
-        </v-btn>
       </template>
       <span>
         {{ copied ? $t('address-display.copied') : $t('address-display.copy') }}
@@ -37,9 +23,6 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 
 @Component({})
 export default class AddressDisplay extends Vue {
-  @Prop({ required: false, default: false })
-  icon!: boolean;
-
   @Prop({ required: true })
   address!: string;
 
