@@ -46,25 +46,20 @@
           />
         </v-col>
         <v-col cols="2" class="transfer__deposit">
-          <v-dialog v-model="depositing" max-width="425">
-            <template #activator="{ on }">
-              <v-btn
-                text
-                class="transfer__deposit-button"
-                v-on="on"
-                @click="depositing = true"
-              >
-                {{ $t('transfer.deposit-button') }}
-              </v-btn>
-            </template>
-            <channel-deposit
-              v-if="depositing"
-              :token="token"
-              identifier="0"
-              @cancel="depositing = false"
-              @confirm="deposit($event)"
-            />
-          </v-dialog>
+          <v-btn
+            text
+            class="transfer__deposit-button"
+            @click="depositing = true"
+          >
+            {{ $t('transfer.deposit-button') }}
+          </v-btn>
+          <channel-deposit-dialog
+            :token="token"
+            :visible="depositing"
+            identifier="0"
+            @cancel="depositing = false"
+            @confirm="deposit($event)"
+          />
         </v-col>
       </v-row>
 
@@ -128,7 +123,7 @@ import Divider from '@/components/Divider.vue';
 import TokenOverlay from '@/components/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import ChannelDeposit from '@/components/ChannelDeposit.vue';
+import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
 import DownArrow from '@/components/icons/DownArrow.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
@@ -141,7 +136,7 @@ import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({
   components: {
-    ChannelDeposit,
+    ChannelDepositDialog,
     ActionButton,
     TokenInformation,
     Divider,
@@ -333,9 +328,5 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
       }
     }
   }
-}
-
-::v-deep .v-dialog {
-  border-radius: 10px !important;
 }
 </style>

@@ -76,14 +76,13 @@
               </confirmation>
             </div>
             <div v-else-if="visible === `channel-${channel.id}-deposit`">
-              <v-dialog v-model="depositing" max-width="425">
-                <channel-deposit
-                  :identifier="channel.id"
-                  :token="token"
-                  @confirm="deposit($event)"
-                  @cancel="dismiss()"
-                ></channel-deposit>
-              </v-dialog>
+              <channel-deposit-dialog
+                :identifier="channel.id"
+                :token="token"
+                :visible="depositing"
+                @confirm="deposit($event)"
+                @cancel="dismiss()"
+              ></channel-deposit-dialog>
             </div>
             <div v-else class="channel-list__channels__channel__area-content">
               <channel-life-cycle
@@ -111,7 +110,7 @@ import { RaidenChannel } from 'raiden-ts';
 import { Token } from '@/model/types';
 import ChannelActions from '@/components/ChannelActions.vue';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
-import ChannelDeposit from '@/components/ChannelDeposit.vue';
+import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
 import Confirmation from '@/components/Confirmation.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import { BigNumber } from 'ethers/utils';
@@ -122,7 +121,7 @@ import Filters from '@/filters';
   components: {
     ChannelActions,
     ChannelLifeCycle,
-    ChannelDeposit,
+    ChannelDepositDialog,
     Confirmation,
     AddressDisplay
   }

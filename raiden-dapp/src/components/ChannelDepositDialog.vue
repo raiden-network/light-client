@@ -1,32 +1,29 @@
 <template>
-  <div>
-    <blurred-overlay :show="true" :fullscreen="true" />
-    <raiden-dialog class="channel-deposit" @close="cancel">
-      <v-card-text>
-        <v-col>
-          <v-form v-model="valid">
-            <amount-input
-              v-model="deposit"
-              :token="token"
-              :label="$t('channel-deposit.input.label')"
-              :max="token.balance"
-              limit
-            ></amount-input>
-          </v-form>
-        </v-col>
-      </v-card-text>
-      <v-card-actions>
-        <action-button
-          sticky
-          arrow
-          :enabled="valid"
-          :text="$t('channel-deposit.buttons.confirm')"
-          @click="mintDeposit()"
-        >
-        </action-button>
-      </v-card-actions>
-    </raiden-dialog>
-  </div>
+  <raiden-dialog :visible="visible" class="channel-deposit" @close="cancel">
+    <v-card-text>
+      <v-col>
+        <v-form v-model="valid">
+          <amount-input
+            v-model="deposit"
+            :token="token"
+            :label="$t('channel-deposit.input.label')"
+            :max="token.balance"
+            limit
+          ></amount-input>
+        </v-form>
+      </v-col>
+    </v-card-text>
+    <v-card-actions>
+      <action-button
+        sticky
+        arrow
+        :enabled="valid"
+        :text="$t('channel-deposit.buttons.confirm')"
+        @click="mintDeposit()"
+      >
+      </action-button>
+    </v-card-actions>
+  </raiden-dialog>
 </template>
 
 <script lang="ts">
@@ -46,9 +43,12 @@ import { BalanceUtils } from '@/utils/balance-utils';
     BlurredOverlay
   }
 })
-export default class ChannelDeposit extends Vue {
+export default class ChannelDepositDialog extends Vue {
   @Prop({ required: true })
   identifier!: number;
+
+  @Prop({ required: true })
+  visible!: boolean;
 
   @Prop({ required: true })
   token!: Token;
