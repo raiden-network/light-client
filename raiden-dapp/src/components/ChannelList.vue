@@ -76,12 +76,14 @@
               </confirmation>
             </div>
             <div v-else-if="visible === `channel-${channel.id}-deposit`">
-              <channel-deposit
-                :identifier="channel.id"
-                :token="token"
-                @confirm="deposit($event)"
-                @cancel="dismiss()"
-              ></channel-deposit>
+              <v-dialog v-model="depositing" max-width="425">
+                <channel-deposit
+                  :identifier="channel.id"
+                  :token="token"
+                  @confirm="deposit($event)"
+                  @cancel="dismiss()"
+                ></channel-deposit>
+              </v-dialog>
             </div>
             <div v-else class="channel-list__channels__channel__area-content">
               <channel-life-cycle
@@ -141,6 +143,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   @Emit()
   visibleChanged(_element: string) {}
 
+  depositing = false;
   displayFormat = Filters.displayFormat;
   capitalizeFirst = Filters.capitalizeFirst;
 
@@ -153,11 +156,13 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   dismiss() {
     this.visibleChanged('');
+    this.depositing = false;
   }
 
   onDeposit(channel: RaidenChannel) {
     this.selectedChannel = channel;
     this.visibleChanged(`channel-${channel.id}-deposit`);
+    this.depositing = true;
   }
 
   onClose(channel: RaidenChannel) {
@@ -259,5 +264,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       }
     }
   }
+}
+
+::v-deep .v-dialog {
+  border-radius: 10px !important;
 }
 </style>

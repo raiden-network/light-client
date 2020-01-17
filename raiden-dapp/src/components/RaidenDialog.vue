@@ -3,9 +3,7 @@
     <v-btn icon class="raiden-dialog__close" @click="close()">
       <v-icon>mdi-close</v-icon>
     </v-btn>
-    <v-card-text>
-      <slot></slot>
-    </v-card-text>
+    <slot></slot>
   </v-card>
 </template>
 
@@ -23,6 +21,7 @@ export default class RaidenDialog extends Vue {
 @import '../scss/colors';
 .raiden-dialog {
   background-color: $card-background;
+  padding: 25px;
 
   &__close {
     position: absolute;

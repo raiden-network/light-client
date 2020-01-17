@@ -1,59 +1,49 @@
 <template>
-  <v-col class="channel-deposit">
-    <v-row
-      class="channel-deposit__wrapper"
-      align="center"
-      justify="center"
-      no-gutters
-    >
-      <v-col cols="12">
-        <v-form v-model="valid">
-          <amount-input
-            v-model="deposit"
-            :token="token"
-            :label="$t('channel-deposit.input.label')"
-            :max="token.balance"
-            limit
-          ></amount-input>
-        </v-form>
-      </v-col>
-    </v-row>
-    <v-row
-      align="end"
-      justify="center"
-      class="channel-deposit__buttons"
-      no-gutters
-    >
-      <v-btn
-        :id="`cancel-${identifier}`"
-        light
-        class="text-capitalize channel-deposit__buttons__cancel"
-        @click="cancel()"
-      >
-        {{ $t('general.buttons.cancel') }}
-      </v-btn>
-      <v-btn
-        :id="`confirm-${identifier}`"
-        :disabled="!valid"
-        light
-        class="text-capitalize channel-deposit__buttons__confirm"
-        @click="confirm()"
-      >
-        {{ $t('channel-deposit.buttons.confirm') }}
-      </v-btn>
-    </v-row>
-  </v-col>
+  <div>
+    <blurred-overlay :show="true" :fullscreen="true" />
+    <raiden-dialog class="channel-deposit" @close="cancel">
+      <v-card-text>
+        <v-col>
+          <v-form v-model="valid">
+            <amount-input
+              v-model="deposit"
+              :token="token"
+              :label="$t('channel-deposit.input.label')"
+              :max="token.balance"
+              limit
+            ></amount-input>
+          </v-form>
+        </v-col>
+      </v-card-text>
+      <v-card-actions>
+        <action-button
+          sticky
+          arrow
+          :enabled="valid"
+          :text="$t('channel-deposit.buttons.confirm')"
+          @click="mintDeposit()"
+        >
+        </action-button>
+      </v-card-actions>
+    </raiden-dialog>
+  </div>
 </template>
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import AmountInput from '@/components/AmountInput.vue';
+import ActionButton from '@/components/ActionButton.vue';
+import RaidenDialog from '@/components/RaidenDialog.vue';
+import BlurredOverlay from '@/components/BlurredOverlay.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({
   components: {
-    AmountInput
+    AmountInput,
+    ActionButton,
+    RaidenDialog,
+    BlurredOverlay
   }
 })
 export default class ChannelDeposit extends Vue {
@@ -83,66 +73,5 @@ export default class ChannelDeposit extends Vue {
 <style scoped lang="scss">
 @import '../scss/colors';
 .channel-deposit {
-  height: 252px;
-  padding: 20px;
-  background-color: $dialog-background;
-  box-shadow: 10px 10px 15px 0 rgba(0, 0, 0, 0.3);
-
-  &__wrapper {
-    > * {
-      height: 150px;
-      font-size: 16px;
-      line-height: 21px;
-      text-align: center;
-    }
-  }
-
-  &__buttons {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-
-    button {
-      height: 35px;
-      width: 135px;
-      color: white;
-      border-radius: 29px;
-      margin-left: 15px;
-      margin-right: 15px;
-    }
-
-    &__cancel {
-      background-color: transparent !important;
-      border: 2px solid $primary-color;
-    }
-
-    &__confirm {
-      background-color: $primary-color !important;
-      color: #ffffff;
-    }
-  }
-}
-
-.theme {
-  &--light {
-    &.v-btn {
-      &.v-btn {
-        &--disabled {
-          /* stylelint-disable */
-          // can't nest class inside nesting
-          &:not(.v-btn--icon) {
-            &:not(.v-btn--text) {
-              &:not(.v-btn--outline) {
-                background-color: $primary-disabled-color !important;
-                color: #c4c4c4 !important;
-              }
-            }
-          }
-          /* stylelint-enable */
-        }
-      }
-    }
-  }
 }
 </style>

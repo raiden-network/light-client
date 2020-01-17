@@ -46,25 +46,24 @@
           />
         </v-col>
         <v-col cols="2" class="transfer__deposit">
-          <v-dialog v-model="depositing" max-width="625">
+          <v-dialog v-model="depositing" max-width="425">
             <template #activator="{ on }">
               <v-btn
                 text
                 class="transfer__deposit-button"
-                @click="depositing = true"
                 v-on="on"
+                @click="depositing = true"
               >
                 {{ $t('transfer.deposit-button') }}
               </v-btn>
             </template>
-            <v-card class="transfer__deposit-dialog">
-              <channel-deposit
-                :token="token"
-                identifier="0"
-                @cancel="depositing = false"
-                @confirm="deposit($event)"
-              ></channel-deposit>
-            </v-card>
+            <channel-deposit
+              v-if="depositing"
+              :token="token"
+              identifier="0"
+              @cancel="depositing = false"
+              @confirm="deposit($event)"
+            />
           </v-dialog>
         </v-col>
       </v-row>
@@ -260,6 +259,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '../scss/colors';
+
 .transfer {
   width: 100%;
   height: 100%;
@@ -333,5 +333,9 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
       }
     }
   }
+}
+
+::v-deep .v-dialog {
+  border-radius: 10px !important;
 }
 </style>
