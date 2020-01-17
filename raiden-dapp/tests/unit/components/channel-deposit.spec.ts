@@ -4,7 +4,7 @@ import Vue from 'vue';
 import { addElemWithDataAppToBody } from '../utils/dialog';
 import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
-import ChannelDeposit from '@/components/ChannelDeposit.vue';
+import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
 import { BigNumber } from 'ethers/utils';
 import flushPromises from 'flush-promises';
 
@@ -13,10 +13,10 @@ Vue.use(Vuetify);
 describe('ChannelDeposit.vue', () => {
   addElemWithDataAppToBody();
 
-  let wrapper: Wrapper<ChannelDeposit>;
+  let wrapper: Wrapper<ChannelDepositDialog>;
 
   beforeAll(() => {
-    wrapper = mount(ChannelDeposit, {
+    wrapper = mount(ChannelDepositDialog, {
       propsData: {
         token: TestData.token,
         identifier: 1
