@@ -14,10 +14,7 @@ checks:
       threshold: 100
 plugins:
     git-legal:
-      enabled: true
-      config:
-        allow_affero_copyleft: false
-        allow_strong_copyleft: false
+      enabled: true  
 exclude_patterns:
   - "**/node_modules/"
   - "raiden-ts/raiden-contracts/"

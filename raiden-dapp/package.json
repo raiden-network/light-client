@@ -23,6 +23,7 @@
     "raiden-ts": "file:../raiden-ts",
     "register-service-worker": "^1.6.2",
     "rxjs": "^6.5.4",
+    "telegram-api-js": "^1.2.9",
     "tiny-async-pool": "^1.1.0",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.2",
