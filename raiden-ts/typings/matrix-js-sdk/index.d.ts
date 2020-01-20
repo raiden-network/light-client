@@ -187,7 +187,7 @@ declare module 'matrix-js-sdk' {
       roomId: string,
       callback?: requestCallback,
     ): Promise<any> | MatrixError | void;
-    public createFilter(content: object): Promise<object> | MatrixError;
+    public createFilter(content: object): Promise<Filter>;
     public createGroup(content: {
       localpart: string;
       profile: object;
@@ -286,9 +286,14 @@ declare module 'matrix-js-sdk' {
     public getRoomIdForAlias(
       alias: string,
       callback?: requestCallback,
-    ): Promise<object> | MatrixError | void;
+    ): Promise<RoomIdForAlias>;
     public getRoomPushRule(scope: string, roomId: string): object | undefined;
     public getRooms(): Room[];
+  }
+
+  export interface RoomIdForAlias {
+    readonly room_id: string;
+    readonly servers: string[];
   }
   /*
   export class MatrixScheduler implements IMatrixScheduler {

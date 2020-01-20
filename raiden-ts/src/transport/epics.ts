@@ -47,7 +47,15 @@ import { find, get, minBy, sortBy } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
 
-import { createClient, MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
+import {
+  createClient,
+  MatrixClient,
+  MatrixEvent,
+  Room,
+  RoomMember,
+  RoomFilterJson,
+  FilterDefinition,
+} from 'matrix-js-sdk';
 import matrixLogger from 'matrix-js-sdk/lib/logger';
 
 import { Address, Signed, isntNil, assert } from '../utils/types';
@@ -55,6 +63,7 @@ import { isActionOf } from '../utils/actions';
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { channelMonitor } from '../channels/actions';
+import { RaidenConfig } from '../config';
 import {
   Message,
   MessageType,
@@ -82,6 +91,47 @@ import { getPresences$, getRoom$, roomMatch, globalRoomNames } from './utils';
 // still there, so we consider the user as available/online then
 const AVAILABLE = ['online', 'unavailable'];
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
+
+/**
+ * Creates and returns a matrix filter. The filter reduces the size of the initial sync by
+ * filtering out broadcast rooms, emphemeral messages like receipts etc.
+ *
+ * @param config - The {@link RaidenConfig} provides the broadcast room aliases for pfs and discovery.
+ * @param server - The matrix server used e.g., https://transport04.raiden.network is part of the alias.
+ * @param matrix - The {@link MatrixClient} instance used to create the filter.
+ */
+async function createFilter(config: RaidenConfig, server: string, matrix: MatrixClient) {
+  const { pfsRoom, discoveryRoom } = config;
+  const transport = server.split('://')[1];
+
+  const filteredRooms = [];
+
+  if (pfsRoom) {
+    const { room_id: roomId } = await matrix.getRoomIdForAlias(`#${pfsRoom}:${transport}`);
+    filteredRooms.push(roomId);
+  }
+
+  if (discoveryRoom) {
+    const { room_id: roomId } = await matrix.getRoomIdForAlias(`#${discoveryRoom}:${transport}`);
+    filteredRooms.push(roomId);
+  }
+
+  const roomFilter: RoomFilterJson = {
+    not_rooms: filteredRooms,
+    ephemeral: {
+      not_types: ['m.receipt'],
+    },
+  };
+
+  const filterDefinition: FilterDefinition = {
+    room: roomFilter,
+    presence: {
+      not_types: ['m.presence'],
+    },
+  };
+
+  return await matrix.createFilter(filterDefinition);
+}
 
 /**
  * Search user directory for valid users matching a given address and return latest
@@ -433,7 +483,13 @@ export const initMatrixEpic = (
           }),
           switchMapTo(matrix$),
           delay(1e3), // wait 1s before starting matrix, so event listeners can be registered
-          mergeMap(matrix => matrix.startClient({ initialSyncLimit: 0 })),
+          withLatestFrom(config$),
+          mergeMap(async ([matrix, config]) =>
+            matrix.startClient({
+              initialSyncLimit: 0,
+              filter: await createFilter(config, server, matrix),
+            }),
+          ),
           ignoreElements(),
         ),
         // emit matrixSetup in parallel to be persisted in state
