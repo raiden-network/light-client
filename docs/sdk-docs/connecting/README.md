@@ -20,4 +20,4 @@ Contract info is a JSON file that is generated when you deploy [raiden-contracts
 
 ## Using the SDK in a Private Chain or a Development Environment
 
-If you want to use the SDK in a private chain or a development environment, you can follow [this guide](https://github.com/raiden-network/light-client/wiki/Using-the-SDK-in-a-private-chain-or-a-development-environment).
+If you want to use the SDK in a private chain, you can follow [this guide](../private-chain/README.md).
