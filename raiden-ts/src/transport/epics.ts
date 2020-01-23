@@ -102,7 +102,7 @@ const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
  */
 async function createFilter(config: RaidenConfig, server: string, matrix: MatrixClient) {
   const { pfsRoom, discoveryRoom } = config;
-  const transport = server.split('://')[1];
+  const transport = getServerName(server);
 
   const filteredRooms = [];
 
