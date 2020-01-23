@@ -71,7 +71,7 @@
     "typechain-target-ethers": "^1.0.3",
     "typedoc": "0.16.8",
     "typedoc-plugin-markdown": "^2.2.16",
-    "typescript": "^3.7.4",
+    "typescript": "^3.7.5",
     "vuepress": "^1.2.0"
   },
   "dependencies": {
