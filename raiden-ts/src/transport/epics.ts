@@ -11,6 +11,7 @@ import {
   merge,
   defer,
   concat,
+  AsyncSubject,
 } from 'rxjs';
 import {
   catchError,
@@ -55,6 +56,7 @@ import {
   RoomMember,
   RoomFilterJson,
   FilterDefinition,
+  Filter,
 } from 'matrix-js-sdk';
 import matrixLogger from 'matrix-js-sdk/lib/logger';
 
@@ -93,44 +95,88 @@ const AVAILABLE = ['online', 'unavailable'];
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
 
 /**
- * Creates and returns a matrix filter. The filter reduces the size of the initial sync by
- * filtering out broadcast rooms, emphemeral messages like receipts etc.
+ * Joins the global broadcast rooms and returns the room ids.
  *
  * @param config - The {@link RaidenConfig} provides the broadcast room aliases for pfs and discovery.
  * @param server - The matrix server used e.g., https://transport04.raiden.network is part of the alias.
  * @param matrix - The {@link MatrixClient} instance used to create the filter.
+ * @returns Observable of the list of room ids for the the broadcast rooms.
  */
-async function createFilter(config: RaidenConfig, server: string, matrix: MatrixClient) {
-  const { pfsRoom, discoveryRoom } = config;
-  const transport = getServerName(server);
+function joinGlobalRooms(
+  config: RaidenConfig,
+  server: string,
+  matrix: MatrixClient,
+): Observable<string[]> {
+  const serverName = getServerName(server);
+  return from(globalRoomNames(config)).pipe(
+    map(globalRoom => `#${globalRoom}:${serverName}`),
+    mergeMap(alias => matrix.joinRoom(alias)),
+    map(room => room.roomId),
+    toArray(), // wait all joinRoom promises to complete
+  );
+}
 
-  const filteredRooms = [];
+/**
+ * Creates and returns a matrix filter. The filter reduces the size of the initial sync by
+ * filtering out broadcast rooms, emphemeral messages like receipts etc.
+ *
+ * @param matrix - The {@link MatrixClient} instance used to create the filter.
+ * @param roomIds - The ids of the rooms to filter out during sync.
+ * @returns Observable of the {@link Filter} that was created.
+ */
+function createFilter(matrix: MatrixClient, roomIds: string[]): Observable<Filter> {
+  return of(roomIds).pipe(
+    map(filteredRooms => ({
+      not_rooms: filteredRooms,
+      ephemeral: {
+        not_types: ['m.receipt'],
+      },
+    })),
+    map((roomFilter: RoomFilterJson) => ({
+      room: roomFilter,
+      presence: {
+        not_types: ['m.presence'],
+      },
+    })),
+    mergeMap((filterDefinition: FilterDefinition) => from(matrix.createFilter(filterDefinition))),
+  );
+}
 
-  if (pfsRoom) {
-    const { room_id: roomId } = await matrix.getRoomIdForAlias(`#${pfsRoom}:${transport}`);
-    filteredRooms.push(roomId);
-  }
-
-  if (discoveryRoom) {
-    const { room_id: roomId } = await matrix.getRoomIdForAlias(`#${discoveryRoom}:${transport}`);
-    filteredRooms.push(roomId);
-  }
-
-  const roomFilter: RoomFilterJson = {
-    not_rooms: filteredRooms,
-    ephemeral: {
-      not_types: ['m.receipt'],
-    },
-  };
-
-  const filterDefinition: FilterDefinition = {
-    room: roomFilter,
-    presence: {
-      not_types: ['m.presence'],
-    },
-  };
-
-  return await matrix.createFilter(filterDefinition);
+function startMatrixSync(
+  state$: Observable<RaidenState>,
+  matrix$: AsyncSubject<MatrixClient>,
+  matrix: MatrixClient,
+  config$: Observable<RaidenConfig>,
+  server: string,
+) {
+  return state$
+    .pipe(
+      pluck('transport', 'matrix', 'server'),
+      filter((_server): _server is string => !!_server),
+      take(1),
+      tap(() => {
+        matrix$.next(matrix);
+        matrix$.complete();
+      }),
+      switchMapTo(matrix$),
+      delay(1e3), // wait 1s before starting matrix, so event listeners can be registered
+    )
+    .pipe(
+      withLatestFrom(config$),
+      mergeMap(([matrix, config]) =>
+        joinGlobalRooms(config, server, matrix).pipe(
+          mergeMap(roomIds => createFilter(matrix, roomIds)),
+          map(filter => [matrix, filter] as const),
+        ),
+      ),
+      mergeMap(([matrix, filter]) =>
+        matrix.startClient({
+          initialSyncLimit: 0,
+          filter: filter,
+        }),
+      ),
+      ignoreElements(),
+    );
 }
 
 /**
@@ -326,7 +372,6 @@ function fetchSortedMatrixServers$(matrixServerLookup: string, httpTimeout: numb
  * @param deps - RaidenEpicDeps-like/partial object
  * @param deps.address - Our address (to compose matrix user)
  * @param deps.signer - Signer to be used to sign password and displayName
- * @param deps.config$ - Used to calculate global rooms to join
  * @returns Observable of one { matrix, server, setup } object
  */
 function setupMatrixClient$(
@@ -335,11 +380,9 @@ function setupMatrixClient$(
   {
     address,
     signer,
-    config$,
   }: {
     address: RaidenEpicDeps['address'];
     signer: RaidenEpicDeps['signer'];
-    config$: RaidenEpicDeps['config$']; // better than the extra type imports
   },
 ) {
   const serverName = getServerName(server);
@@ -393,15 +436,10 @@ function setupMatrixClient$(
       );
     }
   }).pipe(
-    withLatestFrom(config$),
     // the APIs below are authenticated, and therefore also act as validator
-    mergeMap(([{ matrix, server, setup }, config]) =>
+    mergeMap(({ matrix, server, setup }) =>
       // ensure displayName is set even on restarts
       from(matrix.setDisplayName(setup.displayName)).pipe(
-        mergeMap(() => globalRoomNames(config)),
-        map(globalRoom => `#${globalRoom}:${serverName}`),
-        mergeMap(alias => matrix.joinRoom(alias)),
-        toArray(), // wait all joinRoom promises to complete
         mapTo({ matrix, server, setup }), // return triplet again
       ),
     ),
@@ -454,7 +492,7 @@ export const initMatrixEpic = (
         catchError(andSuppress), // servers$ may error, so store lastError
         concatMap(({ server, setup }) =>
           // serially, try setting up client and validate its credential
-          setupMatrixClient$(server, setup, { address, signer, config$ }).pipe(
+          setupMatrixClient$(server, setup, { address, signer }).pipe(
             // store and suppress any 'setupMatrixClient$' error
             catchError(andSuppress),
           ),
@@ -473,25 +511,7 @@ export const initMatrixEpic = (
     mergeMap(({ matrix, server, setup }) =>
       merge(
         // wait for matrixSetup to be persisted in state, then resolves matrix$ with client
-        state$.pipe(
-          pluck('transport', 'matrix', 'server'),
-          filter((_server): _server is string => !!_server),
-          take(1),
-          tap(() => {
-            matrix$.next(matrix);
-            matrix$.complete();
-          }),
-          switchMapTo(matrix$),
-          delay(1e3), // wait 1s before starting matrix, so event listeners can be registered
-          withLatestFrom(config$),
-          mergeMap(async ([matrix, config]) =>
-            matrix.startClient({
-              initialSyncLimit: 0,
-              filter: await createFilter(config, server, matrix),
-            }),
-          ),
-          ignoreElements(),
-        ),
+        startMatrixSync(state$, matrix$, matrix, config$, server),
         // emit matrixSetup in parallel to be persisted in state
         of(matrixSetup({ server, setup })),
         // monitor config.logger & disable or re-enable matrix's logger accordingly
