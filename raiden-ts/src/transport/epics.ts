@@ -57,6 +57,7 @@ import {
   RoomFilterJson,
   FilterDefinition,
   Filter,
+  User,
 } from 'matrix-js-sdk';
 import matrixLogger from 'matrix-js-sdk/lib/logger';
 
@@ -203,6 +204,16 @@ function searchAddressPresence$(matrix: MatrixClient, address: Address) {
         } catch (err) {
           continue;
         }
+
+        const profile = matrix.getUser(user.user_id);
+        if (!profile) {
+          const newUser = new User(user.user_id);
+          newUser.setDisplayName(user.display_name);
+          matrix.store.users[user.user_id] = newUser;
+        } else {
+          profile.setDisplayName(user.display_name);
+        }
+
         yield user.user_id;
       }
     }),

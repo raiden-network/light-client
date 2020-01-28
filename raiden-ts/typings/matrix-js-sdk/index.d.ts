@@ -31,7 +31,9 @@ declare module 'matrix-js-sdk' {
     avatar_url?: string;
   }
 
-  export interface User {
+  export class User {
+    constructor(userId: string);
+    setDisplayName(displayName: string): void;
     userId: string;
     displayName?: string;
     avatarUrl?: string;
@@ -289,6 +291,10 @@ declare module 'matrix-js-sdk' {
     ): Promise<RoomIdForAlias>;
     public getRoomPushRule(scope: string, roomId: string): object | undefined;
     public getRooms(): Room[];
+
+    store: {
+      users: {[userId: string]: User }
+    }
   }
 
   export interface RoomIdForAlias {
@@ -646,6 +652,7 @@ declare module 'matrix-js-sdk' {
 
       }
   }
+
   declare namespace Matrix.Store {
 
       export class MatrixInMemoryStore implements IMatrixStore {
