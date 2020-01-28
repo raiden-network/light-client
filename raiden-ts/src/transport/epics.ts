@@ -135,7 +135,7 @@ function createFilter(matrix: MatrixClient, roomIds: string[]): Observable<Filte
     map((roomFilter: RoomFilterJson) => ({
       room: roomFilter,
       presence: {
-        not_types: ['m.presence'],
+        types: ['m.presence'],
       },
     })),
     mergeMap((filterDefinition: FilterDefinition) => from(matrix.createFilter(filterDefinition))),
