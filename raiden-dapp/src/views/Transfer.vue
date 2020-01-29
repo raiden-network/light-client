@@ -54,11 +54,13 @@
             {{ $t('transfer.deposit-button') }}
           </v-btn>
           <channel-deposit-dialog
+            :loading="loading"
+            :done="done"
             :token="token"
             :visible="depositing"
             identifier="0"
             @cancel="depositing = false"
-            @confirm="deposit($event)"
+            @mintDeposit="deposit($event)"
           />
         </v-col>
       </v-row>
@@ -97,12 +99,12 @@
       ></action-button>
     </v-container>
 
-    <stepper
-      :display="loading"
+    <!-- <stepper
+      :loading="loading"
       :steps="steps"
       :done-step="doneStep"
       :done="done"
-    ></stepper>
+    ></stepper> -->
 
     <error-dialog
       :description="error"
@@ -116,7 +118,7 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import { emptyDescription, StepDescription, Token } from '@/model/types';
+import { Token } from '@/model/types';
 import Stepper from '@/components/Stepper.vue';
 import ErrorDialog from '@/components/ErrorDialog.vue';
 import Divider from '@/components/Divider.vue';
@@ -167,9 +169,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   errorTitle: string = '';
   error: string = '';
 
-  steps: StepDescription[] = [];
-  doneStep: StepDescription = emptyDescription();
-
   channels!: (tokenAddress: string) => RaidenChannel[];
 
   channelWithBiggestCapacity!: (
@@ -218,12 +217,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   }
 
   async deposit(amount: BigNumber) {
-    this.steps = [
-      (this.$t('transfer.steps.deposit') as any) as StepDescription
-    ];
-    this.doneStep = (this.$t(
-      'transfer.steps.deposit-done'
-    ) as any) as StepDescription;
     this.errorTitle = this.$t('transfer.error.deposit-title') as string;
 
     this.loading = true;
