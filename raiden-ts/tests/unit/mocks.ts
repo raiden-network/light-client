@@ -289,7 +289,7 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
     })),
     getUserId: jest.fn(() => userId),
     getUsers: jest.fn(() => []),
-    getUser: jest.fn(userId => ({ userId, presence: 'offline' })),
+    getUser: jest.fn(userId => ({ userId, presence: 'offline', setDisplayName: jest.fn() })),
     getProfileInfo: jest.fn(async userId => ({ displayname: `${userId}_display_name` })),
     createRoom: jest.fn(async ({ visibility, invite }) => ({
       room_id: `!roomId_${visibility || 'public'}_with_${(invite || []).join('_')}:${server}`,

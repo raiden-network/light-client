@@ -481,7 +481,11 @@ describe('transport epic', () => {
         ),
         state$ = of(state);
 
-      matrix.getUser.mockImplementationOnce(userId => ({ userId, presence: 'unavailable' }));
+      matrix.getUser.mockImplementationOnce(userId => ({
+        userId,
+        presence: 'unavailable',
+        setDisplayName: jest.fn(),
+      }));
 
       const promise = matrixPresenceUpdateEpic(action$, state$, depsMock)
         .pipe(takeUntil(timer(50)))
@@ -510,6 +514,7 @@ describe('transport epic', () => {
         userId,
         presence: 'offline',
         displayName: `partner_display_name`,
+        setDisplayName: jest.fn(),
       }));
       (verifyMessage as jest.Mock).mockReturnValueOnce(token);
 
