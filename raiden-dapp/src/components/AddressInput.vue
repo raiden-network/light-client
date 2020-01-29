@@ -90,7 +90,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   valid: boolean = false;
   touched: boolean = false;
-  errorMessages: string[] = [''];
+  errorMessages: string[] = [];
   busy: boolean = false;
   presences!: Presences;
   isAddressAvailable: boolean = false;
@@ -210,6 +210,11 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     if (this.$refs.address) {
       this.touched = true;
       this.valid = this.errorMessages.length === 0;
+      if (!this.valid) {
+        return;
+      }
+      // @ts-ignore
+      this.$refs.address.validate();
     }
   }
 
