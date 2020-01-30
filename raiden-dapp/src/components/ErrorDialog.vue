@@ -1,15 +1,19 @@
 <template>
-  <div v-if="description !== ''">
-    <blurred-overlay :show="true" />
-    <raiden-dialog class="error-dialog bounce-animation" @close="dismiss">
+  <raiden-dialog
+    class="error-dialog"
+    :visible="description !== ''"
+    :fullscreen="false"
+    @close="dismiss"
+  >
+    <v-card-title>
       <v-row align="center" justify="center">
-        <v-col cols="12">
-          <div class="error-dialog__title">
-            {{ title }}
-          </div>
+        <v-col>
+          <span>{{ title }}</span>
         </v-col>
       </v-row>
+    </v-card-title>
 
+    <v-card-actions>
       <v-row align="center" justify="center">
         <v-col cols="6">
           <v-img
@@ -18,31 +22,28 @@
           ></v-img>
         </v-col>
       </v-row>
+    </v-card-actions>
 
+    <v-card-text>
       <v-row align="center" justify="center">
-        <v-col cols="12">
-          <div class="error-dialog__description">
-            {{ description }}
-          </div>
-        </v-col>
+        <span>{{ description }}</span>
       </v-row>
-    </raiden-dialog>
-  </div>
+    </v-card-text>
+  </raiden-dialog>
 </template>
 
 <script lang="ts">
-import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+import { Component, Emit, Prop, Vue} from 'vue-property-decorator';
 import RaidenDialog from '@/components/RaidenDialog.vue';
-import BlurredOverlay from '@/components/BlurredOverlay.vue';
 
 @Component({
-  components: { RaidenDialog, BlurredOverlay }
+  components: { RaidenDialog }
 })
 export default class ErrorDialog extends Vue {
   @Prop({ required: true })
-  title!: string;
-  @Prop({ required: true })
   description!: string;
+  @Prop({ required: true })
+  title!: string;
 
   @Emit()
   dismiss() {}
@@ -50,51 +51,11 @@ export default class ErrorDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
-
-.bounce-animation {
-  animation: bounce-in 0.3s;
-}
-@keyframes bounce-in {
-  0% {
-    transform: scale(0);
-  }
-  50% {
-    transform: scale(1.3);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
 .error-dialog {
-  height: 441px;
-  left: 0;
-  margin: 0 auto;
-  position: absolute;
-  right: 0;
-  top: 12%;
-  width: 310px;
-
-  &__title {
-    font-size: 20px;
-    font-weight: 500;
-    letter-spacing: 0;
-    padding: 60px 0px 10px 0px;
-    text-align: center;
-  }
-
   &__image {
-    height: 125px;
-    width: 125px;
-  }
-
-  &__description {
-    font-size: 14px;
-    font-weight: 400;
-    letter-spacing: 0;
-    padding-top: 10px;
-    text-align: center;
+    height: 110px;
+    margin: 0 auto;
+    width: 110px;
   }
 }
 </style>

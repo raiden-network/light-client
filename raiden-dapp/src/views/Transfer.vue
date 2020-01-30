@@ -99,13 +99,6 @@
       ></action-button>
     </v-container>
 
-    <!-- <stepper
-      :loading="loading"
-      :steps="steps"
-      :done-step="doneStep"
-      :done="done"
-    ></stepper> -->
-
     <error-dialog
       :description="error"
       :title="errorTitle"
@@ -217,9 +210,8 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   }
 
   async deposit(amount: BigNumber) {
-    this.errorTitle = this.$t('transfer.error.deposit-title') as string;
-
     this.loading = true;
+    this.errorTitle = this.$t('transfer.error.deposit-title') as string;
 
     try {
       await this.$raiden.deposit(
@@ -228,17 +220,17 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
         amount
       );
       this.done = true;
-      this.dismissProgress();
+      this.loading = false;
+      this.dismissProgress()
     } catch (e) {
       this.error = e.message;
+      this.loading = false;
+      this.depositing = false;
     }
-    this.loading = false;
-    this.depositing = false;
   }
 
   private dismissProgress() {
     setTimeout(() => {
-      this.loading = false;
       this.done = false;
     }, 2000);
   }

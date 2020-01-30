@@ -21,45 +21,47 @@
       </v-row>
     </v-card-title>
 
-    <v-row v-if="loading" align="center" justify="center">
-      <v-col cols="6">
-        <v-progress-circular
-          class="channel-deposit__progress"
-          :size="110"
-          :width="7"
-          indeterminate
-        >
-        </v-progress-circular>
-      </v-col>
-    </v-row>
-    <v-row v-else-if="done" align="center" justify="center">
-      <v-col cols="6">
-        <v-img
-          class="channel-deposit__done"
-          :src="require('../assets/done.svg')"
-        ></v-img>
-      </v-col>
-    </v-row>
-    <v-row v-else align="center" justify="center">
-      <v-col>
-        <v-form v-model="valid">
-          <amount-input
-            v-model="deposit"
-            :token="token"
-            :max="token.balance"
-            limit
+    <v-card-actions>
+      <v-row v-if="loading" align="center" justify="center">
+        <v-col cols="6">
+          <v-progress-circular
+            class="channel-deposit__progress"
+            :size="110"
+            :width="7"
+            indeterminate
           >
-          </amount-input>
-        </v-form>
-        <div class="channel-deposit__button">
-          <action-button
-            :enabled="valid"
-            :text="$t('channel-deposit.buttons.confirm')"
-            @click="mintDeposit()"
-          ></action-button>
-        </div>
-      </v-col>
-    </v-row>
+          </v-progress-circular>
+        </v-col>
+      </v-row>
+      <v-row v-else-if="done" align="center" justify="center">
+        <v-col cols="6">
+          <v-img
+            class="channel-deposit__done"
+            :src="require('../assets/done.svg')"
+          ></v-img>
+        </v-col>
+      </v-row>
+      <v-row v-else align="center" justify="center">
+        <v-col>
+          <v-form v-model="valid">
+            <amount-input
+              v-model="deposit"
+              :token="token"
+              :max="token.balance"
+              limit
+            >
+            </amount-input>
+          </v-form>
+          <div class="channel-deposit__button">
+            <action-button
+              :enabled="valid"
+              :text="$t('channel-deposit.buttons.confirm')"
+              @click="mintDeposit()"
+            ></action-button>
+          </div>
+        </v-col>
+      </v-row>
+    </v-card-actions>
 
     <v-card-text>
       <v-row align="center" justify="center">
@@ -108,7 +110,7 @@ export default class ChannelDepositDialog extends Vue {
   mintDeposit() {
     const deposit = BalanceUtils.parse(this.deposit, this.token.decimals);
     if (!deposit.isZero()) {
-      this.$emit('mintDeposit', deposit)
+      this.$emit('mintDeposit', deposit);
     }
   }
 }
@@ -124,16 +126,12 @@ export default class ChannelDepositDialog extends Vue {
 
   &__progress {
     color: $secondary-color;
-
-    margin-top: 20px;
-    margin-bottom: 40px;
   }
 
   &__done {
-    width: 110px;
     height: 110px;
-    text-align: center;
     margin: 0 auto;
+    width: 110px;
   }
 }
 </style>

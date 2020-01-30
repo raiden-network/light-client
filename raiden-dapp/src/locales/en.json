@@ -201,7 +201,7 @@
     "error": {
       "button": "Dismiss",
       "title": "Token transfer unsuccessful",
-      "deposit-title": "Deposit was unsuccessful. Please retry."
+      "deposit-title": "Deposit failed, please try again."
     },
     "steps": {
       "request-route": {

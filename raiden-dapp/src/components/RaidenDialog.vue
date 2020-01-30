@@ -46,6 +46,10 @@ export default class RaidenDialog extends Vue {
         text-align: center;
       }
 
+      &__actions {
+        margin: 20px 0px 35px 0px;
+      }
+
       &__text {
         padding-top: 10px;
         text-align: center;
