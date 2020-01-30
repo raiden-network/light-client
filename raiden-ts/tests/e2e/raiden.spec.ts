@@ -57,7 +57,7 @@ describe('Raiden', () => {
   Object.assign(global, { fetch });
 
   beforeAll(async () => {
-    jest.setTimeout(40e3);
+    jest.setTimeout(60e3);
 
     contractsInfo = await provider.deployRegistry();
     ({ token, tokenNetwork } = await provider.deployTokenNetwork(contractsInfo));
@@ -891,8 +891,6 @@ describe('Raiden', () => {
 
   describe('findRoutes', () => {
     let raiden1: Raiden, raiden2: Raiden, target: string;
-
-    beforeAll(() => jest.setTimeout(50e3));
 
     beforeEach(async () => {
       target = accounts[2];

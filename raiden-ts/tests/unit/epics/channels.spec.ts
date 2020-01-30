@@ -679,7 +679,6 @@ describe('channels epic', () => {
         depsMock.address,
         deposit.add(330),
         partner,
-        expect.anything(),
       );
       expect(setTotalDepositTx.wait).toHaveBeenCalledTimes(1);
     });
