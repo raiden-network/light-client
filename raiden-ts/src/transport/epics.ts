@@ -132,6 +132,9 @@ function createFilter(matrix: MatrixClient, roomIds: string[]): Observable<Filte
       ephemeral: {
         not_types: ['m.receipt'],
       },
+      state: {
+        lazy_load_members: true,
+      },
     })),
     map((roomFilter: RoomFilterJson) => ({
       room: roomFilter,

@@ -354,9 +354,13 @@ declare module 'matrix-js-sdk' {
     rooms?: string[];
     ephemeral?: RoomEventFilterJson;
     include_leave?: boolean; // default: false
-    state?: RoomEventFilterJson;
+    state?: StateFilter;
     timeline?: RoomEventFilterJson;
     account_data?: RoomEventFilterJson;
+  }
+
+  export interface StateFilter extends RoomFilterJson {
+    lazy_load_members?: boolean;
   }
 
   export interface FilterDefinition {
