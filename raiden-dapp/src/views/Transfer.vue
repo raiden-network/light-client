@@ -232,6 +232,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   private dismissProgress() {
     setTimeout(() => {
       this.done = false;
+      this.depositing = false;
     }, 2000);
   }
 }
