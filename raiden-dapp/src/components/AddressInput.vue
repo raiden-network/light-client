@@ -17,17 +17,6 @@
       @input="valueChanged"
       @change="valueChanged"
     >
-      <template #append>
-        <div class="address-input__status__paste-button">
-          <v-btn text @click="paste()">
-            <span
-              class="address-input__status__paste-button__text text-capitalize"
-            >
-              {{ $t('address-input.paste-button') }}
-            </span>
-          </v-btn>
-        </div>
-      </template>
       <template #prepend-inner>
         <div
           v-if="value && isChecksumAddress(value)"
@@ -285,8 +274,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       this.$refs.address.validate();
     }
   }
-
-  paste() {}
 }
 </script>
 
@@ -435,17 +422,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   &--untouched {
     caret-color: white !important;
     color: white !important;
-  }
-
-  &__status {
-    &__paste-button {
-      display: none;
-      margin-top: -6px;
-
-      &__text {
-        color: $primary-color;
-      }
-    }
   }
 }
 
