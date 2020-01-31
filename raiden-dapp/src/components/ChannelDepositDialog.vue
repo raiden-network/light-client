@@ -56,7 +56,7 @@
             <action-button
               :enabled="valid"
               :text="$t('channel-deposit.buttons.confirm')"
-              @click="mintDeposit()"
+              @click="depositTokens()"
             ></action-button>
           </div>
         </v-col>
@@ -100,7 +100,7 @@ export default class ChannelDepositDialog extends Vue {
   token!: Token;
   @Prop({ required: true })
   loading!: boolean;
-  @Prop({})
+  @Prop({ required: false, default: false })
   done?: boolean;
 
   deposit: string = '0.0';
@@ -109,10 +109,10 @@ export default class ChannelDepositDialog extends Vue {
   @Emit()
   cancel() {}
 
-  mintDeposit() {
+  depositTokens() {
     const deposit = BalanceUtils.parse(this.deposit, this.token.decimals);
     if (!deposit.isZero()) {
-      this.$emit('mintDeposit', deposit);
+      this.$emit('depositTokens', deposit);
     }
   }
 }

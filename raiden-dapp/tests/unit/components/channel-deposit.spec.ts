@@ -1,7 +1,6 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
-import { addElemWithDataAppToBody } from '../utils/dialog';
 import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
 import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
@@ -11,28 +10,21 @@ import flushPromises from 'flush-promises';
 Vue.use(Vuetify);
 
 describe('ChannelDeposit.vue', () => {
-  addElemWithDataAppToBody();
-
   let wrapper: Wrapper<ChannelDepositDialog>;
+  let vuetify: typeof Vuetify;
 
   beforeAll(() => {
+    vuetify = new Vuetify();
     wrapper = mount(ChannelDepositDialog, {
       propsData: {
         token: TestData.token,
-        identifier: 1
+        identifier: 1,
+        visible: true
       },
       mocks: {
         $t: (msg: string) => msg
       }
     });
-  });
-
-  test('emit a cancel event when the user presses cancel', () => {
-    wrapper
-      .findAll('button')
-      .at(0)
-      .trigger('click');
-    expect(wrapper.emitted().cancel).toBeTruthy();
   });
 
   test('emit a "confirm" event when the user presses confirm', async () => {

@@ -60,7 +60,7 @@
             :visible="depositing"
             identifier="0"
             @cancel="depositing = false"
-            @mintDeposit="deposit($event)"
+            @depositTokens="deposit($event)"
           />
         </v-col>
       </v-row>
@@ -221,7 +221,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
       );
       this.done = true;
       this.loading = false;
-      this.dismissProgress()
+      this.dismissProgress();
     } catch (e) {
       this.error = e.message;
       this.loading = false;
