@@ -1,5 +1,12 @@
 version: 2.1
 
+templates:
+  filter-tag-templates: &filter-version-regex
+    tags:
+      only: /^v\d+\.\d+\.\d+$/
+    branches:
+      ignore: /.*/
+
 var_1: &docker_image circleci/node:12-browsers
 var_2: &sdk_cache_key raiden-ts-{{ .Branch }}-{{ checksum "package-lock.json" }}
 var_3: &dapp_cache_key raiden-dapp-{{ .Branch }}-{{ checksum "package-lock.json" }}
@@ -149,6 +156,18 @@ jobs:
             - "ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3"
       - run: ./deploy.sh
 
+  publish_artifact:
+    executor: base-executor
+    working_directory: *sdk_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
+      - run:
+          name: Publish on npm
+          command: npm publish
+
 workflows:
   version: 2
   default_workflow:
@@ -191,3 +210,8 @@ workflows:
             branches:
               only:
                 - master
+      - publish_artifact:
+          requires:
+            - test_sdk
+          filters:
+            <<: *filter-version-regex
