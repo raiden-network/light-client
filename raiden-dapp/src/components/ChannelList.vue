@@ -218,6 +218,12 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 </script>
 
 <style scoped lang="scss">
+::v-deep {
+  .v-dialog {
+    border-radius: 10px !important;
+  }
+}
+
 .channel-list {
   &__channels {
     background-color: transparent !important;
@@ -271,9 +277,5 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       }
     }
   }
-}
-
-::v-deep .v-dialog {
-  border-radius: 10px !important;
 }
 </style>

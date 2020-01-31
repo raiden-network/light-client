@@ -29,6 +29,12 @@ export default class RaidenDialog extends Vue {
 
 <style scoped lang="scss">
 @import '../scss/colors';
+::v-deep {
+  .v-dialog {
+    border-radius: 10px !important;
+  }
+}
+
 .raiden-dialog {
   background-color: $card-background;
   height: 441px;
@@ -63,9 +69,5 @@ export default class RaidenDialog extends Vue {
     right: 15px;
     top: 15px;
   }
-}
-
-::v-deep .v-dialog {
-  border-radius: 10px !important;
 }
 </style>
