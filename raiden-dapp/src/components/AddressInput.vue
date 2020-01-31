@@ -14,8 +14,8 @@
       persistent-hint
       @blur="$emit('blur')"
       @focus="$emit('focus')"
-      @input="updateValue"
-      @change="updateValue"
+      @input="valueChanged"
+      @change="valueChanged"
     >
       <template #append>
         <div class="address-input__status__paste-button">
@@ -64,9 +64,19 @@ import { mapState } from 'vuex';
 import { Presences } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import { BehaviorSubject, from, merge, of, partition } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  switchMap,
+  tap
+} from 'rxjs/internal/operators';
 
 @Component({ computed: { ...mapState(['presences']) } })
 export default class AddressInput extends Mixins(BlockieMixin) {
+  private valueChange = new BehaviorSubject<string | undefined>('');
   @Prop({})
   disabled!: boolean;
   @Prop({ required: true })
@@ -108,10 +118,127 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     return [() => isAddressValid || ''];
   }
 
+  created() {
+    this.valueChange
+      .pipe(
+        tap(() => (this.errorMessages = [])),
+        debounceTime(500),
+        distinctUntilChanged(),
+        switchMap(value => {
+          if (!value) {
+            return of({
+              error: this.$t('address-input.error.empty') as string
+            });
+          }
+          const [addresses, nonAddresses] = partition(of(value), value =>
+            AddressUtils.isAddress(value)
+          );
+          return merge<{ error: string } | { value: string }>(
+            addresses.pipe(
+              switchMap(value => {
+                if (!AddressUtils.checkAddressChecksum(value)) {
+                  return of({
+                    error: this.$t('address-input.error.no-checksum') as string
+                  });
+                }
+                if (this.exclude.includes(value)) {
+                  return of({
+                    error: this.$t(
+                      'address-input.error.invalid-excluded-address'
+                    ) as string
+                  });
+                }
+                if (this.exclude.includes(value)) {
+                  return of({
+                    error: this.$t(
+                      'address-input.error.channel-not-open'
+                    ) as string
+                  });
+                }
+                return of({ value });
+              })
+            ),
+            nonAddresses.pipe(
+              switchMap(value => {
+                if (!AddressUtils.isDomain(value)) {
+                  return of({
+                    error: this.$t(
+                      'address-input.error.invalid-address'
+                    ) as string
+                  });
+                }
+                return of('').pipe(
+                  tap(() => (this.busy = true)),
+                  switchMap(() => this.$raiden.ensResolve(value)),
+                  map(value => {
+                    if (!value || AddressUtils.checkAddressChecksum(value)) {
+                      return {
+                        error: this.$t(
+                          'address-input.error.ens-resolve-failed'
+                        ) as string
+                      };
+                    }
+                    return { value };
+                  }),
+                  catchError(() =>
+                    of({
+                      error: this.$t(
+                        'address-input.error.ens-resolve-failed'
+                      ) as string
+                    })
+                  ),
+                  tap(() => (this.busy = false))
+                );
+              })
+            )
+          ).pipe(
+            switchMap(value => {
+              if ('value' in value) {
+                return of('').pipe(
+                  tap(() => (this.busy = true)),
+                  switchMap(() =>
+                    from(this.$raiden.getAvailability(value.value))
+                  ),
+                  tap(available => {
+                    this.busy = false;
+                    this.isAddressAvailable = available;
+                  }),
+                  map(available => {
+                    if (!available) {
+                      return {
+                        error: this.$t(
+                          'address-input.error.target-offline'
+                        ) as string
+                      };
+                    }
+                    return value;
+                  })
+                );
+              } else {
+                return of(value);
+              }
+            })
+          );
+        })
+      )
+      .subscribe(result => {
+        if ('error' in result) {
+          this.input(undefined);
+          this.errorMessages.push(result.error);
+          this.address = '';
+        } else {
+          const { value } = result;
+          this.input(value);
+          this.address = value;
+        }
+        this.checkForErrors();
+      });
+  }
+
   mounted() {
     if (this.isChecksumAddress(this.value)) {
       this.address = this.value;
-      this.updateValue(this.value);
+      this.valueChanged(this.value);
     }
   }
 
@@ -121,19 +248,23 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       return;
     }
 
-    this.updateValue(this.address);
+    this.valueChanged(this.value);
   }
 
   @Watch('value')
   onChange(value: string) {
     if (value !== this.address && this.isChecksumAddress(value)) {
       this.address = value;
-      this.updateValue(value);
+      this.valueChanged(this.value);
     }
   }
 
   @Emit()
   public input(_value?: string) {}
+
+  valueChanged(value?: string) {
+    this.valueChange.next(value);
+  }
 
   isChecksumAddress(address: string): boolean {
     const tokenAddress = address;
@@ -141,69 +272,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       AddressUtils.isAddress(tokenAddress) &&
       AddressUtils.checkAddressChecksum(tokenAddress)
     );
-  }
-
-  updateValue(value?: string) {
-    this.errorMessages = [];
-    this.updateErrors(value);
-    this.checkForErrors();
-  }
-
-  private updateErrors(value?: string) {
-    if (!value) {
-      this.input(value);
-      this.errorMessages.push(this.$t('address-input.error.empty') as string);
-    } else if (this.exclude.includes(value)) {
-      this.errorMessages.push(
-        this.$t('address-input.error.invalid-excluded-address') as string
-      );
-    } else if (this.block.includes(value)) {
-      this.errorMessages.push(
-        this.$t('address-input.error.channel-not-open') as string
-      );
-    } else if (
-      AddressUtils.isAddress(value) &&
-      !AddressUtils.checkAddressChecksum(value)
-    ) {
-      this.errorMessages.push(
-        this.$t('address-input.error.no-checksum') as string
-      );
-    } else if (
-      !AddressUtils.isAddressLike(value) &&
-      AddressUtils.isDomain(value)
-    ) {
-      this.resolveEnsAddress(value);
-    } else if (
-      AddressUtils.checkAddressChecksum(value) &&
-      !(value in this.presences)
-    ) {
-      this.isAddressAvailable = false;
-      this.checkAvailability(value);
-      this.input(value);
-    } else if (
-      AddressUtils.checkAddressChecksum(value) &&
-      this.presences[value] === false
-    ) {
-      this.busy = false;
-      this.isAddressAvailable = false;
-      this.input(value);
-      this.address = value;
-      this.errorMessages.push(
-        this.$t('address-input.error.target-offline') as string
-      );
-    } else if (
-      AddressUtils.checkAddressChecksum(value) &&
-      this.presences[value] === true
-    ) {
-      this.busy = false;
-      this.isAddressAvailable = true;
-      this.input(value);
-      this.address = value;
-    } else {
-      this.errorMessages.push(
-        this.$t('address-input.error.invalid-address') as string
-      );
-    }
   }
 
   private checkForErrors() {
@@ -215,44 +283,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       }
       // @ts-ignore
       this.$refs.address.validate();
-    }
-  }
-
-  private async checkAvailability(address: string) {
-    this.busy = true;
-    await this.$raiden.getAvailability(address);
-    this.address = address;
-    this.input(address);
-    this.updateValue(address);
-    this.checkForErrors();
-  }
-
-  private async resolveEnsAddress(url: string) {
-    let resolvedAddress;
-    this.busy = true;
-
-    try {
-      resolvedAddress = await this.$raiden.ensResolve(url);
-    } catch (e) {
-      this.errorMessages.push(
-        this.$t('address-input.error.ens-resolve-failed') as string
-      );
-      this.input(undefined);
-      this.checkForErrors();
-      return;
-    }
-
-    this.busy = false;
-    if (resolvedAddress) {
-      this.address = resolvedAddress;
-      this.updateValue(resolvedAddress);
-      this.input(resolvedAddress);
-    } else {
-      this.errorMessages.push(
-        this.$t('address-input.error.ens-resolve-failed') as string
-      );
-      this.input(undefined);
-      this.checkForErrors();
     }
   }
 
