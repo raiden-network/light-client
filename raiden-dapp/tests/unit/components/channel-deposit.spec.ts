@@ -16,6 +16,7 @@ describe('ChannelDeposit.vue', () => {
   beforeAll(() => {
     vuetify = new Vuetify();
     wrapper = mount(ChannelDepositDialog, {
+      vuetify,
       propsData: {
         token: TestData.token,
         identifier: 1,
