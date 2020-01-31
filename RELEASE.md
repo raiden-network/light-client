@@ -9,7 +9,7 @@
         - [Manually preparing the release](#manually-preparing-the-release)
 - [Creating a Pull Request](#creating-a-pull-request)
 - [Publishing on Github](#publishing-on-github)
-- [Publishing on npm](#publishing-on-npm)
+- [Publishing on npm](#publishing-on-npm-manually)
     * [Login](#login)
     * [Publishing](#publishing)
 
@@ -33,7 +33,7 @@ git checkout -b prepare_release
 Please ensure that you also update the [CHANGELOG.md](./raiden-ts/CHANGELOG.md) accordingly. You should have the changes for the new version tracked as `[Unreleased]`. You only need to replace `[Unreleased]` with the new version. 
 
 ### Increasing the version
-Initially you need to decide if the new release would require `patch`, `minor`, `major` upgrade. For more you can check the [npm version](https://docs.npmjs.com/cli/version) documentation.
+Initially you need to decide if the new release would require `patch`, `minor`, `major` upgrade. For more information you can check the [npm version](https://docs.npmjs.com/cli/version) documentation.
 
 #### Using the script
 
@@ -83,7 +83,7 @@ git push origin -u prepare_release
 You need one approval for your Pull Request to get merged to master. After merging to master, you need to tag the release.
 
 ## Publishing on Github
-Since you need to deal with the GitHub release interface we strongly suggested to use for the creation of the tag too.
+Since you need to deal with the GitHub release interface we strongly suggested you use it for the creation of the tag too.
 
 To draft a new GitHub release, visit the [release interface](https://github.com/kelsos/light-client/releases) and press the `Draft a new release` button. Then set `v0.22.1` as the `Tag version` and keep master as the `Target`. Then use `v0.22.1` as the release title.
 
@@ -91,7 +91,8 @@ Now you need prepare the release description. Don't forget to include the change
 
 Proceed to publish the new release. A new release gets automatically tagged. Tagging will trigger the CI release flow that will also publish the artifact to `npm`.
 
-## Publishing on npm
+## Publishing on npm (manually)
+Regularily the publishing step will be handled automatically by the CI infrastructure. If for any reason the automatic publishing does not work you can alternatively publish the package manually to `npm`.
 Before we proceed to publish on npm, we need to synchronize our local master with `upstream`.
 
 ```bash
