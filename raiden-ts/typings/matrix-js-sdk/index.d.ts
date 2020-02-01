@@ -291,10 +291,6 @@ declare module 'matrix-js-sdk' {
     ): Promise<RoomIdForAlias>;
     public getRoomPushRule(scope: string, roomId: string): object | undefined;
     public getRooms(): Room[];
-
-    store: {
-      users: {[userId: string]: User }
-    }
   }
 
   export interface RoomIdForAlias {
