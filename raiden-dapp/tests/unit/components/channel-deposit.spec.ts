@@ -22,24 +22,25 @@ describe('ChannelDeposit.vue', () => {
         identifier: 1,
         visible: true
       },
+      stubs: ['raiden-dialog'],
       mocks: {
         $t: (msg: string) => msg
       }
     });
   });
 
-  test('emit a "confirm" event when the user presses confirm', async () => {
+  test('emit a "depositTokens" event when the user presses depositTokens', async () => {
     mockInput(wrapper, '0.5');
     await wrapper.vm.$nextTick();
     await flushPromises();
 
     wrapper
       .findAll('button')
-      .at(1)
+      .at(0)
       .trigger('click');
-    expect(wrapper.emitted().confirm).toBeTruthy();
+    expect(wrapper.emitted().depositTokens).toBeTruthy();
 
-    const [events] = wrapper.emitted().confirm;
+    const [events] = wrapper.emitted().depositTokens;
     const deposit: BigNumber = (events[0] as any) as BigNumber;
     expect(new BigNumber(0.5 * 10 ** 5).eq(deposit)).toBeTruthy();
   });
