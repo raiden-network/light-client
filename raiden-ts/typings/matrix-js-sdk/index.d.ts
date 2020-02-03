@@ -31,7 +31,9 @@ declare module 'matrix-js-sdk' {
     avatar_url?: string;
   }
 
-  export interface User {
+  export class User {
+    constructor(userId: string);
+    setDisplayName(displayName: string): void;
     userId: string;
     displayName?: string;
     avatarUrl?: string;
@@ -187,7 +189,7 @@ declare module 'matrix-js-sdk' {
       roomId: string,
       callback?: requestCallback,
     ): Promise<any> | MatrixError | void;
-    public createFilter(content: object): Promise<object> | MatrixError;
+    public createFilter(content: object): Promise<Filter>;
     public createGroup(content: {
       localpart: string;
       profile: object;
@@ -286,9 +288,14 @@ declare module 'matrix-js-sdk' {
     public getRoomIdForAlias(
       alias: string,
       callback?: requestCallback,
-    ): Promise<object> | MatrixError | void;
+    ): Promise<RoomIdForAlias>;
     public getRoomPushRule(scope: string, roomId: string): object | undefined;
     public getRooms(): Room[];
+  }
+
+  export interface RoomIdForAlias {
+    readonly room_id: string;
+    readonly servers: string[];
   }
   /*
   export class MatrixScheduler implements IMatrixScheduler {
@@ -343,9 +350,13 @@ declare module 'matrix-js-sdk' {
     rooms?: string[];
     ephemeral?: RoomEventFilterJson;
     include_leave?: boolean; // default: false
-    state?: RoomEventFilterJson;
+    state?: StateFilter;
     timeline?: RoomEventFilterJson;
     account_data?: RoomEventFilterJson;
+  }
+
+  export interface StateFilter extends RoomFilterJson {
+    lazy_load_members?: boolean;
   }
 
   export interface FilterDefinition {
@@ -641,6 +652,7 @@ declare module 'matrix-js-sdk' {
 
       }
   }
+
   declare namespace Matrix.Store {
 
       export class MatrixInMemoryStore implements IMatrixStore {

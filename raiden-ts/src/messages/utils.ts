@@ -1,13 +1,10 @@
 // import * as t from 'io-ts';
-import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
-import { isLeft } from 'fp-ts/lib/Either';
-
 import { Signer } from 'ethers';
 import { keccak256, RLP, verifyMessage } from 'ethers/utils';
 import { arrayify, concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
 
-import { Address, Hash, HexString, Signature, UInt, Signed } from '../utils/types';
+import { Address, Hash, HexString, Signature, UInt, Signed, decode, assert } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { SignedBalanceProof } from '../channels/types';
 import { EnvelopeMessage, Message, MessageType, Metadata } from './types';
@@ -304,10 +301,15 @@ export function encodeJsonMessage(message: Signed<Message>): string {
  * @returns Message object
  */
 export function decodeJsonMessage(text: string): Signed<Message> {
-  const parsed = losslessParse(text),
-    decoded = Signed(Message).decode(parsed);
-  if (isLeft(decoded)) throw ThrowReporter.report(decoded); // throws if decode failed
-  return decoded.right;
+  const parsed = losslessParse(text);
+  assert(
+    parsed &&
+      typeof parsed === 'object' &&
+      'type' in parsed &&
+      Object.values(MessageType).some(t => t === parsed['type']),
+    `Invalid message type: ${parsed?.['type']}`,
+  );
+  return decode(Signed(Message), parsed);
 }
 
 /**
