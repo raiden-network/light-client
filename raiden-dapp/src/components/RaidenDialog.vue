@@ -1,6 +1,6 @@
 <template>
   <blurred-overlay :show="visible" :fullscreen="fullscreen">
-    <v-dialog :value="visible" width="350" hide-overlay="true">
+    <v-dialog :value="visible" width="350" hide-overlay>
       <v-card class="raiden-dialog">
         <v-btn icon class="raiden-dialog__close" @click="close()">
           <v-icon>mdi-close</v-icon>
