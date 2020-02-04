@@ -17,7 +17,9 @@
 - [#740] Fix empty start screen on first time connect.
 - [#642] Various UI improvements.
 - [#715] Fixed action button disabled color.
+- [#885] Fixed AddressInput validation not working properly.
 
+[#885]: https://github.com/raiden-network/light-client/issues/885
 [#740]: https://github.com/raiden-network/light-client/issues/740
 [#712]: https://github.com/raiden-network/light-client/issues/712
 [#704]: https://github.com/raiden-network/light-client/issues/704
