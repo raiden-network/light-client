@@ -6,15 +6,17 @@
           {{ address | truncate(8) }}
         </p>
       </template>
-      <span>
-        {{ copied ? $t('address-display.copied') : $t('address-display.copy') }}
-      </span>
+      <div class="address__tooltip">
+        <div ref="copy">
+          {{ address }}
+        </div>
+        <div>
+          {{
+            copied ? $t('address-display.copied') : $t('address-display.copy')
+          }}
+        </div>
+      </div>
     </v-tooltip>
-    <textarea
-      ref="copy"
-      v-model="address"
-      class="address__copy-area"
-    ></textarea>
   </div>
 </template>
 
@@ -29,12 +31,29 @@ export default class AddressDisplay extends Vue {
   copied: boolean = false;
   private timeout: number = 0;
 
+  selectAddress(node: Node): void {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  }
+
+  deselectAddress(): void {
+    window.getSelection()!.removeAllRanges();
+  }
+
   copy(event: MouseEvent) {
     event.stopPropagation();
-    const copyArea = this.$refs.copy as HTMLTextAreaElement;
-    copyArea.focus();
-    copyArea.select();
+
+    // Select address
+    this.selectAddress(this.$refs.copy as Node);
     this.copied = document.execCommand('copy');
+
+    // Deselect text
+    this.deselectAddress();
 
     if (this.timeout) {
       clearTimeout(this.timeout);
@@ -60,6 +79,10 @@ export default class AddressDisplay extends Vue {
     align-items: center;
   }
 
+  &__tooltip {
+    text-align: center;
+  }
+
   &__label {
     cursor: pointer;
     margin: 0;
@@ -69,16 +92,6 @@ export default class AddressDisplay extends Vue {
       background-color: $secondary-color;
       color: $color-white;
     }
-  }
-
-  &__copy {
-    height: 12px;
-    width: 12px;
-  }
-
-  &__copy-area {
-    position: absolute;
-    left: -999em;
   }
 }
 </style>

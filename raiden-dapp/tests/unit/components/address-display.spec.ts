@@ -31,6 +31,25 @@ describe('AddressDisplay.vue', () => {
         $t: (msg: string) => msg
       }
     });
+
+    Object.defineProperty(window, 'getSelection', {
+      value: () => {
+        return {
+          removeAllRanges: () => {},
+          addRange: () => {}
+        };
+      },
+      writable: true
+    });
+
+    Object.defineProperty(document, 'createRange', {
+      value: () => {
+        return {
+          selectNodeContents: () => {}
+        };
+      },
+      writable: true
+    });
   });
 
   test('copy the address to the clipboard when the user clicks on the address', async () => {
