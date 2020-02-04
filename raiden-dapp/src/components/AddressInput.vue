@@ -200,7 +200,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         message = this.$t(
           'address-input.error.invalid-excluded-address'
         ) as string;
-      } else if (this.exclude.includes(value)) {
+      } else if (this.block.includes(value)) {
         message = this.$t('address-input.error.channel-not-open') as string;
       }
 
@@ -251,6 +251,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       });
   }
 
+  /* istanbul ignore file */
   destroyed() {
     this.subscription?.unsubscribe();
   }
@@ -297,6 +298,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 
   private checkForErrors() {
+    /* istanbul ignore if */
     if (!this.$refs.address) {
       return;
     }
