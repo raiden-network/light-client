@@ -7,10 +7,10 @@
         </p>
       </template>
       <div class="address__tooltip">
-        <div ref="copy" class="address__tooltip--address">
+        <div ref="copy">
           {{ address }}
         </div>
-        <div class="address__tooltip--hint">
+        <div>
           {{
             copied ? $t('address-display.copied') : $t('address-display.copy')
           }}
@@ -48,7 +48,6 @@ export default class AddressDisplay extends Vue {
   copy(event: MouseEvent) {
     event.stopPropagation();
     const copyArea = this.$refs.copy as HTMLTextAreaElement;
-    copyArea.focus();
 
     // Select address
     this.selectAddress(copyArea);
@@ -94,16 +93,6 @@ export default class AddressDisplay extends Vue {
       background-color: $secondary-color;
       color: $color-white;
     }
-  }
-
-  &__copy {
-    height: 12px;
-    width: 12px;
-  }
-
-  &__copy-area {
-    position: absolute;
-    left: -999em;
   }
 }
 </style>
