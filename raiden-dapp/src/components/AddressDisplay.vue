@@ -47,10 +47,9 @@ export default class AddressDisplay extends Vue {
 
   copy(event: MouseEvent) {
     event.stopPropagation();
-    const copyArea = this.$refs.copy as HTMLTextAreaElement;
 
     // Select address
-    this.selectAddress(copyArea);
+    this.selectAddress(this.$refs.copy as Node);
     this.copied = document.execCommand('copy');
 
     // Deselect text
