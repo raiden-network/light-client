@@ -83,7 +83,7 @@
                 :token="token"
                 :visible="depositing"
                 :loading="depositInProgress"
-                :done="depositDone"
+                :done="false"
                 @depositTokens="deposit($event)"
                 @cancel="dismiss()"
               ></channel-deposit-dialog>
@@ -148,7 +148,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   depositing = false;
   depositInProgress = false;
-  depositDone = false;
   closing = false;
   settling = false;
   displayFormat = Filters.displayFormat;
@@ -193,7 +192,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       this.depositInProgress = true;
       await this.$raiden.deposit(token, partner, deposit);
       this.dismiss();
-      this.depositDone = true;
       this.message(this.$t('channel-list.messages.deposit.success') as string);
     } catch (e) {
       this.message(this.$t('channel-list.messages.deposit.failure') as string);
