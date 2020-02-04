@@ -2,7 +2,7 @@
   <raiden-dialog
     class="channel-deposit"
     :visible="visible"
-    :fullscreen="false"
+    :fullscreen="true"
     @close="cancel"
   >
     <v-card-title>

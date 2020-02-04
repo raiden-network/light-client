@@ -82,7 +82,9 @@
                 :identifier="channel.id"
                 :token="token"
                 :visible="depositing"
-                @confirm="deposit($event)"
+                :loading="depositInProgress"
+                :done="false"
+                @depositTokens="deposit($event)"
                 @cancel="dismiss()"
               ></channel-deposit-dialog>
             </div>
@@ -145,6 +147,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   visibleChanged(_element: string) {}
 
   depositing = false;
+  depositInProgress = false;
   closing = false;
   settling = false;
   displayFormat = Filters.displayFormat;
@@ -159,6 +162,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   dismiss() {
     this.visibleChanged('');
+    this.depositInProgress = false;
     this.depositing = false;
     this.closing = false;
     this.settling = false;
@@ -184,9 +188,10 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   async deposit(deposit: BigNumber) {
     const { token, partner } = this.selectedChannel!;
-    this.dismiss();
     try {
+      this.depositInProgress = true;
       await this.$raiden.deposit(token, partner, deposit);
+      this.dismiss();
       this.message(this.$t('channel-list.messages.deposit.success') as string);
     } catch (e) {
       this.message(this.$t('channel-list.messages.deposit.failure') as string);
