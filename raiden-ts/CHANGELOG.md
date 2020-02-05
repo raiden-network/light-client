@@ -8,6 +8,7 @@
 - [#834] Optimize ethers events polling for several tokens
 - [#684] Support and require Typescript 3.7
 - [#593] Improve PFS url matching.
+- Updated Raiden Contracts to 0.36.0
 
 ## [0.2] - 2019-11-29
 ### Added
