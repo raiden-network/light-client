@@ -85,6 +85,7 @@ declare module 'matrix-js-sdk' {
     public constructor(opts: MatrixClientOpts);
 
     public _http: any;
+    public store: IMatrixStore;
 
     public baseUrl: string;
     public deviceId: string | null;
@@ -460,7 +461,7 @@ declare module 'matrix-js-sdk' {
     //storeEvents(room: Models.Room, events: Models.MatrixEvent[], token: string, toStart: boolean): void;
     storeFilter(filter: Filter): void;
     //storeGroup(group: Models.Group): void;
-    //storeRoom(room: Models.Room): void;
+    storeRoom(room: Room): void;
     //storeUser(user: Models.User): void;
   }
 
@@ -614,6 +615,7 @@ declare module 'matrix-js-sdk' {
     public getJoinedMembers(): RoomMember[];
     public getCanonicalAlias(): string | null;
     public getAliases(): string[];
+    public currentState: RoomState;
   }
 
   /* models/room-member.js*/
@@ -629,6 +631,7 @@ declare module 'matrix-js-sdk' {
   export interface RoomState {
     roomId: string;
     members: { [userId: string]: RoomMember };
+    setStateEvents: (events: MatrixEvent[]) => void;
   }
   /*
 
