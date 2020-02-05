@@ -1,9 +1,7 @@
 <template>
-  <div
-    v-if="show"
-    class="blurred-overlay"
-    :class="{ fullscreen: fullscreen }"
-  />
+  <div v-if="show" class="blurred-overlay" :class="{ fullscreen: fullscreen }">
+    <slot></slot>
+  </div>
 </template>
 
 <script lang="ts">
@@ -22,8 +20,8 @@ export default class BlurredOverlay extends Vue {
 @import '../scss/colors';
 
 .blurred-overlay {
-  background-color: rgba($color-white, 0.15);
-  backdrop-filter: blur(4px);
+  background-color: rgba($color-white, 0.05);
+  backdrop-filter: blur(3px);
   border-radius: 10px;
   bottom: 0;
   left: 0;
@@ -36,6 +34,7 @@ export default class BlurredOverlay extends Vue {
     border-radius: 0px;
     margin-top: 0px;
     position: fixed;
+    z-index: 101;
   }
 }
 </style>

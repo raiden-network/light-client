@@ -46,26 +46,22 @@
           />
         </v-col>
         <v-col cols="2" class="transfer__deposit">
-          <v-dialog v-model="depositing" max-width="625">
-            <template #activator="{ on }">
-              <v-btn
-                text
-                class="transfer__deposit-button"
-                @click="depositing = true"
-                v-on="on"
-              >
-                {{ $t('transfer.deposit-button') }}
-              </v-btn>
-            </template>
-            <v-card class="transfer__deposit-dialog">
-              <channel-deposit
-                :token="token"
-                identifier="0"
-                @cancel="depositing = false"
-                @confirm="deposit($event)"
-              ></channel-deposit>
-            </v-card>
-          </v-dialog>
+          <v-btn
+            text
+            class="transfer__deposit-button"
+            @click="depositing = true"
+          >
+            {{ $t('transfer.deposit-button') }}
+          </v-btn>
+          <channel-deposit-dialog
+            :loading="loading"
+            :done="done"
+            :token="token"
+            :visible="depositing"
+            identifier="0"
+            @cancel="depositing = false"
+            @depositTokens="deposit($event)"
+          />
         </v-col>
       </v-row>
 
@@ -103,13 +99,6 @@
       ></action-button>
     </v-container>
 
-    <stepper
-      :display="loading"
-      :steps="steps"
-      :done-step="doneStep"
-      :done="done"
-    ></stepper>
-
     <error-dialog
       :description="error"
       :title="errorTitle"
@@ -122,14 +111,14 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import { emptyDescription, StepDescription, Token } from '@/model/types';
+import { Token } from '@/model/types';
 import Stepper from '@/components/Stepper.vue';
 import ErrorDialog from '@/components/ErrorDialog.vue';
 import Divider from '@/components/Divider.vue';
 import TokenOverlay from '@/components/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import ChannelDeposit from '@/components/ChannelDeposit.vue';
+import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
 import DownArrow from '@/components/icons/DownArrow.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
@@ -142,7 +131,7 @@ import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({
   components: {
-    ChannelDeposit,
+    ChannelDepositDialog,
     ActionButton,
     TokenInformation,
     Divider,
@@ -172,9 +161,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
   errorTitle: string = '';
   error: string = '';
-
-  steps: StepDescription[] = [];
-  doneStep: StepDescription = emptyDescription();
 
   channels!: (tokenAddress: string) => RaidenChannel[];
 
@@ -224,15 +210,8 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   }
 
   async deposit(amount: BigNumber) {
-    this.steps = [
-      (this.$t('transfer.steps.deposit') as any) as StepDescription
-    ];
-    this.doneStep = (this.$t(
-      'transfer.steps.deposit-done'
-    ) as any) as StepDescription;
-    this.errorTitle = this.$t('transfer.error.deposit-title') as string;
-
     this.loading = true;
+    this.errorTitle = this.$t('transfer.error.deposit-title') as string;
 
     try {
       await this.$raiden.deposit(
@@ -241,18 +220,19 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
         amount
       );
       this.done = true;
+      this.loading = false;
       this.dismissProgress();
     } catch (e) {
       this.error = e.message;
+      this.loading = false;
+      this.depositing = false;
     }
-    this.loading = false;
-    this.depositing = false;
   }
 
   private dismissProgress() {
     setTimeout(() => {
-      this.loading = false;
       this.done = false;
+      this.depositing = false;
     }, 2000);
   }
 }
@@ -260,6 +240,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '../scss/colors';
+
 .transfer {
   width: 100%;
   height: 100%;

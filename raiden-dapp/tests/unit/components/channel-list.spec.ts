@@ -1,4 +1,5 @@
 jest.mock('@/services/raiden-service');
+jest.useFakeTimers();
 
 import Mocked = jest.Mocked;
 
@@ -11,14 +12,12 @@ import { TestData } from '../data/mock-data';
 import VueRouter from 'vue-router';
 import RaidenService, {
   ChannelCloseFailed,
-  ChannelDepositFailed,
   ChannelSettleFailed
 } from '@/services/raiden-service';
 import Filters from '@/filters';
 import flushPromises from 'flush-promises';
 import { $identicon } from '../utils/mocks';
-import { BigNumber, parseUnits } from 'ethers/utils';
-import { mockInput } from '../utils/interaction-utils';
+import { parseUnits } from 'ethers/utils';
 import ChannelList from '@/components/ChannelList.vue';
 import { Token } from '@/model/types';
 
@@ -33,6 +32,7 @@ describe('ChannelList.vue', () => {
   let wrapper: Wrapper<ChannelList>;
   let raiden: Mocked<RaidenService>;
   let vuetify: typeof Vuetify;
+  let depositInProgress: jest.SpyInstance;
 
   function elementVisibilityChanged(
     eventIndex: number,
@@ -63,12 +63,19 @@ describe('ChannelList.vue', () => {
         channels: TestData.mockChannelArray,
         visible: ''
       },
+      stubs: ['raiden-dialog'],
       mocks: {
         $raiden: raiden,
         $identicon: $identicon(),
         $t: (msg: string) => msg
       }
     });
+
+    depositInProgress = jest.spyOn(
+      wrapper.vm.$data,
+      'depositInProgress',
+      'set'
+    );
   });
 
   afterEach(() => {
@@ -180,87 +187,43 @@ describe('ChannelList.vue', () => {
   describe('deposit in a channel', () => {
     beforeEach(() => {
       raiden.deposit = jest.fn();
+      wrapper.setData({
+        selectedChannel: TestData.mockChannelArray[0]
+      });
     });
+    test('deposit successfully', async () => {
+      raiden.deposit.mockResolvedValue(undefined);
 
-    test('deposit to the channel when the user confirms the action', async () => {
-      raiden.deposit.mockResolvedValueOnce(undefined);
-      wrapper.find('#channel-278').trigger('click');
-      await wrapper.vm.$nextTick();
-      wrapper.find('#deposit-0').trigger('click');
-      elementVisibilityChanged(0, 'channel-278-deposit');
+      // @ts-ignore
+      await wrapper.vm.deposit('0.5');
       await flushPromises();
-      mockInput(wrapper, '0.5');
-      await wrapper.vm.$nextTick();
-      await flushPromises();
-      wrapper.find('#confirm-278').trigger('click');
-      await wrapper.vm.$nextTick();
-      elementVisibilityChanged(1);
-      await flushPromises();
-      expect(wrapper.vm.$data.selectedChannel).toBeNull();
+      jest.advanceTimersByTime(2000);
 
-      await flushPromises();
+      expect(depositInProgress).toHaveBeenNthCalledWith(1, true);
       expect(raiden.deposit).toHaveBeenCalledTimes(1);
       expect(raiden.deposit).toHaveBeenCalledWith(
         TestData.openChannel.token,
         TestData.openChannel.partner,
-        new BigNumber(0.5 * 10 ** 10)
+        '0.5'
       );
-    });
-
-    test('show a success message when the deposit is successful', async () => {
-      raiden.deposit.mockResolvedValueOnce(undefined);
-      wrapper.find('#channel-278').trigger('click');
-      await wrapper.vm.$nextTick();
-      wrapper.find('#deposit-0').trigger('click');
-      elementVisibilityChanged(0, 'channel-278-deposit');
-      await flushPromises();
-      mockInput(wrapper, '0.5');
-      await wrapper.vm.$nextTick();
-      await flushPromises();
-      wrapper.find('#confirm-278').trigger('click');
-      elementVisibilityChanged(1);
-      await flushPromises();
-      expect(wrapper.emitted()['message'][0][0]).toBe(
+      expect(wrapper.emitted().message[0]).toEqual([
         'channel-list.messages.deposit.success'
-      );
+      ]);
     });
 
-    test('show an error message when the deposit fails', async () => {
-      raiden.deposit.mockRejectedValue(new ChannelDepositFailed());
-      wrapper.find('#channel-278').trigger('click');
-      await wrapper.vm.$nextTick();
-      wrapper.find('#deposit-0').trigger('click');
-      expect(wrapper.emitted()['visible-changed'][0][0]).toBe(
-        'channel-278-deposit'
-      );
-      wrapper.setProps({
-        visible: 'channel-278-deposit'
-      });
+    test('emit fail message when deposit fails', async () => {
+      raiden.deposit.mockRejectedValue(new Error());
+
+      // @ts-ignore
+      await wrapper.vm.deposit('0.5');
       await flushPromises();
-      mockInput(wrapper, '0.5');
-      await wrapper.vm.$nextTick();
-      await flushPromises();
-      wrapper.find('#confirm-278').trigger('click');
-      expect(wrapper.emitted()['visible-changed'][1][0]).toBe('');
-      wrapper.setProps({
-        visible: ''
-      });
-      await flushPromises();
-      expect(wrapper.emitted()['message'][0][0]).toBe(
+      jest.advanceTimersByTime(2000);
+
+      expect(depositInProgress).toHaveBeenNthCalledWith(1, true);
+      expect(raiden.deposit).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted().message[0]).toEqual([
         'channel-list.messages.deposit.failure'
-      );
-    });
-
-    test('dismiss the dialog when the user presses cancel', async () => {
-      raiden.deposit.mockResolvedValueOnce(undefined);
-      wrapper.find('#channel-278').trigger('click');
-      await wrapper.vm.$nextTick();
-      wrapper.find('#deposit-0').trigger('click');
-      elementVisibilityChanged(0, 'channel-278-deposit');
-      await flushPromises();
-      wrapper.find('#cancel-278').trigger('click');
-      elementVisibilityChanged(1);
-      expect(raiden.deposit).toHaveBeenCalledTimes(0);
+      ]);
     });
   });
 
