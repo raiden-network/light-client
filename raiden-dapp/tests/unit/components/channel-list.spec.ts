@@ -187,12 +187,12 @@ describe('ChannelList.vue', () => {
   describe('deposit in a channel', () => {
     beforeEach(() => {
       raiden.deposit = jest.fn();
-    });
-    test('deposit successfully', async () => {
-      raiden.deposit.mockResolvedValue(undefined);
       wrapper.setData({
         selectedChannel: TestData.mockChannelArray[0]
       });
+    });
+    test('deposit successfully', async () => {
+      raiden.deposit.mockResolvedValue(undefined);
 
       // @ts-ignore
       await wrapper.vm.deposit('0.5');
@@ -206,6 +206,24 @@ describe('ChannelList.vue', () => {
         TestData.openChannel.partner,
         '0.5'
       );
+      expect(wrapper.emitted().message[0]).toEqual([
+        'channel-list.messages.deposit.success'
+      ]);
+    });
+
+    test('emit fail message when deposit fails', async () => {
+      raiden.deposit.mockRejectedValue(new Error());
+
+      // @ts-ignore
+      await wrapper.vm.deposit('0.5');
+      await flushPromises();
+      jest.advanceTimersByTime(2000);
+
+      expect(depositInProgress).toHaveBeenNthCalledWith(1, true);
+      expect(raiden.deposit).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted().message[0]).toEqual([
+        'channel-list.messages.deposit.failure'
+      ]);
     });
   });
 
