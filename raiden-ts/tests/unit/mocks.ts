@@ -206,7 +206,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     },
     state = makeInitialState(
       { network, address, contractsInfo },
-      { blockNumber, config: { pfsSafetyMargin: 1.1, pfs: 'https://pfs.raiden.test' } },
+      {
+        blockNumber,
+        config: { pfsSafetyMargin: 1.1, pfs: 'https://pfs.raiden.test', httpTimeout: 3e3 },
+      },
     ),
     defaultConfig = makeDefaultConfig({ network });
 
