@@ -41,6 +41,24 @@ jobs:
           paths:
             - ./*
 
+  check_licenses:
+    executor: base-executor
+    working_directory: ~/
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Update $PATH
+          command: echo 'export PATH=$PATH:$HOME/node_modules/.bin' >> $BASH_ENV
+      - run:
+          name: Install license checker
+          command: npm install license-checker@25.0.1
+      - run:
+          name: Check SDK Licenses
+          command: cd ~/src/raiden-ts && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
+      - run:
+          name: Check dApp Licenses
+          command: cd ~/src/raiden-dapp && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
+
   install_sdk:
     executor: base-executor
     working_directory: *sdk_working_dir
@@ -180,6 +198,10 @@ workflows:
           requires:
             - checkout
             - install_sdk
+      - check_licenses:
+          requires:
+            - install_sdk
+            - install_dapp
       - lint_sdk:
           requires:
             - install_sdk
