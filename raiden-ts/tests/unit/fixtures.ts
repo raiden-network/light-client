@@ -4,7 +4,8 @@
 import { patchEthersDefineReadOnly } from './patches';
 patchEthersDefineReadOnly();
 
-import { first } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { first, scan } from 'rxjs/operators';
 import { Wallet } from 'ethers';
 import { AddressZero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
@@ -17,6 +18,9 @@ import { makeMatrix, MockRaidenEpicDeps } from './mocks';
 import { IOU } from 'raiden-ts/path/types';
 import { RaidenState } from 'raiden-ts/state';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
+import { RaidenAction } from 'raiden-ts/actions';
+import { raidenReducer } from 'raiden-ts/reducer';
+import { getLatest$ } from 'raiden-ts/epics';
 
 /**
  * Composes several constants used across epics
@@ -71,10 +75,15 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
       expiration_block: bigNumberify(3232341) as UInt<32>,
       amount: bigNumberify(100) as UInt<32>,
       signature: '0x87ea2a9c6834513dcabfca011c4422eb02a824b8bbbfc8f555d6a6dd2ebbbe953e1a47ad27b9715d8c8cf2da833f7b7d6c8f9bdb997591b7234999901f042caf1b' as Signature,
-    } as Signed<IOU>;
+    } as Signed<IOU>,
+    action$ = new Subject<RaidenAction>(),
+    state$ = new Subject<RaidenState>();
 
-  let state!: RaidenState;
-  depsMock.latest$.pipe(pluckDistinct('state'), first()).subscribe(s => (state = s));
+  let initialState!: RaidenState;
+  depsMock.latest$.pipe(pluckDistinct('state'), first()).subscribe(s => (initialState = s));
+
+  action$.pipe(scan((s, a) => raidenReducer(s, a), initialState)).subscribe(state$);
+  getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
   depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async _token =>
     _token === token ? tokenNetwork : AddressZero,
@@ -100,7 +109,7 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
     matrixServer,
     userId,
     txHash,
-    state,
+    state: initialState,
     partnerSigner: wallet,
     processed,
     paymentId,
@@ -111,5 +120,7 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
     pfsTokenAddress,
     pfsInfoResponse,
     iou,
+    action$,
+    state$,
   };
 }

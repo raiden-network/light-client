@@ -76,10 +76,13 @@ export class MockMatrixRequestFn {
       return this.respond(callback, 404, {});
     };
 
-    this.endpoints['/join'] = ({}, callback) => this.respond(callback, 200, {});
+    this.endpoints['/join'] = ({}, callback) =>
+      this.respond(callback, 200, { room_id: `!${Math.random()}:${server}` });
     this.endpoints['/createRoom'] = ({}, callback) =>
       this.respond(callback, 200, { room_id: `!${Math.random()}:${server}` });
     this.endpoints['/versions'] = ({}, callback) => this.respond(callback, 200, {});
+    this.endpoints['/send/m.room.message'] = ({}, callback) =>
+      this.respond(callback, 200, { event_id: `$eventId_${Date.now()}` });
   }
 
   public requestFn(opts: RequestOpts, callback: requestCallback): any {
