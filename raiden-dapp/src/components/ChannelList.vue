@@ -44,9 +44,10 @@
             class="channel-list__channels__channel__expanded-area"
           >
             <div v-if="visible === `channel-${channel.id}-close`">
-              <confirmation
+              <confirmation-dialog
                 :identifier="channel.id"
                 :positive-action="$t('confirmation.buttons.close')"
+                :visible="closing"
                 @confirm="close()"
                 @cancel="dismiss()"
               >
@@ -55,12 +56,13 @@
                 </template>
 
                 {{ $t('channel-list.channel.close_dialog.description') }}
-              </confirmation>
+              </confirmation-dialog>
             </div>
             <div v-else-if="visible === `channel-${channel.id}-settle`">
-              <confirmation
+              <confirmation-dialog
                 :identifier="channel.id"
                 :positive-action="$t('confirmation.buttons.settle')"
+                :visible="settling"
                 @confirm="settle()"
                 @cancel="dismiss()"
               >
@@ -73,15 +75,18 @@
                     token: selectedChannel.token
                   })
                 }}
-              </confirmation>
+              </confirmation-dialog>
             </div>
             <div v-else-if="visible === `channel-${channel.id}-deposit`">
-              <channel-deposit
+              <channel-deposit-dialog
                 :identifier="channel.id"
                 :token="token"
-                @confirm="deposit($event)"
+                :visible="depositing"
+                :loading="depositInProgress"
+                :done="false"
+                @depositTokens="deposit($event)"
                 @cancel="dismiss()"
-              ></channel-deposit>
+              ></channel-deposit-dialog>
             </div>
             <div v-else class="channel-list__channels__channel__area-content">
               <channel-life-cycle
@@ -109,8 +114,8 @@ import { RaidenChannel } from 'raiden-ts';
 import { Token } from '@/model/types';
 import ChannelActions from '@/components/ChannelActions.vue';
 import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
-import ChannelDeposit from '@/components/ChannelDeposit.vue';
-import Confirmation from '@/components/Confirmation.vue';
+import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
+import ConfirmationDialog from '@/components/ConfirmationDialog.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import { BigNumber } from 'ethers/utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
@@ -120,8 +125,8 @@ import Filters from '@/filters';
   components: {
     ChannelActions,
     ChannelLifeCycle,
-    ChannelDeposit,
-    Confirmation,
+    ChannelDepositDialog,
+    ConfirmationDialog,
     AddressDisplay
   }
 })
@@ -141,6 +146,10 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   @Emit()
   visibleChanged(_element: string) {}
 
+  depositing = false;
+  depositInProgress = false;
+  closing = false;
+  settling = false;
   displayFormat = Filters.displayFormat;
   capitalizeFirst = Filters.capitalizeFirst;
 
@@ -153,28 +162,36 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   dismiss() {
     this.visibleChanged('');
+    this.depositInProgress = false;
+    this.depositing = false;
+    this.closing = false;
+    this.settling = false;
   }
 
   onDeposit(channel: RaidenChannel) {
     this.selectedChannel = channel;
     this.visibleChanged(`channel-${channel.id}-deposit`);
+    this.depositing = true;
   }
 
   onClose(channel: RaidenChannel) {
     this.selectedChannel = channel;
     this.visibleChanged(`channel-${channel.id}-close`);
+    this.closing = true;
   }
 
   onSettle(channel: RaidenChannel) {
     this.selectedChannel = channel;
     this.visibleChanged(`channel-${channel.id}-settle`);
+    this.settling = true;
   }
 
   async deposit(deposit: BigNumber) {
     const { token, partner } = this.selectedChannel!;
-    this.dismiss();
     try {
+      this.depositInProgress = true;
       await this.$raiden.deposit(token, partner, deposit);
+      this.dismiss();
       this.message(this.$t('channel-list.messages.deposit.success') as string);
     } catch (e) {
       this.message(this.$t('channel-list.messages.deposit.failure') as string);
@@ -206,6 +223,12 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 </script>
 
 <style scoped lang="scss">
+::v-deep {
+  .v-dialog {
+    border-radius: 10px !important;
+  }
+}
+
 .channel-list {
   &__channels {
     background-color: transparent !important;

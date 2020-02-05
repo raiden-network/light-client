@@ -1,19 +1,33 @@
 <template>
-  <v-card class="raiden-dialog">
-    <v-btn icon class="raiden-dialog__close" @click="close()">
-      <v-icon>mdi-close</v-icon>
-    </v-btn>
-    <v-card-text>
-      <slot></slot>
-    </v-card-text>
-  </v-card>
+  <blurred-overlay :show="visible" :fullscreen="fullscreen">
+    <v-dialog
+      :value="visible"
+      width="350"
+      hide-overlay
+      dark
+      @click:outside="close()"
+    >
+      <v-card class="raiden-dialog">
+        <v-btn icon class="raiden-dialog__close" @click="close()">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+        <slot></slot>
+      </v-card>
+    </v-dialog>
+  </blurred-overlay>
 </template>
 
 <script lang="ts">
-import { Component, Emit, Vue } from 'vue-property-decorator';
+import BlurredOverlay from '@/components/BlurredOverlay.vue';
+import { Component, Emit, Vue, Prop } from 'vue-property-decorator';
 
-@Component({})
+@Component({ components: { BlurredOverlay } })
 export default class RaidenDialog extends Vue {
+  @Prop({ required: true, default: false })
+  visible!: boolean;
+  @Prop({ required: false, default: true })
+  fullscreen!: boolean;
+
   @Emit()
   close() {}
 }
@@ -21,8 +35,40 @@ export default class RaidenDialog extends Vue {
 
 <style scoped lang="scss">
 @import '../scss/colors';
+::v-deep {
+  .v-dialog {
+    border-radius: 10px !important;
+  }
+}
+
 .raiden-dialog {
   background-color: $card-background;
+  height: 441px;
+  padding: 25px;
+
+  ::v-deep {
+    .v-card {
+      &__title {
+        color: $color-white;
+        font-family: Roboto, sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 28px;
+        justify-content: center;
+        text-align: center;
+      }
+
+      &__actions {
+        margin: 20px 0px 35px 0px;
+      }
+
+      &__text {
+        padding-top: 10px;
+        text-align: center;
+        color: $color-white;
+      }
+    }
+  }
 
   &__close {
     position: absolute;

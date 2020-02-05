@@ -1,52 +1,46 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
-import { addElemWithDataAppToBody } from '../utils/dialog';
 import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
-import ChannelDeposit from '@/components/ChannelDeposit.vue';
+import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
 import { BigNumber } from 'ethers/utils';
 import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
 
 describe('ChannelDeposit.vue', () => {
-  addElemWithDataAppToBody();
-
-  let wrapper: Wrapper<ChannelDeposit>;
+  let wrapper: Wrapper<ChannelDepositDialog>;
+  let vuetify: typeof Vuetify;
 
   beforeAll(() => {
-    wrapper = mount(ChannelDeposit, {
+    vuetify = new Vuetify();
+    wrapper = mount(ChannelDepositDialog, {
+      vuetify,
       propsData: {
         token: TestData.token,
-        identifier: 1
+        identifier: 1,
+        visible: true
       },
+      stubs: ['raiden-dialog'],
       mocks: {
         $t: (msg: string) => msg
       }
     });
   });
 
-  test('emit a cancel event when the user presses cancel', () => {
-    wrapper
-      .findAll('button')
-      .at(0)
-      .trigger('click');
-    expect(wrapper.emitted().cancel).toBeTruthy();
-  });
-
-  test('emit a "confirm" event when the user presses confirm', async () => {
+  test('emit a "depositTokens" event when the user presses depositTokens', async () => {
     mockInput(wrapper, '0.5');
     await wrapper.vm.$nextTick();
     await flushPromises();
 
     wrapper
       .findAll('button')
-      .at(1)
+      .at(0)
       .trigger('click');
-    expect(wrapper.emitted().confirm).toBeTruthy();
+    expect(wrapper.emitted().depositTokens).toBeTruthy();
 
-    const [events] = wrapper.emitted().confirm;
+    const [events] = wrapper.emitted().depositTokens;
     const deposit: BigNumber = (events[0] as any) as BigNumber;
     expect(new BigNumber(0.5 * 10 ** 5).eq(deposit)).toBeTruthy();
   });
