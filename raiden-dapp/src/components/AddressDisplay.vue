@@ -7,9 +7,7 @@
         </p>
       </template>
       <div class="address__tooltip">
-        <div ref="copy">
-          {{ address }}
-        </div>
+        <input ref="copy" class="address__input" :value="address" />
         <div>
           {{
             copied ? $t('address-display.copied') : $t('address-display.copy')
@@ -31,29 +29,28 @@ export default class AddressDisplay extends Vue {
   copied: boolean = false;
   private timeout: number = 0;
 
-  selectAddress(node: Node): void {
-    const selection = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    if (selection) {
-      selection.removeAllRanges();
-      selection.addRange(range);
+  selectAddress(input?: HTMLInputElement): void {
+    if (input) {
+      input.focus();
+      input.select();
     }
   }
 
-  deselectAddress(): void {
-    window.getSelection()!.removeAllRanges();
+  deselectAddress(input?: HTMLInputElement): void {
+    if (input) {
+      input.blur();
+    }
   }
 
   copy(event: MouseEvent) {
     event.stopPropagation();
 
     // Select address
-    this.selectAddress(this.$refs.copy as Node);
+    this.selectAddress(this.$refs.copy as HTMLInputElement);
     this.copied = document.execCommand('copy');
 
     // Deselect text
-    this.deselectAddress();
+    this.deselectAddress(this.$refs.copy as HTMLInputElement);
 
     if (this.timeout) {
       clearTimeout(this.timeout);
@@ -92,6 +89,11 @@ export default class AddressDisplay extends Vue {
       background-color: $secondary-color;
       color: $color-white;
     }
+  }
+
+  &__input {
+    width: 330px;
+    text-align: center;
   }
 }
 </style>

@@ -1,3 +1,6 @@
+jest.useFakeTimers();
+
+import Filters from '@/filters';
 import { createLocalVue, mount, shallowMount, Wrapper } from '@vue/test-utils';
 import { addElemWithDataAppToBody } from '../utils/dialog';
 import Vuex from 'vuex';
@@ -14,6 +17,7 @@ import { $identicon } from '../utils/mocks';
 import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
+Vue.filter('truncate', Filters.truncate);
 
 describe('SelectHub.vue', () => {
   addElemWithDataAppToBody();
@@ -69,6 +73,7 @@ describe('SelectHub.vue', () => {
     store.commit('updateTokens', { [tokenAddress]: token });
     wrapper = createWrapper(route, token);
     mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
+    jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
     await flushPromises();
     wrapper.find('.action-button__button').trigger('click');

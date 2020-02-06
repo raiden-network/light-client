@@ -66,9 +66,7 @@ export default class RaidenService {
 
   async ensResolve(name: string): Promise<string> {
     try {
-      const address = await this.raiden.resolveName(name);
-      await this.raiden.getAvailability(address);
-      return address;
+      return await this.raiden.resolveName(name);
     } catch (e) {
       throw new EnsResolveFailed(e);
     }

@@ -13,7 +13,6 @@
     "update": "Refresh"
   },
   "address-input": {
-    "paste-button": "Paste",
     "input": {
       "placeholder": "Enter an address or ENS name..."
     },
