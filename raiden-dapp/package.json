@@ -73,7 +73,7 @@
     "sass": "^1.25.0",
     "sass-loader": "^8.0.2",
     "source-map-loader": "^0.2.4",
-    "stylelint": "^12.0.1",
+    "stylelint": "^13.0.0",
     "stylelint-config-recommended-scss": "^4.2.0",
     "stylelint-scss": "^3.14.2",
     "ts-jest": "^24.2.0",
