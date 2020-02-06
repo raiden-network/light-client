@@ -62,6 +62,7 @@ export interface Transfer {
   serviceToken?: Token;
   mediationFee?: BigNumber;
   target: string;
+  hops: number;
   transferAmount: BigNumber;
   transferToken: Token;
   transferTotal: BigNumber;

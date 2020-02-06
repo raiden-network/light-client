@@ -1,13 +1,27 @@
 <template>
   <div class="transfer-summary">
-    <h2>{{ $t('transfer.steps.summary.route-request') }}</h2>
+    <h2 v-if="!isDirectTransfer" class="transfer-summary__header">
+      {{ $t('transfer.steps.summary.route-request') }}
+    </h2>
 
-    <div class="transfer-summary__row">
+    <div v-if="!isDirectTransfer" class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.pfs') }}</span>
-      <span>{{ transfer.pfsAddress }}</span>
+      <span>
+        <v-tooltip bottom>
+          <template #activator="{ on }">
+            <span v-on="on">
+              {{ transfer.pfsAddress.replace('https://', '') | truncate(28) }}
+            </span>
+          </template>
+          <span>{{ transfer.pfsAddress }}</span>
+        </v-tooltip>
+      </span>
     </div>
 
-    <div class="transfer-summary__row">
+    <div
+      v-if="transfer.serviceFee && transfer.serviceToken"
+      class="transfer-summary__row"
+    >
       <span>{{ $t('transfer.steps.summary.service-fee') }}</span>
       <span>
         {{
@@ -18,17 +32,17 @@
       </span>
     </div>
 
-    <h2>
+    <h2 class="transfer-summary__header">
       {{
-        transfer.mediationFee
-          ? $t('transfer.steps.summary.mediated-transfer')
-          : $t('transfer.steps.summary.direct-transfer')
+        isDirectTransfer
+          ? $t('transfer.steps.summary.direct-transfer')
+          : $t('transfer.steps.summary.mediated-transfer')
       }}
     </h2>
 
     <div class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.target') }}</span>
-      <span>{{ transfer.target }}</span>
+      <span><address-display :address="transfer.target"/></span>
     </div>
 
     <div class="transfer-summary__row">
@@ -42,7 +56,7 @@
       </span>
     </div>
 
-    <div v-if="transfer.mediationFee" class="transfer-summary__row">
+    <div v-if="!isDirectTransfer" class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.mediation-fee') }}</span>
       <span>
         {{
@@ -52,9 +66,9 @@
       </span>
     </div>
 
-    <hr />
+    <hr class="transfer-summary__separator" />
 
-    <div class="transfer-summary__row">
+    <div class="transfer-summary__row transfer-summary__row--total">
       <span>{{ $t('transfer.steps.summary.total-amount') }}</span>
       <span>
         {{
@@ -70,18 +84,31 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Checkmark from '@/components/Checkmark.vue';
+import AddressDisplay from '@/components/AddressDisplay.vue';
 import { Transfer } from '@/model/types';
+import Filters from '@/filters';
 
-@Component({ components: { Checkmark } })
+@Component({ components: { Checkmark, AddressDisplay } })
 export default class NoTokens extends Vue {
   @Prop({ required: true })
   transfer!: Transfer;
+
+  truncate = Filters.truncate;
+
+  get isDirectTransfer() {
+    return this.transfer.hops === 0;
+  }
 }
 </script>
 
 <style lang="scss" scoped>
 .transfer-summary {
   width: 100%;
+
+  &__header {
+    margin-top: 25px;
+    text-align: left;
+  }
 
   &__row {
     justify-content: space-between;
@@ -91,12 +118,21 @@ export default class NoTokens extends Vue {
       display: flex;
       align-items: center;
     }
+
+    &--total {
+      font-weight: bold;
+      font-size: 18px;
+    }
   }
 
   &__checkmark {
     margin-left: 10px;
     width: 16px;
     height: 16px;
+  }
+
+  &__separator {
+    margin: 10px 0;
   }
 }
 </style>
