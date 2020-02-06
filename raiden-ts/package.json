@@ -78,7 +78,7 @@
     "@types/lodash": "^4.14.149",
     "abort-controller": "^3.0.0",
     "ethers": "^4.0.44",
-    "fp-ts": "^2.4.3",
+    "fp-ts": "^2.4.4",
     "io-ts": "^2.0.6",
     "isomorphic-fetch": "^2.2.1",
     "lodash": "^4.17.15",
