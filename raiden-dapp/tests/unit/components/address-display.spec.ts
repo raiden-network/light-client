@@ -3,7 +3,6 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { TestData } from '../data/mock-data';
-import flushPromises from 'flush-promises';
 import Filters from '@/filters';
 import { addElemWithDataAppToBody } from '../utils/dialog';
 import { $identicon } from '../utils/mocks';
@@ -31,25 +30,6 @@ describe('AddressDisplay.vue', () => {
         $t: (msg: string) => msg
       }
     });
-
-    Object.defineProperty(window, 'getSelection', {
-      value: () => {
-        return {
-          removeAllRanges: () => {},
-          addRange: () => {}
-        };
-      },
-      writable: true
-    });
-
-    Object.defineProperty(document, 'createRange', {
-      value: () => {
-        return {
-          selectNodeContents: () => {}
-        };
-      },
-      writable: true
-    });
   });
 
   test('copy the address to the clipboard when the user clicks on the address', async () => {
@@ -58,8 +38,9 @@ describe('AddressDisplay.vue', () => {
     wrapper.find('.address__label').trigger('click');
     wrapper.find('.address__label').trigger('click');
 
-    await flushPromises();
+    await wrapper.vm.$nextTick();
     jest.runAllTimers();
+
     expect(copied).toBeCalledTimes(3);
     expect(document.execCommand).toBeCalledTimes(2);
     expect(document.execCommand).toBeCalledWith('copy');
