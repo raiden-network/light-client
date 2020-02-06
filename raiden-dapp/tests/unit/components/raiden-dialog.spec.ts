@@ -12,8 +12,8 @@ describe('RaidenDialog.vue', () => {
   beforeAll(() => {
     vuetify = new Vuetify();
     wrapper = mount(RaidenDialog, {
-      attachToDocument: true,
       vuetify,
+      stubs: ['v-dialog'],
       propsData: {
         visible: true
       }
@@ -21,10 +21,7 @@ describe('RaidenDialog.vue', () => {
   });
 
   test('emit a close event when the user presses close', () => {
-    wrapper
-      .findAll('button')
-      .at(0)
-      .trigger('click');
-    expect(wrapper.emitted().close).toBeTruthy();
+    wrapper.find('button').trigger('click');
+    expect(wrapper.emitted('close')).toBeTruthy();
   });
 });
