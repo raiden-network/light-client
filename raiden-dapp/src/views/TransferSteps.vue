@@ -195,17 +195,12 @@
       <h2 v-else>{{ this.$t('transfer.steps.request-route.done') }}</h2>
     </v-overlay>
 
-    <v-dialog
-      v-model="processingTransfer"
-      max-width="310"
-      transition="scale-transition"
-    >
-      <transfer-progress-dialog
-        :in-progress="!transferDone"
-        :error="error"
-        @dismiss="dismissProgress"
-      ></transfer-progress-dialog>
-    </v-dialog>
+    <transfer-progress-dialog
+      :visible="processingTransfer"
+      :in-progress="!transferDone"
+      :error="error"
+      @dismiss="dismissProgress"
+    ></transfer-progress-dialog>
 
     <error-dialog
       v-if="!processingTransfer"

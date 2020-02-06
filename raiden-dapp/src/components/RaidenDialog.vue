@@ -1,5 +1,5 @@
 <template>
-  <blurred-overlay :show="visible" :fullscreen="fullscreen">
+  <blurred-overlay :show="visible" fullscreen>
     <v-dialog
       :value="visible"
       width="350"
@@ -25,8 +25,6 @@ import { Component, Emit, Vue, Prop } from 'vue-property-decorator';
 export default class RaidenDialog extends Vue {
   @Prop({ required: true, default: false })
   visible!: boolean;
-  @Prop({ required: false, default: true })
-  fullscreen!: boolean;
 
   @Emit()
   close() {}
@@ -59,7 +57,7 @@ export default class RaidenDialog extends Vue {
       }
 
       &__actions {
-        margin: 20px 0px 35px 0px;
+        margin: 20px 0 35px 0;
       }
 
       &__text {
