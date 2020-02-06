@@ -16,10 +16,13 @@ import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
 
 const transport = createReducer(initialState.transport)
   .handle(matrixSetup, (state, action) => {
+    // immutably remove rooms from state.matrix
+    const { rooms: _, ...noRooms } = { ...state.matrix };
     return {
       ...state,
       matrix: {
-        ...state.matrix,
+        // invalidate rooms map if server has changed
+        ...(state.matrix?.server !== action.payload.server ? noRooms : state.matrix),
         ...action.payload,
       },
     };

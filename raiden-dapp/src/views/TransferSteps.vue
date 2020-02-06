@@ -167,7 +167,8 @@
     </v-overlay>
 
     <transfer-progress-dialog
-      :in-progress="processingTransfer"
+      :visible="processingTransfer"
+      :in-progress="!transferDone"
       :error="error"
       @dismiss="dismissProgress"
     ></transfer-progress-dialog>

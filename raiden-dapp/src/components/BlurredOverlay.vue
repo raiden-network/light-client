@@ -11,7 +11,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class BlurredOverlay extends Vue {
   @Prop({ type: Boolean, required: true })
   show!: boolean;
-  @Prop({ required: false, default: false })
+  @Prop({ required: false, default: false, type: Boolean })
   fullscreen!: boolean;
 }
 </script>
@@ -31,8 +31,8 @@ export default class BlurredOverlay extends Vue {
   top: 0;
 
   &.fullscreen {
-    border-radius: 0px;
-    margin-top: 0px;
+    border-radius: 0;
+    margin-top: 0;
     position: fixed;
     z-index: 101;
   }
