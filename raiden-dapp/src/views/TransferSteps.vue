@@ -252,18 +252,6 @@ export default class TransferSteps extends Mixins(
   target: string = '';
 
   get transferSummary(): Transfer {
-    console.error('### SUMMARY', {
-      pfsAddress: this.selectedPfs?.url as string,
-      serviceFee: this.selectedPfs?.price as BigNumber,
-      serviceToken: this.udcToken,
-      mediationFee: this.selectedRoute?.fee as BigNumber,
-      target: this.target,
-      hops: this.selectedRoute?.hops,
-      transferAmount: BalanceUtils.parse(this.amount, this.token.decimals!),
-      transferToken: this.token,
-      transferTotal: this.totalAmount
-    });
-
     return {
       pfsAddress: this.selectedPfs?.url as string,
       serviceFee: this.selectedPfs?.price as BigNumber,
@@ -389,7 +377,6 @@ export default class TransferSteps extends Mixins(
 
       if (route && route.fee.isZero()) {
         this.selectedRoute = route;
-        this.transfer();
       }
     }
   }
@@ -407,9 +394,20 @@ export default class TransferSteps extends Mixins(
 
       this.pfsFeesPaid = true;
 
-      setTimeout(() => {
-        this.step = 2;
-      }, 2000);
+      const onlySingleFreeRoute =
+        this.routes.length === 1 &&
+        this.selectedRoute &&
+        this.selectedRoute.fee.isZero();
+
+      if (onlySingleFreeRoute) {
+        setTimeout(() => {
+          this.step = 3;
+        }, 2000);
+      } else {
+        setTimeout(() => {
+          this.step = 2;
+        }, 2000);
+      }
 
       return;
     }
@@ -427,10 +425,6 @@ export default class TransferSteps extends Mixins(
 
   get token(): Token {
     const { token: address } = this.$route.params;
-    console.error(
-      'whhooooopp',
-      this.$store.state.tokens[address] || ({ address } as Token)
-    );
     return this.$store.state.tokens[address] || ({ address } as Token);
   }
 
