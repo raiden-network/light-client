@@ -232,8 +232,19 @@ workflows:
             branches:
               only:
                 - master
+
+  publish:
+    jobs:
+      - checkout:
+          filters:
+            <<: *filter-version-regex
+      - install_sdk:
+          requires:
+            - checkout
+          filters:
+            <<: *filter-version-regex
       - publish_artifact:
           requires:
-            - test_sdk
+            - install_sdk
           filters:
             <<: *filter-version-regex
