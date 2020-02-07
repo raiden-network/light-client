@@ -4,9 +4,9 @@
       <v-stepper v-model="step" alt-labels class="transfer-steps fill-height">
         <v-stepper-header class="transfer-steps__header">
           <v-stepper-step
-            :complete="selectedPfs !== null"
-            :class="{ active: step >= 1 }"
-            complete-icon=""
+            :complete="step > 1"
+            :class="{ active: step >= 1, skipped: pfsSelectionSkipped }"
+            :complete-icon="pfsSelectionSkipped ? 'mdi-redo' : 'mdi-check'"
             step=""
             class="transfer-steps__step"
           >
@@ -14,14 +14,20 @@
           </v-stepper-step>
 
           <v-divider
-            :class="{ active: step >= 2 }"
+            :class="{
+              active: step >= 2,
+              skipped: pfsSelectionSkipped || routeSelectionSkipped
+            }"
             class="transfer-steps__divider"
           ></v-divider>
 
           <v-stepper-step
-            :complete="step >= 2"
-            :class="{ active: step >= 2 }"
-            complete-icon=""
+            :complete="step > 2"
+            :class="{
+              active: step >= 2,
+              skipped: pfsSelectionSkipped || routeSelectionSkipped
+            }"
+            :complete-icon="routeSelectionSkipped ? 'mdi-redo' : 'mdi-check'"
             step=""
             class="transfer-steps__step"
           >
@@ -29,14 +35,13 @@
           </v-stepper-step>
 
           <v-divider
-            :class="{ active: step >= 3 }"
+            :class="{ active: step >= 3, skipped: routeSelectionSkipped }"
             class="transfer-steps__divider"
           ></v-divider>
 
           <v-stepper-step
-            :complete="step >= 3"
+            :complete="step > 3"
             :class="{ active: step >= 3 }"
-            complete-icon=""
             step=""
             class="transfer-steps__step"
           >
@@ -240,6 +245,8 @@ export default class TransferSteps extends Mixins(
   routes: Route[] = [];
   pfsFeesConfirmed: boolean = false;
   pfsFeesPaid: boolean = false;
+  pfsSelectionSkipped: boolean = false;
+  routeSelectionSkipped: boolean = false;
   freePfs: boolean = false;
   showMintDeposit: boolean = false;
   mediationFeesConfirmed: boolean = false;
@@ -340,6 +347,8 @@ export default class TransferSteps extends Mixins(
       };
 
       this.step = 3;
+      this.pfsSelectionSkipped = true;
+      this.routeSelectionSkipped = true;
     }
   }
 
@@ -373,9 +382,9 @@ export default class TransferSteps extends Mixins(
           } as Route)
       );
 
+      // Automatically select cheapest route
       const [route] = this.routes;
-
-      if (route && route.fee.isZero()) {
+      if (route) {
         this.selectedRoute = route;
       }
     }
@@ -394,6 +403,8 @@ export default class TransferSteps extends Mixins(
 
       this.pfsFeesPaid = true;
 
+      // If we received only one route and it has zero mediation fees,
+      // then head straight to the 3rd summary step
       const onlySingleFreeRoute =
         this.routes.length === 1 &&
         this.selectedRoute &&
@@ -401,15 +412,15 @@ export default class TransferSteps extends Mixins(
 
       if (onlySingleFreeRoute) {
         setTimeout(() => {
+          this.routeSelectionSkipped = true;
           this.step = 3;
         }, 2000);
       } else {
+        // We received multiple routes, let the user pick one in 2nd step
         setTimeout(() => {
           this.step = 2;
         }, 2000);
       }
-
-      return;
     }
 
     if (this.step === 2 && this.selectedRoute) {
@@ -561,10 +572,6 @@ export default class TransferSteps extends Mixins(
 
         &__step {
           &__step {
-            height: 12px;
-            min-width: 12px;
-            width: 12px;
-            margin-top: 6px;
             background: transparent !important;
             border: 2px solid $secondary-text-color !important;
           }
@@ -592,14 +599,36 @@ export default class TransferSteps extends Mixins(
           }
         }
       }
+
+      &.skipped {
+        ::v-deep {
+          .v-stepper {
+            &__step {
+              &__step {
+                border-color: $secondary-text-color !important;
+                background: $secondary-text-color !important;
+              }
+            }
+
+            &__label {
+              color: $secondary-text-color;
+              font-weight: bold;
+            }
+          }
+        }
+      }
     }
   }
 
   &__divider {
     border: 1px solid #646464 !important;
-    margin: 35px -82px 0 !important;
+    margin: 35px -77px 0 !important;
     &.active {
       border-color: $primary-color !important;
+
+      &.skipped {
+        border-color: $secondary-text-color !important;
+      }
     }
   }
 
