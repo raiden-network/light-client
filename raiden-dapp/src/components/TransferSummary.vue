@@ -113,8 +113,9 @@ export default class NoTokens extends Vue {
   &__row {
     justify-content: space-between;
     display: flex;
+    position: relative;
 
-    & > span {
+    > span {
       display: flex;
       align-items: center;
     }
@@ -126,7 +127,8 @@ export default class NoTokens extends Vue {
   }
 
   &__checkmark {
-    margin-left: 10px;
+    position: absolute;
+    right: -26px;
     width: 16px;
     height: 16px;
   }
