@@ -244,6 +244,7 @@ workflows:
           filters:
             <<: *filter-version-regex
       - publish_artifact:
+          context: "Raiden Context"
           requires:
             - install_sdk
           filters:
