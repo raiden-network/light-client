@@ -2,7 +2,7 @@
   <raiden-dialog
     class="channel-deposit"
     :visible="visible"
-    :fullscreen="true"
+    :fullscreen="false"
     @close="cancel"
   >
     <v-card-title>
@@ -54,6 +54,7 @@
           </v-form>
           <div class="channel-deposit__button">
             <action-button
+              :id="`confirm-${identifier}`"
               :enabled="valid"
               :text="$t('channel-deposit.buttons.confirm')"
               @click="depositTokens()"
