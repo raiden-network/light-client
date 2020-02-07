@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.3.0] - 2020-02-07
 ### Added
 - [#218] Matrix availability check to address inputs.
 - [#585] Pending transfer badge icon
@@ -98,7 +100,8 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.2...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/raiden-network/light-client/compare/v0.2...v0.3.0
 [0.2]: https://github.com/raiden-network/light-client/compare/v0.1.1...v0.2
 [0.1.1]: https://github.com/raiden-network/light-client/compare/v0.1...v0.1.1
 [0.1]: https://github.com/raiden-network/light-client/releases/tag/v0.1
