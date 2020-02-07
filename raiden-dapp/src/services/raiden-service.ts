@@ -336,8 +336,8 @@ export default class RaidenService {
   }
 
   /* istanbul ignore next */
-  async depositToUDC(amount: BigNumber): Promise<void> {
-    await this.raiden.depositToUDC(amount);
+  async depositToUDC(amount: BigNumber, depositing: () => void): Promise<void> {
+    await this.raiden.depositToUDC(amount, depositing);
   }
 
   /* istanbul ignore next */

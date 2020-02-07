@@ -925,6 +925,7 @@ export class Raiden {
    * </ol>
    *
    * @param amount - The amount to deposit on behalf of the target/beneficiary.
+   * @param depositing - Called before the deposit function is called
    * @param options - tx options
    * @param options.subkey - By default, if using subkey, main account is used to send transactions
    *    Set this to true if one wants to force sending the transaction with the subkey
@@ -932,6 +933,7 @@ export class Raiden {
    */
   public async depositToUDC(
     amount: BigNumberish,
+    depositing?: () => void,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
@@ -957,6 +959,7 @@ export class Raiden {
     const approveReceipt = await approveTx.wait();
     if (!approveReceipt.status) throw new Error('Approve transaction failed.');
 
+    depositing?.();
     const currentUDCBalance = await userDepositContract.functions.balances(this.address);
     const depositTx = await userDepositContract.functions.deposit(
       this.address,
