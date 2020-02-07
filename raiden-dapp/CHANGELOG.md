@@ -5,6 +5,7 @@
 - [#218] Matrix availability check to address inputs.
 - [#585] Pending transfer badge icon
 - [#930] Display complete address on hover
+- [#543] Added transfer summary
 
 ### Changed
 - User can now dismiss/hide the transfer progress dialog.
@@ -28,6 +29,7 @@
 [#642]: https://github.com/raiden-network/light-client/issues/642
 [#715]: https://github.com/raiden-network/light-client/issues/715
 [#930]: https://github.com/raiden-network/light-client/issues/930
+[#543]: https://github.com/raiden-network/light-client/issues/543
 
 ## [0.2] - 2019-11-29
 ### Added
