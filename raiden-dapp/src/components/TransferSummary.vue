@@ -6,7 +6,7 @@
 
     <div v-if="!isDirectTransfer" class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.pfs') }}</span>
-      <span>
+      <span class="transfer-summary__pfs-address">
         <v-tooltip bottom>
           <template #activator="{ on }">
             <span v-on="on">
@@ -23,7 +23,7 @@
       class="transfer-summary__row"
     >
       <span>{{ $t('transfer.steps.summary.service-fee') }}</span>
-      <span>
+      <span class="transfer-summary__service-fee">
         {{
           transfer.serviceFee | displayFormat(transfer.serviceToken.decimals)
         }}
@@ -47,7 +47,7 @@
 
     <div class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.transfer-amount') }}</span>
-      <span>
+      <span class="transfer-summary__transfer-amount">
         {{
           transfer.transferAmount
             | displayFormat(transfer.transferToken.decimals)
@@ -58,7 +58,7 @@
 
     <div v-if="!isDirectTransfer" class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.mediation-fee') }}</span>
-      <span>
+      <span class="transfer-summary__mediation-fee">
         {{
           transfer.mediationFee | displayFormat(transfer.transferToken.decimals)
         }}
@@ -70,7 +70,7 @@
 
     <div class="transfer-summary__row transfer-summary__row--total">
       <span>{{ $t('transfer.steps.summary.total-amount') }}</span>
-      <span>
+      <span class="transfer-summary__transfer-total">
         {{
           transfer.transferTotal
             | displayFormat(transfer.transferToken.decimals)
