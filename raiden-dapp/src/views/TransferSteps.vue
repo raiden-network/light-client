@@ -140,7 +140,7 @@
               v-if="step === 3 && !processingTransfer"
               class="transfer-steps__summary"
             >
-              <h1>Summary</h1>
+              <h1>{{ $t('transfer.steps.summary.headline') }}</h1>
               <transfer-summary :transfer="transferSummary" />
             </div>
           </v-stepper-content>

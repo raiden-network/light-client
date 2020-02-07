@@ -250,6 +250,7 @@
         "description": "Your tokens have been successfully deposited."
       },
       "summary": {
+        "headline": "Summary",
         "route-request": "Route Request",
         "pfs": "Pathfinding Service",
         "service-fee": "Service Fee",
