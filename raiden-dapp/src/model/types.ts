@@ -56,6 +56,18 @@ export interface Route {
   readonly displayFee: string;
 }
 
+export interface Transfer {
+  pfsAddress?: string;
+  serviceFee?: BigNumber;
+  serviceToken?: Token;
+  mediationFee?: BigNumber;
+  target: string;
+  hops: number;
+  transferAmount: BigNumber;
+  transferToken: Token;
+  transferTotal: BigNumber;
+}
+
 export const emptyDescription = (): StepDescription => ({
   label: '',
   title: '',

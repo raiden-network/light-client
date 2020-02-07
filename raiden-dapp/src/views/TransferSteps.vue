@@ -138,39 +138,10 @@
           <v-stepper-content step="3">
             <div
               v-if="step === 3 && !processingTransfer"
-              class="transfer-steps__total-amount"
+              class="transfer-steps__summary"
             >
-              <p>
-                {{ $t('transfer.steps.confirm-transfer.total-amount') }}
-              </p>
-              <h2>
-                <v-tooltip top>
-                  <template #activator="{ on }">
-                    <span v-on="on">
-                      {{ totalAmount | displayFormat(token.decimals) }}
-                      {{ token.symbol }}
-                    </span>
-                  </template>
-                  <span>
-                    {{ totalAmount | toUnits(token.decimals) }}
-                    {{ token.symbol }}
-                  </span>
-                </v-tooltip>
-              </h2>
-            </div>
-            <div
-              v-if="processingTransfer"
-              class="transfer-steps__processing-transfer"
-            >
-              <v-row justify="center" class="processing-transfer__spinner">
-                <spinner />
-              </v-row>
-              <p class="transfer-steps__processing-transfer__title">
-                {{ this.$t('transfer.steps.transfer.title') }}
-              </p>
-              <p class="transfer-steps__processing-transfer__description">
-                {{ this.$t('transfer.steps.transfer.description') }}
-              </p>
+              <h1>{{ $t('transfer.steps.summary.headline') }}</h1>
+              <transfer-summary :transfer="transferSummary" />
             </div>
           </v-stepper-content>
         </v-stepper-items>
@@ -227,12 +198,13 @@ import { RaidenPFS } from 'raiden-ts';
 import { BigNumber, bigNumberify } from 'ethers/utils';
 
 import { BalanceUtils } from '@/utils/balance-utils';
-import { Token, Route } from '@/model/types';
+import { Token, Route, Transfer } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import PathfindingServices from '@/components/PathfindingServices.vue';
 import FindRoutes from '@/components/FindRoutes.vue';
 import ActionButton from '@/components/ActionButton.vue';
+import TransferSummary from '@/components/TransferSummary.vue';
 import Spinner from '@/components/Spinner.vue';
 import MintDepositDialog from '@/components/MintDepositDialog.vue';
 import Checkmark from '@/components/Checkmark.vue';
@@ -254,7 +226,8 @@ import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
     Stepper,
     ErrorDialog,
     Checkmark,
-    MintDepositDialog
+    MintDepositDialog,
+    TransferSummary
   }
 })
 export default class TransferSteps extends Mixins(
@@ -277,6 +250,20 @@ export default class TransferSteps extends Mixins(
 
   amount: string = '';
   target: string = '';
+
+  get transferSummary(): Transfer {
+    return {
+      pfsAddress: this.selectedPfs?.url as string,
+      serviceFee: this.selectedPfs?.price as BigNumber,
+      serviceToken: this.udcToken,
+      mediationFee: this.selectedRoute?.fee as BigNumber,
+      target: this.target,
+      hops: this.selectedRoute?.hops,
+      transferAmount: BalanceUtils.parse(this.amount, this.token.decimals!),
+      transferToken: this.token,
+      transferTotal: this.totalAmount
+    } as Transfer;
+  }
 
   get callToActionText() {
     const amountLocalized = `transfer.steps.call-to-action.${this.step}.amount`;
@@ -352,7 +339,7 @@ export default class TransferSteps extends Mixins(
         hops: 0
       };
 
-      this.transfer();
+      this.step = 3;
     }
   }
 
@@ -390,7 +377,6 @@ export default class TransferSteps extends Mixins(
 
       if (route && route.fee.isZero()) {
         this.selectedRoute = route;
-        this.transfer();
       }
     }
   }
@@ -408,9 +394,20 @@ export default class TransferSteps extends Mixins(
 
       this.pfsFeesPaid = true;
 
-      setTimeout(() => {
-        this.step = 2;
-      }, 2000);
+      const onlySingleFreeRoute =
+        this.routes.length === 1 &&
+        this.selectedRoute &&
+        this.selectedRoute.fee.isZero();
+
+      if (onlySingleFreeRoute) {
+        setTimeout(() => {
+          this.step = 3;
+        }, 2000);
+      } else {
+        setTimeout(() => {
+          this.step = 2;
+        }, 2000);
+      }
 
       return;
     }
@@ -421,7 +418,7 @@ export default class TransferSteps extends Mixins(
       return;
     }
 
-    if (this.step === 3 && this.selectedRoute && this.selectedPfs) {
+    if (this.step === 3 && this.selectedRoute) {
       this.transfer();
     }
   }
@@ -449,11 +446,7 @@ export default class TransferSteps extends Mixins(
     }
 
     if (this.step == 3) {
-      return (
-        this.selectedRoute !== null &&
-        this.selectedPfs !== null &&
-        !this.processingTransfer
-      );
+      return this.selectedRoute !== null && !this.processingTransfer;
     }
 
     return false;
@@ -628,8 +621,9 @@ export default class TransferSteps extends Mixins(
     }
   }
 
-  &__total-amount {
+  &__summary {
     text-align: center;
+    padding: 25px 50px;
   }
 
   .udc-balance {

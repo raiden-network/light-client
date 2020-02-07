@@ -248,6 +248,18 @@
         "label": "Done",
         "title": "Deposit Successful",
         "description": "Your tokens have been successfully deposited."
+      },
+      "summary": {
+        "headline": "Summary",
+        "route-request": "Route Request",
+        "pfs": "Pathfinding Service",
+        "service-fee": "Service Fee",
+        "mediated-transfer": "Mediated Transfer",
+        "direct-transfer": "Direct Transfer",
+        "target": "Target",
+        "transfer-amount": "Transfer Amount",
+        "total-amount": "Total Amount",
+        "mediation-fee": "Mediation Fee"
       }
     }
   },
