@@ -89,7 +89,7 @@ import { Transfer } from '@/model/types';
 import Filters from '@/filters';
 
 @Component({ components: { Checkmark, AddressDisplay } })
-export default class NoTokens extends Vue {
+export default class TransferSummary extends Vue {
   @Prop({ required: true })
   transfer!: Transfer;
 
