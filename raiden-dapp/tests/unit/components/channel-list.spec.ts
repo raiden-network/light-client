@@ -60,10 +60,6 @@ describe('ChannelList.vue', () => {
       'depositInProgress',
       'set'
     );
-
-    wrapper.setData({
-      selectedChannel: TestData.mockChannelArray[0]
-    });
   });
 
   afterEach(() => {
@@ -109,6 +105,9 @@ describe('ChannelList.vue', () => {
   describe('close a channel', () => {
     beforeEach(() => {
       raiden.closeChannel = jest.fn();
+      wrapper.setData({
+        selectedChannel: TestData.openChannel
+      });
     });
 
     test('display confirmation dialog when close is pressed', async () => {
@@ -127,8 +126,8 @@ describe('ChannelList.vue', () => {
 
       expect(raiden.closeChannel).toHaveBeenCalledTimes(1);
       expect(raiden.closeChannel).toHaveBeenCalledWith(
-        TestData.mockChannelArray[0].token,
-        TestData.mockChannelArray[0].partner
+        TestData.openChannel.token,
+        TestData.openChannel.partner
       );
       expect(wrapper.emitted().message[0][0]).toEqual(
         'channel-list.messages.close.success'
@@ -152,6 +151,9 @@ describe('ChannelList.vue', () => {
   describe('deposit in a channel', () => {
     beforeEach(() => {
       raiden.deposit = jest.fn();
+      wrapper.setData({
+        selectedChannel: TestData.openChannel
+      });
     });
 
     test('display channel deposit dialog when deposit is pressed', async () => {
@@ -171,8 +173,8 @@ describe('ChannelList.vue', () => {
       expect(depositInProgress).toHaveBeenNthCalledWith(1, true);
       expect(raiden.deposit).toHaveBeenCalledTimes(1);
       expect(raiden.deposit).toHaveBeenCalledWith(
-        TestData.mockChannelArray[0].token,
-        TestData.mockChannelArray[0].partner,
+        TestData.openChannel.token,
+        TestData.openChannel.partner,
         '0.5'
       );
       expect(wrapper.emitted().message[0][0]).toEqual(
@@ -198,6 +200,9 @@ describe('ChannelList.vue', () => {
   describe('settle a channel', () => {
     beforeEach(() => {
       raiden.settleChannel = jest.fn();
+      wrapper.setData({
+        selectedChannel: TestData.settlableChannel
+      });
     });
 
     test('display confirmation dialog when settle is pressed', async () => {
@@ -216,8 +221,8 @@ describe('ChannelList.vue', () => {
 
       expect(raiden.settleChannel).toHaveBeenCalledTimes(1);
       expect(raiden.settleChannel).toHaveBeenCalledWith(
-        TestData.mockChannelArray[0].token,
-        TestData.mockChannelArray[0].partner
+        TestData.settlableChannel.token,
+        TestData.settlableChannel.partner
       );
       expect(wrapper.emitted().message[0][0]).toEqual(
         'channel-list.messages.settle.success'
