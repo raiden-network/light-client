@@ -82,7 +82,14 @@ describe('PFS: pathFindServiceEpic', () => {
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         // a couple of channels with unrelated partners, with larger deposits
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         channelDeposit.success(
@@ -1146,7 +1153,14 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     openedState = [
       tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
       channelOpen.success(
-        { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+        {
+          id: channelId,
+          settleTimeout,
+          isFirstParticipant,
+          txHash,
+          txBlock: openBlock,
+          confirmed: true,
+        },
         { tokenNetwork, partner },
       ),
       newBlock({ blockNumber: 125 }),

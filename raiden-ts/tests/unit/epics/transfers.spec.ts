@@ -164,7 +164,14 @@ describe('transfers epic', () => {
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             // a couple of channels with unrelated partners, with larger deposits
             channelOpen.success(
-              { id: channelId - 2, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId - 2,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner: otherPartner2 },
             ),
             channelDeposit.success(
@@ -177,7 +184,14 @@ describe('transfers epic', () => {
               { tokenNetwork, partner: otherPartner2 },
             ),
             channelOpen.success(
-              { id: channelId - 1, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId - 1,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner: otherPartner1 },
             ),
             channelDeposit.success(
@@ -191,7 +205,14 @@ describe('transfers epic', () => {
             ),
             // but transfer should prefer this direct channel
             channelOpen.success(
-              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner },
             ),
             channelDeposit.success(
@@ -271,7 +292,14 @@ describe('transfers epic', () => {
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             // channel with closingPartner: closed
             channelOpen.success(
-              { id: channelId + 1, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId + 1,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner: closingPartner },
             ),
             channelClose.success(
@@ -329,7 +357,14 @@ describe('transfers epic', () => {
           [
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             channelOpen.success(
-              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner },
             ),
             channelDeposit.success(

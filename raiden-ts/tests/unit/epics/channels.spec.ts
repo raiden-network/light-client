@@ -62,7 +62,14 @@ describe('channels epic', () => {
       const newState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock: 121, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: 121,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         channelClose.success(
@@ -99,7 +106,14 @@ describe('channels epic', () => {
         curState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpen.success(
-            { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
+            {
+              id: channelId,
+              settleTimeout,
+              isFirstParticipant,
+              txHash,
+              txBlock: 125,
+              confirmed: true,
+            },
             { tokenNetwork, partner },
           ),
         ].reduce(raidenReducer, state);
@@ -195,15 +209,32 @@ describe('channels epic', () => {
       jest.clearAllMocks();
     });
 
-    test("filter out if channel isn't in 'open' state", async () => {
-      // channel.state is 'opening'
+    test("filter out if channel isn't in 'open' state or unconfirmed channel", async () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
           channelOpen.success(
-            { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
+            {
+              id: channelId,
+              settleTimeout,
+              isFirstParticipant,
+              txHash,
+              txBlock: 125,
+              confirmed: undefined,
+            },
+            { tokenNetwork, partner },
+          ),
+          channelOpen.success(
+            {
+              id: channelId,
+              settleTimeout,
+              isFirstParticipant,
+              txHash,
+              txBlock: 125,
+              confirmed: true,
+            },
             { tokenNetwork, partner },
           ),
         ),
@@ -213,9 +244,15 @@ describe('channels epic', () => {
     });
 
     test('channelOpen.success triggers channel monitoring', async () => {
-      // channel.state is 'opening'
       const action = channelOpen.success(
-          { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: 125,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         curState = [tokenMonitored({ token, tokenNetwork, fromBlock: 1 }), action].reduce(
@@ -225,11 +262,9 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(action),
         state$ = of<RaidenState>(curState);
 
-      await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toMatchObject({
-        type: channelMonitor.type,
-        payload: { id: channelId, fromBlock: 125 },
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toMatchObject(
+        channelMonitor({ id: channelId, fromBlock: 125 }, { tokenNetwork, partner }),
+      );
     });
   });
 
@@ -250,7 +285,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -287,7 +329,14 @@ describe('channels epic', () => {
         curState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpen.success(
-            { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+            {
+              id: channelId,
+              settleTimeout,
+              isFirstParticipant,
+              txHash,
+              txBlock: openBlock,
+              confirmed: true,
+            },
             { tokenNetwork, partner },
           ),
         ].reduce(raidenReducer, state);
@@ -319,7 +368,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -365,7 +421,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         channelDeposit.success(
@@ -408,7 +471,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -442,7 +512,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         channelClose.success(
@@ -529,7 +606,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -567,7 +651,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -619,7 +710,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         // own initial deposit of 330
@@ -727,7 +825,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -763,7 +868,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -831,7 +943,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
@@ -860,7 +979,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
@@ -905,7 +1031,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
