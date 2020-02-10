@@ -1,4 +1,14 @@
-import { Observable, from, of, EMPTY, merge, interval, defer, concat as concat$ } from 'rxjs';
+import {
+  Observable,
+  from,
+  of,
+  EMPTY,
+  merge,
+  interval,
+  defer,
+  concat as concat$,
+  combineLatest,
+} from 'rxjs';
 import {
   catchError,
   filter,
@@ -13,6 +23,7 @@ import {
   first,
   take,
   mapTo,
+  pluck,
 } from 'rxjs/operators';
 import { findKey, get, isEmpty, negate } from 'lodash';
 
@@ -22,13 +33,14 @@ import { HashZero, Zero } from 'ethers/constants';
 import { Filter } from 'ethers/providers';
 
 import { RaidenEpicDeps } from '../types';
-import { RaidenAction, raidenShutdown } from '../actions';
+import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
 import { Channel, ChannelState } from '../channels';
 import { RaidenState } from '../state';
 import { SignatureZero, ShutdownReason } from '../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
-import { Address, Hash, UInt, Signature } from '../utils/types';
+import { Address, Hash, UInt, Signature, isntNil } from '../utils/types';
 import { isActionOf } from '../utils/actions';
+import { pluckDistinct } from '../utils/rx';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
 import { encode } from '../utils/data';
 import {
@@ -256,9 +268,10 @@ export const tokenMonitoredEpic = (
                 {
                   id: id.toNumber(),
                   settleTimeout: settleTimeout.toNumber(),
-                  openBlock: event.blockNumber!,
                   isFirstParticipant: address === p1,
                   txHash: event.transactionHash! as Hash,
+                  txBlock: event.blockNumber!,
+                  confirmed: undefined,
                 },
                 {
                   tokenNetwork: tokenNetworkContract.address as Address,
@@ -518,17 +531,16 @@ export const channelOpenedEpic = (
     withLatestFrom(state$),
     // proceed only if channel is in 'open' state and a deposit is required
     filter(([action, state]) => {
-      const channel: Channel | undefined = get(state.channels, [
-        action.meta.tokenNetwork,
-        action.meta.partner,
-      ]);
-      return !!channel && channel.state === ChannelState.open;
+      const channel = state.channels[action.meta.tokenNetwork]?.[action.meta.partner];
+      // filter only after tx confirmed & channel persisted in state
+      return !!action.payload.confirmed && !!channel && channel.state === ChannelState.open;
     }),
     map(([action]) =>
       channelMonitor(
         {
           id: action.payload.id,
-          fromBlock: action.payload.openBlock, // fetch past events as well, if needed
+          // fetch past events as well, if needed, including events before confirmation
+          fromBlock: action.payload.txBlock,
         },
         action.meta,
       ),
@@ -877,4 +889,57 @@ export const channelSettleableEpic = (
         }
       }
     }),
+  );
+
+/**
+ * Process new blocks and re-emit confirmed or removed actions
+ *
+ * @param action$ - Observable of channelSettle actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps
+ * @param deps.config$,deps.provider - RaidenEpicDeps members
+ * @returns Observable of confirmed or removed actions
+ */
+export const confirmationEpic = (
+  {}: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { config$, provider }: RaidenEpicDeps,
+): Observable<ConfirmableAction> =>
+  combineLatest(
+    state$.pipe(pluckDistinct('blockNumber')),
+    state$.pipe(pluck('pendingTxs')),
+    config$.pipe(pluckDistinct('confirmationBlocks')),
+  ).pipe(
+    // exhaust will ignore blocks while concat$ is busy
+    exhaustMap(([blockNumber, pendingTxs, confirmationBlocks]) =>
+      concat$(
+        ...pendingTxs
+          // only txs/confirmable actions which are more than confirmationBlocks in the past
+          .filter(a => a.payload.txBlock + confirmationBlocks <= blockNumber)
+          .map(a =>
+            defer(() => provider.getTransactionReceipt(a.payload.txHash)).pipe(
+              map(receipt => {
+                if (
+                  receipt?.confirmations !== undefined &&
+                  receipt.confirmations >= confirmationBlocks
+                ) {
+                  return {
+                    ...a,
+                    // beyond setting confirmed, also re-set blockNumber,
+                    // which may have changed on a reorg
+                    payload: { ...a.payload, txBlock: receipt.blockNumber!, confirmed: true },
+                  };
+                } else if (a.payload.txBlock + 2 * confirmationBlocks < blockNumber) {
+                  // if this txs didn't get confirmed for more than 2*confirmationBlocks, it was removed
+                  return {
+                    ...a,
+                    payload: { ...a.payload, confirmed: false },
+                  };
+                } // else, it seems removed, but give it twice confirmationBlocks to be picked up again
+              }),
+              filter(isntNil),
+            ),
+          ),
+      ),
+    ),
   );

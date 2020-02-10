@@ -46,9 +46,10 @@ export const channelOpen = createAsyncAction(
   t.type({
     id: t.number,
     settleTimeout: t.number,
-    openBlock: t.number,
     isFirstParticipant: t.boolean,
     txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
   }),
 );
 export namespace channelOpen {

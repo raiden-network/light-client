@@ -41,7 +41,7 @@ export function channelCanRoute(
     return `path: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`;
   const { ownCapacity: capacity } = channelAmounts(channel);
   if (capacity.lt(value))
-    return `path: channel with "${partner}" don't have enough capacity=${capacity.toString()}`;
+    return `path: channel with "${partner}" doesn't have enough capacity=${capacity.toString()}`;
   return true;
 }
 
