@@ -164,7 +164,6 @@ describe('ChannelList.vue', () => {
     });
 
     test('deposit is called successfullt', async () => {
-      console.log(TestData.mockChannelArray);
       // @ts-ignore
       await wrapper.vm.deposit('0.5');
       jest.advanceTimersByTime(2000);
