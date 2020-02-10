@@ -20,7 +20,7 @@ export function partialCombineReducers<S, A extends Action = AnyAction>(
     for (const key in reducers) {
       const reducer = reducers[key];
       if (!reducer) continue; // shouldn't happen, only here for type safety below
-      const subState = state[key] || initialState[key];
+      const subState = state[key] ?? initialState[key];
       const newSubState = reducer(subState, action);
       if (newSubState !== subState) {
         state = { ...state, [key]: newSubState };

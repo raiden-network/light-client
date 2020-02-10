@@ -4,6 +4,15 @@ import { Network } from 'ethers/utils';
 import { Address } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 
+const logLevels = t.keyof({
+  ['']: null,
+  trace: null,
+  debug: null,
+  info: null,
+  warn: null,
+  error: null,
+});
+
 /**
  * A Raiden configuration object with required parameters and
  * optional parameters from [[PartialRaidenConfig]].
@@ -18,22 +27,15 @@ import { getNetworkName } from './utils/ethers';
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10% safety margin.
  * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
  *                       Leave LRU beyond this threshold.
+ *   confirmationBlocks - How much blocks to wait before considering a transaction as confirmed
  * - matrixServer? - Specify a matrix server to use.
  * - logger? - String specifying the console log level of redux-logger. Use '' to disable.
  *             Defaults to 'debug' if undefined and process.env.NODE_ENV === 'development'
- * - pfs - Path Finding Service URL or Address. Set to null to disable, or leave undefined to
- *             enable automatic fetching from ServiceRegistry.
- * - subkey - When using subkey, this sets the behavior when { subkey } option isn't explicitly set
- *            in on-chain method calls. false (default) = use main key; true = use subkey
+ * - pfs? - Path Finding Service URL or Address. Set to null to disable, or leave undefined to
+ *          enable automatic fetching from ServiceRegistry.
+ * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly set
+ *             in on-chain method calls. false (default) = use main key; true = use subkey
  */
-const logLevels = t.keyof({
-  ['']: null,
-  trace: null,
-  debug: null,
-  info: null,
-  warn: null,
-  error: null,
-});
 export const RaidenConfig = t.readonly(
   t.intersection([
     t.type({
@@ -45,6 +47,7 @@ export const RaidenConfig = t.readonly(
       pfsRoom: t.union([t.string, t.null]),
       pfsSafetyMargin: t.number,
       matrixExcessRooms: t.number,
+      confirmationBlocks: t.number,
     }),
     t.partial({
       matrixServer: t.string,
@@ -87,5 +90,6 @@ export function makeDefaultConfig({ network }: { network: Network }): RaidenConf
     pfsRoom: `raiden_${getNetworkName(network)}_path_finding`,
     matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0,
+    confirmationBlocks: 5,
   };
 }

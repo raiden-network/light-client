@@ -388,6 +388,31 @@ export function createAsyncAction<
 }
 
 // curried overloads
+export function matchMeta(meta: any, action: { meta: any }): boolean;
+export function matchMeta(meta: any): (action: { meta: any }) => boolean;
+
+/**
+ * Match a passed meta with an action if returns true if metas are from corresponding actions
+ *
+ * curried (arity=2) for action passed as 2nd param.
+ *
+ * @param meta - meta base for comparison
+ * @param args - curried args array
+ * @param args.0 - action to test meta against the 1st param
+ * @returns true if metas are compatible, false otherwise
+ */
+export function matchMeta(meta: any, ...args: [{ meta: any }] | []) {
+  const _match = (action: { meta: any }): boolean =>
+    // like isEqual, but for BigNumbers, use .eq
+    isMatchWith(action.meta, meta, (objVal, othVal) =>
+      // any is to avoid lodash's issue with undefined-returning isMatchWithCustomizer cb type
+      BigNumberC.is(objVal) && BigNumberC.is(othVal) ? objVal.eq(othVal) : (undefined as any),
+    );
+  if (args.length) return _match(args[0]);
+  return _match;
+}
+
+// curried overloads
 export function isResponseOf<
   AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
 >(
@@ -418,12 +443,60 @@ export function isResponseOf<
   AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
 >(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], ...args: [unknown] | []) {
   const _isResponseOf = (action: unknown): action is ActionType<AAC['success'] | AAC['failure']> =>
-    isActionOf([asyncAction.success, asyncAction.failure], action) &&
-    // like isEqual, but for BigNumbers, use .eq
-    isMatchWith(action.meta, meta, (objVal, othVal) =>
-      // any is to avoid lodash's issue with undefined-returning isMatchWithCustomizer cb type
-      BigNumberC.is(objVal) && BigNumberC.is(othVal) ? objVal.eq(othVal) : (undefined as any),
-    );
+    isActionOf([asyncAction.success, asyncAction.failure], action) && matchMeta(meta, action);
+
+  if (args.length) return _isResponseOf(args[0]);
+  return _isResponseOf;
+}
+
+// curried overloads
+export function isConfirmationResponseOf<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+  action: unknown,
+): action is
+  | (ActionType<AAC['success']> & { payload: { confirmed: boolean } })
+  | ActionType<AAC['failure']>;
+export function isConfirmationResponseOf<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+): (
+  action: unknown,
+) => action is
+  | (ActionType<AAC['success']> & { payload: { confirmed: boolean } })
+  | ActionType<AAC['failure']>;
+
+/**
+ * Like isResponseOf, but ignores non-confirmed (or removed by a reorg) success action
+ *
+ * Confirmable success actions are emitted twice: first with payload.confirmed=undefined, then with
+ * either confirmed=true, if tx still present after confirmation blocks, or confirmed=false, if tx
+ * was removed from blockchain by a reorg.
+ * This curied helper filter function ensures only one of the later causes a positive filter.
+ *
+ * @param asyncAction - AsyncActionCreator object
+ * @param meta - meta object to filter matching actions
+ * @param args - curried last param
+ * @returns type guard function to filter deep-equal meta success|failure actions
+ */
+export function isConfirmationResponseOf<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+>(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], ...args: [unknown] | []) {
+  function _isConfirmation(action: unknown): action is { payload: { confirmed: boolean } } {
+    return typeof (action as any)?.['payload']?.['confirmed'] === 'boolean';
+  }
+  const _isResponseOf = (
+    action: unknown,
+  ): action is
+    | (ActionType<AAC['success']> & { payload: { confirmed: boolean } })
+    | ActionType<AAC['failure']> =>
+    isResponseOf(asyncAction, meta, action) &&
+    (asyncAction.failure.is(action) || _isConfirmation(action));
+
   if (args.length) return _isResponseOf(args[0]);
   return _isResponseOf;
 }
@@ -434,17 +507,29 @@ export function isResponseOf<
  * @param asyncAction - async actions object to wait for
  * @param meta - meta object of a request to wait for the respective response
  * @param action$ - actions stream to watch for responses
+ * @param confirmed - set if should ignore non-confirmed success response
  * @returns Promise which rejects with payload in case of failure, or resolves payload otherwise
  */
 export async function asyncActionToPromise<
   AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>
->(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], action$: Observable<Action>) {
+>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+  action$: Observable<Action>,
+  confirmed = false,
+) {
   return action$
     .pipe(
-      first(isResponseOf<AAC>(asyncAction, meta)),
+      first(
+        confirmed
+          ? isConfirmationResponseOf<AAC>(asyncAction, meta)
+          : isResponseOf<AAC>(asyncAction, meta),
+      ),
       map(action => {
         if (asyncAction.failure.is(action))
           throw action.payload as ActionType<AAC['failure']>['payload'];
+        else if (action.payload.confirmed === false)
+          throw new Error(`Transaction "${action.payload.txHash}" mined but removed by a reorg!`);
         return action.payload as ActionType<AAC['success']>['payload'];
       }),
     )

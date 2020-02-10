@@ -5,6 +5,7 @@ import { debounce, merge as _merge } from 'lodash';
 
 import { PartialRaidenConfig } from './config';
 import { ContractsInfo } from './types';
+import { ConfirmableAction } from './actions';
 import { losslessParse, losslessStringify } from './utils/data';
 import { Address, Secret, decode, Signed, Storage } from './utils/types';
 import { Channel } from './channels/state';
@@ -61,6 +62,7 @@ export const RaidenState = t.readonly(
         ),
       ),
     }),
+    pendingTxs: t.readonlyArray(ConfirmableAction),
   }),
 );
 
@@ -131,6 +133,7 @@ export function makeInitialState(
     path: {
       iou: {},
     },
+    pendingTxs: [],
   };
 }
 
