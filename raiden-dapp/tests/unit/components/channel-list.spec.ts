@@ -113,7 +113,7 @@ describe('ChannelList.vue', () => {
 
     test('display confirmation dialog when close is pressed', async () => {
       wrapper.find('#channel-278').trigger('click');
-      await wrapper.vm.$nextTick;
+      await wrapper.vm.$nextTick();
       wrapper.find('#close-0').trigger('click');
 
       // @ts-ignore
@@ -156,7 +156,7 @@ describe('ChannelList.vue', () => {
 
     test('display channel deposit dialog when deposit is pressed', async () => {
       wrapper.find('#channel-278').trigger('click');
-      await wrapper.vm.$nextTick;
+      await wrapper.vm.$nextTick();
       wrapper.find('#deposit-0').trigger('click');
 
       // @ts-ignore
@@ -164,6 +164,7 @@ describe('ChannelList.vue', () => {
     });
 
     test('deposit is called successfullt', async () => {
+      console.log(TestData.mockChannelArray);
       // @ts-ignore
       await wrapper.vm.deposit('0.5');
       jest.advanceTimersByTime(2000);
@@ -202,7 +203,7 @@ describe('ChannelList.vue', () => {
 
     test('display confirmation dialog when settle is pressed', async () => {
       wrapper.find('#channel-280').trigger('click');
-      await wrapper.vm.$nextTick;
+      await wrapper.vm.$nextTick();
       wrapper.find('#settle-2').trigger('click');
 
       // @ts-ignore
