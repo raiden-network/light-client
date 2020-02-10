@@ -38,6 +38,7 @@ describe('RaidenState codecs', () => {
       secrets: {},
       sent: {},
       path: { iou: {} },
+      pendingTxs: [],
     };
     expect(JSON.parse(encodeRaidenState(state))).toEqual({
       address,
@@ -63,6 +64,7 @@ describe('RaidenState codecs', () => {
       secrets: {},
       sent: {},
       path: { iou: {} },
+      pendingTxs: [],
     });
   });
 
@@ -95,6 +97,7 @@ describe('RaidenState codecs', () => {
         secrets: {},
         sent: {},
         path: { iou: {} },
+        pendingTxs: [],
       }),
     ).toThrow('Invalid value "unknownstate"');
 
@@ -124,6 +127,7 @@ describe('RaidenState codecs', () => {
         secrets: {},
         sent: {},
         path: { iou: {} },
+        pendingTxs: [],
       }),
     ).toEqual({
       address,
@@ -149,6 +153,7 @@ describe('RaidenState codecs', () => {
       secrets: {},
       sent: {},
       path: { iou: {} },
+      pendingTxs: [],
     });
   });
 });

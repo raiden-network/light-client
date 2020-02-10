@@ -113,7 +113,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: npm run test -- --ci --runInBand --reporters=default --reporters=jest-junit --detectOpenHandles
+          command: npm run test -- --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
