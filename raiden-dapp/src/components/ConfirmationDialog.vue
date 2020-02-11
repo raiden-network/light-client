@@ -48,7 +48,7 @@ export default class ConfirmationDialog extends Vue {
   @Emit()
   cancel() {}
   @Emit()
-  public confirm() {}
+  confirm() {}
 }
 </script>
 
