@@ -22,6 +22,7 @@
 - User can now dismiss/hide the transfer progress dialog.
 - Fix utility token display on PFS route selection.
 - Adjust the token fetching to work with the latest SDK changes.
+- Stepper replaced with the new modal when opening a channel
 
 ### Fixed
 - [#712] Fix AddressInput.vue validity not updating on presence changes.
