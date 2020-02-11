@@ -38,6 +38,9 @@
           ? $t('transfer.steps.summary.direct-transfer')
           : $t('transfer.steps.summary.mediated-transfer')
       }}
+      <sup v-if="isDirectTransfer">
+        {{ $t('transfer.steps.summary.footnotes.one') }}
+      </sup>
     </h2>
 
     <div class="transfer-summary__row">
@@ -57,7 +60,12 @@
     </div>
 
     <div v-if="!isDirectTransfer" class="transfer-summary__row">
-      <span>{{ $t('transfer.steps.summary.mediation-fee') }}</span>
+      <span>
+        {{ $t('transfer.steps.summary.mediation-fee')
+        }}<sup v-if="routeSelectionSkipped">
+          {{ $t('transfer.steps.summary.footnotes.one') }}
+        </sup>
+      </span>
       <span class="transfer-summary__mediation-fee">
         {{
           transfer.mediationFee | displayFormat(transfer.transferToken.decimals)
@@ -78,6 +86,15 @@
         {{ transfer.transferToken.symbol || '' }}
       </span>
     </div>
+
+    <ol class="transfer-summary__explanation">
+      <li v-if="isDirectTransfer">
+        {{ $t('transfer.steps.summary.footnotes.direct-transfer') }}
+      </li>
+      <li v-if="routeSelectionSkipped">
+        {{ $t('transfer.steps.summary.footnotes.route-selection-skipped') }}
+      </li>
+    </ol>
   </div>
 </template>
 
@@ -97,6 +114,11 @@ export default class TransferSummary extends Vue {
 
   get isDirectTransfer() {
     return this.transfer.hops === 0;
+  }
+
+  get routeSelectionSkipped() {
+    const { mediationFee } = this.transfer;
+    return !this.isDirectTransfer && mediationFee && mediationFee.isZero();
   }
 }
 </script>
@@ -135,6 +157,30 @@ export default class TransferSummary extends Vue {
 
   &__separator {
     margin: 10px 0;
+  }
+
+  &__explanation {
+    text-align: left;
+    margin-top: 30px;
+    list-style: none;
+    counter-reset: item;
+    padding-left: 7px;
+
+    li {
+      counter-increment: item;
+      margin-bottom: 15px;
+      position: relative;
+      font-size: 12px;
+
+      &:before {
+        margin-right: 5px;
+        content: counter(item);
+        position: absolute;
+        left: -10px;
+        top: -4px;
+        font-size: 10px;
+      }
+    }
   }
 }
 </style>
