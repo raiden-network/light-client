@@ -73,9 +73,20 @@ export type RaidenEvent = ActionType<typeof RaidenEvents>;
  *   meta: any;
  * }
  */
-export const ConfirmableActions = [ChannelsActions.channelOpen.success];
+export const ConfirmableActions = [
+  ChannelsActions.channelOpen.success,
+  ChannelsActions.channelDeposit.success,
+  ChannelsActions.channelWithdrawn,
+];
 /**
  * Union of codecs of actions above
  */
-export const ConfirmableAction = ChannelsActions.channelOpen.success.codec;
-export type ConfirmableAction = ChannelsActions.channelOpen.success;
+export const ConfirmableAction = t.union([
+  ChannelsActions.channelOpen.success.codec,
+  ChannelsActions.channelDeposit.success.codec,
+  ChannelsActions.channelWithdrawn.codec,
+]);
+export type ConfirmableAction =
+  | ChannelsActions.channelOpen.success
+  | ChannelsActions.channelDeposit.success
+  | ChannelsActions.channelWithdrawn;
