@@ -5,13 +5,26 @@ import Vuetify from 'vuetify';
 import { TestData } from '../data/mock-data';
 import TransferSummary from '@/components/TransferSummary.vue';
 import { BigNumber } from 'ethers/utils';
+import { Transfer } from '@/model/types';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
 
+let wrapper: Wrapper<TransferSummary>;
+let vuetify: typeof Vuetify;
+
+const createWrapper = (transfer: Transfer) =>
+  mount(TransferSummary, {
+    vuetify,
+    mocks: {
+      $t: (msg: string) => msg
+    },
+    propsData: {
+      transfer
+    }
+  });
+
 describe('TokenOverlay.vue', () => {
-  let wrapper: Wrapper<TransferSummary>;
-  let vuetify: typeof Vuetify;
   const directTransfer = TestData.mockDirectTransfer;
   const mediatedTransfer = TestData.mockMediatedTransfer;
 
@@ -20,15 +33,7 @@ describe('TokenOverlay.vue', () => {
   });
 
   test('show direct transfer breakdown', () => {
-    wrapper = mount(TransferSummary, {
-      vuetify,
-      mocks: {
-        $t: (msg: string) => msg
-      },
-      propsData: {
-        transfer: directTransfer
-      }
-    });
+    wrapper = createWrapper(directTransfer);
 
     // Shows direct transfer header
     expect(wrapper.find('.transfer-summary__header').text()).toContain(
@@ -42,15 +47,8 @@ describe('TokenOverlay.vue', () => {
   });
 
   test('show mediated transfer breakdown', () => {
-    wrapper = mount(TransferSummary, {
-      vuetify,
-      mocks: {
-        $t: (msg: string) => msg
-      },
-      propsData: {
-        transfer: mediatedTransfer
-      }
-    });
+    wrapper = createWrapper(mediatedTransfer);
+
     const routeRequestHeader = wrapper
       .findAll('.transfer-summary__header')
       .at(1);
@@ -66,15 +64,11 @@ describe('TokenOverlay.vue', () => {
   });
 
   test('show explanation if mediated transfer w/ zero fees', () => {
-    wrapper = mount(TransferSummary, {
-      vuetify,
-      mocks: {
-        $t: (msg: string) => msg
-      },
-      propsData: {
-        transfer: { ...mediatedTransfer, mediationFee: new BigNumber(0) }
-      }
+    wrapper = createWrapper({
+      ...mediatedTransfer,
+      mediationFee: new BigNumber(0)
     });
+
     const explanations = wrapper.find('.transfer-summary__explanation');
 
     // Shows explanations if nothing was skipped
