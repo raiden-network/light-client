@@ -20,7 +20,7 @@ import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 import { UserDepositFactory } from './contracts/UserDepositFactory';
 
-import { ContractsInfo, Deposit, OnChange, RaidenEpicDeps } from './types';
+import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
 import { RaidenConfig, makeDefaultConfig, PartialRaidenConfig } from './config';
@@ -933,7 +933,7 @@ export class Raiden {
    */
   public async depositToUDC(
     amount: BigNumberish,
-    onChange?: OnChange<Deposit, { txHash: string }>,
+    onChange?: OnChange<EventTypes, { txHash: string }>,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
@@ -960,7 +960,7 @@ export class Raiden {
     if (!approveReceipt.status) throw new Error('Approve transaction failed.');
 
     onChange?.({
-      type: Deposit.APPROVED,
+      type: EventTypes.APPROVED,
       payload: {
         txHash: approveTx.hash as Hash,
       },
@@ -975,7 +975,7 @@ export class Raiden {
     if (!depositReceipt.status) throw new Error('Deposit transaction failed.');
 
     onChange?.({
-      type: Deposit.DEPOSITED,
+      type: EventTypes.DEPOSITED,
       payload: {
         txHash: depositTx.hash as Hash,
       },

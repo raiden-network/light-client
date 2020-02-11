@@ -50,14 +50,14 @@ export interface RaidenEpicDeps {
   main?: { signer: Signer; address: Address };
 }
 
-export interface ChangeEvent<T, P> {
+export interface ChangeEvent<T extends string, P> {
   readonly type: T;
   readonly payload: P;
 }
 
-export type OnChange<T, P> = (event: ChangeEvent<T, P>) => void;
+export type OnChange<T extends string, P> = (event: ChangeEvent<T, P>) => void;
 
-export enum Deposit {
-  APPROVED,
-  DEPOSITED,
+export enum EventTypes {
+  APPROVED = 'APPROVED',
+  DEPOSITED = 'DEPOSITED',
 }

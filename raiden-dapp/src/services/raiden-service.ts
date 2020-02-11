@@ -1,6 +1,6 @@
 import {
   ChangeEvent,
-  Deposit,
+  EventTypes,
   Raiden,
   RaidenPaths,
   RaidenPFS,
@@ -346,8 +346,8 @@ export default class RaidenService {
   async depositToUDC(amount: BigNumber, depositing: () => void): Promise<void> {
     await this.raiden.depositToUDC(
       amount,
-      (event: ChangeEvent<Deposit, { txHash: string }>) =>
-        event.type === Deposit.APPROVED ? depositing() : null
+      (event: ChangeEvent<EventTypes, { txHash: string }>) =>
+        event.type === EventTypes.APPROVED ? depositing() : null
     );
   }
 
