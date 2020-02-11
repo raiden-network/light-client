@@ -1,6 +1,15 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#695] Skipping of transfer steps.
+
+### Changed
+
+### Fixed
+
+[#695]: https://github.com/raiden-network/light-client/issues/695
+
 
 ## [0.3.0] - 2020-02-07
 ### Added
