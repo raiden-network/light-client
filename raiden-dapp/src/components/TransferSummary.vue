@@ -61,8 +61,8 @@
 
     <div v-if="!isDirectTransfer" class="transfer-summary__row">
       <span>
-        {{ $t('transfer.steps.summary.mediation-fee')
-        }}<sup v-if="routeSelectionSkipped">
+        {{ $t('transfer.steps.summary.mediation-fee') }}
+        <sup v-if="routeSelectionSkipped">
           {{ $t('transfer.steps.summary.footnotes.one') }}
         </sup>
       </span>
