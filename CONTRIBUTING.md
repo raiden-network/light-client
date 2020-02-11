@@ -96,34 +96,6 @@ Functions that return observables should have `$` as suffix, e.g.:
 myFunction$(): Observable<RaidenAction>
 ```
 
-#### Vue components
-
-When using custom vue components in templates make sure to use the kebab case name of the components.
-
-👎 Don't do this:
-
-```html
-<template>
-  <v-container>
-    <NoValidProvider v-if="!providerDetected" />
-    <UserDenied v-else-if="userDenied" />
-    <WalletCore v-else />
-  </v-container>
-</template>
-```
-
-👍 For consistency you should use:
-
-```html
-<template>
-  <v-container>
-    <no-valid-provider v-if="!providerDetected" />
-    <user-denied v-else-if="userDenied" />
-    <wallet-core v-else />
-  </v-container>
-</template>
-```
-
 #### CSS naming
 
 For CSS naming we try to follow the [BEM](http://getbem.com/) methodology. Additionally, we use [SASS](https://sass-lang.com) to structure our style rules. Please nest related elements within their blocks.
@@ -266,12 +238,6 @@ The author of the pull request can choose to implement the feedback or to ignore
 
 Authors should make pull request reviews easier. Make them **as small as possible** .
 
-When a reviewer starts a review, he should write a comment in the pull request stating he is doing so. For example:
-
-> Reviewing this now
-
-This is to keep track of who is reviewing a pull request and to know about ongoing reviews.
-
 For complicated pull requests, that touch the core of the protocol, at least 2 core developers are recommended to have a look and provide an opinion.
 
 When you have trouble to do a review, it is recommended to clone the branch locally and explore the changes with your editor. Run tests and experiment with the changes, so that you can get a better understanding of the changes and give feedback to the author.
@@ -280,6 +246,8 @@ When you have trouble to do a review, it is recommended to clone the branch loca
 
 If you are a core developer of Raiden with write privileges to the repository
 then you can add commits or rebase to master any Pull Request by other people.
+Before doing so, please make sure to communicate and sync this with the owner of
+the Pull Request.
 
 Let us take [this](https://github.com/raiden-network/raiden/pull/221) pull request as an
 example. The contributor has everything ready and all is looking good apart
