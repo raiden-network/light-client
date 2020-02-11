@@ -232,8 +232,20 @@ workflows:
             branches:
               only:
                 - master
-      - publish_artifact:
+
+  publish:
+    jobs:
+      - checkout:
+          filters:
+            <<: *filter-version-regex
+      - install_sdk:
           requires:
-            - test_sdk
+            - checkout
+          filters:
+            <<: *filter-version-regex
+      - publish_artifact:
+          context: "Raiden Context"
+          requires:
+            - install_sdk
           filters:
             <<: *filter-version-regex

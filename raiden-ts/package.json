@@ -1,6 +1,6 @@
 {
   "name": "raiden-ts",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Raiden Light Client Typescript/Javascript SDK",
   "main": "dist:cjs/index.js",
   "module": "dist/index.js",
@@ -123,7 +123,12 @@
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/no-empty-interface": "off",
-      "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^_" }],
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          "varsIgnorePattern": "^_"
+        }
+      ],
       "jsdoc/no-types": "warn",
       "jsdoc/require-param-type": "off",
       "jsdoc/require-returns-type": "off",

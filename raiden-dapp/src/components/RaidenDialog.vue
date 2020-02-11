@@ -41,6 +41,9 @@ export default class RaidenDialog extends Vue {
 
 .raiden-dialog {
   background-color: $card-background;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   height: 441px;
   padding: 25px;
 
