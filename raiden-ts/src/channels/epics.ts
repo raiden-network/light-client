@@ -402,6 +402,8 @@ export const channelMonitoredEpic = (
                     participant,
                     totalDeposit,
                     txHash: event.transactionHash! as Hash,
+                    txBlock: event.blockNumber!,
+                    confirmed: undefined,
                   },
                   action.meta,
                 );
@@ -413,6 +415,8 @@ export const channelMonitoredEpic = (
                     participant,
                     totalWithdraw,
                     txHash: event.transactionHash! as Hash,
+                    txBlock: event.blockNumber!,
+                    confirmed: undefined,
                   },
                   action.meta,
                 );
@@ -905,13 +909,13 @@ function checkPendingAction(
           // beyond setting confirmed, also re-set blockNumber,
           // which may have changed on a reorg
           payload: { ...action.payload, txBlock: receipt.blockNumber!, confirmed: true },
-        };
+        } as ConfirmableAction;
       } else if (action.payload.txBlock + 2 * confirmationBlocks < blockNumber) {
         // if this txs didn't get confirmed for more than 2*confirmationBlocks, it was removed
         return {
           ...action,
           payload: { ...action.payload, confirmed: false },
-        };
+        } as ConfirmableAction;
       } // else, it seems removed, but give it twice confirmationBlocks to be picked up again
     }),
     filter(isntNil),

@@ -555,7 +555,7 @@ export class Raiden {
 
     const deposit = decode(UInt(32), amount);
     const meta = { tokenNetwork, partner };
-    const promise = asyncActionToPromise(channelDeposit, meta, this.action$).then(
+    const promise = asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
     this.store.dispatch(channelDeposit.request({ deposit, subkey }, meta));

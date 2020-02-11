@@ -82,6 +82,8 @@ function channelUpdateOnchainBalanceStateReducer(
   state: RaidenState['channels'],
   action: channelDeposit.success | channelWithdrawn,
 ): RaidenState['channels'] {
+  // ignore channelDeposit.success if unconfirmed or removed
+  if (!action.payload.confirmed) return state;
   const path = [action.meta.tokenNetwork, action.meta.partner];
   let channel: Channel | undefined = get(path, state);
   if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
@@ -183,7 +185,11 @@ const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
   // if confirmed==undefined, add action to state
   else if (action.payload.confirmed === undefined) return [...state, action];
   // else (either confirmed or removed), remove from state
-  else return state.filter(a => a.type !== action.type || !matchMeta(action.meta, a));
+  else {
+    const newState = state.filter(a => a.type !== action.type || !matchMeta(action.meta, a));
+    if (newState.length === state.length) return state;
+    else return newState;
+  }
 };
 
 /**

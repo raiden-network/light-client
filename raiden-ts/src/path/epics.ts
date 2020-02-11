@@ -392,13 +392,13 @@ export const pfsCapacityUpdateEpic = (
   { address, network, signer, config$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
   action$.pipe(
-    filter(isActionOf(channelDeposit.success)),
-    filter(action => action.payload.participant === address),
+    filter(channelDeposit.success.is),
+    filter(action => !!action.payload.confirmed && action.payload.participant === address),
     debounceTime(10e3),
     withLatestFrom(state$, config$),
     filter(([, , { pfsRoom }]) => !!pfsRoom), // ignore actions while/if config.pfsRoom isn't set
     mergeMap(([action, state, { revealTimeout, pfsRoom }]) => {
-      const channel = state.channels[action.meta.tokenNetwork][action.meta.partner];
+      const channel = state.channels[action.meta.tokenNetwork]?.[action.meta.partner];
       if (!channel || channel.state !== ChannelState.open) return EMPTY;
 
       const { ownCapacity, partnerCapacity } = channelAmounts(channel);
@@ -425,11 +425,11 @@ export const pfsCapacityUpdateEpic = (
 
       return from(signMessage(signer, message)).pipe(
         map(signed => messageGlobalSend({ message: signed }, { roomName: pfsRoom! })),
+        catchError(err => {
+          console.error('Error trying to generate & sign PFSCapacityUpdate', err);
+          return EMPTY;
+        }),
       );
-    }),
-    catchError(err => {
-      console.error('Error trying to generate & sign PFSCapacityUpdate', err);
-      return EMPTY;
     }),
   );
 
