@@ -1,10 +1,5 @@
 <template>
-  <raiden-dialog
-    class="channel-deposit"
-    :visible="visible"
-    :fullscreen="true"
-    @close="cancel"
-  >
+  <raiden-dialog class="channel-deposit" :visible="visible" @close="cancel">
     <v-card-title>
       <v-row align="center" justify="center">
         <v-col>

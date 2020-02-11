@@ -2,7 +2,6 @@
   <raiden-dialog
     class="error-dialog"
     :visible="description !== ''"
-    :fullscreen="false"
     @close="dismiss"
   >
     <v-card-title>
