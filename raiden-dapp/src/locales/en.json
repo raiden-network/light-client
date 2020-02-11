@@ -259,7 +259,12 @@
         "target": "Target",
         "transfer-amount": "Transfer Amount",
         "total-amount": "Total Amount",
-        "mediation-fee": "Mediation Fee"
+        "mediation-fee": "Mediation Fee",
+        "footnotes": {
+          "one": "1",
+          "direct-transfer": "Route request and selection skipped, because you are performing a direct transfer.",
+          "route-selection-skipped": "Automatically skipped route selection, because there was only a single route with zero fees."
+        }
       }
     }
   },
