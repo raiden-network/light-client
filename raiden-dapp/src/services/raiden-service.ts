@@ -1,4 +1,11 @@
-import { Raiden, RaidenPaths, RaidenPFS, RaidenSentTransfer } from 'raiden-ts';
+import {
+  ChangeEvent,
+  Deposit,
+  Raiden,
+  RaidenPaths,
+  RaidenPFS,
+  RaidenSentTransfer
+} from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
@@ -337,7 +344,11 @@ export default class RaidenService {
 
   /* istanbul ignore next */
   async depositToUDC(amount: BigNumber, depositing: () => void): Promise<void> {
-    await this.raiden.depositToUDC(amount, depositing);
+    await this.raiden.depositToUDC(
+      amount,
+      (event: ChangeEvent<Deposit, { txHash: string }>) =>
+        event.type === Deposit.APPROVED ? depositing() : null
+    );
   }
 
   /* istanbul ignore next */

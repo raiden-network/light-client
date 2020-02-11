@@ -49,3 +49,15 @@ export interface RaidenEpicDeps {
   userDepositContract: UserDeposit;
   main?: { signer: Signer; address: Address };
 }
+
+export interface ChangeEvent<T, P> {
+  readonly type: T;
+  readonly payload: P;
+}
+
+export type OnChange<T, P> = (event: ChangeEvent<T, P>) => void;
+
+export enum Deposit {
+  APPROVED,
+  DEPOSITED,
+}
