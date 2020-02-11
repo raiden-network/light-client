@@ -1,4 +1,4 @@
-import { Token } from '@/model/types';
+import { Token, Transfer } from '@/model/types';
 import { parseUnits, BigNumber } from 'ethers/utils';
 
 import { Zero } from 'ethers/constants';
@@ -117,4 +117,42 @@ export class TestData {
       meta: meta
     };
   }
+
+  static mockDirectTransfer: Transfer = {
+    target: '0x09123456789',
+    hops: 0,
+    transferAmount: new BigNumber(10 ** 8),
+    transferToken: {
+      address: '0xtoken',
+      decimals: 5,
+      balance: parseUnits('1.2', 5),
+      name: 'TestToken',
+      symbol: 'TTT'
+    } as Token,
+    transferTotal: new BigNumber(10 ** 8)
+  };
+
+  static mockMediatedTransfer: Transfer = {
+    target: '0x09123456789',
+    transferAmount: new BigNumber(10 ** 8),
+    transferToken: {
+      address: '0xtoken',
+      decimals: 5,
+      balance: parseUnits('1.2', 5),
+      name: 'TestToken',
+      symbol: 'TTT'
+    } as Token,
+    transferTotal: new BigNumber(10 ** 8),
+    hops: 1,
+    mediationFee: new BigNumber(10 ** 4),
+    serviceFee: new BigNumber(10 ** 4),
+    serviceToken: {
+      address: '0xtoken',
+      decimals: 5,
+      balance: parseUnits('1.2', 5),
+      name: 'Service Token',
+      symbol: 'SVT'
+    } as Token,
+    pfsAddress: 'https://pfsadr.org'
+  };
 }
