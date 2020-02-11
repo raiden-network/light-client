@@ -308,7 +308,7 @@
       "done": {
         "label": "Done",
         "title": "New Channel opened",
-        "description": "A new channel has been opened successfully. You may now select a transfer target."
+        "description": "A new channel was successfully opened. You can now start making transfers."
       }
     },
     "confirmation": "Channel opening is in progress, are you sure you want to leave?"

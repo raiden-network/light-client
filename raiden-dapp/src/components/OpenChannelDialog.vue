@@ -3,7 +3,10 @@
     <v-card-title>
       <v-row align="center" justify="center">
         <v-col>
-          <span>
+          <span v-if="done">
+            {{ doneStep.title }}
+          </span>
+          <span v-else-if="steps.length > current">
             {{ steps[current].title }}
           </span>
         </v-col>
@@ -32,6 +35,17 @@
         </v-col>
       </v-row>
     </v-card-actions>
+
+    <v-card-text>
+      <v-row align="center" justify="center">
+        <span v-if="done">
+          {{ doneStep.description }}
+        </span>
+        <span v-else-if="steps.length > current">
+          {{ steps[current].description }}
+        </span>
+      </v-row>
+    </v-card-text>
   </raiden-dialog>
 </template>
 
@@ -53,6 +67,8 @@ export default class OpenChannelDialog extends Vue {
   current!: number;
   @Prop({ required: false })
   done?: boolean;
+  @Prop({ required: true })
+  doneStep!: StepDescription;
 
   @Emit()
   cancel() {}
