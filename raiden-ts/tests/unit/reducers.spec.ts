@@ -213,6 +213,8 @@ describe('raidenReducer', () => {
             participant: state.address,
             totalDeposit: bigNumberify(23) as UInt<32>,
             txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -230,6 +232,8 @@ describe('raidenReducer', () => {
             participant: address,
             totalDeposit: deposit,
             txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -256,6 +260,8 @@ describe('raidenReducer', () => {
             participant: partner,
             totalDeposit: deposit,
             txHash,
+            txBlock: openBlock + 2,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -275,6 +281,7 @@ describe('raidenReducer', () => {
 
   describe('channelWithdrawn', () => {
     const deposit = bigNumberify(500) as UInt<32>;
+
     beforeEach(() => {
       state = [
         channelOpen.success(
@@ -294,6 +301,8 @@ describe('raidenReducer', () => {
             participant: state.address,
             totalDeposit: deposit,
             txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -303,6 +312,8 @@ describe('raidenReducer', () => {
             participant: partner,
             totalDeposit: deposit,
             txHash,
+            txBlock: openBlock + 2,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -311,22 +322,30 @@ describe('raidenReducer', () => {
 
     test('channel not in open state', () => {
       // put channel in 'closed' state
-      state = set(['channels', tokenNetwork, partner, 'state'], ChannelState.closed, state);
+      const closedState = raidenReducer(
+        state,
+        channelClose.success(
+          { id: channelId, participant: state.address, closeBlock, txHash },
+          { tokenNetwork, partner },
+        ),
+      );
       // try to apply action/state change
       const newState = raidenReducer(
-        state,
+        closedState,
         channelWithdrawn(
           {
             id: channelId,
             participant: state.address,
             totalWithdraw: bigNumberify(23) as UInt<32>,
             txHash,
+            txBlock: openBlock + 2,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
       );
       // if channel is not open, action is noop and new state must be the previous one
-      expect(newState).toBe(state);
+      expect(newState).toBe(closedState);
     });
 
     test('own withdraw successful', () => {
@@ -339,6 +358,8 @@ describe('raidenReducer', () => {
             participant: address,
             totalWithdraw: withdraw,
             txHash,
+            txBlock: openBlock + 2,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -365,6 +386,8 @@ describe('raidenReducer', () => {
             participant: partner,
             totalWithdraw: withdraw,
             txHash,
+            txBlock: openBlock + 2,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
