@@ -891,6 +891,33 @@ export const channelSettleableEpic = (
     }),
   );
 
+function checkPendingAction(
+  action: ConfirmableAction,
+  provider: RaidenEpicDeps['provider'],
+  blockNumber: number,
+  confirmationBlocks: number,
+): Observable<ConfirmableAction> {
+  return defer(() => provider.getTransactionReceipt(action.payload.txHash)).pipe(
+    map(receipt => {
+      if (receipt?.confirmations !== undefined && receipt.confirmations >= confirmationBlocks) {
+        return {
+          ...action,
+          // beyond setting confirmed, also re-set blockNumber,
+          // which may have changed on a reorg
+          payload: { ...action.payload, txBlock: receipt.blockNumber!, confirmed: true },
+        };
+      } else if (action.payload.txBlock + 2 * confirmationBlocks < blockNumber) {
+        // if this txs didn't get confirmed for more than 2*confirmationBlocks, it was removed
+        return {
+          ...action,
+          payload: { ...action.payload, confirmed: false },
+        };
+      } // else, it seems removed, but give it twice confirmationBlocks to be picked up again
+    }),
+    filter(isntNil),
+  );
+}
+
 /**
  * Process new blocks and re-emit confirmed or removed actions
  *
@@ -916,30 +943,7 @@ export const confirmationEpic = (
         ...pendingTxs
           // only txs/confirmable actions which are more than confirmationBlocks in the past
           .filter(a => a.payload.txBlock + confirmationBlocks <= blockNumber)
-          .map(a =>
-            defer(() => provider.getTransactionReceipt(a.payload.txHash)).pipe(
-              map(receipt => {
-                if (
-                  receipt?.confirmations !== undefined &&
-                  receipt.confirmations >= confirmationBlocks
-                ) {
-                  return {
-                    ...a,
-                    // beyond setting confirmed, also re-set blockNumber,
-                    // which may have changed on a reorg
-                    payload: { ...a.payload, txBlock: receipt.blockNumber!, confirmed: true },
-                  };
-                } else if (a.payload.txBlock + 2 * confirmationBlocks < blockNumber) {
-                  // if this txs didn't get confirmed for more than 2*confirmationBlocks, it was removed
-                  return {
-                    ...a,
-                    payload: { ...a.payload, confirmed: false },
-                  };
-                } // else, it seems removed, but give it twice confirmationBlocks to be picked up again
-              }),
-              filter(isntNil),
-            ),
-          ),
+          .map(action => checkPendingAction(action, provider, blockNumber, confirmationBlocks)),
       ),
     ),
   );

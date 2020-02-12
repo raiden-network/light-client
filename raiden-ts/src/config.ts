@@ -27,7 +27,7 @@ const logLevels = t.keyof({
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10% safety margin.
  * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
  *                       Leave LRU beyond this threshold.
- *   confirmationBlocks - How much blocks to wait before considering a transaction as confirmed
+ * - confirmationBlocks - How many blocks to wait before considering a transaction as confirmed
  * - matrixServer? - Specify a matrix server to use.
  * - logger? - String specifying the console log level of redux-logger. Use '' to disable.
  *             Defaults to 'debug' if undefined and process.env.NODE_ENV === 'development'
