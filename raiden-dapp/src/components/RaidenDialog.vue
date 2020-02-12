@@ -5,10 +5,16 @@
       width="350"
       hide-overlay
       dark
+      persistent="hideClose"
       @click:outside="close()"
     >
       <v-card class="raiden-dialog">
-        <v-btn icon class="raiden-dialog__close" @click="close()">
+        <v-btn
+          v-if="!hideClose"
+          icon
+          class="raiden-dialog__close"
+          @click="close()"
+        >
           <v-icon>mdi-close</v-icon>
         </v-btn>
         <slot></slot>
@@ -25,6 +31,8 @@ import { Component, Emit, Vue, Prop } from 'vue-property-decorator';
 export default class RaidenDialog extends Vue {
   @Prop({ required: true, default: false })
   visible!: boolean;
+  @Prop({ required: false })
+  hideClose!: boolean;
 
   @Emit()
   close() {}
