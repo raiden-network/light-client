@@ -590,7 +590,7 @@ export class Raiden {
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
 
     const meta = { tokenNetwork, partner };
-    const promise = asyncActionToPromise(channelClose, meta, this.action$).then(
+    const promise = asyncActionToPromise(channelClose, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
     this.store.dispatch(channelClose.request(subkey ? { subkey } : undefined, meta));
@@ -625,7 +625,7 @@ export class Raiden {
 
     // wait for the corresponding success or error action
     const meta = { tokenNetwork, partner };
-    const promise = asyncActionToPromise(channelSettle, meta, this.action$).then(
+    const promise = asyncActionToPromise(channelSettle, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
     this.store.dispatch(channelSettle.request(subkey ? { subkey } : undefined, meta));

@@ -393,10 +393,10 @@ export const channelMonitoredEpic = (
             // fetch Channel's pastEvents since channelOpen.success blockNumber as fromBlock$
             action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
           ).pipe(
-            mergeMap(function*(data) {
+            map(data => {
               if (isEvent<ChannelNewDepositEvent>(depositFilter, data)) {
                 const [id, participant, totalDeposit, event] = data;
-                yield channelDeposit.success(
+                return channelDeposit.success(
                   {
                     id: id.toNumber(),
                     participant,
@@ -409,7 +409,7 @@ export const channelMonitoredEpic = (
                 );
               } else if (isEvent<ChannelWithdrawEvent>(withdrawFilter, data)) {
                 const [id, participant, totalWithdraw, event] = data;
-                yield channelWithdrawn(
+                return channelWithdrawn(
                   {
                     id: id.toNumber(),
                     participant,
@@ -422,34 +422,37 @@ export const channelMonitoredEpic = (
                 );
               } else if (isEvent<ChannelClosedEvent>(closedFilter, data)) {
                 const [id, participant, , , event] = data;
-                yield channelClose.success(
+                return channelClose.success(
                   {
                     id: id.toNumber(),
                     participant,
-                    closeBlock: event.blockNumber!,
                     txHash: event.transactionHash! as Hash,
+                    txBlock: event.blockNumber!,
+                    confirmed: undefined,
                   },
                   action.meta,
                 );
               } else if (isEvent<ChannelSettledEvent>(settledFilter, data)) {
                 const [id, , , , , event] = data;
-                yield channelSettle.success(
+                return channelSettle.success(
                   {
                     id: id.toNumber(),
-                    settleBlock: event.blockNumber!,
                     txHash: event.transactionHash! as Hash,
+                    txBlock: event.blockNumber!,
+                    confirmed: undefined,
                   },
                   action.meta,
                 );
               }
             }),
+            filter(isntNil),
             // takeWhile tends to broad input to generic Action. We need to narrow it explicitly
             takeWhile<
               | channelDeposit.success
               | channelWithdrawn
               | channelClose.success
               | channelSettle.success
-            >(negate(isActionOf(channelSettle.success)), true),
+            >(negate(channelSettle.success.is), true),
           );
         }),
       ),
@@ -941,6 +944,7 @@ export const confirmationEpic = (
     state$.pipe(pluck('pendingTxs')),
     config$.pipe(pluckDistinct('confirmationBlocks')),
   ).pipe(
+    filter(([, pendingTxs]) => pendingTxs.length > 0),
     // exhaust will ignore blocks while concat$ is busy
     exhaustMap(([blockNumber, pendingTxs, confirmationBlocks]) =>
       concat$(

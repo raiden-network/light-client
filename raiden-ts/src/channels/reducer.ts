@@ -82,7 +82,7 @@ function channelUpdateOnchainBalanceStateReducer(
   state: RaidenState['channels'],
   action: channelDeposit.success | channelWithdrawn,
 ): RaidenState['channels'] {
-  // ignore channelDeposit.success if unconfirmed or removed
+  // ignore event if unconfirmed or removed
   if (!action.payload.confirmed) return state;
   const path = [action.meta.tokenNetwork, action.meta.partner];
   let channel: Channel | undefined = get(path, state);
@@ -121,7 +121,12 @@ function channelCloseSuccessReducer(
     channel.id !== action.payload.id
   )
     return state;
-  channel = { ...channel, state: ChannelState.closed, closeBlock: action.payload.closeBlock };
+  // even on non-confirmed action, already set channel state as closing, so it can't be used for new transfers
+  if (action.payload.confirmed === undefined && channel.state === ChannelState.open)
+    channel = { ...channel, state: ChannelState.closing };
+  else if (action.payload.confirmed)
+    channel = { ...channel, state: ChannelState.closed, closeBlock: action.payload.txBlock };
+  else return state;
   return set(path, channel, state);
 }
 
@@ -158,7 +163,11 @@ function channelSettleSuccessReducer(
     channel.id !== action.payload.id
   )
     return state;
-  return unset(path, state);
+  // even on non-confirmed action, already set channel as settling
+  if (action.payload.confirmed === undefined && channel.state !== ChannelState.settling)
+    return set(path, { ...channel, state: ChannelState.settling }, state);
+  else if (action.payload.confirmed) return unset(path, state);
+  else return state;
 }
 
 // handles all channel actions and requests

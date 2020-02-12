@@ -109,7 +109,13 @@ export const channelClose = createAsyncAction(
   'channel/close/success',
   'channel/close/failure',
   t.union([t.partial({ subkey: t.boolean }), t.undefined]),
-  t.type({ id: t.number, participant: Address, closeBlock: t.number, txHash: Hash }),
+  t.type({
+    id: t.number,
+    participant: Address,
+    txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
+  }),
 );
 
 export namespace channelClose {
@@ -132,7 +138,12 @@ export const channelSettle = createAsyncAction(
   'channel/settle/success',
   'channel/settle/failure',
   t.union([t.partial({ subkey: t.boolean }), t.undefined]),
-  t.type({ id: t.number, settleBlock: t.number, txHash: Hash }),
+  t.type({
+    id: t.number,
+    txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
+  }),
 );
 
 export namespace channelSettle {
