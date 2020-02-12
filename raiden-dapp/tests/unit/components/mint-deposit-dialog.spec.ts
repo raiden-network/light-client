@@ -33,9 +33,13 @@ describe('MintDepositDialog.vue', () => {
     return mount(MintDepositDialog, {
       vuetify,
       store,
+      stubs: ['v-dialog'],
       mocks: {
         $t: (msg: string) => msg,
         $raiden
+      },
+      propsData: {
+        visible: true
       }
     });
   }
@@ -50,8 +54,9 @@ describe('MintDepositDialog.vue', () => {
 
   test('emit a done event when the mint and deposit is successful', async () => {
     expect.assertions(3);
-    $raiden.mint.mockResolvedValueOnce(undefined);
-    $raiden.depositToUDC.mockResolvedValueOnce(undefined);
+    $raiden.depositToUDC.mockImplementation(async (_, call: () => void) => {
+      call();
+    });
     wrapper.find('.mint-deposit-dialog__action button').trigger('click');
     await flushPromises();
     expect($raiden.mint).toHaveBeenCalledTimes(1);
@@ -80,8 +85,6 @@ describe('MintDepositDialog.vue', () => {
       }
     });
 
-    $raiden.mint.mockResolvedValueOnce(undefined);
-    $raiden.depositToUDC.mockResolvedValueOnce(undefined);
     wrapper.find('.mint-deposit-dialog__action button').trigger('click');
     await flushPromises();
     expect($raiden.mint).toHaveBeenCalledTimes(0);

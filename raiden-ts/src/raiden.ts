@@ -20,7 +20,7 @@ import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 import { UserDepositFactory } from './contracts/UserDepositFactory';
 
-import { ContractsInfo, RaidenEpicDeps } from './types';
+import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
 import { RaidenConfig, makeDefaultConfig, PartialRaidenConfig } from './config';
@@ -925,6 +925,7 @@ export class Raiden {
    * </ol>
    *
    * @param amount - The amount to deposit on behalf of the target/beneficiary.
+   * @param onChange - callback providing notifications about state changes
    * @param options - tx options
    * @param options.subkey - By default, if using subkey, main account is used to send transactions
    *    Set this to true if one wants to force sending the transaction with the subkey
@@ -932,6 +933,7 @@ export class Raiden {
    */
   public async depositToUDC(
     amount: BigNumberish,
+    onChange?: OnChange<EventTypes, { txHash: string }>,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
@@ -957,6 +959,13 @@ export class Raiden {
     const approveReceipt = await approveTx.wait();
     if (!approveReceipt.status) throw new Error('Approve transaction failed.');
 
+    onChange?.({
+      type: EventTypes.APPROVED,
+      payload: {
+        txHash: approveTx.hash as Hash,
+      },
+    });
+
     const currentUDCBalance = await userDepositContract.functions.balances(this.address);
     const depositTx = await userDepositContract.functions.deposit(
       this.address,
@@ -964,6 +973,13 @@ export class Raiden {
     );
     const depositReceipt = await depositTx.wait();
     if (!depositReceipt.status) throw new Error('Deposit transaction failed.');
+
+    onChange?.({
+      type: EventTypes.DEPOSITED,
+      payload: {
+        txHash: depositTx.hash as Hash,
+      },
+    });
 
     return depositTx.hash as Hash;
   }

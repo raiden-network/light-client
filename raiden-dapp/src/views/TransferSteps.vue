@@ -70,39 +70,32 @@
                     {{ udcToken.symbol || '' }}
                   </span>
                 </v-tooltip>
-                <v-dialog
-                  v-model="showMintDeposit"
-                  max-width="425"
-                  class="udc-balance__dialog-container"
-                >
-                  <template #activator="{ on: menu }">
-                    <v-tooltip bottom>
-                      <template #activator="{ on: tooltip }">
-                        <v-btn
-                          text
-                          icon
-                          x-large
-                          class="udc-balance__deposit"
-                          @click="showMintDeposit = true"
-                          v-on="{ ...tooltip, ...menu }"
-                        >
-                          <v-icon color="primary">play_for_work</v-icon>
-                        </v-btn>
-                      </template>
-                      <span>
-                        {{
-                          $t('transfer.steps.request-route.tooltip', {
-                            token: udcToken.symbol
-                          })
-                        }}
-                      </span>
-                    </v-tooltip>
+                <v-tooltip bottom>
+                  <template #activator="{ on }">
+                    <v-btn
+                      text
+                      icon
+                      x-large
+                      class="udc-balance__deposit"
+                      @click="showMintDeposit = true"
+                      v-on="on"
+                    >
+                      <v-icon color="primary">play_for_work</v-icon>
+                    </v-btn>
                   </template>
-                  <mint-deposit-dialog
-                    @cancel="showMintDeposit = false"
-                    @done="mintDone()"
-                  />
-                </v-dialog>
+                  <span>
+                    {{
+                      $t('transfer.steps.request-route.tooltip', {
+                        token: udcToken.symbol
+                      })
+                    }}
+                  </span>
+                </v-tooltip>
+                <mint-deposit-dialog
+                  :visible="showMintDeposit"
+                  @cancel="showMintDeposit = false"
+                  @done="mintDone()"
+                />
               </v-col>
             </v-row>
             <v-row

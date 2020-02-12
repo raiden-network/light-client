@@ -1,10 +1,5 @@
 <template>
-  <raiden-dialog
-    class="confirmation"
-    :visible="visible"
-    :fullscreen="false"
-    @close="cancel"
-  >
+  <raiden-dialog class="confirmation" :visible="visible" @close="cancel">
     <v-card-title>
       <span>
         <slot name="header"></slot>

@@ -1,11 +1,11 @@
 <template>
-  <v-card class="mint-deposit-dialog">
-    <v-btn icon class="mint-deposit-dialog__close" @click="cancel">
-      <v-icon>mdi-close</v-icon>
-    </v-btn>
+  <raiden-dialog :visible="visible" @close="cancel">
+    <v-card-title>
+      {{ $t('mint-deposit-dialog.button') }}
+    </v-card-title>
     <v-card-text>
-      <v-row justify="center" no-gutters>
-        <v-col cols="4">
+      <v-row v-if="!loading" justify="center" no-gutters>
+        <v-col cols="6">
           <v-text-field
             v-model="amount"
             autofocus
@@ -15,12 +15,47 @@
           />
         </v-col>
       </v-row>
+      <v-row v-else class="mint-deposit-dialog--progress">
+        <v-col cols="12">
+          <v-row no-gutters align="center" justify="center">
+            <v-progress-circular
+              :size="125"
+              :width="4"
+              color="primary"
+              indeterminate
+            ></v-progress-circular>
+          </v-row>
+          <v-row no-gutters align="center" justify="center">
+            <span v-if="step === 'mint'">
+              {{
+                $t('mint-deposit-dialog.progress.mint', {
+                  currency: udcToken.symbol || 'SVT'
+                })
+              }}
+            </span>
+            <span v-else-if="step === 'approve'">
+              {{
+                $t('mint-deposit-dialog.progress.approve', {
+                  currency: udcToken.symbol || 'SVT'
+                })
+              }}
+            </span>
+            <span v-else-if="step === 'deposit'">
+              {{
+                $t('mint-deposit-dialog.progress.deposit', {
+                  currency: udcToken.symbol || 'SVT'
+                })
+              }}
+            </span>
+          </v-row>
+        </v-col>
+      </v-row>
       <v-row v-if="error">
         <v-col cols="12" class="text-center error--text">
           {{ error }}
         </v-col>
       </v-row>
-      <v-row class="mint-deposit-dialog__available">
+      <v-row v-if="!loading" class="mint-deposit-dialog__available">
         {{
           $t('mint-deposit-dialog.available', {
             balance: accountBalance,
@@ -33,7 +68,6 @@
       <action-button
         sticky
         arrow
-        :loading="loading"
         :enabled="valid && !loading"
         :text="$t('mint-deposit-dialog.button')"
         class="mint-deposit-dialog__action"
@@ -41,19 +75,20 @@
       >
       </action-button>
     </v-card-actions>
-  </v-card>
+  </raiden-dialog>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Emit } from 'vue-property-decorator';
+import { Component, Vue, Emit, Prop } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Token } from '@/model/types';
+import RaidenDialog from '@/components/RaidenDialog.vue';
 
 @Component({
-  components: { ActionButton },
+  components: { ActionButton, RaidenDialog },
   computed: {
     ...mapState(['accountBalance'])
   }
@@ -62,6 +97,11 @@ export default class MintDepositDialog extends Vue {
   amount: string = '10';
   loading: boolean = false;
   error: string = '';
+
+  step: 'mint' | 'approve' | 'deposit' | '' = '';
+
+  @Prop({ required: true, type: Boolean })
+  visible!: boolean;
 
   get udcToken(): Token {
     const address = this.$raiden.userDepositTokenAddress;
@@ -85,10 +125,14 @@ export default class MintDepositDialog extends Vue {
 
     try {
       if (depositAmount.gt(token.balance!)) {
+        this.step = 'mint';
         await this.$raiden.mint(tokenAddress, depositAmount);
       }
 
-      await this.$raiden.depositToUDC(depositAmount);
+      this.step = 'approve';
+      await this.$raiden.depositToUDC(depositAmount, () => {
+        this.step = 'deposit';
+      });
       this.$emit('done');
     } catch (e) {
       if (typeof e.message === 'string') {
@@ -98,6 +142,7 @@ export default class MintDepositDialog extends Vue {
       }
     }
 
+    this.step = '';
     this.loading = false;
   }
 }
@@ -149,6 +194,13 @@ export default class MintDepositDialog extends Vue {
 
   &__available {
     text-align: center;
+  }
+
+  &--progress {
+    margin-top: 20px;
+    span {
+      margin-top: 22px;
+    }
   }
 
   &__close {
