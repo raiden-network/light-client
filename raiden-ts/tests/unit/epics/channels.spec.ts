@@ -76,8 +76,9 @@ describe('channels epic', () => {
           {
             id: channelId,
             participant: depsMock.address,
-            closeBlock,
             txHash,
+            txBlock: closeBlock,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -531,7 +532,13 @@ describe('channels epic', () => {
 
       await expect(promise).resolves.toEqual(
         channelClose.success(
-          { id: channelId, participant: partner, closeBlock, txHash },
+          {
+            id: channelId,
+            participant: partner,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: undefined,
+          },
           { tokenNetwork, partner },
         ),
       );
@@ -552,7 +559,13 @@ describe('channels epic', () => {
           { tokenNetwork, partner },
         ),
         channelClose.success(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash },
+          {
+            id: channelId,
+            participant: depsMock.address,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ), // channel is in "closed" state already
       ].reduce(raidenReducer, state);
@@ -579,7 +592,10 @@ describe('channels epic', () => {
       );
 
       await expect(promise).resolves.toEqual(
-        channelSettle.success({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
+        channelSettle.success(
+          { id: channelId, txHash, txBlock: settleBlock, confirmed: undefined },
+          { tokenNetwork, partner },
+        ),
       );
 
       // ensure ChannelSettledAction completed channel monitoring and unsubscribed from events
@@ -946,7 +962,13 @@ describe('channels epic', () => {
         ),
         newBlock({ blockNumber: closeBlock }),
         channelClose.success(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash },
+          {
+            id: channelId,
+            participant: depsMock.address,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -977,7 +999,13 @@ describe('channels epic', () => {
         ),
         newBlock({ blockNumber: closeBlock }),
         channelClose.success(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash },
+          {
+            id: channelId,
+            participant: depsMock.address,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
@@ -1024,7 +1052,13 @@ describe('channels epic', () => {
         ),
         newBlock({ blockNumber: closeBlock }),
         channelClose.success(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash },
+          {
+            id: channelId,
+            participant: depsMock.address,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
+import { timer } from 'rxjs';
 import { first, filter, takeUntil } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
@@ -13,7 +14,7 @@ import 'raiden-ts/polyfills';
 import { Raiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { makeInitialState, RaidenState } from 'raiden-ts/state';
-import { raidenShutdown } from 'raiden-ts/actions';
+import { raidenShutdown, ConfirmableActions } from 'raiden-ts/actions';
 import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
 import { Storage, Secret, Address } from 'raiden-ts/utils/types';
@@ -25,7 +26,6 @@ import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
 import { losslessStringify } from 'raiden-ts/utils/data';
 import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
-import { timer } from 'rxjs';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -68,18 +68,8 @@ describe('Raiden', () => {
     );
     raiden.action$
       .pipe(
-        filter(
-          (
-            a: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-          ): a is {
-            payload: { txHash: string; txBlock: number; confirmed: undefined | boolean };
-          } =>
-            a &&
-            a.payload?.['txHash'] &&
-            a.payload['txBlock'] &&
-            'confirmed' in a.payload &&
-            a.payload.confirmed === undefined,
-        ),
+        filter(isActionOf(ConfirmableActions)),
+        filter(a => a.payload.confirmed === undefined),
       )
       .subscribe(a =>
         provider.mineUntil(a.payload.txBlock + raiden.config.confirmationBlocks + 1),

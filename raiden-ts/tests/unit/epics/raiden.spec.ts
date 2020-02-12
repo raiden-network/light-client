@@ -134,7 +134,7 @@ describe('raiden epic', () => {
           ),
           newBlock({ blockNumber: 128 }),
           channelClose.success(
-            { id: channelId, participant: partner, closeBlock: 128, txHash },
+            { id: channelId, participant: partner, txHash, txBlock: 128, confirmed: true },
             { tokenNetwork, partner },
           ),
           newBlock({ blockNumber: 629 }),

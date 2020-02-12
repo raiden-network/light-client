@@ -312,8 +312,9 @@ describe('transfers epic', () => {
               {
                 id: channelId + 1,
                 participant: closingPartner,
-                closeBlock: openBlock + 1,
                 txHash,
+                txBlock: openBlock + 1,
+                confirmed: true,
               },
               { tokenNetwork, partner: closingPartner },
             ),
@@ -457,12 +458,23 @@ describe('transfers epic', () => {
           state$ = of(
             [
               channelClose.success(
-                { id: channelId, participant: partner, closeBlock, txHash },
+                {
+                  id: channelId,
+                  participant: partner,
+                  txHash,
+                  txBlock: closeBlock,
+                  confirmed: true,
+                },
                 { tokenNetwork, partner },
               ),
               newBlock({ blockNumber: closeBlock + settleTimeout + 1 }),
               channelSettle.success(
-                { id: channelId, settleBlock: closeBlock + settleTimeout + 1, txHash },
+                {
+                  id: channelId,
+                  txHash,
+                  txBlock: closeBlock + settleTimeout + 1,
+                  confirmed: true,
+                },
                 { tokenNetwork, partner },
               ),
               newBlock({ blockNumber: closeBlock + settleTimeout + 2 }),
@@ -497,7 +509,13 @@ describe('transfers epic', () => {
           state$ = of(
             [
               channelClose.success(
-                { id: channelId, participant: partner, closeBlock, txHash },
+                {
+                  id: channelId,
+                  participant: partner,
+                  txHash,
+                  txBlock: closeBlock,
+                  confirmed: true,
+                },
                 { tokenNetwork, partner },
               ),
             ].reduce(raidenReducer, transferingState),
@@ -612,7 +630,13 @@ describe('transfers epic', () => {
           state$ = of(
             [
               channelClose.success(
-                { id: channelId, participant: partner, closeBlock, txHash },
+                {
+                  id: channelId,
+                  participant: partner,
+                  txHash,
+                  txBlock: closeBlock,
+                  confirmed: true,
+                },
                 { tokenNetwork, partner },
               ),
               newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
