@@ -60,8 +60,8 @@ export class TestProvider extends Web3Provider {
 
   public async mineUntil(block: number): Promise<number> {
     const blockNumber = await this.getBlockNumber();
+    block = Math.max(block, blockNumber + 1);
     console.debug(`mining until block=${block} from ${blockNumber}`);
-    if (blockNumber >= block) return blockNumber;
     const promise = new Promise<number>(resolve => {
       const cb = (b: number): void => {
         if (b < block) return;

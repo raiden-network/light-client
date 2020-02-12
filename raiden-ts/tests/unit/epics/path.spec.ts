@@ -784,7 +784,7 @@ describe('PFS: pathFindServiceEpic', () => {
     state$.next(
       [
         channelClose.success(
-          { id: channelId, participant: partner, closeBlock: 126, txHash },
+          { id: channelId, participant: partner, txHash, txBlock: 126, confirmed: true },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state$.value),
