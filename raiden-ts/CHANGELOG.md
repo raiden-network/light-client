@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#613] Implement waiting for confirmation blocks on on-chain transactions (configurable)
+
+### Changed
+- [#1042] Support decoding addresses on messages on lowercased format
 
 ## [0.3.0] - 2020-02-07
 ### Added
