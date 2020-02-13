@@ -570,7 +570,15 @@ export const channelOpenedEpic = (
 export const channelDepositEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { signer, address, main, getTokenContract, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  {
+    log,
+    signer,
+    address,
+    main,
+    getTokenContract,
+    getTokenNetworkContract,
+    config$,
+  }: RaidenEpicDeps,
 ): Observable<channelDeposit.failure> =>
   action$.pipe(
     filter(isActionOf(channelDeposit.request)),
@@ -609,14 +617,14 @@ export const channelDepositEpic = (
         tokenContract.functions.approve(action.meta.tokenNetwork, action.payload.deposit),
       )
         .pipe(
-          tap(tx => console.log(`sent approve tx "${tx.hash}" to "${token}"`)),
+          tap(tx => log.debug(`sent approve tx "${tx.hash}" to "${token}"`)),
           mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
           map(({ receipt, tx }) => {
             if (!receipt.status)
               throw new Error(`token "${token}" approve transaction "${tx.hash}" failed`);
             return tx.hash;
           }),
-          tap(txHash => console.log(`approve tx "${txHash}" successfuly mined!`)),
+          tap(txHash => log.debug(`approve tx "${txHash}" successfuly mined!`)),
         )
         .pipe(
           withLatestFrom(state$),
@@ -632,7 +640,7 @@ export const channelDepositEpic = (
             ),
           ),
           tap(tx =>
-            console.log(`sent setTotalDeposit tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
+            log.debug(`sent setTotalDeposit tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
           ),
           mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
           map(({ receipt, tx }) => {
@@ -642,7 +650,7 @@ export const channelDepositEpic = (
               );
             return tx.hash;
           }),
-          tap(txHash => console.log(`setTotalDeposit tx "${txHash}" successfuly mined!`)),
+          tap(txHash => log.debug(`setTotalDeposit tx "${txHash}" successfuly mined!`)),
           // if succeeded, return a empty/completed observable
           // actual ChannelDepositedAction will be detected and handled by channelMonitoredEpic
           // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
@@ -668,7 +676,7 @@ export const channelDepositEpic = (
 export const channelCloseEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { signer, address, main, network, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  { log, signer, address, main, network, getTokenNetworkContract, config$ }: RaidenEpicDeps,
 ): Observable<channelClose.failure> =>
   action$.pipe(
     filter(isActionOf(channelClose.request)),
@@ -741,16 +749,14 @@ export const channelCloseEpic = (
             closingSignature,
           ),
         ),
-        tap(tx =>
-          console.log(`sent closeChannel tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
-        ),
+        tap(tx => log.debug(`sent closeChannel tx "${tx.hash}" to "${action.meta.tokenNetwork}"`)),
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
         map(({ receipt, tx }) => {
           if (!receipt.status)
             throw new Error(
               `tokenNetwork "${action.meta.tokenNetwork}" closeChannel transaction "${tx.hash}" failed`,
             );
-          console.log(`closeChannel tx "${tx.hash}" successfuly mined!`);
+          log.debug(`closeChannel tx "${tx.hash}" successfuly mined!`);
           return tx.hash;
         }),
         // if succeeded, return a empty/completed observable
@@ -778,7 +784,7 @@ export const channelCloseEpic = (
 export const channelSettleEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { signer, address, main, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  { log, signer, address, main, getTokenNetworkContract, config$ }: RaidenEpicDeps,
 ): Observable<channelSettle.failure> =>
   action$.pipe(
     filter(isActionOf(channelSettle.request)),
@@ -838,7 +844,7 @@ export const channelSettleEpic = (
         ),
       ).pipe(
         tap(tx =>
-          console.log(`sent settleChannel tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
+          log.debug(`sent settleChannel tx "${tx.hash}" to "${action.meta.tokenNetwork}"`),
         ),
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
         map(({ receipt, tx }) => {
@@ -846,7 +852,7 @@ export const channelSettleEpic = (
             throw new Error(
               `tokenNetwork "${action.meta.tokenNetwork}" settleChannel transaction "${tx.hash}" failed`,
             );
-          console.log(`settleChannel tx "${tx.hash}" successfuly mined!`);
+          log.debug(`settleChannel tx "${tx.hash}" successfuly mined!`);
           return tx.hash;
         }),
         // if succeeded, return a empty/completed observable

@@ -193,6 +193,7 @@ export const pathFindServiceEpic = (
     ),
   ).pipe(
     publishReplay(1, undefined, cached$ => {
+      const { log } = deps;
       return action$.pipe(
         filter(isActionOf(pathFind.request)),
         concatMap(action =>
@@ -238,7 +239,7 @@ export const pathFindServiceEpic = (
                       first(pfsList => pfsList.length > 0),
                       // fetch pfsInfo from whole list & sort it
                       mergeMap(pfsList => pfsListInfo(pfsList, deps)),
-                      tap(pfss => console.log('Auto-selecting best PFS from:', pfss)),
+                      tap(pfss => log.info('Auto-selecting best PFS from:', pfss)),
                       // pop best ranked
                       pluck(0),
                     );
@@ -356,7 +357,7 @@ export const pathFindServiceEpic = (
                       ? 'path: already selected a smaller fee'
                       : true;
                     if (canTransferOrReason !== true) {
-                      console.log(
+                      log.warn(
                         'Invalidated received route. Reason:',
                         canTransferOrReason,
                         'Route:',
@@ -389,7 +390,7 @@ export const pathFindServiceEpic = (
 export const pfsCapacityUpdateEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, network, signer, config$ }: RaidenEpicDeps,
+  { log, address, network, signer, config$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
   action$.pipe(
     filter(channelDeposit.success.is),
@@ -423,10 +424,10 @@ export const pfsCapacityUpdateEpic = (
         reveal_timeout: bigNumberify(revealTimeout) as UInt<32>,
       };
 
-      return from(signMessage(signer, message)).pipe(
+      return from(signMessage(signer, message, { log })).pipe(
         map(signed => messageGlobalSend({ message: signed }, { roomName: pfsRoom! })),
         catchError(err => {
-          console.error('Error trying to generate & sign PFSCapacityUpdate', err);
+          log.error('Error trying to generate & sign PFSCapacityUpdate', err);
           return EMPTY;
         }),
       );

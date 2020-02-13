@@ -186,9 +186,14 @@ function startMatrixSync(
  *
  * @param matrix - Matrix client to search users from
  * @param address - Address of interest
+ * @param log - Logger object
  * @returns Observable of user with most recent presence
  */
-function searchAddressPresence$(matrix: MatrixClient, address: Address) {
+function searchAddressPresence$(
+  matrix: MatrixClient,
+  address: Address,
+  { log }: { log: RaidenEpicDeps['log'] },
+) {
   return defer(() =>
     // search for any user containing the address of interest in its userId
     matrix.searchUserDirectory({ term: address.toLowerCase() }),
@@ -213,7 +218,7 @@ function searchAddressPresence$(matrix: MatrixClient, address: Address) {
       getUserPresence(matrix, userId)
         .then(presence => ({ ...presence, user_id: userId }))
         .catch(err => {
-          console.log('Error fetching user presence, ignoring:', err);
+          log.info('Error fetching user presence, ignoring:', err);
           return undefined;
         }),
     ),
@@ -249,6 +254,7 @@ function inviteLoop$(
   roomId: string,
   userId: string,
   config$: Observable<{ httpTimeout: number }>,
+  { log }: { log: RaidenEpicDeps['log'] },
 ) {
   return defer(() => {
     const room = matrix.getRoom(roomId);
@@ -273,7 +279,7 @@ function inviteLoop$(
         // while shouldn't stop (by unsubscribe or takeUntil)
         repeatWhen(completed$ => completed$.pipe(delay(httpTimeout))),
         catchError(err => {
-          console.warn('Error inviting', err);
+          log.warn('Error inviting', err);
           return EMPTY;
         }),
         takeUntil(
@@ -565,7 +571,7 @@ export const matrixShutdownEpic = (
 export const matrixMonitorPresenceEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, latest$ }: RaidenEpicDeps,
+  { matrix$, latest$, log }: RaidenEpicDeps,
 ): Observable<matrixPresence.success | matrixPresence.failure> =>
   action$.pipe(
     filter(isActionOf(matrixPresence.request)),
@@ -580,7 +586,7 @@ export const matrixMonitorPresenceEpic = (
           action.meta.address in presences
             ? // we already monitored/saw this user's presence
               of(presences[action.meta.address])
-            : searchAddressPresence$(matrix, action.meta.address).pipe(
+            : searchAddressPresence$(matrix, action.meta.address, { log }).pipe(
                 map(({ presence, user_id: userId }) =>
                   matrixPresence.success(
                     { userId, available: AVAILABLE.includes(presence), ts: Date.now() },
@@ -607,7 +613,7 @@ export const matrixMonitorPresenceEpic = (
 export const matrixPresenceUpdateEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, latest$ }: RaidenEpicDeps,
+  { log, matrix$, latest$ }: RaidenEpicDeps,
 ): Observable<matrixPresence.success> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix presence events
@@ -686,9 +692,9 @@ export const matrixPresenceUpdateEpic = (
             { address },
           ),
         ),
+        catchError(err => (log.debug('Error validating presence event, ignoring', err), EMPTY)),
       );
     }),
-    catchError(err => (console.log('Error validating presence event, ignoring', err), EMPTY)),
   );
 
 /**
@@ -764,7 +770,7 @@ export const matrixCreateRoomEpic = (
 export const matrixInviteEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, config$, latest$ }: RaidenEpicDeps,
+  { matrix$, config$, latest$, log }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   action$.pipe(
     filter(isActionOf(matrixPresence.success)),
@@ -810,7 +816,7 @@ export const matrixInviteEpic = (
                     ? // if roomId not set, do nothing and unsubscribe
                       EMPTY
                     : // while subscribed and user didn't join, invite every httpTimeout=30s
-                      inviteLoop$(matrix, roomId, action.payload.userId, config$),
+                      inviteLoop$(matrix, roomId, action.payload.userId, config$, { log }),
                 ),
               ),
         ),
@@ -1042,7 +1048,7 @@ function waitMember$(
 export const matrixMessageSendEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, config$, latest$ }: RaidenEpicDeps,
+  { log, matrix$, config$, latest$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   action$.pipe(
     filter(isActionOf(messageSend.request)),
@@ -1075,7 +1081,7 @@ export const matrixMessageSendEpic = (
                     withLatestFrom(config$),
                     mergeMap(([err, { httpTimeout }], i) => {
                       if (i < RETRY_COUNT - 1) {
-                        console.warn(`messageSend error, retrying ${i + 1}/${RETRY_COUNT}`, err);
+                        log.warn(`messageSend error, retrying ${i + 1}/${RETRY_COUNT}`, err);
                         return timer(httpTimeout / RETRY_COUNT);
                         // give up
                       } else return throwError(err);
@@ -1086,7 +1092,7 @@ export const matrixMessageSendEpic = (
             }),
             mapTo(messageSend.success(undefined, action.meta)),
             catchError(err => {
-              console.error('messageSend error', err);
+              log.error('messageSend error', err, action.meta);
               return of(messageSend.failure(err, action.meta));
             }),
           ),
@@ -1106,7 +1112,7 @@ export const matrixMessageSendEpic = (
 export const matrixMessageGlobalSendEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, config$ }: RaidenEpicDeps,
+  { log, matrix$, config$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   // actual output observable, gets/wait for the user to be in a room, and then sendMessage
   action$.pipe(
@@ -1117,7 +1123,7 @@ export const matrixMessageGlobalSendEpic = (
     mergeMap(([{ action, matrix }, config]) => {
       const globalRooms = globalRoomNames(config);
       if (!globalRooms.includes(action.meta.roomName)) {
-        console.warn(
+        log.warn(
           'messageGlobalSend for unknown global room, ignoring',
           action.meta.roomName,
           globalRooms,
@@ -1136,9 +1142,9 @@ export const matrixMessageGlobalSendEpic = (
           return matrix.sendEvent(room.roomId, 'm.room.message', { body, msgtype: 'm.text' }, '');
         }),
         catchError(err => {
-          console.error(
+          log.error(
             'Error sending message to global room',
-            action.meta.roomName,
+            action.meta,
             action.payload.message,
             err,
           );
@@ -1161,7 +1167,7 @@ export const matrixMessageGlobalSendEpic = (
 export const matrixMessageReceivedEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, config$, latest$ }: RaidenEpicDeps,
+  { log, matrix$, config$, latest$ }: RaidenEpicDeps,
 ): Observable<messageReceived> =>
   // gets/wait for the user to be in a room, and then sendMessage
   matrix$.pipe(
@@ -1210,7 +1216,7 @@ export const matrixMessageReceivedEpic = (
                   `Signature mismatch: sender=${presence.meta.address} != signer=${signer}`,
                 );
             } catch (err) {
-              console.warn(`Could not decode message: ${line}: ${err}`);
+              log.warn(`Could not decode message: ${line}: ${err}`);
               message = undefined;
             }
             yield messageReceived(
@@ -1280,7 +1286,7 @@ export const matrixMonitorChannelPresenceEpic = (
 export const deliveredEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { signer }: RaidenEpicDeps,
+  { log, signer }: RaidenEpicDeps,
 ): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Delivered>>(32);
   return action$.pipe(
@@ -1310,10 +1316,8 @@ export const deliveredEpic = (
           type: MessageType.DELIVERED,
           delivered_message_identifier: msgId,
         };
-        console.log(
-          `Signing "${delivered.type}" for "${message.type}" with id=${msgId.toString()}`,
-        );
-        return from(signMessage(signer, delivered)).pipe(
+        log.info(`Signing "${delivered.type}" for "${message.type}" with id=${msgId.toString()}`);
+        return from(signMessage(signer, delivered, { log })).pipe(
           tap(signed => cache.put(key, signed)),
           map(signed =>
             messageSend.request({ message: signed }, { address: action.meta.address, msgId: key }),

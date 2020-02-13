@@ -1219,9 +1219,9 @@ describe('transfers epic', () => {
           ),
           state$ = of(transferingState);
 
-        await expect(transferSecretRequestedEpic(action$, state$).toPromise()).resolves.toEqual(
-          transferSecretRequest({ message: signed }, { secrethash }),
-        );
+        await expect(
+          transferSecretRequestedEpic(action$, state$, depsMock).toPromise(),
+        ).resolves.toEqual(transferSecretRequest({ message: signed }, { secrethash }));
       });
 
       test('ignore invalid lock', async () => {
@@ -1243,7 +1243,7 @@ describe('transfers epic', () => {
           state$ = of(transferingState);
 
         await expect(
-          transferSecretRequestedEpic(action$, state$).toPromise(),
+          transferSecretRequestedEpic(action$, state$, depsMock).toPromise(),
         ).resolves.toBeUndefined();
       });
     });

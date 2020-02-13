@@ -128,12 +128,13 @@ export function pfsListInfo(
   pfsList: readonly (string | Address)[],
   deps: RaidenEpicDeps,
 ): Observable<PFS[]> {
+  const { log } = deps;
   return from(pfsList).pipe(
     mergeMap(
       addrOrUrl =>
         pfsInfo(addrOrUrl, deps).pipe(
           catchError(err => {
-            console.warn(`Error trying to fetch PFS info for "${addrOrUrl}" - ignoring:`, err);
+            log.warn(`Error trying to fetch PFS info for "${addrOrUrl}" - ignoring:`, err);
             return EMPTY;
           }),
         ),
