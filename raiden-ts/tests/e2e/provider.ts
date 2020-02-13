@@ -3,6 +3,7 @@ import ganache, { GanacheServerOptions } from 'ganache-cli';
 import memdown from 'memdown';
 import { range } from 'lodash';
 import asyncPool from 'tiny-async-pool';
+import log from 'loglevel';
 
 import { Web3Provider, AsyncSendable } from 'ethers/providers';
 import { MaxUint256, AddressZero } from 'ethers/constants';
@@ -45,7 +46,7 @@ export class TestProvider extends Web3Provider {
 
   public async mine(count = 1): Promise<number> {
     const blockNumber = await this.getBlockNumber();
-    console.debug(`mining ${count} blocks after blockNumber=${blockNumber}`);
+    log.debug(`mining ${count} blocks after blockNumber=${blockNumber}`);
     const promise = new Promise<number>(resolve => {
       const cb = (b: number): void => {
         if (b < blockNumber + count) return;
@@ -61,7 +62,7 @@ export class TestProvider extends Web3Provider {
   public async mineUntil(block: number): Promise<number> {
     const blockNumber = await this.getBlockNumber();
     block = Math.max(block, blockNumber + 1);
-    console.debug(`mining until block=${block} from ${blockNumber}`);
+    log.debug(`mining until block=${block} from ${blockNumber}`);
     const promise = new Promise<number>(resolve => {
       const cb = (b: number): void => {
         if (b < block) return;

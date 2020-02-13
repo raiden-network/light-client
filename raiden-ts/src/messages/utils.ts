@@ -3,6 +3,7 @@ import { Signer } from 'ethers';
 import { keccak256, RLP, verifyMessage } from 'ethers/utils';
 import { arrayify, concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';
+import logging from 'loglevel';
 
 import { Address, Hash, HexString, Signature, UInt, Signed, decode, assert } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
@@ -322,9 +323,10 @@ export function decodeJsonMessage(text: string): Signed<Message> {
 export async function signMessage<M extends Message>(
   signer: Signer,
   message: M,
+  { log }: { log: logging.Logger } = { log: logging },
 ): Promise<Signed<M>> {
   if (isSigned(message)) return message;
-  console.log(`Signing message "${message.type}"`, message);
+  log.debug(`Signing message "${message.type}"`, message);
   const signature = (await signer.signMessage(arrayify(packMessage(message)))) as Signature;
   return { ...message, signature };
 }
