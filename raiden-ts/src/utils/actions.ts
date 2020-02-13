@@ -7,7 +7,8 @@ import { Observable } from 'rxjs';
 import { first, map } from 'rxjs/operators';
 import { Reducer } from 'redux';
 
-import { ErrorCodec, BigNumberC, assert } from './types';
+import { ErrorCodec } from './error';
+import { BigNumberC, assert } from './types';
 
 /**
  * The type of a generic action

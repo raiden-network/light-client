@@ -1,13 +1,13 @@
 import { isError } from 'util';
 
-import RaidenError, { ErrorDetail } from '../../src/utils/error';
+import RaidenError, { ErrorDetails } from '../../src/utils/error';
 
 enum MyCustomErrorCodes {
   TEST = 'Developer-friendly description',
 }
 
 class MyCustomError extends RaidenError {
-  constructor(message: MyCustomErrorCodes, detail?: ErrorDetail) {
+  constructor(message: MyCustomErrorCodes, detail?: ErrorDetails) {
     super(message, detail);
     this.name = 'MyCustomError';
   }
@@ -70,9 +70,9 @@ describe('Test custom error', () => {
 
   test('Details can be added and are shown in stack trace', () => {
     try {
-      throw new MyCustomError(MyCustomErrorCodes.TEST, { foo: 'bar' });
+      throw new MyCustomError(MyCustomErrorCodes.TEST, [{ value: 'bar', key: 'foo' }]);
     } catch (err) {
-      expect(err.details).toEqual([{ foo: 'bar' }]);
+      expect(err.details).toEqual([{ value: 'bar', key: 'foo' }]);
     }
   });
 });
