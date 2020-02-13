@@ -4,15 +4,6 @@ import { Network } from 'ethers/utils';
 import { Address } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 
-const logLevels = t.keyof({
-  ['']: null,
-  trace: null,
-  debug: null,
-  info: null,
-  warn: null,
-  error: null,
-});
-
 /**
  * A Raiden configuration object with required parameters and
  * optional parameters from [[PartialRaidenConfig]].
@@ -48,18 +39,17 @@ export const RaidenConfig = t.readonly(
       pfsSafetyMargin: t.number,
       matrixExcessRooms: t.number,
       confirmationBlocks: t.number,
+      logger: t.keyof({
+        ['']: null, // silent/disabled
+        trace: null,
+        debug: null,
+        info: null,
+        warn: null,
+        error: null,
+      }),
     }),
     t.partial({
       matrixServer: t.string,
-      logger: t.union([
-        logLevels,
-        t.partial({
-          prevState: logLevels,
-          action: logLevels,
-          error: logLevels,
-          nextState: logLevels,
-        }),
-      ]),
       pfs: t.union([Address, t.string, t.null]),
       subkey: t.boolean,
     }),
@@ -91,5 +81,6 @@ export function makeDefaultConfig({ network }: { network: Network }): RaidenConf
     matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0,
     confirmationBlocks: 5,
+    logger: 'info',
   };
 }
