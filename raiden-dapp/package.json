@@ -44,7 +44,7 @@
     "@types/tiny-async-pool": "^1.0.0",
     "@types/vue-i18n": "^7.0.0",
     "@types/webpack": "^4.41.5",
-    "@typescript-eslint/eslint-plugin": "^2.18.0",
+    "@typescript-eslint/eslint-plugin": "^2.19.2",
     "@typescript-eslint/parser": "^2.19.2",
     "@vue/cli": "^4.1.1",
     "@vue/cli-plugin-babel": "^4.1.2",
