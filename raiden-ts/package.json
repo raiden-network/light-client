@@ -67,7 +67,7 @@
     "rxjs-marbles": "^5.0.4",
     "tiny-async-pool": "^1.1.0",
     "ts-jest": "^25.2.0",
-    "typechain": "^1.0.4",
+    "typechain": "^1.0.5",
     "typechain-target-ethers": "^1.0.3",
     "typedoc": "0.16.9",
     "typedoc-plugin-markdown": "^2.2.16",
