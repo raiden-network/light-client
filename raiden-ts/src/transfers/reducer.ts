@@ -225,10 +225,11 @@ function channelCloseSuccessReducer(
 ): RaidenState {
   let sent = state.sent;
   for (const [secrethash, v] of Object.entries(sent)) {
+    const transfer = v.transfer[1];
     if (
-      !v.transfer[1].channel_identifier.eq(action.payload.id) ||
-      v.transfer[1].recipient !== action.meta.partner ||
-      v.transfer[1].token_network_address !== action.meta.tokenNetwork
+      !transfer.channel_identifier.eq(action.payload.id) ||
+      transfer.recipient !== action.meta.partner ||
+      transfer.token_network_address !== action.meta.tokenNetwork
     )
       continue;
     sent = { ...sent, [secrethash]: { ...v, channelClosed: timed(action.payload.txHash) } };
