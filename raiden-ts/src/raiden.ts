@@ -12,6 +12,7 @@ import { createLogger } from 'redux-logger';
 import { constant, memoize } from 'lodash';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
 import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
+import logging from 'loglevel';
 
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
 import { TokenNetworkFactory } from './contracts/TokenNetworkFactory';
@@ -145,6 +146,7 @@ export class Raiden {
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
+    const log = logging.getLogger(`raiden:${address}`);
 
     // use next from latest known blockNumber as start block when polling
     provider.resetEventsBlock(state.blockNumber + 1);
@@ -182,6 +184,7 @@ export class Raiden {
       network,
       signer,
       address,
+      log,
       contractsInfo,
       registryContract: TokenNetworkRegistryFactory.connect(
         contractsInfo.TokenNetworkRegistry.address,
@@ -209,28 +212,19 @@ export class Raiden {
     );
 
     const loggerMiddleware = createLogger({
-      predicate: () =>
-        this.config.logger !== '' &&
-        (this.config.logger !== undefined || process.env.NODE_ENV === 'development'),
+      predicate: () => this.log.getLevel() <= logging.levels.INFO,
+      logger: log,
       level: {
-        prevState: () =>
-          typeof this.config.logger === 'object'
-            ? this.config.logger['prevState'] ?? ''
-            : this.config.logger ?? 'debug',
-        action: () =>
-          typeof this.config.logger === 'object'
-            ? this.config.logger['action'] ?? ''
-            : this.config.logger ?? 'debug',
-        error: () =>
-          typeof this.config.logger === 'object'
-            ? this.config.logger['error'] ?? ''
-            : this.config.logger ?? 'debug',
-        nextState: () =>
-          typeof this.config.logger === 'object'
-            ? this.config.logger['nextState'] ?? ''
-            : this.config.logger ?? 'debug',
+        prevState: 'debug',
+        action: 'info',
+        error: 'error',
+        nextState: 'debug',
       },
     });
+
+    this.deps.config$
+      .pipe(pluckDistinct('logger'))
+      .subscribe(logger => this.log.setLevel(logger || 'silent'));
 
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
@@ -374,6 +368,15 @@ export class Raiden {
    */
   public get address(): Address {
     return this.deps.address;
+  }
+
+  /**
+   * Instance's Logger, compatible with console's API
+   *
+   * @returns Logger instance
+   */
+  private get log(): logging.Logger {
+    return this.deps.log;
   }
 
   /**

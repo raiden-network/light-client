@@ -524,13 +524,7 @@ export const initMatrixEpic = (
         // monitor config.logger & disable or re-enable matrix's logger accordingly
         config$.pipe(
           pluckDistinct('logger'),
-          tap(logger =>
-            matrixLogger.setLevel(
-              logger !== '' && (logger !== undefined || process.env.NODE_ENV === 'development')
-                ? 'debug'
-                : 'error',
-            ),
-          ),
+          tap(logger => matrixLogger.setLevel(logger || 'silent')),
           ignoreElements(),
         ),
       ),
