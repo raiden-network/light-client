@@ -27,12 +27,12 @@ import {
 } from 'rxjs/operators';
 import { bigNumberify } from 'ethers/utils';
 import { One, Zero } from 'ethers/constants';
-import { findKey, get } from 'lodash';
+import { findKey, get, pick, isMatchWith } from 'lodash';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
-import { Address, assert, Hash, Signed, UInt } from '../utils/types';
+import { Address, assert, Hash, Signed, UInt, BigNumberC } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { LruCache } from '../utils/lru';
 import { messageReceived, messageSend } from '../messages/actions';
@@ -462,17 +462,32 @@ function makeAndSignWithdrawConfirmation$(
 
   let signed$: Observable<Signed<WithdrawConfirmation>>;
   const key = request.message_identifier.toString();
+
+  // compare WithdrawRequest and a possible signed WithdrawConfirmation
+  function compareReqConf(
+    req: WithdrawRequest,
+    conf: Signed<WithdrawConfirmation> | undefined,
+  ): conf is Signed<WithdrawConfirmation> {
+    if (!conf) return false;
+    const matchSet = pick(conf, [
+      'token_network_address',
+      'participant',
+      'chain_id',
+      'channel_identifier',
+      'total_withdraw',
+      'expiration',
+    ]);
+    return isMatchWith(req, matchSet, (objVal, othVal) =>
+      BigNumberC.is(objVal)
+        ? objVal.eq(othVal)
+        : BigNumberC.is(othVal)
+        ? othVal.eq(objVal)
+        : (undefined as any),
+    );
+  }
   const cached = cache.get(key);
   // ensure all parameters are equal the cached one before returning it, or else sign again
-  if (
-    cached &&
-    cached.chain_id.eq(request.chain_id) &&
-    cached.token_network_address === request.token_network_address &&
-    cached.channel_identifier.eq(request.channel_identifier) &&
-    cached.participant === request.participant &&
-    cached.total_withdraw.eq(request.total_withdraw) &&
-    cached.expiration.eq(request.expiration)
-  ) {
+  if (compareReqConf(request, cached)) {
     signed$ = of(cached);
   } else {
     const confirmation: WithdrawConfirmation = {
