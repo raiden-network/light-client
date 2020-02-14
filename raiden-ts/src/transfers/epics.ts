@@ -58,6 +58,7 @@ import { channelClose, newBlock } from '../channels/actions';
 import { RaidenConfig } from '../config';
 import { matrixPresence } from '../transport/actions';
 import { pluckDistinct } from '../utils/rx';
+import RaidenError, { ErrorCodes } from '../utils/error';
 import {
   transfer,
   transferExpire,
@@ -784,7 +785,9 @@ function autoExpire$(
     requests$.push(
       of(
         transfer.failure(
-          new Error(`transfer expired at block=${sent.transfer[1].lock.expiration.toString()}`),
+          new RaidenError(ErrorCodes.XFER_EXPIRED, [
+            { block: sent.transfer[1].lock.expiration.toString() },
+          ]),
           { secrethash },
         ),
       ),
@@ -1147,7 +1150,7 @@ export const transferChannelClosedEpic = (
         // as we can't know for sure if recipient/partner received the secret or unlock,
         //consider transfer failed iff neither the secret was revealed nor the unlock happened
         if (!sent.secretReveal && !sent.unlock)
-          yield transfer.failure(new Error(`Channel closed before revealing or unlocking`), {
+          yield transfer.failure(new RaidenError(ErrorCodes.XFER_CHANNEL_CLOSED_PREMATURELY), {
             secrethash,
           });
         else if (state.sent[secrethash].unlock)
@@ -1194,7 +1197,7 @@ export const transferRefundedEpic = (
       )
         return;
       yield transferRefunded({ message }, { secrethash });
-      yield transfer.failure(new Error('transfer refunded'), { secrethash });
+      yield transfer.failure(new RaidenError(ErrorCodes.XFER_REFUNDED), { secrethash });
     }),
   );
 
