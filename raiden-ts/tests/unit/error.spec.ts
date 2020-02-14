@@ -1,38 +1,19 @@
 import { isError } from 'util';
 
-import RaidenError, { ErrorDetails } from '../../src/utils/error';
-
-enum MyCustomErrorCodes {
-  TEST = 'Developer-friendly description',
-}
-
-class MyCustomError extends RaidenError {
-  constructor(message: MyCustomErrorCodes, detail?: ErrorDetails) {
-    super(message, detail);
-    this.name = 'MyCustomError';
-  }
-
-  getCode(message: string): string {
-    return (
-      Object.keys(MyCustomErrorCodes).find(code => Object(MyCustomErrorCodes)[code] === message) ??
-      'GENERAL_ERROR'
-    );
-  }
-}
+import RaidenError, { ErrorCodes } from '../../src/utils/error';
 
 describe('Test custom error', () => {
   test('MyCustomError is instance of its custom class', () => {
     try {
-      throw new MyCustomError(MyCustomErrorCodes.TEST);
+      throw new RaidenError(ErrorCodes.PFS_DISABLED);
     } catch (err) {
-      expect(err).toBeInstanceOf(MyCustomError);
-      expect(err.name).toEqual('MyCustomError');
+      expect(err.name).toEqual('RaidenError');
     }
   });
 
   test('MyCustomError is an instance of Error', () => {
     try {
-      throw new MyCustomError(MyCustomErrorCodes.TEST);
+      throw new RaidenError(ErrorCodes.PFS_DISABLED);
     } catch (err) {
       expect(err instanceof Error).toBeTruthy();
       expect(isError(err)).toBeTruthy();
@@ -42,7 +23,7 @@ describe('Test custom error', () => {
   test('Has stack trace w/ class name and developer-friendly message', () => {
     try {
       function doSomething() {
-        throw new MyCustomError(MyCustomErrorCodes.TEST);
+        throw new RaidenError(ErrorCodes.PFS_DISABLED);
       }
       doSomething();
     } catch (err) {
@@ -51,7 +32,7 @@ describe('Test custom error', () => {
 
       // Stack trace starts with the error message
       expect(err.stack.split('\n').shift()).toEqual(
-        'MyCustomError: Developer-friendly description',
+        'RaidenError: Pathfinding Service is disabled and no direct route is available.',
       );
 
       // Stack trace contains function where error was thrown
@@ -61,16 +42,16 @@ describe('Test custom error', () => {
 
   test('End user "code" property is set', () => {
     try {
-      throw new MyCustomError(MyCustomErrorCodes.TEST);
+      throw new RaidenError(ErrorCodes.PFS_DISABLED);
     } catch (err) {
       expect(err.code).toBeDefined();
-      expect(err.code).toEqual('TEST');
+      expect(err.code).toEqual('PFS_DISABLED');
     }
   });
 
   test('Details can be added and are shown in stack trace', () => {
     try {
-      throw new MyCustomError(MyCustomErrorCodes.TEST, [{ value: 'bar', key: 'foo' }]);
+      throw new RaidenError(ErrorCodes.PFS_DISABLED, [{ value: 'bar', key: 'foo' }]);
     } catch (err) {
       expect(err.details).toEqual([{ value: 'bar', key: 'foo' }]);
     }
