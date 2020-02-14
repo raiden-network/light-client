@@ -1,43 +1,38 @@
 import * as t from 'io-ts';
 import { map } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
+import { CustomError } from 'ts-custom-error';
 
-import { PfsErrorCodes } from '../path/errors';
-
-export const ErrorDetails = t.array(
-  t.type({
-    key: t.string,
-    value: t.union([t.string, t.number]),
-  }),
-);
-export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
-
-export default class RaidenError extends Error {
-  code: string;
-  details?: ErrorDetails;
-
-  constructor(message: string, details?: ErrorDetails) {
-    super(message || 'General Error');
-    this.name = 'RaidenError';
-    this.code = this.getCode(message);
-    this.details = details;
-  }
-
-  getCode(message: string): string {
-    return message ?? 'RAIDEN_ERROR';
-  }
+export enum ErrorCodes {
+  PFS_EMPTY_URL = 'A registered Pathfinding Service returned an empty service URL.',
+  PFS_INVALID_URL = 'A registered Pathfinding Service returned an invalid service URL.',
+  PFS_INVALID_INFO = 'Could not any valid Pathfinding services. Client and PFS versions are possibly out-of-sync.',
+  PFS_NO_ROUTES_FOUND = 'No valid routes found.',
+  PFS_ERROR_RESPONSE = 'Pathfinding Service request returned an error',
+  PFS_DISABLED = 'Pathfinding Service is disabled and no direct route is available.',
+  PFS_UNKNOWN_TOKEN_NETWORK = 'Unknown token network.',
+  PFS_TARGET_OFFLINE = 'The requested target is offline.',
+  PFS_LAST_IOU_REQUEST_FAILED = 'The request for the last IOU has failed.',
+  PFS_IOU_SIGNATURE_MISMATCH = 'The signature of the last IOU did not match.',
 }
 
-export class PfsError extends RaidenError {
-  constructor(message: PfsErrorCodes, details?: ErrorDetails) {
-    super(message, details);
-    this.name = 'PfsError';
+export const ErrorDetails = t.array(t.record(t.string, t.union([t.string, t.number])));
+export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
+
+export default class RaidenError extends CustomError {
+  public code: string;
+  message: string;
+
+  public constructor(message: ErrorCodes, public details?: ErrorDetails) {
+    super(message ?? 'General Error');
+    this.message = message;
+    this.code = this.getCode(message);
   }
 
   getCode(message: string): string {
     return (
-      Object.keys(PfsErrorCodes).find(code => Object(PfsErrorCodes)[code] === message) ??
-      'PFS_GENERAL_ERROR'
+      Object.keys(ErrorCodes).find(code => Object(ErrorCodes)[code] === message) ??
+      'RAIDEN_GENERAL_ERROR'
     );
   }
 }
@@ -61,28 +56,26 @@ export const ErrorCodec = new t.Type<
   'RaidenError',
   (u: unknown): u is RaidenError => u instanceof RaidenError,
   u => {
-    if (u instanceof RaidenError) return t.success(u);
     return pipe(
       serializedErr.decode(u),
       map(({ name, message, code, stack, details }) => {
-        switch (name) {
-          case 'PfsError':
-            return Object.assign(new PfsError(message as PfsErrorCodes, details), {
-              name,
-              stack,
-              code,
-            });
-        }
-
-        return Object.assign(new RaidenError(message), { name, stack });
+        return Object.assign(new RaidenError(message as ErrorCodes, details), {
+          name,
+          code,
+          stack,
+          message,
+        });
       }),
     );
   },
-  ({ name, message, stack, details, code }) => ({
-    name,
-    message,
-    stack,
-    code,
-    details: details ?? undefined,
-  }),
+  ({ name, message, stack, details, code }: RaidenError) => {
+    console.error('$$$$', message);
+    return {
+      name,
+      message,
+      stack,
+      code,
+      details,
+    };
+  },
 );

@@ -13,9 +13,8 @@ import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
-import { PfsError } from '../utils/error';
+import RaidenError, { ErrorCodes } from '../utils/error';
 import { PFS } from './types';
-import { PfsErrorCodes } from './errors';
 
 /**
  * Either returns true if given channel can route a payment, or a reason as string if not
@@ -88,9 +87,8 @@ export function pfsInfo(
   return url$.pipe(
     withLatestFrom(config$),
     mergeMap(([url, { httpTimeout }]) => {
-      if (!url) throw new PfsError(PfsErrorCodes.PFS_EMPTY_URL);
-      else if (!urlRegex.test(url))
-        throw new PfsError(PfsErrorCodes.PFS_EMPTY_URL, [{ key: 'url', value: url }]);
+      if (!url) throw new RaidenError(ErrorCodes.PFS_EMPTY_URL);
+      else if (!urlRegex.test(url)) throw new RaidenError(ErrorCodes.PFS_EMPTY_URL, [{ url }]);
       // default to https for domain-only urls
       else if (!url.startsWith('https://')) url = `https://${url}`;
 
@@ -144,7 +142,7 @@ export function pfsListInfo(
     ),
     toArray(),
     map(list => {
-      if (!list.length) throw new PfsError(PfsErrorCodes.PFS_INVALID_INFO);
+      if (!list.length) throw new RaidenError(ErrorCodes.PFS_INVALID_INFO);
       return list.sort((a, b) => {
         const dif = a.price.sub(b.price);
         // first, sort by price

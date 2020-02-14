@@ -43,11 +43,10 @@ import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
-import { PfsError } from '../utils/error';
+import RaidenError, { ErrorCodes } from '../utils/error';
 import { iouClear, pathFind, iouPersist, pfsListUpdated } from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
-import { PfsErrorCodes } from './errors';
 
 const oneToNAddress = memoize(
   async (userDepositContract: UserDeposit) =>
@@ -150,20 +149,19 @@ const prepareNextIOU$ = (
               }
               const text = await response.text();
               if (!response.ok)
-                throw new PfsError(PfsErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, [
-                  { key: 'responseStatus', value: response.status },
-                  { key: 'responseText', value: text },
+                throw new RaidenError(ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, [
+                  { responseStatus: response.status },
+                  { responseText: text },
                 ]);
 
               const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
               const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
               if (signer !== deps.address)
-                throw new PfsError(PfsErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, [
+                throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, [
                   {
-                    key: 'signer',
-                    value: signer,
+                    signer,
                   },
-                  { key: 'address', value: deps.address },
+                  { address: deps.address },
                 ]);
               return lastIou;
             }),
@@ -208,16 +206,9 @@ export const pathFindServiceEpic = (
             mergeMap(([state, presences, { pfs: configPfs, httpTimeout, pfsSafetyMargin }]) => {
               const { tokenNetwork, target } = action.meta;
               if (!(tokenNetwork in state.channels))
-                throw new PfsError(PfsErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, [
-                  { key: 'tokenNetwork', value: tokenNetwork },
-                ]);
+                throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, [{ tokenNetwork }]);
               if (!(target in presences) || !presences[target].payload.available)
-                throw new PfsError(PfsErrorCodes.PFS_TARGET_OFFLINE, [
-                  {
-                    key: 'target',
-                    value: target,
-                  },
-                ]);
+                throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, [{ target }]);
 
               // if pathFind received a set of paths, pass it through to validation/cleanup
               if (action.payload.paths) return of({ paths: action.payload.paths, iou: undefined });
@@ -234,7 +225,7 @@ export const pathFindServiceEpic = (
                 (!action.payload.pfs && configPfs === null) // disabled in config and not provided
               ) {
                 // pfs not specified in action and disabled (null) in config
-                throw new PfsError(PfsErrorCodes.PFS_DISABLED);
+                throw new RaidenError(ErrorCodes.PFS_DISABLED);
               } else {
                 // else, request a route from PFS.
                 // pfs$ - Observable which emits one PFS info and then completes
@@ -342,9 +333,9 @@ export const pathFindServiceEpic = (
                   }
                   // if error, don't proceed
                   if (!data.paths) {
-                    throw new PfsError(PfsErrorCodes.PFS_ERROR_RESPONSE, [
-                      { key: 'errorCode', value: data.error.error_code },
-                      { key: 'errors', value: data.error.errors },
+                    throw new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, [
+                      { errorCode: data.error.error_code },
+                      { errors: data.error.errors },
                     ]);
                   }
                   const filteredPaths: Paths = [],
@@ -382,7 +373,7 @@ export const pathFindServiceEpic = (
                     }
                     filteredPaths.push({ path, fee });
                   }
-                  if (!filteredPaths.length) throw new PfsError(PfsErrorCodes.PFS_NO_ROUTES_FOUND);
+                  if (!filteredPaths.length) throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_FOUND);
                   yield pathFind.success({ paths: filteredPaths }, action.meta);
                 })(),
               ),

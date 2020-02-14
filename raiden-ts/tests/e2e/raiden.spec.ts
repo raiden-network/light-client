@@ -26,6 +26,7 @@ import { matrixSetup } from 'raiden-ts/transport/actions';
 import { losslessStringify } from 'raiden-ts/utils/data';
 import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
 import { timer } from 'rxjs';
+import { PfsErrorCodes } from 'raiden-ts/path/errors';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -697,7 +698,7 @@ describe('Raiden', () => {
     test('target not available', async () => {
       expect.assertions(1);
       await expect(raiden.transfer(token, partner, 21)).rejects.toThrowError(
-        /\btarget.*not online\b/i,
+        PfsErrorCodes.PFS_TARGET_OFFLINE,
       );
     });
 
@@ -1095,7 +1096,7 @@ describe('Raiden', () => {
       });
 
       await expect(raiden.findRoutes(token, target, 201)).rejects.toThrowError(
-        /no valid routes found/,
+        PfsErrorCodes.PFS_NO_ROUTES_FOUND,
       );
     });
 

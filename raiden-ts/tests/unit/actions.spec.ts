@@ -5,7 +5,8 @@ import { from } from 'rxjs';
 import { bigNumberify } from 'ethers/utils';
 
 import { channelDeposit, channelMonitor } from 'raiden-ts/channels/actions';
-import { Address, UInt, ErrorCodec, decode } from 'raiden-ts/utils/types';
+import RaidenError, { ErrorCodec } from 'raiden-ts/utils/error';
+import { Address, UInt, decode } from 'raiden-ts/utils/types';
 import {
   createAction,
   ActionType,
@@ -105,7 +106,7 @@ describe('utils/actions', () => {
     expect(actionUnd.is(actionUnd(undefined))).toBe(true);
 
     try {
-      throw new Error('Failed');
+      throw new RaidenError('Failed');
     } catch (e) {
       expect(actionFailed(e, { context: 'init' })).toStrictEqual({
         type: 'TEST_FAILED',

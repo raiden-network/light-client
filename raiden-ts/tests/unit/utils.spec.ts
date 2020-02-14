@@ -18,9 +18,9 @@ import {
   Secret,
   Timed,
   timed,
-  ErrorCodec,
   decode,
 } from 'raiden-ts/utils/types';
+import RaidenError, { ErrorCodec } from 'raiden-ts/utils/error';
 import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
@@ -270,16 +270,18 @@ describe('types', () => {
   test('ErrorCodec', () => {
     let err;
     try {
-      throw new Error('error message');
+      throw new RaidenError('error message');
     } catch (e) {
       err = e;
     }
     expect(ErrorCodec.is(err)).toBe(true);
     const encoded = ErrorCodec.encode(err);
     expect(encoded).toStrictEqual({
-      name: 'Error',
+      name: 'RaidenError',
       message: 'error message',
       stack: expect.any(String),
+      details: undefined,
+      code: 'RAIDEN_GENERAL_ERROR',
     });
     expect(decode(ErrorCodec, err)).toBe(err);
     const decoded = decode(ErrorCodec, encoded);
