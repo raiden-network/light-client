@@ -21,15 +21,13 @@ export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
 
 export default class RaidenError extends CustomError {
   public code: string;
-  message: string;
 
   public constructor(message: ErrorCodes, public details?: ErrorDetails) {
     super(message ?? 'General Error');
-    this.message = message;
     this.code = this.getCode(message);
   }
 
-  getCode(message: string): string {
+  private getCode(message: string): string {
     return (
       Object.keys(ErrorCodes).find(code => Object(ErrorCodes)[code] === message) ??
       'RAIDEN_GENERAL_ERROR'
@@ -59,7 +57,8 @@ export const ErrorCodec = new t.Type<
     return pipe(
       serializedErr.decode(u),
       map(({ name, message, code, stack, details }) => {
-        return Object.assign(new RaidenError(message as ErrorCodes, details), {
+        const err = new RaidenError(message as ErrorCodes, details);
+        return Object.assign(err, {
           name,
           code,
           stack,
@@ -68,14 +67,11 @@ export const ErrorCodec = new t.Type<
       }),
     );
   },
-  ({ name, message, stack, details, code }: RaidenError) => {
-    console.error('$$$$', message);
-    return {
-      name,
-      message,
-      stack,
-      code,
-      details,
-    };
-  },
+  ({ name, message, stack, details, code }: RaidenError) => ({
+    name,
+    message,
+    stack,
+    code,
+    details,
+  }),
 );

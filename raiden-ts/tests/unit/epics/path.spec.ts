@@ -849,9 +849,7 @@ describe('PFS: pathFindServiceEpic', () => {
         ),
       );
 
-    const res = await pathFindServiceEpic(action$, state$, depsMock).toPromise();
-    console.log('!!!!!!!!!!!!', JSON.stringify(res));
-    expect(res).resolves.toMatchObject(
+    expect(pathFindServiceEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
       pathFind.failure(expect.objectContaining({ message: ErrorCodes.PFS_NO_ROUTES_FOUND }), {
         tokenNetwork,
         target,
@@ -915,7 +913,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock)
         .pipe(toArray())
         .toPromise(),
-    ).toMatchObject([
+    ).resolves.toMatchObject([
       iouPersist(
         {
           iou: expect.objectContaining({
@@ -929,7 +927,7 @@ describe('PFS: pathFindServiceEpic', () => {
           message: ErrorCodes.PFS_ERROR_RESPONSE,
           details: expect.arrayContaining([
             { errorCode: 2201 },
-            { errors: 'No route between nodes found' },
+            { errors: 'No route between nodes found.' },
           ]),
         }),
         { tokenNetwork, target, value },
@@ -976,7 +974,8 @@ describe('PFS: pathFindServiceEpic', () => {
     ).resolves.toMatchObject([
       pathFind.failure(
         expect.objectContaining({
-          message: expect.stringContaining('last IOU request: code=500'),
+          message: ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED,
+          details: expect.arrayContaining([{ responseStatus: 500 }, { responseText: '{}' }]),
         }),
         { tokenNetwork, target, value },
       ),
@@ -1030,7 +1029,11 @@ describe('PFS: pathFindServiceEpic', () => {
     ).resolves.toMatchObject([
       pathFind.failure(
         expect.objectContaining({
-          message: expect.stringContaining('last iou signature mismatch'),
+          message: ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH,
+          details: expect.arrayContaining([
+            { signer: '0x9EE8539c8C7215AcAE56Fed72E7035a307e24989' },
+            { address: '0x14791697260E4c9A71f18484C9f997B308e59325' },
+          ]),
         }),
         { tokenNetwork, target, value },
       ),
@@ -1088,12 +1091,12 @@ describe('PFS: pathFindServiceEpic', () => {
       json: jest.fn(async () => result),
       text: jest.fn(async () => losslessStringify(result)),
     });
-    const res = await pathFindServiceEpic(action$, state$, depsMock)
-      .pipe(toArray())
-      .toPromise();
 
-    console.log('#########', JSON.stringify(res));
-    expect(res).resolves.toMatchObject([
+    await expect(
+      pathFindServiceEpic(action$, state$, depsMock)
+        .pipe(toArray())
+        .toPromise(),
+    ).resolves.toMatchObject([
       iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
       pathFind.failure(
         expect.objectContaining({
