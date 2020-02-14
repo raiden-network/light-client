@@ -681,7 +681,7 @@ export const matrixPresenceUpdateEpic = (
           const recovered = verifyMessage(userId, displayName) as Address | undefined;
           if (!recovered || recovered !== address)
             throw new RaidenError(ErrorCodes.TRNS_USERNAME_VERIFICATION_FAILED, [
-              { userId, receivedSignature: recovered },
+              { userId, receivedSignature: recovered! },
             ]);
           return recovered;
         }),

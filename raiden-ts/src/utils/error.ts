@@ -18,7 +18,7 @@ export enum ErrorCodes {
 
   // Channel errors
   CNL_INVALID_STATE = 'Invalid channel state.',
-  CNL_TOKEN_NOT_FOUND = 'Could not find tken for token network.',
+  CNL_TOKEN_NOT_FOUND = 'Could not find token for token network.',
   CNL_NO_OPEN_CHANNEL_FOUND = 'No open channel has been found.',
   CNL_NO_OPEN_OR_CLOSING_CHANNEL_FOUND = 'No open or closing channel has been found.',
   CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND = 'No settleable or settling channel has been found.',
@@ -49,7 +49,7 @@ export enum ErrorCodes {
   RDN_UNRECOGNIZED_NETWORK = 'No deploy info provided nor recognized network.',
   RDN_SIGNER_NOT_CONNECTED = 'The signing account is not connected to the provider.',
   RDN_ACCOUNT_NOT_FOUND = 'Account not found in provider.',
-  RDN_STRING_ACCOUNT_INVALID = 'String account must be either a 0x-encoded address or private key',
+  RDN_STRING_ACCOUNT_INVALID = 'String account must be either a 0x-encoded address or private key.',
 }
 
 export const ErrorDetails = t.array(t.record(t.string, t.union([t.string, t.number])));

@@ -49,7 +49,7 @@ export const getContracts = (network: Network): ContractsInfo => {
         ...goerliServicesDeploy.contracts,
       } as unknown) as ContractsInfo;
     default:
-      throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, [{ network }]);
+      throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, [{ network: network.name }]);
   }
 };
 

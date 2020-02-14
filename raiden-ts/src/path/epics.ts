@@ -150,8 +150,7 @@ const prepareNextIOU$ = (
               const text = await response.text();
               if (!response.ok)
                 throw new RaidenError(ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, [
-                  { responseStatus: response.status },
-                  { responseText: text },
+                  { responseStatus: response.status, responseText: text },
                 ]);
 
               const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
@@ -160,8 +159,8 @@ const prepareNextIOU$ = (
                 throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, [
                   {
                     signer,
+                    address: deps.address,
                   },
-                  { address: deps.address },
                 ]);
               return lastIou;
             }),
@@ -334,8 +333,7 @@ export const pathFindServiceEpic = (
                   // if error, don't proceed
                   if (!data.paths) {
                     throw new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, [
-                      { errorCode: data.error.error_code },
-                      { errors: data.error.errors },
+                      { errorCode: data.error.error_code, errors: data.error.errors },
                     ]);
                   }
                   const filteredPaths: Paths = [],
