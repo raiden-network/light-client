@@ -3,7 +3,7 @@ import { Zero } from 'ethers/constants';
 import { Reducer } from 'redux';
 
 import { UInt } from '../utils/types';
-import { createReducer, matchMeta, isActionOf } from '../utils/actions';
+import { createReducer, isActionOf } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction, ConfirmableActions } from '../actions';
@@ -195,9 +195,11 @@ const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
   else if (action.payload.confirmed === undefined) return [...state, action];
   // else (either confirmed or removed), remove from state
   else {
-    const newState = state.filter(a => a.type !== action.type || !matchMeta(action.meta, a));
-    if (newState.length === state.length) return state;
-    else return newState;
+    const newState = state.filter(
+      a => a.type !== action.type || action.payload.txHash !== a.payload.txHash,
+    );
+    if (newState.length !== state.length) return newState;
+    return state;
   }
 };
 

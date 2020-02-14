@@ -1285,4 +1285,47 @@ describe('raidenReducer', () => {
       });
     });
   });
+
+  describe('pendingTxs', () => {
+    const pending = channelDeposit.success(
+      {
+        id: channelId,
+        participant: partner,
+        totalDeposit: bigNumberify(12) as UInt<32>,
+        txHash,
+        txBlock: openBlock + 2,
+        confirmed: undefined,
+      },
+      { tokenNetwork, partner },
+    );
+
+    test('pending action added to queue', () => {
+      expect(state.pendingTxs).toEqual([]);
+      expect(raidenReducer(state, pending).pendingTxs).toEqual([pending]);
+    });
+
+    test('confirmed tx cleans pending', () => {
+      const pendingState = raidenReducer(state, pending);
+      const confirmed = { ...pending, payload: { ...pending.payload, confirmed: true } };
+      expect(raidenReducer(pendingState, confirmed).pendingTxs).toEqual([]);
+    });
+
+    test("confirmed tx doesn't clean other pending txs on same channel", () => {
+      const pending2 = {
+        ...pending,
+        payload: { ...pending.payload, txHash: keccak256(txHash) as Hash, txBlock: openBlock + 3 },
+      };
+      const pendingState = [pending, pending2].reduce(raidenReducer, state);
+      expect(pendingState.pendingTxs).toEqual([pending, pending2]);
+
+      const confirmed = { ...pending, payload: { ...pending.payload, confirmed: true } };
+      expect(raidenReducer(pendingState, confirmed).pendingTxs).toEqual([pending2]);
+    });
+
+    test('noop action returns same object', () => {
+      // no pending in state for this confirmation == noop
+      const confirmed = { ...pending, payload: { ...pending.payload, confirmed: true } };
+      expect(raidenReducer(state, confirmed).pendingTxs).toBe(state.pendingTxs);
+    });
+  });
 });
