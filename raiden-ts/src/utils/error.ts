@@ -23,6 +23,7 @@ export enum ErrorCodes {
   CNL_NO_OPEN_OR_CLOSING_CHANNEL_FOUND = 'No open or closing channel has been found.',
   CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND = 'No settleable or settling channel has been found.',
   CNL_APPROVE_TRANSACTION_FAILED = 'Token approve transaction failed.',
+  CNL_OPENCHANNEL_FAILED = 'Token networks openChannel transaction failed.',
   CNL_SETTOTALDEPOSIT_FAILED = 'Token networks setTotalDeposit transaction failed.',
   CNL_CLOSECHANNEL_FAILED = 'Token networks closeChannel transaction failed.',
   CNL_SETTLECHANNEL_FAILED = 'Token networks settleChannel transaction failed.',
@@ -31,6 +32,24 @@ export enum ErrorCodes {
   XFER_EXPIRED = 'Transfer expired.',
   XFER_CHANNEL_CLOSED_PREMATURELY = 'Channel was closed before secret got reveiled or transfer unlocked.',
   XFER_REFUNDED = 'Transfer has been refunded.',
+
+  // Transport errors
+  TRNS_NO_VALID_USER = 'Could not find a user with a valid signature.',
+  TRNS_NO_SERVERNAME = 'Could not get server name from Matrix server.',
+  TRNS_NO_DISPLAYNAME = 'Could not get display name from Matrix server.',
+  TRNS_USERNAME_VERIFICATION_FAILED = 'Could not verify the signature of a display name.',
+  TRNS_MESSAGE_SIGNATURE_MISMATCH = 'Unable to decode message due to signature mismatch.',
+
+  // Raiden main class errors
+  RDN_MINT_FAILED = 'Failed to mint tokens.',
+  RDN_APPROVE_TRANSACTION_FAILED = 'Approve transaction has failed.',
+  RDN_DEPOSIT_TRANSACTION_FAILED = 'Deposit transaction has failed.',
+  RDN_TRANSFER_ONCHAIN_BALANCE_FAILED = 'Failed to transfer on-chain balance.',
+  RDN_TRANSFER_ONCHAIN_TOKENS_FAILED = 'Failed to transfer on-chain tokens.',
+  RDN_UNRECOGNIZED_NETWORK = 'No deploy info provided nor recognized network.',
+  RDN_SIGNER_NOT_CONNECTED = 'The signing account is not connected to the provider.',
+  RDN_ACCOUNT_NOT_FOUND = 'Account not found in provider.',
+  RDN_STRING_ACCOUNT_INVALID = 'String account must be either a 0x-encoded address or private key',
 }
 
 export const ErrorDetails = t.array(t.record(t.string, t.union([t.string, t.number])));

@@ -60,6 +60,7 @@ import {
   chooseOnchainAccount,
   getContractWithSigner,
 } from './helpers';
+import RaidenError, { ErrorCodes } from './utils/error';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -886,7 +887,8 @@ export class Raiden {
     const customTokenContract = CustomTokenFactory.connect(token, signer);
     const tx = await customTokenContract.functions.mint(decode(UInt(32), amount));
     const receipt = await tx.wait();
-    if (!receipt.status) throw new Error('Failed to mint token.');
+    if (!receipt.status)
+      throw new RaidenError(ErrorCodes.RDN_MINT_FAILED, [{ transactionHash: tx.hash! }]);
 
     return tx.hash as Hash;
   }
@@ -955,7 +957,7 @@ export class Raiden {
       depositAmount,
     );
     const approveReceipt = await approveTx.wait();
-    if (!approveReceipt.status) throw new Error('Approve transaction failed.');
+    if (!approveReceipt.status) throw new RaidenError(ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED);
 
     const currentUDCBalance = await userDepositContract.functions.balances(this.address);
     const depositTx = await userDepositContract.functions.deposit(
@@ -963,7 +965,7 @@ export class Raiden {
       currentUDCBalance.add(depositAmount),
     );
     const depositReceipt = await depositTx.wait();
-    if (!depositReceipt.status) throw new Error('Deposit transaction failed.');
+    if (!depositReceipt.status) throw new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED);
 
     return depositTx.hash as Hash;
   }
@@ -998,7 +1000,7 @@ export class Raiden {
     const tx = await signer.sendTransaction({ to, value: bigNumberify(value) });
     const receipt = await tx.wait();
 
-    if (!receipt.status) throw new Error('Failed to transfer balance');
+    if (!receipt.status) throw new RaidenError(ErrorCodes.RDN_TRANSFER_ONCHAIN_BALANCE_FAILED);
     return tx.hash! as Hash;
   }
 
@@ -1030,7 +1032,7 @@ export class Raiden {
     const tx = await tokenContract.functions.transfer(to, bigNumberify(value));
     const receipt = await tx.wait();
 
-    if (!receipt.status) throw new Error('Failed to transfer tokens');
+    if (!receipt.status) throw new RaidenError(ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED);
     return tx.hash! as Hash;
   }
 }

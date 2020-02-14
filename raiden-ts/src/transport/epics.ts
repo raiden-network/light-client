@@ -58,6 +58,7 @@ import {
 } from 'matrix-js-sdk';
 import matrixLogger from 'matrix-js-sdk/lib/logger';
 
+import RaidenError, { ErrorCodes } from '../utils/error';
 import { Address, Signed, isntNil, assert, Signature } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { RaidenEpicDeps } from '../types';
@@ -226,8 +227,7 @@ function searchAddressPresence$(matrix: MatrixClient, address: Address) {
     // fetch it here directly, and from now on, that other epic will monitor its
     // updates, and sort by most recently seen user
     map(presences => {
-      if (!presences.length)
-        throw new Error(`Could not find any user with valid signature for ${address}`);
+      if (!presences.length) throw new RaidenError(ErrorCodes.TRNS_NO_VALID_USER, [{ address }]);
       return minBy(presences, 'last_active_ago')!;
     }),
   );
@@ -393,7 +393,7 @@ function setupMatrixClient$(
   },
 ) {
   const serverName = getServerName(server);
-  if (!serverName) throw new Error(`Could not get serverName from "${server}"`);
+  if (!serverName) throw new RaidenError(ErrorCodes.TRNS_NO_SERVERNAME, [{ server }]);
 
   return defer(() => {
     if (setup) {
@@ -676,13 +676,13 @@ export const matrixPresenceUpdateEpic = (
       return displayName$.pipe(
         map(displayName => {
           // errors raised here will be logged and ignored on catchError below
-          if (!displayName) throw new Error(`Could not get displayName of "${userId}"`);
+          if (!displayName) throw new RaidenError(ErrorCodes.TRNS_NO_DISPLAYNAME, [{ userId }]);
           // ecrecover address, validating displayName is the signature of the userId
           const recovered = verifyMessage(userId, displayName) as Address | undefined;
           if (!recovered || recovered !== address)
-            throw new Error(
-              `Could not verify displayName signature of "${userId}": got "${recovered}"`,
-            );
+            throw new RaidenError(ErrorCodes.TRNS_USERNAME_VERIFICATION_FAILED, [
+              { userId, receivedSignature: recovered },
+            ]);
           return recovered;
         }),
         // TODO: edge case: don't emit unavailable if address is available somewhere else
@@ -1212,9 +1212,9 @@ export const matrixMessageReceivedEpic = (
               message = decodeJsonMessage(line);
               const signer = getMessageSigner(message);
               if (signer !== presence.meta.address)
-                throw new Error(
-                  `Signature mismatch: sender=${presence.meta.address} != signer=${signer}`,
-                );
+                throw new RaidenError(ErrorCodes.TRNS_MESSAGE_SIGNATURE_MISMATCH, [
+                  { sender: presence.meta.address, signer },
+                ]);
             } catch (err) {
               console.warn(`Could not decode message: ${line}: ${err}`);
               message = undefined;

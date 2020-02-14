@@ -493,7 +493,10 @@ export const channelOpenEpic = (
       ).pipe(
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
         map(({ receipt, tx }) => {
-          if (!receipt.status) throw new Error(`openChannel transaction "${tx.hash}" failed`);
+          if (!receipt.status)
+            throw new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED, [
+              { transactionHash: tx.hash! },
+            ]);
           return tx.hash;
         }),
         // if succeeded, return a empty/completed observable

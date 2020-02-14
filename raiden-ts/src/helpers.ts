@@ -21,6 +21,7 @@ import goerliDeploy from './deployment/deployment_goerli.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
+import RaidenError, { ErrorCodes } from './utils/error';
 
 /**
  * Returns contract information depending on the passed [[Network]]. Currently, only
@@ -48,9 +49,7 @@ export const getContracts = (network: Network): ContractsInfo => {
         ...goerliServicesDeploy.contracts,
       } as unknown) as ContractsInfo;
     default:
-      throw new Error(
-        `No deploy info provided nor recognized network: ${JSON.stringify(network)}`,
-      );
+      throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, [{ network }]);
   }
 };
 
@@ -102,7 +101,9 @@ export const getSigner = async (
     } else if (account instanceof Wallet) {
       signer = account.connect(provider);
     } else {
-      throw new Error(`Signer ${account} not connected to ${provider}`);
+      throw new RaidenError(ErrorCodes.RDN_SIGNER_NOT_CONNECTED, [
+        { account: account.toString(), provider: provider.toString() },
+      ]);
     }
     address = (await signer.getAddress()) as Address;
   } else if (typeof account === 'number') {
@@ -113,7 +114,9 @@ export const getSigner = async (
     // address
     const accounts = await provider.listAccounts();
     if (!accounts.includes(account)) {
-      throw new Error(`Account "${account}" not found in provider, got=${accounts}`);
+      throw new RaidenError(ErrorCodes.RDN_ACCOUNT_NOT_FOUND, [
+        { account, accounts: JSON.stringify(accounts) },
+      ]);
     }
     signer = provider.getSigner(account);
     address = account;
@@ -122,7 +125,7 @@ export const getSigner = async (
     signer = new Wallet(account, provider);
     address = signer.address as Address;
   } else {
-    throw new Error('String account must be either a 0x-encoded address or private key');
+    throw new RaidenError(ErrorCodes.RDN_STRING_ACCOUNT_INVALID);
   }
 
   if (subkey) {
