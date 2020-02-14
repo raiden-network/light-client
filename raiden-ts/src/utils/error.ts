@@ -7,7 +7,7 @@ export enum ErrorCodes {
   // Path errors
   PFS_EMPTY_URL = 'A registered Pathfinding Service returned an empty service URL.',
   PFS_INVALID_URL = 'A registered Pathfinding Service returned an invalid service URL.',
-  PFS_INVALID_INFO = 'Could not any valid Pathfinding services. Client and PFS versions are possibly out-of-sync.',
+  PFS_INVALID_INFO = 'Could not find any valid Pathfinding service. Client and PFS versions are possibly out-of-sync.',
   PFS_NO_ROUTES_FOUND = 'No valid routes found.',
   PFS_ERROR_RESPONSE = 'Pathfinding Service request returned an error',
   PFS_DISABLED = 'Pathfinding Service is disabled and no direct route is available.',
