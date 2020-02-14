@@ -388,8 +388,8 @@ export function createAsyncAction<
 }
 
 // curried overloads
-export function matchMeta(meta: any, action: { meta: any }): boolean;
-export function matchMeta(meta: any): (action: { meta: any }) => boolean;
+function matchMeta(meta: any, action: { meta: any }): boolean;
+function matchMeta(meta: any): (action: { meta: any }) => boolean;
 
 /**
  * Match a passed meta with an action if returns true if metas are from corresponding actions
@@ -401,7 +401,7 @@ export function matchMeta(meta: any): (action: { meta: any }) => boolean;
  * @param args.0 - action to test meta against the 1st param
  * @returns true if metas are compatible, false otherwise
  */
-export function matchMeta(meta: any, ...args: [{ meta: any }] | []) {
+function matchMeta(meta: any, ...args: [{ meta: any }] | []) {
   const _match = (action: { meta: any }): boolean =>
     // like isEqual, but for BigNumbers, use .eq
     isMatchWith(action.meta, meta, (objVal, othVal) =>
