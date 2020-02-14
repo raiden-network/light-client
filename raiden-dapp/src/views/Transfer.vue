@@ -1,12 +1,7 @@
 <template>
   <v-form v-model="valid" autocomplete="off" class="transfer">
     <v-container fluid class="transfer__settings">
-      <v-row
-        align="center"
-        justify="center"
-        no-gutters
-        class="transfer__actions"
-      >
+      <v-row justify="center" no-gutters class="transfer__actions">
         <v-col cols="2" class="transfer__channels">
           <v-btn
             text
@@ -244,6 +239,11 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 .transfer {
   width: 100%;
   height: 100%;
+
+  &__channels,
+  &__deposit {
+    margin-top: 29px;
+  }
 
   &__actions {
     margin-top: 10px;
