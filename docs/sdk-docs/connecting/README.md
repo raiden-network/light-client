@@ -1,7 +1,7 @@
 # Connecting
-The SDK provides out of the box support for the deployed networks on `Görli`, `Ropsten`, `Rinkeby`, and `Mainnet`.
+The SDK provides out of the box support for the deployed networks on `Görli`, `Ropsten`, and `Rinkeby`.
 
-If you need to use the sdk on a private network, or a custom deployment you can find more information in the following [guide](../private-chain/README.md).
+If you need to use the SDK on a private network, or a custom deployment you can find more information in the following [guide](../private-chain/README.md).
 
 ## Raiden Light Client test environment
 For development purposes, the Light Client uses a standalone environment. The dApp deployment [lightclient.raiden.network](https://lightclient.raiden.network/) and the development version served by 'npm run serve' also conforms to this configuration. 
@@ -18,7 +18,7 @@ You can find the raiden version tagged on Docker Hub under `raidennetwork/raiden
 docker pull raidennetwork/raiden:testenv001
 ```
 
-This transport does not participate in the matrix federation. For this reason, you have to explicitly specify it when starting raiden. You can use the following flag:
+The transport server does not participate in the matrix federation. For this reason, you have to explicitly specify it when starting raiden. You can use the following flag:
 
 ```bash
 --matrix-server=https://raidentransport.test001.env.raiden.network
@@ -31,13 +31,13 @@ Similarly, you also have to specify the path-finding server:
 ```
 
 ## Running a Raiden node in the test environment
-You can easily run a python node in the test environment by using docker. To get the supported Raiden version from `dockerhub` you need to run the following command:
+You can easily run a python node in the test environment by using Docker. To get the supported Raiden version from [Docker Hub](https://hub.docker.com/r/raidennetwork/raiden) you need to run the following command:
 
 ```bash
 docker pull raidennetwork/raiden:testenv001
 ```
 
-The test environment uses the `Görli` testnet. For the purposes of this guide you assume that you a `geth` node runs locally on your computer. If you use a different ethereum client or RPC provider, please adjust accordingly.  
+The test environment uses the **Görli** testnet. For the purposes of this guide, we assume that a [geth](https://geth.ethereum.org/docs/) node runs locally on your computer. If you use a different ethereum client or RPC provider, please adjust accordingly.  
 
 ```bash
 geth --goerli console --cache=512 --port 30303 --rpc --rpcapi eth,net,web3,txpool --rpccorsdomain "*" --rpcaddr "0.0.0.0"
@@ -79,7 +79,7 @@ python3.7 -m venv .venv
 source .venv/bin/activate
 ```
 
-Before starting Raiden, you need to install the dependencies. You can install them by running:
+Before starting Raiden, you need to install its dependencies. You can install them by running:
 
 ```
 make install-dev
@@ -101,6 +101,6 @@ raiden --keystore-path ~/.keystore \
 
 ```
 
-After you get your node running you should be able to receive token transfers from the Light Client dApp and SDK.
+After you get your node running, you will be able to receive token transfers from the Light Client dApp and SDK.
 
 
