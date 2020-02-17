@@ -273,7 +273,11 @@ export class Raiden {
   public static async create(
     connection: JsonRpcProvider | AsyncSendable | string,
     account: Signer | string | number,
-    storageOrState?: Storage | RaidenState | unknown,
+    storageOrState?:
+      | Storage
+      | RaidenState
+      | { storage: Storage; state?: RaidenState | unknown }
+      | unknown,
     contracts?: ContractsInfo,
     config?: PartialRaidenConfig,
     subkey?: true,
