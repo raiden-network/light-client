@@ -141,7 +141,35 @@ describe('Raiden', () => {
   });
 
   test('create from other params and RaidenState', async () => {
-    expect.assertions(10);
+    expect.assertions(13);
+
+    const raiden0State = await raiden.state$.pipe(first()).toPromise();
+    raiden.stop();
+
+    // state & storage object
+    await expect(
+      Raiden.create(
+        provider,
+        0,
+        { storage, state: { ...raiden0State, blockNumber: raiden0State.blockNumber - 2 } },
+        contractsInfo,
+        config,
+      ),
+    ).rejects.toThrow(/Can't replace.* with older/i);
+
+    await expect(
+      Raiden.create(
+        provider,
+        0,
+        { storage, state: { ...raiden0State, blockNumber: raiden0State.blockNumber + 2 } },
+        contractsInfo,
+        config,
+      ),
+    ).resolves.toBeInstanceOf(Raiden);
+
+    await expect(
+      Raiden.create(provider, 0, { storage }, contractsInfo, config),
+    ).resolves.toBeInstanceOf(Raiden);
 
     // token address not found as an account in provider
     await expect(Raiden.create(provider, token, storage, contractsInfo, config)).rejects.toThrow(
