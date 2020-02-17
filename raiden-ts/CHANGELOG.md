@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Added
+- [#614] Implement state upgrades and migration
 - [#613] Implement waiting for confirmation blocks on on-chain transactions (configurable)
 
 ### Changed
