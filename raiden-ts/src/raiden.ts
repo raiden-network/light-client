@@ -262,9 +262,9 @@ export class Raiden {
    *       <li>number index of a remote account loaded in provider
    *            (e.g. 0 for Metamask's loaded account)</li>
    *     </ul>
-   * @param storageOrState - Storage/localStorage-like synchronous object where to load and store
-   *     current state or initial RaidenState-like object instead. In this case, user must listen
-   *     state$ changes and update them on whichever persistency option is used
+   * @param storageOrState - Storage/localStorage-like object from where to load and store current
+   *     state, initial RaidenState-like object, or a { storage; state? } object containing both.
+   *     If a storage isn't provided, user must listen state$ changes on ensure it's persisted.
    * @param contracts - Contracts deployment info
    * @param config - Raiden configuration
    * @param subkey - Whether to use a derived subkey or not
@@ -361,7 +361,12 @@ export class Raiden {
     this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
   }
 
-  private get state(): RaidenState {
+  /**
+   * Get current RaidenState object. Can be serialized safely with [[encodeRaidenState]]
+   *
+   * @returns Current Raiden state
+   */
+  public get state(): RaidenState {
     return this.store.getState();
   }
 
