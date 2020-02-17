@@ -100,7 +100,7 @@ export const BigNumberC = new t.Type<BigNumber, string>(
       // decode by trying to bigNumberify string representation of anything
       return t.success(bigNumberify((u as any).toString()));
     } catch (err) {
-      return t.failure(u, c, err.message);
+      return t.failure(u, c);
     }
   },
   a => a.toString(),
@@ -224,14 +224,14 @@ export const Address = new t.Type<Address, string>(
     }
   },
   (u, c) => {
-    if (!HexString(20).is(u)) return t.failure(u, c, `Invalid value ${u}`);
+    if (!HexString(20).is(u)) return t.failure(u, c);
     let addr;
     try {
       addr = getAddress(u);
     } catch (e) {
-      return t.failure(u, c, e.toString());
+      return t.failure(u, c);
     }
-    if (!addr) return t.failure(u, c, 'Could not decode');
+    if (!addr) return t.failure(u, c);
     return t.success(addr as Address);
   },
   t.identity,
