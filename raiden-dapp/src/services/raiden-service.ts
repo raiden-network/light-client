@@ -32,7 +32,11 @@ export default class RaidenService {
         account,
         window.localStorage,
         undefined,
-        { pfsSafetyMargin: 1.1 }
+        {
+          pfsSafetyMargin: 1.1,
+          pfs: process.env.VUE_APP_PFS,
+          matrixServer: process.env.VUE_APP_TRANSPORT
+        }
       );
     } catch (e) {
       throw new RaidenInitializationFailed(e);

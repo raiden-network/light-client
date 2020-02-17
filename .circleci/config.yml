@@ -147,7 +147,7 @@ jobs:
     working_directory: *dapp_working_dir
     steps:
       - attach_workspace: *attach_options
-      - run: npm run build
+      - run: npm run build -- --mode ghpages
       - persist_to_workspace:
           root: ~/src
           paths:
