@@ -1228,10 +1228,11 @@ describe('transfers epic', () => {
         const message: SecretRequest = {
             type: MessageType.SECRET_REQUEST,
             message_identifier: makeMessageId(),
-            payment_identifier: signedTransfer.payment_identifier,
+            // wrong payment_identifier
+            payment_identifier: signedTransfer.payment_identifier.add(1) as UInt<8>,
             secrethash,
             amount: value,
-            expiration: value, // invalid expiration
+            expiration: signedTransfer.lock.expiration,
           },
           signed = await signMessage(partnerSigner, message),
           action$ = of(
@@ -1248,75 +1249,139 @@ describe('transfers epic', () => {
       });
     });
 
-    test('transferSecretRevealEpic: success and cached', async () => {
-      expect.assertions(4);
+    describe('transferSecretRevealEpic', () => {
+      test('ignore unknown secrethash', async () => {
+        expect.assertions(1);
 
-      const request: SecretRequest = {
+        const secrethash = txHash;
+        const request: SecretRequest = {
           type: MessageType.SECRET_REQUEST,
           message_identifier: makeMessageId(),
           payment_identifier: signedTransfer.payment_identifier,
           secrethash,
           amount: value,
           expiration: signedTransfer.lock.expiration,
-        },
-        signed = await signMessage(partnerSigner, request),
-        action$ = of(transferSecretRequest({ message: signed }, { secrethash })),
-        state$ = new BehaviorSubject<RaidenState>(transferingState);
+        };
+        const signed = await signMessage(partnerSigner, request);
 
-      getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
-
-      const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
-
-      await expect(
-        transferSecretRevealEpic(action$, state$, depsMock)
-          .pipe(
-            tap(action => state$.next(raidenReducer(state$.value, action))),
-            toArray(),
-          )
-          .toPromise(),
-      ).resolves.toEqual(
-        expect.arrayContaining([
-          {
-            type: transferSecretReveal.type,
-            payload: {
-              message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
-            },
-            meta: { secrethash },
-          },
-          {
-            type: messageSend.request.type,
-            payload: {
-              message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
-            },
-            meta: { address: partner, msgId: expect.any(String) },
-          },
-        ]),
-      );
-
-      // expect reveal to be persisted on state
-      const reveal = get(state$.value, ['sent', secrethash, 'secretReveal', 1]);
-      expect(reveal).toMatchObject({
-        type: MessageType.SECRET_REVEAL,
-        secret,
-        signature: expect.any(String),
+        await expect(
+          transferSecretRevealEpic(
+            of(transferSecretRequest({ message: signed }, { secrethash })),
+            of(transferingState),
+            depsMock,
+          ).toPromise(),
+        ).resolves.toBeUndefined();
       });
 
-      await expect(
-        transferSecretRevealEpic(action$, state$, depsMock)
-          .pipe(
-            tap(action => state$.next(raidenReducer(state$.value, action))),
-            filter(isActionOf(transferSecretReveal)),
-          )
-          .toPromise(),
-      ).resolves.toMatchObject({
-        type: transferSecretReveal.type,
-        payload: { message: reveal },
-        meta: { secrethash },
+      test('ignore expired request', async () => {
+        expect.assertions(1);
+
+        const request: SecretRequest = {
+          type: MessageType.SECRET_REQUEST,
+          message_identifier: makeMessageId(),
+          payment_identifier: signedTransfer.payment_identifier,
+          secrethash,
+          amount: value,
+          expiration: One as UInt<32>,
+        };
+        const signed = await signMessage(partnerSigner, request);
+
+        await expect(
+          transferSecretRevealEpic(
+            of(transferSecretRequest({ message: signed }, { secrethash })),
+            of(transferingState),
+            depsMock,
+          ).toPromise(),
+        ).resolves.toBeUndefined();
       });
 
-      // second reveal should have been cached
-      expect(signerSpy).toHaveBeenCalledTimes(1);
-      signerSpy.mockRestore();
+      test('amount too low fails transfer', async () => {
+        expect.assertions(1);
+
+        const request: SecretRequest = {
+          type: MessageType.SECRET_REQUEST,
+          message_identifier: makeMessageId(),
+          payment_identifier: signedTransfer.payment_identifier,
+          secrethash,
+          amount: value.sub(1) as UInt<32>,
+          expiration: signedTransfer.lock.expiration,
+        };
+        const signed = await signMessage(partnerSigner, request);
+
+        await expect(
+          transferSecretRevealEpic(
+            of(transferSecretRequest({ message: signed }, { secrethash })),
+            of(transferingState),
+            depsMock,
+          ).toPromise(),
+        ).resolves.toEqual(transfer.failure(expect.any(Error), { secrethash }));
+      });
+
+      test('success and cached', async () => {
+        expect.assertions(4);
+
+        const request: SecretRequest = {
+            type: MessageType.SECRET_REQUEST,
+            message_identifier: makeMessageId(),
+            payment_identifier: signedTransfer.payment_identifier,
+            secrethash,
+            // valid but bigger amount
+            amount: value.add(1) as UInt<32>,
+            expiration: signedTransfer.lock.expiration,
+          },
+          signed = await signMessage(partnerSigner, request),
+          action$ = of(transferSecretRequest({ message: signed }, { secrethash })),
+          state$ = new BehaviorSubject<RaidenState>(transferingState);
+
+        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
+
+        const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
+
+        await expect(
+          transferSecretRevealEpic(action$, state$, depsMock)
+            .pipe(
+              tap(action => state$.next(raidenReducer(state$.value, action))),
+              toArray(),
+            )
+            .toPromise(),
+        ).resolves.toEqual(
+          expect.arrayContaining([
+            transferSecretReveal(
+              {
+                message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
+              },
+              { secrethash },
+            ),
+            messageSend.request(
+              {
+                message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
+              },
+              { address: partner, msgId: expect.any(String) },
+            ),
+          ]),
+        );
+
+        // expect reveal to be persisted on state
+        const reveal = get(state$.value, ['sent', secrethash, 'secretReveal', 1]);
+        expect(reveal).toMatchObject({
+          type: MessageType.SECRET_REVEAL,
+          secret,
+          signature: expect.any(String),
+        });
+
+        await expect(
+          transferSecretRevealEpic(action$, state$, depsMock)
+            .pipe(
+              tap(action => state$.next(raidenReducer(state$.value, action))),
+              filter(isActionOf(transferSecretReveal)),
+            )
+            .toPromise(),
+        ).resolves.toEqual(transferSecretReveal({ message: reveal }, { secrethash }));
+
+        // second reveal should have been cached
+        expect(signerSpy).toHaveBeenCalledTimes(1);
+        signerSpy.mockRestore();
+      });
     });
 
     describe('transferSecretRevealedEpic', () => {

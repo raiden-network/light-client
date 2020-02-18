@@ -67,26 +67,30 @@ export function makeMessageId(): UInt<8> {
  */
 export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
   const [status, changedAt]: [RaidenSentTransferStatus, number] = sent.lockExpiredProcessed
-      ? [RaidenSentTransferStatus.expired, sent.lockExpiredProcessed[0]]
-      : sent.unlockProcessed
-      ? [RaidenSentTransferStatus.unlocked, sent.unlockProcessed[0]]
-      : sent.lockExpired
-      ? [RaidenSentTransferStatus.expiring, sent.lockExpired[0]]
-      : sent.unlock
-      ? [RaidenSentTransferStatus.unlocking, sent.unlock[0]]
-      : sent.secretReveal
-      ? [RaidenSentTransferStatus.revealed, sent.secretReveal[0]]
-      : sent.channelClosed // channelClosed before revealing
-      ? [RaidenSentTransferStatus.closed, sent.channelClosed[0]]
-      : sent.refund
-      ? [RaidenSentTransferStatus.refunded, sent.refund[0]]
-      : sent.transferProcessed
-      ? [RaidenSentTransferStatus.received, sent.transferProcessed[0]]
-      : [RaidenSentTransferStatus.pending, sent.transfer[0]],
-    success: boolean | undefined =
+    ? [RaidenSentTransferStatus.expired, sent.lockExpiredProcessed[0]]
+    : sent.unlockProcessed
+    ? [RaidenSentTransferStatus.unlocked, sent.unlockProcessed[0]]
+    : sent.lockExpired
+    ? [RaidenSentTransferStatus.expiring, sent.lockExpired[0]]
+    : sent.unlock
+    ? [RaidenSentTransferStatus.unlocking, sent.unlock[0]]
+    : sent.secretReveal
+    ? [RaidenSentTransferStatus.revealed, sent.secretReveal[0]]
+    : sent.secretRequest
+    ? [RaidenSentTransferStatus.requested, sent.secretRequest[0]]
+    : sent.channelClosed // channelClosed before revealing
+    ? [RaidenSentTransferStatus.closed, sent.channelClosed[0]]
+    : sent.refund
+    ? [RaidenSentTransferStatus.refunded, sent.refund[0]]
+    : sent.transferProcessed
+    ? [RaidenSentTransferStatus.received, sent.transferProcessed[0]]
+    : [RaidenSentTransferStatus.pending, sent.transfer[0]];
+  const value = sent.transfer[1].lock.amount.sub(sent.fee);
+  const invalidSecretRequest = sent.secretRequest && sent.secretRequest[1].amount.lt(value);
+  const success: boolean | undefined =
       sent.secretReveal || sent.unlock
         ? true
-        : sent.refund || sent.lockExpired || sent.channelClosed
+        : invalidSecretRequest || sent.refund || sent.lockExpired || sent.channelClosed
         ? false
         : undefined,
     completed = !!(sent.unlockProcessed || sent.lockExpiredProcessed || sent.channelClosed);
@@ -102,7 +106,7 @@ export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
     token: sent.transfer[1].token,
     tokenNetwork: sent.transfer[1].token_network_address,
     channelId: sent.transfer[1].channel_identifier,
-    value: sent.transfer[1].lock.amount.sub(sent.fee),
+    value,
     fee: sent.fee,
     amount: sent.transfer[1].lock.amount,
     expirationBlock: sent.transfer[1].lock.expiration.toNumber(),
