@@ -667,6 +667,7 @@ describe('RaidenService', () => {
       factory.mockResolvedValue(
         mockRaiden({
           transfer: transfer,
+          waitTransfer: transfer,
           getAvailability: jest.fn()
         })
       );
@@ -683,11 +684,13 @@ describe('RaidenService', () => {
     });
 
     test('throw when a transfer fails', async () => {
-      const transfer = jest.fn().mockRejectedValue('txfailed');
+      const transfer = jest.fn().mockResolvedValue(One);
+      const waitTransfer = jest.fn().mockRejectedValue('txfailed');
       providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(
         mockRaiden({
-          transfer: transfer,
+          transfer,
+          waitTransfer,
           getAvailability: jest.fn()
         })
       );
@@ -843,8 +846,7 @@ describe('RaidenService', () => {
       await flushPromises();
 
       expect(store.commit).toBeCalledTimes(5);
-      expect(store.commit).toHaveBeenNthCalledWith(
-        5,
+      expect(store.commit).toHaveBeenCalledWith(
         'updateTransfers',
         expect.objectContaining({
           ...dummyTransfer
