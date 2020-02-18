@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 import { first, map } from 'rxjs/operators';
 import { Reducer } from 'redux';
 
-import { ErrorCodec } from './error';
+import RaidenError, { ErrorCodes, ErrorCodec } from './error';
 import { BigNumberC, assert } from './types';
 
 /**
@@ -530,7 +530,9 @@ export async function asyncActionToPromise<
         if (asyncAction.failure.is(action))
           throw action.payload as ActionType<AAC['failure']>['payload'];
         else if (action.payload.confirmed === false)
-          throw new Error(`Transaction "${action.payload.txHash}" mined but removed by a reorg!`);
+          throw new RaidenError(ErrorCodes.RDN_TRANSACTION_REOGRG, [
+            { transactionHash: action.payload.txHash! },
+          ]);
         return action.payload as ActionType<AAC['success']>['payload'];
       }),
     )

@@ -41,6 +41,7 @@ export enum ErrorCodes {
   TRNS_MESSAGE_SIGNATURE_MISMATCH = 'Unable to decode message due to signature mismatch.',
 
   // Raiden main class errors
+  RDN_GENERAL_ERROR = 'An unknown error occured.',
   RDN_MINT_FAILED = 'Failed to mint tokens.',
   RDN_APPROVE_TRANSACTION_FAILED = 'Approve transaction has failed.',
   RDN_DEPOSIT_TRANSACTION_FAILED = 'Deposit transaction has failed.',
@@ -50,6 +51,14 @@ export enum ErrorCodes {
   RDN_SIGNER_NOT_CONNECTED = 'The signing account is not connected to the provider.',
   RDN_ACCOUNT_NOT_FOUND = 'Account not found in provider.',
   RDN_STRING_ACCOUNT_INVALID = 'String account must be either a 0x-encoded address or private key.',
+  RDN_TRANSACTION_REOGRG = 'Transaction has been mined but got removed by a reorg.',
+  RDN_STATE_MIGRATION = 'Could not replace stored state with older, provided state.',
+
+  // Data errors
+  DTA_NEGATIVE_NUMBER = 'Encountered negative number while encoding to HEX string.',
+  DTA_NUMBER_TOO_LARGE = 'Encountered a number that is too large to be encoded.',
+  DTA_ARRAY_LENGTH_DIFFRENCE = 'Expected length of HEX string differs from integer array input.',
+  DTA_UNENCODABLE_DATA = 'Passed data is not a HEX string nor integer array.',
 }
 
 export const ErrorDetails = t.array(t.record(t.string, t.union([t.string, t.number])));
@@ -59,14 +68,14 @@ export default class RaidenError extends CustomError {
   public code: string;
 
   public constructor(message: ErrorCodes, public details?: ErrorDetails) {
-    super(message ?? 'General Error');
+    super(message ?? ErrorCodes.RDN_GENERAL_ERROR);
     this.code = this.getCode(message);
   }
 
   private getCode(message: string): string {
     return (
-      Object.keys(ErrorCodes).find(code => Object(ErrorCodes)[code] === message) ??
-      'RAIDEN_GENERAL_ERROR'
+      Object.keys(ErrorCodes).find(code => Object(ErrorCodes)[code] === message) ||
+      'RDN_GENERAL_ERROR'
     );
   }
 }
