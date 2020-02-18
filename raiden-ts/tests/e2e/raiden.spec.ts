@@ -156,7 +156,7 @@ describe('Raiden', () => {
         contractsInfo,
         config,
       ),
-    ).rejects.toThrow(/Can't replace.* with older/i);
+    ).rejects.toThrow(ErrorCodes.RDN_STATE_MIGRATION);
 
     await expect(
       Raiden.create(
@@ -674,9 +674,7 @@ describe('Raiden', () => {
     test('getAvailability', async () => {
       expect.assertions(3);
 
-      await expect(raiden.getAvailability(partner)).rejects.toThrow(
-        'Could not find any user with valid signature for',
-      );
+      await expect(raiden.getAvailability(partner)).rejects.toThrow(ErrorCodes.TRNS_NO_VALID_USER);
 
       // success when using address of account on provider and initial state
       const raiden1 = await createRaiden(
