@@ -46,9 +46,10 @@ export const channelOpen = createAsyncAction(
   t.type({
     id: t.number,
     settleTimeout: t.number,
-    openBlock: t.number,
     isFirstParticipant: t.boolean,
     txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
   }),
 );
 export namespace channelOpen {
@@ -71,7 +72,14 @@ export const channelDeposit = createAsyncAction(
   'channel/deposit/success',
   'channel/deposit/failure',
   t.intersection([t.type({ deposit: UInt(32) }), t.partial({ subkey: t.boolean })]),
-  t.type({ id: t.number, participant: Address, totalDeposit: UInt(32), txHash: Hash }),
+  t.type({
+    id: t.number,
+    participant: Address,
+    totalDeposit: UInt(32),
+    txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
+  }),
 );
 
 export namespace channelDeposit {
@@ -83,7 +91,14 @@ export namespace channelDeposit {
 /* A withdraw is detected on-chain */
 export const channelWithdrawn = createAction(
   'channel/withdraw/success',
-  t.type({ id: t.number, participant: Address, totalWithdraw: UInt(32), txHash: Hash }),
+  t.type({
+    id: t.number,
+    participant: Address,
+    totalWithdraw: UInt(32),
+    txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
+  }),
   ChannelId,
 );
 export interface channelWithdrawn extends ActionType<typeof channelWithdrawn> {}
@@ -94,7 +109,13 @@ export const channelClose = createAsyncAction(
   'channel/close/success',
   'channel/close/failure',
   t.union([t.partial({ subkey: t.boolean }), t.undefined]),
-  t.type({ id: t.number, participant: Address, closeBlock: t.number, txHash: Hash }),
+  t.type({
+    id: t.number,
+    participant: Address,
+    txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
+  }),
 );
 
 export namespace channelClose {
@@ -117,7 +138,12 @@ export const channelSettle = createAsyncAction(
   'channel/settle/success',
   'channel/settle/failure',
   t.union([t.partial({ subkey: t.boolean }), t.undefined]),
-  t.type({ id: t.number, settleBlock: t.number, txHash: Hash }),
+  t.type({
+    id: t.number,
+    txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
+  }),
 );
 
 export namespace channelSettle {

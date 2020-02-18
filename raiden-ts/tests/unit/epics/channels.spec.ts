@@ -62,15 +62,23 @@ describe('channels epic', () => {
       const newState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock: 121, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: 121,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         channelClose.success(
           {
             id: channelId,
             participant: depsMock.address,
-            closeBlock,
             txHash,
+            txBlock: closeBlock,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -99,19 +107,23 @@ describe('channels epic', () => {
         curState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpen.success(
-            { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
+            {
+              id: channelId,
+              settleTimeout,
+              isFirstParticipant,
+              txHash,
+              txBlock: 125,
+              confirmed: true,
+            },
             { tokenNetwork, partner },
           ),
         ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(action),
         state$ = of<RaidenState>(curState);
 
-      await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject({
-        type: channelOpen.failure.type,
-        payload: expect.any(Error),
-        error: true,
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelOpen.failure(expect.any(Error), { tokenNetwork, partner }),
+      );
     });
 
     test('tx fails', async () => {
@@ -137,12 +149,9 @@ describe('channels epic', () => {
       };
       tokenNetworkContract.functions.openChannel.mockResolvedValueOnce(tx);
 
-      await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject({
-        type: channelOpen.failure.type,
-        payload: expect.any(Error),
-        error: true,
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelOpenEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelOpen.failure(expect.any(Error), { tokenNetwork, partner }),
+      );
     });
 
     test('success', async () => {
@@ -195,15 +204,32 @@ describe('channels epic', () => {
       jest.clearAllMocks();
     });
 
-    test("filter out if channel isn't in 'open' state", async () => {
-      // channel.state is 'opening'
+    test("filter out if channel isn't in 'open' state or unconfirmed channel", async () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
           channelOpen.success(
-            { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
+            {
+              id: channelId,
+              settleTimeout,
+              isFirstParticipant,
+              txHash,
+              txBlock: 125,
+              confirmed: undefined,
+            },
+            { tokenNetwork, partner },
+          ),
+          channelOpen.success(
+            {
+              id: channelId,
+              settleTimeout,
+              isFirstParticipant,
+              txHash,
+              txBlock: 125,
+              confirmed: true,
+            },
             { tokenNetwork, partner },
           ),
         ),
@@ -213,9 +239,15 @@ describe('channels epic', () => {
     });
 
     test('channelOpen.success triggers channel monitoring', async () => {
-      // channel.state is 'opening'
       const action = channelOpen.success(
-          { id: channelId, settleTimeout, openBlock: 125, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: 125,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         curState = [tokenMonitored({ token, tokenNetwork, fromBlock: 1 }), action].reduce(
@@ -225,11 +257,9 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(action),
         state$ = of<RaidenState>(curState);
 
-      await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toMatchObject({
-        type: channelMonitor.type,
-        payload: { id: channelId, fromBlock: 125 },
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toMatchObject(
+        channelMonitor({ id: channelId, fromBlock: 125 }, { tokenNetwork, partner }),
+      );
     });
   });
 
@@ -250,7 +280,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -275,11 +312,19 @@ describe('channels epic', () => {
         channelMonitoredEpic(action$, state$, depsMock)
           .pipe(first())
           .toPromise(),
-      ).resolves.toMatchObject({
-        type: channelDeposit.success.type,
-        payload: { id: channelId, participant: depsMock.address, totalDeposit: deposit },
-        meta: { tokenNetwork, partner },
-      });
+      ).resolves.toEqual(
+        channelDeposit.success(
+          {
+            id: channelId,
+            participant: depsMock.address,
+            totalDeposit: deposit,
+            txHash: expect.any(String),
+            txBlock: 123,
+            confirmed: undefined,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
     });
 
     test('already channelMonitor with new$ partner ChannelNewDeposit event', async () => {
@@ -287,7 +332,14 @@ describe('channels epic', () => {
         curState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpen.success(
-            { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+            {
+              id: channelId,
+              settleTimeout,
+              isFirstParticipant,
+              txHash,
+              txBlock: openBlock,
+              confirmed: true,
+            },
             { tokenNetwork, partner },
           ),
         ].reduce(raidenReducer, state);
@@ -307,11 +359,19 @@ describe('channels epic', () => {
         }),
       );
 
-      await expect(promise).resolves.toMatchObject({
-        type: channelDeposit.success.type,
-        payload: { id: channelId, participant: partner, totalDeposit: deposit },
-        meta: { tokenNetwork, partner },
-      });
+      await expect(promise).resolves.toEqual(
+        channelDeposit.success(
+          {
+            id: channelId,
+            participant: partner,
+            totalDeposit: deposit,
+            txHash: expect.any(String),
+            txBlock: 125,
+            confirmed: undefined,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
     });
 
     test("ensure multiple channelMonitor don't produce duplicated events", async () => {
@@ -319,7 +379,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -352,11 +419,19 @@ describe('channels epic', () => {
 
       const result = await promise;
       expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
-        type: channelDeposit.success.type,
-        payload: { id: channelId, participant: depsMock.address, totalDeposit: deposit },
-        meta: { tokenNetwork, partner },
-      });
+      expect(result[0]).toEqual(
+        channelDeposit.success(
+          {
+            id: channelId,
+            participant: depsMock.address,
+            totalDeposit: deposit,
+            txHash: expect.any(String),
+            txBlock: 125,
+            confirmed: undefined,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
 
       expect(depsMock.provider.on).toHaveBeenCalledTimes(1); // mergedFilter
     });
@@ -365,7 +440,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         channelDeposit.success(
@@ -374,6 +456,8 @@ describe('channels epic', () => {
             participant: partner,
             totalDeposit: bigNumberify(410) as UInt<32>,
             txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -397,18 +481,33 @@ describe('channels epic', () => {
         }),
       );
 
-      await expect(promise).resolves.toMatchObject({
-        type: channelWithdrawn.type,
-        payload: { id: channelId, participant: partner, totalWithdraw: withdraw, txHash },
-        meta: { tokenNetwork, partner },
-      });
+      await expect(promise).resolves.toEqual(
+        channelWithdrawn(
+          {
+            id: channelId,
+            participant: partner,
+            totalWithdraw: withdraw,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: undefined,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
     });
 
     test('new$ partner ChannelClosed event', async () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -431,22 +530,42 @@ describe('channels epic', () => {
         }),
       );
 
-      await expect(promise).resolves.toMatchObject({
-        type: channelClose.success.type,
-        payload: { id: channelId, participant: partner, closeBlock, txHash },
-        meta: { tokenNetwork, partner },
-      });
+      await expect(promise).resolves.toEqual(
+        channelClose.success(
+          {
+            id: channelId,
+            participant: partner,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: undefined,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
     });
 
     test('new$ ChannelSettled event', async () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         channelClose.success(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash },
+          {
+            id: channelId,
+            participant: depsMock.address,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ), // channel is in "closed" state already
       ].reduce(raidenReducer, state);
@@ -473,7 +592,10 @@ describe('channels epic', () => {
       );
 
       await expect(promise).resolves.toEqual(
-        channelSettle.success({ id: channelId, settleBlock, txHash }, { tokenNetwork, partner }),
+        channelSettle.success(
+          { id: channelId, txHash, txBlock: settleBlock, confirmed: undefined },
+          { tokenNetwork, partner },
+        ),
       );
 
       // ensure ChannelSettledAction completed channel monitoring and unsubscribed from events
@@ -493,14 +615,9 @@ describe('channels epic', () => {
         ),
         state$ = of<RaidenState>(state);
 
-      await expect(
-        channelDepositEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toMatchObject({
-        type: channelDeposit.failure.type,
-        payload: expect.any(Error),
-        error: true,
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelDepositEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelDeposit.failure(expect.any(Error), { tokenNetwork, partner }),
+      );
     });
 
     test('fails if channel.state !== "open"', async () => {
@@ -514,14 +631,9 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(action),
         state$ = of<RaidenState>(curState);
 
-      await expect(
-        channelDepositEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toMatchObject({
-        type: channelDeposit.failure.type,
-        payload: expect.any(Error),
-        error: true,
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelDepositEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelDeposit.failure(expect.any(Error), { tokenNetwork, partner }),
+      );
     });
 
     test('approve tx fails', async () => {
@@ -529,7 +641,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -552,14 +671,9 @@ describe('channels epic', () => {
       };
       tokenContract.functions.approve.mockResolvedValueOnce(approveTx);
 
-      await expect(
-        channelDepositEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toMatchObject({
-        type: channelDeposit.failure.type,
-        payload: expect.any(Error),
-        error: true,
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelDepositEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelDeposit.failure(expect.any(Error), { tokenNetwork, partner }),
+      );
     });
 
     test('setTotalDeposit tx fails', async () => {
@@ -567,7 +681,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -604,14 +725,9 @@ describe('channels epic', () => {
       };
       tokenNetworkContract.functions.setTotalDeposit.mockResolvedValueOnce(setTotalDeposiTx);
 
-      await expect(
-        channelDepositEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toMatchObject({
-        type: channelDeposit.failure.type,
-        payload: expect.any(Error),
-        error: true,
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelDepositEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelDeposit.failure(expect.any(Error), { tokenNetwork, partner }),
+      );
     });
 
     test('success', async () => {
@@ -619,7 +735,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         // own initial deposit of 330
@@ -629,6 +752,8 @@ describe('channels epic', () => {
             participant: depsMock.address,
             totalDeposit: bigNumberify(330) as UInt<32>,
             txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -692,13 +817,8 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(channelClose.request(undefined, { tokenNetwork, partner })),
         state$ = of<RaidenState>(state);
 
-      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
-        {
-          type: channelClose.failure.type,
-          payload: expect.any(Error),
-          error: true,
-          meta: { tokenNetwork, partner },
-        },
+      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelClose.failure(expect.any(Error), { tokenNetwork, partner }),
       );
     });
 
@@ -712,13 +832,8 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(channelClose.request(undefined, { tokenNetwork, partner })),
         state$ = of<RaidenState>(curState);
 
-      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
-        {
-          type: channelClose.failure.type,
-          payload: expect.any(Error),
-          error: true,
-          meta: { tokenNetwork, partner },
-        },
+      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelClose.failure(expect.any(Error), { tokenNetwork, partner }),
       );
     });
 
@@ -727,7 +842,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -748,13 +870,8 @@ describe('channels epic', () => {
       };
       tokenNetworkContract.functions.closeChannel.mockResolvedValueOnce(closeTx);
 
-      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
-        {
-          type: channelClose.failure.type,
-          payload: expect.any(Error),
-          error: true,
-          meta: { tokenNetwork, partner },
-        },
+      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelClose.failure(expect.any(Error), { tokenNetwork, partner }),
       );
     });
 
@@ -763,7 +880,14 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -816,14 +940,9 @@ describe('channels epic', () => {
         ),
         state$ = of<RaidenState>(state);
 
-      await expect(
-        channelSettleEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toMatchObject({
-        type: channelSettle.failure.type,
-        payload: expect.any(Error),
-        error: true,
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelSettleEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelSettle.failure(expect.any(Error), { tokenNetwork, partner }),
+      );
     });
 
     test('fails if channel.state !== "settleable|settling"', async () => {
@@ -831,12 +950,25 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
         channelClose.success(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash },
+          {
+            id: channelId,
+            participant: depsMock.address,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state);
@@ -845,14 +977,9 @@ describe('channels epic', () => {
         ),
         state$ = of<RaidenState>(curState);
 
-      await expect(
-        channelSettleEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toMatchObject({
-        type: channelSettle.failure.type,
-        payload: expect.any(Error),
-        error: true,
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelSettleEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelSettle.failure(expect.any(Error), { tokenNetwork, partner }),
+      );
     });
 
     test('settleChannel tx fails', async () => {
@@ -860,12 +987,25 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
         channelClose.success(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash },
+          {
+            id: channelId,
+            participant: depsMock.address,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),
@@ -890,14 +1030,9 @@ describe('channels epic', () => {
       };
       tokenNetworkContract.functions.settleChannel.mockResolvedValueOnce(settleTx);
 
-      await expect(
-        channelSettleEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toMatchObject({
-        type: channelSettle.failure.type,
-        payload: expect.any(Error),
-        error: true,
-        meta: { tokenNetwork, partner },
-      });
+      await expect(channelSettleEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+        channelSettle.failure(expect.any(Error), { tokenNetwork, partner }),
+      );
     });
 
     test('success', async () => {
@@ -905,12 +1040,25 @@ describe('channels epic', () => {
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
         channelClose.success(
-          { id: channelId, participant: depsMock.address, closeBlock, txHash },
+          {
+            id: channelId,
+            participant: depsMock.address,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: settleBlock }),

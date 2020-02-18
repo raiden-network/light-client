@@ -1,5 +1,5 @@
 import { Reducer } from 'redux';
-import { get, set, unset, mapValues } from 'lodash/fp';
+import { get, set, unset } from 'lodash/fp';
 import { Zero, HashZero } from 'ethers/constants';
 import { hexlify } from 'ethers/utils';
 
@@ -206,7 +206,7 @@ function transferStateReducer(
   } else {
     return state;
   }
-
+  if (state.sent[secrethash][key]) return state;
   return {
     ...state,
     sent: {
@@ -223,18 +223,19 @@ function channelCloseSuccessReducer(
   state: RaidenState,
   action: channelClose.success,
 ): RaidenState {
-  return {
-    ...state,
-    sent: mapValues(
-      (v: SentTransfer): SentTransfer =>
-        // if transfer was on this channel, persist CloseChannel txHash, else pass
-        v.transfer[1].channel_identifier.eq(action.payload.id) &&
-        v.transfer[1].recipient === action.meta.partner &&
-        v.transfer[1].token_network_address === action.meta.tokenNetwork
-          ? { ...v, channelClosed: timed(action.payload.txHash) }
-          : v,
-    )(state.sent),
-  };
+  let sent = state.sent;
+  for (const [secrethash, v] of Object.entries(sent)) {
+    const transfer = v.transfer[1];
+    if (
+      !transfer.channel_identifier.eq(action.payload.id) ||
+      transfer.recipient !== action.meta.partner ||
+      transfer.token_network_address !== action.meta.tokenNetwork
+    )
+      continue;
+    sent = { ...sent, [secrethash]: { ...v, channelClosed: timed(action.payload.txHash) } };
+  }
+  if (sent === state.sent) return state;
+  return { ...state, sent };
 }
 
 function transferClearReducer(state: RaidenState, action: transferClear): RaidenState {
@@ -249,6 +250,8 @@ function withdrawReceiveSuccessReducer(
   state: RaidenState,
   action: withdrawReceive.success,
 ): RaidenState {
+  // TODO: subtract this pending withdraw request from partner's capacity (maybe some pending
+  // withdraws state), revert upon expiration or consolidate on confirmed channelWithdrawn
   const message = action.payload.message;
   const channelPath = ['channels', action.meta.tokenNetwork, action.meta.partner];
   let channel: Channel | undefined = get(channelPath, state);

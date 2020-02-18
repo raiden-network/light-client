@@ -240,8 +240,16 @@ describe('types', () => {
     expect(Address.is(address.toLowerCase())).toBe(false);
     expect(Address.is(address2)).toBe(false);
 
-    expect(hexPred).toHaveBeenCalledTimes(3); // 'parent' codec was also checked
-    expect(addrPred).toHaveBeenCalledTimes(3);
+    // can decode lowercased addresses
+    const address2decoded = decode(Address, address2.toLowerCase());
+    expect(address2decoded).toBeTruthy();
+    expect(Address.is(address2decoded)).toBe(true);
+    // still serializes to the checksummed format
+    expect(address2decoded).not.toEqual(address2);
+    expect(address2decoded).not.toEqual(address2.toLowerCase());
+
+    expect(addrPred).toHaveBeenCalledTimes(4);
+    expect(hexPred).toHaveBeenCalledTimes(5); // 'parent' codec was also checked, +1 for decode
 
     // narrow address to Address below
     if (!Address.is(address)) throw new Error('not an address');

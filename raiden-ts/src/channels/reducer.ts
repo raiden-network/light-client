@@ -1,12 +1,12 @@
-import { get, set, unset } from 'lodash/fp';
+import { get, set, unset, getOr } from 'lodash/fp';
 import { Zero } from 'ethers/constants';
 import { Reducer } from 'redux';
 
 import { UInt } from '../utils/types';
-import { createReducer } from '../utils/actions';
+import { createReducer, isActionOf } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
-import { RaidenAction } from '../actions';
+import { RaidenAction, ConfirmableActions } from '../actions';
 import {
   channelClose,
   channelDeposit,
@@ -50,17 +50,22 @@ function channelOpenSuccessReducer(
   state: RaidenState['channels'],
   action: channelOpen.success,
 ): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner],
-    channel: Channel = {
-      state: ChannelState.open,
-      own: { deposit: Zero as UInt<32> },
-      partner: { deposit: Zero as UInt<32> },
-      id: action.payload.id,
-      settleTimeout: action.payload.settleTimeout,
-      openBlock: action.payload.openBlock,
-      isFirstParticipant: action.payload.isFirstParticipant,
-      /* txHash: action.txHash, */ // not needed in state for now, but comes in action
-    };
+  const path = [action.meta.tokenNetwork, action.meta.partner];
+  // ignore if older than currently set channel, or unconfirmed or removed
+  if (
+    getOr(0, [...path, 'openBlock'], state) >= action.payload.txBlock ||
+    !action.payload.confirmed
+  )
+    return state;
+  const channel: Channel = {
+    state: ChannelState.open,
+    own: { deposit: Zero as UInt<32> },
+    partner: { deposit: Zero as UInt<32> },
+    id: action.payload.id,
+    settleTimeout: action.payload.settleTimeout,
+    isFirstParticipant: action.payload.isFirstParticipant,
+    openBlock: action.payload.txBlock,
+  };
   return set(path, channel, state);
 }
 
@@ -77,6 +82,8 @@ function channelUpdateOnchainBalanceStateReducer(
   state: RaidenState['channels'],
   action: channelDeposit.success | channelWithdrawn,
 ): RaidenState['channels'] {
+  // ignore event if unconfirmed or removed
+  if (!action.payload.confirmed) return state;
   const path = [action.meta.tokenNetwork, action.meta.partner];
   let channel: Channel | undefined = get(path, state);
   if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
@@ -114,7 +121,12 @@ function channelCloseSuccessReducer(
     channel.id !== action.payload.id
   )
     return state;
-  channel = { ...channel, state: ChannelState.closed, closeBlock: action.payload.closeBlock };
+  // even on non-confirmed action, already set channel state as closing, so it can't be used for new transfers
+  if (action.payload.confirmed === undefined && channel.state === ChannelState.open)
+    channel = { ...channel, state: ChannelState.closing };
+  else if (action.payload.confirmed)
+    channel = { ...channel, state: ChannelState.closed, closeBlock: action.payload.txBlock };
+  else return state;
   return set(path, channel, state);
 }
 
@@ -151,7 +163,11 @@ function channelSettleSuccessReducer(
     channel.id !== action.payload.id
   )
     return state;
-  return unset(path, state);
+  // even on non-confirmed action, already set channel as settling
+  if (action.payload.confirmed === undefined && channel.state !== ChannelState.settling)
+    return set(path, { ...channel, state: ChannelState.settling }, state);
+  else if (action.payload.confirmed) return unset(path, state);
+  else return state;
 }
 
 // handles all channel actions and requests
@@ -169,6 +185,24 @@ const channels: Reducer<RaidenState['channels'], RaidenAction> = createReducer(
   .handle(channelClose.success, channelCloseSuccessReducer)
   .handle(channelSettle.success, channelSettleSuccessReducer);
 
+const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
+  state = initialState.pendingTxs,
+  action: RaidenAction,
+): RaidenState['pendingTxs'] => {
+  // filter out non-ConfirmableActions's
+  if (!isActionOf(ConfirmableActions, action)) return state;
+  // if confirmed==undefined, add action to state
+  else if (action.payload.confirmed === undefined) return [...state, action];
+  // else (either confirmed or removed), remove from state
+  else {
+    const newState = state.filter(
+      a => a.type !== action.type || action.payload.txHash !== a.payload.txHash,
+    );
+    if (newState.length !== state.length) return newState;
+    return state;
+  }
+};
+
 /**
  * Nested/combined reducer for channels
  * blockNumber, tokens & channels reducers get its own slice of the state, corresponding to the
@@ -176,6 +210,6 @@ const channels: Reducer<RaidenState['channels'], RaidenAction> = createReducer(
  * so it compose the output with each key/nested/combined state.
  */
 export const channelsReducer = partialCombineReducers(
-  { blockNumber, tokens, channels },
+  { blockNumber, tokens, channels, pendingTxs },
   initialState,
 );

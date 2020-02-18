@@ -57,3 +57,42 @@ export const RaidenEvents = [
 ];
 /* Tagged union of RaidenEvents actions */
 export type RaidenEvent = ActionType<typeof RaidenEvents>;
+
+/**
+ * Set of [serializable] actions which are first emitted with
+ * payload.confirmed=undefined, then, after confirmation blocks, either with confirmed=true if tx
+ * is still present on blockchain, or confirmed=false if it got removed by a reorg.
+ *
+ * These actions must comply with the following type:
+ * {
+ *   payload: {
+ *     txHash: Hash;
+ *     txBlock: number;
+ *     confirmed: undefined | boolean;
+ *   };
+ *   meta: any;
+ * }
+ */
+export const ConfirmableActions = [
+  ChannelsActions.channelOpen.success,
+  ChannelsActions.channelDeposit.success,
+  ChannelsActions.channelWithdrawn,
+  ChannelsActions.channelClose.success,
+  ChannelsActions.channelSettle.success,
+];
+/**
+ * Union of codecs of actions above
+ */
+export const ConfirmableAction = t.union([
+  ChannelsActions.channelOpen.success.codec,
+  ChannelsActions.channelDeposit.success.codec,
+  ChannelsActions.channelWithdrawn.codec,
+  ChannelsActions.channelClose.success.codec,
+  ChannelsActions.channelSettle.success.codec,
+]);
+export type ConfirmableAction =
+  | ChannelsActions.channelOpen.success
+  | ChannelsActions.channelDeposit.success
+  | ChannelsActions.channelWithdrawn
+  | ChannelsActions.channelClose.success
+  | ChannelsActions.channelSettle.success;

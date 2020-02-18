@@ -25,15 +25,14 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
-import { Signer } from 'ethers';
 import { bigNumberify } from 'ethers/utils';
 import { One, Zero } from 'ethers/constants';
-import { findKey, get } from 'lodash';
+import { findKey, get, pick, isMatchWith } from 'lodash';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
-import { Address, assert, Hash, Signed, UInt } from '../utils/types';
+import { Address, assert, Hash, Signed, UInt, BigNumberC } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { LruCache } from '../utils/lru';
 import { messageReceived, messageSend } from '../messages/actions';
@@ -159,10 +158,11 @@ function makeAndSignTransfer$(
   { revealTimeout }: RaidenConfig,
   deps: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned> {
+  const { log } = deps;
   const { address, network, signer } = deps;
   if (action.meta.secrethash in state.sent) {
     // don't throw to avoid emitting transfer.failure, to just wait for already pending transfer
-    console.error('transfer already present', action.meta);
+    log.warn('transfer already present', action.meta);
     return EMPTY;
   }
 
@@ -188,7 +188,7 @@ function makeAndSignTransfer$(
   const locksroot = getLocksroot(locks);
   const token = findKey(state.tokens, tn => tn === action.payload.tokenNetwork)! as Address;
 
-  console.log(
+  log.info(
     'Signing transfer of value',
     action.payload.value.toString(),
     'of token',
@@ -224,7 +224,7 @@ function makeAndSignTransfer$(
     initiator: address,
     metadata,
   };
-  return from(signMessage(signer, message)).pipe(
+  return from(signMessage(signer, message, { log })).pipe(
     mergeMap(function*(signed) {
       // besides transferSigned, also yield transferSecret (for registering) if we know it
       if (action.payload.secret)
@@ -271,7 +271,7 @@ function makeAndSignUnlock$(
   state$: Observable<RaidenState>,
   state: RaidenState,
   action: transferUnlock.request,
-  signer: Signer,
+  { log, signer }: { signer: RaidenEpicDeps['signer']; log: RaidenEpicDeps['log'] },
 ): Observable<transferUnlock.success> {
   const secrethash = action.meta.secrethash;
   assert(secrethash in state.sent, 'unknown transfer');
@@ -310,7 +310,7 @@ function makeAndSignUnlock$(
       payment_identifier: transfer.payment_identifier,
       secret: state.secrets[action.meta.secrethash].secret,
     };
-    signed$ = from(signMessage(signer, message));
+    signed$ = from(signMessage(signer, message, { log }));
   }
 
   return signed$.pipe(
@@ -340,13 +340,13 @@ function makeAndSignUnlock$(
 function makeAndSignUnlock(
   state$: Observable<RaidenState>,
   action: transferUnlock.request,
-  { signer }: RaidenEpicDeps,
+  { signer, log }: Pick<RaidenEpicDeps, 'signer' | 'log'>,
 ): Observable<transferUnlock.success | transferUnlock.failure> {
   return state$.pipe(
     first(),
-    mergeMap(state => makeAndSignUnlock$(state$, state, action, signer)),
+    mergeMap(state => makeAndSignUnlock$(state$, state, action, { log, signer })),
     catchError(err => {
-      console.error('Error when trying to unlock after SecretReveal', err);
+      log.warn('Error trying to unlock after SecretReveal', err);
       return of(transferUnlock.failure(err, action.meta));
     }),
   );
@@ -363,7 +363,7 @@ function makeAndSignUnlock(
 function makeAndSignLockExpired$(
   state: RaidenState,
   action: transferExpire.request,
-  signer: Signer,
+  { signer, log }: Pick<RaidenEpicDeps, 'signer' | 'log'>,
 ): Observable<transferExpire.success> {
   const secrethash = action.meta.secrethash;
   assert(secrethash in state.sent, 'unknown transfer');
@@ -401,7 +401,7 @@ function makeAndSignLockExpired$(
       recipient: transfer.recipient,
       secrethash,
     };
-    signed$ = from(signMessage(signer, message));
+    signed$ = from(signMessage(signer, message, { log }));
   }
 
   return signed$.pipe(
@@ -424,11 +424,11 @@ function makeAndSignLockExpired$(
 function makeAndSignLockExpired(
   state$: Observable<RaidenState>,
   action: transferExpire.request,
-  { signer }: RaidenEpicDeps,
+  { log, signer }: Pick<RaidenEpicDeps, 'signer' | 'log'>,
 ): Observable<transferExpire.success | transferExpire.failure> {
   return state$.pipe(
     first(),
-    mergeMap(state => makeAndSignLockExpired$(state, action, signer)),
+    mergeMap(state => makeAndSignLockExpired$(state, action, { signer, log })),
     catchError(err => of(transferExpire.failure(err, action.meta))),
   );
 }
@@ -436,7 +436,7 @@ function makeAndSignLockExpired(
 function makeAndSignWithdrawConfirmation$(
   state: RaidenState,
   action: withdrawReceive.request,
-  signer: Signer,
+  { log, signer }: Pick<RaidenEpicDeps, 'signer' | 'log'>,
   cache: LruCache<string, Signed<WithdrawConfirmation>>,
 ) {
   const request = action.payload.message;
@@ -463,17 +463,32 @@ function makeAndSignWithdrawConfirmation$(
 
   let signed$: Observable<Signed<WithdrawConfirmation>>;
   const key = request.message_identifier.toString();
+
+  // compare WithdrawRequest and a possible signed WithdrawConfirmation
+  function compareReqConf(
+    req: WithdrawRequest,
+    conf: Signed<WithdrawConfirmation> | undefined,
+  ): conf is Signed<WithdrawConfirmation> {
+    if (!conf) return false;
+    const matchSet = pick(conf, [
+      'token_network_address',
+      'participant',
+      'chain_id',
+      'channel_identifier',
+      'total_withdraw',
+      'expiration',
+    ]);
+    return isMatchWith(req, matchSet, (objVal, othVal) =>
+      BigNumberC.is(objVal)
+        ? objVal.eq(othVal)
+        : BigNumberC.is(othVal)
+        ? othVal.eq(objVal)
+        : (undefined as any),
+    );
+  }
   const cached = cache.get(key);
   // ensure all parameters are equal the cached one before returning it, or else sign again
-  if (
-    cached &&
-    cached.chain_id.eq(request.chain_id) &&
-    cached.token_network_address === request.token_network_address &&
-    cached.channel_identifier.eq(request.channel_identifier) &&
-    cached.participant === request.participant &&
-    cached.total_withdraw.eq(request.total_withdraw) &&
-    cached.expiration.eq(request.expiration)
-  ) {
+  if (compareReqConf(request, cached)) {
     signed$ = of(cached);
   } else {
     const confirmation: WithdrawConfirmation = {
@@ -487,7 +502,9 @@ function makeAndSignWithdrawConfirmation$(
       nonce: nextNonce(channel.own.balanceProof),
       expiration: request.expiration,
     };
-    signed$ = from(signMessage(signer, confirmation)).pipe(tap(signed => cache.put(key, signed)));
+    signed$ = from(signMessage(signer, confirmation, { log })).pipe(
+      tap(signed => cache.put(key, signed)),
+    );
   }
 
   return signed$.pipe(map(signed => withdrawReceive.success({ message: signed }, action.meta)));
@@ -518,14 +535,14 @@ function makeAndSignWithdrawConfirmation$(
 function makeAndSignWithdrawConfirmation(
   state$: Observable<RaidenState>,
   action: withdrawReceive.request,
-  { signer }: RaidenEpicDeps,
+  { signer, log }: RaidenEpicDeps,
   cache: LruCache<string, Signed<WithdrawConfirmation>>,
 ): Observable<withdrawReceive.success> {
   return state$.pipe(
     first(),
-    mergeMap(state => makeAndSignWithdrawConfirmation$(state, action, signer, cache)),
+    mergeMap(state => makeAndSignWithdrawConfirmation$(state, action, { log, signer }, cache)),
     catchError(err => {
-      console.error('Error trying to handle WithdrawRequest, ignoring:', err);
+      log.warn('Error trying to handle WithdrawRequest, ignoring:', err);
       return EMPTY;
     }),
   );
@@ -907,6 +924,7 @@ export const transferProcessedReceivedEpic = (
 export const transferSecretRequestedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
+  { log }: RaidenEpicDeps,
 ): Observable<transferSecretRequest> =>
   action$.pipe(
     filter(isActionOf(messageReceived)),
@@ -924,17 +942,17 @@ export const transferSecretRequestedEpic = (
         transfer.target !== action.meta.address || // reveal only to target
         !transfer.payment_identifier.eq(message.payment_identifier)
       ) {
-        console.warn('Invalid SecretRequest for transfer', message, transfer);
+        log.warn('Invalid SecretRequest for transfer', message, transfer);
       } else if (
         !message.expiration.lte(transfer.lock.expiration) ||
         !message.expiration.gt(state.blockNumber)
       ) {
-        console.warn('SecretRequest for expired transfer', message, transfer);
+        log.warn('SecretRequest for expired transfer', message, transfer);
       } else if (!message.amount.gte(value)) {
-        console.warn('SecretRequest for amount too small!', message, transfer);
+        log.warn('SecretRequest for amount too small!', message, transfer);
       } /* accept request */ else {
         if (!message.amount.eq(value))
-          console.warn('Accepted SecretRequest for amount different than sent', message, transfer);
+          log.warn('Accepted SecretRequest for amount different than sent', message, transfer);
         yield transferSecretRequest({ message }, { secrethash: message.secrethash });
       }
       // we don't check if transfer was refunded. If partner refunded the transfer but still
@@ -953,7 +971,7 @@ export const transferSecretRequestedEpic = (
 const secretReveal$ = (
   state: RaidenState,
   action: transferSecretRequest,
-  signer: Signer,
+  { signer, log }: Pick<RaidenEpicDeps, 'signer' | 'log'>,
 ): Observable<transferSecretReveal | messageSend.request> => {
   const target = state.sent[action.meta.secrethash].transfer[1].target;
 
@@ -966,7 +984,7 @@ const secretReveal$ = (
       message_identifier: makeMessageId(),
       secret: state.secrets[action.meta.secrethash].secret,
     };
-    reveal$ = from(signMessage(signer, message));
+    reveal$ = from(signMessage(signer, message, { log }));
   }
 
   return reveal$.pipe(
@@ -997,14 +1015,14 @@ const secretReveal$ = (
 export const transferSecretRevealEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { signer, latest$ }: RaidenEpicDeps,
+  { log, signer, latest$ }: RaidenEpicDeps,
 ): Observable<transferSecretReveal | messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferSecretRequest)),
     concatMap(action =>
       latest$.pipe(pluckDistinct('state')).pipe(
         first(),
-        mergeMap(state => secretReveal$(state, action, signer)),
+        mergeMap(state => secretReveal$(state, action, { log, signer })),
       ),
     ),
   );
@@ -1221,7 +1239,7 @@ export const transferRefundedEpic = (
 export const transferReceivedReplyProcessedEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { signer }: RaidenEpicDeps,
+  { log, signer }: RaidenEpicDeps,
 ): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Processed>>(32);
   return action$.pipe(
@@ -1252,7 +1270,7 @@ export const transferReceivedReplyProcessedEpic = (
           type: MessageType.PROCESSED,
           message_identifier: msgId,
         };
-        return from(signMessage(signer, processed)).pipe(
+        return from(signMessage(signer, processed, { log })).pipe(
           tap(signed => cache.put(key, signed)),
           map(signed =>
             messageSend.request({ message: signed }, { address: action.meta.address, msgId: key }),

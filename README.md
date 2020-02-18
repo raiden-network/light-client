@@ -59,7 +59,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
   - [Try Out the Raiden Demo dApp](#try-out-the-raiden-demo-dapp)
   - [Start Developing](#start-developing)
     - [Prerequisites](#prerequisites)
-    - [SDK Installation](#sdk-installation)
+    - [SDK Documentation](#sdk-documentation)
     - [dApp Installation](#dapp-installation)
       - [Build the Raiden SDK](#build-the-raiden-sdk)
       - [Install the dApp Dependencies](#install-the-dapp-dependencies)
@@ -155,7 +155,7 @@ __Step 1: Acquire ETH__
 2. Follow the instructions on how to acquire Goerli ETH on respective website
 
 __Step 2: Acquire TTT (TestToken)__
-1. Visit [this page on Etherscan](https://goerli.etherscan.io/token/0x31aa9d3e2bd38d22ca3ae9be7aae1d518fe46043#writeContract) where you'll be able to write to the TTT contract
+1. Visit [this page on Etherscan](https://goerli.etherscan.io/token/0x59105441977ecD9d805A4f5b060E34676F50F806#writeContract) where you'll be able to write to the TTT contract
 2. Open your MetaMask and choose your Goerli account with ETH
 3. Go back to Etherscan and click "Connect to Web3"
 4. Scroll down to the "mint" field and enter ```1000000000000000000000```

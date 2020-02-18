@@ -70,39 +70,32 @@
                     {{ udcToken.symbol || '' }}
                   </span>
                 </v-tooltip>
-                <v-dialog
-                  v-model="showMintDeposit"
-                  max-width="425"
-                  class="udc-balance__dialog-container"
-                >
-                  <template #activator="{ on: menu }">
-                    <v-tooltip bottom>
-                      <template #activator="{ on: tooltip }">
-                        <v-btn
-                          text
-                          icon
-                          x-large
-                          class="udc-balance__deposit"
-                          @click="showMintDeposit = true"
-                          v-on="{ ...tooltip, ...menu }"
-                        >
-                          <v-icon color="primary">play_for_work</v-icon>
-                        </v-btn>
-                      </template>
-                      <span>
-                        {{
-                          $t('transfer.steps.request-route.tooltip', {
-                            token: udcToken.symbol
-                          })
-                        }}
-                      </span>
-                    </v-tooltip>
+                <v-tooltip bottom>
+                  <template #activator="{ on }">
+                    <v-btn
+                      text
+                      icon
+                      x-large
+                      class="udc-balance__deposit"
+                      @click="showMintDeposit = true"
+                      v-on="on"
+                    >
+                      <v-icon color="primary">play_for_work</v-icon>
+                    </v-btn>
                   </template>
-                  <mint-deposit-dialog
-                    @cancel="showMintDeposit = false"
-                    @done="mintDone()"
-                  />
-                </v-dialog>
+                  <span>
+                    {{
+                      $t('transfer.steps.request-route.tooltip', {
+                        token: udcToken.symbol
+                      })
+                    }}
+                  </span>
+                </v-tooltip>
+                <mint-deposit-dialog
+                  :visible="showMintDeposit"
+                  @cancel="showMintDeposit = false"
+                  @done="mintDone()"
+                />
               </v-col>
             </v-row>
             <v-row
@@ -153,23 +146,12 @@
       </v-stepper>
     </v-row>
 
-    <v-overlay
-      v-if="step === 1"
-      :value="pfsFeesConfirmed"
-      class="confirmation-overlay"
-      :class="{ 'v-overlay--dark': freePfs && pfsFeesConfirmed }"
+    <pfs-fees-dialog
+      :visible="pfsFeesConfirmed && step === 1"
+      :pfs-fees-paid="pfsFeesPaid"
+      :free-pfs="freePfs"
     >
-      <spinner v-if="!pfsFeesPaid" />
-      <checkmark v-else class="confirmation-overlay__checkmark" />
-
-      <h2 v-if="!pfsFeesPaid && !freePfs">
-        {{ this.$t('transfer.steps.request-route.in-progress') }}
-      </h2>
-      <h2 v-else-if="freePfs">
-        {{ this.$t('transfer.steps.request-route.searching-for-route') }}
-      </h2>
-      <h2 v-else>{{ this.$t('transfer.steps.request-route.done') }}</h2>
-    </v-overlay>
+    </pfs-fees-dialog>
 
     <transfer-progress-dialog
       :visible="processingTransfer"
@@ -220,6 +202,7 @@ import { getAddress, getAmount } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
 import Filter from '@/filters';
 import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
+import PfsFeesDialog from '@/components/PfsFeesDialog.vue';
 
 @Component({
   components: {
@@ -232,7 +215,8 @@ import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
     ErrorDialog,
     Checkmark,
     MintDepositDialog,
-    TransferSummary
+    TransferSummary,
+    PfsFeesDialog
   }
 })
 export default class TransferSteps extends Mixins(

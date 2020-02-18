@@ -1,6 +1,13 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#614] Implement state upgrades and migration
+- [#613] Implement waiting for confirmation blocks on on-chain transactions (configurable)
+
+### Changed
+- [#926] Introduce loglevel logging framework (config.logger now specifies logging level)
+- [#1042] Support decoding addresses on messages on lowercased format
 
 ## [0.3.0] - 2020-02-07
 ### Added

@@ -164,7 +164,14 @@ describe('transfers epic', () => {
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             // a couple of channels with unrelated partners, with larger deposits
             channelOpen.success(
-              { id: channelId - 2, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId - 2,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner: otherPartner2 },
             ),
             channelDeposit.success(
@@ -173,11 +180,20 @@ describe('transfers epic', () => {
                 participant: depsMock.address,
                 totalDeposit: otherDeposit,
                 txHash,
+                txBlock: openBlock + 1,
+                confirmed: true,
               },
               { tokenNetwork, partner: otherPartner2 },
             ),
             channelOpen.success(
-              { id: channelId - 1, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId - 1,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner: otherPartner1 },
             ),
             channelDeposit.success(
@@ -186,12 +202,21 @@ describe('transfers epic', () => {
                 participant: depsMock.address,
                 totalDeposit: otherDeposit,
                 txHash,
+                txBlock: openBlock + 1,
+                confirmed: true,
               },
               { tokenNetwork, partner: otherPartner1 },
             ),
             // but transfer should prefer this direct channel
             channelOpen.success(
-              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner },
             ),
             channelDeposit.success(
@@ -200,6 +225,8 @@ describe('transfers epic', () => {
                 participant: depsMock.address,
                 totalDeposit: bigNumberify(500) as UInt<32>,
                 txHash,
+                txBlock: openBlock + 1,
+                confirmed: true,
               },
               { tokenNetwork, partner },
             ),
@@ -271,15 +298,23 @@ describe('transfers epic', () => {
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             // channel with closingPartner: closed
             channelOpen.success(
-              { id: channelId + 1, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId + 1,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner: closingPartner },
             ),
             channelClose.success(
               {
                 id: channelId + 1,
                 participant: closingPartner,
-                closeBlock: openBlock + 1,
                 txHash,
+                txBlock: openBlock + 1,
+                confirmed: true,
               },
               { tokenNetwork, partner: closingPartner },
             ),
@@ -329,7 +364,14 @@ describe('transfers epic', () => {
           [
             tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
             channelOpen.success(
-              { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+              {
+                id: channelId,
+                settleTimeout,
+                isFirstParticipant,
+                txHash,
+                txBlock: openBlock,
+                confirmed: true,
+              },
               { tokenNetwork, partner },
             ),
             channelDeposit.success(
@@ -338,6 +380,8 @@ describe('transfers epic', () => {
                 participant: depsMock.address,
                 totalDeposit: bigNumberify(500) as UInt<32>,
                 txHash,
+                txBlock: openBlock + 1,
+                confirmed: true,
               },
               { tokenNetwork, partner },
             ),
@@ -414,12 +458,23 @@ describe('transfers epic', () => {
           state$ = of(
             [
               channelClose.success(
-                { id: channelId, participant: partner, closeBlock, txHash },
+                {
+                  id: channelId,
+                  participant: partner,
+                  txHash,
+                  txBlock: closeBlock,
+                  confirmed: true,
+                },
                 { tokenNetwork, partner },
               ),
               newBlock({ blockNumber: closeBlock + settleTimeout + 1 }),
               channelSettle.success(
-                { id: channelId, settleBlock: closeBlock + settleTimeout + 1, txHash },
+                {
+                  id: channelId,
+                  txHash,
+                  txBlock: closeBlock + settleTimeout + 1,
+                  confirmed: true,
+                },
                 { tokenNetwork, partner },
               ),
               newBlock({ blockNumber: closeBlock + settleTimeout + 2 }),
@@ -454,7 +509,13 @@ describe('transfers epic', () => {
           state$ = of(
             [
               channelClose.success(
-                { id: channelId, participant: partner, closeBlock, txHash },
+                {
+                  id: channelId,
+                  participant: partner,
+                  txHash,
+                  txBlock: closeBlock,
+                  confirmed: true,
+                },
                 { tokenNetwork, partner },
               ),
             ].reduce(raidenReducer, transferingState),
@@ -569,7 +630,13 @@ describe('transfers epic', () => {
           state$ = of(
             [
               channelClose.success(
-                { id: channelId, participant: partner, closeBlock, txHash },
+                {
+                  id: channelId,
+                  participant: partner,
+                  txHash,
+                  txBlock: closeBlock,
+                  confirmed: true,
+                },
                 { tokenNetwork, partner },
               ),
               newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
@@ -1152,9 +1219,9 @@ describe('transfers epic', () => {
           ),
           state$ = of(transferingState);
 
-        await expect(transferSecretRequestedEpic(action$, state$).toPromise()).resolves.toEqual(
-          transferSecretRequest({ message: signed }, { secrethash }),
-        );
+        await expect(
+          transferSecretRequestedEpic(action$, state$, depsMock).toPromise(),
+        ).resolves.toEqual(transferSecretRequest({ message: signed }, { secrethash }));
       });
 
       test('ignore invalid lock', async () => {
@@ -1176,7 +1243,7 @@ describe('transfers epic', () => {
           state$ = of(transferingState);
 
         await expect(
-          transferSecretRequestedEpic(action$, state$).toPromise(),
+          transferSecretRequestedEpic(action$, state$, depsMock).toPromise(),
         ).resolves.toBeUndefined();
       });
     });
@@ -1647,6 +1714,8 @@ describe('transfers epic', () => {
                 participant: partner,
                 totalDeposit: partnerDeposit,
                 txHash,
+                txBlock: openBlock + 1,
+                confirmed: true,
               },
               { tokenNetwork, partner },
             ),

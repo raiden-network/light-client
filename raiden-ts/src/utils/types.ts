@@ -74,7 +74,7 @@ export const BigNumberC = new t.Type<BigNumber, string>(
       // decode by trying to bigNumberify string representation of anything
       return t.success(bigNumberify((u as any).toString()));
     } catch (err) {
-      return t.failure(u, c, err.message);
+      return t.failure(u, c);
     }
   },
   a => a.toString(),
@@ -187,17 +187,29 @@ export interface AddressB {
 }
 
 // string brand: checksummed address, 20 bytes
-export const Address = t.brand(
-  HexString(20),
-  (u): u is HexString<20> & t.Brand<AddressB> => {
-    try {
-      return typeof u === 'string' && getAddress(u) === u;
-    } catch (e) {}
-    return false;
-  }, // type guard for branded values
-  'Address', // the name must match the readonly field in the brand
-);
 export type Address = string & t.Brand<HexStringB<20>> & t.Brand<AddressB>;
+export const Address = new t.Type<Address, string>(
+  'Address',
+  (u: unknown): u is Address => {
+    try {
+      return HexString(20).is(u) && getAddress(u) === u;
+    } catch (e) {
+      return false;
+    }
+  },
+  (u, c) => {
+    if (!HexString(20).is(u)) return t.failure(u, c);
+    let addr;
+    try {
+      addr = getAddress(u);
+    } catch (e) {
+      return t.failure(u, c);
+    }
+    if (!addr) return t.failure(u, c);
+    return t.success(addr as Address);
+  },
+  t.identity,
+);
 
 /**
  * Helper function to create codecs to validate [timestamp, value] tuples

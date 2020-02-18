@@ -11,7 +11,12 @@ import { range } from 'lodash';
 
 import { UInt, Signed } from 'raiden-ts/utils/types';
 import { MessageType, Processed, Delivered } from 'raiden-ts/messages/types';
-import { RaidenAction, raidenShutdown } from 'raiden-ts/actions';
+import {
+  RaidenAction,
+  raidenShutdown,
+  raidenConfigUpdate,
+  ConfirmableAction,
+} from 'raiden-ts/actions';
 import { RaidenState } from 'raiden-ts/state';
 import {
   newBlock,
@@ -30,6 +35,7 @@ import {
   initMonitorProviderEpic,
   tokenMonitoredEpic,
   initTokensRegistryEpic,
+  confirmationEpic,
 } from 'raiden-ts/channels/epics';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
@@ -52,6 +58,8 @@ describe('raiden epic', () => {
       matrixServer,
       partnerRoomId,
       partnerUserId,
+      state$,
+      action$,
     } = epicFixtures(depsMock);
 
   const fetch = jest.fn(async () => ({
@@ -76,6 +84,8 @@ describe('raiden epic', () => {
       matrixServer,
       partnerRoomId,
       partnerUserId,
+      state$,
+      action$,
     } = epicFixtures(depsMock));
   });
 
@@ -90,7 +100,14 @@ describe('raiden epic', () => {
         const newState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpen.success(
-            { id: channelId, settleTimeout, openBlock: 121, isFirstParticipant, txHash },
+            {
+              id: channelId,
+              settleTimeout,
+              isFirstParticipant,
+              txHash,
+              txBlock: 121,
+              confirmed: true,
+            },
             { tokenNetwork, partner },
           ),
           channelDeposit.success(
@@ -99,6 +116,8 @@ describe('raiden epic', () => {
               participant: depsMock.address,
               totalDeposit: bigNumberify(200) as UInt<32>,
               txHash,
+              txBlock: 122,
+              confirmed: true,
             },
             { tokenNetwork, partner },
           ),
@@ -108,12 +127,14 @@ describe('raiden epic', () => {
               participant: partner,
               totalDeposit: bigNumberify(200) as UInt<32>,
               txHash,
+              txBlock: 123,
+              confirmed: true,
             },
             { tokenNetwork, partner },
           ),
           newBlock({ blockNumber: 128 }),
           channelClose.success(
-            { id: channelId, participant: partner, closeBlock: 128, txHash },
+            { id: channelId, participant: partner, txHash, txBlock: 128, confirmed: true },
             { tokenNetwork, partner },
           ),
           newBlock({ blockNumber: 629 }),
@@ -306,11 +327,19 @@ describe('raiden epic', () => {
         .pipe(first())
         .toPromise();
 
-      await expect(promise).resolves.toMatchObject({
-        type: channelOpen.success.type,
-        payload: { id: channelId, settleTimeout, openBlock: 121 },
-        meta: { tokenNetwork, partner },
-      });
+      await expect(promise).resolves.toEqual(
+        channelOpen.success(
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant: true,
+            txHash: expect.any(String),
+            txBlock: 121,
+            confirmed: undefined,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
 
       expect(depsMock.provider.getLogs).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -345,11 +374,19 @@ describe('raiden epic', () => {
         }),
       );
 
-      await expect(promise).resolves.toMatchObject({
-        type: channelOpen.success.type,
-        payload: { id: channelId, settleTimeout, openBlock: 125 },
-        meta: { tokenNetwork, partner },
-      });
+      await expect(promise).resolves.toEqual(
+        channelOpen.success(
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant: true,
+            txHash: expect.any(String),
+            txBlock: 125,
+            confirmed: undefined,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
     });
 
     test("ensure multiple tokenMonitored don't produce duplicated events", async () => {
@@ -386,11 +423,19 @@ describe('raiden epic', () => {
 
       const result = await promise;
       expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
-        type: channelOpen.success.type,
-        payload: { id: channelId, settleTimeout, openBlock: 125 },
-        meta: { tokenNetwork, partner },
-      });
+      expect(result[0]).toEqual(
+        channelOpen.success(
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant: true,
+            txHash: expect.any(String),
+            txBlock: 125,
+            confirmed: undefined,
+          },
+          { tokenNetwork, partner },
+        ),
+      );
 
       // one for channels with us, one for channels from us
       expect(depsMock.provider.on).toHaveBeenCalledTimes(1);
@@ -472,6 +517,135 @@ describe('raiden epic', () => {
       await expect(promise).resolves.toBeUndefined();
       expect(signerSpy).toHaveBeenCalledTimes(0);
       signerSpy.mockRestore();
+    });
+  });
+
+  describe('confirmationEpic', () => {
+    beforeEach(() => action$.next(raidenConfigUpdate({ config: { confirmationBlocks: 5 } })));
+
+    test('confirmed', async () => {
+      expect.assertions(7);
+      let output: ConfirmableAction | undefined = undefined;
+
+      const sub = confirmationEpic(action$, state$, depsMock).subscribe(o => {
+        action$.next(o);
+        output = o;
+      });
+
+      const currentState = async () =>
+        depsMock.latest$.pipe(pluckDistinct('state'), first()).toPromise();
+
+      const pending = channelOpen.success(
+        {
+          id: channelId,
+          settleTimeout,
+          isFirstParticipant,
+          txHash,
+          txBlock: 122,
+          confirmed: undefined,
+        },
+        { tokenNetwork, partner },
+      );
+
+      action$.next(newBlock({ blockNumber: 121 }));
+      action$.next(pending);
+      action$.next(newBlock({ blockNumber: 122 }));
+
+      // pending tx (confirmed=undefined) is stored in state
+      await expect(currentState()).resolves.toMatchObject({
+        blockNumber: 122,
+        config: { confirmationBlocks: 5 },
+        pendingTxs: [pending],
+      });
+      expect(output).toBeUndefined();
+
+      // at least confirmationBlocks passed, but getTransactionReceipt returns invalid
+      depsMock.provider.getTransactionReceipt.mockResolvedValueOnce(null as any);
+      action$.next(newBlock({ blockNumber: 127 }));
+
+      expect(depsMock.provider.getTransactionReceipt).toHaveBeenCalledTimes(1);
+      expect(output).toBeUndefined();
+
+      // give some time to exhaustMap to be free'd
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // now, confirmed, but reorged to block=123
+      depsMock.provider.getTransactionReceipt.mockResolvedValueOnce({
+        confirmations: 6,
+        blockNumber: 123,
+      } as any);
+      action$.next(newBlock({ blockNumber: 129 }));
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(depsMock.provider.getTransactionReceipt).toHaveBeenCalledTimes(2);
+      expect(output).toMatchObject({
+        payload: {
+          txHash,
+          txBlock: 123,
+          confirmed: true,
+        },
+      });
+      await expect(currentState()).resolves.toMatchObject({
+        blockNumber: 129,
+        pendingTxs: [],
+      });
+
+      sub.unsubscribe();
+    });
+
+    test('confirmed', async () => {
+      expect.assertions(4);
+      let output: ConfirmableAction | undefined = undefined;
+
+      const sub = confirmationEpic(action$, state$, depsMock).subscribe(o => {
+        action$.next(o);
+        output = o;
+      });
+
+      const currentState = async () =>
+        depsMock.latest$.pipe(pluckDistinct('state'), first()).toPromise();
+
+      const pending = channelOpen.success(
+        {
+          id: channelId,
+          settleTimeout,
+          isFirstParticipant,
+          txHash,
+          txBlock: 122,
+          confirmed: undefined,
+        },
+        { tokenNetwork, partner },
+      );
+
+      action$.next(newBlock({ blockNumber: 121 }));
+      action$.next(pending);
+
+      // can't get receipt, confirmationBlocks < n < 2*confirmationBlocks passed
+      depsMock.provider.getTransactionReceipt.mockResolvedValueOnce(null as any);
+      action$.next(newBlock({ blockNumber: 129 }));
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(output).toBeUndefined();
+
+      // still can't get receipt, n > 2*confirmationBlocks passed
+      depsMock.provider.getTransactionReceipt.mockResolvedValueOnce(null as any);
+      action$.next(newBlock({ blockNumber: 133 }));
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(depsMock.provider.getTransactionReceipt).toHaveBeenCalledTimes(2);
+      expect(output).toMatchObject({
+        payload: {
+          txHash,
+          txBlock: 122,
+          confirmed: false,
+        },
+      });
+      await expect(currentState()).resolves.toMatchObject({
+        blockNumber: 133,
+        pendingTxs: [],
+      });
+
+      sub.unsubscribe();
     });
   });
 });

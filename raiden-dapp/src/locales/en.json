@@ -188,7 +188,12 @@
   "mint-deposit-dialog": {
     "button": "Mint and deposit",
     "available": "Available {currency} to pay for on-chain transaction: {balance} {currency}",
-    "error": "The mint and deposit operation failed."
+    "error": "The mint and deposit operation failed.",
+    "progress": {
+      "mint": "Minting {currency} tokens",
+      "approve": "Allow UDC to access {currency} tokens",
+      "deposit": "Deposit {currency} tokens to the UDC"
+    }
   },
   "transfer": {
     "deposit-button": "Deposit",
@@ -308,7 +313,7 @@
       "done": {
         "label": "Done",
         "title": "New Channel opened",
-        "description": "A new channel has been opened successfully. You may now select a transfer target."
+        "description": "A new channel was successfully opened. You can now start making transfers."
       }
     },
     "confirmation": "Channel opening is in progress, are you sure you want to leave?"

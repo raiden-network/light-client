@@ -3,6 +3,7 @@ import { Signer } from 'ethers';
 import { JsonRpcProvider } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 import { MatrixClient } from 'matrix-js-sdk';
+import { Logger } from 'loglevel';
 
 import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
 import { ServiceRegistry } from './contracts/ServiceRegistry';
@@ -41,6 +42,7 @@ export interface RaidenEpicDeps {
   network: Network;
   signer: Signer;
   address: Address;
+  log: Logger;
   contractsInfo: ContractsInfo;
   registryContract: TokenNetworkRegistry;
   getTokenNetworkContract: (address: Address) => TokenNetwork;
@@ -48,4 +50,16 @@ export interface RaidenEpicDeps {
   serviceRegistryContract: ServiceRegistry;
   userDepositContract: UserDeposit;
   main?: { signer: Signer; address: Address };
+}
+
+export interface ChangeEvent<T extends string, P> {
+  readonly type: T;
+  readonly payload: P;
+}
+
+export type OnChange<T extends string, P> = (event: ChangeEvent<T, P>) => void;
+
+export enum EventTypes {
+  APPROVED = 'APPROVED',
+  DEPOSITED = 'DEPOSITED',
 }

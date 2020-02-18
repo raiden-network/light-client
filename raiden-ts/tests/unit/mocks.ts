@@ -8,6 +8,7 @@ import { AsyncSubject, of, BehaviorSubject } from 'rxjs';
 import { MatrixClient } from 'matrix-js-sdk';
 import { EventEmitter } from 'events';
 import { memoize } from 'lodash';
+import logging from 'loglevel';
 
 jest.mock('ethers/providers');
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
@@ -129,6 +130,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     provider,
   );
   const address = signer.address as Address;
+  const log = logging.getLogger(`raiden:${address}`);
 
   const registryAddress = '0xregistry';
   const registryContract = TokenNetworkRegistryFactory.connect(
@@ -208,7 +210,12 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       { network, address, contractsInfo },
       {
         blockNumber,
-        config: { pfsSafetyMargin: 1.1, pfs: 'https://pfs.raiden.test', httpTimeout: 3e3 },
+        config: {
+          pfsSafetyMargin: 1.1,
+          pfs: 'https://pfs.raiden.test',
+          httpTimeout: 3e3,
+          confirmationBlocks: 2,
+        },
       },
     ),
     defaultConfig = makeDefaultConfig({ network });
@@ -230,6 +237,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     config$,
     matrix$: new AsyncSubject<MatrixClient>(),
     address,
+    log,
     network,
     contractsInfo,
     provider,

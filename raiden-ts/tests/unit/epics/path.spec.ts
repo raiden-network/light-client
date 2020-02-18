@@ -83,7 +83,14 @@ describe('PFS: pathFindServiceEpic', () => {
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         // a couple of channels with unrelated partners, with larger deposits
         channelOpen.success(
-          { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
           { tokenNetwork, partner },
         ),
         channelDeposit.success(
@@ -92,6 +99,8 @@ describe('PFS: pathFindServiceEpic', () => {
             participant: depsMock.address,
             totalDeposit: bigNumberify(50000000) as UInt<32>,
             txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
           },
           { tokenNetwork, partner },
         ),
@@ -789,7 +798,7 @@ describe('PFS: pathFindServiceEpic', () => {
     state$.next(
       [
         channelClose.success(
-          { id: channelId, participant: partner, closeBlock: 126, txHash },
+          { id: channelId, participant: partner, txHash, txBlock: 126, confirmed: true },
           { tokenNetwork, partner },
         ),
       ].reduce(raidenReducer, state$.value),
@@ -1172,7 +1181,14 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     openedState = [
       tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
       channelOpen.success(
-        { id: channelId, settleTimeout, openBlock, isFirstParticipant, txHash },
+        {
+          id: channelId,
+          settleTimeout,
+          isFirstParticipant,
+          txHash,
+          txBlock: openBlock,
+          confirmed: true,
+        },
         { tokenNetwork, partner },
       ),
       newBlock({ blockNumber: 125 }),
@@ -1189,6 +1205,8 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
           participant: depsMock.address,
           totalDeposit: deposit,
           txHash,
+          txBlock: openBlock + 1,
+          confirmed: true,
         },
         { tokenNetwork, partner },
       ),
@@ -1224,6 +1242,8 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
           participant: depsMock.address,
           totalDeposit: deposit,
           txHash,
+          txBlock: openBlock + 1,
+          confirmed: true,
         },
         { tokenNetwork, partner },
       ),

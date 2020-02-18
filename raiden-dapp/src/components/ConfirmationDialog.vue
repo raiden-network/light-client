@@ -1,40 +1,23 @@
 <template>
-  <raiden-dialog
-    class="confirmation"
-    :visible="visible"
-    :fullscreen="false"
-    @close="cancel"
-  >
+  <raiden-dialog class="confirmation" :visible="visible" @close="cancel">
     <v-card-title>
-      <v-row align="center" justify="center">
-        <v-col>
-          <span>
-            <slot name="header"></slot>
-          </span>
-        </v-col>
-      </v-row>
+      <span>
+        <slot name="header"></slot>
+      </span>
     </v-card-title>
 
     <v-card-text>
-      <v-row align="center" justify="center">
-        <span>
-          <slot></slot>
-        </span>
-      </v-row>
+      <slot></slot>
     </v-card-text>
 
     <v-card-actions>
-      <v-row align="center" justify="center">
-        <v-col>
-          <action-button
-            :id="`confirm-${identifier}`"
-            :enabled="true"
-            :text="positiveAction"
-            @click="confirm()"
-          >
-          </action-button>
-        </v-col>
-      </v-row>
+      <action-button
+        :id="`confirm-${identifier}`"
+        :enabled="true"
+        :text="positiveAction"
+        @click="confirm()"
+      >
+      </action-button>
     </v-card-actions>
   </raiden-dialog>
 </template>
@@ -60,7 +43,7 @@ export default class ConfirmationDialog extends Vue {
   @Emit()
   cancel() {}
   @Emit()
-  public confirm() {}
+  confirm() {}
 }
 </script>
 

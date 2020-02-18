@@ -1,23 +1,30 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as t from 'io-ts';
 import { AddressZero } from 'ethers/constants';
 import { Network, getNetwork } from 'ethers/utils';
-import { debounce, merge as _merge } from 'lodash';
+import { debounce } from 'lodash';
+import logging from 'loglevel';
 
 import { PartialRaidenConfig } from './config';
 import { ContractsInfo } from './types';
+import { ConfirmableAction } from './actions';
+import migrateState from './migration';
 import { losslessParse, losslessStringify } from './utils/data';
-import { Address, Secret, decode, Signed, Storage } from './utils/types';
+import { Address, Secret, Signed, Storage, decode } from './utils/types';
 import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
 import { IOU } from './path/types';
 import { getNetworkName } from './utils/ethers';
 
-// types
+// same as highest migrator function in migration.index.migrators
+export const CURRENT_STATE_VERSION = 0;
 
+// types
 export const RaidenState = t.readonly(
   t.type({
     address: Address,
+    version: t.literal(CURRENT_STATE_VERSION),
     chainId: t.number,
     registry: Address,
     blockNumber: t.number,
@@ -61,6 +68,7 @@ export const RaidenState = t.readonly(
         ),
       ),
     }),
+    pendingTxs: t.readonlyArray(ConfirmableAction),
   }),
 );
 
@@ -85,16 +93,26 @@ export function encodeRaidenState(state: RaidenState): string {
 }
 
 /**
- * Try to decode any data as a RaidenState.
+ * Try to migrate & decode data as RaidenState.
  * If handled a string, will parse it with lossless-json, to preserve BigNumbers encoded as JSON
- * 'number'.
+ * 'number'. The data may be migrated from previous versions, then validated as current RaidenState
  *
  * @param data - string | any which may be decoded as RaidenState
- * @returns RaidenState parsed and validated
+ * @returns RaidenState parsed, migrated and validated
  */
-export function decodeRaidenState(data: unknown): RaidenState {
+export function decodeRaidenState(
+  data: unknown,
+  { log }: { log: logging.Logger } = { log: logging },
+): RaidenState {
   if (typeof data === 'string') data = losslessParse(data);
-  return decode(RaidenState, data);
+  const state = migrateState(data, { log });
+  // validates and returns as current state
+  try {
+    return decode(RaidenState, state);
+  } catch (err) {
+    log.error(`Error validating migrated state version=${state?.version}`, state);
+    throw err;
+  }
 }
 
 // Partial<RaidenState> which allows 2nd-level config: PartialRaidenConfig
@@ -119,6 +137,7 @@ export function makeInitialState(
 ): RaidenState {
   return {
     address,
+    version: CURRENT_STATE_VERSION,
     chainId: network.chainId,
     registry: contractsInfo.TokenNetworkRegistry.address,
     blockNumber: contractsInfo.TokenNetworkRegistry.block_number,
@@ -131,6 +150,7 @@ export function makeInitialState(
     path: {
       iou: {},
     },
+    pendingTxs: [],
   };
 }
 
@@ -154,11 +174,11 @@ export const initialState = makeInitialState({
 /**
  * Checks whether `storageOrState` is [[Storage]]
  *
- * @param storageOrState - either state or [[Storage]]
+ * @param storage - either state or [[Storage]]
  * @returns true if storageOrState is [[Storage]]
  */
-const isStorage = (storageOrState: unknown): storageOrState is Storage =>
-  storageOrState && typeof (storageOrState as Storage).getItem === 'function';
+const isStorage = (storage: unknown): storage is Storage =>
+  storage && typeof (storage as Storage).getItem === 'function';
 
 /**
  * Loads state from `storageOrState`. Returns the initial [[RaidenState]] if
@@ -167,7 +187,8 @@ const isStorage = (storageOrState: unknown): storageOrState is Storage =>
  * @param network - current network
  * @param contracts - current contracts
  * @param address - current address of the signer
- * @param storageOrState - either [[Storage]] or [[RaidenState]]
+ * @param storageOrState - either [[Storage]] or [[RaidenState]] or
+ *        { storage: [[Storage]]; state?: [[RaidenState]] }
  * @param config - raiden config
  * @returns true if storageOrState is [[Storage]]
  */
@@ -175,44 +196,78 @@ export const getState = async (
   network: Network,
   contracts: ContractsInfo,
   address: Address,
-  storageOrState?: unknown,
+  storageOrState?: any,
   config?: PartialRaidenConfig,
 ): Promise<{
   state: RaidenState;
   onState?: (state: RaidenState) => void;
   onStateComplete?: () => void;
 }> => {
-  let loadedState = makeInitialState({ network, address, contractsInfo: contracts }, { config });
+  const log = logging.getLogger(`raiden:${address}`);
   let onState;
   let onStateComplete;
 
-  if (storageOrState && isStorage(storageOrState)) {
+  let storage: Storage | undefined;
+  let providedState: any;
+
+  if (isStorage(storageOrState)) {
+    // stateOrStorage is storage
+    storage = storageOrState;
+    providedState = undefined;
+  } else if (isStorage(storageOrState?.storage)) {
+    // stateOrStorage is in the format { storage: Storage; state?: RaidenState | unknown }
+    storage = storageOrState.storage;
+    providedState = storageOrState.state;
+  } else {
+    // stateOrStorage is state, no storage provided
+    storage = undefined;
+    providedState = storageOrState;
+  }
+
+  let state: RaidenState | undefined = undefined;
+  if (providedState) {
+    state = decodeRaidenState(providedState, { log });
+  }
+
+  if (storage) {
     const ns = `raiden_${getNetworkName(network)}_${
       contracts.TokenNetworkRegistry.address
     }_${address}`;
-    const loaded = _merge(
-      {},
-      loadedState,
-      losslessParse((await storageOrState.getItem(ns)) || 'null'),
-    );
+    const storedData = await storage.getItem(ns);
 
-    loadedState = decodeRaidenState(loaded);
+    if (storedData) {
+      const storedState = decodeRaidenState(storedData, { log });
+      if (state /* provided */) {
+        // if both stored & provided state, ensure we weren't handed an older one!
+        if (state.blockNumber < storedState.blockNumber) {
+          throw new Error(
+            `Can't replace stored state @blockNumber=${storedState.blockNumber} with older provided state @blockNumber=${state.blockNumber}.`,
+          );
+        } else {
+          log.warn(
+            `Replacing stored state @blockNumber=${storedState.blockNumber} with newer provided state @blockNumber=${state.blockNumber}`,
+          );
+        }
+      } else {
+        // no provided state but there's a stored one, use it
+        state = storedState;
+      }
+    } // else, no stored state, initialize a new one below, if needed
 
     // to be subscribed on raiden.state$
     const debouncedState = debounce(
       (state: RaidenState): void => {
-        storageOrState.setItem(ns, encodeRaidenState(state));
+        storage!.setItem(ns, encodeRaidenState(state));
       },
       1000,
       { maxWait: 5000 },
     );
     onState = debouncedState;
     onStateComplete = () => debouncedState.flush();
-  } else if (storageOrState && RaidenState.is(storageOrState)) {
-    loadedState = storageOrState;
-  } else if (storageOrState) {
-    loadedState = decodeRaidenState(storageOrState);
   }
 
-  return { state: loadedState, onState, onStateComplete };
+  // if no provided nor stored state, initialize a pristine one
+  if (!state) state = makeInitialState({ network, address, contractsInfo: contracts }, { config });
+
+  return { state, onState, onStateComplete };
 };

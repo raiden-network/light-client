@@ -32,13 +32,14 @@
       @click="openChannel()"
     ></action-button>
 
-    <stepper
-      :display="loading"
+    <open-channel-dialog
+      :visible="loading"
       :steps="steps"
-      :done-step="doneStep"
       :current="current"
       :done="done"
-    ></stepper>
+      :done-step="doneStep"
+      @cancel="dismiss()"
+    ></open-channel-dialog>
 
     <error-dialog
       :description="error"
@@ -57,7 +58,6 @@ import {
 } from '@/services/raiden-service';
 import { emptyDescription, StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import Stepper from '@/components/Stepper.vue';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -69,16 +69,17 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import { mapGetters } from 'vuex';
 import { getAmount } from '@/utils/query-params';
+import OpenChannelDialog from '@/components/OpenChannelDialog.vue';
 
 @Component({
   components: {
     TokenInformation,
     Divider,
     ErrorDialog,
-    Stepper,
     ActionButton,
     AmountInput,
-    AddressDisplay
+    AddressDisplay,
+    OpenChannelDialog
   },
   computed: {
     ...mapGetters({
@@ -101,6 +102,10 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
   doneStep: StepDescription = emptyDescription();
   current = 0;
   done = false;
+
+  dismiss() {
+    this.loading = false;
+  }
 
   get token(): Token {
     const { token: address } = this.$route.params;
