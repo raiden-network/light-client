@@ -1,5 +1,5 @@
 <template>
-  <raiden-dialog class="pfs-fees-dialog" :visible="visible" :hide-close="true">
+  <raiden-dialog class="pfs-fees-dialog" :visible="visible" hide-close>
     <v-card-actions>
       <v-row v-if="!pfsFeesPaid" align="center" justify="center">
         <v-progress-circular

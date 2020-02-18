@@ -5,6 +5,7 @@ import { Network } from 'ethers/utils';
 
 export type Tokens = { [token: string]: Token };
 export type Transfers = { [secretHash: string]: RaidenSentTransfer };
+export type ChannelAction = 'close' | 'deposit' | 'settle';
 
 export interface RootState {
   loading: boolean;

@@ -90,7 +90,7 @@ import { BalanceUtils } from '@/utils/balance-utils';
 export default class ChannelDepositDialog extends Vue {
   @Prop({ required: true })
   identifier!: number;
-  @Prop({ required: true })
+  @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
   @Prop({ required: true })
   token!: Token;

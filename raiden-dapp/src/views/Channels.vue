@@ -1,14 +1,5 @@
 <template>
   <div class="channels">
-    <v-row justify="center">
-      <transition name="fade-transition" mode="out-in">
-        <div
-          v-show="visible"
-          class="channels__overlay"
-          @click="visible = ''"
-        ></div>
-      </transition>
-    </v-row>
     <list-header
       v-if="open.length > 0"
       :header="$t('channels.open.header')"
@@ -16,11 +7,12 @@
     ></list-header>
     <div class="channels__wrapper">
       <channel-list
-        :visible="visible"
+        v-if="open.length > 0"
         :token="token"
         :channels="open"
-        @visible-changed="visible = $event"
-        @message="showMessage($event)"
+        :expanded="expanded"
+        @action="onAction"
+        @expand="channelSelected($event)"
       ></channel-list>
       <list-header
         v-if="closed.length > 0"
@@ -28,11 +20,12 @@
         class="channels__header"
       ></list-header>
       <channel-list
-        :visible="visible"
+        v-if="closed.length > 0"
         :token="token"
         :channels="closed"
-        @visible-changed="visible = $event"
-        @message="showMessage($event)"
+        :expanded="expanded"
+        @action="onAction"
+        @expand="channelSelected($event)"
       ></channel-list>
       <list-header
         v-if="settleable.length > 0"
@@ -40,11 +33,12 @@
         class="channels__header"
       ></list-header>
       <channel-list
-        :visible="visible"
+        v-if="settleable.length > 0"
         :token="token"
         :channels="settleable"
-        @visible-changed="visible = $event"
-        @message="showMessage($event)"
+        :expanded="expanded"
+        @action="onAction"
+        @expand="channelSelected($event)"
       ></channel-list>
     </div>
     <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
@@ -53,6 +47,13 @@
         {{ $t('channels.snackbar-close') }}
       </v-btn>
     </v-snackbar>
+    <channel-dialogs
+      v-if="!!selectedChannel && !!action"
+      :action="action"
+      :channel="selectedChannel"
+      @dismiss="action = null"
+      @message="showMessage($event)"
+    ></channel-dialogs>
   </div>
 </template>
 
@@ -65,19 +66,46 @@ import ListHeader from '@/components/ListHeader.vue';
 import { Token } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
+import ChannelDialogs from '@/components/ChannelDialogs.vue';
+import { ChannelAction } from '@/types';
 
 @Component({
-  components: { ListHeader, ChannelList },
+  components: { ChannelDialogs, ListHeader, ChannelList },
   computed: {
     ...mapGetters(['channels'])
   }
 })
 export default class Channels extends Mixins(NavigationMixin) {
   message: string = '';
-  visible: string = '';
   snackbar: boolean = false;
-
   channels!: (address: string) => RaidenChannel[];
+  action: ChannelAction | null = null;
+
+  selectedChannel: RaidenChannel | null = null;
+  expanded: { [id: number]: boolean } = {};
+
+  channelSelected(payload: { channel: RaidenChannel; expanded: boolean }) {
+    const { expanded, channel } = payload;
+    if (expanded) {
+      this.selectedChannel = channel;
+      this.expanded = { [channel.id ?? -1]: true };
+    } else {
+      this.selectedChannel = null;
+      const updates = { ...this.expanded };
+      for (const key in updates) {
+        updates[key] = false;
+      }
+      this.expanded = updates;
+    }
+  }
+
+  onAction(action: ChannelAction) {
+    const channel = this.selectedChannel;
+    if (!channel) {
+      return;
+    }
+    this.action = action;
+  }
 
   get open(): RaidenChannel[] {
     return this.channels(this.$route.params.token).filter(

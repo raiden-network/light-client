@@ -33,7 +33,7 @@ import RaidenDialog from '@/components/RaidenDialog.vue';
   }
 })
 export default class ConfirmationDialog extends Vue {
-  @Prop({ required: true })
+  @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
   @Prop({ required: true })
   positiveAction!: string;
