@@ -5,7 +5,7 @@ import { from } from 'rxjs';
 import { bigNumberify } from 'ethers/utils';
 
 import { channelDeposit, channelMonitor } from 'raiden-ts/channels/actions';
-import RaidenError, { ErrorCodec } from 'raiden-ts/utils/error';
+import RaidenError, { ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
 import { Address, UInt, decode } from 'raiden-ts/utils/types';
 import {
   createAction,
@@ -40,7 +40,7 @@ describe('action factories not tested in reducers.spec.ts', () => {
   });
 
   test('channelDeposit failed', () => {
-    const error = new Error('not enough funds');
+    const error = new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED);
     expect(channelDeposit.failure(error, { tokenNetwork, partner })).toEqual({
       type: channelDeposit.failure.type,
       payload: error,
@@ -106,11 +106,11 @@ describe('utils/actions', () => {
     expect(actionUnd.is(actionUnd(undefined))).toBe(true);
 
     try {
-      throw new RaidenError('Failed');
+      throw new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
     } catch (e) {
       expect(actionFailed(e, { context: 'init' })).toStrictEqual({
         type: 'TEST_FAILED',
-        payload: expect.any(Error),
+        payload: expect.any(RaidenError),
         meta: { context: 'init' },
         error: true,
       });
@@ -170,7 +170,7 @@ describe('utils/actions', () => {
     // isResponseOf
     expect(isResponseOf(asyncAction, req.meta, success)).toBe(false);
 
-    const err = new Error('no entry with given id');
+    const err = new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
     const fail: ActionType<typeof asyncAction.failure> = asyncAction.failure(err, {
       id: 123,
     });
@@ -188,7 +188,9 @@ describe('utils/actions', () => {
 
     // asyncActionToPromise
     let action$ = from([success, fail]);
-    await expect(asyncActionToPromise(asyncAction, req.meta, action$)).rejects.toThrow('no entry');
+    await expect(asyncActionToPromise(asyncAction, req.meta, action$)).rejects.toThrow(
+      ErrorCodes.RDN_GENERAL_ERROR,
+    );
 
     action$ = from([asyncAction.success(true, { id: 123 }), fail]);
     await expect(asyncActionToPromise(asyncAction, req.meta, action$)).resolves.toBe(true);

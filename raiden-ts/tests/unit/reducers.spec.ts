@@ -51,6 +51,7 @@ import {
   getLocksroot,
 } from 'raiden-ts/transfers/utils';
 import { makeSignature } from './mocks';
+import RaidenError, { ErrorCodes } from 'raiden-ts/utils/error';
 
 describe('raidenReducer', () => {
   let state: RaidenState;
@@ -176,7 +177,7 @@ describe('raidenReducer', () => {
     });
 
     test('channelOpen.failure', () => {
-      const error = new Error('could not open channel');
+      const error = new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED);
       const newState = [
         channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
         channelOpen.failure(error, { tokenNetwork, partner }),
@@ -566,7 +567,10 @@ describe('raidenReducer', () => {
     test("channelClose.failure doesn't mutate state", () => {
       const newState = raidenReducer(
         state,
-        channelClose.failure(new Error('channelClose failed'), { tokenNetwork, partner }),
+        channelClose.failure(new RaidenError(ErrorCodes.CNL_CLOSECHANNEL_FAILED), {
+          tokenNetwork,
+          partner,
+        }),
       );
       expect(newState).toEqual(state);
     });
@@ -685,7 +689,7 @@ describe('raidenReducer', () => {
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
         channelSettle.request(undefined, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      const error = new Error('settle tx failed');
+      const error = new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_FAILED);
       const newState2 = raidenReducer(
         newState,
         channelSettle.failure(error, { tokenNetwork, partner }),

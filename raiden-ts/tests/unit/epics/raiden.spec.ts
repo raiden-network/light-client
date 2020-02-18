@@ -42,6 +42,7 @@ import { makeMessageId } from 'raiden-ts/transfers/utils';
 import { encodeJsonMessage } from 'raiden-ts/messages/utils';
 import { messageSend, messageReceived } from 'raiden-ts/messages/actions';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
+import RaidenError, { ErrorCodes } from 'raiden-ts/utils/error';
 
 describe('raiden epic', () => {
   let depsMock = raidenEpicDeps(),
@@ -282,7 +283,7 @@ describe('raiden epic', () => {
         state$ = depsMock.latest$.pipe(pluckDistinct('state'));
       action$.next(newBlock({ blockNumber: 122 }));
 
-      const error = new Error('connection lost');
+      const error = new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
       depsMock.provider.listAccounts.mockRejectedValueOnce(error);
 
       // whole raidenRootEpic completes upon raidenShutdown, with it as last emitted value

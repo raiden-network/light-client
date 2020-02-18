@@ -101,12 +101,12 @@ export const ErrorCodec = new t.Type<
   u =>
     pipe(
       serializedErr.decode(u),
-      map(({ name, message, code, stack, details }) =>
+      map(({ message, code, stack, details }) =>
         Object.assign(new RaidenError(message as ErrorCodes, details), {
-          name,
           code,
           stack,
           message,
+          details,
         }),
       ),
     ),
