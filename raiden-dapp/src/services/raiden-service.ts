@@ -3,8 +3,7 @@ import {
   EventTypes,
   Raiden,
   RaidenPaths,
-  RaidenPFS,
-  RaidenSentTransfer
+  RaidenPFS
 } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
@@ -13,7 +12,7 @@ import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
 import { BigNumber, BigNumberish } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
-import { exhaustMap, filter, first } from 'rxjs/operators';
+import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import { ConfigProvider } from './config-provider';
 
@@ -111,7 +110,8 @@ export default class RaidenService {
 
         this._raiden = raiden;
 
-        this.store.commit('account', await this.getAccount());
+        const account = await this.getAccount();
+        this.store.commit('account', account);
         this.store.commit('balance', await this.getBalance());
 
         this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
@@ -152,9 +152,8 @@ export default class RaidenService {
         });
 
         // Subscribe to our pending transfers
-        raiden.transfers$.subscribe(async (transfer: RaidenSentTransfer) => {
-          const accountAddress = await this.getAccount();
-          if (transfer.initiator === accountAddress) {
+        raiden.transfers$.subscribe(transfer => {
+          if (transfer.initiator === account) {
             this.store.commit('updateTransfers', transfer);
           }
         });
@@ -288,14 +287,7 @@ export default class RaidenService {
       });
 
       // Wait for transaction to be completed
-      await this.raiden.transfers$
-        .pipe(
-          first(
-            (transfer: RaidenSentTransfer) =>
-              transfer.secrethash === secretHash && transfer.completed
-          )
-        )
-        .toPromise();
+      await this.raiden.waitTransfer(secretHash);
     } catch (e) {
       throw new TransferFailed(e);
     }
