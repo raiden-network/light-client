@@ -9,6 +9,7 @@ import {
   LockExpired,
   RefundTransfer,
   Metadata,
+  SecretRequest,
 } from '../messages/types';
 import { Address, Timed, Hash, Int, Signed } from '../utils/types';
 
@@ -39,6 +40,12 @@ export const SentTransfer = t.readonly(
        * CloseChannel transaction. No further actions are possible after it's set.
        */
       channelClosed: Timed(Hash),
+      /**
+       * <- incoming secret request from target
+       * If this is set, it means the target requested the secret, not necessarily with a valid
+       * amount (an invalid amount < value == lock - fee, means transfer failed)
+       */
+      secretRequest: Timed(Signed(SecretRequest)),
       /**
        * -> outgoing secret reveal to target
        * If this is set, it means the secret was revealed (so transfer succeeded, even if it didn't
@@ -84,7 +91,8 @@ export enum RaidenSentTransferStatus {
   received = 'RECEIVED', // transfer acknowledged by partner
   refunded = 'REFUNDED', // partner informed that can't forward transfer
   closed = 'CLOSED', // channel closed before revealing
-  revealed = 'REVEALED', // secret asked and revealed to target
+  requested = 'REQUESTED', // secret requested by target
+  revealed = 'REVEALED', // secret revealed to target
   unlocking = 'UNLOCKING', // unlock sent to partner
   expiring = 'EXPIRING', // lock expired sent to partner
   unlocked = 'UNLOCKED', // unlock acknowledged by partner (complete with success)
