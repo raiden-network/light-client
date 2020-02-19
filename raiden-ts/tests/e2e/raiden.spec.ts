@@ -174,13 +174,13 @@ describe('Raiden', () => {
 
     // token address not found as an account in provider
     await expect(Raiden.create(provider, token, storage, contractsInfo, config)).rejects.toThrow(
-      /Account.*not found in provider/i,
+      ErrorCodes.RDN_ACCOUNT_NOT_FOUND,
     );
 
     // neither account index, address nor private key
     await expect(
       Raiden.create(provider, '0x1234', storage, contractsInfo, config),
-    ).rejects.toThrow(/account must be either.*address or private key/i);
+    ).rejects.toThrow(ErrorCodes.RDN_STRING_ACCOUNT_INVALID);
 
     // from hex-encoded private key, initial unknown state (decodable) but invalid address inside
     await expect(
@@ -803,7 +803,7 @@ describe('Raiden', () => {
         expect.assertions(2);
         raiden.updateConfig({ pfs: null });
         await expect(raiden.transfer(token, partner, 201)).rejects.toThrowError(
-          /no direct route/i,
+          ErrorCodes.PFS_DISABLED,
         );
       });
 

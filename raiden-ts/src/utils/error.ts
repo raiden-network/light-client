@@ -34,6 +34,7 @@ export enum ErrorCodes {
   XFER_REFUNDED = 'Transfer has been refunded.',
 
   // Transport errors
+  TRNS_NO_MATRIX_SERVERS = 'Could not contact any Matrix servers.',
   TRNS_NO_VALID_USER = 'Could not find a user with a valid signature.',
   TRNS_NO_SERVERNAME = 'Could not get server name from Matrix server.',
   TRNS_NO_DISPLAYNAME = 'Could not get display name from Matrix server.',

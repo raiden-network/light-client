@@ -47,6 +47,7 @@ import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps } from '../mocks';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
+import { ErrorCodes } from 'raiden-ts/utils/error';
 
 describe('transport epic', () => {
   let depsMock: ReturnType<typeof raidenEpicDeps>,
@@ -278,7 +279,7 @@ describe('transport epic', () => {
         text: jest.fn(async () => ''),
       });
       await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).rejects.toThrow(
-        'Could not contact any matrix servers',
+        ErrorCodes.TRNS_NO_MATRIX_SERVERS,
       );
       expect(fetch).toHaveBeenCalledTimes(2);
     });

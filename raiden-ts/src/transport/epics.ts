@@ -372,7 +372,7 @@ function fetchSortedMatrixServers$(matrixServerLookup: string, httpTimeout: numb
     toArray(),
     mergeMap(rtts => sortBy(rtts, ['rtt'])),
     filter(({ rtt }) => !isNaN(rtt)),
-    throwIfEmpty(() => new Error('Could not contact any matrix servers')),
+    throwIfEmpty(() => new RaidenError(ErrorCodes.TRNS_NO_MATRIX_SERVERS)),
   );
 }
 
