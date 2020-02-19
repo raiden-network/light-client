@@ -288,8 +288,7 @@ describe('types', () => {
       name: 'RaidenError',
       message: ErrorCodes.RDN_GENERAL_ERROR,
       stack: expect.any(String),
-      details: undefined,
-      code: 'RDN_GENERAL_ERROR',
+      details: expect.anything(),
     });
     expect(decode(ErrorCodec, encoded)).toStrictEqual(err);
     const decoded = decode(ErrorCodec, encoded);
@@ -388,7 +387,7 @@ describe('RaidenError', () => {
     try {
       throw new RaidenError(ErrorCodes.PFS_DISABLED);
     } catch (err) {
-      expect(err instanceof RaidenError).toBeTruthy();
+      expect(err).toBeInstanceOf(RaidenError);
       expect(isError(err)).toBeTruthy();
       expect(err.name).toEqual('RaidenError');
     }
@@ -425,9 +424,9 @@ describe('RaidenError', () => {
 
   test('Details can be added and are shown in stack trace', () => {
     try {
-      throw new RaidenError(ErrorCodes.PFS_DISABLED, [{ value: 'bar', key: 'foo' }]);
+      throw new RaidenError(ErrorCodes.PFS_DISABLED, { value: 'bar', key: 'foo' });
     } catch (err) {
-      expect(err.details).toEqual([{ value: 'bar', key: 'foo' }]);
+      expect(err.details).toStrictEqual({ value: 'bar', key: 'foo' });
     }
   });
 });

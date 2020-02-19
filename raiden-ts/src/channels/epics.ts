@@ -498,7 +498,7 @@ export const channelOpenEpic = (
       if (channelState !== ChannelState.opening)
         return of(
           channelOpen.failure(
-            new RaidenError(ErrorCodes.CNL_INVALID_STATE, [{ state: channelState.toString() }]),
+            new RaidenError(ErrorCodes.CNL_INVALID_STATE, { state: channelState.toString() }),
             action.meta,
           ),
         );
@@ -514,9 +514,9 @@ export const channelOpenEpic = (
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
         map(({ receipt, tx }) => {
           if (!receipt.status)
-            throw new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED, [
-              { transactionHash: tx.hash! },
-            ]);
+            throw new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED, {
+              transactionHash: tx.hash!,
+            });
           return tx.hash;
         }),
         // if succeeded, return a empty/completed observable
@@ -595,9 +595,9 @@ export const channelDepositEpic = (
         | Address
         | undefined;
       if (!token) {
-        const error = new RaidenError(ErrorCodes.CNL_TOKEN_NOT_FOUND, [
-          { tokenNetwork: action.meta.tokenNetwork },
-        ]);
+        const error = new RaidenError(ErrorCodes.CNL_TOKEN_NOT_FOUND, {
+          tokenNetwork: action.meta.tokenNetwork,
+        });
         return of(channelDeposit.failure(error, action.meta));
       }
       const { signer: onchainSigner } = chooseOnchainAccount(
@@ -614,9 +614,7 @@ export const channelDepositEpic = (
         action.meta.partner,
       ]);
       if (!channel || channel.state !== ChannelState.open || channel.id === undefined) {
-        const error = new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND, [
-          { tokenNetwork: action.meta.tokenNetwork, partner: action.meta.partner },
-        ]);
+        const error = new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND, action.meta);
         return of(channelDeposit.failure(error, action.meta));
       }
       const channelId = channel.id;
@@ -630,9 +628,10 @@ export const channelDepositEpic = (
           mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
           map(({ receipt, tx }) => {
             if (!receipt.status)
-              throw new RaidenError(ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, [
-                { token, transactionHash: tx.hash! },
-              ]);
+              throw new RaidenError(ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, {
+                token,
+                transactionHash: tx.hash!,
+              });
             return tx.hash;
           }),
           tap(txHash => log.debug(`approve tx "${txHash}" successfuly mined!`)),
@@ -656,9 +655,10 @@ export const channelDepositEpic = (
           mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
           map(({ receipt, tx }) => {
             if (!receipt.status)
-              throw new RaidenError(ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, [
-                { tokenNetwork: action.meta.tokenNetwork, transactionHash: tx.hash! },
-              ]);
+              throw new RaidenError(ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, {
+                tokenNetwork: action.meta.tokenNetwork,
+                transactionHash: tx.hash!,
+              });
             return tx.hash;
           }),
           tap(txHash => log.debug(`setTotalDeposit tx "${txHash}" successfuly mined!`)),
@@ -710,9 +710,10 @@ export const channelCloseEpic = (
         !(channel.state === ChannelState.open || channel.state === ChannelState.closing) ||
         !channel.id
       ) {
-        const error = new RaidenError(ErrorCodes.CNL_NO_OPEN_OR_CLOSING_CHANNEL_FOUND, [
-          { tokenNetwork: action.meta.tokenNetwork, partner: action.meta.partner },
-        ]);
+        const error = new RaidenError(ErrorCodes.CNL_NO_OPEN_OR_CLOSING_CHANNEL_FOUND, {
+          tokenNetwork: action.meta.tokenNetwork,
+          partner: action.meta.partner,
+        });
         return of(channelClose.failure(error, action.meta));
       }
       const channelId = channel.id;
@@ -764,9 +765,10 @@ export const channelCloseEpic = (
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
         map(({ receipt, tx }) => {
           if (!receipt.status)
-            throw new RaidenError(ErrorCodes.CNL_CLOSECHANNEL_FAILED, [
-              { tokenNetwork: action.meta.tokenNetwork, transactionHash: tx.hash! },
-            ]);
+            throw new RaidenError(ErrorCodes.CNL_CLOSECHANNEL_FAILED, {
+              tokenNetwork: action.meta.tokenNetwork,
+              transactionHash: tx.hash!,
+            });
           log.debug(`closeChannel tx "${tx.hash}" successfuly mined!`);
           return tx.hash;
         }),
@@ -818,9 +820,10 @@ export const channelSettleEpic = (
         !(channel.state === ChannelState.settleable || channel.state === ChannelState.settling) ||
         !channel.id
       ) {
-        const error = new RaidenError(ErrorCodes.CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND, [
-          { tokenNetwork: action.meta.tokenNetwork, partner: action.meta.partner },
-        ]);
+        const error = new RaidenError(ErrorCodes.CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND, {
+          tokenNetwork: action.meta.tokenNetwork,
+          partner: action.meta.partner,
+        });
         return of(channelSettle.failure(error, action.meta));
       }
       const channelId = channel.id;
@@ -860,9 +863,10 @@ export const channelSettleEpic = (
         mergeMap(async tx => ({ receipt: await tx.wait(), tx })),
         map(({ receipt, tx }) => {
           if (!receipt.status)
-            throw new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_FAILED, [
-              { tokenNetwork: action.meta.tokenNetwork, transactionHash: tx.hash! },
-            ]);
+            throw new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_FAILED, {
+              tokenNetwork: action.meta.tokenNetwork,
+              transactionHash: tx.hash!,
+            });
           log.debug(`settleChannel tx "${tx.hash}" successfuly mined!`);
           return tx.hash;
         }),

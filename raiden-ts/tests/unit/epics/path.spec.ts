@@ -131,7 +131,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK,
-          details: [{ tokenNetwork: token }],
+          details: { tokenNetwork: token },
         }),
         { tokenNetwork: token, target, value },
       ),
@@ -160,7 +160,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_TARGET_OFFLINE,
-          details: [{ target }],
+          details: { target },
         }),
         {
           tokenNetwork,
@@ -550,7 +550,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_ERROR_RESPONSE,
-          details: [{ errorCode: 1337, errors: 'No route' }],
+          details: { errorCode: 1337, errors: 'No route' },
         }),
         { tokenNetwork, target, value },
       ),
@@ -934,7 +934,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_ERROR_RESPONSE,
-          details: [{ errorCode: 2201, errors: 'No route between nodes found.' }],
+          details: { errorCode: 2201, errors: 'No route between nodes found.' },
         }),
         { tokenNetwork, target, value },
       ),
@@ -981,7 +981,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED,
-          details: [{ responseStatus: 500, responseText: '{}' }],
+          details: { responseStatus: 500, responseText: '{}' },
         }),
         { tokenNetwork, target, value },
       ),
@@ -1036,12 +1036,10 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH,
-          details: expect.arrayContaining([
-            {
-              signer: '0x9EE8539c8C7215AcAE56Fed72E7035a307e24989',
-              address: '0x14791697260E4c9A71f18484C9f997B308e59325',
-            },
-          ]),
+          details: expect.objectContaining({
+            signer: '0x9EE8539c8C7215AcAE56Fed72E7035a307e24989',
+            address: '0x14791697260E4c9A71f18484C9f997B308e59325',
+          }),
         }),
         { tokenNetwork, target, value },
       ),
@@ -1109,13 +1107,11 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_ERROR_RESPONSE,
-          details: [
-            {
-              errors:
-                'The IOU is already claimed. Please start new session with different `expiration_block`.',
-              errorCode: 2105,
-            },
-          ],
+          details: {
+            errors:
+              'The IOU is already claimed. Please start new session with different `expiration_block`.',
+            errorCode: 2105,
+          },
         }),
         { tokenNetwork, target, value },
       ),

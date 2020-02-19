@@ -88,7 +88,7 @@ export function pfsInfo(
     withLatestFrom(config$),
     mergeMap(([url, { httpTimeout }]) => {
       if (!url) throw new RaidenError(ErrorCodes.PFS_EMPTY_URL);
-      else if (!urlRegex.test(url)) throw new RaidenError(ErrorCodes.PFS_INVALID_URL, [{ url }]);
+      else if (!urlRegex.test(url)) throw new RaidenError(ErrorCodes.PFS_INVALID_URL, { url });
       // default to https for domain-only urls
       else if (!url.startsWith('https://')) url = `https://${url}`;
 

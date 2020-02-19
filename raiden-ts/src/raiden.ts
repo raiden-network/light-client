@@ -927,7 +927,7 @@ export class Raiden {
     const tx = await customTokenContract.functions.mint(decode(UInt(32), amount));
     const receipt = await tx.wait();
     if (!receipt.status)
-      throw new RaidenError(ErrorCodes.RDN_MINT_FAILED, [{ transactionHash: tx.hash! }]);
+      throw new RaidenError(ErrorCodes.RDN_MINT_FAILED, { transactionHash: tx.hash! });
 
     return tx.hash as Hash;
   }

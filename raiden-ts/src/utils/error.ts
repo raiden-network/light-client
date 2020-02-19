@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { map } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
-import { CustomError } from 'ts-custom-error';
+import { findKey } from 'lodash';
 
 export enum ErrorCodes {
   // Path errors
@@ -32,6 +32,7 @@ export enum ErrorCodes {
   XFER_EXPIRED = 'Transfer expired.',
   XFER_CHANNEL_CLOSED_PREMATURELY = 'Channel was closed before secret got reveiled or transfer unlocked.',
   XFER_REFUNDED = 'Transfer has been refunded.',
+  XFER_INVALID_SECRETREQUEST = 'Invalid SecretRequest received',
 
   // Transport errors
   TRNS_NO_MATRIX_SERVERS = 'Could not contact any Matrix servers.',
@@ -52,7 +53,7 @@ export enum ErrorCodes {
   RDN_SIGNER_NOT_CONNECTED = 'The signing account is not connected to the provider.',
   RDN_ACCOUNT_NOT_FOUND = 'Account not found in provider.',
   RDN_STRING_ACCOUNT_INVALID = 'String account must be either a 0x-encoded address or private key.',
-  RDN_TRANSACTION_REOGRG = 'Transaction has been mined but got removed by a reorg.',
+  RDN_TRANSACTION_REORG = 'Transaction has been mined but got removed by a reorg.',
   RDN_STATE_MIGRATION = 'Could not replace stored state with older, provided state.',
 
   // Data errors
@@ -62,28 +63,29 @@ export enum ErrorCodes {
   DTA_UNENCODABLE_DATA = 'Passed data is not a HEX string nor integer array.',
 }
 
-export const ErrorDetails = t.array(t.record(t.string, t.union([t.string, t.number])));
+export const ErrorDetails = t.record(t.string, t.union([t.string, t.number, t.boolean, t.null]));
 export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
 
-export default class RaidenError extends CustomError {
-  public code: string;
+export default class RaidenError extends Error {
+  public name = 'RaidenError';
+  private _code: string | undefined = undefined;
 
-  public constructor(message: ErrorCodes, public details?: ErrorDetails) {
+  public constructor(message?: ErrorCodes, public details: ErrorDetails = {}) {
     super(message ?? ErrorCodes.RDN_GENERAL_ERROR);
-    this.code = this.getCode(message);
+    Object.setPrototypeOf(this, RaidenError.prototype);
   }
 
-  private getCode(message: string): string {
-    return (
-      Object.keys(ErrorCodes).find(code => Object(ErrorCodes)[code] === message) ||
-      'RDN_GENERAL_ERROR'
-    );
+  public get code(): string {
+    // to need to search for _code before first access
+    if (this._code === undefined)
+      this._code = findKey(ErrorCodes, message => message === this.message) ?? 'RDN_GENERAL_ERROR';
+    return this._code;
   }
 }
 
 const serializedErr = t.intersection([
-  t.type({ name: t.string, message: t.string, code: t.string }),
-  t.partial({ stack: t.string, details: ErrorDetails }),
+  t.type({ name: t.string }),
+  t.partial({ message: t.string, stack: t.string, details: ErrorDetails }),
 ]);
 
 /**
@@ -94,28 +96,30 @@ const serializedErr = t.intersection([
  * object.
  */
 export const ErrorCodec = new t.Type<
-  RaidenError,
-  { name: string; message: string; code: string; stack?: string; details?: ErrorDetails }
+  Error,
+  { name: string; message?: string; stack?: string } & ({} | { details: ErrorDetails })
 >(
-  'RaidenError',
-  (u: unknown): u is RaidenError => u instanceof RaidenError,
+  'Error',
+  // if it quacks like a duck... without relying on instanceof
+  (u: unknown): u is Error => typeof u === 'object' && !!u && 'name' in u && 'message' in u,
   u =>
     pipe(
       serializedErr.decode(u),
-      map(({ message, code, stack, details }) =>
-        Object.assign(new RaidenError(message as ErrorCodes, details), {
-          code,
-          stack,
-          message,
-          details,
-        }),
-      ),
+      map(error => {
+        if ('details' in error) {
+          return Object.assign(new RaidenError(error.message as ErrorCodes, error.details), {
+            name: error.name,
+            stack: error.stack,
+          });
+        } else {
+          return Object.assign(new Error(error.message), { name: error.name, stack: error.stack });
+        }
+      }),
     ),
-  ({ name, message, stack, details, code }: RaidenError) => ({
-    name,
-    message,
-    stack,
-    code,
-    details,
+  (error: RaidenError | Error) => ({
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+    ...('details' in error ? { details: error.details } : {}),
   }),
 );

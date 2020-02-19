@@ -802,9 +802,9 @@ function autoExpire$(
     requests$.push(
       of(
         transfer.failure(
-          new RaidenError(ErrorCodes.XFER_EXPIRED, [
-            { block: sent.transfer[1].lock.expiration.toString() },
-          ]),
+          new RaidenError(ErrorCodes.XFER_EXPIRED, {
+            block: sent.transfer[1].lock.expiration.toString(),
+          }),
           { secrethash },
         ),
       ),
@@ -986,7 +986,11 @@ const secretReveal$ = (
     return EMPTY;
   } else if (request.amount.lt(value)) {
     log.error('SecretRequest for amount too small!', request, transf);
-    return of(transfer.failure(new Error('Invalid SecretRequest received'), { secrethash }));
+    return of(
+      transfer.failure(new RaidenError(ErrorCodes.XFER_INVALID_SECRETREQUEST), {
+        secrethash,
+      }),
+    );
   } else if (!request.amount.eq(value)) {
     // accept request
     log.info('Accepted SecretRequest for amount different than sent', request, transf);

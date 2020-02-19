@@ -49,7 +49,7 @@ export const getContracts = (network: Network): ContractsInfo => {
         ...goerliServicesDeploy.contracts,
       } as unknown) as ContractsInfo;
     default:
-      throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, [{ network: network.name }]);
+      throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, { network: network.name });
   }
 };
 
@@ -101,9 +101,10 @@ export const getSigner = async (
     } else if (account instanceof Wallet) {
       signer = account.connect(provider);
     } else {
-      throw new RaidenError(ErrorCodes.RDN_SIGNER_NOT_CONNECTED, [
-        { account: account.toString(), provider: provider.toString() },
-      ]);
+      throw new RaidenError(ErrorCodes.RDN_SIGNER_NOT_CONNECTED, {
+        account: account.toString(),
+        provider: provider.toString(),
+      });
     }
     address = (await signer.getAddress()) as Address;
   } else if (typeof account === 'number') {
@@ -114,9 +115,10 @@ export const getSigner = async (
     // address
     const accounts = await provider.listAccounts();
     if (!accounts.includes(account)) {
-      throw new RaidenError(ErrorCodes.RDN_ACCOUNT_NOT_FOUND, [
-        { account, accounts: JSON.stringify(accounts) },
-      ]);
+      throw new RaidenError(ErrorCodes.RDN_ACCOUNT_NOT_FOUND, {
+        account,
+        accounts: JSON.stringify(accounts),
+      });
     }
     signer = provider.getSigner(account);
     address = account;

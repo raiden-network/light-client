@@ -530,9 +530,9 @@ export async function asyncActionToPromise<
         if (asyncAction.failure.is(action))
           throw action.payload as ActionType<AAC['failure']>['payload'];
         else if (action.payload.confirmed === false)
-          throw new RaidenError(ErrorCodes.RDN_TRANSACTION_REOGRG, [
-            { transactionHash: action.payload.txHash! },
-          ]);
+          throw new RaidenError(ErrorCodes.RDN_TRANSACTION_REORG, {
+            transactionHash: action.payload.txHash!,
+          });
         return action.payload as ActionType<AAC['success']>['payload'];
       }),
     )

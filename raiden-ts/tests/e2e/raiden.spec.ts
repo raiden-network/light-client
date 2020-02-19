@@ -603,12 +603,6 @@ describe('Raiden', () => {
 
     test('newBlock', async () => {
       expect.assertions(1);
-      console.warn(
-        'RAIDEN NEW BLOCK',
-        raiden.address,
-        await raiden.getBlockNumber(),
-        provider.blockNumber,
-      );
       const promise = raiden.events$.pipe(first(newBlock.is)).toPromise();
       provider.mine(10);
       await expect(promise).resolves.toEqual(newBlock({ blockNumber: expect.any(Number) }));

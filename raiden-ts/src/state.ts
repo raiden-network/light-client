@@ -241,12 +241,10 @@ export const getState = async (
       if (state /* provided */) {
         // if both stored & provided state, ensure we weren't handed an older one!
         if (state.blockNumber < storedState.blockNumber) {
-          throw new RaidenError(ErrorCodes.RDN_STATE_MIGRATION, [
-            {
-              storedStateBlockNumber: storedState.blockNumber,
-              providedStateBlockNumber: state.blockNumber,
-            },
-          ]);
+          throw new RaidenError(ErrorCodes.RDN_STATE_MIGRATION, {
+            storedStateBlockNumber: storedState.blockNumber,
+            providedStateBlockNumber: state.blockNumber,
+          });
         } else {
           log.warn(
             `Replacing stored state @blockNumber=${storedState.blockNumber} with newer provided state @blockNumber=${state.blockNumber}`,

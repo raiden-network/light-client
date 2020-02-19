@@ -149,19 +149,18 @@ const prepareNextIOU$ = (
               }
               const text = await response.text();
               if (!response.ok)
-                throw new RaidenError(ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, [
-                  { responseStatus: response.status, responseText: text },
-                ]);
+                throw new RaidenError(ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, {
+                  responseStatus: response.status,
+                  responseText: text,
+                });
 
               const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
               const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
               if (signer !== deps.address)
-                throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, [
-                  {
-                    signer,
-                    address: deps.address,
-                  },
-                ]);
+                throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, {
+                  signer,
+                  address: deps.address,
+                });
               return lastIou;
             }),
           )
@@ -206,9 +205,9 @@ export const pathFindServiceEpic = (
             mergeMap(([state, presences, { pfs: configPfs, httpTimeout, pfsSafetyMargin }]) => {
               const { tokenNetwork, target } = action.meta;
               if (!(tokenNetwork in state.channels))
-                throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, [{ tokenNetwork }]);
+                throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, { tokenNetwork });
               if (!(target in presences) || !presences[target].payload.available)
-                throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, [{ target }]);
+                throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, { target });
 
               // if pathFind received a set of paths, pass it through to validation/cleanup
               if (action.payload.paths) return of({ paths: action.payload.paths, iou: undefined });
@@ -333,9 +332,10 @@ export const pathFindServiceEpic = (
                   }
                   // if error, don't proceed
                   if (!data.paths) {
-                    throw new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, [
-                      { errorCode: data.error.error_code, errors: data.error.errors },
-                    ]);
+                    throw new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, {
+                      errorCode: data.error.error_code,
+                      errors: data.error.errors,
+                    });
                   }
                   const filteredPaths: Paths = [],
                     invalidatedRecipients = new Set<Address>();
