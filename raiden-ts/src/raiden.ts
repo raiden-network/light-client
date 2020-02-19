@@ -45,7 +45,7 @@ import {
 } from './channels/actions';
 import { matrixPresence } from './transport/actions';
 import { transfer, transferSigned } from './transfers/actions';
-import { makeSecret, getSecrethash, makePaymentId } from './transfers/utils';
+import { makeSecret, getSecrethash, makePaymentId, raidenSentTransfer } from './transfers/utils';
 import { pathFind } from './path/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
 import { pfsListInfo } from './path/utils';
@@ -776,6 +776,32 @@ export class Raiden {
         ),
       )
       .toPromise();
+  }
+
+  /**
+   * Waits for the transfer identified by a secrethash to fail or complete
+   *
+   * The returned promise will resolve with the final amount received by the target
+   *
+   * @param secrethash - Transfer identifier
+   * @returns Amount received by target, as informed by them on SecretRequest
+   */
+  public async waitTransfer(secrethash: string): Promise<BigNumber | undefined> {
+    assert(Hash.is(secrethash), 'Invalid secrethash for transfer');
+    let state = this.state;
+    assert(secrethash in state.sent, 'Unknown secrethash');
+
+    const sent = raidenSentTransfer(state.sent[secrethash]);
+    // already completed/past transfer
+    if (sent.completed) {
+      if (sent.success) return this.state.sent[secrethash].secretRequest?.[1]?.amount;
+      else throw new Error(sent.status);
+    }
+
+    // throws/rejects if a failure occurs
+    await asyncActionToPromise(transfer, { secrethash }, this.action$);
+    state = this.state;
+    return state.sent[secrethash].secretRequest?.[1]?.amount;
   }
 
   /**

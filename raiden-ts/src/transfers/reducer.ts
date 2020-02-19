@@ -26,6 +26,7 @@ import {
   transferExpireProcessed,
   transferClear,
   withdrawReceive,
+  transferSecretRequest,
 } from './actions';
 
 // Reducers for different actions
@@ -81,6 +82,24 @@ function transferSignedReducer(state: RaidenState, action: transferSigned): Raid
   state = set(channelPath, channel, state);
   state = set(['sent', secrethash], sentTransfer, state);
   return state;
+}
+
+function transferSecretRequestedReducer(
+  state: RaidenState,
+  action: transferSecretRequest,
+): RaidenState {
+  const secrethash = action.meta.secrethash;
+  if (!(secrethash in state.sent)) return state;
+  return {
+    ...state,
+    sent: {
+      ...state.sent,
+      [secrethash]: {
+        ...state.sent[secrethash],
+        secretRequest: timed(action.payload.message),
+      },
+    },
+  };
 }
 
 function transferSecretReveledReducer(
@@ -297,6 +316,7 @@ export const transfersReducer: Reducer<RaidenState, RaidenAction> = createReduce
     [transferProcessed, transferUnlockProcessed, transferExpireProcessed, transferRefunded],
     transferStateReducer,
   )
+  .handle(transferSecretRequest, transferSecretRequestedReducer)
   .handle(transferSecretReveal, transferSecretReveledReducer)
   .handle(transferUnlock.success, transferUnlockSuccessReducer)
   .handle(transferExpire.success, transferExpireSuccessReducer)

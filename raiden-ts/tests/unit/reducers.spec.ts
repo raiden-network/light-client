@@ -33,6 +33,7 @@ import {
   transferUnlockProcessed,
   transferExpireProcessed,
   withdrawReceive,
+  transferSecretRequest,
 } from 'raiden-ts/transfers/actions';
 import {
   LockedTransfer,
@@ -43,6 +44,7 @@ import {
   SecretReveal,
   RefundTransfer,
   WithdrawConfirmation,
+  SecretRequest,
 } from 'raiden-ts/messages/types';
 import {
   makeMessageId,
@@ -987,6 +989,25 @@ describe('raidenReducer', () => {
       ].reduce(raidenReducer, state);
 
       expect(get(newState, ['sent', secrethash, 'transferProcessed', 1])).toBe(processed);
+    });
+
+    test('transfer secret request', () => {
+      const secretRequest: Signed<SecretRequest> = {
+          type: MessageType.SECRET_REQUEST,
+          message_identifier: makeMessageId(),
+          secrethash,
+          payment_identifier: transfer.payment_identifier,
+          amount: transfer.lock.amount,
+          expiration: transfer.lock.expiration,
+          signature: makeSignature(),
+        },
+        action = transferSecretRequest({ message: secretRequest }, { secrethash }),
+        newState = [transferSigned({ message: transfer, fee }, { secrethash }), action].reduce(
+          raidenReducer,
+          state,
+        );
+
+      expect(newState.sent[secrethash]?.secretRequest?.[1]).toBe(secretRequest);
     });
 
     test('transfer secret reveal', () => {
