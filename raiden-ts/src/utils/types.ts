@@ -97,9 +97,9 @@ export interface HexStringB<S extends number> extends SizedB<S> {
  * @param size - Required number of bytes. Pass undefined or zero to have a variable-sized type
  * @returns branded codec for hex-encoded bytestrings
  */
-export const HexString = memoize<
-  <S extends number = number>(size?: S) => t.BrandC<t.StringC, HexStringB<S>>
->(function<S extends number = number>(size?: S) {
+export const HexString: <S extends number = number>(
+  size?: S,
+) => t.BrandC<t.StringC, HexStringB<S>> = memoize(function<S extends number = number>(size?: S) {
   return t.brand(
     t.string,
     (n): n is string & t.Brand<HexStringB<S>> =>
@@ -123,9 +123,9 @@ export interface IntB<S extends number> extends SizedB<S> {
  * @param size - Required number of bytes. Pass undefined to have a variable-sized type
  * @returns branded codec for hex-encoded bytestrings
  */
-export const Int = memoize<
-  <S extends number = number>(size?: S) => t.BrandC<typeof BigNumberC, IntB<S>>
->(function<S extends number = number>(size?: S) {
+export const Int: <S extends number = number>(
+  size?: S,
+) => t.BrandC<typeof BigNumberC, IntB<S>> = memoize(function<S extends number = number>(size?: S) {
   const min = size ? Zero.sub(Two.pow(size * 8 - 1)) : undefined,
     max = size ? Two.pow(size * 8 - 1) : undefined;
   return t.brand(
@@ -149,9 +149,11 @@ export interface UIntB<S extends number> extends SizedB<S> {
  * @param size - Required number of bytes. Pass undefined to have a variable-sized type
  * @returns branded codec for hex-encoded bytestrings
  */
-export const UInt = memoize<
-  <S extends number = number>(size?: S) => t.BrandC<typeof BigNumberC, UIntB<S>>
->(function<S extends number = number>(size?: S) {
+export const UInt: <S extends number = number>(
+  size?: S,
+) => t.BrandC<typeof BigNumberC, UIntB<S>> = memoize(function<S extends number = number>(
+  size?: S,
+) {
   const min = size ? Zero : undefined,
     max = size ? Two.pow(size * 8) : undefined;
   return t.brand(
@@ -217,8 +219,10 @@ export const Address = new t.Type<Address, string>(
  * @param codec - Codec to compose with a timestamp in a tuple
  * @returns Codec of a tuple of timestamp and codec type
  */
-export const Timed = memoize<<T extends t.Mixed>(codec: T) => t.TupleC<[t.NumberC, T]>>(
-  <T extends t.Mixed>(codec: T) => t.tuple([t.number, codec]),
+export const Timed: <T extends t.Mixed>(
+  codec: T,
+) => t.TupleC<[t.NumberC, T]> = memoize(<T extends t.Mixed>(codec: T) =>
+  t.tuple([t.number, codec]),
 );
 export type Timed<T> = [number, T];
 
@@ -235,20 +239,18 @@ export function timed<T>(v: T): Timed<T> {
 // generic type codec for messages that must be signed
 // use it like: Codec = Signed(Message)
 // The t.TypeOf<typeof codec> will be Signed<Message>, defined later
-export const Signed = memoize<
-  <C extends t.Mixed>(
-    codec: C,
-  ) => t.IntersectionC<
-    [
-      C,
-      t.ReadonlyC<
-        t.TypeC<{
-          signature: typeof Signature;
-        }>
-      >,
-    ]
-  >
->(<C extends t.Mixed>(codec: C) =>
+export const Signed: <C extends t.Mixed>(
+  codec: C,
+) => t.IntersectionC<
+  [
+    C,
+    t.ReadonlyC<
+      t.TypeC<{
+        signature: typeof Signature;
+      }>
+    >,
+  ]
+> = memoize(<C extends t.Mixed>(codec: C) =>
   t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),
 );
 export type Signed<M> = M & { signature: Signature };

@@ -42,7 +42,7 @@ import {
   retryWhen,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
-import { find, minBy, sortBy } from 'lodash';
+import { find, minBy, sortBy, curry } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
 
@@ -87,12 +87,52 @@ import { LruCache } from '../utils/lru';
 import { pluckDistinct } from '../utils/rx';
 import { matrixRoom, matrixRoomLeave, matrixSetup, matrixPresence } from './actions';
 import { RaidenMatrixSetup } from './state';
-import { getRoom$, roomMatch, globalRoomNames } from './utils';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available/online then
 const AVAILABLE = ['online', 'unavailable'];
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
+
+/**
+ * Return the array of configured global rooms
+ *
+ * @param config - object to gather the list from
+ * @returns Array of room names
+ */
+function globalRoomNames(config: RaidenConfig) {
+  return [config.discoveryRoom, config.pfsRoom].filter(isntNil);
+}
+
+/**
+ * Curried function (arity=2) which matches room passed as second argument based on roomId, name or
+ * alias passed as first argument
+ *
+ * @param roomIdOrAlias - Room Id, name, canonical or normal alias for room
+ * @param room - Room to test
+ * @returns True if room matches term, false otherwise
+ */
+const roomMatch = curry(
+  (roomIdOrAlias: string, room: Room) =>
+    roomIdOrAlias === room.roomId ||
+    roomIdOrAlias === room.name ||
+    roomIdOrAlias === room.getCanonicalAlias() ||
+    room.getAliases().includes(roomIdOrAlias),
+);
+
+/**
+ * Returns an observable to a (possibly pending) room matching roomId or some alias
+ * This method doesn't try to join the room, just wait for it to show up in MatrixClient.
+ *
+ * @param matrix - Client instance to fetch room info from
+ * @param roomIdOrAlias - room id or alias to look for
+ * @returns Observable to populated room instance
+ */
+function getRoom$(matrix: MatrixClient, roomIdOrAlias: string): Observable<Room> {
+  let room: Room | null | undefined = matrix.getRoom(roomIdOrAlias);
+  if (!room) room = matrix.getRooms().find(roomMatch(roomIdOrAlias));
+  if (room) return of(room);
+  return fromEvent<Room>(matrix, 'Room').pipe(filter(roomMatch(roomIdOrAlias)), take(1));
+}
 
 /**
  * Joins the global broadcast rooms and returns the room ids.
