@@ -14,6 +14,7 @@ Vue.use(Vuetify);
 
 describe('AddressInput', () => {
   let wrapper: Wrapper<AddressInput>;
+  let vuetify: typeof Vuetify;
 
   let ensResolve: jest.Mock<any, any>;
   let getAvailability: jest.Mock<any, any>;
@@ -27,7 +28,9 @@ describe('AddressInput', () => {
     excluded?: string,
     blocked?: string
   ) {
+    vuetify = new Vuetify();
     return mount(AddressInput, {
+      vuetify,
       store,
       propsData: {
         value,

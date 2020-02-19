@@ -1,8 +1,7 @@
 jest.useFakeTimers();
 
 import Filters from '@/filters';
-import { createLocalVue, mount, shallowMount, Wrapper } from '@vue/test-utils';
-import { addElemWithDataAppToBody } from '../utils/dialog';
+import { mount, shallowMount, Wrapper } from '@vue/test-utils';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import { TestData } from '../data/mock-data';
@@ -17,11 +16,10 @@ import { $identicon } from '../utils/mocks';
 import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
+Vue.use(Vuex);
 Vue.filter('truncate', Filters.truncate);
 
 describe('SelectHub.vue', () => {
-  addElemWithDataAppToBody();
-
   let wrapper: Wrapper<SelectHub>;
   let router: Mocked<VueRouter>;
   let vuetify: typeof Vuetify;
@@ -32,12 +30,11 @@ describe('SelectHub.vue', () => {
     });
 
   function createWrapper(route: Route, token: any, shallow: boolean = false) {
-    const localVue = createLocalVue();
-    localVue.use(Vuex);
+    vuetify = new Vuetify();
     const options = {
       vuetify,
-      localVue,
       store,
+      stubs: ['v-dialog'],
       mocks: {
         $route: route,
         $router: router,

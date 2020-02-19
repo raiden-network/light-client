@@ -17,10 +17,11 @@ describe('OfflineSnackbar.vue', () => {
     });
   });
   test('do not show the snackbar when there is a working connection', async () => {
-    // @ts-ignore
-    window.navigator.onLine = true;
+    (window.navigator as any).onLine = true;
 
+    const vuetify = new Vuetify();
     const wrapper = mount(OfflineSnackbar, {
+      vuetify,
       attachToDocument: true,
       mocks: {
         $t: (msg: string) => msg
@@ -31,10 +32,11 @@ describe('OfflineSnackbar.vue', () => {
   });
 
   test('show the snackbar when a working connection does not exist', async () => {
-    // @ts-ignore
-    window.navigator.onLine = false;
+    (window.navigator as any).onLine = false;
 
+    const vuetify = new Vuetify();
     const wrapper = mount(OfflineSnackbar, {
+      vuetify,
       attachToDocument: true,
       mocks: {
         $t: (msg: string) => msg

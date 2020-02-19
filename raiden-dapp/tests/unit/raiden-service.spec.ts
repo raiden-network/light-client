@@ -11,18 +11,15 @@ import RaidenService, {
   TransferFailed
 } from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
-import Vuex, { Store } from 'vuex';
+import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
 import { Raiden, RaidenSentTransfer } from 'raiden-ts';
-import Vue from 'vue';
 import { BigNumber, bigNumberify } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
 import { One, Zero, AddressZero } from 'ethers/constants';
 import Mocked = jest.Mocked;
-
-Vue.use(Vuex);
 
 describe('RaidenService', () => {
   let raidenService: RaidenService;
@@ -35,41 +32,30 @@ describe('RaidenService', () => {
   };
   const path = [{ path: ['0xmediator'], fee: new BigNumber(1 ** 10) }];
 
-  const mockRaiden = (overrides: {} = {}) =>
-    Object.assign(
-      {
-        address: '123',
-        getBalance: jest.fn().mockResolvedValue(Zero),
-        channels$: EMPTY,
-        events$: EMPTY,
-        // Emit a dummy transfer event every time raiden is mocked
-        transfers$: of({}).pipe(delay(1000)),
-        getTokenBalance: jest.fn().mockResolvedValue(Zero),
-        getTokenList: jest.fn().mockResolvedValue(['0xtoken']),
-        getTokenInfo: jest.fn().mockResolvedValue(null),
-        getUDCCapacity: jest.fn().mockResolvedValue(Zero),
-        userDepositTokenAddress: jest
-          .fn()
-          .mockResolvedValue('0xuserdeposittoken'),
-        start: jest.fn().mockReturnValue(null),
-        stop: jest.fn().mockReturnValue(null),
-        getAvailability: jest
-          .fn()
-          .mockResolvedValue({ userId: '123', available: true, ts: 0 })
-      },
-      overrides
-    );
+  const mockRaiden = (overrides: {} = {}) => ({
+    address: '123',
+    getBalance: jest.fn().mockResolvedValue(Zero),
+    channels$: EMPTY,
+    events$: EMPTY,
+    // Emit a dummy transfer event every time raiden is mocked
+    transfers$: of({}).pipe(delay(1000)),
+    getTokenBalance: jest.fn().mockResolvedValue(Zero),
+    getTokenList: jest.fn().mockResolvedValue(['0xtoken']),
+    getTokenInfo: jest.fn().mockResolvedValue(null),
+    getUDCCapacity: jest.fn().mockResolvedValue(Zero),
+    userDepositTokenAddress: jest.fn().mockResolvedValue('0xuserdeposittoken'),
+    start: jest.fn().mockReturnValue(null),
+    stop: jest.fn().mockReturnValue(null),
+    getAvailability: jest
+      .fn()
+      .mockResolvedValue({ userId: '123', available: true, ts: 0 }),
+    ...overrides
+  });
 
   beforeEach(() => {
     factory = Raiden.create = jest.fn();
     providerMock = Web3Provider.provider = jest.fn();
     store = new Store({}) as Mocked<Store<RootState>>;
-    store.commit = jest.fn();
-    (store as any).state = {
-      tokens: {},
-      presences: {},
-      transfers: {}
-    };
     raidenService = new RaidenService(store);
   });
 
