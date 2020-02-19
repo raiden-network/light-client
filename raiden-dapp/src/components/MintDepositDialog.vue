@@ -66,7 +66,6 @@
     </v-card-text>
     <v-card-actions>
       <action-button
-        sticky
         arrow
         :enabled="valid && !loading"
         :text="$t('mint-deposit-dialog.button')"
