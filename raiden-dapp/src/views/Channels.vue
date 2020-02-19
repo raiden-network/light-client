@@ -101,6 +101,7 @@ export default class Channels extends Mixins(NavigationMixin) {
 
   onAction(action: ChannelAction) {
     const channel = this.selectedChannel;
+    /* istanbul ignore if */
     if (!channel) {
       return;
     }
@@ -150,6 +151,7 @@ export default class Channels extends Mixins(NavigationMixin) {
     }
   }
 
+  /* istanbul ignore next */
   showMessage(message: string) {
     this.message = message;
     this.snackbar = true;
