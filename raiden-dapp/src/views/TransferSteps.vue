@@ -60,7 +60,15 @@
               <v-col cols="10">
                 <v-tooltip top>
                   <template #activator="{ on }">
-                    <span class="udc-balance__amount" v-on="on">
+                    <span
+                      class="udc-balance__amount"
+                      :class="{
+                        'low-balance':
+                          selectedPfs !== null &&
+                          !udcCapacity.gte(selectedPfs.price)
+                      }"
+                      v-on="on"
+                    >
                       {{ udcCapacity | displayFormat(udcToken.decimals) }}
                       {{ udcToken.symbol || '' }}
                     </span>
@@ -104,7 +112,20 @@
               class="udc-balance__container"
             >
               <v-col cols="10">
-                <span class="udc-balance__description">
+                <span
+                  v-if="
+                    selectedPfs !== null && !udcCapacity.gte(selectedPfs.price)
+                  "
+                  class="udc-balance__description low-balance"
+                >
+                  {{
+                    $t(
+                      'transfer.steps.request-route.udc-description-low-balance',
+                      { token: udcToken.symbol }
+                    )
+                  }}
+                </span>
+                <span v-else class="udc-balance__description">
                   {{ $t('transfer.steps.request-route.udc-description') }}
                 </span>
               </v-col>
@@ -650,12 +671,20 @@ export default class TransferSteps extends Mixins(
       font-family: Roboto, sans-serif;
       color: $color-white;
       vertical-align: middle;
+
+      &.low-balance {
+        color: $error-color;
+      }
     }
 
     &__description {
       font-size: 16px;
       font-family: Roboto, sans-serif;
       color: $secondary-text-color;
+
+      &.low-balance {
+        color: $error-color;
+      }
     }
 
     &__deposit {

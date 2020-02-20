@@ -40,36 +40,31 @@
           class="pathfinding-services__table"
           @item-selected="select($event)"
         >
-          <template #item.address="{ item }">
-            <v-tooltip bottom>
-              <template #activator="{ on }">
-                <span v-on="on">
-                  {{ item.address | truncate(8) }}
-                </span>
-              </template>
-              <span>{{ item.address }}</span>
-            </v-tooltip>
-          </template>
           <template #item.host="{ item }">
             <v-tooltip bottom>
               <template #activator="{ on }">
-                <span v-on="on">
-                  {{ item.url.replace('https://', '') | truncate(28) }}
-                </span>
+                <div class="pathfinding-services__table__pfs">
+                  <span v-on="on">
+                    {{ item.url.replace('https://', '') | truncate(28) }}
+                  </span>
+                  <span>
+                    {{ $t('pathfinding-services.rtt', { time: item.rtt }) }}
+                  </span>
+                </div>
               </template>
               <span>{{ item.url }}</span>
             </v-tooltip>
           </template>
-          <template #item.rtt="{ item }">
-            {{ $t('pathfinding-services.rtt', { time: item.rtt }) }}
-          </template>
+
           <template #item.price="{ item }">
             <v-tooltip bottom>
               <template #activator="{ on }">
-                <span v-on="on">
-                  {{ item.price | displayFormat(token(item.token).decimals) }}
-                  {{ token(item.token).symbol || '' }}
-                </span>
+                <div class="pathfinding-services__table__price">
+                  <span v-on="on">
+                    {{ item.price | displayFormat(token(item.token).decimals) }}
+                    {{ token(item.token).symbol || '' }}
+                  </span>
+                </div>
               </template>
               <span>
                 {{ item.price | toUnits(token(item.token).decimals) }}
@@ -108,11 +103,6 @@ export default class PathfindingServices extends Vue {
       {
         text: this.$t('pathfinding-services.headers.host') as string,
         value: 'host',
-        align: 'left'
-      },
-      {
-        text: this.$t('pathfinding-services.headers.rtt') as string,
-        value: 'rtt',
         align: 'left'
       },
       {
@@ -188,8 +178,15 @@ export default class PathfindingServices extends Vue {
   &__table {
     margin-bottom: 20px;
 
+    &__pfs,
+    &__price {
+      display: flex;
+      flex-direction: column;
+      height: 42px;
+    }
+
     &.v-data-table {
-      background-color: transparent !important;
+      background-color: transparent;
     }
 
     ::v-deep {
@@ -210,6 +207,7 @@ export default class PathfindingServices extends Vue {
 
       td {
         border: none !important;
+        height: 74px;
         padding-top: 5px;
         padding-bottom: 5px;
       }
