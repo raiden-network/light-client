@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/camelcase */
 import * as t from 'io-ts';
 import { AddressZero } from 'ethers/constants';
 import { Network, getNetwork } from 'ethers/utils';
@@ -163,12 +164,10 @@ export const initialState = makeInitialState({
   network: getNetwork('unspecified'),
   address: AddressZero as Address,
   contractsInfo: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
     TokenNetworkRegistry: { address: AddressZero as Address, block_number: 0 },
-    // eslint-disable-next-line @typescript-eslint/camelcase
     ServiceRegistry: { address: AddressZero as Address, block_number: 0 },
-    // eslint-disable-next-line @typescript-eslint/camelcase
     UserDeposit: { address: AddressZero as Address, block_number: 0 },
+    SecretRegistry: { address: AddressZero as Address, block_number: 0 },
   },
 });
 
