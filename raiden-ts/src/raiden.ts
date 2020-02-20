@@ -795,7 +795,7 @@ export class Raiden {
     // already completed/past transfer
     if (sent.completed) {
       if (sent.success) return this.state.sent[secrethash].secretRequest?.[1]?.amount;
-      else throw new Error(sent.status);
+      else throw new RaidenError(ErrorCodes.XFER_ALREADY_COMPLETED, { status: sent.status });
     }
 
     // throws/rejects if a failure occurs
