@@ -20,6 +20,7 @@ import { HumanStandardTokenFactory } from './contracts/HumanStandardTokenFactory
 import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 import { UserDepositFactory } from './contracts/UserDepositFactory';
+import { SecretRegistryFactory } from './contracts/SecretRegistryFactory';
 
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
@@ -203,6 +204,10 @@ export class Raiden {
       ),
       userDepositContract: UserDepositFactory.connect(
         contractsInfo.UserDeposit.address,
+        main?.signer ?? signer,
+      ),
+      secretRegistryContract: SecretRegistryFactory.connect(
+        contractsInfo.SecretRegistry.address,
         main?.signer ?? signer,
       ),
       main,
