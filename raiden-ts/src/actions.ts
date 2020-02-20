@@ -7,7 +7,7 @@ import * as t from 'io-ts';
 import { ShutdownReason } from './constants';
 import { PartialRaidenConfig } from './config';
 import { ActionType, createAction, Action } from './utils/actions';
-import { ErrorCodec } from './utils/types';
+import { ErrorCodec } from './utils/error';
 
 import * as ChannelsActions from './channels/actions';
 import * as TransportActions from './transport/actions';

@@ -30,6 +30,7 @@ import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog } from '../mocks';
 import { getLatest$ } from 'raiden-ts/epics';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
+import { ErrorCodes } from 'raiden-ts/utils/error';
 
 describe('PFS: pathFindServiceEpic', () => {
   const depsMock = raidenEpicDeps();
@@ -128,7 +129,10 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFind.failure(
-        expect.objectContaining({ message: expect.stringContaining('unknown tokenNetwork') }),
+        expect.objectContaining({
+          message: ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK,
+          details: { tokenNetwork: token },
+        }),
         { tokenNetwork: token, target, value },
       ),
     );
@@ -154,8 +158,15 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFind.failure(
-        expect.objectContaining({ message: expect.stringMatching(/target.*not online/i) }),
-        { tokenNetwork, target, value },
+        expect.objectContaining({
+          message: ErrorCodes.PFS_TARGET_OFFLINE,
+          details: { target },
+        }),
+        {
+          tokenNetwork,
+          target,
+          value,
+        },
       ),
     );
   });
@@ -487,7 +498,7 @@ describe('PFS: pathFindServiceEpic', () => {
     ).resolves.toMatchObject(
       pathFind.failure(
         expect.objectContaining({
-          message: expect.stringContaining('Could not validate any PFS info'),
+          message: ErrorCodes.PFS_INVALID_INFO,
         }),
         { tokenNetwork, target, value },
       ),
@@ -537,7 +548,10 @@ describe('PFS: pathFindServiceEpic', () => {
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
       pathFind.failure(
-        expect.objectContaining({ message: expect.stringContaining('paths request: code=1337') }),
+        expect.objectContaining({
+          message: ErrorCodes.PFS_ERROR_RESPONSE,
+          details: { errorCode: 1337, errors: 'No route' },
+        }),
         { tokenNetwork, target, value },
       ),
     );
@@ -817,14 +831,11 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFind.failure(
-        expect.objectContaining({ message: expect.stringContaining('no valid routes found') }),
-        {
-          tokenNetwork,
-          target,
-          value,
-        },
-      ),
+      pathFind.failure(expect.objectContaining({ message: ErrorCodes.PFS_NO_ROUTES_FOUND }), {
+        tokenNetwork,
+        target,
+        value,
+      }),
     );
   });
 
@@ -847,13 +858,12 @@ describe('PFS: pathFindServiceEpic', () => {
         ),
       );
 
-    await expect(
-      pathFindServiceEpic(action$, state$, depsMock).toPromise(),
-    ).resolves.toMatchObject(
-      pathFind.failure(
-        expect.objectContaining({ message: expect.stringContaining('no valid routes found') }),
-        { tokenNetwork, target, value },
-      ),
+    expect(pathFindServiceEpic(action$, state$, depsMock).toPromise()).resolves.toMatchObject(
+      pathFind.failure(expect.objectContaining({ message: ErrorCodes.PFS_NO_ROUTES_FOUND }), {
+        tokenNetwork,
+        target,
+        value,
+      }),
     );
   });
 
@@ -923,7 +933,8 @@ describe('PFS: pathFindServiceEpic', () => {
       ),
       pathFind.failure(
         expect.objectContaining({
-          message: expect.stringContaining('No route between nodes found.'),
+          message: ErrorCodes.PFS_ERROR_RESPONSE,
+          details: { errorCode: 2201, errors: 'No route between nodes found.' },
         }),
         { tokenNetwork, target, value },
       ),
@@ -969,7 +980,8 @@ describe('PFS: pathFindServiceEpic', () => {
     ).resolves.toMatchObject([
       pathFind.failure(
         expect.objectContaining({
-          message: expect.stringContaining('last IOU request: code=500'),
+          message: ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED,
+          details: { responseStatus: 500, responseText: '{}' },
         }),
         { tokenNetwork, target, value },
       ),
@@ -1023,7 +1035,11 @@ describe('PFS: pathFindServiceEpic', () => {
     ).resolves.toMatchObject([
       pathFind.failure(
         expect.objectContaining({
-          message: expect.stringContaining('last iou signature mismatch'),
+          message: ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH,
+          details: expect.objectContaining({
+            signer: '0x9EE8539c8C7215AcAE56Fed72E7035a307e24989',
+            address: '0x14791697260E4c9A71f18484C9f997B308e59325',
+          }),
         }),
         { tokenNetwork, target, value },
       ),
@@ -1090,7 +1106,12 @@ describe('PFS: pathFindServiceEpic', () => {
       iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
       pathFind.failure(
         expect.objectContaining({
-          message: expect.stringContaining('The IOU is already claimed'),
+          message: ErrorCodes.PFS_ERROR_RESPONSE,
+          details: {
+            errors:
+              'The IOU is already claimed. Please start new session with different `expiration_block`.',
+            errorCode: 2105,
+          },
         }),
         { tokenNetwork, target, value },
       ),
@@ -1123,10 +1144,11 @@ describe('PFS: pathFindServiceEpic', () => {
     await expect(
       pathFindServiceEpic(action$, state$, depsMock).toPromise(),
     ).resolves.toMatchObject(
-      pathFind.failure(
-        expect.objectContaining({ message: expect.stringContaining('PFS disabled') }),
-        { tokenNetwork, target, value },
-      ),
+      pathFind.failure(expect.objectContaining({ message: ErrorCodes.PFS_DISABLED }), {
+        tokenNetwork,
+        target,
+        value,
+      }),
     );
   });
 });

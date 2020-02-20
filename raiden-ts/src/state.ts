@@ -16,6 +16,7 @@ import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
 import { IOU } from './path/types';
 import { getNetworkName } from './utils/ethers';
+import RaidenError, { ErrorCodes } from './utils/error';
 
 // same as highest migrator function in migration.index.migrators
 export const CURRENT_STATE_VERSION = 0;
@@ -240,9 +241,10 @@ export const getState = async (
       if (state /* provided */) {
         // if both stored & provided state, ensure we weren't handed an older one!
         if (state.blockNumber < storedState.blockNumber) {
-          throw new Error(
-            `Can't replace stored state @blockNumber=${storedState.blockNumber} with older provided state @blockNumber=${state.blockNumber}.`,
-          );
+          throw new RaidenError(ErrorCodes.RDN_STATE_MIGRATION, {
+            storedStateBlockNumber: storedState.blockNumber,
+            providedStateBlockNumber: state.blockNumber,
+          });
         } else {
           log.warn(
             `Replacing stored state @blockNumber=${storedState.blockNumber} with newer provided state @blockNumber=${state.blockNumber}`,

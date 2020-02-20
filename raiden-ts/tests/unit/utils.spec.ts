@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
-
+import { isError } from 'util';
 import { of } from 'rxjs';
 import { first, take, toArray } from 'rxjs/operators';
 
@@ -18,9 +18,9 @@ import {
   Secret,
   Timed,
   timed,
-  ErrorCodec,
   decode,
 } from 'raiden-ts/utils/types';
+import RaidenError, { ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
 import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
@@ -278,21 +278,22 @@ describe('types', () => {
   test('ErrorCodec', () => {
     let err;
     try {
-      throw new Error('error message');
+      throw new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
     } catch (e) {
       err = e;
     }
     expect(ErrorCodec.is(err)).toBe(true);
     const encoded = ErrorCodec.encode(err);
     expect(encoded).toStrictEqual({
-      name: 'Error',
-      message: 'error message',
+      name: 'RaidenError',
+      message: ErrorCodes.RDN_GENERAL_ERROR,
       stack: expect.any(String),
+      details: expect.anything(),
     });
-    expect(decode(ErrorCodec, err)).toBe(err);
+    expect(decode(ErrorCodec, encoded)).toStrictEqual(err);
     const decoded = decode(ErrorCodec, encoded);
-    expect(decoded).toBeInstanceOf(Error);
-    expect(decoded.message).toBe('error message');
+    expect(decoded).toBeInstanceOf(RaidenError);
+    expect(decoded.message).toBe(ErrorCodes.RDN_GENERAL_ERROR);
     expect(decoded.stack).toBeTruthy();
   });
 });
@@ -328,7 +329,7 @@ describe('data', () => {
 
     expect(() => encode(-1, 2)).toThrowError('negative');
     expect(() => encode(bigNumberify(65537), 2)).toThrowError('too large');
-    expect(() => encode('0x01', 2)).toThrowError('exact length');
+    expect(() => encode('0x01', 2)).toThrowError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFRENCE);
     expect(() => encode((true as unknown) as number, 2)).toThrowError('data is not');
   });
 
@@ -378,5 +379,54 @@ describe('messages', () => {
     const secret = makeSecret();
     expect(Secret.is(secret)).toBe(true);
     expect(hexDataLength(secret)).toBe(32);
+  });
+});
+
+describe('RaidenError', () => {
+  test('RaidenError is instance of its custom class', () => {
+    try {
+      throw new RaidenError(ErrorCodes.PFS_DISABLED);
+    } catch (err) {
+      expect(err).toBeInstanceOf(RaidenError);
+      expect(isError(err)).toBeTruthy();
+      expect(err.name).toEqual('RaidenError');
+    }
+  });
+
+  test('Has stack trace w/ class name and developer-friendly message', () => {
+    try {
+      function doSomething() {
+        throw new RaidenError(ErrorCodes.PFS_DISABLED);
+      }
+      doSomething();
+    } catch (err) {
+      // Stack trace exists
+      expect(err.stack).toBeDefined();
+
+      // Stack trace starts with the error message
+      expect(err.stack.split('\n').shift()).toEqual(
+        'RaidenError: Pathfinding Service is disabled and no direct route is available.',
+      );
+
+      // Stack trace contains function where error was thrown
+      expect(err.stack.split('\n')[1]).toContain('doSomething');
+    }
+  });
+
+  test('End user "code" property is set', () => {
+    try {
+      throw new RaidenError(ErrorCodes.PFS_DISABLED);
+    } catch (err) {
+      expect(err.code).toBeDefined();
+      expect(err.code).toEqual('PFS_DISABLED');
+    }
+  });
+
+  test('Details can be added and are shown in stack trace', () => {
+    try {
+      throw new RaidenError(ErrorCodes.PFS_DISABLED, { value: 'bar', key: 'foo' });
+    } catch (err) {
+      expect(err.details).toStrictEqual({ value: 'bar', key: 'foo' });
+    }
   });
 });

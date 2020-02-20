@@ -13,6 +13,7 @@ import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
+import RaidenError, { ErrorCodes } from '../utils/error';
 import { PFS } from './types';
 
 /**
@@ -86,8 +87,8 @@ export function pfsInfo(
   return url$.pipe(
     withLatestFrom(config$),
     mergeMap(([url, { httpTimeout }]) => {
-      if (!url) throw new Error(`Empty URL: ${url}`);
-      else if (!urlRegex.test(url)) throw new Error(`Invalid URL: ${url}`);
+      if (!url) throw new RaidenError(ErrorCodes.PFS_EMPTY_URL);
+      else if (!urlRegex.test(url)) throw new RaidenError(ErrorCodes.PFS_INVALID_URL, { url });
       // default to https for domain-only urls
       else if (!url.startsWith('https://')) url = `https://${url}`;
 
@@ -142,10 +143,7 @@ export function pfsListInfo(
     ),
     toArray(),
     map(list => {
-      if (!list.length)
-        throw new Error(
-          'Could not validate any PFS info. Possibly out-of-sync with PFSs version.',
-        );
+      if (!list.length) throw new RaidenError(ErrorCodes.PFS_INVALID_INFO);
       return list.sort((a, b) => {
         const dif = a.price.sub(b.price);
         // first, sort by price

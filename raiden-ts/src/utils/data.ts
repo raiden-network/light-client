@@ -5,6 +5,7 @@ import { Arrayish, hexlify, isArrayish, hexZeroPad, hexDataLength } from 'ethers
 import * as LosslessJSON from 'lossless-json';
 
 import { BigNumberC, HexString } from './types';
+import RaidenError, { ErrorCodes } from './error';
 
 /**
  * Encode data to hex string of exactly length size (in bytes)
@@ -24,16 +25,16 @@ export function encode<S extends number = number>(
   let hex: HexString<S>;
   if (typeof data === 'number') data = bigNumberify(data);
   if (BigNumberC.is(data)) {
-    if (data.lt(0)) throw new Error('Number is negative');
-    if (data.gte(Two.pow(length * 8))) throw new Error('Number too large');
+    if (data.lt(0)) throw new RaidenError(ErrorCodes.DTA_NEGATIVE_NUMBER);
+    if (data.gte(Two.pow(length * 8))) throw new RaidenError(ErrorCodes.DTA_NUMBER_TOO_LARGE);
     hex = hexZeroPad(hexlify(data), length) as HexString<S>;
   } else if (typeof data === 'string' || isArrayish(data)) {
     const str = hexlify(data);
     if (hexDataLength(str) !== length)
-      throw new Error('Uint8Array or hex string must be of exact length');
+      throw new RaidenError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFRENCE);
     hex = str as HexString<S>;
   } else {
-    throw new Error('data is not a HexString or Uint8Array');
+    throw new RaidenError(ErrorCodes.DTA_UNENCODABLE_DATA);
   }
   return hex;
 }

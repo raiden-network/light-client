@@ -26,6 +26,7 @@ import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
 import { losslessStringify } from 'raiden-ts/utils/data';
 import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
+import { ErrorCodes } from 'raiden-ts/utils/error';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -155,7 +156,7 @@ describe('Raiden', () => {
         contractsInfo,
         config,
       ),
-    ).rejects.toThrow(/Can't replace.* with older/i);
+    ).rejects.toThrow(ErrorCodes.RDN_STATE_MIGRATION);
 
     await expect(
       Raiden.create(
@@ -173,13 +174,13 @@ describe('Raiden', () => {
 
     // token address not found as an account in provider
     await expect(Raiden.create(provider, token, storage, contractsInfo, config)).rejects.toThrow(
-      /Account.*not found in provider/i,
+      ErrorCodes.RDN_ACCOUNT_NOT_FOUND,
     );
 
     // neither account index, address nor private key
     await expect(
       Raiden.create(provider, '0x1234', storage, contractsInfo, config),
-    ).rejects.toThrow(/account must be either.*address or private key/i);
+    ).rejects.toThrow(ErrorCodes.RDN_STRING_ACCOUNT_INVALID);
 
     // from hex-encoded private key, initial unknown state (decodable) but invalid address inside
     await expect(
@@ -602,12 +603,6 @@ describe('Raiden', () => {
 
     test('newBlock', async () => {
       expect.assertions(1);
-      console.warn(
-        'RAIDEN NEW BLOCK',
-        raiden.address,
-        await raiden.getBlockNumber(),
-        provider.blockNumber,
-      );
       const promise = raiden.events$.pipe(first(newBlock.is)).toPromise();
       provider.mine(10);
       await expect(promise).resolves.toEqual(newBlock({ blockNumber: expect.any(Number) }));
@@ -673,9 +668,7 @@ describe('Raiden', () => {
     test('getAvailability', async () => {
       expect.assertions(3);
 
-      await expect(raiden.getAvailability(partner)).rejects.toThrow(
-        'Could not find any user with valid signature for',
-      );
+      await expect(raiden.getAvailability(partner)).rejects.toThrow(ErrorCodes.TRNS_NO_VALID_USER);
 
       // success when using address of account on provider and initial state
       const raiden1 = await createRaiden(
@@ -765,7 +758,7 @@ describe('Raiden', () => {
     test('target not available', async () => {
       expect.assertions(1);
       await expect(raiden.transfer(token, partner, 21)).rejects.toThrowError(
-        /\btarget.*not online\b/i,
+        ErrorCodes.PFS_TARGET_OFFLINE,
       );
     });
 
@@ -804,7 +797,7 @@ describe('Raiden', () => {
         expect.assertions(2);
         raiden.updateConfig({ pfs: null });
         await expect(raiden.transfer(token, partner, 201)).rejects.toThrowError(
-          /no direct route/i,
+          ErrorCodes.PFS_DISABLED,
         );
       });
 
@@ -1162,7 +1155,7 @@ describe('Raiden', () => {
       });
 
       await expect(raiden.findRoutes(token, target, 201)).rejects.toThrowError(
-        /no valid routes found/,
+        ErrorCodes.PFS_NO_ROUTES_FOUND,
       );
     });
 

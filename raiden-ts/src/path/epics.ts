@@ -43,6 +43,7 @@ import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
+import RaidenError, { ErrorCodes } from '../utils/error';
 import { iouClear, pathFind, iouPersist, pfsListUpdated } from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
@@ -148,16 +149,18 @@ const prepareNextIOU$ = (
               }
               const text = await response.text();
               if (!response.ok)
-                throw new Error(
-                  `PFS: last IOU request: code=${response.status} => body="${text}"`,
-                );
+                throw new RaidenError(ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, {
+                  responseStatus: response.status,
+                  responseText: text,
+                });
 
               const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
               const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
               if (signer !== deps.address)
-                throw new Error(
-                  `PFS: last iou signature mismatch: signer=${signer} instead of us ${deps.address}`,
-                );
+                throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, {
+                  signer,
+                  address: deps.address,
+                });
               return lastIou;
             }),
           )
@@ -202,9 +205,9 @@ export const pathFindServiceEpic = (
             mergeMap(([state, presences, { pfs: configPfs, httpTimeout, pfsSafetyMargin }]) => {
               const { tokenNetwork, target } = action.meta;
               if (!(tokenNetwork in state.channels))
-                throw new Error(`PFS: unknown tokenNetwork ${tokenNetwork}`);
+                throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, { tokenNetwork });
               if (!(target in presences) || !presences[target].payload.available)
-                throw new Error(`PFS: target ${target} not online`);
+                throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, { target });
 
               // if pathFind received a set of paths, pass it through to validation/cleanup
               if (action.payload.paths) return of({ paths: action.payload.paths, iou: undefined });
@@ -221,7 +224,7 @@ export const pathFindServiceEpic = (
                 (!action.payload.pfs && configPfs === null) // disabled in config and not provided
               ) {
                 // pfs not specified in action and disabled (null) in config
-                throw new Error(`PFS disabled and no direct route available`);
+                throw new RaidenError(ErrorCodes.PFS_DISABLED);
               } else {
                 // else, request a route from PFS.
                 // pfs$ - Observable which emits one PFS info and then completes
@@ -329,9 +332,10 @@ export const pathFindServiceEpic = (
                   }
                   // if error, don't proceed
                   if (!data.paths) {
-                    throw new Error(
-                      `PFS: paths request: code=${data.error.error_code} => errors="${data.error.errors}"`,
-                    );
+                    throw new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, {
+                      errorCode: data.error.error_code,
+                      errors: data.error.errors,
+                    });
                   }
                   const filteredPaths: Paths = [],
                     invalidatedRecipients = new Set<Address>();
@@ -368,7 +372,7 @@ export const pathFindServiceEpic = (
                     }
                     filteredPaths.push({ path, fee });
                   }
-                  if (!filteredPaths.length) throw new Error(`PFS: no valid routes found`);
+                  if (!filteredPaths.length) throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_FOUND);
                   yield pathFind.success({ paths: filteredPaths }, action.meta);
                 })(),
               ),
