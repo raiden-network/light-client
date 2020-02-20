@@ -4,7 +4,7 @@
       :id="`deposit-${index}`"
       :disabled="channel.state !== 'open'"
       class="channel-action__button text-capitalize channel-action__button__primary"
-      @click="$emit('deposit', channel)"
+      @click="action('deposit')"
     >
       {{ $t('channel-actions.deposit') }}
     </v-btn>
@@ -12,7 +12,7 @@
       :id="`close-${index}`"
       :disabled="channel.state !== 'open' && channel.state !== 'closing'"
       class="channel-action__button text-capitalize channel-action__button__secondary"
-      @click="$emit('close', channel)"
+      @click="action('close')"
     >
       {{ $t('channel-actions.close') }}
     </v-btn>
@@ -20,15 +20,16 @@
       :id="`settle-${index}`"
       :disabled="channel.state !== 'settleable' && channel.state !== 'settling'"
       class="channel-action__button text-capitalize channel-action__button__secondary"
-      @click="$emit('settle', channel)"
+      @click="action('settle')"
     >
       {{ $t('channel-actions.settle') }}
     </v-btn>
   </v-row>
 </template>
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import { RaidenChannel } from 'raiden-ts';
+import { ChannelAction } from '@/types';
 
 @Component({})
 export default class ChannelActions extends Vue {
@@ -36,6 +37,8 @@ export default class ChannelActions extends Vue {
   index!: number;
   @Prop({})
   channel!: RaidenChannel;
+  @Emit()
+  action(_action: ChannelAction) {}
 }
 </script>
 <style lang="scss" scoped>

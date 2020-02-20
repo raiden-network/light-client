@@ -1,12 +1,11 @@
 jest.mock('vue-router');
 
 import flushPromises from 'flush-promises';
-import { createLocalVue, mount, shallowMount, Wrapper } from '@vue/test-utils';
+import { mount, shallowMount, Wrapper } from '@vue/test-utils';
 import Channels from '@/views/Channels.vue';
 import Vuex from 'vuex';
 import { TestData } from '../data/mock-data';
 import Vuetify from 'vuetify';
-import { addElemWithDataAppToBody } from '../utils/dialog';
 import Filters from '@/filters';
 import Vue from 'vue';
 import store from '@/store/index';
@@ -17,12 +16,12 @@ import { RouteNames } from '@/router/route-names';
 import VueRouter from 'vue-router';
 
 Vue.use(Vuetify);
+Vue.use(Vuex);
+Vue.filter('displayFormat', Filters.displayFormat);
 
 describe('Channels.vue', () => {
-  addElemWithDataAppToBody();
-
-  let raidenService: Mocked<RaidenService>;
-  let router: Mocked<VueRouter>;
+  let $raiden: Mocked<RaidenService>;
+  let $router: Mocked<VueRouter>;
   let wrapper: Wrapper<Channels>;
   let vuetify: typeof Vuetify;
 
@@ -33,20 +32,18 @@ describe('Channels.vue', () => {
     token: string = '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
     shallow: boolean = false
   ) {
-    const localVue = createLocalVue();
-    localVue.use(Vuex);
-    localVue.filter('displayFormat', Filters.displayFormat);
+    vuetify = new Vuetify();
 
-    let options = {
-      localVue,
+    const options = {
       vuetify,
       store,
+      stubs: ['v-dialog'],
       mocks: {
-        $router: router,
+        $router,
         $route: TestData.mockRoute({
           token
         }),
-        $raiden: raidenService,
+        $raiden,
         $identicon: $identicon(),
         $t: (msg: string) => msg
       }
@@ -59,18 +56,18 @@ describe('Channels.vue', () => {
   }
 
   beforeEach(() => {
-    router = new VueRouter() as Mocked<VueRouter>;
-    router.push = jest.fn().mockResolvedValue(undefined);
+    $router = new VueRouter() as Mocked<VueRouter>;
+    $router.push = jest.fn().mockResolvedValue(undefined);
 
-    raidenService = new RaidenService(store) as Mocked<RaidenService>;
-    raidenService.fetchTokenData = jest.fn().mockResolvedValue(undefined);
-    raidenService.connect = jest.fn().mockResolvedValue(undefined);
+    $raiden = new RaidenService(store) as Mocked<RaidenService>;
+    $raiden.fetchTokenData = jest.fn().mockResolvedValue(undefined);
+    $raiden.connect = jest.fn().mockResolvedValue(undefined);
 
     vuetify = new Vuetify();
   });
 
   afterEach(() => {
-    router.push.mockReset();
+    $router.push.mockReset();
   });
 
   test('render the test data', () => {
@@ -80,24 +77,13 @@ describe('Channels.vue', () => {
     );
   });
 
-  test('dismiss the confirmation when the user presses the overlay', () => {
-    wrapper = createWrapper();
-    wrapper.setData({
-      visible: 'channel-278-deposit'
-    });
-
-    expect(wrapper.vm.$data['visible']).toBe('channel-278-deposit');
-    wrapper.find('.channels__overlay').trigger('click');
-    expect(wrapper.vm.$data['visible']).toBe('');
-  });
-
   test('navigate to home when the address is not in checksum format', async () => {
     wrapper = createWrapper('0xd0a1e359811322d97991e03f863a0c30c2cf029c', true);
     await wrapper.vm.$nextTick();
     await flushPromises();
 
-    expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith(
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.HOME
       })
@@ -109,11 +95,54 @@ describe('Channels.vue', () => {
     await wrapper.vm.$nextTick();
     await flushPromises();
 
-    expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith(
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.HOME
       })
     );
+  });
+
+  test('collapse a channel when a new channel is expanded', async () => {
+    wrapper = createWrapper();
+    wrapper.find('#channel-278').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.$data['expanded']).toMatchObject({
+      '278': true
+    });
+
+    wrapper.find('#channel-279').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.$data['expanded']).toMatchObject({
+      '279': false
+    });
+  });
+
+  test('collapsing a channel after expanding', async () => {
+    wrapper = createWrapper();
+    wrapper.find('#channel-278').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.$data['expanded']).toMatchObject({
+      '278': true
+    });
+
+    wrapper.find('#channel-278').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.$data['expanded']).toMatchObject({
+      '278': false
+    });
+  });
+
+  test('clicking on deposit changes action', async () => {
+    wrapper = createWrapper();
+    wrapper.find('#channel-278').trigger('click');
+    await wrapper.vm.$nextTick();
+    wrapper.find('#deposit-0').trigger('click');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.$data['action']).toBe('deposit');
   });
 });

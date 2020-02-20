@@ -22,7 +22,7 @@ describe('Home.vue', () => {
   let mockedRouter: Mocked<VueRouter>;
   let vuetify: typeof Vuetify;
 
-  const vueFactory = () =>
+  const createWrapper = () =>
     mount(Home, {
       vuetify,
       store,
@@ -40,14 +40,14 @@ describe('Home.vue', () => {
   });
 
   test('show the "NoTokens" component when the user has no connected tokens', () => {
-    wrapper = vueFactory();
+    wrapper = createWrapper();
 
     expect(wrapper.find(NoTokens).exists()).toBeTruthy();
     expect(mockedRouter.push).toHaveBeenCalledTimes(0);
   });
 
   test('redirect to the "Transfer" view when the user has connected tokens', async () => {
-    vueFactory();
+    createWrapper();
 
     expect(wrapper.find(NoTokens).exists()).toBeTruthy();
     expect(mockedRouter.push).toHaveBeenCalledTimes(0);

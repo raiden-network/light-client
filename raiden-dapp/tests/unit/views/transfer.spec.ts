@@ -3,13 +3,12 @@ jest.mock('@/services/raiden-service');
 jest.useFakeTimers();
 
 import { Token } from '@/model/types';
-import { addElemWithDataAppToBody } from '../utils/dialog';
 import { ChannelState } from 'raiden-ts';
 import { mockInput } from '../utils/interaction-utils';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
+import { mount, Wrapper } from '@vue/test-utils';
 import Transfer from '@/views/Transfer.vue';
 import store from '@/store/index';
 import VueRouter from 'vue-router';
@@ -25,8 +24,6 @@ import { RouteNames } from '@/router/route-names';
 Vue.use(Vuetify);
 
 describe('Transfer.vue', () => {
-  addElemWithDataAppToBody();
-
   let wrapper: Wrapper<Transfer>;
   let router: Mocked<VueRouter>;
   let raiden: Mocked<RaidenService>;
@@ -46,14 +43,12 @@ describe('Transfer.vue', () => {
     router: VueRouter,
     raiden: RaidenService
   ): Wrapper<Transfer> {
-    const localVue = createLocalVue();
     vuetify = new Vuetify();
 
     let options = {
-      localVue,
       vuetify,
       store,
-      stubs: ['router-link'],
+      stubs: ['router-link', 'v-dialog'],
       mocks: {
         $router: router,
         $route: TestData.mockRoute({

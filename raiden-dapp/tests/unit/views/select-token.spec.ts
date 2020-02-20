@@ -1,27 +1,26 @@
-import { createLocalVue, mount, Wrapper } from '@vue/test-utils';
-import { addElemWithDataAppToBody } from '../utils/dialog';
+import { mount, Wrapper } from '@vue/test-utils';
 import Vuex, { Store } from 'vuex';
 import { TestData } from '../data/mock-data';
 import SelectToken from '@/views/SelectToken.vue';
 import Vuetify from 'vuetify';
 import VueVirtualScroller from 'vue-virtual-scroller';
 import { $identicon } from '../utils/mocks';
+import Vue from 'vue';
+
+Vue.use(Vuex);
+Vue.use(Vuetify);
+Vue.use(VueVirtualScroller);
+Vue.filter('displayFormat', (v: string) => v);
+Vue.filter('truncate', (v: string) => v);
 
 describe('SelectToken.vue', () => {
-  addElemWithDataAppToBody();
-
   let wrapper: Wrapper<SelectToken>;
+  let vuetify: typeof Vuetify;
 
   beforeEach(() => {
-    const localVue = createLocalVue();
-    localVue.use(Vuex);
-    localVue.use(Vuetify);
-    localVue.use(VueVirtualScroller);
-    localVue.filter('displayFormat', (v: string) => v);
-    localVue.filter('truncate', (v: string) => v);
-
+    vuetify = new Vuetify();
     wrapper = mount(SelectToken, {
-      localVue,
+      vuetify,
       store: new Store({
         getters: {
           allTokens: jest.fn().mockReturnValue([TestData.token])

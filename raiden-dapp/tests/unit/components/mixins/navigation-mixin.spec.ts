@@ -1,7 +1,7 @@
 jest.mock('vue-router');
 
 import { RouteNames } from '@/router/route-names';
-import { createLocalVue, shallowMount, Wrapper } from '@vue/test-utils';
+import { shallowMount, Wrapper } from '@vue/test-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import VueRouter from 'vue-router';
 import { TestData } from '../../data/mock-data';
@@ -15,14 +15,12 @@ describe('NavigationMixin', () => {
     router = new VueRouter() as Mocked<VueRouter>;
     router.push = jest.fn().mockReturnValue(null);
 
-    const localVue = createLocalVue();
     const component = {
       render() {},
       mixins: [NavigationMixin]
     };
 
     wrapper = shallowMount(component as any, {
-      localVue,
       mocks: {
         $router: router,
         $route: TestData.mockRoute()
