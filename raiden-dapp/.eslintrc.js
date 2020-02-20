@@ -49,7 +49,7 @@ module.exports = {
       }
     ],
     'vue-i18n/no-unused-keys': ['error', {
-      'src': ['./src'],
+      'src': './src',
       'extensions': ['.ts', '.vue']
     }],
     "vue/component-name-in-template-casing": ["error", "kebab-case", {
