@@ -4,10 +4,13 @@
 ### Added
 - [#614] Implement state upgrades and migration
 - [#613] Implement waiting for confirmation blocks on on-chain transactions (configurable)
+- [#1000] Implemented SDK error handling
 
 ### Changed
 - [#926] Introduce loglevel logging framework (config.logger now specifies logging level)
 - [#1042] Support decoding addresses on messages on lowercased format
+
+[#1000]: https://github.com/raiden-network/light-client/issues/1000
 
 ## [0.3.0] - 2020-02-07
 ### Added
