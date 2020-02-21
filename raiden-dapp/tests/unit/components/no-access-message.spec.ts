@@ -7,8 +7,12 @@ import Vue from 'vue';
 Vue.use(Vuetify);
 
 describe('NoAccessScreen.vue', () => {
+  let vuetify: typeof Vuetify;
+
   function createWrapper(reason: DeniedReason) {
+    vuetify = new Vuetify();
     return mount(NoAccessMessage, {
+      vuetify,
       propsData: {
         reason: reason
       },

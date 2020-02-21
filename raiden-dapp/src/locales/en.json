@@ -212,6 +212,7 @@
         "title": "Request Route",
         "tooltip": "Mint and deposit {token} to the User Deposit Contract to pay for PFS requests",
         "udc-description": "Balance to pay the Pathfinding Service",
+        "udc-description-low-balance": "Your {token} token balance is to low to pay for the Pathfinding Service. Use the button above to mint and deposit more tokens.",
         "in-progress": "Sign the message to pay for the route request",
         "searching-for-route": "Searching for route...",
         "done": "Route request payment complete"
@@ -226,7 +227,7 @@
       "call-to-action": {
         "1": {
           "default": "Transfer Route Request",
-          "amount": "Transfer {amount} {symbol}"
+          "amount": "Confirm PFS Fee of {amount} {symbol}"
         },
         "2": {
           "default": "Confirm Mediation Fees",

@@ -20,7 +20,8 @@ describe('ChannelDeposit.vue', () => {
       propsData: {
         token: TestData.token,
         identifier: 1,
-        visible: true
+        visible: true,
+        loading: false
       },
       stubs: ['raiden-dialog'],
       mocks: {

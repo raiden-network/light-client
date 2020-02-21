@@ -8,10 +8,14 @@ Vue.use(Vuetify);
 
 describe('SplashScreen.vue', () => {
   let wrapper: Wrapper<Loading>;
+  let vuetify: typeof Vuetify;
 
   beforeEach(() => {
+    vuetify = new Vuetify();
     wrapper = mount(Loading, {
+      vuetify,
       store,
+      stubs: ['i18n'],
       propsData: {
         connecting: false
       },

@@ -5,7 +5,7 @@
       width="350"
       hide-overlay
       dark
-      persistent="hideClose"
+      :persistent="hideClose"
       @click:outside="close()"
     >
       <v-card class="raiden-dialog">
@@ -29,9 +29,9 @@ import { Component, Emit, Vue, Prop } from 'vue-property-decorator';
 
 @Component({ components: { BlurredOverlay } })
 export default class RaidenDialog extends Vue {
-  @Prop({ required: true, default: false })
+  @Prop({ required: true, default: false, type: Boolean })
   visible!: boolean;
-  @Prop({ required: false })
+  @Prop({ required: false, default: false, type: Boolean })
   hideClose!: boolean;
 
   @Emit()

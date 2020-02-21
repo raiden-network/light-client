@@ -1,5 +1,3 @@
-import { addElemWithDataAppToBody } from '../utils/dialog';
-
 jest.useFakeTimers();
 
 import { mount } from '@vue/test-utils';
@@ -22,7 +20,6 @@ import { RouteNames } from '@/router/route-names';
 Vue.use(Vuetify);
 
 describe('TransferSteps.vue', () => {
-  addElemWithDataAppToBody();
   let vuetify: typeof Vuetify;
   let processingTransfer: jest.SpyInstance;
   let transferDone: jest.SpyInstance;
@@ -71,6 +68,7 @@ describe('TransferSteps.vue', () => {
     return mount(TransferSteps, {
       store,
       vuetify,
+      stubs: ['v-dialog'],
       mocks: {
         $router: router,
         $route: {

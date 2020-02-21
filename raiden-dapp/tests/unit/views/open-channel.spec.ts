@@ -1,10 +1,12 @@
+import Filters from '@/filters';
+
 jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
 jest.useFakeTimers();
 
 import VueRouter, { NavigationGuard } from 'vue-router';
 import flushPromises from 'flush-promises';
-import { createLocalVue, mount, shallowMount, Wrapper } from '@vue/test-utils';
+import { mount, shallowMount, Wrapper } from '@vue/test-utils';
 import OpenChannel from '@/views/OpenChannel.vue';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
@@ -23,10 +25,12 @@ import { mockInput } from '../utils/interaction-utils';
 import { parseUnits } from 'ethers/utils';
 
 Vue.use(Vuetify);
+Vue.filter('truncate', Filters.truncate);
 
 describe('OpenChannel.vue', () => {
   let service: Mocked<RaidenService>;
   let wrapper: Wrapper<OpenChannel>;
+  let vuetify: typeof Vuetify;
   let button: Wrapper<Vue>;
   let router: Mocked<VueRouter>;
 
@@ -37,10 +41,10 @@ describe('OpenChannel.vue', () => {
     },
     shallow: boolean = false
   ): Wrapper<OpenChannel> {
-    const localVue = createLocalVue();
     const options = {
-      localVue,
+      vuetify,
       store,
+      stubs: ['v-dialog'],
       propsData: {
         current: 0
       },
