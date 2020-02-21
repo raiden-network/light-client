@@ -21,9 +21,7 @@
           justify="center"
           class="pathfinding-services__error"
         >
-          <span>
-            {{ error }}
-          </span>
+          <error-message :error="error"/>
         </v-row>
         <v-data-table
           v-else
@@ -86,12 +84,14 @@
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
 import { RaidenPFS } from 'raiden-ts';
+import RaidenError, { ErrorCodes } from 'raiden-ts/dist/utils/error';
 
 import { Token } from '@/model/types';
 import Filters from '@/filters';
 import Spinner from '@/components/Spinner.vue';
+import ErrorMessage from '@/components/ErrorMessage.vue';
 
-@Component({ components: { Spinner } })
+@Component({ components: { Spinner, ErrorMessage } })
 export default class PathfindingServices extends Vue {
   headers: { text: string; align: string; value: string }[] = [];
 
@@ -144,6 +144,7 @@ export default class PathfindingServices extends Vue {
   async fetchServices() {
     this.loading = true;
     try {
+      throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK);
       this.services = await this.$raiden.fetchServices();
       if (this.services.length > 0) {
         const [preSelectedPfs] = this.services;
@@ -156,7 +157,7 @@ export default class PathfindingServices extends Vue {
 
       await this.$raiden.fetchTokenData(tokens);
     } catch (e) {
-      this.error = e.message;
+      this.error = e;
     } finally {
       this.loading = false;
     }
@@ -177,12 +178,6 @@ export default class PathfindingServices extends Vue {
       width: 250px;
       text-align: center;
     }
-  }
-
-  &__error {
-    height: 86px;
-    padding-left: 16px;
-    padding-right: 16px;
   }
 
   &__table {

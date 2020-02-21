@@ -330,5 +330,52 @@
       "rtt": "Ping",
       "price": "Price"
     }
+  },
+  "errors": {
+    "RDN_GENERAL_ERROR": {
+      "title": "An error occured",
+      "problem": "We do not know this error, sorry.",
+      "solution": "Feel free to file a new issue in our <a href=\"https://github.com/raiden-network/light-client/issues\">Github repo</a>."
+    },
+    "PFS_UNKNOWN_TOKEN_NETWORK": {
+      "title": "No open channels",
+      "problem": "You don't seem to have open channels on this token network.",
+      "solution": "To proceed with your transfer: <ol><li>Hit the ← button in the top left</li><li>Click on the current token network</li><li>Select <strong>Connect new token</strong></li><li>Select the token you want to transfer</li><li>Proceed with the flow to open a new channel</li>"
+    },
+    "PFS_INVALID_INFO": {
+      "title": "",
+      "problem": "",
+      "solution": ""
+    },
+    "PFS_NO_ROUTES_FOUND": {
+      "title": "",
+      "problem": "",
+      "solution": ""
+    },
+    "PFS_ERROR_RESPONSE": {
+      "title": "",
+      "problem": "",
+      "solution": ""
+    },
+    "PFS_DISABLED": {
+      "title": "",
+      "problem": "",
+      "solution": ""
+    },
+    "PFS_TARGET_OFFLINE": {
+      "title": "",
+      "problem": "",
+      "solution": ""
+    },
+    "PFS_LAST_IOU_REQUEST_FAILED": {
+      "title": "",
+      "problem": "",
+      "solution": ""
+    },
+    "PFS_IOU_SIGNATURE_MISMATCH": {
+      "title": "",
+      "problem": "",
+      "solution": ""
+    }
   }
 }
