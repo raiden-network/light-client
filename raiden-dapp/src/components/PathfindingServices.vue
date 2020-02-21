@@ -21,7 +21,7 @@
           justify="center"
           class="pathfinding-services__error"
         >
-          <error-message :error="error"/>
+          <error-message :error="error" />
         </v-row>
         <v-data-table
           v-else

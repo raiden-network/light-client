@@ -1,13 +1,20 @@
 <template>
   <v-row class="error-message">
-    <div>
-      <v-img class="error-message__image" :src="require('../assets/error.png')" />
+    <div class="error-message__image">
+      <v-img :src="require('../assets/error.png')" />
     </div>
 
     <h2 class="error-message__title">{{ title }}</h2>
 
+    <label class="error-message__label">
+      {{ $t('error-message.problem') }}:
+    </label>
     <p>{{ problem }}</p>
-    <div v-html="solution"/>
+
+    <label class="error-message__label">
+      {{ $t('error-message.solution') }}:
+    </label>
+    <div v-html="solution" />
   </v-row>
 </template>
 
@@ -45,12 +52,17 @@ export default class ErrorMessage extends Vue {
 
 .error-message {
   width: 100%;
-  justify-content: center;
   text-align: left;
+
+  &__label {
+    font-weight: bold;
+    margin-right: 5px;
+  }
 
   &__title {
     width: 100%;
     text-align: center;
+    margin-bottom: 7px;
   }
 
   &__image {
