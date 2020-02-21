@@ -3,18 +3,18 @@
     <div class="error-message__image">
       <v-img :src="require('../assets/error.png')" />
     </div>
-
     <h2 class="error-message__title">{{ title }}</h2>
-
     <label class="error-message__label">
-      {{ $t('error-message.problem') }}:
+      {{ $t('error-message.problem') }}
     </label>
     <p>{{ problem }}</p>
-
     <label class="error-message__label">
-      {{ $t('error-message.solution') }}:
+      {{ $t('error-message.solution') }}
     </label>
-    <div v-html="solution" />
+    <ol v-if="Array.isArray(solution)">
+      <li :key="step" v-for="step in solution">{{step}}</li>
+    </ol>
+    <p v-else>{{ solution }}</p>
   </v-row>
 </template>
 

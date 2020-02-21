@@ -333,8 +333,8 @@
     }
   },
   "error-message": {
-    "problem": "Problem",
-    "solution": "Solution"
+    "problem": "Problem:",
+    "solution": "Solution:"
   },
   "errors": {
     "RDN_GENERAL_ERROR": {
@@ -345,7 +345,13 @@
     "PFS_UNKNOWN_TOKEN_NETWORK": {
       "title": "No open channels",
       "problem": "You don't seem to have open channels on this token network.",
-      "solution": "<ol><li>Hit the ← button in the top left</li><li>Click on the current token network</li><li>Select <strong>Connect new token</strong></li><li>Select the token you want to transfer</li><li>Proceed with the flow to open a new channel</li>"
+      "solution": [
+        "Hit the ← button in the top left", 
+        "Click on the current token network", 
+        "Select Connect new token", 
+        "Select the token you want to transfer", 
+        "Proceed with the flow to open a new channel"
+      ]
     },
     "PFS_INVALID_INFO": {
       "title": "",
