@@ -34,6 +34,7 @@ import {
   transferExpireProcessed,
   withdrawReceive,
   transferSecretRequest,
+  transferSecretRegistered,
 } from 'raiden-ts/transfers/actions';
 import {
   LockedTransfer,
@@ -82,6 +83,8 @@ describe('raidenReducer', () => {
           ServiceRegistry: { address: AddressZero as Address, block_number: 0 },
           // eslint-disable-next-line @typescript-eslint/camelcase
           UserDeposit: { address: AddressZero as Address, block_number: 0 },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          SecretRegistry: { address: AddressZero as Address, block_number: 0 },
         },
       },
       { blockNumber: 1337 },
@@ -918,28 +921,34 @@ describe('raidenReducer', () => {
     test('secret register', () => {
       // normal secret register without blockNumber
       let newState = [transferSecret({ secret }, { secrethash })].reduce(raidenReducer, state);
-      expect(get(newState, ['secrets'])).toStrictEqual({ [secrethash]: { secret } });
+      expect(newState.sent[secrethash].secret).toStrictEqual([
+        expect.any(Number),
+        { value: secret, registerBlock: 0 },
+      ]);
 
       // with blockNumber saves it as well
-      newState = [transferSecret({ secret, registerBlock: 123 }, { secrethash })].reduce(
-        raidenReducer,
-        newState,
-      );
-      expect(get(newState, ['secrets'])).toStrictEqual({
-        [secrethash]: {
-          secret,
-          registerBlock: 123,
-        },
-      });
+      newState = [
+        transferSecretRegistered(
+          { secret, txHash, txBlock: 123, confirmed: true },
+          { secrethash },
+        ),
+      ].reduce(raidenReducer, newState);
+      expect(newState.sent[secrethash].secret).toStrictEqual([
+        expect.any(Number),
+        { value: secret, registerBlock: 123 },
+      ]);
 
       // if already registered with blockNumber and try without, keep the blockNumber
-      newState = [transferSecret({ secret }, { secrethash })].reduce(raidenReducer, newState);
-      expect(get(newState, ['secrets'])).toStrictEqual({
-        [secrethash]: {
-          secret,
-          registerBlock: 123,
-        },
-      });
+      newState = [
+        transferSecretRegistered(
+          { secret, txHash, txBlock: 123, confirmed: undefined },
+          { secrethash },
+        ),
+      ].reduce(raidenReducer, newState);
+      expect(newState.sent[secrethash].secret).toStrictEqual([
+        expect.any(Number),
+        { value: secret, registerBlock: 123 },
+      ]);
     });
 
     test('transfer signed', () => {
@@ -1176,8 +1185,8 @@ describe('raidenReducer', () => {
         state,
       );
 
-      expect(get(newState, ['sent', secrethash, 'transfer', 1])).toBe(transfer);
-      expect(get(newState, ['secrets', secrethash])).toBeUndefined();
+      expect(newState.sent[secrethash].transfer[1]).toBe(transfer);
+      expect(newState.sent[secrethash].secret).toBeUndefined();
 
       newState = [
         channelClose.success(
@@ -1197,17 +1206,19 @@ describe('raidenReducer', () => {
 
     test('transfer cleared', () => {
       let newState = [
-        transferSecret({ secret }, { secrethash }),
         transferSigned({ message: transfer, fee }, { secrethash }),
+        transferSecret({ secret }, { secrethash }),
       ].reduce(raidenReducer, state);
 
-      expect(get(newState, ['sent', secrethash, 'transfer', 1])).toBe(transfer);
-      expect(get(newState, ['secrets', secrethash, 'secret'])).toBe(secret);
+      expect(newState.sent[secrethash].transfer[1]).toBe(transfer);
+      expect(newState.sent[secrethash].secret).toStrictEqual([
+        expect.any(Number),
+        { value: secret, registerBlock: 0 },
+      ]);
 
       newState = [transferClear(undefined, { secrethash })].reduce(raidenReducer, newState);
 
-      expect(get(newState, ['sent', secrethash])).toBeUndefined();
-      expect(get(newState, ['secrets', secrethash])).toBeUndefined();
+      expect(newState.sent[secrethash]).toBeUndefined();
     });
 
     // withdraw request is under transfer just to use its pending transfer setup/vars

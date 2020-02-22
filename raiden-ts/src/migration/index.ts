@@ -2,10 +2,11 @@
 import logging from 'loglevel';
 
 import m0 from './0';
+import m1 from './1';
 
 // import above and populate this dict with new migrator functions
 // must be ordered, continuous, and last one MUST be state.CURRENT_STATE_VERSION
-const migrations = { 0: m0 };
+const migrations = { 0: m0, 1: m1 };
 
 /**
  * Migrate a RaidenState from any previous version to latest one
