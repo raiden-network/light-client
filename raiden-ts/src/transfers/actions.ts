@@ -82,10 +82,23 @@ export interface transferProcessed extends ActionType<typeof transferProcessed> 
 /** Register a secret */
 export const transferSecret = createAction(
   'transferSecret',
-  t.intersection([t.type({ secret: Secret }), t.partial({ registerBlock: t.number })]),
+  t.type({ secret: Secret }),
   TransferId,
 );
 export interface transferSecret extends ActionType<typeof transferSecret> {}
+
+export const transferSecretRegistered = createAction(
+  'transferSecretRegistered',
+  t.type({
+    secret: Secret,
+    txHash: Hash,
+    txBlock: t.number,
+    // ConfirmableAction
+    confirmed: t.union([t.undefined, t.boolean]),
+  }),
+  TransferId,
+);
+export interface transferSecretRegistered extends ActionType<typeof transferSecretRegistered> {}
 
 /** A valid SecretRequest received from target */
 export const transferSecretRequest = createAction(

@@ -247,14 +247,8 @@ describe('transfers epic', () => {
 
       expect(output).toEqual(
         expect.arrayContaining([
-          {
-            type: transferSecret.type,
-            payload: { secret },
-            meta: { secrethash },
-          },
-          {
-            type: transferSigned.type,
-            payload: {
+          transferSigned(
+            {
               message: expect.objectContaining({
                 type: MessageType.LOCKED_TRANSFER,
                 message_identifier: expect.any(BigNumber),
@@ -262,8 +256,9 @@ describe('transfers epic', () => {
               }),
               fee,
             },
-            meta: { secrethash },
-          },
+            { secrethash },
+          ),
+          transferSecret({ secret }, { secrethash }),
         ]),
       );
 

@@ -11,7 +11,7 @@ import {
   Metadata,
   SecretRequest,
 } from '../messages/types';
-import { Address, Timed, Hash, Int, Signed } from '../utils/types';
+import { Address, Timed, Hash, Int, Signed, Secret } from '../utils/types';
 
 /**
  * This struct holds the relevant messages exchanged in a transfer
@@ -25,6 +25,11 @@ export const SentTransfer = t.readonly(
       fee: Int(32),
     }),
     t.partial({
+      /**
+       * Transfer secret, if known
+       * registerBlock is 0 if not yet registered on-chain
+       * */
+      secret: Timed(t.type({ value: Secret, registerBlock: t.number })),
       /** <- incoming processed for locked transfer */
       transferProcessed: Timed(Signed(Processed)),
       /**

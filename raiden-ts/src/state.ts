@@ -11,7 +11,7 @@ import { ContractsInfo } from './types';
 import { ConfirmableAction } from './actions';
 import migrateState from './migration';
 import { losslessParse, losslessStringify } from './utils/data';
-import { Address, Secret, Signed, Storage, decode } from './utils/types';
+import { Address, Signed, Storage, decode } from './utils/types';
 import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
@@ -20,7 +20,7 @@ import { getNetworkName } from './utils/ethers';
 import RaidenError, { ErrorCodes } from './utils/error';
 
 // same as highest migrator function in migration.index.migrators
-export const CURRENT_STATE_VERSION = 0;
+export const CURRENT_STATE_VERSION = 1;
 
 // types
 export const RaidenState = t.readonly(
@@ -52,14 +52,6 @@ export const RaidenState = t.readonly(
           ]),
         ),
       }),
-    ),
-    secrets: t.readonly(
-      t.record(
-        t.string /* secrethash: Hash */,
-        t.readonly(
-          t.intersection([t.type({ secret: Secret }), t.partial({ registerBlock: t.number })]),
-        ),
-      ),
     ),
     sent: SentTransfers,
     path: t.type({
@@ -147,7 +139,6 @@ export function makeInitialState(
     channels: {},
     tokens: {},
     transport: {},
-    secrets: {},
     sent: {},
     path: {
       iou: {},

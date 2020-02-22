@@ -26,13 +26,14 @@ import {
   withLatestFrom,
 } from 'rxjs/operators';
 import { bigNumberify } from 'ethers/utils';
+import { Event } from 'ethers/contract';
 import { One, Zero } from 'ethers/constants';
 import { findKey, get, pick, isMatchWith } from 'lodash';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
-import { Address, assert, Hash, Signed, UInt, BigNumberC } from '../utils/types';
+import { Address, assert, Hash, Signed, UInt, BigNumberC, Secret } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { LruCache } from '../utils/lru';
 import { messageReceived, messageSend } from '../messages/actions';
@@ -58,6 +59,7 @@ import { RaidenConfig } from '../config';
 import { matrixPresence } from '../transport/actions';
 import { pluckDistinct } from '../utils/rx';
 import RaidenError, { ErrorCodes } from '../utils/error';
+import { getEventsStream } from '../utils/ethers';
 import {
   transfer,
   transferExpire,
@@ -65,6 +67,7 @@ import {
   transferProcessed,
   transferRefunded,
   transferSecret,
+  transferSecretRegistered,
   transferSecretRequest,
   transferSecretReveal,
   transferSigned,
@@ -226,11 +229,11 @@ function makeAndSignTransfer$(
   };
   return from(signMessage(signer, message, { log })).pipe(
     mergeMap(function*(signed) {
+      // messageSend LockedTransfer handled by transferSignedRetryMessageEpic
+      yield transferSigned({ message: signed, fee }, action.meta);
       // besides transferSigned, also yield transferSecret (for registering) if we know it
       if (action.payload.secret)
         yield transferSecret({ secret: action.payload.secret }, action.meta);
-      yield transferSigned({ message: signed, fee }, action.meta);
-      // messageSend LockedTransfer handled by transferSignedRetryMessageEpic
     }),
   );
 }
@@ -308,7 +311,7 @@ function makeAndSignUnlock$(
       locked_amount: channel.own.balanceProof.lockedAmount.sub(transfer.lock.amount) as UInt<32>,
       locksroot,
       payment_identifier: transfer.payment_identifier,
-      secret: state.secrets[action.meta.secrethash].secret,
+      secret: state.sent[action.meta.secrethash].secret![1].value,
     };
     signed$ = from(signMessage(signer, message, { log }));
   }
@@ -967,7 +970,7 @@ const secretReveal$ = (
 ): Observable<transfer.failure | transferSecretReveal | messageSend.request> => {
   const request = action.payload.message;
   const secrethash = action.meta.secrethash;
-  if (!(secrethash in state.secrets)) {
+  if (!state.sent[secrethash]?.secret) {
     // shouldn't happen, as we're the initiator (for now), and always know the secret
     log.warn('SecretRequest for unknown secret', request, secrethash);
     return EMPTY;
@@ -1003,7 +1006,7 @@ const secretReveal$ = (
     const message: SecretReveal = {
       type: MessageType.SECRET_REVEAL,
       message_identifier: makeMessageId(),
-      secret: state.secrets[action.meta.secrethash].secret,
+      secret: state.sent[action.meta.secrethash].secret![1].value,
     };
     reveal$ = from(signMessage(signer, message, { log }));
   }
@@ -1354,6 +1357,40 @@ export const withdrawSendConfirmationEpic = (
           address: action.meta.partner,
           msgId: action.payload.message.message_identifier.toString(),
         },
+      ),
+    ),
+  );
+
+/**
+ * Monitors SecretRegistry and emits when a relevant secret gets registered
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of transferSecretRegistered actions
+ */
+export const monitorSecretRegistryEpic = (
+  {}: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { secretRegistryContract }: RaidenEpicDeps,
+): Observable<transferSecretRegistered> =>
+  getEventsStream<[Hash, Secret, Event]>(secretRegistryContract, [
+    secretRegistryContract.filters.SecretRevealed(null, null),
+  ]).pipe(
+    withLatestFrom(state$),
+    filter(
+      ([[secrethash, , { blockNumber }], { sent }]) =>
+        // emits only if lock didn't expire yet
+        secrethash in sent && sent[secrethash].transfer[1].lock.expiration.gte(blockNumber!),
+    ),
+    map(([[secrethash, secret, event]]) =>
+      transferSecretRegistered(
+        {
+          secret,
+          txHash: event.transactionHash! as Hash,
+          txBlock: event.blockNumber!,
+          confirmed: undefined,
+        },
+        { secrethash },
       ),
     ),
   );

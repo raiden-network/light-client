@@ -1,0 +1,166 @@
+{
+  "address": "0x11111111111111111111111111aaaaaaaaaaaaaa",
+  "version": 1,
+  "chainId": 1338,
+  "registry": "0x0000000000000000000000000000000000000070",
+  "blockNumber": 123,
+  "config": {
+    "matrixServerLookup": "http://raw.yaml",
+    "settleTimeout": 50,
+    "revealTimeout": 10,
+    "httpTimeout": 10e3,
+    "discoveryRoom": "raiden_test_discovery",
+    "pfsRoom": "raiden_test_path_finding",
+    "matrixExcessRooms": 2,
+    "pfsSafetyMargin": 1.1,
+    "confirmationBlocks": 2,
+    "logger": "debug"
+  },
+  "channels": {
+    "0x0000000000000000000000000000000000020001": {
+      "0x0000000000000000000000000000000000020002": {
+        "state": "open",
+        "id": 17,
+        "settleTimeout": 50,
+        "openBlock": 121,
+        "isFirstParticipant": true,
+        "own": {
+          "deposit": "1000",
+          "withdraw": "0",
+          "locks": [{
+            "amount": "20",
+            "expiration": 132,
+            "secrethash": "0x0000000000000000000000000000000000000020111111111111111111111111"
+          }],
+          "balanceProof": {
+            "chainId": "1338",
+            "tokenNetworkAddress": "0x0000000000000000000000000000000000020001",
+            "channelId": "17",
+            "nonce": "1",
+            "transferredAmount": "0",
+            "lockedAmount": "20",
+            "locksroot": "0x0000000000000000000000000000000000000020111111111111111111111111",
+            "messageHash": "0x0000000000000000000000000000000000000020111111111111111111111111",
+            "signature": "0x0000000000000000000000000000000000000020111111111111111111111111000000000000000000000000000000000000002011111111111111111111111101",
+            "sender": "0x0000000000000000000000000000000000020002"
+          }
+        },
+        "partner": {
+          "deposit": "80"
+        }
+      }
+    }
+  },
+  "tokens": {
+    "0x0000000000000000000000000000000000010001": "0x0000000000000000000000000000000000020001"
+  },
+  "transport": {
+    "matrix": {
+      "server": "https://matrix.raiden.test",
+      "setup": {
+        "userId": "@0x11111111111111111111111111aaaaaaaaaaaaaa:matrix.raiden.test",
+        "accessToken": "#access_token",
+        "deviceId": "!deviceId",
+        "displayName": "0x0000000000000000000000000000000000000020111111111111111111111111000000000000000000000000000000000000002011111111111111111111111101"
+      },
+      "rooms": { "0x0000000000000000000000000000000000020002": ["#roomId:matrix.raiden.test"] }
+    }
+  },
+  "sent": {
+    "0x0000000000000000000000000000000000000020111111111111111111111111": {
+      "transfer": [990, {
+        "type": "LockedTransfer",
+        "chain_id": "1338",
+        "message_identifier": "123456",
+        "payment_identifier": "1",
+        "nonce": "1",
+        "token_network_address": "0xe82ae5475589b828D3644e1B56546F93cD27d1a4",
+        "token": "0xc778417E063141139Fce010982780140Aa0cD5Ab",
+        "channel_identifier": "1338",
+        "transferred_amount": "0",
+        "locked_amount": "10",
+        "recipient": "0x2A915FDA69746F515b46C520eD511401d5CCD5e2",
+        "locksroot": "0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b",
+        "lock": {
+          "amount": "10",
+          "expiration": "1",
+          "secrethash": "0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8"
+        },
+        "target": "0x811957b07304d335B271feeBF46754696694b09e",
+        "initiator": "0x540B51eDc5900B8012091cc7c83caf2cb243aa86",
+        "metadata": {
+          "routes": [
+            {
+              "route": [
+                "0x2A915FDA69746F515b46C520eD511401d5CCD5e2",
+                "0x811957b07304d335B271feeBF46754696694b09e"
+              ]
+            }
+          ]
+        },
+        "signature": "0xa4beb47c2067e196de4cd9d5643d1c7af37caf4ac87de346e10ac27351505d405272f3d68960322bd53d1ea95460e4dd323dbef7c862fa6596444a57732ddb2b1c"
+      }],
+      "fee": "0",
+      "secret": [990, { "value": "0x0000000000000000000000000000000000000020111111111111111111111111", "registerBlock": 122 }],
+      "transferProcessed": [991, {
+        "type": "Processed",
+        "message_identifier": "123456",
+        "signature": "0xdc1647ec6cdd805d8d4af231c5d5b2105bda2e5c7e81b9a6314f37aef9e5db8e62c253189ddb9886201427e1908876aa68d7a3ec6c45aaa3b1de4587efc70a3f1c"
+      }],
+      "secretReveal": [992, {
+        "type": "RevealSecret",
+        "message_identifier": "123454",
+        "secret": "0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e",
+        "signature": "0x758eace7b5443a3afb5daf06eda3d2d024ca4d2cdbd0e72b36bcc9408d5bbf0d32153f53fc180c4145fd7b6b3038554484b9d3a56382b03bfed5f3ce01c5ea1b1b"
+      }],
+      "unlock": [993, {
+        "type": "Unlock",
+        "chain_id": "337",
+        "message_identifier": "123457",
+        "payment_identifier": "1",
+        "secret": "0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e",
+        "nonce": "1",
+        "token_network_address": "0xe82ae5475589b828D3644e1B56546F93cD27d1a4",
+        "channel_identifier": "1338",
+        "transferred_amount": "0",
+        "locked_amount": "10",
+        "locksroot": "0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b",
+        "signature": "0xd153bbef8ca5462e62ba5dceda7929fc2ee7d866e983c033afe59e7f7958b8d80c734d5fba96028e8fb689300ca3c6a47764c0c0d6fbfffca9cf70729efb8e7e1c"
+      }],
+      "unlockProcessed": [994, {
+        "type": "Processed",
+        "message_identifier": "123457",
+        "signature": "0xdc1647ec6cdd805d8d4af231c5d5b2105bda2e5c7e81b9a6314f37aef9e5db8e62c253189ddb9886201427e1908876aa68d7a3ec6c45aaa3b1de4587efc70a3f1c"
+      }]
+    }
+  },
+  "path": {
+    "iou": {
+      "0x0000000000000000000000000000000000020001": {
+        "0x0000000000000000000000000000000000070002": {
+          "sender": "0x11111111111111111111111111aaaaaaaaaaaaaa",
+          "receiver": "0x0000000000000000000000000000000000070002",
+          "amount": "20",
+          "expiration_block": "132",
+          "one_to_n_address": "0x0000000000000000000000000000000000090002",
+          "chain_id": "1338",
+          "signature": "0xdc1647ec6cdd805d8d4af231c5d5b2105bda2e5c7e81b9a6314f37aef9e5db8e62c253189ddb9886201427e1908876aa68d7a3ec6c45aaa3b1de4587efc70a3f1c"
+        }
+      }
+    }
+  },
+  "pendingTxs": [{
+    "type": "channel/deposit/success",
+    "payload": {
+      "id": 17,
+      "participant": "0x11111111111111111111111111aaaaaaaaaaaaaa",
+      "totalDeposit": "100",
+      "txHash": "0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e",
+      "txBlock": 123
+    },
+    "meta": {
+      "tokenNetwork": "0x0000000000000000000000000000000000020001",
+      "partner": "0x0000000000000000000000000000000000020002"
+    }
+  }]
+}
