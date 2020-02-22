@@ -103,15 +103,15 @@ function dispatchAndWait$<A extends RaidenAction>(
   predicate: (action: RaidenAction) => boolean,
 ): Observable<A> {
   return merge(
-    // output once
-    of(request),
-    // but wait until respective success/failure action is seen before completing
+    // wait until respective success/failure action is seen before completing
     action$.pipe(
       filter(predicate),
       take(1),
       // don't output success/failure action, just wait for first match to complete
       ignoreElements(),
     ),
+    // output once
+    of(request),
   );
 }
 
@@ -122,7 +122,6 @@ function retryUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOpera
   // waits for address's user in transport to be online and joined room before actually
   // sending the message. That's why repeatWhen emits/resubscribe only some time after
   // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-  // TODO: configurable retry delay, possibly use an exponential backoff timeout strat
   return input$ =>
     input$.pipe(
       repeatWhen(completed$ => completed$.pipe(delay(delayMs))),
@@ -135,9 +134,10 @@ function retrySendUntil$(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   predicate: (state: RaidenState) => boolean,
+  delayMs = 30e3,
 ): Observable<messageSend.request> {
   return dispatchAndWait$(action$, send, isResponseOf(messageSend, send.meta)).pipe(
-    retryUntil(state$.pipe(filter(predicate))),
+    retryUntil(state$.pipe(filter(predicate)), delayMs),
   );
 }
 
@@ -614,6 +614,7 @@ const transferSignedRetryMessage$ = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   action: transferSigned,
+  { httpTimeout }: RaidenConfig,
 ): Observable<messageSend.request> => {
   const secrethash = action.meta.secrethash;
   const signed = action.payload.message;
@@ -631,7 +632,7 @@ const transferSignedRetryMessage$ = (
       !!transfer.channelClosed
     );
   };
-  return retrySendUntil$(send, action$, state$, processedOrNotPossibleToSend);
+  return retrySendUntil$(send, action$, state$, processedOrNotPossibleToSend, httpTimeout);
 };
 
 /**
@@ -642,18 +643,19 @@ const transferSignedRetryMessage$ = (
  *
  * @param action$ - Observable of transferSigned actions
  * @param state$ - Observable of RaidenStates
- * @param latest$ - RaidenEpicDeps latest
+ * @param deps - RaidenEpicDeps
  * @returns Observable of messageSend.request actions
  */
 export const transferSignedRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { latest$ }: RaidenEpicDeps,
+  { latest$, config$ }: RaidenEpicDeps,
 ): Observable<messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferSigned)),
-    mergeMap(action =>
-      transferSignedRetryMessage$(action$, latest$.pipe(pluckDistinct('state')), action),
+    withLatestFrom(config$),
+    mergeMap(([action, config]) =>
+      transferSignedRetryMessage$(action$, latest$.pipe(pluckDistinct('state')), action, config),
     ),
   );
 
@@ -671,6 +673,7 @@ const transferUnlockedRetryMessage$ = (
   state$: Observable<RaidenState>,
   action: transferUnlock.success,
   state: RaidenState,
+  { httpTimeout }: RaidenConfig,
 ): Observable<messageSend.request> => {
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
@@ -687,7 +690,7 @@ const transferUnlockedRetryMessage$ = (
     return !!transfer.unlockProcessed || !!transfer.channelClosed;
   };
 
-  return retrySendUntil$(send, action$, state$, unlockProcessedOrChannelClosed);
+  return retrySendUntil$(send, action$, state$, unlockProcessedOrChannelClosed, httpTimeout);
 };
 
 /**
@@ -703,13 +706,19 @@ const transferUnlockedRetryMessage$ = (
 export const transferUnlockedRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { latest$ }: RaidenEpicDeps,
+  { latest$, config$ }: RaidenEpicDeps,
 ): Observable<messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferUnlock.success)),
-    withLatestFrom(latest$.pipe(pluckDistinct('state'))),
-    mergeMap(([action, state]) =>
-      transferUnlockedRetryMessage$(action$, latest$.pipe(pluckDistinct('state')), action, state),
+    withLatestFrom(latest$.pipe(pluckDistinct('state')), config$),
+    mergeMap(([action, state, config]) =>
+      transferUnlockedRetryMessage$(
+        action$,
+        latest$.pipe(pluckDistinct('state')),
+        action,
+        state,
+        config,
+      ),
     ),
   );
 
@@ -727,6 +736,7 @@ const expiredRetryMessages$ = (
   state$: Observable<RaidenState>,
   action: transferExpire.success,
   state: RaidenState,
+  { httpTimeout }: RaidenConfig,
 ): Observable<messageSend.request> => {
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
@@ -743,7 +753,7 @@ const expiredRetryMessages$ = (
     return !!transfer.lockExpiredProcessed || !!transfer.channelClosed;
   };
   // emit request once immediatelly, then wait until respective success, then retries until confirmed
-  return retrySendUntil$(send, action$, state$, lockExpiredProcessedOrChannelClosed);
+  return retrySendUntil$(send, action$, state$, lockExpiredProcessedOrChannelClosed, httpTimeout);
 };
 
 /**
@@ -760,28 +770,30 @@ const expiredRetryMessages$ = (
 export const transferExpiredRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { latest$ }: RaidenEpicDeps,
+  { latest$, config$ }: RaidenEpicDeps,
 ): Observable<messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferExpire.success)),
-    withLatestFrom(latest$.pipe(pluckDistinct('state'))),
-    mergeMap(([action, state]) =>
-      expiredRetryMessages$(action$, latest$.pipe(pluckDistinct('state')), action, state),
+    withLatestFrom(latest$.pipe(pluckDistinct('state')), config$),
+    mergeMap(([action, state, config]) =>
+      expiredRetryMessages$(action$, latest$.pipe(pluckDistinct('state')), action, state, config),
     ),
   );
 
 /**
  * Contains the core logic of {@link transferAutoExpireEpic}.
  *
- * @param state - Contains The current state of the app
- * @param blockNumber - The current block number
  * @param action$ - Observable of {@link RaidenAction} actions
+ * @param state - Contains The current state of the app
+ * @param config - Contains the current app config
+ * @param blockNumber - The current block number
  * @returns Observable of {@link transferExpire.request} or {@link transfer.failure} actions
  */
 function autoExpire$(
-  state: RaidenState,
-  blockNumber: number,
   action$: Observable<RaidenAction>,
+  state: RaidenState,
+  { confirmationBlocks }: RaidenConfig,
+  blockNumber: number,
 ): Observable<transferExpire.request | transfer.failure> {
   const requests$: Observable<transferExpire.request | transfer.failure>[] = [];
 
@@ -790,7 +802,10 @@ function autoExpire$(
       sent.unlock ||
       sent.lockExpired ||
       sent.channelClosed ||
-      sent.transfer[1].lock.expiration.gte(blockNumber)
+      sent.transfer[1].lock.expiration.add(confirmationBlocks).gt(blockNumber) ||
+      // don't expire if secret got registered before lock expired
+      (sent.secret?.[1]?.registerBlock &&
+        sent.transfer[1].lock.expiration.gte(sent.secret?.[1]?.registerBlock))
     )
       continue;
     const secrethash = key as Hash;
@@ -831,20 +846,14 @@ function autoExpire$(
 export const transferAutoExpireEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
+  { config$ }: RaidenEpicDeps,
 ): Observable<transferExpire.request | transfer.failure> =>
   action$.pipe(
     filter(isActionOf(newBlock)),
-    withLatestFrom(state$),
+    withLatestFrom(state$, config$),
     // exhaustMap ignores new blocks while previous request batch is still pending
-    exhaustMap(
-      ([
-        {
-          payload: { blockNumber },
-        },
-        state,
-      ]) => {
-        return autoExpire$(state, blockNumber, action$);
-      },
+    exhaustMap(([{ payload: { blockNumber } }, state, config]) =>
+      autoExpire$(action$, state, config, blockNumber),
     ),
   );
 
