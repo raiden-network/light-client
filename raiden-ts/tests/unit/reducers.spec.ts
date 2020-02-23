@@ -920,8 +920,12 @@ describe('raidenReducer', () => {
 
     test('secret register', () => {
       // normal secret register without blockNumber
-      let newState = [transferSecret({ secret }, { secrethash })].reduce(raidenReducer, state);
-      expect(newState.sent[secrethash].secret).toStrictEqual([
+      let newState = [
+        transferSigned({ message: transfer, fee }, { secrethash }),
+        transferSecret({ secret }, { secrethash }),
+      ].reduce(raidenReducer, state);
+
+      expect(newState.sent[secrethash]?.secret).toStrictEqual([
         expect.any(Number),
         { value: secret, registerBlock: 0 },
       ]);
