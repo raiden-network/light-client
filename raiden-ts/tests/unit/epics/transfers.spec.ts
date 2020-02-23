@@ -1,11 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
-
 import { bigNumberify, BigNumber, keccak256, hexlify, randomBytes } from 'ethers/utils';
 import { Zero, HashZero, One } from 'ethers/constants';
-import { BehaviorSubject, of, EMPTY, Subject, Observable } from 'rxjs';
-import { fakeSchedulers } from 'rxjs-marbles/jest';
-import { first, tap, toArray, delay, filter } from 'rxjs/operators';
-import { get } from 'lodash';
+import { of, EMPTY, timer, merge } from 'rxjs';
+import {
+  first,
+  tap,
+  toArray,
+  filter,
+  take,
+  pluck,
+  takeUntil,
+  mergeMap,
+  ignoreElements,
+  last,
+} from 'rxjs/operators';
 
 import {
   newBlock,
@@ -15,8 +23,7 @@ import {
   channelClose,
   channelSettle,
 } from 'raiden-ts/channels/actions';
-import { RaidenAction } from 'raiden-ts/actions';
-import { RaidenState } from 'raiden-ts/state';
+import { raidenConfigUpdate } from 'raiden-ts/actions';
 import {
   MessageType,
   Processed,
@@ -43,6 +50,7 @@ import {
   transferUnlockProcessed,
   transferExpireProcessed,
   withdrawReceive,
+  transferSecretRegistered,
 } from 'raiden-ts/transfers/actions';
 import {
   transferGenerateAndSignEnvelopeMessageEpic,
@@ -62,35 +70,33 @@ import {
   transferRefundedEpic,
   withdrawRequestReceivedEpic,
   withdrawSendConfirmationEpic,
+  monitorSecretRegistryEpic,
 } from 'raiden-ts/transfers/epics';
 import { matrixPresence } from 'raiden-ts/transport/actions';
-import { raidenReducer } from 'raiden-ts/reducer';
-import { UInt, Address, Hash, Signed } from 'raiden-ts/utils/types';
-import { isActionOf, ActionType } from 'raiden-ts/utils/actions';
+import { UInt, Address, Hash, Signed, isntNil } from 'raiden-ts/utils/types';
+import { ActionType } from 'raiden-ts/utils/actions';
 import { makeMessageId, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 
 import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps } from '../mocks';
-import { getLatest$ } from 'raiden-ts/epics';
+import { raidenEpicDeps, makeLog } from '../mocks';
 
 describe('transfers epic', () => {
-  let depsMock = raidenEpicDeps();
-  let {
-    token,
-    tokenNetwork,
-    channelId,
-    partner,
-    settleTimeout,
-    isFirstParticipant,
-    txHash,
-    state,
-    matrixServer,
-    partnerUserId,
-    partnerSigner,
-    paymentId,
-    fee,
-    paths,
-  } = epicFixtures(depsMock);
+  let depsMock: ReturnType<typeof raidenEpicDeps>;
+  let token: ReturnType<typeof epicFixtures>['token'],
+    tokenNetwork: ReturnType<typeof epicFixtures>['tokenNetwork'],
+    channelId: ReturnType<typeof epicFixtures>['channelId'],
+    partner: ReturnType<typeof epicFixtures>['partner'],
+    settleTimeout: ReturnType<typeof epicFixtures>['settleTimeout'],
+    isFirstParticipant: ReturnType<typeof epicFixtures>['isFirstParticipant'],
+    txHash: ReturnType<typeof epicFixtures>['txHash'],
+    matrixServer: ReturnType<typeof epicFixtures>['matrixServer'],
+    partnerUserId: ReturnType<typeof epicFixtures>['partnerUserId'],
+    partnerSigner: ReturnType<typeof epicFixtures>['partnerSigner'],
+    paymentId: ReturnType<typeof epicFixtures>['paymentId'],
+    fee: ReturnType<typeof epicFixtures>['fee'],
+    paths: ReturnType<typeof epicFixtures>['paths'],
+    action$: ReturnType<typeof epicFixtures>['action$'],
+    state$: ReturnType<typeof epicFixtures>['state$'];
 
   beforeEach(() => {
     depsMock = raidenEpicDeps();
@@ -102,18 +108,22 @@ describe('transfers epic', () => {
       settleTimeout,
       isFirstParticipant,
       txHash,
-      state,
       matrixServer,
       partnerUserId,
       partnerSigner,
       paymentId,
       fee,
       paths,
+      action$,
+      state$,
     } = epicFixtures(depsMock));
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    action$.complete();
+    state$.complete();
+    depsMock.latest$.complete();
   });
 
   describe('transfer: request', () => {
@@ -127,125 +137,120 @@ describe('transfers epic', () => {
 
       const otherPartner1 = hexlify(randomBytes(20)) as Address,
         otherPartner2 = hexlify(randomBytes(20)) as Address,
-        otherDeposit = bigNumberify(800) as UInt<32>,
-        action$ = of(
-          matrixPresence.success(
-            {
-              userId: `@${otherPartner1.toLowerCase()}:${matrixServer}`,
-              available: true,
-              ts: Date.now(),
-            },
-            { address: otherPartner1 },
-          ),
-          matrixPresence.success(
-            {
-              userId: `@${otherPartner2.toLowerCase()}:${matrixServer}`,
-              available: true,
-              ts: Date.now(),
-            },
-            { address: otherPartner2 },
-          ),
-          matrixPresence.success(
-            { userId: partnerUserId, available: true, ts: Date.now() },
-            { address: partner },
-          ),
-          transfer.request(
-            { tokenNetwork, target: partner, value, secret, paths, paymentId },
-            { secrethash },
-          ),
-          // double transfer to test caching
-          transfer.request(
-            { tokenNetwork, target: partner, value, paths, paymentId },
-            { secrethash },
-          ),
-        ),
-        state$ = new BehaviorSubject(
-          [
-            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-            // a couple of channels with unrelated partners, with larger deposits
-            channelOpen.success(
-              {
-                id: channelId - 2,
-                settleTimeout,
-                isFirstParticipant,
-                txHash,
-                txBlock: openBlock,
-                confirmed: true,
-              },
-              { tokenNetwork, partner: otherPartner2 },
-            ),
-            channelDeposit.success(
-              {
-                id: channelId - 2,
-                participant: depsMock.address,
-                totalDeposit: otherDeposit,
-                txHash,
-                txBlock: openBlock + 1,
-                confirmed: true,
-              },
-              { tokenNetwork, partner: otherPartner2 },
-            ),
-            channelOpen.success(
-              {
-                id: channelId - 1,
-                settleTimeout,
-                isFirstParticipant,
-                txHash,
-                txBlock: openBlock,
-                confirmed: true,
-              },
-              { tokenNetwork, partner: otherPartner1 },
-            ),
-            channelDeposit.success(
-              {
-                id: channelId - 1,
-                participant: depsMock.address,
-                totalDeposit: otherDeposit,
-                txHash,
-                txBlock: openBlock + 1,
-                confirmed: true,
-              },
-              { tokenNetwork, partner: otherPartner1 },
-            ),
-            // but transfer should prefer this direct channel
-            channelOpen.success(
-              {
-                id: channelId,
-                settleTimeout,
-                isFirstParticipant,
-                txHash,
-                txBlock: openBlock,
-                confirmed: true,
-              },
-              { tokenNetwork, partner },
-            ),
-            channelDeposit.success(
-              {
-                id: channelId,
-                participant: depsMock.address,
-                totalDeposit: bigNumberify(500) as UInt<32>,
-                txHash,
-                txBlock: openBlock + 1,
-                confirmed: true,
-              },
-              { tokenNetwork, partner },
-            ),
-            newBlock({ blockNumber: 125 }),
-          ].reduce(raidenReducer, state),
-        );
-
-      getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
+        otherDeposit = bigNumberify(800) as UInt<32>;
 
       const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
-
-      const output = await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+      const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
         .pipe(
-          tap(action => state$.next(raidenReducer(state$.value, action))),
+          tap(action => action$.next(action)),
           toArray(),
         )
         .toPromise();
 
-      expect(output).toEqual(
+      [
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
+        // a couple of channels with unrelated partners, with larger deposits
+        channelOpen.success(
+          {
+            id: channelId - 2,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
+          { tokenNetwork, partner: otherPartner2 },
+        ),
+        channelDeposit.success(
+          {
+            id: channelId - 2,
+            participant: depsMock.address,
+            totalDeposit: otherDeposit,
+            txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
+          },
+          { tokenNetwork, partner: otherPartner2 },
+        ),
+        channelOpen.success(
+          {
+            id: channelId - 1,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
+          { tokenNetwork, partner: otherPartner1 },
+        ),
+        channelDeposit.success(
+          {
+            id: channelId - 1,
+            participant: depsMock.address,
+            totalDeposit: otherDeposit,
+            txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
+          },
+          { tokenNetwork, partner: otherPartner1 },
+        ),
+        // but transfer should prefer this direct channel
+        channelOpen.success(
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
+          { tokenNetwork, partner },
+        ),
+        channelDeposit.success(
+          {
+            id: channelId,
+            participant: depsMock.address,
+            totalDeposit: bigNumberify(500) as UInt<32>,
+            txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
+          },
+          { tokenNetwork, partner },
+        ),
+        newBlock({ blockNumber: 125 }),
+        matrixPresence.success(
+          {
+            userId: `@${otherPartner1.toLowerCase()}:${matrixServer}`,
+            available: true,
+            ts: Date.now(),
+          },
+          { address: otherPartner1 },
+        ),
+        matrixPresence.success(
+          {
+            userId: `@${otherPartner2.toLowerCase()}:${matrixServer}`,
+            available: true,
+            ts: Date.now(),
+          },
+          { address: otherPartner2 },
+        ),
+        matrixPresence.success(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        transfer.request(
+          { tokenNetwork, target: partner, value, secret, paths, paymentId },
+          { secrethash },
+        ),
+        // double transfer to test caching
+        transfer.request(
+          { tokenNetwork, target: partner, value, paths, paymentId },
+          { secrethash },
+        ),
+      ].forEach(a => action$.next(a));
+      action$.complete();
+
+      await expect(promise).resolves.toEqual(
         expect.arrayContaining([
           transferSigned(
             {
@@ -270,60 +275,55 @@ describe('transfers epic', () => {
     test('transferSigned fail no channel with route partner', async () => {
       expect.assertions(1);
 
-      const closingPartner = '0x0100000000000000000000000000000000000000' as Address,
-        action$ = of(
-          matrixPresence.success(
-            { userId: partnerUserId, available: true, ts: Date.now() },
-            { address: partner },
-          ),
-          transfer.request(
-            {
-              tokenNetwork,
-              target: partner,
-              value,
-              secret,
-              paths: [{ path: [closingPartner], fee }],
-              paymentId,
-            },
-            { secrethash },
-          ),
+      const closingPartner = '0x0100000000000000000000000000000000000000' as Address;
+      const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      [
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
+        // channel with closingPartner: closed
+        channelOpen.success(
+          {
+            id: channelId + 1,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
+          { tokenNetwork, partner: closingPartner },
         ),
-        state$ = of(
-          [
-            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-            // channel with closingPartner: closed
-            channelOpen.success(
-              {
-                id: channelId + 1,
-                settleTimeout,
-                isFirstParticipant,
-                txHash,
-                txBlock: openBlock,
-                confirmed: true,
-              },
-              { tokenNetwork, partner: closingPartner },
-            ),
-            channelClose.success(
-              {
-                id: channelId + 1,
-                participant: closingPartner,
-                txHash,
-                txBlock: openBlock + 1,
-                confirmed: true,
-              },
-              { tokenNetwork, partner: closingPartner },
-            ),
-            newBlock({ blockNumber: 125 }),
-          ].reduce(raidenReducer, state),
-        );
+        channelClose.success(
+          {
+            id: channelId + 1,
+            participant: closingPartner,
+            txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
+          },
+          { tokenNetwork, partner: closingPartner },
+        ),
+        newBlock({ blockNumber: 125 }),
+        matrixPresence.success(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
+        ),
+        transfer.request(
+          {
+            tokenNetwork,
+            target: partner,
+            value,
+            secret,
+            paths: [{ path: [closingPartner], fee }],
+            paymentId,
+          },
+          { secrethash },
+        ),
+      ].forEach(a => action$.next(a));
+      action$.complete();
 
-      getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
-
-      await expect(
-        transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
-      ).resolves.toMatchObject({
+      await expect(promise).resolves.toMatchObject({
         type: transfer.failure.type,
         payload: expect.any(Error),
         error: true,
@@ -338,65 +338,56 @@ describe('transfers epic', () => {
       value = bigNumberify(10) as UInt<32>,
       openBlock = 121;
 
-    let transferingState: RaidenState, signedTransfer: Signed<LockedTransfer>;
+    let signedTransfer: Signed<LockedTransfer>;
 
-    /**
-     * this will leave/reset transferingState, signedTransfer as a state with a channel and pending
-     * transfer
-     */
     beforeEach(async () => {
-      const action$: Observable<RaidenAction> = of(
-          matrixPresence.success(
-            { userId: partnerUserId, available: true, ts: Date.now() },
-            { address: partner },
-          ),
-          transfer.request(
-            { tokenNetwork, target: partner, value, secret, paths, paymentId },
-            { secrethash },
-          ),
+      [
+        matrixPresence.success(
+          { userId: partnerUserId, available: true, ts: Date.now() },
+          { address: partner },
         ),
-        state$ = new BehaviorSubject(
-          [
-            tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-            channelOpen.success(
-              {
-                id: channelId,
-                settleTimeout,
-                isFirstParticipant,
-                txHash,
-                txBlock: openBlock,
-                confirmed: true,
-              },
-              { tokenNetwork, partner },
-            ),
-            channelDeposit.success(
-              {
-                id: channelId,
-                participant: depsMock.address,
-                totalDeposit: bigNumberify(500) as UInt<32>,
-                txHash,
-                txBlock: openBlock + 1,
-                confirmed: true,
-              },
-              { tokenNetwork, partner },
-            ),
-            newBlock({ blockNumber: 125 }),
-          ].reduce(raidenReducer, state),
-        );
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
+        channelOpen.success(
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
+          { tokenNetwork, partner },
+        ),
+        channelDeposit.success(
+          {
+            id: channelId,
+            participant: depsMock.address,
+            totalDeposit: bigNumberify(500) as UInt<32>,
+            txHash,
+            txBlock: openBlock + 1,
+            confirmed: true,
+          },
+          { tokenNetwork, partner },
+        ),
+        newBlock({ blockNumber: 125 }),
+      ].forEach(a => action$.next(a));
 
-      getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
-
-      const output = await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-        .pipe(toArray())
+      const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+        .pipe(
+          tap(a => action$.next(a)),
+          take(2),
+          filter(transferSigned.is),
+        )
         .toPromise();
-      for (const action of output) {
-        if (isActionOf(transferSigned, action)) {
-          signedTransfer = action.payload.message;
-        }
-      }
+      action$.next(
+        transfer.request(
+          { tokenNetwork, target: partner, value, secret, paths, paymentId },
+          { secrethash },
+        ),
+      );
+      signedTransfer = (await promise).payload.message;
 
-      state$.next([...output, newBlock({ blockNumber: 126 })].reduce(raidenReducer, state$.value));
-      transferingState = state$.value;
+      action$.next(newBlock({ blockNumber: 126 }));
     });
 
     describe('transferUnlock.request', () => {
@@ -404,28 +395,26 @@ describe('transfers epic', () => {
         expect.assertions(2);
 
         // secret revealed action is only ever emitted when received from recipient
-        const action$ = of(
-            transferUnlock.request(undefined, { secrethash }),
-            transferUnlock.request(undefined, { secrethash }),
-          ),
-          state$ = new BehaviorSubject(transferingState);
-
-        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-            .pipe(
-              tap(action => state$.next(raidenReducer(state$.value, action))),
-              toArray(),
-            )
-            .toPromise(),
-        ).resolves.toEqual(
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(action => action$.next(action)),
+            toArray(),
+          )
+          .toPromise();
+
+        [
+          transferUnlock.request(undefined, { secrethash }),
+          transferUnlock.request(undefined, { secrethash }),
+        ].forEach(a => action$.next(a));
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
-            {
-              type: transferUnlock.success.type,
-              payload: {
+            transferUnlock.success(
+              {
                 message: expect.objectContaining({
                   type: MessageType.UNLOCK,
                   locksroot: keccak256([]),
@@ -435,8 +424,8 @@ describe('transfers epic', () => {
                   signature: expect.any(String),
                 }),
               },
-              meta: { secrethash },
-            },
+              { secrethash },
+            ),
           ]),
         );
 
@@ -448,43 +437,44 @@ describe('transfers epic', () => {
         expect.assertions(2);
 
         // update state: transfer still pending, but channel gets settled
-        const closeBlock = 125,
-          action$ = of(transferUnlock.request(undefined, { secrethash })),
-          state$ = of(
-            [
-              channelClose.success(
-                {
-                  id: channelId,
-                  participant: partner,
-                  txHash,
-                  txBlock: closeBlock,
-                  confirmed: true,
-                },
-                { tokenNetwork, partner },
-              ),
-              newBlock({ blockNumber: closeBlock + settleTimeout + 1 }),
-              channelSettle.success(
-                {
-                  id: channelId,
-                  txHash,
-                  txBlock: closeBlock + settleTimeout + 1,
-                  confirmed: true,
-                },
-                { tokenNetwork, partner },
-              ),
-              newBlock({ blockNumber: closeBlock + settleTimeout + 2 }),
-            ].reduce(raidenReducer, transferingState),
-          );
-
-        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
+        const closeBlock = 125;
+        [
+          channelClose.success(
+            {
+              id: channelId,
+              participant: partner,
+              txHash,
+              txBlock: closeBlock,
+              confirmed: true,
+            },
+            { tokenNetwork, partner },
+          ),
+          newBlock({ blockNumber: closeBlock + settleTimeout + 1 }),
+          channelSettle.success(
+            {
+              id: channelId,
+              txHash,
+              txBlock: closeBlock + settleTimeout + 1,
+              confirmed: true,
+            },
+            { tokenNetwork, partner },
+          ),
+          newBlock({ blockNumber: closeBlock + settleTimeout + 2 }),
+        ].forEach(a => action$.next(a));
+        action$.complete();
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
+          .toPromise();
+
+        action$.next(transferUnlock.request(undefined, { secrethash }));
+
+        await expect(promise).resolves.toEqual(
           expect.not.arrayContaining([
             expect.objectContaining({ type: transferUnlock.success.type, meta: { secrethash } }),
           ]),
@@ -499,32 +489,33 @@ describe('transfers epic', () => {
         expect.assertions(2);
 
         // secret revealed action is only ever emitted when received from recipient
-        const closeBlock = 125,
-          action$ = of(transferUnlock.request(undefined, { secrethash })),
-          state$ = of(
-            [
-              channelClose.success(
-                {
-                  id: channelId,
-                  participant: partner,
-                  txHash,
-                  txBlock: closeBlock,
-                  confirmed: true,
-                },
-                { tokenNetwork, partner },
-              ),
-            ].reduce(raidenReducer, transferingState),
-          );
-
-        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
+        const closeBlock = 125;
+        action$.next(
+          channelClose.success(
+            {
+              id: channelId,
+              participant: partner,
+              txHash,
+              txBlock: closeBlock,
+              confirmed: true,
+            },
+            { tokenNetwork, partner },
+          ),
+        );
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
+          .toPromise();
+
+        action$.next(transferUnlock.request(undefined, { secrethash }));
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.not.arrayContaining([
             expect.objectContaining({ type: transferUnlock.success.type, meta: { secrethash } }),
           ]),
@@ -539,23 +530,21 @@ describe('transfers epic', () => {
         expect.assertions(2);
 
         // secret revealed action is only ever emitted when received from recipient
-        const action$ = of(transferUnlock.request(undefined, { secrethash })),
-          state$ = of(
-            [newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 })].reduce(
-              raidenReducer,
-              transferingState,
-            ),
-          );
-
-        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }));
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
+          .toPromise();
+
+        action$.next(transferUnlock.request(undefined, { secrethash }));
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.not.arrayContaining([
             expect.objectContaining({ type: transferUnlock.success.type, meta: { secrethash } }),
           ]),
@@ -572,32 +561,27 @@ describe('transfers epic', () => {
         expect.assertions(2);
 
         // secret revealed action is only ever emitted when received from recipient
-        const action$ = of(
-            transferExpire.request(undefined, { secrethash }),
-            transferExpire.request(undefined, { secrethash }),
-          ),
-          state$ = new BehaviorSubject(
-            [newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 })].reduce(
-              raidenReducer,
-              transferingState,
-            ),
-          );
-        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }));
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-            .pipe(
-              tap(action => state$.next(raidenReducer(state$.value, action))),
-              toArray(),
-            )
-            .toPromise(),
-        ).resolves.toEqual(
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
+          .toPromise();
+
+        [
+          transferExpire.request(undefined, { secrethash }),
+          transferExpire.request(undefined, { secrethash }),
+        ].forEach(a => action$.next(a));
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
-            {
-              type: transferExpire.success.type,
-              payload: {
+            transferExpire.success(
+              {
                 message: expect.objectContaining({
                   type: MessageType.LOCK_EXPIRED,
                   locksroot: keccak256([]),
@@ -607,8 +591,8 @@ describe('transfers epic', () => {
                   signature: expect.any(String),
                 }),
               },
-              meta: { secrethash },
-            },
+              { secrethash },
+            ),
           ]),
         );
 
@@ -620,38 +604,36 @@ describe('transfers epic', () => {
         expect.assertions(2);
 
         // secret revealed action is only ever emitted when received from recipient
-        const closeBlock = 125,
-          action$ = of(transferExpire.request(undefined, { secrethash })),
-          state$ = of(
-            [
-              channelClose.success(
-                {
-                  id: channelId,
-                  participant: partner,
-                  txHash,
-                  txBlock: closeBlock,
-                  confirmed: true,
-                },
-                { tokenNetwork, partner },
-              ),
-              newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
-            ].reduce(raidenReducer, transferingState),
-          );
-        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
+        const closeBlock = 125;
+        [
+          channelClose.success(
+            {
+              id: channelId,
+              participant: partner,
+              txHash,
+              txBlock: closeBlock,
+              confirmed: true,
+            },
+            { tokenNetwork, partner },
+          ),
+          newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
+        ].forEach(a => action$.next(a));
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
+          .toPromise();
+
+        action$.next(transferExpire.request(undefined, { secrethash }));
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
-            expect.objectContaining({
-              type: transferExpire.failure.type,
-              payload: expect.any(Error),
-              meta: { secrethash },
-            }),
+            expect.objectContaining(transferExpire.failure(expect.any(Error), { secrethash })),
           ]),
         );
 
@@ -664,27 +646,23 @@ describe('transfers epic', () => {
         expect.assertions(2);
 
         // secret revealed action is only ever emitted when received from recipient
-        const action$ = of(transferExpire.request(undefined, { secrethash })),
-          state$ = of(
-            [newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() - 1 })].reduce(
-              raidenReducer,
-              transferingState,
-            ),
-          );
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() - 1 }));
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
+          .toPromise();
+
+        action$.next(transferExpire.request(undefined, { secrethash }));
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
-            expect.objectContaining({
-              type: transferExpire.failure.type,
-              payload: expect.any(Error),
-              meta: { secrethash },
-            }),
+            expect.objectContaining(transferExpire.failure(expect.any(Error), { secrethash })),
           ]),
         );
 
@@ -697,31 +675,24 @@ describe('transfers epic', () => {
         expect.assertions(2);
 
         // secret revealed action is only ever emitted when received from recipient
-        const action$ = of(
-            transferExpire.request(undefined, {
-              secrethash: HashZero as Hash /* no transfer with HashZero as secrethash */,
-            }),
-          ),
-          state$ = of(
-            [newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 })].reduce(
-              raidenReducer,
-              transferingState,
-            ),
-          );
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }));
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
+          .toPromise();
+
+        const secrethash = HashZero as Hash; // no transfer with HashZero as secrethash/
+        action$.next(transferExpire.request(undefined, { secrethash }));
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
-            expect.objectContaining({
-              type: transferExpire.failure.type,
-              payload: expect.any(Error),
-              meta: { secrethash: HashZero },
-            }),
+            expect.objectContaining(transferExpire.failure(expect.any(Error), { secrethash })),
           ]),
         );
 
@@ -733,43 +704,34 @@ describe('transfers epic', () => {
       test('fail transfer unlocked', async () => {
         expect.assertions(3);
 
-        const state$ = new BehaviorSubject(transferingState);
-
-        await transferGenerateAndSignEnvelopeMessageEpic(
-          of(transferUnlock.request(undefined, { secrethash })),
-          state$,
-          depsMock,
-        )
-          .pipe(tap(action => state$.next(raidenReducer(state$.value, action))))
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
           .toPromise();
 
+        action$.next(transferUnlock.request(undefined, { secrethash }));
+
         // expect unlock to be set
-        expect(get(state$.value, ['sent', secrethash, 'unlock', 1])).toMatchObject({
+        await expect(
+          depsMock.latest$
+            .pipe(pluck('state', 'sent', secrethash, 'unlock', '1'), first(isntNil))
+            .toPromise(),
+        ).resolves.toMatchObject({
           type: MessageType.UNLOCK,
           signature: expect.any(String),
         });
 
-        state$.next(
-          [newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 })].reduce(
-            raidenReducer,
-            state$.value,
-          ),
-        );
-
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
-        const action$ = of(transferExpire.request(undefined, { secrethash }));
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }));
+        action$.next(transferExpire.request(undefined, { secrethash }));
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
-            expect.objectContaining({
-              type: transferExpire.failure.type,
-              payload: expect.any(Error),
-              meta: { secrethash },
-            }),
+            expect.objectContaining(transferExpire.failure(expect.any(Error), { secrethash })),
           ]),
         );
 
@@ -780,253 +742,347 @@ describe('transfers epic', () => {
     });
 
     describe('transfer*RetryMessageEpic', () => {
-      let processed: Signed<Processed>,
-        unlockedAction: ActionType<typeof transferUnlock.success>,
-        unlockProcessed: Signed<Processed>,
-        expiredAction: ActionType<typeof transferExpire.success>,
-        expiredProcessed: Signed<Processed>;
-
       beforeEach(async () => {
-        jest.useFakeTimers();
+        action$.next(raidenConfigUpdate({ config: { httpTimeout: 50 } }));
+      });
+
+      test('transferSigned', async () => {
+        expect.assertions(2);
 
         const msg: Processed = {
           type: MessageType.PROCESSED,
           message_identifier: signedTransfer.message_identifier,
         };
-        processed = await signMessage(partnerSigner, msg);
+        const processed = await signMessage(partnerSigner, msg);
 
-        // set state as unlocked
-        const a = await transferGenerateAndSignEnvelopeMessageEpic(
-          of(transferUnlock.request(undefined, { secrethash })),
-          of(transferingState),
-          depsMock,
-        ).toPromise();
+        // wait until seeing 3 messageSend.request to send Processed
+        action$
+          .pipe(filter(messageSend.request.is), take(3), ignoreElements())
+          .subscribe(undefined, undefined, () =>
+            action$.next(transferProcessed({ message: processed }, { secrethash })),
+          );
 
-        if (!a || !isActionOf(transferUnlock.success, a)) throw new Error(`not unlocked: ${a}`);
-        unlockedAction = a;
-        unlockProcessed = await signMessage(partnerSigner, {
-          type: MessageType.PROCESSED,
-          message_identifier: unlockedAction.payload.message.message_identifier,
-        });
+        const requests = [];
+        transferSignedRetryMessageEpic(action$, state$, depsMock)
+          .pipe(filter(messageSend.request.is))
+          .subscribe(a => {
+            requests.push(a);
+            action$.next(a);
+            // for each message request, emit a success
+            action$.next(messageSend.success(undefined, a.meta));
+          });
 
-        // set state as unlocked
-        const expiredState = raidenReducer(
-          transferingState,
-          newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
-        );
+        // as signedTransfer is already in state, use initQueuePendingEnvelopeMessagesEpic
+        initQueuePendingEnvelopeMessagesEpic(
+          EMPTY,
+          depsMock.latest$.pipe(pluck('state')),
+        ).subscribe(a => action$.next(a));
 
-        depsMock.latest$.pipe(first()).subscribe(l => {
-          depsMock.latest$.next({ ...l, state: expiredState });
-        });
+        // const promise = action$.pipe(first(messageSend.request.is)).toPromise();
+        // await promise;
 
-        const b = await transferGenerateAndSignEnvelopeMessageEpic(
-          of(transferExpire.request(undefined, { secrethash })),
-          of(expiredState),
-          depsMock,
-        ).toPromise();
+        // first message request comes right away after transferSigned
+        expect(requests.length).toBe(1);
 
-        if (!b || !isActionOf(transferExpire.success, b)) throw new Error(`not expired`);
-        expiredAction = b;
-        expiredProcessed = await signMessage(partnerSigner, {
-          type: MessageType.PROCESSED,
-          message_identifier: expiredAction.payload.message.message_identifier,
-        });
+        // 1st msg, +2 messages retried after httpTimeout each, then completes
+        await new Promise(resolve => setTimeout(resolve, 500));
+        expect(requests.length).toBe(3);
       });
 
-      test(
-        'transferSigned',
-        fakeSchedulers(advance => {
-          expect.assertions(3);
+      test('transferUnlock.success', async () => {
+        expect.assertions(2);
 
-          const state$ = new BehaviorSubject<RaidenState>(transferingState),
-            // 'of' is cold and'll fire these events on every subscription. For inner observable,
-            // only messageSend.success is relevant and'll confirm messageSend.request with message=signedTransfer
-            action$ = of(
-              transferSigned({ message: signedTransfer, fee }, { secrethash }),
-              messageSend.success(undefined, {
-                address: partner,
-                msgId: signedTransfer.message_identifier.toString(),
+        // upon transferUnlock.success, generate Processed for it,
+        // but receives only after 3 message requests
+        merge(
+          // generate & sign Processed for the Unlock
+          action$.pipe(
+            first(transferUnlock.success.is),
+            mergeMap(action =>
+              signMessage(partnerSigner, {
+                type: MessageType.PROCESSED,
+                message_identifier: action.payload.message.message_identifier,
               }),
-            );
+            ),
+          ),
+          // wait until seeing 3 messageSend.request to complete
+          action$.pipe(filter(messageSend.request.is), take(3), ignoreElements()),
+        )
+          .pipe(last())
+          .subscribe(signed =>
+            action$.next(transferUnlockProcessed({ message: signed }, { secrethash })),
+          );
 
-          depsMock.latest$.pipe(first()).subscribe(l => {
-            depsMock.latest$.next({ ...l, state: transferingState });
+        const requests = [];
+        transferUnlockedRetryMessageEpic(action$, state$, depsMock)
+          .pipe(filter(messageSend.request.is))
+          .subscribe(a => {
+            requests.push(a);
+            action$.next(a);
+            // for each message request, emit a success
+            action$.next(messageSend.success(undefined, a.meta));
           });
 
-          let sent = 0;
-          transferSignedRetryMessageEpic(action$, state$, depsMock).subscribe(() => sent++);
+        // expire lock, to init messageSend.request retry loop
+        await transferGenerateAndSignEnvelopeMessageEpic(
+          of(transferUnlock.request(undefined, { secrethash })),
+          depsMock.latest$.pipe(pluck('state')),
+          depsMock,
+        )
+          .pipe(tap(a => action$.next(a)))
+          .toPromise();
 
-          // first messageSend.request is sent immediatelly
-          advance(1);
-          expect(sent).toBe(1);
+        // first message request comes right away after transferExpire.success
+        expect(requests.length).toBe(1);
 
-          // advance 80s, 10s each; somehow advance(80e3) doesn't do all callbacks as expected
-          for (let t = 0; t < 80; t += 10) advance(10e3);
-          // then, at 30 and 60s, 2 more retries
-          expect(sent).toBe(3);
+        // 1st msg, +2 messages retried after httpTimeout each, then completes
+        await new Promise(resolve => setTimeout(resolve, 500));
+        expect(requests.length).toBe(3);
+      });
 
-          const processedState = raidenReducer(
-            state$.value,
-            transferProcessed({ message: processed }, { secrethash }),
+      test('transferExpire.success', async () => {
+        expect.assertions(2);
+
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 6 }));
+
+        // upon transferExpire.success, generate Processed for it,
+        // but receives only after 3 message requests
+        merge(
+          // generate & sign Processed for the LockExpired
+          action$.pipe(
+            first(transferExpire.success.is),
+            mergeMap(action =>
+              signMessage(partnerSigner, {
+                type: MessageType.PROCESSED,
+                message_identifier: action.payload.message.message_identifier,
+              }),
+            ),
+          ),
+          // wait until seeing 3 messageSend.request to complete
+          action$.pipe(filter(messageSend.request.is), take(3), ignoreElements()),
+        )
+          .pipe(last())
+          .subscribe(processed =>
+            action$.next(transferExpireProcessed({ message: processed }, { secrethash })),
           );
-          state$.next(processedState);
-          depsMock.latest$.pipe(first()).subscribe(l => {
-            depsMock.latest$.next({ ...l, state: processedState });
+
+        const requests = [];
+        transferExpiredRetryMessageEpic(action$, state$, depsMock)
+          .pipe(filter(messageSend.request.is))
+          .subscribe(a => {
+            requests.push(a);
+            action$.next(a);
+            // for each message request, emit a success
+            action$.next(messageSend.success(undefined, a.meta));
           });
 
-          // +30s and no new messageSend.request, as transferProcessed stopped retry
-          for (let t = 0; t < 30; t += 10) advance(10e3);
-          expect(sent).toBe(3);
-        }),
-      );
+        // expire lock, to init messageSend.request retry loop
+        await transferGenerateAndSignEnvelopeMessageEpic(
+          of(transferExpire.request(undefined, { secrethash })),
+          depsMock.latest$.pipe(pluck('state')),
+          depsMock,
+        )
+          .pipe(tap(a => action$.next(a)))
+          .toPromise();
 
-      test(
-        'transferUnlock.success',
-        fakeSchedulers(advance => {
-          expect.assertions(3);
+        // first message request comes right away after transferExpire.success
+        expect(requests.length).toBe(1);
 
-          const state$ = new BehaviorSubject<RaidenState>(
-            raidenReducer(transferingState, unlockedAction),
-          );
-
-          // 'of' is cold and'll fire these events on every subscription. For inner observable,
-          // only messageSend.success is relevant and will confirm messageSend.request with message=signedTransfer
-          const action$ = of(
-            unlockedAction,
-            messageSend.success(undefined, {
-              address: partner,
-              msgId: unlockedAction.payload.message.message_identifier.toString(),
-            }),
-          ).pipe(delay(1));
-
-          let sent = 0;
-          transferUnlockedRetryMessageEpic(action$, state$, depsMock).subscribe(() => sent++);
-
-          // first messageSend.request is sent immediatelly
-          advance(1);
-          expect(sent).toBe(1);
-
-          // advance 80s, 10s each; somehow advance(80e3) doesn't do all callbacks as expected
-          for (let t = 0; t < 80; t += 10) advance(10e3);
-          // then, at 30 and 60s, 2 more retries
-          expect(sent).toBe(3);
-
-          // clear transfer from state
-          state$.next(
-            raidenReducer(
-              state$.value,
-              transferUnlockProcessed({ message: unlockProcessed }, { secrethash }),
-            ),
-          );
-
-          // +30s and no new messageSend.request, as transferUnlockProcessed stopped retry
-          for (let t = 0; t < 30; t += 10) advance(10e3);
-          expect(sent).toBe(3);
-        }),
-      );
-
-      test(
-        'transferExpire.success',
-        fakeSchedulers(advance => {
-          expect.assertions(3);
-
-          const state$ = new BehaviorSubject<RaidenState>(
-            [
-              newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
-              expiredAction,
-            ].reduce(raidenReducer, transferingState),
-          );
-
-          // 'of' is cold and'll fire these events on every subscription. For inner observable,
-          // only messageSend.success is relevant and will confirm messageSend.request with message=signedTransfer
-          const action$ = of(
-            expiredAction,
-            messageSend.success(undefined, {
-              address: partner,
-              msgId: expiredAction.payload.message.message_identifier.toString(),
-            }),
-          ).pipe(delay(1));
-
-          let sent = 0;
-          transferExpiredRetryMessageEpic(action$, state$, depsMock).subscribe(() => sent++);
-
-          // first messageSend.request is sent immediatelly
-          advance(1);
-          expect(sent).toBe(1);
-
-          // advance 80s, 10s each; somehow advance(80e3) doesn't do all callbacks as expected
-          for (let t = 0; t < 80; t += 10) advance(10e3);
-          // then, at 30 and 60s, 2 more retries
-          expect(sent).toBe(3);
-
-          // clear transfer from state
-          state$.next(
-            raidenReducer(
-              state$.value,
-              transferExpireProcessed({ message: expiredProcessed }, { secrethash }),
-            ),
-          );
-
-          // +30s and no new messageSend.request, as transferExpireProcessed stopped retry
-          for (let t = 0; t < 30; t += 10) advance(10e3);
-          expect(sent).toBe(3);
-        }),
-      );
+        // 1st msg, +2 messages retried after httpTimeout each, then completes
+        await new Promise(resolve => setTimeout(resolve, 500));
+        expect(requests.length).toBe(3);
+      });
     });
 
-    test('transferAutoExpireEpic', async () => {
-      expect.assertions(2);
+    describe('transferAutoExpireEpic', () => {
+      const confirmationBlocks = 2;
 
-      const state$ = new BehaviorSubject(transferingState);
+      beforeEach(() => action$.next(raidenConfigUpdate({ config: { confirmationBlocks } })));
 
-      // no output if lock didn't expire yet
-      await expect(
-        transferAutoExpireEpic(
-          of(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() - 1 })),
-          state$,
-        ).toPromise(),
-      ).resolves.toBeUndefined();
+      test("don't emit if transfer didn't expire", async () => {
+        expect.assertions(1);
 
-      const action$ = new Subject<RaidenAction>();
-      const promise = transferAutoExpireEpic(action$, state$)
-        .pipe(
-          tap(action => {
-            if (isActionOf(transferExpire.request, action)) {
-              transferGenerateAndSignEnvelopeMessageEpic(of(action), state$, depsMock).subscribe(
-                expired => {
-                  // push state when transferExpire.success
-                  state$.next(raidenReducer(state$.value, expired));
-                  // also push to input action$, to complete pending inner$ in exhaustMap
-                  action$.next(expired);
-                  // and complete, as no other newBlock/transferExpire.request[d|Failed] will go through
-                  action$.complete();
-                },
-              );
-            }
+        const promise = transferAutoExpireEpic(action$, state$, depsMock).toPromise();
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() - 1 }));
+        setTimeout(() => action$.complete(), 10);
+
+        // no output if lock didn't expire yet
+        await expect(promise).resolves.toBeUndefined();
+      });
+
+      test("don't emit if expired but not confirmed yet", async () => {
+        const promise = action$.pipe(toArray()).toPromise();
+
+        transferAutoExpireEpic(action$, state$, depsMock).subscribe(action => {
+          action$.next(action);
+          // fail requests, to allow retrying autoExpire on next block
+          if (transferExpire.request.is(action))
+            action$.next(transferExpire.failure(new Error('signature failed'), action.meta));
+        });
+
+        action$.next(
+          newBlock({
+            blockNumber: signedTransfer.lock.expiration.toNumber() + confirmationBlocks - 1,
           }),
-          toArray(),
-        )
-        .toPromise();
+        );
+        setTimeout(() => action$.complete(), 10);
 
-      const action = newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 });
-      state$.next(raidenReducer(state$.value, action));
-      action$.next(action);
+        // don't emit even after simple expiration
+        await expect(promise).resolves.not.toEqual(
+          expect.arrayContaining([transferExpire.request(undefined, { secrethash })]),
+        );
+      });
 
-      await expect(promise).resolves.toEqual(
-        expect.arrayContaining([
-          {
-            type: transferExpire.request.type,
-            payload: undefined,
-            meta: { secrethash },
-          },
-          {
-            type: transfer.failure.type,
-            payload: expect.any(Error),
-            error: true,
-            meta: { secrethash },
-          },
-        ]),
+      test('expire after confirmed blocks after expiration', async () => {
+        const promise = action$.pipe(toArray()).toPromise();
+
+        transferAutoExpireEpic(action$, state$, depsMock).subscribe(action => {
+          action$.next(action);
+          // fail requests, to allow retrying autoExpire on next block
+          if (transferExpire.request.is(action))
+            action$.next(transferExpire.failure(new Error('signature failed'), action.meta));
+        });
+
+        action$.next(
+          newBlock({
+            blockNumber: signedTransfer.lock.expiration.toNumber() + confirmationBlocks + 1,
+          }),
+        );
+        setTimeout(() => action$.complete(), 10);
+
+        // expire after confirmed
+        await expect(promise).resolves.toEqual(
+          expect.arrayContaining([
+            transferExpire.request(undefined, { secrethash }),
+            transfer.failure(expect.any(Error), { secrethash }),
+          ]),
+        );
+      });
+
+      test("don't expire if secret registered before expiration", async () => {
+        const promise = action$.pipe(toArray()).toPromise();
+
+        transferAutoExpireEpic(action$, state$, depsMock).subscribe(action => {
+          action$.next(action);
+          // fail requests, to allow retrying autoExpire on next block
+          if (transferExpire.request.is(action))
+            action$.next(transferExpire.failure(new Error('signature failed'), action.meta));
+        });
+
+        action$.next(
+          transferSecretRegistered(
+            {
+              secret,
+              txHash,
+              txBlock: signedTransfer.lock.expiration.toNumber(),
+              confirmed: true,
+            },
+            { secrethash },
+          ),
+        );
+        action$.next(
+          newBlock({
+            blockNumber: signedTransfer.lock.expiration.toNumber() + confirmationBlocks + 1,
+          }),
+        );
+        setTimeout(() => action$.complete(), 10);
+
+        // expire after confirmed
+        await expect(promise).resolves.not.toEqual(
+          expect.arrayContaining([transferExpire.request(undefined, { secrethash })]),
+        );
+      });
+
+      test('expire if secret registered but too late', async () => {
+        const promise = action$.pipe(toArray()).toPromise();
+
+        transferAutoExpireEpic(action$, state$, depsMock).subscribe(action => {
+          action$.next(action);
+          // fail requests, to allow retrying autoExpire on next block
+          if (transferExpire.request.is(action))
+            action$.next(transferExpire.failure(new Error('signature failed'), action.meta));
+        });
+
+        action$.next(
+          transferSecretRegistered(
+            {
+              secret,
+              txHash,
+              txBlock: signedTransfer.lock.expiration.toNumber() + 1,
+              confirmed: true,
+            },
+            { secrethash },
+          ),
+        );
+        action$.next(
+          newBlock({
+            blockNumber: signedTransfer.lock.expiration.toNumber() + confirmationBlocks + 1,
+          }),
+        );
+        setTimeout(() => action$.complete(), 10);
+
+        // expire after confirmed
+        await expect(promise).resolves.toEqual(
+          expect.arrayContaining([
+            transferExpire.request(undefined, { secrethash }),
+            transfer.failure(expect.any(Error), { secrethash }),
+          ]),
+        );
+      });
+    });
+
+    test('monitorSecretRegistryEpic', async () => {
+      expect.assertions(3);
+
+      const secrets: transferSecretRegistered[] = [];
+
+      monitorSecretRegistryEpic(
+        EMPTY,
+        depsMock.latest$.pipe(pluck('state')),
+        depsMock,
+      ).subscribe(a => secrets.push(a));
+
+      // ignore unknown secrethash
+      depsMock.provider.emit(
+        '*',
+        makeLog({
+          blockNumber: 127,
+          transactionHash: txHash,
+          filter: depsMock.secretRegistryContract.filters.SecretRevealed(txHash, null),
+          data: HashZero, // non-indexed secret
+        }),
       );
+      expect(secrets).toHaveLength(0);
+
+      // ignore register after lock expiration block
+      depsMock.provider.emit(
+        '*',
+        makeLog({
+          blockNumber: signedTransfer.lock.expiration.toNumber() + 1,
+          transactionHash: txHash,
+          filter: depsMock.secretRegistryContract.filters.SecretRevealed(secrethash, null),
+          data: secret, // non-indexed secret
+        }),
+      );
+      expect(secrets).toHaveLength(0);
+
+      const txBlock = signedTransfer.lock.expiration.toNumber() - 1;
+      // valid secrethash,emit
+      depsMock.provider.emit(
+        '*',
+        makeLog({
+          blockNumber: txBlock,
+          transactionHash: txHash,
+          filter: depsMock.secretRegistryContract.filters.SecretRevealed(secrethash, null),
+          data: secret, // non-indexed secret
+        }),
+      );
+      expect(secrets).toEqual([
+        transferSecretRegistered(
+          { secret, txHash, txBlock, confirmed: undefined },
+          { secrethash },
+        ),
+      ]);
     });
 
     describe('transferProcessedReceivedEpic', () => {
@@ -1035,16 +1091,17 @@ describe('transfers epic', () => {
             type: MessageType.PROCESSED,
             message_identifier: signedTransfer.message_identifier,
           },
-          signed = await signMessage(partnerSigner, message),
-          action$ = of(
-            messageReceived(
-              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-              { address: partner },
-            ),
-          ),
-          state$ = of(transferingState);
+          signed = await signMessage(partnerSigner, message);
 
-        await expect(transferProcessedReceivedEpic(action$, state$).toPromise()).resolves.toEqual(
+        const promise = transferProcessedReceivedEpic(action$, state$).toPromise();
+        action$.next(
+          messageReceived(
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
+            { address: partner },
+          ),
+        );
+        action$.complete();
+        await expect(promise).resolves.toEqual(
           transferProcessed({ message: signed }, { secrethash }),
         );
       });
@@ -1054,18 +1111,18 @@ describe('transfers epic', () => {
             type: MessageType.DELIVERED,
             delivered_message_identifier: signedTransfer.message_identifier,
           },
-          signed = await signMessage(partnerSigner, message),
-          action$ = of(
-            messageReceived(
-              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-              { address: partner },
-            ),
-          ),
-          state$ = of(transferingState);
+          signed = await signMessage(partnerSigner, message);
 
-        await expect(
-          transferProcessedReceivedEpic(action$, state$).toPromise(),
-        ).resolves.toBeUndefined();
+        const promise = transferProcessedReceivedEpic(action$, state$).toPromise();
+        action$.next(
+          messageReceived(
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
+            { address: partner },
+          ),
+        );
+        action$.complete();
+
+        await expect(promise).resolves.toBeUndefined();
       });
 
       test('ignore non-matching message_id', async () => {
@@ -1073,49 +1130,54 @@ describe('transfers epic', () => {
             type: MessageType.PROCESSED,
             message_identifier: signedTransfer.payment_identifier,
           },
-          signed = await signMessage(partnerSigner, message),
-          action$ = of(
-            messageReceived(
-              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-              { address: partner },
-            ),
-          ),
-          state$ = of(transferingState);
+          signed = await signMessage(partnerSigner, message);
 
-        await expect(
-          transferProcessedReceivedEpic(action$, state$).toPromise(),
-        ).resolves.toBeUndefined();
+        const promise = transferProcessedReceivedEpic(action$, state$).toPromise();
+
+        action$.next(
+          messageReceived(
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
+            { address: partner },
+          ),
+        );
+        action$.complete();
+
+        await expect(promise).resolves.toBeUndefined();
       });
     });
 
     describe('initQueuePendingEnvelopeMessagesEpic', () => {
       test('transferSigned', async () => {
-        const state$ = of(transferingState);
-        await expect(
-          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual([
+        const promise = initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
+          .pipe(toArray())
+          .toPromise();
+
+        action$.next(raidenConfigUpdate({ config: {} })); // noop action, to re-emit state$
+        action$.complete();
+
+        await expect(promise).resolves.toEqual([
           matrixPresence.request(undefined, { address: partner }),
           transferSigned({ message: signedTransfer, fee }, { secrethash }),
         ]);
       });
 
       test('transferUnlock.success', async () => {
-        const state$ = new BehaviorSubject(transferingState),
-          unlocked = await transferGenerateAndSignEnvelopeMessageEpic(
-            of(transferUnlock.request(undefined, { secrethash })),
-            state$,
-            depsMock,
-          ).toPromise();
+        const unlocked = await transferGenerateAndSignEnvelopeMessageEpic(
+          of(transferUnlock.request(undefined, { secrethash })),
+          depsMock.latest$.pipe(pluck('state')),
+          depsMock,
+        )
+          .pipe(tap(a => action$.next(a)))
+          .toPromise();
 
-        state$.next(raidenReducer(state$.value, unlocked));
+        const promise = initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
+          .pipe(toArray())
+          .toPromise();
 
-        await expect(
-          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        action$.next(raidenConfigUpdate({ config: {} })); // noop action, to re-emit state$
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
             matrixPresence.request(undefined, { address: partner }),
             unlocked,
@@ -1124,30 +1186,24 @@ describe('transfers epic', () => {
       });
 
       test('transferExpire.success', async () => {
-        const expiredState = raidenReducer(
-          transferingState,
-          newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
-        );
-
-        const state$ = new BehaviorSubject(expiredState);
-
-        depsMock.latest$.pipe(first()).subscribe(l => {
-          depsMock.latest$.next({ ...l, state: expiredState });
-        });
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }));
 
         const expired = await transferGenerateAndSignEnvelopeMessageEpic(
           of(transferExpire.request(undefined, { secrethash })),
-          state$,
+          depsMock.latest$.pipe(pluck('state')),
           depsMock,
-        ).toPromise();
+        )
+          .pipe(tap(a => action$.next(a)))
+          .toPromise();
 
-        state$.next(raidenReducer(state$.value, expired));
+        const promise = initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
+          .pipe(toArray())
+          .toPromise();
 
-        await expect(
-          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        action$.next(raidenConfigUpdate({ config: {} })); // noop action, to re-emit state$
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
             matrixPresence.request(undefined, { address: partner }),
             expired,
@@ -1156,25 +1212,18 @@ describe('transfers epic', () => {
       });
 
       test('completed transfer is skipped', async () => {
-        const expiredState = raidenReducer(
-          transferingState,
-          newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
-        );
-
-        const state$ = new BehaviorSubject(expiredState);
-
-        depsMock.latest$.pipe(first()).subscribe(l => {
-          depsMock.latest$.next({ ...l, state: expiredState });
-        });
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }));
 
         const expired = await transferGenerateAndSignEnvelopeMessageEpic(
           of(transferExpire.request(undefined, { secrethash })),
-          state$,
+          depsMock.latest$.pipe(pluck('state')),
           depsMock,
-        ).toPromise();
-
-        // narrow down type of expired
-        if (!isActionOf(transferExpire.success, expired)) throw new Error('not expired');
+        )
+          .pipe(
+            tap(a => action$.next(a)),
+            first(transferExpire.success.is),
+          )
+          .toPromise();
 
         const expireProcessed: Processed = {
             type: MessageType.PROCESSED,
@@ -1182,16 +1231,12 @@ describe('transfers epic', () => {
           },
           message = await signMessage(partnerSigner, expireProcessed);
 
-        state$.next(
-          [expired, transferExpireProcessed({ message }, expired.meta)].reduce(
-            raidenReducer,
-            state$.value,
-          ),
-        );
+        const promise = initQueuePendingEnvelopeMessagesEpic(EMPTY, state$).toPromise();
 
-        await expect(
-          initQueuePendingEnvelopeMessagesEpic(EMPTY, state$).toPromise(),
-        ).resolves.toBeUndefined();
+        action$.next(transferExpireProcessed({ message }, expired.meta));
+        action$.complete();
+
+        await expect(promise).resolves.toBeUndefined();
       });
     });
 
@@ -1205,18 +1250,21 @@ describe('transfers epic', () => {
             amount: value,
             expiration: signedTransfer.lock.expiration,
           },
-          signed = await signMessage(partnerSigner, message),
-          action$ = of(
-            messageReceived(
-              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-              { address: partner },
-            ),
-          ),
-          state$ = of(transferingState);
+          signed = await signMessage(partnerSigner, message);
 
-        await expect(
-          transferSecretRequestedEpic(action$, state$, depsMock).toPromise(),
-        ).resolves.toEqual(transferSecretRequest({ message: signed }, { secrethash }));
+        const promise = transferSecretRequestedEpic(action$, state$, depsMock).toPromise();
+
+        action$.next(
+          messageReceived(
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
+            { address: partner },
+          ),
+        );
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
+          transferSecretRequest({ message: signed }, { secrethash }),
+        );
       });
 
       test('ignore invalid lock', async () => {
@@ -1229,18 +1277,19 @@ describe('transfers epic', () => {
             amount: value,
             expiration: signedTransfer.lock.expiration,
           },
-          signed = await signMessage(partnerSigner, message),
-          action$ = of(
-            messageReceived(
-              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-              { address: partner },
-            ),
-          ),
-          state$ = of(transferingState);
+          signed = await signMessage(partnerSigner, message);
 
-        await expect(
-          transferSecretRequestedEpic(action$, state$, depsMock).toPromise(),
-        ).resolves.toBeUndefined();
+        const promise = transferSecretRequestedEpic(action$, state$, depsMock).toPromise();
+
+        action$.next(
+          messageReceived(
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
+            { address: partner },
+          ),
+        );
+        action$.complete();
+
+        await expect(promise).resolves.toBeUndefined();
       });
     });
 
@@ -1259,13 +1308,14 @@ describe('transfers epic', () => {
         };
         const signed = await signMessage(partnerSigner, request);
 
-        await expect(
-          transferSecretRevealEpic(
-            of(transferSecretRequest({ message: signed }, { secrethash })),
-            of(transferingState),
-            depsMock,
-          ).toPromise(),
-        ).resolves.toBeUndefined();
+        const promise = transferSecretRevealEpic(action$, state$, depsMock)
+          .pipe(tap(a => action$.next(a)))
+          .toPromise();
+
+        action$.next(transferSecretRequest({ message: signed }, { secrethash }));
+        action$.complete();
+
+        await expect(promise).resolves.toBeUndefined();
       });
 
       test('ignore expired request', async () => {
@@ -1281,13 +1331,14 @@ describe('transfers epic', () => {
         };
         const signed = await signMessage(partnerSigner, request);
 
-        await expect(
-          transferSecretRevealEpic(
-            of(transferSecretRequest({ message: signed }, { secrethash })),
-            of(transferingState),
-            depsMock,
-          ).toPromise(),
-        ).resolves.toBeUndefined();
+        const promise = transferSecretRevealEpic(action$, state$, depsMock)
+          .pipe(tap(a => action$.next(a)))
+          .toPromise();
+
+        action$.next(transferSecretRequest({ message: signed }, { secrethash }));
+        action$.complete();
+
+        await expect(promise).resolves.toBeUndefined();
       });
 
       test('amount too low fails transfer', async () => {
@@ -1303,17 +1354,20 @@ describe('transfers epic', () => {
         };
         const signed = await signMessage(partnerSigner, request);
 
-        await expect(
-          transferSecretRevealEpic(
-            of(transferSecretRequest({ message: signed }, { secrethash })),
-            of(transferingState),
-            depsMock,
-          ).toPromise(),
-        ).resolves.toEqual(transfer.failure(expect.any(Error), { secrethash }));
+        const promise = transferSecretRevealEpic(action$, state$, depsMock)
+          .pipe(tap(a => action$.next(a)))
+          .toPromise();
+
+        action$.next(transferSecretRequest({ message: signed }, { secrethash }));
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
+          transfer.failure(expect.any(Error), { secrethash }),
+        );
       });
 
       test('success and cached', async () => {
-        expect.assertions(4);
+        expect.assertions(5);
 
         const request: SecretRequest = {
             type: MessageType.SECRET_REQUEST,
@@ -1324,54 +1378,48 @@ describe('transfers epic', () => {
             amount: value.add(1) as UInt<32>,
             expiration: signedTransfer.lock.expiration,
           },
-          signed = await signMessage(partnerSigner, request),
-          action$ = of(transferSecretRequest({ message: signed }, { secrethash })),
-          state$ = new BehaviorSubject<RaidenState>(transferingState);
-
-        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
+          signed = await signMessage(partnerSigner, request);
 
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
-        await expect(
-          transferSecretRevealEpic(action$, state$, depsMock)
-            .pipe(
-              tap(action => state$.next(raidenReducer(state$.value, action))),
-              toArray(),
-            )
-            .toPromise(),
-        ).resolves.toEqual(
+        transferSecretRevealEpic(action$, state$, depsMock).subscribe(a => action$.next(a));
+
+        const promise = action$.pipe(takeUntil(timer(10)), toArray()).toPromise();
+
+        action$.next(transferSecretRequest({ message: signed }, { secrethash }));
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
             transferSecretReveal(
-              {
-                message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
-              },
+              { message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }) },
               { secrethash },
             ),
             messageSend.request(
-              {
-                message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }),
-              },
+              { message: expect.objectContaining({ type: MessageType.SECRET_REVEAL, secret }) },
               { address: partner, msgId: expect.any(String) },
             ),
           ]),
         );
+        expect(signerSpy).toHaveBeenCalledTimes(1);
 
         // expect reveal to be persisted on state
-        const reveal = get(state$.value, ['sent', secrethash, 'secretReveal', 1]);
+        const reveal = (await depsMock.latest$
+          .pipe(pluck('state', 'sent', secrethash, 'secretReveal', '1'), first(isntNil))
+          .toPromise()) as Signed<SecretReveal>;
         expect(reveal).toMatchObject({
           type: MessageType.SECRET_REVEAL,
           secret,
           signature: expect.any(String),
         });
 
-        await expect(
-          transferSecretRevealEpic(action$, state$, depsMock)
-            .pipe(
-              tap(action => state$.next(raidenReducer(state$.value, action))),
-              filter(isActionOf(transferSecretReveal)),
-            )
-            .toPromise(),
-        ).resolves.toEqual(transferSecretReveal({ message: reveal }, { secrethash }));
+        const promise2 = action$.pipe(toArray()).toPromise();
+
+        action$.next(transferSecretRequest({ message: signed }, { secrethash }));
+        setTimeout(() => action$.complete(), 10);
+
+        await expect(promise2).resolves.toEqual(
+          expect.arrayContaining([transferSecretReveal({ message: reveal }, { secrethash })]),
+        );
 
         // second reveal should have been cached
         expect(signerSpy).toHaveBeenCalledTimes(1);
@@ -1388,20 +1436,21 @@ describe('transfers epic', () => {
             message_identifier: makeMessageId(),
             secret,
           },
-          signed = await signMessage(partnerSigner, reveal),
-          action$ = of(
-            messageReceived(
-              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-              { address: partner },
-            ),
-          ),
-          state$ = of(transferingState);
+          signed = await signMessage(partnerSigner, reveal);
 
-        await expect(
-          transferSecretRevealedEpic(action$, state$)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        const promise = transferSecretRevealedEpic(action$, state$)
+          .pipe(toArray())
+          .toPromise();
+
+        action$.next(
+          messageReceived(
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
+            { address: partner },
+          ),
+        );
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
             transferSecret({ secret }, { secrethash }),
             transferUnlock.request(undefined, { secrethash }),
@@ -1417,35 +1466,37 @@ describe('transfers epic', () => {
             message_identifier: makeMessageId(),
             secret,
           },
-          signed = await signMessage(depsMock.signer, reveal),
-          action$ = of(
-            messageReceived(
-              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-              { address: depsMock.address },
-            ),
-          ),
-          state$ = of(transferingState);
+          signed = await signMessage(depsMock.signer, reveal);
 
-        await expect(
-          transferSecretRevealedEpic(action$, state$).toPromise(),
-        ).resolves.toBeUndefined();
+        const promise = transferSecretRevealedEpic(action$, state$).toPromise();
+        action$.next(
+          messageReceived(
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
+            { address: depsMock.address },
+          ),
+        );
+        action$.complete();
+
+        await expect(promise).resolves.toBeUndefined();
       });
 
       test('ignores if already unlocked', async () => {
         expect.assertions(2);
 
-        const state$ = new BehaviorSubject(transferingState);
-
         await transferGenerateAndSignEnvelopeMessageEpic(
           of(transferUnlock.request(undefined, { secrethash })),
-          state$,
+          depsMock.latest$.pipe(pluck('state')),
           depsMock,
         )
-          .pipe(tap(action => state$.next(raidenReducer(state$.value, action))))
+          .pipe(tap(action => action$.next(action)))
           .toPromise();
 
         // expect unlock to be set
-        expect(get(state$.value, ['sent', secrethash, 'unlock', 1])).toMatchObject({
+        await expect(
+          depsMock.latest$
+            .pipe(pluck('state', 'sent', secrethash, 'unlock', '1'), first(isntNil))
+            .toPromise(),
+        ).resolves.toMatchObject({
           type: MessageType.UNLOCK,
           signature: expect.any(String),
         });
@@ -1455,31 +1506,31 @@ describe('transfers epic', () => {
             message_identifier: makeMessageId(),
             secret,
           },
-          signed = await signMessage(depsMock.signer, reveal),
-          action$ = of(
-            messageReceived(
-              { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-              { address: depsMock.address },
-            ),
-          );
+          signed = await signMessage(depsMock.signer, reveal);
 
-        await expect(
-          transferSecretRevealedEpic(action$, state$).toPromise(),
-        ).resolves.toBeUndefined();
+        const promise = transferSecretRevealedEpic(action$, state$).toPromise();
+        action$.next(
+          messageReceived(
+            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
+            { address: depsMock.address },
+          ),
+        );
+        action$.complete();
+
+        await expect(promise).resolves.toBeUndefined();
       });
     });
 
     test('transferUnlockProcessedReceivedEpic: success', async () => {
-      let action$: Observable<RaidenAction> = of(
-        transferUnlock.request(undefined, { secrethash }),
-      );
-      const state$ = new BehaviorSubject(transferingState);
-
       const unlock = (
-        await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+        await transferGenerateAndSignEnvelopeMessageEpic(
+          of(transferUnlock.request(undefined, { secrethash })),
+          depsMock.latest$.pipe(pluck('state')),
+          depsMock,
+        )
           .pipe(
-            tap(action => state$.next(raidenReducer(state$.value, action))),
-            filter(isActionOf(transferUnlock.success)),
+            tap(action => action$.next(action)),
+            filter(transferUnlock.success.is),
           )
           .toPromise()
       ).payload.message;
@@ -1489,18 +1540,20 @@ describe('transfers epic', () => {
           message_identifier: unlock.message_identifier,
         },
         signed = await signMessage(partnerSigner, message);
-      action$ = of(
+
+      const promise = transferUnlockProcessedReceivedEpic(action$, state$)
+        .pipe(toArray())
+        .toPromise();
+
+      action$.next(
         messageReceived(
           { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
           { address: partner },
         ),
       );
+      action$.complete();
 
-      await expect(
-        transferUnlockProcessedReceivedEpic(action$, state$)
-          .pipe(toArray())
-          .toPromise(),
-      ).resolves.toEqual(
+      await expect(promise).resolves.toEqual(
         expect.arrayContaining([
           transfer.success(
             { balanceProof: expect.objectContaining({ sender: depsMock.address }) },
@@ -1515,29 +1568,23 @@ describe('transfers epic', () => {
     });
 
     describe('transferExpireProcessedEpic', () => {
-      let state$: BehaviorSubject<RaidenState>, expired: Signed<LockExpired>;
+      let expired: Signed<LockExpired>;
 
       beforeEach(async () => {
-        state$ = new BehaviorSubject(
-          raidenReducer(
-            transferingState,
-            newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
-          ),
-        );
-        const action$ = of(transferExpire.request(undefined, { secrethash }));
-
-        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }));
 
         const expiredAction = await transferGenerateAndSignEnvelopeMessageEpic(
-          action$,
-          state$,
+          of(transferExpire.request(undefined, { secrethash })),
+          depsMock.latest$.pipe(pluck('state')),
           depsMock,
-        ).toPromise();
+        )
+          .pipe(
+            tap(a => action$.next(a)),
+            first(transferExpire.success.is),
+          )
+          .toPromise();
 
-        if (!isActionOf(transferExpire.success, expiredAction)) throw new Error('not expired');
         expired = expiredAction.payload.message;
-
-        state$.next(raidenReducer(state$.value, expiredAction));
       });
 
       test('success', async () => {
@@ -1547,19 +1594,24 @@ describe('transfers epic', () => {
             type: MessageType.PROCESSED,
             message_identifier: expired.message_identifier,
           },
-          signed = await signMessage(partnerSigner, processed),
-          received = messageReceived(
+          signed = await signMessage(partnerSigner, processed);
+
+        const promise = transferExpireProcessedEpic(action$, state$).toPromise();
+        action$.next(
+          messageReceived(
             {
               text: encodeJsonMessage(signed),
               message: signed,
               ts: Date.now(),
             },
             { address: partner },
-          );
+          ),
+        );
+        action$.complete();
 
-        await expect(
-          transferExpireProcessedEpic(of(received), state$).toPromise(),
-        ).resolves.toEqual(transferExpireProcessed({ message: signed }, { secrethash }));
+        await expect(promise).resolves.toEqual(
+          transferExpireProcessed({ message: signed }, { secrethash }),
+        );
       });
 
       test('fail sender mismatch', async () => {
@@ -1569,52 +1621,71 @@ describe('transfers epic', () => {
             type: MessageType.PROCESSED,
             message_identifier: expired.message_identifier,
           },
-          signed = await signMessage(depsMock.signer, processed),
-          received = messageReceived(
+          signed = await signMessage(depsMock.signer, processed);
+
+        const promise = transferExpireProcessedEpic(action$, state$).toPromise();
+        action$.next(
+          messageReceived(
             {
               text: encodeJsonMessage(signed),
               message: signed,
               ts: Date.now(),
             },
             { address: depsMock.address },
-          );
+          ),
+        );
+        action$.complete();
 
-        await expect(
-          transferExpireProcessedEpic(of(received), state$).toPromise(),
-        ).resolves.toBeUndefined();
+        await expect(promise).resolves.toBeUndefined();
       });
     });
 
     describe('transferChannelClosedEpic', () => {
-      const action = channelClose.request(undefined, { tokenNetwork, partner }),
-        state$ = new BehaviorSubject(transferingState);
-
-      beforeEach(() => state$.next(transferingState));
+      let closeRequest: ActionType<typeof channelClose.request>;
+      beforeEach(
+        () => (closeRequest = channelClose.request(undefined, { tokenNetwork, partner })),
+      );
 
       test('fail if neither revealed nor unlocked', async () => {
-        await expect(
-          transferChannelClosedEpic(of(action), state$)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        expect.assertions(1);
+
+        const promise = transferChannelClosedEpic(action$, state$)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
+          .toPromise();
+
+        action$.next(closeRequest);
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([transfer.failure(expect.any(Error), { secrethash })]),
         );
       });
 
       test('success if unlocked', async () => {
-        const unlockedAction = await transferGenerateAndSignEnvelopeMessageEpic(
-          of(transferUnlock.request(undefined, { secrethash })),
-          state$,
-          depsMock,
-        ).toPromise();
+        expect.assertions(2);
 
-        state$.next(raidenReducer(state$.value, unlockedAction));
-
+        transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock).subscribe(a =>
+          action$.next(a),
+        );
+        action$.next(transferUnlock.request(undefined, { secrethash }));
+        // wait for transfer to be unlocked
         await expect(
-          transferChannelClosedEpic(of(action), state$)
-            .pipe(toArray())
+          depsMock.latest$
+            .pipe(pluck('state', 'sent', secrethash, 'unlock'), first(isntNil))
             .toPromise(),
-        ).resolves.toEqual(
+        ).resolves.toBeDefined();
+
+        const promise = transferChannelClosedEpic(action$, state$)
+          .pipe(toArray())
+          .toPromise();
+
+        action$.next(closeRequest);
+        action$.complete();
+
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
             transfer.success(
               { balanceProof: expect.objectContaining({ sender: depsMock.address }) },
@@ -1625,30 +1696,32 @@ describe('transfers epic', () => {
       });
 
       test('success if secret revealed', async () => {
+        expect.assertions(1);
         const reveal: SecretReveal = {
             type: MessageType.SECRET_REVEAL,
             message_identifier: makeMessageId(),
             secret,
           },
-          signed = await signMessage(depsMock.signer, reveal),
-          revealAction = transferSecretReveal({ message: signed }, { secrethash });
+          signed = await signMessage(depsMock.signer, reveal);
+        action$.next(transferSecretReveal({ message: signed }, { secrethash }));
 
-        state$.next(raidenReducer(state$.value, revealAction));
+        const promise = transferChannelClosedEpic(action$, state$)
+          .pipe(toArray())
+          .toPromise();
+        action$.next(closeRequest);
+        action$.complete();
 
-        await expect(
-          transferChannelClosedEpic(of(action), state$)
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(expect.arrayContaining([transfer.success({}, { secrethash })]));
+        await expect(promise).resolves.toEqual(
+          expect.arrayContaining([transfer.success({}, { secrethash })]),
+        );
       });
 
       test('skip different channel', async () => {
-        await expect(
-          transferChannelClosedEpic(
-            of(channelClose.request(undefined, { tokenNetwork, partner: token })),
-            state$,
-          ).toPromise(),
-        ).resolves.toBeUndefined();
+        expect.assertions(1);
+        const promise = transferChannelClosedEpic(action$, state$).toPromise();
+        action$.next(channelClose.request(undefined, { tokenNetwork, partner: token }));
+        action$.complete();
+        await expect(promise).resolves.toBeUndefined();
       });
     });
 
@@ -1695,17 +1768,18 @@ describe('transfers epic', () => {
 
       test('transferReceivedReplyProcessedEpic', async () => {
         expect.assertions(4);
-
         const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
-
-        const output = await transferReceivedReplyProcessedEpic(
-          of(action, otherAction, action),
-          of(transferingState),
-          depsMock,
-        )
-          .pipe(toArray())
+        const promise = transferReceivedReplyProcessedEpic(action$, state$, depsMock)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
           .toPromise();
 
+        [action, otherAction, action].forEach(a => action$.next(a));
+        action$.complete();
+
+        const output = await promise;
         expect(output).toHaveLength(2);
         expect(output[0]).toMatchObject({
           type: messageSend.request.type,
@@ -1726,12 +1800,18 @@ describe('transfers epic', () => {
       test('transferRefundedEpic', async () => {
         expect.assertions(2);
 
+        const promise = transferRefundedEpic(action$, state$)
+          .pipe(
+            tap(a => action$.next(a)),
+            toArray(),
+          )
+          .toPromise();
+
+        [otherAction, action].forEach(a => action$.next(a));
+        setTimeout(() => action$.complete(), 10);
+
         // success case
-        await expect(
-          transferRefundedEpic(of(otherAction, action), of(transferingState))
-            .pipe(toArray())
-            .toPromise(),
-        ).resolves.toEqual(
+        await expect(promise).resolves.toEqual(
           expect.arrayContaining([
             transferRefunded({ message: refund }, { secrethash }),
             {
@@ -1743,50 +1823,45 @@ describe('transfers epic', () => {
           ]),
         );
 
+        const promise2 = transferRefundedEpic(action$, state$).toPromise();
+
+        action$.next(newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }));
+        action$.next(action);
+        setTimeout(() => action$.complete(), 10);
+
         // if transfer expired, refund is ignored
-        await expect(
-          transferRefundedEpic(
-            of(action),
-            of(
-              [newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 })].reduce(
-                raidenReducer,
-                transferingState,
-              ),
-            ),
-          ).toPromise(),
-        ).resolves.toBeUndefined();
+        await expect(promise2).resolves.toBeUndefined();
       });
     });
 
     describe('withdraw request', () => {
-      const state$ = new BehaviorSubject(transferingState),
-        partnerDeposit = bigNumberify(30) as UInt<32>,
-        transferredAmount = value.add(fee),
-        withdrawableAmount = partnerDeposit.add(transferredAmount) as UInt<32>;
+      let partnerDeposit: UInt<32>, transferredAmount: UInt<32>, withdrawableAmount: UInt<32>;
 
       /* state$ holds the state when a transfer unlocked and completed */
       beforeEach(async () => {
-        state$.next(
-          [
-            channelDeposit.success(
-              {
-                id: channelId,
-                participant: partner,
-                totalDeposit: partnerDeposit,
-                txHash,
-                txBlock: openBlock + 1,
-                confirmed: true,
-              },
-              { tokenNetwork, partner },
-            ),
-          ].reduce(raidenReducer, transferingState),
+        partnerDeposit = bigNumberify(30) as UInt<32>;
+        transferredAmount = value.add(fee) as UInt<32>;
+        withdrawableAmount = partnerDeposit.add(transferredAmount) as UInt<32>;
+
+        action$.next(
+          channelDeposit.success(
+            {
+              id: channelId,
+              participant: partner,
+              totalDeposit: partnerDeposit,
+              txHash,
+              txBlock: openBlock + 1,
+              confirmed: true,
+            },
+            { tokenNetwork, partner },
+          ),
         );
         await transferGenerateAndSignEnvelopeMessageEpic(
           of(transferUnlock.request(undefined, { secrethash })),
-          state$,
+          depsMock.latest$.pipe(pluck('state')),
           depsMock,
         )
-          .pipe(tap(action => state$.next(raidenReducer(state$.value, action))))
+          .pipe(tap(action => action$.next(action)))
           .toPromise();
       });
 
@@ -1828,13 +1903,16 @@ describe('transfers epic', () => {
           },
         });
 
-        const action$ = of(withdrawRequestAction, withdrawRequestAction);
-
-        getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
-
-        const output = await transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
           .pipe(toArray())
           .toPromise();
+
+        const statePromise = state$.toPromise();
+        [withdrawRequestAction, withdrawRequestAction].forEach(a => action$.next(a));
+        setTimeout(() => action$.complete(), 50);
+
+        const output = await promise;
+        const state = await statePromise;
 
         expect(output).toHaveLength(2);
         expect(output[0].payload).toEqual(output[1].payload);
@@ -1845,7 +1923,7 @@ describe('transfers epic', () => {
               ...request,
               type: MessageType.WITHDRAW_CONFIRMATION,
               message_identifier: expect.any(BigNumber),
-              nonce: state$.value.channels[tokenNetwork][partner].own.balanceProof!.nonce.add(1),
+              nonce: state.channels[tokenNetwork][partner].own.balanceProof!.nonce.add(1),
               signature: expect.any(String),
             },
           },
@@ -1886,12 +1964,19 @@ describe('transfers epic', () => {
           messageReceivedAction = messageReceived(
             { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
             { address: partner },
-          ),
-          action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
+          );
 
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(of(action), state$, depsMock).toPromise(),
-        ).resolves.toBeUndefined();
+        withdrawRequestReceivedEpic(action$).subscribe(a => action$.next(a));
+        const promise = transferGenerateAndSignEnvelopeMessageEpic(
+          action$,
+          state$,
+          depsMock,
+        ).toPromise();
+
+        action$.next(messageReceivedAction);
+        action$.complete();
+
+        await expect(promise).resolves.toBeUndefined();
       });
 
       test('fail WithdrawRequest expired', async () => {
@@ -1916,7 +2001,7 @@ describe('transfers epic', () => {
           ),
           action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
 
-        state$.next([newBlock({ blockNumber: 125 + 20 + 2 })].reduce(raidenReducer, state$.value));
+        action$.next(newBlock({ blockNumber: 125 + 20 + 2 }));
 
         await expect(
           transferGenerateAndSignEnvelopeMessageEpic(of(action), state$, depsMock).toPromise(),
@@ -1945,12 +2030,7 @@ describe('transfers epic', () => {
           ),
           action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
 
-        state$.next(
-          [channelClose.request(undefined, { tokenNetwork, partner })].reduce(
-            raidenReducer,
-            state$.value,
-          ),
-        );
+        action$.next(channelClose.request(undefined, { tokenNetwork, partner }));
 
         await expect(
           transferGenerateAndSignEnvelopeMessageEpic(of(action), state$, depsMock).toPromise(),
