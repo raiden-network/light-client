@@ -743,9 +743,7 @@ describe('transfers epic', () => {
     });
 
     describe('transfer*RetryMessageEpic', () => {
-      beforeEach(async () => {
-        action$.next(raidenConfigUpdate({ config: { httpTimeout: 50 } }));
-      });
+      beforeEach(() => action$.next(raidenConfigUpdate({ httpTimeout: 50 })));
 
       test('transferSigned', async () => {
         expect.assertions(2);
@@ -898,7 +896,7 @@ describe('transfers epic', () => {
     describe('transferAutoExpireEpic', () => {
       const confirmationBlocks = 2;
 
-      beforeEach(() => action$.next(raidenConfigUpdate({ config: { confirmationBlocks } })));
+      beforeEach(() => action$.next(raidenConfigUpdate({ confirmationBlocks })));
 
       test("don't emit if transfer didn't expire", async () => {
         expect.assertions(1);
@@ -1174,11 +1172,12 @@ describe('transfers epic', () => {
 
     describe('initQueuePendingEnvelopeMessagesEpic', () => {
       test('transferSigned', async () => {
-        const promise = initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
+        const promise = initQueuePendingEnvelopeMessagesEpic(
+          EMPTY,
+          depsMock.latest$.pipe(pluck('state')),
+        )
           .pipe(toArray())
           .toPromise();
-
-        action$.next(raidenConfigUpdate({ config: {} })); // noop action, to re-emit state$
         action$.complete();
 
         await expect(promise).resolves.toEqual([
@@ -1196,11 +1195,12 @@ describe('transfers epic', () => {
           .pipe(tap(a => action$.next(a)))
           .toPromise();
 
-        const promise = initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
+        const promise = initQueuePendingEnvelopeMessagesEpic(
+          EMPTY,
+          depsMock.latest$.pipe(pluck('state')),
+        )
           .pipe(toArray())
           .toPromise();
-
-        action$.next(raidenConfigUpdate({ config: {} })); // noop action, to re-emit state$
         action$.complete();
 
         await expect(promise).resolves.toEqual(
@@ -1222,11 +1222,12 @@ describe('transfers epic', () => {
           .pipe(tap(a => action$.next(a)))
           .toPromise();
 
-        const promise = initQueuePendingEnvelopeMessagesEpic(EMPTY, state$)
+        const promise = initQueuePendingEnvelopeMessagesEpic(
+          EMPTY,
+          depsMock.latest$.pipe(pluck('state')),
+        )
           .pipe(toArray())
           .toPromise();
-
-        action$.next(raidenConfigUpdate({ config: {} })); // noop action, to re-emit state$
         action$.complete();
 
         await expect(promise).resolves.toEqual(

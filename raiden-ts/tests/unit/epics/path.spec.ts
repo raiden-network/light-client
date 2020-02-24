@@ -56,7 +56,7 @@ describe('PFS: pathFindServiceEpic', () => {
   const openBlock = 121,
     state$ = new BehaviorSubject(state);
 
-  getLatest$(of(raidenConfigUpdate({ config: {} })), state$, depsMock).subscribe(depsMock.latest$);
+  getLatest$(of(raidenConfigUpdate({})), state$, depsMock).subscribe(depsMock.latest$);
 
   afterAll(() => state$.complete());
 
@@ -347,7 +347,7 @@ describe('PFS: pathFindServiceEpic', () => {
   test('success request pfs from pfsList', async () => {
     expect.assertions(4);
     // put config.pfs into auto mode
-    state$.next(raidenReducer(state$.value, raidenConfigUpdate({ config: { pfs: undefined } })));
+    state$.next(raidenReducer(state$.value, raidenConfigUpdate({ pfs: undefined })));
 
     const value = bigNumberify(100) as UInt<32>,
       pfsAddress1 = '0x0800000000000000000000000000000000000091' as Address,
@@ -468,7 +468,7 @@ describe('PFS: pathFindServiceEpic', () => {
   test('fail request pfs from pfsList, empty', async () => {
     expect.assertions(1);
     // put config.pfs into auto mode
-    state$.next(raidenReducer(state$.value, raidenConfigUpdate({ config: { pfs: undefined } })));
+    state$.next(raidenReducer(state$.value, raidenConfigUpdate({ pfs: undefined })));
 
     const value = bigNumberify(100) as UInt<32>,
       action$ = of(
@@ -1122,7 +1122,7 @@ describe('PFS: pathFindServiceEpic', () => {
     expect.assertions(2);
 
     // disable pfs
-    state$.next(raidenReducer(state$.value, raidenConfigUpdate({ config: { pfs: null } })));
+    state$.next(raidenReducer(state$.value, raidenConfigUpdate({ pfs: null })));
 
     await expect(
       depsMock.latest$.pipe(pluckDistinct('config', 'pfs'), first()).toPromise(),
@@ -1263,7 +1263,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
     { state, pfsAddress } = epicFixtures(depsMock),
     state$ = new BehaviorSubject(state);
 
-  getLatest$(of(raidenConfigUpdate({ config: {} })), state$, depsMock).subscribe(depsMock.latest$);
+  getLatest$(of(raidenConfigUpdate({})), state$, depsMock).subscribe(depsMock.latest$);
 
   afterAll(() => state$.complete());
 
@@ -1275,7 +1275,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
     expect.assertions(2);
 
     // enable config.pfs auto (undefined)
-    state$.next(raidenReducer(state$.value, raidenConfigUpdate({ config: { pfs: undefined } })));
+    state$.next(raidenReducer(state$.value, raidenConfigUpdate({ pfs: undefined })));
 
     const validTill = bigNumberify(Math.floor(Date.now() / 1000) + 86400), // tomorrow
       registeredEncoded = defaultAbiCoder.encode(

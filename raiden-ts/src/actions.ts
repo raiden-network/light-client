@@ -28,10 +28,7 @@ export const raidenShutdown = createAction(
 );
 export interface raidenShutdown extends ActionType<typeof raidenShutdown> {}
 
-export const raidenConfigUpdate = createAction(
-  'raidenConfigUpdate',
-  t.type({ config: PartialRaidenConfig }),
-);
+export const raidenConfigUpdate = createAction('raidenConfigUpdate', PartialRaidenConfig);
 export interface raidenConfigUpdate extends ActionType<typeof raidenConfigUpdate> {}
 
 const RaidenActions = {

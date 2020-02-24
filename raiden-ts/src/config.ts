@@ -58,7 +58,7 @@ export const RaidenConfig = t.readonly(
 export interface RaidenConfig extends t.TypeOf<typeof RaidenConfig> {}
 
 export const PartialRaidenConfig = t.readonly(
-  t.intersection([t.partial(RaidenConfig.type.types['0'].props), RaidenConfig.type.types['1']]),
+  t.partial({ ...RaidenConfig.type.types['0'].props, ...RaidenConfig.type.types['1'].props }),
 );
 export interface PartialRaidenConfig extends t.TypeOf<typeof PartialRaidenConfig> {}
 
