@@ -71,6 +71,7 @@ import {
   withdrawRequestReceivedEpic,
   withdrawSendConfirmationEpic,
   monitorSecretRegistryEpic,
+  transferSuccessOnSecretRegisteredEpic,
 } from 'raiden-ts/transfers/epics';
 import { matrixPresence } from 'raiden-ts/transport/actions';
 import { UInt, Address, Hash, Signed, isntNil } from 'raiden-ts/utils/types';
@@ -1083,6 +1084,31 @@ describe('transfers epic', () => {
           { secrethash },
         ),
       ]);
+    });
+
+    test('transferSuccessOnSecretRegisteredEpic', async () => {
+      const txBlock = 127;
+
+      // don't succeed transfer with unconfirmed action
+      await expect(
+        transferSuccessOnSecretRegisteredEpic(
+          of(
+            transferSecretRegistered(
+              { secret, txHash, txBlock, confirmed: undefined },
+              { secrethash },
+            ),
+          ),
+        ).toPromise(),
+      ).resolves.toBeUndefined();
+
+      // but do with confirmed
+      await expect(
+        transferSuccessOnSecretRegisteredEpic(
+          of(
+            transferSecretRegistered({ secret, txHash, txBlock, confirmed: true }, { secrethash }),
+          ),
+        ).toPromise(),
+      ).resolves.toEqual(transfer.success(expect.anything(), { secrethash }));
     });
 
     describe('transferProcessedReceivedEpic', () => {

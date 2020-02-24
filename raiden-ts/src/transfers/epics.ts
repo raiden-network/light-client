@@ -1403,3 +1403,18 @@ export const monitorSecretRegistryEpic = (
       ),
     ),
   );
+
+/**
+ * A simple epic to emit transfer.success when secret register is confirmed
+ *
+ * @param action$ - Observable of transferSecretRegistered actions
+ * @returns Observable of transfer.success actions
+ */
+export const transferSuccessOnSecretRegisteredEpic = (
+  action$: Observable<RaidenAction>,
+): Observable<transfer.success> =>
+  action$.pipe(
+    filter(transferSecretRegistered.is),
+    filter(action => !!action.payload.confirmed),
+    map(action => transfer.success({}, action.meta)),
+  );
