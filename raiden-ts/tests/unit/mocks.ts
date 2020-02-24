@@ -236,7 +236,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     defaultConfig = makeDefaultConfig({ network });
 
   const latest$: RaidenEpicDeps['latest$'] = new BehaviorSubject({
-      action: raidenConfigUpdate({ config: {} }) as RaidenAction,
+      action: raidenConfigUpdate({}) as RaidenAction,
       state,
       config: { ...defaultConfig, ...state.config },
       presences: {} as Presences,

@@ -344,7 +344,7 @@ export class Raiden {
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
     // dispatch a first, noop action, to next first state$ as current/initial state
-    this.store.dispatch(raidenConfigUpdate({ config: {} }));
+    this.store.dispatch(raidenConfigUpdate({}));
   }
 
   /**
@@ -440,7 +440,7 @@ export class Raiden {
    * @param config - Partial object containing keys and values to update in config
    */
   public updateConfig(config: PartialRaidenConfig) {
-    this.store.dispatch(raidenConfigUpdate({ config }));
+    this.store.dispatch(raidenConfigUpdate(config));
   }
 
   /**
