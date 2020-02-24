@@ -392,7 +392,7 @@ describe('transfers epic', () => {
     });
 
     describe('transferUnlock.request', () => {
-      test('success and cached', async () => {
+      test('success and cached, after expiration with registered secret', async () => {
         expect.assertions(2);
 
         // secret revealed action is only ever emitted when received from recipient
@@ -407,6 +407,17 @@ describe('transfers epic', () => {
           .toPromise();
 
         [
+          // lock expired, but secret got registered, so unlock must still be accepted
+          transferSecretRegistered(
+            {
+              secret,
+              txBlock: signedTransfer.lock.expiration.toNumber() - 1,
+              txHash,
+              confirmed: true,
+            },
+            { secrethash },
+          ),
+          newBlock({ blockNumber: signedTransfer.lock.expiration.toNumber() + 1 }),
           transferUnlock.request(undefined, { secrethash }),
           transferUnlock.request(undefined, { secrethash }),
         ].forEach(a => action$.next(a));

@@ -295,7 +295,12 @@ function makeAndSignUnlock$(
     signed$ = of(state.sent[secrethash].unlock![1]);
   } else {
     // don't forget to check after signature too, may have expired by then
-    assert(transfer.lock.expiration.gt(state.blockNumber), 'lock expired');
+    // allow unlocking past expiration if secret registered
+    assert(
+      state.sent[secrethash].secret?.[1]?.registerBlock ||
+        transfer.lock.expiration.gt(state.blockNumber),
+      'lock expired',
+    );
     const locksroot = getChannelLocksroot(channel, secrethash);
 
     const message: Unlock = {
@@ -319,7 +324,11 @@ function makeAndSignUnlock$(
   return signed$.pipe(
     withLatestFrom(state$),
     mergeMap(function*([signed, state]) {
-      assert(transfer.lock.expiration.gt(state.blockNumber), 'lock expired!');
+      assert(
+        state.sent[secrethash].secret?.[1]?.registerBlock ||
+          transfer.lock.expiration.gt(state.blockNumber),
+        'lock expired',
+      );
       assert(!state.sent[secrethash].channelClosed, 'channel closed!');
       yield transferUnlock.success({ message: signed }, action.meta);
       // messageSend Unlock handled by transferUnlockedRetryMessageEpic
