@@ -1,3 +1,18 @@
+<h2 align="center">
+  <br/>
+  <a href='https://raiden.network/'><img 
+      width='400px' 
+      alt='' 
+      src="https://user-images.githubusercontent.com/35398162/54018436-ee3f6300-4188-11e9-9b4e-0666c44cda53.png" /></a>
+  <br/>
+  Raiden Light Client SDK Development
+  <br/>
+</h2>
+
+<h4 align="center">
+  Architecture **description**, code style and patterns, tips & tricks, caveats, typing and pits to avoid!
+</h4>
+
 The Raiden Light Client SDK requires a Web3 provide like [MetaMask](https://metamask.io), [Parity](https://www.parity.io) or [Geth](https://geth.ethereum.org) and is built on the following concepts and libraries:
 * Functional programming
 * [Redux](https://redux.js.org) architecture
