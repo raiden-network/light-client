@@ -44,7 +44,7 @@ function transferSecretReducer(
   // don't overwrite registerBlock if secret already stored with it
   if (
     !(secrethash in state.sent) ||
-    state.sent[secrethash]?.secret?.[1]?.registerBlock === registerBlock
+    state.sent[secrethash].secret?.[1]?.registerBlock === registerBlock
   )
     return state;
   return {

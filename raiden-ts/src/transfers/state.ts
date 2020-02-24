@@ -98,6 +98,7 @@ export enum RaidenSentTransferStatus {
   closed = 'CLOSED', // channel closed before revealing
   requested = 'REQUESTED', // secret requested by target
   revealed = 'REVEALED', // secret revealed to target
+  registered = 'REGISTERED', // secret registered on-chain before lock's expiration
   unlocking = 'UNLOCKING', // unlock sent to partner
   expiring = 'EXPIRING', // lock expired sent to partner
   unlocked = 'UNLOCKED', // unlock acknowledged by partner (complete with success)

@@ -877,7 +877,13 @@ export const initQueuePendingEnvelopeMessagesEpic = (
       for (const [key, sent] of Object.entries(state.sent)) {
         const secrethash = key as Hash;
         // transfer already completed or channelClosed
-        if (sent.unlockProcessed || sent.lockExpiredProcessed || sent.channelClosed) continue;
+        if (
+          sent.unlockProcessed ||
+          sent.lockExpiredProcessed ||
+          sent.secret?.[1]?.registerBlock ||
+          sent.channelClosed
+        )
+          continue;
         // on init, request monitor presence of any pending transfer target
         yield matrixPresence.request(undefined, { address: sent.transfer[1].target });
         // Processed not received yet for LockedTransfer
@@ -1090,6 +1096,7 @@ export const transferSecretRevealedEpic = (
         // don't unlock again if already unlocked, retry handled by transferUnlockedRetryMessageEpic
         // in the future, we may avoid retry until Processed, and [re]send once per SecretReveal
         state.sent[secrethash].unlock
+        // accepts secretReveal/unlock request even if registered on-chain
       )
         return;
       // transferSecret is noop if we already know the secret (e.g. we're the initiator)
