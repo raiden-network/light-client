@@ -6,7 +6,7 @@
  * validation, etc, and converting everything to its respective object, where needed.
  */
 import * as t from 'io-ts';
-// import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
+
 import { Address, Hash, Secret, UInt } from '../utils/types';
 import { Lock } from '../channels/types';
 

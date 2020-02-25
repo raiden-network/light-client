@@ -3,9 +3,9 @@ import { EMPTY, from, Observable, of } from 'rxjs';
 import { concatMap, filter, first, map, mergeMap, withLatestFrom } from 'rxjs/operators';
 
 import { RaidenAction } from '../../actions';
-import { messageReceived, messageSend } from '../../messages/actions';
+import { messageSend } from '../../messages/actions';
 import { MessageType, SecretRequest, SecretReveal } from '../../messages/types';
-import { signMessage } from '../../messages/utils';
+import { signMessage, isMessageReceivedOfType } from '../../messages/utils';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
@@ -37,11 +37,10 @@ export const transferSecretRequestedEpic = (
   { log }: RaidenEpicDeps,
 ): Observable<transferSecretRequest> =>
   action$.pipe(
-    filter(isActionOf(messageReceived)),
+    filter(isMessageReceivedOfType(Signed(SecretRequest))),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
-      if (!message || !Signed(SecretRequest).is(message)) return;
       // proceed only if we know the secret and the transfer
       if (!(message.secrethash in state.sent)) return;
 
@@ -175,11 +174,10 @@ export const transferSecretRevealedEpic = (
   state$: Observable<RaidenState>,
 ): Observable<transferUnlock.request | transferSecret> =>
   action$.pipe(
-    filter(isActionOf(messageReceived)),
+    filter(isMessageReceivedOfType(Signed(SecretReveal))),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
-      if (!message || !Signed(SecretReveal).is(message)) return;
       const secrethash = getSecrethash(message.secret);
       if (
         !(secrethash in state.sent) ||

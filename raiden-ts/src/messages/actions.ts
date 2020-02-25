@@ -46,7 +46,6 @@ export const messageReceived = createAction(
       roomId: t.string,
     }),
   ]),
-
   t.type({ address: Address }),
 );
 export interface messageReceived extends ActionType<typeof messageReceived> {}

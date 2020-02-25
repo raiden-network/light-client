@@ -1,4 +1,4 @@
-// import * as t from 'io-ts';
+import * as t from 'io-ts';
 import { Signer } from 'ethers';
 import { keccak256, RLP, verifyMessage } from 'ethers/utils';
 import { arrayify, concat, hexlify } from 'ethers/utils/bytes';
@@ -9,6 +9,7 @@ import { Address, Hash, HexString, Signature, UInt, Signed, decode, assert } fro
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { SignedBalanceProof } from '../channels/types';
 import { EnvelopeMessage, Message, MessageType, Metadata } from './types';
+import { messageReceived } from './actions';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
@@ -329,4 +330,18 @@ export async function signMessage<M extends Message>(
   log.debug(`Signing message "${message.type}"`, message);
   const signature = (await signer.signMessage(arrayify(packMessage(message)))) as Signature;
   return { ...message, signature };
+}
+
+/**
+ * Typeguard to ensure an action is a messageReceived of any of a set of Message types
+ *
+ * @param messageCodecs - Message codec to test action.payload.message against
+ * @returns Typeguard intersecting messageReceived action and payload.message schemas
+ */
+export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | [C, C, ...C[]]) {
+  return (action: unknown): action is messageReceived & { payload: { message: t.TypeOf<C> } } =>
+    messageReceived.is(action) &&
+    (Array.isArray(messageCodecs)
+      ? t.union(messageCodecs).is(action.payload.message)
+      : messageCodecs.is(action.payload.message));
 }
