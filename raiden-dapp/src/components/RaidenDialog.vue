@@ -1,5 +1,5 @@
 <template>
-  <blurred-overlay :show="visible">
+  <blurred-overlay :show="visible" fullscreen>
     <v-dialog
       :value="visible"
       width="350"
