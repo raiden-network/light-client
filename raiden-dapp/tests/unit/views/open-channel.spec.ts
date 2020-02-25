@@ -20,6 +20,7 @@ import { Tokens } from '@/types';
 import { mockInput } from '../utils/interaction-utils';
 import { parseUnits } from 'ethers/utils';
 import { RaidenError, ErrorCodes } from 'raiden-ts';
+import RaidenService from '@/services/raiden-service';
 
 Vue.use(Vuetify);
 Vue.filter('truncate', Filters.truncate);
