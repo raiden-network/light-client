@@ -142,7 +142,7 @@ function makeAndSignTransfer$(
   };
   return from(signMessage(signer, message, { log })).pipe(
     mergeMap(function*(signed) {
-      // messageSend LockedTransfer handled by transferSignedRetryMessageEpic
+      // messageSend LockedTransfer handled by transferRetryMessageEpic
       yield transferSigned({ message: signed, fee }, action.meta);
       // besides transferSigned, also yield transferSecret (for registering) if we know it
       if (action.payload.secret)
@@ -244,7 +244,7 @@ function makeAndSignUnlock$(
       );
       assert(!state.sent[secrethash].channelClosed, 'channel closed!');
       yield transferUnlock.success({ message: signed }, action.meta);
-      // messageSend Unlock handled by transferUnlockedRetryMessageEpic
+      // messageSend Unlock handled by transferRetryMessageEpic
       // we don't check if transfer was refunded. If partner refunded the transfer but still
       // forwarded the payment, we still act honestly and unlock if they revealed
     }),
@@ -330,7 +330,7 @@ function makeAndSignLockExpired$(
   }
 
   return signed$.pipe(
-    // messageSend LockExpired handled by transferExpiredRetryMessageEpic
+    // messageSend LockExpired handled by transferRetryMessageEpic
     map(signed => transferExpire.success({ message: signed }, action.meta)),
   );
 }

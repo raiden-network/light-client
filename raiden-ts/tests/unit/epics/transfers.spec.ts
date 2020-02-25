@@ -63,9 +63,7 @@ import {
   initQueuePendingEnvelopeMessagesEpic,
   transferExpireProcessedEpic,
   transferChannelClosedEpic,
-  transferSignedRetryMessageEpic,
-  transferUnlockedRetryMessageEpic,
-  transferExpiredRetryMessageEpic,
+  transferRetryMessageEpic,
   transferReceivedReplyProcessedEpic,
   transferRefundedEpic,
   withdrawRequestReceivedEpic,
@@ -753,7 +751,7 @@ describe('transfers epic', () => {
       });
     });
 
-    describe('transfer*RetryMessageEpic', () => {
+    describe('transferRetryMessageEpic', () => {
       beforeEach(() => action$.next(raidenConfigUpdate({ httpTimeout: 50 })));
 
       test('transferSigned', async () => {
@@ -773,7 +771,7 @@ describe('transfers epic', () => {
           );
 
         const requests = [];
-        transferSignedRetryMessageEpic(action$, state$, depsMock)
+        transferRetryMessageEpic(action$, state$, depsMock)
           .pipe(filter(messageSend.request.is))
           .subscribe(a => {
             requests.push(a);
@@ -824,7 +822,7 @@ describe('transfers epic', () => {
           );
 
         const requests = [];
-        transferUnlockedRetryMessageEpic(action$, state$, depsMock)
+        transferRetryMessageEpic(action$, state$, depsMock)
           .pipe(filter(messageSend.request.is))
           .subscribe(a => {
             requests.push(a);
@@ -877,7 +875,7 @@ describe('transfers epic', () => {
           );
 
         const requests = [];
-        transferExpiredRetryMessageEpic(action$, state$, depsMock)
+        transferRetryMessageEpic(action$, state$, depsMock)
           .pipe(filter(messageSend.request.is))
           .subscribe(a => {
             requests.push(a);

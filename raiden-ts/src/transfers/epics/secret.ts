@@ -184,7 +184,7 @@ export const transferSecretRevealedEpic = (
         action.meta.address !== state.sent[secrethash].transfer[1].recipient ||
         // don't unlock if channel closed
         state.sent[secrethash].channelClosed ||
-        // don't unlock again if already unlocked, retry handled by transferUnlockedRetryMessageEpic
+        // don't unlock again if already unlocked, retry handled by transferRetryMessageEpic
         // in the future, we may avoid retry until Processed, and [re]send once per SecretReveal
         state.sent[secrethash].unlock
         // accepts secretReveal/unlock request even if registered on-chain
