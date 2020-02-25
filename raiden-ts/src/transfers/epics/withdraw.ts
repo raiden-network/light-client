@@ -1,11 +1,12 @@
 import { Observable } from 'rxjs';
-import { filter, map, mergeMap } from 'rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 
 import { RaidenAction } from '../../actions';
 import { Signed } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
-import { messageReceived, messageSend } from '../../messages/actions';
+import { messageSend } from '../../messages/actions';
 import { WithdrawRequest } from '../../messages/types';
+import { isMessageReceivedOfType } from '../../messages/utils';
 import { withdrawReceive } from '../actions';
 
 /**
@@ -19,16 +20,11 @@ export const withdrawRequestReceivedEpic = (
   action$: Observable<RaidenAction>,
 ): Observable<withdrawReceive.request> =>
   action$.pipe(
-    filter(isActionOf(messageReceived)),
-    mergeMap(function*(action) {
+    filter(isMessageReceivedOfType(Signed(WithdrawRequest))),
+    filter(action => action.payload.message.participant === action.meta.address),
+    map(action => {
       const message = action.payload.message;
-      if (
-        !message ||
-        !Signed(WithdrawRequest).is(message) ||
-        message.participant !== action.meta.address
-      )
-        return;
-      yield withdrawReceive.request(
+      return withdrawReceive.request(
         { message },
         {
           tokenNetwork: message.token_network_address,

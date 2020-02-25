@@ -1,8 +1,8 @@
-import { defer, EMPTY, from, Observable, of } from 'rxjs';
+import { defer, from, Observable, of } from 'rxjs';
 import { concatMap, filter, first, map, mergeMap, tap, withLatestFrom } from 'rxjs/operators';
 
 import { RaidenAction } from '../../actions';
-import { messageReceived, messageSend } from '../../messages/actions';
+import { messageSend } from '../../messages/actions';
 import {
   LockedTransfer,
   LockExpired,
@@ -11,11 +11,14 @@ import {
   RefundTransfer,
   WithdrawExpired,
 } from '../../messages/types';
-import { getBalanceProofFromEnvelopeMessage, signMessage } from '../../messages/utils';
+import {
+  getBalanceProofFromEnvelopeMessage,
+  signMessage,
+  isMessageReceivedOfType,
+} from '../../messages/utils';
 import { RaidenState } from '../../state';
 import { matrixPresence } from '../../transport/actions';
 import { RaidenEpicDeps } from '../../types';
-import { isActionOf } from '../../utils/actions';
 import { LruCache } from '../../utils/lru';
 import { Hash, Signed } from '../../utils/types';
 import {
@@ -82,11 +85,10 @@ export const transferProcessedReceivedEpic = (
   state$: Observable<RaidenState>,
 ): Observable<transferProcessed> =>
   action$.pipe(
-    filter(isActionOf(messageReceived)),
+    filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
-      if (!message || !Signed(Processed).is(message)) return;
       let secrethash: Hash | undefined = undefined;
       for (const [key, sent] of Object.entries(state.sent)) {
         if (
@@ -116,11 +118,10 @@ export const transferUnlockProcessedReceivedEpic = (
   state$: Observable<RaidenState>,
 ): Observable<transfer.success | transferUnlockProcessed> =>
   action$.pipe(
-    filter(isActionOf(messageReceived)),
+    filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
-      if (!message || !Signed(Processed).is(message)) return;
       let secrethash: Hash | undefined;
       for (const [key, sent] of Object.entries(state.sent)) {
         if (
@@ -157,11 +158,10 @@ export const transferExpireProcessedEpic = (
   state$: Observable<RaidenState>,
 ): Observable<transferExpireProcessed> =>
   action$.pipe(
-    filter(isActionOf(messageReceived)),
+    filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
-      if (!message || !Signed(Processed).is(message)) return;
       let secrethash: Hash | undefined;
       for (const [key, sent] of Object.entries(state.sent)) {
         if (
@@ -202,19 +202,16 @@ export const transferReceivedReplyProcessedEpic = (
 ): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Processed>>(32);
   return action$.pipe(
-    filter(isActionOf(messageReceived)),
+    filter(
+      isMessageReceivedOfType([
+        Signed(LockedTransfer),
+        Signed(RefundTransfer),
+        Signed(LockExpired),
+        Signed(WithdrawExpired),
+      ]),
+    ),
     concatMap(action => {
       const message = action.payload.message;
-      if (
-        !message ||
-        !(
-          Signed(LockedTransfer).is(message) ||
-          Signed(RefundTransfer).is(message) ||
-          Signed(LockExpired).is(message) ||
-          Signed(WithdrawExpired).is(message)
-        )
-      )
-        return EMPTY;
       // defer causes the cache check to be performed at subscription time
       return defer(() => {
         const msgId = message.message_identifier;

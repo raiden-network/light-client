@@ -3,8 +3,8 @@ import { filter, mergeMap, withLatestFrom } from 'rxjs/operators';
 import { isEqualWith } from 'lodash';
 
 import { RaidenAction } from '../../actions';
-import { messageReceived } from '../../messages/actions';
 import { RefundTransfer } from '../../messages/types';
+import { isMessageReceivedOfType } from '../../messages/utils';
 import { RaidenState } from '../../state';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Signed, BigNumberC } from '../../utils/types';
@@ -33,11 +33,10 @@ export const transferRefundedEpic = (
   state$: Observable<RaidenState>,
 ): Observable<transferRefunded | transfer.failure> =>
   action$.pipe(
-    filter(messageReceived.is),
+    filter(isMessageReceivedOfType(Signed(RefundTransfer))),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
-      if (!message || !Signed(RefundTransfer).is(message)) return;
       const secrethash = message.lock.secrethash;
       if (!(secrethash in state.sent)) return;
       const sent = state.sent[secrethash],
