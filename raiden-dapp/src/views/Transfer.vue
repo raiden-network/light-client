@@ -229,6 +229,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '../scss/colors';
+@import '../scss/mixins';
 
 .transfer {
   width: 100%;
@@ -245,6 +246,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
   &__recipient {
     margin-top: 75px;
+
+    @include respond-to(handhelds) {
+      margin-top: 0;
+    }
 
     &__label {
       color: $secondary-color;

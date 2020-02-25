@@ -20,6 +20,7 @@ $error-indicator-color: $error-tooltip-background;
 $token-entry-background: $error-tooltip-background;
 $token-entry-hover-background: darken($error-tooltip-background, 1%);
 $expanded-area-background: $secondary-button-color;
+$background-gradient: linear-gradient(90deg, #313030 0%, #000000 100%);
 
 // Color vars
 $color-white: #ffffff;
