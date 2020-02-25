@@ -12,8 +12,8 @@
           />
         </div>
       </v-col>
-      <v-col cols="8" xl="4" lg="5" md="8" sm="8">
-        <div class="splash-screen__app-name display-3">
+      <v-col cols="8" xl="4" lg="5" md="8" sm="12">
+        <div class="splash-screen__app-name">
           {{ name }}
         </div>
       </v-col>
@@ -37,7 +37,7 @@
           {{ $t('splash-screen.matrix-sign') }}
         </div>
       </v-col>
-      <v-col cols="8">
+      <v-col cols="12">
         <div class="splash-screen__button">
           <action-button
             v-if="injectedProvider"
@@ -96,7 +96,11 @@ export default class Loading extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '../scss/mixins';
+
 .splash-screen {
+  margin-top: 40px;
+
   ::v-deep {
     a {
       text-decoration: none;
@@ -124,9 +128,17 @@ export default class Loading extends Vue {
     height: 100%;
     padding-left: 10px;
     white-space: nowrap;
+    font-size: 3.75rem !important;
+    font-weight: 300;
+    line-height: 3.75rem;
+
     @media only screen and (max-width: 1263px) {
       justify-content: center;
       padding: 30px 0px 0px 0px;
+    }
+
+    @include respond-to(handhelds) {
+      font-size: 2.75rem !important;
     }
   }
 
