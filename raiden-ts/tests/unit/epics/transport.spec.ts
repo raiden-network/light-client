@@ -152,7 +152,7 @@ describe('transport epic', () => {
         state$ = depsMock.latest$.pipe(pluckDistinct('state'));
 
       depsMock.latest$.pipe(first()).subscribe(l => {
-        const state = raidenReducer(l.state, raidenConfigUpdate({ config: { matrixServer } }));
+        const state = raidenReducer(l.state, raidenConfigUpdate({ matrixServer }));
         depsMock.latest$.next({ ...l, state, config: { ...l.config, ...state.config } });
       });
 
@@ -190,7 +190,7 @@ describe('transport epic', () => {
               displayName,
             },
           }),
-          raidenConfigUpdate({ config: { matrixServer } }),
+          raidenConfigUpdate({ matrixServer }),
         ].reduce(raidenReducer, l.state);
         depsMock.latest$.next({ ...l, state, config: { ...l.config, ...state.config } });
       });
@@ -896,7 +896,7 @@ describe('transport epic', () => {
   });
 
   describe('matrixMessageSendEpic', () => {
-    beforeEach(() => action$.next(raidenConfigUpdate({ config: { httpTimeout: 30 } })));
+    beforeEach(() => action$.next(raidenConfigUpdate({ httpTimeout: 30 })));
 
     test('send: all needed parts in place, errors once but retries successfully', async () => {
       expect.assertions(3);

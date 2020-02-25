@@ -20,6 +20,7 @@ import { HumanStandardTokenFactory } from './contracts/HumanStandardTokenFactory
 import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 import { UserDepositFactory } from './contracts/UserDepositFactory';
+import { SecretRegistryFactory } from './contracts/SecretRegistryFactory';
 
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
@@ -205,6 +206,10 @@ export class Raiden {
         contractsInfo.UserDeposit.address,
         main?.signer ?? signer,
       ),
+      secretRegistryContract: SecretRegistryFactory.connect(
+        contractsInfo.SecretRegistry.address,
+        main?.signer ?? signer,
+      ),
       main,
     };
 
@@ -339,7 +344,7 @@ export class Raiden {
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
     // dispatch a first, noop action, to next first state$ as current/initial state
-    this.store.dispatch(raidenConfigUpdate({ config: {} }));
+    this.store.dispatch(raidenConfigUpdate({}));
   }
 
   /**
@@ -435,7 +440,7 @@ export class Raiden {
    * @param config - Partial object containing keys and values to update in config
    */
   public updateConfig(config: PartialRaidenConfig) {
-    this.store.dispatch(raidenConfigUpdate({ config }));
+    this.store.dispatch(raidenConfigUpdate(config));
   }
 
   /**

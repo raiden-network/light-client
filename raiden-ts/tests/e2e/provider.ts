@@ -17,6 +17,7 @@ import { CustomToken } from 'raiden-ts/contracts/CustomToken';
 import { ServiceRegistry } from 'raiden-ts/contracts/ServiceRegistry';
 import { TokenNetworkRegistryFactory } from 'raiden-ts/contracts/TokenNetworkRegistryFactory';
 import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
+import { SecretRegistry } from 'raiden-ts/contracts/SecretRegistry';
 import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
 
 export class TestProvider extends Web3Provider {
@@ -80,12 +81,13 @@ export class TestProvider extends Web3Provider {
     const address = accounts[accounts.length - 1],
       signer = this.getSigner(address);
 
-    const secretRegistryContract = await new ContractFactory(
+    const secretRegistryContract = (await new ContractFactory(
       Contracts.contracts.SecretRegistry.abi as ParamType[],
       Contracts.contracts.SecretRegistry.bin,
       signer,
-    ).deploy();
+    ).deploy()) as SecretRegistry;
     await secretRegistryContract.deployed();
+    const secretRegistryDeployBlock = secretRegistryContract.deployTransaction.blockNumber;
 
     const registryContract = (await new ContractFactory(
       Contracts.contracts.TokenNetworkRegistry.abi as ParamType[],
@@ -157,6 +159,10 @@ export class TestProvider extends Web3Provider {
       UserDeposit: {
         address: userDepositContract.address as Address,
         block_number: userDepositDeployBlock!,
+      },
+      SecretRegistry: {
+        address: secretRegistryContract.address as Address,
+        block_number: secretRegistryDeployBlock!,
       },
     };
   }

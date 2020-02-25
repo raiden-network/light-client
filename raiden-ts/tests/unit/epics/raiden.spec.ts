@@ -522,7 +522,7 @@ describe('raiden epic', () => {
   });
 
   describe('confirmationEpic', () => {
-    beforeEach(() => action$.next(raidenConfigUpdate({ config: { confirmationBlocks: 5 } })));
+    beforeEach(() => action$.next(raidenConfigUpdate({ confirmationBlocks: 5 })));
 
     test('confirmed', async () => {
       expect.assertions(7);

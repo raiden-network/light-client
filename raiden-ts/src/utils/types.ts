@@ -175,9 +175,9 @@ export type Signature = string & t.Brand<HexStringB<65>>;
 export const Hash = HexString(32);
 export type Hash = string & t.Brand<HexStringB<32>>;
 
-// string brand: a secret bytearray, non-sized
-export const Secret = HexString();
-export type Secret = string & t.Brand<HexStringB<number>>;
+// string brand: a secret bytearray, 32 bytes
+export const Secret = HexString(32);
+export type Secret = string & t.Brand<HexStringB<32>>;
 
 // string brand: ECDSA private key, 32 bytes
 export const PrivateKey = HexString(32);

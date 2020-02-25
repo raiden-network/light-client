@@ -7,6 +7,7 @@
 - [#1000] Implemented SDK error handling
 
 ### Changed
+- [#986] Don't expire locks which secret got registered on-chain
 - [#926] Introduce loglevel logging framework (config.logger now specifies logging level)
 - [#1042] Support decoding addresses on messages on lowercased format
 

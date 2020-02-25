@@ -27,17 +27,34 @@ import {
   transferClear,
   withdrawReceive,
   transferSecretRequest,
+  transferSecretRegistered,
 } from './actions';
 
 // Reducers for different actions
-function transferSecretReducer(state: RaidenState, action: transferSecret): RaidenState {
+function transferSecretReducer(
+  state: RaidenState,
+  action: transferSecret | transferSecretRegistered,
+): RaidenState {
   const secrethash = action.meta.secrethash;
-  if (secrethash in state.secrets && state.secrets[secrethash].registerBlock) return state; // avoid storing without registerBlock if we already got with
+  // store when seeing unconfirmed, but registerBlock only after confirmation
+  const registerBlock =
+    transferSecretRegistered.is(action) && action.payload.confirmed
+      ? action.payload.txBlock
+      : state.sent[secrethash]?.secret?.[1]?.registerBlock ?? 0;
+  // don't overwrite registerBlock if secret already stored with it
+  if (
+    !(secrethash in state.sent) ||
+    state.sent[secrethash].secret?.[1]?.registerBlock === registerBlock
+  )
+    return state;
   return {
     ...state,
-    secrets: {
-      ...state.secrets,
-      [secrethash]: action.payload,
+    sent: {
+      ...state.sent,
+      [secrethash]: {
+        ...state.sent[secrethash],
+        secret: timed({ value: action.payload.secret, registerBlock }),
+      },
     },
   };
 }
@@ -261,7 +278,6 @@ function transferClearReducer(state: RaidenState, action: transferClear): Raiden
   const secrethash = action.meta.secrethash;
   if (!(secrethash in state.sent)) return state;
   state = unset(['sent', secrethash], state);
-  state = unset(['secrets', secrethash], state);
   return state;
 }
 
@@ -310,7 +326,7 @@ function withdrawReceiveSuccessReducer(
  * Handles all transfers actions and requests
  */
 export const transfersReducer: Reducer<RaidenState, RaidenAction> = createReducer(initialState)
-  .handle(transferSecret, transferSecretReducer)
+  .handle([transferSecret, transferSecretRegistered], transferSecretReducer)
   .handle(transferSigned, transferSignedReducer)
   .handle(
     [transferProcessed, transferUnlockProcessed, transferExpireProcessed, transferRefunded],

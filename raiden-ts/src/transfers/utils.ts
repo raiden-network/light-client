@@ -69,6 +69,9 @@ const statusesMap: { [K in RaidenSentTransferStatus]: (s: SentTransfer) => numbe
   [RaidenSentTransferStatus.unlocked]: getTimeIfPresent<SentTransfer>('unlockProcessed'),
   [RaidenSentTransferStatus.expiring]: getTimeIfPresent<SentTransfer>('lockExpired'),
   [RaidenSentTransferStatus.unlocking]: getTimeIfPresent<SentTransfer>('unlock'),
+  [RaidenSentTransferStatus.registered]: (sent: SentTransfer) =>
+    // only set status as registered if there's a valid registerBlock
+    sent.secret?.[1]?.registerBlock ? sent.secret[0] : undefined,
   [RaidenSentTransferStatus.revealed]: getTimeIfPresent<SentTransfer>('secretReveal'),
   [RaidenSentTransferStatus.requested]: getTimeIfPresent<SentTransfer>('secretRequest'),
   [RaidenSentTransferStatus.closed]: getTimeIfPresent<SentTransfer>('channelClosed'),
@@ -100,12 +103,17 @@ export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
   const value = transfer.lock.amount.sub(sent.fee);
   const invalidSecretRequest = sent.secretRequest && sent.secretRequest[1].amount.lt(value);
   const success =
-    sent.secretReveal || sent.unlock
+    sent.secretReveal || sent.unlock || sent.secret?.[1]?.registerBlock
       ? true
       : invalidSecretRequest || sent.refund || sent.lockExpired || sent.channelClosed
       ? false
       : undefined;
-  const completed = !!(sent.unlockProcessed || sent.lockExpiredProcessed || sent.channelClosed);
+  const completed = !!(
+    sent.unlockProcessed ||
+    sent.lockExpiredProcessed ||
+    sent.secret?.[1]?.registerBlock ||
+    sent.channelClosed
+  );
   return {
     secrethash: transfer.lock.secrethash,
     status,
