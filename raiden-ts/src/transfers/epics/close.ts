@@ -29,23 +29,31 @@ export const transferChannelClosedEpic = (
     mergeMap(([action, state]) =>
       from(Object.entries(state.sent) as Array<[Hash, typeof state.sent[string]]>).pipe(
         filter(
-          ([, sent]) =>
-            sent.transfer[1].token_network_address === action.meta.tokenNetwork &&
-            sent.transfer[1].recipient === action.meta.partner,
+          ([
+            ,
+            {
+              transfer: [, transf],
+            },
+          ]) =>
+            transf.token_network_address === action.meta.tokenNetwork &&
+            transf.recipient === action.meta.partner,
         ),
         map(([secrethash, sent]) => {
           // as we can't know for sure if recipient/partner received the secret or unlock,
           //consider transfer failed iff neither the secret was revealed nor the unlock happened
+          let action: transfer.failure | transfer.success;
           if (!sent.secretReveal && !sent.unlock)
-            return transfer.failure(new RaidenError(ErrorCodes.XFER_CHANNEL_CLOSED_PREMATURELY), {
-              secrethash,
-            });
-          else {
-            const payload = sent.unlock
-              ? { balanceProof: getBalanceProofFromEnvelopeMessage(sent.unlock[1]) }
-              : {};
-            return transfer.success(payload, { secrethash });
-          }
+            action = transfer.failure(
+              new RaidenError(ErrorCodes.XFER_CHANNEL_CLOSED_PREMATURELY),
+              { secrethash },
+            );
+          else if (sent.unlock)
+            action = transfer.success(
+              { balanceProof: getBalanceProofFromEnvelopeMessage(sent.unlock[1]) },
+              { secrethash },
+            );
+          else action = transfer.success({}, { secrethash });
+          return action;
         }),
       ),
     ),
