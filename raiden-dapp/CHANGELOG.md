@@ -6,11 +6,13 @@
 - [#695] Skipping of transfer steps.
 
 ### Changed
+- [#693] Localized error messages for Pathfinding errors.
 
 ### Fixed
 
 [#1015]: https://github.com/raiden-network/light-client/issues/1015
 [#695]: https://github.com/raiden-network/light-client/issues/695
+[#693]: https://github.com/raiden-network/light-client/issues/693
 
 
 ## [0.3.0] - 2020-02-07

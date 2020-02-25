@@ -6,15 +6,13 @@ import RaidenService, {
   ChannelDepositFailed,
   ChannelOpenFailed,
   ChannelSettleFailed,
-  FindRoutesFailed,
-  PFSRequestFailed,
   TransferFailed
 } from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
-import { Raiden, RaidenSentTransfer } from 'raiden-ts';
+import { Raiden, RaidenError, RaidenSentTransfer, ErrorCodes } from 'raiden-ts';
 import { BigNumber, bigNumberify } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
@@ -721,16 +719,14 @@ describe('RaidenService', () => {
     factory.mockResolvedValue(mockRaiden({ findPFS }));
     await raidenService.connect();
     await flushPromises();
-    await expect(raidenService.fetchServices()).rejects.toBeInstanceOf(
-      PFSRequestFailed
-    );
+    await expect(raidenService.fetchServices()).rejects.toBeInstanceOf(Error);
   });
 
   describe('findRoutes', () => {
     test('rejects when it cannot find routes: no availability', async () => {
       const getAvailability = jest
         .fn()
-        .mockRejectedValue(new Error('target offline'));
+        .mockRejectedValue(new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE));
       const findRoutes = jest
         .fn()
         .mockRejectedValue(new Error('should not reach findRoutes'));
@@ -740,10 +736,10 @@ describe('RaidenService', () => {
       await flushPromises();
       await expect(
         raidenService.findRoutes(AddressZero, AddressZero, One)
-      ).rejects.toBeInstanceOf(FindRoutesFailed);
+      ).rejects.toBeInstanceOf(RaidenError);
       await expect(
         raidenService.findRoutes(AddressZero, AddressZero, One)
-      ).rejects.toThrowError('target offline');
+      ).rejects.toThrowError(ErrorCodes.PFS_TARGET_OFFLINE);
     });
 
     test('rejects when it cannot find routes: no routes', async () => {
@@ -755,7 +751,7 @@ describe('RaidenService', () => {
       await flushPromises();
       await expect(
         raidenService.findRoutes(AddressZero, AddressZero, One)
-      ).rejects.toBeInstanceOf(FindRoutesFailed);
+      ).rejects.toBeInstanceOf(Error);
       await expect(
         raidenService.findRoutes(AddressZero, AddressZero, One)
       ).rejects.toThrowError('no path');

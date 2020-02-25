@@ -43,7 +43,7 @@ import { isActionOf } from '../utils/actions';
 import { pluckDistinct } from '../utils/rx';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
 import { encode } from '../utils/data';
-import RaidenError, { ErrorCodes } from '../utils/error';
+import { RaidenError, ErrorCodes } from '../utils/error';
 import {
   newBlock,
   tokenMonitored,

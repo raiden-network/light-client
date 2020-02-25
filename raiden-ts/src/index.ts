@@ -9,3 +9,4 @@ export { RaidenPaths, RaidenPFS } from './path/types';
 export { RaidenConfig } from './config';
 export * from './types';
 export * from './utils/types';
+export * from './utils/error';

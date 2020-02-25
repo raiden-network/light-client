@@ -58,7 +58,7 @@ import { channelClose, newBlock } from '../channels/actions';
 import { RaidenConfig } from '../config';
 import { matrixPresence } from '../transport/actions';
 import { pluckDistinct } from '../utils/rx';
-import RaidenError, { ErrorCodes } from '../utils/error';
+import { RaidenError, ErrorCodes } from '../utils/error';
 import { getEventsStream } from '../utils/ethers';
 import {
   transfer,

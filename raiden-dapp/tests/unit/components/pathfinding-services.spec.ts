@@ -89,9 +89,9 @@ describe('PathfindingService.vue', () => {
     const wrapper = createWrapper();
     await wrapper.vm.$nextTick();
     await flushPromises();
-    expect(wrapper.find('.pathfinding-services__error').isVisible()).toBe(true);
-    expect(wrapper.find('.pathfinding-services__error span').text()).toMatch(
-      'there was an error'
-    );
+    expect(wrapper.vm.$data.error).toBeDefined();
+    expect(wrapper.vm.$data.error).toMatchObject({
+      message: 'there was an error'
+    });
   });
 });

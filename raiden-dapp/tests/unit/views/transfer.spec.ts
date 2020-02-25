@@ -173,7 +173,7 @@ describe('Transfer.vue', () => {
     expect(loading).toHaveBeenNthCalledWith(1, true);
     expect(loading).toHaveBeenNthCalledWith(2, false);
     expect(done).toBeCalledTimes(0);
-    expect(wrapper.vm.$data.error).toEqual('failure');
+    expect(wrapper.vm.$data.error).toMatchObject({ message: 'failure' });
   });
 
   test('navigates to the "ChannelList" when the user presses the channel button', async () => {

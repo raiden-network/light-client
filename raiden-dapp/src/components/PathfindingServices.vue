@@ -21,9 +21,7 @@
           justify="center"
           class="pathfinding-services__error"
         >
-          <span>
-            {{ error }}
-          </span>
+          <error-message :error="error" />
         </v-row>
         <v-data-table
           v-else
@@ -80,17 +78,18 @@
 
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
-import { RaidenPFS } from 'raiden-ts';
+import { RaidenPFS, RaidenError } from 'raiden-ts';
 
 import { Token } from '@/model/types';
 import Filters from '@/filters';
 import Spinner from '@/components/Spinner.vue';
+import ErrorMessage from '@/components/ErrorMessage.vue';
 
-@Component({ components: { Spinner } })
+@Component({ components: { Spinner, ErrorMessage } })
 export default class PathfindingServices extends Vue {
   headers: { text: string; align: string; value: string }[] = [];
 
-  error: string = '';
+  error: Error | RaidenError | null = null;
   loading: boolean = false;
 
   selected: RaidenPFS[] = [];
@@ -146,7 +145,7 @@ export default class PathfindingServices extends Vue {
 
       await this.$raiden.fetchTokenData(tokens);
     } catch (e) {
-      this.error = e.message;
+      this.error = e;
     } finally {
       this.loading = false;
     }
@@ -167,12 +166,6 @@ export default class PathfindingServices extends Vue {
       width: 250px;
       text-align: center;
     }
-  }
-
-  &__error {
-    height: 86px;
-    padding-left: 16px;
-    padding-right: 16px;
   }
 
   &__table {

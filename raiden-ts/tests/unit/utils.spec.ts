@@ -20,7 +20,7 @@ import {
   timed,
   decode,
 } from 'raiden-ts/utils/types';
-import RaidenError, { ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
+import { RaidenError, ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
 import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
