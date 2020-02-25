@@ -78,13 +78,12 @@
 
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
-import { RaidenPFS } from 'raiden-ts';
+import { RaidenPFS, RaidenError } from 'raiden-ts';
 
 import { Token } from '@/model/types';
 import Filters from '@/filters';
 import Spinner from '@/components/Spinner.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
-import RaidenError from 'raiden-ts/dist/utils/error';
 
 @Component({ components: { Spinner, ErrorMessage } })
 export default class PathfindingServices extends Vue {

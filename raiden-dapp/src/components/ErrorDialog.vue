@@ -12,7 +12,7 @@
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import RaidenDialog from '@/components/RaidenDialog.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
-import RaidenError from 'raiden-ts/dist/utils/error';
+import { RaidenError } from 'raiden-ts';
 
 @Component({
   components: { RaidenDialog, ErrorMessage }

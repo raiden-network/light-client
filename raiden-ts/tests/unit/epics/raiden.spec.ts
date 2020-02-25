@@ -42,7 +42,7 @@ import { makeMessageId } from 'raiden-ts/transfers/utils';
 import { encodeJsonMessage } from 'raiden-ts/messages/utils';
 import { messageSend, messageReceived } from 'raiden-ts/messages/actions';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
-import RaidenError, { ErrorCodes } from 'raiden-ts/utils/error';
+import { RaidenError, ErrorCodes } from 'raiden-ts/utils/error';
 
 describe('raiden epic', () => {
   let depsMock = raidenEpicDeps(),

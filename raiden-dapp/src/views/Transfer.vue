@@ -113,13 +113,12 @@ import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
 import DownArrow from '@/components/icons/DownArrow.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannel, ChannelState } from 'raiden-ts';
+import { RaidenChannel, ChannelState, RaidenError } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { getAddress, getAmount } from '@/utils/query-params';
 import BlockieMixin from '@/mixins/blockie-mixin';
-import RaidenError from 'raiden-ts/dist/utils/error';
 
 @Component({
   components: {

@@ -5,7 +5,7 @@ import { from } from 'rxjs';
 import { bigNumberify } from 'ethers/utils';
 
 import { channelDeposit, channelMonitor } from 'raiden-ts/channels/actions';
-import RaidenError, { ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
+import { RaidenError, ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
 import { Address, UInt, decode } from 'raiden-ts/utils/types';
 import {
   createAction,

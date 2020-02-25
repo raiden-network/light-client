@@ -5,7 +5,7 @@ import { Arrayish, hexlify, isArrayish, hexZeroPad, hexDataLength } from 'ethers
 import * as LosslessJSON from 'lossless-json';
 
 import { BigNumberC, HexString } from './types';
-import RaidenError, { ErrorCodes } from './error';
+import { RaidenError, ErrorCodes } from './error';
 
 /**
  * Encode data to hex string of exactly length size (in bytes)

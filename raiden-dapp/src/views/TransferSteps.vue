@@ -201,7 +201,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { RaidenPFS } from 'raiden-ts';
+import { RaidenPFS, RaidenError } from 'raiden-ts';
 import { BigNumber, bigNumberify } from 'ethers/utils';
 
 import { BalanceUtils } from '@/utils/balance-utils';
@@ -223,7 +223,6 @@ import AddressUtils from '@/utils/address-utils';
 import Filter from '@/filters';
 import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
 import PfsFeesDialog from '@/components/PfsFeesDialog.vue';
-import RaidenError from 'raiden-ts/dist/utils/error';
 
 @Component({
   components: {

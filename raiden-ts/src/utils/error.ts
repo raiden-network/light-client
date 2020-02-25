@@ -67,7 +67,7 @@ export enum ErrorCodes {
 export const ErrorDetails = t.record(t.string, t.union([t.string, t.number, t.boolean, t.null]));
 export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
 
-export default class RaidenError extends Error {
+export class RaidenError extends Error {
   public name = 'RaidenError';
   private _code: string | undefined = undefined;
 

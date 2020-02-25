@@ -53,7 +53,7 @@ import {
   getLocksroot,
 } from 'raiden-ts/transfers/utils';
 import { makeSignature } from './mocks';
-import RaidenError, { ErrorCodes } from 'raiden-ts/utils/error';
+import { RaidenError, ErrorCodes } from 'raiden-ts/utils/error';
 
 describe('raidenReducer', () => {
   let state: RaidenState;

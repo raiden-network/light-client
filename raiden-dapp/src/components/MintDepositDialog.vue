@@ -84,7 +84,7 @@ import { BalanceUtils } from '@/utils/balance-utils';
 import { Token } from '@/model/types';
 import RaidenDialog from '@/components/RaidenDialog.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
-import RaidenError from 'raiden-ts/dist/utils/error';
+import { RaidenError } from 'raiden-ts';
 
 @Component({
   components: { ActionButton, RaidenDialog, ErrorMessage },

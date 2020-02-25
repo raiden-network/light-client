@@ -43,7 +43,7 @@ import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
-import RaidenError, { ErrorCodes } from '../utils/error';
+import { RaidenError, ErrorCodes } from '../utils/error';
 import { iouClear, pathFind, iouPersist, pfsListUpdated } from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';

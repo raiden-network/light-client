@@ -16,7 +16,7 @@ import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
 import { IOU } from './path/types';
 import { getNetworkName } from './utils/ethers';
-import RaidenError, { ErrorCodes } from './utils/error';
+import { RaidenError, ErrorCodes } from './utils/error';
 
 // same as highest migrator function in migration.index.migrators
 export const CURRENT_STATE_VERSION = 0;

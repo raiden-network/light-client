@@ -61,7 +61,7 @@ import {
   chooseOnchainAccount,
   getContractWithSigner,
 } from './helpers';
-import RaidenError, { ErrorCodes } from './utils/error';
+import { RaidenError, ErrorCodes } from './utils/error';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;

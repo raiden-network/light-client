@@ -21,7 +21,7 @@ import goerliDeploy from './deployment/deployment_goerli.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
-import RaidenError, { ErrorCodes } from './utils/error';
+import { RaidenError, ErrorCodes } from './utils/error';
 
 /**
  * Returns contract information depending on the passed [[Network]]. Currently, only

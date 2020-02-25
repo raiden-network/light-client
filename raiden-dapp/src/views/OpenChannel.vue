@@ -62,7 +62,7 @@ import ActionButton from '@/components/ActionButton.vue';
 import { mapGetters } from 'vuex';
 import { getAmount } from '@/utils/query-params';
 import OpenChannelDialog from '@/components/OpenChannelDialog.vue';
-import RaidenError from 'raiden-ts/dist/utils/error';
+import { RaidenError } from 'raiden-ts';
 
 @Component({
   components: {
