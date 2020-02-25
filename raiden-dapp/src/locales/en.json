@@ -340,7 +340,7 @@
     "RDN_GENERAL_ERROR": {
       "title": "An error occured",
       "problem": "We do not know this error, sorry.",
-      "solution": "Feel free to file a new issue in our <a href=\"https://github.com/raiden-network/light-client/issues\">Github repo</a>."
+      "solution": "Please file a new issue on https://github.com/raiden-network/light-client."
     },
     "PFS_UNKNOWN_TOKEN_NETWORK": {
       "title": "No open channels",
@@ -354,39 +354,50 @@
       ]
     },
     "PFS_INVALID_INFO": {
-      "title": "",
-      "problem": "",
-      "solution": ""
+      "title": "Couldn't understand Pathfinding Service",
+      "problem": "The Light Client has received a response from the Pathfinding Service that it couldn't understand. It's possible that the current Light Client version is out-of-sync with the Pathfinding Service.",
+      "solution": [
+        "Update the dApp by reloading the page",
+        "Attempt a new transfer",
+        "If the problem persists, please file a new issue on https://github.com/raiden-network/light-client"
+      ]
     },
     "PFS_NO_ROUTES_FOUND": {
-      "title": "",
-      "problem": "",
-      "solution": ""
+      "title": "No routes found",
+      "problem": "Pathfinding Service wasn't able to find a route in the Raiden Network to perform your transfer.",
+      "solution": "Make sure that you either have a direct channel with the target or that both of you are connected to a well-connected hub."
     },
     "PFS_ERROR_RESPONSE": {
-      "title": "",
-      "problem": "",
-      "solution": ""
+      "title": "Pathfinding replied with an error",
+      "problem": "While communicating with the Pathfinding Service, you have received an error response that we don't actively handle yet.",
+      "solution": [
+        "Simply retry your last action",
+        "If the problem persists, please help us and report the issue",
+        "Right click > Inspect or Inspect Element", 
+        "Go to Console", 
+        "Copy errors that occurred", 
+        "File a new issue on https://github.com/raiden-network/light-client"
+      ]
     },
     "PFS_DISABLED": {
-      "title": "",
-      "problem": "",
-      "solution": ""
+      "title": "Pathfinding Service disabled",
+      "problem": "You tried to find a route in the Raiden Network but Pathfinding was either disabled in your configuration or you did not select a valid Pathfinding Service.",
+      "solution": "Try to restart the Light Client by reloading the page and attempt a new transfer."
     },
     "PFS_TARGET_OFFLINE": {
-      "title": "",
-      "problem": "",
-      "solution": ""
+      "title": "Target address is offline",
+      "problem": "You are trying to send tokens to an offline target.",
+      "solution": "Hit the ← button and verify that the address is online or choose a different target address."
     },
     "PFS_LAST_IOU_REQUEST_FAILED": {
-      "title": "",
-      "problem": "",
-      "solution": ""
+      "title": "Error while depositing tokens for Pathfinding Service",
+      "problem": "While trying to deposit tokens for route requests, the Pathfinding Service returned an error.",
+      "solution": "This should happen very rarely, please retry to deposit. If the problem persists, please file an issue on https://github.com/raiden-network/light-client."
     },
     "PFS_IOU_SIGNATURE_MISMATCH": {
-      "title": "",
-      "problem": "",
-      "solution": ""
+      "title": "Error while depositing tokens for Pathfinding Service",
+      "problem": "While trying to deposit tokens for route requests, the Pathfinding Service encountered mismatching signatures.",
+      "solution": "This should happen very rarely, please retry to deposit. If the problem persists, please file an issue on https://github.com/raiden-network/light-client."
     }
   }
 }

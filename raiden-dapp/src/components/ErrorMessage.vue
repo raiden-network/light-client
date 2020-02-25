@@ -12,7 +12,7 @@
       {{ $t('error-message.solution') }}
     </label>
     <ol v-if="Array.isArray(solution)">
-      <li :key="step" v-for="step in solution">{{step}}</li>
+      <li v-for="step in solution" :key="step">{{ step }}</li>
     </ol>
     <p v-else>{{ solution }}</p>
   </v-row>
@@ -25,10 +25,12 @@ import RaidenError from 'raiden-ts/dist/utils/error';
 @Component({})
 export default class ErrorMessage extends Vue {
   @Prop({ required: true })
-  error!: Error | RaidenError;
+  error!: Error | RaidenError | null;
 
   get code() {
-    return 'code' in this.error && this.$te(`errors.${this.error.code}.title`)
+    return this.error &&
+      'code' in this.error &&
+      this.$te(`errors.${this.error.code}.title`)
       ? this.error.code
       : 'RDN_GENERAL_ERROR';
   }

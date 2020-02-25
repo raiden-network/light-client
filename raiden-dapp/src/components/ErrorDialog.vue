@@ -1,31 +1,8 @@
 <template>
-  <raiden-dialog
-    class="error-dialog"
-    :visible="description !== ''"
-    @close="dismiss"
-  >
-    <v-card-title>
-      <v-row align="center" justify="center">
-        <v-col>
-          <span>{{ title }}</span>
-        </v-col>
-      </v-row>
-    </v-card-title>
-
-    <v-card-actions>
-      <v-row align="center" justify="center">
-        <v-col cols="6">
-          <v-img
-            class="error-dialog__image"
-            :src="require('../assets/error.png')"
-          ></v-img>
-        </v-col>
-      </v-row>
-    </v-card-actions>
-
+  <raiden-dialog class="error-dialog" :visible="showDialog" @close="dismiss">
     <v-card-text>
       <v-row align="center" justify="center">
-        <span>{{ description }}</span>
+        <error-message :error="error" />
       </v-row>
     </v-card-text>
   </raiden-dialog>
@@ -34,18 +11,22 @@
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import RaidenDialog from '@/components/RaidenDialog.vue';
+import ErrorMessage from '@/components/ErrorMessage.vue';
+import RaidenError from 'raiden-ts/dist/utils/error';
 
 @Component({
-  components: { RaidenDialog }
+  components: { RaidenDialog, ErrorMessage }
 })
 export default class ErrorDialog extends Vue {
   @Prop({ required: true })
-  description!: string;
-  @Prop({ required: true })
-  title!: string;
+  error!: Error | RaidenError | null;
 
   @Emit()
   dismiss() {}
+
+  get showDialog() {
+    return this.error !== null;
+  }
 }
 </script>
 

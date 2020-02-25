@@ -79,18 +79,18 @@
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
 import { RaidenPFS } from 'raiden-ts';
-import RaidenError, { ErrorCodes } from 'raiden-ts/dist/utils/error';
 
 import { Token } from '@/model/types';
 import Filters from '@/filters';
 import Spinner from '@/components/Spinner.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
+import RaidenError from 'raiden-ts/dist/utils/error';
 
 @Component({ components: { Spinner, ErrorMessage } })
 export default class PathfindingServices extends Vue {
   headers: { text: string; align: string; value: string }[] = [];
 
-  error: string = '';
+  error: Error | RaidenError | null = null;
   loading: boolean = false;
 
   selected: RaidenPFS[] = [];
@@ -134,7 +134,6 @@ export default class PathfindingServices extends Vue {
   async fetchServices() {
     this.loading = true;
     try {
-      throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK);
       this.services = await this.$raiden.fetchServices();
       if (this.services.length > 0) {
         const [preSelectedPfs] = this.services;

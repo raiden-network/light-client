@@ -94,11 +94,7 @@
       ></action-button>
     </v-container>
 
-    <error-dialog
-      :description="error"
-      :title="errorTitle"
-      @dismiss="error = ''"
-    ></error-dialog>
+    <error-dialog :error="error" @dismiss="error = null"></error-dialog>
   </v-form>
 </template>
 
@@ -123,6 +119,7 @@ import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { getAddress, getAmount } from '@/utils/query-params';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import RaidenError from 'raiden-ts/dist/utils/error';
 
 @Component({
   components: {
@@ -154,8 +151,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   done: boolean = false;
   depositing: boolean = false;
 
-  errorTitle: string = '';
-  error: string = '';
+  error: Error | RaidenError | null = null;
 
   channels!: (tokenAddress: string) => RaidenChannel[];
 
@@ -206,7 +202,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
   async deposit(amount: BigNumber) {
     this.loading = true;
-    this.errorTitle = this.$t('transfer.error.deposit-title') as string;
 
     try {
       await this.$raiden.deposit(
@@ -218,7 +213,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
       this.loading = false;
       this.dismissProgress();
     } catch (e) {
-      this.error = e.message;
+      this.error = e;
       this.loading = false;
       this.depositing = false;
     }

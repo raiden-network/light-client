@@ -183,9 +183,8 @@
 
     <error-dialog
       v-if="!processingTransfer"
-      :description="error"
-      :title="$t('transfer.error.title')"
-      @dismiss="error = ''"
+      :error="error"
+      @dismiss="error = null"
     >
     </error-dialog>
 
@@ -224,6 +223,7 @@ import AddressUtils from '@/utils/address-utils';
 import Filter from '@/filters';
 import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
 import PfsFeesDialog from '@/components/PfsFeesDialog.vue';
+import RaidenError from 'raiden-ts/dist/utils/error';
 
 @Component({
   components: {
@@ -257,7 +257,7 @@ export default class TransferSteps extends Mixins(
   mediationFeesConfirmed: boolean = false;
   processingTransfer: boolean = false;
   transferDone: boolean = false;
-  error: string = '';
+  error: Error | RaidenError | null = null;
   udcCapacity: BigNumber = Zero;
 
   amount: string = '';
@@ -369,12 +369,17 @@ export default class TransferSteps extends Mixins(
   async findRoutes(): Promise<void> {
     const { address, decimals } = this.token;
     // Fetch available routes from PFS
-    const fetchedRoutes = await this.$raiden.findRoutes(
-      address,
-      this.target,
-      BalanceUtils.parse(this.amount, decimals!),
-      this.selectedPfs ? this.selectedPfs : undefined
-    );
+    let fetchedRoutes;
+    try {
+      fetchedRoutes = await this.$raiden.findRoutes(
+        address,
+        this.target,
+        BalanceUtils.parse(this.amount, decimals!),
+        this.selectedPfs ?? undefined
+      );
+    } catch (e) {
+      this.error = e;
+    }
 
     if (fetchedRoutes) {
       this.routes = fetchedRoutes.map(
@@ -402,7 +407,7 @@ export default class TransferSteps extends Mixins(
         await this.findRoutes();
       } catch (e) {
         this.pfsFeesConfirmed = false;
-        this.error = e.message;
+        this.error = e;
         return;
       }
 
@@ -503,13 +508,13 @@ export default class TransferSteps extends Mixins(
       this.transferDone = true;
       this.dismissProgress();
     } catch (e) {
-      this.error = e.message;
+      this.error = e;
     }
   }
 
   private dismissProgress(delay: number = 6000) {
     setTimeout(() => {
-      this.error = '';
+      this.error = null;
       this.processingTransfer = false;
       this.transferDone = false;
       this.navigateToSelectTransferTarget(this.token.address);
