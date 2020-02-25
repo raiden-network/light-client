@@ -1,15 +1,26 @@
 import { Observable } from 'rxjs';
 import { filter, mergeMap, withLatestFrom } from 'rxjs/operators';
+import { isEqualWith } from 'lodash';
 
 import { RaidenAction } from '../../actions';
 import { messageReceived } from '../../messages/actions';
 import { RefundTransfer } from '../../messages/types';
 import { RaidenState } from '../../state';
-import { isActionOf } from '../../utils/actions';
 import { RaidenError, ErrorCodes } from '../../utils/error';
-import { Signed } from '../../utils/types';
+import { Signed, BigNumberC } from '../../utils/types';
 import { transfer, transferRefunded } from '../actions';
 
+// Compare two objects, using .eq for BigNumber properties
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function bnIsEqual(obj: any, other: any): boolean {
+  return isEqualWith(obj, other, (objVal, othVal) =>
+    BigNumberC.is(objVal)
+      ? objVal.eq(othVal)
+      : BigNumberC.is(othVal)
+      ? othVal.eq(objVal)
+      : undefined,
+  );
+}
 /**
  * Receiving RefundTransfer for pending transfer fails it
  *
@@ -22,23 +33,26 @@ export const transferRefundedEpic = (
   state$: Observable<RaidenState>,
 ): Observable<transferRefunded | transfer.failure> =>
   action$.pipe(
-    filter(isActionOf(messageReceived)),
+    filter(messageReceived.is),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
       if (!message || !Signed(RefundTransfer).is(message)) return;
       const secrethash = message.lock.secrethash;
       if (!(secrethash in state.sent)) return;
-      const [, sent] = state.sent[secrethash].transfer;
+      const sent = state.sent[secrethash],
+        transf = sent.transfer[1];
       if (
-        message.initiator !== sent.recipient ||
-        !message.payment_identifier.eq(sent.payment_identifier) ||
-        !message.lock.amount.eq(sent.lock.amount) ||
-        !message.lock.expiration.eq(sent.lock.expiration) ||
-        state.sent[secrethash].unlock || // already unlocked
-        state.sent[secrethash].lockExpired || // already expired
-        state.sent[secrethash].channelClosed || // channel closed
-        message.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
+        message.initiator !== transf.recipient ||
+        !message.payment_identifier.eq(transf.payment_identifier) ||
+        !bnIsEqual(message.lock, transf.lock)
+      )
+        return;
+      if (
+        sent.unlock || // already unlocked
+        sent.lockExpired || // already expired
+        sent.channelClosed || // channel closed
+        transf.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
       )
         return;
       yield transferRefunded({ message }, { secrethash });

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { EMPTY, MonoTypeOperatorFunction, Observable } from 'rxjs';
 import { delay, filter, mergeMap, repeatWhen, takeUntil, withLatestFrom } from 'rxjs/operators';
 
@@ -11,8 +12,7 @@ import { pluckDistinct } from '../../utils/rx';
 import { transferExpire, transferSigned, transferUnlock } from '../actions';
 import { dispatchAndWait$ } from './utils';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function retryUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOperatorFunction<T> {
+function repeatUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOperatorFunction<T> {
   // Resubscribe/retry every 30s after messageSend succeeds
   // Notice first (or any) messageSend.request can wait for a long time before succeeding, as it
   // waits for address's user in transport to be online and joined room before actually
@@ -28,12 +28,11 @@ function retryUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOpera
 function retrySendUntil$(
   send: messageSend.request,
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-  predicate: (state: RaidenState) => boolean,
+  notifier: Observable<any>,
   delayMs = 30e3,
 ): Observable<messageSend.request> {
   return dispatchAndWait$(action$, send, isResponseOf(messageSend, send.meta)).pipe(
-    retryUntil(state$.pipe(filter(predicate)), delayMs),
+    repeatUntil(notifier, delayMs),
   );
 }
 
@@ -57,17 +56,20 @@ const transferSignedRetryMessage$ = (
     { message: signed },
     { address: signed.recipient, msgId: signed.message_identifier.toString() },
   );
+  const notifier = state$.pipe(
+    pluckDistinct('sent', secrethash),
+    filter(
+      sent =>
+        !!(
+          sent.transferProcessed ||
+          sent.unlockProcessed ||
+          sent.lockExpiredProcessed ||
+          sent.channelClosed
+        ),
+    ),
+  );
   // emit request once immediatelly, then wait until success, then retry every 30s
-  const processedOrNotPossibleToSend = (state: RaidenState) => {
-    const transfer = state.sent[secrethash];
-    return (
-      !!transfer.transferProcessed ||
-      !!transfer.unlockProcessed ||
-      !!transfer.lockExpiredProcessed ||
-      !!transfer.channelClosed
-    );
-  };
-  return retrySendUntil$(send, action$, state$, processedOrNotPossibleToSend, httpTimeout);
+  return retrySendUntil$(send, action$, notifier, httpTimeout);
 };
 
 /**
@@ -119,13 +121,13 @@ const transferUnlockedRetryMessage$ = (
     { address: transfer.recipient, msgId: unlock.message_identifier.toString() },
   );
 
-  // emit request once immediatelly, then wait until respective success, then repeats until confirmed
-  const unlockProcessedOrChannelClosed = (state: RaidenState) => {
-    const transfer = state.sent[secrethash];
-    return !!transfer.unlockProcessed || !!transfer.channelClosed;
-  };
-
-  return retrySendUntil$(send, action$, state$, unlockProcessedOrChannelClosed, httpTimeout);
+  const notifier = state$.pipe(
+    pluckDistinct('sent', secrethash),
+    filter(sent => !!(sent.unlockProcessed || sent.channelClosed)),
+  );
+  // emit request once immediatelly, then wait until respective success,
+  // then repeats until confirmed
+  return retrySendUntil$(send, action$, notifier, httpTimeout);
 };
 
 /**
@@ -183,12 +185,13 @@ const expiredRetryMessages$ = (
       msgId: lockExpired.message_identifier.toString(),
     },
   );
-  const lockExpiredProcessedOrChannelClosed = (state: RaidenState) => {
-    const transfer = state.sent[secrethash];
-    return !!transfer.lockExpiredProcessed || !!transfer.channelClosed;
-  };
-  // emit request once immediatelly, then wait until respective success, then retries until confirmed
-  return retrySendUntil$(send, action$, state$, lockExpiredProcessedOrChannelClosed, httpTimeout);
+  const notifier = state$.pipe(
+    pluckDistinct('sent', secrethash),
+    filter(sent => !!(sent.lockExpiredProcessed || sent.channelClosed)),
+  );
+  // emit request once immediatelly, then wait until respective success,
+  // then retries until confirmed
+  return retrySendUntil$(send, action$, notifier, httpTimeout);
 };
 
 /**
