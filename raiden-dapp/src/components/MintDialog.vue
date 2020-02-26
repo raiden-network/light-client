@@ -82,30 +82,3 @@ export default class MintDepositDialog extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-@import '../scss/colors';
-
-.mint-dialog {
-  background-color: #141414;
-  border-radius: 10px !important;
-  padding: 20px 20px 55px 20px;
-
-  &__available {
-    text-align: center;
-  }
-
-  &--progress {
-    margin-top: 20px;
-    span {
-      margin-top: 22px;
-    }
-  }
-
-  &__close {
-    position: absolute;
-    right: 15px;
-    top: 15px;
-  }
-}
-</style>
