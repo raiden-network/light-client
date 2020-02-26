@@ -33,7 +33,14 @@
           </span>
           <v-tooltip bottom>
             <template #activator="{ on }">
-              <v-btn text icon small @click="showMintDialog = true" v-on="on">
+              <v-btn
+                text
+                icon
+                small
+                class="token-information__mint"
+                @click="showMintDialog = true"
+                v-on="on"
+              >
                 <v-icon color="primary">play_for_work</v-icon>
               </v-btn>
             </template>
