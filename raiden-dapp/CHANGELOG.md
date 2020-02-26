@@ -4,12 +4,14 @@
 ### Added
 - [#1015] More prominent warning for low UDC token balance
 - [#695] Skipping of transfer steps.
+- [#1071] Mint token feature.
 
 ### Changed
 - [#693] Localized error messages for Pathfinding errors.
 
 ### Fixed
 
+[#1071]: https://github.com/raiden-network/light-client/issues/1071
 [#1015]: https://github.com/raiden-network/light-client/issues/1015
 [#695]: https://github.com/raiden-network/light-client/issues/695
 [#693]: https://github.com/raiden-network/light-client/issues/693
