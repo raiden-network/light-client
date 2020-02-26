@@ -350,7 +350,7 @@
     "RDN_MINT_FAILED": {
       "title": "Could not mint token",
       "problem": "It looks like the Light Client does not support minting out-of-the-box for this token contract.",
-      "solution": "You may try to mint manually via MetaMask and Etherscan. You can find a step-by-step guide on https://github.com/raiden-network/light-client#try-out-the-raiden-demo-dapp."
+      "solution": "You may try to mint manually via MetaMask and Etherscan. You can find a step-by-step guide on https://github.com/raiden-network/light-client#minting-manually."
     },
     "PFS_UNKNOWN_TOKEN_NETWORK": {
       "title": "No open channels",
