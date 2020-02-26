@@ -3,7 +3,7 @@
     <splash-screen
       v-if="inaccessible"
       :connecting="connecting"
-      @connect="connect()"
+      @connect="connect"
     ></splash-screen>
     <div v-else id="application-wrapper">
       <div id="application-content">
@@ -57,10 +57,10 @@ export default class App extends Vue {
     );
   }
 
-  async connect() {
-    this.connecting = true;
+  async connect(subkey?: true) {
+    this.connecting = true && !subkey;
     this.$store.commit('reset');
-    await this.$raiden.connect();
+    await this.$raiden.connect(subkey);
     this.connecting = false;
   }
 

@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Added
+- [#745] Possibility to connect LC with derived subkey
 - [#1015] More prominent warning for low UDC token balance
 - [#695] Skipping of transfer steps.
 
@@ -10,6 +11,7 @@
 
 ### Fixed
 
+[#745]: https://github.com/raiden-network/light-client/issues/745
 [#1015]: https://github.com/raiden-network/light-client/issues/1015
 [#695]: https://github.com/raiden-network/light-client/issues/695
 [#693]: https://github.com/raiden-network/light-client/issues/693

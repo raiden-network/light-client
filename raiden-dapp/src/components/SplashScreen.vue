@@ -1,62 +1,71 @@
 <template>
   <v-container class="splash-screen fill-height">
     <v-row no-gutters justify="center">
-      <v-col cols="8" xl="2" lg="2" md="8" sm="8">
+      <v-col cols="8">
         <div class="splash-screen__logo-container">
           <v-img
             :src="require('../assets/logo.svg')"
-            min-width="50px"
-            class="splash-screen__logo"
             aspect-ratio="1"
+            class="splash-screen__logo"
             contain
           />
         </div>
       </v-col>
-      <v-col cols="8" xl="4" lg="5" md="8" sm="12">
-        <div class="splash-screen__app-name">
-          {{ name }}
+      <v-col cols="8">
+        <div class="splash-screen__app-welcome text-center">
+          {{ welcome }}
+        </div>
+        <div class="splash-screen__web3-provider text-center">
+          {{ $t('splash-screen.connect.web3-provider') }}
         </div>
       </v-col>
-      <v-col cols="8">
-        <div class="splash-screen__disclaimer font-weight-light text-center">
-          {{ $t('splash-screen.disclaimer') }}
-        </div>
-        <i18n
-          path="splash-screen.getting-started.description"
-          tag="div"
-          class="splash-screen__getting-started font-weight-light text-center"
-        >
-          <a
-            href="https://github.com/raiden-network/light-client#getting-started"
-            target="_blank"
+      <template v-if="injectedProvider">
+        <v-col cols="12">
+          <div class="splash-screen__button">
+            <action-button
+              :text="$t('splash-screen.connect-button')"
+              :enabled="!connecting"
+              :loading="connecting"
+              @click="connect()"
+            >
+            </action-button>
+          </div>
+        </v-col>
+        <v-col cols="8">
+          <div
+            class="splash-screen__raiden-account text-center font-weight-light"
           >
-            {{ $t('splash-screen.getting-started.link-name') }}
-          </a>
-        </i18n>
-        <div class="splash-screen__matrix-sign font-weight-light text-center">
-          {{ $t('splash-screen.matrix-sign') }}
-        </div>
-      </v-col>
-      <v-col cols="12">
-        <div class="splash-screen__button">
-          <action-button
-            v-if="injectedProvider"
-            :text="$t('splash-screen.connect-button')"
-            :enabled="!connecting"
-            :loading="connecting"
-            @click="connect()"
-          ></action-button>
-          <span v-else class="splash-screen__no-provider">
-            {{ $t('splash-screen.no-provider') }}
-          </span>
-        </div>
-      </v-col>
-      <v-col cols="8">
-        <div class="splash-screen__message">
-          <no-access-message
-            v-if="accessDenied"
-            :reason="accessDenied"
-          ></no-access-message>
+            {{ $t('splash-screen.connect.divider') }}
+          </div>
+          <i18n
+            path="splash-screen.connect.raiden-account.description"
+            tag="div"
+            class="splash-screen__raiden-account text-center font-weight-light"
+          >
+            <a @click="connect(true)">
+              {{ $t('splash-screen.connect.raiden-account.link-name') }}
+            </a>
+          </i18n>
+          <div class="splash-screen__disclaimer text-center font-weight-light">
+            {{ $t('splash-screen.disclaimer') }}
+          </div>
+          <i18n
+            path="splash-screen.getting-started.description"
+            tag="div"
+            class="splash-screen__getting-started font-weight-light text-center"
+          >
+            <a
+              href="https://github.com/raiden-network/light-client#getting-started"
+              target="_blank"
+            >
+              {{ $t('splash-screen.getting-started.link-name') }}
+            </a>
+          </i18n>
+        </v-col>
+      </template>
+      <v-col v-else cols="8">
+        <div class="splash-screen__no-provider text-center">
+          {{ $t('splash-screen.no-provider') }}
         </div>
       </v-col>
     </v-row>
@@ -80,7 +89,7 @@ import ActionButton from '@/components/ActionButton.vue';
 })
 export default class Loading extends Vue {
   accessDenied!: DeniedReason;
-  name: string = 'Raiden dApp';
+  welcome: string = 'Welcome to the Raiden dApp';
 
   @Prop({ default: false, required: true, type: Boolean })
   connecting!: boolean;
@@ -91,12 +100,15 @@ export default class Loading extends Vue {
   }
 
   @Emit()
-  connect() {}
+  connect(subkey?: true) {
+    return subkey;
+  }
 }
 </script>
 
 <style lang="scss" scoped>
 @import '../scss/mixins';
+@import '../scss/colors';
 
 .splash-screen {
   margin-top: 40px;
@@ -109,60 +121,49 @@ export default class Loading extends Vue {
 
   &__logo-container {
     display: flex;
-    justify-content: flex-end;
-    padding-right: 10px;
-    @media only screen and (max-width: 1263px) {
-      justify-content: center;
-      padding: 0;
-    }
+    justify-content: center;
   }
 
   &__logo {
     filter: invert(100%);
     max-width: 6rem;
+    justify-content: center;
   }
 
-  &__app-name {
-    align-items: center;
-    display: flex;
-    height: 100%;
-    padding-left: 10px;
-    white-space: nowrap;
-    font-size: 3.75rem !important;
-    font-weight: 300;
-    line-height: 3.75rem;
-
-    @media only screen and (max-width: 1263px) {
-      justify-content: center;
-      padding: 30px 0px 0px 0px;
-    }
-
-    @include respond-to(handhelds) {
-      font-size: 2.75rem !important;
-    }
-  }
-
-  &__disclaimer,
-  &__button {
+  &__app-welcome {
+    font-size: 24px;
     margin-top: 60px;
   }
 
-  &__getting-started,
-  &__matrix-sign {
-    margin-top: 30px;
+  &__web3-provider {
+    margin-top: 5px;
+  }
+
+  &__button {
+    margin-top: 35px;
+  }
+
+  &__raiden-account {
+    margin: 0 auto;
+    margin-top: 20px;
+    width: 245px;
+  }
+
+  &__disclaimer {
+    margin: 0 auto;
+    margin-top: 180px;
+    max-width: 560px;
+  }
+
+  &__getting-started {
+    margin-top: 20px;
   }
 
   &__no-provider {
-    display: flex;
-    justify-content: center;
-    font-size: 24px;
+    color: $error-color;
+    font-size: 20px;
     font-weight: 500;
-    text-align: center;
-  }
-
-  &__message {
-    height: 35px;
-    margin-top: 40px;
+    padding-top: 35px;
   }
 }
 </style>

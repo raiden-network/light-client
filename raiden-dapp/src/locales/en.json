@@ -145,14 +145,22 @@
     "generic-error": "A valid account could not be detected. Please make sure that your provider is unlocked and accessible."
   },
   "splash-screen": {
-    "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and can just be used on the Ethereum Testnets.",
+    "connect": {
+      "divider": "-OR-",
+      "web3-provider": "Connect using your Web3 provider account.",
+      "raiden-account": {
+        "description": "Connect to Web3 and re-generate a {0}",
+        "link-name": "dedicated Raiden account."
+      }
+    },
+    "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is a work in progress and can only be used on the Ethereum testnets",
     "matrix-sign": "On the first launch you get asked to sign two messages to connect to the Raiden transport layer. You sign the matrix server name and the public user name.",
     "getting-started": {
       "description": "Read the {0} for detailed information on how to use the Raiden dApp.",
       "link-name": "getting started guide"
     },
     "connect-button": "Connect",
-    "no-provider": "No web3 provider was detected. Please install e.g. MetaMask"
+    "no-provider": "No Web3 provider detected, please install e.g. MetaMask."
   },
   "tokens": {
     "connected": {
