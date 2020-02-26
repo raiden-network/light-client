@@ -17,7 +17,7 @@
 
     <divider></divider>
 
-    <v-row align="center" justify="center" class="open-channel__hub">
+    <v-row align="center" justify="center" no-gutters class="open-channel__hub">
       <v-col cols="2" class="open-channel__hub__label text-left">
         {{ $t('open-channel.hub') }}
       </v-col>

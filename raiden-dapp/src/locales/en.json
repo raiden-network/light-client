@@ -321,7 +321,8 @@
   },
   "token-information": {
     "title": "Token",
-    "description": "{symbol} | {name}"
+    "description": "{symbol} | {name}",
+    "balance": "Balance"
   },
   "pathfinding-services": {
     "title": "Select Pathfinding Service",
@@ -332,6 +333,10 @@
       "price": "Price"
     }
   },
+  "mint-dialog": {
+    "title": "Mint {symbol}",
+    "description": "If you continue, you will get prompted by MetaMask to sign off a minting transction. In order to mint tokens, you need test net ETH in your wallet."
+  },
   "error-message": {
     "problem": "Problem:",
     "solution": "Solution:"
@@ -341,6 +346,11 @@
       "title": "An error occured",
       "problem": "We do not know this error, sorry.",
       "solution": "Please file a new issue on https://github.com/raiden-network/light-client."
+    },
+    "RDN_MINT_FAILED": {
+      "title": "Could not mint token",
+      "problem": "It looks like the Light Client does not support minting out-of-the-box for this token contract.",
+      "solution": "You may try to mint manually via MetaMask and Etherscan. You can find a step-by-step guide on https://github.com/raiden-network/light-client#try-out-the-raiden-demo-dapp."
     },
     "PFS_UNKNOWN_TOKEN_NETWORK": {
       "title": "No open channels",
