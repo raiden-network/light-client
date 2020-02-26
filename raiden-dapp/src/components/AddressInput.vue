@@ -317,7 +317,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../main';
+@import '../scss/mixins';
 @import '../scss/colors';
 
 .address-input {

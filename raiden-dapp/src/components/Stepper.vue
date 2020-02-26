@@ -78,8 +78,9 @@ export default class Stepper extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../main';
+@import '../scss/mixins';
 @import '../scss/colors';
+
 .stepper {
   display: flex;
   flex-direction: column;

@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 import { first, map } from 'rxjs/operators';
 import { Reducer } from 'redux';
 
-import RaidenError, { ErrorCodes, ErrorCodec } from './error';
+import { RaidenError, ErrorCodes, ErrorCodec } from '../utils/error';
 import { BigNumberC, assert } from './types';
 
 /**

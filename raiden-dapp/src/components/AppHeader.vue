@@ -81,7 +81,7 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
-@import '../main';
+@import '../scss/mixins';
 @import '../scss/colors';
 
 $row-horizontal-padding: 20px;

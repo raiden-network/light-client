@@ -65,15 +65,13 @@ describe('MintDepositDialog.vue', () => {
   });
 
   test('show an error message when the minting fails', async () => {
-    expect.assertions(4);
+    expect.assertions(3);
     $raiden.mint.mockRejectedValueOnce(new Error('error'));
     wrapper.find('.mint-deposit-dialog__action button').trigger('click');
     await flushPromises();
     expect($raiden.mint).toHaveBeenCalledTimes(1);
     expect($raiden.depositToUDC).toHaveBeenCalledTimes(0);
-    const errorText = wrapper.find('.error--text');
-    expect(errorText.exists()).toBe(true);
-    expect(errorText.text()).toMatch('error');
+    expect(wrapper.vm.$data.error).toMatchObject({ message: 'error' });
   });
 
   test('do not mint when the user has already enough tokens', async () => {

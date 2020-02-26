@@ -44,7 +44,6 @@ describe('RaidenState codecs', () => {
       },
       tokens: { [token]: tokenNetwork },
       transport: {},
-      secrets: {},
       sent: {},
       path: { iou: {} },
       pendingTxs: [],
@@ -71,7 +70,6 @@ describe('RaidenState codecs', () => {
       },
       tokens: { [token]: tokenNetwork },
       transport: {},
-      secrets: {},
       sent: {},
       path: { iou: {} },
       pendingTxs: [],
@@ -80,10 +78,10 @@ describe('RaidenState codecs', () => {
 
   test('decodeRaidenState', () => {
     // missing required properties
-    expect(() => decodeRaidenState({ address })).toThrow('Invalid value undefined');
+    expect(() => decodeRaidenState({ address })).toThrow();
 
     // property of wrong type
-    expect(() => decodeRaidenState({ address: 123 })).toThrow('Invalid value 123');
+    expect(() => decodeRaidenState({ address: 123 })).toThrow();
 
     // invalid deep enum value and BigNumber
     expect(() =>
@@ -104,7 +102,6 @@ describe('RaidenState codecs', () => {
         },
         tokens: {},
         transport: {},
-        secrets: {},
         sent: {},
         path: { iou: {} },
         pendingTxs: [],
@@ -135,7 +132,6 @@ describe('RaidenState codecs', () => {
         },
         tokens: { [token]: tokenNetwork },
         transport: {},
-        secrets: {},
         sent: {},
         path: { iou: {} },
         pendingTxs: [],
@@ -162,7 +158,6 @@ describe('RaidenState codecs', () => {
       },
       tokens: { [token]: tokenNetwork },
       transport: {},
-      secrets: {},
       sent: {},
       path: { iou: {} },
       pendingTxs: [],

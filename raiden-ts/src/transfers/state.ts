@@ -11,7 +11,7 @@ import {
   Metadata,
   SecretRequest,
 } from '../messages/types';
-import { Address, Timed, Hash, Int, Signed } from '../utils/types';
+import { Address, Timed, Hash, Int, Signed, Secret } from '../utils/types';
 
 /**
  * This struct holds the relevant messages exchanged in a transfer
@@ -25,6 +25,11 @@ export const SentTransfer = t.readonly(
       fee: Int(32),
     }),
     t.partial({
+      /**
+       * Transfer secret, if known
+       * registerBlock is 0 if not yet registered on-chain
+       * */
+      secret: Timed(t.type({ value: Secret, registerBlock: t.number })),
       /** <- incoming processed for locked transfer */
       transferProcessed: Timed(Signed(Processed)),
       /**
@@ -93,6 +98,7 @@ export enum RaidenSentTransferStatus {
   closed = 'CLOSED', // channel closed before revealing
   requested = 'REQUESTED', // secret requested by target
   revealed = 'REVEALED', // secret revealed to target
+  registered = 'REGISTERED', // secret registered on-chain before lock's expiration
   unlocking = 'UNLOCKING', // unlock sent to partner
   expiring = 'EXPIRING', // lock expired sent to partner
   unlocked = 'UNLOCKED', // unlock acknowledged by partner (complete with success)

@@ -144,8 +144,8 @@ describe('TransferSteps.vue', () => {
     button.trigger('click');
     await flushPromises();
     jest.runOnlyPendingTimers();
-    expect(wrapper.vm.$data.step).toBe(1);
-    expect(wrapper.vm.$data.error).toEqual('failed');
+    expect(wrapper.vm.$data.step).toBe(2);
+    expect(wrapper.vm.$data.error).toMatchObject({ message: 'failed' });
   });
 
   test('enables the continue button and lets the user to proceed to the 3rd step', async () => {
@@ -244,7 +244,7 @@ describe('TransferSteps.vue', () => {
     expect(processingTransfer).toHaveBeenCalledTimes(1);
     expect(processingTransfer).toHaveBeenNthCalledWith(1, true);
     expect(transferDone).toBeCalledTimes(0);
-    expect(wrapper.vm.$data.error).toEqual('failure');
+    expect(wrapper.vm.$data.error).toBeInstanceOf(Error);
   });
 
   test('skip to transfer summary, if a direct route is available', async () => {

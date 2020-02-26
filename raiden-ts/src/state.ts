@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/camelcase */
 import * as t from 'io-ts';
 import { AddressZero } from 'ethers/constants';
 import { Network, getNetwork } from 'ethers/utils';
@@ -10,16 +11,16 @@ import { ContractsInfo } from './types';
 import { ConfirmableAction } from './actions';
 import migrateState from './migration';
 import { losslessParse, losslessStringify } from './utils/data';
-import { Address, Secret, Signed, Storage, decode } from './utils/types';
+import { Address, Signed, Storage, decode } from './utils/types';
 import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { SentTransfers } from './transfers/state';
 import { IOU } from './path/types';
 import { getNetworkName } from './utils/ethers';
-import RaidenError, { ErrorCodes } from './utils/error';
+import { RaidenError, ErrorCodes } from './utils/error';
 
 // same as highest migrator function in migration.index.migrators
-export const CURRENT_STATE_VERSION = 0;
+export const CURRENT_STATE_VERSION = 1;
 
 // types
 export const RaidenState = t.readonly(
@@ -51,14 +52,6 @@ export const RaidenState = t.readonly(
           ]),
         ),
       }),
-    ),
-    secrets: t.readonly(
-      t.record(
-        t.string /* secrethash: Hash */,
-        t.readonly(
-          t.intersection([t.type({ secret: Secret }), t.partial({ registerBlock: t.number })]),
-        ),
-      ),
     ),
     sent: SentTransfers,
     path: t.type({
@@ -146,7 +139,6 @@ export function makeInitialState(
     channels: {},
     tokens: {},
     transport: {},
-    secrets: {},
     sent: {},
     path: {
       iou: {},
@@ -163,12 +155,10 @@ export const initialState = makeInitialState({
   network: getNetwork('unspecified'),
   address: AddressZero as Address,
   contractsInfo: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
     TokenNetworkRegistry: { address: AddressZero as Address, block_number: 0 },
-    // eslint-disable-next-line @typescript-eslint/camelcase
     ServiceRegistry: { address: AddressZero as Address, block_number: 0 },
-    // eslint-disable-next-line @typescript-eslint/camelcase
     UserDeposit: { address: AddressZero as Address, block_number: 0 },
+    SecretRegistry: { address: AddressZero as Address, block_number: 0 },
   },
 });
 

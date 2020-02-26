@@ -71,16 +71,14 @@ export default class App extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import 'main';
+@import 'scss/mixins';
 @import 'scss/colors';
+
 #application-wrapper {
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  @include respond-to(handhelds) {
-    margin-top: 0;
-  }
 }
 
 #application-content {
@@ -113,6 +111,10 @@ export default class App extends Vue {
 
 .v-application {
   background: $background-gradient !important;
+
+  @include respond-to(handhelds) {
+    background: $card-background !important;
+  }
 }
 
 .policy {

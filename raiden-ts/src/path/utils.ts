@@ -13,7 +13,7 @@ import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
-import RaidenError, { ErrorCodes } from '../utils/error';
+import { RaidenError, ErrorCodes } from '../utils/error';
 import { PFS } from './types';
 
 /**

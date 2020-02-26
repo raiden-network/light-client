@@ -41,21 +41,13 @@
       @cancel="dismiss()"
     ></open-channel-dialog>
 
-    <error-dialog
-      :description="error"
-      :title="$t('open-channel.error.title')"
-      @dismiss="error = ''"
-    ></error-dialog>
+    <error-dialog :error="error" @dismiss="error = null" />
   </v-form>
 </template>
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import AmountInput from '../components/AmountInput.vue';
-import {
-  ChannelDepositFailed,
-  ChannelOpenFailed
-} from '@/services/raiden-service';
 import { emptyDescription, StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Zero } from 'ethers/constants';
@@ -70,6 +62,7 @@ import ActionButton from '@/components/ActionButton.vue';
 import { mapGetters } from 'vuex';
 import { getAmount } from '@/utils/query-params';
 import OpenChannelDialog from '@/components/OpenChannelDialog.vue';
+import { RaidenError } from 'raiden-ts';
 
 @Component({
   components: {
@@ -95,7 +88,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 
   valid: boolean = false;
   loading: boolean = false;
-  error: string = '';
+  error: Error | RaidenError | null = null;
 
   steps: StepDescription[] = [];
 
@@ -156,15 +149,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
         this.navigateToSelectTransferTarget(address);
       }, 2000);
     } catch (e) {
-      this.error = '';
-      if (e instanceof ChannelOpenFailed) {
-        this.error = this.$t('open-channel.error.open-failed') as string;
-      } else if (e instanceof ChannelDepositFailed) {
-        this.error = this.$t('open-channel.error.deposit-failed') as string;
-      } else {
-        this.error = e.message;
-      }
-
+      this.error = e;
       this.done = false;
       this.loading = false;
     }

@@ -301,26 +301,17 @@ export default class RaidenService {
   ): Promise<RaidenPaths> {
     let routes: RaidenPaths;
 
-    try {
-      await this.raiden.getAvailability(target);
-      routes = await this.raiden.findRoutes(token, target, amount, {
-        pfs: raidenPFS
-      });
-    } catch (e) {
-      throw new FindRoutesFailed(e);
-    }
+    await this.raiden.getAvailability(target);
+    routes = await this.raiden.findRoutes(token, target, amount, {
+      pfs: raidenPFS
+    });
 
     return routes;
   }
 
   async fetchServices(): Promise<RaidenPFS[]> {
     let raidenPFS: RaidenPFS[];
-    try {
-      raidenPFS = await this.raiden.findPFS();
-    } catch (e) {
-      throw new PFSRequestFailed(e);
-    }
-
+    raidenPFS = await this.raiden.findPFS();
     return raidenPFS;
   }
 
@@ -377,7 +368,3 @@ export class EnsResolveFailed extends Error {}
 export class TransferFailed extends Error {}
 
 export class RaidenInitializationFailed extends Error {}
-
-export class FindRoutesFailed extends Error {}
-
-export class PFSRequestFailed extends Error {}

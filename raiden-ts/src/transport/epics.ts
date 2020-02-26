@@ -58,7 +58,7 @@ import {
 } from 'matrix-js-sdk';
 import matrixLogger from 'matrix-js-sdk/lib/logger';
 
-import RaidenError, { ErrorCodes } from '../utils/error';
+import { RaidenError, ErrorCodes } from '../utils/error';
 import { Address, Signed, isntNil, assert, Signature } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { RaidenEpicDeps } from '../types';
@@ -78,6 +78,7 @@ import {
   encodeJsonMessage,
   getMessageSigner,
   signMessage,
+  isMessageReceivedOfType,
 } from '../messages/utils';
 import { messageSend, messageReceived, messageGlobalSend } from '../messages/actions';
 import { transferSigned } from '../transfers/actions';
@@ -1290,7 +1291,7 @@ export const matrixMessageReceivedUpdateRoomEpic = (
   state$: Observable<RaidenState>,
 ): Observable<matrixRoom> =>
   action$.pipe(
-    filter(isActionOf(messageReceived)),
+    filter(messageReceived.is),
     withLatestFrom(state$),
     filter(([action, state]) => {
       const rooms = state.transport.matrix?.rooms?.[action.meta.address] ?? [];
@@ -1332,18 +1333,11 @@ export const deliveredEpic = (
 ): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Delivered>>(32);
   return action$.pipe(
-    filter(isActionOf(messageReceived)),
+    filter(
+      isMessageReceivedOfType([Signed(Processed), Signed(SecretRequest), Signed(SecretReveal)]),
+    ),
     concatMap(action => {
       const message = action.payload.message;
-      if (
-        !message ||
-        !(
-          Signed(Processed).is(message) ||
-          Signed(SecretRequest).is(message) ||
-          Signed(SecretReveal).is(message)
-        )
-      )
-        return EMPTY;
       // defer causes the cache check to be performed at subscription time
       return defer(() => {
         const msgId = message.message_identifier;

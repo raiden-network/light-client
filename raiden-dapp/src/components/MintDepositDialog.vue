@@ -1,10 +1,10 @@
 <template>
   <raiden-dialog :visible="visible" @close="cancel">
-    <v-card-title>
+    <v-card-title v-if="!error">
       {{ $t('mint-deposit-dialog.button') }}
     </v-card-title>
     <v-card-text>
-      <v-row v-if="!loading" justify="center" no-gutters>
+      <v-row v-if="!loading && !error" justify="center" no-gutters>
         <v-col cols="6">
           <v-text-field
             v-model="amount"
@@ -14,6 +14,9 @@
             class="mint-deposit-dialog__amount"
           />
         </v-col>
+      </v-row>
+      <v-row v-else-if="error">
+        <error-message :error="error" />
       </v-row>
       <v-row v-else class="mint-deposit-dialog--progress">
         <v-col cols="12">
@@ -50,12 +53,7 @@
           </v-row>
         </v-col>
       </v-row>
-      <v-row v-if="error">
-        <v-col cols="12" class="text-center error--text">
-          {{ error }}
-        </v-col>
-      </v-row>
-      <v-row v-if="!loading" class="mint-deposit-dialog__available">
+      <v-row v-if="!loading && !error" class="mint-deposit-dialog__available">
         {{
           $t('mint-deposit-dialog.available', {
             balance: accountBalance,
@@ -64,7 +62,7 @@
         }}
       </v-row>
     </v-card-text>
-    <v-card-actions>
+    <v-card-actions v-if="!error">
       <action-button
         arrow
         :enabled="valid && !loading"
@@ -85,9 +83,11 @@ import ActionButton from '@/components/ActionButton.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Token } from '@/model/types';
 import RaidenDialog from '@/components/RaidenDialog.vue';
+import ErrorMessage from '@/components/ErrorMessage.vue';
+import { RaidenError } from 'raiden-ts';
 
 @Component({
-  components: { ActionButton, RaidenDialog },
+  components: { ActionButton, RaidenDialog, ErrorMessage },
   computed: {
     ...mapState(['accountBalance'])
   }
@@ -95,7 +95,7 @@ import RaidenDialog from '@/components/RaidenDialog.vue';
 export default class MintDepositDialog extends Vue {
   amount: string = '10';
   loading: boolean = false;
-  error: string = '';
+  error: Error | RaidenError | null = null;
 
   step: 'mint' | 'approve' | 'deposit' | '' = '';
 
@@ -112,10 +112,12 @@ export default class MintDepositDialog extends Vue {
   }
 
   @Emit()
-  cancel() {}
+  cancel() {
+    this.error = null;
+  }
 
   async mintDeposit() {
-    this.error = '';
+    this.error = null;
     this.loading = true;
 
     const tokenAddress = this.$raiden.userDepositTokenAddress;
@@ -134,11 +136,7 @@ export default class MintDepositDialog extends Vue {
       });
       this.$emit('done');
     } catch (e) {
-      if (typeof e.message === 'string') {
-        this.error = e.message;
-      } else {
-        this.error = JSON.stringify(e.message);
-      }
+      this.error = e;
     }
 
     this.step = '';
