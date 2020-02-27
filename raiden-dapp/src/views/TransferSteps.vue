@@ -524,6 +524,7 @@ export default class TransferSteps extends Mixins(
 
 <style lang="scss" scoped>
 @import '../scss/colors';
+@import '../scss/fonts';
 
 .transfer-steps {
   background: transparent !important;
@@ -641,7 +642,7 @@ export default class TransferSteps extends Mixins(
     &__amount {
       font-size: 24px;
       font-weight: bold;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       color: $color-white;
       vertical-align: middle;
 
@@ -652,7 +653,7 @@ export default class TransferSteps extends Mixins(
 
     &__description {
       font-size: 16px;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       color: $secondary-text-color;
 
       &.low-balance {

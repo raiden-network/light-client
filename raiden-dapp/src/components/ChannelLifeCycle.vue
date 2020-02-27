@@ -69,6 +69,7 @@ export default class ChannelLifeCycle extends Vue {
 <style scoped lang="scss">
 @import '../main';
 @import '../scss/colors';
+@import '../scss/fonts';
 
 $inactive-color: #646464;
 $active-color: $secondary-color;
@@ -158,7 +159,7 @@ $circle-size: 20px;
 
     &__text {
       color: #fafafa;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       font-size: 16px;
       line-height: 21px;
       text-align: center;

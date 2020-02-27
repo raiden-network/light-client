@@ -83,6 +83,7 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 <style lang="scss" scoped>
 @import '../scss/scroll';
 @import '../scss/colors';
+@import '../scss/fonts';
 
 .select-token {
   height: 100%;
@@ -125,7 +126,7 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 
       &__balance {
         color: #ffffff;
-        font-family: Roboto, sans-serif;
+        font-family: $main-font;
         font-size: 16px;
         font-weight: bold;
         line-height: 20px;

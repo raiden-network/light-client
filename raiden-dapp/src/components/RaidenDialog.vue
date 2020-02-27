@@ -41,6 +41,8 @@ export default class RaidenDialog extends Vue {
 
 <style scoped lang="scss">
 @import '../scss/colors';
+@import '../scss/fonts';
+
 ::v-deep {
   .v-dialog {
     border-radius: 10px !important;
@@ -58,7 +60,7 @@ export default class RaidenDialog extends Vue {
     .v-card {
       &__title {
         color: $color-white;
-        font-family: Roboto, sans-serif;
+        font-family: $main-font;
         font-size: 20px;
         font-weight: 700;
         line-height: 28px;
