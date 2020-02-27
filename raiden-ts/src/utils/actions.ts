@@ -542,6 +542,14 @@ export async function asyncActionToPromise<
 // createReducer
 
 /**
+ * A simplified schema for ActionCreator<any, any, any, any>, to optimize createReducer
+ */
+export type AnyAC = ((payload: any, meta: any) => Action) & {
+  type: string;
+  is: (action: unknown) => action is Action;
+};
+
+/**
  * Create a reducer which can be extended with additional actions handlers
  *
  * Usage:
@@ -556,28 +564,63 @@ export async function asyncActionToPromise<
 export function createReducer<S, A extends Action = Action>(initialState: S) {
   // generic handlers as a indexed type for `makeReducer`
   type Handlers = {
-    [type: string]: [ActionCreator<any, any, any, any>, (state: S, action: A) => S];
+    [type: string]: [AnyAC, (state: S, action: A) => S];
   };
-  // a type which only property is the literal string tag and value, a tuple with AC & handler:
-  // { [ac.type]: [ac, (state: S, action: ActionType<AC>) => S] }
-  type Handler<AC> = AC extends ActionCreator<infer TType, any, any, any>
-    ? { [K in TType]: [AC, (state: S, action: ActionType<AC>) => S] }
-    : never;
-  // helper type to 'never' allow 'handle' to receive an already handled action
-  type NotHandled<
-    H extends Handlers,
-    AC extends ActionCreator<any, any, any, any>
-  > = H extends Handler<AC> ? never : AC;
-  // helper type to convert union of Handler into intersection:
-  // UnionToIntersection<Handler<AC1 | AC2>> = { [AC1.type]: [AC1...] } & { [AC2.type]: [AC2...] }
-  type UnionToIntersection<U> = (U extends any
-  ? (k: U) => void
-  : never) extends (k: infer I) => void
-    ? I
-    : never;
+  type Handler<AC extends AnyAC> = (state: S, action: ActionType<AC>) => S;
+  // allows to constrain a generic to not already be part of an union
+  type NotHandled<ACs, AC extends AnyAC> = AC extends ACs ? never : AC;
+
+  // workaround for "Type instantiation is excessively deep and possibly infinite" error
+  // see https://stackoverflow.com/questions/60265325/using-recursive-type-alias-in-generic-results-in-error
+  type I = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
+  type Iterate<A extends I = 0> = A extends 0
+    ? 1
+    : A extends 1
+    ? 2
+    : A extends 2
+    ? 3
+    : A extends 3
+    ? 4
+    : A extends 4
+    ? 5
+    : A extends 5
+    ? 6
+    : A extends 6
+    ? 7
+    : A extends 7
+    ? 8
+    : A extends 8
+    ? 9
+    : A extends 9
+    ? 10
+    : A extends 10
+    ? 11
+    : A extends 11
+    ? 12
+    : A extends 12
+    ? 13
+    : A extends 13
+    ? 14
+    : A extends 14
+    ? 15
+    : 15;
+
+  type ExtReducer<ACs, X extends I = 0> = X extends 15
+    ? Reducer<S, A>
+    : Reducer<S, A> & {
+        handle: <
+          AC extends AnyAC & NotHandled<ACs, AD>,
+          H extends Handler<AC>,
+          AD extends AnyAC = AC
+        >(
+          ac: AC | AC[],
+          handler: H,
+        ) => ExtReducer<ACs | AC, Iterate<X>>;
+        acs: ACs;
+      };
 
   // make a reducer function for given handlers
-  function makeReducer<H extends Handlers>(handlers: H) {
+  function makeReducer<ACs, X extends I = 0>(handlers: Handlers): ExtReducer<ACs, X> {
     const reducer: Reducer<S, A> = (state: S = initialState, action: A) => {
       if (action.type in handlers && handlers[action.type][0].is(action))
         return handlers[action.type][1](state, action); // calls registered handler
@@ -585,19 +628,19 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
     };
     // circular dependency on generic params forbids an already handled action from being accepted
     function handle<
-      AC extends ActionCreator<any, any, any, any> & NotHandled<H, AD>,
-      AD extends ActionCreator<any, any, any, any> = AC
-    >(ac: AC | AC[], handler: (state: S, action: ActionType<AC>) => S) {
+      AC extends AnyAC & NotHandled<ACs, AD>,
+      H extends Handler<AC>,
+      AD extends AnyAC = AC
+    >(ac: AC | AC[], handler: H) {
       const arr = Array.isArray(ac) ? ac : [ac];
       assert(!arr.some(a => a.type in handlers), 'Already handled');
-      return makeReducer(
-        Object.assign({}, handlers, ...arr.map(a => ({ [a.type]: [a, handler] }))) as H &
-          UnionToIntersection<Handler<AC>>,
+      return makeReducer<ACs | AC, Iterate<X>>(
+        Object.assign({}, handlers, ...arr.map(ac => ({ [ac.type]: [ac, handler] }))),
       );
     }
     // grow reducer function with our `handle` extender
-    return Object.assign(reducer, { handle });
+    return Object.assign(reducer, { handle }) as ExtReducer<ACs, X>;
   }
   // initially makes a reducer which doesn't handle anything (just returns unchanged state)
-  return makeReducer({});
+  return makeReducer<never>({});
 }
