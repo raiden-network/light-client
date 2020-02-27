@@ -156,7 +156,7 @@ __Step 1: Acquire ETH__
 1. Go to the Goerli faucet at [htts://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/)
 2. Follow the instructions on how to acquire Goerli ETH on respective website
 
-__Step 2: Navigate to the Raiden Hub
+__Step 2: Navigate to the Raiden Hub__
 
 1. Visit the Raiden Hub Page at [https://hub.raiden.network/](https://hub.raiden.network/)
 2. Click __Open Channel with Hub__ to get forwarded to [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
@@ -172,22 +172,24 @@ __Step 4: Select a Hub and Open a Channel__
 5. Click __Open Channel__.
 6. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
 
-__Step 4: Make a transfer
+__Step 4: Make a transfer__
 
-1. Enter the address of the node receiving your transfer (eg. ```TODO```)
+1. Enter the address of the node receiving your transfer (eg. ```TODO Enter hub address```)
 2. Enter the amount you want to transfer
 3. Click __Transfer__
 
-__Step 6: Find a node to send a mediated transfer
+__Step 6: Find a node and send a mediated transfer__
 
 1. Navigate to https://goerli.explorer.raiden.network/tokens/ TODO Enter token address
-2. Scroll down to the __Network Visualization__ and search for TODO Enter hub address
-3. Copy a node address which has got a channel to TODO Enter hub address
+2. Scroll down to the __Network Visualization__ and search for ```TODO Enter hub address```
+3. Copy a node address which has got a channel to ```TODO Enter hub address``
 4. Make a transfer (see Step 4)
 
-__Optional: Use a Raiden Full Node
+__Optional: Use a Raiden Full Node__
 
 1. Navigate to https://docs.raiden.network/quick-start and follow the instructions
+2. [Join the EthCC3 token network](https://docs.raiden.network/using-raiden/the-raiden-web-interface/join-a-token-network)
+3. [Make a transfer](https://docs.raiden.network/using-raiden/the-raiden-web-interface/payment#pay-from-the-tokens-screen) to the hub TODO Enter hub address (see 
 
 #### Minting Manually
 
