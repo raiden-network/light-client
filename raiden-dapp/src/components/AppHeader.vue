@@ -36,14 +36,6 @@
           <address-display :address="defaultAccount" />
         </div>
       </v-col>
-      <v-col cols="6">
-        <div class="app-header__bottom__balance text-right">
-          {{ accountBalance | decimals }}
-          <span class="app-header__bottom__balance__currency">
-            {{ $t('app-header.currency') }}
-          </span>
-        </div>
-      </v-col>
     </v-row>
   </div>
 </template>
@@ -137,13 +129,6 @@ $header-content-horizontal-margin: 20px;
     padding-right: $row-horizontal-padding;
     height: 40px;
     background-color: $error-tooltip-background;
-
-    &__balance {
-      color: #ffffff;
-      font-family: Roboto, sans-serif;
-      font-size: 16px;
-      line-height: 19px;
-    }
   }
 }
 </style>
