@@ -11,8 +11,10 @@
 
 ### Fixed
 - [#1067] Fixed displayed service fee on summary screen.
+- [#1066] Fixed continue button enabled w/o selected PFS.
 
 
+[#1066]: https://github.com/raiden-network/light-client/issues/1066
 [#1067]: https://github.com/raiden-network/light-client/issues/1067
 [#1071]: https://github.com/raiden-network/light-client/issues/1071
 [#1015]: https://github.com/raiden-network/light-client/issues/1015
