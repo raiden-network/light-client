@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Added
+- [#745] Possibility to connect LC with derived subkey
 - [#1015] More prominent warning for low UDC token balance
 - [#695] Skipping of transfer steps.
 - [#1071] Mint token feature.
@@ -10,11 +11,14 @@
 - [#693] Localized error messages for Pathfinding errors.
 
 ### Fixed
+- [#1065] Prevent select hub dialog from being accidentally dismissed.
 - [#1067] Fixed displayed service fee on summary screen.
 - [#1066] Fixed continue button enabled w/o selected PFS.
 
 
 [#1066]: https://github.com/raiden-network/light-client/issues/1066
+[#745]: https://github.com/raiden-network/light-client/issues/745
+[#1065]: https://github.com/raiden-network/light-client/issues/1065
 [#1067]: https://github.com/raiden-network/light-client/issues/1067
 [#1071]: https://github.com/raiden-network/light-client/issues/1071
 [#1015]: https://github.com/raiden-network/light-client/issues/1015

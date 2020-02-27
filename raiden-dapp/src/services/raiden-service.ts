@@ -23,7 +23,8 @@ export default class RaidenService {
 
   private static async createRaiden(
     provider: any,
-    account: string | number = 0
+    account: string | number = 0,
+    subkey?: true
   ): Promise<Raiden> {
     try {
       return await Raiden.create(
@@ -35,7 +36,8 @@ export default class RaidenService {
           pfsSafetyMargin: 1.1,
           pfs: process.env.VUE_APP_PFS,
           matrixServer: process.env.VUE_APP_TRANSPORT
-        }
+        },
+        subkey
       );
     } catch (e) {
       throw new RaidenInitializationFailed(e);
@@ -82,7 +84,7 @@ export default class RaidenService {
     }
   }
 
-  async connect() {
+  async connect(subkey?: true) {
     try {
       const raidenPackageConfigUrl = process.env.VUE_APP_RAIDEN_PACKAGE;
       let config;
@@ -102,10 +104,15 @@ export default class RaidenService {
         if (config) {
           raiden = await RaidenService.createRaiden(
             provider,
-            config.PRIVATE_KEY
+            config.PRIVATE_KEY,
+            subkey
           );
         } else {
-          raiden = await RaidenService.createRaiden(provider);
+          raiden = await RaidenService.createRaiden(
+            provider,
+            undefined,
+            subkey
+          );
         }
 
         this._raiden = raiden;
