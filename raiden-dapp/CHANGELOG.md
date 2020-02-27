@@ -10,7 +10,9 @@
 - [#693] Localized error messages for Pathfinding errors.
 
 ### Fixed
+- [#1065] Prevent select hub dialog from being accidentally dismissed.
 
+[#1065]: https://github.com/raiden-network/light-client/issues/1065
 [#1071]: https://github.com/raiden-network/light-client/issues/1071
 [#1015]: https://github.com/raiden-network/light-client/issues/1015
 [#695]: https://github.com/raiden-network/light-client/issues/695
