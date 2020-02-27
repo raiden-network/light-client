@@ -24,7 +24,7 @@
           <div class="splash-screen__button">
             <action-button
               :text="$t('splash-screen.connect-button')"
-              :enabled="!connecting"
+              :enabled="!connecting && !connectingSubkey"
               :loading="connecting"
               @click="connect()"
             >
@@ -43,9 +43,12 @@
             tag="div"
             class="splash-screen__raiden-account text-center font-weight-light"
           >
-            <a @click="connect(true)">
+            <a v-if="!connecting" @click="connect(true)">
               {{ $t('splash-screen.connect.raiden-account.link-name') }}
             </a>
+            <span v-else>
+              {{ $t('splash-screen.connect.raiden-account.link-name') }}
+            </span>
           </i18n>
           <div v-else class="splash-screen__raiden-account-spinner text-center">
             <v-progress-circular :size="30" :width="1" indeterminate>

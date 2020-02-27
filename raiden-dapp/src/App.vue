@@ -60,12 +60,16 @@ export default class App extends Vue {
   }
 
   async connect(subkey?: true) {
-    this.connecting = true && !subkey;
-    this.connectingSubkey = true && subkey;
+    if (subkey) {
+      this.connectingSubkey = true;
+    } else {
+      this.connecting = true;
+    }
+
     this.$store.commit('reset');
     await this.$raiden.connect(subkey);
-    this.connecting = false;
     this.connectingSubkey = false;
+    this.connecting = false;
   }
 
   destroyed() {
