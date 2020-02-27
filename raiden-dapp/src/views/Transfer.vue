@@ -230,6 +230,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 <style lang="scss" scoped>
 @import '../scss/colors';
 @import '../scss/mixins';
+@import '../scss/fonts';
 
 .transfer {
   width: 100%;
@@ -274,6 +275,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   &__deposit-button {
     color: $primary-color;
     text-transform: none;
+    font-size: 16px;
+    letter-spacing: 1px;
+    font-weight: 500;
+    font-family: $main-font;
   }
 
   &__token-networks {
@@ -290,7 +295,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
     &__dropdown {
       color: $primary-color;
       font-size: 16px;
-      margin-top: 5px;
+      letter-spacing: 1px;
+      font-weight: 500;
+      font-family: $main-font;
+      margin-top: 7px;
       cursor: pointer;
       text-align: center;
 
