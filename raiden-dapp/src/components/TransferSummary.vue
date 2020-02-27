@@ -18,10 +18,7 @@
       </span>
     </div>
 
-    <div
-      v-if="transfer.serviceFee && transfer.serviceToken"
-      class="transfer-summary__row"
-    >
+    <div v-if="!isDirectTransfer" class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.service-fee') }}</span>
       <span class="transfer-summary__service-fee">
         {{
