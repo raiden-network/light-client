@@ -154,7 +154,30 @@ __Step 1: Acquire ETH__
 1. Go to the Goerli faucet at [htts://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/)
 2. Follow the instructions on how to acquire Goerli ETH on respective website
 
-__Step 2: Acquire TTT (TestToken)__
+__Step 2: Connect to the Raiden dApp__
+1. Visit the Raiden demo dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
+2. Click __Connect__ to connect the dApp to your MetaMask
+3. Select the TTT Token from the list of available tokens
+
+__Step 3: Select a Hub and Open a Channel__
+1. Enter the address ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub, this will connect you to a Raiden test node
+2. Click the mint button next to your token balance, to mint some TTT tokens.
+3. Click __Select Hub__
+3. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
+4. Sign the deposit with your MetaMask.
+5. Click __Open Channel__.
+6. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
+
+You can now start making transfers. To do so, simply:
+
+1. Enter the address of the node receiving your transfer (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```)
+2. Enter the amount you want to transfer
+3. Click __Transfer__
+
+#### Minting Manually
+
+It is possible that the minting feature in the Light Client does not work out-of-the-box with every custom token. You can still try to mint the token manually:
+
 1. Visit [this page on Etherscan](https://goerli.etherscan.io/token/0x59105441977ecD9d805A4f5b060E34676F50F806#writeContract) where you'll be able to write to the TTT contract
 2. Open your MetaMask and choose your Goerli account with ETH
 3. Go back to Etherscan and click "Connect to Web3"
@@ -162,24 +185,6 @@ __Step 2: Acquire TTT (TestToken)__
 5. Click the "Write" button and confirm the transaction in MetaMask. MetaMask will show the transaction status as "Confirmed" when it has succeeded
 
 ![Etherscan TTT acquisition](https://drive.google.com/uc?export=view&id=1M81D3dsWnHCDeP25rY0RpGS9DsPg2lUa)
-
-__Step 3: Connect to the Raiden dApp__
-1. Visit the Raiden demo dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
-2. Click __Connect__ to connect the dApp to your MetaMask
-3. Select the TTT Token from the list of available tokens
-
-__Step 3: Select a Hub and Open a Channel__
-1. Enter the address ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub, this will connect you to a Raiden test node
-2. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
-3. Sign the deposit with your MetaMask.
-4. Click __Open Channel__.
-5. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
-
-You can now start making transfers. To do so, simply:
-
-1. Enter the address of the node receiving your transfer (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```)
-2. Enter the amount you want to transfer
-3. Click __Transfer__
 
 ### Start Developing
 
