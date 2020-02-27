@@ -479,11 +479,15 @@ export default class TransferSteps extends Mixins(
   }
 
   setPFS(payload: [RaidenPFS, boolean]) {
-    const [pfs, single] = payload;
-    this.selectedPfs = pfs;
-    this.freePfs = bigNumberify(pfs.price).isZero();
-    if (pfs && single && this.freePfs) {
-      this.handleStep();
+    this.selectedPfs = null;
+
+    if (payload) {
+      const [pfs, single] = payload;
+      this.selectedPfs = pfs;
+      this.freePfs = bigNumberify(pfs.price).isZero();
+      if (pfs && single && this.freePfs) {
+        this.handleStep();
+      }
     }
   }
 
