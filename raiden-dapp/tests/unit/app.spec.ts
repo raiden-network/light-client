@@ -1,6 +1,6 @@
 jest.mock('@/services/raiden-service');
 
-import { shallowMount } from '@vue/test-utils';
+import { shallowMount, Wrapper } from '@vue/test-utils';
 import { DeniedReason } from '@/model/types';
 import App from '@/App.vue';
 import RaidenService from '@/services/raiden-service';
@@ -24,22 +24,36 @@ describe('App.vue', () => {
     $raiden.disconnect = jest.fn();
   });
 
-  test('call connect on component creation and disconnect on destruction', async () => {
-    const wrapper = shallowMount(App, {
-      store,
-      mocks: {
-        $raiden: $raiden,
-        $t: (msg: string) => msg
-      }
+  describe('call connect on component creation and disconnect on destruction', async () => {
+    let wrapper: Wrapper<App>;
+
+    beforeEach(() => {
+      wrapper = shallowMount(App, {
+        store,
+        mocks: {
+          $raiden: $raiden,
+          $t: (msg: string) => msg
+        }
+      });
     });
 
-    await (wrapper.vm as any).connect();
+    test('call without subkey', async () => {
+      await (wrapper.vm as any).connect();
+      await flushPromises();
+      wrapper.vm.$destroy();
 
-    await flushPromises();
-    wrapper.vm.$destroy();
+      expect($raiden.connect).toHaveBeenCalledTimes(1);
+      expect($raiden.disconnect).toHaveBeenCalledTimes(1);
+    });
 
-    expect($raiden.connect).toHaveBeenCalledTimes(1);
-    expect($raiden.disconnect).toHaveBeenCalledTimes(1);
+    test('call with subkey', async () => {
+      await (wrapper.vm as any).connect(true);
+      await flushPromises();
+      wrapper.vm.$destroy();
+
+      expect($raiden.connect).toHaveBeenCalledTimes(1);
+      expect($raiden.disconnect).toHaveBeenCalledTimes(1);
+    });
   });
 
   test('connect can be called without error after failing initially', async () => {
