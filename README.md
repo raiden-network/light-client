@@ -172,7 +172,7 @@ __Step 4: Select a Hub and Open a Channel__
 5. Click __Open Channel__.
 6. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
 
-__Step 4: Make a transfer__
+__Step 5: Make a transfer__
 
 1. Enter the address of the node receiving your transfer (eg. ```TODO Enter hub address```)
 2. Enter the amount you want to transfer
