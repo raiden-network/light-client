@@ -3,6 +3,7 @@
     <splash-screen
       v-if="inaccessible"
       :connecting="connecting"
+      :connecting-subkey="connectingSubkey"
       @connect="connect"
     ></splash-screen>
     <div v-else id="application-wrapper">
@@ -41,6 +42,7 @@ import { DeniedReason } from '@/model/types';
 export default class App extends Vue {
   name: string;
   connecting: boolean = false;
+  connectingSubkey: boolean = false;
   accessDenied!: DeniedReason;
   loading!: boolean;
 
@@ -59,9 +61,11 @@ export default class App extends Vue {
 
   async connect(subkey?: true) {
     this.connecting = true && !subkey;
+    this.connectingSubkey = true && subkey;
     this.$store.commit('reset');
     await this.$raiden.connect(subkey);
     this.connecting = false;
+    this.connectingSubkey = false;
   }
 
   destroyed() {

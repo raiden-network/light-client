@@ -38,6 +38,7 @@
             {{ $t('splash-screen.connect.divider') }}
           </div>
           <i18n
+            v-if="!connectingSubkey"
             path="splash-screen.connect.raiden-account.description"
             tag="div"
             class="splash-screen__raiden-account text-center font-weight-light"
@@ -46,27 +47,33 @@
               {{ $t('splash-screen.connect.raiden-account.link-name') }}
             </a>
           </i18n>
-          <div class="splash-screen__disclaimer text-center font-weight-light">
-            {{ $t('splash-screen.disclaimer') }}
+          <div v-else class="splash-screen__raiden-account-spinner text-center">
+            <v-progress-circular :size="30" :width="1" indeterminate>
+            </v-progress-circular>
           </div>
-          <i18n
-            path="splash-screen.getting-started.description"
-            tag="div"
-            class="splash-screen__getting-started font-weight-light text-center"
-          >
-            <a
-              href="https://github.com/raiden-network/light-client#getting-started"
-              target="_blank"
-            >
-              {{ $t('splash-screen.getting-started.link-name') }}
-            </a>
-          </i18n>
         </v-col>
       </template>
-      <v-col v-else cols="8">
+      <v-col v-if="!injectedProvider" cols="8">
         <div class="splash-screen__no-provider text-center">
           {{ $t('splash-screen.no-provider') }}
         </div>
+      </v-col>
+      <v-col cols="8">
+        <div class="splash-screen__disclaimer text-center font-weight-light">
+          {{ $t('splash-screen.disclaimer') }}
+        </div>
+        <i18n
+          path="splash-screen.getting-started.description"
+          tag="div"
+          class="splash-screen__getting-started font-weight-light text-center"
+        >
+          <a
+            href="https://github.com/raiden-network/light-client#getting-started"
+            target="_blank"
+          >
+            {{ $t('splash-screen.getting-started.link-name') }}
+          </a>
+        </i18n>
       </v-col>
     </v-row>
   </v-container>
@@ -93,6 +100,9 @@ export default class Loading extends Vue {
 
   @Prop({ default: false, required: true, type: Boolean })
   connecting!: boolean;
+
+  @Prop({ default: false, required: true, type: Boolean })
+  connectingSubkey!: boolean;
 
   // noinspection JSMethodCanBeStatic
   get injectedProvider(): boolean {
@@ -147,6 +157,11 @@ export default class Loading extends Vue {
     margin: 0 auto;
     margin-top: 20px;
     width: 245px;
+  }
+
+  &__raiden-account-spinner {
+    margin-top: 20px;
+    height: 48px;
   }
 
   &__disclaimer {
