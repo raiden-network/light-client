@@ -1,5 +1,10 @@
 <template>
-  <raiden-dialog class="open-channel-dialog" :visible="visible" @close="cancel">
+  <raiden-dialog
+    class="open-channel-dialog"
+    :visible="visible"
+    hide-close
+    @close="cancel"
+  >
     <v-card-title>
       <v-row align="center" justify="center">
         <v-col>
