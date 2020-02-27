@@ -13,7 +13,10 @@
 ### Fixed
 - [#1065] Prevent select hub dialog from being accidentally dismissed.
 - [#1067] Fixed displayed service fee on summary screen.
+- [#1066] Fixed continue button enabled w/o selected PFS.
 
+
+[#1066]: https://github.com/raiden-network/light-client/issues/1066
 [#745]: https://github.com/raiden-network/light-client/issues/745
 [#1065]: https://github.com/raiden-network/light-client/issues/1065
 [#1067]: https://github.com/raiden-network/light-client/issues/1067
