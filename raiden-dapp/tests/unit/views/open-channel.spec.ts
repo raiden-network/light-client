@@ -91,7 +91,7 @@ describe('OpenChannel.vue', () => {
         partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
       });
 
-      button = wrapper.find('button');
+      button = wrapper.find('button.action-button__button');
       await wrapper.vm.$nextTick();
       service.openChannel = jest.fn();
     });

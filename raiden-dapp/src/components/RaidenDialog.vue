@@ -52,7 +52,6 @@ export default class RaidenDialog extends Vue {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  height: 441px;
   padding: 25px;
 
   ::v-deep {
@@ -68,7 +67,7 @@ export default class RaidenDialog extends Vue {
       }
 
       &__actions {
-        margin: 20px 0 35px 0;
+        margin: 20px 0 20px 0;
       }
 
       &__text {
