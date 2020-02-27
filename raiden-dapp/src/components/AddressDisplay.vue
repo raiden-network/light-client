@@ -65,11 +65,12 @@ export default class AddressDisplay extends Vue {
 
 <style lang="scss" scoped>
 @import '../scss/colors';
+@import '../scss/fonts';
 
 .address {
   &__container {
     color: $color-white;
-    font-family: Roboto, sans-serif;
+    font-family: $main-font;
     font-size: 16px;
     line-height: 19px;
     display: flex;

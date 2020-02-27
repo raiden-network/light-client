@@ -83,6 +83,7 @@ export default class AppHeader extends Mixins(BlockieMixin, NavigationMixin) {
 <style scoped lang="scss">
 @import '../scss/mixins';
 @import '../scss/colors';
+@import '../scss/fonts';
 
 $row-horizontal-padding: 20px;
 $header-content-horizontal-margin: 20px;
@@ -117,7 +118,7 @@ $header-content-horizontal-margin: 20px;
 
       &__title {
         color: #ffffff;
-        font-family: Roboto, sans-serif;
+        font-family: $main-font;
         font-size: 24px;
         line-height: 28px;
         text-align: center;
@@ -140,7 +141,7 @@ $header-content-horizontal-margin: 20px;
 
     &__balance {
       color: #ffffff;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       font-size: 16px;
       line-height: 19px;
     }

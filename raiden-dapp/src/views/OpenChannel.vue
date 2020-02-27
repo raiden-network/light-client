@@ -185,6 +185,8 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
+@import '../scss/fonts';
+
 .open-channel {
   height: 100%;
   width: 100%;
@@ -195,7 +197,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
     max-height: 30px;
     &__label {
       color: #ffffff;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       font-size: 16px;
       font-weight: bold;
       line-height: 19px;
@@ -204,7 +206,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 
     &__address {
       color: #ffffff;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       font-size: 16px;
       line-height: 20px;
       overflow-x: hidden;
