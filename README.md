@@ -148,31 +148,46 @@ These step-by-step instructions will guide you through the process for trying ou
 
 __Prerequisites__
 
-You need to have MetaMask installed for your browser. If you don't have MetaMask, [visit their website](https://metamask.io/) to download and install it.
+1. You need to have MetaMask installed for your browser. If you don't have MetaMask, [visit their website](https://metamask.io/) to download and install it.
+2. It is NOT recommended to use the dApp on mobile (but it works).
 
 __Step 1: Acquire ETH__
+
 1. Go to the Goerli faucet at [htts://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/)
 2. Follow the instructions on how to acquire Goerli ETH on respective website
 
-__Step 2: Connect to the Raiden dApp__
-1. Visit the Raiden demo dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
-2. Click __Connect__ to connect the dApp to your MetaMask
-3. Select the TTT Token from the list of available tokens
+__Step 2: Navigate to the Raiden Hub
 
-__Step 3: Select a Hub and Open a Channel__
-1. Enter the address ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6``` as your hub, this will connect you to a Raiden test node
-2. Click the mint button next to your token balance, to mint some TTT tokens.
-3. Click __Select Hub__
+1. Visit the Raiden Hub Page at [https://hub.raiden.network/](https://hub.raiden.network/)
+2. Click __Open Channel with Hub__ to get forwarded to [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
+
+__Step 3: Connect to the Raiden dApp__
+1. Click __Connect__ to connect the dApp to your MetaMask
+
+__Step 4: Select a Hub and Open a Channel__
+1. Click the mint button next to your token balance, to mint some ETHCC3 tokens.
+2. Click __Select Hub__
 3. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
 4. Sign the deposit with your MetaMask.
 5. Click __Open Channel__.
 6. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
 
-You can now start making transfers. To do so, simply:
+__Step 4: Make a transfer
 
-1. Enter the address of the node receiving your transfer (eg. ```0x5257964Ef9b81fba7276AF2a97c111AaD7B840D6```)
+1. Enter the address of the node receiving your transfer (eg. ```TODO```)
 2. Enter the amount you want to transfer
 3. Click __Transfer__
+
+__Step 6: Find a node to send a mediated transfer
+
+1. Navigate to https://goerli.explorer.raiden.network/tokens/ TODO Enter token address
+2. Scroll down to the __Network Visualization__ and search for TODO Enter hub address
+3. Copy a node address which has got a channel to TODO Enter hub address
+4. Make a transfer (see Step 4)
+
+__Optional: Use a Raiden Full Node
+
+1. Navigate to https://docs.raiden.network/quick-start and follow the instructions
 
 #### Minting Manually
 
