@@ -64,6 +64,7 @@ export default class RaidenDialog extends Vue {
         line-height: 28px;
         justify-content: center;
         text-align: center;
+        word-break: normal;
       }
 
       &__actions {
