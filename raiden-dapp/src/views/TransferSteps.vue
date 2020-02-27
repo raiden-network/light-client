@@ -525,37 +525,6 @@ export default class TransferSteps extends Mixins(
 <style lang="scss" scoped>
 @import '../scss/colors';
 
-.confirmation-overlay {
-  text-align: center;
-
-  &.v-overlay {
-    &--active {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      backdrop-filter: blur(4px);
-      background-color: rgba($color-white, 0.15);
-      border-bottom-left-radius: 10px;
-      border-bottom-right-radius: 10px;
-    }
-
-    &--dark {
-      background-color: $card-background;
-    }
-  }
-
-  ::v-deep {
-    .spinner {
-      margin: 2em;
-    }
-  }
-
-  &__checkmark {
-    margin: 2em;
-  }
-}
-
 .transfer-steps {
   background: transparent !important;
   box-shadow: none;
