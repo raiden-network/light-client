@@ -64,7 +64,7 @@ export async function setupLogStore(
 export async function getLogsFromStore(): Promise<[number, string]> {
   let content = '';
   let cursor = await db.transaction('logs').store.openCursor();
-  let lastTime = 0;
+  let lastTime = Date.now();
   while (cursor) {
     const { logger, level, message } = cursor.value;
     const line = message
