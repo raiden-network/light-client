@@ -4,7 +4,7 @@ import { keccak256, randomBytes, bigNumberify, sha256 } from 'ethers/utils';
 import { Hash, Secret, UInt, HexString } from '../utils/types';
 import { encode } from '../utils/data';
 import { Lock } from '../channels/types';
-import { SentTransfer, RaidenSentTransfer, RaidenSentTransferStatus } from './state';
+import { TransferState, RaidenTransfer, RaidenTransferStatus } from './state';
 
 /**
  * Get the locksroot of a given array of pending locks
@@ -64,37 +64,37 @@ function getTimeIfPresent<T>(k: keyof T): (o: T) => number | undefined {
   return (o: T) => (o[k] ? (o[k] as any)[0] : undefined);
 }
 
-const statusesMap: { [K in RaidenSentTransferStatus]: (s: SentTransfer) => number | undefined } = {
-  [RaidenSentTransferStatus.expired]: getTimeIfPresent<SentTransfer>('lockExpiredProcessed'),
-  [RaidenSentTransferStatus.unlocked]: getTimeIfPresent<SentTransfer>('unlockProcessed'),
-  [RaidenSentTransferStatus.expiring]: getTimeIfPresent<SentTransfer>('lockExpired'),
-  [RaidenSentTransferStatus.unlocking]: getTimeIfPresent<SentTransfer>('unlock'),
-  [RaidenSentTransferStatus.registered]: (sent: SentTransfer) =>
+const statusesMap: { [K in RaidenTransferStatus]: (s: TransferState) => number | undefined } = {
+  [RaidenTransferStatus.expired]: getTimeIfPresent<TransferState>('lockExpiredProcessed'),
+  [RaidenTransferStatus.unlocked]: getTimeIfPresent<TransferState>('unlockProcessed'),
+  [RaidenTransferStatus.expiring]: getTimeIfPresent<TransferState>('lockExpired'),
+  [RaidenTransferStatus.unlocking]: getTimeIfPresent<TransferState>('unlock'),
+  [RaidenTransferStatus.registered]: (sent: TransferState) =>
     // only set status as registered if there's a valid registerBlock
     sent.secret?.[1]?.registerBlock ? sent.secret[0] : undefined,
-  [RaidenSentTransferStatus.revealed]: getTimeIfPresent<SentTransfer>('secretReveal'),
-  [RaidenSentTransferStatus.requested]: getTimeIfPresent<SentTransfer>('secretRequest'),
-  [RaidenSentTransferStatus.closed]: getTimeIfPresent<SentTransfer>('channelClosed'),
-  [RaidenSentTransferStatus.refunded]: getTimeIfPresent<SentTransfer>('refund'),
-  [RaidenSentTransferStatus.received]: getTimeIfPresent<SentTransfer>('transferProcessed'),
-  [RaidenSentTransferStatus.pending]: getTimeIfPresent<SentTransfer>('transfer'),
+  [RaidenTransferStatus.revealed]: getTimeIfPresent<TransferState>('secretReveal'),
+  [RaidenTransferStatus.requested]: getTimeIfPresent<TransferState>('secretRequest'),
+  [RaidenTransferStatus.closed]: getTimeIfPresent<TransferState>('channelClosed'),
+  [RaidenTransferStatus.refunded]: getTimeIfPresent<TransferState>('refund'),
+  [RaidenTransferStatus.received]: getTimeIfPresent<TransferState>('transferProcessed'),
+  [RaidenTransferStatus.pending]: getTimeIfPresent<TransferState>('transfer'),
 };
 
 /**
- * Convert a state.sent: SentTransfer to a public RaidenSentTransfer object
+ * Convert a state.sent: TransferState to a public RaidenTransfer object
  *
  * @param sent - RaidenState.sent value
  * @returns Public raiden sent transfer info object
  */
-export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
+export function raidenSentTransfer(sent: TransferState): RaidenTransfer {
   const startedAt = new Date(sent.transfer[0]);
   let changedAt = startedAt;
-  let status = RaidenSentTransferStatus.pending;
+  let status = RaidenTransferStatus.pending;
   // order matters! from top to bottom priority, first match breaks loop
   for (const [s, g] of Object.entries(statusesMap)) {
     const ts = g(sent);
     if (ts !== undefined) {
-      status = s as RaidenSentTransferStatus;
+      status = s as RaidenTransferStatus;
       changedAt = new Date(ts);
       break;
     }
@@ -116,9 +116,10 @@ export function raidenSentTransfer(sent: SentTransfer): RaidenSentTransfer {
   );
   return {
     secrethash: transfer.lock.secrethash,
+    direction: 'sent',
     status,
     initiator: transfer.initiator,
-    recipient: transfer.recipient,
+    partner: transfer.recipient,
     target: transfer.target,
     metadata: transfer.metadata,
     paymentId: transfer.payment_identifier,
