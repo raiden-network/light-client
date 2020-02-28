@@ -3,6 +3,7 @@ import { JsonRpcProvider, JsonRpcSigner } from 'ethers/providers';
 
 import { getContracts, getSigner } from 'raiden-ts/helpers';
 import { Wallet } from 'ethers';
+import Raiden from 'raiden-ts/raiden';
 
 describe('getContracts', () => {
   test('return contracts if network is ropsten, rinkeby or goerli', async () => {
@@ -77,5 +78,16 @@ describe('getSigner', () => {
       address: expect.stringMatching(/^0x/),
       main: { signer: account, address: account.address },
     });
+  });
+});
+
+describe('Raiden Versions', () => {
+  const someVersion = /[0-9.]+/;
+  test('Returns raiden version', () => {
+    expect(Raiden.version).toMatch(someVersion);
+  });
+
+  test('Returns raiden contract version', () => {
+    expect(Raiden.contractVersion).toMatch(someVersion);
   });
 });

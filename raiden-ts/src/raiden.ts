@@ -22,6 +22,7 @@ import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 import { UserDepositFactory } from './contracts/UserDepositFactory';
 import { SecretRegistryFactory } from './contracts/SecretRegistryFactory';
 
+import versions from './versions.json';
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
@@ -432,6 +433,24 @@ export class Raiden {
     if (this.lastConfig?.['0'] !== currentPartial)
       this.lastConfig = [currentPartial, { ...this.defaultConfig, ...currentPartial }];
     return this.lastConfig['1'];
+  }
+
+  /**
+   * Returns the currently used SDK version.
+   *
+   * @returns SDK version
+   */
+  static get version(): string {
+    return versions.sdk;
+  }
+
+  /**
+   * Returns the version of the used Smart Contracts.
+   *
+   * @returns Smart Contract version
+   */
+  static get contractVersion(): string {
+    return versions.contracts;
   }
 
   /**

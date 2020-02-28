@@ -8,5 +8,6 @@ contracts/
 
 src/deployment/*
 src/abi/*
+src/versions.json
 
 docs/

@@ -16,6 +16,10 @@
         </v-content>
       </div>
     </div>
+    <ul v-if="version" class="raiden-versions">
+      <li>{{ $t('versions.sdk', { version }) }}</li>
+      <li>{{ $t('versions.contracts', { version: contractVersion }) }}</li>
+    </ul>
     <div class="policy">
       <a href="https://raiden.network/privacy.html" target="_blank">
         {{ $t('application.privacy-policy') }}
@@ -28,11 +32,13 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { mapState } from 'vuex';
+import { Raiden } from 'raiden-ts';
+
 import SplashScreen from '@/components/SplashScreen.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
-import { mapState } from 'vuex';
 import { DeniedReason } from '@/model/types';
 
 @Component({
@@ -57,6 +63,14 @@ export default class App extends Vue {
       this.loading ||
       this.accessDenied !== DeniedReason.UNDEFINED
     );
+  }
+
+  get version() {
+    return Raiden.version;
+  }
+
+  get contractVersion() {
+    return Raiden.contractVersion;
   }
 
   async connect(subkey?: true) {
@@ -125,17 +139,28 @@ export default class App extends Vue {
   }
 }
 
+.raiden-versions {
+  font-size: 13px;
+  margin: 27px auto 6px auto;
+  color: $secondary-button-color;
+  list-style: none;
+  padding: 0;
+
+  li {
+    display: inline-block;
+
+    &:not(:last-child) {
+      margin-right: 15px;
+    }
+  }
+}
+
 .policy {
   font-size: 13px;
-  line-height: 15px;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 220px;
-  margin: 27px auto 27px auto;
+  margin: 0 auto 27px auto;
 
   a {
-    color: #646464;
+    color: $secondary-text-color;
     text-decoration: none;
   }
 }
