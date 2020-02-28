@@ -18,10 +18,12 @@ export default class ListHeader extends Vue {
 </script>
 
 <style scoped lang="scss">
+@import '../scss/fonts';
+
 .list-header {
   &__header {
     color: #ffffff;
-    font-family: Roboto, sans-serif;
+    font-family: $main-font;
     font-size: 16px;
     font-weight: bold;
     line-height: 19px;

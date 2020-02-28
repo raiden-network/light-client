@@ -82,13 +82,15 @@ export default class TokenInformation extends Vue {
 }
 </script>
 <style scoped lang="scss">
+@import '../scss/fonts';
+
 .token-information {
   max-height: 55px;
   margin-top: 25px;
 
   &__label {
     color: #ffffff;
-    font-family: Roboto, sans-serif;
+    font-family: $main-font;
     font-size: 16px;
     font-weight: bold;
     text-transform: uppercase;
@@ -99,7 +101,7 @@ export default class TokenInformation extends Vue {
     display: flex;
     align-items: flex-start;
     color: #ffffff;
-    font-family: Roboto, sans-serif;
+    font-family: $main-font;
     font-size: 16px;
     overflow-x: visible;
     text-overflow: ellipsis;

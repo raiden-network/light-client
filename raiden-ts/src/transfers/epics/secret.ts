@@ -46,7 +46,7 @@ export const transferSecretRequestedEpic = (
 
       const transfer = state.sent[message.secrethash].transfer[1];
       // we do only some basic verification here, as most of it is done upon SecretReveal,
-      // to persist the request in most cases in SentTransfer.secretRequest
+      // to persist the request in most cases in TransferState.secretRequest
       if (
         transfer.target !== action.meta.address || // reveal only to target
         !transfer.payment_identifier.eq(message.payment_identifier)

@@ -1,4 +1,3 @@
-import { Reducer } from 'redux';
 import { get, set, unset } from 'lodash/fp';
 import { Zero, HashZero } from 'ethers/constants';
 import { hexlify } from 'ethers/utils';
@@ -10,10 +9,10 @@ import { SignedBalanceProof } from '../channels/types';
 import { channelClose } from '../channels/actions';
 import { SignatureZero } from '../constants';
 import { timed, UInt, Signature, Hash } from '../utils/types';
-import { createReducer } from '../utils/actions';
+import { Reducer, createReducer } from '../utils/actions';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { getLocksroot } from './utils';
-import { SentTransfer } from './state';
+import { TransferState } from './state';
 import {
   transferSigned,
   transferSecret,
@@ -63,7 +62,7 @@ function transferSignedReducer(state: RaidenState, action: transferSigned): Raid
   const transfer = action.payload.message;
   const lock = transfer.lock;
   const secrethash = lock.secrethash;
-  // transferSigned must be the first action, to init SentTransfer state
+  // transferSigned must be the first action, to init TransferState state
   if (secrethash in state.sent) return state;
   const channelPath = ['channels', transfer.token_network_address, transfer.recipient];
   let channel: Channel | undefined = get(channelPath, state);
@@ -94,7 +93,7 @@ function transferSignedReducer(state: RaidenState, action: transferSigned): Raid
       balanceProof: getBalanceProofFromEnvelopeMessage(transfer),
     },
   };
-  const sentTransfer: SentTransfer = { transfer: timed(transfer), fee: action.payload.fee };
+  const sentTransfer: TransferState = { transfer: timed(transfer), fee: action.payload.fee };
 
   state = set(channelPath, channel, state);
   state = set(['sent', secrethash], sentTransfer, state);
@@ -169,7 +168,7 @@ function transferUnlockSuccessReducer(
       balanceProof: getBalanceProofFromEnvelopeMessage(unlock),
     },
   };
-  const sentTransfer: SentTransfer = { ...state.sent[secrethash], unlock: timed(unlock) };
+  const sentTransfer: TransferState = { ...state.sent[secrethash], unlock: timed(unlock) };
 
   state = set(channelPath, channel, state);
   state = set(['sent', secrethash], sentTransfer, state);
@@ -213,7 +212,7 @@ function transferExpireSuccessReducer(
       balanceProof: getBalanceProofFromEnvelopeMessage(lockExpired),
     },
   };
-  const sentTransfer: SentTransfer = {
+  const sentTransfer: TransferState = {
     ...state.sent[secrethash],
     lockExpired: timed(lockExpired),
   };

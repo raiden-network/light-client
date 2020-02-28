@@ -1,9 +1,8 @@
 import { get, set, unset, getOr } from 'lodash/fp';
 import { Zero } from 'ethers/constants';
-import { Reducer } from 'redux';
 
 import { UInt } from '../utils/types';
-import { createReducer, isActionOf } from '../utils/actions';
+import { Reducer, createReducer, isActionOf } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction, ConfirmableActions } from '../actions';

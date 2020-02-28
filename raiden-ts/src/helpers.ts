@@ -8,7 +8,7 @@ import { findKey, transform, pick } from 'lodash';
 import { RaidenState } from './state';
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { raidenSentTransfer } from './transfers/utils';
-import { SentTransfer, SentTransfers, RaidenSentTransfer } from './transfers/state';
+import { TransferState, TransfersState, RaidenTransfer } from './transfers/state';
 import { channelAmounts } from './channels/utils';
 import { RaidenChannels, RaidenChannel, Channel } from './channels/state';
 import { pluckDistinct } from './utils/rx';
@@ -144,13 +144,13 @@ export const getSigner = async (
  * @param state$ - Observable of the current RaidenState
  * @returns observable of sent and completed Raiden transfers
  */
-export const initTransfers$ = (state$: Observable<RaidenState>): Observable<RaidenSentTransfer> =>
+export const initTransfers$ = (state$: Observable<RaidenState>): Observable<RaidenTransfer> =>
   state$.pipe(
     pluckDistinct('sent'),
     concatMap(sent => from(Object.entries(sent))),
     /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
      * changes from last time seen. It relies on value references changing only if needed */
-    scan<[string, SentTransfer], { acc: SentTransfers; changed?: SentTransfer }>(
+    scan<[string, TransferState], { acc: TransfersState; changed?: TransferState }>(
       ({ acc }, [secrethash, sent]) =>
         // if ref didn't change, emit previous accumulator, without 'changed' value
         acc[secrethash] === sent
@@ -161,7 +161,7 @@ export const initTransfers$ = (state$: Observable<RaidenState>): Observable<Raid
     ),
     pluck('changed'),
     filter(isntNil), // filter out if reference didn't change from last emit
-    // from here, we get SentTransfer objects which changed from previous state (all on first)
+    // from here, we get TransferState objects which changed from previous state (all on first)
     map(raidenSentTransfer),
   );
 

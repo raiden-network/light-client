@@ -80,6 +80,7 @@ export default class Stepper extends Vue {
 <style lang="scss" scoped>
 @import '../scss/mixins';
 @import '../scss/colors';
+@import '../scss/fonts';
 
 .stepper {
   display: flex;
@@ -119,7 +120,7 @@ export default class Stepper extends Vue {
 
       &__title {
         color: #ffffff;
-        font-family: Roboto, sans-serif;
+        font-family: $main-font;
         font-size: 32px;
         font-weight: bold;
         line-height: 38px;
@@ -128,7 +129,7 @@ export default class Stepper extends Vue {
 
       &__description {
         color: #ffffff;
-        font-family: Roboto, sans-serif;
+        font-family: $main-font;
         font-size: 16px;
         line-height: 21px;
         text-align: center;
@@ -159,7 +160,7 @@ export default class Stepper extends Vue {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        font-family: Roboto, sans-serif;
+        font-family: $main-font;
         font-size: 16px;
         line-height: 21px;
         text-align: center;

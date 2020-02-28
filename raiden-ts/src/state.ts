@@ -14,7 +14,7 @@ import { losslessParse, losslessStringify } from './utils/data';
 import { Address, Signed, Storage, decode } from './utils/types';
 import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
-import { SentTransfers } from './transfers/state';
+import { TransfersState } from './transfers/state';
 import { IOU } from './path/types';
 import { getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
@@ -53,7 +53,7 @@ export const RaidenState = t.readonly(
         ),
       }),
     ),
-    sent: SentTransfers,
+    sent: TransfersState,
     path: t.type({
       iou: t.readonly(
         t.record(

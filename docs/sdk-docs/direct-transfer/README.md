@@ -2,12 +2,12 @@
 
 This is where the fun begins: off-chain transfers!
 
-The main point of information about past and pending transfers is the `transfers$: Observable<RaidenSentTransfer>` observable. It'll first emit all known past transfers at subscription time (history), then emit again each time a transfer state changes, allowing you to keep track of the transfer status. The [Raiden.transfer](https://github.com/raiden-network/light-client/blob/dfe87e1886b12fc9f85857b01e28db5e81cc5070/raiden-ts/src/raiden.ts#L693) method is used to initiate an outgoing transfer, and returned Promise will reject with an Error if transfer signature prompt is cancelled or resolve with the `secrethash` value (a transfer unique key) as soon as it's registered. You can use this `secrethash` property of the objects emitted by `transfers$` as a unique key to keep track of specific transfers.
+The main point of information about past and pending transfers is the `transfers$: Observable<RaidenTransfer>` observable. It'll first emit all known past transfers at subscription time (history), then emit again each time a transfer state changes, allowing you to keep track of the transfer status. The [Raiden.transfer](https://github.com/raiden-network/light-client/blob/dfe87e1886b12fc9f85857b01e28db5e81cc5070/raiden-ts/src/raiden.ts#L693) method is used to initiate an outgoing transfer, and returned Promise will reject with an Error if transfer signature prompt is cancelled or resolve with the `secrethash` value (a transfer unique key) as soon as it's registered. You can use this `secrethash` property of the objects emitted by `transfers$` as a unique key to keep track of specific transfers.
 
 ```typescript
-import { RaidenSentTransfer } from 'raiden-ts';
+import { RaidenTransfer } from 'raiden-ts';
 
-const transfers: { [secrethash: string]: RaidenSentTransfer } = {};
+const transfers: { [secrethash: string]: RaidenTransfer } = {};
 raiden.transfers$.subscribe(transfer => {
   transfers[transfer.secrethash] = transfer;
   console.log('Transfers updated:', transfers);
@@ -37,7 +37,7 @@ const secrethash: string = await raiden.transfer('0xtoken', '0xtarget', 10);
 # Transfers updated: {
 #   [secrethash]: {
 #     secrethash,
-#     status: 'PENDING', // see RaidenSentTransferStatus enum imported from 'raiden-ts'
+#     status: 'PENDING', // see RaidenTransferStatus enum imported from 'raiden-ts'
 #     initiator: '0xourAddress'
 #     recipient: '0xpartner',
 #     target: '0xtarget',

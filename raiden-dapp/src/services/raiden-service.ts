@@ -167,6 +167,7 @@ export default class RaidenService {
 
         this.store.commit('network', raiden.network);
 
+        window.addEventListener('beforeunload', () => this.raiden.stop());
         raiden.start();
       }
     } catch (e) {

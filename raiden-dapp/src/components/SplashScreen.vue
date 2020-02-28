@@ -77,6 +77,9 @@
             {{ $t('splash-screen.getting-started.link-name') }}
           </a>
         </i18n>
+        <div class="splash-screen__no-provider text-center font-weight-light">
+          <a @click="downloadLogs">{{ $t('splash-screen.download-logs') }}</a>
+        </div>
       </v-col>
     </v-row>
   </v-container>
@@ -86,6 +89,7 @@
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import { Web3Provider } from '@/services/web3-provider';
 import { DeniedReason } from '@/model/types';
+import { getLogsFromStore } from '@/utils/logstore';
 import { mapState } from 'vuex';
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
 import ActionButton from '@/components/ActionButton.vue';
@@ -115,6 +119,23 @@ export default class Loading extends Vue {
   @Emit()
   connect(subkey?: true) {
     return subkey;
+  }
+
+  async downloadLogs() {
+    const [lastTime, content] = await getLogsFromStore();
+    const filename = `raiden_${new Date(lastTime).toISOString()}.log`;
+    const file = new File([content], filename, { type: 'text/plain' });
+    const url = URL.createObjectURL(file);
+    const el = document.createElement('a');
+    el.href = url;
+    el.download = filename;
+    el.style.display = 'none';
+    document.body.appendChild(el);
+    el.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      document.body.removeChild(el);
+    }, 0);
   }
 }
 </script>

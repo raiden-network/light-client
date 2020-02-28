@@ -157,6 +157,7 @@ export default class AmountInput extends Vue {
 <style scoped lang="scss">
 @import '../scss/mixins';
 @import '../scss/colors';
+@import '../scss/fonts';
 
 $header-vertical-margin: 5rem;
 $header-vertical-margin-mobile: 2rem;
@@ -201,7 +202,7 @@ $header-vertical-margin-mobile: 2rem;
     }
 
     input {
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       font-size: 16px;
       line-height: 20px;
       caret-color: white !important;
@@ -213,7 +214,7 @@ $header-vertical-margin-mobile: 2rem;
 
     .v-messages {
       border: 1px solid transparent;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       font-size: 14px;
       line-height: 16px;
 
@@ -230,7 +231,7 @@ $header-vertical-margin-mobile: 2rem;
   }
 
   &__token-symbol {
-    font-family: Roboto, sans-serif;
+    font-family: $main-font;
     color: $text-color;
     font-weight: 500;
     font-size: 14px;

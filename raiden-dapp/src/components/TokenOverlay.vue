@@ -142,6 +142,7 @@ export default class TokenOverlay extends Mixins(
 <style lang="scss" scoped>
 @import '../scss/colors';
 @import '../scss/scroll';
+@import '../scss/fonts';
 
 .token-network-overlay {
   border-bottom-left-radius: 10px;
@@ -209,7 +210,7 @@ export default class TokenOverlay extends Mixins(
 
     &__token-balance {
       color: $color-white;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       font-size: 16px;
       font-weight: bold;
       line-height: 20px;

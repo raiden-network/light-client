@@ -319,6 +319,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 <style lang="scss" scoped>
 @import '../scss/mixins';
 @import '../scss/colors';
+@import '../scss/fonts';
 
 .address-input {
   display: flex;
@@ -363,7 +364,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     input {
       color: $color-white;
       caret-color: $color-white !important;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       font-size: 16px;
       max-height: 49px;
 
@@ -415,7 +416,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
     .v-messages {
       color: #323232 !important;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       font-size: 14px;
       line-height: 21px;
       text-align: left;

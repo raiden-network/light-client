@@ -479,11 +479,15 @@ export default class TransferSteps extends Mixins(
   }
 
   setPFS(payload: [RaidenPFS, boolean]) {
-    const [pfs, single] = payload;
-    this.selectedPfs = pfs;
-    this.freePfs = bigNumberify(pfs.price).isZero();
-    if (pfs && single && this.freePfs) {
-      this.handleStep();
+    this.selectedPfs = null;
+
+    if (payload) {
+      const [pfs, single] = payload;
+      this.selectedPfs = pfs;
+      this.freePfs = bigNumberify(pfs.price).isZero();
+      if (pfs && single && this.freePfs) {
+        this.handleStep();
+      }
     }
   }
 
@@ -524,6 +528,7 @@ export default class TransferSteps extends Mixins(
 
 <style lang="scss" scoped>
 @import '../scss/colors';
+@import '../scss/fonts';
 
 .transfer-steps {
   background: transparent !important;
@@ -641,7 +646,7 @@ export default class TransferSteps extends Mixins(
     &__amount {
       font-size: 24px;
       font-weight: bold;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       color: $color-white;
       vertical-align: middle;
 
@@ -652,7 +657,7 @@ export default class TransferSteps extends Mixins(
 
     &__description {
       font-size: 16px;
-      font-family: Roboto, sans-serif;
+      font-family: $main-font;
       color: $secondary-text-color;
 
       &.low-balance {

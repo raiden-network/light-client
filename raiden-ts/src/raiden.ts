@@ -27,7 +27,7 @@ import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
 import { RaidenConfig, makeDefaultConfig, PartialRaidenConfig } from './config';
 import { RaidenChannels } from './channels/state';
-import { RaidenSentTransfer } from './transfers/state';
+import { RaidenTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import {
@@ -96,7 +96,7 @@ export class Raiden {
    * Every time a transfer state is updated, it's emitted here. 'secrethash' property is unique and
    * may be used as identifier to know which transfer got updated.
    */
-  public readonly transfers$: Observable<RaidenSentTransfer>;
+  public readonly transfers$: Observable<RaidenTransfer>;
 
   /**
    * Expose ether's Provider.resolveName for ENS support
@@ -230,7 +230,7 @@ export class Raiden {
 
     this.deps.config$
       .pipe(pluckDistinct('logger'))
-      .subscribe(logger => this.log.setLevel(logger || 'silent'));
+      .subscribe(logger => this.log.setLevel(logger || 'silent', false));
 
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
