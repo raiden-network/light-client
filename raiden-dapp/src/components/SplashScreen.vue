@@ -123,7 +123,6 @@ export default class Loading extends Vue {
 
   async downloadLogs() {
     const [lastTime, content] = await getLogsFromStore();
-    if (!content) return;
     const filename = `raiden_${new Date(lastTime).toISOString()}.log`;
     const file = new File([content], filename, { type: 'text/plain' });
     const url = URL.createObjectURL(file);
