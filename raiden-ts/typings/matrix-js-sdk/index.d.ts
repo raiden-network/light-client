@@ -789,6 +789,6 @@ declare module 'matrix-js-sdk/lib/utils' {
 }
 
 declare module 'matrix-js-sdk/lib/logger' {
-  const logger: { setLevel: (level: string) => void; };
+  const logger: { setLevel: (level: string, persist?: boolean) => void; };
   export = logger;
 }
