@@ -253,6 +253,6 @@ workflows:
             <<: *filter-version-regex
       - deploy_gh_pages:
           requires:
-            - build_dapp
+            - generate_documentation
           filters:
             <<: *filter-version-regex
