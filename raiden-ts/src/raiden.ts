@@ -230,7 +230,7 @@ export class Raiden {
 
     this.deps.config$
       .pipe(pluckDistinct('logger'))
-      .subscribe(logger => this.log.setLevel(logger || 'silent'));
+      .subscribe(logger => this.log.setLevel(logger || 'silent', false));
 
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
