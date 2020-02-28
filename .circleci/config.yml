@@ -232,6 +232,7 @@ workflows:
       - install_dapp:
           requires:
             - checkout
+            - install_sdk
           filters:
             <<: *filter-version-regex
       - publish_artifact:
