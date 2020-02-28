@@ -417,5 +417,9 @@
       "problem": "While trying to deposit tokens for route requests, the Pathfinding Service encountered mismatching signatures.",
       "solution": "This should happen very rarely, please retry to deposit. If the problem persists, please file an issue on https://github.com/raiden-network/light-client."
     }
+  },
+  "versions": {
+    "sdk": "Raiden SDK: {version}",
+    "contracts": "Raiden Contracts: {version}"
   }
 }
