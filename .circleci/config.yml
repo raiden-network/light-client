@@ -231,19 +231,12 @@ workflows:
             <<: *filter-version-regex
       - install_dapp:
           requires:
-            - checkout
             - install_sdk
           filters:
             <<: *filter-version-regex
       - build_dapp:
           requires:
             - install_dapp
-          filters:
-            <<: *filter-version-regex
-      - publish_artifact:
-          context: "Raiden Context"
-          requires:
-            - install_sdk
           filters:
             <<: *filter-version-regex
       - generate_documentation:
@@ -254,5 +247,11 @@ workflows:
       - deploy_gh_pages:
           requires:
             - generate_documentation
+          filters:
+            <<: *filter-version-regex
+      - publish_artifact:
+          context: "Raiden Context"
+          requires:
+            - deploy_gh_pages
           filters:
             <<: *filter-version-regex
