@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * Move secrets to 'secret' member of the respective SentTransfer
+ * Move secrets to 'secret' member of the respective TransferState
  *
  * @param state - RaidenState version 0
  * @returns State version 1

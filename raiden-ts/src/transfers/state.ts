@@ -17,7 +17,7 @@ import { Address, Timed, Hash, Int, Signed, Secret } from '../utils/types';
  * This struct holds the relevant messages exchanged in a transfer
  * The transfer state is defined by the exchanged messages
  */
-export const SentTransfer = t.readonly(
+export const TransferState = t.readonly(
   t.intersection([
     t.type({
       /** -> outgoing locked transfer */
@@ -83,15 +83,15 @@ export const SentTransfer = t.readonly(
     }),
   ]),
 );
-export type SentTransfer = t.TypeOf<typeof SentTransfer>;
+export type TransferState = t.TypeOf<typeof TransferState>;
 
 /**
  * Mapping of outgoing transfers, indexed by the secrethash
  */
-export const SentTransfers = t.readonly(t.record(t.string /* secrethash: Hash */, SentTransfer));
-export type SentTransfers = t.TypeOf<typeof SentTransfers>;
+export const TransfersState = t.readonly(t.record(t.string /* secrethash: Hash */, TransferState));
+export type TransfersState = t.TypeOf<typeof TransfersState>;
 
-export enum RaidenSentTransferStatus {
+export enum RaidenTransferStatus {
   pending = 'PENDING', // transfer was just sent
   received = 'RECEIVED', // transfer acknowledged by partner
   refunded = 'REFUNDED', // partner informed that can't forward transfer
@@ -110,11 +110,12 @@ export enum RaidenSentTransferStatus {
  *
  * This should be only used as a public view of the internal transfer state
  */
-export interface RaidenSentTransfer {
+export interface RaidenTransfer {
   secrethash: Hash; // used as transfer identifier
-  status: RaidenSentTransferStatus;
+  direction: 'sent' | 'received';
+  status: RaidenTransferStatus;
   initiator: Address; // us
-  recipient: Address; // receiver/partner/hub
+  partner: Address; // receiver/partner/hub
   target: Address; // final receiver of the transfer
   metadata: Metadata; // chosen routes
   paymentId: BigNumber;
