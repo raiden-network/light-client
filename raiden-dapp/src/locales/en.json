@@ -160,7 +160,8 @@
       "link-name": "getting started guide"
     },
     "connect-button": "Connect",
-    "no-provider": "No Web3 provider detected, please install e.g. MetaMask."
+    "no-provider": "No Web3 provider detected, please install e.g. MetaMask.",
+    "download-logs": "Download stored Raiden logs"
   },
   "tokens": {
     "connected": {
