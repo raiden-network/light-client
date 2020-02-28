@@ -12,7 +12,7 @@ import { Web3Provider } from '@/services/web3-provider';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
-import { Raiden, RaidenError, RaidenSentTransfer, ErrorCodes } from 'raiden-ts';
+import { Raiden, RaidenError, RaidenTransfer, ErrorCodes } from 'raiden-ts';
 import { BigNumber, bigNumberify } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
@@ -832,7 +832,7 @@ describe('RaidenService', () => {
         'updateTransfers',
         expect.objectContaining({
           ...dummyTransfer
-        } as RaidenSentTransfer)
+        } as RaidenTransfer)
       );
     });
   });
