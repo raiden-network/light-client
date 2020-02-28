@@ -21,6 +21,10 @@ module.exports = {
       'ethers',
       path.resolve(__dirname, 'node_modules/ethers')
     );
+    config.resolve.alias.set(
+      'loglevel',
+      path.resolve(__dirname, 'node_modules/loglevel')
+    );
   },
 
   pluginOptions: {
