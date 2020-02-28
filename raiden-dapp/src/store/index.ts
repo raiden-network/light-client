@@ -5,7 +5,7 @@ import {
   ChannelState,
   RaidenChannel,
   RaidenChannels,
-  RaidenSentTransfer
+  RaidenTransfer
 } from 'raiden-ts';
 import {
   AccTokenModel,
@@ -83,7 +83,7 @@ const store: StoreOptions<RootState> = {
     reset(state: RootState) {
       Object.assign(state, defaultState());
     },
-    updateTransfers(state: RootState, transfer: RaidenSentTransfer) {
+    updateTransfers(state: RootState, transfer: RaidenTransfer) {
       state.transfers = { ...state.transfers, [transfer.secrethash]: transfer };
     }
   },
