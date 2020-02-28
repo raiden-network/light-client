@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/class-name-casing */
-/* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as t from 'io-ts';
 import { isMatchWith } from 'lodash';
 import { Observable } from 'rxjs';
 import { first, map } from 'rxjs/operators';
-import { Reducer } from 'redux';
 
 import { RaidenError, ErrorCodes, ErrorCodec } from '../utils/error';
 import { BigNumberC, assert } from './types';
@@ -14,6 +12,7 @@ import { BigNumberC, assert } from './types';
  * The type of a generic action
  */
 export type Action<TType extends string = string> = { type: TType };
+export type Reducer<S = any, A extends Action = Action> = (state: S | undefined, action: A) => S;
 
 /**
  * The ActionCreator's ReturnType, equivalent but more efficient than t.TypeOf<ActionCodec>
@@ -616,7 +615,6 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
           ac: AC | AC[],
           handler: H,
         ) => ExtReducer<ACs | AC, Iterate<X>>;
-        acs: ACs;
       };
 
   // make a reducer function for given handlers

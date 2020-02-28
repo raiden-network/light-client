@@ -1,4 +1,3 @@
-import { Reducer } from 'redux';
 import { get, set, unset } from 'lodash/fp';
 import { Zero, HashZero } from 'ethers/constants';
 import { hexlify } from 'ethers/utils';
@@ -10,7 +9,7 @@ import { SignedBalanceProof } from '../channels/types';
 import { channelClose } from '../channels/actions';
 import { SignatureZero } from '../constants';
 import { timed, UInt, Signature, Hash } from '../utils/types';
-import { createReducer } from '../utils/actions';
+import { Reducer, createReducer } from '../utils/actions';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { getLocksroot } from './utils';
 import { TransferState } from './state';

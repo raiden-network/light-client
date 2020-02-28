@@ -1,10 +1,10 @@
-import { Action, AnyAction, Reducer } from 'redux';
+import { Action, Reducer } from './actions';
 
 /**
  * Like redux's combineReducers, but allows passing only a partial reducer mapping
  * redux's combineReducers output state must be exactly the mapping passed as parameter,
  * which doesn't allow to only provide a partial set of reducers and passthrough the other state's
- * keys. This function allows that, also preserving state/object reference when reducers doesn't
+ * keys. This function allows that, also preserving state/object reference when reducers don't
  * change state value.
  *
  * @param reducers - A mapping of a subset of state's key to nested reducers functions
@@ -12,7 +12,7 @@ import { Action, AnyAction, Reducer } from 'redux';
  *                      reducers
  * @returns Full reducer for state S and actions A
  */
-export function partialCombineReducers<S, A extends Action = AnyAction>(
+export function partialCombineReducers<S, A extends Action = Action>(
   reducers: { [K in keyof S]?: Reducer<S[K], A> },
   initialState: S,
 ): Reducer<S, A> {
