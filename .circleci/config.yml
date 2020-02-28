@@ -218,20 +218,6 @@ workflows:
           requires:
             - lint_dapp
             - build_dapp
-      - generate_documentation:
-          requires:
-            - test_dapp
-          filters:
-            branches:
-              only:
-                - master
-      - deploy_gh_pages:
-          requires:
-            - generate_documentation
-          filters:
-            branches:
-              only:
-                - master
 
   publish:
     jobs:
@@ -243,9 +229,25 @@ workflows:
             - checkout
           filters:
             <<: *filter-version-regex
+      - install_dapp:
+          requires:
+            - checkout
+          filters:
+            <<: *filter-version-regex
       - publish_artifact:
           context: "Raiden Context"
           requires:
             - install_sdk
+          filters:
+            <<: *filter-version-regex
+      - generate_documentation:
+          requires:
+            - install_sdk
+            - install_dapp
+          filters:
+            <<: *filter-version-regex
+      - deploy_gh_pages:
+          requires:
+            - generate_documentation
           filters:
             <<: *filter-version-regex
