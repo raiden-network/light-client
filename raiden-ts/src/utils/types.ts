@@ -72,7 +72,7 @@ export const BigNumberC = new t.Type<BigNumber, string>(
     if (BigNumber.isBigNumber(u)) return t.success(u);
     try {
       // decode by trying to bigNumberify string representation of anything
-      return t.success(bigNumberify((u as any).toString()));
+      return t.success(bigNumberify(((u as any)?._hex ?? (u as any)).toString()));
     } catch (err) {
       return t.failure(u, c);
     }
