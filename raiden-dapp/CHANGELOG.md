@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+### Fixed
+- [#1115] Fixed error message when trying to connect to main net.
+
+[#1115]: https://github.com/raiden-network/light-client/issues/1115
+
 ## [0.4.0] - 2020-02-28
 ### Added
 - [#745] Possibility to connect LC with derived subkey
