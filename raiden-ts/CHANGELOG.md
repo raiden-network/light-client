@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Fixed
-- [#1120] Ensure PFS is updated by sending a PFSCapacityUpdate at least once per channel per session
+- [#1120] Ensure PFS is updated by sending a PFSCapacityUpdate every time our capacity changes
 - [#1116] Wait for confirmation blocks after mint & depositToUDC to resolve promise
 
 ## [0.4.0] - 2020-02-28
