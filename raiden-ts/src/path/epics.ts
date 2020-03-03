@@ -18,7 +18,6 @@ import {
   tap,
   timeout,
   withLatestFrom,
-  distinctUntilKeyChanged,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { Signer } from 'ethers';
@@ -419,14 +418,11 @@ export const pfsCapacityUpdateEpic = (
       grouped$.pipe(
         withLatestFrom(config$),
         filter(([, { pfsRoom }]) => !!pfsRoom), // ignore actions while/if config.pfsRoom isn't set
-        debounceTime(httpTimeout / 3), // default: 10s
-        map(([channel, config]) => ({ channel, capacities: channelAmounts(channel), config })),
-        // distinct on ownCapacity change
-        distinctUntilKeyChanged('capacities', (a, b) => a.ownCapacity.eq(b.ownCapacity)),
-        concatMap(({ channel, capacities, config: { revealTimeout, pfsRoom } }) => {
+        debounceTime(httpTimeout / 2), // default: 15s
+        concatMap(([channel, { revealTimeout, pfsRoom }]) => {
           const { tokenNetwork, partnerAddr: partner } = channel;
           if (channel.state !== ChannelState.open) return EMPTY;
-          const { ownCapacity, partnerCapacity } = capacities;
+          const { ownCapacity, partnerCapacity } = channelAmounts(channel);
 
           const message: PFSCapacityUpdate = {
             type: MessageType.PFS_CAPACITY_UPDATE,

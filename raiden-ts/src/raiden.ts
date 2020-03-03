@@ -954,7 +954,6 @@ export class Raiden {
     if (!receipt.status)
       throw new RaidenError(ErrorCodes.RDN_MINT_FAILED, { transactionHash: tx.hash! });
 
-    await waitConfirmation(receipt, this.deps);
     return tx.hash as Hash;
   }
 
