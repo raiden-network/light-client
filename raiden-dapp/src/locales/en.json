@@ -153,7 +153,7 @@
         "link-name": "dedicated Raiden account."
       }
     },
-    "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is a work in progress and can only be used on the Ethereum testnets",
+    "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and can only be used on Ethereum testnets.",
     "matrix-sign": "On the first launch you get asked to sign two messages to connect to the Raiden transport layer. You sign the matrix server name and the public user name.",
     "getting-started": {
       "description": "Read the {0} for detailed information on how to use the Raiden dApp.",
