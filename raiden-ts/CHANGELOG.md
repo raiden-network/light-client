@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Fixed
 - [#1120] Ensure PFS is updated by sending a PFSCapacityUpdate at least once per channel per session
+- [#1116] Wait for confirmation blocks after mint & depositToUDC to resolve promise
 
 ## [0.4.0] - 2020-02-28
 ### Added
@@ -93,6 +94,7 @@
 - Add protocol message implementation.
 
 
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/raiden-network/light-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/raiden-network/light-client/compare/v0.2...v0.3.0
 [0.2]: https://github.com/raiden-network/light-client/compare/v0.1.1...v0.2
