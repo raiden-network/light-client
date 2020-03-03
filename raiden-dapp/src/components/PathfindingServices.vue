@@ -220,9 +220,11 @@ export default class PathfindingServices extends Vue {
           background: rgba($disabled-text-color, 0.1) !important;
         }
 
-        &__mobile-row__header,
-        &__mobile-row__cell {
-          align-self: flex-start;
+        &__mobile-row {
+          &__header,
+          &__cell {
+            align-self: flex-start;
+          }
         }
       }
     }

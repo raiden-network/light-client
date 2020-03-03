@@ -100,6 +100,8 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 </script>
 
 <style scoped lang="scss">
+@import '../scss/mixins';
+
 ::v-deep {
   .v-dialog {
     border-radius: 10px !important;
@@ -136,6 +138,10 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
         position: relative;
         z-index: 20;
+
+        @include respond-to(handhelds) {
+          height: auto;
+        }
       }
 
       &__partner-address {
