@@ -183,7 +183,7 @@
     <error-dialog
       v-if="!processingTransfer"
       :error="error"
-      @dismiss="error = null"
+      @dismiss="navigateToSelectTransferTarget(token.address)"
     >
     </error-dialog>
 
@@ -289,10 +289,12 @@ export default class TransferSteps extends Mixins(
 
     if (this.step === 2 && this.selectedRoute) {
       return this.$t(amountLocalized, {
-        amount: Filter.displayFormat(
-          this.selectedRoute.fee as BigNumber,
-          this.token.decimals
-        ),
+        amount: this.selectedRoute?.fee
+          ? Filter.displayFormat(
+              this.selectedRoute.fee as BigNumber,
+              this.token.decimals
+            )
+          : '',
         symbol: this.token.symbol
       });
     }
