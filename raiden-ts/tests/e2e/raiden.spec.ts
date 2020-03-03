@@ -8,6 +8,19 @@ import { get } from 'lodash';
 import { TestProvider } from './provider';
 import { MockStorage, MockMatrixRequestFn } from './mocks';
 
+// mock waitConfirmation Raiden helper to also trigger provider.mine
+jest.mock('raiden-ts/helpers', () => {
+  const actual = jest.requireActual('raiden-ts/helpers');
+  return {
+    ...actual,
+    waitConfirmation: jest.fn(
+      (receipt, deps) => (
+        (deps.provider as TestProvider).mine(3), actual.waitConfirmation(receipt, deps)
+      ),
+    ),
+  };
+});
+
 import { request } from 'matrix-js-sdk';
 
 import 'raiden-ts/polyfills';
@@ -308,6 +321,7 @@ describe('Raiden', () => {
 
     test('mint and deposit', async () => {
       expect.assertions(1);
+
       await raiden.mint(await raiden.userDepositTokenAddress(), 10);
       await raiden.depositToUDC(10);
       await expect(raiden.getUDCCapacity()).resolves.toEqual(bigNumberify(10));

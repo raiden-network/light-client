@@ -1,8 +1,18 @@
 import { Signer, Wallet, Contract } from 'ethers';
+import { ContractReceipt } from 'ethers/contract';
 import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
 import { JsonRpcProvider } from 'ethers/providers';
-import { Observable, from } from 'rxjs';
-import { filter, map, scan, concatMap, pluck } from 'rxjs/operators';
+import { Observable, from, defer } from 'rxjs';
+import {
+  filter,
+  map,
+  scan,
+  concatMap,
+  pluck,
+  withLatestFrom,
+  first,
+  exhaustMap,
+} from 'rxjs/operators';
 import { findKey, transform, pick } from 'lodash';
 
 import { RaidenState } from './state';
@@ -255,4 +265,40 @@ export function chooseOnchainAccount(
 export function getContractWithSigner<C extends Contract>(contract: C, signer: Signer): C {
   if (contract.signer === signer) return contract;
   return contract.connect(signer) as C;
+}
+
+/**
+ * Waits for a given receipt to be confirmed; throws if it gets removed by a reorg instead
+ *
+ * @param receipt - Receipt to wait for confirmation
+ * @param deps - RaidenEpicDeps
+ */
+export async function waitConfirmation(
+  receipt: ContractReceipt,
+  { latest$, config$, provider }: RaidenEpicDeps,
+): Promise<number> {
+  const txBlock = receipt.blockNumber!;
+  const txHash = receipt.transactionHash!;
+  return latest$
+    .pipe(
+      pluckDistinct('state', 'blockNumber'),
+      withLatestFrom(config$),
+      filter(
+        ([blockNumber, { confirmationBlocks }]) => txBlock + confirmationBlocks <= blockNumber,
+      ),
+      exhaustMap(([blockNumber, { confirmationBlocks }]) =>
+        defer(() => provider.getTransactionReceipt(txHash)).pipe(
+          map(receipt => {
+            if (receipt?.confirmations && receipt.confirmations >= confirmationBlocks)
+              return receipt.blockNumber;
+            else if (txBlock + 2 * confirmationBlocks < blockNumber)
+              throw new RaidenError(ErrorCodes.RDN_TRANSACTION_REORG, {
+                transactionHash: txHash,
+              });
+          }),
+        ),
+      ),
+      first(isntNil),
+    )
+    .toPromise();
 }
