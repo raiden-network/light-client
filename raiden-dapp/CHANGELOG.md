@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+### Fixed
+- [#1118] Fixed token list in token overlay.
+
+[#1118]: https://github.com/raiden-network/light-client/issues/1118
+
 ## [0.4.0] - 2020-02-28
 ### Added
 - [#745] Possibility to connect LC with derived subkey
