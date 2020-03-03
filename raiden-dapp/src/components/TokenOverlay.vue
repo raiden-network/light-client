@@ -42,7 +42,7 @@
       </v-row>
 
       <v-row class="token-list">
-        <v-col cols="12" class="fill-height">
+        <v-col cols="12">
           <v-list
             v-for="(token, i) in tokens"
             :key="i"
@@ -195,7 +195,6 @@ export default class TokenOverlay extends Mixins(
       overflow-y: auto;
       @extend .themed-scrollbar;
 
-      height: 100%;
       background-color: transparent !important;
       padding-bottom: 0;
       padding-top: 0;

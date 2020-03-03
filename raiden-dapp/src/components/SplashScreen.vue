@@ -56,6 +56,13 @@
           </div>
         </v-col>
       </template>
+      <div class="splash-screen__message">
+        <no-access-message
+          v-if="accessDenied"
+          :reason="accessDenied"
+        ></no-access-message>
+      </div>
+
       <v-col v-if="!injectedProvider" cols="8">
         <div class="splash-screen__no-provider text-center">
           {{ $t('splash-screen.no-provider') }}
@@ -187,12 +194,6 @@ export default class Loading extends Vue {
     height: 48px;
   }
 
-  &__disclaimer {
-    margin: 0 auto;
-    margin-top: 180px;
-    max-width: 560px;
-  }
-
   &__getting-started {
     margin-top: 20px;
   }
@@ -202,6 +203,11 @@ export default class Loading extends Vue {
     font-size: 20px;
     font-weight: 500;
     padding-top: 35px;
+  }
+
+  &__message,
+  &__disclaimer {
+    margin-top: 25px;
   }
 }
 </style>
