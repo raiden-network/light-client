@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+### Fixed
+- [#1120] Ensure PFS is updated by sending a PFSCapacityUpdate at least once per channel per session
+
 ## [0.4.0] - 2020-02-28
 ### Added
 - [#614] Implement state upgrades and migration
