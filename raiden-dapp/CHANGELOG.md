@@ -1,9 +1,12 @@
 # Changelog
 
+
 ## Unreleased
 ### Fixed
+- [#1118] Fixed token list in token overlay.
 - [#1115] Fixed error message when trying to connect to main net.
 
+[#1118]: https://github.com/raiden-network/light-client/issues/1118
 [#1115]: https://github.com/raiden-network/light-client/issues/1115
 
 ## [0.4.0] - 2020-02-28
