@@ -2,7 +2,7 @@
   <v-form v-model="valid" autocomplete="off" class="transfer">
     <v-container fluid class="transfer__settings">
       <v-row justify="center" no-gutters class="transfer__actions">
-        <v-col cols="2" class="transfer__channels">
+        <v-col cols="3" sm="2" class="transfer__channels">
           <v-btn
             text
             class="transfer__channel-button"
@@ -40,7 +40,7 @@
             @cancel="showTokenNetworks = false"
           />
         </v-col>
-        <v-col cols="2" class="transfer__deposit">
+        <v-col cols="3" sm="2" class="transfer__deposit">
           <v-btn
             text
             class="transfer__deposit-button"
@@ -61,7 +61,7 @@
       </v-row>
 
       <v-row justify="center" align="center" class="transfer__recipient">
-        <v-col cols="10">
+        <v-col cols="12" sm="10">
           <address-input
             v-model="target"
             :exclude="[token.address, defaultAccount]"
@@ -71,7 +71,7 @@
       </v-row>
 
       <v-row justify="center" align="center">
-        <v-col cols="10">
+        <v-col cols="12" sm="10">
           <amount-input
             v-model="amount"
             :token="token"

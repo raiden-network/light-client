@@ -180,7 +180,6 @@ export default class Loading extends Vue {
   &__raiden-account {
     margin: 0 auto;
     margin-top: 20px;
-    width: 245px;
   }
 
   &__raiden-account-spinner {

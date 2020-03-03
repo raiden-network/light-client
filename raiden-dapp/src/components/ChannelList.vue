@@ -154,7 +154,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       }
 
       &__icon {
-        padding-left: 10px;
         margin-right: 15px;
       }
     }
