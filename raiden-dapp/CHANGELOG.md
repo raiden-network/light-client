@@ -1,8 +1,8 @@
 # Changelog
 
-
 ## Unreleased
 ### Fixed
+- [#1116] Fixed unhandled exception on transfer error dialog on PFS expected errors
 - [#1118] Fixed token list in token overlay.
 - [#1115] Fixed error message when trying to connect to main net.
 - [#1078] Various mobile UI improvements.
@@ -10,6 +10,7 @@
 [#1078]: https://github.com/raiden-network/light-client/issues/1078
 [#1118]: https://github.com/raiden-network/light-client/issues/1118
 [#1115]: https://github.com/raiden-network/light-client/issues/1115
+[#1116]: https://github.com/raiden-network/light-client/issues/1116
 
 ## [0.4.0] - 2020-02-28
 ### Added
@@ -138,6 +139,7 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/raiden-network/light-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/raiden-network/light-client/compare/v0.2...v0.3.0
 [0.2]: https://github.com/raiden-network/light-client/compare/v0.1.1...v0.2
