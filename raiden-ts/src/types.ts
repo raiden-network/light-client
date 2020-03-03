@@ -65,4 +65,5 @@ export type OnChange<T extends string, P> = (event: ChangeEvent<T, P>) => void;
 export enum EventTypes {
   APPROVED = 'APPROVED',
   DEPOSITED = 'DEPOSITED',
+  CONFIRMED = 'CONFIRMED',
 }

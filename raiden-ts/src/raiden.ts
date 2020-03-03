@@ -62,6 +62,7 @@ import {
   mapTokenToPartner,
   chooseOnchainAccount,
   getContractWithSigner,
+  waitConfirmation,
 } from './helpers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
@@ -953,6 +954,7 @@ export class Raiden {
     if (!receipt.status)
       throw new RaidenError(ErrorCodes.RDN_MINT_FAILED, { transactionHash: tx.hash! });
 
+    await waitConfirmation(receipt, this.deps);
     return tx.hash as Hash;
   }
 
@@ -1041,6 +1043,14 @@ export class Raiden {
 
     onChange?.({
       type: EventTypes.DEPOSITED,
+      payload: {
+        txHash: depositTx.hash as Hash,
+      },
+    });
+
+    await waitConfirmation(depositReceipt, this.deps);
+    onChange?.({
+      type: EventTypes.CONFIRMED,
       payload: {
         txHash: depositTx.hash as Hash,
       },
