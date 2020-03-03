@@ -18,6 +18,7 @@ import {
   tap,
   timeout,
   withLatestFrom,
+  distinctUntilKeyChanged,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { Signer } from 'ethers';
@@ -33,10 +34,9 @@ import { RaidenEpicDeps } from '../types';
 import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate } from '../messages/types';
 import { MessageTypeId, signMessage } from '../messages/utils';
-import { channelDeposit, channelMonitor } from '../channels/actions';
-import { ChannelState } from '../channels/state';
+import { ChannelState, Channel } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
-import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
+import { Address, decode, Int, Signature, Signed, UInt, isntNil } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
@@ -365,6 +365,23 @@ export const pathFindServiceEpic = (
   );
 };
 
+function channelEntries(channels: RaidenState['channels']): ReadonlyArray<[string, Channel]> {
+  return Object.entries(channels)
+    .map(([tokenNetwork, partnerChannels]) =>
+      Object.entries(partnerChannels).map(
+        ([partner, channel]) => [`${partner}@${tokenNetwork}`, channel] as [string, Channel],
+      ),
+    )
+    .reduce((acc, val) => [...acc, ...val], []);
+}
+
+function keyToTNP(key: string): { key: string; tokenNetwork: Address; partnerAddr: Address } {
+  const [partner, tokenNetwork] = key.split('@');
+  return { key, tokenNetwork: tokenNetwork as Address, partnerAddr: partner as Address };
+}
+
+type ChangedChannel = Channel & ReturnType<typeof keyToTNP>;
+
 /**
  * Sends a [[PFSCapacityUpdate]] to PFS global room on new deposit on our side of channels
  *
@@ -373,39 +390,53 @@ export const pathFindServiceEpic = (
  * @returns Observable of messageGlobalSend actions
  */
 export const pfsCapacityUpdateEpic = (
-  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, address, network, signer, config$, latest$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
-  action$.pipe(
-    filter(isActionOf([channelMonitor, channelDeposit.success])),
-    filter(
-      action =>
-        !channelDeposit.success.is(action) ||
-        (!!action.payload.confirmed && action.payload.participant === address),
+  latest$.pipe(
+    pluckDistinct('state', 'channels'),
+    concatMap(channels => from(channelEntries(channels))),
+    /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
+     * changes from last time seen. It relies on value references changing only if needed */
+    scan(
+      ({ acc }, [key, channel]) =>
+        // if ref didn't change, emit previous accumulator, without 'changed' value
+        acc[key] === channel
+          ? { acc }
+          : // else, update ref in 'acc' and emit value in 'changed' prop
+            {
+              acc: { ...acc, [key]: channel },
+              changed: { ...channel, ...keyToTNP(key) } as ChangedChannel,
+            },
+      { acc: {} } as { acc: { [k: string]: Channel }; changed?: ChangedChannel },
     ),
-    groupBy(({ meta: { tokenNetwork, partner } }) => `${partner}@${tokenNetwork}`),
+    pluck('changed'),
+    filter(isntNil), // filter out if reference didn't change from last emit
+    groupBy(({ key }) => key),
     withLatestFrom(config$),
     mergeMap(([grouped$, { httpTimeout }]) =>
       grouped$.pipe(
-        debounceTime(httpTimeout / 6),
-        withLatestFrom(latest$.pipe(pluckDistinct('state')), config$),
-        filter(([, , { pfsRoom }]) => !!pfsRoom), // ignore actions while/if config.pfsRoom isn't set
-        mergeMap(([action, state, { revealTimeout, pfsRoom }]) => {
-          const channel = state.channels[action.meta.tokenNetwork]?.[action.meta.partner];
-          if (channel?.state !== ChannelState.open) return EMPTY;
-
-          const { ownCapacity, partnerCapacity } = channelAmounts(channel);
+        withLatestFrom(config$),
+        filter(([, { pfsRoom }]) => !!pfsRoom), // ignore actions while/if config.pfsRoom isn't set
+        debounceTime(httpTimeout / 3), // default: 10s
+        map(([channel, config]) => ({ channel, capacities: channelAmounts(channel), config })),
+        // distinct on ownCapacity change
+        distinctUntilKeyChanged('capacities', (a, b) => a.ownCapacity.eq(b.ownCapacity)),
+        concatMap(({ channel, capacities, config: { revealTimeout, pfsRoom } }) => {
+          const { tokenNetwork, partnerAddr: partner } = channel;
+          if (channel.state !== ChannelState.open) return EMPTY;
+          const { ownCapacity, partnerCapacity } = capacities;
 
           const message: PFSCapacityUpdate = {
             type: MessageType.PFS_CAPACITY_UPDATE,
             canonical_identifier: {
               chain_identifier: bigNumberify(network.chainId) as UInt<32>,
-              token_network_address: action.meta.tokenNetwork,
+              token_network_address: tokenNetwork,
               channel_identifier: bigNumberify(channel.id) as UInt<32>,
             },
             updating_participant: address,
-            other_participant: action.meta.partner,
+            other_participant: partner,
             updating_nonce: channel.own.balanceProof
               ? channel.own.balanceProof.nonce
               : (Zero as UInt<8>),
