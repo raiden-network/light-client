@@ -131,7 +131,7 @@
               </v-col>
             </v-row>
             <v-row justify="center" class="transfer-steps__step__content">
-              <v-col cols="10">
+              <v-col cols="12" sm="10">
                 <pathfinding-services
                   v-if="step === 1"
                   @select="setPFS($event)"
@@ -142,7 +142,7 @@
 
           <v-stepper-content step="2">
             <v-row justify="center" class="transfer-steps__step__content">
-              <v-col cols="10">
+              <v-col cols="12" sm="10">
                 <find-routes
                   v-if="step === 2"
                   :token="token"
@@ -155,13 +155,12 @@
           </v-stepper-content>
 
           <v-stepper-content step="3">
-            <div
-              v-if="step === 3 && !processingTransfer"
-              class="transfer-steps__summary"
-            >
-              <h1>{{ $t('transfer.steps.summary.headline') }}</h1>
-              <transfer-summary :transfer="transferSummary" />
-            </div>
+            <v-row v-if="step === 3 && !processingTransfer" justify="center">
+              <v-col cols="12" sm="10">
+                <h1>{{ $t('transfer.steps.summary.headline') }}</h1>
+                <transfer-summary :transfer="transferSummary" />
+              </v-col>
+            </v-row>
           </v-stepper-content>
         </v-stepper-items>
       </v-stepper>
@@ -631,11 +630,6 @@ export default class TransferSteps extends Mixins(
     &__spinner {
       margin: 3rem 0;
     }
-  }
-
-  &__summary {
-    text-align: center;
-    padding: 25px 50px;
   }
 
   .udc-balance {

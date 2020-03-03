@@ -159,6 +159,7 @@ export default class PathfindingServices extends Vue {
 
 <style scoped lang="scss">
 @import '../scss/colors';
+@import '../scss/mixins';
 
 .pathfinding-services {
   &__wrapper {
@@ -196,6 +197,10 @@ export default class PathfindingServices extends Vue {
       th {
         font-size: 16px;
         border: none !important;
+
+        @include respond-to(handhelds) {
+          padding: 0;
+        }
       }
 
       td {
@@ -203,11 +208,23 @@ export default class PathfindingServices extends Vue {
         height: 74px;
         padding-top: 5px;
         padding-bottom: 5px;
+
+        @include respond-to(handhelds) {
+          height: auto;
+          padding: 0;
+        }
       }
 
       .v-data-table {
         &__selected {
           background: rgba($disabled-text-color, 0.1) !important;
+        }
+
+        &__mobile-row {
+          &__header,
+          &__cell {
+            align-self: flex-start;
+          }
         }
       }
     }

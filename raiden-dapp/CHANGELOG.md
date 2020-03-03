@@ -5,7 +5,9 @@
 ### Fixed
 - [#1118] Fixed token list in token overlay.
 - [#1115] Fixed error message when trying to connect to main net.
+- [#1078] Various mobile UI improvements.
 
+[#1078]: https://github.com/raiden-network/light-client/issues/1078
 [#1118]: https://github.com/raiden-network/light-client/issues/1118
 [#1115]: https://github.com/raiden-network/light-client/issues/1115
 

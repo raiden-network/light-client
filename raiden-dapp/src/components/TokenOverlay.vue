@@ -31,7 +31,7 @@
       </v-row>
 
       <v-row>
-        <v-col cols="2" align-self="center"></v-col>
+        <v-col cols="2" class="hidden-sm-and-down" align-self="center"></v-col>
         <v-col
           cols="10"
           align-self="center"
@@ -143,6 +143,7 @@ export default class TokenOverlay extends Mixins(
 @import '../scss/colors';
 @import '../scss/scroll';
 @import '../scss/fonts';
+@import '../scss/mixins';
 
 .token-network-overlay {
   border-bottom-left-radius: 10px;
@@ -169,6 +170,10 @@ export default class TokenOverlay extends Mixins(
 
     .v-list-item {
       padding: 0 0 0 48px;
+
+      @include respond-to(handhelds) {
+        padding: 0;
+      }
     }
   }
 

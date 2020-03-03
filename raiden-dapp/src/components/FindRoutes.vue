@@ -6,7 +6,7 @@
         {{ $t('find-routes.sub-title', { subdomain }) }}
       </div>
       <v-row align="center" justify="center">
-        <v-form>
+        <v-col cols="12" sm="10">
           <v-data-table
             v-model="selected"
             :headers="headers"
@@ -29,7 +29,7 @@
               {{ token.symbol }}
             </template>
           </v-data-table>
-        </v-form>
+        </v-col>
       </v-row>
     </v-col>
   </v-row>
@@ -103,6 +103,7 @@ export default class FindRoutes extends Vue {
 
 <style scoped lang="scss">
 @import '../scss/colors';
+@import '../scss/mixins';
 
 .find-routes {
   > * {
@@ -134,12 +135,21 @@ export default class FindRoutes extends Vue {
       th {
         font-size: 16px;
         border: none !important;
+
+        @include respond-to(handhelds) {
+          padding: 0;
+        }
       }
 
       td {
         border: none !important;
         padding-top: 5px;
         padding-bottom: 5px;
+
+        @include respond-to(handhelds) {
+          height: auto;
+          padding: 0;
+        }
       }
 
       .v-data-table {
