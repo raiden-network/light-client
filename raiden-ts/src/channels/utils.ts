@@ -27,18 +27,12 @@ export function channelAmounts(channel: Channel) {
       partnerCapacity: Zero32,
     };
 
-  const ownWithdraw = channel.own.withdraw || Zero32,
-    partnerWithdraw = channel.partner.withdraw || Zero32,
-    ownTransferred = channel.own.balanceProof
-      ? channel.own.balanceProof.transferredAmount
-      : Zero32,
-    partnerTransferred = channel.partner.balanceProof
-      ? channel.partner.balanceProof.transferredAmount
-      : Zero32,
-    ownLocked = channel.own.balanceProof ? channel.own.balanceProof.lockedAmount : Zero32,
-    partnerLocked = channel.partner.balanceProof
-      ? channel.partner.balanceProof.lockedAmount
-      : Zero32,
+  const ownWithdraw = channel.own.withdraw ?? Zero32,
+    partnerWithdraw = channel.partner.withdraw ?? Zero32,
+    ownTransferred = channel.own.balanceProof?.transferredAmount ?? Zero32,
+    partnerTransferred = channel.partner.balanceProof?.transferredAmount ?? Zero32,
+    ownLocked = channel.own.balanceProof?.lockedAmount ?? Zero32,
+    partnerLocked = channel.partner.balanceProof?.lockedAmount ?? Zero32,
     ownBalance = partnerTransferred.sub(ownTransferred) as UInt<32>,
     partnerBalance = ownTransferred.sub(partnerTransferred) as UInt<32>, // == -ownBalance
     ownCapacity = channel.own.deposit
