@@ -30,7 +30,7 @@ export class TestProvider extends Web3Provider {
           seed: 'testrpc_provider',
           network_id: 1338,
           db: memdown(),
-          // logger: console,
+          logger: console,
           ...opts,
         }),
     );

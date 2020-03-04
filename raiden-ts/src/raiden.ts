@@ -27,7 +27,7 @@ import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
 import { RaidenConfig, makeDefaultConfig, PartialRaidenConfig } from './config';
-import { RaidenChannels } from './channels/state';
+import { RaidenChannels, ChannelState } from './channels/state';
 import { RaidenTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
@@ -546,24 +546,47 @@ export class Raiden {
    * @param options - (optional) option parameter
    * @param options.settleTimeout - Custom, one-time settle timeout
    * @param options.subkey - Whether to use the subkey for on-chain tx or main account (default)
+   * @param onChange - Optional callback for status change notification
    * @returns txHash of channelOpen call, iff it succeeded
    */
   public async openChannel(
     token: string,
     partner: string,
-    options: { settleTimeout?: number; subkey?: boolean } = {},
+    options: { settleTimeout?: number; subkey?: boolean; deposit?: BigNumberish } = {},
+    onChange?: OnChange<EventTypes, { txHash: string }>,
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(partner), 'Invalid address');
     const tokenNetwork = await this.monitorToken(token);
     assert(!options.subkey || this.deps.main, "Can't send tx from subkey if not set");
+    const deposit = options.deposit === undefined ? undefined : decode(UInt(32), options.deposit);
 
     const meta = { tokenNetwork, partner };
     // wait for confirmation
-    const promise = asyncActionToPromise(channelOpen, meta, this.action$, true).then(
+    const openPromise = asyncActionToPromise(channelOpen, meta, this.action$, false).then(
       ({ txHash }) => txHash, // pluck txHash
     );
-    this.store.dispatch(channelOpen.request(options, meta));
-    return promise;
+
+    this.store.dispatch(channelOpen.request({ ...options, deposit }, meta));
+
+    const openTxHash = await openPromise;
+    onChange?.({ type: EventTypes.OPENED, payload: { txHash: openTxHash } });
+
+    await this.state$
+      .pipe(
+        pluckDistinct('channels', tokenNetwork, partner, 'state'),
+        first(state => state === ChannelState.open),
+      )
+      .toPromise();
+    onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash: openTxHash } });
+
+    if (deposit) {
+      const depositTx = await asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
+        ({ txHash }) => txHash, // pluck txHash
+      );
+      onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: depositTx } });
+    }
+
+    return openTxHash;
   }
 
   /**

@@ -11,7 +11,6 @@ import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
 import { BigNumber, BigNumberish } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import { ConfigProvider } from './config-provider';
@@ -236,15 +235,11 @@ export default class RaidenService {
     progressUpdater(1, 3);
 
     try {
-      await raiden.openChannel(token, partner);
+      await raiden.openChannel(token, partner, { deposit: amount }, e =>
+        e.type === EventTypes.OPENED ? progressUpdater(2, 3) : ''
+      );
     } catch (e) {
       throw new ChannelOpenFailed(e);
-    }
-
-    progressUpdater(2, 3);
-
-    if (amount.gt(Zero)) {
-      await this.deposit(token, partner, amount);
     }
   }
 
