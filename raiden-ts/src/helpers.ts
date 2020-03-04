@@ -1,5 +1,5 @@
 import { Signer, Wallet, Contract } from 'ethers';
-import { ContractReceipt } from 'ethers/contract';
+import { ContractReceipt, ContractTransaction } from 'ethers/contract';
 import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
 import { JsonRpcProvider } from 'ethers/providers';
 import { Observable, from, defer } from 'rxjs';
@@ -14,6 +14,7 @@ import {
   exhaustMap,
 } from 'rxjs/operators';
 import { findKey, transform, pick } from 'lodash';
+import logging from 'loglevel';
 
 import { RaidenState } from './state';
 import { ContractsInfo, RaidenEpicDeps } from './types';
@@ -22,7 +23,7 @@ import { TransferState, TransfersState, RaidenTransfer } from './transfers/state
 import { channelAmounts } from './channels/utils';
 import { RaidenChannels, RaidenChannel, Channel } from './channels/state';
 import { pluckDistinct } from './utils/rx';
-import { Address, PrivateKey, isntNil, Hash } from './utils/types';
+import { Address, PrivateKey, isntNil, Hash, assert } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
@@ -265,6 +266,50 @@ export function chooseOnchainAccount(
 export function getContractWithSigner<C extends Contract>(contract: C, signer: Signer): C {
   if (contract.signer === signer) return contract;
   return contract.connect(signer) as C;
+}
+
+/**
+ * Calls a contract method and wait for it to be mined successfuly, rejects otherwise
+ *
+ * @param contract - Contract instance
+ * @param method - Method name
+ * @param params - Params tuple to method
+ * @param errorCode - ErrorCode to throw in case of failure
+ * @returns Promise to successful receipt
+ */
+export async function callAndWaitMined<
+  C extends Contract,
+  M extends keyof C['functions'],
+  P extends Parameters<C['functions'][M]>
+>(
+  contract: C,
+  method: M,
+  params: P,
+  errorCode: ErrorCodes,
+  { log }: { log: logging.Logger } = { log: logging },
+): Promise<ContractReceipt> {
+  let tx: ContractTransaction;
+  try {
+    // 'as C' just to avoid error with unknown functions Bucket
+    tx = await (contract.functions as C)[method](...params);
+  } catch (err) {
+    log.error(`Error sending ${method} tx`, err);
+    throw new RaidenError(errorCode, { error: err.message });
+  }
+  log.debug(`sent ${method} tx "${tx.hash}" to "${contract.address}"`);
+
+  let receipt: ContractReceipt;
+  try {
+    receipt = await tx.wait();
+    assert(receipt.status, `tx status: ${receipt.status}`);
+  } catch (err) {
+    log.error(`Error mining ${method} tx`, err);
+    throw new RaidenError(errorCode, {
+      transactionHash: tx.hash!,
+    });
+  }
+  log.debug(`${method} tx "${tx.hash}" successfuly mined!`);
+  return receipt;
 }
 
 /**
