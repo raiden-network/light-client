@@ -429,6 +429,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         align-items: flex-start;
         padding-left: 20px;
         justify-content: center;
+
+        @include respond-to(handhelds) {
+          padding-left: 10px;
+        }
+      }
+
+      &__message {
+        line-height: 1.1;
       }
     }
   }
