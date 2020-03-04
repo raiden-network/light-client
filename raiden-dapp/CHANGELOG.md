@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [0.4.1] - 2020-03-04
 ### Fixed
 - [#1116] Fixed unhandled exception on transfer error dialog on PFS expected errors
 - [#1118] Fixed token list in token overlay.
@@ -139,7 +139,7 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.4.0...HEAD
+[0.4.1]: https://github.com/raiden-network/light-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/raiden-network/light-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/raiden-network/light-client/compare/v0.2...v0.3.0
 [0.2]: https://github.com/raiden-network/light-client/compare/v0.1.1...v0.2
