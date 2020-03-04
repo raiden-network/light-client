@@ -1,20 +1,22 @@
 <template>
   <v-row class="error-message">
-    <div class="error-message__image">
-      <v-img :src="require('../assets/error.png')" />
-    </div>
-    <h2 class="error-message__title">{{ title }}</h2>
-    <label class="error-message__label">
-      {{ $t('error-message.problem') }}
-    </label>
-    <p>{{ problem }}</p>
-    <label class="error-message__label">
-      {{ $t('error-message.solution') }}
-    </label>
-    <ol v-if="Array.isArray(solution)">
-      <li v-for="step in solution" :key="step">{{ step }}</li>
-    </ol>
-    <p v-else>{{ solution }}</p>
+    <v-col cols="12">
+      <div class="error-message__image">
+        <v-img :src="require('../assets/error.png')" />
+      </div>
+      <h2 class="error-message__title">{{ title }}</h2>
+      <label class="error-message__label">
+        {{ $t('error-message.problem') }}
+      </label>
+      <p>{{ problem }}</p>
+      <label class="error-message__label">
+        {{ $t('error-message.solution') }}
+      </label>
+      <ol v-if="Array.isArray(solution)">
+        <li v-for="step in solution" :key="step">{{ step }}</li>
+      </ol>
+      <p v-else>{{ solution }}</p>
+    </v-col>
   </v-row>
 </template>
 

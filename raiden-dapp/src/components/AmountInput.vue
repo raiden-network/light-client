@@ -226,6 +226,14 @@ $header-vertical-margin-mobile: 2rem;
         padding-left: 20px;
         justify-content: center;
         color: white;
+
+        @include respond-to(handhelds) {
+          padding-left: 10px;
+        }
+      }
+
+      &__message {
+        line-height: 1.1;
       }
     }
   }
