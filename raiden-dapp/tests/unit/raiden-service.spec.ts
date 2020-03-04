@@ -145,12 +145,11 @@ describe('RaidenService', () => {
 
   test('resolves when channel open and deposit are successful', async () => {
     providerMock.mockResolvedValue(mockProvider);
-    const openChannel = jest.fn().mockResolvedValue('0xtxhash');
-    const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
-    const raidenMock = mockRaiden({
-      openChannel: openChannel,
-      depositChannel: depositChannel
+    const openChannel = jest.fn(async ({}, {}, {}, callback?: Function) => {
+      callback?.({ type: 'OPENED', payload: { txHash: '0xtxhash' } });
+      return '0xtxhash';
     });
+    const raidenMock = mockRaiden({ openChannel });
     factory.mockResolvedValue(raidenMock);
     await raidenService.connect();
     await flushPromises();
@@ -162,49 +161,21 @@ describe('RaidenService', () => {
       raidenService.openChannel('0xtoken', '0xpartner', depositAmount, progress)
     ).resolves.toBeUndefined();
     expect(openChannel).toBeCalledTimes(1);
-    expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
-    expect(depositChannel).toBeCalledTimes(1);
-    expect(depositChannel).toBeCalledWith(
+    expect(openChannel).toBeCalledWith(
       '0xtoken',
       '0xpartner',
-      depositAmount
+      { deposit: expect.any(BigNumber) },
+      expect.any(Function)
     );
 
-    expect(progress).toHaveBeenCalledTimes(2);
-  });
-
-  test('return true and opens a channel but skips deposit when the balance is zero', async () => {
-    providerMock.mockResolvedValue(mockProvider);
-    const openChannel = jest.fn().mockResolvedValue('0xtxhash');
-    const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
-    const raidenMock = mockRaiden({
-      openChannel: openChannel,
-      depositChannel: depositChannel
-    });
-    factory.mockResolvedValue(raidenMock);
-    await raidenService.connect();
-    await flushPromises();
-
-    const progress = jest.fn();
-
-    await expect(
-      raidenService.openChannel('0xtoken', '0xpartner', Zero, progress)
-    ).resolves.toBeUndefined();
-    expect(openChannel).toBeCalledTimes(1);
-    expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
-    expect(depositChannel).toBeCalledTimes(0);
-    expect(progress).toHaveBeenCalledTimes(2);
+    expect(progress).toHaveBeenCalled();
   });
 
   test('throw an exception when channel open fails', async () => {
     expect.assertions(1);
     providerMock.mockResolvedValue(mockProvider);
     const openChannel = jest.fn().mockRejectedValue('failed');
-    const depositChannel = jest.fn().mockResolvedValue('0xtxhash');
-    const raidenMock = mockRaiden({
-      openChannel: openChannel,
-      depositChannel: depositChannel
-    });
+    const raidenMock = mockRaiden({ openChannel });
 
     factory.mockResolvedValue(raidenMock);
     await raidenService.connect();
@@ -214,28 +185,6 @@ describe('RaidenService', () => {
     await expect(
       raidenService.openChannel('0xtoken', '0xpartner', depositAmount)
     ).rejects.toBeInstanceOf(ChannelOpenFailed);
-  });
-
-  test('throw an exception when the deposit fails', async () => {
-    expect.assertions(3);
-    providerMock.mockResolvedValue(mockProvider);
-    const openChannel = jest.fn().mockResolvedValue('0xtxhash');
-    const depositChannel = jest.fn().mockRejectedValue('failed');
-    const raidenMock = mockRaiden({
-      openChannel: openChannel,
-      depositChannel: depositChannel
-    });
-
-    factory.mockResolvedValue(raidenMock);
-    await raidenService.connect();
-    await flushPromises();
-
-    const depositAmount = new BigNumber(100);
-    await expect(
-      raidenService.openChannel('0xtoken', '0xpartner', depositAmount)
-    ).rejects.toBeInstanceOf(ChannelDepositFailed);
-    expect(openChannel).toBeCalledTimes(1);
-    expect(openChannel).toBeCalledWith('0xtoken', '0xpartner');
   });
 
   test('return a token object from getTokenBalance when there is no exception', async () => {
