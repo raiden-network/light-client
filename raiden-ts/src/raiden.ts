@@ -63,6 +63,7 @@ import {
   chooseOnchainAccount,
   getContractWithSigner,
   waitConfirmation,
+  callAndWaitMined,
 } from './helpers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
@@ -973,29 +974,17 @@ export class Raiden {
     // Mint token
     const customTokenContract = CustomTokenFactory.connect(token, signer);
 
-    let tx;
-    try {
-      tx = await customTokenContract.functions.mint(decode(UInt(32), amount));
-    } catch (err) {
-      this.log.error('Error sending approve tx', err);
-      throw err;
-    }
-    this.log.debug(`sent mint tx "${tx.hash}" to "${token}"`);
-
-    let receipt;
-    try {
-      receipt = await tx.wait();
-    } catch (err) {
-      this.log.error('Error mining mint tx', err);
-      throw err;
-    }
-    if (!receipt.status)
-      throw new RaidenError(ErrorCodes.RDN_MINT_FAILED, { transactionHash: tx.hash! });
-    this.log.debug(`mint tx "${tx.hash}" successfuly mined!`);
+    const receipt = await callAndWaitMined(
+      customTokenContract,
+      'mint',
+      [decode(UInt(32), amount)],
+      ErrorCodes.RDN_MINT_FAILED,
+      { log: this.log },
+    );
 
     // wait for a single block, so future calls will correctly pick value
     await waitConfirmation(receipt, this.deps, 1);
-    return tx.hash as Hash;
+    return receipt.transactionHash as Hash;
   }
 
   /**
@@ -1059,76 +1048,49 @@ export class Raiden {
 
     assert(balance.gte(amount), `Insufficient token balance (${balance}).`, this.log.debug);
 
-    let approveTx;
-    try {
-      approveTx = await serviceTokenContract.functions.approve(
-        userDepositContract.address,
-        depositAmount,
-      );
-    } catch (err) {
-      this.log.error('Error sending approve tx', err);
-      throw err;
-    }
-    this.log.debug(`sent approve tx "${approveTx.hash}" to "${serviceTokenContract.address}"`);
-
-    let approveReceipt;
-    try {
-      approveReceipt = await approveTx.wait();
-    } catch (err) {
-      this.log.error('Error mining approve tx', err);
-      throw err;
-    }
-    if (!approveReceipt.status) throw new RaidenError(ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED);
-    this.log.debug(`approve tx "${approveTx.hash}" successfuly mined!`);
+    const approveReceipt = await callAndWaitMined(
+      serviceTokenContract,
+      'approve',
+      [userDepositContract.address, depositAmount],
+      ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
+      { log: this.log },
+    );
 
     onChange?.({
       type: EventTypes.APPROVED,
       payload: {
-        txHash: approveTx.hash as Hash,
+        txHash: approveReceipt.transactionHash as Hash,
       },
     });
 
     const currentUDCBalance = await userDepositContract.functions.balances(this.address);
 
-    let depositTx;
-    try {
-      depositTx = await userDepositContract.functions.deposit(
-        this.address,
-        currentUDCBalance.add(depositAmount),
-      );
-    } catch (err) {
-      this.log.error('Error sending approve tx', err);
-      throw err;
-    }
-    this.log.debug(`sent deposit tx "${depositTx.hash}" to "${userDepositContract.address}"`);
-
-    let depositReceipt;
-    try {
-      depositReceipt = await depositTx.wait();
-    } catch (err) {
-      this.log.error('Error mining deposit tx', err);
-      throw err;
-    }
-    if (!depositReceipt.status) throw new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED);
-    this.log.debug(`deposit tx "${depositTx.hash}" successfuly mined!`);
+    const depositReceipt = await callAndWaitMined(
+      userDepositContract,
+      'deposit',
+      [this.address, currentUDCBalance.add(depositAmount)],
+      ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED,
+      { log: this.log },
+    );
 
     onChange?.({
       type: EventTypes.DEPOSITED,
       payload: {
-        txHash: depositTx.hash as Hash,
+        txHash: depositReceipt.transactionHash as Hash,
       },
     });
 
     await waitConfirmation(depositReceipt, this.deps);
-    this.log.debug(`deposit tx "${depositTx.hash}" confirmed`);
+    this.log.debug(`deposit tx "${depositReceipt.transactionHash}" confirmed`);
+
     onChange?.({
       type: EventTypes.CONFIRMED,
       payload: {
-        txHash: depositTx.hash as Hash,
+        txHash: depositReceipt.transactionHash as Hash,
       },
     });
 
-    return depositTx.hash as Hash;
+    return depositReceipt.transactionHash as Hash;
   }
 
   /**
@@ -1190,11 +1152,14 @@ export class Raiden {
     const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     const tokenContract = getContractWithSigner(this.deps.getTokenContract(token), signer);
 
-    const tx = await tokenContract.functions.transfer(to, bigNumberify(value));
-    const receipt = await tx.wait();
-
-    if (!receipt.status) throw new RaidenError(ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED);
-    return tx.hash! as Hash;
+    const receipt = await callAndWaitMined(
+      tokenContract,
+      'transfer',
+      [to, bigNumberify(value)],
+      ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED,
+      { log: this.log },
+    );
+    return receipt.transactionHash as Hash;
   }
 }
 
