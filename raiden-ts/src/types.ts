@@ -63,6 +63,7 @@ export interface ChangeEvent<T extends string, P> {
 export type OnChange<T extends string, P> = (event: ChangeEvent<T, P>) => void;
 
 export enum EventTypes {
+  OPENED = 'OPENED',
   APPROVED = 'APPROVED',
   DEPOSITED = 'DEPOSITED',
   CONFIRMED = 'CONFIRMED',

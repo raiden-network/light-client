@@ -343,9 +343,9 @@ describe('Raiden', () => {
       ).rejects.toThrow();
     });
 
-    test('success with default settleTimeout=20', async () => {
+    test('success with default settleTimeout=20 & deposit', async () => {
       expect.assertions(2);
-      await expect(raiden.openChannel(token, partner)).resolves.toMatch(/^0x/);
+      await expect(raiden.openChannel(token, partner, { deposit: 117 })).resolves.toMatch(/^0x/);
       await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toMatchObject({
         [token]: {
           [partner]: {
@@ -353,7 +353,7 @@ describe('Raiden', () => {
             tokenNetwork,
             partner,
             state: ChannelState.open,
-            ownDeposit: Zero,
+            ownDeposit: bigNumberify(117),
             partnerDeposit: Zero,
             settleTimeout: 20,
             balance: Zero,

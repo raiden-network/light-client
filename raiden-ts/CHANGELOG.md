@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- [#1128] Enable faster channel opening & deposit by parallelizing them and their confirmations
+
 ### Fixed
 - [#1120] Ensure PFS is updated by sending a PFSCapacityUpdate every time our capacity changes
 - [#1116] Wait for confirmation blocks after mint & depositToUDC to resolve promise

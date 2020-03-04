@@ -42,7 +42,7 @@ export const channelOpen = createAsyncAction(
   'channel/open/request',
   'channel/open/success',
   'channel/open/failed',
-  t.partial({ settleTimeout: t.number, subkey: t.boolean }),
+  t.partial({ settleTimeout: t.number, subkey: t.boolean, deposit: UInt(32) }),
   t.type({
     id: t.number,
     settleTimeout: t.number,
