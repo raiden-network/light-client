@@ -972,11 +972,29 @@ export class Raiden {
     const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     // Mint token
     const customTokenContract = CustomTokenFactory.connect(token, signer);
-    const tx = await customTokenContract.functions.mint(decode(UInt(32), amount));
-    const receipt = await tx.wait();
+
+    let tx;
+    try {
+      tx = await customTokenContract.functions.mint(decode(UInt(32), amount));
+    } catch (err) {
+      this.log.error('Error sending approve tx', err);
+      throw err;
+    }
+    this.log.debug(`sent mint tx "${tx.hash}" to "${token}"`);
+
+    let receipt;
+    try {
+      receipt = await tx.wait();
+    } catch (err) {
+      this.log.error('Error mining mint tx', err);
+      throw err;
+    }
     if (!receipt.status)
       throw new RaidenError(ErrorCodes.RDN_MINT_FAILED, { transactionHash: tx.hash! });
+    this.log.debug(`mint tx "${tx.hash}" successfuly mined!`);
 
+    // wait for a single block, so future calls will correctly pick value
+    await waitConfirmation(receipt, this.deps, 1);
     return tx.hash as Hash;
   }
 
@@ -1025,10 +1043,10 @@ export class Raiden {
     onChange?: OnChange<EventTypes, { txHash: string }>,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.debug);
 
     const depositAmount = bigNumberify(amount);
-    assert(depositAmount.gt(Zero), 'Please deposit a positive amount.');
+    assert(depositAmount.gt(Zero), 'Please deposit a positive amount.', this.log.debug);
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
@@ -1039,14 +1057,29 @@ export class Raiden {
     );
     const balance = await serviceTokenContract.functions.balanceOf(address);
 
-    assert(balance.gte(amount), `Insufficient token balance (${balance}).`);
+    assert(balance.gte(amount), `Insufficient token balance (${balance}).`, this.log.debug);
 
-    const approveTx = await serviceTokenContract.functions.approve(
-      userDepositContract.address,
-      depositAmount,
-    );
-    const approveReceipt = await approveTx.wait();
+    let approveTx;
+    try {
+      approveTx = await serviceTokenContract.functions.approve(
+        userDepositContract.address,
+        depositAmount,
+      );
+    } catch (err) {
+      this.log.error('Error sending approve tx', err);
+      throw err;
+    }
+    this.log.debug(`sent approve tx "${approveTx.hash}" to "${serviceTokenContract.address}"`);
+
+    let approveReceipt;
+    try {
+      approveReceipt = await approveTx.wait();
+    } catch (err) {
+      this.log.error('Error mining approve tx', err);
+      throw err;
+    }
     if (!approveReceipt.status) throw new RaidenError(ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED);
+    this.log.debug(`approve tx "${approveTx.hash}" successfuly mined!`);
 
     onChange?.({
       type: EventTypes.APPROVED,
@@ -1056,12 +1089,28 @@ export class Raiden {
     });
 
     const currentUDCBalance = await userDepositContract.functions.balances(this.address);
-    const depositTx = await userDepositContract.functions.deposit(
-      this.address,
-      currentUDCBalance.add(depositAmount),
-    );
-    const depositReceipt = await depositTx.wait();
+
+    let depositTx;
+    try {
+      depositTx = await userDepositContract.functions.deposit(
+        this.address,
+        currentUDCBalance.add(depositAmount),
+      );
+    } catch (err) {
+      this.log.error('Error sending approve tx', err);
+      throw err;
+    }
+    this.log.debug(`sent deposit tx "${depositTx.hash}" to "${userDepositContract.address}"`);
+
+    let depositReceipt;
+    try {
+      depositReceipt = await depositTx.wait();
+    } catch (err) {
+      this.log.error('Error mining deposit tx', err);
+      throw err;
+    }
     if (!depositReceipt.status) throw new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED);
+    this.log.debug(`deposit tx "${depositTx.hash}" successfuly mined!`);
 
     onChange?.({
       type: EventTypes.DEPOSITED,
@@ -1071,6 +1120,7 @@ export class Raiden {
     });
 
     await waitConfirmation(depositReceipt, this.deps);
+    this.log.debug(`deposit tx "${depositTx.hash}" confirmed`);
     onChange?.({
       type: EventTypes.CONFIRMED,
       payload: {
@@ -1103,8 +1153,8 @@ export class Raiden {
     value: BigNumberish,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
-    assert(Address.is(to), 'Invalid address');
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+    assert(Address.is(to), 'Invalid address', this.log.debug);
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.debug);
 
     const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
@@ -1134,8 +1184,8 @@ export class Raiden {
     value: BigNumberish,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
-    assert(Address.is(token) && Address.is(to), 'Invalid address');
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+    assert(Address.is(token) && Address.is(to), 'Invalid address', this.log.debug);
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.debug);
 
     const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     const tokenContract = getContractWithSigner(this.deps.getTokenContract(token), signer);

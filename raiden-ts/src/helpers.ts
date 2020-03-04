@@ -272,10 +272,13 @@ export function getContractWithSigner<C extends Contract>(contract: C, signer: S
  *
  * @param receipt - Receipt to wait for confirmation
  * @param deps - RaidenEpicDeps
+ * @param confBlocks - Overwrites config
+ * @returns Promise final block of transaction
  */
 export async function waitConfirmation(
   receipt: ContractReceipt,
   { latest$, config$, provider }: RaidenEpicDeps,
+  confBlocks?: number,
 ): Promise<number> {
   const txBlock = receipt.blockNumber!;
   const txHash = receipt.transactionHash!;
@@ -284,14 +287,18 @@ export async function waitConfirmation(
       pluckDistinct('state', 'blockNumber'),
       withLatestFrom(config$),
       filter(
-        ([blockNumber, { confirmationBlocks }]) => txBlock + confirmationBlocks <= blockNumber,
+        ([blockNumber, { confirmationBlocks }]) =>
+          txBlock + (confBlocks ?? confirmationBlocks) <= blockNumber,
       ),
       exhaustMap(([blockNumber, { confirmationBlocks }]) =>
         defer(() => provider.getTransactionReceipt(txHash)).pipe(
           map(receipt => {
-            if (receipt?.confirmations && receipt.confirmations >= confirmationBlocks)
+            if (
+              receipt?.confirmations &&
+              receipt.confirmations >= (confBlocks ?? confirmationBlocks)
+            )
               return receipt.blockNumber;
-            else if (txBlock + 2 * confirmationBlocks < blockNumber)
+            else if (txBlock + 2 * (confBlocks ?? confirmationBlocks) < blockNumber)
               throw new RaidenError(ErrorCodes.RDN_TRANSACTION_REORG, {
                 transactionHash: txHash,
               });
