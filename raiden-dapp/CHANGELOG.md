@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+### Fixed
+- [#1139] Fix AddressInput value resetting when validation fails
+
+[#1139]: https://github.com/raiden-network/light-client/issues/1139
+
 ## [0.4.1] - 2020-03-04
 ### Fixed
 - [#1116] Fixed unhandled exception on transfer error dialog on PFS expected errors
@@ -139,6 +145,7 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/raiden-network/light-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/raiden-network/light-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/raiden-network/light-client/compare/v0.2...v0.3.0
