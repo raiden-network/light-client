@@ -1,12 +1,16 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.1] - 2020-03-04
 ### Changed
 - [#1128] Enable faster channel opening & deposit by parallelizing them and their confirmations
 
 ### Fixed
 - [#1120] Ensure PFS is updated by sending a PFSCapacityUpdate every time our capacity changes
 - [#1116] Wait for confirmation blocks after mint & depositToUDC to resolve promise
+
+[#1120]: https://github.com/raiden-network/light-client/issues/1120
+[#1128]: https://github.com/raiden-network/light-client/issues/1128
+[#1116]: https://github.com/raiden-network/light-client/issues/1116
 
 ## [0.4.0] - 2020-02-28
 ### Added
@@ -97,7 +101,7 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.4.0...HEAD
+[0.4.1]: https://github.com/raiden-network/light-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/raiden-network/light-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/raiden-network/light-client/compare/v0.2...v0.3.0
 [0.2]: https://github.com/raiden-network/light-client/compare/v0.1.1...v0.2

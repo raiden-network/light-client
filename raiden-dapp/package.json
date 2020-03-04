@@ -1,6 +1,6 @@
 {
   "name": "raiden-dapp",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "A dApp that showcases the Raiden Light Client sdk functionality",
   "author": "brainbot labs est.",
