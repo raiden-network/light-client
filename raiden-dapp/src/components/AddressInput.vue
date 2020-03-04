@@ -3,7 +3,7 @@
     <v-text-field
       id="address-input"
       ref="address"
-      :value="address"
+      v-model="address"
       :error-messages="errorMessages"
       :rules="isAddressValid"
       :class="{
@@ -243,10 +243,10 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
         if (error) {
           this.errorMessages.push(error);
+        } else {
+          this.address = value;
         }
-
-        this.address = value;
-        this.input(this.address);
+        this.input(value);
         this.checkForErrors();
       });
   }
