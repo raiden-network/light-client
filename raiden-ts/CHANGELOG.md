@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2] - 2020-03-05
+### Added
+- [#1135] Add logging to mint & depositToUDC public methods
+
+### Fixed
+- [#1133] Fix minor bug when minting & depositing to UDC for the first time
+
 ## [0.4.1] - 2020-03-04
 ### Changed
 - [#1128] Enable faster channel opening & deposit by parallelizing them and their confirmations
@@ -101,6 +108,7 @@
 - Add protocol message implementation.
 
 
+[0.4.2]: https://github.com/raiden-network/light-client/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/raiden-network/light-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/raiden-network/light-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/raiden-network/light-client/compare/v0.2...v0.3.0
