@@ -47,7 +47,7 @@
     "@types/webpack": "^4.41.7",
     "@typescript-eslint/eslint-plugin": "^2.22.0",
     "@typescript-eslint/parser": "^2.21.0",
-    "@vue/cli": "^4.2.2",
+    "@vue/cli": "^4.2.3",
     "@vue/cli-plugin-babel": "^4.2.3",
     "@vue/cli-plugin-eslint": "^4.2.3",
     "@vue/cli-plugin-pwa": "^4.2.2",
