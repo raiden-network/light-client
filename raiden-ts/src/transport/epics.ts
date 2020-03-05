@@ -40,23 +40,16 @@ import {
   exhaustMap,
   throwIfEmpty,
   retryWhen,
+  distinct,
+  delayWhen,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { find, minBy, sortBy, curry } from 'lodash';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
 
-import {
-  createClient,
-  MatrixClient,
-  MatrixEvent,
-  Room,
-  RoomMember,
-  RoomFilterJson,
-  FilterDefinition,
-  Filter,
-} from 'matrix-js-sdk';
-import matrixLogger from 'matrix-js-sdk/lib/logger';
+import { createClient, MatrixClient, MatrixEvent, Room, RoomMember, Filter } from 'matrix-js-sdk';
+import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 
 import { RaidenError, ErrorCodes } from '../utils/error';
 import { Address, Signed, isntNil, assert, Signature } from '../utils/types';
@@ -143,7 +136,7 @@ function getRoom$(matrix: MatrixClient, roomIdOrAlias: string): Observable<Room>
  * @returns Observable of the list of room ids for the the broadcast rooms.
  */
 function joinGlobalRooms(config: RaidenConfig, matrix: MatrixClient): Observable<string[]> {
-  const serverName = getServerName(matrix.baseUrl)!;
+  const serverName = getServerName(matrix.getHomeserverUrl())!;
   return from(globalRoomNames(config)).pipe(
     map(globalRoom => `#${globalRoom}:${serverName}`),
     mergeMap(alias =>
@@ -179,19 +172,17 @@ function joinGlobalRooms(config: RaidenConfig, matrix: MatrixClient): Observable
  */
 function createFilter(matrix: MatrixClient, roomIds: string[]): Observable<Filter> {
   return defer(() => {
-    const roomFilter: RoomFilterJson = {
+    const roomFilter = {
       not_rooms: roomIds,
       ephemeral: {
         not_types: ['m.receipt', 'm.typing'],
       },
-      state: {
-        lazy_load_members: true,
-      },
       timeline: {
         limit: 0,
+        not_senders: [matrix.getUserId()!],
       },
     };
-    const filterDefinition: FilterDefinition = {
+    const filterDefinition = {
       room: roomFilter,
     };
     return matrix.createFilter(filterDefinition);
@@ -709,7 +700,7 @@ export const matrixPresenceUpdateEpic = (
       // fetch profile info if user have no valid displayName set
       const displayName$: Observable<string | undefined> = Signature.is(user.displayName)
         ? of(user.displayName)
-        : defer(() => matrix.getProfileInfo(userId, 'displayname')).pipe(
+        : defer(() => matrix.getProfileInfo(userId)).pipe(
             pluck('displayname'),
             catchError(() => of(undefined)),
           );
@@ -751,12 +742,13 @@ export const matrixPresenceUpdateEpic = (
 export const matrixCreateRoomEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, latest$ }: RaidenEpicDeps,
+  { log, matrix$, latest$ }: RaidenEpicDeps,
 ): Observable<matrixRoom> =>
   // actual output observable, selects addresses of interest from actions
   action$.pipe(
     // ensure there's a room for address of interest for each of these actions
-    filter(isActionOf([transferSigned, channelMonitor, messageSend.request])),
+    // matrixRoomLeave ensures a new room is created if all we had are forgotten/left
+    filter(isActionOf([transferSigned, channelMonitor, messageSend.request, matrixRoomLeave])),
     map(action =>
       isActionOf(transferSigned, action)
         ? action.payload.message.target
@@ -790,6 +782,7 @@ export const matrixCreateRoomEpic = (
               }),
             ),
             map(({ room_id: roomId }) => matrixRoom({ roomId }, { address })),
+            catchError(err => (log.error('Error creating room, ignoring', err), EMPTY)),
           ),
         ),
       ),
@@ -878,7 +871,7 @@ export const matrixInviteEpic = (
 export const matrixHandleInvitesEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, config$, latest$ }: RaidenEpicDeps,
+  { log, matrix$, config$, latest$ }: RaidenEpicDeps,
 ): Observable<matrixRoom> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix invite events
@@ -915,6 +908,7 @@ export const matrixHandleInvitesEpic = (
       // join room and emit MatrixRoomAction to make it default/first option for sender address
       from(matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
         map(() => matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
+        catchError(err => (log.error('Error joining invited room, ignoring', err), EMPTY)),
       ),
     ),
   );
@@ -932,7 +926,7 @@ export const matrixHandleInvitesEpic = (
 export const matrixLeaveExcessRoomsEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { matrix$, config$ }: RaidenEpicDeps,
+  { log, matrix$, config$ }: RaidenEpicDeps,
 ): Observable<matrixRoomLeave> =>
   action$.pipe(
     // act whenever a new room is added to the address queue in state
@@ -941,9 +935,14 @@ export const matrixLeaveExcessRoomsEpic = (
     mergeMap(action => matrix$.pipe(map(matrix => ({ action, matrix })))),
     withLatestFrom(state$, config$),
     mergeMap(([{ action, matrix }, state, { matrixExcessRooms }]) => {
-      const rooms = state.transport!.matrix!.rooms![action.meta.address];
+      const rooms = state.transport.matrix?.rooms?.[action.meta.address] ?? [];
       return from(rooms.filter(({}, i) => i >= matrixExcessRooms)).pipe(
-        mergeMap(roomId => matrix.leave(roomId).then(() => roomId)),
+        mergeMap(roomId =>
+          matrix
+            .leave(roomId)
+            .catch(err => log.error('Error leaving excess room, ignoring', err))
+            .then(() => roomId),
+        ),
         map(roomId => matrixRoomLeave({ roomId }, action.meta)),
       );
     }),
@@ -960,14 +959,20 @@ export const matrixLeaveExcessRoomsEpic = (
 export const matrixLeaveUnknownRoomsEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { matrix$, config$ }: RaidenEpicDeps,
+  { log, matrix$, config$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix Room events
     switchMap(matrix =>
       fromEvent<Room>(matrix, 'Room').pipe(map(room => ({ matrix, roomId: room.roomId }))),
     ),
-    delay(180e3), // this room may become known later for some reason, so wait a little
+    // this room may become known later for some reason, so wait a little
+    delayWhen(() =>
+      config$.pipe(
+        first(),
+        mergeMap(({ httpTimeout }) => timer(httpTimeout)),
+      ),
+    ),
     withLatestFrom(state$, config$),
     // filter for leave events to us
     filter(([{ matrix, roomId }, state, config]) => {
@@ -983,7 +988,12 @@ export const matrixLeaveUnknownRoomsEpic = (
       }
       return true;
     }),
-    mergeMap(([{ matrix, roomId }]) => matrix.leave(roomId)),
+    mergeMap(async ([{ matrix, roomId }]) => {
+      log.warn('Unknown room in matrix, leaving', roomId);
+      return matrix
+        .leave(roomId)
+        .catch(err => log.error('Error leaving unknown room, ignoring', err));
+    }),
     ignoreElements(),
   );
 
@@ -1000,7 +1010,7 @@ export const matrixLeaveUnknownRoomsEpic = (
 export const matrixCleanLeftRoomsEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { matrix$ }: RaidenEpicDeps,
+  { log, matrix$ }: RaidenEpicDeps,
 ): Observable<matrixRoomLeave> =>
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix invite events
@@ -1019,11 +1029,51 @@ export const matrixCleanLeftRoomsEpic = (
       for (const address in rooms) {
         for (const roomId of rooms[address]) {
           if (roomId === room.roomId) {
+            log.warn('Left event for peer room detected, forgetting', address, roomId);
             yield matrixRoomLeave({ roomId }, { address: address as Address });
           }
         }
       }
     }),
+  );
+
+/**
+ * If some room we had with a peer doesn't show up in transport, forget it
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps members
+ * @returns Observable of matrixRoomLeave actions
+ */
+export const matrixCleanMissingRoomsEpic = (
+  {}: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { log, matrix$, config$ }: RaidenEpicDeps,
+): Observable<matrixRoomLeave> =>
+  state$.pipe(
+    pluckDistinct('transport', 'matrix'),
+    mergeMap(function*(matrix) {
+      const rooms = matrix?.rooms ?? {};
+      for (const address in rooms) {
+        for (const roomId of rooms[address]) {
+          yield { roomId, address: address as Address };
+        }
+      }
+    }),
+    distinct(({ roomId }) => roomId),
+    mergeMap(({ roomId, address }) => matrix$.pipe(map(matrix => ({ matrix, roomId, address })))),
+    withLatestFrom(config$),
+    mergeMap(([{ roomId, address, matrix }, { httpTimeout }]) =>
+      getRoom$(matrix, roomId).pipe(
+        // wait for room to show up in MatrixClient; if it doesn't, clean up
+        timeout(httpTimeout),
+        ignoreElements(),
+        catchError(() => {
+          log.warn('Peer room in state not found in matrix, forgetting', address, roomId);
+          return of(matrixRoomLeave({ roomId }, { address }));
+        }),
+      ),
+    ),
   );
 
 function waitMember$(
@@ -1172,7 +1222,7 @@ export const matrixMessageGlobalSendEpic = (
         );
         return EMPTY;
       }
-      const serverName = getServerName(matrix.baseUrl),
+      const serverName = getServerName(matrix.getHomeserverUrl()),
         roomAlias = `#${action.meta.roomName}:${serverName}`;
       return getRoom$(matrix, roomAlias).pipe(
         // send message!
