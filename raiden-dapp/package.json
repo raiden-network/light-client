@@ -78,7 +78,7 @@
     "stylelint-config-recommended-scss": "^4.2.0",
     "stylelint-scss": "^3.14.2",
     "ts-jest": "^24.3.0",
-    "typescript": "^3.8.2",
+    "typescript": "^3.8.3",
     "vue-cli-plugin-i18n": "^0.6.1",
     "vue-cli-plugin-vuetify": "^2.0.5",
     "vue-jest": "^3.0.5",
