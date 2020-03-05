@@ -478,11 +478,14 @@ describe('transport epic', () => {
     test('update without changing availability does not emit', async () => {
       expect.assertions(1);
 
-      matrix.getUser.mockImplementationOnce(userId => ({
-        userId,
-        presence: 'unavailable',
-        setDisplayName: jest.fn(),
-      }));
+      matrix.getUser.mockImplementationOnce(
+        userId =>
+          ({
+            userId,
+            presence: 'unavailable',
+            setDisplayName: jest.fn(),
+          } as any),
+      );
 
       const promise = matrixPresenceUpdateEpic(action$, state$, depsMock)
         .pipe(takeUntil(timer(50)))
@@ -515,12 +518,15 @@ describe('transport epic', () => {
         ),
         state$ = of(state);
 
-      matrix.getUser.mockImplementationOnce(userId => ({
-        userId,
-        presence: 'offline',
-        displayName: `partner_display_name`,
-        setDisplayName: jest.fn(),
-      }));
+      matrix.getUser.mockImplementationOnce(
+        userId =>
+          ({
+            userId,
+            presence: 'offline',
+            displayName: `partner_display_name`,
+            setDisplayName: jest.fn(),
+          } as any),
+      );
       (verifyMessage as jest.Mock).mockReturnValueOnce(token);
 
       const promise = matrixPresenceUpdateEpic(action$, state$, depsMock)
@@ -621,7 +627,7 @@ describe('transport epic', () => {
 
       action$.next(matrixRoom({ roomId }, { address: partner }));
 
-      matrix.invite.mockResolvedValueOnce(true);
+      matrix.invite.mockResolvedValueOnce(Promise.resolve());
       // partner joins when they're invited the second time
       matrix.invite.mockImplementationOnce(async () => {
         matrix.emit(
@@ -629,7 +635,6 @@ describe('transport epic', () => {
           {},
           { roomId, userId: partnerUserId, membership: 'join' },
         );
-        return true;
       });
 
       // epic needs to wait for the room to become available
@@ -826,8 +831,8 @@ describe('transport epic', () => {
             roomId,
             setStateEvents: jest.fn(),
             members: {},
-          },
-        });
+          } as any,
+        } as any);
 
         const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
 
@@ -910,13 +915,16 @@ describe('transport epic', () => {
       matrix.getRoom.mockReturnValueOnce({
         roomId,
         name: roomId,
-        getMember: jest.fn(userId => ({
-          roomId,
-          userId,
-          name: userId,
-          membership: 'join',
-          user: null,
-        })),
+        getMember: jest.fn(
+          userId =>
+            ({
+              roomId,
+              userId,
+              name: userId,
+              membership: 'join',
+              user: null,
+            } as any),
+        ),
         getJoinedMembers: jest.fn(() => []),
         getCanonicalAlias: jest.fn(() => roomId),
         getAliases: jest.fn(() => []),
@@ -924,8 +932,8 @@ describe('transport epic', () => {
           roomId,
           setStateEvents: jest.fn(),
           members: {},
-        },
-      });
+        } as any,
+      } as any);
       matrix.sendEvent.mockRejectedValueOnce(new Error('Failed'));
 
       const promise = matrixMessageSendEpic(action$, state$, depsMock).toPromise();
@@ -1019,13 +1027,16 @@ describe('transport epic', () => {
       matrix.getRoom.mockReturnValueOnce({
         roomId,
         name: roomId,
-        getMember: jest.fn(userId => ({
-          roomId,
-          userId,
-          name: userId,
-          membership: 'join',
-          user: null,
-        })),
+        getMember: jest.fn(
+          userId =>
+            ({
+              roomId,
+              userId,
+              name: userId,
+              membership: 'join',
+              user: null,
+            } as any),
+        ),
         getJoinedMembers: jest.fn(() => []),
         getCanonicalAlias: jest.fn(() => roomId),
         getAliases: jest.fn(() => []),
@@ -1033,8 +1044,8 @@ describe('transport epic', () => {
           roomId,
           setStateEvents: jest.fn(),
           members: {},
-        },
-      });
+        } as any,
+      } as any);
       matrix.sendEvent.mockRejectedValueOnce(new Error('Failed 1'));
       matrix.sendEvent.mockRejectedValueOnce(new Error('Failed 2'));
       matrix.sendEvent.mockRejectedValueOnce(new Error('Failed 3'));
