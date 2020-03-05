@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.2] - 2020-03-05
 ### Fixed
 - [#1139] Fix AddressInput value resetting when validation fails
 
@@ -145,7 +145,7 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.4.1...HEAD
+[0.4.2]: https://github.com/raiden-network/light-client/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/raiden-network/light-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/raiden-network/light-client/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/raiden-network/light-client/compare/v0.2...v0.3.0
