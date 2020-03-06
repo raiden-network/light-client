@@ -39,6 +39,7 @@ import {
   matrixMessageReceivedUpdateRoomEpic,
   deliveredEpic,
   matrixMessageGlobalSendEpic,
+  matrixCleanMissingRoomsEpic,
 } from 'raiden-ts/transport/epics';
 import { MessageType, Delivered } from 'raiden-ts/messages/types';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
@@ -897,6 +898,47 @@ describe('transport epic', () => {
         payload: { roomId },
         meta: { address: partner },
       });
+    });
+  });
+
+  describe('matrixCleanMissingRoomsEpic', () => {
+    test('clean missing rooms', async () => {
+      expect.assertions(1);
+
+      const roomId = partnerRoomId;
+      const roomId2 = `!partnerRoomId2:${matrixServer}`;
+
+      matrix.getRoom.mockReturnValueOnce(null);
+      matrix.getRoom.mockReturnValueOnce({
+        roomId,
+        name: roomId,
+        getMember: jest.fn(),
+        getJoinedMembers: jest.fn(),
+        getCanonicalAlias: jest.fn(() => roomId),
+        getAliases: jest.fn(() => []),
+      } as any);
+
+      action$.next(raidenConfigUpdate({ httpTimeout: 10 }));
+      action$.next(
+        matrixSetup({
+          server: matrixServer,
+          setup: { userId, deviceId, accessToken, displayName },
+        }),
+      );
+      action$.next(matrixRoom({ roomId }, { address: partner }));
+      action$.next(matrixRoom({ roomId: roomId2 }, { address: partner }));
+
+      const promise = matrixCleanMissingRoomsEpic(action$, state$, depsMock)
+        .pipe(toArray())
+        .toPromise();
+
+      action$.next(raidenConfigUpdate({ httpTimeout: 10 }));
+
+      setTimeout(() => action$.complete(), 50);
+
+      await expect(promise).resolves.toEqual([
+        matrixRoomLeave({ roomId: roomId2 }, { address: partner }),
+      ]);
     });
   });
 
