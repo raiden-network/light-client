@@ -14,7 +14,6 @@
     "paths": {
       "raiden-ts/*": ["src/*"],
       "matrix-js-sdk": ["node_modules/@types/matrix-js-sdk/index.d.ts"]
-    },
-    "typeRoots": ["./typings", "./node_modules/@types"]
+    }
   }
 }

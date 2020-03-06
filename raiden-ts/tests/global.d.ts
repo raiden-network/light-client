@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module 'ganache-cli' {
   import { Http2Server } from 'http2';
   import { AsyncSendable } from 'ethers/providers';
@@ -6,7 +7,7 @@ declare module 'ganache-cli' {
     accounts?: { balance: string; secretKey?: string }[];
     debug?: boolean;
     blockTime?: number;
-    logger?: Console;
+    logger?: { log: (...args: any[]) => void };
     mnemonic?: string;
     port?: number;
     seed?: string;
