@@ -1,5 +1,5 @@
 import { AsyncSubject, Subject, Observable } from 'rxjs';
-import { Signer } from 'ethers';
+import { Signer } from 'ethers/abstract-signer';
 import { JsonRpcProvider } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 import { MatrixClient } from 'matrix-js-sdk';

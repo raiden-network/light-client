@@ -44,7 +44,10 @@ import {
   delayWhen,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
-import { find, minBy, sortBy, curry } from 'lodash';
+import find from 'lodash/find';
+import minBy from 'lodash/minBy';
+import sortBy from 'lodash/sortBy';
+import curry from 'lodash/curry';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
 

@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { One, Zero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
-import { findKey, get, isMatchWith, pick } from 'lodash';
 import { combineLatest, EMPTY, from, Observable, of } from 'rxjs';
 import {
   catchError,
@@ -13,6 +12,10 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
+import findKey from 'lodash/findKey';
+import get from 'lodash/get';
+import isMatchWith from 'lodash/isMatchWith';
+import pick from 'lodash/pick';
 
 import { RaidenAction } from '../../actions';
 import { Channel, ChannelState } from '../../channels/state';

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/class-name-casing */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as t from 'io-ts';
-import { isMatchWith } from 'lodash';
+import isMatchWith from 'lodash/isMatchWith';
 import { Observable } from 'rxjs';
 import { first, map } from 'rxjs/operators';
 

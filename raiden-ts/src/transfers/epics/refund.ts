@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { filter, mergeMap, withLatestFrom } from 'rxjs/operators';
-import { isEqualWith } from 'lodash';
+import isEqualWith from 'lodash/isEqualWith';
 
 import { RaidenAction } from '../../actions';
 import { RefundTransfer } from '../../messages/types';

@@ -1,5 +1,5 @@
 import './polyfills';
-import { Signer } from 'ethers';
+import { Signer } from 'ethers/abstract-signer';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
 import { Zero, AddressZero } from 'ethers/constants';
@@ -9,7 +9,8 @@ import { applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
 import { createLogger } from 'redux-logger';
 
-import { constant, memoize } from 'lodash';
+import constant from 'lodash/constant';
+import memoize from 'lodash/memoize';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
 import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
 import logging from 'loglevel';

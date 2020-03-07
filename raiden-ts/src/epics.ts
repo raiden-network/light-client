@@ -9,7 +9,7 @@ import {
   startWith,
   map,
 } from 'rxjs/operators';
-import { negate } from 'lodash';
+import negate from 'lodash/negate';
 
 import { RaidenState } from './state';
 import { RaidenEpicDeps } from './types';

@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Contract, Event } from 'ethers';
+import { Contract, Event } from 'ethers/contract';
 import { Provider, JsonRpcProvider, Listener, EventType, Filter, Log } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 import { getNetwork as parseNetwork } from 'ethers/utils/networks';
-import { flatten, sortBy } from 'lodash';
 import { Observable, fromEventPattern, merge, from, of, EMPTY, combineLatest, defer } from 'rxjs';
 import { filter, first, map, switchMap, mergeMap, share } from 'rxjs/operators';
+import flatten from 'lodash/flatten';
+import sortBy from 'lodash/sortBy';
 
 import { isntNil } from './types';
 

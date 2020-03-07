@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { map } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
-import { findKey } from 'lodash';
+import findKey from 'lodash/findKey';
 
 export enum ErrorCodes {
   // Path errors

@@ -3,7 +3,7 @@ import * as t from 'io-ts';
 import { Observable, from, of, EMPTY } from 'rxjs';
 import { mergeMap, map, timeout, withLatestFrom, catchError, toArray } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
-import { memoize } from 'lodash';
+import memoize from 'lodash/memoize';
 
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
