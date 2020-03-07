@@ -27,4 +27,13 @@ echo "Preparing to commit version update $MESSAGE"
 git add package.json
 git add package-lock.json
 
+cd ../raiden-dapp/
+
+DAPP_VERSION=$(npm --no-git-tag-version version $1)
+
+echo "dApp version update updated to $DAPP_VERSION"
+
+git add package.json
+git add package-lock.json
+
 git commit -m "$MESSAGE"
