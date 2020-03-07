@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { filter, scan, startWith, share } from 'rxjs/operators';
-import { memoize } from 'lodash';
+import memoize from 'lodash/memoize';
 
 import { RaidenAction } from '../actions';
 import { Presences } from './types';

@@ -3,7 +3,7 @@
 import * as t from 'io-ts';
 import { AddressZero } from 'ethers/constants';
 import { Network, getNetwork } from 'ethers/utils';
-import { debounce } from 'lodash';
+import debounce from 'lodash/debounce';
 import logging from 'loglevel';
 
 import { PartialRaidenConfig } from './config';

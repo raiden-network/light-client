@@ -1,5 +1,6 @@
-import { Signer, Wallet, Contract } from 'ethers';
-import { ContractReceipt, ContractTransaction } from 'ethers/contract';
+import { Signer } from 'ethers/abstract-signer';
+import { Wallet } from 'ethers/wallet';
+import { Contract, ContractReceipt, ContractTransaction } from 'ethers/contract';
 import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
 import { JsonRpcProvider } from 'ethers/providers';
 import { Observable, from, defer } from 'rxjs';
@@ -13,7 +14,9 @@ import {
   first,
   exhaustMap,
 } from 'rxjs/operators';
-import { findKey, transform, pick } from 'lodash';
+import pick from 'lodash/pick';
+import transform from 'lodash/transform';
+import findKey from 'lodash/findKey';
 import logging from 'loglevel';
 
 import { RaidenState } from './state';

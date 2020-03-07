@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import { Signer } from 'ethers';
+import { Signer } from 'ethers/abstract-signer';
 import { keccak256, RLP, verifyMessage } from 'ethers/utils';
 import { arrayify, concat, hexlify } from 'ethers/utils/bytes';
 import { HashZero } from 'ethers/constants';

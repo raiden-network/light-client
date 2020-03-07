@@ -2,9 +2,9 @@
 import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress, isHexString, hexDataLength } from 'ethers/utils';
 import { Two, Zero } from 'ethers/constants';
-import { memoize } from 'lodash';
 import { Either, Right } from 'fp-ts/lib/Either';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
+import memoize from 'lodash/memoize';
 
 /* A Subset of DOM's Storage/localStorage interface which supports async/await */
 export interface Storage {

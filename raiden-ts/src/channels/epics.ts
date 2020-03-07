@@ -27,7 +27,10 @@ import {
   publishReplay,
   ignoreElements,
 } from 'rxjs/operators';
-import { findKey, get, isEmpty, negate } from 'lodash';
+import findKey from 'lodash/findKey';
+import get from 'lodash/get';
+import isEmpty from 'lodash/isEmpty';
+import negate from 'lodash/negate';
 
 import { BigNumber, hexlify, concat, defaultAbiCoder } from 'ethers/utils';
 import { Event } from 'ethers/contract';

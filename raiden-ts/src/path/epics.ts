@@ -20,11 +20,11 @@ import {
   withLatestFrom,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
-import { Signer } from 'ethers';
+import { Signer } from 'ethers/abstract-signer';
 import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, toUtf8Bytes, verifyMessage, concat } from 'ethers/utils';
 import { Two, Zero } from 'ethers/constants';
-import { memoize } from 'lodash';
+import memoize from 'lodash/memoize';
 
 import { UserDeposit } from '../contracts/UserDeposit';
 import { RaidenAction } from '../actions';
