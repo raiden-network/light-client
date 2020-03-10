@@ -54,15 +54,16 @@ COPY keystores /opt/geth/
 ENV KEYSTORE_PATH="${LOCAL_BASE}/UTC--2020-02-21T12-38-21.170002355Z--cbc49ec22c93db69c78348c90cd03a323267db86"
 RUN deploy.sh
 
-FROM alpine:latest
+FROM ubuntu:18.04
+LABEL maintainer="Raiden Network Team <contact@raiden.network>"
 ARG DATA_DIR
 ARG LOCAL_BASE
 ARG CONTRACTS_VERSION
 ARG OS_NAME
 ARG GETH_VERSION
 
-COPY --from=builder "${LOCAL_BASE}/bin/" /usr/local/bin
-RUN ln -sfn /usr/local/bin/geth-${OSNAME}-${GETH_VERSION} /usr/local/bin/geth
+COPY --from=builder "${LOCAL_BASE}/bin/" /usr/local/bin/
+RUN ln -sfn /usr/local/bin/geth-${OS_NAME}-${GETH_VERSION} /usr/local/bin/geth
 
 RUN mkdir -p /opt/chain
 COPY --from=builder "${DATA_DIR}" /opt/chain
@@ -73,5 +74,5 @@ COPY --from=builder "/opt/raiden-contracts/raiden_contracts/data_${CONTRACTS_VER
 COPY --from=builder "/opt/raiden-contracts/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_services_private_net.json" /opt/deployment/
 
 EXPOSE 8545 8546 8547 30303 30303/udp
-
-ENTRYPOINT ["/usr/local/bin/geth", "--rpc", "--datadir", "/opt/chain/", "--networkid", "4321", "--rpcapi", "eth,net,web3,txpool", "--minerthreads=1", "--mine"]
+ENTRYPOINT ["/usr/local/bin/geth"]
+CMD ["--rpc", "--datadir", "/opt/chain/", "--networkid", "4321", "--rpcapi", "eth,net,web3,txpool", "--minerthreads=1", "--mine"]

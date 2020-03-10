@@ -65,7 +65,7 @@ def main(keystore_file: str, contract_version: str, password: str, rpc_url: str)
         private_key=private_key,
         gas_limit=GAS_LIMIT,
         gas_price=GAS_PRICE,
-        wait=60,
+        wait=120,
         contracts_version=contract_version,
     )
 
