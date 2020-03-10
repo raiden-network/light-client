@@ -68,6 +68,9 @@ RUN ln -sfn /usr/local/bin/geth-${OS_NAME}-${GETH_VERSION} /usr/local/bin/geth
 RUN mkdir -p /opt/chain
 COPY --from=builder "${DATA_DIR}" /opt/chain
 
+RUN mkdir /root/.ethash
+COPY --from=builder /root/.ethash /root/.ethash
+
 RUN mkdir -p /opt/deployment
 COPY --from=builder "/opt/raiden-contracts/user_deposit_info.sh" /opt/deployment
 COPY --from=builder "/opt/raiden-contracts/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_private_net.json" /opt/deployment/
@@ -76,3 +79,8 @@ COPY --from=builder "/opt/raiden-contracts/raiden_contracts/data_${CONTRACTS_VER
 EXPOSE 8545 8546 8547 30303 30303/udp
 ENTRYPOINT ["/usr/local/bin/geth"]
 CMD ["--rpc", "--datadir", "/opt/chain/", "--networkid", "4321", "--rpcapi", "eth,net,web3,txpool", "--minerthreads=1", "--mine"]
+
+HEALTHCHECK \
+    --timeout=5s \
+    --start-period=60s \
+    CMD curl -s --fail -X POST --data '{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}' || exit 1
