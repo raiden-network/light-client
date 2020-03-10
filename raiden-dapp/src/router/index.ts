@@ -70,6 +70,28 @@ const router = new Router({
         title: 'Channels'
       },
       component: () => import('../views/Channels.vue')
+    },
+    {
+      path: '/general',
+      name: RouteNames.GENERAL,
+      beforeEnter: (to, from, next) => {
+        if (to.matched.length) {
+          to.matched[0].components.default = from.matched[0].components.default;
+          to.matched[0].components.modal = () =>
+            import('../views/GeneralDialog.vue');
+        }
+        next();
+      },
+      children: [
+        {
+          path: 'general-home',
+          name: RouteNames.GENERAL_HOME,
+          meta: {
+            title: 'General'
+          },
+          component: () => import('../views/GeneralHome.vue')
+        }
+      ]
     }
   ]
 });

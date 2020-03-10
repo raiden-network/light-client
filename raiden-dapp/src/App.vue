@@ -7,6 +7,7 @@
       @connect="connect"
     ></splash-screen>
     <div v-else id="application-wrapper">
+      <router-view name="modal" />
       <div id="application-content">
         <app-header></app-header>
         <v-content>
