@@ -6,6 +6,20 @@ ARG GETH_VERSION="1.9.9"
 ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.9-01744997.tar.gz"
 ARG GETH_MD5_LINUX="de1b31439dc6697fcbe2d729d2080d22"
 
+FROM python:3.7 as service-builder
+
+FROM python:3.7 as synapse-builder
+ARG SYNAPSE_VERSION=1.5.1
+
+RUN \
+    python -m venv /synapse-venv && \
+    /synapse-venv/bin/pip install "matrix-synapse[sqlite]==${SYNAPSE_VERSION}"
+
+RUN /synapse-venv/bin/pip install psycopg2 coincurve pycryptodome
+
+COPY synapse/eth_auth_provider.py /synapse-venv/lib/python3.7/site-packages/
+COPY synapse/admin_user_auth_provider.py /synapse-venv/lib/python3.7/site-packages/
+
 FROM python:3.7 as builder
 
 ARG DATA_DIR
@@ -24,16 +38,9 @@ ENV GENESIS_FILE="${SETUP_FOLDER}/genesis.json"
 RUN apt-get update && apt-get install -y --no-install-recommends python3-virtualenv python3-dev
 
 RUN mkdir -p ${SETUP_FOLDER}
-RUN echo ${KEYSTORE_PASS} > ${PASSWORD_FILE}
-RUN mkdir -p ${DATA_DIR}
 
-RUN mkdir -p ${SETUP_FOLDER}
-COPY download_geth.sh ${SETUP_FOLDER}
-COPY deploy_contracts.py ${SETUP_FOLDER}
-COPY deploy.sh ${SETUP_FOLDER}
-COPY genesis.json ${SETUP_FOLDER}
 ENV PATH="${SETUP_FOLDER}:$PATH"
-
+COPY geth/download_geth.sh ${SETUP_FOLDER}
 RUN download_geth.sh
 ENV PATH="${LOCAL_BASE}/bin:$PATH"
 
@@ -50,11 +57,16 @@ WORKDIR /opt/raiden-contracts/
 RUN pip install -r requirements.txt
 RUN pip install -e .
 
-COPY keystores /opt/geth/
+RUN echo ${KEYSTORE_PASS} > ${PASSWORD_FILE}
+COPY geth/genesis.json ${SETUP_FOLDER}
+COPY geth/keystores /opt/geth/
+COPY geth/deploy_contracts.py ${SETUP_FOLDER}
+COPY geth/deploy.sh ${SETUP_FOLDER}
+RUN mkdir -p ${DATA_DIR}
 ENV KEYSTORE_PATH="${LOCAL_BASE}/UTC--2020-02-21T12-38-21.170002355Z--cbc49ec22c93db69c78348c90cd03a323267db86"
 RUN deploy.sh
 
-FROM ubuntu:18.04
+FROM python:3.7
 LABEL maintainer="Raiden Network Team <contact@raiden.network>"
 ARG DATA_DIR
 ARG LOCAL_BASE
@@ -62,6 +74,11 @@ ARG CONTRACTS_VERSION
 ARG OS_NAME
 ARG GETH_VERSION
 
+# Prepare supervisor
+RUN apt-get update && apt-get install -y supervisor
+RUN mkdir -p /var/log/supervisor
+
+# Private chain setup
 COPY --from=builder "${LOCAL_BASE}/bin/" /usr/local/bin/
 RUN ln -sfn /usr/local/bin/geth-${OS_NAME}-${GETH_VERSION} /usr/local/bin/geth
 
@@ -76,11 +93,22 @@ COPY --from=builder "/opt/raiden-contracts/user_deposit_info.sh" /opt/deployment
 COPY --from=builder "/opt/raiden-contracts/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_private_net.json" /opt/deployment/
 COPY --from=builder "/opt/raiden-contracts/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_services_private_net.json" /opt/deployment/
 
+# Geth ports
 EXPOSE 8545 8546 8547 30303 30303/udp
-ENTRYPOINT ["/usr/local/bin/geth"]
-CMD ["--rpc", "--datadir", "/opt/chain/", "--networkid", "4321", "--rpcapi", "eth,net,web3,txpool", "--minerthreads=1", "--mine"]
+ENV SERVER_NAME=localhost
 
-HEALTHCHECK \
-    --timeout=5s \
-    --start-period=60s \
-    CMD curl -s --fail -X POST --data '{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}' || exit 1
+RUN mkdir -p /opt/synapse/config
+RUN mkdir -p /opt/synapse/data_well_known
+COPY synapse/synapse.template.yaml /opt/synapse/config/
+COPY synapse/synapse-entrypoint.sh /usr/local/bin/
+COPY synapse/render_config_template.py /usr/local/bin/
+
+RUN mkdir -p /opt/synapse/venv/
+COPY --from=synapse-builder /synapse-venv /opt/synapse/venv
+
+# Matrix ports
+# HTTP, HTTP metrics, TCP replication, HTTP replication
+EXPOSE 8008 9101 9092 9093
+
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+CMD ["/usr/bin/supervisord"]

@@ -7,6 +7,9 @@ geth --datadir ${DATA_DIR} init ${GENESIS_FILE}
 geth --rpc --datadir ${DATA_DIR} --networkid 4321 --rpcapi "eth,net,web3,txpool" --minerthreads=1 --mine &
 GETH_PID=$!
 
+# Wait for DAG Generation
+sleep 4m
+
 deploy_contracts.py --keystore-file ${KEYSTORE_PATH} --password ${KEYSTORE_PASS}
 
 kill ${GETH_PID}
