@@ -174,22 +174,15 @@ __Step 4: Select a Hub and Open a Channel__
 
 __Step 5: Make a transfer__
 
-1. Enter the address of the node receiving your transfer (eg. ```TODO Enter hub address```)
+1. Enter the address of the node receiving your transfer (eg. ```hub.raiden.network```)
 2. Enter the amount you want to transfer
 3. Click __Transfer__
-
-__Step 6: Find a node and send a mediated transfer__
-
-1. Navigate to https://goerli.explorer.raiden.network/tokens/ TODO Enter token address
-2. Scroll down to the __Network Visualization__ and search for ```TODO Enter hub address```
-3. Copy a node address which has got a channel to ```TODO Enter hub address``
-4. Make a transfer (see Step 4)
 
 __Optional: Use a Raiden Full Node__
 
 1. Navigate to https://docs.raiden.network/quick-start and follow the instructions
 2. [Join the EthCC3 token network](https://docs.raiden.network/using-raiden/the-raiden-web-interface/join-a-token-network)
-3. [Make a transfer](https://docs.raiden.network/using-raiden/the-raiden-web-interface/payment#pay-from-the-tokens-screen) to the hub TODO Enter hub address (see 
+3. [Make a transfer](https://docs.raiden.network/using-raiden/the-raiden-web-interface/payment#pay-from-the-tokens-screen) to the hub ```hub.raiden.network```
 
 #### Minting Manually
 
