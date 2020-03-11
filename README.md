@@ -165,7 +165,7 @@ __Step 3: Connect to the Raiden dApp__
 1. Click __Connect__ to connect the dApp to your MetaMask
 
 __Step 4: Select a Hub and Open a Channel__
-1. Click the mint button next to your token balance, to mint some ETHCC3 tokens.
+1. Click the mint button next to your token balance, to mint some TTT tokens.
 2. Click __Select Hub__
 3. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
 4. Sign the deposit with your MetaMask.
@@ -181,14 +181,14 @@ __Step 5: Make a transfer__
 __Optional: Use a Raiden Full Node__
 
 1. Navigate to https://docs.raiden.network/quick-start and follow the instructions
-2. [Join the EthCC3 token network](https://docs.raiden.network/using-raiden/the-raiden-web-interface/join-a-token-network)
+2. [Join the TTT token network](https://docs.raiden.network/using-raiden/the-raiden-web-interface/join-a-token-network)
 3. [Make a transfer](https://docs.raiden.network/using-raiden/the-raiden-web-interface/payment#pay-from-the-tokens-screen) to the hub ```hub.raiden.network```
 
 #### Minting Manually
 
 It is possible that the minting feature in the Light Client does not work out-of-the-box with every custom token. You can still try to mint the token manually:
 
-1. Visit [this page on Etherscan](https://goerli.etherscan.io/token/0x59105441977ecD9d805A4f5b060E34676F50F806#writeContract) where you'll be able to write to the TTT contract
+1. Visit [this page on Etherscan](https://goerli.etherscan.io/token/0xE2b702eD684bEb02850ac604278f078A4ce8b6E6#writeContract) where you'll be able to write to the TTT contract
 2. Open your MetaMask and choose your Goerli account with ETH
 3. Go back to Etherscan and click "Connect to Web3"
 4. Scroll down to the "mint" field and enter ```1000000000000000000000```
