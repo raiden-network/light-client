@@ -1,12 +1,11 @@
 ARG DATA_DIR="/opt/chain"
 ARG LOCAL_BASE="/opt/geth"
 ARG CONTRACTS_VERSION="0.36.0"
+ARG PFS_VERSION="0.6.0"
 ARG OS_NAME="LINUX"
 ARG GETH_VERSION="1.9.9"
 ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.9-01744997.tar.gz"
 ARG GETH_MD5_LINUX="de1b31439dc6697fcbe2d729d2080d22"
-
-FROM python:3.7 as service-builder
 
 FROM python:3.7 as synapse-builder
 ARG SYNAPSE_VERSION=1.5.1
@@ -75,8 +74,10 @@ ARG OS_NAME
 ARG GETH_VERSION
 
 # Prepare supervisor
-RUN apt-get update && apt-get install -y supervisor
+RUN apt-get update && apt-get install -y supervisor --no-install-recommends python3-virtualenv python3-dev
 RUN mkdir -p /var/log/supervisor
+
+COPY services/pfs-entrypoint.sh /usr/local/bin/
 
 # Private chain setup
 COPY --from=builder "${LOCAL_BASE}/bin/" /usr/local/bin/
@@ -109,6 +110,26 @@ COPY --from=synapse-builder /synapse-venv /opt/synapse/venv
 # Matrix ports
 # HTTP, HTTP metrics, TCP replication, HTTP replication
 EXPOSE 8008 9101 9092 9093
+
+# Services
+ARG PFS_VERSION
+
+WORKDIR /opt/services
+RUN git clone https://github.com/raiden-network/raiden-services.git
+WORKDIR /opt/services/raiden-services
+RUN git checkout "v${PFS_VERSION}"
+
+ENV VIRTUAL_ENV=/opt/services/venv
+RUN /usr/bin/python3 -m virtualenv -p /usr/bin/python3 $VIRTUAL_ENV
+ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
+
+RUN pip install -r requirements.txt
+RUN pip install -e .
+
+RUN mkdir -p /opt/services/keystore
+COPY services/keystore/UTC--2020-03-11T15-39-16.935381228Z--2b5e1928c25c5a326dbb61fc9713876dd2904e34 /opt/services/keystore
+
+EXPOSE 6000
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 CMD ["/usr/bin/supervisord"]
