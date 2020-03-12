@@ -7,6 +7,28 @@ ARG GETH_VERSION="1.9.9"
 ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.9-01744997.tar.gz"
 ARG GETH_MD5_LINUX="de1b31439dc6697fcbe2d729d2080d22"
 
+
+FROM python:3.7 as raiden-builder
+
+# use --build-arg RAIDENVERSION=v0.0.3 to build a specific (tagged) version
+ARG REPO=raiden-network/raiden
+ARG RAIDENVERSION=develop
+
+# This is a "hack" to automatically invalidate the cache in case there are new commits
+ADD https://api.github.com/repos/${REPO}/commits/${RAIDENVERSION} /dev/null
+
+# clone raiden repo + install dependencies
+RUN git clone -b ${RAIDENVERSION} https://github.com/${REPO} /app/raiden
+
+RUN python3 -m venv /opt/venv
+
+ENV PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app/raiden
+RUN git checkout 2e741dfdf4bfa564dec760abd5e3d8b2c9d30715
+
+RUN make install
+
 FROM python:3.7 as synapse-builder
 ARG SYNAPSE_VERSION=1.5.1
 
@@ -132,6 +154,16 @@ RUN mkdir -p /opt/services/keystore
 COPY services/keystore/UTC--2020-03-11T15-39-16.935381228Z--2b5e1928c25c5a326dbb61fc9713876dd2904e34 /opt/services/keystore
 
 EXPOSE 6000
+
+# prepare raiden
+COPY --from=raiden-builder /opt/venv /opt/raiden
+
+COPY synapse/room_ensurer/* /usr/local/bin/
+RUN chmod u+x /usr/local/bin/ensure_rooms.sh
+RUN chmod u+x /usr/local/bin/room_ensurer.py
+RUN ensure_rooms.sh
+
+EXPOSE 5001 5002
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 CMD ["/usr/bin/supervisord"]
