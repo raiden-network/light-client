@@ -1,7 +1,7 @@
 ARG DATA_DIR="/opt/chain"
 ARG LOCAL_BASE="/opt/geth"
 ARG CONTRACTS_VERSION="0.36.0"
-ARG PFS_VERSION="0.6.0"
+ARG PFS_VERSION="918ee6ef2dcfe293d1ce57c11f5ca23c8e9d68f3"
 ARG OS_NAME="LINUX"
 ARG GETH_VERSION="1.9.9"
 ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.9-01744997.tar.gz"
@@ -117,7 +117,7 @@ ARG PFS_VERSION
 WORKDIR /opt/services
 RUN git clone https://github.com/raiden-network/raiden-services.git
 WORKDIR /opt/services/raiden-services
-RUN git checkout "v${PFS_VERSION}"
+RUN git checkout "${PFS_VERSION}"
 
 ENV VIRTUAL_ENV=/opt/services/venv
 RUN /usr/bin/python3 -m virtualenv -p /usr/bin/python3 $VIRTUAL_ENV
@@ -126,6 +126,8 @@ ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
 RUN pip install -r requirements.txt
 RUN pip install -e .
 
+RUN cp /opt/deployment/deployment_private_net.json /opt/services/venv/lib/python3.7/site-packages/raiden_contracts/data/
+RUN cp /opt/deployment/deployment_services_private_net.json /opt/services/venv/lib/python3.7/site-packages/raiden_contracts/data/
 RUN mkdir -p /opt/services/keystore
 COPY services/keystore/UTC--2020-03-11T15-39-16.935381228Z--2b5e1928c25c5a326dbb61fc9713876dd2904e34 /opt/services/keystore
 

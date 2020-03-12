@@ -4,7 +4,8 @@ import os
 
 import click
 from eth_account import Account
-from raiden_contracts.constants import CONTRACT_TOKEN_NETWORK_REGISTRY, CONTRACT_USER_DEPOSIT
+from raiden_contracts.constants import CONTRACT_TOKEN_NETWORK_REGISTRY, CONTRACT_USER_DEPOSIT, \
+    CONTRACT_ONE_TO_N
 from raiden_contracts.deploy.__main__ import (
     ContractDeployer,
 )
@@ -133,8 +134,11 @@ def main(keystore_file: str, contract_version: str, password: str, rpc_url: str)
     with open('user_deposit_info.sh', 'w+') as address_file:
         contracts_info = deployed_service_contracts_info['contracts']
         user_deposit_address = contracts_info[CONTRACT_USER_DEPOSIT]['address']
+        one_to_n_address = contracts_info[CONTRACT_ONE_TO_N]['address']
         address_file.write(f'export USER_DEPOSIT_ADDRESS={user_deposit_address}\n')
         address_file.write(f'export TOKEN_NETWORK_REGISTRY_ADDRESS={token_network_registry_address}\n')
+        address_file.write(f'export TOKEN_NETWORK_REGISTRY_ADDRESS={token_network_registry_address}\n')
+        address_file.write(f'export ONE_TO_N_ADDRESS={one_to_n_address}\n')
         address_file.close()
 
     print('done')
