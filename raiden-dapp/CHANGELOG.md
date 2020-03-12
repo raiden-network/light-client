@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- [#691] Auto-suggesting hub on Goerli.
+
+[#691]: https://github.com/raiden-network/light-client/issues/691
+
 ## [0.4.2] - 2020-03-05
 ### Fixed
 - [#1139] Fix AddressInput value resetting when validation fails
