@@ -61,6 +61,10 @@ describe('SelectHub.vue', () => {
     });
   });
 
+  beforeAll(() => {
+    process.env = { VUE_APP_HUB: 'hub.raiden.network' };
+  });
+
   test('navigate to "OpenChannel when the user selects a hub', async () => {
     const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
     const route = TestData.mockRoute({
@@ -111,5 +115,22 @@ describe('SelectHub.vue', () => {
         name: RouteNames.HOME
       })
     );
+  });
+
+  test('auto suggest our hub on goerli if not connected yet', async () => {
+    const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
+    const route = TestData.mockRoute({
+      token: tokenAddress
+    });
+    const token = testToken(tokenAddress);
+    store.commit('updateTokens', { [tokenAddress]: token });
+    store.commit('network', { name: 'goerli' });
+    wrapper = createWrapper(route, token);
+
+    jest.advanceTimersByTime(1000);
+    await wrapper.vm.$nextTick();
+    await flushPromises();
+
+    expect(wrapper.vm.$data.partner).toBe('hub.raiden.network');
   });
 });
