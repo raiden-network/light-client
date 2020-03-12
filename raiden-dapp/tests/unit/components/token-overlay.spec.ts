@@ -2,12 +2,16 @@ import { mount, Wrapper } from '@vue/test-utils';
 import Vuex from 'vuex';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+
+import { RouteNames } from '@/router/route-names';
 import { TestData } from '../data/mock-data';
 import TokenOverlay from '@/components/TokenOverlay.vue';
 import { $identicon } from '../utils/mocks';
 import store from '@/store/index';
 import { Tokens } from '@/types';
 import { RaidenChannel, RaidenChannels } from 'raiden-ts';
+import VueRouter from 'vue-router';
+import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -15,13 +19,18 @@ Vue.use(Vuex);
 describe('TokenOverlay.vue', () => {
   let wrapper: Wrapper<TokenOverlay>;
   let vuetify: typeof Vuetify;
+  let router: VueRouter;
 
   beforeEach(() => {
     vuetify = new Vuetify();
+    router = new VueRouter() as Mocked<VueRouter>;
+    router.push = jest.fn().mockReturnValue(null);
+
     wrapper = mount(TokenOverlay, {
       vuetify,
       store,
       mocks: {
+        $router: router,
         $route: TestData.mockRoute({
           token: '0xtoken'
         }),
@@ -73,6 +82,15 @@ describe('TokenOverlay.vue', () => {
     test('show the "connect new token list" item', () => {
       const connectNewToken = wrapper.find('#connect-new .v-list-item');
       expect(connectNewToken.exists()).toBe(true);
+    });
+
+    test('should navigate to select token', async () => {
+      wrapper.find('.v-list-item').trigger('click');
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: RouteNames.SELECT_TOKEN
+        })
+      );
     });
   });
 

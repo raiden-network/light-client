@@ -117,7 +117,7 @@ describe('SelectHub.vue', () => {
     );
   });
 
-  test.only('auto suggest our hub on goerli if not connected yet', async () => {
+  test('auto suggest our hub on goerli if not connected yet', async () => {
     const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
     const route = TestData.mockRoute({
       token: tokenAddress
