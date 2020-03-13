@@ -30,7 +30,7 @@ import json
 import os
 import sys
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import IntEnum, Enum
 from itertools import chain
 from json import JSONDecodeError
 from typing import Any, Dict, Optional, Set, TextIO, Tuple, Union
@@ -48,7 +48,6 @@ from raiden.constants import (
     MONITORING_BROADCASTING_ROOM,
     PATH_FINDING_BROADCASTING_ROOM,
     Environment,
-    Networks,
 )
 from raiden.log_config import configure_logging
 from raiden.network.transport.matrix import make_room_alias
@@ -57,6 +56,10 @@ from raiden.settings import DEFAULT_MATRIX_KNOWN_SERVERS
 from raiden.tests.utils.factories import make_signer
 
 ENV_KEY_KNOWN_SERVERS = "URL_KNOWN_FEDERATION_SERVERS"
+
+
+class Networks(Enum):
+    INTEGRATION = ChainID(4321)
 
 
 class MatrixPowerLevels(IntEnum):
@@ -99,7 +102,7 @@ class RoomEnsurer:
             known_servers_url = DEFAULT_MATRIX_KNOWN_SERVERS[Environment.PRODUCTION]
 
         self._known_servers: Dict[str, str] = {
-            own_server_name: f"http://{own_server_name}:8008"
+            own_server_name: f"http://{own_server_name}:80"
         }
 
 
@@ -276,7 +279,7 @@ class RoomEnsurer:
         response = api.create_room(
             room_alias_prefix,
             is_public=True,
-            power_level_content_override=server_admin_power_levels,
+            # power_level_content_override=server_admin_power_levels,
         )
         room_alias = f"#{room_alias_prefix}:{server_name}"
         return RoomInfo(response["room_id"], {room_alias}, server_name)

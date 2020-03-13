@@ -131,7 +131,7 @@ COPY --from=synapse-builder /synapse-venv /opt/synapse/venv
 
 # Matrix ports
 # HTTP, HTTP metrics, TCP replication, HTTP replication
-EXPOSE 8008 9101 9092 9093
+EXPOSE 80 9101 9092 9093
 
 # Services
 ARG PFS_VERSION
@@ -158,10 +158,15 @@ EXPOSE 6000
 # prepare raiden
 COPY --from=raiden-builder /opt/venv /opt/raiden
 
-COPY synapse/room_ensurer/* /usr/local/bin/
-RUN chmod u+x /usr/local/bin/ensure_rooms.sh
+RUN mkdir -p /opt/raiden/config/keys
+COPY geth/keystores/* /opt/raiden/config/keys/
+COPY raiden/* /opt/raiden/config/
+
+COPY room_ensurer/room_ensurer.py /usr/local/bin
+COPY setup_channels.sh /usr/local/bin
+RUN chmod u+x /usr/local/bin/setup_channels.sh
 RUN chmod u+x /usr/local/bin/room_ensurer.py
-RUN ensure_rooms.sh
+RUN setup_channels.sh
 
 EXPOSE 5001 5002
 

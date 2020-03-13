@@ -7,7 +7,7 @@ trusted_key_servers: []
 soft_file_limit: 0
 
 listeners:
-  - port: 8008
+  - port: 80
     bind_addresses: ['0.0.0.0']
     type: http
     tls: false
@@ -73,7 +73,7 @@ rc_federation:
   reject_limit: 50
   # The number of federation requests to concurrently process from a
   # single server
-  concurrent: 3
+  concurrent: 1
 
 
 ## Files and uploads
@@ -104,8 +104,8 @@ trusted_third_party_id_servers:
 
 
 ## Metrics ###
-enable_metrics: True
-report_stats: True
+enable_metrics: False
+report_stats: False
 
 
 ## API Configuration ##
