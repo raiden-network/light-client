@@ -6,26 +6,17 @@ ARG OS_NAME="LINUX"
 ARG GETH_VERSION="1.9.9"
 ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.9-01744997.tar.gz"
 ARG GETH_MD5_LINUX="de1b31439dc6697fcbe2d729d2080d22"
-
+ARG RAIDEN_VERSION="2e741dfdf4bfa564dec760abd5e3d8b2c9d30715"
 
 FROM python:3.7 as raiden-builder
-
-# use --build-arg RAIDENVERSION=v0.0.3 to build a specific (tagged) version
-ARG REPO=raiden-network/raiden
-ARG RAIDENVERSION=develop
-
-# This is a "hack" to automatically invalidate the cache in case there are new commits
-ADD https://api.github.com/repos/${REPO}/commits/${RAIDENVERSION} /dev/null
-
 # clone raiden repo + install dependencies
-RUN git clone -b ${RAIDENVERSION} https://github.com/${REPO} /app/raiden
+RUN git clone -b develop $RAIDEN_VERSION https://github.com/raiden-network/raiden /app/raiden
 
-RUN python3 -m venv /opt/venv
+RUN python3 -m venv /opt/raiden
 
-ENV PATH="/opt/venv/bin:$PATH"
+ENV PATH="/opt/raiden/bin:$PATH"
 
 WORKDIR /app/raiden
-RUN git checkout 2e741dfdf4bfa564dec760abd5e3d8b2c9d30715
 
 RUN make install
 
@@ -54,7 +45,6 @@ ARG GETH_MD5_LINUX
 ENV SETUP_FOLDER="/opt/setup"
 ENV PASSWORD_FILE="${SETUP_FOLDER}/passwd"
 ENV KEYSTORE_PASS=1234
-ENV GENESIS_FILE="${SETUP_FOLDER}/genesis.json"
 
 RUN apt-get update && apt-get install -y --no-install-recommends python3-virtualenv python3-dev
 
@@ -79,7 +69,7 @@ RUN pip install -r requirements.txt
 RUN pip install -e .
 
 RUN echo ${KEYSTORE_PASS} > ${PASSWORD_FILE}
-COPY geth/genesis.json ${SETUP_FOLDER}
+COPY geth/genesis.py /usr/local/bin
 COPY geth/keystores /opt/geth/
 COPY geth/deploy_contracts.py ${SETUP_FOLDER}
 COPY geth/deploy.sh ${SETUP_FOLDER}
@@ -107,9 +97,6 @@ RUN ln -sfn /usr/local/bin/geth-${OS_NAME}-${GETH_VERSION} /usr/local/bin/geth
 
 RUN mkdir -p /opt/chain
 COPY --from=builder "${DATA_DIR}" /opt/chain
-
-RUN mkdir /root/.ethash
-COPY --from=builder /root/.ethash /root/.ethash
 
 RUN mkdir -p /opt/deployment
 COPY --from=builder "/opt/raiden-contracts/user_deposit_info.sh" /opt/deployment
@@ -141,12 +128,10 @@ RUN git clone https://github.com/raiden-network/raiden-services.git
 WORKDIR /opt/services/raiden-services
 RUN git checkout "${PFS_VERSION}"
 
-ENV VIRTUAL_ENV=/opt/services/venv
-RUN /usr/bin/python3 -m virtualenv -p /usr/bin/python3 $VIRTUAL_ENV
-ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
+RUN /usr/bin/python3 -m virtualenv -p /usr/bin/python3 /opt/services/venv
 
-RUN pip install -r requirements.txt
-RUN pip install -e .
+RUN /opt/services/venv/bin/pip install -r requirements.txt
+RUN /opt/services/venv/bin/pip install -e .
 
 RUN cp /opt/deployment/deployment_private_net.json /opt/services/venv/lib/python3.7/site-packages/raiden_contracts/data/
 RUN cp /opt/deployment/deployment_services_private_net.json /opt/services/venv/lib/python3.7/site-packages/raiden_contracts/data/
@@ -156,16 +141,22 @@ COPY services/keystore/UTC--2020-03-11T15-39-16.935381228Z--2b5e1928c25c5a326dbb
 EXPOSE 6000
 
 # prepare raiden
-COPY --from=raiden-builder /opt/venv /opt/raiden
+COPY --from=raiden-builder /opt/raiden /opt/raiden
 
 RUN mkdir -p /opt/raiden/config/keys
 COPY geth/keystores/* /opt/raiden/config/keys/
 COPY raiden/* /opt/raiden/config/
 
+RUN cp /opt/deployment/deployment_private_net.json /opt/raiden/lib/python3.7/site-packages/raiden_contracts/data
+RUN cp /opt/deployment/deployment_services_private_net.json /opt/raiden/lib/python3.7/site-packages/raiden_contracts/data
+
 COPY room_ensurer/room_ensurer.py /usr/local/bin
 COPY setup_channels.sh /usr/local/bin
+COPY prepare_channel.py /usr/local/bin
+
 RUN chmod u+x /usr/local/bin/setup_channels.sh
 RUN chmod u+x /usr/local/bin/room_ensurer.py
+RUN chmod u+x /usr/local/bin/prepare_channel.py
 RUN setup_channels.sh
 
 EXPOSE 5001 5002

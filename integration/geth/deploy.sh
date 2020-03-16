@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 
 echo "Setting up private chain"
-geth --datadir ${DATA_DIR} account new --password ${PASSWORD_FILE}
-geth --datadir ${DATA_DIR} init ${GENESIS_FILE}
+ACCOUNT=$(geth --datadir ${DATA_DIR} account new --password ${PASSWORD_FILE} | grep -oP 'Public address of the key:\s*\K\w*')
+genesis.py --validator "${ACCOUNT}" --output /tmp/genesis.json
+geth --datadir ${DATA_DIR} init /tmp/genesis.json
 
-geth --rpc --datadir ${DATA_DIR} --networkid 4321 --rpcapi "eth,net,web3,txpool" --minerthreads=1 --mine &
+geth --rpc --datadir ${DATA_DIR} --networkid 4321 --rpcapi "eth,net,web3,txpool" --minerthreads=1 --mine --nousb --unlock "${ACCOUNT}" --password "${PASSWORD_FILE}" --allow-insecure-unlock --verbosity 1 &
 GETH_PID=$!
-
-# Wait for DAG Generation
-sleep 4m
 
 deploy_contracts.py --keystore-file ${KEYSTORE_PATH} --password ${KEYSTORE_PASS}
 
