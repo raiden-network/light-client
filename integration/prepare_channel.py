@@ -46,16 +46,22 @@ def deposit(port: int, token: str, partner: str) -> bool:
 @click.command()
 @click.option('--token', required=True, type=str)
 def main(token: str):
+    print(f'Preparing channels for token {token}')
     node1 = 5001
     node2 = 5002
     node1_address = address(node1)
     node2_address = address(node2)
 
+    print(f'Minting tokens for {node1_address}')
     mint(node1, node1_address, token)
+    print(f'Minting tokens for {node2_address}')
     mint(node2, node2_address, token)
 
+    print(f'Opening channel from {node1_address} -> {node2_address}')
     open_channel(node1, token, node2_address)
+    print(f'Depositing on channel {node2_address} -> {node1_address}')
     deposit(node2, token, node1_address)
+    print('Channels ready')
 
 
 if __name__ == '__main__':

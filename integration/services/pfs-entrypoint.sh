@@ -8,8 +8,6 @@ export WORKER_COUNT=1
 export SERVER_NAME=localhost
 export ETH_RPC="http://localhost:8545"
 
-source /opt/deployment/user_deposit_info.sh
-
 /opt/services/venv/bin/python -m pathfinding_service.cli \
     --keystore-file /opt/services/keystore/UTC--2020-03-11T15-39-16.935381228Z--2b5e1928c25c5a326dbb61fc9713876dd2904e34 \
     --token-network-registry-address $TOKEN_NETWORK_REGISTRY_ADDRESS \

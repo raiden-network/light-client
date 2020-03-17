@@ -39,8 +39,9 @@ SERVICE_REGISTRATION_DURATION = 17_280_000
     envvar="ACCOUNT_PASSWORD",
     confirmation_prompt=False,
 )
+@click.option('--output', required=True, type=click.Path(dir_okay=False), envvar="DEPLOYMENT_FILE",)
 @click.option("--rpc-url", default="http://localhost:8545")
-def main(keystore_file: str, contract_version: str, password: str, rpc_url: str):
+def main(keystore_file: str, contract_version: str, password: str, output: str, rpc_url: str):
     web3 = Web3(HTTPProvider(rpc_url, request_kwargs={'timeout': 60}))
     web3.middleware_stack.inject(geth_poa_middleware, layer=0)
 
@@ -131,10 +132,13 @@ def main(keystore_file: str, contract_version: str, password: str, rpc_url: str)
     if os.path.exists("user_deposit_address"):
         os.remove("user_deposit_address")
 
-    with open('user_deposit_info.sh', 'w+') as address_file:
+    print(f'Storing deployment info to {output}')
+
+    with open(output, 'w+') as address_file:
         contracts_info = deployed_service_contracts_info['contracts']
         user_deposit_address = contracts_info[CONTRACT_USER_DEPOSIT]['address']
         one_to_n_address = contracts_info[CONTRACT_ONE_TO_N]['address']
+        address_file.write(f'#!/bin/sh\n')
         address_file.write(f'export TTT_TOKEN_ADDRESS={ttt_token_address}\n')
         address_file.write(f'export USER_DEPOSIT_ADDRESS={user_deposit_address}\n')
         address_file.write(f'export TOKEN_NETWORK_REGISTRY_ADDRESS={token_network_registry_address}\n')

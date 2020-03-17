@@ -44,6 +44,9 @@ GENESIS_STUB: Dict = {
 @click.option('--output', required=True, type=click.Path(), default="genesis.json")
 def main(validator: str, output: str):
     GENESIS_STUB['config']['clique']['validators'].append(validator)
+    GENESIS_STUB['alloc'][validator] = {
+        "balance": "100000000000000000000000"
+    }
     signer = validator.lower().replace('0x', '')
     GENESIS_STUB[
         'extraData'
