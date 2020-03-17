@@ -17,7 +17,6 @@ describe('GeneralDialog.vue', () => {
   beforeEach(() => {
     vuetify = new Vuetify();
     router = new VueRouter() as Mocked<VueRouter>;
-    router.go = jest.fn().mockResolvedValue(null);
 
     wrapper = mount(GeneralDialog, {
       vuetify,
@@ -29,7 +28,7 @@ describe('GeneralDialog.vue', () => {
     });
   });
 
-  test('go to previously visited route when back arrow is clicked', async () => {
+  test('go to previously visited route when back arrow is clicked', () => {
     const button = wrapper.find('button');
     button.trigger('click');
 
