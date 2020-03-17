@@ -110,6 +110,28 @@ describe('NavigationMixin', () => {
     );
   });
 
+  test('navigate to general home', () => {
+    wrapper.vm.navigateToGeneralHome();
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.GENERAL_HOME
+      })
+    );
+  });
+
+  test('general modal back navigation', () => {
+    wrapper.vm.$route.name = RouteNames.TRANSFER;
+    wrapper.vm.navigateToGeneralHome();
+    wrapper.vm.onGeneralBackClicked();
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.go).toHaveBeenCalledTimes(1);
+    expect(router.go).toHaveBeenCalledWith(-1);
+    expect(wrapper.vm.$route.name).toBe(RouteNames.TRANSFER);
+  });
+
   describe('back navigation', () => {
     test('from select target', async () => {
       wrapper.vm.$route.name = RouteNames.TRANSFER;
