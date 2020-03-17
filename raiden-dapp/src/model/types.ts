@@ -63,6 +63,7 @@ export interface Transfer {
   mediationFee?: BigNumber;
   target: string;
   hops: number;
+  paymentId: BigNumberish;
   transferAmount: BigNumber;
   transferToken: Token;
   transferTotal: BigNumber;

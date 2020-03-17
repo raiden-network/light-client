@@ -2,7 +2,7 @@ import { mount, Wrapper } from '@vue/test-utils';
 import Vuex from 'vuex';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { TestData } from '../data/mock-data';
+import { TestData, paymentId } from '../data/mock-data';
 import TransferSummary from '@/components/TransferSummary.vue';
 import { BigNumber } from 'ethers/utils';
 import { Transfer } from '@/model/types';
@@ -34,6 +34,8 @@ describe('TokenOverlay.vue', () => {
 
   test('show direct transfer breakdown', () => {
     wrapper = createWrapper(directTransfer);
+
+    expect(wrapper.text()).toContain(paymentId);
 
     // Shows direct transfer header
     expect(wrapper.find('.transfer-summary__header').text()).toContain(

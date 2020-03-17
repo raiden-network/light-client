@@ -71,6 +71,11 @@
       </span>
     </div>
 
+    <div class="transfer-summary__row">
+      <span>{{ $t('transfer.steps.summary.identifier') }}</span>
+      <span>{{ transfer.paymentId }}</span>
+    </div>
+
     <hr class="transfer-summary__separator" />
 
     <div class="transfer-summary__row transfer-summary__row--total">

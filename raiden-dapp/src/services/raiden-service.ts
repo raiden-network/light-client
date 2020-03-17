@@ -282,11 +282,13 @@ export default class RaidenService {
     token: string,
     target: string,
     amount: BigNumber,
-    paths: RaidenPaths
+    paths: RaidenPaths,
+    paymentId: BigNumber
   ) {
     try {
       const secretHash = await this.raiden.transfer(token, target, amount, {
-        paths: paths
+        paymentId,
+        paths
       });
 
       // Wait for transaction to be completed

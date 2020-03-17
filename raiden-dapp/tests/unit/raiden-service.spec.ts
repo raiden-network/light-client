@@ -18,6 +18,7 @@ import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
 import { One, Zero, AddressZero } from 'ethers/constants';
 import Mocked = jest.Mocked;
+import { paymentId } from './data/mock-data';
 
 describe('RaidenService', () => {
   let raidenService: RaidenService;
@@ -608,8 +609,9 @@ describe('RaidenService', () => {
       await raidenService.connect();
       await flushPromises();
 
-      await expect(raidenService.transfer('0xtoken', '0xpartner', One, path))
-        .resolves;
+      await expect(
+        raidenService.transfer('0xtoken', '0xpartner', One, path, paymentId)
+      ).resolves;
       expect(transfer).toHaveBeenCalledTimes(1);
       expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One, {
         paths: path
@@ -632,7 +634,7 @@ describe('RaidenService', () => {
       await flushPromises();
 
       await expect(
-        raidenService.transfer('0xtoken', '0xpartner', One, path)
+        raidenService.transfer('0xtoken', '0xpartner', One, path, paymentId)
       ).rejects.toBeInstanceOf(TransferFailed);
       expect(transfer).toHaveBeenCalledTimes(1);
       expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One, {

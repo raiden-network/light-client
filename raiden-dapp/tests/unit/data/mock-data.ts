@@ -12,6 +12,8 @@ import { Route } from 'vue-router';
 import { RouteNames } from '@/router/route-names';
 import { Tokens } from '@/types';
 
+export const paymentId = new BigNumber(4444);
+
 export class TestData {
   static token: Token = {
     address: '0xtoken',
@@ -129,7 +131,8 @@ export class TestData {
       name: 'TestToken',
       symbol: 'TTT'
     } as Token,
-    transferTotal: new BigNumber(10 ** 8)
+    transferTotal: new BigNumber(10 ** 8),
+    paymentId
   };
 
   static mockMediatedTransfer: Transfer = {
@@ -153,6 +156,7 @@ export class TestData {
       name: 'Service Token',
       symbol: 'SVT'
     } as Token,
-    pfsAddress: 'https://pfsadr.org'
+    pfsAddress: 'https://pfsadr.org',
+    paymentId
   };
 }
