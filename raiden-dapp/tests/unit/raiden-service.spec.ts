@@ -614,7 +614,8 @@ describe('RaidenService', () => {
       ).resolves;
       expect(transfer).toHaveBeenCalledTimes(1);
       expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One, {
-        paths: path
+        paths: path,
+        paymentId
       });
     });
 
@@ -638,7 +639,8 @@ describe('RaidenService', () => {
       ).rejects.toBeInstanceOf(TransferFailed);
       expect(transfer).toHaveBeenCalledTimes(1);
       expect(transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', One, {
-        paths: path
+        paths: path,
+        paymentId
       });
     });
   });
