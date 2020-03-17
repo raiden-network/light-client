@@ -118,4 +118,5 @@ RUN setup_channels.sh
 EXPOSE 5001 5002
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-CMD ["/usr/bin/supervisord"]
+COPY entrypoint.sh /usr/local/bin
+CMD ["entrypoint.sh"]
