@@ -7,5 +7,6 @@ export enum RouteNames {
   CHANNELS = 'channels',
   OPEN_CHANNEL = 'open-channel',
   GENERAL = 'general',
-  GENERAL_HOME = 'general-home'
+  GENERAL_HOME = 'general-home',
+  BACKUP_STATE = 'backup-state'
 }
