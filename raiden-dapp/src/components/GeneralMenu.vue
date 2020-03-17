@@ -1,28 +1,28 @@
 <template>
   <div class="general-screen-menu">
-    <v-row class="general-screen-menu__account-details no-gutter" no-gutters>
+    <v-row class="general-screen-menu__account-details" no-gutters>
       <v-col cols="12">
-        <div class="general-screen-menu__account-details__title">
+        <div class="general-screen-menu__account-details--title">
           {{ $t('general-menu.account-details') }}
         </div>
       </v-col>
       <v-col cols="2">
-        <span class="general-screen-menu__account-details__address">
+        <span class="general-screen-menu__account-details--address">
           {{ $t('general-menu.address') }}
         </span>
       </v-col>
       <v-col cols="10">
-        <span class="general-screen-menu__account-details__address">
-          <address-display :address="defaultAccount" :full-address="true" />
+        <span class="general-screen-menu__account-details--address">
+          <address-display :address="defaultAccount" full-address />
         </span>
       </v-col>
       <v-col cols="2">
-        <div class="general-screen-menu__account-details__eth">
+        <div class="general-screen-menu__account-details--eth">
           {{ $t('general-menu.currency') }}
         </div>
       </v-col>
       <v-col cols="10">
-        <div class="general-screen-menu__account-details__eth">
+        <div class="general-screen-menu__account-details--eth">
           {{ accountBalance | decimals }}
         </div>
       </v-col>
@@ -45,7 +45,7 @@
           </v-list-item-subtitle>
         </v-list-item-content>
         <v-list-item-action>
-          <v-btn icon>
+          <v-btn icon @click="menuItem.route">
             <v-icon>mdi-chevron-right mdi-36px</v-icon>
           </v-btn>
         </v-list-item-action>
@@ -55,8 +55,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 import { mapState } from 'vuex';
+import NavigationMixin from '@/mixins/navigation-mixin';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 
 @Component({
@@ -67,7 +68,7 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
     ...mapState(['defaultAccount', 'accountBalance'])
   }
 })
-export default class GeneralMenu extends Vue {
+export default class GeneralMenu extends Mixins(NavigationMixin) {
   menuItems: {}[] = [];
 
   mounted() {
@@ -78,7 +79,9 @@ export default class GeneralMenu extends Vue {
         subtitle: this.$t(
           'general-menu.menu-items.backup-state-subtitle'
         ) as string,
-        route: ''
+        route: () => {
+          this.navigateToBackupState();
+        }
       }
     ];
   }

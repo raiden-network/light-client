@@ -27,7 +27,7 @@ export default class AddressDisplay extends Vue {
   @Prop({ required: true })
   address!: string;
 
-  @Prop({ required: false, default: false })
+  @Prop({ required: false, default: false, type: Boolean })
   fullAddress!: boolean;
 
   copied: boolean = false;

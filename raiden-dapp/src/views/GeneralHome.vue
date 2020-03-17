@@ -1,9 +1,9 @@
 <template>
   <div class="general-screen-home">
     <v-row class="general-screen-home__identicon" no-gutters>
-      <header-identicon></header-identicon>
+      <header-identicon />
     </v-row>
-    <general-menu></general-menu>
+    <general-menu />
   </div>
 </template>
 
