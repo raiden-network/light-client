@@ -71,6 +71,7 @@ const router = new Router({
       },
       component: () => import('../views/Channels.vue')
     },
+    /*istanbul ignore next*/
     {
       path: '/general',
       name: RouteNames.GENERAL,
