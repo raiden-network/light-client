@@ -90,6 +90,14 @@ const router = new Router({
             title: 'General'
           },
           component: () => import('../views/GeneralHome.vue')
+        },
+        {
+          path: 'backup-state',
+          name: RouteNames.BACKUP_STATE,
+          meta: {
+            title: 'Backup State'
+          },
+          component: () => import('../views/BackupState.vue')
         }
       ]
     }

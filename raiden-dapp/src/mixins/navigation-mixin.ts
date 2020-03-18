@@ -73,6 +73,12 @@ export default class NavigationMixin extends Vue {
     });
   }
 
+  navigateToBackupState() {
+    this.$router.push({
+      name: RouteNames.BACKUP_STATE
+    });
+  }
+
   onGeneralBackClicked() {
     this.$router.go(-1);
   }

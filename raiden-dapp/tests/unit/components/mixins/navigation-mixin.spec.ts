@@ -121,6 +121,17 @@ describe('NavigationMixin', () => {
     );
   });
 
+  test('navigate to backup state', () => {
+    wrapper.vm.navigateToBackupState();
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.BACKUP_STATE
+      })
+    );
+  });
+
   test('general modal back navigation', () => {
     wrapper.vm.$route.name = RouteNames.TRANSFER;
     wrapper.vm.navigateToGeneralHome();
