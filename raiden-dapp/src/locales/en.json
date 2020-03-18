@@ -275,6 +275,7 @@
         "transfer-amount": "Transfer Amount",
         "total-amount": "Total Amount",
         "mediation-fee": "Mediation Fee",
+        "identifier": "Identifier",
         "footnotes": {
           "one": "1",
           "direct-transfer": "Route request and selection skipped, because you are performing a direct transfer.",

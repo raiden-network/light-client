@@ -250,6 +250,7 @@ export default class TransferSteps extends Mixins(
   pfsFeesPaid: boolean = false;
   pfsSelectionSkipped: boolean = false;
   routeSelectionSkipped: boolean = false;
+  paymentId: BigNumber = bigNumberify(Date.now());
   freePfs: boolean = false;
   showMintDeposit: boolean = false;
   mediationFeesConfirmed: boolean = false;
@@ -271,7 +272,8 @@ export default class TransferSteps extends Mixins(
       hops: this.selectedRoute?.hops,
       transferAmount: BalanceUtils.parse(this.amount, this.token.decimals!),
       transferToken: this.token,
-      transferTotal: this.totalAmount
+      transferTotal: this.totalAmount,
+      paymentId: this.paymentId
     } as Transfer;
   }
 
@@ -506,7 +508,8 @@ export default class TransferSteps extends Mixins(
         address,
         this.target,
         BalanceUtils.parse(this.amount, decimals!),
-        [{ path, fee }]
+        [{ path, fee }],
+        this.paymentId
       );
 
       this.transferDone = true;

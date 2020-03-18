@@ -47,7 +47,7 @@ export function makeSecret(length = 32): Secret {
  * @returns UInt<8>
  */
 export function makePaymentId(): UInt<8> {
-  return bigNumberify(randomBytes(8)) as UInt<8>;
+  return bigNumberify(Date.now()) as UInt<8>;
 }
 
 /**
