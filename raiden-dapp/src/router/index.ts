@@ -1,5 +1,3 @@
-/*istanbul ignore file*/
-
 import Vue from 'vue';
 import Router from 'vue-router';
 
@@ -8,6 +6,7 @@ import { RouteNames } from '@/router/route-names';
 
 Vue.use(Router);
 
+/* istanbul ignore next */
 const router = new Router({
   mode: 'history',
   base: process.env.BASE_URL,
