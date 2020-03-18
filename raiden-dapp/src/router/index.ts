@@ -75,7 +75,11 @@ const router = new Router({
       path: '/general',
       name: RouteNames.GENERAL,
       beforeEnter: (to, from, next) => {
-        if (to.matched.length) {
+        if (from.name === null) {
+          next({
+            name: RouteNames.TRANSFER
+          });
+        } else if (to.matched.length) {
           to.matched[0].components.default = from.matched[0].components.default;
           to.matched[0].components.modal = () =>
             import('../views/GeneralDialog.vue');
