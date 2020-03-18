@@ -29,6 +29,14 @@ describe('GeneralMenu.vue', () => {
     });
   });
 
+  test('displays account details title', () => {
+    const accountDetailsTitle = wrapper.find(
+      '.general-screen-menu__account-details--title'
+    );
+
+    expect(accountDetailsTitle.text()).toBe('general-menu.account-details');
+  });
+
   test('displays address', async () => {
     store.commit('account', '0x31aA9D3E2bd38d22CA3Ae9be7aae1D518fe46043');
     await wrapper.vm.$nextTick();
