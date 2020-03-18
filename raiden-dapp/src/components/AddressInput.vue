@@ -239,12 +239,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       .subscribe(({ error, value }) => {
         this.typing = false;
 
-        // On first ens lookup value might become '' again,
-        // even though it got already resolved to an address
-        if (!value && this.address) {
-          return;
-        }
-
         if (error) {
           this.errorMessages.push(error);
         } else {
@@ -271,6 +265,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   onPresenceUpdate() {
     if (
       !this.address ||
+      !this.value ||
       this.presences[this.address] === this.isAddressAvailable
     ) {
       return;
