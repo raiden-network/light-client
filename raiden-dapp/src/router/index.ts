@@ -77,7 +77,7 @@ const router = new Router({
       beforeEnter: (to, from, next) => {
         if (from.name === null) {
           next({
-            name: RouteNames.TRANSFER
+            name: RouteNames.HOME
           });
         } else if (to.matched.length) {
           to.matched[0].components.default = from.matched[0].components.default;
