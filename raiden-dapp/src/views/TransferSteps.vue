@@ -201,7 +201,7 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { RaidenPFS, RaidenError } from 'raiden-ts';
-import { BigNumber, bigNumberify, randomBytes } from 'ethers/utils';
+import { BigNumber, bigNumberify } from 'ethers/utils';
 
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Token, Route, Transfer } from '@/model/types';
@@ -250,7 +250,7 @@ export default class TransferSteps extends Mixins(
   pfsFeesPaid: boolean = false;
   pfsSelectionSkipped: boolean = false;
   routeSelectionSkipped: boolean = false;
-  paymentId: BigNumber = bigNumberify(randomBytes(8));
+  paymentId: BigNumber = bigNumberify(Date.now());
   freePfs: boolean = false;
   showMintDeposit: boolean = false;
   mediationFeesConfirmed: boolean = false;
