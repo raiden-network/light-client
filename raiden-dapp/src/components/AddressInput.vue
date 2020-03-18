@@ -236,10 +236,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           ).pipe(switchMap(value => this.checkAvailability(value)));
         })
       )
-      .subscribe(result => {
+      .subscribe(({ error, value }) => {
         this.typing = false;
 
-        const { error, value } = result;
+        // On first ens lookup value might become '' again,
+        // even though it got already resolved to an address
+        if (!value && this.address) {
+          return;
+        }
 
         if (error) {
           this.errorMessages.push(error);
