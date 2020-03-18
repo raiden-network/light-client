@@ -154,4 +154,5 @@ user_directory:
 database:
   name: "sqlite3"
   args:
-    database: ":memory:"  # changed
+    #database: ":memory:"  # changed
+    database: "/opt/synapse/data/homeserver.db"
