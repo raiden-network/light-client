@@ -17,6 +17,11 @@
       "backup-state-subtitle": "Download & upload your state"
     }
   },
+  "backup-state": {
+    "description": "Description of state and the purpose of downloading and uploading state",
+    "download": "Download State",
+    "upload": "Upload State"
+  },
   "update": {
     "available": "A new version is available.",
     "update": "Refresh"

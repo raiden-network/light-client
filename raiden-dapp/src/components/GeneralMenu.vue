@@ -89,6 +89,8 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
+@import '../scss/colors';
+
 .general-screen-menu {
   margin: 0 64px 0 64px;
 
@@ -116,7 +118,7 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
     margin-top: 96px;
 
     &__list-items {
-      border: solid 2px #707070;
+      border: solid 2px $secondary-text-color;
       border-radius: 15px;
       margin-top: -2px;
       height: 74px;
