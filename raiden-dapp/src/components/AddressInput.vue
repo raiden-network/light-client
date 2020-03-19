@@ -44,10 +44,17 @@
       </template>
       <template #append>
         <span class="address-input__qr-code">
-          <qr-code />
+          <qr-code
+            @click.native="isQrCodeOverlayVisible = !isQrCodeOverlayVisible"
+          />
         </span>
       </template>
     </v-text-field>
+    <qr-code-overlay
+      :visible="isQrCodeOverlayVisible"
+      @cancel="isQrCodeOverlayVisible = false"
+      @decode="onDecode"
+    />
   </fieldset>
 </template>
 
@@ -56,6 +63,7 @@ import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 
 import QrCode from '@/components/icons/QrCode.vue';
+import QrCodeOverlay from '@/components/QrCodeOverlay.vue';
 import { Presences } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
@@ -84,7 +92,7 @@ type ValidationResult = {
 };
 
 @Component({
-  components: { QrCode },
+  components: { QrCode, QrCodeOverlay },
   computed: { ...mapState(['presences']) }
 })
 export default class AddressInput extends Mixins(BlockieMixin) {
@@ -119,6 +127,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   busy: boolean = false;
   presences!: Presences;
   isAddressAvailable: boolean = false;
+  isQrCodeOverlayVisible: boolean = false;
 
   get isAddressValid() {
     // v-text-field interprets strings returned from a validation rule
@@ -325,6 +334,12 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       this.$refs.address.validate();
     });
   }
+
+  onDecode(decoded: string) {
+    this.address = decoded;
+    this.valueChanged(decoded);
+    this.isQrCodeOverlayVisible = false;
+  }
 }
 </script>
 
@@ -349,7 +364,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 
   &__qr-code {
-    width: 22px;
+    width: 20px;
+    margin: 1px 6px 0 0;
     cursor: pointer;
 
     svg {
@@ -358,8 +374,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
     &:hover ::v-deep {
       g,
-      path {
-        stroke: $primary-color !important;
+      path,
+      rect {
+        fill: $primary-color !important;
       }
     }
   }

@@ -1,24 +1,48 @@
 <template>
   <svg
-    id="s1"
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    viewBox="0 0 16 16"
     version="1.1"
+    x="0px"
+    y="0px"
+    viewBox="0 0 512 512"
+    style="enable-background:new 0 0 512 512;"
+    xml:space="preserve"
   >
-    <g transform="scale(.5,.5)" stroke-width="2" stroke-linecap="butt">
-      <path id="A" d="M3,3 h8 v8 h-8 v-8 z M6,7 h2" />
-      <use xlink:href="#A" x="18" y="0" />
-      <use xlink:href="#A" x="0" y="18" />
-      <path d="M18,3 h-3 v4 h2 v4 h-2 v3" />
-      <path d="M2,15 h2 m2,0 h4 m6,0 h2 m2,0 h4 m4,0 h2" />
-      <path d="M4,17 h2 m2,0 h8 m6,0 h2 m2,0 h4" />
-      <path d="M14,19 h2 m2,0 h2 m6,0 h2" />
-      <path d="M16,21 h2 m2,0 h8" />
-      <path d="M14,23 h2 m2,0 h2 m4,0 h2 m2,0 h2" />
-      <path d="M14,25 h4 m2,0 h2 m2, 0 h4" />
-      <path d="M14,27 h2 m6,0 h2 m4,0 h2" />
-      <path d="M16,29 h8 m2,0 h2" />
+    <g>
+      <path d="M160,0H0v160h160V0z M128,128H32V32h96V128z" />
+      <rect x="64" y="64" width="32" height="32" />
+      <path d="M352,0v160h160V0H352z M480,128h-96V32h96V128z" />
+      <rect x="416" y="64" width="32" height="32" />
+      <path d="M0,512h160V352H0V512z M32,384h96v96H32V384z" />
+      <rect x="64" y="416" width="32" height="32" />
+      <rect x="256" width="64" height="32" />
+      <polygon
+        points="256,128 288,128 288,96 320,96 320,64 224,64 224,32 192,32 192,64 192,80 192,96 256,96    "
+      />
+      <rect x="192" y="128" width="32" height="32" />
+      <polygon points="320,160 288,160 288,192 192,192 192,224 320,224    " />
+      <polygon
+        points="32,288 64,288 64,256 32,256 32,192 0,192 0,320 32,320    "
+      />
+      <rect x="64" y="192" width="32" height="32" />
+      <polygon
+        points="192,320 256,320 256,288 224,288 224,256 160,256 160,192 128,192 128,256 96,256 96,320 128,320 128,288      144,288 160,288 192,288    "
+      />
+      <rect x="288" y="256" width="32" height="64" />
+      <polygon
+        points="288,352 192,352 192,384 256,384 256,480 192,480 192,512 288,512 288,480 352,480 352,448 288,448    "
+      />
+      <rect x="192" y="416" width="32" height="32" />
+      <rect x="320" y="352" width="32" height="64" />
+      <polygon points="480,416 384,416 384,512 416,512 416,448 480,448    " />
+      <rect x="448" y="480" width="64" height="32" />
+      <rect x="480" y="352" width="32" height="32" />
+      <polygon points="384,384 416,384 416,288 352,288 352,320 384,320    " />
+      <polygon
+        points="448,224 416,224 416,192 384,192 384,224 352,224 352,256 480,256 480,224 512,224 512,192 448,192    "
+      />
+      <rect x="448" y="288" width="64" height="32" />
     </g>
   </svg>
 </template>
@@ -33,7 +57,8 @@ export default {
 @import '../../scss/colors';
 
 g,
-path {
-  stroke: $text-color !important;
+path,
+rect {
+  fill: $text-color !important;
 }
 </style>
