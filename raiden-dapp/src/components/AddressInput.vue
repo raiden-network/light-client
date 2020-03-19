@@ -42,6 +42,11 @@
         </div>
         <div v-else></div>
       </template>
+      <template #append>
+        <span class="address-input__qr-code">
+          <qr-code />
+        </span>
+      </template>
     </v-text-field>
   </fieldset>
 </template>
@@ -50,6 +55,7 @@
 import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 
+import QrCode from '@/components/icons/QrCode.vue';
 import { Presences } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
@@ -77,7 +83,10 @@ type ValidationResult = {
   isAddress?: boolean;
 };
 
-@Component({ computed: { ...mapState(['presences']) } })
+@Component({
+  components: { QrCode },
+  computed: { ...mapState(['presences']) }
+})
 export default class AddressInput extends Mixins(BlockieMixin) {
   private valueChange = new BehaviorSubject<string | undefined>('');
   private subscription?: Subscription;
@@ -337,6 +346,22 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     width: 22px;
     border: 1px solid #979797;
     background-color: $color-gray;
+  }
+
+  &__qr-code {
+    width: 22px;
+    cursor: pointer;
+
+    svg {
+      width: 100%;
+    }
+
+    &:hover ::v-deep {
+      g,
+      path {
+        stroke: $primary-color !important;
+      }
+    }
   }
 
   &__availability {

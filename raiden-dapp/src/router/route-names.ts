@@ -5,5 +5,6 @@ export enum RouteNames {
   SELECT_HUB = 'select-hub',
   HOME = 'home',
   CHANNELS = 'channels',
-  OPEN_CHANNEL = 'open-channel'
+  OPEN_CHANNEL = 'open-channel',
+  SCAN = 'scan'
 }

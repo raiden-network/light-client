@@ -70,6 +70,14 @@ const router = new Router({
         title: 'Channels'
       },
       component: () => import('../views/Channels.vue')
+    },
+    {
+      path: '/scan',
+      name: RouteNames.SCAN,
+      meta: {
+        title: 'Scan'
+      },
+      component: () => import('../views/Scan.vue')
     }
   ]
 });
