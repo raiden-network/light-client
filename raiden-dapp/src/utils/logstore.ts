@@ -1,8 +1,10 @@
 import logging from 'loglevel';
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
+const collectionName = 'logs';
+
 interface RaidenDB extends DBSchema {
-  logs: {
+  [collectionName]: {
     value: {
       logger: string;
       level: string;
@@ -26,6 +28,21 @@ function filterMessage(message: any[]) {
   return message;
 }
 
+function serialize(e: any) {
+  if (typeof e === 'string') return e;
+  else {
+    try {
+      return JSON.stringify(e);
+    } catch (err) {
+      try {
+        return e.toString();
+      } catch (err) {
+        return '<unserializable>';
+      }
+    }
+  }
+}
+
 export async function setupLogStore(
   dbName = 'raiden',
   additionalLoggers: string[] = ['matrix']
@@ -33,7 +50,7 @@ export async function setupLogStore(
   if (typeof db !== 'undefined') return;
   db = await openDB<RaidenDB>(dbName, 1, {
     upgrade(db) {
-      const logsStore = db.createObjectStore('logs');
+      const logsStore = db.createObjectStore(collectionName);
       logsStore.createIndex('by-logger', 'logger');
       logsStore.createIndex('by-level', 'level');
     }
@@ -52,9 +69,19 @@ export async function setupLogStore(
         const filtered = filterMessage(message);
         if (filtered !== undefined)
           db.put(
-            'logs',
+            collectionName,
             { logger: loggerName, level: methodName, message },
             Date.now()
+          ).catch(() =>
+            db.put(
+              collectionName,
+              {
+                logger: loggerName,
+                level: methodName,
+                message: message.map(serialize)
+              },
+              Date.now()
+            )
           );
       };
     };
@@ -63,7 +90,7 @@ export async function setupLogStore(
 
 export async function getLogsFromStore(): Promise<[number, string]> {
   let content = '';
-  let cursor = await db.transaction('logs').store.openCursor();
+  let cursor = await db.transaction(collectionName).store.openCursor();
   let lastTime = Date.now();
   while (cursor) {
     const { logger, level, message } = cursor.value;
