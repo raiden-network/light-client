@@ -28,18 +28,18 @@ import {
   transferClear,
   withdrawReceive,
   transferSecretRequest,
-  transferSecretRegistered,
+  transferSecretRegister,
 } from './actions';
 
 // Reducers for different actions
 function transferSecretReducer(
   state: RaidenState,
-  action: transferSecret | transferSecretRegistered,
+  action: transferSecret | transferSecretRegister.success,
 ): RaidenState {
   const secrethash = action.meta.secrethash;
   // store when seeing unconfirmed, but registerBlock only after confirmation
   const registerBlock =
-    transferSecretRegistered.is(action) && action.payload.confirmed
+    transferSecretRegister.success.is(action) && action.payload.confirmed
       ? action.payload.txBlock
       : state.sent[secrethash]?.secret?.[1]?.registerBlock ?? 0;
   // don't overwrite registerBlock if secret already stored with it
@@ -327,7 +327,7 @@ function withdrawReceiveSuccessReducer(
  * Handles all transfers actions and requests
  */
 export const transfersReducer: Reducer<RaidenState, RaidenAction> = createReducer(initialState)
-  .handle([transferSecret, transferSecretRegistered], transferSecretReducer)
+  .handle([transferSecret, transferSecretRegister.success], transferSecretReducer)
   .handle(transferSigned, transferSignedReducer)
   .handle(
     [transferProcessed, transferUnlockProcessed, transferExpireProcessed, transferRefunded],

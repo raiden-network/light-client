@@ -76,7 +76,7 @@ export const ConfirmableActions = [
   ChannelsActions.channelWithdrawn,
   ChannelsActions.channelClose.success,
   ChannelsActions.channelSettle.success,
-  TransfersActions.transferSecretRegistered,
+  TransfersActions.transferSecretRegister.success,
 ];
 /**
  * Union of codecs of actions above
@@ -87,7 +87,7 @@ export const ConfirmableAction = t.union([
   ChannelsActions.channelWithdrawn.codec,
   ChannelsActions.channelClose.success.codec,
   ChannelsActions.channelSettle.success.codec,
-  TransfersActions.transferSecretRegistered.codec,
+  TransfersActions.transferSecretRegister.success.codec,
 ]);
 export type ConfirmableAction =
   | ChannelsActions.channelOpen.success
@@ -95,4 +95,4 @@ export type ConfirmableAction =
   | ChannelsActions.channelWithdrawn
   | ChannelsActions.channelClose.success
   | ChannelsActions.channelSettle.success
-  | TransfersActions.transferSecretRegistered;
+  | TransfersActions.transferSecretRegister.success;

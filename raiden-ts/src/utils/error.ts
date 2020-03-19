@@ -35,6 +35,7 @@ export enum ErrorCodes {
   XFER_REFUNDED = 'Transfer has been refunded.',
   XFER_INVALID_SECRETREQUEST = 'Invalid SecretRequest received',
   XFER_ALREADY_COMPLETED = "Not waiting for transfer, it's already completed.",
+  XFER_REGISTERSECRET_TX_FAILED = 'SecretRegistry.registerSecret transaction failed',
 
   // Transport errors
   TRNS_NO_MATRIX_SERVERS = 'Could not contact any Matrix servers.',

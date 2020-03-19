@@ -1,7 +1,22 @@
 import { Event } from 'ethers/contract';
 import { EMPTY, from, Observable, of } from 'rxjs';
-import { concatMap, filter, first, map, mergeMap, withLatestFrom } from 'rxjs/operators';
+import {
+  concatMap,
+  filter,
+  first,
+  map,
+  mergeMap,
+  withLatestFrom,
+  catchError,
+  distinct,
+  pluck,
+  exhaustMap,
+  takeUntil,
+  ignoreElements,
+} from 'rxjs/operators';
 
+import { newBlock } from '../../channels/actions';
+import { assertTx } from '../../channels/utils';
 import { RaidenAction } from '../../actions';
 import { messageSend } from '../../messages/actions';
 import { MessageType, SecretRequest, SecretReveal } from '../../messages/types';
@@ -16,7 +31,7 @@ import { Hash, Secret, Signed, UInt } from '../../utils/types';
 import {
   transfer,
   transferSecret,
-  transferSecretRegistered,
+  transferSecretRegister,
   transferSecretRequest,
   transferSecretReveal,
   transferUnlock,
@@ -202,46 +217,159 @@ export const transferSecretRevealedEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @returns Observable of transferSecretRegistered actions
+ * @returns Observable of transferSecretRegister.success actions
  */
 export const monitorSecretRegistryEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { secretRegistryContract }: RaidenEpicDeps,
-): Observable<transferSecretRegistered> =>
+): Observable<transferSecretRegister.success> =>
   getEventsStream<[Hash, Secret, Event]>(secretRegistryContract, [
     secretRegistryContract.filters.SecretRevealed(null, null),
   ]).pipe(
     withLatestFrom(state$),
     filter(
-      ([[secrethash, , { blockNumber }], { sent }]) =>
+      ([[secrethash, , { blockNumber }], { sent, received }]) =>
         // emits only if lock didn't expire yet
-        secrethash in sent && sent[secrethash].transfer[1].lock.expiration.gte(blockNumber!),
+        (secrethash in sent && sent[secrethash].transfer[1].lock.expiration.gte(blockNumber!)) ||
+        (secrethash in received &&
+          received[secrethash].transfer[1].lock.expiration.gte(blockNumber!)),
     ),
-    map(([[secrethash, secret, event]]) =>
-      transferSecretRegistered(
-        {
-          secret,
-          txHash: event.transactionHash! as Hash,
-          txBlock: event.blockNumber!,
-          confirmed: undefined,
-        },
-        { secrethash },
-      ),
-    ),
+    mergeMap(function*([[secrethash, secret, event], { sent, received }]) {
+      if (
+        secrethash in sent &&
+        sent[secrethash].transfer[1].lock.expiration.gte(event.blockNumber!)
+      ) {
+        yield transferSecretRegister.success(
+          {
+            secret,
+            txHash: event.transactionHash! as Hash,
+            txBlock: event.blockNumber!,
+            confirmed: undefined,
+          },
+          { secrethash, direction: Direction.SENT },
+        );
+      }
+      if (
+        secrethash in received &&
+        received[secrethash].transfer[1].lock.expiration.gte(event.blockNumber!)
+      ) {
+        yield transferSecretRegister.success(
+          {
+            secret,
+            txHash: event.transactionHash! as Hash,
+            txBlock: event.blockNumber!,
+            confirmed: undefined,
+          },
+          { secrethash, direction: Direction.RECEIVED },
+        );
+      }
+    }),
   );
 
 /**
  * A simple epic to emit transfer.success when secret register is confirmed
  *
- * @param action$ - Observable of transferSecretRegistered actions
+ * @param action$ - Observable of transferSecretRegister.success actions
  * @returns Observable of transfer.success actions
  */
 export const transferSuccessOnSecretRegisteredEpic = (
   action$: Observable<RaidenAction>,
 ): Observable<transfer.success> =>
   action$.pipe(
-    filter(transferSecretRegistered.is),
+    filter(transferSecretRegister.success.is),
     filter(action => !!action.payload.confirmed),
     map(action => transfer.success({}, action.meta)),
+  );
+
+/**
+ * Process newBlocks and pending received transfers. If we know the secret, and transfer doesn't
+ * get unlocked before revealTimeout blocks are left to lock expiration, request to register secret
+ *
+ * @param action$ - Observable of newBlock actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of transferSecretRegister.request actions
+ */
+export const transferAutoRegisterEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { config$, latest$ }: RaidenEpicDeps,
+): Observable<transferSecretRegister.request> =>
+  state$.pipe(
+    pluckDistinct(Direction.RECEIVED),
+    mergeMap(received => from(Object.keys(received) as Hash[])),
+    distinct(),
+    mergeMap(secrethash =>
+      action$.pipe(
+        filter(newBlock.is),
+        withLatestFrom(latest$.pipe(pluck('state', Direction.RECEIVED, secrethash)), config$),
+        filter(
+          ([action, received, { caps, revealTimeout }]) =>
+            !caps?.[Capabilities.NO_RECEIVE] && // ignore if receiving is disabled
+            !!received.secret && // register only if we know the secret
+            received.transfer[1].lock.expiration
+              .sub(revealTimeout)
+              .lt(action.payload.blockNumber) && // and after <revealTimeout left to expiration
+            !received.secret?.[1]?.registerBlock && // and not yet registered nor unlocked
+            !received.unlock,
+        ),
+        exhaustMap(([, received]) => {
+          const meta = { secrethash, direction: Direction.RECEIVED };
+          return dispatchAndWait$(
+            action$,
+            transferSecretRegister.request({ secret: received.secret![1].value }, meta),
+            isConfirmationResponseOf(transferSecretRegister, meta),
+          );
+        }),
+        takeUntil(
+          latest$.pipe(
+            pluckDistinct('state'),
+            filter(state => {
+              const blockNumber = state.blockNumber;
+              const received = state.received[secrethash];
+              const expiration = received.transfer[1].lock.expiration;
+              return !!(
+                expiration.lt(blockNumber) || // give up if lock already expired
+                received.unlock ||
+                // stop if secret got registered or unlocked
+                received.secret?.[1]?.registerBlock
+              );
+              // even if channelClosed, while inside lock expiration, continue to try to register
+            }),
+          ),
+        ),
+      ),
+    ),
+  );
+
+/**
+ * Registers secret on-chain. Success is detected by monitorSecretRegistryEpic
+ *
+ * @param action$ - Observable of transferSecretRegister.request actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Dependencies
+ * @returns Observable of transferSecretRegister.failure actions
+ */
+export const transferSecretRegisterEpic = (
+  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { log, signer, address, main, secretRegistryContract, config$ }: RaidenEpicDeps,
+): Observable<transferSecretRegister.failure> =>
+  action$.pipe(
+    filter(transferSecretRegister.request.is),
+    withLatestFrom(config$),
+    mergeMap(([action, { subkey: configSubkey }]) => {
+      const { signer: onchainSigner } = chooseOnchainAccount(
+        { signer, address, main },
+        action.payload.subkey ?? configSubkey,
+      );
+      const contract = getContractWithSigner(secretRegistryContract, onchainSigner);
+
+      return from(contract.functions.registerSecret(action.payload.secret)).pipe(
+        assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log }),
+        // transferSecretRegister.success handled by monitorSecretRegistryEpic
+        ignoreElements(),
+        catchError(err => of(transferSecretRegister.failure(err, action.meta))),
+      );
+    }),
   );
