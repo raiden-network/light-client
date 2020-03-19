@@ -362,24 +362,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     background-color: $color-gray;
   }
 
-  &__qr-code {
-    width: 20px;
-    margin: 1px 6px 0 0;
-    cursor: pointer;
-
-    svg {
-      width: 100%;
-    }
-
-    &:hover ::v-deep {
-      g,
-      path,
-      rect {
-        fill: $primary-color !important;
-      }
-    }
-  }
-
   &__availability {
     margin-right: 10px;
     height: 26px;
@@ -516,6 +498,26 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   &--untouched {
     caret-color: white !important;
     color: white !important;
+  }
+
+  &__qr-code {
+    width: 20px;
+    margin: 1px 6px 0 0;
+    cursor: pointer;
+
+    svg {
+      width: 100%;
+    }
+
+    &:hover {
+      ::v-deep {
+        g,
+        path,
+        rect {
+          fill: $primary-color !important;
+        }
+      }
+    }
   }
 }
 
