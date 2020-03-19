@@ -87,8 +87,12 @@ export const transferSecret = createAction(
 );
 export interface transferSecret extends ActionType<typeof transferSecret> {}
 
-export const transferSecretRegistered = createAction(
-  'transferSecretRegistered',
+export const transferSecretRegister = createAsyncAction(
+  TransferId,
+  'transferSecret/register/request',
+  'transferSecret/register/success',
+  'transferSecret/register/failure',
+  t.intersection([t.type({ secret: Secret }), t.partial({ subkey: t.boolean })]),
   t.type({
     secret: Secret,
     txHash: Hash,
@@ -96,9 +100,13 @@ export const transferSecretRegistered = createAction(
     // ConfirmableAction
     confirmed: t.union([t.undefined, t.boolean]),
   }),
-  TransferId,
 );
-export interface transferSecretRegistered extends ActionType<typeof transferSecretRegistered> {}
+
+export namespace transferSecretRegister {
+  export interface request extends ActionType<typeof transferSecretRegister.request> {}
+  export interface success extends ActionType<typeof transferSecretRegister.success> {}
+  export interface failure extends ActionType<typeof transferSecretRegister.failure> {}
+}
 
 /** A valid SecretRequest received from target */
 export const transferSecretRequest = createAction(
