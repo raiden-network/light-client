@@ -108,7 +108,10 @@ export default class App extends Vue {
   width: 620px;
   border-radius: 10px;
   background-color: $card-background;
+  margin-top: 25px;
+
   @include respond-to(handhelds) {
+    margin-top: 0;
     height: 100vh;
     width: 100%;
     border-radius: 0;

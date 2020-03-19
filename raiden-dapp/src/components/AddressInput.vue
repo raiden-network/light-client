@@ -254,10 +254,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           ).pipe(switchMap(value => this.checkAvailability(value)));
         })
       )
-      .subscribe(result => {
+      .subscribe(({ error, value }) => {
         this.typing = false;
-
-        const { error, value } = result;
 
         if (error) {
           this.errorMessages.push(error);
@@ -285,6 +283,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   onPresenceUpdate() {
     if (
       !this.address ||
+      !this.value ||
       this.presences[this.address] === this.isAddressAvailable
     ) {
       return;
