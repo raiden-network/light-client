@@ -36,12 +36,12 @@ export default class GeneralDialog extends Mixins(NavigationMixin) {}
 @import '../scss/fonts';
 
 .general-screen {
-  background-color: black; /* CHANGE */
+  background-color: black;
   border-radius: 10px;
   height: 844px;
   position: absolute;
   width: 620px;
-  z-index: 90000;
+  z-index: 2;
   @include respond-to(handhelds) {
     border-radius: 0;
     height: 100vh;

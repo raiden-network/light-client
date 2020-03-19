@@ -6,6 +6,8 @@
           {{ $t('general-menu.account-details') }}
         </div>
       </v-col>
+    </v-row>
+    <v-row no-gutters>
       <v-col cols="2">
         <span class="general-screen-menu__account-details--address">
           {{ $t('general-menu.address') }}
@@ -16,15 +18,17 @@
           <address-display :address="defaultAccount" full-address />
         </span>
       </v-col>
+    </v-row>
+    <v-row no-gutters>
       <v-col cols="2">
-        <div class="general-screen-menu__account-details--eth">
+        <span class="general-screen-menu__account-details--eth">
           {{ $t('general-menu.currency') }}
-        </div>
+        </span>
       </v-col>
       <v-col cols="10">
-        <div class="general-screen-menu__account-details--eth">
+        <span class="general-screen-menu__account-details--eth">
           {{ accountBalance | decimals }}
-        </div>
+        </span>
       </v-col>
     </v-row>
     <v-list two-line class="general-screen-menu__menu">
@@ -108,7 +112,7 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
     }
 
     &__eth {
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba($color-white, 0.7);
       font-size: 14px;
     }
   }

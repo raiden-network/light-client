@@ -26,9 +26,7 @@
             <div class="app-header__top__content__network">{{ network }}</div>
           </v-col>
           <v-spacer></v-spacer>
-          <div @click="navigateToGeneralHome()">
-            <header-identicon />
-          </div>
+          <header-identicon @click.native="navigateToGeneralHome()" />
         </div>
       </v-col>
     </v-row>

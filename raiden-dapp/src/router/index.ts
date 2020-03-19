@@ -75,6 +75,9 @@ const router = new Router({
       path: '/general',
       name: RouteNames.GENERAL,
       beforeEnter: (to, from, next) => {
+        // Remembers the route that was visited just before the General view is opened and
+        // then loads the General view in a separate <router-view>. The last visited route
+        // is loaded when clicking out of the General view.
         if (from.name === null) {
           next({
             name: RouteNames.HOME
