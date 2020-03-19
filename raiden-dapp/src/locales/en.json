@@ -8,6 +8,20 @@
     },
     "offline": "Please connect to the internet."
   },
+  "general-menu": {
+    "account-details": "Account Details",
+    "address": "Address:",
+    "currency": "ETH:",
+    "menu-items": {
+      "backup-state-title": "Backup state",
+      "backup-state-subtitle": "Download & upload your state"
+    }
+  },
+  "backup-state": {
+    "description": "Description of state and the purpose of downloading and uploading state",
+    "download": "Download State",
+    "upload": "Upload State"
+  },
   "update": {
     "available": "A new version is available.",
     "update": "Refresh"

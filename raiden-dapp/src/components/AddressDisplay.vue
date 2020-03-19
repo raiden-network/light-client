@@ -3,7 +3,7 @@
     <v-tooltip bottom close-delay="1400">
       <template #activator="{ on }">
         <p class="address__label" v-on="on" @click="copy">
-          {{ address | truncate(8) }}
+          {{ addressOutput }}
         </p>
       </template>
       <div class="address__tooltip">
@@ -20,14 +20,22 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
+import Filters from '../filters';
 
 @Component({})
 export default class AddressDisplay extends Vue {
   @Prop({ required: true })
   address!: string;
 
+  @Prop({ required: false, default: false, type: Boolean })
+  fullAddress!: boolean;
+
   copied: boolean = false;
   private timeout: number = 0;
+
+  get addressOutput() {
+    return this.fullAddress ? this.address : Filters.truncate(this.address, 8);
+  }
 
   selectAddress(input?: HTMLInputElement): void {
     if (input) {
