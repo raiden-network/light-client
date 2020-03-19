@@ -3,8 +3,6 @@ import os
 import random
 import string
 from pathlib import Path
-from urllib.error import URLError
-from urllib.request import urlopen
 
 PATH_CONFIG = Path("/opt/synapse/config/synapse.yaml")
 PATH_CONFIG_TEMPLATE = Path("/opt/synapse/config/synapse.template.yaml")

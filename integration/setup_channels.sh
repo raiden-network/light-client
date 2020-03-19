@@ -18,7 +18,7 @@ python3 /usr/local/bin/room_ensurer.py --own-server "${SERVER_NAME}" \
 
 echo Starting Chain
 ACCOUNT=$(cat /opt/deployment/miner.sh)
-geth --rpc --syncmode full --gcmode archive --datadir "${DATA_DIR}" --networkid 4321 --rpcapi "eth,net,web3,txpool" --minerthreads=1 --mine --nousb --unlock "${ACCOUNT}" --password "${PASSWORD_FILE}" --allow-insecure-unlock &
+geth --rpc --syncmode full --gcmode archive --datadir "${DATA_DIR}" --networkid 4321 --rpc --rpcapi "eth,net,web3,txpool" --minerthreads=1 --mine --nousb --unlock "${ACCOUNT}" --password "${PASSWORD_FILE}" --allow-insecure-unlock &
 GETH_PID=$!
 
 echo Start PFS

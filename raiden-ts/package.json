@@ -9,7 +9,8 @@
   "scripts": {
     "start": "npm run versions && npm run contracts && tsc -p src/tsconfig.cjs.json -w",
     "build": "npm run versions && npm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json && npm run contracts:post",
-    "test": "npm run lint && NODE_ENV=development jest --coverage=true",
+    "test": "npm run lint && NODE_ENV=development jest --coverage=true --testPathIgnorePatterns tests/integration",
+    "test:integration": "npm run lint && NODE_ENV=development jest --coverage=true --testPathIgnorePatterns tests/unit tests/e2e",
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "clean": "rimraf dist/ dist:cjs/ .coverage/ src/contracts/ src/abi/ src/deployment/ src/versions.json",
     "contracts:pre": "node ./scripts/copyContracts.js prebuild",

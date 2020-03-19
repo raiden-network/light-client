@@ -106,6 +106,10 @@ RUN /opt/services/venv/bin/pip install -e .
 RUN cp -R /opt/raiden/lib/python3.7/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/* /opt/services/venv/lib/python3.7/site-packages/raiden_contracts/data
 RUN cp -R /opt/raiden/lib/python3.7/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_private_net.json /opt/deployment/
 RUN cp -R /opt/raiden/lib/python3.7/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_services_private_net.json /opt/deployment/
+
+ENV DEPLOYMENT_INFO=/opt/deployment/deployment_private_net.json
+ENV DEPLOYMENT_SERVICES_INFO=/opt/deployment/deployment_services_private_net.json
+
 RUN mkdir -p /opt/services/keystore
 COPY services/keystore/UTC--2020-03-11T15-39-16.935381228Z--2b5e1928c25c5a326dbb61fc9713876dd2904e34 /opt/services/keystore
 
