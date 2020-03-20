@@ -18,7 +18,7 @@
     }
   },
   "backup-state": {
-    "description": "Description of state and the purpose of downloading and uploading state",
+    "description": "Possibility to download and update state coming soon",
     "download": "Download State",
     "upload": "Upload State"
   },
