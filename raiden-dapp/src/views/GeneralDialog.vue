@@ -39,12 +39,14 @@ export default class GeneralDialog extends Mixins(NavigationMixin) {}
   background-color: black;
   border-radius: 10px;
   height: 844px;
+  margin-top: 12px;
   position: absolute;
   width: 620px;
-  z-index: 2;
+  z-index: 20;
   @include respond-to(handhelds) {
     border-radius: 0;
     height: 100vh;
+    margin-top: 0;
     width: 100%;
   }
 
