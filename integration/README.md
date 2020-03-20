@@ -1,27 +1,48 @@
-# Integration Image
+# Raiden Integration Image
 
-Building:
+## About
+
+This integration image acts as a base to ran integration tests for the Light Client in a fully controlled, 
+contained environment.
+
+The environment contains:
+- Geth running a private chain using the Clique PoA engine.
+- [Raiden Contracts](https://github.com/raiden-network/raiden-contracts) pre deployed
+- Matrix Synapse
+- Pathfinding Service ([raiden-services](https://github.com/raiden-network/raiden-services))
+- A `CustomToken` deployed with a `Token Network` deployed
+- Two [Raiden](https://github.com/raiden-network/raiden) nodes with a pre funded open channel
+
+## Using the image
+
+### Building
+
+To build the docker image you need to run:
+
 ```bash
 docker build -t lightclient-integration .
-```
+```  
   
-  
-Running:
+### Running
+
+To start the container you can run:
+
 ```bash
 docker run --name lc-integration -p 80:80 -p 6000:6000 -p 5001:5001 -p 5002:5002 -p 8545:8545 lightclient-integration
 ```
 
-- Private chain RPC is running at `8545`
+### Services
+
+After starting the container you can access the following services:
+
+- RPC is running at `8545`
 - Synapse is running at port `80`
 - PFS is running at port `6000`
-- First Raiden node is running at `5001`
-- Second Raiden node is running at `5002`
+- Raiden node 1 is running at `5001`
+- Raiden node 2 is running at `5002`
 
-To run the tests locally you first need to start the docker image.
+### Running the tests
 
-Then you need to pull the `deployment_private_net.json` and `deployment_services_private_net.json` from the container.
-You can easily do that by sourcing `source pull_deployment.sh container_name`. This will download the files to `/tmp/deployment`
-and export `DEPLOYMENT_INFO` and `DEPLOYMENT_SERVICES_INFO` that are used by the integration tests to connect to the private chain.
-
-
-Running e
+It is suggested to run the tests using the `run-integration.sh`. The script starts a temporary container,
+runs the tests and then stops and deletes the container. This makes sure that tests are always run in 
+a clean environment.
