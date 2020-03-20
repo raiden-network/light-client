@@ -80,8 +80,9 @@ describe('PathfindingService.vue', () => {
       .at(1)
       .trigger('click');
     await wrapper.vm.$nextTick();
-    expect(wrapper.emitted().select).toBeTruthy();
-    expect(wrapper.emitted().select[0][0]).toEqual([raidenPFS, false]);
+    const selectEvent = wrapper.emitted('select');
+    expect(selectEvent).toBeTruthy();
+    expect(selectEvent?.shift()).toContainEqual([raidenPFS, false]);
   });
 
   test('show an error message when the request for the services fails', async () => {

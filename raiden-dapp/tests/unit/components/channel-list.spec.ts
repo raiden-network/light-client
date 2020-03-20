@@ -90,16 +90,20 @@ describe('ChannelList.vue', () => {
       wrapper.find('#channel-278').trigger('click');
 
       await wrapper.vm.$nextTick();
-      const [firstExpansion] = wrapper.emitted('expand');
-      const [firstExpansionArg] = firstExpansion;
+      const expandEvent = wrapper.emitted('expand');
+      expect(expandEvent).toBeTruthy();
+      const [firstExpansionArg] = expandEvent?.shift();
       expect(firstExpansionArg).toMatchObject({
         channel: TestData.openChannel,
         expanded: true
       });
+
       wrapper.find('#close-0').trigger('click');
       await wrapper.vm.$nextTick();
-      const [firstAction] = wrapper.emitted('action');
-      const [firstActionArg] = firstAction;
+
+      const actionEvent = wrapper.emitted('action');
+      expect(actionEvent).toBeTruthy();
+      const [firstActionArg] = actionEvent?.shift();
       expect(firstActionArg).toBe('close');
     });
 
@@ -107,16 +111,18 @@ describe('ChannelList.vue', () => {
       wrapper.find('#channel-278').trigger('click');
 
       await wrapper.vm.$nextTick();
-      const [firstExpansion] = wrapper.emitted('expand');
-      const [firstExpansionArg] = firstExpansion;
+      const expandEvent = wrapper.emitted('expand');
+      expect(expandEvent).toBeTruthy();
+      const [firstExpansionArg] = expandEvent?.shift();
       expect(firstExpansionArg).toMatchObject({
         channel: TestData.openChannel,
         expanded: true
       });
       wrapper.find('#deposit-0').trigger('click');
       await wrapper.vm.$nextTick();
-      const [firstAction] = wrapper.emitted('action');
-      const [firstActionArg] = firstAction;
+      const actionEvent = wrapper.emitted('action');
+      expect(actionEvent).toBeTruthy();
+      const [firstActionArg] = actionEvent?.shift();
       expect(firstActionArg).toBe('deposit');
     });
 
@@ -124,16 +130,18 @@ describe('ChannelList.vue', () => {
       wrapper.find('#channel-280').trigger('click');
 
       await wrapper.vm.$nextTick();
-      const [firstExpansion] = wrapper.emitted('expand');
-      const [firstExpansionArg] = firstExpansion;
+      const expandEvent = wrapper.emitted('expand');
+      expect(expandEvent).toBeTruthy();
+      const [firstExpansionArg] = expandEvent?.shift();
       expect(firstExpansionArg).toMatchObject({
         channel: TestData.settlableChannel,
         expanded: true
       });
       wrapper.find('#settle-2').trigger('click');
       await wrapper.vm.$nextTick();
-      const [firstAction] = wrapper.emitted('action');
-      const [firstActionArg] = firstAction;
+      const actionEvent = wrapper.emitted('action');
+      expect(actionEvent).toBeTruthy();
+      const [firstActionArg] = actionEvent?.shift();
       expect(firstActionArg).toBe('settle');
     });
   });

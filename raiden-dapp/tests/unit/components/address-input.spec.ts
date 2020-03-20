@@ -83,9 +83,10 @@ describe('AddressInput', () => {
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.emitted().input).toBeTruthy();
-    expect(wrapper.emitted().input[0]).toEqual(['0x21b']);
-    expect(wrapper.emitted().input[1]).toEqual(['']);
+    const inputEvent = wrapper.emitted('input');
+    expect(inputEvent).toBeDefined();
+    expect(inputEvent?.shift()).toEqual(['0x21b']);
+    expect(inputEvent?.shift()).toEqual(['']);
 
     const messages = wrapper.find('.v-messages__message');
     expect(messages.exists()).toBe(true);
@@ -120,8 +121,9 @@ describe('AddressInput', () => {
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.emitted().input).toBeTruthy();
-    expect(wrapper.emitted().input[1]).toEqual([onlineTarget]);
+    const inputEvent = wrapper.emitted('input');
+    expect(inputEvent).toBeTruthy();
+    expect(inputEvent).toContainEqual([onlineTarget]);
   });
 
   test('render a blockie when the input address is valid', async () => {
@@ -144,8 +146,9 @@ describe('AddressInput', () => {
       jest.advanceTimersByTime(1000);
       await wrapper.vm.$nextTick();
 
-      expect(wrapper.emitted().input).toBeTruthy();
-      expect(wrapper.emitted().input[2]).toEqual([onlineTarget]);
+      const inputEvent = wrapper.emitted('input');
+      expect(inputEvent).toBeTruthy();
+      expect(inputEvent).toContainEqual([onlineTarget]);
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(0);
     });
@@ -158,8 +161,9 @@ describe('AddressInput', () => {
       jest.advanceTimersByTime(1000);
       await wrapper.vm.$nextTick();
 
-      expect(wrapper.emitted().input).toBeTruthy();
-      expect(wrapper.emitted().input[0]).toEqual([null]);
+      const inputEvent = wrapper.emitted('input');
+      expect(inputEvent).toBeTruthy();
+      expect(inputEvent).toContainEqual([null]);
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(1);
       expect(wrapper.vm.$data.errorMessages).toContain(
@@ -175,8 +179,9 @@ describe('AddressInput', () => {
       jest.advanceTimersByTime(1000);
       await wrapper.vm.$nextTick();
 
-      expect(wrapper.emitted().input).toBeTruthy();
-      expect(wrapper.emitted().input[0]).toEqual(['enstest.test']);
+      const inputEvent = wrapper.emitted('input');
+      expect(inputEvent).toBeTruthy();
+      expect(inputEvent).toContainEqual(['enstest.test']);
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(1);
       expect(wrapper.vm.$data.errorMessages).toContain(

@@ -93,8 +93,9 @@ describe('ChannelDialogs.vue', () => {
 
     test('success', async () => {
       await (wrapper.vm as any).deposit(One);
-      const [firstMessage] = wrapper.emitted('message');
-      const [firstMessageArg] = firstMessage;
+      const messageEvent = wrapper.emitted('message');
+      expect(messageEvent).toBeTruthy();
+      const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.deposit.success');
       expect(wrapper.emitted('dismiss')).toHaveLength(1);
     });
@@ -102,8 +103,9 @@ describe('ChannelDialogs.vue', () => {
     test('fail', async () => {
       $raiden.deposit.mockRejectedValueOnce(new Error('failed'));
       await (wrapper.vm as any).deposit(One);
-      const [firstMessage] = wrapper.emitted('message');
-      const [firstMessageArg] = firstMessage;
+      const messageEvent = wrapper.emitted('message');
+      expect(messageEvent).toBeTruthy();
+      const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.deposit.failure');
       expect(wrapper.emitted('dismiss')).toBeUndefined();
     });
@@ -118,8 +120,9 @@ describe('ChannelDialogs.vue', () => {
 
     test('success', async () => {
       await (wrapper.vm as any).close();
-      const [firstMessage] = wrapper.emitted('message');
-      const [firstMessageArg] = firstMessage;
+      const messageEvent = wrapper.emitted('message');
+      expect(messageEvent).toBeTruthy();
+      const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.close.success');
       expect(wrapper.emitted('dismiss')).toHaveLength(1);
     });
@@ -127,8 +130,9 @@ describe('ChannelDialogs.vue', () => {
     test('fail', async () => {
       $raiden.closeChannel.mockRejectedValueOnce(new Error('failed'));
       await (wrapper.vm as any).close();
-      const [firstMessage] = wrapper.emitted('message');
-      const [firstMessageArg] = firstMessage;
+      const messageEvent = wrapper.emitted('message');
+      expect(messageEvent).toBeTruthy();
+      const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.close.failure');
       expect(wrapper.emitted('dismiss')).toHaveLength(1);
     });
@@ -143,8 +147,9 @@ describe('ChannelDialogs.vue', () => {
 
     test('success', async () => {
       await (wrapper.vm as any).settle();
-      const [firstMessage] = wrapper.emitted('message');
-      const [firstMessageArg] = firstMessage;
+      const messageEvent = wrapper.emitted('message');
+      expect(messageEvent).toBeTruthy();
+      const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.settle.success');
       expect(wrapper.emitted('dismiss')).toHaveLength(1);
     });
@@ -152,8 +157,9 @@ describe('ChannelDialogs.vue', () => {
     test('fail', async () => {
       $raiden.settleChannel.mockRejectedValueOnce(new Error('failed'));
       await (wrapper.vm as any).settle();
-      const [firstMessage] = wrapper.emitted('message');
-      const [firstMessageArg] = firstMessage;
+      const messageEvent = wrapper.emitted('message');
+      expect(messageEvent).toBeTruthy();
+      const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.settle.failure');
       expect(wrapper.emitted('dismiss')).toHaveLength(1);
     });
