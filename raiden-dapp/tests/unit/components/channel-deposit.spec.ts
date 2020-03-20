@@ -41,8 +41,9 @@ describe('ChannelDeposit.vue', () => {
       .trigger('click');
     expect(wrapper.emitted().depositTokens).toBeTruthy();
 
-    const [events] = wrapper.emitted().depositTokens;
-    const deposit: BigNumber = (events[0] as any) as BigNumber;
+    const depositTokensEvent = wrapper.emitted('depositTokens');
+    const events = depositTokensEvent?.shift();
+    const deposit: BigNumber = events?.shift() as BigNumber;
     expect(new BigNumber(0.5 * 10 ** 5).eq(deposit)).toBeTruthy();
   });
 });

@@ -43,8 +43,9 @@ describe('AmountInput.vue', () => {
       mockInput(wrapper, '');
       await wrapper.vm.$nextTick();
       await flushPromises();
-      expect(wrapper.emitted().input).toBeTruthy();
-      expect(wrapper.emitted().input[0]).toEqual(['']);
+      const inputEvent = wrapper.emitted('input');
+      expect(inputEvent).toBeTruthy();
+      expect(inputEvent?.shift()).toEqual(['']);
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
       expect(messages.text()).toEqual('amount-input.error.empty');
@@ -53,8 +54,9 @@ describe('AmountInput.vue', () => {
     test('show no error if the input is valid', async () => {
       mockInput(wrapper, '1.2');
       await wrapper.vm.$nextTick();
-      expect(wrapper.emitted().input).toBeTruthy();
-      expect(wrapper.emitted().input[0]).toEqual(['1.2']);
+      const inputEvent = wrapper.emitted('input');
+      expect(inputEvent).toBeTruthy();
+      expect(inputEvent?.shift()).toEqual(['1.2']);
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(false);
     });
@@ -69,8 +71,9 @@ describe('AmountInput.vue', () => {
       mockInput(wrapper, '2.4');
       await wrapper.vm.$nextTick();
       await flushPromises();
-      expect(wrapper.emitted().input).toBeTruthy();
-      expect(wrapper.emitted().input[0]).toEqual(['2.4']);
+      const inputEvent = wrapper.emitted('input');
+      expect(inputEvent).toBeTruthy();
+      expect(inputEvent?.shift()).toEqual(['2.4']);
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
       expect(messages.text()).toEqual('amount-input.error.not-enough-funds');
@@ -80,8 +83,9 @@ describe('AmountInput.vue', () => {
       mockInput(wrapper, '1.42345678');
       await wrapper.vm.$nextTick();
       await flushPromises();
-      expect(wrapper.emitted().input).toBeTruthy();
-      expect(wrapper.emitted().input[0]).toEqual(['1.42345678']);
+      const inputEvent = wrapper.emitted('input');
+      expect(inputEvent).toBeTruthy();
+      expect(inputEvent?.shift()).toEqual(['1.42345678']);
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
       expect(messages.text()).toEqual('amount-input.error.too-many-decimals');

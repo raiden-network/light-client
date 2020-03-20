@@ -10,8 +10,6 @@
         >
           <v-img
             :src="$blockie(defaultAccount)"
-            height="36"
-            width="36"
             contain
             aspect-ratio="1"
             class="header-identicon__blockie"
@@ -30,8 +28,6 @@
     <v-img
       v-else
       :src="$blockie(defaultAccount)"
-      height="36"
-      width="36"
       contain
       aspect-ratio="1"
       class="header-identicon__blockie"

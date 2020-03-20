@@ -57,8 +57,10 @@ describe('FindRoutes.vue', () => {
       .findAll('.find-routes__table .v-data-table__checkbox')
       .trigger('click');
     await wrapper.vm.$nextTick();
-    expect(wrapper.emitted().select).toBeTruthy();
-    expect(wrapper.emitted().select[0][0]).toEqual({
+
+    const selectEvent = wrapper.emitted('select');
+    expect(selectEvent).toBeTruthy();
+    expect(selectEvent?.shift()).toContainEqual({
       fee: bigNumberify(100),
       path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77']
     });

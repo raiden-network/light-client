@@ -69,7 +69,7 @@ describe('TokenOverlay.vue', () => {
 
     test('emit a cancel event when the user presses the close button', () => {
       wrapper.find('.token-network-overlay__close-button').trigger('click');
-      expect(wrapper.emitted().cancel).toBeTruthy();
+      expect(wrapper.emitted('cancel')).toBeTruthy();
     });
 
     test('hide the overlay when the show property changes', async () => {
