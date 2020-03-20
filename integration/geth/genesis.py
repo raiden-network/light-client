@@ -18,7 +18,7 @@ GENESIS_STUB: Dict = {
         "ConstantinopleBlock": 0,
         "PetersburgBlock": 0,
         "clique": {
-            "period": 5,
+            "period": 3,
             "epoch": 30000,
             "validators": []
         }
@@ -37,8 +37,8 @@ GENESIS_STUB: Dict = {
     "coinbase": "0x0000000000000000000000000000000000000000",
     "difficulty": "1",
     "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "nonce": "0",
-    "gasLimit": "0x9880000"
+    "nonce": "0x0",
+    "gasLimit": "0xa00000"
 }
 
 

@@ -10,9 +10,11 @@ else
   echo "Getting DEPLOYMENT_INFO from docker image ${CONTAINER_NAME}"
   docker cp "${CONTAINER_NAME}":/opt/deployment/deployment_private_net.json /tmp/deployment
   docker cp "${CONTAINER_NAME}":/opt/deployment/deployment_services_private_net.json /tmp/deployment
+  docker cp "${CONTAINER_NAME}":/etc/profile.d/smartcontracts.sh /tmp/deployment
 
   export DEPLOYMENT_INFO=/tmp/deployment/deployment_private_net.json
   export DEPLOYMENT_SERVICES_INFO=/tmp/deployment/deployment_services_private_net.json
+  source /tmp/deployment/smartcontracts.sh
 fi
 
 

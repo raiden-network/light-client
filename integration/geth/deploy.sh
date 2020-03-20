@@ -15,7 +15,7 @@ echo "${ACCOUNT}" > "${DEPLOYMENT_DIRECTORY}"/miner.sh
 genesis.py --validator "${ACCOUNT}" --output /tmp/genesis.json
 geth --datadir "${DATA_DIR}" init /tmp/genesis.json
 
-geth --rpc --syncmode full --gcmode archive --datadir "${DATA_DIR}" --networkid 4321 --rpc --rpcapi "eth,net,web3,txpool" --minerthreads=1 --mine --nousb --unlock "${ACCOUNT}" --password "${PASSWORD_FILE}" --allow-insecure-unlock &
+geth --rpc --syncmode full --gcmode archive --datadir "${DATA_DIR}" --networkid 4321 --nodiscover --rpc --rpcapi "eth,net,web3,txpool" --minerthreads=1 --mine --nousb --unlock "${ACCOUNT}" --password "${PASSWORD_FILE}" --allow-insecure-unlock &
 GETH_PID=$!
 
 deploy_contracts.py --contract-version "${CONTRACTS_VERSION}" --keystore-file "${KEYSTORE_PATH}" --output "${SMARTCONTRACTS_ENV_FILE}" --password "${PASSWORD}"
