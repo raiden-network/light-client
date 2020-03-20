@@ -20,7 +20,6 @@ export enum MessageType {
   REFUND_TRANSFER = 'RefundTransfer',
   UNLOCK = 'Unlock',
   LOCK_EXPIRED = 'LockExpired',
-  TO_DEVICE = 'ToDevice',
   WITHDRAW_REQUEST = 'WithdrawRequest',
   WITHDRAW_CONFIRMATION = 'WithdrawConfirmation',
   WITHDRAW_EXPIRED = 'WithdrawExpired',
@@ -173,14 +172,6 @@ export const LockExpired = t.readonly(
 );
 export interface LockExpired extends t.TypeOf<typeof LockExpired> {}
 
-export const ToDevice = t.readonly(
-  t.type({
-    type: t.literal(MessageType.TO_DEVICE),
-    message_identifier: UInt(8),
-  }),
-);
-export interface ToDevice extends t.TypeOf<typeof ToDevice> {}
-
 export const WithdrawBase = t.readonly(
   t.type({
     chain_id: UInt(32),
@@ -256,7 +247,6 @@ export const Message = t.union([
   RefundTransfer,
   Unlock,
   LockExpired,
-  ToDevice,
   WithdrawRequest,
   WithdrawConfirmation,
   WithdrawExpired,
@@ -272,7 +262,6 @@ export type Message =
   | RefundTransfer
   | Unlock
   | LockExpired
-  | ToDevice
   | WithdrawRequest
   | WithdrawConfirmation
   | WithdrawExpired

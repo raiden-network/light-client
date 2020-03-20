@@ -41,6 +41,7 @@ import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
 import { RaidenError, ErrorCodes } from '../utils/error';
 import { pluckDistinct } from '../utils/rx';
+import { Capabilities } from '../constants';
 import { iouClear, pathFind, iouPersist, pfsListUpdated } from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
@@ -193,12 +194,21 @@ export const pathFindServiceEpic = (
               throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, { tokenNetwork });
             if (!(target in presences) || !presences[target].payload.available)
               throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, { target });
+            if (presences[target].payload.caps?.[Capabilities.NO_RECEIVE])
+              throw new RaidenError(ErrorCodes.PFS_TARGET_NO_RECEIVE, { target });
 
             // if pathFind received a set of paths, pass it through to validation/cleanup
             if (action.payload.paths) return of({ paths: action.payload.paths, iou: undefined });
             // else, if possible, use a direct transfer
             else if (
-              channelCanRoute(state, presences, tokenNetwork, target, action.meta.value) === true
+              channelCanRoute(
+                state,
+                presences,
+                tokenNetwork,
+                target,
+                target,
+                action.meta.value,
+              ) === true
             ) {
               return of({
                 paths: [{ path: [deps.address, target], fee: Zero as Int<32> }],
@@ -334,6 +344,7 @@ export const pathFindServiceEpic = (
                       presences,
                       action.meta.tokenNetwork,
                       recipient,
+                      action.meta.target,
                       action.meta.value.add(fee) as UInt<32>,
                     )
                   : recipient !== filteredPaths[0].path[0]

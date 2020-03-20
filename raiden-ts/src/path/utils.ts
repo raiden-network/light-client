@@ -14,6 +14,7 @@ import { ChannelState } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
 import { RaidenError, ErrorCodes } from '../utils/error';
+import { Capabilities } from '../constants';
 import { PFS } from './types';
 
 /**
@@ -23,6 +24,7 @@ import { PFS } from './types';
  * @param presences - latest Presences mapping
  * @param tokenNetwork - tokenNetwork where the channel is
  * @param partner - possibly a partner on given tokenNetwork
+ * @param target - transfer target
  * @param value - amount of tokens to check if channel can route
  * @returns true if channel can route, string containing reason if not
  */
@@ -31,10 +33,13 @@ export function channelCanRoute(
   presences: Presences,
   tokenNetwork: Address,
   partner: Address,
+  target: Address,
   value: UInt<32>,
 ): true | string {
   if (!(partner in presences) || !presences[partner].payload.available)
     return `path: partner "${partner}" not available in transport`;
+  if (target !== partner && presences[partner].payload.caps?.[Capabilities.NO_MEDIATE])
+    return `path: partner "${partner}" doesn't mediate transfers`;
   if (!(partner in state.channels[tokenNetwork]))
     return `path: there's no direct channel with partner "${partner}"`;
   const channel = state.channels[tokenNetwork][partner];

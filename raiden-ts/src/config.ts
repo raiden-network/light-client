@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import { Network } from 'ethers/utils';
 
+import { Capabilities } from './constants';
 import { Address } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 
@@ -52,6 +53,7 @@ export const RaidenConfig = t.readonly(
       matrixServer: t.string,
       pfs: t.union([Address, t.string, t.null]),
       subkey: t.boolean,
+      caps: t.readonly(t.record(t.string /* Capabilities */, t.any)),
     }),
   ]),
 );
@@ -82,5 +84,10 @@ export function makeDefaultConfig({ network }: { network: Network }): RaidenConf
     pfsSafetyMargin: 1.0,
     confirmationBlocks: 5,
     logger: 'info',
+    caps: {
+      [Capabilities.NO_DELIVERY]: true,
+      [Capabilities.NO_RECEIVE]: true,
+      [Capabilities.NO_MEDIATE]: true,
+    },
   };
 }
