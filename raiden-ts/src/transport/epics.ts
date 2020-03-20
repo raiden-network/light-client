@@ -51,9 +51,18 @@ import curry from 'lodash/curry';
 
 import { getAddress, verifyMessage } from 'ethers/utils';
 
-import { createClient, MatrixClient, MatrixEvent, Room, RoomMember, Filter } from 'matrix-js-sdk';
+import {
+  createClient,
+  MatrixClient,
+  MatrixEvent,
+  Room,
+  RoomMember,
+  Filter,
+  EventType,
+} from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 
+import { Capabilities } from '../constants';
 import { RaidenError, ErrorCodes } from '../utils/error';
 import { Address, Signed, isntNil, assert, Signature } from '../utils/types';
 import { isActionOf } from '../utils/actions';
@@ -89,6 +98,10 @@ import { RaidenMatrixSetup } from './state';
 // still there, so we consider the user as available/online then
 const AVAILABLE = ['online', 'unavailable'];
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
+const DEVICE_ID = 'RAIDEN';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CapsMapping = { readonly [k: string]: any };
 
 /**
  * Return the array of configured global rooms
@@ -246,17 +259,13 @@ function searchAddressPresence$(
         } catch (err) {
           continue;
         }
-
-        yield user.user_id;
+        yield user;
       }
     }),
-    mergeMap(userId =>
-      getUserPresence(matrix, userId)
-        .then(presence => ({ ...presence, user_id: userId }))
-        .catch(err => {
-          log.info('Error fetching user presence, ignoring:', err);
-          return undefined;
-        }),
+    mergeMap(user =>
+      getUserPresence(matrix, user.user_id)
+        .then(presence => ({ ...presence, ...user }))
+        .catch(err => (log.info('Error fetching user presence, ignoring:', err), undefined)),
     ),
     filter(isntNil),
     toArray(),
@@ -271,6 +280,32 @@ function searchAddressPresence$(
       return minBy(presences, 'last_active_ago')!;
     }),
   );
+}
+
+/**
+ * Parse a caps string in the format 'k1,k2=v2,k3="v3"' to { k1: true, k2: v2, k3: v3 } object
+ *
+ * @param caps - caps string
+ * @returns Caps mapping object
+ */
+function parseCaps(caps?: string | null): CapsMapping | undefined {
+  if (!caps) return;
+  const result: { [k: string]: string | boolean } = {};
+  try {
+    // this regex splits by comma, but respecting strings inside double-quotes
+    for (const cap of caps.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/g)) {
+      const match = cap.match(/^\s*([^=]+)(?: ?= ?"?(.*?)"?\s*)?$/);
+      if (match) result[match[1]] = match[2] ?? true;
+    }
+    return result;
+  } catch (err) {}
+}
+
+function stringifyCaps(caps: CapsMapping): string {
+  return Object.entries(caps)
+    .filter(([, v]) => typeof v !== 'boolean' || v)
+    .map(([k, v]) => (typeof v === 'boolean' ? k : `${k}="${v}"`))
+    .join(',');
 }
 
 /**
@@ -310,13 +345,9 @@ function inviteLoop$(
     withLatestFrom(config$),
     mergeMap(([, { httpTimeout }]) =>
       // defer here ensures invite is re-done on repeat (re-subscription)
-      defer(() => matrix.invite(roomId, userId)).pipe(
+      defer(() => matrix.invite(roomId, userId).catch(log.warn.bind(log, 'Error inviting'))).pipe(
         // while shouldn't stop (by unsubscribe or takeUntil)
         repeatWhen(completed$ => completed$.pipe(delay(httpTimeout))),
-        catchError(err => {
-          log.warn('Error inviting', err);
-          return EMPTY;
-        }),
         takeUntil(
           // stop repeat+defer loop above when user joins
           fromEvent<RoomMember>(
@@ -420,18 +451,14 @@ function fetchSortedMatrixServers$(matrixServerLookup: string, httpTimeout: numb
  * @param deps - RaidenEpicDeps-like/partial object
  * @param deps.address - Our address (to compose matrix user)
  * @param deps.signer - Signer to be used to sign password and displayName
+ * @param caps - Transport capabilities to set in user's avatar_url
  * @returns Observable of one { matrix, server, setup } object
  */
 function setupMatrixClient$(
   server: string,
   setup: RaidenMatrixSetup | undefined,
-  {
-    address,
-    signer,
-  }: {
-    address: RaidenEpicDeps['address'];
-    signer: RaidenEpicDeps['signer'];
-  },
+  { address, signer }: Pick<RaidenEpicDeps, 'address' | 'signer'>,
+  caps?: CapsMapping,
 ) {
   const serverName = getServerName(server);
   if (!serverName) throw new RaidenError(ErrorCodes.TRNS_NO_SERVERNAME, { server });
@@ -454,9 +481,9 @@ function setupMatrixClient$(
       // create password as signature of serverName, then try login or register
       return from(signer.signMessage(serverName)).pipe(
         mergeMap(password =>
-          from(matrix.loginWithPassword(userName, password)).pipe(
-            catchError(() => matrix.register(userName, password)),
-          ),
+          from(
+            matrix.login('m.login.password', { user: userName, password, device_id: DEVICE_ID }),
+          ).pipe(catchError(() => matrix.register(userName, password))),
         ),
         mergeMap(({ access_token, device_id }) => {
           // matrix.register implementation doesn't set returned credentials
@@ -487,7 +514,11 @@ function setupMatrixClient$(
     // the APIs below are authenticated, and therefore also act as validator
     mergeMap(({ matrix, server, setup }) =>
       // ensure displayName is set even on restarts
-      from(matrix.setDisplayName(setup.displayName)).pipe(
+      merge(
+        from(matrix.setDisplayName(setup.displayName)),
+        from(matrix.setPresence({ presence: 'online', status_msg: '' })),
+        caps ? from(matrix.setAvatarUrl(stringifyCaps(caps))) : EMPTY,
+      ).pipe(
         mapTo({ matrix, server, setup }), // return triplet again
       ),
     ),
@@ -511,7 +542,7 @@ export const initMatrixEpic = (
 ): Observable<matrixSetup> =>
   combineLatest([state$, config$]).pipe(
     first(), // at startup
-    mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout }]) => {
+    mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout, caps }]) => {
       const server = state.transport.matrix?.server,
         setup = state.transport.matrix?.setup;
 
@@ -540,13 +571,14 @@ export const initMatrixEpic = (
         catchError(andSuppress), // servers$ may error, so store lastError
         concatMap(({ server, setup }) =>
           // serially, try setting up client and validate its credential
-          setupMatrixClient$(server, setup, { address, signer }).pipe(
+          setupMatrixClient$(server, setup, { address, signer }, caps).pipe(
             // store and suppress any 'setupMatrixClient$' error
             catchError(andSuppress),
           ),
         ),
         // on first setupMatrixClient$'s success, emit, complete and unsubscribe
         first(),
+        tap(({ matrix }) => matrix.setMaxListeners(30)),
         // with errors suppressed, only possible error here is 'no element in sequence'
         retryWhen(err$ =>
           // if there're more servers$ observables in queue, emit once to retry from defer;
@@ -586,7 +618,16 @@ export const matrixShutdownEpic = (
   { matrix$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   matrix$.pipe(
-    mergeMap(matrix => action$.pipe(finalize(() => matrix.stopClient()))),
+    mergeMap(matrix =>
+      action$.pipe(
+        finalize(() => {
+          matrix.setPresence({ presence: 'offline', status_msg: '' }).catch(() => {
+            /* stopping, ignore exceptions */
+          });
+          matrix.stopClient();
+        }),
+      ),
+    ),
     ignoreElements(), // dont re-emit action$, but keep it subscribed so finalize works
   );
 
@@ -622,9 +663,14 @@ export const matrixMonitorPresenceEpic = (
             ? // we already monitored/saw this user's presence
               of(presences[action.meta.address])
             : searchAddressPresence$(matrix, action.meta.address, { log }).pipe(
-                map(({ presence, user_id: userId }) =>
+                map(({ presence, user_id: userId, avatar_url }) =>
                   matrixPresence.success(
-                    { userId, available: AVAILABLE.includes(presence), ts: Date.now() },
+                    {
+                      userId,
+                      available: AVAILABLE.includes(presence),
+                      ts: Date.now(),
+                      caps: parseCaps(avatar_url),
+                    },
                     action.meta,
                   ),
                 ),
@@ -650,88 +696,98 @@ export const matrixPresenceUpdateEpic = (
   {}: Observable<RaidenState>,
   { log, matrix$, latest$ }: RaidenEpicDeps,
 ): Observable<matrixPresence.success> =>
-  matrix$.pipe(
-    // when matrix finishes initialization, register to matrix presence events
-    switchMap(matrix =>
-      // matrix's 'User.presence' sometimes fail to fire, but generic 'event' is always fired,
-      // and User (retrieved via matrix.getUser) is up-to-date before 'event' emits
-      fromEvent<MatrixEvent>(matrix, 'event').pipe(map(event => ({ event, matrix }))),
-    ),
-    filter(({ event }) => event.getType() === 'm.presence'),
-    // parse peer address from userId
-    map(({ event, matrix }) => {
-      // as 'event' is emitted after user is (created and) updated, getUser always returns it
-      const user = matrix.getUser(event.getSender());
-      if (!user || !user.presence) return;
-      const match = userRe.exec(user.userId),
-        peerAddress = match && match[1];
-      if (!peerAddress) return;
-      // getAddress will convert any valid address into checksummed-format
-      const address = getAddress(peerAddress) as Address | undefined;
-      if (!address) return;
-      return { matrix, user, address };
-    }),
-    // filter out events without userId in the right format (startWith hex-address)
-    filter(isntNil),
-    withLatestFrom(
-      // observable of all addresses whose presence monitoring was requested since init
-      action$.pipe(
-        filter(isActionOf(matrixPresence.request)),
-        scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<Address>()),
-        startWith(new Set<Address>()),
+  matrix$
+    .pipe(
+      // when matrix finishes initialization, register to matrix presence events
+      switchMap(matrix =>
+        // matrix's 'User.presence' sometimes fail to fire, but generic 'event' is always fired,
+        // and User (retrieved via matrix.getUser) is up-to-date before 'event' emits
+        fromEvent<MatrixEvent>(matrix, 'event').pipe(map(event => ({ event, matrix }))),
       ),
-      // known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
-      latest$.pipe(pluckDistinct('presences')),
-    ),
-    // filter out events from users we don't care about
-    // i.e.: presence monitoring never requested
-    filter(([{ address }, toMonitor]) => toMonitor.has(address)),
-    mergeMap(([{ matrix, user, address }, , presences]) => {
-      // first filter can't tell typescript this property will always be set!
-      const userId = user.userId,
-        presence = user.presence!,
-        available = AVAILABLE.includes(presence);
-
-      if (
-        address in presences &&
-        presences[address].payload.userId === userId &&
-        presences[address].payload.available === available
-      )
-        // even if signature verification passes, this wouldn't change presence, so return early
-        return EMPTY;
-
-      // fetch profile info if user have no valid displayName set
-      const displayName$: Observable<string | undefined> = Signature.is(user.displayName)
-        ? of(user.displayName)
-        : defer(() => matrix.getProfileInfo(userId)).pipe(
-            pluck('displayname'),
-            catchError(() => of(undefined)),
-          );
-
-      return displayName$.pipe(
-        map(displayName => {
-          // errors raised here will be logged and ignored on catchError below
-          if (!displayName) throw new RaidenError(ErrorCodes.TRNS_NO_DISPLAYNAME, { userId });
-          // ecrecover address, validating displayName is the signature of the userId
-          const recovered = verifyMessage(userId, displayName) as Address | undefined;
-          if (!recovered || recovered !== address)
-            throw new RaidenError(ErrorCodes.TRNS_USERNAME_VERIFICATION_FAILED, {
-              userId,
-              receivedSignature: recovered!,
-            });
-          return recovered;
-        }),
-        // TODO: edge case: don't emit unavailable if address is available somewhere else
-        map(address =>
-          matrixPresence.success(
-            { userId, available, ts: user.lastPresenceTs ?? Date.now() },
-            { address },
-          ),
+      filter(({ event }) => event.getType() === 'm.presence'),
+      // parse peer address from userId
+      map(({ event, matrix }) => {
+        // as 'event' is emitted after user is (created and) updated, getUser always returns it
+        const user = matrix.getUser(event.getSender());
+        if (!user || !user.presence) return;
+        const match = userRe.exec(user.userId),
+          peerAddress = match && match[1];
+        if (!peerAddress) return;
+        // getAddress will convert any valid address into checksummed-format
+        const address = getAddress(peerAddress) as Address | undefined;
+        if (!address) return;
+        return { matrix, user, address };
+      }),
+      // filter out events without userId in the right format (startWith hex-address)
+      filter(isntNil),
+      withLatestFrom(
+        // observable of all addresses whose presence monitoring was requested since init
+        action$.pipe(
+          filter(isActionOf(matrixPresence.request)),
+          scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<Address>()),
+          startWith(new Set<Address>()),
         ),
-        catchError(err => (log.debug('Error validating presence event, ignoring', err), EMPTY)),
-      );
-    }),
-  );
+        // known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
+        latest$.pipe(pluckDistinct('presences')),
+      ),
+      // filter out events from users we don't care about
+      // i.e.: presence monitoring never requested
+      filter(([{ address }, toMonitor]) => toMonitor.has(address)),
+      mergeMap(([{ matrix, user, address }, , presences]) => {
+        // first filter can't tell typescript this property will always be set!
+        const userId = user.userId,
+          presence = user.presence!,
+          available = AVAILABLE.includes(presence);
+
+        if (
+          address in presences &&
+          presences[address].payload.userId === userId &&
+          presences[address].payload.available === available
+        )
+          // even if signature verification passes, this wouldn't change presence, so return early
+          return EMPTY;
+
+        // fetch profile info if user have no valid displayName set
+        const profile$ = Signature.is(user.displayName)
+          ? of({ displayname: user.displayName, avatar_url: user.avatarUrl })
+          : defer(() => matrix.getProfileInfo(userId));
+
+        return profile$.pipe(
+          map(profile => {
+            // errors raised here will be logged and ignored on catchError below
+            assert(profile?.displayname, 'no displayname');
+            // ecrecover address, validating displayName is the signature of the userId
+            const recovered = verifyMessage(userId, profile.displayname) as Address | undefined;
+            assert(
+              recovered === address,
+              `invalid displayname signature: ${recovered} !== ${address}`,
+            );
+            return matrixPresence.success(
+              {
+                userId,
+                available,
+                ts: user.lastPresenceTs ?? Date.now(),
+                caps: parseCaps(profile.avatar_url),
+              },
+              { address: recovered },
+            );
+          }),
+          catchError(err => (log.debug('Error validating presence event, ignoring', err), EMPTY)),
+        );
+      }),
+    )
+    .pipe(
+      withLatestFrom(latest$),
+      // filter out if presence update is to offline, and address became online in another user
+      filter(
+        ([action, { presences }]) =>
+          action.payload.available ||
+          !(action.meta.address in presences) ||
+          !presences[action.meta.address].payload.available ||
+          action.payload.userId === presences[action.meta.address].payload.userId,
+      ),
+      pluck(0),
+    );
 
 /**
  * Create room (if needed) for a transfer's target, channel's partner or, as a fallback, for any
@@ -820,12 +876,11 @@ export const matrixInviteEpic = (
         withLatestFrom(matrix$),
         // switchMap on new presence action for address
         switchMap(([action, matrix]) =>
+          // if not available, do nothing (and unsubscribe from previous observable)
           !action.payload.available
-            ? // if not available, do nothing (and unsubscribe from previous observable)
-              EMPTY
+            ? EMPTY
             : latest$.pipe(
-                pluckDistinct('state'),
-                map(state => state.transport.matrix?.rooms?.[action.meta.address]?.[0]),
+                map(({ state }) => state.transport.matrix?.rooms?.[action.meta.address]?.[0]),
                 distinctUntilChanged(),
                 switchMap(roomId =>
                   concat(
@@ -910,7 +965,7 @@ export const matrixHandleInvitesEpic = (
     mergeMap(({ matrix, member, senderPresence }) =>
       // join room and emit MatrixRoomAction to make it default/first option for sender address
       from(matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
-        map(() => matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
+        mapTo(matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
         catchError(err => (log.error('Error joining invited room, ignoring', err), EMPTY)),
       ),
     ),
@@ -1079,55 +1134,82 @@ export const matrixCleanMissingRoomsEpic = (
     ),
   );
 
-function waitMember$(
+function waitMemberAndSend$(
   address: Address,
   matrix: MatrixClient,
-  latest$: RaidenEpicDeps['latest$'],
-): Observable<RoomMember> {
+  type: EventType,
+  content: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  { log, latest$, config$ }: Pick<RaidenEpicDeps, 'log' | 'latest$' | 'config$'>,
+): Observable<string> {
+  const RETRY_COUNT = 3; // is this relevant enough to become a constant/setting?
   return latest$.pipe(
+    // wait for it to be joined in the first room, and return its roomId
     map(({ state }) => state.transport.matrix?.rooms?.[address]?.[0]),
     // wait for a room to exist (created or invited) for address
-    filter(isntNil),
     distinctUntilChanged(),
     // this switchMap unsubscribes from previous "wait" if first room for address changes
     switchMap(roomId =>
-      // get/wait room object for roomId
-      // may wait for the room state to be populated (happens after createRoom resolves)
-      getRoom$(matrix, roomId).pipe(
-        mergeMap(room =>
-          // wait for address to be monitored & online (after getting Room for address)
-          // latest$ ensures it happens immediatelly if all conditions are satisfied
-          latest$.pipe(
-            pluck('presences', address),
-            map(presence => (presence?.payload?.available ? presence.payload.userId : undefined)),
-            distinctUntilChanged(),
-            map(userId => ({ room, userId })),
-          ),
-        ),
-        // when user is online, get room member for partner's userId
-        // this switchMap unsubscribes from previous wait if userId changes or go offline
-        switchMap(({ room, userId }) => {
-          if (!userId) return EMPTY; // user not monitored or not available
-          const member = room.getMember(userId);
-          // if it already joined room, return its membership
-          if (member && member.membership === 'join') return of(member);
-          // else, wait for the user to join/accept invite
-          return fromEvent<RoomMember>(
-            matrix,
-            'RoomMember.membership',
-            ({}: MatrixEvent, member: RoomMember) => member,
-          ).pipe(
-            filter(
-              member =>
-                member.roomId === room.roomId &&
-                member.userId === userId &&
-                member.membership === 'join',
+      !roomId
+        ? EMPTY
+        : getRoom$(matrix, roomId).pipe(
+            // get/wait room object for roomId
+            // may wait for the room state to be populated (happens after createRoom resolves)
+            mergeMap(room =>
+              // wait for address to be monitored & online (after getting Room for address)
+              // latest$ ensures it happens immediatelly if all conditions are satisfied
+              latest$.pipe(
+                pluck('presences', address),
+                map(presence =>
+                  presence?.payload?.available ? presence.payload.userId : undefined,
+                ),
+                distinctUntilChanged(),
+                map(userId => ({ room, userId })),
+              ),
             ),
-          );
-        }),
-      ),
+            // when user is online, get room member for partner's userId
+            // this switchMap unsubscribes from previous wait if userId changes or go offline
+            switchMap(({ room, userId }) => {
+              if (!userId) return EMPTY; // user not monitored or not available
+              const member = room.getMember(userId);
+              // if it already joined room, return its membership
+              if (member && member.membership === 'join') return of(member);
+              // else, wait for the user to join/accept invite
+              return fromEvent<RoomMember>(
+                matrix,
+                'RoomMember.membership',
+                ({}: MatrixEvent, member: RoomMember) => member,
+              ).pipe(
+                filter(
+                  member =>
+                    member.roomId === room.roomId &&
+                    member.userId === userId &&
+                    member.membership === 'join',
+                ),
+              );
+            }),
+            pluck('roomId'),
+          ),
     ),
     take(1), // use first room/user which meets all requirements/filters above
+    mergeMap(roomId =>
+      defer(() => matrix.sendEvent(roomId, type, content, '')).pipe(
+        mapTo(roomId),
+        retryWhen(err$ =>
+          // if sendEvent throws, omit & retry after httpTimeout / N,
+          // up to RETRY_COUNT times; if it continues to error, throws down
+          err$.pipe(
+            withLatestFrom(config$),
+            mergeMap(([err, { httpTimeout }], i) => {
+              if (i < RETRY_COUNT - 1) {
+                log.warn(`messageSend error, retrying ${i + 1}/${RETRY_COUNT}`, err);
+                return timer(httpTimeout / RETRY_COUNT);
+                // give up
+              } else return throwError(err);
+            }),
+          ),
+        ),
+      ),
+    ),
   );
 }
 
@@ -1156,42 +1238,25 @@ export const matrixMessageSendEpic = (
       grouped$.pipe(
         // each per-user "queue" (observable) are processed serially (because concatMap)
         // TODO: batch all pending messages in a single send message request, with retry
-        concatMap(({ action, matrix }) =>
+        concatMap(({ action, matrix }) => {
+          const body: string =
+            typeof action.payload.message === 'string'
+              ? action.payload.message
+              : encodeJsonMessage(action.payload.message);
+          const content = { body, msgtype: 'm.text' };
           // wait for address to be monitored, online & have joined a non-global room with us
-          waitMember$(action.meta.address, matrix, latest$).pipe(
-            // send message!
-            mergeMap(({ roomId }) => {
-              const RETRY_COUNT = 3; // is this relevant enough to become a constant/setting?
-              const body: string =
-                typeof action.payload.message === 'string'
-                  ? action.payload.message
-                  : encodeJsonMessage(action.payload.message);
-              return defer(() =>
-                matrix.sendEvent(roomId, 'm.room.message', { body, msgtype: 'm.text' }, ''),
-              ).pipe(
-                retryWhen(err$ =>
-                  // if sendEvent throws, omit & retry after httpTimeout / N,
-                  // up to RETRY_COUNT times; if it continues to error, throws down
-                  err$.pipe(
-                    withLatestFrom(config$),
-                    mergeMap(([err, { httpTimeout }], i) => {
-                      if (i < RETRY_COUNT - 1) {
-                        log.warn(`messageSend error, retrying ${i + 1}/${RETRY_COUNT}`, err);
-                        return timer(httpTimeout / RETRY_COUNT);
-                        // give up
-                      } else return throwError(err);
-                    }),
-                  ),
-                ),
-              );
-            }),
+          return waitMemberAndSend$(action.meta.address, matrix, 'm.room.message', content, {
+            log,
+            latest$,
+            config$,
+          }).pipe(
             mapTo(messageSend.success(undefined, action.meta)),
             catchError(err => {
               log.error('messageSend error', err, action.meta);
               return of(messageSend.failure(err, action.meta));
             }),
-          ),
-        ),
+          );
+        }),
       ),
     ),
   );
@@ -1250,6 +1315,29 @@ export const matrixMessageGlobalSendEpic = (
     ignoreElements(),
   );
 
+function parseMessage(
+  line: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  address: Address,
+  { log }: { log: RaidenEpicDeps['log'] },
+): Message | Signed<Message> | undefined {
+  if (typeof line !== 'string') return;
+  try {
+    const message = decodeJsonMessage(line);
+    // if Signed, accept only if signature matches sender address
+    if ('signature' in message) {
+      const signer = getMessageSigner(message);
+      if (signer !== address)
+        throw new RaidenError(ErrorCodes.TRNS_MESSAGE_SIGNATURE_MISMATCH, {
+          sender: address,
+          signer,
+        });
+    }
+    return message;
+  } catch (err) {
+    log.warn(`Could not decode message: ${line}: ${err}`);
+  }
+}
+
 /**
  * Subscribe to matrix messages and emits MessageReceivedAction upon receiving a valid message from
  * an user of interest (one valid signature from an address we monitor) in a room we have for them
@@ -1279,7 +1367,7 @@ export const matrixMessageReceivedEpic = (
     filter(
       ([{ matrix, event, room }, config]) =>
         event.getType() === 'm.room.message' &&
-        event.event.content.msgtype === 'm.text' &&
+        event.event?.content?.msgtype === 'm.text' &&
         event.getSender() !== matrix.getUserId() &&
         !globalRoomNames(config).some(g =>
           // generate an alias for global room of given name, and check if room matches
@@ -1302,19 +1390,7 @@ export const matrixMessageReceivedEpic = (
         mergeMap(function*({ presences }) {
           const presence = find(presences, ['payload.userId', event.getSender()])!;
           for (const line of (event.event.content.body || '').split('\n')) {
-            let message: Signed<Message> | undefined;
-            try {
-              message = decodeJsonMessage(line);
-              const signer = getMessageSigner(message);
-              if (signer !== presence.meta.address)
-                throw new RaidenError(ErrorCodes.TRNS_MESSAGE_SIGNATURE_MISMATCH, {
-                  sender: presence.meta.address,
-                  signer,
-                });
-            } catch (err) {
-              log.warn(`Could not decode message: ${line}: ${err}`);
-              message = undefined;
-            }
+            const message = parseMessage(line, presence.meta.address, { log });
             yield messageReceived(
               {
                 text: line,
@@ -1382,14 +1458,21 @@ export const matrixMonitorChannelPresenceEpic = (
 export const deliveredEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, signer }: RaidenEpicDeps,
+  { log, signer, latest$ }: RaidenEpicDeps,
 ): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Delivered>>(32);
   return action$.pipe(
     filter(
       isMessageReceivedOfType([Signed(Processed), Signed(SecretRequest), Signed(SecretReveal)]),
     ),
-    concatMap(action => {
+    withLatestFrom(latest$),
+    filter(
+      ([action, { presences }]) =>
+        action.meta.address in presences &&
+        // skip if peer supports Capabilities.NO_DELIVERY
+        !presences[action.meta.address].payload.caps?.[Capabilities.NO_DELIVERY],
+    ),
+    concatMap(([action]) => {
       const message = action.payload.message;
       // defer causes the cache check to be performed at subscription time
       return defer(() => {

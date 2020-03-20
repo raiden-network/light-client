@@ -41,7 +41,7 @@ export const messageReceived = createAction(
       ts: t.number,
     }),
     t.partial({
-      message: Signed(Message),
+      message: t.union([Message, Signed(Message)]),
       userId: t.string,
       roomId: t.string,
     }),

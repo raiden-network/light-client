@@ -24,7 +24,10 @@ export const matrixPresence = createAsyncAction(
   'matrix/presence/success',
   'matrix/presence/failure',
   undefined,
-  t.type({ userId: t.string, available: t.boolean, ts: t.number }),
+  t.intersection([
+    t.type({ userId: t.string, available: t.boolean, ts: t.number }),
+    t.partial({ caps: t.record(t.string, t.any) }),
+  ]),
 );
 
 export namespace matrixPresence {

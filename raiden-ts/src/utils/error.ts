@@ -13,6 +13,7 @@ export enum ErrorCodes {
   PFS_DISABLED = 'Pathfinding Service is disabled and no direct route is available.',
   PFS_UNKNOWN_TOKEN_NETWORK = 'No open channels on this token network.',
   PFS_TARGET_OFFLINE = 'The requested target is offline.',
+  PFS_TARGET_NO_RECEIVE = "The requested target doesn't receive transfers.",
   PFS_LAST_IOU_REQUEST_FAILED = 'The request for the last IOU has failed.',
   PFS_IOU_SIGNATURE_MISMATCH = 'The signature of the last IOU did not match.',
 
@@ -39,8 +40,6 @@ export enum ErrorCodes {
   TRNS_NO_MATRIX_SERVERS = 'Could not contact any Matrix servers.',
   TRNS_NO_VALID_USER = 'Could not find a user with a valid signature.',
   TRNS_NO_SERVERNAME = 'Could not get server name from Matrix server.',
-  TRNS_NO_DISPLAYNAME = 'Could not get display name from Matrix server.',
-  TRNS_USERNAME_VERIFICATION_FAILED = 'Could not verify the signature of a display name.',
   TRNS_MESSAGE_SIGNATURE_MISMATCH = 'Unable to decode message due to signature mismatch.',
 
   // Raiden main class errors

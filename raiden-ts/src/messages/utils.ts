@@ -20,7 +20,6 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.REFUND_TRANSFER]: 8,
   [MessageType.UNLOCK]: 4,
   [MessageType.LOCK_EXPIRED]: 13,
-  [MessageType.TO_DEVICE]: 14,
   [MessageType.WITHDRAW_REQUEST]: 15,
   [MessageType.WITHDRAW_CONFIRMATION]: 16,
   [MessageType.WITHDRAW_EXPIRED]: 17,
@@ -184,14 +183,6 @@ export function packMessage(message: Message) {
           encode(message.secret, 32),
         ]),
       ) as HexString<44>;
-    case MessageType.TO_DEVICE:
-      return hexlify(
-        concat([
-          encode(CMDIDs[message.type], 1),
-          encode(0, 3),
-          encode(message.message_identifier, 8),
-        ]),
-      ) as HexString<12>;
     case MessageType.WITHDRAW_REQUEST:
     case MessageType.WITHDRAW_CONFIRMATION:
       return hexlify(
@@ -286,13 +277,14 @@ export function getBalanceProofFromEnvelopeMessage(
 
 /**
  * Encode a Message as a JSON string
- * Uses lossless-json to encode BigNumbers as JSON 'number' type, as Raiden
+ * Uses lossless-json to encode BigNumbers as JSON 'string' type, as Raiden
  *
  * @param message - Message object to be serialized
  * @returns JSON string
  */
-export function encodeJsonMessage(message: Signed<Message>): string {
-  return losslessStringify(Signed(Message).encode(message));
+export function encodeJsonMessage(message: Message | Signed<Message>): string {
+  if ('signature' in message) return losslessStringify(Signed(Message).encode(message));
+  else return losslessStringify(Message.encode(message));
 }
 
 /**
@@ -302,7 +294,7 @@ export function encodeJsonMessage(message: Signed<Message>): string {
  * @param text - JSON string to try to decode
  * @returns Message object
  */
-export function decodeJsonMessage(text: string): Signed<Message> {
+export function decodeJsonMessage(text: string): Message | Signed<Message> {
   const parsed = losslessParse(text);
   assert(
     parsed &&
@@ -311,7 +303,8 @@ export function decodeJsonMessage(text: string): Signed<Message> {
       Object.values(MessageType).some(t => t === parsed['type']),
     `Invalid message type: ${parsed?.['type']}`,
   );
-  return decode(Signed(Message), parsed);
+  if ('signature' in parsed) return decode(Signed(Message), parsed);
+  else return decode(Message, parsed);
 }
 
 /**
@@ -333,13 +326,20 @@ export async function signMessage<M extends Message>(
 }
 
 /**
+ * Type of a specific messageReceived action which validates & narrows payload.message type
+ */
+export type messageReceivedTyped<M extends Message> = messageReceived & {
+  payload: { message: M };
+};
+
+/**
  * Typeguard to ensure an action is a messageReceived of any of a set of Message types
  *
  * @param messageCodecs - Message codec to test action.payload.message against
  * @returns Typeguard intersecting messageReceived action and payload.message schemas
  */
 export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | [C, C, ...C[]]) {
-  return (action: unknown): action is messageReceived & { payload: { message: t.TypeOf<C> } } =>
+  return (action: unknown): action is messageReceivedTyped<t.TypeOf<C>> =>
     messageReceived.is(action) &&
     (Array.isArray(messageCodecs)
       ? t.union(messageCodecs).is(action.payload.message)
