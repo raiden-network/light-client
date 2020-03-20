@@ -437,5 +437,11 @@
   "versions": {
     "sdk": "Raiden SDK: {version}",
     "contracts": "Raiden Contracts: {version}"
+  },
+  "scan": {
+    "permission": {
+      "title": "Grant Camera Access",
+      "description": "In order to scan QR codes, you will need to allow camera access."
+    }
   }
 }

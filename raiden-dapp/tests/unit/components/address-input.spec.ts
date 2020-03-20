@@ -133,6 +133,29 @@ describe('AddressInput', () => {
     expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
   });
 
+  test('click on QR code opens overlay', async () => {
+    wrapper = createWrapper('', excludeAddress, blockAddress);
+    expect(wrapper.vm.$data.isQrCodeOverlayVisible).toBe(false);
+
+    wrapper.find('.address-input__qr-code svg').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.$data.isQrCodeOverlayVisible).toBe(true);
+  });
+
+  test('insert address if QR code got decoded', async () => {
+    wrapper = createWrapper('', excludeAddress, blockAddress);
+    // @ts-ignore
+    wrapper.vm.onDecode(onlineTarget);
+
+    jest.advanceTimersByTime(1000);
+    await wrapper.vm.$nextTick();
+
+    const inputEvent = wrapper.emitted('input');
+    expect(inputEvent).toBeTruthy();
+    expect(inputEvent).toContainEqual([onlineTarget]);
+  });
+
   describe('resolve an ens domain', () => {
     test('with success', async () => {
       wrapper = createWrapper('', excludeAddress, blockAddress);
