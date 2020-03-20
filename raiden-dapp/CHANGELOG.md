@@ -5,9 +5,11 @@
 ### Added
 - [#691] Auto-suggesting hub on Goerli.
 - [#921] Transfer identifier on summary screen.
+- [#1136] Ability to enter addresses via QR code scanning.
 
 [#691]: https://github.com/raiden-network/light-client/issues/691
 [#921]: https://github.com/raiden-network/light-client/issues/921
+[#1136]: https://github.com/raiden-network/light-client/issues/1136
 
 ## [0.4.2] - 2020-03-05
 ### Fixed

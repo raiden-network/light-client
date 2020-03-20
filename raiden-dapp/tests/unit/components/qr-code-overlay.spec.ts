@@ -3,7 +3,6 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 
 import QrCodeOverlay from '@/components/QrCodeOverlay.vue';
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 
