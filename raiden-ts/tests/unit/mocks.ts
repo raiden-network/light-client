@@ -300,9 +300,9 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
   return (Object.assign(new EventEmitter(), {
     startClient: jest.fn(async () => true),
     stopClient: jest.fn(() => true),
-    setDisplayName: jest.fn(async () => true),
     joinRoom: jest.fn(async () => true),
-    loginWithPassword: jest.fn().mockRejectedValue(new Error('invalid password')),
+    // reject to test register
+    login: jest.fn().mockRejectedValue(new Error('invalid password')),
     register: jest.fn(async userName => {
       userId = `@${userName}:${server}`;
       return {
@@ -318,6 +318,9 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
     getUsers: jest.fn(() => []),
     getUser: jest.fn(userId => ({ userId, presence: 'offline', setDisplayName: jest.fn() })),
     getProfileInfo: jest.fn(async userId => ({ displayname: `${userId}_display_name` })),
+    setDisplayName: jest.fn(async () => null),
+    setAvatarUrl: jest.fn(async () => null),
+    setPresence: jest.fn(async () => null),
     createRoom: jest.fn(async ({ visibility, invite }) => ({
       room_id: `!roomId_${visibility || 'public'}_with_${(invite || []).join('_')}:${server}`,
       getMember: jest.fn(),

@@ -53,18 +53,24 @@ export class MockMatrixRequestFn {
       this.respond(callback, 200, { filter_id: 'a filter id' });
 
     const displayNames: { [userId: string]: string } = {};
-    this.endpoints['/displayname'] = (opts, callback) => {
+    const avatarUrls: { [userId: string]: string } = {};
+    this.endpoints['/profile'] = (opts, callback) => {
       const match = /\/profile\/([^/]+)/i.exec(opts.uri),
         userId = match && match[1] && decodeURIComponent(match[1]);
       if (opts.method === 'PUT') {
         const body = JSON.parse(opts.body),
-          displayName = body['displayname'];
-        if (!userId || !displayName) return this.respond(callback, 400, {});
-        displayNames[userId] = displayName;
+          displayName = body['displayname'],
+          avatarUrl = body['avatar_url'];
+        if (!userId) return this.respond(callback, 400, {});
+        if (displayName) displayNames[userId] = displayName;
+        if (avatarUrl) avatarUrls[userId] = avatarUrl;
         return this.respond(callback, 200, {});
       } else {
         if (userId && userId in displayNames)
-          return this.respond(callback, 200, { displayname: displayNames[userId] });
+          return this.respond(callback, 200, {
+            displayname: displayNames[userId],
+            avatar_url: avatarUrls[userId],
+          });
         return this.respond(callback, 404, {});
       }
     };
@@ -77,6 +83,7 @@ export class MockMatrixRequestFn {
       });
     };
     this.endpoints['/status'] = (opts, callback) => {
+      if (opts.method !== 'GET') return this.respond(callback, 200, {});
       const match = /\/presence\/([^/]+)/i.exec(opts.uri),
         userId = match && match[1] && decodeURIComponent(match[1]);
       if (userId && userId in displayNames)
@@ -125,6 +132,11 @@ export class MockMatrixRequestFn {
     } else {
       body = JSON.stringify(data);
       type = 'application/json';
+    }
+
+    if (!timeout) {
+      callback(undefined, { statusCode: code, headers: { 'content-type': type } }, body);
+      return () => undefined;
     }
 
     let timeoutId: NodeJS.Timeout | undefined;
