@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
 import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps, makeLog, makeSignature } from '../mocks';
+import { raidenEpicDeps, makeLog } from '../mocks';
 
 import { marbles } from 'rxjs-marbles/jest';
 import { of, from, timer, Observable, EMPTY, merge, ReplaySubject } from 'rxjs';
@@ -9,8 +9,7 @@ import { bigNumberify } from 'ethers/utils';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { range } from 'lodash';
 
-import { UInt, Signed } from 'raiden-ts/utils/types';
-import { MessageType, Processed, Delivered } from 'raiden-ts/messages/types';
+import { UInt } from 'raiden-ts/utils/types';
 import {
   RaidenAction,
   raidenShutdown,
@@ -30,7 +29,6 @@ import {
 } from 'raiden-ts/channels/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
 import { raidenRootEpic } from 'raiden-ts/epics';
-import { deliveredEpic } from 'raiden-ts/transport/epics';
 import {
   initMonitorProviderEpic,
   tokenMonitoredEpic,
@@ -38,9 +36,6 @@ import {
   confirmationEpic,
 } from 'raiden-ts/channels/epics';
 import { ShutdownReason } from 'raiden-ts/constants';
-import { makeMessageId } from 'raiden-ts/transfers/utils';
-import { encodeJsonMessage } from 'raiden-ts/messages/utils';
-import { messageSend, messageReceived } from 'raiden-ts/messages/actions';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { RaidenError, ErrorCodes } from 'raiden-ts/utils/error';
 
@@ -57,8 +52,6 @@ describe('raiden epic', () => {
       txHash,
       state,
       matrixServer,
-      partnerRoomId,
-      partnerUserId,
       state$,
       action$,
     } = epicFixtures(depsMock);
@@ -83,8 +76,6 @@ describe('raiden epic', () => {
       txHash,
       state,
       matrixServer,
-      partnerRoomId,
-      partnerUserId,
       state$,
       action$,
     } = epicFixtures(depsMock));
@@ -440,84 +431,6 @@ describe('raiden epic', () => {
 
       // one for channels with us, one for channels from us
       expect(depsMock.provider.on).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('deliveredEpic', () => {
-    test('success with cached', async () => {
-      expect.assertions(4);
-
-      const message: Signed<Processed> = {
-          type: MessageType.PROCESSED,
-          message_identifier: makeMessageId(),
-          signature: makeSignature(),
-        },
-        roomId = partnerRoomId,
-        action = messageReceived(
-          {
-            text: encodeJsonMessage(message),
-            message,
-            ts: 123,
-            userId: partnerUserId,
-            roomId,
-          },
-          { address: partner },
-        ),
-        action$ = of(action, action);
-
-      const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
-      const promise = deliveredEpic(action$, EMPTY, depsMock)
-        .pipe(toArray())
-        .toPromise();
-
-      const output = await promise;
-      expect(output).toHaveLength(2);
-      expect(output[1]).toMatchObject({
-        type: messageSend.request.type,
-        payload: {
-          message: {
-            type: MessageType.DELIVERED,
-            delivered_message_identifier: message.message_identifier,
-            signature: expect.any(String),
-          },
-        },
-        meta: { address: partner },
-      });
-      expect(output[0].payload.message).toBe(output[1].payload.message); // same cached object
-
-      expect(signerSpy).toHaveBeenCalledTimes(1);
-      signerSpy.mockRestore();
-    });
-
-    test('do not reply if not message type which should be replied', async () => {
-      expect.assertions(2);
-
-      // Delivered messages aren't in the set of messages which get replied with a Delivered
-      const message: Signed<Delivered> = {
-          type: MessageType.DELIVERED,
-          delivered_message_identifier: makeMessageId(),
-          signature: makeSignature(),
-        },
-        roomId = partnerRoomId,
-        action$ = of(
-          messageReceived(
-            {
-              text: encodeJsonMessage(message),
-              message,
-              ts: 123,
-              userId: partnerUserId,
-              roomId,
-            },
-            { address: partner },
-          ),
-        );
-
-      const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
-      const promise = deliveredEpic(action$, EMPTY, depsMock).toPromise();
-
-      await expect(promise).resolves.toBeUndefined();
-      expect(signerSpy).toHaveBeenCalledTimes(0);
-      signerSpy.mockRestore();
     });
   });
 

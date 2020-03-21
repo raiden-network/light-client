@@ -11,7 +11,6 @@ import {
   SecretRequest,
   Unlock,
   Metadata,
-  ToDevice,
   WithdrawRequest,
   WithdrawConfirmation,
   WithdrawExpired,
@@ -335,9 +334,9 @@ describe('sign/verify, pack & encode/decode ', () => {
 
   test('decodeJsonMessage invalid', () => {
     expect(() => decodeJsonMessage('{"type":"Invalid"}')).toThrowError(/\btype\b/);
-    expect(() =>
-      decodeJsonMessage('{"type":"Processed","message_identifier":123456}'),
-    ).toThrowError('Invalid value undefined');
+    expect(() => decodeJsonMessage('{"type":"Processed"}')).toThrowError(
+      'Invalid value undefined',
+    );
   });
 
   test('getBalanceProofFromEnvelopeMessage', async () => {
@@ -404,34 +403,6 @@ describe('sign/verify, pack & encode/decode ', () => {
     expect(createMetadataHash(metadata)).toEqual(
       '0x24b7955a3be270fd6c9513737759f42741653e9e39d901f7e2f255cc71dd4ae5',
     );
-  });
-
-  test('ToDevice', async () => {
-    const message: ToDevice = {
-      type: MessageType.TO_DEVICE,
-      message_identifier: bigNumberify(123456) as UInt<8>,
-    };
-
-    expect(packMessage(message)).toEqual('0x0e000000000000000001e240');
-
-    const signed = await signMessage(signer, message);
-    expect(Signed(ToDevice).is(signed)).toBe(true);
-    expect(signed.signature).toBe(
-      '0x26674d7687baf09d21185664daf85cf6a9f9671d61f00e85d32621a721c3b4e251197dafe01d6930f1d86177e119dd0948f206d352204eb986b286b6b76a541d1b',
-    );
-    expect(getMessageSigner(signed)).toBe(address);
-
-    const encoded = encodeJsonMessage(signed);
-    expect(encoded).toBe(
-      '{"type":"ToDevice","message_identifier":"123456","signature":"0x26674d7687baf09d21185664daf85cf6a9f9671d61f00e85d32621a721c3b4e251197dafe01d6930f1d86177e119dd0948f206d352204eb986b286b6b76a541d1b"}',
-    );
-
-    const decoded = decodeJsonMessage(encoded);
-    expect(decoded).toEqual(signed);
-
-    // test sign already signed message return original object
-    const signed2 = await signMessage(signer, signed);
-    expect(signed2).toBe(signed);
   });
 
   test('WithdrawRequest', async () => {
