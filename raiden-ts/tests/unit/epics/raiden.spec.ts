@@ -279,7 +279,7 @@ describe('raiden epic', () => {
 
       // whole raidenRootEpic completes upon raidenShutdown, with it as last emitted value
       await expect(raidenRootEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
-        raidenShutdown({ reason: error }),
+        raidenShutdown({ reason: expect.anything() }),
       );
 
       action$.complete();
