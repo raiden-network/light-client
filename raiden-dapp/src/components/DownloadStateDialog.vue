@@ -7,7 +7,7 @@
     <v-card-text>
       <v-row align="center" justify="center" no-gutters>
         <v-col cols="6">
-          <v-img :src="require('../assets/done.svg')"></v-img>
+          <v-img :src="require('../assets/warning.svg')"></v-img>
         </v-col>
         <v-col cols="12">
           {{ $t('backup-state.download-warning') }}
