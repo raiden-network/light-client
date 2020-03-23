@@ -30,7 +30,11 @@
         </v-list-item-content>
       </v-list-item>
     </v-list>
-    <download-state-dialog :visible="downloadState"> </download-state-dialog>
+    <download-state-dialog
+      :visible="downloadState"
+      @cancel="downloadState = false"
+    >
+    </download-state-dialog>
   </div>
 </template>
 

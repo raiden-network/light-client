@@ -7,7 +7,10 @@
     <v-card-text>
       <v-row align="center" justify="center" no-gutters>
         <v-col cols="6">
-          <v-img :src="require('../assets/warning.svg')"></v-img>
+          <v-img
+            class="download-state__warning"
+            :src="require('../assets/warning.svg')"
+          ></v-img>
         </v-col>
         <v-col cols="12">
           {{ $t('backup-state.download-warning') }}
@@ -66,6 +69,10 @@ export default class DownloadStateDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-/* .download-state {
-} */
+.download-state {
+  &__warning {
+    height: 110px;
+    margin-bottom: 20px;
+  }
+}
 </style>
