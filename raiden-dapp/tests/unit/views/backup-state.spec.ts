@@ -1,3 +1,4 @@
+jest.useFakeTimers();
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
@@ -14,18 +15,33 @@ describe('BackupState.vue', () => {
 
     wrapper = mount(BackupState, {
       vuetify,
+      stubs: ['v-dialog'],
       mocks: {
         $t: (msg: string) => msg
       }
     });
   });
 
-  test('download state', () => {
+  test('download state title', () => {
     const downloadStateTitle = wrapper.find(
       '.backup-state__buttons__download-state__title'
     );
 
     expect(downloadStateTitle.text()).toBe('backup-state.download');
+  });
+
+  test('clicking download state buttons opens download state dialog', () => {
+    expect(wrapper.vm.$data.downloadState).toBe(false);
+
+    const downloadStateButton = wrapper.find(
+      '.backup-state__buttons__download-state'
+    );
+    downloadStateButton.trigger('click');
+    expect(wrapper.vm.$data.downloadState).toBe(true);
+
+    jest.advanceTimersByTime(2000);
+    const downloadStateDialog = wrapper.find('.download-state');
+    expect(downloadStateDialog).toBeTruthy();
   });
 
   test('upload state', () => {
