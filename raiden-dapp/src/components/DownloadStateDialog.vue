@@ -1,0 +1,71 @@
+<template>
+  <raiden-dialog class="download-state" :visible="visible" @close="cancel">
+    <v-card-title>
+      {{ $t('backup-state.download') }}
+    </v-card-title>
+
+    <v-card-text>
+      <v-row align="center" justify="center" no-gutters>
+        <v-col cols="6">
+          <v-img :src="require('../assets/done.svg')"></v-img>
+        </v-col>
+        <v-col cols="12">
+          {{ $t('backup-state.download-warning') }}
+        </v-col>
+      </v-row>
+    </v-card-text>
+
+    <v-card-actions>
+      <action-button
+        enabled
+        :text="$t('backup-state.download-button')"
+        @click="getAndDownloadState()"
+      ></action-button>
+    </v-card-actions>
+  </raiden-dialog>
+</template>
+
+<script lang="ts">
+import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
+import RaidenDialog from '@/components/RaidenDialog.vue';
+import ActionButton from '@/components/ActionButton.vue';
+
+@Component({
+  components: {
+    RaidenDialog,
+    ActionButton
+  }
+})
+export default class DownloadStateDialog extends Vue {
+  @Prop({ required: true, type: Boolean, default: false })
+  visible!: boolean;
+
+  @Emit()
+  cancel() {}
+
+  async getAndDownloadState() {
+    const state = await this.$raiden.getState();
+    const stateJSON = JSON.stringify(state);
+    const filename = `raiden_lc_state_${new Date().toISOString()}.json`;
+    const file = new File([stateJSON], filename, { type: 'application/json' });
+    const url = URL.createObjectURL(file);
+    const el = document.createElement('a');
+
+    el.href = url;
+    el.download = filename;
+    el.style.display = 'none';
+    document.body.appendChild(el);
+    el.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      document.body.removeChild(el);
+    }, 0);
+  }
+}
+</script>
+
+<style scoped lang="scss">
+/* .download-state {
+} */
+</style>
