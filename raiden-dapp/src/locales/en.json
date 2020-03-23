@@ -20,6 +20,8 @@
   "backup-state": {
     "description": "Possibility to download and update state coming soon",
     "download": "Download State",
+    "download-warning": "Downloading the state will force the dApp to shut down",
+    "download-button": "Download",
     "upload": "Upload State"
   },
   "update": {

@@ -6,7 +6,10 @@
       </v-col>
     </v-row>
     <v-list class="backup-state__buttons">
-      <v-list-item class="backup-state__buttons__download-state">
+      <v-list-item
+        class="backup-state__buttons__download-state"
+        @click="downloadState = true"
+      >
         <div class="backup-state__buttons__download-state__icon">
           <v-img :src="require('../assets/state_download.png')"></v-img>
         </div>
@@ -27,14 +30,22 @@
         </v-list-item-content>
       </v-list-item>
     </v-list>
+    <download-state-dialog :visible="downloadState"> </download-state-dialog>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import DownloadStateDialog from '@/components/DownloadStateDialog.vue';
 
-@Component({})
-export default class BackupState extends Vue {}
+@Component({
+  components: {
+    DownloadStateDialog
+  }
+})
+export default class BackupState extends Vue {
+  downloadState: boolean = false;
+}
 </script>
 
 <style scoped lang="scss">
