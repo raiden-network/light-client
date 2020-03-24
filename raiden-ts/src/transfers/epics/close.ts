@@ -1,14 +1,16 @@
 import { Observable, from } from 'rxjs';
 import { filter, mergeMap, withLatestFrom, map } from 'rxjs/operators';
 
+import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
 import { channelClose } from '../../channels/actions';
 import { getBalanceProofFromEnvelopeMessage } from '../../messages/utils';
 import { RaidenState } from '../../state';
 import { isActionOf } from '../../utils/actions';
 import { RaidenError, ErrorCodes } from '../../utils/error';
-import { Hash } from '../../utils/types';
+import { Hash, isntNil } from '../../utils/types';
 import { transfer } from '../actions';
+import { Direction } from '../state';
 
 /**
  * Complete or fail any pending transfer for any closing or closed channels
@@ -22,6 +24,7 @@ import { transfer } from '../actions';
 export const transferChannelClosedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
+  { address }: RaidenEpicDeps,
 ): Observable<transfer.success | transfer.failure> =>
   action$.pipe(
     filter(isActionOf([channelClose.request, channelClose.success])),
@@ -36,25 +39,34 @@ export const transferChannelClosedEpic = (
             },
           ]) =>
             transf.token_network_address === action.meta.tokenNetwork &&
-            transf.recipient === action.meta.partner,
+            transf.recipient === action.meta.partner &&
+            transf.initiator === address,
         ),
         map(([secrethash, sent]) => {
           // as we can't know for sure if recipient/partner received the secret or unlock,
           //consider transfer failed iff neither the secret was revealed nor the unlock happened
-          let action: transfer.failure | transfer.success;
-          if (!sent.secretReveal && !sent.unlock)
-            action = transfer.failure(
+          const meta = { secrethash, direction: Direction.SENT };
+          if (
+            sent.lockExpired ||
+            sent.unlockProcessed ||
+            sent.secret?.[1]?.registerBlock ||
+            (sent.secretRequest && !sent.secretReveal)
+          )
+            // success/failure already emitted
+            return;
+          else if (!sent.secret?.[1]?.registerBlock && !sent.secretReveal && !sent.unlock)
+            return transfer.failure(
               new RaidenError(ErrorCodes.XFER_CHANNEL_CLOSED_PREMATURELY),
-              { secrethash },
+              meta,
             );
           else if (sent.unlock)
-            action = transfer.success(
+            return transfer.success(
               { balanceProof: getBalanceProofFromEnvelopeMessage(sent.unlock[1]) },
-              { secrethash },
+              meta,
             );
-          else action = transfer.success({}, { secrethash });
-          return action;
+          else return transfer.success({}, meta);
         }),
+        filter(isntNil),
       ),
     ),
   );

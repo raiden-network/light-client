@@ -29,7 +29,7 @@ import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
 import { RaidenConfig, PartialRaidenConfig } from './config';
 import { RaidenChannels, ChannelState } from './channels/state';
-import { RaidenTransfer } from './transfers/state';
+import { RaidenTransfer, Direction } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import {
@@ -808,7 +808,7 @@ export class Raiden {
                     paymentId,
                     secret,
                   },
-                  { secrethash },
+                  { secrethash, direction: Direction.SENT },
                 ),
               );
               return EMPTY;
@@ -840,7 +840,7 @@ export class Raiden {
     }
 
     // throws/rejects if a failure occurs
-    await asyncActionToPromise(transfer, { secrethash }, this.action$);
+    await asyncActionToPromise(transfer, { secrethash, direction: Direction.SENT }, this.action$);
     state = this.state;
     return state.sent[secrethash].secretRequest?.[1]?.amount;
   }

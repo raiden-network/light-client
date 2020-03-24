@@ -54,6 +54,7 @@ export const RaidenState = t.readonly(
       }),
     ),
     sent: TransfersState,
+    received: TransfersState,
     path: t.type({
       iou: t.readonly(
         t.record(
@@ -140,6 +141,7 @@ export function makeInitialState(
     tokens: {},
     transport: {},
     sent: {},
+    received: {},
     path: {
       iou: {},
     },
