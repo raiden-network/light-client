@@ -20,7 +20,7 @@ import { getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
 // same as highest migrator function in migration.index.migrators
-export const CURRENT_STATE_VERSION = 1;
+export const CURRENT_STATE_VERSION = 2;
 
 // types
 export const RaidenState = t.readonly(
@@ -100,7 +100,7 @@ export function decodeRaidenState(
   { log }: { log: logging.Logger } = { log: logging },
 ): RaidenState {
   if (typeof data === 'string') data = losslessParse(data);
-  const state = migrateState(data, { log });
+  const state = migrateState(data, CURRENT_STATE_VERSION, { log });
   // validates and returns as current state
   try {
     return decode(RaidenState, state);
