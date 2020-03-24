@@ -46,6 +46,7 @@ export default class DownloadStateDialog extends Vue {
   @Emit()
   cancel() {}
 
+  /* istanbul ignore next */
   async getAndDownloadState() {
     const state = await this.$raiden.getState();
     const stateJSON = JSON.stringify(state);
