@@ -319,7 +319,7 @@ export class Raiden {
       contracts,
       address,
       storageOrState,
-      config,
+      config && decode(PartialRaidenConfig, config),
     );
 
     assert(
@@ -344,6 +344,8 @@ export class Raiden {
    */
   public start(): void {
     assert(this.epicMiddleware, 'Already started or stopped!');
+    // on complete, sets epicMiddleware to null, so this.started === false
+    this.deps.latest$.subscribe(undefined, undefined, () => (this.epicMiddleware = null));
     this.epicMiddleware.run(raidenRootEpic);
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
@@ -367,7 +369,7 @@ export class Raiden {
    */
   public stop(): void {
     // start still can't be called again, but turns this.started to false
-    this.epicMiddleware = null;
+    // this.epicMiddleware is set to null by latest$'s complete callback
     this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
   }
 
@@ -451,7 +453,7 @@ export class Raiden {
    * @param config - Partial object containing keys and values to update in config
    */
   public updateConfig(config: PartialRaidenConfig) {
-    this.store.dispatch(raidenConfigUpdate(config));
+    this.store.dispatch(raidenConfigUpdate(decode(PartialRaidenConfig, config)));
   }
 
   /**
