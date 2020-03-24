@@ -62,6 +62,26 @@ import {
 } from './actions';
 
 /**
+ * Receives an async function and returns an observable which will retry it every interval until it
+ * resolves, or throw if it can't succeed after 10 retries.
+ * It is needed e.g. on provider methods which perform RPC requests directly, as they can fail
+ * temporarily due to network errors, so they need to be retried for a while.
+ * JsonRpcProvider._doPoll also catches, suppresses & retry
+ *
+ * @param func - An async function (e.g. a Promise factory, like a defer callback)
+ * @param interval - Interval to retry in case of rejection
+ * @param retries - Max number of times to retry
+ * @returns Observable version of async function, with retries
+ */
+function retryAsync$<T>(func: () => Promise<T>, interval = 1e3, retries = 10): Observable<T> {
+  return defer(func).pipe(
+    retryWhen(err$ =>
+      err$.pipe(mergeMap((err, i) => (i < retries ? timer(interval) : throwError(err)))),
+    ),
+  );
+}
+
+/**
  * Fetch current blockNumber, register for new block events and emit newBlock actions
  *
  * @param action$ - Observable of RaidenActions
@@ -74,7 +94,7 @@ export const initNewBlockEpic = (
   {}: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
 ): Observable<newBlock> =>
-  from(provider.getBlockNumber()).pipe(
+  retryAsync$(() => provider.getBlockNumber(), provider.pollingInterval).pipe(
     mergeMap(blockNumber => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
     map(blockNumber => newBlock({ blockNumber })),
   );
@@ -107,14 +127,16 @@ export const initTokensRegistryEpic = (
         );
       // else, do an initial registry scan, from deploy to now
       else
-        return defer(() =>
-          provider.getLogs({
-            ...registryContract.filters.TokenNetworkCreated(null, null),
-            fromBlock: contractsInfo.TokenNetworkRegistry.block_number,
-            toBlock: 'latest',
-          }),
+        return retryAsync$(
+          () =>
+            provider.getLogs({
+              ...registryContract.filters.TokenNetworkCreated(null, null),
+              fromBlock: contractsInfo.TokenNetworkRegistry.block_number,
+              toBlock: 'latest',
+            }),
+          provider.pollingInterval,
         ).pipe(
-          mergeMap(from),
+          mergeMap(logs => from(logs)),
           map(log => ({ log, parsed: registryContract.interface.parseLog(log) })),
           filter(({ parsed }) => !!parsed.values?.token_network_address),
           // for each TokenNetwork found, scan for channels with us
@@ -123,21 +145,26 @@ export const initTokensRegistryEpic = (
               concat$(
                 // concat channels opened by us and to us separately
                 // take(1) won't subscribe the later if something is found on former
-                defer(() =>
-                  provider.getLogs({
-                    address: parsed.values.token_network_address,
-                    topics: [null, null, encodedAddress] as string[], // channels from us
-                    fromBlock: log.blockNumber ?? contractsInfo.TokenNetworkRegistry.block_number,
-                    toBlock: 'latest',
-                  }),
+                retryAsync$(
+                  () =>
+                    provider.getLogs({
+                      address: parsed.values.token_network_address,
+                      topics: [null, null, encodedAddress] as string[], // channels from us
+                      fromBlock:
+                        log.blockNumber ?? contractsInfo.TokenNetworkRegistry.block_number,
+                      toBlock: 'latest',
+                    }),
+                  provider.pollingInterval,
                 ).pipe(mergeMap(from)),
-                defer(() =>
-                  provider.getLogs({
-                    address: parsed.values.token_network_address,
-                    topics: [null, null, null, encodedAddress] as string[], // channels to us
-                    fromBlock: log.blockNumber ?? contractsInfo.TokenNetworkRegistry.block_number,
-                    toBlock: 'latest',
-                  }),
+                retryAsync$(
+                  () =>
+                    provider.getLogs({
+                      address: parsed.values.token_network_address,
+                      topics: [null, null, null, encodedAddress] as string[], // channels to us
+                      fromBlock: log.blockNumber!,
+                      toBlock: 'latest',
+                    }),
+                  provider.pollingInterval,
                 ).pipe(mergeMap(from)),
               ).pipe(
                 // if found at least one, register this TokenNetwork as of interest
@@ -147,7 +174,7 @@ export const initTokensRegistryEpic = (
                   tokenMonitored({
                     token: parsed.values.token_address,
                     tokenNetwork: parsed.values.token_network_address,
-                    fromBlock: log.blockNumber ?? contractsInfo.TokenNetworkRegistry.block_number,
+                    fromBlock: log.blockNumber!,
                   }),
                 ),
               ),
@@ -196,7 +223,7 @@ export const initMonitorProviderEpic = (
   {}: Observable<RaidenState>,
   { address, network, provider }: RaidenEpicDeps,
 ): Observable<raidenShutdown> =>
-  from(provider.listAccounts()).pipe(
+  retryAsync$(() => provider.listAccounts(), provider.pollingInterval).pipe(
     // at init time, check if our address is in provider's accounts list
     // if not, it means Signer is a local Wallet or another non-provider-side account
     // if yes, poll accounts every 1s and monitors if address is still there
@@ -207,11 +234,11 @@ export const initMonitorProviderEpic = (
     map(accounts => accounts.includes(address)),
     mergeMap(isProviderAccount =>
       interval(provider.pollingInterval).pipe(
-        mergeMap(() =>
+        exhaustMap(() =>
           merge(
             // if isProviderAccount, also polls and monitors accounts list
             isProviderAccount
-              ? from(provider.listAccounts()).pipe(
+              ? retryAsync$(() => provider.listAccounts(), provider.pollingInterval).pipe(
                   mergeMap(accounts =>
                     !accounts.includes(address)
                       ? of(raidenShutdown({ reason: ShutdownReason.ACCOUNT_CHANGED }))
@@ -220,7 +247,7 @@ export const initMonitorProviderEpic = (
                 )
               : EMPTY,
             // unconditionally monitors network changes
-            from(getNetwork(provider)).pipe(
+            retryAsync$(() => getNetwork(provider), provider.pollingInterval).pipe(
               mergeMap(curNetwork =>
                 curNetwork.chainId !== network.chainId
                   ? of(raidenShutdown({ reason: ShutdownReason.NETWORK_CHANGED }))
@@ -996,7 +1023,10 @@ function checkPendingAction(
   blockNumber: number,
   confirmationBlocks: number,
 ): Observable<ConfirmableAction> {
-  return defer(() => provider.getTransactionReceipt(action.payload.txHash)).pipe(
+  return retryAsync$(
+    () => provider.getTransactionReceipt(action.payload.txHash),
+    provider.pollingInterval,
+  ).pipe(
     map(receipt => {
       if (receipt?.confirmations !== undefined && receipt.confirmations >= confirmationBlocks) {
         return {
