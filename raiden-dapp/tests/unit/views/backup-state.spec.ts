@@ -30,7 +30,7 @@ describe('BackupState.vue', () => {
     expect(downloadStateTitle.text()).toBe('backup-state.download');
   });
 
-  test('clicking download state buttons opens download state dialog', () => {
+  test('clicking download state button opens download state dialog', () => {
     expect(wrapper.vm.$data.downloadState).toBe(false);
 
     const downloadStateButton = wrapper.find(
