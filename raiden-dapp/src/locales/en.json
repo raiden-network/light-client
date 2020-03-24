@@ -51,7 +51,8 @@
       "empty": "Please enter an amount",
       "too-many-decimals": "Please use only up to {decimals} decimals for this token",
       "not-enough-funds": "Your maximum usable amount is {funds} {symbol}",
-      "zero": "Please enter an amount larger than zero"
+      "zero": "Please enter an amount larger than zero",
+      "invalid": "Please enter a valid amount"
     }
   },
   "address-display": {

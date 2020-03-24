@@ -113,7 +113,7 @@ describe('OpenChannel.vue', () => {
       mockInput(wrapper, '0.1');
       await wrapper.vm.$nextTick();
       await flushPromises();
-      button.trigger('click');
+      wrapper.find('form').trigger('submit');
       await wrapper.vm.$nextTick();
       await flushPromises();
       expect(wrapper.vm.$data.error).toMatchObject({
@@ -128,7 +128,7 @@ describe('OpenChannel.vue', () => {
       );
 
       mockInput(wrapper, '0.1');
-      button.trigger('click');
+      wrapper.find('form').trigger('submit');
       await wrapper.vm.$nextTick();
       await flushPromises();
       expect(wrapper.vm.$data.error).toMatchObject({
@@ -140,7 +140,7 @@ describe('OpenChannel.vue', () => {
     test('show an error when any error occurs during channel opening', async () => {
       service.openChannel.mockRejectedValueOnce(new Error('unknown'));
       mockInput(wrapper, '0.1');
-      button.trigger('click');
+      wrapper.find('form').trigger('submit');
       await wrapper.vm.$nextTick();
       await flushPromises();
       expect(wrapper.vm.$data.error).toMatchObject({ message: 'unknown' });
@@ -150,7 +150,7 @@ describe('OpenChannel.vue', () => {
     test('navigate to the "Transfer" view when the channel opens', async () => {
       const loading = jest.spyOn(wrapper.vm.$data, 'loading', 'set');
       service.openChannel.mockResolvedValue(undefined);
-      button.trigger('click');
+      wrapper.find('form').trigger('submit');
       await wrapper.vm.$nextTick();
       await flushPromises();
       jest.advanceTimersByTime(2000);

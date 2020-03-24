@@ -135,7 +135,7 @@ describe('Transfer.vue', () => {
 
     const button = wrapper.find('.action-button__button');
     expect(button.attributes()['disabled']).toBeUndefined();
-    button.trigger('click');
+    wrapper.find('form').trigger('submit');
 
     await wrapper.vm.$nextTick();
     await flushPromises();

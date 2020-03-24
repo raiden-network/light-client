@@ -8,6 +8,7 @@
   >
     <v-col :cols="sticky ? 12 : 10" class="text-center">
       <v-btn
+        type="submit"
         :disabled="!enabled"
         :loading="loading"
         class="text-capitalize action-button__button"

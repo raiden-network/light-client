@@ -38,23 +38,21 @@
       </v-row>
       <v-row v-else align="center" justify="center">
         <v-col>
-          <v-form v-model="valid">
+          <v-form v-model="valid" @submit.prevent="depositTokens()">
             <amount-input
               v-model="deposit"
               :token="token"
               :max="token.balance"
               limit
-            >
-            </amount-input>
+            />
+            <div class="channel-deposit__button">
+              <action-button
+                :id="`confirm-${identifier}`"
+                :enabled="valid"
+                :text="$t('channel-deposit.buttons.confirm')"
+              />
+            </div>
           </v-form>
-          <div class="channel-deposit__button">
-            <action-button
-              :id="`confirm-${identifier}`"
-              :enabled="valid"
-              :text="$t('channel-deposit.buttons.confirm')"
-              @click="depositTokens()"
-            ></action-button>
-          </div>
         </v-col>
       </v-row>
     </v-card-actions>
