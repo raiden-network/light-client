@@ -284,7 +284,7 @@ export function getBalanceProofFromEnvelopeMessage(
  */
 export function encodeJsonMessage(message: Message | Signed<Message>): string {
   if ('signature' in message) return losslessStringify(Signed(Message).encode(message));
-  else return losslessStringify(Message.encode(message));
+  return losslessStringify(Message.encode(message));
 }
 
 /**
@@ -304,7 +304,7 @@ export function decodeJsonMessage(text: string): Message | Signed<Message> {
     `Invalid message type: ${parsed?.['type']}`,
   );
   if ('signature' in parsed) return decode(Signed(Message), parsed);
-  else return decode(Message, parsed);
+  return decode(Message, parsed);
 }
 
 /**
