@@ -358,6 +358,12 @@ export default class RaidenService {
 
     return false;
   }
+
+  /* istanbul ignore next */
+  async getState() {
+    this._raiden?.stop();
+    return await this._raiden?.state$.toPromise();
+  }
 }
 
 export class ChannelSettleFailed extends Error {}
