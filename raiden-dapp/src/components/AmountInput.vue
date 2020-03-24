@@ -51,9 +51,9 @@ export default class AmountInput extends Vue {
   private static numericRegex = /^\d*[.]?\d*$/;
 
   readonly rules = [
-    (v: string) => {
-      return !!v || this.$parent.$t('amount-input.error.empty');
-    },
+    (v: string) => !!v || this.$parent.$t('amount-input.error.empty'),
+    (v: string) =>
+      !Number.isNaN(Number(v)) || this.$parent.$t('amount-input.error.invalid'),
     (v: string) =>
       !this.limit ||
       (v && this.noDecimalOverflow(v)) ||
@@ -89,14 +89,14 @@ export default class AmountInput extends Vue {
 
   private hasEnoughBalance(v: string, max: BigNumber) {
     return (
-      AmountInput.numericRegex.test(v) &&
+      !Number.isNaN(Number(v)) &&
       !BalanceUtils.decimalsOverflow(v, this.token!.decimals!) &&
       BalanceUtils.parse(v, this.token!.decimals!).lte(max)
     );
   }
 
   private updateIfValid(value: string) {
-    if (value !== this.amount && AmountInput.numericRegex.test(value)) {
+    if (value !== this.amount && !Number.isNaN(Number(value))) {
       this.amount = value;
     }
   }

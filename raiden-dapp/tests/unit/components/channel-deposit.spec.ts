@@ -35,10 +35,7 @@ describe('ChannelDeposit.vue', () => {
     await wrapper.vm.$nextTick();
     await flushPromises();
 
-    wrapper
-      .findAll('button')
-      .at(0)
-      .trigger('click');
+    wrapper.find('form').trigger('submit');
     expect(wrapper.emitted().depositTokens).toBeTruthy();
 
     const depositTokensEvent = wrapper.emitted('depositTokens');

@@ -77,7 +77,8 @@ describe('SelectHub.vue', () => {
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
     await flushPromises();
-    wrapper.find('.action-button__button').trigger('click');
+    wrapper.find('form').trigger('submit');
+
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({ name: RouteNames.OPEN_CHANNEL })

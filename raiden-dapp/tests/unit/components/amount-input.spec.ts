@@ -91,54 +91,6 @@ describe('AmountInput.vue', () => {
       expect(messages.text()).toEqual('amount-input.error.too-many-decimals');
     });
 
-    test('do not prevent the keypress for an allowed key', () => {
-      wrapper.find('input').setValue('');
-      const event = {
-        key: '1',
-        preventDefault: jest.fn().mockReturnValue(null)
-      };
-      // @ts-ignore
-      wrapper.vm.checkIfValid(event);
-
-      expect(event.preventDefault).toHaveBeenCalledTimes(0);
-    });
-
-    test('prevent the keypress for a non-numeric key', () => {
-      wrapper.find('input').setValue('');
-      const event = {
-        key: 'a',
-        preventDefault: jest.fn().mockReturnValue(null)
-      };
-      // @ts-ignore
-      wrapper.vm.checkIfValid(event);
-
-      expect(event.preventDefault).toHaveBeenCalledTimes(1);
-    });
-
-    test('prevent the keypress for a dot when the input is empty', () => {
-      wrapper.find('input').setValue('');
-      const event = {
-        key: '.',
-        preventDefault: jest.fn().mockReturnValue(null)
-      };
-      // @ts-ignore
-      wrapper.vm.checkIfValid(event);
-
-      expect(event.preventDefault).toHaveBeenCalledTimes(1);
-    });
-
-    test('prevent the keypress for a dot when a dot already exists', () => {
-      wrapper.find('input').setValue('1.');
-      const event = {
-        key: '.',
-        preventDefault: jest.fn().mockReturnValue(null)
-      };
-      // @ts-ignore
-      wrapper.vm.checkIfValid(event);
-
-      expect(event.preventDefault).toHaveBeenCalledTimes(1);
-    });
-
     test('call preventDefault when pasting an invalid value', () => {
       const event = {
         clipboardData: {
