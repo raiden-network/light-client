@@ -23,7 +23,7 @@ export const ChannelEnd = t.readonly(
       deposit: UInt(32), // total deposit/contract balance
     }),
     t.partial({
-      locks: t.array(Lock),
+      locks: t.readonlyArray(Lock),
       balanceProof: SignedBalanceProof,
       withdraw: UInt(32),
     }),
@@ -67,6 +67,7 @@ export const Channel = t.intersection([
         openBlock: t.number,
         isFirstParticipant: t.boolean,
         closeBlock: t.number,
+        closeParticipant: Address,
       }),
     ),
   ]),

@@ -127,7 +127,12 @@ function channelCloseSuccessReducer(
   if (action.payload.confirmed === undefined && channel.state === ChannelState.open)
     channel = { ...channel, state: ChannelState.closing };
   else if (action.payload.confirmed)
-    channel = { ...channel, state: ChannelState.closed, closeBlock: action.payload.txBlock };
+    channel = {
+      ...channel,
+      state: ChannelState.closed,
+      closeBlock: action.payload.txBlock,
+      closeParticipant: action.payload.participant,
+    };
   else return state;
   return set(path, channel, state);
 }
