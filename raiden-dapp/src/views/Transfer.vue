@@ -1,65 +1,67 @@
 <template>
-  <v-form v-model="valid" autocomplete="off" class="transfer">
-    <v-container fluid class="transfer__settings">
-      <v-row justify="center" no-gutters class="transfer__actions">
-        <v-col cols="3" sm="2" class="transfer__channels">
-          <v-btn
-            text
-            class="transfer__channel-button"
-            @click="navigateToChannels(token.address)"
-          >
-            {{ $t('transfer.channel-button') }}
-          </v-btn>
-        </v-col>
-        <v-col cols="6" class="transfer__token-networks">
-          <div class="transfer__token-networks__amount">
-            <v-tooltip top>
-              <template #activator="{ on }">
-                <span v-on="on">
-                  {{ capacity | displayFormat(token.decimals) }}
-                  {{ token.symbol || '' }}
-                </span>
-              </template>
-              <span>
-                {{ capacity | toUnits(token.decimals) }}
+  <v-container fluid class="transfer__settings">
+    <v-row justify="center" no-gutters class="transfer__actions">
+      <v-col cols="3" sm="2" class="transfer__channels">
+        <v-btn
+          text
+          class="transfer__channel-button"
+          @click="navigateToChannels(token.address)"
+        >
+          {{ $t('transfer.channel-button') }}
+        </v-btn>
+      </v-col>
+      <v-col cols="6" class="transfer__token-networks">
+        <div class="transfer__token-networks__amount">
+          <v-tooltip top>
+            <template #activator="{ on }">
+              <span v-on="on">
+                {{ capacity | displayFormat(token.decimals) }}
                 {{ token.symbol || '' }}
               </span>
-            </v-tooltip>
-          </div>
-          <div
-            class="transfer__token-networks__dropdown"
-            @click="showTokenNetworks = true"
-          >
-            <span>{{ token.name }}</span>
+            </template>
             <span>
-              <down-arrow />
+              {{ capacity | toUnits(token.decimals) }}
+              {{ token.symbol || '' }}
             </span>
-          </div>
-          <token-overlay
-            :show="showTokenNetworks"
-            @cancel="showTokenNetworks = false"
-          />
-        </v-col>
-        <v-col cols="3" sm="2" class="transfer__deposit">
-          <v-btn
-            text
-            class="transfer__deposit-button"
-            @click="depositing = true"
-          >
-            {{ $t('transfer.deposit-button') }}
-          </v-btn>
-          <channel-deposit-dialog
-            :loading="loading"
-            :done="done"
-            :token="token"
-            :visible="depositing"
-            identifier="0"
-            @cancel="depositing = false"
-            @depositTokens="deposit($event)"
-          />
-        </v-col>
-      </v-row>
+          </v-tooltip>
+        </div>
+        <div
+          class="transfer__token-networks__dropdown"
+          @click="showTokenNetworks = true"
+        >
+          <span>{{ token.name }}</span>
+          <span>
+            <down-arrow />
+          </span>
+        </div>
+        <token-overlay
+          :show="showTokenNetworks"
+          @cancel="showTokenNetworks = false"
+        />
+      </v-col>
+      <v-col cols="3" sm="2" class="transfer__deposit">
+        <v-btn text class="transfer__deposit-button" @click="depositing = true">
+          {{ $t('transfer.deposit-button') }}
+        </v-btn>
+        <channel-deposit-dialog
+          :loading="loading"
+          :done="done"
+          :token="token"
+          :visible="depositing"
+          identifier="0"
+          @cancel="depositing = false"
+          @depositTokens="deposit($event)"
+        />
+      </v-col>
+    </v-row>
 
+    <v-form
+      v-model="valid"
+      autocomplete="off"
+      class="transfer"
+      novalidate
+      @submit.prevent="onSubmit"
+    >
       <v-row justify="center" align="center" class="transfer__recipient">
         <v-col cols="12" sm="10">
           <address-input
@@ -92,10 +94,9 @@
         arrow
         @click="navigateToTransferSteps(target, amount)"
       ></action-button>
-    </v-container>
-
-    <error-dialog :error="error" @dismiss="error = null"></error-dialog>
-  </v-form>
+      <error-dialog :error="error" @dismiss="error = null"></error-dialog>
+    </v-form>
+  </v-container>
 </template>
 
 <script lang="ts">
@@ -223,6 +224,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
       this.done = false;
       this.depositing = false;
     }, 2000);
+  }
+
+  onSubmit(e: Event) {
+    console.log('submit', e);
   }
 }
 </script>

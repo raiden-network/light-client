@@ -13,7 +13,6 @@
       :placeholder="placeholder"
       autocomplete="off"
       @paste="onPaste($event)"
-      @keypress="checkIfValid($event)"
       @input="onInput($event)"
     >
       <div slot="append" class="amount-input__token-symbol">
@@ -114,16 +113,6 @@ export default class AmountInput extends Vue {
 
   mounted() {
     this.updateIfValid(this.value);
-  }
-
-  checkIfValid(event: KeyboardEvent) {
-    if (
-      !/[\d.]/.test(event.key) ||
-      (!this.value && event.key === '.') ||
-      (this.value.indexOf('.') > -1 && event.key === '.')
-    ) {
-      event.preventDefault();
-    }
   }
 
   onPaste(event: ClipboardEvent) {
