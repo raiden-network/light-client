@@ -1,5 +1,10 @@
 <template>
-  <v-form v-model="valid" autocomplete="off" class="open-channel">
+  <v-form
+    v-model="valid"
+    autocomplete="off"
+    class="open-channel"
+    @submit.prevent="openChannel()"
+  >
     <v-row align="center" justify="center">
       <v-col cols="10">
         <amount-input
@@ -29,7 +34,6 @@
     <action-button
       :enabled="valid"
       :text="$t('open-channel.open-button')"
-      @click="openChannel()"
     ></action-button>
 
     <open-channel-dialog
