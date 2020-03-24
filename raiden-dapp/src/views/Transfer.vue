@@ -60,7 +60,7 @@
       autocomplete="off"
       class="transfer"
       novalidate
-      @submit.prevent="onSubmit"
+      @submit.prevent="navigateToTransferSteps(target, amount)"
     >
       <v-row justify="center" align="center" class="transfer__recipient">
         <v-col cols="12" sm="10">
@@ -92,7 +92,6 @@
         class="transfer__action-button"
         sticky
         arrow
-        @click="navigateToTransferSteps(target, amount)"
       ></action-button>
       <error-dialog :error="error" @dismiss="error = null"></error-dialog>
     </v-form>
@@ -225,10 +224,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
       this.depositing = false;
     }, 2000);
   }
-
-  onSubmit(e: Event) {
-    console.log('submit', e);
-  }
 }
 </script>
 
@@ -238,8 +233,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 @import '../scss/fonts';
 
 .transfer {
-  width: 100%;
-  height: 100%;
+  &__settings {
+    width: 100%;
+    height: 100%;
+  }
 
   &__channels,
   &__deposit {
