@@ -28,6 +28,8 @@ export enum ErrorCodes {
   CNL_SETTOTALDEPOSIT_FAILED = 'Token networks setTotalDeposit transaction failed.',
   CNL_CLOSECHANNEL_FAILED = 'Token networks closeChannel transaction failed.',
   CNL_SETTLECHANNEL_FAILED = 'Token networks settleChannel transaction failed.',
+  CNL_UPDATE_NONCLOSING_BP_FAILED = 'updateNonClosingBalanceProof transaction failed.',
+  CNL_ONCHAIN_UNLOCK_FAILED = 'on-chain unlock transaction failed.',
 
   // Transfer errors
   XFER_EXPIRED = 'Transfer expired.',

@@ -4,6 +4,7 @@ import * as t from 'io-ts';
 
 import { createAction, ActionType, createAsyncAction } from '../utils/actions';
 import { Address, Hash, UInt } from '../utils/types';
+import { Lock } from './types';
 
 // interfaces need to be exported, and we need/want to support `import * as RaidenActions`
 const ChannelId = t.type({
@@ -138,12 +139,15 @@ export const channelSettle = createAsyncAction(
   'channel/settle/success',
   'channel/settle/failure',
   t.union([t.partial({ subkey: t.boolean }), t.undefined]),
-  t.type({
-    id: t.number,
-    txHash: Hash,
-    txBlock: t.number,
-    confirmed: t.union([t.undefined, t.boolean]),
-  }),
+  t.intersection([
+    t.type({
+      id: t.number,
+      txHash: Hash,
+      txBlock: t.number,
+      confirmed: t.union([t.undefined, t.boolean]),
+    }),
+    t.partial({ locks: t.readonlyArray(Lock) }),
+  ]),
 );
 
 export namespace channelSettle {
