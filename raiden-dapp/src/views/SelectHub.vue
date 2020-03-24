@@ -1,5 +1,10 @@
 <template>
-  <v-form v-model="valid" autocomplete="off" class="select-hub">
+  <v-form
+    v-model="valid"
+    autocomplete="off"
+    class="select-hub"
+    @submit.prevent="selectHub()"
+  >
     <v-row align="center" justify="center" no-gutters>
       <v-col cols="10">
         <address-input
@@ -16,7 +21,6 @@
     <action-button
       :enabled="valid"
       :text="$t('select-hub.select-button')"
-      @click="selectHub()"
     ></action-button>
   </v-form>
 </template>
