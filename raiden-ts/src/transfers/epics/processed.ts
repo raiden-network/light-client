@@ -1,76 +1,25 @@
 import { defer, from, Observable, of } from 'rxjs';
-import { concatMap, filter, first, map, mergeMap, tap, withLatestFrom } from 'rxjs/operators';
+import { concatMap, filter, map, mergeMap, tap, withLatestFrom } from 'rxjs/operators';
 
 import { RaidenAction } from '../../actions';
 import { messageSend } from '../../messages/actions';
-import {
-  LockedTransfer,
-  LockExpired,
-  MessageType,
-  Processed,
-  RefundTransfer,
-  WithdrawExpired,
-} from '../../messages/types';
+import { MessageType, Processed, RefundTransfer, WithdrawExpired } from '../../messages/types';
 import {
   getBalanceProofFromEnvelopeMessage,
   signMessage,
   isMessageReceivedOfType,
 } from '../../messages/utils';
 import { RaidenState } from '../../state';
-import { matrixPresence } from '../../transport/actions';
 import { RaidenEpicDeps } from '../../types';
 import { LruCache } from '../../utils/lru';
 import { Hash, Signed } from '../../utils/types';
 import {
   transfer,
-  transferExpire,
   transferExpireProcessed,
   transferProcessed,
-  transferSigned,
-  transferUnlock,
   transferUnlockProcessed,
 } from '../actions';
-
-/**
- * Re-queue pending transfer's BalanceProof/Envelope messages for retry on init
- *
- * @param action$ - Observable of RaidenActions
- * @param state$ - Observable of RaidenStates
- * @returns Observable of transferSigned|transferUnlock.success actions
- */
-export const initQueuePendingEnvelopeMessagesEpic = (
-  {}: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-): Observable<
-  matrixPresence.request | transferSigned | transferUnlock.success | transferExpire.success
-> =>
-  state$.pipe(
-    first(),
-    mergeMap(function*(state) {
-      // loop over all pending transfers
-      for (const [key, sent] of Object.entries(state.sent)) {
-        const secrethash = key as Hash;
-        // transfer already completed or channelClosed
-        if (
-          sent.unlockProcessed ||
-          sent.lockExpiredProcessed ||
-          sent.secret?.[1]?.registerBlock ||
-          sent.channelClosed
-        )
-          continue;
-        // on init, request monitor presence of any pending transfer target
-        yield matrixPresence.request(undefined, { address: sent.transfer[1].target });
-        // Processed not received yet for LockedTransfer
-        if (!sent.transferProcessed)
-          yield transferSigned({ message: sent.transfer[1], fee: sent.fee }, { secrethash });
-        // already unlocked, but Processed not received yet for Unlock
-        if (sent.unlock) yield transferUnlock.success({ message: sent.unlock[1] }, { secrethash });
-        // lock expired, but Processed not received yet for LockExpired
-        if (sent.lockExpired)
-          yield transferExpire.success({ message: sent.lockExpired[1] }, { secrethash });
-      }
-    }),
-  );
+import { Direction } from '../state';
 
 /**
  * Handles receiving a signed Processed for some sent LockedTransfer
