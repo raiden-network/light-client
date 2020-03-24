@@ -1,5 +1,5 @@
-import { merge, Observable, of } from 'rxjs';
-import { exhaustMap, filter, withLatestFrom } from 'rxjs/operators';
+import { from, merge, Observable, of } from 'rxjs';
+import { exhaustMap, filter, withLatestFrom, mergeMap } from 'rxjs/operators';
 
 import { RaidenAction } from '../../actions';
 import { newBlock } from '../../channels/actions';
@@ -10,6 +10,7 @@ import { isActionOf, isResponseOf } from '../../utils/actions';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Hash } from '../../utils/types';
 import { transfer, transferExpire } from '../actions';
+import { Direction } from '../state';
 import { dispatchAndWait$ } from './utils';
 
 /**
@@ -27,42 +28,38 @@ function autoExpire$(
   { confirmationBlocks }: RaidenConfig,
   blockNumber: number,
 ): Observable<transferExpire.request | transfer.failure> {
-  const requests$: Observable<transferExpire.request | transfer.failure>[] = [];
-
-  for (const [key, sent] of Object.entries(state.sent)) {
-    if (
-      sent.unlock ||
-      sent.lockExpired ||
-      sent.channelClosed ||
-      sent.transfer[1].lock.expiration.add(confirmationBlocks).gt(blockNumber) ||
-      // don't expire if secret got registered before lock expired
-      (sent.secret?.[1]?.registerBlock &&
-        sent.transfer[1].lock.expiration.gte(sent.secret?.[1]?.registerBlock))
-    )
-      continue;
-    const secrethash = key as Hash;
-    // this observable acts like a Promise: emits request once, completes on success/failure
-    const requestAndWait$ = dispatchAndWait$(
-      action$,
-      transferExpire.request(undefined, { secrethash }),
-      isResponseOf(transferExpire, { secrethash }),
-    );
-    requests$.push(requestAndWait$);
-    // notify users that this transfer failed definitely
-    requests$.push(
-      of(
-        transfer.failure(
-          new RaidenError(ErrorCodes.XFER_EXPIRED, {
-            block: sent.transfer[1].lock.expiration.toString(),
-          }),
-          { secrethash },
+  // we can send LockExpired only for SENT transfers
+  return from(Object.entries(state.sent) as Array<[Hash, typeof state.sent[string]]>).pipe(
+    filter(
+      ([, sent]) =>
+        !sent.unlock &&
+        !sent.lockExpired &&
+        !sent.channelClosed &&
+        sent.transfer[1].lock.expiration.add(confirmationBlocks).lte(blockNumber) &&
+        // don't expire if secret got registered before lock expired
+        !sent.secret?.[1]?.registerBlock,
+    ),
+    mergeMap(([secrethash, sent]) => {
+      const meta = { secrethash, direction: Direction.SENT };
+      // this observable acts like a Promise: emits request once, completes on success/failure
+      return merge(
+        dispatchAndWait$(
+          action$,
+          transferExpire.request(undefined, meta),
+          isResponseOf(transferExpire, meta),
         ),
-      ),
-    );
-  }
-
-  // process all requests before completing and restart handling newBlocks (in exhaustMap)
-  return merge(...requests$);
+        // notify users that this transfer failed definitely
+        of(
+          transfer.failure(
+            new RaidenError(ErrorCodes.XFER_EXPIRED, {
+              block: sent.transfer[1].lock.expiration.toString(),
+            }),
+            meta,
+          ),
+        ),
+      );
+    }),
+  );
 }
 
 /**

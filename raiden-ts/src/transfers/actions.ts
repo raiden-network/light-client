@@ -18,7 +18,10 @@ import {
 } from '../messages/types';
 import { Paths } from '../path/types';
 
-const TransferId = t.type({ secrethash: Hash });
+const TransferId = t.type({
+  secrethash: Hash,
+  direction: t.keyof({ sent: null, received: null }),
+});
 
 /**
  * A transfer async action set
@@ -52,6 +55,8 @@ export const transfer = createAsyncAction(
     }),
     t.partial({
       secret: Secret,
+      expiration: t.number,
+      initiator: Address,
     }),
   ]),
   t.partial({ balanceProof: SignedBalanceProof }),

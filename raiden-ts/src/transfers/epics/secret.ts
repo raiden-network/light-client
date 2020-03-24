@@ -23,7 +23,7 @@ import { MessageType, SecretRequest, SecretReveal } from '../../messages/types';
 import { signMessage, isMessageReceivedOfType } from '../../messages/utils';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
-import { isActionOf } from '../../utils/actions';
+import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { getEventsStream } from '../../utils/ethers';
 import { pluckDistinct } from '../../utils/rx';
@@ -37,6 +37,10 @@ import {
   transferUnlock,
 } from '../actions';
 import { getSecrethash, makeMessageId } from '../utils';
+import { Direction } from '../state';
+import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
+import { Capabilities } from '../../constants';
+import { dispatchAndWait$ } from './utils';
 
 /**
  * Handles receiving a signed SecretRequest from target for some sent LockedTransfer
@@ -49,27 +53,31 @@ import { getSecrethash, makeMessageId } from '../utils';
 export const transferSecretRequestedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log }: RaidenEpicDeps,
+  { address, log }: RaidenEpicDeps,
 ): Observable<transferSecretRequest> =>
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(SecretRequest))),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
-      // proceed only if we know the secret and the transfer
+      // proceed only if we know the secret and the SENT transfer
       if (!(message.secrethash in state.sent)) return;
 
       const transfer = state.sent[message.secrethash].transfer[1];
       // we do only some basic verification here, as most of it is done upon SecretReveal,
       // to persist the request in most cases in TransferState.secretRequest
       if (
+        transfer.initiator !== address || // only the initiator may reply a SecretRequest
         transfer.target !== action.meta.address || // reveal only to target
         !transfer.payment_identifier.eq(message.payment_identifier)
       ) {
         log.warn('Invalid SecretRequest for transfer', message, transfer);
         return;
       }
-      yield transferSecretRequest({ message }, { secrethash: message.secrethash });
+      yield transferSecretRequest(
+        { message },
+        { secrethash: message.secrethash, direction: Direction.SENT },
+      );
       // we don't check if transfer was refunded. If partner refunded the transfer but still
       // forwarded the payment, they would be in risk of losing their money, not us
     }),
@@ -111,9 +119,7 @@ const secretReveal$ = (
   } else if (request.amount.lt(value)) {
     log.error('SecretRequest for amount too small!', request, transf);
     return of(
-      transfer.failure(new RaidenError(ErrorCodes.XFER_INVALID_SECRETREQUEST), {
-        secrethash,
-      }),
+      transfer.failure(new RaidenError(ErrorCodes.XFER_INVALID_SECRETREQUEST), action.meta),
     );
   } else if (!request.amount.eq(value)) {
     // accept request
@@ -167,6 +173,7 @@ export const transferSecretRevealEpic = (
 ): Observable<transfer.failure | transferSecretReveal | messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferSecretRequest)),
+    filter(action => action.meta.direction === Direction.SENT),
     concatMap(action =>
       latest$.pipe(pluckDistinct('state')).pipe(
         first(),
@@ -189,27 +196,81 @@ export const transferSecretRevealedEpic = (
   state$: Observable<RaidenState>,
 ): Observable<transferUnlock.request | transferSecret> =>
   action$.pipe(
-    filter(isMessageReceivedOfType(Signed(SecretReveal))),
+    // we don't require Signed SecretReveal, nor even check sender for persisting the secret
+    filter(isMessageReceivedOfType(SecretReveal)),
     withLatestFrom(state$),
     mergeMap(function*([action, state]) {
       const message = action.payload.message;
       const secrethash = getSecrethash(message.secret);
-      if (
-        !(secrethash in state.sent) ||
-        action.meta.address !== state.sent[secrethash].transfer[1].recipient ||
-        // don't unlock if channel closed
-        state.sent[secrethash].channelClosed ||
-        // don't unlock again if already unlocked, retry handled by transferRetryMessageEpic
-        // in the future, we may avoid retry until Processed, and [re]send once per SecretReveal
-        state.sent[secrethash].unlock
-        // accepts secretReveal/unlock request even if registered on-chain
-      )
-        return;
-      // transferSecret is noop if we already know the secret (e.g. we're the initiator)
-      yield transferSecret({ secret: message.secret }, { secrethash });
-      // request unlock to be composed, signed & sent to partner
-      yield transferUnlock.request(undefined, { secrethash });
+
+      if (secrethash in state.sent) {
+        const meta = { secrethash, direction: Direction.SENT };
+        // if secrethash matches, we're good for persisting
+        yield transferSecret({ secret: message.secret }, meta);
+
+        // but are stricter for unlocking to next hop
+        if (
+          action.meta.address === state.sent[secrethash].partner &&
+          // don't unlock if channel closed
+          !state.sent[secrethash].channelClosed &&
+          // don't unlock again if already unlocked, retry handled by transferRetryMessageEpic
+          // in the future, we may avoid retry until Processed, and [re]send once per SecretReveal
+          !state.sent[secrethash].unlock
+          // accepts secretReveal/unlock request even if registered on-chain
+        ) {
+          // request unlock to be composed, signed & sent to partner
+          yield transferUnlock.request(undefined, meta);
+        }
+      }
+
+      // we're mediator or target, and received reveal from next hop or initiator, respectively
+      if (secrethash in state.received) {
+        // if secrethash matches, we're good for persisting, which also triggers Reveal back
+        yield transferSecret(
+          { secret: message.secret },
+          { secrethash, direction: Direction.RECEIVED },
+        );
+      }
     }),
+  );
+
+/**
+ * For a received transfer, when we know the secret, sign & send a SecretReveal to previous hop
+ *
+ * @param action$ - Observable of transferSecret|transferSecretReveal actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps
+ * @returns Observable of transferSecretReveal actions
+ */
+export const transferRequestUnlockEpic = (
+  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { log, signer, latest$ }: RaidenEpicDeps,
+): Observable<transferSecretReveal> =>
+  action$.pipe(
+    filter(isActionOf([transferSecret, transferSecretRegister.success])),
+    filter(action => action.meta.direction === Direction.RECEIVED),
+    concatMap(action =>
+      latest$.pipe(
+        pluckDistinct('state'),
+        first(),
+        filter(({ received }) => !received[action.meta.secrethash]?.secretReveal),
+        mergeMap(() => {
+          const message: SecretReveal = {
+            type: MessageType.SECRET_REVEAL,
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            message_identifier: makeMessageId(),
+            secret: action.payload.secret,
+          };
+          return signMessage(signer, message, { log });
+        }),
+        map(message => transferSecretReveal({ message }, action.meta)),
+        catchError(err => {
+          log.warn('Error trying to sign SecretReveal - ignoring', err, action.meta);
+          return EMPTY;
+        }),
+      ),
+    ),
   );
 
 /**
@@ -285,6 +346,7 @@ export const transferSuccessOnSecretRegisteredEpic = (
 /**
  * Process newBlocks and pending received transfers. If we know the secret, and transfer doesn't
  * get unlocked before revealTimeout blocks are left to lock expiration, request to register secret
+ * TODO: check economic viability (and define what that means) of registering lock on-chain
  *
  * @param action$ - Observable of newBlock actions
  * @param state$ - Observable of RaidenStates
