@@ -1,0 +1,158 @@
+# This template is used by synapse-entrypoint.sh to generate the actual config
+
+server_name: "${SERVER_NAME}"
+
+no_tls: True
+trusted_key_servers: []
+soft_file_limit: 0
+
+listeners:
+  - port: 80
+    bind_addresses: ['0.0.0.0']
+    type: http
+    tls: false
+    x_forwarded: true
+    resources:
+      - names:
+          - client
+          - federation
+        compress: false
+
+  - port: 9101
+    bind_addresses: ['0.0.0.0']
+    type: metrics
+
+  # TCP replication
+  - port: 9092
+    bind_address: '0.0.0.0'
+    type: replication
+
+  # HTTP replication
+  - port: 9093
+    bind_address: '0.0.0.0'
+    type: http
+    resources:
+      - names: [replication]
+
+
+event_cache_size: "20K"
+
+log_config: "/opt/synapse/config/synapse.log.config"
+
+
+## Ratelimiting
+
+rc_message:
+  # Number of messages a client can send per second on average
+  per_second: 15
+  # Number of message a client can send before being throttled
+  burst_count: 100
+
+rc_login:
+  address:
+    per_second: 1
+    burst_count: 10
+  account:
+    per_second: 1
+    burst_count: 10
+  failed_attempts:
+    per_second: 1
+    burst_count: 10
+
+rc_federation:
+  # The federation window size in milliseconds
+  window_size: 1000
+  # The number of federation requests from a single server in a window
+  # before the server will delay processing the request.
+  sleep_limit: 50
+  # The duration in milliseconds to delay processing events from
+  # remote servers by if they go over the sleep limit.
+  sleep_delay: 250
+  # The maximum number of concurrent federation requests allowed
+  # from a single server
+  reject_limit: 50
+  # The number of federation requests to concurrently process from a
+  # single server
+  concurrent: 1
+
+
+## Files and uploads
+# Disable all
+max_upload_size: "0"
+max_image_pixels: "0"
+dynamic_thumbnails: false
+url_preview_enabled: False
+
+## Registration
+enable_registration: False
+enable_registration_captcha: False
+allow_guest_access: False
+
+password_providers:
+  - module: 'eth_auth_provider.EthAuthProvider'
+    config:
+      enabled: true
+  - module: 'admin_user_auth_provider.AdminUserAuthProvider'
+    config:
+      enabled: true
+      credentials_file: /opt/synapse/config/admin_user_cred.json
+
+bcrypt_rounds: 12
+
+trusted_third_party_id_servers:
+  - localhost
+
+
+## Metrics ###
+enable_metrics: False
+report_stats: False
+
+
+## API Configuration ##
+room_invite_state_types:
+  - "m.room.join_rules"
+  - "m.room.canonical_alias"
+  - "m.room.name"
+
+## Room Creation Rules ##
+alias_creation_rules:
+  - user_id: "@admin*"
+    alias: "#raiden_*_*"
+    room_id: "*"
+    action: allow
+  - user_id: "*"
+    alias: "#raiden_*_*"
+    room_id: "*"
+    action: deny
+
+
+# A list of application service config file to use
+app_service_config_files: []
+
+macaroon_secret_key: "${MACAROON_KEY}"
+
+# Used to enable access token expiration.
+expire_access_token: False
+
+## Signing Keys
+
+# Path to the signing key to sign messages with
+signing_key_path: "/opt/synapse/data/keys/synapse-signing.key"
+old_signing_keys: {}
+
+key_refresh_interval: "1d" # 1 Day.
+
+# Enable password for login.
+password_config:
+  enabled: true
+
+enable_group_creation: false
+
+user_directory:
+  search_all_users: true
+
+database:
+  name: "sqlite3"
+  args:
+    #database: ":memory:"  # changed
+    database: "/opt/synapse/data/homeserver.db"
