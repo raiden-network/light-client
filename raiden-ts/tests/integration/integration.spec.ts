@@ -44,6 +44,7 @@ async function createRaiden(
     matrixServer: 'http://localhost',
     revealTimeout: 10,
     settleTimeout: 50,
+    confirmationBlocks: 1,
   });
 }
 

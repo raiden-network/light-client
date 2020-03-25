@@ -18,7 +18,7 @@ GENESIS_STUB: Dict = {
         "ConstantinopleBlock": 0,
         "PetersburgBlock": 0,
         "clique": {
-            "period": 3,
+            "period": 1,
             "epoch": 30000,
             "validators": []
         }

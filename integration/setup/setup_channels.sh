@@ -18,7 +18,19 @@ python3 /usr/local/bin/room_ensurer.py --own-server "${SERVER_NAME}" \
 
 echo Starting Chain
 ACCOUNT=$(cat /opt/deployment/miner.sh)
-geth --rpc --syncmode full --gcmode archive --datadir "${DATA_DIR}" --networkid 4321 --nodiscover --rpc --rpcapi "eth,net,web3,txpool" --minerthreads=1 --mine --nousb --unlock "${ACCOUNT}" --password "${PASSWORD_FILE}" --allow-insecure-unlock &
+
+geth --rpc --syncmode full --gcmode archive --datadir "${DATA_DIR}" \
+  --networkid 4321 \
+  --nodiscover \
+  --rpc \
+  --rpcapi "eth,net,web3,txpool" \
+  --minerthreads=1 \
+  --mine \
+  --nousb \
+  --unlock "${ACCOUNT}" \
+  --password "${PASSWORD_FILE}" \
+  --allow-insecure-unlock &
+
 GETH_PID=$!
 
 echo Start PFS
@@ -36,7 +48,7 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:6000/api/
     exit 1
   fi
   echo "Waiting for Pathfinding service to start (${PFS_RETRIES})"
-  PFS_RETRIES=$((PFS_RETRIES+1))
+  PFS_RETRIES=$((PFS_RETRIES + 1))
   sleep 20
 done
 
@@ -52,7 +64,6 @@ raiden --config-file /opt/raiden/config/node2.toml \
   --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
 RAIDEN2_PID=$!
 
-
 NODE_TRIES=0
 until $(curl --output /dev/null --silent --get --fail http://localhost:5001/api/v1/address); do
   if [ $NODE_TRIES -gt 10 ]; then
@@ -60,7 +71,7 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:5001/api/
     exit 1
   fi
   echo "Waiting for node 1 (${NODE_TRIES})"
-  NODE_TRIES=$((NODE_TRIES+1))
+  NODE_TRIES=$((NODE_TRIES + 1))
   if [ ! -n "$(ps -p $RAIDEN1_PID -o pid=)" ]; then
     echo 'restarting'
     raiden --config-file /opt/raiden/config/node1.toml \
@@ -77,7 +88,7 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:5002/api/
     exit 1
   fi
   echo "Waiting for node 2 (${NODE_TRIES})"
-  NODE_TRIES=$((NODE_TRIES+1))
+  NODE_TRIES=$((NODE_TRIES + 1))
   sleep 20
 done
 
@@ -85,8 +96,8 @@ prepare_channel.py --token "${TTT_TOKEN_ADDRESS}"
 
 echo Preparing to terminate at "${SYNAPSE_PID}"
 
-kill -s TERM  ${RAIDEN1_PID}
-kill -s TERM  ${RAIDEN2_PID}
-kill -s TERM  ${PFS_PID}
-kill -s TERM  ${SYNAPSE_PID}
-kill -s TERM  ${GETH_PID}
+kill -s TERM ${RAIDEN1_PID}
+kill -s TERM ${RAIDEN2_PID}
+kill -s TERM ${PFS_PID}
+kill -s TERM ${SYNAPSE_PID}
+kill -s TERM ${GETH_PID}

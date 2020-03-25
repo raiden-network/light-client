@@ -16,5 +16,3 @@ else
   export DEPLOYMENT_SERVICES_INFO=/tmp/deployment/deployment_services_private_net.json
   source /tmp/deployment/smartcontracts.sh
 fi
-
-

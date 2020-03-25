@@ -28,7 +28,12 @@ docker build -t lightclient-integration .
 To start the container you can run:
 
 ```bash
-docker run --name lc-integration -p 80:80 -p 6000:6000 -p 5001:5001 -p 5002:5002 -p 8545:8545 lightclient-integration
+docker run --name lc-integration -d \
+  -p 127.0.0.1:80:80 \
+  -p 127.0.0.1:6000:6000 \
+  -p 127.0.0.1:5001:5001 \
+  -p 127.0.0.1:5002:5002 \
+  -p 127.0.0.1:8545:8545 lightclient-integration
 ```
 
 ### Services
