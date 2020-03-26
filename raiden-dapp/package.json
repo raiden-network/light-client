@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.8.3",
-    "@babel/plugin-proposal-optional-chaining": "^7.8.3",
+    "@babel/plugin-proposal-optional-chaining": "^7.9.0",
     "@kazupon/vue-i18n-loader": "^0.5.0",
     "@mdi/font": "^5.0.45",
     "@namics/stylelint-bem": "^6.3.0",
