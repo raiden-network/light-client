@@ -3,6 +3,9 @@
 ## [0.4.2] - 2020-03-05
 ### Added
 - [#1135] Add logging to mint & depositToUDC public methods
+- [#152] Enable download of local data (state)
+
+[#152]: https://github.com/raiden-network/light-client/issues/152
 
 ### Fixed
 - [#1133] Fix minor bug when minting & depositing to UDC for the first time
