@@ -72,7 +72,7 @@
     "tiny-async-pool": "^1.1.0",
     "ts-jest": "^25.2.1",
     "typechain": "^1.0.5",
-    "typechain-target-ethers": "^1.0.3",
+    "typechain-target-ethers": "^1.0.4",
     "typedoc": "0.17.3",
     "typedoc-plugin-markdown": "^2.2.17",
     "typescript": "^3.8.3",
