@@ -1,4 +1,7 @@
-import { get, set, unset, getOr } from 'lodash/fp';
+import get from 'lodash/fp/get';
+import set from 'lodash/fp/set';
+import unset from 'lodash/fp/unset';
+import getOr from 'lodash/fp/getOr';
 import { Zero } from 'ethers/constants';
 
 import { UInt } from '../utils/types';

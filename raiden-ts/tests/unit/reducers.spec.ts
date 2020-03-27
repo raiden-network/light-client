@@ -1,5 +1,5 @@
-import { get } from 'lodash';
-import { set } from 'lodash/fp';
+import get from 'lodash/get';
+import set from 'lodash/fp/set';
 
 import { Zero, One, AddressZero } from 'ethers/constants';
 import { bigNumberify, keccak256, getNetwork } from 'ethers/utils';

@@ -1,4 +1,6 @@
-import { get, set, unset } from 'lodash/fp';
+import get from 'lodash/fp/get';
+import set from 'lodash/fp/set';
+import unset from 'lodash/fp/unset';
 import { Zero, HashZero } from 'ethers/constants';
 import { hexlify } from 'ethers/utils';
 
