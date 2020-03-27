@@ -142,6 +142,9 @@ export class Raiden {
   // for a given partial config, "memoize-one" full config (merge of default & partial configs)
   private lastConfig?: [PartialRaidenConfig, RaidenConfig];
 
+  /** Instance's Logger, compatible with console's API */
+  private readonly log: logging.Logger;
+
   public constructor(
     provider: JsonRpcProvider,
     network: Network,
@@ -152,7 +155,7 @@ export class Raiden {
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
-    const log = logging.getLogger(`raiden:${address}`);
+    this.log = logging.getLogger(`raiden:${address}`);
 
     // use next from latest known blockNumber as start block when polling
     provider.resetEventsBlock(state.blockNumber + 1);
@@ -190,7 +193,7 @@ export class Raiden {
       network,
       signer,
       address,
-      log,
+      log: this.log,
       contractsInfo,
       registryContract: TokenNetworkRegistryFactory.connect(
         contractsInfo.TokenNetworkRegistry.address,
@@ -223,7 +226,7 @@ export class Raiden {
 
     const loggerMiddleware = createLogger({
       predicate: () => this.log.getLevel() <= logging.levels.INFO,
-      logger: log,
+      logger: this.log,
       level: {
         prevState: 'debug',
         action: 'info',
@@ -387,15 +390,6 @@ export class Raiden {
    */
   public get address(): Address {
     return this.deps.address;
-  }
-
-  /**
-   * Instance's Logger, compatible with console's API
-   *
-   * @returns Logger instance
-   */
-  private get log(): logging.Logger {
-    return this.deps.log;
   }
 
   /**
