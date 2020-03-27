@@ -5,8 +5,8 @@
 ### Added
 - [#691] Auto-suggesting hub on Goerli.
 - [#921] Transfer identifier on summary screen.
-- [#1136] Ability to enter addresses via QR code scanning.
-- [#1160] Submit forms via enter.
+- [#1136] Ability to scan QR codes.
+- [#1160] Ability to submit forms via enter.
 - [#300] Enter amounts with leading "." (dot).
 
 [#691]: https://github.com/raiden-network/light-client/issues/691
