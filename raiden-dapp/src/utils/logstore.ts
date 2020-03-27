@@ -20,6 +20,7 @@ interface RaidenDB extends DBSchema {
 
 let db: IDBPDatabase<RaidenDB>;
 
+/* istanbul ignore next */
 function serializeError(e: Error): string {
   // special handling of Errors, since firefox doesn't like to structure-clone it
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1556604
@@ -33,6 +34,7 @@ function serializeError(e: Error): string {
   }
 }
 
+/* istanbul ignore next */
 function filterMessage(message: any[]) {
   if (message[0] === '%c prev state') return;
   if (message[0] === '—— log end ——') return;
@@ -42,6 +44,7 @@ function filterMessage(message: any[]) {
   return message;
 }
 
+/* istanbul ignore next */
 function serialize(e: any): string {
   if (typeof e === 'string') return e;
   try {
@@ -55,6 +58,7 @@ function serialize(e: any): string {
   }
 }
 
+/* istanbul ignore next */
 export async function setupLogStore(
   dbName = 'raiden',
   additionalLoggers: string[] = ['matrix']
