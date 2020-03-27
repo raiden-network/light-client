@@ -40,7 +40,6 @@ import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
 import { Presences } from 'raiden-ts/transport/types';
 import { makeDefaultConfig } from 'raiden-ts/config';
-import { map } from 'rxjs/operators';
 
 export type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -239,10 +238,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       presences: {} as Presences,
       pfsList: [] as readonly Address[],
     }),
-    config$ = latest$.pipe(
-      pluckDistinct('state', 'config'),
-      map(config => ({ ...defaultConfig, ...config })),
-    );
+    config$ = latest$.pipe(pluckDistinct('config'));
 
   return {
     latest$,
