@@ -14,7 +14,7 @@ import negate from 'lodash/negate';
 import { RaidenState } from './state';
 import { RaidenEpicDeps } from './types';
 import { RaidenAction, raidenShutdown } from './actions';
-import { makeDefaultConfig, PartialRaidenConfig, RaidenConfig } from './config';
+import { PartialRaidenConfig, RaidenConfig } from './config';
 import { getPresences$ } from './transport/utils';
 import { pfsListUpdated } from './path/actions';
 import { Address } from './utils/types';
@@ -35,9 +35,8 @@ import * as PathFindEpics from './path/epics';
 export function getLatest$(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { network }: { network: RaidenEpicDeps['network'] },
+  { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
 ) {
-  const defaultConfig = makeDefaultConfig({ network });
   let lastConfig: [PartialRaidenConfig, RaidenConfig];
 
   return combineLatest([

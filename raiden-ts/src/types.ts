@@ -45,6 +45,7 @@ export interface RaidenEpicDeps {
   signer: Signer;
   address: Address;
   log: Logger;
+  defaultConfig: RaidenConfig;
   contractsInfo: ContractsInfo;
   registryContract: TokenNetworkRegistry;
   getTokenNetworkContract: (address: Address) => TokenNetwork;
