@@ -216,7 +216,7 @@ export const pathFindServiceEpic = (
               });
             } else if (
               action.payload.pfs === null || // explicitly disabled in action
-              (!action.payload.pfs && configPfs === null) // disabled in config and not provided
+              (!action.payload.pfs && configPfs === null) // undefined in action and disabled in config
             ) {
               // pfs not specified in action and disabled (null) in config
               throw new RaidenError(ErrorCodes.PFS_DISABLED);
@@ -224,13 +224,12 @@ export const pathFindServiceEpic = (
               // else, request a route from PFS.
               // pfs$ - Observable which emits one PFS info and then completes
               const pfs$ = action.payload.pfs
-                ? // first, honor action.payload.pfs
+                ? // first, use action.payload.pfs as is, if present
                   of(action.payload.pfs)
-                : configPfs != null
-                ? // or if config.pfs isn't disabled nor auto (undefined), use it
-                  // configPfs is addr or url, so fetch pfsInfo from it
+                : configPfs
+                ? // or if config.pfs isn't disabled (null) nor auto (''), fetch & use it
                   pfsInfo(configPfs, deps)
-                : // else (config.pfs undefined, auto mode)
+                : // else (action unset, config.pfs=''=auto mode)
                   latest$.pipe(
                     pluck('pfsList'), // get cached pfsList
                     // if needed, wait for list to be populated
@@ -485,12 +484,11 @@ export const pfsServiceRegistryMonitorEpic = (
   { serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
 ): Observable<pfsListUpdated> =>
   config$.pipe(
-    // monitors config.pfs, and only monitors contract if it's undefined
-    pluck('pfs'),
-    distinctUntilChanged(),
+    // monitors config.pfs, and only monitors contract if it's empty
+    pluckDistinct('pfs'),
     switchMap(pfs =>
-      pfs !== undefined
-        ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or set
+      pfs !== ''
+        ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
           EMPTY
         : // type of elements emitted by getEventsStream (past and new events coming from contract):
           // [service, valid_till, deposit_amount, deposit_contract, Event]

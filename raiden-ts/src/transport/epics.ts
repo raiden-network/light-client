@@ -537,10 +537,10 @@ function setupMatrixClient$(
  */
 export const initMatrixEpic = (
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-  { address, signer, matrix$, config$ }: RaidenEpicDeps,
+  {}: Observable<RaidenState>,
+  { address, signer, matrix$, latest$, config$ }: RaidenEpicDeps,
 ): Observable<matrixSetup> =>
-  combineLatest([state$, config$]).pipe(
+  combineLatest([latest$.pipe(pluck('state')), config$]).pipe(
     first(), // at startup
     mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout, caps }]) => {
       const server = state.transport.matrix?.server,

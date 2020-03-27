@@ -15,6 +15,7 @@ import { RaidenState } from './state';
 import { RaidenEpicDeps } from './types';
 import { RaidenAction, raidenShutdown } from './actions';
 import { PartialRaidenConfig, RaidenConfig } from './config';
+import { pluckDistinct } from './utils/rx';
 import { getPresences$ } from './transport/utils';
 import { pfsListUpdated } from './path/actions';
 import { Address } from './utils/types';
@@ -37,11 +38,13 @@ export function getLatest$(
   state$: Observable<RaidenState>,
   { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
 ) {
-  let lastConfig: [PartialRaidenConfig, RaidenConfig];
-
   return combineLatest([
     action$,
     state$,
+    state$.pipe(
+      pluckDistinct('config'),
+      map((c: PartialRaidenConfig): RaidenConfig => ({ ...defaultConfig, ...c })),
+    ),
     getPresences$(action$),
     action$.pipe(
       filter(isActionOf(pfsListUpdated)),
@@ -49,15 +52,11 @@ export function getLatest$(
       startWith([] as readonly Address[]),
     ),
   ]).pipe(
-    map(([action, state, presences, pfsList]) => {
-      // "memoize one" last merge of default and partial configs
-      const currentPartial = state.config;
-      if (lastConfig?.['0'] !== currentPartial)
-        lastConfig = [currentPartial, { ...defaultConfig, ...currentPartial }];
+    map(([action, state, config, presences, pfsList]) => {
       return {
         action,
         state,
-        config: lastConfig['1'],
+        config,
         presences,
         pfsList,
       };
