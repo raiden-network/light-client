@@ -20,25 +20,37 @@ interface RaidenDB extends DBSchema {
 
 let db: IDBPDatabase<RaidenDB>;
 
+function serializeError(e: Error): string {
+  // special handling of Errors, since firefox doesn't like to structure-clone it
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=1556604
+  const strError = e.toString();
+  if (!e.stack) {
+    return strError;
+  } else if (e.stack.startsWith(strError)) {
+    return e.stack; // chrome includes error str repr on top of stack
+  } else {
+    return `${strError}\n${e.stack}`;
+  }
+}
+
 function filterMessage(message: any[]) {
   if (message[0] === '%c prev state') return;
   if (message[0] === '—— log end ——') return;
+  message = message.map(e => (e instanceof Error ? serializeError(e) : e));
   if (typeof message[1] === 'string' && message[1].startsWith('color:'))
     message.splice(1, 1);
   return message;
 }
 
-function serialize(e: any) {
+function serialize(e: any): string {
   if (typeof e === 'string') return e;
-  else {
+  try {
+    return JSON.stringify(e);
+  } catch (err) {
     try {
-      return JSON.stringify(e);
+      return e.toString();
     } catch (err) {
-      try {
-        return e.toString();
-      } catch (err) {
-        return '<unserializable>';
-      }
+      return '<unserializable>';
     }
   }
 }
@@ -67,22 +79,22 @@ export async function setupLogStore(
       return (...message: any[]): void => {
         rawMethod(...message);
         const filtered = filterMessage(message);
-        if (filtered !== undefined)
+        if (!filtered) return;
+        db.put(
+          collectionName,
+          { logger: loggerName, level: methodName, message },
+          Date.now()
+        ).catch(() =>
           db.put(
             collectionName,
-            { logger: loggerName, level: methodName, message },
+            {
+              logger: loggerName,
+              level: methodName,
+              message: message.map(serialize)
+            },
             Date.now()
-          ).catch(() =>
-            db.put(
-              collectionName,
-              {
-                logger: loggerName,
-                level: methodName,
-                message: message.map(serialize)
-              },
-              Date.now()
-            )
-          );
+          )
+        );
       };
     };
   }
