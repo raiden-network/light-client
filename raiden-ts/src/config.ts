@@ -69,9 +69,13 @@ export interface PartialRaidenConfig extends t.TypeOf<typeof PartialRaidenConfig
  *
  * @param obj - Object containing common parameters for config
  * @param obj.network - ether's Network object for the current blockchain
+ * @param overwrites - Overwrites values from default config
  * @returns A full config object
  */
-export function makeDefaultConfig({ network }: { network: Network }): RaidenConfig {
+export function makeDefaultConfig(
+  { network }: { network: Network },
+  overwrites?: PartialRaidenConfig,
+): RaidenConfig {
   return {
     matrixServerLookup:
       'https://raw.githubusercontent.com/raiden-network/raiden-transport/master/known_servers.test.yaml',
@@ -89,5 +93,6 @@ export function makeDefaultConfig({ network }: { network: Network }): RaidenConf
       [Capabilities.NO_RECEIVE]: true,
       [Capabilities.NO_MEDIATE]: true,
     },
+    ...overwrites,
   };
 }

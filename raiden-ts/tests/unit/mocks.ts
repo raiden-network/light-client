@@ -221,19 +221,16 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
         block_number: 102,
       },
     },
-    state = makeInitialState(
-      { network, address, contractsInfo },
+    state = makeInitialState({ network, address, contractsInfo }, { blockNumber }),
+    defaultConfig = makeDefaultConfig(
+      { network },
       {
-        blockNumber,
-        config: {
-          pfsSafetyMargin: 1.1,
-          pfs: 'https://pfs.raiden.test',
-          httpTimeout: 3e3,
-          confirmationBlocks: 2,
-        },
+        pfsSafetyMargin: 1.1,
+        pfs: 'https://pfs.raiden.test',
+        httpTimeout: 300,
+        confirmationBlocks: 2,
       },
-    ),
-    defaultConfig = makeDefaultConfig({ network });
+    );
 
   const latest$: RaidenEpicDeps['latest$'] = new BehaviorSubject({
       action: raidenConfigUpdate({}) as RaidenAction,
@@ -253,6 +250,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     matrix$: new AsyncSubject<MatrixClient>(),
     address,
     log,
+    defaultConfig,
     network,
     contractsInfo,
     provider,

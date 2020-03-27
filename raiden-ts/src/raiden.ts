@@ -27,7 +27,7 @@ import versions from './versions.json';
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
-import { RaidenConfig, makeDefaultConfig, PartialRaidenConfig } from './config';
+import { RaidenConfig, PartialRaidenConfig } from './config';
 import { RaidenChannels, ChannelState } from './channels/state';
 import { RaidenTransfer } from './transfers/state';
 import { raidenReducer } from './reducer';
@@ -138,10 +138,6 @@ export class Raiden {
     RaidenEpicDeps
   > | null;
 
-  private readonly defaultConfig: RaidenConfig;
-  // for a given partial config, "memoize-one" full config (merge of default & partial configs)
-  private lastConfig?: [PartialRaidenConfig, RaidenConfig];
-
   /** Instance's Logger, compatible with console's API */
   private readonly log: logging.Logger;
 
@@ -151,6 +147,7 @@ export class Raiden {
     signer: Signer,
     contractsInfo: ContractsInfo,
     state: RaidenState,
+    defaultConfig: RaidenConfig,
     main?: { address: Address; signer: Signer },
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
@@ -169,7 +166,6 @@ export class Raiden {
     this.channels$ = this.state$.pipe(map(state => mapTokenToPartner(state)));
     this.transfers$ = initTransfers$(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
-    this.defaultConfig = makeDefaultConfig({ network });
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
       assert(Address.is(token), 'Invalid address');
@@ -194,6 +190,7 @@ export class Raiden {
       signer,
       address,
       log: this.log,
+      defaultConfig,
       contractsInfo,
       registryContract: TokenNetworkRegistryFactory.connect(
         contractsInfo.TokenNetworkRegistry.address,
@@ -317,7 +314,7 @@ export class Raiden {
     const { signer, address, main } = await getSigner(account, provider, subkey);
 
     // Build initial state or parse from storage
-    const { state, onState, onStateComplete } = await getState(
+    const { state, onState, onStateComplete, defaultConfig } = await getState(
       network,
       contracts,
       address,
@@ -335,7 +332,7 @@ export class Raiden {
       `Mismatch between network or registry address and loaded state`,
     );
 
-    const raiden = new Raiden(provider, network, signer, contracts, state, main);
+    const raiden = new Raiden(provider, network, signer, contracts, state, defaultConfig, main);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
@@ -425,11 +422,9 @@ export class Raiden {
    * @returns Current Raiden config
    */
   public get config(): RaidenConfig {
-    // "memoize one" last merge of default and partial configs
-    const currentPartial = this.state.config;
-    if (this.lastConfig?.['0'] !== currentPartial)
-      this.lastConfig = [currentPartial, { ...this.defaultConfig, ...currentPartial }];
-    return this.lastConfig['1'];
+    let config!: RaidenConfig;
+    this.deps.config$.pipe(first()).subscribe(c => (config = c));
+    return config;
   }
 
   /**
