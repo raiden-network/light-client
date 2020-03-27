@@ -50,7 +50,7 @@ async function createRaiden(
 
 function getToken(): string {
   const token = process.env.TTT_TOKEN_ADDRESS;
-  assert(token !== undefined);
+  assert(token !== undefined, 'TTT Token address is undefined');
   return token;
 }
 
