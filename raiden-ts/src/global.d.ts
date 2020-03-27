@@ -5,8 +5,8 @@ declare module 'matrix-js-sdk/lib/utils' {
 }
 
 declare module 'matrix-js-sdk/lib/logger' {
-  import log from 'loglevel';
-  export const logger: log.Logger;
+  import { Logger } from 'loglevel';
+  export const logger: Logger;
 }
 
 declare module 'abort-controller/polyfill';
