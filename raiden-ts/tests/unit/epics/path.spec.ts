@@ -4,7 +4,7 @@ import { first, takeUntil, toArray, pluck } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
 
-import { UInt, Int, Address, Signature } from 'raiden-ts/utils/types';
+import { UInt, Int, Address, Signature, isntNil } from 'raiden-ts/utils/types';
 import {
   newBlock,
   tokenMonitored,
@@ -40,7 +40,6 @@ describe('PFS: pathFindServiceEpic', () => {
     settleTimeout: ReturnType<typeof epicFixtures>['settleTimeout'],
     isFirstParticipant: ReturnType<typeof epicFixtures>['isFirstParticipant'],
     txHash: ReturnType<typeof epicFixtures>['txHash'],
-    state: ReturnType<typeof epicFixtures>['state'],
     partnerUserId: ReturnType<typeof epicFixtures>['partnerUserId'],
     targetUserId: ReturnType<typeof epicFixtures>['targetUserId'],
     fee: ReturnType<typeof epicFixtures>['fee'],
@@ -75,7 +74,6 @@ describe('PFS: pathFindServiceEpic', () => {
       settleTimeout,
       isFirstParticipant,
       txHash,
-      state,
       partnerUserId,
       targetUserId,
       fee,
@@ -261,7 +259,6 @@ describe('PFS: pathFindServiceEpic', () => {
 
   test('success request pfs from action', async () => {
     expect.assertions(1);
-
     const value = bigNumberify(100) as UInt<32>;
 
     fetch.mockResolvedValueOnce({
@@ -273,8 +270,10 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify({})),
     });
 
-    let pfsSafetyMargin!: number;
-    depsMock.config$.pipe(first()).subscribe(config => (pfsSafetyMargin = config.pfsSafetyMargin));
+    const pfsSafetyMargin = await depsMock.config$
+      .pipe(pluck('pfsSafetyMargin'), first(isntNil))
+      .toPromise();
+    const pfsUrl = await depsMock.config$.pipe(pluck('pfs'), first(isntNil)).toPromise();
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
 
@@ -291,7 +290,7 @@ describe('PFS: pathFindServiceEpic', () => {
         {
           pfs: {
             address: pfsAddress,
-            url: state.config.pfs!,
+            url: pfsUrl,
             rtt: 3,
             price: One as UInt<32>,
             token: pfsTokenAddress,
@@ -384,7 +383,7 @@ describe('PFS: pathFindServiceEpic', () => {
       pfsAddress3 = '0x0800000000000000000000000000000000000093' as Address;
 
     // put config.pfs into auto mode
-    action$.next(raidenConfigUpdate({ pfs: undefined }));
+    action$.next(raidenConfigUpdate({ pfs: '' }));
 
     // pfsAddress1 will be accepted with default https:// schema
     depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('domain.only.url');
@@ -500,7 +499,7 @@ describe('PFS: pathFindServiceEpic', () => {
   test('fail request pfs from pfsList, empty', async () => {
     expect.assertions(1);
     // put config.pfs into auto mode
-    action$.next(raidenConfigUpdate({ pfs: undefined }));
+    action$.next(raidenConfigUpdate({ pfs: '' }));
 
     const value = bigNumberify(100) as UInt<32>;
 
@@ -1342,8 +1341,8 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
   test('success', async () => {
     expect.assertions(2);
 
-    // enable config.pfs auto (undefined)
-    action$.next(raidenConfigUpdate({ pfs: undefined }));
+    // enable config.pfs auto ('')
+    action$.next(raidenConfigUpdate({ pfs: '' }));
 
     const validTill = bigNumberify(Math.floor(Date.now() / 1000) + 86400), // tomorrow
       registeredEncoded = defaultAbiCoder.encode(
@@ -1359,12 +1358,12 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
         [bigNumberify(Math.floor(Date.now() / 1000) + 1), Zero, AddressZero],
       );
 
-    await expect(
-      depsMock.config$.pipe(pluck('pfs'), first()).toPromise(),
-    ).resolves.toBeUndefined();
-    const promise = pfsServiceRegistryMonitorEpic(EMPTY, state$, depsMock)
+    await expect(depsMock.config$.pipe(pluck('pfs'), first()).toPromise()).resolves.toBe('');
+
+    const promise = pfsServiceRegistryMonitorEpic(action$, state$, depsMock)
       .pipe(first())
       .toPromise();
+    action$.next(raidenConfigUpdate({}));
 
     // expired
     depsMock.provider.emit(
@@ -1426,10 +1425,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
       }),
     );
 
-    await expect(promise).resolves.toMatchObject({
-      type: pfsListUpdated.type,
-      payload: { pfsList: [pfsAddress] },
-    });
+    await expect(promise).resolves.toEqual(pfsListUpdated({ pfsList: [pfsAddress] }));
   });
 
   test('noop if config.pfs is set', async () => {
