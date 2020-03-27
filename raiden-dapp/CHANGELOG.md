@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [0.5.0] - 2020-03-27
 
 ### Added
 - [#691] Auto-suggesting hub on Goerli.

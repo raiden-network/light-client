@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0] - 2020-03-27
+
+### Added
+- [#348] Foundation for integration tests w/ Raiden Python client.
+- [#774] Reduced size of transpiled bundle.
+- [#1209] Added transport capabilities.
+- Upgraded `matrix-js-sdk` dependency.
+
+[#348]: https://github.com/raiden-network/light-client/issues/348
+[#774]: https://github.com/raiden-network/light-client/issues/744
+[#1209]: https://github.com/raiden-network/light-client/issues/1209
+
+### Fixed
+- [#1232] Fixed logging.
+
+[#1232]: https://github.com/raiden-network/light-client/issues/1232
+
 ## [0.4.2] - 2020-03-05
 ### Added
 - [#1135] Add logging to mint & depositToUDC public methods
