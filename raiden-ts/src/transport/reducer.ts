@@ -1,4 +1,8 @@
-import { get, getOr, isEmpty, set, unset } from 'lodash/fp';
+import get from 'lodash/fp/get';
+import getOr from 'lodash/fp/getOr';
+import isEmpty from 'lodash/fp/isEmpty';
+import set from 'lodash/fp/set';
+import unset from 'lodash/fp/unset';
 
 import { partialCombineReducers } from '../utils/redux';
 import { createReducer } from '../utils/actions';

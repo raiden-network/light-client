@@ -1,21 +1,29 @@
-import { isEmpty } from 'lodash/fp';
+import unset from 'lodash/fp/unset';
 
 import { channelsReducer } from './channels/reducer';
 import { pathReducer } from './path/reducer';
 import { transportReducer } from './transport/reducer';
 import { transfersReducer } from './transfers/reducer';
 
+import { PartialRaidenConfig } from './config';
 import { RaidenAction, raidenConfigUpdate } from './actions';
 import { RaidenState, initialState } from './state';
+import { createReducer } from './utils/actions';
 
 // update state.config on raidenConfigUpdate action
-const configReducer = (state: RaidenState = initialState, action: RaidenAction) => {
-  if (raidenConfigUpdate.is(action)) {
-    if (!isEmpty(action.payload))
-      return { ...state, config: { ...state.config, ...action.payload } };
-  }
-  return state;
-};
+// resets key to default value if value is undefined, otherwise overwrites it
+const configReducer = createReducer(initialState).handle(
+  raidenConfigUpdate,
+  (state, { payload }) => {
+    let config: PartialRaidenConfig = state.config;
+    for (const [k, v] of Object.entries(payload)) {
+      if (v !== undefined) config = { ...config, [k]: v };
+      else if (k in config) config = unset(k, config);
+    }
+    if (config === state.config) return state;
+    return { ...state, config };
+  },
+);
 
 const raidenReducers = {
   configReducer,
