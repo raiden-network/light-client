@@ -64,6 +64,7 @@ import {
   channelSettleable,
   channelWithdrawn,
 } from './actions';
+import { assertTx } from './utils';
 
 /**
  * Receives an async function and returns an observable which will retry it every interval until it
@@ -581,20 +582,25 @@ export const channelOpenEpic = (
         filter(a => a.meta.tokenNetwork === tokenNetwork && a.meta.partner === partner),
         // opened$ will "cache" matching channelOpen.success, if needed
         publishReplay(1, undefined, opened$ =>
-          combineLatest([
-            // send openChannel transaction !!!
-            defer(() =>
-              tokenNetworkContract.functions.openChannel(
-                address,
-                partner,
-                action.payload.settleTimeout ?? settleTimeout,
-              ),
+          // send openChannel transaction
+          defer(() =>
+            tokenNetworkContract.functions.openChannel(
+              address,
+              partner,
+              action.payload.settleTimeout ?? settleTimeout,
             ),
-            // can't share logic with channelDepositEpic, because parallelism of txs needs to be strict
-            deposit
-              ? defer(() => tokenContract.functions.approve(tokenNetwork, deposit))
-              : of(undefined),
-          ]).pipe(
+          ).pipe(
+            // Wallet signer depends on fetching the 'pending' tx count to fill 'nonce'
+            // therefore we need to send open then approve, instead of doing them parallely
+            mergeMap(openTx =>
+              deposit
+                ? from(tokenContract.functions.approve(tokenNetwork, deposit)).pipe(
+                    map(approveTx => [openTx, approveTx] as const),
+                  )
+                : of([openTx] as const),
+            ),
+            // can't share logic with channelDepositEpic, because parallelism of txs needs to be
+            // strict, nor use assertTx for approve|openChannel parallel txs
             tap(([tx]) => log.debug(`sent openChannel tx "${tx.hash}" to "${tokenNetwork}"`)),
             tap(([, tx]) => (tx ? log.debug(`sent approve tx "${tx.hash}" to "${token}"`) : 0)),
             mergeMap(([openTx, approveTx]) =>
@@ -635,17 +641,7 @@ export const channelOpenEpic = (
                     ),
                   );
                 }),
-                tap(tx => log.debug(`sent setTotalDeposit tx "${tx.hash}" to "${tokenNetwork}"`)),
-                mergeMap(tx => from(tx.wait()).pipe(map(receipt => ({ tx, receipt })))),
-                map(({ tx, receipt }) => {
-                  if (!receipt.status)
-                    throw new RaidenError(ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, {
-                      ...action.meta,
-                      transactionHash: tx.hash!,
-                    });
-                  log.debug(`setTotalDeposit tx "${tx.hash}" successfuly mined!`);
-                  return tx.hash!;
-                }),
+                assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log }),
                 // ignore success so it's picked by channelMonitoredEpic
                 ignoreElements(),
                 catchError(error => of(channelDeposit.failure(error, action.meta))),
@@ -711,56 +707,26 @@ export const channelDepositEpic = (
       }
 
       // send approve transaction
-      return from(tokenContract.functions.approve(tokenNetwork, action.payload.deposit))
-        .pipe(
-          tap(tx => log.debug(`sent approve tx "${tx.hash}" to "${token}"`)),
-          mergeMap(tx =>
-            from(tx.wait()).pipe(
-              map(receipt => {
-                if (!receipt.status)
-                  throw new RaidenError(ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, {
-                    token,
-                    transactionHash: tx.hash!,
-                  });
-                log.debug(`approve tx "${tx.hash}" successfuly mined!`);
-                return tx.hash;
-              }),
-            ),
+      return from(tokenContract.functions.approve(tokenNetwork, action.payload.deposit)).pipe(
+        assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
+        withLatestFrom(state$),
+        mergeMap(([, state]) =>
+          // send setTotalDeposit transaction
+          tokenNetworkContract.functions.setTotalDeposit(
+            channel.id,
+            address,
+            state.channels[tokenNetwork][partner].own.deposit.add(action.payload.deposit),
+            partner,
           ),
-        )
-        .pipe(
-          withLatestFrom(state$),
-          mergeMap(([, state]) =>
-            // send setTotalDeposit transaction
-            tokenNetworkContract.functions.setTotalDeposit(
-              channel.id,
-              address,
-              state.channels[tokenNetwork][partner].own.deposit.add(action.payload.deposit),
-              partner,
-            ),
-          ),
-          tap(tx => log.debug(`sent setTotalDeposit tx "${tx.hash}" to "${tokenNetwork}"`)),
-          mergeMap(tx =>
-            from(tx.wait()).pipe(
-              map(receipt => {
-                if (!receipt.status)
-                  throw new RaidenError(ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, {
-                    ...action.meta,
-                    transactionHash: tx.hash!,
-                  });
-                log.debug(`setTotalDeposit tx "${tx.hash}" successfuly mined!`);
-                return tx.hash;
-              }),
-            ),
-          ),
-
-          // if succeeded, return a empty/completed observable
-          // actual ChannelDepositedAction will be detected and handled by channelMonitoredEpic
-          // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
-          // will then emit the channelDeposit.failure action instead
-          ignoreElements(),
-          catchError(error => of(channelDeposit.failure(error, action.meta))),
-        );
+        ),
+        assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log }),
+        // if succeeded, return a empty/completed observable
+        // actual ChannelDepositedAction will be detected and handled by channelMonitoredEpic
+        // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
+        // will then emit the channelDeposit.failure action instead
+        ignoreElements(),
+        catchError(error => of(channelDeposit.failure(error, action.meta))),
+      );
     }),
   );
 
@@ -844,20 +810,7 @@ export const channelCloseEpic = (
             closingSignature,
           ),
         ),
-        tap(tx => log.debug(`sent closeChannel tx "${tx.hash}" to "${tokenNetwork}"`)),
-        mergeMap(tx =>
-          from(tx.wait()).pipe(
-            map(receipt => {
-              if (!receipt.status)
-                throw new RaidenError(ErrorCodes.CNL_CLOSECHANNEL_FAILED, {
-                  ...action.meta,
-                  transactionHash: tx.hash!,
-                });
-              log.debug(`closeChannel tx "${tx.hash}" successfuly mined!`);
-              return tx.hash;
-            }),
-          ),
-        ),
+        assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log }),
         // if succeeded, return a empty/completed observable
         // actual ChannelClosedAction will be detected and handled by channelMonitoredEpic
         // if any error happened on tx call/pipeline, catchError will then emit the
@@ -946,18 +899,9 @@ export const channelUpdateEpic = (
             nonClosingSignature,
           ),
         ),
-        tap(tx =>
-          log.debug(`sent updateNonClosingBalanceProof tx "${tx.hash}" to "${tokenNetwork}"`),
-        ),
-        mergeMap(tx =>
-          from(tx.wait()).pipe(
-            map(receipt => {
-              assert(receipt.status, 'tx revert');
-              log.info(`updateNonClosingBalanceProof tx "${tx.hash}" successfuly mined!`);
-              return tx.hash!;
-            }),
-          ),
-        ),
+        assertTx('updateNonClosingBalanceProof', ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED, {
+          log,
+        }),
         // if succeeded, return a empty/completed observable
         ignoreElements(),
         catchError(error => {
@@ -1036,20 +980,7 @@ export const channelSettleEpic = (
           part2.locksroot,
         ),
       ).pipe(
-        tap(tx => log.debug(`sent settleChannel tx "${tx.hash}" to "${tokenNetwork}"`)),
-        mergeMap(tx =>
-          from(tx.wait()).pipe(
-            map(receipt => {
-              if (!receipt.status)
-                throw new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_FAILED, {
-                  ...action.meta,
-                  transactionHash: tx.hash!,
-                });
-              log.debug(`settleChannel tx "${tx.hash}" successfuly mined!`);
-              return tx.hash;
-            }),
-          ),
-        ),
+        assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log }),
         // if succeeded, return a empty/completed observable
         // actual ChannelSettledAction will be detected and handled by channelMonitoredEpic
         // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
@@ -1144,17 +1075,7 @@ export const channelUnlockEpic = (
       return from(
         tokenNetworkContract.functions.unlock(action.payload.id, address, partner, locks),
       ).pipe(
-        tap(tx => log.debug(`sent unlock tx "${tx.hash}" to "${tokenNetwork}"`)),
-        mergeMap(tx =>
-          from(tx.wait()).pipe(
-            map(receipt => {
-              assert(receipt.status, 'tx revert');
-              log.debug(`unlock tx "${tx.hash}" successfuly mined!`);
-              return tx.hash!;
-            }),
-          ),
-        ),
-        // if succeeded, return a empty/completed observable
+        assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log }),
         ignoreElements(),
         catchError(error => {
           log.error('Error unlocking pending locks on-chain, ignoring', error);
