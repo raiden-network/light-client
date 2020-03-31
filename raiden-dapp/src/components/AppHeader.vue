@@ -26,7 +26,9 @@
             <div class="app-header__top__content__network">{{ network }}</div>
           </v-col>
           <v-spacer></v-spacer>
-          <header-identicon @click.native="navigateToGeneralHome()" />
+          <span class="app-header__account-wrapper">
+            <header-identicon @click.native="navigateToGeneralHome()" />
+          </span>
         </div>
       </v-col>
     </v-row>
@@ -130,6 +132,10 @@ $header-content-horizontal-margin: 20px;
     padding-right: $row-horizontal-padding;
     height: 40px;
     background-color: $error-tooltip-background;
+  }
+
+  &__account-wrapper {
+    cursor: pointer;
   }
 }
 </style>
