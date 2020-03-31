@@ -1,4 +1,23 @@
 {
+  "home": {
+    "welcome": "Welcome to the Raiden dApp",
+    "connect-button": "Connect",
+    "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and can only be used on Ethereum testnets.",
+    "getting-started": {
+      "description": "Read the {0} for detailed information on how to use the Raiden dApp.",
+      "link-name": "getting started guide"
+    },
+    "connect-dialog": {
+      "connect-title": "Connect",
+      "divider": "-OR-",
+      "web3-provider": "Use Web3 Provider",
+      "raiden-account": {
+        "description": "Connect to Web3 and re-generate a {0}",
+        "link-name": "dedicated Raiden account."
+      },
+      "no-provider": "No Web3 provider detected, please install e.g. MetaMask."
+    }
+  },
   "general": {
     "buttons": {
       "cancel": "Cancel",
@@ -162,22 +181,6 @@
     "generic-error": "A valid account could not be detected. Please make sure that your provider is unlocked and accessible."
   },
   "splash-screen": {
-    "connect": {
-      "divider": "-OR-",
-      "web3-provider": "Connect using your Web3 provider account.",
-      "raiden-account": {
-        "description": "Connect to Web3 and re-generate a {0}",
-        "link-name": "dedicated Raiden account."
-      }
-    },
-    "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and can only be used on Ethereum testnets.",
-    "matrix-sign": "On the first launch you get asked to sign two messages to connect to the Raiden transport layer. You sign the matrix server name and the public user name.",
-    "getting-started": {
-      "description": "Read the {0} for detailed information on how to use the Raiden dApp.",
-      "link-name": "getting started guide"
-    },
-    "connect-button": "Connect",
-    "no-provider": "No Web3 provider detected, please install e.g. MetaMask.",
     "download-logs": "Download stored Raiden logs"
   },
   "tokens": {
