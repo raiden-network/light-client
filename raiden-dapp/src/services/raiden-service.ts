@@ -118,7 +118,6 @@ export default class RaidenService {
 
         const account = await this.getAccount();
         this.store.commit('account', account);
-        this.store.commit('balance', await this.getBalance());
 
         this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
 
@@ -168,6 +167,7 @@ export default class RaidenService {
 
         window.addEventListener('beforeunload', () => this.raiden.stop());
         raiden.start();
+        this.store.commit('balance', await this.getBalance());
       }
     } catch (e) {
       let deniedReason: DeniedReason;
