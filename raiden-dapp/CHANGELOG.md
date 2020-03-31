@@ -2,8 +2,10 @@
 
 ## [Unreleased]
 ### Fixed
+- [#1243] Fix width of transfer input on mobile screens.
 - [#1242] Fix transfer modal not closing instantly.
 
+[#1243]: https://github.com/raiden-network/light-client/issues/1243
 [#1242]: https://github.com/raiden-network/light-client/issues/1242
 
 ## [0.5.0] - 2020-03-27
