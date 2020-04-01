@@ -103,7 +103,7 @@ export default class ActionButton extends Vue {
 
     &--ghost {
       border: 2px solid rgba($primary-color, 0.8);
-      background-color: $card-background !important;
+      background-color: transparent !important;
 
       &.theme {
         &--dark {
