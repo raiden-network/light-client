@@ -113,7 +113,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { tokenNetwork, partner },
       ),
       newBlock({ blockNumber: 126 }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
 
     const result = { result: [{ path: [partner, target], estimated_fee: 1234 }] };
     fetch.mockImplementation(async () => ({
@@ -150,7 +150,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork: token, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -180,7 +180,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -217,7 +217,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { paths: [{ path: [depsMock.address, partner, target], fee }] },
         { tokenNetwork, target, value },
       ),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     // self should be taken out of route
@@ -245,7 +245,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target: partner, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     // self should be taken out of route
@@ -298,7 +298,7 @@ describe('PFS: pathFindServiceEpic', () => {
         },
         { tokenNetwork, target, value },
       ),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -340,7 +340,9 @@ describe('PFS: pathFindServiceEpic', () => {
     });
 
     let pfsSafetyMargin!: number;
-    depsMock.config$.pipe(first()).subscribe(config => (pfsSafetyMargin = config.pfsSafetyMargin));
+    depsMock.config$
+      .pipe(first())
+      .subscribe((config) => (pfsSafetyMargin = config.pfsSafetyMargin));
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
 
@@ -354,7 +356,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -391,7 +393,7 @@ describe('PFS: pathFindServiceEpic', () => {
     const pfsInfoResponse1 = { ...pfsInfoResponse, payment_address: pfsAddress1 };
     fetch.mockImplementationOnce(
       async () =>
-        new Promise(resolve =>
+        new Promise((resolve) =>
           setTimeout(
             () =>
               resolve({
@@ -440,11 +442,11 @@ describe('PFS: pathFindServiceEpic', () => {
     });
 
     let pfsSafetyMargin!: number;
-    depsMock.config$.pipe(first()).subscribe(config => (pfsSafetyMargin = config.pfsSafetyMargin));
+    depsMock.config$
+      .pipe(first())
+      .subscribe((config) => (pfsSafetyMargin = config.pfsSafetyMargin));
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock)
-      .pipe(toArray())
-      .toPromise();
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
 
     [
       pfsListUpdated({
@@ -459,7 +461,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 50);
 
     await expect(promise).resolves.toMatchObject([
@@ -525,7 +527,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -578,7 +580,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -624,7 +626,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -679,7 +681,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -718,9 +720,7 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify(result)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock)
-      .pipe(toArray())
-      .toPromise();
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
 
     [
       matrixPresence.success(
@@ -732,7 +732,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject([
@@ -804,7 +804,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -863,7 +863,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -894,7 +894,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { paths: [{ path: [depsMock.address, partner, target], fee }] },
         { tokenNetwork, target, value },
       ),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -946,9 +946,7 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify(errorResult)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock)
-      .pipe(toArray())
-      .toPromise();
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
 
     [
       matrixPresence.success(
@@ -960,7 +958,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject([
@@ -1003,9 +1001,7 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify({})),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock)
-      .pipe(toArray())
-      .toPromise();
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
 
     [
       matrixPresence.success(
@@ -1017,7 +1013,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject([
@@ -1060,9 +1056,7 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify(lastIOUResult)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock)
-      .pipe(toArray())
-      .toPromise();
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
 
     [
       matrixPresence.success(
@@ -1074,7 +1068,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject([
@@ -1132,9 +1126,7 @@ describe('PFS: pathFindServiceEpic', () => {
       text: jest.fn(async () => losslessStringify(result)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock)
-      .pipe(toArray())
-      .toPromise();
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
 
     [
       matrixPresence.success(
@@ -1146,7 +1138,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject([
@@ -1188,7 +1180,7 @@ describe('PFS: pathFindServiceEpic', () => {
         { address: target },
       ),
       pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
@@ -1244,7 +1236,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
         { tokenNetwork, partner },
       ),
       newBlock({ blockNumber: 125 }),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
   });
 
   test('own channelDeposit.success triggers capacity update', async () => {
@@ -1253,7 +1245,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     const deposit = bigNumberify(500) as UInt<32>;
 
     let pfsRoom!: string;
-    depsMock.config$.pipe(first()).subscribe(config => (pfsRoom = config.pfsRoom!));
+    depsMock.config$.pipe(first()).subscribe((config) => (pfsRoom = config.pfsRoom!));
 
     const promise = pfsCapacityUpdateEpic(action$, state$, depsMock).toPromise();
 

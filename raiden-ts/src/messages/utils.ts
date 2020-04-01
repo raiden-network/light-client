@@ -40,7 +40,7 @@ export enum MessageTypeId {
  * @returns Hash of the metadata.
  */
 export function createMetadataHash(metadata: Metadata): Hash {
-  const routeHashes = metadata.routes.map(value => keccak256(RLP.encode(value.route)) as Hash);
+  const routeHashes = metadata.routes.map((value) => keccak256(RLP.encode(value.route)) as Hash);
   return keccak256(RLP.encode(routeHashes)) as Hash;
 }
 
@@ -300,7 +300,7 @@ export function decodeJsonMessage(text: string): Message | Signed<Message> {
     parsed &&
       typeof parsed === 'object' &&
       'type' in parsed &&
-      Object.values(MessageType).some(t => t === parsed['type']),
+      Object.values(MessageType).some((t) => t === parsed['type']),
     `Invalid message type: ${parsed?.['type']}`,
   );
   if ('signature' in parsed) return decode(Signed(Message), parsed);

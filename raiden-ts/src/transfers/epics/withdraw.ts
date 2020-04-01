@@ -21,8 +21,8 @@ export const withdrawRequestReceivedEpic = (
 ): Observable<withdrawReceive.request> =>
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(WithdrawRequest))),
-    filter(action => action.payload.message.participant === action.meta.address),
-    map(action => {
+    filter((action) => action.payload.message.participant === action.meta.address),
+    map((action) => {
       const message = action.payload.message;
       return withdrawReceive.request(
         { message },
@@ -47,7 +47,7 @@ export const withdrawSendConfirmationEpic = (
 ): Observable<messageSend.request> =>
   action$.pipe(
     filter(isActionOf(withdrawReceive.success)),
-    map(action =>
+    map((action) =>
       messageSend.request(
         { message: action.payload.message },
         {

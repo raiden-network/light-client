@@ -70,7 +70,7 @@ describe('channels epic', () => {
 
   test(
     'channelSettleableEpic',
-    marbles(m => {
+    marbles((m) => {
       const closeBlock = 125;
       // state contains one channel in closed state
       const newState = [
@@ -276,9 +276,7 @@ describe('channels epic', () => {
       ]);
 
       await expect(
-        channelMonitoredEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
+        channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise(),
       ).resolves.toEqual(
         channelDeposit.success(
           {
@@ -313,9 +311,7 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(action),
         state$ = of<RaidenState>(curState);
 
-      const promise = channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       depsMock.provider.emit(
         '*',
@@ -434,9 +430,7 @@ describe('channels epic', () => {
         ),
         state$ = of<RaidenState>(curState);
 
-      const promise = channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       depsMock.provider.emit(
         '*',
@@ -483,9 +477,7 @@ describe('channels epic', () => {
         ),
         state$ = of<RaidenState>(curState);
 
-      const promise = channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       depsMock.provider.emit(
         '*',
@@ -822,7 +814,7 @@ describe('channels epic', () => {
           { tokenNetwork, partner },
         ),
         newBlock({ blockNumber: closeBlock }),
-      ].forEach(a => action$.next(a));
+      ].forEach((a) => action$.next(a));
 
       // put a received & unlocked transfer from partner in state
       const { state, config } = await depsMock.latest$.pipe(first()).toPromise();
@@ -886,7 +878,7 @@ describe('channels epic', () => {
           { secrethash, direction },
         ),
         transferUnlock.success({ message: unlock }, { secrethash, direction }),
-      ].forEach(a => action$.next(a));
+      ].forEach((a) => action$.next(a));
     });
 
     afterEach(() => {
@@ -996,7 +988,7 @@ describe('channels epic', () => {
         ),
         newBlock({ blockNumber: closeBlock + 1 }),
         newBlock({ blockNumber: closeBlock + 2 }),
-      ].forEach(a => action$.next(a));
+      ].forEach((a) => action$.next(a));
 
       setTimeout(() => action$.complete(), 10);
       await expect(promise).resolves.toBeUndefined();

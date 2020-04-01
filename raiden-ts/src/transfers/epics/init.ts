@@ -30,7 +30,7 @@ export const initQueuePendingEnvelopeMessagesEpic = (
 ) =>
   state$.pipe(
     first(),
-    mergeMap(function*(state) {
+    mergeMap(function* (state) {
       // loop over all pending transfers
       for (const [key, sent] of Object.entries(state.sent)) {
         const secrethash = key as Hash;
@@ -70,7 +70,7 @@ export const initQueuePendingReceivedEpic = (
 ) =>
   state$.pipe(
     first(),
-    mergeMap(state =>
+    mergeMap((state) =>
       from(Object.entries(state.received) as Array<[Hash, typeof state.received[string]]>),
     ),
     filter(
@@ -81,7 +81,7 @@ export const initQueuePendingReceivedEpic = (
         !received.channelClosed,
     ),
     withLatestFrom(config$),
-    mergeMap(function*([[secrethash, received], { caps }]) {
+    mergeMap(function* ([[secrethash, received], { caps }]) {
       // loop over all pending transfers
       const meta = { secrethash, direction: Direction.RECEIVED };
       // on init, request monitor presence of any pending transfer initiator

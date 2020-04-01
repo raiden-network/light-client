@@ -105,7 +105,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       event = getEventTag(event);
       if (event === '*') {
         for (const cbs of listeners.values()) for (const cb of cbs) cb(...args);
-      } else if (listeners.has(event)) listeners.get(event)!.forEach(cb => cb(...args));
+      } else if (listeners.has(event)) listeners.get(event)!.forEach((cb) => cb(...args));
       return true;
     });
   };
@@ -114,7 +114,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   Object.assign(provider, { network });
   Object.defineProperty(provider, 'blockNumber', { get: () => blockNumber });
   jest.spyOn(provider, 'getNetwork').mockImplementation(async () => network);
-  jest.spyOn(provider, 'resolveName').mockImplementation(async addressOrName => addressOrName);
+  jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
   jest.spyOn(provider, 'getLogs').mockResolvedValue([]);
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([]);
   // See: https://github.com/cartant/rxjs-marbles/issues/11
@@ -297,7 +297,7 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
     joinRoom: jest.fn(async () => true),
     // reject to test register
     login: jest.fn().mockRejectedValue(new Error('invalid password')),
-    register: jest.fn(async userName => {
+    register: jest.fn(async (userName) => {
       userId = `@${userName}:${server}`;
       return {
         user_id: userId,
@@ -310,8 +310,8 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
     })),
     getUserId: jest.fn(() => userId),
     getUsers: jest.fn(() => []),
-    getUser: jest.fn(userId => ({ userId, presence: 'offline', setDisplayName: jest.fn() })),
-    getProfileInfo: jest.fn(async userId => ({ displayname: `${userId}_display_name` })),
+    getUser: jest.fn((userId) => ({ userId, presence: 'offline', setDisplayName: jest.fn() })),
+    getProfileInfo: jest.fn(async (userId) => ({ displayname: `${userId}_display_name` })),
     setDisplayName: jest.fn(async () => null),
     setAvatarUrl: jest.fn(async () => null),
     setPresence: jest.fn(async () => null),
@@ -321,7 +321,7 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
       getCanonicalAlias: jest.fn(() => null),
       getAliases: jest.fn(() => []),
     })),
-    getRoom: jest.fn(roomId => ({
+    getRoom: jest.fn((roomId) => ({
       roomId,
       getMember: jest.fn(),
       getCanonicalAlias: jest.fn(() => null),

@@ -41,10 +41,7 @@ export function channelAmounts(channel: Channel) {
     partnerLocked = channel.partner.balanceProof?.lockedAmount ?? Zero32,
     ownBalance = partnerTransferred.sub(ownTransferred) as UInt<32>,
     partnerBalance = ownTransferred.sub(partnerTransferred) as UInt<32>, // == -ownBalance
-    ownCapacity = channel.own.deposit
-      .sub(ownWithdraw)
-      .sub(ownLocked)
-      .add(ownBalance) as UInt<32>,
+    ownCapacity = channel.own.deposit.sub(ownWithdraw).sub(ownLocked).add(ownBalance) as UInt<32>,
     partnerCapacity = channel.partner.deposit
       .sub(partnerWithdraw)
       .sub(partnerLocked)
@@ -79,12 +76,12 @@ export function assertTx(
   error: ErrorCodes,
   { log }: Pick<RaidenEpicDeps, 'log'>,
 ): OperatorFunction<ContractTransaction, Hash> {
-  return tx =>
+  return (tx) =>
     tx.pipe(
-      tap(tx => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
-      mergeMap(tx =>
+      tap((tx) => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
+      mergeMap((tx) =>
         from(tx.wait()).pipe(
-          map(receipt => {
+          map((receipt) => {
             if (!receipt.status) throw new RaidenError(error, { transactionHash: tx.hash! });
             log.debug(`${method} tx "${tx.hash}" successfuly mined!`);
             return tx.hash as Hash;

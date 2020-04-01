@@ -203,7 +203,7 @@ const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
   // else (either confirmed or removed), remove from state
   else {
     const newState = state.filter(
-      a => a.type !== action.type || action.payload.txHash !== a.payload.txHash,
+      (a) => a.type !== action.type || action.payload.txHash !== a.payload.txHash,
     );
     if (newState.length !== state.length) return newState;
     return state;

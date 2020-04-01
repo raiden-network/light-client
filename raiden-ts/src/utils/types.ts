@@ -83,7 +83,7 @@ export const BigNumberC = new t.Type<BigNumber, string>(
       return t.failure(u, c);
     }
   },
-  a => a.toString(),
+  (a) => a.toString(),
 );
 
 // sized brands interfaces must derive from this interface
@@ -105,7 +105,7 @@ export interface HexStringB<S extends number> extends SizedB<S> {
  */
 export const HexString: <S extends number = number>(
   size?: S,
-) => t.BrandC<t.StringC, HexStringB<S>> = memoize(function<S extends number = number>(size?: S) {
+) => t.BrandC<t.StringC, HexStringB<S>> = memoize(function <S extends number = number>(size?: S) {
   return t.brand(
     t.string,
     (n): n is string & t.Brand<HexStringB<S>> =>
@@ -131,7 +131,9 @@ export interface IntB<S extends number> extends SizedB<S> {
  */
 export const Int: <S extends number = number>(
   size?: S,
-) => t.BrandC<typeof BigNumberC, IntB<S>> = memoize(function<S extends number = number>(size?: S) {
+) => t.BrandC<typeof BigNumberC, IntB<S>> = memoize(function <S extends number = number>(
+  size?: S,
+) {
   const min = size ? Zero.sub(Two.pow(size * 8 - 1)) : undefined,
     max = size ? Two.pow(size * 8 - 1) : undefined;
   return t.brand(
@@ -157,7 +159,7 @@ export interface UIntB<S extends number> extends SizedB<S> {
  */
 export const UInt: <S extends number = number>(
   size?: S,
-) => t.BrandC<typeof BigNumberC, UIntB<S>> = memoize(function<S extends number = number>(
+) => t.BrandC<typeof BigNumberC, UIntB<S>> = memoize(function <S extends number = number>(
   size?: S,
 ) {
   const min = size ? Zero : undefined,

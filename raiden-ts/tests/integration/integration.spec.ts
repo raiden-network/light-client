@@ -64,9 +64,9 @@ describe('integration', () => {
     raiden.start();
   });
 
-  afterAll(done => {
+  afterAll((done) => {
     raiden.stop();
-    raiden.events$.pipe(filter(value => value.type === 'raidenShutdown')).subscribe(done);
+    raiden.events$.pipe(filter((value) => value.type === 'raidenShutdown')).subscribe(done);
   });
 
   test('account is funded', async () => {

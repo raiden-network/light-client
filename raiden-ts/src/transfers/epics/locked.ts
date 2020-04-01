@@ -74,7 +74,7 @@ function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
 }
 
 function getChannelLocksroot(channel: Channel, secrethash: Hash): Hash {
-  const locks: Lock[] = (channel.own.locks ?? []).filter(l => l.secrethash !== secrethash);
+  const locks: Lock[] = (channel.own.locks ?? []).filter((l) => l.secrethash !== secrethash);
   return getLocksroot(locks);
 }
 
@@ -125,7 +125,7 @@ function makeAndSignTransfer$(
   };
   const locks: Lock[] = [...(channel.own.locks ?? []), lock];
   const locksroot = getLocksroot(locks);
-  const token = findKey(state.tokens, tn => tn === action.payload.tokenNetwork)! as Address;
+  const token = findKey(state.tokens, (tn) => tn === action.payload.tokenNetwork)! as Address;
 
   log.info(
     'Signing transfer of value',
@@ -161,7 +161,7 @@ function makeAndSignTransfer$(
   };
 
   return from(signMessage(signer, message, { log })).pipe(
-    mergeMap(function*(signed) {
+    mergeMap(function* (signed) {
       // messageSend LockedTransfer handled by transferRetryMessageEpic
       yield transferSigned({ message: signed, fee }, action.meta);
       // besides transferSigned, also yield transferSecret (for registering) if we know it
@@ -190,7 +190,7 @@ function makeAndSignTransfer(
   return combineLatest([state$, deps.config$]).pipe(
     first(),
     mergeMap(([state, config]) => makeAndSignTransfer$(state, action, config, deps)),
-    catchError(err => of(transfer.failure(err, action.meta))),
+    catchError((err) => of(transfer.failure(err, action.meta))),
   );
 }
 
@@ -256,7 +256,7 @@ function makeAndSignUnlock$(
 
   return signed$.pipe(
     withLatestFrom(state$),
-    mergeMap(function*([signed, state]) {
+    mergeMap(function* ([signed, state]) {
       assert(
         state.sent[secrethash].secret?.[1]?.registerBlock ||
           transfer.lock.expiration.gt(state.blockNumber),
@@ -289,8 +289,8 @@ function makeAndSignUnlock(
 ): Observable<transferUnlock.success | transferUnlock.failure> {
   return state$.pipe(
     first(),
-    mergeMap(state => makeAndSignUnlock$(state$, state, action, { log, signer })),
-    catchError(err => {
+    mergeMap((state) => makeAndSignUnlock$(state$, state, action, { log, signer })),
+    catchError((err) => {
       log.warn('Error trying to unlock after SecretReveal', err);
       return of(transferUnlock.failure(err, action.meta));
     }),
@@ -351,7 +351,7 @@ function makeAndSignLockExpired$(
 
   return signed$.pipe(
     // messageSend LockExpired handled by transferRetryMessageEpic
-    map(signed => transferExpire.success({ message: signed }, action.meta)),
+    map((signed) => transferExpire.success({ message: signed }, action.meta)),
   );
 }
 
@@ -373,8 +373,8 @@ function makeAndSignLockExpired(
 ): Observable<transferExpire.success | transferExpire.failure> {
   return state$.pipe(
     first(),
-    mergeMap(state => makeAndSignLockExpired$(state, action, { signer, log })),
-    catchError(err => of(transferExpire.failure(err, action.meta))),
+    mergeMap((state) => makeAndSignLockExpired$(state, action, { signer, log })),
+    catchError((err) => of(transferExpire.failure(err, action.meta))),
   );
 }
 
@@ -447,11 +447,11 @@ function makeAndSignWithdrawConfirmation$(
       expiration: request.expiration,
     };
     signed$ = from(signMessage(signer, confirmation, { log })).pipe(
-      tap(signed => cache.put(key, signed)),
+      tap((signed) => cache.put(key, signed)),
     );
   }
 
-  return signed$.pipe(map(signed => withdrawReceive.success({ message: signed }, action.meta)));
+  return signed$.pipe(map((signed) => withdrawReceive.success({ message: signed }, action.meta)));
 }
 
 /**
@@ -484,8 +484,8 @@ function makeAndSignWithdrawConfirmation(
 ): Observable<withdrawReceive.success> {
   return state$.pipe(
     first(),
-    mergeMap(state => makeAndSignWithdrawConfirmation$(state, action, { log, signer }, cache)),
-    catchError(err => {
+    mergeMap((state) => makeAndSignWithdrawConfirmation$(state, action, { log, signer }, cache)),
+    catchError((err) => {
       log.warn('Error trying to handle WithdrawRequest, ignoring:', err);
       return EMPTY;
     }),
@@ -558,7 +558,7 @@ function receiveTransferSigned(
       const locks = [...(channel.partner.locks ?? []), transfer.lock];
       const locksroot = getLocksroot(locks);
       assert(transfer.locksroot === locksroot, 'locksroot mismatch');
-      const token = findKey(state.tokens, tn => tn === tokenNetwork)! as Address;
+      const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
 
       log.info(
         'Receiving transfer of value',
@@ -596,7 +596,7 @@ function receiveTransferSigned(
 
       // if any of these signature prompts fail, none of these actions will be emitted
       return combineLatest([processed$, request$]).pipe(
-        mergeMap(function*([processed, request]) {
+        mergeMap(function* ([processed, request]) {
           yield transferSigned({ message: transfer, fee: Zero as Int<32> }, meta);
           // sets TransferState.transferProcessed
           yield transferProcessed({ message: processed }, meta);
@@ -609,7 +609,7 @@ function receiveTransferSigned(
         }),
       );
     }),
-    catchError(err => of(transfer.failure(err, meta))),
+    catchError((err) => of(transfer.failure(err, meta))),
   );
 }
 
@@ -622,7 +622,7 @@ function receiveTransferUnlocked(
   const meta = { secrethash, direction: Direction.RECEIVED };
   return state$.pipe(
     first(),
-    mergeMap(state => {
+    mergeMap((state) => {
       if (!(secrethash in state.received)) return EMPTY;
       const received = state.received[secrethash];
 
@@ -669,7 +669,7 @@ function receiveTransferUnlocked(
         'lockedAmount mismatch',
       );
 
-      const locks: Lock[] = channel.partner.locks.filter(lock => lock.secrethash !== secrethash);
+      const locks: Lock[] = channel.partner.locks.filter((lock) => lock.secrethash !== secrethash);
       const locksroot = getLocksroot(locks);
       assert(unlock.locksroot === locksroot, 'locksroot mismatch');
 
@@ -680,7 +680,7 @@ function receiveTransferUnlocked(
       };
       // if any of these signature prompts fail, none of these actions will be emitted
       return from(signMessage(signer, processed, { log })).pipe(
-        mergeMap(function*(processed) {
+        mergeMap(function* (processed) {
           yield transferUnlock.success({ message: unlock }, meta);
           // sets TransferState.transferProcessed
           yield transferUnlockProcessed({ message: processed }, meta);
@@ -691,7 +691,7 @@ function receiveTransferUnlocked(
         }),
       );
     }),
-    catchError(err => {
+    catchError((err) => {
       log.warn('Error trying to process received Unlock', err);
       return of(transferUnlock.failure(err, meta));
     }),
@@ -761,7 +761,7 @@ function receiveTransferExpired(
         'lockedAmount mismatch',
       );
 
-      const locks: Lock[] = channel.partner.locks.filter(lock => lock.secrethash !== secrethash);
+      const locks: Lock[] = channel.partner.locks.filter((lock) => lock.secrethash !== secrethash);
       const locksroot = getLocksroot(locks);
       assert(expired.locksroot === locksroot, 'locksroot mismatch');
 
@@ -772,7 +772,7 @@ function receiveTransferExpired(
       };
       // if any of these signature prompts fail, none of these actions will be emitted
       return from(signMessage(signer, processed, { log })).pipe(
-        mergeMap(function*(processed) {
+        mergeMap(function* (processed) {
           yield transferExpire.success({ message: expired }, meta);
           // sets TransferState.transferProcessed
           yield transferExpireProcessed({ message: processed }, meta);
@@ -785,7 +785,7 @@ function receiveTransferExpired(
         }),
       );
     }),
-    catchError(err => {
+    catchError((err) => {
       log.warn('Error trying to process received LockExpired', err);
       return of(transferExpire.failure(err, meta));
     }),
@@ -828,7 +828,7 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
       ),
     ),
   ).pipe(
-    concatMap(action =>
+    concatMap((action) =>
       transfer.request.is(action)
         ? makeAndSignTransfer(state$, action, deps)
         : transferUnlock.request.is(action)

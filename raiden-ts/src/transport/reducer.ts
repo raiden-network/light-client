@@ -37,7 +37,7 @@ const transport = createReducer(initialState.transport)
       path,
       [
         action.payload.roomId,
-        ...(getOr([], path, state) as string[]).filter(room => room !== action.payload.roomId),
+        ...(getOr([], path, state) as string[]).filter((room) => room !== action.payload.roomId),
       ],
       state,
     );
@@ -46,7 +46,7 @@ const transport = createReducer(initialState.transport)
     const path = ['matrix', 'rooms', action.meta.address];
     state = set(
       path,
-      (getOr([], path, state) as string[]).filter(r => r !== action.payload.roomId),
+      (getOr([], path, state) as string[]).filter((r) => r !== action.payload.roomId),
       state,
     );
     if (isEmpty(get(path, state))) state = unset(path, state);

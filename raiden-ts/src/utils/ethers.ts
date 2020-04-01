@@ -88,17 +88,17 @@ export function getEventsStream<T extends any[]>(
         ? of(provider.blockNumber)
         : fromEthersEvent<number>(provider, 'block').pipe(
             first(),
-            map(b => provider.blockNumber ?? b),
+            map((b) => provider.blockNumber ?? b),
           ),
     ).pipe(share());
     pastEvents$ = combineLatest(fromBlock$, nextBlock$).pipe(
       first(),
       switchMap(([fromBlock, toBlock]) =>
-        Promise.all(filters.map(filter => provider.getLogs({ ...filter, fromBlock, toBlock }))),
+        Promise.all(filters.map((filter) => provider.getLogs({ ...filter, fromBlock, toBlock }))),
       ),
       // flatten array of each getLogs query response and sort them
       // emit log array elements as separate logs into stream (unwind)
-      mergeMap(logs => from(sortBy(flatten(logs), ['blockNumber']))),
+      mergeMap((logs) => from(sortBy(flatten(logs), ['blockNumber']))),
       map(logToEvent),
       filter(isntNil),
     );
@@ -109,7 +109,7 @@ export function getEventsStream<T extends any[]>(
   // doesn't complete, keep emitting events for each new block (if any) until unsubscription
   const newEvents$: Observable<T> = nextBlock$.pipe(
     switchMap(() => from(filters)),
-    mergeMap(filter => fromEthersEvent<Log>(provider, filter)),
+    mergeMap((filter) => fromEthersEvent<Log>(provider, filter)),
     map(logToEvent),
     filter(isntNil),
   );
@@ -135,10 +135,10 @@ export async function getNetwork(provider: JsonRpcProvider): Promise<Network> {
  */
 export function patchSignSend(provider: JsonRpcProvider): void {
   const origSend: (method: string, params: any) => Promise<any> = provider.send;
-  provider.send = async function(method: string, params: any): Promise<any> {
+  provider.send = async function (method: string, params: any): Promise<any> {
     if (method === 'eth_sign') {
       // try 'personal_sign' by default instead of 'eth_sign'
-      return origSend.apply(this, ['personal_sign', [params[1], params[0]]]).catch(err => {
+      return origSend.apply(this, ['personal_sign', [params[1], params[0]]]).catch((err) => {
         // on first error, if personal_sign isn't available
         if (
           err instanceof Error &&
