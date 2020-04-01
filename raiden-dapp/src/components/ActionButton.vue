@@ -12,7 +12,11 @@
         :disabled="!enabled"
         :loading="loading"
         class="text-capitalize action-button__button"
-        :class="{ sticky: sticky }"
+        :class="{
+          sticky: sticky,
+          'action-button__button--ghost': ghost,
+          'action-button__button--full-width': fullWidth
+        }"
         depressed
         large
         @click="click()"
@@ -42,6 +46,12 @@ export default class ActionButton extends Vue {
 
   @Prop({ type: Boolean, default: false })
   arrow?: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  ghost?: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  fullWidth?: boolean;
 
   @Emit()
   click() {}
@@ -85,6 +95,42 @@ export default class ActionButton extends Vue {
 
     &:hover {
       background-color: rgba($primary-color, 0.8) !important;
+    }
+
+    &--full-width {
+      width: 100%;
+    }
+
+    &--ghost {
+      border: 2px solid rgba($primary-color, 0.8);
+      background-color: $card-background !important;
+
+      &.theme {
+        &--dark {
+          &.v-btn {
+            &.v-btn {
+              &--disabled {
+                /* stylelint-disable */
+                // can't nest class inside nesting
+                &:not(.v-btn--icon) {
+                  &:not(.v-btn--text) {
+                    &:not(.v-btn--outline) {
+                      background-color: transparent !important;
+                    }
+                  }
+                }
+                /* stylelint-enable */
+              }
+            }
+          }
+        }
+      }
+
+      &.v-btn {
+        &--disabled {
+          border-color: $primary-disabled-color;
+        }
+      }
     }
   }
 
