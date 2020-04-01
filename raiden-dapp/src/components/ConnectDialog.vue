@@ -28,7 +28,7 @@
           {{ $t('home.connect-dialog.raiden-account.link-name') }}
         </span>
       </i18n>
-      <div v-else>
+      <div v-else class="connect__raiden-account-spinner text-center">
         <v-progress-circular :size="30" :width="1" indeterminate />
       </div>
     </v-card-action>
@@ -88,7 +88,8 @@ export default class ConnectDialog extends Vue {
     margin: 45px 0 28px 0;
   }
 
-  &__raiden-account {
+  &__raiden-account,
+  &__raiden-account-spinner {
     margin: 28px 0 45px 0;
   }
 }

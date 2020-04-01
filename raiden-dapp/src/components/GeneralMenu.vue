@@ -63,6 +63,7 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapState } from 'vuex';
+import { getLogsFromStore } from '@/utils/logstore';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 
@@ -87,6 +88,29 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
         ) as string,
         route: () => {
           this.navigateToBackupState();
+        }
+      },
+      {
+        icon: 'state.svg',
+        title: this.$t('general-menu.menu-items.report-bugs-title') as string,
+        subtitle: this.$t(
+          'general-menu.menu-items.report-bugs-subtitle'
+        ) as string,
+        route: async () => {
+          const [lastTime, content] = await getLogsFromStore();
+          const filename = `raiden_${new Date(lastTime).toISOString()}.log`;
+          const file = new File([content], filename, { type: 'text/plain' });
+          const url = URL.createObjectURL(file);
+          const el = document.createElement('a');
+          el.href = url;
+          el.download = filename;
+          el.style.display = 'none';
+          document.body.appendChild(el);
+          el.click();
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            document.body.removeChild(el);
+          }, 0);
         }
       }
     ];
