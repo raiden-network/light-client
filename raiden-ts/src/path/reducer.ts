@@ -6,7 +6,8 @@
  * @param action - RaidenAction to handle
  * @returns New RaidenState['path'] slice
  */
-import { set, unset } from 'lodash/fp';
+import set from 'lodash/fp/set';
+import unset from 'lodash/fp/unset';
 
 import { initialState } from '../state';
 import { partialCombineReducers } from '../utils/redux';

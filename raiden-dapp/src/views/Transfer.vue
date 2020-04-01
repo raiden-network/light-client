@@ -63,7 +63,7 @@
       @submit.prevent="navigateToTransferSteps(target, amount)"
     >
       <v-row justify="center" align="center" class="transfer__recipient">
-        <v-col cols="12" sm="10">
+        <v-col cols="10">
           <address-input
             v-model="target"
             :exclude="[token.address, defaultAccount]"
@@ -73,7 +73,7 @@
       </v-row>
 
       <v-row justify="center" align="center">
-        <v-col cols="12" sm="10">
+        <v-col cols="10">
           <amount-input
             v-model="amount"
             :token="token"

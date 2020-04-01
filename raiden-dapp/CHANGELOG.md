@@ -1,12 +1,19 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
+### Fixed
+- [#1243] Fix width of transfer input on mobile screens.
+- [#1242] Fix transfer modal not closing instantly.
 
+[#1243]: https://github.com/raiden-network/light-client/issues/1243
+[#1242]: https://github.com/raiden-network/light-client/issues/1242
+
+## [0.5.0] - 2020-03-27
 ### Added
 - [#691] Auto-suggesting hub on Goerli.
 - [#921] Transfer identifier on summary screen.
-- [#1136] Ability to enter addresses via QR code scanning.
-- [#1160] Submit forms via enter.
+- [#1136] Ability to scan QR codes.
+- [#1160] Ability to submit forms via enter.
 - [#300] Enter amounts with leading "." (dot).
 
 [#691]: https://github.com/raiden-network/light-client/issues/691
@@ -160,6 +167,8 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/raiden-network/light-client/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/raiden-network/light-client/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/raiden-network/light-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/raiden-network/light-client/compare/v0.3.0...v0.4.0

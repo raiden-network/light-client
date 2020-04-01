@@ -28,6 +28,8 @@ export enum ErrorCodes {
   CNL_SETTOTALDEPOSIT_FAILED = 'Token networks setTotalDeposit transaction failed.',
   CNL_CLOSECHANNEL_FAILED = 'Token networks closeChannel transaction failed.',
   CNL_SETTLECHANNEL_FAILED = 'Token networks settleChannel transaction failed.',
+  CNL_UPDATE_NONCLOSING_BP_FAILED = 'updateNonClosingBalanceProof transaction failed.',
+  CNL_ONCHAIN_UNLOCK_FAILED = 'on-chain unlock transaction failed.',
 
   // Transfer errors
   XFER_EXPIRED = 'Transfer expired.',
@@ -35,6 +37,7 @@ export enum ErrorCodes {
   XFER_REFUNDED = 'Transfer has been refunded.',
   XFER_INVALID_SECRETREQUEST = 'Invalid SecretRequest received',
   XFER_ALREADY_COMPLETED = "Not waiting for transfer, it's already completed.",
+  XFER_REGISTERSECRET_TX_FAILED = 'SecretRegistry.registerSecret transaction failed',
 
   // Transport errors
   TRNS_NO_MATRIX_SERVERS = 'Could not contact any Matrix servers.',

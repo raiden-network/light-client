@@ -44,11 +44,11 @@ describe('BackupState.vue', () => {
     expect(downloadStateDialog).toBeTruthy();
   });
 
-  test('upload state', () => {
-    const uploadStateTitle = wrapper.find(
-      '.backup-state__buttons__upload-state__title'
-    );
+  // test('upload state', () => {
+  //   const uploadStateTitle = wrapper.find(
+  //     '.backup-state__buttons__upload-state__title'
+  //   );
 
-    expect(uploadStateTitle.text()).toBe('backup-state.upload');
-  });
+  //   expect(uploadStateTitle.text()).toBe('backup-state.upload');
+  // });
 });

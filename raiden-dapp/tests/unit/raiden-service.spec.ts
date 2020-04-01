@@ -431,7 +431,7 @@ describe('RaidenService', () => {
       expect(store.commit).toHaveBeenCalledTimes(4);
 
       expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
-      expect(store.commit).toHaveBeenNthCalledWith(2, 'balance', '0.0');
+      expect(store.commit).toHaveBeenNthCalledWith(3, 'balance', '0.0');
       expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
 
       await raidenService.fetchTokenData(['0xtoken1']);

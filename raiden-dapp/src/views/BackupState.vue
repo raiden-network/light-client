@@ -19,7 +19,7 @@
           </div>
         </v-list-item-content>
       </v-list-item>
-      <v-list-item class="backup-state__buttons__upload-state">
+      <!-- <v-list-item class="backup-state__buttons__upload-state">
         <div class="backup-state__buttons__upload-state__icon">
           <v-img :src="require('../assets/state_upload.png')"></v-img>
         </div>
@@ -28,7 +28,7 @@
             {{ $t('backup-state.upload') }}
           </div>
         </v-list-item-content>
-      </v-list-item>
+      </v-list-item> -->
     </v-list>
     <download-state-dialog
       :visible="downloadState"
@@ -58,6 +58,8 @@ export default class BackupState extends Vue {
 .backup-state {
   &__description {
     color: $secondary-text-color;
+    font-size: 20px;
+    padding: 50px 100px 0 100px;
     text-align: center;
   }
 

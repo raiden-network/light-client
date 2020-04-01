@@ -281,7 +281,7 @@ describe('Raiden', () => {
       settleTimeout: 20,
       revealTimeout: 5,
     });
-    expect(raiden.config.pfs).toBeUndefined();
+    expect(raiden.config.pfs).toBe('');
     raiden.updateConfig({ revealTimeout: 8 });
     expect(raiden.config).toMatchObject({
       revealTimeout: 8,
@@ -854,7 +854,7 @@ describe('Raiden', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         // auto pfs mode
-        raiden.updateConfig({ pfs: undefined });
+        raiden.updateConfig({ pfs: '' });
 
         fetch.mockResolvedValueOnce({
           ok: true,
@@ -956,7 +956,7 @@ describe('Raiden', () => {
         text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
       });
 
-      raiden.updateConfig({ pfs: undefined });
+      raiden.updateConfig({ pfs: '' });
       await expect(raiden.findPFS()).resolves.toEqual([
         {
           address: pfsAddress,
@@ -1073,7 +1073,7 @@ describe('Raiden', () => {
       });
 
       // config.pfs in auto mode
-      raiden.updateConfig({ pfs: undefined });
+      raiden.updateConfig({ pfs: '' });
 
       const pfss = await raiden.findPFS();
       expect(pfss).toEqual([

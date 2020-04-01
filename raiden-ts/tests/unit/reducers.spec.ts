@@ -1,5 +1,5 @@
-import { get } from 'lodash';
-import { set } from 'lodash/fp';
+import get from 'lodash/get';
+import set from 'lodash/fp/set';
 
 import { Zero, One, AddressZero } from 'ethers/constants';
 import { bigNumberify, keccak256, getNetwork } from 'ethers/utils';
@@ -34,7 +34,7 @@ import {
   transferExpireProcessed,
   withdrawReceive,
   transferSecretRequest,
-  transferSecretRegistered,
+  transferSecretRegister,
 } from 'raiden-ts/transfers/actions';
 import {
   LockedTransfer,
@@ -53,8 +53,10 @@ import {
   getSecrethash,
   getLocksroot,
 } from 'raiden-ts/transfers/utils';
-import { makeSignature } from './mocks';
 import { RaidenError, ErrorCodes } from 'raiden-ts/utils/error';
+import { Direction } from 'raiden-ts/transfers/state';
+
+import { makeSignature } from './mocks';
 
 describe('raidenReducer', () => {
   let state: RaidenState;
@@ -69,7 +71,8 @@ describe('raidenReducer', () => {
     openBlock = 5123,
     closeBlock = 5999,
     settleBlock = closeBlock + settleTimeout + 1,
-    isFirstParticipant = true;
+    isFirstParticipant = true,
+    direction = Direction.SENT;
 
   beforeEach(() => {
     state = makeInitialState(
@@ -921,8 +924,8 @@ describe('raidenReducer', () => {
     test('secret register', () => {
       // normal secret register without blockNumber
       let newState = [
-        transferSigned({ message: transfer, fee }, { secrethash }),
-        transferSecret({ secret }, { secrethash }),
+        transferSigned({ message: transfer, fee }, { secrethash, direction }),
+        transferSecret({ secret }, { secrethash, direction }),
       ].reduce(raidenReducer, state);
 
       expect(newState.sent[secrethash]?.secret).toStrictEqual([
@@ -932,9 +935,9 @@ describe('raidenReducer', () => {
 
       // with blockNumber saves it as well
       newState = [
-        transferSecretRegistered(
+        transferSecretRegister.success(
           { secret, txHash, txBlock: 123, confirmed: true },
-          { secrethash },
+          { secrethash, direction },
         ),
       ].reduce(raidenReducer, newState);
       expect(newState.sent[secrethash].secret).toStrictEqual([
@@ -944,9 +947,9 @@ describe('raidenReducer', () => {
 
       // if already registered with blockNumber and try without, keep the blockNumber
       newState = [
-        transferSecretRegistered(
+        transferSecretRegister.success(
           { secret, txHash, txBlock: 123, confirmed: undefined },
-          { secrethash },
+          { secrethash, direction },
         ),
       ].reduce(raidenReducer, newState);
       expect(newState.sent[secrethash].secret).toStrictEqual([
@@ -958,28 +961,28 @@ describe('raidenReducer', () => {
     test('transfer signed', () => {
       // invalid locked
       const message = { ...transfer, locked_amount: bigNumberify(20) as UInt<32> };
-      let newState = [transferSigned({ message, fee }, { secrethash })].reduce(
+      let newState = [transferSigned({ message, fee }, { secrethash, direction })].reduce(
         raidenReducer,
         state,
       );
       expect(newState.sent).toStrictEqual({});
 
       message.locked_amount = transfer.locked_amount; // fix locked amount
-      newState = [transferSigned({ message, fee }, { secrethash })].reduce(
+      newState = [transferSigned({ message, fee }, { secrethash, direction })].reduce(
         raidenReducer,
         newState,
       );
       expect(get(newState, ['sent', secrethash])).toEqual({
         transfer: [expect.any(Number), message],
         fee,
+        partner,
       });
 
       // other transfer with same secretHash doesn't replace the first
       const otherMessageSameSecret = { ...message, payment_identifier: makePaymentId() };
-      newState = [transferSigned({ message: otherMessageSameSecret, fee }, { secrethash })].reduce(
-        raidenReducer,
-        newState,
-      );
+      newState = [
+        transferSigned({ message: otherMessageSameSecret, fee }, { secrethash, direction }),
+      ].reduce(raidenReducer, newState);
       expect(get(newState, ['sent', secrethash, 'transfer', 1])).toBe(message);
     });
 
@@ -989,7 +992,7 @@ describe('raidenReducer', () => {
         message_identifier: transfer.message_identifier,
         signature: makeSignature(),
       };
-      let newState = [transferProcessed({ message: processed }, { secrethash })].reduce(
+      let newState = [transferProcessed({ message: processed }, { secrethash, direction })].reduce(
         raidenReducer,
         state,
       );
@@ -997,8 +1000,8 @@ describe('raidenReducer', () => {
       expect(get(newState, ['sent', secrethash])).toBeUndefined();
 
       newState = [
-        transferSigned({ message: transfer, fee }, { secrethash }),
-        transferProcessed({ message: processed }, { secrethash }),
+        transferSigned({ message: transfer, fee }, { secrethash, direction }),
+        transferProcessed({ message: processed }, { secrethash, direction }),
       ].reduce(raidenReducer, state);
 
       expect(get(newState, ['sent', secrethash, 'transferProcessed', 1])).toBe(processed);
@@ -1014,11 +1017,11 @@ describe('raidenReducer', () => {
           expiration: transfer.lock.expiration,
           signature: makeSignature(),
         },
-        action = transferSecretRequest({ message: secretRequest }, { secrethash }),
-        newState = [transferSigned({ message: transfer, fee }, { secrethash }), action].reduce(
-          raidenReducer,
-          state,
-        );
+        action = transferSecretRequest({ message: secretRequest }, { secrethash, direction }),
+        newState = [
+          transferSigned({ message: transfer, fee }, { secrethash, direction }),
+          action,
+        ].reduce(raidenReducer, state);
 
       expect(newState.sent[secrethash]?.secretRequest?.[1]).toBe(secretRequest);
     });
@@ -1030,18 +1033,17 @@ describe('raidenReducer', () => {
           secret,
           signature: makeSignature(),
         },
-        action = transferSecretReveal({ message: secretReveal }, { secrethash }),
-        newState = [transferSigned({ message: transfer, fee }, { secrethash }), action].reduce(
-          raidenReducer,
-          state,
-        );
+        action = transferSecretReveal({ message: secretReveal }, { secrethash, direction }),
+        newState = [
+          transferSigned({ message: transfer, fee }, { secrethash, direction }),
+          action,
+        ].reduce(raidenReducer, state);
 
       expect(get(newState, ['sent', secrethash, 'secretReveal', 1])).toBe(secretReveal);
 
-      const newState2 = [transferSecretReveal({ message: secretReveal }, { secrethash })].reduce(
-        raidenReducer,
-        newState,
-      );
+      const newState2 = [
+        transferSecretReveal({ message: secretReveal }, { secrethash, direction }),
+      ].reduce(raidenReducer, newState);
 
       expect(newState2).toBe(newState);
     });
@@ -1061,7 +1063,7 @@ describe('raidenReducer', () => {
           secret,
           signature: makeSignature(),
         },
-        newState = [transferUnlock.success({ message: unlock }, { secrethash })].reduce(
+        newState = [transferUnlock.success({ message: unlock }, { secrethash, direction })].reduce(
           raidenReducer,
           state,
         );
@@ -1069,15 +1071,15 @@ describe('raidenReducer', () => {
       expect(get(newState, ['sent', secrethash])).toBeUndefined();
 
       newState = [
-        transferSigned({ message: transfer, fee }, { secrethash }),
-        transferUnlock.success({ message: unlock }, { secrethash }),
+        transferSigned({ message: transfer, fee }, { secrethash, direction }),
+        transferUnlock.success({ message: unlock }, { secrethash, direction }),
       ].reduce(raidenReducer, newState);
 
       // invalid lock because locked_amount isn't right
       expect(get(newState, ['sent', secrethash, 'unlock'])).toBeUndefined();
 
       unlock = { ...unlock, locked_amount: Zero as UInt<32> };
-      newState = [transferUnlock.success({ message: unlock }, { secrethash })].reduce(
+      newState = [transferUnlock.success({ message: unlock }, { secrethash, direction })].reduce(
         raidenReducer,
         newState,
       );
@@ -1089,10 +1091,9 @@ describe('raidenReducer', () => {
         message_identifier: unlock.message_identifier,
         signature: makeSignature(),
       };
-      newState = [transferUnlockProcessed({ message: processed }, { secrethash })].reduce(
-        raidenReducer,
-        newState,
-      );
+      newState = [
+        transferUnlockProcessed({ message: processed }, { secrethash, direction }),
+      ].reduce(raidenReducer, newState);
 
       expect(get(newState, ['sent', secrethash, 'unlockProcessed', 1])).toBe(processed);
     });
@@ -1112,26 +1113,24 @@ describe('raidenReducer', () => {
           recipient: partner,
           signature: makeSignature(),
         },
-        newState = [transferExpire.success({ message: lockExpired }, { secrethash })].reduce(
-          raidenReducer,
-          state,
-        );
+        newState = [
+          transferExpire.success({ message: lockExpired }, { secrethash, direction }),
+        ].reduce(raidenReducer, state);
 
       expect(get(newState, ['sent', secrethash])).toBeUndefined();
 
       newState = [
-        transferSigned({ message: transfer, fee }, { secrethash }),
-        transferExpire.success({ message: lockExpired }, { secrethash }),
+        transferSigned({ message: transfer, fee }, { secrethash, direction }),
+        transferExpire.success({ message: lockExpired }, { secrethash, direction }),
       ].reduce(raidenReducer, newState);
 
       // invalid lock because locked_amount isn't right
       expect(get(newState, ['sent', secrethash, 'lockExpired'])).toBeUndefined();
 
       lockExpired = { ...lockExpired, locked_amount: Zero as UInt<32> };
-      newState = [transferExpire.success({ message: lockExpired }, { secrethash })].reduce(
-        raidenReducer,
-        newState,
-      );
+      newState = [
+        transferExpire.success({ message: lockExpired }, { secrethash, direction }),
+      ].reduce(raidenReducer, newState);
 
       expect(get(newState, ['sent', secrethash, 'lockExpired', 1])).toBe(lockExpired);
 
@@ -1140,10 +1139,9 @@ describe('raidenReducer', () => {
         message_identifier: lockExpired.message_identifier,
         signature: makeSignature(),
       };
-      newState = [transferExpireProcessed({ message: processed }, { secrethash })].reduce(
-        raidenReducer,
-        newState,
-      );
+      newState = [
+        transferExpireProcessed({ message: processed }, { secrethash, direction }),
+      ].reduce(raidenReducer, newState);
 
       expect(get(newState, ['sent', secrethash, 'lockExpiredProcessed', 1])).toBe(processed);
     });
@@ -1168,7 +1166,7 @@ describe('raidenReducer', () => {
         metadata: { routes: [{ route: [partner] }] },
         signature: makeSignature(),
       };
-      let newState = [transferRefunded({ message: refund }, { secrethash })].reduce(
+      let newState = [transferRefunded({ message: refund }, { secrethash, direction })].reduce(
         raidenReducer,
         state,
       );
@@ -1176,18 +1174,17 @@ describe('raidenReducer', () => {
       expect(get(newState, ['sent', secrethash])).toBeUndefined();
 
       newState = [
-        transferSigned({ message: transfer, fee }, { secrethash }),
-        transferRefunded({ message: refund }, { secrethash }),
+        transferSigned({ message: transfer, fee }, { secrethash, direction }),
+        transferRefunded({ message: refund }, { secrethash, direction }),
       ].reduce(raidenReducer, newState);
 
       expect(get(newState, ['sent', secrethash, 'refund', 1])).toBe(refund);
     });
 
     test('transfer channel closed', () => {
-      let newState = [transferSigned({ message: transfer, fee }, { secrethash })].reduce(
-        raidenReducer,
-        state,
-      );
+      let newState = [
+        transferSigned({ message: transfer, fee }, { secrethash, direction }),
+      ].reduce(raidenReducer, state);
 
       expect(newState.sent[secrethash].transfer[1]).toBe(transfer);
       expect(newState.sent[secrethash].secret).toBeUndefined();
@@ -1210,8 +1207,8 @@ describe('raidenReducer', () => {
 
     test('transfer cleared', () => {
       let newState = [
-        transferSigned({ message: transfer, fee }, { secrethash }),
-        transferSecret({ secret }, { secrethash }),
+        transferSigned({ message: transfer, fee }, { secrethash, direction }),
+        transferSecret({ secret }, { secrethash, direction }),
       ].reduce(raidenReducer, state);
 
       expect(newState.sent[secrethash].transfer[1]).toBe(transfer);
@@ -1220,7 +1217,10 @@ describe('raidenReducer', () => {
         { value: secret, registerBlock: 0 },
       ]);
 
-      newState = [transferClear(undefined, { secrethash })].reduce(raidenReducer, newState);
+      newState = [transferClear(undefined, { secrethash, direction })].reduce(
+        raidenReducer,
+        newState,
+      );
 
       expect(newState.sent[secrethash]).toBeUndefined();
     });
@@ -1277,8 +1277,8 @@ describe('raidenReducer', () => {
           },
           // now, a state with a preent own.balanceProof due to a completed transfer
           newState = [
-            transferSigned({ message: transfer, fee }, { secrethash }),
-            transferUnlock.success({ message: unlock }, { secrethash }),
+            transferSigned({ message: transfer, fee }, { secrethash, direction }),
+            transferUnlock.success({ message: unlock }, { secrethash, direction }),
           ].reduce(raidenReducer, state),
           prevNonce = newState.channels[tokenNetwork][partner].own.balanceProof!.nonce;
 

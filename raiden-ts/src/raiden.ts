@@ -27,9 +27,9 @@ import versions from './versions.json';
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
-import { RaidenConfig, makeDefaultConfig, PartialRaidenConfig } from './config';
+import { RaidenConfig, PartialRaidenConfig } from './config';
 import { RaidenChannels, ChannelState } from './channels/state';
-import { RaidenTransfer } from './transfers/state';
+import { RaidenTransfer, Direction } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import {
@@ -138,9 +138,8 @@ export class Raiden {
     RaidenEpicDeps
   > | null;
 
-  private readonly defaultConfig: RaidenConfig;
-  // for a given partial config, "memoize-one" full config (merge of default & partial configs)
-  private lastConfig?: [PartialRaidenConfig, RaidenConfig];
+  /** Instance's Logger, compatible with console's API */
+  private readonly log: logging.Logger;
 
   public constructor(
     provider: JsonRpcProvider,
@@ -148,11 +147,12 @@ export class Raiden {
     signer: Signer,
     contractsInfo: ContractsInfo,
     state: RaidenState,
+    defaultConfig: RaidenConfig,
     main?: { address: Address; signer: Signer },
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
-    const log = logging.getLogger(`raiden:${address}`);
+    this.log = logging.getLogger(`raiden:${address}`);
 
     // use next from latest known blockNumber as start block when polling
     provider.resetEventsBlock(state.blockNumber + 1);
@@ -166,7 +166,6 @@ export class Raiden {
     this.channels$ = this.state$.pipe(map(state => mapTokenToPartner(state)));
     this.transfers$ = initTransfers$(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
-    this.defaultConfig = makeDefaultConfig({ network });
 
     this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
       assert(Address.is(token), 'Invalid address');
@@ -190,7 +189,8 @@ export class Raiden {
       network,
       signer,
       address,
-      log,
+      log: this.log,
+      defaultConfig,
       contractsInfo,
       registryContract: TokenNetworkRegistryFactory.connect(
         contractsInfo.TokenNetworkRegistry.address,
@@ -223,7 +223,7 @@ export class Raiden {
 
     const loggerMiddleware = createLogger({
       predicate: () => this.log.getLevel() <= logging.levels.INFO,
-      logger: log,
+      logger: this.log,
       level: {
         prevState: 'debug',
         action: 'info',
@@ -314,12 +314,12 @@ export class Raiden {
     const { signer, address, main } = await getSigner(account, provider, subkey);
 
     // Build initial state or parse from storage
-    const { state, onState, onStateComplete } = await getState(
+    const { state, onState, onStateComplete, defaultConfig } = await getState(
       network,
       contracts,
       address,
       storageOrState,
-      config,
+      config && decode(PartialRaidenConfig, config),
     );
 
     assert(
@@ -332,7 +332,7 @@ export class Raiden {
       `Mismatch between network or registry address and loaded state`,
     );
 
-    const raiden = new Raiden(provider, network, signer, contracts, state, main);
+    const raiden = new Raiden(provider, network, signer, contracts, state, defaultConfig, main);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
@@ -344,6 +344,8 @@ export class Raiden {
    */
   public start(): void {
     assert(this.epicMiddleware, 'Already started or stopped!');
+    // on complete, sets epicMiddleware to null, so this.started === false
+    this.deps.latest$.subscribe(undefined, undefined, () => (this.epicMiddleware = null));
     this.epicMiddleware.run(raidenRootEpic);
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
@@ -367,7 +369,7 @@ export class Raiden {
    */
   public stop(): void {
     // start still can't be called again, but turns this.started to false
-    this.epicMiddleware = null;
+    // this.epicMiddleware is set to null by latest$'s complete callback
     this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
   }
 
@@ -387,15 +389,6 @@ export class Raiden {
    */
   public get address(): Address {
     return this.deps.address;
-  }
-
-  /**
-   * Instance's Logger, compatible with console's API
-   *
-   * @returns Logger instance
-   */
-  private get log(): logging.Logger {
-    return this.deps.log;
   }
 
   /**
@@ -431,11 +424,9 @@ export class Raiden {
    * @returns Current Raiden config
    */
   public get config(): RaidenConfig {
-    // "memoize one" last merge of default and partial configs
-    const currentPartial = this.state.config;
-    if (this.lastConfig?.['0'] !== currentPartial)
-      this.lastConfig = [currentPartial, { ...this.defaultConfig, ...currentPartial }];
-    return this.lastConfig['1'];
+    let config!: RaidenConfig;
+    this.deps.config$.pipe(first()).subscribe(c => (config = c));
+    return config;
   }
 
   /**
@@ -462,7 +453,7 @@ export class Raiden {
    * @param config - Partial object containing keys and values to update in config
    */
   public updateConfig(config: PartialRaidenConfig) {
-    this.store.dispatch(raidenConfigUpdate(config));
+    this.store.dispatch(raidenConfigUpdate(decode(PartialRaidenConfig, config)));
   }
 
   /**
@@ -817,7 +808,7 @@ export class Raiden {
                     paymentId,
                     secret,
                   },
-                  { secrethash },
+                  { secrethash, direction: Direction.SENT },
                 ),
               );
               return EMPTY;
@@ -849,7 +840,7 @@ export class Raiden {
     }
 
     // throws/rejects if a failure occurs
-    await asyncActionToPromise(transfer, { secrethash }, this.action$);
+    await asyncActionToPromise(transfer, { secrethash, direction: Direction.SENT }, this.action$);
     state = this.state;
     return state.sent[secrethash].secretRequest?.[1]?.amount;
   }
