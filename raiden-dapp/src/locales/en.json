@@ -33,7 +33,9 @@
     "currency": "ETH:",
     "menu-items": {
       "backup-state-title": "Backup state",
-      "backup-state-subtitle": "Download & upload your state"
+      "backup-state-subtitle": "Download & upload your state",
+      "report-bugs-title": "Report bugs",
+      "report-bugs-subtitle": "Download logs"
     }
   },
   "backup-state": {
@@ -179,9 +181,6 @@
     "unsupported-network": "The current network is unsupported. Please choose a different network.",
     "sdk-initialization-failure": "SDK initialization failed. Please check the console for more information.",
     "generic-error": "A valid account could not be detected. Please make sure that your provider is unlocked and accessible."
-  },
-  "splash-screen": {
-    "download-logs": "Download stored Raiden logs"
   },
   "tokens": {
     "connected": {
