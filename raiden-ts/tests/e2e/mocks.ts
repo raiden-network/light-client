@@ -16,7 +16,7 @@ export interface RequestOpts {
 export type RequestCallback = (err?: Error, response?: any, body?: any) => void;
 
 export const MockStorage: jest.Mock<jest.Mocked<Storage>, [{ [key: string]: string }?]> = jest.fn(
-  function(init?: { [key: string]: string }) {
+  function (init?: { [key: string]: string }) {
     const storage: NonNullable<typeof init> = init || {};
     return {
       storage,

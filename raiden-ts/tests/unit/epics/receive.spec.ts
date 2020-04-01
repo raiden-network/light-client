@@ -134,7 +134,7 @@ describe('receive transfers', () => {
         },
         { tokenNetwork, partner },
       ),
-    ].forEach(a => action$.next(a));
+    ].forEach((a) => action$.next(a));
 
     const { state, config } = await depsMock.latest$.pipe(first()).toPromise();
 
@@ -183,7 +183,7 @@ describe('receive transfers', () => {
           depsMock,
         )
           .pipe(
-            tap(a => action$.next(a)),
+            tap((a) => action$.next(a)),
             toArray(),
           )
           .toPromise(),
@@ -283,7 +283,7 @@ describe('receive transfers', () => {
         of(messageReceived({ text: '', message: transf, ts: Date.now() }, { address: partner })),
         state$,
         depsMock,
-      ).subscribe(a => action$.next(a));
+      ).subscribe((a) => action$.next(a));
     });
 
     test('receive Unlock', async () => {
@@ -348,7 +348,7 @@ describe('receive transfers', () => {
           depsMock,
         )
           .pipe(
-            tap(a => action$.next(a)),
+            tap((a) => action$.next(a)),
             toArray(),
           )
           .toPromise(),
@@ -473,7 +473,7 @@ describe('receive transfers', () => {
           depsMock,
         )
           .pipe(
-            tap(a => action$.next(a)),
+            tap((a) => action$.next(a)),
             toArray(),
           )
           .toPromise(),
@@ -575,7 +575,7 @@ describe('receive transfers', () => {
           of(messageReceived({ text: '', message, ts: Date.now() }, { address: partner })),
           depsMock.latest$.pipe(pluck('state')),
         )
-          .pipe(tap(a => action$.next(a)))
+          .pipe(tap((a) => action$.next(a)))
           .toPromise(),
       ).resolves.toEqual(transferSecret({ secret }, { secrethash, direction }));
 
@@ -600,7 +600,7 @@ describe('receive transfers', () => {
           state$,
           depsMock,
         )
-          .pipe(tap(a => action$.next(a)))
+          .pipe(tap((a) => action$.next(a)))
           .toPromise(),
       ).resolves.toBeUndefined();
 
@@ -611,7 +611,7 @@ describe('receive transfers', () => {
           state$,
           depsMock,
         )
-          .pipe(tap(a => action$.next(a)))
+          .pipe(tap((a) => action$.next(a)))
           .toPromise(),
       ).resolves.toEqual(
         transferSecretReveal(
@@ -647,7 +647,7 @@ describe('receive transfers', () => {
         EMPTY,
         depsMock.latest$.pipe(pluck('state')),
         depsMock,
-      ).subscribe(a => secrets.push(a));
+      ).subscribe((a) => secrets.push(a));
 
       // ignore unknown secrethash
       depsMock.provider.emit(
@@ -699,7 +699,7 @@ describe('receive transfers', () => {
 
       // first, get the secret known to the node
       action$.next(transferSecret({ secret }, { secrethash, direction }));
-      action$.subscribe(a => {
+      action$.subscribe((a) => {
         // when secret registration requested, register it
         if (transferSecretRegister.request.is(a)) {
           output = a;
@@ -725,9 +725,9 @@ describe('receive transfers', () => {
         action$,
         depsMock.latest$.pipe(pluck('state')),
         depsMock,
-      ).subscribe(a => action$.next(a));
+      ).subscribe((a) => action$.next(a));
 
-      [newBlock({ blockNumber: 124 }), newBlock({ blockNumber: 125 })].forEach(a =>
+      [newBlock({ blockNumber: 124 }), newBlock({ blockNumber: 125 })].forEach((a) =>
         action$.next(a),
       );
 
@@ -762,7 +762,7 @@ describe('receive transfers', () => {
       };
 
       let msgCnt = 0;
-      action$.subscribe(a => {
+      action$.subscribe((a) => {
         if (messageSend.request.is(a)) {
           // succeeds messageSend request immediatelly
           action$.next(messageSend.success(undefined, a.meta));
@@ -782,7 +782,7 @@ describe('receive transfers', () => {
 
       const promise = transferRetryMessageEpic(action$, state$, depsMock)
         .pipe(
-          tap(a => action$.next(a)),
+          tap((a) => action$.next(a)),
           toArray(),
         )
         .toPromise();
@@ -812,9 +812,7 @@ describe('receive transfers', () => {
         .pipe(pluck('received', secrethash, 'transfer', '1'), first())
         .toPromise();
       await expect(
-        initQueuePendingReceivedEpic(EMPTY, state$, depsMock)
-          .pipe(toArray())
-          .toPromise(),
+        initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
         transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
         matrixPresence.request(undefined, { address: partner }),
@@ -827,9 +825,7 @@ describe('receive transfers', () => {
       // with receiving disabled, ensure transferSigned but no secret requested
       action$.next(raidenConfigUpdate({ caps: { [Capabilities.NO_RECEIVE]: true } }));
       await expect(
-        initQueuePendingReceivedEpic(EMPTY, state$, depsMock)
-          .pipe(toArray())
-          .toPromise(),
+        initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
         transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
       ]);
@@ -837,9 +833,7 @@ describe('receive transfers', () => {
       // secret known, no reveal signed, emits transferSecret to prompt reveal signing again
       action$.next(transferSecret({ secret }, { secrethash, direction }));
       await expect(
-        initQueuePendingReceivedEpic(EMPTY, state$, depsMock)
-          .pipe(toArray())
-          .toPromise(),
+        initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
         transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
         transferSecret({ secret }, { secrethash, direction }),
@@ -854,9 +848,7 @@ describe('receive transfers', () => {
       };
       action$.next(transferSecretReveal({ message: reveal }, { secrethash, direction }));
       await expect(
-        initQueuePendingReceivedEpic(EMPTY, state$, depsMock)
-          .pipe(toArray())
-          .toPromise(),
+        initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
         transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
         transferSecretReveal({ message: reveal }, { secrethash, direction }),

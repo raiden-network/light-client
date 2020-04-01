@@ -165,7 +165,7 @@ export function isActionOf<AC extends ActionCreator<any, any, any, any>>(
 ) {
   const arr = Array.isArray(ac) ? ac : [ac];
   function _isActionOf(action: unknown): action is ReturnType<AC> {
-    return action != null && arr.some(a => a.is(action));
+    return action != null && arr.some((a) => a.is(action));
   }
   if (args.length > 0) return _isActionOf(args[0]);
   return _isActionOf;
@@ -525,7 +525,7 @@ export async function asyncActionToPromise<
           ? isConfirmationResponseOf<AAC>(asyncAction, meta)
           : isResponseOf<AAC>(asyncAction, meta),
       ),
-      map(action => {
+      map((action) => {
         if (asyncAction.failure.is(action))
           throw action.payload as ActionType<AAC['failure']>['payload'];
         else if (action.payload.confirmed === false)
@@ -631,9 +631,9 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
       AD extends AnyAC = AC
     >(ac: AC | AC[], handler: H) {
       const arr = Array.isArray(ac) ? ac : [ac];
-      assert(!arr.some(a => a.type in handlers), 'Already handled');
+      assert(!arr.some((a) => a.type in handlers), 'Already handled');
       return makeReducer<ACs | AC, Iterate<X>>(
-        Object.assign({}, handlers, ...arr.map(ac => ({ [ac.type]: [ac, handler] }))),
+        Object.assign({}, handlers, ...arr.map((ac) => ({ [ac.type]: [ac, handler] }))),
       );
     }
     // grow reducer function with our `handle` extender

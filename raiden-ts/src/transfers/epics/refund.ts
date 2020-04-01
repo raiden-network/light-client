@@ -36,7 +36,7 @@ export const transferRefundedEpic = (
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(RefundTransfer))),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
       const secrethash = message.lock.secrethash;
       if (!(secrethash in state.sent)) return;

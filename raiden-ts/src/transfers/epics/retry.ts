@@ -34,9 +34,9 @@ function repeatUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOper
   // waits for address's user in transport to be online and joined room before actually
   // sending the message. That's why repeatWhen emits/resubscribe only some time after
   // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-  return input$ =>
+  return (input$) =>
     input$.pipe(
-      repeatWhen(completed$ => completed$.pipe(delay(delayMs))),
+      repeatWhen((completed$) => completed$.pipe(delay(delayMs))),
       takeUntil(notifier),
     );
 }
@@ -83,7 +83,7 @@ const signedRetryMessage$ = (
       const notifier = state$.pipe(
         pluckDistinct('sent', secrethash),
         filter(
-          sent =>
+          (sent) =>
             !!(
               sent.transferProcessed ||
               sent.unlockProcessed ||
@@ -130,7 +130,7 @@ const unlockedRetryMessage$ = (
 
       const notifier = state$.pipe(
         pluckDistinct('sent', secrethash),
-        filter(sent => !!(sent.unlockProcessed || sent.channelClosed)),
+        filter((sent) => !!(sent.unlockProcessed || sent.channelClosed)),
       );
       // emit request once immediatelly, then wait until respective success,
       // then repeats until confirmed
@@ -173,7 +173,7 @@ const expiredRetryMessages$ = (
       );
       const notifier = state$.pipe(
         pluckDistinct('sent', secrethash),
-        filter(sent => !!(sent.lockExpiredProcessed || sent.channelClosed)),
+        filter((sent) => !!(sent.lockExpiredProcessed || sent.channelClosed)),
       );
       // emit request once immediatelly, then wait until respective success,
       // then retries until confirmed
@@ -208,7 +208,8 @@ const secretRequestRetryMessage$ = (
         // we could stop as soon as we know received.secret, but we use it to retry SecretReveal
         // signature, if it failed for any reason
         filter(
-          received => !!(received.secretReveal || received.lockExpired || received.channelClosed),
+          (received) =>
+            !!(received.secretReveal || received.lockExpired || received.channelClosed),
         ),
       );
       // emit request once immediatelly, then wait until respective success,
@@ -243,7 +244,7 @@ const secretRevealRetryMessage$ = (
         // stop retrying when we were unlocked, secret registered or channel closed
         // we don't test for lockExpired, as we know the secret and must not accept LockExpired
         filter(
-          received =>
+          (received) =>
             !!(received.unlock || received.secret?.[1]?.registerBlock || received.channelClosed),
         ),
       );
@@ -278,7 +279,7 @@ export const transferRetryMessageEpic = (
         transferSecretReveal,
       ]),
     ),
-    mergeMap(action =>
+    mergeMap((action) =>
       transferSigned.is(action)
         ? signedRetryMessage$(action$, state$, config$, action)
         : transferUnlock.success.is(action)

@@ -163,11 +163,11 @@ export class Raiden {
     this.state$ = latest$.pipe(pluckDistinct('state'));
     // pipe action, skipping cached
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
-    this.channels$ = this.state$.pipe(map(state => mapTokenToPartner(state)));
+    this.channels$ = this.state$.pipe(map((state) => mapTokenToPartner(state)));
     this.transfers$ = initTransfers$(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
 
-    this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
+    this.getTokenInfo = memoize(async function (this: Raiden, token: string) {
       assert(Address.is(token), 'Invalid address');
       const tokenContract = this.deps.getTokenContract(token);
       const [totalSupply, decimals, name, symbol] = await Promise.all([
@@ -234,7 +234,7 @@ export class Raiden {
 
     this.deps.config$
       .pipe(pluckDistinct('logger'))
-      .subscribe(logger => this.log.setLevel(logger || 'silent', false));
+      .subscribe((logger) => this.log.setLevel(logger || 'silent', false));
 
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
@@ -425,7 +425,7 @@ export class Raiden {
    */
   public get config(): RaidenConfig {
     let config!: RaidenConfig;
-    this.deps.config$.pipe(first()).subscribe(c => (config = c));
+    this.deps.config$.pipe(first()).subscribe((c) => (config = c));
     return config;
   }
 
@@ -495,11 +495,11 @@ export class Raiden {
         fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
         toBlock: 'latest',
       })
-      .then(logs =>
+      .then((logs) =>
         logs
-          .map(log => this.deps.registryContract.interface.parseLog(log))
-          .filter(parsed => !!parsed.values?.token_address)
-          .map(parsed => parsed.values.token_address as Address),
+          .map((log) => this.deps.registryContract.interface.parseLog(log))
+          .filter((parsed) => !!parsed.values?.token_address)
+          .map((parsed) => parsed.values.token_address as Address),
       );
   }
 
@@ -567,7 +567,7 @@ export class Raiden {
     await this.state$
       .pipe(
         pluckDistinct('channels', tokenNetwork, partner, 'state'),
-        first(state => state === ChannelState.open),
+        first((state) => state === ChannelState.open),
       )
       .toPromise();
     onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash: openTxHash } });
@@ -772,7 +772,7 @@ export class Raiden {
       // wait for pathFind response
       this.action$.pipe(
         first(isResponseOf(pathFind, pathFindMeta)),
-        map(action => {
+        map((action) => {
           if (pathFind.failure.is(action)) throw action.payload;
           return action.payload.paths;
         }),
@@ -785,13 +785,13 @@ export class Raiden {
       }),
     )
       .pipe(
-        mergeMap(paths =>
+        mergeMap((paths) =>
           merge(
             // wait for transfer response
             this.action$.pipe(
               filter(isActionOf([transferSigned, transfer.failure])),
-              first(action => action.meta.secrethash === secrethash),
-              map(action => {
+              first((action) => action.meta.secrethash === secrethash),
+              map((action) => {
                 if (transfer.failure.is(action)) throw action.payload;
                 return secrethash;
               }),
@@ -925,10 +925,10 @@ export class Raiden {
       ? of<readonly (string | Address)[]>([this.config.pfs])
       : this.deps.latest$.pipe(
           pluckDistinct('pfsList'),
-          first(v => v.length > 0),
+          first((v) => v.length > 0),
         )
     )
-      .pipe(mergeMap(pfsList => pfsListInfo(pfsList, this.deps)))
+      .pipe(mergeMap((pfsList) => pfsListInfo(pfsList, this.deps)))
       .toPromise();
   }
 
@@ -989,7 +989,7 @@ export class Raiden {
     const blockNumber = this.state.blockNumber;
     const owedAmount = Object.values(this.state.path.iou)
       .reduce((acc, value) => {
-        const nonExpiredIOUs = Object.values(value).filter(value =>
+        const nonExpiredIOUs = Object.values(value).filter((value) =>
           value.expiration_block.gte(blockNumber),
         );
         acc.push(...nonExpiredIOUs);

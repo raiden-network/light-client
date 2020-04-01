@@ -80,7 +80,7 @@ import { assertTx } from './utils';
  */
 function retryAsync$<T>(func: () => Promise<T>, interval = 1e3, retries = 10): Observable<T> {
   return defer(func).pipe(
-    retryWhen(err$ =>
+    retryWhen((err$) =>
       err$.pipe(mergeMap((err, i) => (i < retries ? timer(interval) : throwError(err)))),
     ),
   );
@@ -100,8 +100,8 @@ export const initNewBlockEpic = (
   { provider }: RaidenEpicDeps,
 ): Observable<newBlock> =>
   retryAsync$(() => provider.getBlockNumber(), provider.pollingInterval).pipe(
-    mergeMap(blockNumber => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
-    map(blockNumber => newBlock({ blockNumber })),
+    mergeMap((blockNumber) => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
+    map((blockNumber) => newBlock({ blockNumber })),
   );
 
 /**
@@ -121,7 +121,7 @@ export const initTokensRegistryEpic = (
 ): Observable<tokenMonitored> =>
   state$.pipe(
     take(1),
-    mergeMap(state => {
+    mergeMap((state) => {
       const encodedAddress = defaultAbiCoder.encode(['address'], [address]);
       // if tokens are already initialized, use it
       if (!isEmpty(state.tokens))
@@ -141,8 +141,8 @@ export const initTokensRegistryEpic = (
             }),
           provider.pollingInterval,
         ).pipe(
-          mergeMap(logs => from(logs)),
-          map(log => ({ log, parsed: registryContract.interface.parseLog(log) })),
+          mergeMap((logs) => from(logs)),
+          map((log) => ({ log, parsed: registryContract.interface.parseLog(log) })),
           filter(({ parsed }) => !!parsed.values?.token_network_address),
           // for each TokenNetwork found, scan for channels with us
           mergeMap(
@@ -202,7 +202,7 @@ export const initMonitorChannelsEpic = (
 ): Observable<channelMonitor> =>
   state$.pipe(
     first(),
-    mergeMap(function*(state) {
+    mergeMap(function* (state) {
       for (const [tokenNetwork, obj] of Object.entries(state.channels)) {
         for (const [partner, channel] of Object.entries(obj)) {
           if (channel.state === ChannelState.opening) continue;
@@ -236,15 +236,15 @@ export const initMonitorProviderEpic = (
     // if any check fails, emits RaidenShutdownAction, nothing otherwise
     // Poll reason from: https://github.com/MetaMask/faq/blob/master/DEVELOPERS.md
     // first/init-time check
-    map(accounts => accounts.includes(address)),
-    mergeMap(isProviderAccount =>
+    map((accounts) => accounts.includes(address)),
+    mergeMap((isProviderAccount) =>
       interval(provider.pollingInterval).pipe(
         exhaustMap(() =>
           merge(
             // if isProviderAccount, also polls and monitors accounts list
             isProviderAccount
               ? retryAsync$(() => provider.listAccounts(), provider.pollingInterval).pipe(
-                  mergeMap(accounts =>
+                  mergeMap((accounts) =>
                     !accounts.includes(address)
                       ? of(raidenShutdown({ reason: ShutdownReason.ACCOUNT_CHANGED }))
                       : EMPTY,
@@ -253,7 +253,7 @@ export const initMonitorProviderEpic = (
               : EMPTY,
             // unconditionally monitors network changes
             retryAsync$(() => getNetwork(provider), provider.pollingInterval).pipe(
-              mergeMap(curNetwork =>
+              mergeMap((curNetwork) =>
                 curNetwork.chainId !== network.chainId
                   ? of(raidenShutdown({ reason: ShutdownReason.NETWORK_CHANGED }))
                   : EMPTY,
@@ -283,10 +283,10 @@ export const tokenMonitoredEpic = (
 ): Observable<channelOpen.success> =>
   action$.pipe(
     filter(isActionOf(tokenMonitored)),
-    groupBy(action => action.payload.tokenNetwork),
-    mergeMap(grouped$ =>
+    groupBy((action) => action.payload.tokenNetwork),
+    mergeMap((grouped$) =>
       grouped$.pipe(
-        exhaustMap(action => {
+        exhaustMap((action) => {
           const tokenNetworkContract = getTokenNetworkContract(action.payload.tokenNetwork);
 
           // type of elements emitted by getEventsStream (past and new events coming from
@@ -332,8 +332,8 @@ export const tokenMonitoredEpic = (
 export const channelOpenedEpic = (action$: Observable<RaidenAction>): Observable<channelMonitor> =>
   action$.pipe(
     filter(isActionOf(channelOpen.success)),
-    filter(action => !!action.payload.confirmed),
-    map(action =>
+    filter((action) => !!action.payload.confirmed),
+    map((action) =>
       channelMonitor(
         {
           id: action.payload.id,
@@ -369,10 +369,10 @@ export const channelMonitoredEpic = (
 > =>
   action$.pipe(
     filter(isActionOf(channelMonitor)),
-    groupBy(action => `${action.payload.id}#${action.meta.partner}@${action.meta.tokenNetwork}`),
-    mergeMap(grouped$ =>
+    groupBy((action) => `${action.payload.id}#${action.meta.partner}@${action.meta.tokenNetwork}`),
+    mergeMap((grouped$) =>
       grouped$.pipe(
-        exhaustMap(action => {
+        exhaustMap((action) => {
           const { tokenNetwork, partner } = action.meta;
           const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
 
@@ -574,14 +574,14 @@ export const channelOpenEpic = (
         !action.payload.deposit || action.payload.deposit.isZero()
           ? undefined
           : action.payload.deposit;
-      const token = findKey(state.tokens, tn => tn === tokenNetwork)! as Address;
+      const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
       const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
 
       return action$.pipe(
         filter(channelOpen.success.is),
-        filter(a => a.meta.tokenNetwork === tokenNetwork && a.meta.partner === partner),
+        filter((a) => a.meta.tokenNetwork === tokenNetwork && a.meta.partner === partner),
         // opened$ will "cache" matching channelOpen.success, if needed
-        publishReplay(1, undefined, opened$ =>
+        publishReplay(1, undefined, (opened$) =>
           // send openChannel transaction
           defer(() =>
             tokenNetworkContract.functions.openChannel(
@@ -592,10 +592,10 @@ export const channelOpenEpic = (
           ).pipe(
             // Wallet signer depends on fetching the 'pending' tx count to fill 'nonce'
             // therefore we need to send open then approve, instead of doing them parallely
-            mergeMap(openTx =>
+            mergeMap((openTx) =>
               deposit
                 ? from(tokenContract.functions.approve(tokenNetwork, deposit)).pipe(
-                    map(approveTx => [openTx, approveTx] as const),
+                    map((approveTx) => [openTx, approveTx] as const),
                   )
                 : of([openTx] as const),
             ),
@@ -605,9 +605,9 @@ export const channelOpenEpic = (
             tap(([, tx]) => (tx ? log.debug(`sent approve tx "${tx.hash}" to "${token}"`) : 0)),
             mergeMap(([openTx, approveTx]) =>
               combineLatest([
-                from(openTx.wait()).pipe(map(receipt => ({ tx: openTx, receipt }))),
+                from(openTx.wait()).pipe(map((receipt) => ({ tx: openTx, receipt }))),
                 approveTx
-                  ? from(approveTx.wait()).pipe(map(receipt => ({ tx: approveTx, receipt })))
+                  ? from(approveTx.wait()).pipe(map((receipt) => ({ tx: approveTx, receipt })))
                   : of(undefined),
               ]),
             ),
@@ -644,11 +644,11 @@ export const channelOpenEpic = (
                 assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log }),
                 // ignore success so it's picked by channelMonitoredEpic
                 ignoreElements(),
-                catchError(error => of(channelDeposit.failure(error, action.meta))),
+                catchError((error) => of(channelDeposit.failure(error, action.meta))),
               );
             }),
             // ignore success so it's picked by tokenMonitoredEpic
-            catchError(error => of(channelOpen.failure(error, action.meta))),
+            catchError((error) => of(channelOpen.failure(error, action.meta))),
           ),
         ),
       );
@@ -686,7 +686,7 @@ export const channelDepositEpic = (
     withLatestFrom(state$, config$),
     mergeMap(([action, state, { subkey: configSubkey }]) => {
       const { tokenNetwork, partner } = action.meta;
-      const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
+      const token = findKey(state.tokens, (tn) => tn === tokenNetwork) as Address | undefined;
       if (!token) {
         const error = new RaidenError(ErrorCodes.CNL_TOKEN_NOT_FOUND, action.meta);
         return of(channelDeposit.failure(error, action.meta));
@@ -725,7 +725,7 @@ export const channelDepositEpic = (
         // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
         // will then emit the channelDeposit.failure action instead
         ignoreElements(),
-        catchError(error => of(channelDeposit.failure(error, action.meta))),
+        catchError((error) => of(channelDeposit.failure(error, action.meta))),
       );
     }),
   );
@@ -798,7 +798,7 @@ export const channelCloseEpic = (
 
       // sign counter balance proof, then send closeChannel transaction with our signature
       return from(signer.signMessage(closingMessage) as Promise<Signature>).pipe(
-        mergeMap(closingSignature =>
+        mergeMap((closingSignature) =>
           tokenNetworkContract.functions.closeChannel(
             channel.id,
             partner,
@@ -816,7 +816,7 @@ export const channelCloseEpic = (
         // if any error happened on tx call/pipeline, catchError will then emit the
         // channelClose.failure action instead
         ignoreElements(),
-        catchError(error => of(channelClose.failure(error, action.meta))),
+        catchError((error) => of(channelClose.failure(error, action.meta))),
       );
     }),
   );
@@ -838,10 +838,10 @@ export const channelUpdateEpic = (
 ): Observable<channelSettle.failure> =>
   action$.pipe(
     filter(isActionOf(channelClose.success)),
-    filter(action => !!action.payload.confirmed),
+    filter((action) => !!action.payload.confirmed),
     // wait 2 newBlock actions go through after channelClose confirmation, to ensure any pending
     // channelSettle could have been processed
-    mergeMap(action => action$.pipe(filter(newBlock.is), skip(1), take(1), mapTo(action))),
+    mergeMap((action) => action$.pipe(filter(newBlock.is), skip(1), take(1), mapTo(action))),
     withLatestFrom(state$, config$),
     filter(([action, state]) => {
       const channel = state.channels[action.meta.tokenNetwork]?.[action.meta.partner];
@@ -887,7 +887,7 @@ export const channelUpdateEpic = (
 
       // send updateNonClosingBalanceProof transaction
       return from(signer.signMessage(nonClosingMessage) as Promise<Signature>).pipe(
-        mergeMap(nonClosingSignature =>
+        mergeMap((nonClosingSignature) =>
           tokenNetworkContract.functions.updateNonClosingBalanceProof(
             channel.id,
             partner,
@@ -904,7 +904,7 @@ export const channelUpdateEpic = (
         }),
         // if succeeded, return a empty/completed observable
         ignoreElements(),
-        catchError(error => {
+        catchError((error) => {
           log.error('Error updating non-closing balance-proof, ignoring', error);
           return EMPTY;
         }),
@@ -986,7 +986,7 @@ export const channelSettleEpic = (
         // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
         // will then emit the channelSettle.failure action instead
         ignoreElements(),
-        catchError(error => of(channelSettle.failure(error, action.meta))),
+        catchError((error) => of(channelSettle.failure(error, action.meta))),
       );
     }),
   );
@@ -1005,7 +1005,7 @@ export const channelSettleableEpic = (
   action$.pipe(
     filter(isActionOf(newBlock)),
     withLatestFrom(state$),
-    mergeMap(function*([
+    mergeMap(function* ([
       {
         payload: { blockNumber },
       },
@@ -1047,7 +1047,7 @@ export const channelUnlockEpic = (
 ): Observable<channelSettle.failure> =>
   action$.pipe(
     filter(isActionOf(channelSettle.success)),
-    filter(action => !!(action.payload.confirmed && action.payload.locks?.length)),
+    filter((action) => !!(action.payload.confirmed && action.payload.locks?.length)),
     withLatestFrom(state$, config$),
     filter(([action, state]) => {
       const channel = state.channels[action.meta.tokenNetwork]?.[action.meta.partner];
@@ -1077,7 +1077,7 @@ export const channelUnlockEpic = (
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log }),
         ignoreElements(),
-        catchError(error => {
+        catchError((error) => {
           log.error('Error unlocking pending locks on-chain, ignoring', error);
           return EMPTY;
         }),
@@ -1095,7 +1095,7 @@ function checkPendingAction(
     () => provider.getTransactionReceipt(action.payload.txHash),
     provider.pollingInterval,
   ).pipe(
-    map(receipt => {
+    map((receipt) => {
       if (receipt?.confirmations !== undefined && receipt.confirmations >= confirmationBlocks) {
         return {
           ...action,
@@ -1140,8 +1140,8 @@ export const confirmationEpic = (
       concat$(
         ...pendingTxs
           // only txs/confirmable actions which are more than confirmationBlocks in the past
-          .filter(a => a.payload.txBlock + confirmationBlocks <= blockNumber)
-          .map(action => checkPendingAction(action, provider, blockNumber, confirmationBlocks)),
+          .filter((a) => a.payload.txBlock + confirmationBlocks <= blockNumber)
+          .map((action) => checkPendingAction(action, provider, blockNumber, confirmationBlocks)),
       ),
     ),
   );

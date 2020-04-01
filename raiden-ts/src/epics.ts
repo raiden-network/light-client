@@ -90,8 +90,8 @@ export const raidenRootEpic = (
 
   // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
   return from(Object.values(RaidenEpics)).pipe(
-    mergeMap(epic => epic(limitedAction$, limitedState$, deps)),
-    catchError(err => of(raidenShutdown({ reason: err }))),
+    mergeMap((epic) => epic(limitedAction$, limitedState$, deps)),
+    catchError((err) => of(raidenShutdown({ reason: err }))),
     takeUntil(shutdownNotification),
   );
 };

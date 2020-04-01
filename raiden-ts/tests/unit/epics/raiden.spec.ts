@@ -88,7 +88,7 @@ describe('raiden epic', () => {
   describe('raiden initialization & shutdown', () => {
     test(
       'init newBlock, tokenMonitored, channelMonitor events',
-      marbles(m => {
+      marbles((m) => {
         const newState = [
           tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
           channelOpen.success(
@@ -211,9 +211,7 @@ describe('raiden epic', () => {
       ]);
 
       await expect(
-        initTokensRegistryEpic(EMPTY, of(state), depsMock)
-          .pipe(toArray())
-          .toPromise(),
+        initTokensRegistryEpic(EMPTY, of(state), depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([tokenMonitored({ token, tokenNetwork, fromBlock: 121 })]);
 
       expect(depsMock.provider.getLogs).toHaveBeenCalledTimes(2);
@@ -250,9 +248,7 @@ describe('raiden epic', () => {
       depsMock.provider.listAccounts.mockResolvedValueOnce([depsMock.address]);
 
       await expect(
-        initMonitorProviderEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
+        initMonitorProviderEpic(action$, state$, depsMock).pipe(first()).toPromise(),
       ).resolves.toEqual(raidenShutdown({ reason: ShutdownReason.ACCOUNT_CHANGED }));
     });
 
@@ -263,9 +259,7 @@ describe('raiden epic', () => {
       depsMock.provider.getNetwork.mockResolvedValueOnce({ chainId: 899, name: 'unknown' });
 
       await expect(
-        initMonitorProviderEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
+        initMonitorProviderEpic(action$, state$, depsMock).pipe(first()).toPromise(),
       ).resolves.toEqual(raidenShutdown({ reason: ShutdownReason.NETWORK_CHANGED }));
     });
 
@@ -315,9 +309,7 @@ describe('raiden epic', () => {
         }),
       ]);
 
-      const promise = tokenMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = tokenMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       await expect(promise).resolves.toEqual(
         channelOpen.success(
@@ -348,9 +340,7 @@ describe('raiden epic', () => {
       const action$ = of<RaidenAction>(action),
         state$ = of<RaidenState>(curState);
 
-      const promise = tokenMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = tokenMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       depsMock.provider.emit(
         tokenNetworkContract.filters.ChannelOpened(null, null, null, null),
@@ -441,7 +431,7 @@ describe('raiden epic', () => {
       expect.assertions(7);
       let output: ConfirmableAction | undefined = undefined;
 
-      const sub = confirmationEpic(action$, state$, depsMock).subscribe(o => {
+      const sub = confirmationEpic(action$, state$, depsMock).subscribe((o) => {
         action$.next(o);
         output = o;
       });
@@ -481,7 +471,7 @@ describe('raiden epic', () => {
       expect(output).toBeUndefined();
 
       // give some time to exhaustMap to be free'd
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // now, confirmed, but reorged to block=123
       depsMock.provider.getTransactionReceipt.mockResolvedValueOnce({
@@ -490,7 +480,7 @@ describe('raiden epic', () => {
       } as any);
       action$.next(newBlock({ blockNumber: 129 }));
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(depsMock.provider.getTransactionReceipt).toHaveBeenCalledTimes(2);
       expect(output).toMatchObject({
@@ -512,7 +502,7 @@ describe('raiden epic', () => {
       expect.assertions(4);
       let output: ConfirmableAction | undefined = undefined;
 
-      const sub = confirmationEpic(action$, state$, depsMock).subscribe(o => {
+      const sub = confirmationEpic(action$, state$, depsMock).subscribe((o) => {
         action$.next(o);
         output = o;
       });
@@ -538,13 +528,13 @@ describe('raiden epic', () => {
       // can't get receipt, confirmationBlocks < n < 2*confirmationBlocks passed
       depsMock.provider.getTransactionReceipt.mockResolvedValueOnce(null as any);
       action$.next(newBlock({ blockNumber: 129 }));
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(output).toBeUndefined();
 
       // still can't get receipt, n > 2*confirmationBlocks passed
       depsMock.provider.getTransactionReceipt.mockResolvedValueOnce(null as any);
       action$.next(newBlock({ blockNumber: 133 }));
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(depsMock.provider.getTransactionReceipt).toHaveBeenCalledTimes(2);
       expect(output).toMatchObject({

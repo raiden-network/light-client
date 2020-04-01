@@ -58,7 +58,7 @@ export const transferSecretRequestedEpic = (
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(SecretRequest))),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
       // proceed only if we know the secret and the SENT transfer
       if (!(message.secrethash in state.sent)) return;
@@ -140,7 +140,7 @@ const secretReveal$ = (
   }
 
   return reveal$.pipe(
-    mergeMap(function*(message) {
+    mergeMap(function* (message) {
       yield transferSecretReveal({ message }, action.meta);
       yield messageSend.request(
         { message },
@@ -173,11 +173,11 @@ export const transferSecretRevealEpic = (
 ): Observable<transfer.failure | transferSecretReveal | messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferSecretRequest)),
-    filter(action => action.meta.direction === Direction.SENT),
-    concatMap(action =>
+    filter((action) => action.meta.direction === Direction.SENT),
+    concatMap((action) =>
       latest$.pipe(pluckDistinct('state')).pipe(
         first(),
-        mergeMap(state => secretReveal$(state, action, { log, signer })),
+        mergeMap((state) => secretReveal$(state, action, { log, signer })),
       ),
     ),
   );
@@ -199,7 +199,7 @@ export const transferSecretRevealedEpic = (
     // we don't require Signed SecretReveal, nor even check sender for persisting the secret
     filter(isMessageReceivedOfType(SecretReveal)),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
       const secrethash = getSecrethash(message.secret);
 
@@ -249,8 +249,8 @@ export const transferRequestUnlockEpic = (
 ): Observable<transferSecretReveal> =>
   action$.pipe(
     filter(isActionOf([transferSecret, transferSecretRegister.success])),
-    filter(action => action.meta.direction === Direction.RECEIVED),
-    concatMap(action =>
+    filter((action) => action.meta.direction === Direction.RECEIVED),
+    concatMap((action) =>
       latest$.pipe(
         pluckDistinct('state'),
         first(),
@@ -264,8 +264,8 @@ export const transferRequestUnlockEpic = (
           };
           return signMessage(signer, message, { log });
         }),
-        map(message => transferSecretReveal({ message }, action.meta)),
-        catchError(err => {
+        map((message) => transferSecretReveal({ message }, action.meta)),
+        catchError((err) => {
           log.warn('Error trying to sign SecretReveal - ignoring', err, action.meta);
           return EMPTY;
         }),
@@ -296,7 +296,7 @@ export const monitorSecretRegistryEpic = (
         (secrethash in received &&
           received[secrethash].transfer[1].lock.expiration.gte(blockNumber!)),
     ),
-    mergeMap(function*([[secrethash, secret, event], { sent, received }]) {
+    mergeMap(function* ([[secrethash, secret, event], { sent, received }]) {
       if (
         secrethash in sent &&
         sent[secrethash].transfer[1].lock.expiration.gte(event.blockNumber!)
@@ -339,8 +339,8 @@ export const transferSuccessOnSecretRegisteredEpic = (
 ): Observable<transfer.success> =>
   action$.pipe(
     filter(transferSecretRegister.success.is),
-    filter(action => !!action.payload.confirmed),
-    map(action => transfer.success({}, action.meta)),
+    filter((action) => !!action.payload.confirmed),
+    map((action) => transfer.success({}, action.meta)),
   );
 
 /**
@@ -359,9 +359,9 @@ export const transferAutoRegisterEpic = (
 ): Observable<transferSecretRegister.request> =>
   state$.pipe(
     pluckDistinct(Direction.RECEIVED),
-    mergeMap(received => from(Object.keys(received) as Hash[])),
+    mergeMap((received) => from(Object.keys(received) as Hash[])),
     distinct(),
-    mergeMap(secrethash =>
+    mergeMap((secrethash) =>
       action$.pipe(
         filter(newBlock.is),
         withLatestFrom(latest$.pipe(pluck('state', Direction.RECEIVED, secrethash)), config$),
@@ -386,7 +386,7 @@ export const transferAutoRegisterEpic = (
         takeUntil(
           latest$.pipe(
             pluckDistinct('state'),
-            filter(state => {
+            filter((state) => {
               const blockNumber = state.blockNumber;
               const received = state.received[secrethash];
               const expiration = received.transfer[1].lock.expiration;
@@ -431,7 +431,7 @@ export const transferSecretRegisterEpic = (
         assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log }),
         // transferSecretRegister.success handled by monitorSecretRegistryEpic
         ignoreElements(),
-        catchError(err => of(transferSecretRegister.failure(err, action.meta))),
+        catchError((err) => of(transferSecretRegister.failure(err, action.meta))),
       );
     }),
   );

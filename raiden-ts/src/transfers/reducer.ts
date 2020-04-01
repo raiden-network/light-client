@@ -173,7 +173,7 @@ function transferUnlockSuccessReducer(
   let channel: Channel | undefined = get(channelPath, state);
   if (!channel || !channel[end].locks || !channel[end].balanceProof) return state;
 
-  const locks = channel[end].locks!.filter(l => l.secrethash !== secrethash);
+  const locks = channel[end].locks!.filter((l) => l.secrethash !== secrethash);
   const locksroot = getLocksroot(locks);
   if (
     unlock.locksroot !== locksroot ||
@@ -224,7 +224,7 @@ function transferExpireSuccessReducer(
   let channel: Channel | undefined = get(channelPath, state);
   if (!channel || !channel[end].locks || !channel[end].balanceProof) return state;
 
-  const locks = channel[end].locks!.filter(l => l.secrethash !== secrethash);
+  const locks = channel[end].locks!.filter((l) => l.secrethash !== secrethash);
   const locksroot = getLocksroot(locks);
   if (
     expired.locksroot !== locksroot ||

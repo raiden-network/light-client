@@ -38,7 +38,7 @@ export const transferProcessedReceivedEpic = (
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
       let secrethash: Hash | undefined = undefined;
       for (const [key, sent] of Object.entries(state.sent)) {
@@ -69,7 +69,7 @@ export const transferProcessedSendEpic = (
   action$.pipe(
     filter(isActionOf([transferProcessed, transferUnlockProcessed, transferExpireProcessed])),
     // transfer direction is RECEIVED, not message direction (which is outbound)
-    filter(action => action.meta.direction === Direction.RECEIVED),
+    filter((action) => action.meta.direction === Direction.RECEIVED),
     withLatestFrom(state$),
     map(([action, { received }]) =>
       messageSend.request(
@@ -98,11 +98,11 @@ export const transferUnlockProcessedReceivedEpic = (
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
       const secrethash = findKey(
         state.sent,
-        sent =>
+        (sent) =>
           sent.unlock &&
           sent.unlock[1].message_identifier.eq(message.message_identifier) &&
           sent.partner === action.meta.address,
@@ -135,11 +135,11 @@ export const transferExpireProcessedEpic = (
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
       const secrethash = findKey(
         state.sent,
-        sent =>
+        (sent) =>
           sent.lockExpired &&
           sent.lockExpired[1].message_identifier.eq(message.message_identifier) &&
           sent.partner === action.meta.address,
@@ -174,7 +174,7 @@ export const transferReceivedReplyProcessedEpic = (
   const cache = new LruCache<string, Signed<Processed>>(32);
   return action$.pipe(
     filter(isMessageReceivedOfType([Signed(RefundTransfer), Signed(WithdrawExpired)])),
-    concatMap(action => {
+    concatMap((action) => {
       const message = action.payload.message;
       // defer causes the cache check to be performed at subscription time
       return defer(() => {
@@ -192,8 +192,8 @@ export const transferReceivedReplyProcessedEpic = (
           message_identifier: msgId,
         };
         return from(signMessage(signer, processed, { log })).pipe(
-          tap(signed => cache.put(key, signed)),
-          map(signed =>
+          tap((signed) => cache.put(key, signed)),
+          map((signed) =>
             messageSend.request({ message: signed }, { address: action.meta.address, msgId: key }),
           ),
         );

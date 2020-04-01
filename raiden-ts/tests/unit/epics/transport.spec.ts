@@ -126,9 +126,7 @@ describe('transport epic', () => {
         }),
       );
 
-      const promise = initMatrixEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = initMatrixEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       setTimeout(() => action$.complete(), 10);
 
@@ -180,11 +178,9 @@ describe('transport epic', () => {
           },
         }),
         raidenConfigUpdate({ matrixServer }),
-      ].forEach(a => action$.next(a));
+      ].forEach((a) => action$.next(a));
 
-      const promise = initMatrixEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = initMatrixEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       setTimeout(() => action$.complete(), 10);
 
@@ -206,9 +202,7 @@ describe('transport epic', () => {
       const action$ = EMPTY as Observable<RaidenAction>,
         state$ = of(state);
       await expect(
-        initMatrixEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
+        initMatrixEpic(action$, state$, depsMock).pipe(first()).toPromise(),
       ).resolves.toEqual(
         matrixSetup({
           server: `https://${matrixServer}`,
@@ -490,7 +484,7 @@ describe('transport epic', () => {
       expect.assertions(1);
 
       matrix.getUser.mockImplementationOnce(
-        userId =>
+        (userId) =>
           ({
             userId,
             presence: 'unavailable',
@@ -530,7 +524,7 @@ describe('transport epic', () => {
         state$ = of(state);
 
       matrix.getUser.mockImplementationOnce(
-        userId =>
+        (userId) =>
           ({
             userId,
             presence: 'offline',
@@ -585,7 +579,7 @@ describe('transport epic', () => {
       const promise = matrixCreateRoomEpic(action$, state$, depsMock)
         .pipe(
           // update state with action, to ensure serial handling knows about already created room
-          tap(action => state$.next(raidenReducer(state, action))),
+          tap((action) => state$.next(raidenReducer(state, action))),
           takeUntil(timer(50)),
         )
         .toPromise();
@@ -600,7 +594,7 @@ describe('transport epic', () => {
           { userId: partnerUserId, available: true, ts: 123 },
           { address: partner },
         ),
-      ].forEach(a => action$.next(a));
+      ].forEach((a) => action$.next(a));
 
       action$.complete();
 
@@ -680,9 +674,7 @@ describe('transport epic', () => {
       expect.assertions(3);
       const roomId = partnerRoomId;
 
-      const promise = matrixHandleInvitesEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = matrixHandleInvitesEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       action$.next(
         matrixPresence.success(
@@ -709,9 +701,7 @@ describe('transport epic', () => {
       expect.assertions(3);
       const roomId = partnerRoomId;
 
-      const promise = matrixHandleInvitesEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = matrixHandleInvitesEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       matrix.emit(
         'RoomMember.membership',
@@ -788,7 +778,7 @@ describe('transport epic', () => {
 
     test(
       'leave unknown rooms',
-      fakeSchedulers(advance => {
+      fakeSchedulers((advance) => {
         expect.assertions(3);
 
         action$.next(raidenConfigUpdate({ httpTimeout: 30e3 }));
@@ -815,7 +805,7 @@ describe('transport epic', () => {
 
     test(
       'do not leave discovery room',
-      fakeSchedulers(advance => {
+      fakeSchedulers((advance) => {
         expect.assertions(2);
 
         const roomId = `!discoveryRoomId:${matrixServer}`,
@@ -856,7 +846,7 @@ describe('transport epic', () => {
 
     test(
       'do not leave peers rooms',
-      fakeSchedulers(advance => {
+      fakeSchedulers((advance) => {
         expect.assertions(2);
 
         const roomId = partnerRoomId,
@@ -888,9 +878,7 @@ describe('transport epic', () => {
       const roomId = partnerRoomId,
         state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
 
-      const promise = matrixCleanLeftRoomsEpic(EMPTY, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = matrixCleanLeftRoomsEpic(EMPTY, state$, depsMock).pipe(first()).toPromise();
 
       matrix.emit('Room.myMembership', { roomId }, 'leave');
 
@@ -955,7 +943,7 @@ describe('transport epic', () => {
         roomId,
         name: roomId,
         getMember: jest.fn(
-          userId =>
+          (userId) =>
             ({
               roomId,
               userId,
@@ -986,7 +974,7 @@ describe('transport epic', () => {
           { userId: partnerUserId, available: true, ts: Date.now() },
           { address: partner },
         ),
-      ].forEach(a => action$.next(a));
+      ].forEach((a) => action$.next(a));
       setTimeout(() => action$.complete(), 100);
 
       await expect(promise).resolves.toMatchObject(
@@ -1022,7 +1010,7 @@ describe('transport epic', () => {
           { address: partner },
         ),
         messageSend.request({ message }, { address: partner, msgId: message }),
-      ].forEach(a => action$.next(a));
+      ].forEach((a) => action$.next(a));
       setTimeout(() => action$.complete(), 100);
 
       expect(matrix.sendEvent).not.toHaveBeenCalled();
@@ -1067,7 +1055,7 @@ describe('transport epic', () => {
         roomId,
         name: roomId,
         getMember: jest.fn(
-          userId =>
+          (userId) =>
             ({
               roomId,
               userId,
@@ -1097,7 +1085,7 @@ describe('transport epic', () => {
           { address: partner },
         ),
         messageSend.request({ message }, { address: partner, msgId: message }),
-      ].forEach(a => action$.next(a));
+      ].forEach((a) => action$.next(a));
       setTimeout(() => action$.complete(), 100);
 
       await expect(promise).resolves.toMatchObject(

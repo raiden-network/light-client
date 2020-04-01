@@ -48,7 +48,7 @@ export class TestProvider extends Web3Provider {
   public async mine(count = 1): Promise<number> {
     const blockNumber = await this.getBlockNumber();
     log.debug(`mining ${count} blocks after blockNumber=${blockNumber}`);
-    const promise = new Promise<number>(resolve => {
+    const promise = new Promise<number>((resolve) => {
       const cb = (b: number): void => {
         if (b < blockNumber + count) return;
         this.removeListener('block', cb);
@@ -64,7 +64,7 @@ export class TestProvider extends Web3Provider {
     const blockNumber = await this.getBlockNumber();
     block = Math.max(block, blockNumber + 1);
     log.debug(`mining until block=${block} from ${blockNumber}`);
-    const promise = new Promise<number>(resolve => {
+    const promise = new Promise<number>((resolve) => {
       const cb = (b: number): void => {
         if (b < block) return;
         this.removeListener('block', cb);
@@ -193,7 +193,7 @@ export class TestProvider extends Web3Provider {
 
     const decimals = await tokenContract.functions.decimals();
     const txs = await Promise.all(
-      accounts.map(account =>
+      accounts.map((account) =>
         tokenContract.functions.mintFor(parseUnits('1000', decimals), account),
       ),
     );
