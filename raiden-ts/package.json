@@ -66,7 +66,7 @@
     "jest-junit": "^10.0.0",
     "memdown": "^5.1.0",
     "node-localstorage": "^2.1.5",
-    "prettier": "^1.19.1",
+    "prettier": "^2.0.2",
     "rimraf": "^3.0.2",
     "rxjs-marbles": "^6.0.0",
     "tiny-async-pool": "^1.1.0",
