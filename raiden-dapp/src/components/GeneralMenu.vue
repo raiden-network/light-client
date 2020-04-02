@@ -91,7 +91,7 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
         }
       },
       {
-        icon: 'state.svg',
+        icon: 'bug.svg',
         title: this.$t('general-menu.menu-items.report-bugs-title') as string,
         subtitle: this.$t(
           'general-menu.menu-items.report-bugs-subtitle'
