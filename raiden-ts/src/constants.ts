@@ -13,4 +13,5 @@ export enum Capabilities {
   NO_RECEIVE = 'noReceive', // won't proceed with protocol for incoming transfers
   NO_MEDIATE = 'noMediate', // can't mediate transfers; mediating requires receiving
   NO_DELIVERY = 'noDelivery', // don't need Delivery messages
+  WEBRTC = 'webRTC', // use WebRTC channels for p2p messaging
 }
