@@ -237,6 +237,7 @@ workflows:
       - build_dapp:
           requires:
             - install_dapp
+          context: "Raiden-LC-Deploy"
       - test_sdk:
           requires:
             - lint_sdk
@@ -244,6 +245,14 @@ workflows:
           requires:
             - lint_dapp
             - build_dapp
+      - deploy_gh_pages:
+          requires:
+            - test_dapp
+          context: "Raiden-LC-Deploy"
+          filters:
+            branches:
+              only:
+                - master
 
   publish:
     jobs:
