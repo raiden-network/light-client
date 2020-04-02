@@ -262,3 +262,23 @@ export const Signed: <C extends t.Mixed>(
   t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),
 );
 export type Signed<M> = M & { signature: Signature };
+
+export interface Newable {
+  new (...args: any[]): any;
+}
+
+/**
+ * Memoized factory to create codecs validating an arbitrary class C
+ *
+ * @param C - Class to create a codec for
+ * @returns Codec validating class C
+ */
+export const instanceOf: <C extends Newable>(C: C) => t.Type<InstanceType<C>> = memoize(
+  <C extends Newable>(C: C): t.Type<InstanceType<C>> =>
+    new t.Type<InstanceType<C>>(
+      `instanceOf(${C.name})`,
+      (v): v is InstanceType<C> => v instanceof C,
+      (i, c) => (i instanceof C ? t.success<InstanceType<C>>(i) : t.failure(i, c)),
+      t.identity,
+    ),
+);
