@@ -1,76 +1,93 @@
-jest.mock('vue-router');
-
-import Mocked = jest.Mocked;
+jest.mock('@/services/raiden-service');
+import flushPromises from 'flush-promises';
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import store from '@/store/index';
-import VueRouter from 'vue-router';
-import { RouteNames } from '@/router/route-names';
 import Vuetify from 'vuetify';
+import RaidenService from '@/services/raiden-service';
+import { DeniedReason } from '@/model/types';
 import Home from '@/views/Home.vue';
-import NoTokens from '@/components/NoTokens.vue';
-import { TestData } from '../data/mock-data';
-import { RaidenChannel, RaidenChannels } from 'raiden-ts';
-import { Tokens } from '@/types';
 
 Vue.use(Vuex);
 Vue.use(Vuetify);
 
 describe('Home.vue', () => {
   let wrapper: Wrapper<Home>;
-  let mockedRouter: Mocked<VueRouter>;
   let vuetify: typeof Vuetify;
+  let $raiden: RaidenService;
 
-  const createWrapper = () =>
-    mount(Home, {
+  beforeEach(() => {
+    vuetify = new Vuetify();
+    $raiden = new RaidenService(store);
+    $raiden.connect = jest.fn();
+    wrapper = mount(Home, {
       vuetify,
       store,
+      stubs: ['i18n', 'v-dialog'],
       mocks: {
-        $router: mockedRouter,
+        $raiden: $raiden,
         $t: (msg: string) => msg
       }
     });
-
-  beforeEach(() => {
-    mockedRouter = new VueRouter() as Mocked<VueRouter>;
-    mockedRouter.push = jest.fn().mockResolvedValue(null);
-    vuetify = new Vuetify();
-    store.commit('reset');
   });
 
-  test('show the "NoTokens" component when the user has no connected tokens', () => {
-    wrapper = createWrapper();
+  test('connect without subkey', async () => {
+    // @ts-ignore
+    await wrapper.vm.connect();
+    await flushPromises();
 
-    expect(wrapper.find(NoTokens).exists()).toBeTruthy();
-    expect(mockedRouter.push).toHaveBeenCalledTimes(0);
+    expect($raiden.connect).toHaveBeenCalledTimes(1);
   });
 
-  test('redirect to the "Transfer" view when the user has connected tokens', async () => {
-    createWrapper();
+  test('connect with subkey', async () => {
+    // @ts-ignore
+    await wrapper.vm.connect(true);
+    await flushPromises();
 
-    expect(wrapper.find(NoTokens).exists()).toBeTruthy();
-    expect(mockedRouter.push).toHaveBeenCalledTimes(0);
+    expect($raiden.connect).toHaveBeenCalledTimes(1);
+  });
 
-    store.commit('updateTokens', {
-      [TestData.token.address]: TestData.token
-    } as Tokens);
-    store.commit('updateChannels', {
-      [TestData.token.address]: {
-        [TestData.openChannel.partner]: {
-          ...TestData.openChannel,
-          token: TestData.token.address
-        } as RaidenChannel
-      }
-    } as RaidenChannels);
+  test('connect can be called without displaying error after failing initially', async () => {
+    store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
+    // @ts-ignore
+    await wrapper.vm.connect();
+    await flushPromises();
 
+    expect(store.state.accessDenied).toEqual(DeniedReason.UNDEFINED);
+  });
+
+  test('displays welcome title', () => {
+    const welcomeTitle = wrapper.find('.home__app-welcome');
+
+    expect(welcomeTitle.text()).toBe('home.welcome');
+  });
+
+  test('displays disclaimer', () => {
+    const disclaimer = wrapper.find('.home__disclaimer');
+
+    expect(disclaimer.text()).toBe('home.disclaimer');
+  });
+
+  test('displays getting started link', () => {
+    const gettingStartedText = wrapper.find('.home__getting-started');
+
+    expect(gettingStartedText.text()).toContain(
+      'home.getting-started.link-name'
+    );
+  });
+
+  test('connect button displays connect dialog', async () => {
+    expect(wrapper.vm.$data.connectDialog).toBe(false);
+
+    const connectButton = wrapper.find('button');
+    connectButton.trigger('click');
     await wrapper.vm.$nextTick();
 
-    expect(mockedRouter.push).toHaveBeenCalledTimes(1);
-    expect(mockedRouter.push).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: RouteNames.TRANSFER
-      })
-    );
+    expect(wrapper.vm.$data.connectDialog).toBe(true);
+
+    const connectDialog = wrapper.find('.connect');
+
+    expect(connectDialog.exists()).toBe(true);
   });
 });
