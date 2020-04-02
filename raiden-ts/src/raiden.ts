@@ -24,7 +24,7 @@ import { UserDepositFactory } from './contracts/UserDepositFactory';
 import { SecretRegistryFactory } from './contracts/SecretRegistryFactory';
 
 import versions from './versions.json';
-import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
+import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps, Latest } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
 import { RaidenConfig, PartialRaidenConfig } from './config';
@@ -157,7 +157,7 @@ export class Raiden {
     // use next from latest known blockNumber as start block when polling
     provider.resetEventsBlock(state.blockNumber + 1);
 
-    const latest$: RaidenEpicDeps['latest$'] = new ReplaySubject(1);
+    const latest$ = new ReplaySubject<Latest>(1);
 
     // pipe cached state
     this.state$ = latest$.pipe(pluckDistinct('state'));

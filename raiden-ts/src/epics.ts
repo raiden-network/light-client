@@ -8,15 +8,18 @@ import {
   pluck,
   startWith,
   map,
+  scan,
 } from 'rxjs/operators';
 import negate from 'lodash/negate';
+import unset from 'lodash/fp/unset';
 
 import { RaidenState } from './state';
-import { RaidenEpicDeps } from './types';
+import { RaidenEpicDeps, Latest } from './types';
 import { RaidenAction, raidenShutdown } from './actions';
 import { PartialRaidenConfig, RaidenConfig } from './config';
 import { pluckDistinct } from './utils/rx';
 import { getPresences$ } from './transport/utils';
+import { rtcChannel } from './transport/actions';
 import { pfsListUpdated } from './path/actions';
 import { Address } from './utils/types';
 import { isActionOf } from './utils/actions';
@@ -37,7 +40,7 @@ export function getLatest$(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
-) {
+): Observable<Latest> {
   return combineLatest([
     action$,
     state$,
@@ -51,14 +54,25 @@ export function getLatest$(
       pluck('payload', 'pfsList'),
       startWith([] as readonly Address[]),
     ),
+    action$.pipe(
+      filter(rtcChannel.is),
+      // scan: if v.payload is defined, set it; else, unset
+      scan(
+        (acc, v) =>
+          v.payload ? { ...acc, [v.meta.address]: v.payload } : unset(v.meta.address, acc),
+        {} as Latest['rtc'],
+      ),
+      startWith({} as Latest['rtc']),
+    ),
   ]).pipe(
-    map(([action, state, config, presences, pfsList]) => {
+    map(([action, state, config, presences, pfsList, rtc]) => {
       return {
         action,
         state,
         config,
         presences,
         pfsList,
+        rtc,
       };
     }),
   );
