@@ -32,13 +32,12 @@ import { UserDepositFactory } from 'raiden-ts/contracts/UserDepositFactory';
 import { SecretRegistryFactory } from 'raiden-ts/contracts/SecretRegistryFactory';
 
 import 'raiden-ts/polyfills';
-import { RaidenEpicDeps, ContractsInfo } from 'raiden-ts/types';
+import { RaidenEpicDeps, ContractsInfo, Latest } from 'raiden-ts/types';
 import { makeInitialState } from 'raiden-ts/state';
 import { Address, Signature } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
-import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
-import { Presences } from 'raiden-ts/transport/types';
+import { raidenConfigUpdate } from 'raiden-ts/actions';
 import { makeDefaultConfig } from 'raiden-ts/config';
 
 export type MockedContract<T extends Contract> = jest.Mocked<T> & {
@@ -231,12 +230,13 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       },
     );
 
-  const latest$: RaidenEpicDeps['latest$'] = new BehaviorSubject({
-      action: raidenConfigUpdate({}) as RaidenAction,
+  const latest$ = new BehaviorSubject<Latest>({
+      action: raidenConfigUpdate({}),
       state,
       config: { ...defaultConfig, ...state.config },
-      presences: {} as Presences,
-      pfsList: [] as readonly Address[],
+      presences: {},
+      pfsList: [],
+      rtc: {},
     }),
     config$ = latest$.pipe(pluckDistinct('config'));
 
