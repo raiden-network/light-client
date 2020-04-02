@@ -35,10 +35,6 @@ remote=$(git config remote.origin.url)
 mkdir gh-pages-branch
 cd gh-pages-branch
 
-if [[ ! -d ./${DEPLOY_BASE} ]];then
-    mkdir -p ./${DEPLOY_BASE}
-fi
-
 # now lets setup a new repo so we can update the gh-pages branch
 git config --global user.email ${GH_EMAIL} >/dev/null 2>&1
 git config --global user.name ${GH_NAME} >/dev/null 2>&1
@@ -52,6 +48,10 @@ if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
   git rm -rf ./${DEPLOY_BASE} --ignore-unmatch
 else
   git checkout --orphan gh-pages
+fi
+
+if [[ ! -d ./${DEPLOY_BASE} ]];then
+    mkdir -p ./${DEPLOY_BASE}
 fi
 
 mv ../dist/* ./${DEPLOY_BASE}
