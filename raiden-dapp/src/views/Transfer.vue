@@ -2,13 +2,14 @@
   <v-container fluid class="transfer__settings">
     <v-row justify="center" no-gutters class="transfer__actions">
       <v-col cols="3" sm="2" class="transfer__channels">
-        <v-btn
-          text
+        <action-button
+          :text="$t('transfer.channel-button')"
+          ghost
+          enabled
+          full-width
           class="transfer__channel-button"
           @click="navigateToChannels(token.address)"
-        >
-          {{ $t('transfer.channel-button') }}
-        </v-btn>
+        ></action-button>
       </v-col>
       <v-col cols="6" class="transfer__token-networks">
         <div class="transfer__token-networks__amount">
@@ -40,9 +41,14 @@
         />
       </v-col>
       <v-col cols="3" sm="2" class="transfer__deposit">
-        <v-btn text class="transfer__deposit-button" @click="depositing = true">
-          {{ $t('transfer.deposit-button') }}
-        </v-btn>
+        <action-button
+          :text="$t('transfer.deposit-button')"
+          ghost
+          full-width
+          enabled
+          class="transfer__deposit-button"
+          @click="depositing = true"
+        ></action-button>
         <channel-deposit-dialog
           :loading="loading"
           :done="done"
@@ -275,12 +281,15 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
   &__channel-button,
   &__deposit-button {
-    color: $primary-color;
-    text-transform: none;
-    font-size: 16px;
-    letter-spacing: 1px;
-    font-weight: 500;
-    font-family: $main-font;
+    ::v-deep {
+      .v-btn {
+        text-transform: none;
+        font-size: 16px;
+        letter-spacing: 1px;
+        font-weight: 500;
+        font-family: $main-font;
+      }
+    }
   }
 
   &__token-networks {
