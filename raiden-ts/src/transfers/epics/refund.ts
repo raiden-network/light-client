@@ -9,6 +9,7 @@ import { RaidenState } from '../../state';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Signed, BigNumberC } from '../../utils/types';
 import { transfer, transferRefunded } from '../actions';
+import { Direction } from '../state';
 
 // Compare two objects, using .eq for BigNumber properties
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,7 +36,7 @@ export const transferRefundedEpic = (
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(RefundTransfer))),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
       const secrethash = message.lock.secrethash;
       if (!(secrethash in state.sent)) return;
@@ -54,7 +55,8 @@ export const transferRefundedEpic = (
         transf.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
       )
         return;
-      yield transferRefunded({ message }, { secrethash });
-      yield transfer.failure(new RaidenError(ErrorCodes.XFER_REFUNDED), { secrethash });
+      const meta = { secrethash, direction: Direction.SENT };
+      yield transferRefunded({ message }, meta);
+      yield transfer.failure(new RaidenError(ErrorCodes.XFER_REFUNDED), meta);
     }),
   );

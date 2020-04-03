@@ -80,12 +80,12 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
     state$ = new Subject<RaidenState>();
 
   let initialState!: RaidenState;
-  depsMock.latest$.pipe(pluckDistinct('state'), first()).subscribe(s => (initialState = s));
+  depsMock.latest$.pipe(pluckDistinct('state'), first()).subscribe((s) => (initialState = s));
 
   action$.pipe(scan((s, a) => raidenReducer(s, a), initialState)).subscribe(state$);
   getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
-  depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async _token =>
+  depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async (_token) =>
     _token === token ? tokenNetwork : AddressZero,
   );
 

@@ -178,7 +178,9 @@ describe('Transfer.vue', () => {
 
   test('navigates to the "ChannelList" when the user presses the channel button', async () => {
     // click on channels button
-    wrapper.find('.transfer__channel-button').trigger('click');
+    wrapper
+      .find('.transfer__channel-button .action-button__button')
+      .trigger('click');
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(

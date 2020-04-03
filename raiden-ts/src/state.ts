@@ -6,7 +6,7 @@ import { Network, getNetwork } from 'ethers/utils';
 import debounce from 'lodash/debounce';
 import logging from 'loglevel';
 
-import { PartialRaidenConfig } from './config';
+import { PartialRaidenConfig, makeDefaultConfig, RaidenConfig } from './config';
 import { ContractsInfo } from './types';
 import { ConfirmableAction } from './actions';
 import migrateState from './migration';
@@ -20,7 +20,7 @@ import { getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
 // same as highest migrator function in migration.index.migrators
-export const CURRENT_STATE_VERSION = 1;
+export const CURRENT_STATE_VERSION = 2;
 
 // types
 export const RaidenState = t.readonly(
@@ -54,6 +54,7 @@ export const RaidenState = t.readonly(
       }),
     ),
     sent: TransfersState,
+    received: TransfersState,
     path: t.type({
       iou: t.readonly(
         t.record(
@@ -99,7 +100,7 @@ export function decodeRaidenState(
   { log }: { log: logging.Logger } = { log: logging },
 ): RaidenState {
   if (typeof data === 'string') data = losslessParse(data);
-  const state = migrateState(data, { log });
+  const state = migrateState(data, CURRENT_STATE_VERSION, { log });
   // validates and returns as current state
   try {
     return decode(RaidenState, state);
@@ -140,6 +141,7 @@ export function makeInitialState(
     tokens: {},
     transport: {},
     sent: {},
+    received: {},
     path: {
       iou: {},
     },
@@ -193,6 +195,7 @@ export const getState = async (
   state: RaidenState;
   onState?: (state: RaidenState) => void;
   onStateComplete?: () => void;
+  defaultConfig: RaidenConfig;
 }> => {
   const log = logging.getLogger(`raiden:${address}`);
   let onState;
@@ -259,7 +262,8 @@ export const getState = async (
   }
 
   // if no provided nor stored state, initialize a pristine one
-  if (!state) state = makeInitialState({ network, address, contractsInfo: contracts }, { config });
+  if (!state) state = makeInitialState({ network, address, contractsInfo: contracts });
+  const defaultConfig = makeDefaultConfig({ network }, config);
 
-  return { state, onState, onStateComplete };
+  return { state, onState, onStateComplete, defaultConfig };
 };

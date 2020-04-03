@@ -97,7 +97,7 @@ const packIOU = (iou: IOU) =>
 
 const signIOU$ = (iou: IOU, signer: Signer): Observable<Signed<IOU>> =>
   from(signer.signMessage(packIOU(iou)) as Promise<Signature>).pipe(
-    map(signature => ({ ...iou, signature })),
+    map((signature) => ({ ...iou, signature })),
   );
 
 const makeAndSignLastIOURequest$ = (sender: Address, receiver: Address, signer: Signer) =>
@@ -105,7 +105,7 @@ const makeAndSignLastIOURequest$ = (sender: Address, receiver: Address, signer: 
     const timestamp = new Date().toISOString().split('.')[0],
       message = concat([sender, receiver, toUtf8Bytes(timestamp)]);
     return from(signer.signMessage(message) as Promise<Signature>).pipe(
-      map(signature => ({ sender, receiver, timestamp, signature })),
+      map((signature) => ({ sender, receiver, timestamp, signature })),
     );
   });
 
@@ -121,7 +121,7 @@ const prepareNextIOU$ = (
       return (cachedIOU
         ? of(cachedIOU)
         : makeAndSignLastIOURequest$(address, pfs.address, signer).pipe(
-            mergeMap(payload =>
+            mergeMap((payload) =>
               fromFetch(
                 `${pfs.url}/api/v1/${tokenNetwork}/payment/iou?${new URLSearchParams(
                   payload,
@@ -161,8 +161,8 @@ const prepareNextIOU$ = (
             }),
           )
       ).pipe(
-        map(iou => updateIOU(iou, pfs.price)),
-        mergeMap(iou => signIOU$(iou, signer)),
+        map((iou) => updateIOU(iou, pfs.price)),
+        mergeMap((iou) => signIOU$(iou, signer)),
       );
     }),
   );
@@ -184,7 +184,7 @@ export const pathFindServiceEpic = (
   const { log, latest$ } = deps;
   return action$.pipe(
     filter(isActionOf(pathFind.request)),
-    concatMap(action =>
+    concatMap((action) =>
       latest$.pipe(
         first(),
         mergeMap(
@@ -216,7 +216,7 @@ export const pathFindServiceEpic = (
               });
             } else if (
               action.payload.pfs === null || // explicitly disabled in action
-              (!action.payload.pfs && configPfs === null) // disabled in config and not provided
+              (!action.payload.pfs && configPfs === null) // undefined in action and disabled in config
             ) {
               // pfs not specified in action and disabled (null) in config
               throw new RaidenError(ErrorCodes.PFS_DISABLED);
@@ -224,28 +224,27 @@ export const pathFindServiceEpic = (
               // else, request a route from PFS.
               // pfs$ - Observable which emits one PFS info and then completes
               const pfs$ = action.payload.pfs
-                ? // first, honor action.payload.pfs
+                ? // first, use action.payload.pfs as is, if present
                   of(action.payload.pfs)
-                : configPfs != null
-                ? // or if config.pfs isn't disabled nor auto (undefined), use it
-                  // configPfs is addr or url, so fetch pfsInfo from it
+                : configPfs
+                ? // or if config.pfs isn't disabled (null) nor auto (''), fetch & use it
                   pfsInfo(configPfs, deps)
-                : // else (config.pfs undefined, auto mode)
+                : // else (action unset, config.pfs=''=auto mode)
                   latest$.pipe(
                     pluck('pfsList'), // get cached pfsList
                     // if needed, wait for list to be populated
-                    first(pfsList => pfsList.length > 0),
+                    first((pfsList) => pfsList.length > 0),
                     // fetch pfsInfo from whole list & sort it
-                    mergeMap(pfsList => pfsListInfo(pfsList, deps)),
-                    tap(pfss => log.info('Auto-selecting best PFS from:', pfss)),
+                    mergeMap((pfsList) => pfsListInfo(pfsList, deps)),
+                    tap((pfss) => log.info('Auto-selecting best PFS from:', pfss)),
                     // pop best ranked
                     pluck(0),
                   );
               return pfs$.pipe(
-                mergeMap(pfs =>
+                mergeMap((pfs) =>
                   pfs.price.isZero()
                     ? of({ pfs, iou: undefined })
-                    : prepareNextIOU$(pfs, tokenNetwork, deps).pipe(map(iou => ({ pfs, iou }))),
+                    : prepareNextIOU$(pfs, tokenNetwork, deps).pipe(map((iou) => ({ pfs, iou }))),
                 ),
                 mergeMap(({ pfs, iou }) =>
                   fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {
@@ -267,7 +266,7 @@ export const pathFindServiceEpic = (
                     }),
                   }).pipe(
                     timeout(httpTimeout),
-                    map(response => ({ response, iou })),
+                    map((response) => ({ response, iou })),
                   ),
                 ),
                 mergeMap(async ({ response, iou }) => ({
@@ -283,7 +282,7 @@ export const pathFindServiceEpic = (
                   }
                   return {
                     paths: decode(PathResults, data).result.map(
-                      r =>
+                      (r) =>
                         ({
                           path: r.path,
                           // Add PFS safety margin to estimated fees
@@ -305,7 +304,7 @@ export const pathFindServiceEpic = (
           // looks like mergeMap with generator doesn't handle exceptions correctly
           // use from+iterator from iife generator instead
           from(
-            (function*() {
+            (function* () {
               const { iou } = data;
               if (iou) {
                 // if not error or error_code of "no route found", iou accepted => persist
@@ -369,7 +368,7 @@ export const pathFindServiceEpic = (
             })(),
           ),
         ),
-        catchError(err => of(pathFind.failure(err, action.meta))),
+        catchError((err) => of(pathFind.failure(err, action.meta))),
       ),
     ),
   );
@@ -406,7 +405,7 @@ export const pfsCapacityUpdateEpic = (
 ): Observable<messageGlobalSend> =>
   latest$.pipe(
     pluckDistinct('state', 'channels'),
-    concatMap(channels => from(channelEntries(channels))),
+    concatMap((channels) => from(channelEntries(channels))),
     /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
      * changes from last time seen. It relies on value references changing only if needed */
     scan(
@@ -456,8 +455,8 @@ export const pfsCapacityUpdateEpic = (
           };
 
           return defer(() => signMessage(signer, message, { log })).pipe(
-            map(signed => messageGlobalSend({ message: signed }, { roomName: pfsRoom! })),
-            catchError(err => {
+            map((signed) => messageGlobalSend({ message: signed }, { roomName: pfsRoom! })),
+            catchError((err) => {
               log.error('Error trying to generate & sign PFSCapacityUpdate', err);
               return EMPTY;
             }),
@@ -485,12 +484,11 @@ export const pfsServiceRegistryMonitorEpic = (
   { serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
 ): Observable<pfsListUpdated> =>
   config$.pipe(
-    // monitors config.pfs, and only monitors contract if it's undefined
-    pluck('pfs'),
-    distinctUntilChanged(),
-    switchMap(pfs =>
-      pfs !== undefined
-        ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or set
+    // monitors config.pfs, and only monitors contract if it's empty
+    pluckDistinct('pfs'),
+    switchMap((pfs) =>
+      pfs !== ''
+        ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
           EMPTY
         : // type of elements emitted by getEventsStream (past and new events coming from contract):
           // [service, valid_till, deposit_amount, deposit_contract, Event]
@@ -500,7 +498,7 @@ export const pfsServiceRegistryMonitorEpic = (
             of(contractsInfo.ServiceRegistry.block_number), // at boot, always fetch from deploy block
           ).pipe(
             groupBy(([service]) => service),
-            mergeMap(grouped$ =>
+            mergeMap((grouped$) =>
               grouped$.pipe(
                 // switchMap ensures new events for each server (grouped$) picks latest event
                 switchMap(([service, valid_till]) => {
@@ -518,7 +516,7 @@ export const pfsServiceRegistryMonitorEpic = (
             scan(
               (acc, { service, valid }) =>
                 !valid && acc.includes(service)
-                  ? acc.filter(s => s !== service)
+                  ? acc.filter((s) => s !== service)
                   : valid && !acc.includes(service)
                   ? [...acc, service]
                   : acc,
@@ -526,7 +524,7 @@ export const pfsServiceRegistryMonitorEpic = (
             ),
             distinctUntilChanged(),
             debounceTime(1e3), // debounce burst of updates on initial fetch
-            map(pfsList => pfsListUpdated({ pfsList })),
+            map((pfsList) => pfsListUpdated({ pfsList })),
           ),
     ),
   );

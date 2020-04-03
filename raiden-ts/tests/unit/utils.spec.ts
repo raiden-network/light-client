@@ -35,9 +35,7 @@ describe('fromEthersEvent', () => {
   });
 
   test('event registered and emitted', async () => {
-    const promise = fromEthersEvent<number>(provider, 'block')
-      .pipe(first())
-      .toPromise();
+    const promise = fromEthersEvent<number>(provider, 'block').pipe(first()).toPromise();
     provider.emit('block', 1337);
 
     const blockNumber = await promise;
@@ -186,7 +184,7 @@ describe('types', () => {
     expect(B).toBe(b);
     pipe(
       HexString().decode(B),
-      fold(fail, result => expect(result).toBe(b)),
+      fold(fail, (result) => expect(result).toBe(b)),
     );
   });
 
@@ -223,7 +221,7 @@ describe('types', () => {
     expect(BigNumberC.encode(b)).toEqual('16');
     pipe(
       BigNumberC.decode(b),
-      fold(fail, result => expect(result).toBeInstanceOf(BigNumber)),
+      fold(fail, (result) => expect(result).toBeInstanceOf(BigNumber)),
     );
     expect(isRight(BigNumberC.decode(null))).toBe(false);
   });

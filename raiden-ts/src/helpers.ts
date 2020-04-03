@@ -161,7 +161,7 @@ export const getSigner = async (
 export const initTransfers$ = (state$: Observable<RaidenState>): Observable<RaidenTransfer> =>
   state$.pipe(
     pluckDistinct('sent'),
-    concatMap(sent => from(Object.entries(sent))),
+    concatMap((sent) => from(Object.entries(sent))),
     /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
      * changes from last time seen. It relies on value references changing only if needed */
     scan<[string, TransferState], { acc: TransfersState; changed?: TransferState }>(
@@ -230,7 +230,7 @@ export const mapTokenToPartner = (state: RaidenState): RaidenChannels =>
     // transform state.channels to token-partner-raidenChannel map
     state.channels,
     (result: RaidenChannels, partnerChannelMap, tokenNetwork) => {
-      const token = findKey(state.tokens, tn => tn === tokenNetwork) as Address | undefined;
+      const token = findKey(state.tokens, (tn) => tn === tokenNetwork) as Address | undefined;
       if (!token) return; // shouldn't happen, token mapping is always bi-directional
       result[token] = mapPartnerToChannel(partnerChannelMap, token, tokenNetwork);
     },
@@ -340,7 +340,7 @@ export async function waitConfirmation(
       ),
       exhaustMap(([blockNumber, { confirmationBlocks }]) =>
         defer(() => provider.getTransactionReceipt(txHash)).pipe(
-          map(receipt => {
+          map((receipt) => {
             if (
               receipt?.confirmations &&
               receipt.confirmations >= (confBlocks ?? confirmationBlocks)

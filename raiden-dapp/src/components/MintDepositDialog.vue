@@ -65,6 +65,7 @@
     <v-card-actions v-if="!error">
       <action-button
         arrow
+        full-width
         :enabled="valid && !loading"
         :text="$t('mint-deposit-dialog.button')"
         class="mint-deposit-dialog__action"

@@ -1,76 +1,27 @@
 import { defer, from, Observable, of } from 'rxjs';
-import { concatMap, filter, first, map, mergeMap, tap, withLatestFrom } from 'rxjs/operators';
+import { concatMap, filter, map, mergeMap, tap, withLatestFrom } from 'rxjs/operators';
+import findKey from 'lodash/findKey';
 
 import { RaidenAction } from '../../actions';
 import { messageSend } from '../../messages/actions';
-import {
-  LockedTransfer,
-  LockExpired,
-  MessageType,
-  Processed,
-  RefundTransfer,
-  WithdrawExpired,
-} from '../../messages/types';
+import { MessageType, Processed, RefundTransfer, WithdrawExpired } from '../../messages/types';
 import {
   getBalanceProofFromEnvelopeMessage,
   signMessage,
   isMessageReceivedOfType,
 } from '../../messages/utils';
 import { RaidenState } from '../../state';
-import { matrixPresence } from '../../transport/actions';
 import { RaidenEpicDeps } from '../../types';
 import { LruCache } from '../../utils/lru';
 import { Hash, Signed } from '../../utils/types';
+import { isActionOf } from '../../utils/actions';
 import {
   transfer,
-  transferExpire,
   transferExpireProcessed,
   transferProcessed,
-  transferSigned,
-  transferUnlock,
   transferUnlockProcessed,
 } from '../actions';
-
-/**
- * Re-queue pending transfer's BalanceProof/Envelope messages for retry on init
- *
- * @param action$ - Observable of RaidenActions
- * @param state$ - Observable of RaidenStates
- * @returns Observable of transferSigned|transferUnlock.success actions
- */
-export const initQueuePendingEnvelopeMessagesEpic = (
-  {}: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-): Observable<
-  matrixPresence.request | transferSigned | transferUnlock.success | transferExpire.success
-> =>
-  state$.pipe(
-    first(),
-    mergeMap(function*(state) {
-      // loop over all pending transfers
-      for (const [key, sent] of Object.entries(state.sent)) {
-        const secrethash = key as Hash;
-        // transfer already completed or channelClosed
-        if (
-          sent.unlockProcessed ||
-          sent.lockExpiredProcessed ||
-          sent.secret?.[1]?.registerBlock ||
-          sent.channelClosed
-        )
-          continue;
-        // on init, request monitor presence of any pending transfer target
-        yield matrixPresence.request(undefined, { address: sent.transfer[1].target });
-        // Processed not received yet for LockedTransfer
-        if (!sent.transferProcessed)
-          yield transferSigned({ message: sent.transfer[1], fee: sent.fee }, { secrethash });
-        // already unlocked, but Processed not received yet for Unlock
-        if (sent.unlock) yield transferUnlock.success({ message: sent.unlock[1] }, { secrethash });
-        // lock expired, but Processed not received yet for LockExpired
-        if (sent.lockExpired)
-          yield transferExpire.success({ message: sent.lockExpired[1] }, { secrethash });
-      }
-    }),
-  );
+import { Direction } from '../state';
 
 /**
  * Handles receiving a signed Processed for some sent LockedTransfer
@@ -87,7 +38,7 @@ export const transferProcessedReceivedEpic = (
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
       let secrethash: Hash | undefined = undefined;
       for (const [key, sent] of Object.entries(state.sent)) {
@@ -100,8 +51,35 @@ export const transferProcessedReceivedEpic = (
         }
       }
       if (!secrethash) return;
-      yield transferProcessed({ message }, { secrethash });
+      yield transferProcessed({ message }, { secrethash, direction: Direction.SENT });
     }),
+  );
+
+/**
+ * Handles sending Processed for a received EnvelopeMessages
+ *
+ * @param action$ - Observable of transferProcessed actions
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of messageSend.request actions
+ */
+export const transferProcessedSendEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<messageSend.request> =>
+  action$.pipe(
+    filter(isActionOf([transferProcessed, transferUnlockProcessed, transferExpireProcessed])),
+    // transfer direction is RECEIVED, not message direction (which is outbound)
+    filter((action) => action.meta.direction === Direction.RECEIVED),
+    withLatestFrom(state$),
+    map(([action, { received }]) =>
+      messageSend.request(
+        { message: action.payload.message },
+        {
+          address: received[action.meta.secrethash].partner,
+          msgId: action.payload.message.message_identifier.toString(),
+        },
+      ),
+    ),
   );
 
 /**
@@ -120,27 +98,24 @@ export const transferUnlockProcessedReceivedEpic = (
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
-      let secrethash: Hash | undefined;
-      for (const [key, sent] of Object.entries(state.sent)) {
-        if (
+      const secrethash = findKey(
+        state.sent,
+        (sent) =>
           sent.unlock &&
           sent.unlock[1].message_identifier.eq(message.message_identifier) &&
-          sent.transfer[1].recipient === action.meta.address
-        ) {
-          secrethash = key as Hash;
-          break;
-        }
-      }
+          sent.partner === action.meta.address,
+      ) as Hash | undefined;
       if (!secrethash) return;
+      const meta = { secrethash, direction: Direction.SENT };
       yield transfer.success(
         {
           balanceProof: getBalanceProofFromEnvelopeMessage(state.sent[secrethash].unlock![1]),
         },
-        { secrethash },
+        meta,
       );
-      yield transferUnlockProcessed({ message }, { secrethash });
+      yield transferUnlockProcessed({ message }, meta);
     }),
   );
 
@@ -160,21 +135,17 @@ export const transferExpireProcessedEpic = (
   action$.pipe(
     filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
-    mergeMap(function*([action, state]) {
+    mergeMap(function* ([action, state]) {
       const message = action.payload.message;
-      let secrethash: Hash | undefined;
-      for (const [key, sent] of Object.entries(state.sent)) {
-        if (
+      const secrethash = findKey(
+        state.sent,
+        (sent) =>
           sent.lockExpired &&
           sent.lockExpired[1].message_identifier.eq(message.message_identifier) &&
-          sent.transfer[1].recipient === action.meta.address
-        ) {
-          secrethash = key as Hash;
-          break;
-        }
-      }
+          sent.partner === action.meta.address,
+      ) as Hash | undefined;
       if (!secrethash) return;
-      yield transferExpireProcessed({ message }, { secrethash });
+      yield transferExpireProcessed({ message }, { secrethash, direction: Direction.SENT });
     }),
   );
 
@@ -202,15 +173,8 @@ export const transferReceivedReplyProcessedEpic = (
 ): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Processed>>(32);
   return action$.pipe(
-    filter(
-      isMessageReceivedOfType([
-        Signed(LockedTransfer),
-        Signed(RefundTransfer),
-        Signed(LockExpired),
-        Signed(WithdrawExpired),
-      ]),
-    ),
-    concatMap(action => {
+    filter(isMessageReceivedOfType([Signed(RefundTransfer), Signed(WithdrawExpired)])),
+    concatMap((action) => {
       const message = action.payload.message;
       // defer causes the cache check to be performed at subscription time
       return defer(() => {
@@ -228,8 +192,8 @@ export const transferReceivedReplyProcessedEpic = (
           message_identifier: msgId,
         };
         return from(signMessage(signer, processed, { log })).pipe(
-          tap(signed => cache.put(key, signed)),
-          map(signed =>
+          tap((signed) => cache.put(key, signed)),
+          map((signed) =>
             messageSend.request({ message: signed }, { address: action.meta.address, msgId: key }),
           ),
         );

@@ -31,7 +31,9 @@
             </div>
           </v-col>
           <v-spacer />
-          <header-identicon @click.native="navigateToGeneralHome()" />
+          <span class="app-header__account-wrapper">
+            <header-identicon @click.native="navigateToGeneralHome()" />
+          </span>
         </div>
       </v-col>
     </v-row>
@@ -135,6 +137,10 @@ export default class AppHeader extends Mixins(NavigationMixin) {
       height: 40px;
       padding: 0 20px 0 20px;
     }
+  }
+
+  &__account-wrapper {
+    cursor: pointer;
   }
 }
 </style>

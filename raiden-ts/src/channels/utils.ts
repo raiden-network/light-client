@@ -1,5 +1,11 @@
+import { OperatorFunction, from } from 'rxjs';
+import { tap, mergeMap, map } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
-import { UInt } from '../utils/types';
+import { ContractTransaction } from 'ethers/contract';
+
+import { RaidenEpicDeps } from '../types';
+import { UInt, Hash } from '../utils/types';
+import { ErrorCodes, RaidenError } from '../utils/error';
 import { Channel, ChannelState } from './state';
 
 /**
@@ -35,10 +41,7 @@ export function channelAmounts(channel: Channel) {
     partnerLocked = channel.partner.balanceProof?.lockedAmount ?? Zero32,
     ownBalance = partnerTransferred.sub(ownTransferred) as UInt<32>,
     partnerBalance = ownTransferred.sub(partnerTransferred) as UInt<32>, // == -ownBalance
-    ownCapacity = channel.own.deposit
-      .sub(ownWithdraw)
-      .sub(ownLocked)
-      .add(ownBalance) as UInt<32>,
+    ownCapacity = channel.own.deposit.sub(ownWithdraw).sub(ownLocked).add(ownBalance) as UInt<32>,
     partnerCapacity = channel.partner.deposit
       .sub(partnerWithdraw)
       .sub(partnerLocked)
@@ -58,4 +61,32 @@ export function channelAmounts(channel: Channel) {
     partnerBalance,
     partnerCapacity,
   };
+}
+
+/**
+ * Custom operator to wait & assert transaction success
+ *
+ * @param method - method name to use in logs
+ * @param error - ErrorCode to throw if transaction fails
+ * @param deps - object containing logger
+ * @returns operator function to wait for transaction and output hash
+ */
+export function assertTx(
+  method: string,
+  error: ErrorCodes,
+  { log }: Pick<RaidenEpicDeps, 'log'>,
+): OperatorFunction<ContractTransaction, Hash> {
+  return (tx) =>
+    tx.pipe(
+      tap((tx) => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
+      mergeMap((tx) =>
+        from(tx.wait()).pipe(
+          map((receipt) => {
+            if (!receipt.status) throw new RaidenError(error, { transactionHash: tx.hash! });
+            log.debug(`${method} tx "${tx.hash}" successfuly mined!`);
+            return tx.hash as Hash;
+          }),
+        ),
+      ),
+    );
 }

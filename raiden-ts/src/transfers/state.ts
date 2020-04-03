@@ -13,6 +13,11 @@ import {
 } from '../messages/types';
 import { Address, Timed, Hash, Int, Signed, Secret } from '../utils/types';
 
+export enum Direction {
+  SENT = 'sent',
+  RECEIVED = 'received',
+}
+
 /**
  * This struct holds the relevant messages exchanged in a transfer
  * The transfer state is defined by the exchanged messages
@@ -23,6 +28,7 @@ export const TransferState = t.readonly(
       /** -> outgoing locked transfer */
       transfer: Timed(Signed(LockedTransfer)),
       fee: Int(32),
+      partner: Address,
     }),
     t.partial({
       /**

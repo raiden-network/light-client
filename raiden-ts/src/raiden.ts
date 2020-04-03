@@ -27,9 +27,9 @@ import versions from './versions.json';
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps } from './types';
 import { ShutdownReason } from './constants';
 import { RaidenState, getState } from './state';
-import { RaidenConfig, makeDefaultConfig, PartialRaidenConfig } from './config';
+import { RaidenConfig, PartialRaidenConfig } from './config';
 import { RaidenChannels, ChannelState } from './channels/state';
-import { RaidenTransfer } from './transfers/state';
+import { RaidenTransfer, Direction } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic } from './epics';
 import {
@@ -138,10 +138,6 @@ export class Raiden {
     RaidenEpicDeps
   > | null;
 
-  private readonly defaultConfig: RaidenConfig;
-  // for a given partial config, "memoize-one" full config (merge of default & partial configs)
-  private lastConfig?: [PartialRaidenConfig, RaidenConfig];
-
   /** Instance's Logger, compatible with console's API */
   private readonly log: logging.Logger;
 
@@ -151,6 +147,7 @@ export class Raiden {
     signer: Signer,
     contractsInfo: ContractsInfo,
     state: RaidenState,
+    defaultConfig: RaidenConfig,
     main?: { address: Address; signer: Signer },
   ) {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
@@ -166,12 +163,11 @@ export class Raiden {
     this.state$ = latest$.pipe(pluckDistinct('state'));
     // pipe action, skipping cached
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
-    this.channels$ = this.state$.pipe(map(state => mapTokenToPartner(state)));
+    this.channels$ = this.state$.pipe(map((state) => mapTokenToPartner(state)));
     this.transfers$ = initTransfers$(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
-    this.defaultConfig = makeDefaultConfig({ network });
 
-    this.getTokenInfo = memoize(async function(this: Raiden, token: string) {
+    this.getTokenInfo = memoize(async function (this: Raiden, token: string) {
       assert(Address.is(token), 'Invalid address');
       const tokenContract = this.deps.getTokenContract(token);
       const [totalSupply, decimals, name, symbol] = await Promise.all([
@@ -194,6 +190,7 @@ export class Raiden {
       signer,
       address,
       log: this.log,
+      defaultConfig,
       contractsInfo,
       registryContract: TokenNetworkRegistryFactory.connect(
         contractsInfo.TokenNetworkRegistry.address,
@@ -237,7 +234,7 @@ export class Raiden {
 
     this.deps.config$
       .pipe(pluckDistinct('logger'))
-      .subscribe(logger => this.log.setLevel(logger || 'silent', false));
+      .subscribe((logger) => this.log.setLevel(logger || 'silent', false));
 
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
@@ -317,12 +314,12 @@ export class Raiden {
     const { signer, address, main } = await getSigner(account, provider, subkey);
 
     // Build initial state or parse from storage
-    const { state, onState, onStateComplete } = await getState(
+    const { state, onState, onStateComplete, defaultConfig } = await getState(
       network,
       contracts,
       address,
       storageOrState,
-      config,
+      config && decode(PartialRaidenConfig, config),
     );
 
     assert(
@@ -335,7 +332,7 @@ export class Raiden {
       `Mismatch between network or registry address and loaded state`,
     );
 
-    const raiden = new Raiden(provider, network, signer, contracts, state, main);
+    const raiden = new Raiden(provider, network, signer, contracts, state, defaultConfig, main);
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
@@ -347,6 +344,8 @@ export class Raiden {
    */
   public start(): void {
     assert(this.epicMiddleware, 'Already started or stopped!');
+    // on complete, sets epicMiddleware to null, so this.started === false
+    this.deps.latest$.subscribe(undefined, undefined, () => (this.epicMiddleware = null));
     this.epicMiddleware.run(raidenRootEpic);
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
@@ -370,7 +369,7 @@ export class Raiden {
    */
   public stop(): void {
     // start still can't be called again, but turns this.started to false
-    this.epicMiddleware = null;
+    // this.epicMiddleware is set to null by latest$'s complete callback
     this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
   }
 
@@ -425,11 +424,9 @@ export class Raiden {
    * @returns Current Raiden config
    */
   public get config(): RaidenConfig {
-    // "memoize one" last merge of default and partial configs
-    const currentPartial = this.state.config;
-    if (this.lastConfig?.['0'] !== currentPartial)
-      this.lastConfig = [currentPartial, { ...this.defaultConfig, ...currentPartial }];
-    return this.lastConfig['1'];
+    let config!: RaidenConfig;
+    this.deps.config$.pipe(first()).subscribe((c) => (config = c));
+    return config;
   }
 
   /**
@@ -456,7 +453,7 @@ export class Raiden {
    * @param config - Partial object containing keys and values to update in config
    */
   public updateConfig(config: PartialRaidenConfig) {
-    this.store.dispatch(raidenConfigUpdate(config));
+    this.store.dispatch(raidenConfigUpdate(decode(PartialRaidenConfig, config)));
   }
 
   /**
@@ -498,11 +495,11 @@ export class Raiden {
         fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
         toBlock: 'latest',
       })
-      .then(logs =>
+      .then((logs) =>
         logs
-          .map(log => this.deps.registryContract.interface.parseLog(log))
-          .filter(parsed => !!parsed.values?.token_address)
-          .map(parsed => parsed.values.token_address as Address),
+          .map((log) => this.deps.registryContract.interface.parseLog(log))
+          .filter((parsed) => !!parsed.values?.token_address)
+          .map((parsed) => parsed.values.token_address as Address),
       );
   }
 
@@ -570,7 +567,7 @@ export class Raiden {
     await this.state$
       .pipe(
         pluckDistinct('channels', tokenNetwork, partner, 'state'),
-        first(state => state === ChannelState.open),
+        first((state) => state === ChannelState.open),
       )
       .toPromise();
     onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash: openTxHash } });
@@ -775,7 +772,7 @@ export class Raiden {
       // wait for pathFind response
       this.action$.pipe(
         first(isResponseOf(pathFind, pathFindMeta)),
-        map(action => {
+        map((action) => {
           if (pathFind.failure.is(action)) throw action.payload;
           return action.payload.paths;
         }),
@@ -788,13 +785,13 @@ export class Raiden {
       }),
     )
       .pipe(
-        mergeMap(paths =>
+        mergeMap((paths) =>
           merge(
             // wait for transfer response
             this.action$.pipe(
               filter(isActionOf([transferSigned, transfer.failure])),
-              first(action => action.meta.secrethash === secrethash),
-              map(action => {
+              first((action) => action.meta.secrethash === secrethash),
+              map((action) => {
                 if (transfer.failure.is(action)) throw action.payload;
                 return secrethash;
               }),
@@ -811,7 +808,7 @@ export class Raiden {
                     paymentId,
                     secret,
                   },
-                  { secrethash },
+                  { secrethash, direction: Direction.SENT },
                 ),
               );
               return EMPTY;
@@ -843,7 +840,7 @@ export class Raiden {
     }
 
     // throws/rejects if a failure occurs
-    await asyncActionToPromise(transfer, { secrethash }, this.action$);
+    await asyncActionToPromise(transfer, { secrethash, direction: Direction.SENT }, this.action$);
     state = this.state;
     return state.sent[secrethash].secretRequest?.[1]?.amount;
   }
@@ -928,10 +925,10 @@ export class Raiden {
       ? of<readonly (string | Address)[]>([this.config.pfs])
       : this.deps.latest$.pipe(
           pluckDistinct('pfsList'),
-          first(v => v.length > 0),
+          first((v) => v.length > 0),
         )
     )
-      .pipe(mergeMap(pfsList => pfsListInfo(pfsList, this.deps)))
+      .pipe(mergeMap((pfsList) => pfsListInfo(pfsList, this.deps)))
       .toPromise();
   }
 
@@ -992,7 +989,7 @@ export class Raiden {
     const blockNumber = this.state.blockNumber;
     const owedAmount = Object.values(this.state.path.iou)
       .reduce((acc, value) => {
-        const nonExpiredIOUs = Object.values(value).filter(value =>
+        const nonExpiredIOUs = Object.values(value).filter((value) =>
           value.expiration_block.gte(blockNumber),
         );
         acc.push(...nonExpiredIOUs);

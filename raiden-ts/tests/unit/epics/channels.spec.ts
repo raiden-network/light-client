@@ -1,16 +1,17 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog } from '../mocks';
 
 import { marbles } from 'rxjs-marbles/jest';
 import { of, from, timer } from 'rxjs';
-import { first, takeUntil, toArray, delay } from 'rxjs/operators';
+import { first, takeUntil, toArray, delay, pluck } from 'rxjs/operators';
 import { ContractTransaction } from 'ethers/contract';
-import { bigNumberify } from 'ethers/utils';
-import { Zero, HashZero } from 'ethers/constants';
+import { bigNumberify, BigNumber } from 'ethers/utils';
+import { Zero, HashZero, One } from 'ethers/constants';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { range } from 'lodash';
 
-import { UInt } from 'raiden-ts/utils/types';
+import { UInt, Int } from 'raiden-ts/utils/types';
 import { RaidenAction } from 'raiden-ts/actions';
 import { RaidenState } from 'raiden-ts/state';
 import {
@@ -32,8 +33,21 @@ import {
   channelSettleEpic,
   channelMonitoredEpic,
   channelSettleableEpic,
+  channelUpdateEpic,
+  channelUnlockEpic,
 } from 'raiden-ts/channels/epics';
 import { raidenReducer } from 'raiden-ts/reducer';
+import {
+  makeSecret,
+  getSecrethash,
+  makePaymentId,
+  makeMessageId,
+  getLocksroot,
+} from 'raiden-ts/transfers/utils';
+import { Direction } from 'raiden-ts/transfers/state';
+import { MessageType } from 'raiden-ts/messages/types';
+import { signMessage } from 'raiden-ts/messages/utils';
+import { transferSigned, transferUnlock } from 'raiden-ts/transfers/actions';
 
 describe('channels epic', () => {
   const depsMock = raidenEpicDeps();
@@ -56,7 +70,7 @@ describe('channels epic', () => {
 
   test(
     'channelSettleableEpic',
-    marbles(m => {
+    marbles((m) => {
       const closeBlock = 125;
       // state contains one channel in closed state
       const newState = [
@@ -188,79 +202,32 @@ describe('channels epic', () => {
     });
   });
 
-  describe('channelOpenedEpic', () => {
+  test('channelOpenedEpic', async () => {
     const {
-      token,
       tokenNetwork,
       channelId,
       partner,
       settleTimeout,
       isFirstParticipant,
       txHash,
-      state,
     } = epicFixtures(depsMock);
 
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
+    const action = channelOpen.success(
+      {
+        id: channelId,
+        settleTimeout,
+        isFirstParticipant,
+        txHash,
+        txBlock: 125,
+        confirmed: true,
+      },
+      { tokenNetwork, partner },
+    );
+    const action$ = of<RaidenAction>(action);
 
-    test("filter out if channel isn't in 'open' state or unconfirmed channel", async () => {
-      const curState = [
-        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
-      ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(
-          channelOpen.success(
-            {
-              id: channelId,
-              settleTimeout,
-              isFirstParticipant,
-              txHash,
-              txBlock: 125,
-              confirmed: undefined,
-            },
-            { tokenNetwork, partner },
-          ),
-          channelOpen.success(
-            {
-              id: channelId,
-              settleTimeout,
-              isFirstParticipant,
-              txHash,
-              txBlock: 125,
-              confirmed: true,
-            },
-            { tokenNetwork, partner },
-          ),
-        ),
-        state$ = of<RaidenState>(curState);
-
-      await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toBeUndefined();
-    });
-
-    test('channelOpen.success triggers channel monitoring', async () => {
-      const action = channelOpen.success(
-          {
-            id: channelId,
-            settleTimeout,
-            isFirstParticipant,
-            txHash,
-            txBlock: 125,
-            confirmed: true,
-          },
-          { tokenNetwork, partner },
-        ),
-        curState = [tokenMonitored({ token, tokenNetwork, fromBlock: 1 }), action].reduce(
-          raidenReducer,
-          state,
-        );
-      const action$ = of<RaidenAction>(action),
-        state$ = of<RaidenState>(curState);
-
-      await expect(channelOpenedEpic(action$, state$).toPromise()).resolves.toMatchObject(
-        channelMonitor({ id: channelId, fromBlock: 125 }, { tokenNetwork, partner }),
-      );
-    });
+    await expect(channelOpenedEpic(action$).toPromise()).resolves.toMatchObject(
+      channelMonitor({ id: channelId, fromBlock: 125 }, { tokenNetwork, partner }),
+    );
   });
 
   describe('channelMonitoredEpic', () => {
@@ -309,9 +276,7 @@ describe('channels epic', () => {
       ]);
 
       await expect(
-        channelMonitoredEpic(action$, state$, depsMock)
-          .pipe(first())
-          .toPromise(),
+        channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise(),
       ).resolves.toEqual(
         channelDeposit.success(
           {
@@ -346,9 +311,7 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(action),
         state$ = of<RaidenState>(curState);
 
-      const promise = channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       depsMock.provider.emit(
         '*',
@@ -467,9 +430,7 @@ describe('channels epic', () => {
         ),
         state$ = of<RaidenState>(curState);
 
-      const promise = channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       depsMock.provider.emit(
         '*',
@@ -516,9 +477,7 @@ describe('channels epic', () => {
         ),
         state$ = of<RaidenState>(curState);
 
-      const promise = channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(first())
-        .toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
 
       depsMock.provider.emit(
         '*',
@@ -810,7 +769,124 @@ describe('channels epic', () => {
   });
 
   describe('channelCloseEpic', () => {
+    let depsMock: ReturnType<typeof raidenEpicDeps>;
+    let token: ReturnType<typeof epicFixtures>['token'],
+      tokenNetworkContract: ReturnType<typeof epicFixtures>['tokenNetworkContract'],
+      tokenNetwork: ReturnType<typeof epicFixtures>['tokenNetwork'],
+      channelId: ReturnType<typeof epicFixtures>['channelId'],
+      partner: ReturnType<typeof epicFixtures>['partner'],
+      partnerSigner: ReturnType<typeof epicFixtures>['partnerSigner'],
+      settleTimeout: ReturnType<typeof epicFixtures>['settleTimeout'],
+      isFirstParticipant: ReturnType<typeof epicFixtures>['isFirstParticipant'],
+      txHash: ReturnType<typeof epicFixtures>['txHash'],
+      action$: ReturnType<typeof epicFixtures>['action$'],
+      state$: ReturnType<typeof epicFixtures>['state$'];
     const openBlock = 121;
+    const closeBlock = 125;
+
+    beforeEach(async () => {
+      depsMock = raidenEpicDeps();
+      ({
+        token,
+        tokenNetworkContract,
+        tokenNetwork,
+        channelId,
+        partner,
+        partnerSigner,
+        settleTimeout,
+        isFirstParticipant,
+        txHash,
+        action$,
+        state$,
+      } = epicFixtures(depsMock));
+
+      [
+        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
+        channelOpen.success(
+          {
+            id: channelId,
+            settleTimeout,
+            isFirstParticipant,
+            txHash,
+            txBlock: openBlock,
+            confirmed: true,
+          },
+          { tokenNetwork, partner },
+        ),
+        newBlock({ blockNumber: closeBlock }),
+      ].forEach((a) => action$.next(a));
+
+      // put a received & unlocked transfer from partner in state
+      const { state, config } = await depsMock.latest$.pipe(first()).toPromise();
+      const secret = makeSecret();
+      const secrethash = getSecrethash(secret);
+      const amount = bigNumberify(10) as UInt<32>;
+      const direction = Direction.RECEIVED;
+      const expiration = bigNumberify(state.blockNumber + config.revealTimeout * 2) as UInt<32>;
+      const lock = {
+        secrethash,
+        amount,
+        expiration,
+      };
+      const transf = await signMessage(
+        partnerSigner,
+        {
+          type: MessageType.LOCKED_TRANSFER,
+          payment_identifier: makePaymentId(),
+          message_identifier: makeMessageId(),
+          chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
+          token,
+          token_network_address: tokenNetwork,
+          recipient: depsMock.address,
+          target: depsMock.address,
+          initiator: partner,
+          channel_identifier: bigNumberify(channelId) as UInt<32>,
+          metadata: { routes: [{ route: [depsMock.address] }] },
+          lock,
+          locksroot: getLocksroot([lock]),
+          nonce: One as UInt<8>,
+          transferred_amount: Zero as UInt<32>,
+          locked_amount: lock.amount,
+        },
+        depsMock,
+      );
+
+      const unlock = await signMessage(
+        partnerSigner,
+        {
+          type: MessageType.UNLOCK,
+          payment_identifier: transf.payment_identifier,
+          message_identifier: makeMessageId(),
+          chain_id: transf.chain_id,
+          token_network_address: tokenNetwork,
+          channel_identifier: transf.channel_identifier,
+          nonce: transf.nonce.add(1) as UInt<8>,
+          transferred_amount: transf.transferred_amount.add(amount) as UInt<32>,
+          locked_amount: transf.locked_amount.sub(amount) as UInt<32>,
+          locksroot: getLocksroot([]),
+          secret,
+        },
+        depsMock,
+      );
+
+      [
+        transferSigned(
+          {
+            message: transf,
+            fee: Zero as Int<32>,
+          },
+          { secrethash, direction },
+        ),
+        transferUnlock.success({ message: unlock }, { secrethash, direction }),
+      ].forEach((a) => action$.next(a));
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+      action$.complete();
+      state$.complete();
+      depsMock.latest$.complete();
+    });
 
     test('fails if there is no open channel with partner on tokenNetwork', async () => {
       // there's a channel already opened in state
@@ -838,24 +914,6 @@ describe('channels epic', () => {
     });
 
     test('closeChannel tx fails', async () => {
-      // there's a channel already opened in state
-      const curState = [
-        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpen.success(
-          {
-            id: channelId,
-            settleTimeout,
-            isFirstParticipant,
-            txHash,
-            txBlock: openBlock,
-            confirmed: true,
-          },
-          { tokenNetwork, partner },
-        ),
-      ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelClose.request(undefined, { tokenNetwork, partner })),
-        state$ = of<RaidenState>(curState);
-
       const closeTx: ContractTransaction = {
         hash: txHash,
         confirmations: 1,
@@ -870,30 +928,16 @@ describe('channels epic', () => {
       };
       tokenNetworkContract.functions.closeChannel.mockResolvedValueOnce(closeTx);
 
-      await expect(channelCloseEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
+      const promise = channelCloseEpic(action$, state$, depsMock).toPromise();
+      action$.next(channelClose.request(undefined, { tokenNetwork, partner }));
+      action$.complete();
+
+      await expect(promise).resolves.toEqual(
         channelClose.failure(expect.any(Error), { tokenNetwork, partner }),
       );
     });
 
     test('success', async () => {
-      // there's a channel already opened in state
-      const curState = [
-        tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-        channelOpen.success(
-          {
-            id: channelId,
-            settleTimeout,
-            isFirstParticipant,
-            txHash,
-            txBlock: openBlock,
-            confirmed: true,
-          },
-          { tokenNetwork, partner },
-        ),
-      ].reduce(raidenReducer, state);
-      const action$ = of<RaidenAction>(channelClose.request(undefined, { tokenNetwork, partner })),
-        state$ = of<RaidenState>(curState);
-
       const closeTx: ContractTransaction = {
         hash: txHash,
         confirmations: 1,
@@ -908,23 +952,48 @@ describe('channels epic', () => {
       };
       tokenNetworkContract.functions.closeChannel.mockResolvedValueOnce(closeTx);
 
+      const promise = channelCloseEpic(action$, state$, depsMock).toPromise();
+      action$.next(channelClose.request(undefined, { tokenNetwork, partner }));
+      action$.complete();
+
       // result is undefined on success as the respective channelClose.success is emitted by the
       // channelMonitoredEpic, which monitors the blockchain for channel events
-      await expect(
-        channelCloseEpic(action$, state$, depsMock).toPromise(),
-      ).resolves.toBeUndefined();
+      await expect(promise).resolves.toBeUndefined();
       expect(tokenNetworkContract.functions.closeChannel).toHaveBeenCalledTimes(1);
       expect(tokenNetworkContract.functions.closeChannel).toHaveBeenCalledWith(
         channelId,
         partner,
         depsMock.address,
-        HashZero, // balance_hash
-        Zero, // nonce
-        HashZero, // additional_hash
+        expect.any(String), // balance_hash
+        expect.any(BigNumber), // nonce
+        expect.any(String), // additional_hash
         expect.any(String), // non_closing_signature
         expect.any(String), // closing_signature
       );
       expect(closeTx.wait).toHaveBeenCalledTimes(1);
+    });
+
+    test('channelUpdateEpic', async () => {
+      const promise = channelUpdateEpic(action$, state$, depsMock).toPromise();
+      [
+        channelClose.success(
+          {
+            id: channelId,
+            participant: partner,
+            txHash,
+            txBlock: closeBlock,
+            confirmed: true,
+          },
+          { tokenNetwork, partner },
+        ),
+        newBlock({ blockNumber: closeBlock + 1 }),
+        newBlock({ blockNumber: closeBlock + 2 }),
+      ].forEach((a) => action$.next(a));
+
+      setTimeout(() => action$.complete(), 10);
+      await expect(promise).resolves.toBeUndefined();
+
+      expect(tokenNetworkContract.functions.updateNonClosingBalanceProof).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -1102,5 +1171,94 @@ describe('channels epic', () => {
       );
       expect(settleTx.wait).toHaveBeenCalledTimes(1);
     });
+  });
+
+  test('channelUnlockEpic', async () => {
+    expect.assertions(4);
+    const tokenNetworkContract = depsMock.getTokenNetworkContract(tokenNetwork);
+
+    tokenNetworkContract.functions.unlock.mockResolvedValueOnce({
+      hash: txHash,
+      confirmations: 1,
+      nonce: 2,
+      gasLimit: bigNumberify(1e6),
+      gasPrice: bigNumberify(2e10),
+      value: Zero,
+      data: '0x',
+      chainId: depsMock.network.chainId,
+      from: depsMock.address,
+      wait: jest.fn().mockResolvedValue({ byzantium: true, status: 0 }),
+    });
+
+    await expect(
+      channelUnlockEpic(
+        of(
+          channelSettle.success(
+            {
+              id: channelId,
+              txHash,
+              txBlock: 129,
+              confirmed: true,
+              locks: [
+                {
+                  amount: bigNumberify(10) as UInt<32>,
+                  expiration: bigNumberify(128) as UInt<32>,
+                  secrethash: getSecrethash(makeSecret()),
+                },
+              ],
+            },
+            { tokenNetwork, partner },
+          ),
+        ),
+        depsMock.latest$.pipe(pluck('state')),
+        depsMock,
+      ).toPromise(),
+    ).resolves.toBeUndefined();
+
+    tokenNetworkContract.functions.unlock.mockResolvedValueOnce({
+      hash: txHash,
+      confirmations: 1,
+      nonce: 2,
+      gasLimit: bigNumberify(1e6),
+      gasPrice: bigNumberify(2e10),
+      value: Zero,
+      data: '0x',
+      chainId: depsMock.network.chainId,
+      from: depsMock.address,
+      wait: jest.fn().mockResolvedValue({ byzantium: true, status: 1 }),
+    });
+
+    await expect(
+      channelUnlockEpic(
+        of(
+          channelSettle.success(
+            {
+              id: channelId,
+              txHash,
+              txBlock: 129,
+              confirmed: true,
+              locks: [
+                {
+                  amount: bigNumberify(10) as UInt<32>,
+                  expiration: bigNumberify(128) as UInt<32>,
+                  secrethash: getSecrethash(makeSecret()),
+                },
+              ],
+            },
+            { tokenNetwork, partner },
+          ),
+        ),
+        depsMock.latest$.pipe(pluck('state')),
+        depsMock,
+      ).toPromise(),
+    ).resolves.toBeUndefined();
+
+    expect(tokenNetworkContract.functions.unlock).toHaveBeenCalledTimes(2);
+    expect(tokenNetworkContract.functions.unlock).toHaveBeenCalledWith(
+      channelId,
+      depsMock.address,
+      partner,
+      expect.any(Uint8Array),
+    );
   });
 });

@@ -83,9 +83,9 @@ describe('Raiden', () => {
     raiden.action$
       .pipe(
         filter(isActionOf(ConfirmableActions)),
-        filter(a => a.payload.confirmed === undefined),
+        filter((a) => a.payload.confirmed === undefined),
       )
-      .subscribe(a =>
+      .subscribe((a) =>
         provider.mineUntil(a.payload.txBlock + raiden.config.confirmationBlocks + 1),
       );
     return raiden;
@@ -281,7 +281,7 @@ describe('Raiden', () => {
       settleTimeout: 20,
       revealTimeout: 5,
     });
-    expect(raiden.config.pfs).toBeUndefined();
+    expect(raiden.config.pfs).toBe('');
     raiden.updateConfig({ revealTimeout: 8 });
     expect(raiden.config).toMatchObject({
       revealTimeout: 8,
@@ -423,10 +423,10 @@ describe('Raiden', () => {
         raiden1.channels$
           .pipe(
             filter(
-              channels => get(channels, [token, raiden.address, 'state']) === ChannelState.open,
+              (channels) => get(channels, [token, raiden.address, 'state']) === ChannelState.open,
             ),
-            filter(channels => !!get(channels, [token, raiden.address, 'partnerDeposit'])),
-            filter(channels => get(channels, [token, raiden.address, 'partnerDeposit']).gt(0)),
+            filter((channels) => !!get(channels, [token, raiden.address, 'partnerDeposit'])),
+            filter((channels) => get(channels, [token, raiden.address, 'partnerDeposit']).gt(0)),
             first(),
           )
           .toPromise(), // resolves on first emitted value which passes all filters above
@@ -447,7 +447,7 @@ describe('Raiden', () => {
       // wait for raiden1 to pick up main tokenNetwork channel
       await expect(
         raiden1.state$
-          .pipe(first(state => !!get(state.channels, [tokenNetwork, raiden.address])))
+          .pipe(first((state) => !!get(state.channels, [tokenNetwork, raiden.address])))
           .toPromise(),
       ).resolves.toMatchObject({
         tokens: {
@@ -459,7 +459,7 @@ describe('Raiden', () => {
       });
 
       let raidenState: RaidenState | undefined;
-      raiden.state$.subscribe(state => (raidenState = state));
+      raiden.state$.subscribe((state) => (raidenState = state));
       raiden.stop();
       expect(raidenState!.tokens).toEqual({ [token]: tokenNetwork });
       // expect & save block when raiden was stopped
@@ -485,7 +485,7 @@ describe('Raiden', () => {
 
       raidenState = undefined;
       raiden = await createRaiden(0, storage);
-      raiden.state$.subscribe(state => (raidenState = state));
+      raiden.state$.subscribe((state) => (raidenState = state));
       raiden.start();
 
       // ensure after hot boot, state is rehydrated and contains (only) previous token
@@ -499,8 +499,8 @@ describe('Raiden', () => {
       await expect(
         raiden.state$
           .pipe(
-            filter(state => state.tokens[newToken] === newTokenNetwork),
-            first(state => !!get(state.channels, [newTokenNetwork, partner])),
+            filter((state) => state.tokens[newToken] === newTokenNetwork),
+            first((state) => !!get(state.channels, [newTokenNetwork, partner])),
           )
           .toPromise(),
       ).resolves.toMatchObject({
@@ -587,7 +587,7 @@ describe('Raiden', () => {
       await provider.mine(config.settleTimeout! + 1);
       await expect(
         raiden.channels$
-          .pipe(first(c => c[token]?.[partner]?.state === ChannelState.settleable))
+          .pipe(first((c) => c[token]?.[partner]?.state === ChannelState.settleable))
           .toPromise(),
       ).resolves.toMatchObject({
         [token]: {
@@ -628,7 +628,7 @@ describe('Raiden', () => {
       expect.assertions(4);
 
       const promise = raiden.events$
-        .pipe(first(value => tokenMonitored.is(value) && !!value.payload.fromBlock))
+        .pipe(first((value) => tokenMonitored.is(value) && !!value.payload.fromBlock))
         .toPromise();
 
       // deploy a new token & tokenNetwork
@@ -638,7 +638,7 @@ describe('Raiden', () => {
       await expect(
         raiden.state$
           .pipe(
-            filter(state => !!state.tokens?.[token]),
+            filter((state) => !!state.tokens?.[token]),
             takeUntil(timer(10)),
           )
           .toPromise(),
@@ -661,7 +661,7 @@ describe('Raiden', () => {
       const raiden1 = await createRaiden(partner, undefined);
 
       const promise1 = raiden1.events$
-        .pipe(first(value => tokenMonitored.is(value) && !!value.payload.fromBlock))
+        .pipe(first((value) => tokenMonitored.is(value) && !!value.payload.fromBlock))
         .toPromise();
 
       raiden1.start();
@@ -794,7 +794,8 @@ describe('Raiden', () => {
         await raiden1.state$
           .pipe(
             first(
-              state => state.channels[tokenNetwork]?.[raiden.address]?.state === ChannelState.open,
+              (state) =>
+                state.channels[tokenNetwork]?.[raiden.address]?.state === ChannelState.open,
             ),
           )
           .toPromise();
@@ -804,7 +805,7 @@ describe('Raiden', () => {
           available: true,
           ts: expect.any(Number),
         });
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       afterEach(() => raiden1.stop());
@@ -821,7 +822,7 @@ describe('Raiden', () => {
         expect.assertions(4);
 
         const transfers: { [h: string]: RaidenTransfer } = {};
-        raiden.transfers$.subscribe(t => (transfers[t.secrethash] = t));
+        raiden.transfers$.subscribe((t) => (transfers[t.secrethash] = t));
 
         const secrethash = await raiden.transfer(token, partner, 23);
         expect(secrethash).toMatch(/^0x[0-9a-fA-F]{64}$/);
@@ -851,10 +852,10 @@ describe('Raiden', () => {
           available: true,
           ts: expect.any(Number),
         });
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // auto pfs mode
-        raiden.updateConfig({ pfs: undefined });
+        raiden.updateConfig({ pfs: '' });
 
         fetch.mockResolvedValueOnce({
           ok: true,
@@ -891,7 +892,7 @@ describe('Raiden', () => {
         });
 
         const transfers: { [h: string]: RaidenTransfer } = {};
-        raiden.transfers$.subscribe(t => (transfers[t.secrethash] = t));
+        raiden.transfers$.subscribe((t) => (transfers[t.secrethash] = t));
 
         const secrethash = await raiden.transfer(token, target, 23);
         expect(secrethash).toMatch(/^0x[0-9a-fA-F]{64}$/);
@@ -956,7 +957,7 @@ describe('Raiden', () => {
         text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
       });
 
-      raiden.updateConfig({ pfs: undefined });
+      raiden.updateConfig({ pfs: '' });
       await expect(raiden.findPFS()).resolves.toEqual([
         {
           address: pfsAddress,
@@ -1005,7 +1006,7 @@ describe('Raiden', () => {
         available: true,
         ts: expect.any(Number),
       });
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       raiden.updateConfig({ pfs: pfsUrl });
     });
@@ -1073,7 +1074,7 @@ describe('Raiden', () => {
       });
 
       // config.pfs in auto mode
-      raiden.updateConfig({ pfs: undefined });
+      raiden.updateConfig({ pfs: '' });
 
       const pfss = await raiden.findPFS();
       expect(pfss).toEqual([
@@ -1278,7 +1279,7 @@ describe('Raiden', () => {
     let closeTx = await provider.getTransaction(closeTxHash);
     await provider.mineUntil(closeTx.blockNumber! + config.settleTimeout! + 1);
     await sub.channels$
-      .pipe(first(c => c[token]?.[partner]?.state === ChannelState.settleable))
+      .pipe(first((c) => c[token]?.[partner]?.state === ChannelState.settleable))
       .toPromise();
     await expect(sub.settleChannel(token, partner)).resolves.toMatch(/^0x/);
 
@@ -1312,7 +1313,7 @@ describe('Raiden', () => {
 
     await provider.mineUntil(closeTx.blockNumber! + config.settleTimeout! + 1);
     await sub.channels$
-      .pipe(first(c => c[token]?.[partner]?.state === ChannelState.settleable))
+      .pipe(first((c) => c[token]?.[partner]?.state === ChannelState.settleable))
       .toPromise();
     await expect(sub.settleChannel(token, partner)).resolves.toMatch(/^0x/);
 

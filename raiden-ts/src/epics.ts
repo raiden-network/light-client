@@ -14,7 +14,8 @@ import negate from 'lodash/negate';
 import { RaidenState } from './state';
 import { RaidenEpicDeps } from './types';
 import { RaidenAction, raidenShutdown } from './actions';
-import { makeDefaultConfig, PartialRaidenConfig, RaidenConfig } from './config';
+import { PartialRaidenConfig, RaidenConfig } from './config';
+import { pluckDistinct } from './utils/rx';
 import { getPresences$ } from './transport/utils';
 import { pfsListUpdated } from './path/actions';
 import { Address } from './utils/types';
@@ -35,14 +36,15 @@ import * as PathFindEpics from './path/epics';
 export function getLatest$(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { network }: { network: RaidenEpicDeps['network'] },
+  { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
 ) {
-  const defaultConfig = makeDefaultConfig({ network });
-  let lastConfig: [PartialRaidenConfig, RaidenConfig];
-
   return combineLatest([
     action$,
     state$,
+    state$.pipe(
+      pluckDistinct('config'),
+      map((c: PartialRaidenConfig): RaidenConfig => ({ ...defaultConfig, ...c })),
+    ),
     getPresences$(action$),
     action$.pipe(
       filter(isActionOf(pfsListUpdated)),
@@ -50,15 +52,11 @@ export function getLatest$(
       startWith([] as readonly Address[]),
     ),
   ]).pipe(
-    map(([action, state, presences, pfsList]) => {
-      // "memoize one" last merge of default and partial configs
-      const currentPartial = state.config;
-      if (lastConfig?.['0'] !== currentPartial)
-        lastConfig = [currentPartial, { ...defaultConfig, ...currentPartial }];
+    map(([action, state, config, presences, pfsList]) => {
       return {
         action,
         state,
-        config: lastConfig['1'],
+        config,
         presences,
         pfsList,
       };
@@ -92,8 +90,8 @@ export const raidenRootEpic = (
 
   // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
   return from(Object.values(RaidenEpics)).pipe(
-    mergeMap(epic => epic(limitedAction$, limitedState$, deps)),
-    catchError(err => of(raidenShutdown({ reason: err }))),
+    mergeMap((epic) => epic(limitedAction$, limitedState$, deps)),
+    catchError((err) => of(raidenShutdown({ reason: err }))),
     takeUntil(shutdownNotification),
   );
 };

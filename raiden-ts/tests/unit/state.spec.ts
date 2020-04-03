@@ -45,6 +45,7 @@ describe('RaidenState codecs', () => {
       tokens: { [token]: tokenNetwork },
       transport: {},
       sent: {},
+      received: {},
       path: { iou: {} },
       pendingTxs: [],
     };
@@ -71,6 +72,7 @@ describe('RaidenState codecs', () => {
       tokens: { [token]: tokenNetwork },
       transport: {},
       sent: {},
+      received: {},
       path: { iou: {} },
       pendingTxs: [],
     });
@@ -103,6 +105,7 @@ describe('RaidenState codecs', () => {
         tokens: {},
         transport: {},
         sent: {},
+        received: {},
         path: { iou: {} },
         pendingTxs: [],
       }),
@@ -159,6 +162,7 @@ describe('RaidenState codecs', () => {
       tokens: { [token]: tokenNetwork },
       transport: {},
       sent: {},
+      received: {},
       path: { iou: {} },
       pendingTxs: [],
     });

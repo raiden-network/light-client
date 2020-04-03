@@ -28,6 +28,11 @@ executors:
     docker:
       - image: *docker_image
 
+  integration-executor:
+    working_directory: ~/src
+    docker:
+      - image: raidennetwork/lightclient-integration:latest
+
 jobs:
   checkout:
     executor: base-executor
@@ -186,6 +191,27 @@ jobs:
           name: Publish on npm
           command: npm publish
 
+  integration_tests:
+    executor: integration-executor
+    working_directory: *sdk_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Restore dependencies
+          command: npm ci
+      - run:
+          name: Run integration tests
+          command: source /etc/profile.d/smartcontracts.sh && npm run test:integration -- --ci --runInBand --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
+      - store_test_results:
+          path: reports/junit
+      - store_artifacts:
+          path: reports/junit
+      - run:
+          name: "Upload coverage"
+          command: cd .. && bash <(curl -s https://codecov.io/bash) -F sdk-integration
+
 workflows:
   version: 2
   default_workflow:
@@ -211,6 +237,7 @@ workflows:
       - build_dapp:
           requires:
             - install_dapp
+          context: "Raiden-LC-Deploy"
       - test_sdk:
           requires:
             - lint_sdk
@@ -218,6 +245,14 @@ workflows:
           requires:
             - lint_dapp
             - build_dapp
+      - deploy_gh_pages:
+          requires:
+            - test_dapp
+          context: "Raiden-LC-Deploy"
+          filters:
+            branches:
+              only:
+                - master
 
   publish:
     jobs:
@@ -255,3 +290,17 @@ workflows:
             - deploy_gh_pages
           filters:
             <<: *filter-version-regex
+
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - checkout
+      - integration_tests:
+          requires:
+            - checkout

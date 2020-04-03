@@ -8,3 +8,20 @@ const methodFactory = logging.methodFactory;
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 Object.assign(logging, { methodFactory }); // revert
 matrixLogger.setLevel(logging.levels.DEBUG); // apply
+
+// request.abort() is called when shutting down matrix; this patch clears some timeouts left behind
+import { getRequest, request } from 'matrix-js-sdk';
+const origRequest = getRequest();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ReqCb = (err?: Error, res?: any, body?: any) => void;
+// 'request' replaces matrix's request
+request((opts: object, cb: ReqCb) => {
+  const req = origRequest(opts, cb);
+  const origAbort = req.abort.bind(req);
+  return Object.assign(req, {
+    abort: function () {
+      origAbort();
+      cb(new Error('aborted!')); // also call callback when aborting, to clear pending timeouts
+    },
+  });
+});

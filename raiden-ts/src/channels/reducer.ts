@@ -1,4 +1,7 @@
-import { get, set, unset, getOr } from 'lodash/fp';
+import get from 'lodash/fp/get';
+import set from 'lodash/fp/set';
+import unset from 'lodash/fp/unset';
+import getOr from 'lodash/fp/getOr';
 import { Zero } from 'ethers/constants';
 
 import { UInt } from '../utils/types';
@@ -124,7 +127,12 @@ function channelCloseSuccessReducer(
   if (action.payload.confirmed === undefined && channel.state === ChannelState.open)
     channel = { ...channel, state: ChannelState.closing };
   else if (action.payload.confirmed)
-    channel = { ...channel, state: ChannelState.closed, closeBlock: action.payload.txBlock };
+    channel = {
+      ...channel,
+      state: ChannelState.closed,
+      closeBlock: action.payload.txBlock,
+      closeParticipant: action.payload.participant,
+    };
   else return state;
   return set(path, channel, state);
 }
@@ -195,7 +203,7 @@ const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
   // else (either confirmed or removed), remove from state
   else {
     const newState = state.filter(
-      a => a.type !== action.type || action.payload.txHash !== a.payload.txHash,
+      (a) => a.type !== action.type || action.payload.txHash !== a.payload.txHash,
     );
     if (newState.length !== state.length) return newState;
     return state;

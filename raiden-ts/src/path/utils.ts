@@ -101,7 +101,7 @@ export function pfsInfo(
       return fromFetch(url + '/api/v1/info').pipe(
         timeout(httpTimeout),
         mergeMap(
-          async res =>
+          async (res) =>
             [
               decode(PathInfo, losslessParse(await res.text())),
               await serviceRegistryToken(serviceRegistryContract),
@@ -137,9 +137,9 @@ export function pfsListInfo(
   const { log } = deps;
   return from(pfsList).pipe(
     mergeMap(
-      addrOrUrl =>
+      (addrOrUrl) =>
         pfsInfo(addrOrUrl, deps).pipe(
-          catchError(err => {
+          catchError((err) => {
             log.warn(`Error trying to fetch PFS info for "${addrOrUrl}" - ignoring:`, err);
             return EMPTY;
           }),
@@ -147,7 +147,7 @@ export function pfsListInfo(
       5, // maximum concurrency
     ),
     toArray(),
-    map(list => {
+    map((list) => {
       if (!list.length) throw new RaidenError(ErrorCodes.PFS_INVALID_INFO);
       return list.sort((a, b) => {
         const dif = a.price.sub(b.price);

@@ -21,6 +21,7 @@
     <v-card-actions>
       <action-button
         enabled
+        full-width
         :text="$t('backup-state.download-button')"
         @click="getAndDownloadState()"
       ></action-button>

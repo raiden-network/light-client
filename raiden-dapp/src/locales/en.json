@@ -448,5 +448,20 @@
       "title": "Grant Camera Access",
       "description": "In order to scan QR codes, you will need to allow camera access."
     }
+  },
+  "progress-steps": {
+    "transfer": {
+      "PENDING": "Transfer sent",
+      "RECEIVED": "Transfer acknowledged by partner",
+      "REFUNDED": "Transfer refunded",
+      "CLOSED": "Channel closed early",
+      "REVEALED": "Secret revealed to target",
+      "UNLOCKING": "Unlock sent to partner",
+      "EXPIRING": "Lock expired",
+      "UNLOCKED": "Unlock acknowledged",
+      "EXPIRED": "Lock expired acknowledged",
+      "REQUESTED": "Secret requested by target",
+      "REGISTERED": "Secret registered on-chain"
+    }
   }
 }

@@ -18,7 +18,14 @@ import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { isActionOf, isResponseOf } from '../../utils/actions';
 import { pluckDistinct } from '../../utils/rx';
-import { transferExpire, transferSigned, transferUnlock } from '../actions';
+import {
+  transferExpire,
+  transferSigned,
+  transferUnlock,
+  transferSecretRequest,
+  transferSecretReveal,
+} from '../actions';
+import { Direction } from '../state';
 import { dispatchAndWait$ } from './utils';
 
 function repeatUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOperatorFunction<T> {
@@ -27,9 +34,9 @@ function repeatUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOper
   // waits for address's user in transport to be online and joined room before actually
   // sending the message. That's why repeatWhen emits/resubscribe only some time after
   // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-  return input$ =>
+  return (input$) =>
     input$.pipe(
-      repeatWhen(completed$ => completed$.pipe(delay(delayMs))),
+      repeatWhen((completed$) => completed$.pipe(delay(delayMs))),
       takeUntil(notifier),
     );
 }
@@ -62,8 +69,9 @@ const signedRetryMessage$ = (
   state$: Observable<RaidenState>,
   config$: Observable<RaidenConfig>,
   action: transferSigned,
-): Observable<messageSend.request> =>
-  config$.pipe(
+): Observable<messageSend.request> => {
+  if (action.meta.direction !== Direction.SENT) return EMPTY;
+  return config$.pipe(
     first(),
     switchMap(({ httpTimeout }) => {
       const secrethash = action.meta.secrethash;
@@ -75,7 +83,7 @@ const signedRetryMessage$ = (
       const notifier = state$.pipe(
         pluckDistinct('sent', secrethash),
         filter(
-          sent =>
+          (sent) =>
             !!(
               sent.transferProcessed ||
               sent.unlockProcessed ||
@@ -88,6 +96,7 @@ const signedRetryMessage$ = (
       return retrySendUntil$(send, action$, notifier, httpTimeout);
     }),
   );
+};
 
 /**
  * Handles a transferUnlock.success action and retry messageSend until confirmed.
@@ -105,13 +114,13 @@ const unlockedRetryMessage$ = (
   state$: Observable<RaidenState>,
   config$: Observable<RaidenConfig>,
   action: transferUnlock.success,
-): Observable<messageSend.request> =>
-  state$.pipe(
+): Observable<messageSend.request> => {
+  if (action.meta.direction !== Direction.SENT) return EMPTY;
+  return state$.pipe(
     first(),
     withLatestFrom(config$),
     switchMap(([state, { httpTimeout }]) => {
       const secrethash = action.meta.secrethash;
-      if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
       const unlock = action.payload.message;
       const transfer = state.sent[secrethash].transfer[1];
       const send = messageSend.request(
@@ -121,13 +130,14 @@ const unlockedRetryMessage$ = (
 
       const notifier = state$.pipe(
         pluckDistinct('sent', secrethash),
-        filter(sent => !!(sent.unlockProcessed || sent.channelClosed)),
+        filter((sent) => !!(sent.unlockProcessed || sent.channelClosed)),
       );
       // emit request once immediatelly, then wait until respective success,
       // then repeats until confirmed
       return retrySendUntil$(send, action$, notifier, httpTimeout);
     }),
   );
+};
 
 /**
  * Handles a transferExpire.success action and retry messageSend.request until transfer is gone (completed
@@ -146,13 +156,13 @@ const expiredRetryMessages$ = (
   state$: Observable<RaidenState>,
   config$: Observable<RaidenConfig>,
   action: transferExpire.success,
-): Observable<messageSend.request> =>
-  state$.pipe(
+): Observable<messageSend.request> => {
+  if (action.meta.direction !== Direction.SENT) return EMPTY;
+  return state$.pipe(
     first(),
     withLatestFrom(config$),
     switchMap(([state, { httpTimeout }]) => {
       const secrethash = action.meta.secrethash;
-      if (!(secrethash in state.sent)) return EMPTY; // shouldn't happen
       const lockExpired = action.payload.message;
       const send = messageSend.request(
         { message: lockExpired },
@@ -163,13 +173,87 @@ const expiredRetryMessages$ = (
       );
       const notifier = state$.pipe(
         pluckDistinct('sent', secrethash),
-        filter(sent => !!(sent.lockExpiredProcessed || sent.channelClosed)),
+        filter((sent) => !!(sent.lockExpiredProcessed || sent.channelClosed)),
       );
       // emit request once immediatelly, then wait until respective success,
       // then retries until confirmed
       return retrySendUntil$(send, action$, notifier, httpTimeout);
     }),
   );
+};
+
+const secretRequestRetryMessage$ = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  config$: Observable<RaidenConfig>,
+  action: transferSecretRequest,
+): Observable<messageSend.request> => {
+  if (action.meta.direction !== Direction.RECEIVED) return EMPTY;
+  return state$.pipe(
+    first(),
+    withLatestFrom(config$),
+    switchMap(([state, { httpTimeout }]) => {
+      const secrethash = action.meta.secrethash;
+      const request = action.payload.message;
+      const send = messageSend.request(
+        { message: request },
+        {
+          address: state.received[secrethash].transfer[1].initiator,
+          msgId: request.message_identifier.toString(),
+        },
+      );
+      const notifier = state$.pipe(
+        pluckDistinct('received', secrethash),
+        // stop retrying when we've signed secretReveal, lock expired or channel closed
+        // we could stop as soon as we know received.secret, but we use it to retry SecretReveal
+        // signature, if it failed for any reason
+        filter(
+          (received) =>
+            !!(received.secretReveal || received.lockExpired || received.channelClosed),
+        ),
+      );
+      // emit request once immediatelly, then wait until respective success,
+      // then retries until confirmed
+      return retrySendUntil$(send, action$, notifier, httpTimeout);
+    }),
+  );
+};
+
+const secretRevealRetryMessage$ = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  config$: Observable<RaidenConfig>,
+  action: transferSecretReveal,
+): Observable<messageSend.request> => {
+  if (action.meta.direction !== Direction.RECEIVED) return EMPTY;
+  return state$.pipe(
+    first(),
+    withLatestFrom(config$),
+    switchMap(([state, { httpTimeout }]) => {
+      const secrethash = action.meta.secrethash;
+      const reveal = action.payload.message;
+      const send = messageSend.request(
+        { message: reveal },
+        {
+          address: state.received[secrethash].partner,
+          msgId: reveal.message_identifier.toString(),
+        },
+      );
+      const notifier = state$.pipe(
+        pluckDistinct('received', secrethash),
+        // stop retrying when we were unlocked, secret registered or channel closed
+        // we don't test for lockExpired, as we know the secret and must not accept LockExpired
+        filter(
+          (received) =>
+            !!(received.unlock || received.secret?.[1]?.registerBlock || received.channelClosed),
+        ),
+      );
+      // emit request once immediatelly, then wait until respective success,
+      // then retries until confirmed
+      return retrySendUntil$(send, action$, notifier, httpTimeout);
+    }),
+  );
+};
 
 /**
  * Retry sending balance proof messages until their respective Processed
@@ -183,14 +267,28 @@ export const transferRetryMessageEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { latest$, config$ }: RaidenEpicDeps,
-): Observable<messageSend.request> =>
-  action$.pipe(
-    filter(isActionOf([transferSigned, transferUnlock.success, transferExpire.success])),
-    mergeMap(action =>
+): Observable<messageSend.request> => {
+  const state$ = latest$.pipe(pluckDistinct('state'));
+  return action$.pipe(
+    filter(
+      isActionOf([
+        transferSigned,
+        transferUnlock.success,
+        transferExpire.success,
+        transferSecretRequest,
+        transferSecretReveal,
+      ]),
+    ),
+    mergeMap((action) =>
       transferSigned.is(action)
-        ? signedRetryMessage$(action$, latest$.pipe(pluckDistinct('state')), config$, action)
+        ? signedRetryMessage$(action$, state$, config$, action)
         : transferUnlock.success.is(action)
-        ? unlockedRetryMessage$(action$, latest$.pipe(pluckDistinct('state')), config$, action)
-        : expiredRetryMessages$(action$, latest$.pipe(pluckDistinct('state')), config$, action),
+        ? unlockedRetryMessage$(action$, state$, config$, action)
+        : transferExpire.success.is(action)
+        ? expiredRetryMessages$(action$, state$, config$, action)
+        : transferSecretRequest.is(action)
+        ? secretRequestRetryMessage$(action$, state$, config$, action)
+        : secretRevealRetryMessage$(action$, state$, config$, action),
     ),
   );
+};

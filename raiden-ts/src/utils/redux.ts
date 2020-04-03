@@ -16,7 +16,7 @@ export function partialCombineReducers<S, A extends Action = Action>(
   reducers: { [K in keyof S]?: Reducer<S[K], A> },
   initialState: S,
 ): Reducer<S, A> {
-  return function(state: S = initialState, action: A): S {
+  return function (state: S = initialState, action: A): S {
     for (const key in reducers) {
       const reducer = reducers[key];
       if (!reducer) continue; // shouldn't happen, only here for type safety below

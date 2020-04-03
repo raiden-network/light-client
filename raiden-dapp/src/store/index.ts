@@ -24,7 +24,7 @@ import reduce from 'lodash/reduce';
 import orderBy from 'lodash/orderBy';
 import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
-import { Network } from 'ethers/utils';
+import { Network, BigNumber } from 'ethers/utils';
 
 Vue.use(Vuex);
 
@@ -152,7 +152,18 @@ const store: StoreOptions<RootState> = {
         .reduce((pendingTransfers: Transfers, secretHash: string) => {
           pendingTransfers[secretHash] = transfers[secretHash];
           return pendingTransfers;
-        }, {})
+        }, {}),
+    transfer: (state: RootState) => (paymentId: BigNumber) => {
+      const secretHash = Object.keys(state.transfers).find(
+        secretHash => state.transfers[secretHash].paymentId === paymentId
+      );
+
+      if (secretHash) {
+        return state.transfers[secretHash];
+      }
+
+      return undefined;
+    }
   }
 };
 

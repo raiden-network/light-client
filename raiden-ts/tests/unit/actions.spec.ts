@@ -208,7 +208,7 @@ describe('utils/actions', () => {
 
     const reducer1 = reducer0
       .handle(incrementBy, (s, { payload }) => s + payload)
-      .handle(decrement, s => s - 1);
+      .handle(decrement, (s) => s - 1);
     expect(reducer1(undefined, incrementBy(5))).toBe(5);
     expect(reducer1(9, decrement())).toBe(8);
     expect(reducer1(8, noop())).toBe(8);
