@@ -40,7 +40,7 @@ class AdminUserAuthProvider:
             user_exists = yield self.account_handler.check_user_exists(user_id)
             if not user_exists:
                 self.log.info("First well known admin user login, registering: user=%r", user_id)
-                user_id = yield self.account_handler.hs.get_registration_handler().register_user(
+                user_id = yield self.account_handler._hs.get_registration_handler().register_user(
                     localpart=username, admin=True
                 )
                 _, access_token = yield self.account_handler.register_device(user_id)
