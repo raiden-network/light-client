@@ -50,6 +50,7 @@
                 :id="`confirm-${identifier}`"
                 :enabled="valid"
                 :text="$t('channel-deposit.buttons.confirm')"
+                full-width
               />
             </div>
           </v-form>
