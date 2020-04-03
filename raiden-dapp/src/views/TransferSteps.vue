@@ -177,6 +177,7 @@
       :visible="processingTransfer"
       :in-progress="!transferDone"
       :error="error"
+      :identifier="paymentId"
       @dismiss="dismissProgress(0)"
     ></transfer-progress-dialog>
 
