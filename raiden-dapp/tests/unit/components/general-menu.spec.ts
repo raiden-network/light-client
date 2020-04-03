@@ -115,4 +115,18 @@ describe('GeneralMenu.vue', () => {
       'general-menu.menu-items.report-bugs-subtitle'
     );
   });
+
+  test('calls method for downloading logs', async () => {
+    // @ts-ignore
+    wrapper.vm.downloadLogs = jest.fn();
+    const reportBugsMenuItem = wrapper
+      .findAll('.general-screen-menu__menu__list-items')
+      .at(1);
+    const reportBugsButton = reportBugsMenuItem.find('button');
+    reportBugsButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    // @ts-ignore
+    expect(wrapper.vm.downloadLogs).toBeCalled();
+  });
 });

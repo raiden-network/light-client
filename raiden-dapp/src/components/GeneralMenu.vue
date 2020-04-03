@@ -96,25 +96,29 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
         subtitle: this.$t(
           'general-menu.menu-items.report-bugs-subtitle'
         ) as string,
-        route: async () => {
-          /* istanbul ignore next */
-          const [lastTime, content] = await getLogsFromStore();
-          const filename = `raiden_${new Date(lastTime).toISOString()}.log`;
-          const file = new File([content], filename, { type: 'text/plain' });
-          const url = URL.createObjectURL(file);
-          const el = document.createElement('a');
-          el.href = url;
-          el.download = filename;
-          el.style.display = 'none';
-          document.body.appendChild(el);
-          el.click();
-          setTimeout(() => {
-            URL.revokeObjectURL(url);
-            document.body.removeChild(el);
-          }, 0);
+        route: () => {
+          this.downloadLogs();
         }
       }
     ];
+  }
+
+  /* istanbul ignore next */
+  async downloadLogs() {
+    const [lastTime, content] = await getLogsFromStore();
+    const filename = `raiden_${new Date(lastTime).toISOString()}.log`;
+    const file = new File([content], filename, { type: 'text/plain' });
+    const url = URL.createObjectURL(file);
+    const el = document.createElement('a');
+    el.href = url;
+    el.download = filename;
+    el.style.display = 'none';
+    document.body.appendChild(el);
+    el.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      document.body.removeChild(el);
+    }, 0);
   }
 }
 </script>
