@@ -30,7 +30,10 @@
       :src="$blockie(defaultAccount)"
       contain
       aspect-ratio="1"
-      class="header-identicon__blockie"
+      :class="{
+        'header-identicon__blockie': defaultAccount,
+        'header-identicon__blockie header-identicon__blockie__grayscale': !defaultAccount
+      }"
     />
   </div>
 </template>
@@ -69,6 +72,10 @@ export default class HeaderIdenticon extends Mixins(BlockieMixin) {
     width: 36px;
     border: 1px solid $color-white;
     background-color: $color-gray;
+
+    &__grayscale {
+      filter: grayscale(1);
+    }
   }
 
   ::v-deep {

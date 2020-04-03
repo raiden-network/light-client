@@ -30,9 +30,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
+import { Component, Prop, Emit, Mixins } from 'vue-property-decorator';
 import RaidenDialog from '@/components/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
+import NavigationMixin from '../mixins/navigation-mixin';
 
 @Component({
   components: {
@@ -40,7 +41,7 @@ import ActionButton from '@/components/ActionButton.vue';
     ActionButton
   }
 })
-export default class DownloadStateDialog extends Vue {
+export default class DownloadStateDialog extends Mixins(NavigationMixin) {
   @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
 
@@ -49,6 +50,7 @@ export default class DownloadStateDialog extends Vue {
 
   /* istanbul ignore next */
   async getAndDownloadState() {
+    this.navigateToHome();
     const state = await this.$raiden.getState();
     const stateJSON = JSON.stringify(state);
     const filename = `raiden_lc_state_${new Date().toISOString()}.json`;

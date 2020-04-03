@@ -10,8 +10,10 @@
             width="40px"
             @click="onGeneralBackClicked()"
           >
-            <v-img :src="require('../assets/back_arrow.svg')" max-width="34px">
-            </v-img>
+            <v-img
+              :src="require('../assets/back_arrow.svg')"
+              max-width="34px"
+            />
           </v-btn>
         </div>
         <div class="general-screen__header__content__title">
@@ -19,25 +21,47 @@
         </div>
       </div>
     </v-row>
-    <router-view></router-view>
+    <router-view />
+    <v-row class="general-screen__footer" no-gutters>
+      <div v-if="version">
+        <span>
+          {{ $t('versions.sdk', { version }) }}
+        </span>
+        <span class="general-screen__footer__contracts-version">
+          {{ $t('versions.contracts', { version: contractVersion }) }}
+        </span>
+      </div>
+    </v-row>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
+import { Raiden } from 'raiden-ts';
 import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({})
-export default class GeneralDialog extends Mixins(NavigationMixin) {}
+export default class GeneralDialog extends Mixins(NavigationMixin) {
+  get version() {
+    return Raiden.version;
+  }
+
+  get contractVersion() {
+    return Raiden.contractVersion;
+  }
+}
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 @import '../scss/mixins';
 @import '../scss/fonts';
+@import '../scss/colors';
 
 .general-screen {
   background-color: black;
   border-radius: 10px;
+  display: flex;
+  flex-direction: column;
   height: 844px;
   margin-top: 12px;
   position: absolute;
@@ -51,6 +75,7 @@ export default class GeneralDialog extends Mixins(NavigationMixin) {}
   }
 
   &__header {
+    flex: none;
     margin-top: 13px;
     width: 620px;
     @include respond-to(handhelds) {
@@ -74,6 +99,18 @@ export default class GeneralDialog extends Mixins(NavigationMixin) {}
         padding-bottom: 18px;
         text-align: center;
       }
+    }
+  }
+
+  &__footer {
+    align-items: flex-end;
+    color: $secondary-button-color;
+    font-size: 13px;
+    justify-content: center;
+    padding-bottom: 25px;
+
+    &__contracts-version {
+      padding-left: 15px;
     }
   }
 }

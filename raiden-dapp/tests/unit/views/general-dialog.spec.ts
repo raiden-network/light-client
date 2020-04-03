@@ -23,7 +23,8 @@ describe('GeneralDialog.vue', () => {
       stubs: ['router-view'],
       mocks: {
         $router: router,
-        $route: TestData.mockRoute()
+        $route: TestData.mockRoute(),
+        $t: (msg: string) => msg
       }
     });
   });

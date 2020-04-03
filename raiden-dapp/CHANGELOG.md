@@ -22,12 +22,14 @@
 - [#1136] Ability to scan QR codes.
 - [#1160] Ability to submit forms via enter.
 - [#300] Enter amounts with leading "." (dot).
+- [#1222] dApp window as home screen
 
 [#691]: https://github.com/raiden-network/light-client/issues/691
 [#921]: https://github.com/raiden-network/light-client/issues/921
 [#1136]: https://github.com/raiden-network/light-client/issues/1136
 [#1160]: https://github.com/raiden-network/light-client/issues/1160
 [#300]: https://github.com/raiden-network/light-client/issues/300
+[#1222]: https://github.com/raiden-network/light-client/issues/1222
 
 ## [0.4.2] - 2020-03-05
 ### Fixed
