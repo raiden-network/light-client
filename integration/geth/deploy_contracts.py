@@ -43,7 +43,7 @@ SERVICE_REGISTRATION_DURATION = 17_280_000
 @click.option("--rpc-url", default="http://localhost:8545")
 def main(keystore_file: str, contract_version: str, password: str, output: str, rpc_url: str):
     web3 = Web3(HTTPProvider(rpc_url, request_kwargs={'timeout': 60}))
-    web3.middleware_stack.inject(geth_poa_middleware, layer=0)
+    web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     with open(keystore_file, 'r') as keystore:
         encrypted_key = keystore.read()
@@ -60,7 +60,7 @@ def main(keystore_file: str, contract_version: str, password: str, output: str, 
         print('Account with insuficient funds.')
         exit(1)
 
-    print(f'Deploying contracts on behalf of {owner}')
+    print(f'Deploying contracts {contract_version} on behalf of {owner}')
 
     deployer = ContractDeployer(
         web3=web3,

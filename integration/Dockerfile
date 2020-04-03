@@ -1,6 +1,7 @@
-ARG CONTRACTS_VERSION="0.36.0"
-ARG PFS_VERSION="918ee6ef2dcfe293d1ce57c11f5ca23c8e9d68f3"
-ARG RAIDEN_VERSION="2e741dfdf4bfa564dec760abd5e3d8b2c9d30715"
+ARG CONTRACTS_VERSION="0.37.0-beta"
+ARG PFS_VERSION="37050f5522f20ed74a5773fd39c75c9c243b7384"
+ARG RAIDEN_VERSION="f29c6da85e2871b87eaec5ffcde33d569413346f"
+ARG SYNAPSE_VERSION=1.10.0
 ARG OS_NAME="LINUX"
 ARG GETH_VERSION="1.9.9"
 ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.9-01744997.tar.gz"
@@ -19,7 +20,7 @@ RUN git checkout ${RAIDEN_VERSION}
 RUN make install
 
 FROM python:3.7 as synapse-builder
-ARG SYNAPSE_VERSION=1.5.1
+ARG SYNAPSE_VERSION
 
 RUN python -m venv /synapse-venv \
     && /synapse-venv/bin/pip install "matrix-synapse[sqlite]==${SYNAPSE_VERSION}" \

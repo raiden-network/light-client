@@ -14,7 +14,7 @@
 
 import logging
 import re
-from binascii import unhexlify, hexlify
+from binascii import unhexlify
 from typing import Callable
 
 from coincurve import PublicKey
@@ -72,7 +72,7 @@ class EthAuthProvider:
     def __init__(self, config, account_handler):
         self.account_handler = account_handler
         self.config = config
-        self.hs_hostname = self.account_handler.hs.hostname
+        self.hs_hostname = self.account_handler._hs.hostname
         self.log = logging.getLogger(__name__)
 
     @defer.inlineCallbacks
@@ -108,8 +108,8 @@ class EthAuthProvider:
             self.log.error(
                 "Invalid account password/signature. user=%r, expected=%r, recovered=%r",
                 user_id,
-                hexlify(user_addr),
-                hexlify(rec_addr),
+                user_addr,
+                rec_addr,
             )
             defer.returnValue(False)
 
