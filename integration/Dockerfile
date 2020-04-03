@@ -1,5 +1,5 @@
 ARG CONTRACTS_VERSION="0.37.0-beta"
-ARG PFS_VERSION="37050f5522f20ed74a5773fd39c75c9c243b7384"
+ARG SERVICES_VERSION="37050f5522f20ed74a5773fd39c75c9c243b7384"
 ARG RAIDEN_VERSION="f29c6da85e2871b87eaec5ffcde33d569413346f"
 ARG SYNAPSE_VERSION=1.10.0
 ARG OS_NAME="LINUX"
@@ -121,12 +121,12 @@ COPY synapse/exec/ /usr/local/bin/
 COPY --from=synapse-builder /synapse-venv /opt/synapse/venv
 
 # Services
-ARG PFS_VERSION
+ARG SERVICES_VERSION
 
 WORKDIR /opt/services
 RUN git clone https://github.com/raiden-network/raiden-services.git
 WORKDIR /opt/services/raiden-services
-RUN git checkout "${PFS_VERSION}"
+RUN git checkout "${SERVICES_VERSION}"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3-dev \
