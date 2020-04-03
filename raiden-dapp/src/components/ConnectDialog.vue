@@ -1,9 +1,14 @@
 <template>
-  <raiden-dialog class="connect" :visible="visible" @close="close">
+  <raiden-dialog
+    class="connect"
+    :visible="visible"
+    :hide-close="hideClose"
+    @close="close"
+  >
     <v-card-title>
       {{ $t('home.connect-dialog.connect-title') }}
     </v-card-title>
-    <v-card-action v-if="injectedProvider">
+    <div v-if="injectedProvider">
       <div class="connect__button">
         <action-button
           :text="$t('home.connect-dialog.web3-provider')"
@@ -31,7 +36,7 @@
       <div v-else class="connect__raiden-account-spinner text-center">
         <v-progress-circular :size="30" :width="1" indeterminate />
       </div>
-    </v-card-action>
+    </div>
     <no-access-message v-if="accessDenied" :reason="accessDenied" />
     <v-card-text v-if="!injectedProvider">
       <div class="text-center">
@@ -59,6 +64,7 @@ import NoAccessMessage from '@/components/NoAccessMessage.vue';
   computed: mapState(['accessDenied'])
 })
 export default class ConnectDialog extends Vue {
+  hideClose: boolean = false;
   accessDenied!: DeniedReason;
 
   @Prop({ required: true, type: Boolean, default: false })
@@ -73,6 +79,7 @@ export default class ConnectDialog extends Vue {
 
   @Emit()
   connect(subkey?: true) {
+    this.hideClose = true;
     return subkey;
   }
 

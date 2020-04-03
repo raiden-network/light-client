@@ -108,7 +108,7 @@ export default class AppHeader extends Mixins(NavigationMixin) {
       }
 
       &__title {
-        color: #fff;
+        color: $color-white;
         font-family: $main-font;
         font-size: 24px;
         line-height: 28px;
