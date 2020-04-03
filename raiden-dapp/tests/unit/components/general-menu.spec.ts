@@ -15,10 +15,11 @@ describe('GeneralMenu.vue', () => {
   let router: Mocked<VueRouter>;
   let vuetify: typeof Vuetify;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vuetify = new Vuetify();
     router = new VueRouter() as Mocked<VueRouter>;
-
+    store.commit('loadComplete');
+    store.commit('account', 'testAccount');
     wrapper = mount(GeneralMenu, {
       vuetify,
       store,
@@ -27,9 +28,11 @@ describe('GeneralMenu.vue', () => {
         $t: (msg: string) => msg
       }
     });
+
+    await wrapper.vm.$nextTick();
   });
 
-  test('displays account details title', () => {
+  test('displays account details title', async () => {
     const accountDetailsTitle = wrapper.find(
       '.general-screen-menu__account-details--title'
     );
@@ -54,12 +57,12 @@ describe('GeneralMenu.vue', () => {
   test('displays eth', async () => {
     store.commit('balance', '12.0');
     await wrapper.vm.$nextTick();
-    const ethTitle = wrapper
-      .findAll('.general-screen-menu__account-details--eth')
-      .at(0);
-    const eth = wrapper
-      .findAll('.general-screen-menu__account-details--eth')
-      .at(1);
+    const ethTitle = wrapper.find(
+      '.general-screen-menu__account-details__eth--currency'
+    );
+    const eth = wrapper.find(
+      '.general-screen-menu__account-details__eth--balance'
+    );
 
     expect(ethTitle.text()).toBe('general-menu.currency');
     expect(eth.text()).toBe('12.000');
