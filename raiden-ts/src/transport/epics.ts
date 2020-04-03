@@ -47,6 +47,7 @@ import {
   takeWhile,
   bufferTime,
   endWith,
+  mergeMapTo,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import find from 'lodash/find';
@@ -1527,6 +1528,70 @@ export const deliveredEpic = (
 
 type CallInfo = { callId: string; peerId: string; peerAddress: Address };
 
+// fetches and caches matrix set turnServer
+const _matrixIceServersCache = new WeakMap<MatrixClient, [number, RTCIceServer[]]>();
+async function getMatrixIceServers(matrix: MatrixClient): Promise<RTCIceServer[]> {
+  const cached = _matrixIceServersCache.get(matrix);
+  if (cached && Date.now() < cached[0]) return cached[1];
+  const fetched = ((await matrix.turnServer()) as unknown) as
+    | {
+        uris: string | string[];
+        ttl: number;
+        username: string;
+        password: string;
+      }
+    | {}
+    | undefined;
+  // if request returns nothing, caches empty list for 1h
+  let expire = Date.now() + 36e5;
+  const servers: RTCIceServer[] = [];
+  if (fetched && 'uris' in fetched) {
+    servers.push({
+      urls: fetched.uris,
+      username: fetched.username,
+      credentialType: 'password',
+      credential: fetched.password,
+    });
+    expire = Date.now() + fetched.ttl * 1e3;
+  }
+  _matrixIceServersCache.set(matrix, [expire, servers]);
+  return servers;
+}
+
+// creates a filter function which filters valid MatrixEvents
+function filterMatrixVoipEvents<
+  T extends 'm.call.invite' | 'm.call.answer' | 'm.call.candidates' | 'm.call.hangup'
+>(type: T, sender: string, callId: string, httpTimeout?: number) {
+  type ContentKey = T extends 'm.call.invite'
+    ? 'offer'
+    : T extends 'm.call.answer'
+    ? 'answer'
+    : T extends 'm.call.candidates'
+    ? 'candidates'
+    : never;
+  const contentKey = (type === 'm.call.invite'
+    ? 'offer'
+    : type === 'm.call.answer'
+    ? 'answer'
+    : type === 'm.call.candidates'
+    ? 'candidates'
+    : undefined) as ContentKey | undefined;
+  return (
+    // FIXME: remove any when MatrixEvent type exposes getAge & getContent methods
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    event: any,
+  ): event is MatrixEvent & {
+    getType: () => T;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getContent: () => { call_id: string } & { [K in ContentKey]: any };
+  } =>
+    event.getType() === type &&
+    event.getSender() === sender &&
+    event.getContent()?.call_id === callId &&
+    (!httpTimeout || event.getAge() <= (event.getContent()?.lifetime ?? httpTimeout)) &&
+    (!contentKey || !!event.getContent()?.[contentKey]);
+}
+
 // setup candidates$ handlers
 function handleCandidates$(
   connection: RTCPeerConnection,
@@ -1556,12 +1621,7 @@ function handleCandidates$(
     ),
     // when receiving candidates from peer, add it locally
     fromEvent<MatrixEvent>(matrix, 'event').pipe(
-      filter(
-        (event) =>
-          event.getType() === ('m.call.candidates' as EventType) &&
-          event.getSender() === peerId &&
-          event.event?.content?.call_id === callId,
-      ),
+      filter(filterMatrixVoipEvents('m.call.candidates', peerId, callId)),
       tap((e) => log.debug('RTC: received candidates', callId, e.getContent().candidates)),
       mergeMap((event) => from<RTCIceCandidateInit[]>(event.getContent().candidates ?? [])),
       mergeMap((candidate) =>
@@ -1581,64 +1641,59 @@ function setupCallerDataChannel$(
   matrix: MatrixClient,
   start$: Subject<null>,
   info: CallInfo,
-  { httpTimeout }: RaidenConfig,
+  { httpTimeout, fallbackIceServers }: RaidenConfig,
   deps: Pick<RaidenEpicDeps, 'log' | 'latest$' | 'config$'>,
 ): Observable<RTCDataChannel> {
   const { callId, peerId, peerAddress } = info;
   const { log, latest$, config$ } = deps;
 
-  const connection = new RTCPeerConnection({
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-  });
-  // we relay on retries, no need to enforce ordered
-  const dataChannel = connection.createDataChannel(callId, { ordered: false });
-  return merge(
-    // despite 'never' emitting, candidates$ have side-effects while/when subscribed
-    handleCandidates$(connection, matrix, start$, info, deps),
-    defer(() => connection.createOffer()).pipe(
-      mergeMap((offer) => {
-        connection.setLocalDescription(offer);
-        const content = {
-          call_id: callId,
-          lifetime: httpTimeout,
-          version: 0,
-          offer,
-        };
-        return merge(
-          // wait for answer
-          fromEvent<MatrixEvent>(matrix, 'event').pipe(
-            filter<MatrixEvent>(
-              // FIXME: remove any when MatrixEvent type exposes getAge & getContent methods
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (event: any) =>
-                event.getType() === ('m.call.answer' as EventType) &&
-                event.getSender() === peerId &&
-                event.getContent()?.call_id === callId &&
-                event.getAge() <= (event.getContent()?.lifetime ?? httpTimeout) &&
-                !!event.getContent()?.answer,
-            ),
-          ),
-          // send invite with offer
-          waitMemberAndSend$(peerAddress, matrix, 'm.call.invite' as EventType, content, {
-            log,
-            latest$,
-            config$,
-          }).pipe(
-            tap((e) => log.debug('RTC: sent invite', callId, e)),
-            ignoreElements(),
-          ),
-        );
-      }),
-      take(1),
-      tap(() => log.info('RTC: got answer', callId)),
-      map((event) => {
-        connection.setRemoteDescription(new RTCSessionDescription(event.event.content.answer));
-        start$.next(null);
-        start$.complete();
-      }),
-      ignoreElements(),
-    ),
-    of(dataChannel), // output created channel
+  return from(getMatrixIceServers(matrix)).pipe(
+    mergeMap((matrixTurnServers) => {
+      const connection = new RTCPeerConnection({
+        iceServers: [...matrixTurnServers, ...fallbackIceServers],
+      });
+      // we relay on retries, no need to enforce ordered
+      const dataChannel = connection.createDataChannel(callId, { ordered: false });
+      return merge(
+        // despite 'never' emitting, candidates$ have side-effects while/when subscribed
+        handleCandidates$(connection, matrix, start$, info, deps),
+        defer(() => connection.createOffer()).pipe(
+          mergeMap((offer) => {
+            connection.setLocalDescription(offer);
+            const content = {
+              call_id: callId,
+              lifetime: httpTimeout,
+              version: 0,
+              offer,
+            };
+            return merge(
+              // wait for answer
+              fromEvent<MatrixEvent>(matrix, 'event').pipe(
+                filter(filterMatrixVoipEvents('m.call.answer', peerId, callId, httpTimeout)),
+              ),
+              // send invite with offer
+              waitMemberAndSend$(peerAddress, matrix, 'm.call.invite' as EventType, content, {
+                log,
+                latest$,
+                config$,
+              }).pipe(
+                tap((e) => log.debug('RTC: sent invite', callId, e)),
+                ignoreElements(),
+              ),
+            );
+          }),
+          take(1),
+          tap(() => log.info('RTC: got answer', callId)),
+          map((event) => {
+            connection.setRemoteDescription(new RTCSessionDescription(event.getContent().answer));
+            start$.next(null);
+            start$.complete();
+          }),
+          ignoreElements(),
+        ),
+        of(dataChannel), // output created channel
+      );
+    }),
   );
 }
 
@@ -1653,23 +1708,18 @@ function setupCalleeDataChannel$(
   const { callId, peerId, peerAddress } = info;
   const { log, latest$, config$ } = deps;
   return fromEvent<MatrixEvent>(matrix, 'event').pipe(
-    filter(
-      // FIXME: remove any when MatrixEvent type exposes getAge & getContent methods
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (event: any) =>
-        event.getType() === ('m.call.invite' as EventType) &&
-        event.getSender() === peerId &&
-        event.getContent()?.call_id === callId &&
-        event.getAge() <= (event.getContent()?.lifetime ?? httpTimeout) &&
-        !!event.getContent()?.offer,
-    ),
+    filter(filterMatrixVoipEvents('m.call.invite', peerId, callId, httpTimeout)),
     tap(() => log.info('RTC: got invite', callId)),
-    mergeMap((event) => {
+    mergeMap((event) =>
+      from(getMatrixIceServers(matrix)).pipe(map((serv) => [event, serv] as const)),
+    ),
+    withLatestFrom(config$),
+    mergeMap(([[event, matrixTurnServers], { fallbackIceServers }]) => {
       // create connection only upon invite/offer
       const connection = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+        iceServers: [...matrixTurnServers, ...fallbackIceServers],
       });
-      connection.setRemoteDescription(new RTCSessionDescription(event.event.content.offer));
+      connection.setRemoteDescription(new RTCSessionDescription(event.getContent().offer));
       return merge(
         // despite 'never' emitting, candidates$ have side-effects while/when subscribed
         handleCandidates$(connection, matrix, start$, info, deps),
@@ -1835,14 +1885,9 @@ function handlePresenceChange$(
           dataChannel$,
           // throws nad restart if peer hangs up
           fromEvent<MatrixEvent>(matrix, 'event').pipe(
-            filter(
-              (event) =>
-                event.getType() === ('m.call.hangup' as EventType) &&
-                event.getSender() === info.peerId &&
-                event.event?.content?.call_id === callId,
-            ),
+            filter(filterMatrixVoipEvents('m.call.hangup', info.peerId, callId)),
             // no need for specific error since this is just logged and ignored in listenDataChannel$
-            mergeMap(() => throwError(new Error('RTC: peer hung up'))),
+            mergeMapTo(throwError(new Error('RTC: peer hung up'))),
           ),
         ).pipe(listenDataChannel$(stop$, info, config, deps));
       }).pipe(
