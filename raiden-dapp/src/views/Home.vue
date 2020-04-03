@@ -103,6 +103,8 @@ export default class Home extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '../scss/mixins';
+
 .home {
   height: 100%;
   width: 100%;
@@ -132,6 +134,9 @@ export default class Home extends Vue {
   &__disclaimer,
   &__getting-started {
     margin: 30px 130px 0 130px;
+    @include respond-to(handhelds) {
+      margin: 30px 20px 0 20px;
+    }
   }
 
   &__getting-started {
