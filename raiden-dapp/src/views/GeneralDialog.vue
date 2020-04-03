@@ -27,7 +27,7 @@
         <span>
           {{ $t('versions.sdk', { version }) }}
         </span>
-        <span class="general-screen__footer--contracts-version">
+        <span class="general-screen__footer__contracts-version">
           {{ $t('versions.contracts', { version: contractVersion }) }}
         </span>
       </div>
@@ -108,10 +108,10 @@ export default class GeneralDialog extends Mixins(NavigationMixin) {
     font-size: 13px;
     justify-content: center;
     padding-bottom: 25px;
-  }
 
-  &__footer--contracts-version {
-    padding-left: 15px;
+    &__contracts-version {
+      padding-left: 15px;
+    }
   }
 }
 </style>
