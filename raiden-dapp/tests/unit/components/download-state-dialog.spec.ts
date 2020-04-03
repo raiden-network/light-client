@@ -36,7 +36,7 @@ describe('DownloadStateDialog.vue', () => {
     expect(downloadStateWarning.text()).toBe('backup-state.download-warning');
   });
 
-  test('calls function for getting and downloading state', async () => {
+  test('calls method for getting and downloading state', async () => {
     // @ts-ignore
     wrapper.vm.getAndDownloadState = jest.fn();
     wrapper.find('.action-button__button').trigger('click');

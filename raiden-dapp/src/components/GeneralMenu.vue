@@ -96,6 +96,7 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
         subtitle: this.$t(
           'general-menu.menu-items.report-bugs-subtitle'
         ) as string,
+        /* istanbul ignore next */
         route: async () => {
           const [lastTime, content] = await getLogsFromStore();
           const filename = `raiden_${new Date(lastTime).toISOString()}.log`;

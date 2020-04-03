@@ -98,4 +98,21 @@ describe('GeneralMenu.vue', () => {
       })
     );
   });
+
+  test('report bugs menu item', () => {
+    const reportBugsMenuItem = wrapper
+      .findAll('.general-screen-menu__menu__list-items')
+      .at(1);
+    const reportBugsTitle = reportBugsMenuItem.find('.v-list-item__title');
+    const reportBugsSubtitle = reportBugsMenuItem.find(
+      '.v-list-item__subtitle'
+    );
+
+    expect(reportBugsTitle.text()).toEqual(
+      'general-menu.menu-items.report-bugs-title'
+    );
+    expect(reportBugsSubtitle.text()).toBe(
+      'general-menu.menu-items.report-bugs-subtitle'
+    );
+  });
 });
