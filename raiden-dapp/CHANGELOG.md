@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- [#694] Show protocol progress steps for transfers.
+- [#694] Show protocol progress steps on transfer modal.
 - [#687] Ghost action buttons.
 
 ### Fixed
