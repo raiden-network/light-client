@@ -3,8 +3,10 @@
 ## [Unreleased]
 ### Added
 - [#1209] Support for receiving payments
+- [#1254] Bumped contract version to 0.37.0-beta
 
 [#1209]: https://github.com/raiden-network/light-client/issues/1209
+[#1254]: https://github.com/raiden-network/light-client/issues/1254
 
 ## [0.5.0] - 2020-03-27
 
