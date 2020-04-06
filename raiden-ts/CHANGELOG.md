@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.1] - 2020-04-06
 ### Added
 - [#1209] Support for receiving payments
 - [#1254] Bumped contract version to 0.37.0-beta

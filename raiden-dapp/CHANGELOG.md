@@ -1,7 +1,6 @@
 # Changelog
 
-## [Unreleased]
-
+## [0.5.1] - 2020-04-06
 ### Added
 - [#694] Show protocol progress steps on transfer modal.
 - [#687] Ghost action buttons.
