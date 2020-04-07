@@ -57,7 +57,7 @@ Unless there are some major changes in some of the dependencies or the different
 be as simple as updating the following arguments in the `Dockerfile`.
 
 ```dockerfile
-ARG CONTRACTS_VERSION="0.37.0-beta"
+ARG CONTRACTS_VERSION="0.36.2"
 ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
 ARG RAIDEN_VERSION="ea7025739b460f940c26616ca1fccdb739b218ed"
 ARG SYNAPSE_VERSION=1.10.0
