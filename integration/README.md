@@ -58,7 +58,7 @@ be as simple as updating the following arguments in the `Dockerfile`.
 
 ```dockerfile
 ARG CONTRACTS_VERSION="0.37.0-beta"
-ARG SERVICES_VERSION="37050f5522f20ed74a5773fd39c75c9c243b7384"
+ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
 ARG RAIDEN_VERSION="f29c6da85e2871b87eaec5ffcde33d569413346f"
 ARG SYNAPSE_VERSION=1.10.0
 ```
@@ -89,14 +89,14 @@ ARG CONTRACTS_VERSION="0.37.0-beta"
 ```
 
 ### Services
-The next step would be updating the service. To locate a compatible version of Raiden Services you can go to the [requirements.txt](https://github.com/raiden-network/raiden-services/blob/37050f5522f20ed74a5773fd39c75c9c243b7384/requirements.txt#L2)
+The next step would be updating the service. To locate a compatible version of Raiden Services you can go to the [requirements.txt](https://github.com/raiden-network/raiden-services/blob/100fecf0d8c21ee68d8afbea912b67167ec7aad3/requirements.txt#L2)
 file and locate the a version or commit that is compatible.
 
-You can find a release or a commit that is compatible with the contract version located above using GitHub's [blame](https://github.com/raiden-network/raiden-services/blame/37050f5522f20ed74a5773fd39c75c9c243b7384/requirements.txt#L2) interface.
+You can find a release or a commit that is compatible with the contract version located above using GitHub's [blame](https://github.com/raiden-network/raiden-services/blame/100fecf0d8c21ee68d8afbea912b67167ec7aad3/requirements.txt#L2) interface.
 As soon as you locate the commit you are interested you need to update the `SERVICES_VERSION` argument.
 
 ```dockerfile
-ARG SERVICES_VERSION="37050f5522f20ed74a5773fd39c75c9c243b7384"
+ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
 ```
 
 ### Transport

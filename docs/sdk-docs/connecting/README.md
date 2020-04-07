@@ -8,7 +8,7 @@ For development purposes, the Light Client uses a standalone environment. The dA
 
 This environment uses:
 
-- A specific version of [Raiden](https://github.com/raiden-network/raiden/releases/tag/v0.200.0-rc3)
+- A specific version of [Raiden](https://github.com/raiden-network/raiden/commit/ea7025739b460f940c26616ca1fccdb739b218ed)
 - A matrix transport server - `https://raidentransport.test001.env.raiden.network`
 - A PFS server - `https://pfs.raidentransport.test001.env.raiden.network`
  
