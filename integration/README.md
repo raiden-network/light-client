@@ -57,9 +57,9 @@ Unless there are some major changes in some of the dependencies or the different
 be as simple as updating the following arguments in the `Dockerfile`.
 
 ```dockerfile
-ARG CONTRACTS_VERSION="0.37.0-beta"
-ARG SERVICES_VERSION="37050f5522f20ed74a5773fd39c75c9c243b7384"
-ARG RAIDEN_VERSION="f29c6da85e2871b87eaec5ffcde33d569413346f"
+ARG CONTRACTS_VERSION="0.36.2"
+ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
+ARG RAIDEN_VERSION="ea7025739b460f940c26616ca1fccdb739b218ed"
 ARG SYNAPSE_VERSION=1.10.0
 ```
 
@@ -70,12 +70,12 @@ locate the version of Raiden you want to use for the integration tests. This can
 You need to locate the the git commit hash and update the `RAIDEN_VERSION` argument:
 
 ```dockerfile
-ARG RAIDEN_VERSION="f29c6da85e2871b87eaec5ffcde33d569413346f"
+ARG RAIDEN_VERSION="ea7025739b460f940c26616ca1fccdb739b218ed"
 ```
 
 ### Contracts
 Raiden will have a pinned version of `raiden-contracts`. You can locate the version of the contracts by looking into the
-[requirements.txt](https://github.com/raiden-network/raiden/blob/f29c6da85e2871b87eaec5ffcde33d569413346f/requirements/requirements.txt#L75)
+[requirements.txt](https://github.com/raiden-network/raiden/blob/ea7025739b460f940c26616ca1fccdb739b218ed/requirements/requirements.txt#L75)
 for the commit you are interested. The requirements entry will look like this:
  
 ```requirements.txt
@@ -89,14 +89,14 @@ ARG CONTRACTS_VERSION="0.37.0-beta"
 ```
 
 ### Services
-The next step would be updating the service. To locate a compatible version of Raiden Services you can go to the [requirements.txt](https://github.com/raiden-network/raiden-services/blob/37050f5522f20ed74a5773fd39c75c9c243b7384/requirements.txt#L2)
+The next step would be updating the service. To locate a compatible version of Raiden Services you can go to the [requirements.txt](https://github.com/raiden-network/raiden-services/blob/100fecf0d8c21ee68d8afbea912b67167ec7aad3/requirements.txt#L2)
 file and locate the a version or commit that is compatible.
 
-You can find a release or a commit that is compatible with the contract version located above using GitHub's [blame](https://github.com/raiden-network/raiden-services/blame/37050f5522f20ed74a5773fd39c75c9c243b7384/requirements.txt#L2) interface.
+You can find a release or a commit that is compatible with the contract version located above using GitHub's [blame](https://github.com/raiden-network/raiden-services/blame/100fecf0d8c21ee68d8afbea912b67167ec7aad3/requirements.txt#L2) interface.
 As soon as you locate the commit you are interested you need to update the `SERVICES_VERSION` argument.
 
 ```dockerfile
-ARG SERVICES_VERSION="37050f5522f20ed74a5773fd39c75c9c243b7384"
+ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
 ```
 
 ### Transport

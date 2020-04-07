@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+## Fixed
+- [#1254] Downgraded contract version 0.36.2
+
+[#1254]: https://github.com/raiden-network/light-client/issues/1254
+
 ## [0.5.1] - 2020-04-06
 ### Added
 - [#1209] Support for receiving payments
