@@ -59,7 +59,7 @@ be as simple as updating the following arguments in the `Dockerfile`.
 ```dockerfile
 ARG CONTRACTS_VERSION="0.37.0-beta"
 ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
-ARG RAIDEN_VERSION="f29c6da85e2871b87eaec5ffcde33d569413346f"
+ARG RAIDEN_VERSION="ea7025739b460f940c26616ca1fccdb739b218ed"
 ARG SYNAPSE_VERSION=1.10.0
 ```
 
@@ -70,12 +70,12 @@ locate the version of Raiden you want to use for the integration tests. This can
 You need to locate the the git commit hash and update the `RAIDEN_VERSION` argument:
 
 ```dockerfile
-ARG RAIDEN_VERSION="f29c6da85e2871b87eaec5ffcde33d569413346f"
+ARG RAIDEN_VERSION="ea7025739b460f940c26616ca1fccdb739b218ed"
 ```
 
 ### Contracts
 Raiden will have a pinned version of `raiden-contracts`. You can locate the version of the contracts by looking into the
-[requirements.txt](https://github.com/raiden-network/raiden/blob/f29c6da85e2871b87eaec5ffcde33d569413346f/requirements/requirements.txt#L75)
+[requirements.txt](https://github.com/raiden-network/raiden/blob/ea7025739b460f940c26616ca1fccdb739b218ed/requirements/requirements.txt#L75)
 for the commit you are interested. The requirements entry will look like this:
  
 ```requirements.txt
