@@ -19,7 +19,10 @@
           </div>
         </v-list-item-content>
       </v-list-item>
-      <!-- <v-list-item class="backup-state__buttons__upload-state">
+      <v-list-item
+        class="backup-state__buttons__upload-state"
+        @click="uploadState = true"
+      >
         <div class="backup-state__buttons__upload-state__icon">
           <v-img :src="require('../assets/state_upload.png')"></v-img>
         </div>
@@ -28,27 +31,32 @@
             {{ $t('backup-state.upload') }}
           </div>
         </v-list-item-content>
-      </v-list-item> -->
+      </v-list-item>
     </v-list>
     <download-state-dialog
       :visible="downloadState"
       @cancel="downloadState = false"
     >
     </download-state-dialog>
+    <upload-state-dialog :visible="uploadState" @cancel="uploadState = false">
+    </upload-state-dialog>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import DownloadStateDialog from '@/components/DownloadStateDialog.vue';
+import UploadStateDialog from '@/components/UploadStateDialog.vue';
 
 @Component({
   components: {
-    DownloadStateDialog
+    DownloadStateDialog,
+    UploadStateDialog
   }
 })
 export default class BackupState extends Vue {
   downloadState: boolean = false;
+  uploadState: boolean = false;
 }
 </script>
 

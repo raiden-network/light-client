@@ -86,7 +86,10 @@ export default class Home extends Vue {
     );
   }
 
-  async connect(subkey?: true) {
+  async connect(connectOptions: {}) {
+    const stateBackup = connectOptions['uploadedState'] || undefined;
+    const subkey = connectOptions['subkey'];
+
     if (subkey) {
       this.connectingSubkey = true;
     } else {
@@ -94,7 +97,7 @@ export default class Home extends Vue {
     }
 
     this.$store.commit('reset');
-    await this.$raiden.connect(subkey);
+    await this.$raiden.connect(stateBackup, subkey);
     this.connectingSubkey = false;
     this.connecting = false;
     this.connectDialog = false;

@@ -43,7 +43,10 @@
     "download": "Download State",
     "download-warning": "Downloading the state will force the dApp to shut down",
     "download-button": "Download",
-    "upload": "Upload State"
+    "upload": "Upload State",
+    "upload-drag-and-drop": "Drag and drop state file",
+    "upload-divider": "or",
+    "upload-button": "Browse files"
   },
   "update": {
     "available": "A new version is available.",

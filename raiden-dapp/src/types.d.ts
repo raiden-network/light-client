@@ -18,6 +18,7 @@ export interface RootState {
   network: Network;
   presences: Presences;
   transfers: Transfers;
+  stateBackup: string;
 }
 
 declare global {

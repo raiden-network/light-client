@@ -23,13 +23,17 @@ export default class RaidenService {
   private static async createRaiden(
     provider: any,
     account: string | number = 0,
+    stateBackup: string | undefined,
     subkey?: true
   ): Promise<Raiden> {
     try {
       return await Raiden.create(
         provider,
         account,
-        window.localStorage,
+        {
+          storage: window.localStorage,
+          state: stateBackup
+        },
         undefined,
         {
           pfsSafetyMargin: 1.1,
@@ -83,7 +87,7 @@ export default class RaidenService {
     }
   }
 
-  async connect(subkey?: true) {
+  async connect(stateBackup: string | undefined, subkey?: true) {
     try {
       const raidenPackageConfigUrl = process.env.VUE_APP_RAIDEN_PACKAGE;
       let config;
@@ -104,12 +108,14 @@ export default class RaidenService {
           raiden = await RaidenService.createRaiden(
             provider,
             config.PRIVATE_KEY,
+            stateBackup,
             subkey
           );
         } else {
           raiden = await RaidenService.createRaiden(
             provider,
             undefined,
+            stateBackup,
             subkey
           );
         }
