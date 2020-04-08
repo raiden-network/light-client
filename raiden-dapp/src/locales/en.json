@@ -183,6 +183,7 @@
   "no-access": {
     "unsupported-network": "The current network is unsupported. Please choose a different network.",
     "sdk-initialization-failure": "SDK initialization failed. Please check the console for more information.",
+    "rdn-state-migration": "Cannot replace state with older uploaded state.",
     "generic-error": "A valid account could not be detected. Please make sure that your provider is unlocked and accessible."
   },
   "tokens": {

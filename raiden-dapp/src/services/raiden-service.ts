@@ -179,6 +179,11 @@ export default class RaidenService {
       let deniedReason: DeniedReason;
       if (e.message && e.message.indexOf('No deploy info provided') > -1) {
         deniedReason = DeniedReason.UNSUPPORTED_NETWORK;
+      } else if (
+        e.message &&
+        e.message.indexOf('Could not replace stored state') > -1
+      ) {
+        deniedReason = DeniedReason.RDN_STATE_MIGRATION;
       } else if (e instanceof RaidenInitializationFailed) {
         deniedReason = DeniedReason.INITIALIZATION_FAILED;
       } else {

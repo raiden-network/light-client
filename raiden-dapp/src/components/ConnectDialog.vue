@@ -80,7 +80,6 @@ export default class ConnectDialog extends Vue {
 
   @Emit()
   connect(uploadedState: string, subkey?: true) {
-    this.hideClose = true;
     return { uploadedState, subkey };
   }
 

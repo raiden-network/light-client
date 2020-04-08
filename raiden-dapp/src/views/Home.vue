@@ -100,7 +100,9 @@ export default class Home extends Vue {
     await this.$raiden.connect(stateBackup, subkey);
     this.connectingSubkey = false;
     this.connecting = false;
-    this.connectDialog = false;
+    if (!this.accessDenied) {
+      this.connectDialog = false;
+    }
   }
 }
 </script>

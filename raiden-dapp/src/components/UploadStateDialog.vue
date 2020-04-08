@@ -134,7 +134,7 @@ export default class UploadStateDialog extends Vue {
         setTimeout(() => {
           this.uploadingStateProgress = false;
           this.cancel();
-        }, 2000);
+        }, 1000);
       };
       reader.readAsText(uploadedFile[0]);
     }

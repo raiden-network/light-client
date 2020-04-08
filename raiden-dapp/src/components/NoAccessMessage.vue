@@ -4,8 +4,11 @@
       <span v-if="networkUnsupported">
         {{ $t('no-access.unsupported-network') }}
       </span>
-      <span v-else-if="initializationFailed">
+      <span v-if="initializationFailed">
         {{ $t('no-access.sdk-initialization-failure') }}
+      </span>
+      <span v-if="rdnStateMigration">
+        {{ $t('no-access.rdn-state-migration') }}
       </span>
       <span v-else>
         {{ $t('no-access.generic-error') }}
@@ -29,6 +32,10 @@ export default class NoAccessMessage extends Vue {
 
   get initializationFailed(): boolean {
     return this.reason === DeniedReason.INITIALIZATION_FAILED;
+  }
+
+  get rdnStateMigration(): boolean {
+    return this.reason === DeniedReason.RDN_STATE_MIGRATION;
   }
 }
 </script>
