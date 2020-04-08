@@ -8,8 +8,16 @@
       {{ 'There is an dropzone error' }}
     </v-card-text>
 
-    <v-card-actions v-else-if="uploadingState">
-      <v-progress-circular indeterminate></v-progress-circular>
+    <v-card-actions v-else-if="uploadingStateProgress">
+      <v-row justify="center" no-gutters>
+        <v-progress-circular
+          class="upload-state__progress"
+          :size="110"
+          :width="7"
+          indeterminate
+        >
+        </v-progress-circular>
+      </v-row>
     </v-card-actions>
 
     <v-card-actions v-else>
@@ -47,12 +55,12 @@
           {{ $t('backup-state.upload-divider') }}
         </v-row>
         <v-row class="upload-state__dropzone__button">
-          <input ref="stateInput" type="file" hidden />
+          <input ref="stateInput" type="file" hidden @change="onFileSelect" />
           <action-button
             :enabled="!activeDropzone ? true : false"
             ghost
             :text="$t('backup-state.upload-button')"
-            @click="chooseStateFile()"
+            @click="$refs.stateInput.click()"
           />
         </v-row>
       </div>
@@ -75,7 +83,7 @@ export default class UploadStateDialog extends Vue {
   dragCount: number = 0;
   activeDropzone: boolean = false;
   dropzoneError: boolean = false;
-  uploadingState: boolean = false;
+  uploadingStateProgress: boolean = false;
 
   @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
@@ -102,7 +110,15 @@ export default class UploadStateDialog extends Vue {
     e.preventDefault();
     this.activeDropzone = false;
     const uploadedFile = e.dataTransfer.files;
+    this.uploadState(uploadedFile);
+  }
 
+  onFileSelect(e) {
+    const uploadedFile = e.target.files;
+    this.uploadState(uploadedFile);
+  }
+
+  uploadState(uploadedFile: FileList) {
     if (uploadedFile.length > 1) {
       this.dropzoneError = true;
       setTimeout(() => {
@@ -111,22 +127,17 @@ export default class UploadStateDialog extends Vue {
     } else {
       let reader = new FileReader();
       reader.onload = e => {
-        let retrievedState = String(e.target.result);
-        this.uploadState(retrievedState);
+        this.uploadingStateProgress = true;
+        let retreivedState = String(e.target.result);
+        this.$store.commit('backupState', retreivedState);
+
+        setTimeout(() => {
+          this.uploadingStateProgress = false;
+          this.cancel();
+        }, 2000);
       };
       reader.readAsText(uploadedFile[0]);
     }
-  }
-
-  chooseStateFile() {
-    // TODO, add functionality
-    (this.$refs.stateInput as any).click();
-  }
-
-  uploadState(uploadedState: string) {
-    // TODO, work on spinner
-    this.uploadingState = true;
-    this.$store.commit('backupState', uploadedState);
   }
 }
 </script>
@@ -135,6 +146,9 @@ export default class UploadStateDialog extends Vue {
 @import '../scss/colors';
 
 .upload-state {
+  &__progress {
+    color: $secondary-color;
+  }
   &__dropzone {
     border: dashed 2px $secondary-button-color;
     display: flex;
