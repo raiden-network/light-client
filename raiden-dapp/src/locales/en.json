@@ -374,7 +374,13 @@
     "RDN_GENERAL_ERROR": {
       "title": "An error occured",
       "problem": "We do not know this error, sorry.",
-      "solution": "Please file a new issue on https://github.com/raiden-network/light-client."
+      "solution": [
+        "Please help us and report the issue",
+        "Click on your identicon in the top right corner",
+        "Click on Report Bugs / Download logs",
+        "File a new issue on https://github.com/raiden-network/light-client",
+        "Upload logs to the issue"
+      ]
     },
     "RDN_MINT_FAILED": {
       "title": "Could not mint token",
@@ -385,10 +391,10 @@
       "title": "No open channels",
       "problem": "You don't seem to have open channels on this token network.",
       "solution": [
-        "Hit the ← button in the top left", 
-        "Click on the current token network", 
-        "Select Connect new token", 
-        "Select the token you want to transfer", 
+        "Hit the ← button in the top left",
+        "Click on the current token network",
+        "Select Connect new token",
+        "Select the token you want to transfer",
         "Proceed with the flow to open a new channel"
       ]
     },
@@ -398,7 +404,11 @@
       "solution": [
         "Update the dApp by reloading the page",
         "Attempt a new transfer",
-        "If the problem persists, please file a new issue on https://github.com/raiden-network/light-client"
+        "If the problem persists, please help us and report the issue",
+        "Click on your identicon in the top right corner",
+        "Click on Report Bugs / Download logs",
+        "File a new issue on https://github.com/raiden-network/light-client",
+        "Upload logs to the issue"
       ]
     },
     "PFS_NO_ROUTES_FOUND": {
@@ -412,10 +422,10 @@
       "solution": [
         "Simply retry your last action",
         "If the problem persists, please help us and report the issue",
-        "Right click > Inspect or Inspect Element", 
-        "Go to Console", 
-        "Copy errors that occurred", 
-        "File a new issue on https://github.com/raiden-network/light-client"
+        "Click on your identicon in the top right corner",
+        "Click on Report Bugs / Download logs",
+        "File a new issue on https://github.com/raiden-network/light-client",
+        "Upload logs to the issue"
       ]
     },
     "PFS_DISABLED": {
@@ -431,12 +441,26 @@
     "PFS_LAST_IOU_REQUEST_FAILED": {
       "title": "Error while depositing tokens for Pathfinding Service",
       "problem": "While trying to deposit tokens for route requests, the Pathfinding Service returned an error.",
-      "solution": "This should happen very rarely, please retry to deposit. If the problem persists, please file an issue on https://github.com/raiden-network/light-client."
+      "solution": [
+        "This should happen very rarely, please retry to deposit",
+        "If the problem persists, please help us and report the issue",
+        "Click on your identicon in the top right corner",
+        "Click on Report Bugs / Download logs",
+        "File a new issue on https://github.com/raiden-network/light-client",
+        "Upload logs to the issue"
+      ]
     },
     "PFS_IOU_SIGNATURE_MISMATCH": {
       "title": "Error while depositing tokens for Pathfinding Service",
       "problem": "While trying to deposit tokens for route requests, the Pathfinding Service encountered mismatching signatures.",
-      "solution": "This should happen very rarely, please retry to deposit. If the problem persists, please file an issue on https://github.com/raiden-network/light-client."
+      "solution": [
+        "This should happen very rarely, please retry to deposit",
+        "If the problem persists, please help us and report the issue",
+        "Click on your identicon in the top right corner",
+        "Click on Report Bugs / Download logs",
+        "File a new issue on https://github.com/raiden-network/light-client",
+        "Upload logs to the issue"
+      ]
     }
   },
   "versions": {
