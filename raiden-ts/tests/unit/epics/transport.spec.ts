@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
+/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase,@typescript-eslint/ban-ts-ignore */
 jest.mock('matrix-js-sdk');
 
 import { createClient } from 'matrix-js-sdk';
@@ -40,6 +40,7 @@ import {
   deliveredEpic,
   matrixMessageGlobalSendEpic,
   matrixCleanMissingRoomsEpic,
+  rtcConnectEpic,
 } from 'raiden-ts/transport/epics';
 import { MessageType, Delivered, Processed } from 'raiden-ts/messages/types';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
@@ -59,6 +60,7 @@ describe('transport epic', () => {
     partner: ReturnType<typeof epicFixtures>['partner'],
     state: ReturnType<typeof epicFixtures>['state'],
     matrixServer: ReturnType<typeof epicFixtures>['matrixServer'],
+    turnServer: ReturnType<typeof epicFixtures>['turnServer'],
     partnerRoomId: ReturnType<typeof epicFixtures>['partnerRoomId'],
     partnerUserId: ReturnType<typeof epicFixtures>['partnerUserId'],
     partnerSigner: ReturnType<typeof epicFixtures>['partnerSigner'],
@@ -1476,5 +1478,71 @@ describe('transport epic', () => {
       expect.objectContaining({ body: text, msgtype: 'm.text' }),
       expect.anything(),
     );
+  });
+
+  describe('rtcConnectEpic', () => {
+    const createPresence = (userId: string, available: boolean, webRtcCapable: boolean) =>
+      matrixPresence.success(
+        {
+          userId,
+          available,
+          ts: Date.now(),
+          caps: { [Capabilities.WEBRTC]: webRtcCapable },
+        },
+        { address: depsMock.address },
+      );
+    const rtcChannel = {
+      meta: { address: '0x14791697260E4c9A71f18484C9f997B308e59325' },
+      payload: undefined,
+      type: 'rtcChannel',
+    };
+
+    test('skip if no webrtc capability exists', async () => {
+      const promise = rtcConnectEpic(action$, state$, depsMock).toPromise();
+      action$.next(createPresence(userId, false, false));
+      action$.next(createPresence(userId, true, false));
+      setTimeout(() => action$.complete(), 100);
+
+      await expect(promise).resolves.toBeUndefined();
+    });
+
+    test('reset data channel if user goes offline in matrix', async () => {
+      matrix.turnServer = jest.fn().mockResolvedValueOnce(turnServer);
+
+      // @ts-ignore
+      global.RTCPeerConnection = jest.fn().mockImplementationOnce(() => ({
+        /* eslint-disable @typescript-eslint/no-empty-function */
+        createDataChannel: () => {},
+        createOffer: () => {},
+        setLocalDescription: () => {},
+        setRemoteDescription: () => {},
+      }));
+
+      const promise = rtcConnectEpic(action$, state$, depsMock).toPromise();
+      action$.next(createPresence(userId, true, true));
+      action$.next(createPresence(userId, false, true));
+      setTimeout(() => action$.complete(), 100);
+
+      await expect(promise).resolves.toEqual(rtcChannel);
+    });
+
+    test('set up caller data channel and waits for partner to join room', async () => {
+      matrix.turnServer = jest.fn().mockResolvedValueOnce(turnServer);
+
+      // @ts-ignore
+      global.RTCPeerConnection = jest.fn().mockImplementationOnce(() => ({
+        /* eslint-disable @typescript-eslint/no-empty-function */
+        createDataChannel: () => {},
+        createOffer: () => {},
+        setLocalDescription: () => {},
+        setRemoteDescription: () => {},
+      }));
+      const promise = rtcConnectEpic(action$, state$, depsMock).toPromise();
+      action$.next(createPresence(userId, true, true));
+      action$.next(matrixRoom({ roomId: userId }, { address: partner }));
+      action$.next(createPresence(userId, false, true));
+
+      await expect(promise).resolves.toEqual(rtcChannel);
+    });
   });
 });

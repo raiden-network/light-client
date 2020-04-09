@@ -31,7 +31,7 @@ if (!('RTCPeerConnection' in globalThis)) {
   Object.assign(globalThis, wrtc);
 }
 
-// patch createNewMatrisCall to prevent matrix-js-sdk from hooking WebRTC events in browser;
+// patch createNewMatrixCall to prevent matrix-js-sdk from hooking WebRTC events in browser;
 // ugly, but there's no option to prevent MatrixClient to handle m.call.* events
 import * as call from 'matrix-js-sdk/lib/webrtc/call';
 Object.assign(call, { createNewMatrixCall: () => null });
