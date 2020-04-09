@@ -5,7 +5,9 @@
     </v-card-title>
 
     <v-card-text v-if="dropzoneError">
-      {{ 'There is an dropzone error' }}
+      <v-row justify="center" class="upload-state__error" no-gutters>
+        {{ $t('backup-state.upload-error') }}
+      </v-row>
     </v-card-text>
 
     <v-card-actions v-else-if="uploadingStateProgress">
@@ -127,14 +129,23 @@ export default class UploadStateDialog extends Vue {
     } else {
       let reader = new FileReader();
       reader.onload = e => {
-        this.uploadingStateProgress = true;
-        let retreivedState = String(e.target.result);
-        this.$store.commit('backupState', retreivedState);
+        try {
+          this.uploadingStateProgress = true;
+          let retreivedState = String(e.target.result);
+          JSON.parse(retreivedState);
+          this.$store.commit('backupState', retreivedState);
 
-        setTimeout(() => {
+          setTimeout(() => {
+            this.uploadingStateProgress = false;
+            this.cancel();
+          }, 1000);
+        } catch (err) {
+          this.dropzoneError = true;
           this.uploadingStateProgress = false;
-          this.cancel();
-        }, 1000);
+          setTimeout(() => {
+            this.dropzoneError = false;
+          }, 2000);
+        }
       };
       reader.readAsText(uploadedFile[0]);
     }
@@ -146,6 +157,13 @@ export default class UploadStateDialog extends Vue {
 @import '../scss/colors';
 
 .upload-state {
+  &__error {
+    color: $error-color;
+    flex-direction: column;
+    font-size: 16px;
+    height: 307px;
+  }
+
   &__progress {
     color: $secondary-color;
   }

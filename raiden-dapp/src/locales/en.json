@@ -46,7 +46,8 @@
     "upload": "Upload State",
     "upload-drag-and-drop": "Drag and drop state file",
     "upload-divider": "or",
-    "upload-button": "Browse files"
+    "upload-button": "Browse files",
+    "upload-error": "Only one state file in valid JSON format can be uploaded"
   },
   "update": {
     "available": "A new version is available.",
