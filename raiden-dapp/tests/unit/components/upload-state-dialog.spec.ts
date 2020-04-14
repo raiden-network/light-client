@@ -25,8 +25,6 @@ describe('UploadStateDialog.vue', () => {
   });
 
   test('upload state title', () => {
-    console.log(wrapper.vm.$data.dragCount);
-
     const uploadStateTitle = wrapper.find('.v-card__title');
 
     expect(uploadStateTitle.text()).toBe('backup-state.upload');
@@ -59,5 +57,34 @@ describe('UploadStateDialog.vue', () => {
     expect(wrapper.vm.$data.activeDropzone).toEqual(false);
   });
 
-  test('calls methods for uploading state on dropzone drop', async () => {});
+  test('calls methods for uploading state on dropzone drop', async () => {
+    // @ts-ignore
+    wrapper.vm.uploadState = jest.fn();
+    // @ts-ignore
+    expect(wrapper.vm.uploadState).not.toBeCalled();
+
+    const dropzone = wrapper.find('.upload-state__dropzone');
+    dropzone.trigger('dragenter');
+    dropzone.trigger('drop');
+    await wrapper.vm.$nextTick();
+
+    // @ts-ignore
+    expect(wrapper.vm.uploadState).toBeCalled();
+  });
+
+  test('calls methods for uploading state on file select', async () => {
+    // @ts-ignore
+    wrapper.vm.uploadState = jest.fn();
+    // @ts-ignore
+    expect(wrapper.vm.uploadState).not.toBeCalled();
+
+    const stateInput = wrapper.find('input');
+    // @ts-ignore
+    stateInput.element.value = '';
+    stateInput.trigger('change');
+    await wrapper.vm.$nextTick();
+
+    // @ts-ignore
+    expect(wrapper.vm.uploadState).toBeCalled();
+  });
 });
