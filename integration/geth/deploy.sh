@@ -36,6 +36,17 @@ deploy_contracts.py --contract-version "${CONTRACTS_VERSION}" \
   --output "${SMARTCONTRACTS_ENV_FILE}" \
   --password "${PASSWORD}"
 
-chmod u+x "${SMARTCONTRACTS_ENV_FILE}"
+if [[ -f ${SMARTCONTRACTS_ENV_FILE} ]]; then
+  echo 'Deployment was successful'
+  chmod u+x "${SMARTCONTRACTS_ENV_FILE}"
+  kill -s TERM ${GETH_PID}
+  exit 0
+else
+  echo 'Deployment failed'
+  kill -s TERM ${GETH_PID}
+  exit 1
+fi
 
-kill -s TERM ${GETH_PID}
+
+
+
