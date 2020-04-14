@@ -39,7 +39,7 @@
     }
   },
   "backup-state": {
-    "description": "Currently it is only possible to download the state. Uploading of state coming soon.",
+    "description": "Download and upload your state",
     "download": "Download State",
     "download-warning": "Downloading the state will force the dApp to shut down",
     "download-button": "Download",
@@ -390,10 +390,10 @@
       "title": "No open channels",
       "problem": "You don't seem to have open channels on this token network.",
       "solution": [
-        "Hit the ← button in the top left", 
-        "Click on the current token network", 
-        "Select Connect new token", 
-        "Select the token you want to transfer", 
+        "Hit the ← button in the top left",
+        "Click on the current token network",
+        "Select Connect new token",
+        "Select the token you want to transfer",
         "Proceed with the flow to open a new channel"
       ]
     },
@@ -417,9 +417,9 @@
       "solution": [
         "Simply retry your last action",
         "If the problem persists, please help us and report the issue",
-        "Right click > Inspect or Inspect Element", 
-        "Go to Console", 
-        "Copy errors that occurred", 
+        "Right click > Inspect or Inspect Element",
+        "Go to Console",
+        "Copy errors that occurred",
         "File a new issue on https://github.com/raiden-network/light-client"
       ]
     },
