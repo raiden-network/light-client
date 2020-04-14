@@ -140,6 +140,7 @@ export default class UploadStateDialog extends Vue {
     }
 
     let reader = new FileReader();
+    /* istanbul ignore next */
     reader.onload = e => {
       if (!e.target?.result) {
         this.dropzoneError();
