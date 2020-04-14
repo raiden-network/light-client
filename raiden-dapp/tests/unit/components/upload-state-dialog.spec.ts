@@ -1,3 +1,4 @@
+jest.useFakeTimers();
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
@@ -86,5 +87,14 @@ describe('UploadStateDialog.vue', () => {
 
     // @ts-ignore
     expect(wrapper.vm.uploadState).toBeCalled();
+  });
+
+  test('method for dropzone error displays and hides dropzone error message', async () => {
+    // @ts-ignore
+    wrapper.vm.dropzoneError();
+
+    expect(wrapper.vm.$data.dropzoneErrorMessage).toBe(true);
+    jest.advanceTimersByTime(2000);
+    expect(wrapper.vm.$data.dropzoneErrorMessage).toBe(false);
   });
 });
