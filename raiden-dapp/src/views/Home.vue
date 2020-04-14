@@ -58,6 +58,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
+import { ConnectOptions } from '@/types';
 import { DeniedReason } from '@/model/types';
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectDialog from '@/components/ConnectDialog.vue';
@@ -86,9 +87,9 @@ export default class Home extends Vue {
     );
   }
 
-  async connect(connectOptions: {}) {
+  async connect(connectOptions: ConnectOptions) {
     const stateBackup = connectOptions['uploadedState'] || undefined;
-    const subkey = connectOptions['subkey'];
+    let subkey = connectOptions['subkey'];
 
     if (subkey) {
       this.connectingSubkey = true;

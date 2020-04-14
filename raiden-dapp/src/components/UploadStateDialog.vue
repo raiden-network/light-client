@@ -1,10 +1,8 @@
 <template>
   <raiden-dialog class="upload-state" :visible="visible" @close="cancel">
-    <v-card-title>
-      {{ $t('backup-state.upload') }}
-    </v-card-title>
+    <v-card-title>{{ $t('backup-state.upload') }}</v-card-title>
 
-    <v-card-text v-if="dropzoneError">
+    <v-card-text v-if="dropzoneErrorMessage">
       <v-row justify="center" class="upload-state__error" no-gutters>
         {{ $t('backup-state.upload-error') }}
       </v-row>
@@ -17,8 +15,7 @@
           :size="110"
           :width="7"
           indeterminate
-        >
-        </v-progress-circular>
+        ></v-progress-circular>
       </v-row>
     </v-card-actions>
 
@@ -84,7 +81,7 @@ import ActionButton from '@/components/ActionButton.vue';
 export default class UploadStateDialog extends Vue {
   dragCount: number = 0;
   activeDropzone: boolean = false;
-  dropzoneError: boolean = false;
+  dropzoneErrorMessage: boolean = false;
   uploadingStateProgress: boolean = false;
 
   @Prop({ required: true, type: Boolean, default: false })
@@ -93,13 +90,13 @@ export default class UploadStateDialog extends Vue {
   @Emit()
   cancel() {}
 
-  onDropzoneEnter(e) {
+  onDropzoneEnter(e: DragEvent) {
     e.preventDefault();
     this.dragCount++;
     this.activeDropzone = true;
   }
 
-  onDropzoneLeave(e) {
+  onDropzoneLeave(e: DragEvent) {
     e.preventDefault();
     this.dragCount--;
 
@@ -108,47 +105,60 @@ export default class UploadStateDialog extends Vue {
     }
   }
 
-  onDropzoneDrop(e) {
+  onDropzoneDrop(e: DragEvent) {
     e.preventDefault();
     this.activeDropzone = false;
-    const uploadedFile = e.dataTransfer.files;
-    this.uploadState(uploadedFile);
+
+    if (!e.dataTransfer?.files) {
+      this.dropzoneError();
+    }
+
+    const uploadedFile = e.dataTransfer?.files;
+    this.uploadState(uploadedFile!);
   }
 
-  onFileSelect(e) {
-    const uploadedFile = e.target.files;
-    this.uploadState(uploadedFile);
+  onFileSelect(e: Event) {
+    if (!(e.target as HTMLInputElement).files) {
+      this.dropzoneError();
+    }
+
+    const uploadedFile = (e.target as HTMLInputElement).files;
+    this.uploadState(uploadedFile!);
+  }
+
+  dropzoneError() {
+    this.uploadingStateProgress = false;
+    this.dropzoneErrorMessage = true;
+    setTimeout(() => {
+      this.dropzoneErrorMessage = false;
+    }, 2000);
   }
 
   uploadState(uploadedFile: FileList) {
     if (uploadedFile.length > 1) {
-      this.dropzoneError = true;
-      setTimeout(() => {
-        this.dropzoneError = false;
-      }, 2000);
-    } else {
-      let reader = new FileReader();
-      reader.onload = e => {
-        try {
-          this.uploadingStateProgress = true;
-          let retreivedState = String(e.target.result);
-          JSON.parse(retreivedState);
-          this.$store.commit('backupState', retreivedState);
-
-          setTimeout(() => {
-            this.uploadingStateProgress = false;
-            this.cancel();
-          }, 1000);
-        } catch (err) {
-          this.dropzoneError = true;
-          this.uploadingStateProgress = false;
-          setTimeout(() => {
-            this.dropzoneError = false;
-          }, 2000);
-        }
-      };
-      reader.readAsText(uploadedFile[0]);
+      this.dropzoneError();
     }
+
+    let reader = new FileReader();
+    reader.onload = e => {
+      if (!e.target?.result) {
+        this.dropzoneError();
+      }
+
+      try {
+        this.uploadingStateProgress = true;
+        const retrievedState = e.target?.result;
+        JSON.parse(String(retrievedState));
+        this.$store.commit('backupState', retrievedState);
+        setTimeout(() => {
+          this.uploadingStateProgress = false;
+          this.cancel();
+        }, 1000);
+      } catch (err) {
+        this.dropzoneError();
+      }
+    };
+    reader.readAsText(uploadedFile[0]);
   }
 }
 </script>

@@ -10,9 +10,7 @@
       <span v-if="rdnStateMigration">
         {{ $t('no-access.rdn-state-migration') }}
       </span>
-      <span v-else>
-        {{ $t('no-access.generic-error') }}
-      </span>
+      <span v-else>{{ $t('no-access.generic-error') }}</span>
     </div>
   </v-alert>
 </template>
