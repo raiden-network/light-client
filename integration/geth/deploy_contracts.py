@@ -72,79 +72,112 @@ def main(keystore_file: str, contract_version: str, password: str, output: str, 
     )
 
     print('Deploying Raiden contracts')
-    deployed_contracts_info = deployer.deploy_raiden_contracts(
-        max_num_of_token_networks=UNLIMITED,
-        settle_timeout_min=SETTLE_TIMEOUT_MIN,
-        settle_timeout_max=SETTLE_TIMEOUT_MAX,
-        reuse_secret_registry_from_deploy_file=None
-    )
+    try:
+        deployed_contracts_info = deployer.deploy_raiden_contracts(
+            max_num_of_token_networks=UNLIMITED,
+            settle_timeout_min=SETTLE_TIMEOUT_MIN,
+            settle_timeout_max=SETTLE_TIMEOUT_MAX,
+            reuse_secret_registry_from_deploy_file=None
+        )
+    except Exception as err:
+        print(f'Raiden Contract Deployment failed: {err}')
+        exit(1)
 
     deployed_contracts = {
         contract_name: info['address']
         for contract_name, info in deployed_contracts_info['contracts'].items()
     }
 
-    deployer.store_and_verify_deployment_info_raiden(
-        deployed_contracts_info=deployed_contracts_info
-    )
+    try:
+        deployer.store_and_verify_deployment_info_raiden(
+            deployed_contracts_info=deployed_contracts_info
+        )
+    except Exception as err:
+        print(f'Contract verification failed: {err}')
+        exit(1)
 
     token_network_registry_address = deployed_contracts[CONTRACT_TOKEN_NETWORK_REGISTRY]
     print(f'Registry contract deployed @ {token_network_registry_address}')
 
     print('Deploying TTT contract')
-    ttt_abi, ttt_token_address = deploy_token(deployer)
+    try:
+        ttt_abi, ttt_token_address = deploy_token(deployer)
+    except Exception as err:
+        print(f'TTT deployment failed: {err}')
+        exit(1)
+
     print(f'Deployed TTT contract @ {ttt_token_address}')
 
     print('Registering TTT')
-    deployer.register_token_network(
-        token_registry_abi=ttt_abi,
-        token_registry_address=token_network_registry_address,
-        token_address=ttt_token_address,
-        channel_participant_deposit_limit=UNLIMITED,
-        token_network_deposit_limit=UNLIMITED,
-    )
+    try:
+        deployer.register_token_network(
+            token_registry_abi=ttt_abi,
+            token_registry_address=token_network_registry_address,
+            token_address=ttt_token_address,
+            channel_participant_deposit_limit=UNLIMITED,
+            token_network_deposit_limit=UNLIMITED,
+        )
+    except Exception as err:
+        print(f'Registration of TTT failed: {err}')
+        exit(1)
 
     print('Deploying SVT contract')
-    svt_abi, svt_token_address = deploy_token(deployer, 'ServiceToken', 'SVT')
+    try:
+        svt_abi, svt_token_address = deploy_token(deployer, 'ServiceToken', 'SVT')
+    except Exception as err:
+        print(f'SVT Deployment failed: {err}')
+        exit(1)
+
     print(f'Deployed SVT contract @ {svt_token_address}')
 
     print('Deploying Raiden service contracts')
-    deployed_service_contracts_info = deployer.deploy_service_contracts(
-        token_address=svt_token_address,
-        user_deposit_whole_balance_limit=UNLIMITED,
-        service_registry_controller=owner,
-        initial_service_deposit_price=INITIAL_SERVICE_DEPOSIT_PRICE,
-        service_deposit_bump_numerator=SERVICE_DEPOSIT_BUMP_NUMERATOR,
-        service_deposit_bump_denominator=SERVICE_DEPOSIT_BUMP_DENOMINATOR,
-        decay_constant=SERVICE_DEPOSIT_DECAY_CONSTANT,
-        min_price=SERVICE_DEPOSIT_MIN_PRICE,
-        registration_duration=SERVICE_REGISTRATION_DURATION,
-        token_network_registry_address=token_network_registry_address
-    )
+    try:
+        deployed_service_contracts_info = deployer.deploy_service_contracts(
+            token_address=svt_token_address,
+            user_deposit_whole_balance_limit=UNLIMITED,
+            service_registry_controller=owner,
+            initial_service_deposit_price=INITIAL_SERVICE_DEPOSIT_PRICE,
+            service_deposit_bump_numerator=SERVICE_DEPOSIT_BUMP_NUMERATOR,
+            service_deposit_bump_denominator=SERVICE_DEPOSIT_BUMP_DENOMINATOR,
+            decay_constant=SERVICE_DEPOSIT_DECAY_CONSTANT,
+            min_price=SERVICE_DEPOSIT_MIN_PRICE,
+            registration_duration=SERVICE_REGISTRATION_DURATION,
+            token_network_registry_address=token_network_registry_address
+        )
+    except Exception as err:
+        print(f'Service contract deployment failed: {err}')
+        exit(1)
 
-    deployer.store_and_verify_deployment_info_services(
-        deployed_contracts_info=deployed_service_contracts_info,
-        token_address=svt_token_address,
-        user_deposit_whole_balance_limit=UNLIMITED,
-        token_network_registry_address=token_network_registry_address,
-    )
+    try:
+        deployer.store_and_verify_deployment_info_services(
+            deployed_contracts_info=deployed_service_contracts_info,
+            token_address=svt_token_address,
+            user_deposit_whole_balance_limit=UNLIMITED,
+            token_network_registry_address=token_network_registry_address,
+        )
+    except Exception as err:
+        print(f'Service contract verification failed: {err}')
+        exit(1)
 
     if os.path.exists("user_deposit_address"):
         os.remove("user_deposit_address")
 
     print(f'Storing deployment info to {output}')
 
-    with open(output, 'w+') as address_file:
-        contracts_info = deployed_service_contracts_info['contracts']
-        user_deposit_address = contracts_info[CONTRACT_USER_DEPOSIT]['address']
-        one_to_n_address = contracts_info[CONTRACT_ONE_TO_N]['address']
-        address_file.write(f'#!/bin/sh\n')
-        address_file.write(f'export TTT_TOKEN_ADDRESS={ttt_token_address}\n')
-        address_file.write(f'export USER_DEPOSIT_ADDRESS={user_deposit_address}\n')
-        address_file.write(f'export TOKEN_NETWORK_REGISTRY_ADDRESS={token_network_registry_address}\n')
-        address_file.write(f'export TOKEN_NETWORK_REGISTRY_ADDRESS={token_network_registry_address}\n')
-        address_file.write(f'export ONE_TO_N_ADDRESS={one_to_n_address}\n')
-        address_file.close()
+    try:
+        with open(output, 'w+') as address_file:
+            contracts_info = deployed_service_contracts_info['contracts']
+            user_deposit_address = contracts_info[CONTRACT_USER_DEPOSIT]['address']
+            one_to_n_address = contracts_info[CONTRACT_ONE_TO_N]['address']
+            address_file.write(f'#!/bin/sh\n')
+            address_file.write(f'export TTT_TOKEN_ADDRESS={ttt_token_address}\n')
+            address_file.write(f'export USER_DEPOSIT_ADDRESS={user_deposit_address}\n')
+            address_file.write(f'export TOKEN_NETWORK_REGISTRY_ADDRESS={token_network_registry_address}\n')
+            address_file.write(f'export TOKEN_NETWORK_REGISTRY_ADDRESS={token_network_registry_address}\n')
+            address_file.write(f'export ONE_TO_N_ADDRESS={one_to_n_address}\n')
+            address_file.close()
+    except Exception as err:
+        print(f'Writing environment variables failed: {err}')
 
     print('done')
 
