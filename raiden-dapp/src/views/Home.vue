@@ -88,8 +88,8 @@ export default class Home extends Vue {
   }
 
   async connect(connectOptions: ConnectOptions) {
-    const stateBackup = connectOptions['uploadedState'] || undefined;
-    let subkey = connectOptions['subkey'];
+    const stateBackup = connectOptions.uploadedState;
+    let subkey = connectOptions.subkey;
 
     if (subkey) {
       this.connectingSubkey = true;

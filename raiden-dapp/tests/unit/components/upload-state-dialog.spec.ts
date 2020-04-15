@@ -62,21 +62,6 @@ describe('UploadStateDialog.vue', () => {
     expect(wrapper.vm.$data.activeDropzone).toEqual(false);
   });
 
-  test('calls methods for uploading state on dropzone drop', async () => {
-    // @ts-ignore
-    wrapper.vm.uploadState = jest.fn();
-    // @ts-ignore
-    expect(wrapper.vm.uploadState).not.toBeCalled();
-
-    const dropzone = wrapper.find('.upload-state__dropzone');
-    dropzone.trigger('dragenter');
-    dropzone.trigger('drop');
-    await wrapper.vm.$nextTick();
-
-    // @ts-ignore
-    expect(wrapper.vm.uploadState).toBeCalled();
-  });
-
   test('calls methods for uploading state on file select', async () => {
     // @ts-ignore
     wrapper.vm.uploadState = jest.fn();

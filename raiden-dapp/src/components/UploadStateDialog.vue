@@ -105,12 +105,13 @@ export default class UploadStateDialog extends Vue {
     }
   }
 
+  /* istanbul ignore next */
   onDropzoneDrop(e: DragEvent) {
     e.preventDefault();
     this.activeDropzone = false;
 
     if (!e.dataTransfer?.files) {
-      this.dropzoneError();
+      return;
     }
 
     const uploadedFile = e.dataTransfer?.files;
@@ -119,7 +120,7 @@ export default class UploadStateDialog extends Vue {
 
   onFileSelect(e: Event) {
     if (!(e.target as HTMLInputElement).files) {
-      this.dropzoneError();
+      return;
     }
 
     const uploadedFile = (e.target as HTMLInputElement).files;
@@ -142,13 +143,14 @@ export default class UploadStateDialog extends Vue {
     let reader = new FileReader();
     /* istanbul ignore next */
     reader.onload = e => {
-      if (!e.target?.result) {
-        this.dropzoneError();
+      const target = e.target;
+      if (!e.target) {
+        return;
       }
 
       try {
         this.uploadingStateProgress = true;
-        const retrievedState = e.target?.result;
+        const retrievedState = target!.result;
         JSON.parse(String(retrievedState));
         this.$store.commit('backupState', retrievedState);
         setTimeout(() => {

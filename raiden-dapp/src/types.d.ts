@@ -9,7 +9,7 @@ export type ChannelAction = 'close' | 'deposit' | 'settle';
 
 export interface ConnectOptions {
   uploadedState: string;
-  subkey?: true | undefined;
+  subkey?: true;
 }
 
 export interface RootState {

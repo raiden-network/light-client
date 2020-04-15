@@ -23,7 +23,7 @@ export default class RaidenService {
   private static async createRaiden(
     provider: any,
     account: string | number = 0,
-    stateBackup: string | undefined,
+    stateBackup?: string,
     subkey?: true
   ): Promise<Raiden> {
     try {
@@ -87,7 +87,7 @@ export default class RaidenService {
     }
   }
 
-  async connect(stateBackup: string | undefined, subkey?: true) {
+  async connect(stateBackup?: string, subkey?: true) {
     try {
       const raidenPackageConfigUrl = process.env.VUE_APP_RAIDEN_PACKAGE;
       let config;

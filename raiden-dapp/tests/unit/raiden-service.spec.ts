@@ -67,7 +67,7 @@ describe('RaidenService', () => {
     expect.assertions(1);
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden());
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
     expect(raidenService.userDepositTokenAddress).toEqual('0xuserdeposittoken');
   });
@@ -88,7 +88,7 @@ describe('RaidenService', () => {
   test('return the account when the sdk is connected', async () => {
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden());
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
     expect(await raidenService.getAccount()).toBe('123');
   });
@@ -96,7 +96,7 @@ describe('RaidenService', () => {
   test('commit a deniedAccess when the throws a denied access error', async () => {
     providerMock.mockRejectedValue('denied');
 
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     expect(store.commit).toBeCalledTimes(2);
@@ -115,7 +115,7 @@ describe('RaidenService', () => {
       )
     );
 
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     expect(store.commit).toBeCalledTimes(2);
@@ -129,7 +129,7 @@ describe('RaidenService', () => {
   test('commit an noProvider when there is no provider detected', async () => {
     providerMock.mockResolvedValue(null);
 
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     expect(store.commit).toBeCalledTimes(2);
@@ -179,7 +179,7 @@ describe('RaidenService', () => {
     const raidenMock = mockRaiden({ openChannel });
 
     factory.mockResolvedValue(raidenMock);
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     const depositAmount = new BigNumber(100);
@@ -240,7 +240,7 @@ describe('RaidenService', () => {
 
     factory.mockResolvedValue(raidenMock);
     stub.next({});
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     expect(store.commit).toHaveBeenNthCalledWith(5, 'loadComplete');
@@ -259,7 +259,7 @@ describe('RaidenService', () => {
       })
     );
 
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     await raidenService.closeChannel('0xtoken', '0xpartner');
@@ -297,7 +297,7 @@ describe('RaidenService', () => {
       })
     );
 
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     const depositAmount = new BigNumber(6000);
@@ -320,7 +320,7 @@ describe('RaidenService', () => {
       })
     );
 
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     const depositAmount = new BigNumber(6000);
@@ -345,7 +345,7 @@ describe('RaidenService', () => {
         })
       );
 
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
 
       await expect(raidenService.settleChannel('0xtoken', '0xpartner'))
@@ -363,7 +363,7 @@ describe('RaidenService', () => {
         })
       );
 
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
 
       await expect(
@@ -425,7 +425,7 @@ describe('RaidenService', () => {
         tokens: [{ address: mockToken1 } as TokenModel]
       };
 
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
 
       expect(store.commit).toHaveBeenCalledTimes(4);
@@ -485,7 +485,7 @@ describe('RaidenService', () => {
       });
 
       factory.mockResolvedValue(raidenMock);
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
       subject.next({ type: 'newBlock' });
       await flushPromises();
@@ -516,7 +516,7 @@ describe('RaidenService', () => {
           })
         })
       );
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
       store.commit.mockReset();
       await raidenService.fetchTokenList();
@@ -568,7 +568,7 @@ describe('RaidenService', () => {
     });
 
     factory.mockResolvedValue(raidenMock);
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
     subject.next({ type: 'raidenShutdown' });
     await flushPromises();
@@ -583,7 +583,7 @@ describe('RaidenService', () => {
       sendAsync: jest.fn()
     });
     factory.mockRejectedValue(new Error('create failed'));
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     expect(store.commit).toBeCalledTimes(2);
@@ -606,7 +606,7 @@ describe('RaidenService', () => {
         })
       );
 
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
 
       await expect(
@@ -631,7 +631,7 @@ describe('RaidenService', () => {
         })
       );
 
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
 
       await expect(
@@ -650,7 +650,7 @@ describe('RaidenService', () => {
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden({ resolveName }));
 
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     expect(await raidenService.ensResolve('domain.eth')).toEqual(AddressZero);
@@ -661,7 +661,7 @@ describe('RaidenService', () => {
     const findPFS = jest.fn().mockResolvedValueOnce([]);
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden({ findPFS }));
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
     await expect(raidenService.fetchServices()).resolves.toEqual([]);
   });
@@ -670,7 +670,7 @@ describe('RaidenService', () => {
     const findPFS = jest.fn().mockRejectedValue(new Error('failed'));
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden({ findPFS }));
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
     await expect(raidenService.fetchServices()).rejects.toBeInstanceOf(Error);
   });
@@ -685,7 +685,7 @@ describe('RaidenService', () => {
         .mockRejectedValue(new Error('should not reach findRoutes'));
       providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(mockRaiden({ getAvailability, findRoutes }));
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
       await expect(
         raidenService.findRoutes(AddressZero, AddressZero, One)
@@ -700,7 +700,7 @@ describe('RaidenService', () => {
       const findRoutes = jest.fn().mockRejectedValue(new Error('no path'));
       providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(mockRaiden({ getAvailability, findRoutes }));
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
       await expect(
         raidenService.findRoutes(AddressZero, AddressZero, One)
@@ -715,7 +715,7 @@ describe('RaidenService', () => {
       const findRoutes = jest.fn().mockResolvedValueOnce([]);
       providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(mockRaiden({ getAvailability, findRoutes }));
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
       await expect(
         raidenService.findRoutes(AddressZero, AddressZero, One)
@@ -733,7 +733,7 @@ describe('RaidenService', () => {
         })
       );
 
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
 
       const isAvailable = await raidenService.getAvailability('0xtarget');
@@ -750,7 +750,7 @@ describe('RaidenService', () => {
         })
       );
 
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
 
       const isAvailable = await raidenService.getAvailability('0xtarget');
@@ -777,7 +777,7 @@ describe('RaidenService', () => {
         })
       );
 
-      await raidenService.connect('');
+      await raidenService.connect();
       await flushPromises();
 
       expect(store.commit).toBeCalledTimes(5);
