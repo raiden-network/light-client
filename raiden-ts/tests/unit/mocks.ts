@@ -131,6 +131,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     provider,
   );
   const address = signer.address as Address;
+  logging.setLevel(logging.levels.DEBUG);
   const log = logging.getLogger(`raiden:${address}`);
 
   const registryAddress = '0xregistry';
@@ -341,6 +342,12 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
         presence: 'online',
       })),
     },
+    turnServer: jest.fn(async () => ({
+      uris: 'https://turn.raiden.test',
+      ttl: 86400,
+      username: 'user',
+      password: 'password',
+    })),
   }) as unknown) as jest.Mocked<MatrixClient>;
 }
 
@@ -351,4 +358,34 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
  */
 export function makeSignature(): Signature {
   return '0x5770d597b270ad9d1225c901b1ef6bfd8782b15d7541379619c5dae02c5c03c1196291b042a4fea9dbddcb1c6bcd2a5ee19180e8dc881c2e9298757e84ad190b1c' as Signature;
+}
+
+/**
+ * Spies and mocks classes constructors on globalThis
+ *
+ * @returns Mocked spies
+ */
+export function mockRTC() {
+  const rtcDataChannel = (Object.assign(new EventEmitter(), {
+    close: jest.fn(),
+  }) as unknown) as jest.Mocked<RTCDataChannel & EventEmitter>;
+
+  const rtcConnection = (Object.assign(new EventEmitter(), {
+    createDataChannel: jest.fn(() => rtcDataChannel),
+    createOffer: jest.fn(async () => ({})),
+    createAnswer: jest.fn(async () => ({})),
+    setLocalDescription: jest.fn(async () => {
+      /* local */
+    }),
+    setRemoteDescription: jest.fn(async () => {
+      /* remote */
+    }),
+    addIceCandidate: jest.fn(),
+  }) as unknown) as jest.Mocked<RTCPeerConnection & EventEmitter>;
+
+  const RTCPeerConnection = jest
+    .spyOn(globalThis, 'RTCPeerConnection')
+    .mockImplementation(() => rtcConnection);
+
+  return { rtcDataChannel, rtcConnection, RTCPeerConnection };
 }
