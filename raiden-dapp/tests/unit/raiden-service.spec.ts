@@ -152,7 +152,7 @@ describe('RaidenService', () => {
     });
     const raidenMock = mockRaiden({ openChannel });
     factory.mockResolvedValue(raidenMock);
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     const progress = jest.fn();
@@ -204,7 +204,7 @@ describe('RaidenService', () => {
     });
 
     factory.mockResolvedValue(raidenMock);
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     await raidenService.fetchTokenData(['0xtoken']);
@@ -277,7 +277,7 @@ describe('RaidenService', () => {
       })
     );
 
-    await raidenService.connect('');
+    await raidenService.connect();
     await flushPromises();
 
     await expect(
