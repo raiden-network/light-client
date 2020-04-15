@@ -11,7 +11,7 @@ import { Signer, Wallet } from 'ethers';
 jest.setTimeout(80000);
 
 const signer = new Wallet('0x0123456789012345678901234567890123456789012345678901234567890123');
-//const partner1 = '0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec';
+const partner1 = '0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec';
 const partner2 = '0xCBC49ec22c93DB69c78348C90cd03A323267db86';
 
 async function createRaiden(
@@ -79,7 +79,13 @@ describe('integration', () => {
     await expect(raiden.getTokenBalance(getToken())).resolves.toStrictEqual(parseEther('1'));
   });
 
-  test('open channel', async () => {
-    await expect(raiden.openChannel(getToken(), partner2)).resolves.toMatch('0x');
+  test('open and fund channel with 1st node', async () => {
+    await expect(
+      raiden.openChannel(getToken(), partner1, { deposit: parseEther('1') }),
+    ).resolves.toMatch('0x');
+  });
+
+  test('transfer to 2nd node', async () => {
+    await expect(raiden.transfer(getToken(), partner2, 1)).resolves.toMatch('0x');
   });
 });
