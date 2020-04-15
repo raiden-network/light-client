@@ -1,15 +1,15 @@
 # Changelog
 
 ## [Unreleased]
-
-## Added
-- [#1338]: Allow HTTP URLs for Path Finding Service (non-production)
+### Added
+- [#1338] Allow HTTP URLs for Path Finding Service (non-production)
+- [#1261] Implements fast WebRTC P2P transport
 
 [#1338]: https://github.com/raiden-network/light-client/issues/1338
+[#1261]: https://github.com/raiden-network/light-client/issues/1261
 
 ## [0.5.2] - 2020-04-07
-
-## Fixed
+### Fixed
 - [#1254] Downgraded contract version 0.36.2
 
 [#1254]: https://github.com/raiden-network/light-client/issues/1254
@@ -23,7 +23,6 @@
 [#1254]: https://github.com/raiden-network/light-client/issues/1254
 
 ## [0.5.0] - 2020-03-27
-
 ### Added
 - [#348] Foundation for integration tests w/ Raiden Python client.
 - [#774] Reduced size of transpiled bundle.
