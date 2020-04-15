@@ -39,11 +39,15 @@
     }
   },
   "backup-state": {
-    "description": "Currently it is only possible to download the state. Uploading of state coming soon.",
+    "description": "Download and upload your state",
     "download": "Download State",
     "download-warning": "Downloading the state will force the dApp to shut down",
     "download-button": "Download",
-    "upload": "Upload State"
+    "upload": "Upload State",
+    "upload-drag-and-drop": "Drag and drop state file",
+    "upload-divider": "or",
+    "upload-button": "Browse files",
+    "upload-error": "Only one state file in valid JSON format can be uploaded"
   },
   "update": {
     "available": "A new version is available.",
@@ -180,6 +184,7 @@
   "no-access": {
     "unsupported-network": "The current network is unsupported. Please choose a different network.",
     "sdk-initialization-failure": "SDK initialization failed. Please check the console for more information.",
+    "rdn-state-migration": "Cannot replace state with older uploaded state.",
     "generic-error": "A valid account could not be detected. Please make sure that your provider is unlocked and accessible."
   },
   "tokens": {

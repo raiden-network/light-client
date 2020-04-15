@@ -7,6 +7,11 @@ export type Tokens = { [token: string]: Token };
 export type Transfers = { [secretHash: string]: RaidenTransfer };
 export type ChannelAction = 'close' | 'deposit' | 'settle';
 
+export interface ConnectOptions {
+  uploadedState: string;
+  subkey?: true;
+}
+
 export interface RootState {
   loading: boolean;
   defaultAccount: string;
@@ -18,6 +23,7 @@ export interface RootState {
   network: Network;
   presences: Presences;
   transfers: Transfers;
+  stateBackup: string;
 }
 
 declare global {

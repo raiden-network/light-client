@@ -38,7 +38,8 @@ const _defaultState: RootState = {
   tokens: {},
   transfers: {},
   presences: {},
-  network: PlaceHolderNetwork
+  network: PlaceHolderNetwork,
+  stateBackup: ''
 };
 
 export function defaultState(): RootState {
@@ -85,6 +86,9 @@ const store: StoreOptions<RootState> = {
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {
       state.transfers = { ...state.transfers, [transfer.secrethash]: transfer };
+    },
+    backupState(state: RootState, uploadedState: string) {
+      state.stateBackup = uploadedState;
     }
   },
   actions: {},
