@@ -2,6 +2,8 @@ jest.useFakeTimers();
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+
+import store from '@/store/index';
 import BackupState from '@/views/BackupState.vue';
 
 Vue.use(Vuetify);
@@ -18,7 +20,8 @@ describe('BackupState.vue', () => {
       stubs: ['v-dialog'],
       mocks: {
         $t: (msg: string) => msg
-      }
+      },
+      store
     });
   });
 
@@ -42,6 +45,14 @@ describe('BackupState.vue', () => {
     jest.advanceTimersByTime(2000);
     const downloadStateDialog = wrapper.find('.download-state');
     expect(downloadStateDialog).toBeTruthy();
+  });
+
+  test('download state button disabled if disconnected', () => {
+    const downloadStateButton = wrapper.find(
+      '.backup-state__buttons__download-state'
+    );
+
+    expect(downloadStateButton.classes()).toContain('v-list-item--disabled');
   });
 
   // test('upload state', () => {
