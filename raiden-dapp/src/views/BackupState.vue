@@ -7,6 +7,7 @@
     </v-row>
     <v-list class="backup-state__buttons">
       <v-list-item
+        :disabled="!isConnected"
         class="backup-state__buttons__download-state"
         @click="downloadState = true"
       >
@@ -45,6 +46,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { mapGetters } from 'vuex';
 import DownloadStateDialog from '@/components/DownloadStateDialog.vue';
 import UploadStateDialog from '@/components/UploadStateDialog.vue';
 
@@ -52,9 +54,11 @@ import UploadStateDialog from '@/components/UploadStateDialog.vue';
   components: {
     DownloadStateDialog,
     UploadStateDialog
-  }
+  },
+  computed: { ...mapGetters(['isConnected']) }
 })
 export default class BackupState extends Vue {
+  isConnected!: boolean;
   downloadState: boolean = false;
   uploadState: boolean = false;
 }
