@@ -32,6 +32,10 @@ describe('store', () => {
     store.replaceState(defaultState());
   });
 
+  test('isConnected getter is false while disconnected', () => {
+    expect(store.getters.isConnected).toBe(false);
+  });
+
   test('loadComplete mutation changes the loading state', () => {
     expect(store.state.loading).toBe(true);
     store.commit('loadComplete');

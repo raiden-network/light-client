@@ -163,7 +163,9 @@ const store: StoreOptions<RootState> = {
       }
 
       return undefined;
-    }
+    },
+    isConnected: (state: RootState): boolean =>
+      !!(state.defaultAccount && state.defaultAccount !== '')
   }
 };
 
