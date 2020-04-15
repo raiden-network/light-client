@@ -38,7 +38,13 @@ function serializeError(e: Error): string {
 function filterMessage(message: any[]) {
   if (message[0] === '%c prev state') return;
   if (message[0] === '—— log end ——') return;
-  message = message.map(e => (e instanceof Error ? serializeError(e) : e));
+  message = message.map(e =>
+    e instanceof Error
+      ? serializeError(e)
+      : e?.payload instanceof Error // error action
+      ? { ...e, payload: serializeError(e.payload) }
+      : e
+  );
   if (typeof message[1] === 'string' && message[1].startsWith('color:'))
     message.splice(1, 1);
   return message;

@@ -2,7 +2,13 @@
 
 echo "Setting up private chain"
 
-source "${VENV}/bin/activate"
+# Setting up a virtual environment for the raiden contracts
+VENV=/tmp/deploy_venv
+python3 -m venv $VENV
+source $VENV/bin/activate
+pip install mypy_extensions
+pip install click>=7.0
+pip install raiden-contracts==${CONTRACTS_PACKAGE_VERSION}
 
 GETH_RESULT=$(geth --datadir "${DATA_DIR}" account new --password "${PASSWORD_FILE}")
 
@@ -36,6 +42,33 @@ deploy_contracts.py --contract-version "${CONTRACTS_VERSION}" \
   --output "${SMARTCONTRACTS_ENV_FILE}" \
   --password "${PASSWORD}"
 
-chmod u+x "${SMARTCONTRACTS_ENV_FILE}"
+if [[ -f ${SMARTCONTRACTS_ENV_FILE} ]]; then
+  cp ${VENV}/lib/python3.7/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_private_net.json /opt/deployment/
+  cp ${VENV}/lib/python3.7/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_services_private_net.json /opt/deployment/
 
-kill -s TERM ${GETH_PID}
+  if [[ ! -f /opt/deployment/deployment_private_net.json ]]; then
+    echo 'Could not find the deployment_private_net.json'
+    exit 1
+  fi
+
+  if [[ ! -f /opt/deployment/deployment_services_private_net.json ]]; then
+    echo 'Could not find the deployment_services_private_net.json'
+    exit 1
+  fi
+
+  chmod u+x "${SMARTCONTRACTS_ENV_FILE}"
+  echo 'Deployment was successful'
+  kill -s TERM ${GETH_PID}
+
+  # Cleanup the temporary virtual environment used during the deployment
+  rm -rf $VENV
+  exit 0
+else
+  echo 'Deployment failed'
+  kill -s TERM ${GETH_PID}
+  exit 1
+fi
+
+
+
+

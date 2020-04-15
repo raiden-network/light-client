@@ -1,7 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.2] - 2020-04-07
+- No changes
 
+
+## [0.5.1] - 2020-04-06
 ### Added
 - [#1222] Enables state upload
 - [#694] Show protocol progress steps on transfer modal.
@@ -178,7 +181,9 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/raiden-network/light-client/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/raiden-network/light-client/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/raiden-network/light-client/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/raiden-network/light-client/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/raiden-network/light-client/compare/v0.4.0...v0.4.1
