@@ -1,12 +1,20 @@
 # Changelog
 
+## Unreleased
+### Added
+- [#1222] Enables state upload
+
+### Fixed
+- [#1310] Disable state download if not connected to web3 provider.
+
+[#1222] https://github.com/raiden-network/light-client/issues/1222
+[#1310]: https://github.com/raiden-network/light-client/issues/1310
+
 ## [0.5.2] - 2020-04-07
 - No changes
 
-
 ## [0.5.1] - 2020-04-06
 ### Added
-- [#1222] Enables state upload
 - [#694] Show protocol progress steps on transfer modal.
 - [#687] Ghost action buttons.
 
@@ -14,11 +22,11 @@
 - [#1243] Fix width of transfer input on mobile screens.
 - [#1242] Fix transfer modal not closing instantly.
 
-[#1222] https://github.com/raiden-network/light-client/issues/1222
 [#694] https://github.com/raiden-network/light-client/issues/694
+[#694]: https://github.com/raiden-network/light-client/issues/694
 [#1243]: https://github.com/raiden-network/light-client/issues/1243
 [#1242]: https://github.com/raiden-network/light-client/issues/1242
-[#687] https://github.com/raiden-network/light-client/issues/687
+[#687]: https://github.com/raiden-network/light-client/issues/687
 
 ## [0.5.0] - 2020-03-27
 ### Added
