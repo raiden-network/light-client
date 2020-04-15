@@ -1,37 +1,37 @@
 <template>
-  <div class="general-screen">
-    <v-row class="general-screen__header" no-gutters>
-      <div class="general-screen__header__content">
-        <div class="general-screen__header__content__back">
-          <v-btn
-            height="40px"
-            text
-            icon
-            width="40px"
-            @click="onGeneralBackClicked()"
-          >
-            <v-img
-              :src="require('../assets/back_arrow.svg')"
-              max-width="34px"
-            />
-          </v-btn>
+  <div id="general-screen-wrapper">
+    <div class="general-screen">
+      <v-row class="general-screen__header" no-gutters>
+        <div class="general-screen__header__content">
+          <div class="general-screen__header__content__back">
+            <v-btn
+              height="40px"
+              text
+              icon
+              width="40px"
+              @click="onGeneralBackClicked()"
+            >
+              <v-img
+                :src="require('../assets/back_arrow.svg')"
+                max-width="34px"
+              />
+            </v-btn>
+          </div>
+          <div class="general-screen__header__content__title">
+            {{ $route.meta.title }}
+          </div>
         </div>
-        <div class="general-screen__header__content__title">
-          {{ $route.meta.title }}
+      </v-row>
+      <router-view />
+      <v-row class="general-screen__footer" no-gutters>
+        <div v-if="version">
+          <span>{{ $t('versions.sdk', { version }) }}</span>
+          <span class="general-screen__footer__contracts-version">
+            {{ $t('versions.contracts', { version: contractVersion }) }}
+          </span>
         </div>
-      </div>
-    </v-row>
-    <router-view />
-    <v-row class="general-screen__footer" no-gutters>
-      <div v-if="version">
-        <span>
-          {{ $t('versions.sdk', { version }) }}
-        </span>
-        <span class="general-screen__footer__contracts-version">
-          {{ $t('versions.contracts', { version: contractVersion }) }}
-        </span>
-      </div>
-    </v-row>
+      </v-row>
+    </div>
   </div>
 </template>
 
@@ -57,16 +57,27 @@ export default class GeneralDialog extends Mixins(NavigationMixin) {
 @import '../scss/fonts';
 @import '../scss/colors';
 
+#general-screen-wrapper {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  position: absolute;
+  z-index: 20;
+  @include respond-to(handhelds) {
+    height: 100vh;
+    width: 100%;
+  }
+}
+
 .general-screen {
   background-color: black;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
   height: 844px;
-  margin-top: 12px;
-  position: absolute;
+  margin-top: 25px;
   width: 620px;
-  z-index: 20;
   @include respond-to(handhelds) {
     border-radius: 0;
     height: 100vh;
