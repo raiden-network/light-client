@@ -58,18 +58,18 @@ describe('BackupState.vue', () => {
   test('clicking upload state button opens upload state dialog', () => {
     expect(wrapper.vm.$data.uploadState).toBe(false);
 
-  test('download state button disabled if disconnected', () => {
-    const downloadStateButton = wrapper.find(
-      '.backup-state__buttons__download-state'
-    );
+    test('download state button disabled if disconnected', () => {
+      const downloadStateButton = wrapper.find(
+        '.backup-state__buttons__download-state'
+      );
 
-    expect(downloadStateButton.classes()).toContain('v-list-item--disabled');
-  });
+      expect(downloadStateButton.classes()).toContain('v-list-item--disabled');
+    });
 
-  // test('upload state', () => {
-  //   const uploadStateTitle = wrapper.find(
-  //     '.backup-state__buttons__upload-state__title'
-  //   );
+    // test('upload state', () => {
+    //   const uploadStateTitle = wrapper.find(
+    //     '.backup-state__buttons__upload-state__title'
+    //   );
 
     const uploadStateButton = wrapper.find(
       '.backup-state__buttons__upload-state'
