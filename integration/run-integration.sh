@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
+param="$1"
+
 INTEGRATION_CONTAINER=lc-integration
+WORKING_DIR=$PWD
 
 echo Starting the image
 docker run --name "${INTEGRATION_CONTAINER}" -d \
@@ -11,9 +14,14 @@ docker run --name "${INTEGRATION_CONTAINER}" -d \
   -p 127.0.0.1:8545:8545 lightclient-integration
 
 source ./pull_deployment.sh "${INTEGRATION_CONTAINER}"
-cd ../raiden-ts || exit
+cd ../raiden-ts || exit 1
 
 npm run test:integration
+
+if [[ "${param}" == DEBUG ]]; then
+  echo "Getting service logs from docker image ${INTEGRATION_CONTAINER}"
+  docker cp "${INTEGRATION_CONTAINER}":/var/log/supervisor/. "${WORKING_DIR}"/logs/
+fi
 
 docker stop lc-integration
 docker rm lc-integration
