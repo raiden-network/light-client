@@ -171,6 +171,7 @@ def main(keystore_file: str, contract_version: str, password: str, output: str, 
             one_to_n_address = contracts_info[CONTRACT_ONE_TO_N]['address']
             address_file.write(f'#!/bin/sh\n')
             address_file.write(f'export TTT_TOKEN_ADDRESS={ttt_token_address}\n')
+            address_file.write(f'export SVT_TOKEN_ADDRESS={svt_token_address}\n')
             address_file.write(f'export USER_DEPOSIT_ADDRESS={user_deposit_address}\n')
             address_file.write(f'export TOKEN_NETWORK_REGISTRY_ADDRESS={token_network_registry_address}\n')
             address_file.write(f'export TOKEN_NETWORK_REGISTRY_ADDRESS={token_network_registry_address}\n')
