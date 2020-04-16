@@ -16,7 +16,7 @@
     "lint:check": "vue-cli-service lint --no-fix --max-warnings 0 && stylelint ./src/**/*.{vue,scss}"
   },
   "dependencies": {
-    "core-js": "^3.6.4",
+    "core-js": "^3.6.5",
     "ethereum-blockies-base64": "^1.0.2",
     "ethers": "^4.0.46",
     "idb": "^5.0.2",
