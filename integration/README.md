@@ -52,6 +52,10 @@ It is suggested to run the tests using the `run-integration.sh`. The script star
 runs the tests and then stops and deletes the container. This makes sure that tests are always run in 
 a clean environment.
 
+#### Getting service logs
+To access the logs of all the underlying services you can run `run-integration.sh DEBUG`. This
+will copy the logs from the integration container to the `logs` folder.
+
 ## Updating the image
 Unless there are some major changes in some of the dependencies or the different part updating the environment should
 be as simple as updating the following arguments in the `Dockerfile`.

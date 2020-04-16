@@ -23,13 +23,17 @@ export default class RaidenService {
   private static async createRaiden(
     provider: any,
     account: string | number = 0,
+    stateBackup?: string,
     subkey?: true
   ): Promise<Raiden> {
     try {
       return await Raiden.create(
         provider,
         account,
-        window.localStorage,
+        {
+          storage: window.localStorage,
+          state: stateBackup
+        },
         undefined,
         {
           pfsSafetyMargin: 1.1,
@@ -83,7 +87,7 @@ export default class RaidenService {
     }
   }
 
-  async connect(subkey?: true) {
+  async connect(stateBackup?: string, subkey?: true) {
     try {
       const raidenPackageConfigUrl = process.env.VUE_APP_RAIDEN_PACKAGE;
       let config;
@@ -104,12 +108,14 @@ export default class RaidenService {
           raiden = await RaidenService.createRaiden(
             provider,
             config.PRIVATE_KEY,
+            stateBackup,
             subkey
           );
         } else {
           raiden = await RaidenService.createRaiden(
             provider,
             undefined,
+            stateBackup,
             subkey
           );
         }
@@ -173,6 +179,11 @@ export default class RaidenService {
       let deniedReason: DeniedReason;
       if (e.message && e.message.indexOf('No deploy info provided') > -1) {
         deniedReason = DeniedReason.UNSUPPORTED_NETWORK;
+      } else if (
+        e.message &&
+        e.message.indexOf('Could not replace stored state') > -1
+      ) {
+        deniedReason = DeniedReason.RDN_STATE_MIGRATION;
       } else if (e instanceof RaidenInitializationFailed) {
         deniedReason = DeniedReason.INITIALIZATION_FAILED;
       } else {

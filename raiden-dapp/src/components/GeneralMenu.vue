@@ -43,12 +43,8 @@
           <v-img :src="require(`../assets/${menuItem.icon}`)"></v-img>
         </div>
         <v-list-item-content>
-          <v-list-item-title>
-            {{ menuItem.title }}
-          </v-list-item-title>
-          <v-list-item-subtitle>
-            {{ menuItem.subtitle }}
-          </v-list-item-subtitle>
+          <v-list-item-title>{{ menuItem.title }}</v-list-item-title>
+          <v-list-item-subtitle>{{ menuItem.subtitle }}</v-list-item-subtitle>
         </v-list-item-content>
         <v-list-item-action>
           <v-btn icon @click="menuItem.route">

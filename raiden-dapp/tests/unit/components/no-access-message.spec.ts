@@ -57,4 +57,13 @@ describe('NoAccessScreen.vue', () => {
         .join(' ')
     ).toEqual('no-access.sdk-initialization-failure');
   });
+
+  test('invalid old state', () => {
+    const wrapper = createWrapper(DeniedReason.RDN_STATE_MIGRATION);
+    const invalidOldStateMessage = wrapper.find('span');
+
+    expect(invalidOldStateMessage.text()).toEqual(
+      'no-access.rdn-state-migration'
+    );
+  });
 });

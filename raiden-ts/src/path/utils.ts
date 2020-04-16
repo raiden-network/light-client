@@ -15,6 +15,7 @@ import { channelAmounts } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
 import { RaidenError, ErrorCodes } from '../utils/error';
 import { Capabilities } from '../constants';
+import { isValidUrl } from '../helpers';
 import { PFS } from './types';
 
 /**
@@ -56,9 +57,6 @@ const serviceRegistryToken = memoize(
     serviceRegistryContract.functions.token() as Promise<Address>,
 );
 
-// match an https:// or domain-only url
-const urlRegex = /^(?:https:\/\/)?[^\s\/$.?#&"']+\.[^\s\/$?#&"']+$/;
-
 /**
  * Returns a cold observable which fetch PFS info & validate for a given server address or URL
  *
@@ -93,9 +91,9 @@ export function pfsInfo(
     withLatestFrom(config$),
     mergeMap(([url, { httpTimeout }]) => {
       if (!url) throw new RaidenError(ErrorCodes.PFS_EMPTY_URL);
-      else if (!urlRegex.test(url)) throw new RaidenError(ErrorCodes.PFS_INVALID_URL, { url });
+      else if (!isValidUrl(url)) throw new RaidenError(ErrorCodes.PFS_INVALID_URL, { url });
       // default to https for domain-only urls
-      else if (!url.startsWith('https://')) url = `https://${url}`;
+      else if (!url.startsWith('https://') && !url.startsWith('http://')) url = `https://${url}`;
 
       const start = Date.now();
       return fromFetch(url + '/api/v1/info').pipe(

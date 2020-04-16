@@ -225,7 +225,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       { network },
       {
         pfsSafetyMargin: 1.1,
-        pfs: 'https://pfs.raiden.test',
+        pfs: 'pfs.raiden.test',
         httpTimeout: 300,
         confirmationBlocks: 2,
       },

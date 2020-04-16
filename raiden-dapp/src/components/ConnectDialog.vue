@@ -14,7 +14,7 @@
           :text="$t('home.connect-dialog.web3-provider')"
           :enabled="!connecting && !connectingSubkey"
           :loading="connecting"
-          @click="connect()"
+          @click="connect(stateBackup)"
         />
       </div>
       <div class="text-center font-weight-light">
@@ -26,7 +26,7 @@
         tag="div"
         class="connect__raiden-account text-center font-weight-light"
       >
-        <a v-if="!connecting" @click="connect(true)">
+        <a v-if="!connecting" @click="connect(stateBackup, true)">
           {{ $t('home.connect-dialog.raiden-account.link-name') }}
         </a>
         <span v-else>
@@ -61,10 +61,11 @@ import NoAccessMessage from '@/components/NoAccessMessage.vue';
     ActionButton,
     NoAccessMessage
   },
-  computed: mapState(['accessDenied'])
+  computed: mapState(['stateBackup', 'accessDenied'])
 })
 export default class ConnectDialog extends Vue {
   hideClose: boolean = false;
+  stateBackup!: string;
   accessDenied!: DeniedReason;
 
   @Prop({ required: true, type: Boolean, default: false })
@@ -78,9 +79,8 @@ export default class ConnectDialog extends Vue {
   close() {}
 
   @Emit()
-  connect(subkey?: true) {
-    this.hideClose = true;
-    return subkey;
+  connect(uploadedState: string, subkey?: true) {
+    return { uploadedState, subkey };
   }
 
   get injectedProvider(): boolean {

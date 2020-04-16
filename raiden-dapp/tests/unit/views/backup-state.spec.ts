@@ -47,6 +47,28 @@ describe('BackupState.vue', () => {
     expect(downloadStateDialog).toBeTruthy();
   });
 
+  test('upload state title', () => {
+    const uploadStateTitle = wrapper.find(
+      '.backup-state__buttons__upload-state__title'
+    );
+
+    expect(uploadStateTitle.text()).toBe('backup-state.upload');
+  });
+
+  test('clicking upload state button opens upload state dialog', () => {
+    expect(wrapper.vm.$data.uploadState).toBe(false);
+
+    const uploadStateButton = wrapper.find(
+      '.backup-state__buttons__upload-state'
+    );
+    uploadStateButton.trigger('click');
+    expect(wrapper.vm.$data.uploadState).toBe(true);
+
+    jest.advanceTimersByTime(2000);
+    const uploadStateDialog = wrapper.find('.upload-state');
+    expect(uploadStateDialog).toBeTruthy();
+  });
+
   test('download state button disabled if disconnected', () => {
     const downloadStateButton = wrapper.find(
       '.backup-state__buttons__download-state'
@@ -59,7 +81,4 @@ describe('BackupState.vue', () => {
   //   const uploadStateTitle = wrapper.find(
   //     '.backup-state__buttons__upload-state__title'
   //   );
-
-  //   expect(uploadStateTitle.text()).toBe('backup-state.upload');
-  // });
 });

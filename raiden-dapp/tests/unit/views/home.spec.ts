@@ -34,7 +34,7 @@ describe('Home.vue', () => {
 
   test('connect without subkey', async () => {
     // @ts-ignore
-    await wrapper.vm.connect();
+    await wrapper.vm.connect('');
     await flushPromises();
 
     expect($raiden.connect).toHaveBeenCalledTimes(1);
@@ -51,7 +51,7 @@ describe('Home.vue', () => {
   test('connect can be called without displaying error after failing initially', async () => {
     store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
     // @ts-ignore
-    await wrapper.vm.connect();
+    await wrapper.vm.connect('');
     await flushPromises();
 
     expect(store.state.accessDenied).toEqual(DeniedReason.UNDEFINED);
