@@ -1502,18 +1502,21 @@ describe('transport epic', () => {
           caps: { [Capabilities.NO_DELIVERY]: true, [Capabilities.WEBRTC]: true },
         }),
       );
-      matrix.getRoom.mockReturnValue({
-        roomId: partnerRoomId,
-        name: partnerRoomId,
-        getMember: jest.fn(() => ({
-          membership: 'join',
-          roomId: partnerRoomId,
-          userId: partnerUserId,
-        })),
-        getJoinedMembers: jest.fn(),
-        getCanonicalAlias: jest.fn(() => partnerRoomId),
-        getAliases: jest.fn(() => []),
-      } as any);
+      matrix.getRoom.mockImplementation(
+        () =>
+          ({
+            roomId: partnerRoomId,
+            name: partnerRoomId,
+            getMember: jest.fn(() => ({
+              membership: 'join',
+              roomId: partnerRoomId,
+              userId: partnerUserId,
+            })),
+            getJoinedMembers: jest.fn(),
+            getCanonicalAlias: jest.fn(() => partnerRoomId),
+            getAliases: jest.fn(() => []),
+          } as any),
+      );
     });
     afterEach(() => {
       RTCPeerConnection.mockRestore();
@@ -1561,18 +1564,6 @@ describe('transport epic', () => {
       // change partner to one with smaller address, to be the caller
       partner = '0x0000000000000000000000000000000000000088' as Address;
       partnerUserId = `@${partner.toLowerCase()}:${matrixServer}`;
-      matrix.getRoom.mockReturnValue({
-        roomId: partnerRoomId,
-        name: partnerRoomId,
-        getMember: jest.fn(() => ({
-          membership: 'join',
-          roomId: partnerRoomId,
-          userId: partnerUserId,
-        })),
-        getJoinedMembers: jest.fn(),
-        getCanonicalAlias: jest.fn(() => partnerRoomId),
-        getAliases: jest.fn(() => []),
-      } as any);
 
       const promise = rtcConnectEpic(action$, state$, depsMock)
         .pipe(takeUntil(timer(1e3)), toArray())
