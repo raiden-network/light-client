@@ -93,7 +93,7 @@ export function pfsInfo(
       if (!url) throw new RaidenError(ErrorCodes.PFS_EMPTY_URL);
       else if (!isValidUrl(url)) throw new RaidenError(ErrorCodes.PFS_INVALID_URL, { url });
       // default to https for domain-only urls
-      else if (!url.startsWith('https://')) url = `https://${url}`;
+      else if (!url.startsWith('https://') && !url.startsWith('http://')) url = `https://${url}`;
 
       const start = Date.now();
       return fromFetch(url + '/api/v1/info').pipe(

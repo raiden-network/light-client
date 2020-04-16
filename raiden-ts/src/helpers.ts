@@ -369,6 +369,6 @@ export const isValidUrl = (url: string): boolean => {
   const regex =
     process.env.NODE_ENV === 'production'
       ? /^(?:https:\/\/)?[^\s\/$.?#&"']+\.[^\s\/$?#&"']+$/
-      : /^(?:(https|http):\/\/)?[^\s\/$.?#&"']+\.[^\s\/$?#&"']+$/;
+      : /^(?:(http|https):\/\/)?([^\s\/$.?#&"']+\.)*[^\s\/$?#&"']+(?:(\d+))*$/;
   return regex.test(url);
 };
