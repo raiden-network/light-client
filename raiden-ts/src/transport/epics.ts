@@ -1216,6 +1216,8 @@ function waitMemberAndSend$(
             ? matrix.sendEvent(via, type, content, '') // via room
             : via.send(content.body), // via RTC channel
       ).pipe(
+        // this returned value is just for notification, and shouldn't be relayed on
+        // all functionality is provided as side effects of the subscription
         mapTo(typeof via === 'string' ? via : via.label),
         retryWhen((err$) =>
           // if sendEvent throws, omit & retry after httpTimeout / N,
