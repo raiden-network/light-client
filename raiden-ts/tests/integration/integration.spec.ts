@@ -1,7 +1,7 @@
 import { RaidenState } from 'raiden-ts/state';
 import { assert, Storage } from 'raiden-ts/utils/types';
 import { Raiden } from 'raiden-ts/raiden';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import { ContractsInfo } from 'raiden-ts/types';
 import { bigNumberify, parseEther } from 'ethers/utils';
 import { MockStorage } from '../e2e/mocks';
@@ -10,6 +10,9 @@ import { Signer, Wallet } from 'ethers';
 
 jest.setTimeout(80000);
 
+const ethBalance = '100000000000000000000000';
+const tttBalance = '100000000000000';
+const svtBalance = '100000000000000';
 const signer = new Wallet('0x0123456789012345678901234567890123456789012345678901234567890123');
 const partner1 = '0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec';
 const partner2 = '0xCBC49ec22c93DB69c78348C90cd03A323267db86';
@@ -23,13 +26,13 @@ async function createRaiden(
 
   assert(deploymentInfoFile !== undefined);
   assert(deploymentServiceInfoFile !== undefined);
-  assert(fs.existsSync(deploymentInfoFile));
-  assert(fs.existsSync(deploymentServiceInfoFile));
+  assert(await fs.stat(deploymentInfoFile));
+  assert(await fs.stat(deploymentServiceInfoFile));
 
   const options = { encoding: 'utf8', flag: 'r' };
 
-  const deployFile = await fs.readFileSync(deploymentInfoFile, options);
-  const servicesDeployFile = await fs.readFileSync(deploymentServiceInfoFile, options);
+  const deployFile = (await fs.readFile(deploymentInfoFile, options)) as string;
+  const servicesDeployFile = (await fs.readFile(deploymentServiceInfoFile, options)) as string;
 
   const deploy = JSON.parse(deployFile);
   const servicesDeploy = JSON.parse(servicesDeployFile);
@@ -71,21 +74,36 @@ describe('integration', () => {
 
   test('account is funded', async () => {
     const balance = await raiden.getBalance(raiden.address);
-    expect(balance.eq(bigNumberify('100000000000000000000000'))).toBe(true);
+    expect(balance.eq(bigNumberify(ethBalance))).toBe(true);
   });
 
-  test('mint tokens', async () => {
-    await expect(raiden.mint(getToken(), parseEther('1'))).resolves.toMatch('0x');
-    await expect(raiden.getTokenBalance(getToken())).resolves.toStrictEqual(parseEther('1'));
+  test('mint TTT', async () => {
+    await expect(raiden.mint(getToken(), parseEther(tttBalance))).resolves.toMatch('0x');
+    await expect(raiden.getTokenBalance(getToken())).resolves.toStrictEqual(
+      parseEther(tttBalance),
+    );
   });
 
-  test('open and fund channel with 1st node', async () => {
+  test('open channel with partner #1', async () => {
+    await expect(raiden.openChannel(getToken(), partner1)).resolves.toMatch('0x');
+  });
+
+  test('mint SVT', async () => {
     await expect(
-      raiden.openChannel(getToken(), partner1, { deposit: parseEther('1') }),
+      raiden.mint(process.env.SVT_TOKEN_ADDRESS as string, parseEther(svtBalance)),
     ).resolves.toMatch('0x');
+    await expect(
+      raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
+    ).resolves.toStrictEqual(parseEther(svtBalance));
   });
 
-  test('transfer to 2nd node', async () => {
+  test('deposit to UDC', async () => {
+    await expect(raiden.depositToUDC(parseEther(svtBalance))).resolves.toMatch('0x');
+    await expect(raiden.getUDCCapacity()).resolves.toStrictEqual(parseEther(svtBalance));
+  });
+
+  test('transfer to partner #2', async () => {
+    await expect(raiden.getAvailability(partner2)).resolves.toMatchObject({ available: true });
     await expect(raiden.transfer(getToken(), partner2, 1)).resolves.toMatch('0x');
   });
 });
