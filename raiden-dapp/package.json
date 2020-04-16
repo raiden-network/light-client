@@ -77,7 +77,7 @@
     "source-map-loader": "^0.2.4",
     "stylelint": "^13.3.0",
     "stylelint-config-recommended-scss": "^4.2.0",
-    "stylelint-scss": "^3.16.1",
+    "stylelint-scss": "^3.17.0",
     "ts-jest": "^24.3.0",
     "typescript": "^3.8.3",
     "vue-cli-plugin-i18n": "^0.6.1",
