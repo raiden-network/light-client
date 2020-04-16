@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+## Added
+- [#1338]: Allow HTTP URLs for Path Finding Service (non-production)
+
+[#1338]: https://github.com/raiden-network/light-client/issues/1338
+
 ## [0.5.2] - 2020-04-07
 
 ## Fixed
