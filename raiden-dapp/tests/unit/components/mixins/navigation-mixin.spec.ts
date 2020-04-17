@@ -13,7 +13,7 @@ describe('NavigationMixin', () => {
 
   beforeEach(async () => {
     router = new VueRouter() as Mocked<VueRouter>;
-    router.push = jest.fn().mockReturnValue(null);
+    router.push = jest.fn().mockResolvedValue(null);
 
     const component = {
       render() {},

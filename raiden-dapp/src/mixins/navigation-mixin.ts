@@ -13,9 +13,11 @@ export default class NavigationMixin extends Vue {
   }
 
   navigateToHome() {
-    this.$router.push({
-      name: RouteNames.HOME
-    });
+    this.$router
+      .push({
+        name: RouteNames.HOME
+      })
+      .catch(() => {});
   }
 
   navigateToOpenChannel(token: string, partner: string) {
