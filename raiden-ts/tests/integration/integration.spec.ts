@@ -121,8 +121,8 @@ describe('integration', () => {
     });
 
     test('10 consecutive transfers to partner #2', async () => {
+      expect.assertions(10);
       for (let i = 0; i < 10; i++) {
-        await expect(raiden.getAvailability(partner2)).resolves.toMatchObject({ available: true });
         await expect(
           raiden.transfer(getToken(), partner2, 50, { paths: routes }),
         ).resolves.toMatch('0x');
