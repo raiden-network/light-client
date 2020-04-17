@@ -7,7 +7,7 @@
  */
 import * as t from 'io-ts';
 
-import { Address, Hash, Secret, UInt } from '../utils/types';
+import { Address, Hash, Secret, UInt, Int } from '../utils/types';
 import { Lock } from '../channels/types';
 
 // types
@@ -24,6 +24,7 @@ export enum MessageType {
   WITHDRAW_CONFIRMATION = 'WithdrawConfirmation',
   WITHDRAW_EXPIRED = 'WithdrawExpired',
   PFS_CAPACITY_UPDATE = 'PFSCapacityUpdate',
+  PFS_FEE_UPDATE = 'PFSFeeUpdate',
 }
 
 // Mixin of a message that contains an identifier and should be ack'ed with a respective Delivered
@@ -238,6 +239,29 @@ export const PFSCapacityUpdate = t.readonly(
 );
 export interface PFSCapacityUpdate extends t.TypeOf<typeof PFSCapacityUpdate> {}
 
+export const PFSFeeUpdate = t.readonly(
+  t.type({
+    type: t.literal(MessageType.PFS_FEE_UPDATE),
+    canonical_identifier: t.readonly(
+      t.type({
+        chain_identifier: UInt(32),
+        token_network_address: Address,
+        channel_identifier: UInt(32),
+      }),
+    ),
+    updating_participant: Address,
+    timestamp: t.string,
+    fee_schedule: t.type({
+      cap_fees: t.boolean,
+      // if not null, it should be an array of [tokenAmount, fee] tuples
+      imbalance_penalty: t.union([t.null, t.array(t.tuple([UInt(32), Int(32)]))]),
+      proportional: Int(32),
+      flat: Int(32),
+    }),
+  }),
+);
+export interface PFSFeeUpdate extends t.TypeOf<typeof PFSFeeUpdate> {}
+
 export const Message = t.union([
   Delivered,
   Processed,
@@ -251,6 +275,7 @@ export const Message = t.union([
   WithdrawConfirmation,
   WithdrawExpired,
   PFSCapacityUpdate,
+  PFSFeeUpdate,
 ]);
 // prefer an explicit union to have the union of the interfaces, instead of the union of t.TypeOf's
 export type Message =
@@ -265,5 +290,6 @@ export type Message =
   | WithdrawRequest
   | WithdrawConfirmation
   | WithdrawExpired
-  | PFSCapacityUpdate;
+  | PFSCapacityUpdate
+  | PFSFeeUpdate;
 export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;

@@ -31,8 +31,9 @@ import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { messageGlobalSend } from '../messages/actions';
-import { MessageType, PFSCapacityUpdate } from '../messages/types';
+import { MessageType, PFSCapacityUpdate, PFSFeeUpdate } from '../messages/types';
 import { MessageTypeId, signMessage } from '../messages/utils';
+import { channelMonitor } from '../channels/actions';
 import { ChannelState, Channel } from '../channels/state';
 import { channelAmounts } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil } from '../utils/types';
@@ -443,12 +444,8 @@ export const pfsCapacityUpdateEpic = (
             },
             updating_participant: address,
             other_participant: partner,
-            updating_nonce: channel.own.balanceProof
-              ? channel.own.balanceProof.nonce
-              : (Zero as UInt<8>),
-            other_nonce: channel.partner.balanceProof
-              ? channel.partner.balanceProof.nonce
-              : (Zero as UInt<8>),
+            updating_nonce: channel.own.balanceProof?.nonce ?? (Zero as UInt<8>),
+            other_nonce: channel.partner.balanceProof?.nonce ?? (Zero as UInt<8>),
             updating_capacity: ownCapacity,
             other_capacity: partnerCapacity,
             reveal_timeout: bigNumberify(revealTimeout) as UInt<32>,
@@ -464,6 +461,57 @@ export const pfsCapacityUpdateEpic = (
         }),
       ),
     ),
+  );
+
+/**
+ * When monitoring a channel (either a new channel or a previously monitored one), send a matching
+ * PFSFeeUpdate to path_finding global room, so PFSs can pick us for mediation
+ * TODO: Currently, we always send Zero fees; we should send correct fee data from config
+ *
+ * @param action$ - Observable of channelMonitor actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Raiden epic dependencies
+ * @returns Observable of messageGlobalSend actions
+ */
+export const pfsFeeUpdateEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { log, address, network, signer, config$ }: RaidenEpicDeps,
+): Observable<messageGlobalSend> =>
+  action$.pipe(
+    filter(channelMonitor.is),
+    withLatestFrom(state$, config$),
+    // ignore actions while/if mediating not enabled
+    filter(([, , { pfsRoom, caps }]) => !!pfsRoom && !caps?.[Capabilities.NO_MEDIATE]),
+    mergeMap(([action, state, { pfsRoom }]) => {
+      const channel = state.channels[action.meta.tokenNetwork]?.[action.meta.partner];
+      if (channel?.state !== ChannelState.open) return EMPTY;
+
+      const message: PFSFeeUpdate = {
+        type: MessageType.PFS_FEE_UPDATE,
+        canonical_identifier: {
+          chain_identifier: bigNumberify(network.chainId) as UInt<32>,
+          token_network_address: action.meta.tokenNetwork,
+          channel_identifier: bigNumberify(channel.id) as UInt<32>,
+        },
+        updating_participant: address,
+        timestamp: new Date().toISOString().substr(0, 23) + '000',
+        fee_schedule: {
+          cap_fees: true,
+          imbalance_penalty: null,
+          proportional: Zero as Int<32>,
+          flat: Zero as Int<32>,
+        },
+      };
+
+      return from(signMessage(signer, message, { log })).pipe(
+        map((signed) => messageGlobalSend({ message: signed }, { roomName: pfsRoom! })),
+        catchError((err) => {
+          log.error('Error trying to generate & sign PFSFeeUpdate', err);
+          return EMPTY;
+        }),
+      );
+    }),
   );
 
 /**
