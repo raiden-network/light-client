@@ -4,7 +4,9 @@
 ### Added
 - [#1338] Allow HTTP URLs for Path Finding Service (non-production)
 - [#1261] Implements fast WebRTC P2P transport
+- [#1211] Integration test for mediated transfers
 
+[#1211]: https://github.com/raiden-network/light-client/issues/1211
 [#1338]: https://github.com/raiden-network/light-client/issues/1338
 [#1261]: https://github.com/raiden-network/light-client/issues/1261
 
