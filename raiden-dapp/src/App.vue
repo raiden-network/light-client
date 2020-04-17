@@ -22,19 +22,33 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Watch, Mixins } from 'vue-property-decorator';
+import { mapGetters } from 'vuex';
+import NavigationMixin from './mixins/navigation-mixin';
 import AppHeader from '@/components/AppHeader.vue';
 import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
 
 @Component({
+  computed: {
+    ...mapGetters(['isConnected'])
+  },
   components: {
     AppHeader,
     OfflineSnackbar,
     UpdateSnackbar
   }
 })
-export default class App extends Vue {
+export default class App extends Mixins(NavigationMixin) {
+  isConnected!: boolean;
+
+  @Watch('isConnected', { immediate: true })
+  onIsConnectedChange() {
+    if (!this.isConnected) {
+      this.navigateToHome();
+    }
+  }
+
   destroyed() {
     this.$raiden.disconnect();
   }

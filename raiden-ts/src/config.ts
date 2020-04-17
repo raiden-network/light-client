@@ -5,6 +5,8 @@ import { Capabilities } from './constants';
 import { Address } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 
+const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
+
 /**
  * A Raiden configuration object with required and optional params from [[PartialRaidenConfig]].
  *
@@ -56,6 +58,7 @@ export const RaidenConfig = t.readonly(
         error: null,
       }),
       caps: t.readonly(t.record(t.string /* Capabilities */, t.any)),
+      fallbackIceServers: t.array(RTCIceServer),
     }),
     t.partial({
       matrixServer: t.string,
@@ -99,7 +102,9 @@ export function makeDefaultConfig(
       [Capabilities.NO_DELIVERY]: true,
       [Capabilities.NO_RECEIVE]: true,
       [Capabilities.NO_MEDIATE]: true,
+      [Capabilities.WEBRTC]: true,
     },
+    fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     ...overwrites,
   };
 }

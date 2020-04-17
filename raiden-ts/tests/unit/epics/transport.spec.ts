@@ -19,6 +19,7 @@ import {
   matrixRoom,
   matrixSetup,
   matrixRoomLeave,
+  rtcChannel,
 } from 'raiden-ts/transport/actions';
 import { messageSend, messageReceived, messageGlobalSend } from 'raiden-ts/messages/actions';
 
@@ -40,16 +41,17 @@ import {
   deliveredEpic,
   matrixMessageGlobalSendEpic,
   matrixCleanMissingRoomsEpic,
+  rtcConnectEpic,
 } from 'raiden-ts/transport/epics';
 import { MessageType, Delivered, Processed } from 'raiden-ts/messages/types';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
 import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
+import { ErrorCodes } from 'raiden-ts/utils/error';
+import { Signed, Address } from 'raiden-ts/utils/types';
+import { Capabilities } from 'raiden-ts/constants';
 
 import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps, makeSignature } from '../mocks';
-import { ErrorCodes } from 'raiden-ts/utils/error';
-import { Signed } from 'raiden-ts/utils/types';
-import { Capabilities } from 'raiden-ts/constants';
+import { raidenEpicDeps, makeSignature, mockRTC } from '../mocks';
 
 describe('transport epic', () => {
   let depsMock: ReturnType<typeof raidenEpicDeps>,
@@ -1011,7 +1013,6 @@ describe('transport epic', () => {
         ),
         messageSend.request({ message }, { address: partner, msgId: message }),
       ].forEach((a) => action$.next(a));
-      setTimeout(() => action$.complete(), 100);
 
       expect(matrix.sendEvent).not.toHaveBeenCalled();
 
@@ -1476,5 +1477,251 @@ describe('transport epic', () => {
       expect.objectContaining({ body: text, msgtype: 'm.text' }),
       expect.anything(),
     );
+  });
+
+  describe('rtcConnectEpic', () => {
+    const createPartnerPresence = (available: boolean, webRtcCapable: boolean) =>
+      matrixPresence.success(
+        {
+          userId: partnerUserId,
+          available,
+          ts: Date.now(),
+          caps: { [Capabilities.WEBRTC]: webRtcCapable },
+        },
+        { address: partner },
+      );
+
+    let rtcConnection: ReturnType<typeof mockRTC>['rtcConnection'];
+    let rtcDataChannel: ReturnType<typeof mockRTC>['rtcDataChannel'];
+    let RTCPeerConnection: ReturnType<typeof mockRTC>['RTCPeerConnection'];
+    beforeEach(() => {
+      ({ rtcConnection, rtcDataChannel, RTCPeerConnection } = mockRTC());
+      action$.next(
+        raidenConfigUpdate({
+          httpTimeout: 300,
+          caps: { [Capabilities.NO_DELIVERY]: true, [Capabilities.WEBRTC]: true },
+        }),
+      );
+      matrix.getRoom.mockImplementation(
+        () =>
+          ({
+            roomId: partnerRoomId,
+            name: partnerRoomId,
+            getMember: jest.fn(() => ({
+              membership: 'join',
+              roomId: partnerRoomId,
+              userId: partnerUserId,
+            })),
+            getJoinedMembers: jest.fn(),
+            getCanonicalAlias: jest.fn(() => partnerRoomId),
+            getAliases: jest.fn(() => []),
+          } as any),
+      );
+    });
+    afterEach(() => {
+      RTCPeerConnection.mockRestore();
+    });
+
+    test('skip if no webrtc capability exists', async () => {
+      const promise = rtcConnectEpic(action$, state$, depsMock).toPromise();
+      action$.next(createPartnerPresence(false, false));
+      action$.next(createPartnerPresence(true, false));
+      setTimeout(() => action$.complete(), 100);
+
+      await expect(promise).resolves.toBeUndefined();
+    });
+
+    test('reset data channel if user goes offline in matrix', async () => {
+      const promise = rtcConnectEpic(action$, state$, depsMock).toPromise();
+      action$.next(createPartnerPresence(true, true));
+      action$.next(createPartnerPresence(false, true));
+      setTimeout(() => action$.complete(), 100);
+
+      await expect(promise).resolves.toEqual({
+        meta: { address: partner },
+        payload: undefined,
+        type: 'rtcChannel',
+      });
+    });
+
+    test('set up caller data channel and waits for partner to join room', async () => {
+      const promise = rtcConnectEpic(action$, state$, depsMock).toPromise();
+      action$.next(createPartnerPresence(true, true));
+      action$.next(matrixRoom({ roomId: userId }, { address: partner }));
+      action$.next(createPartnerPresence(false, true));
+      setTimeout(() => action$.complete(), 100);
+
+      await expect(promise).resolves.toEqual({
+        meta: { address: partner },
+        payload: undefined,
+        type: 'rtcChannel',
+      });
+    });
+
+    test('success callee, receive message & channel error', async () => {
+      expect.assertions(2);
+
+      // change partner to one with smaller address, to be the caller
+      partner = '0x0000000000000000000000000000000000000088' as Address;
+      partnerUserId = `@${partner.toLowerCase()}:${matrixServer}`;
+
+      const promise = rtcConnectEpic(action$, state$, depsMock)
+        .pipe(takeUntil(timer(1e3)), toArray())
+        .toPromise();
+
+      const msg = '{"type":"Delivered","delivered_message_identifier":"123456"}';
+
+      setTimeout(() => {
+        matrix.emit('event', {
+          getType: () => 'm.call.invite',
+          getSender: () => partnerUserId,
+          getContent: () => ({
+            call_id: `${partner}|${depsMock.address}`.toLowerCase(),
+            offer: 'offer',
+            lifetime: 86.4e6,
+          }),
+          getAge: () => 1,
+        });
+      }, 5);
+      setTimeout(() => {
+        rtcConnection.emit('datachannel', { channel: rtcDataChannel });
+      }, 15);
+      setTimeout(() => {
+        Object.assign(rtcDataChannel, { readyState: 'open' });
+        rtcDataChannel.emit('open', true);
+        rtcDataChannel.emit('message', { data: msg });
+      }, 20);
+      setTimeout(() => {
+        Object.assign(rtcDataChannel, { readyState: 'closed' });
+        rtcDataChannel.emit('error', { error: new Error('errored!') });
+        action$.next(
+          matrixPresence.success(
+            {
+              userId: partnerUserId,
+              available: false,
+              ts: Date.now(),
+            },
+            { address: partner },
+          ),
+        );
+      }, 50);
+
+      action$.next(matrixRoom({ roomId: partnerRoomId }, { address: partner }));
+      action$.next(
+        matrixPresence.success(
+          {
+            userId: partnerUserId,
+            available: true,
+            ts: Date.now(),
+            caps: { [Capabilities.WEBRTC]: true },
+          },
+          { address: partner },
+        ),
+      );
+
+      await expect(promise).resolves.toEqual(
+        expect.arrayContaining([
+          rtcChannel(rtcDataChannel, { address: partner }),
+          messageReceived(
+            {
+              text: expect.any(String),
+              ts: expect.any(Number),
+              message: expect.objectContaining({ type: MessageType.DELIVERED }),
+              userId: partnerUserId,
+              roomId: undefined,
+            },
+            { address: partner },
+          ),
+        ]),
+      );
+
+      expect(matrix.sendEvent).toHaveBeenCalledWith(
+        partnerRoomId,
+        'm.call.answer',
+        expect.objectContaining({ call_id: expect.any(String), answer: expect.anything() }),
+        expect.anything(),
+      );
+    });
+
+    test('success caller & candidates', async () => {
+      expect.assertions(4);
+
+      const promise = rtcConnectEpic(action$, state$, depsMock)
+        .pipe(takeUntil(timer(200)), toArray())
+        .toPromise();
+
+      matrix.sendEvent.mockImplementation(async ({}, type: string, content: any) => {
+        if (type !== 'm.call.invite') return;
+        setTimeout(() => {
+          matrix.emit('event', {
+            getType: () => 'm.call.candidates',
+            getSender: () => partnerUserId,
+            getContent: () => ({
+              call_id: content.call_id,
+              candidates: ['partnerCandidateFail', 'partnerCandidate'],
+            }),
+            getAge: () => 1,
+          });
+          // emit 'icecandidate' to be sent to partner
+          rtcConnection.emit('icecandidate', { candidate: 'myCandidate' });
+          rtcConnection.emit('icecandidate', { candidate: null });
+        }, 10);
+
+        setTimeout(() => {
+          matrix.emit('event', {
+            getType: () => 'm.call.answer',
+            getSender: () => partnerUserId,
+            getContent: () => ({
+              call_id: content.call_id,
+              answer: 'answer',
+              lifetime: 86.4e6,
+            }),
+            getAge: () => 1,
+          });
+          Object.assign(rtcDataChannel, { readyState: 'open' });
+          rtcDataChannel.emit('open', true);
+        }, 40);
+        setTimeout(() => {
+          rtcDataChannel.emit('close', true);
+        }, 70);
+      });
+      rtcConnection.addIceCandidate.mockRejectedValueOnce(new Error('addIceCandidate failed'));
+
+      action$.next(matrixRoom({ roomId: partnerRoomId }, { address: partner }));
+      action$.next(
+        matrixPresence.success(
+          {
+            userId: partnerUserId,
+            available: true,
+            ts: Date.now(),
+            caps: { [Capabilities.WEBRTC]: true },
+          },
+          { address: partner },
+        ),
+      );
+
+      await expect(promise).resolves.toEqual(
+        expect.arrayContaining([
+          rtcChannel(rtcDataChannel, { address: partner }),
+          rtcChannel(undefined, { address: partner }),
+        ]),
+      );
+
+      expect(matrix.sendEvent).toHaveBeenCalledWith(
+        partnerRoomId,
+        'm.call.invite',
+        expect.objectContaining({ call_id: expect.any(String), offer: expect.anything() }),
+        expect.anything(),
+      );
+
+      // assert candidates
+      expect(rtcConnection.addIceCandidate).toHaveBeenCalledWith('partnerCandidate');
+      expect(matrix.sendEvent).toHaveBeenCalledWith(
+        partnerRoomId,
+        'm.call.candidates',
+        expect.objectContaining({ call_id: expect.any(String), candidates: ['myCandidate'] }),
+        expect.anything(),
+      );
+    });
   });
 });

@@ -30,14 +30,17 @@ export interface ContractsInfo {
   SecretRegistry: Info;
 }
 
+export interface Latest {
+  action: RaidenAction;
+  state: RaidenState;
+  config: RaidenConfig;
+  presences: Presences;
+  pfsList: readonly Address[];
+  rtc: { [address: string]: RTCDataChannel };
+}
+
 export interface RaidenEpicDeps {
-  latest$: Subject<{
-    action: RaidenAction;
-    state: RaidenState;
-    config: RaidenConfig;
-    presences: Presences;
-    pfsList: readonly Address[];
-  }>;
+  latest$: Subject<Latest>;
   config$: Observable<RaidenConfig>;
   matrix$: AsyncSubject<MatrixClient>;
   provider: JsonRpcProvider;

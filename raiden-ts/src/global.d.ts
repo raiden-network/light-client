@@ -8,5 +8,7 @@ declare module 'matrix-js-sdk/lib/logger' {
   import { Logger } from 'loglevel';
   export const logger: Logger;
 }
+declare module 'matrix-js-sdk/lib/webrtc/call';
 
 declare module 'abort-controller/polyfill';
+declare module 'wrtc'; // types provided by @types/webrtc

@@ -3,7 +3,7 @@
 import * as t from 'io-ts';
 
 import { createAction, ActionType, createAsyncAction } from '../utils/actions';
-import { Address } from '../utils/types';
+import { Address, instanceOf } from '../utils/types';
 import { RaidenMatrixSetup } from './state';
 
 const NodeId = t.type({ address: Address });
@@ -47,3 +47,10 @@ export const matrixRoomLeave = createAction(
   NodeId,
 );
 export interface matrixRoomLeave extends ActionType<typeof matrixRoomLeave> {}
+
+export const rtcChannel = createAction(
+  'rtcChannel',
+  t.union([t.undefined, instanceOf(RTCDataChannel)]),
+  NodeId,
+);
+export interface rtcChannel extends ActionType<typeof rtcChannel> {}

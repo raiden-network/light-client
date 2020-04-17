@@ -91,7 +91,8 @@
     "redux": "^4.0.5",
     "redux-logger": "^3.0.6",
     "redux-observable": "^1.2.0",
-    "rxjs": "^6.5.5"
+    "rxjs": "^6.5.5",
+    "wrtc": "^0.4.4"
   },
   "peerDependencies": {
     "ethers": "^4.0.46"
@@ -176,6 +177,9 @@
     },
     "testMatch": [
       "<rootDir>/tests/**/*.spec.ts"
+    ],
+    "setupFiles": [
+      "<rootDir>/src/polyfills.ts"
     ],
     "verbose": true,
     "collectCoverageFrom": [
