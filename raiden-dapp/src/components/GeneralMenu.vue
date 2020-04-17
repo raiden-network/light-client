@@ -40,7 +40,12 @@
         class="general-screen-menu__menu__list-items"
       >
         <div class="general-screen-menu__menu__list-items__icon">
-          <v-img :src="require(`../assets/${menuItem.icon}`)"></v-img>
+          <v-img
+            :src="require(`../assets/${menuItem.icon}`)"
+            max-width="40px"
+            height="36px"
+          >
+          </v-img>
         </div>
         <v-list-item-content>
           <v-list-item-title>{{ menuItem.title }}</v-list-item-title>
