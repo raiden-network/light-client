@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-ignore */
 import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
@@ -328,7 +329,8 @@ describe('data', () => {
     expect(() => encode(-1, 2)).toThrowError('negative');
     expect(() => encode(bigNumberify(65537), 2)).toThrowError('too large');
     expect(() => encode('0x01', 2)).toThrowError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFRENCE);
-    expect(() => encode((true as unknown) as number, 2)).toThrowError('data is not');
+    // @ts-ignore // TODO: replace with @ts-expect-error ts@^3.9
+    expect(() => encode(null, 2)).toThrowError('data is not');
   });
 
   test('losslessParse', () => {

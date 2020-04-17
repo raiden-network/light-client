@@ -14,6 +14,7 @@ import {
   WithdrawRequest,
   WithdrawConfirmation,
   WithdrawExpired,
+  PFSFeeUpdate,
 } from 'raiden-ts/messages/types';
 import {
   packMessage,
@@ -25,7 +26,7 @@ import {
   createMessageHash,
   createMetadataHash,
 } from 'raiden-ts/messages/utils';
-import { Address, Hash, Secret, UInt, Signed } from 'raiden-ts/utils/types';
+import { Address, Hash, Secret, UInt, Signed, Int } from 'raiden-ts/utils/types';
 import { bigNumberify } from 'ethers/utils';
 import { HashZero, One, Zero } from 'ethers/constants';
 
@@ -514,5 +515,43 @@ describe('sign/verify, pack & encode/decode ', () => {
     // test sign already signed message return original object
     const signed2 = await signMessage(signer, signed);
     expect(signed2).toBe(signed);
+  });
+
+  test('PFSFeeUpdate', async () => {
+    const message: PFSFeeUpdate = {
+      type: MessageType.PFS_FEE_UPDATE,
+      canonical_identifier: {
+        chain_identifier: bigNumberify(337) as UInt<32>,
+        token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
+        channel_identifier: bigNumberify(1338) as UInt<32>,
+      },
+      updating_participant: '0x14791697260E4c9A71f18484C9f997B308e59325' as Address,
+      timestamp: new Date(0).toISOString().substr(0, 23) + '000',
+      fee_schedule: {
+        cap_fees: true,
+        imbalance_penalty: null,
+        proportional: Zero as Int<32>,
+        flat: Zero as Int<32>,
+      },
+    };
+
+    expect(packMessage(message)).toEqual(
+      '0x0000000000000000000000000000000000000000000000000000000000000151e82ae5475589b828d3644e1b56546f93cd27d1a4000000000000000000000000000000000000000000000000000000000000053a14791697260e4c9a71f18484c9f997b308e59325010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080313937302d30312d30315430303a30303a3030',
+    );
+
+    const signed = await signMessage(signer, message);
+    expect(Signed(PFSFeeUpdate).is(signed)).toBe(true);
+    expect(signed.signature).toBe(
+      '0x444213b2b0a3e390b0e288ebb92cc219e1177ff8359d51517cc894643b3fdbc56da603289a967bacf42c2dcc0ba1cc98425e4524e4eca86023c776a284c2a71f1c',
+    );
+    expect(getMessageSigner(signed)).toBe(address);
+
+    const encoded = encodeJsonMessage(signed);
+    expect(encoded).toBe(
+      '{"type":"PFSFeeUpdate","canonical_identifier":{"chain_identifier":"337","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":"1338"},"updating_participant":"0x14791697260E4c9A71f18484C9f997B308e59325","timestamp":"1970-01-01T00:00:00.000000","fee_schedule":{"cap_fees":true,"imbalance_penalty":null,"proportional":"0","flat":"0"},"signature":"0x444213b2b0a3e390b0e288ebb92cc219e1177ff8359d51517cc894643b3fdbc56da603289a967bacf42c2dcc0ba1cc98425e4524e4eca86023c776a284c2a71f1c"}',
+    );
+
+    const decoded = decodeJsonMessage(encoded);
+    expect(decoded).toEqual(signed);
   });
 });

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { EMPTY, timer } from 'rxjs';
+import { EMPTY, timer, Observable, of } from 'rxjs';
 import { first, takeUntil, toArray, pluck } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
@@ -11,24 +11,28 @@ import {
   channelOpen,
   channelDeposit,
   channelClose,
+  channelMonitor,
 } from 'raiden-ts/channels/actions';
-import { raidenConfigUpdate } from 'raiden-ts/actions';
+import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
 import { matrixPresence } from 'raiden-ts/transport/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
 import {
   pathFindServiceEpic,
   pfsCapacityUpdateEpic,
   pfsServiceRegistryMonitorEpic,
+  pfsFeeUpdateEpic,
 } from 'raiden-ts/path/epics';
 import { pathFind, pfsListUpdated, iouPersist, iouClear } from 'raiden-ts/path/actions';
 import { messageGlobalSend } from 'raiden-ts/messages/actions';
 import { MessageType } from 'raiden-ts/messages/types';
 import { losslessStringify } from 'raiden-ts/utils/data';
+import { pluckDistinct } from 'raiden-ts/utils/rx';
+import { ErrorCodes } from 'raiden-ts/utils/error';
+import { RaidenState } from 'raiden-ts/state';
+import { Capabilities } from 'raiden-ts/constants';
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog } from '../mocks';
-import { pluckDistinct } from 'raiden-ts/utils/rx';
-import { ErrorCodes } from 'raiden-ts/utils/error';
 
 describe('PFS: pathFindServiceEpic', () => {
   let depsMock: ReturnType<typeof raidenEpicDeps>,
@@ -1309,6 +1313,122 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
 
     expect(signerSpy).toHaveBeenCalledTimes(1);
     signerSpy.mockRestore();
+  });
+});
+
+describe('PFS: pfsFeeUpdateEpic', () => {
+  let depsMock: ReturnType<typeof raidenEpicDeps>,
+    action$: ReturnType<typeof epicFixtures>['action$'],
+    tokenNetwork: ReturnType<typeof epicFixtures>['tokenNetwork'],
+    token: ReturnType<typeof epicFixtures>['token'],
+    channelId: ReturnType<typeof epicFixtures>['channelId'],
+    partner: ReturnType<typeof epicFixtures>['partner'],
+    settleTimeout: ReturnType<typeof epicFixtures>['settleTimeout'],
+    isFirstParticipant: ReturnType<typeof epicFixtures>['isFirstParticipant'],
+    txHash: ReturnType<typeof epicFixtures>['txHash'],
+    state$: Observable<RaidenState>,
+    action: RaidenAction;
+
+  beforeEach(() => {
+    depsMock = raidenEpicDeps();
+    ({
+      action$,
+      tokenNetwork,
+      token,
+      channelId,
+      partner,
+      settleTimeout,
+      isFirstParticipant,
+      txHash,
+    } = epicFixtures(depsMock));
+    state$ = depsMock.latest$.pipe(pluck('state'));
+    action = channelMonitor({ id: channelId }, { tokenNetwork, partner });
+
+    [
+      raidenConfigUpdate({
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          // disable NO_RECEIVE & NO_MEDIATE
+        },
+      }),
+      tokenMonitored({ token, tokenNetwork }),
+      channelOpen.success(
+        {
+          id: channelId,
+          settleTimeout,
+          isFirstParticipant,
+          txHash,
+          txBlock: 121,
+          confirmed: true,
+        },
+        { tokenNetwork, partner },
+      ),
+    ].forEach((a) => action$.next(a));
+  });
+
+  afterAll(() => {
+    jest.clearAllMocks();
+    action$.complete();
+    depsMock.latest$.complete();
+  });
+
+  test('success: send PFSFeeUpdate to global pfsRoom on channelMonitor', async () => {
+    expect.assertions(1);
+
+    await expect(pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise()).resolves.toEqual(
+      messageGlobalSend(
+        {
+          message: expect.objectContaining({
+            type: MessageType.PFS_FEE_UPDATE,
+            signature: expect.any(String),
+          }),
+        },
+        { roomName: expect.stringContaining('path_finding') },
+      ),
+    );
+  });
+
+  test("signature fail isn't fatal", async () => {
+    expect.assertions(2);
+
+    const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
+    signerSpy.mockRejectedValueOnce(new Error('Signature rejected'));
+
+    await expect(
+      pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise(),
+    ).resolves.toBeUndefined();
+
+    expect(signerSpy).toHaveBeenCalledTimes(1);
+    signerSpy.mockRestore();
+  });
+
+  test('skip: channel is not open', async () => {
+    expect.assertions(1);
+
+    // put channel in 'closing' state
+    action$.next(channelClose.request(undefined, { tokenNetwork, partner }));
+
+    await expect(
+      pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise(),
+    ).resolves.toBeUndefined();
+  });
+
+  test('skip: NO_MEDIATE', async () => {
+    expect.assertions(1);
+
+    // put channel in 'closing' state
+    action$.next(
+      raidenConfigUpdate({
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          [Capabilities.NO_MEDIATE]: true,
+        },
+      }),
+    );
+
+    await expect(
+      pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise(),
+    ).resolves.toBeUndefined();
   });
 });
 
