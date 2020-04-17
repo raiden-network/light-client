@@ -2,6 +2,7 @@ import * as t from 'io-ts';
 import { Signer } from 'ethers/abstract-signer';
 import { keccak256, RLP, verifyMessage } from 'ethers/utils';
 import { arrayify, concat, hexlify } from 'ethers/utils/bytes';
+import { encode as rlpEncode } from 'ethers/utils/rlp';
 import { HashZero } from 'ethers/constants';
 import logging from 'loglevel';
 
@@ -24,6 +25,7 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.WITHDRAW_CONFIRMATION]: 16,
   [MessageType.WITHDRAW_EXPIRED]: 17,
   [MessageType.PFS_CAPACITY_UPDATE]: -1,
+  [MessageType.PFS_FEE_UPDATE]: -1,
 };
 
 // raiden_contracts.constants.MessageTypeId
@@ -227,6 +229,20 @@ export function packMessage(message: Message) {
           encode(message.reveal_timeout, 32),
         ]),
       ) as HexString<236>;
+    case MessageType.PFS_FEE_UPDATE:
+      return hexlify(
+        concat([
+          encode(message.canonical_identifier.chain_identifier, 32),
+          encode(message.canonical_identifier.token_network_address, 20),
+          encode(message.canonical_identifier.channel_identifier, 32),
+          encode(message.updating_participant, 20),
+          encode(message.fee_schedule.cap_fees, 1),
+          encode(message.fee_schedule.flat, 32),
+          encode(message.fee_schedule.proportional, 32),
+          rlpEncode(message.fee_schedule.imbalance_penalty ?? '0x'),
+          encode(message.timestamp.substr(0, 19), 19),
+        ]),
+      ) as HexString; // variable size of fee_schedule.imbalance_penalty rlpEncoding, when not null
   }
 }
 

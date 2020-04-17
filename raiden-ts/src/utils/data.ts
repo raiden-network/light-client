@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Two } from 'ethers/constants';
-import { BigNumber, bigNumberify } from 'ethers/utils';
-import { Arrayish, hexlify, isArrayish, hexZeroPad, hexDataLength } from 'ethers/utils/bytes';
+import { Zero, One, Two } from 'ethers/constants';
+import { BigNumber, bigNumberify, toUtf8Bytes } from 'ethers/utils';
+import {
+  Arrayish,
+  hexlify,
+  isArrayish,
+  hexZeroPad,
+  hexDataLength,
+  isHexString,
+} from 'ethers/utils/bytes';
 import * as LosslessJSON from 'lossless-json';
 
 import { BigNumberC, HexString } from './types';
@@ -19,20 +26,23 @@ import { RaidenError, ErrorCodes } from './error';
  * @returns HexString byte-array of length
  */
 export function encode<S extends number = number>(
-  data: number | string | Arrayish | BigNumber,
+  data: boolean | number | string | Arrayish | BigNumber,
   length: S,
 ): HexString<S> {
   let hex: HexString<S>;
-  if (typeof data === 'number') data = bigNumberify(data);
+  if (typeof data === 'boolean') data = data ? One : Zero;
+  else if (typeof data === 'number') data = bigNumberify(data);
+  if (typeof data === 'string' && !isHexString(data)) data = toUtf8Bytes(data);
+  if (isArrayish(data)) data = hexlify(data);
+
   if (BigNumberC.is(data)) {
     if (data.lt(0)) throw new RaidenError(ErrorCodes.DTA_NEGATIVE_NUMBER);
     if (data.gte(Two.pow(length * 8))) throw new RaidenError(ErrorCodes.DTA_NUMBER_TOO_LARGE);
     hex = hexZeroPad(hexlify(data), length) as HexString<S>;
-  } else if (typeof data === 'string' || isArrayish(data)) {
-    const str = hexlify(data);
-    if (hexDataLength(str) !== length)
+  } else if (typeof data === 'string') {
+    if (hexDataLength(data) !== length)
       throw new RaidenError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFRENCE);
-    hex = str as HexString<S>;
+    hex = data as HexString<S>;
   } else {
     throw new RaidenError(ErrorCodes.DTA_UNENCODABLE_DATA);
   }
