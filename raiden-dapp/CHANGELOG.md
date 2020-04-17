@@ -12,9 +12,9 @@
 - [#1306] Redirects to home view upon page refresh
 - [#1310] Disable state download if not connected to web3 provider.
 
-[#1305] https://github.com/raiden-network/light-client/issues/1305
-[#1306] https://github.com/raiden-network/light-client/issues/1306
-[#1222] https://github.com/raiden-network/light-client/issues/1222
+[#1305]: https://github.com/raiden-network/light-client/issues/1305
+[#1306]: https://github.com/raiden-network/light-client/issues/1306
+[#1222]: https://github.com/raiden-network/light-client/issues/1222
 [#1310]: https://github.com/raiden-network/light-client/issues/1310
 
 ## [0.5.2] - 2020-04-07
@@ -33,7 +33,7 @@
 - [#1243] Fix width of transfer input on mobile screens.
 - [#1242] Fix transfer modal not closing instantly.
 
-[#694] https://github.com/raiden-network/light-client/issues/694
+[#694]: https://github.com/raiden-network/light-client/issues/694
 [#694]: https://github.com/raiden-network/light-client/issues/694
 [#1243]: https://github.com/raiden-network/light-client/issues/1243
 [#1242]: https://github.com/raiden-network/light-client/issues/1242
