@@ -43,7 +43,7 @@ export default class App extends Mixins(NavigationMixin) {
   isConnected!: boolean;
 
   @Watch('isConnected', { immediate: true })
-  onAccessDeniedChange() {
+  onIsConnectedChange() {
     if (!this.isConnected) {
       this.navigateToHome();
     }
