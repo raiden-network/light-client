@@ -23,15 +23,16 @@
 
 <script lang="ts">
 import { Component, Watch, Mixins } from 'vue-property-decorator';
-import { mapState } from 'vuex';
-import { DeniedReason } from '@/model/types';
+import { mapGetters } from 'vuex';
 import NavigationMixin from './mixins/navigation-mixin';
 import AppHeader from '@/components/AppHeader.vue';
 import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
 
 @Component({
-  computed: mapState(['loading', 'accessDenied']),
+  computed: {
+    ...mapGetters(['isConnected'])
+  },
   components: {
     AppHeader,
     OfflineSnackbar,
@@ -39,21 +40,11 @@ import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
   }
 })
 export default class App extends Mixins(NavigationMixin) {
-  loading!: boolean;
-  accessDenied!: DeniedReason;
+  isConnected!: boolean;
 
-  @Watch('loading', { immediate: true })
-  onLoadingChange() {
-    this.redirectOnReload();
-  }
-
-  @Watch('accessDenied', { immediate: true })
+  @Watch('isConnected', { immediate: true })
   onAccessDeniedChange() {
-    this.redirectOnReload();
-  }
-
-  redirectOnReload() {
-    if (this.accessDenied !== DeniedReason.UNDEFINED || this.loading) {
+    if (!this.isConnected) {
       this.navigateToHome();
     }
   }
