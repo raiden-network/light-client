@@ -7,7 +7,7 @@
           ghost
           enabled
           full-width
-          class="transfer__channel-button"
+          class="transfer__top-button"
           @click="navigateToChannels(token.address)"
         ></action-button>
       </v-col>
@@ -26,15 +26,14 @@
             </span>
           </v-tooltip>
         </div>
-        <div
-          class="transfer__token-networks__dropdown"
+        <action-button
+          :text="token.name"
+          ghost
+          enabled
+          full-width
+          class="transfer__top-button"
           @click="showTokenNetworks = true"
-        >
-          <span>{{ token.name }}</span>
-          <span>
-            <down-arrow />
-          </span>
-        </div>
+        ></action-button>
         <token-overlay
           :show="showTokenNetworks"
           @cancel="showTokenNetworks = false"
@@ -46,7 +45,7 @@
           ghost
           full-width
           enabled
-          class="transfer__deposit-button"
+          class="transfer__top-button"
           @click="depositing = true"
         ></action-button>
         <channel-deposit-dialog
@@ -279,8 +278,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
     margin-bottom: 24px;
   }
 
-  &__channel-button,
-  &__deposit-button {
+  &__top-button {
     ::v-deep {
       .v-btn {
         text-transform: none;
@@ -299,37 +297,8 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
       font-weight: bold;
       line-height: 19px;
       padding-left: 11px;
-      margin-top: 10px;
+      margin-bottom: 10px;
       text-align: center;
-    }
-
-    &__dropdown {
-      color: $primary-color;
-      font-size: 16px;
-      letter-spacing: 1px;
-      font-weight: 500;
-      font-family: $main-font;
-      margin-top: 7px;
-      cursor: pointer;
-      text-align: center;
-
-      &:hover {
-        color: $secondary-color;
-
-        ::v-deep {
-          g {
-            stroke: $secondary-color !important;
-          }
-        }
-      }
-
-      > span {
-        display: inline-block;
-
-        &:last-child {
-          margin-left: 5px;
-        }
-      }
     }
   }
 }
