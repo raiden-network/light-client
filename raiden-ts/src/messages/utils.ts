@@ -240,7 +240,7 @@ export function packMessage(message: Message) {
           encode(message.fee_schedule.flat, 32),
           encode(message.fee_schedule.proportional, 32),
           rlpEncode(message.fee_schedule.imbalance_penalty ?? '0x'),
-          encode(message.timestamp.substr(0, 19), 19),
+          encode(message.timestamp, 19),
         ]),
       ) as HexString; // variable size of fee_schedule.imbalance_penalty rlpEncoding, when not null
   }
