@@ -178,9 +178,7 @@ describe('Transfer.vue', () => {
 
   test('navigates to the "ChannelList" when the user presses the channel button', async () => {
     // click on channels button
-    wrapper
-      .find('.transfer__channel-button .action-button__button')
-      .trigger('click');
+    wrapper.find('.transfer__channels .action-button__button').trigger('click');
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
@@ -192,7 +190,9 @@ describe('Transfer.vue', () => {
 
   test('show the "TokenOverlay" when the user presses the token networks dropdown', async () => {
     // click on channels button
-    wrapper.find('.transfer__token-networks__dropdown').trigger('click');
+    wrapper
+      .find('.transfer__token-networks .action-button__button')
+      .trigger('click');
 
     await flushPromises();
     jest.advanceTimersByTime(2000);
