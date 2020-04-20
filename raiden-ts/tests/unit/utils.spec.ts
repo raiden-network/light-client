@@ -330,7 +330,9 @@ describe('data', () => {
     expect(() => encode(bigNumberify(65537), 2)).toThrowError('too large');
     expect(() => encode('0x01', 2)).toThrowError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFRENCE);
     // @ts-ignore // TODO: replace with @ts-expect-error ts@^3.9
-    expect(() => encode(null, 2)).toThrowError('data is not');
+    expect(() => encode(null, 2)).toThrowError(
+      'Passed data is not a HEX string nor integer array',
+    );
   });
 
   test('losslessParse', () => {

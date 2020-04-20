@@ -65,6 +65,11 @@ const PathError = t.readonly(
   }),
 );
 
+// returns a ISO string truncated at the integer second resolution
+function makeTimestamp(time?: Date): string {
+  return (time ?? new Date()).toISOString().substr(0, 19);
+}
+
 const makeIOU = (
   sender: Address,
   receiver: Address,
@@ -103,7 +108,7 @@ const signIOU$ = (iou: IOU, signer: Signer): Observable<Signed<IOU>> =>
 
 const makeAndSignLastIOURequest$ = (sender: Address, receiver: Address, signer: Signer) =>
   defer(() => {
-    const timestamp = new Date().toISOString().split('.')[0],
+    const timestamp = makeTimestamp(),
       message = concat([sender, receiver, toUtf8Bytes(timestamp)]);
     return from(signer.signMessage(message) as Promise<Signature>).pipe(
       map((signature) => ({ sender, receiver, timestamp, signature })),
@@ -495,7 +500,7 @@ export const pfsFeeUpdateEpic = (
           channel_identifier: bigNumberify(channel.id) as UInt<32>,
         },
         updating_participant: address,
-        timestamp: new Date().toISOString().substr(0, 23) + '000',
+        timestamp: makeTimestamp(),
         fee_schedule: {
           cap_fees: true,
           imbalance_penalty: null,

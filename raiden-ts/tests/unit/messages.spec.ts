@@ -526,7 +526,7 @@ describe('sign/verify, pack & encode/decode ', () => {
         channel_identifier: bigNumberify(1338) as UInt<32>,
       },
       updating_participant: '0x14791697260E4c9A71f18484C9f997B308e59325' as Address,
-      timestamp: new Date(0).toISOString().substr(0, 23) + '000',
+      timestamp: new Date(0).toISOString().substr(0, 19),
       fee_schedule: {
         cap_fees: true,
         imbalance_penalty: null,
@@ -548,7 +548,7 @@ describe('sign/verify, pack & encode/decode ', () => {
 
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
-      '{"type":"PFSFeeUpdate","canonical_identifier":{"chain_identifier":"337","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":"1338"},"updating_participant":"0x14791697260E4c9A71f18484C9f997B308e59325","timestamp":"1970-01-01T00:00:00.000000","fee_schedule":{"cap_fees":true,"imbalance_penalty":null,"proportional":"0","flat":"0"},"signature":"0x444213b2b0a3e390b0e288ebb92cc219e1177ff8359d51517cc894643b3fdbc56da603289a967bacf42c2dcc0ba1cc98425e4524e4eca86023c776a284c2a71f1c"}',
+      '{"type":"PFSFeeUpdate","canonical_identifier":{"chain_identifier":"337","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":"1338"},"updating_participant":"0x14791697260E4c9A71f18484C9f997B308e59325","timestamp":"1970-01-01T00:00:00","fee_schedule":{"cap_fees":true,"imbalance_penalty":null,"proportional":"0","flat":"0"},"signature":"0x444213b2b0a3e390b0e288ebb92cc219e1177ff8359d51517cc894643b3fdbc56da603289a967bacf42c2dcc0ba1cc98425e4524e4eca86023c776a284c2a71f1c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);
