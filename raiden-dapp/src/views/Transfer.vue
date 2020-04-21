@@ -115,7 +115,6 @@ import TokenOverlay from '@/components/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
-import DownArrow from '@/components/icons/DownArrow.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
 import { RaidenChannel, ChannelState, RaidenError } from 'raiden-ts';
@@ -135,7 +134,6 @@ import BlockieMixin from '@/mixins/blockie-mixin';
     AmountInput,
     Stepper,
     ErrorDialog,
-    DownArrow,
     TokenOverlay
   },
   computed: {
