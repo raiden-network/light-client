@@ -49,6 +49,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
 > **INFO:** The Light Client SDK and dApp are **work in progress** and can only be used on the Ethereum **Testnets**.
 
 ## Table of Contents
+
 - [Table of Contents](#table-of-contents)
 - [About The Project](#about-the-project)
 - [Architecture](#architecture)
@@ -57,7 +58,6 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
 - [Getting Started](#getting-started)
   - [Learn about Raiden](#learn-about-raiden)
   - [Try Out the Raiden Demo dApp](#try-out-the-raiden-demo-dapp)
-  - [Start Developing](#start-developing)
     - [Prerequisites](#prerequisites)
     - [SDK Documentation](#sdk-documentation)
     - [dApp Installation](#dapp-installation)
@@ -86,9 +86,9 @@ The goal of the Raiden Light Client SDK is to provide an easy-to-use framework, 
 
 With the SDK we want to make your life as a dApp dev easier:
 
-* You should be able to interact with the Raiden Network easily with your dApp.
-* We want to help you to enable your users to make token transfers using their consumer wallets like imToken or Metamask.
-* It should be possible to send tokens using low end devices, which would not be capable of running a full Raiden node.
+- You should be able to interact with the Raiden Network easily with your dApp.
+- We want to help you to enable your users to make token transfers using their consumer wallets like imToken or Metamask.
+- It should be possible to send tokens using low end devices, which would not be capable of running a full Raiden node.
 
 ## Architecture
 
@@ -99,7 +99,6 @@ This is a standalone Typescript library which contains all the low level machine
 Its target audience is blockchain and dApp developers looking into interacting with and performing transfers through the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows it to reach the majority of current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other future languages and environments.
 
 Look at the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) for more information. Also, a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [project's Wiki page](https://github.com/raiden-network/light-client/wiki/SDK-Development). Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
-
 
 ### Architecture diagram
 
@@ -135,10 +134,10 @@ Look at the [Raiden Light Client SDK folder of this repository](./raiden-ts/READ
 
 If you didn't use Raiden before, you can
 
-* Checkout the [developer portal](http://developer.raiden.network)
-* Look at the [documentation](https://raiden-network.readthedocs.io/en/stable/index.html)
-* Learn more by watching explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
-* Read the blog posts on [Medium](https://medium.com/@raiden_network)
+- Checkout the [developer portal](http://developer.raiden.network)
+- Look at the [documentation](https://raiden-network.readthedocs.io/en/stable/index.html)
+- Learn more by watching explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
+- Read the blog posts on [Medium](https://medium.com/@raiden_network)
 
 ### Try Out the Raiden Demo dApp
 
@@ -146,43 +145,81 @@ The Raiden dApp is the demo and first dApp user of the SDK. It's a single page a
 
 These step-by-step instructions will guide you through the process for trying out the Raiden demo dApp. The dApp is hosted at [https://lightclient.raiden.network/](https://lightclient.raiden.network/) and we will be using the Goerli testnet and MetaMask wallet in this example.
 
-__Prerequisites__
+**Prerequisites**
 
 1. You need to have MetaMask installed for your browser. If you don't have MetaMask, [visit their website](https://metamask.io/) to download and install it.
 2. It is NOT recommended to use the dApp on mobile (but it works).
 
-__Step 1: Acquire ETH__
+**Step 1: Acquire ETH**
 
 1. Go to the Goerli faucet at [htts://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/)
 2. Follow the instructions on how to acquire Goerli ETH on respective website
 
-__Step 2: Navigate to the Raiden Hub__
+**Step 2: Navigate to the Raiden Hub**
 
 1. Visit the Raiden Hub Page at [https://hub.raiden.network/](https://hub.raiden.network/)
-2. Click __Open Channel with Hub__ to get forwarded to [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
+2. Click **Open Channel with Hub** to get forwarded to [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
 
-__Step 3: Connect to the Raiden dApp__
-1. Click __Connect__ to connect the dApp to your MetaMask
+**Step 3: Connect to the Raiden dApp**
 
-__Step 4: Select a Hub and Open a Channel__
+1. Click **Connect** to connect the dApp to your MetaMask
+
+**Step 4: Select a Hub and Open a Channel**
+
 1. Click the mint button next to your token balance, to mint some TTT tokens.
-2. Click __Select Hub__
+2. Click **Select Hub**
 3. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
 4. Sign the deposit with your MetaMask.
-5. Click __Open Channel__.
+5. Click **Open Channel**.
 6. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
 
-__Step 5: Make a transfer__
+**Step 5: Make a transfer**
 
-1. Enter the address of the node receiving your transfer (eg. ```hub.raiden.network```)
+1. Enter the address of the node receiving your transfer (eg. `hub.raiden.network`)
 2. Enter the amount you want to transfer
-3. Click __Transfer__
+3. Click **Transfer**
 
-__Optional: Use a Raiden Full Node__
+**Optional: Use a Raiden Full Node**
 
 1. Navigate to https://docs.raiden.network/quick-start and follow the instructions
 2. [Join the TTT token network](https://docs.raiden.network/using-raiden/the-raiden-web-interface/join-a-token-network)
-3. [Make a transfer](https://docs.raiden.network/using-raiden/the-raiden-web-interface/payment#pay-from-the-tokens-screen) to the hub ```hub.raiden.network```
+3. [Make a transfer](https://docs.raiden.network/using-raiden/the-raiden-web-interface/payment#pay-from-the-tokens-screen) to the hub `hub.raiden.network`
+
+#### Backup the state to keep your tokens
+
+Store a backup of your state to **avoid loosing tokens** in case you:
+
+- Delete your local browser storage
+- Change your computer
+- Change your browser
+
+If you want to continue using the dApp with a specific account when switching browser or changing computer you need to make sure that the dApp is connecting with the most recent state.
+
+This is important because your state contains all the off-chain information which is needed to make transactions in the Raiden Network. Your state is stored in the browser across sessions and therefore it needs to be downloaded and uploaded whenever you switch browser or change computer.
+
+You can download and upload your state via the `General Menu`. Note that if you loose or delete your state you will also loose your tokens.
+
+Structure of the state file:
+
+```json
+{
+  "address": "0x2a23F385d32dcce35824D4498Bb10f9B6575B2de",
+  "version": 2,
+  "chainId": 5,
+  "registry": "0x9b0c8C8C75904CEf5B7a8dbF59c3459Ea85c6526",
+  "blockNumber": 2561973,
+  "config": {},
+  "channels": {},
+  "tokens": {
+    "0xE2b702eD684bEb02850ac604278f078A4ce8b6E6": "0x2001E8851d33CA476e209e37ED8db1BB9E72334F"
+  },
+  "transport": {},
+  "sent": {},
+  "received": {},
+  "path": { "iou": {} },
+  "pendingTxs": []
+}
+```
 
 #### Minting Manually
 
@@ -191,12 +228,10 @@ It is possible that the minting feature in the Light Client does not work out-of
 1. Visit [this page on Etherscan](https://goerli.etherscan.io/token/0xE2b702eD684bEb02850ac604278f078A4ce8b6E6#writeContract) where you'll be able to write to the TTT contract
 2. Open your MetaMask and choose your Goerli account with ETH
 3. Go back to Etherscan and click "Connect to Web3"
-4. Scroll down to the "mint" field and enter ```1000000000000000000000```
+4. Scroll down to the "mint" field and enter `1000000000000000000000`
 5. Click the "Write" button and confirm the transaction in MetaMask. MetaMask will show the transaction status as "Confirmed" when it has succeeded
 
 ![Etherscan TTT acquisition](https://drive.google.com/uc?export=view&id=1M81D3dsWnHCDeP25rY0RpGS9DsPg2lUa)
-
-### Start Developing
 
 #### Prerequisites
 
@@ -215,7 +250,7 @@ cd light-client/raiden-dapp
 
 ##### Build the Raiden SDK
 
- First you need to build the sdk. For this you have to go to the `raiden` directory and run the following commands.
+First you need to build the sdk. For this you have to go to the `raiden` directory and run the following commands.
 
 ```bash
 cd ../raiden-ts
@@ -244,9 +279,9 @@ npm run serve
 
 After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp. It requires either MetaMask to be installed on your browser or some other web3 provider (e.g. Wallet apps with dApp support).
 
-
 ## Roadmap and Timeline
-We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1). 
+
+We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1).
 
 With the [first testnet release](https://github.com/raiden-network/light-client/releases) we have reached milestone 0, where the SDK and dApp are able to send transfers, but will not be able to receive transfers.
 
@@ -268,6 +303,6 @@ Twitter: [@raiden_network](https://twitter.com/raiden_network)
 
 Website: [Raiden Network](https://raiden.network/)
 
-Mail: contact@raiden.network 
+Mail: contact@raiden.network
 
 Project Link: [https://github.com/raiden-network/light-client](https://github.com/raiden-network/light-client)
