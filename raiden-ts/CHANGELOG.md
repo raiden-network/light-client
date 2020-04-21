@@ -1,9 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [0.6.0] 0 2020-04-21
 ### Added
 - [#1338] Allow HTTP URLs for Path Finding Service (non-production)
-- [#1261] Implements fast WebRTC P2P transport
+- [#1261] Implements fast WebRTC P2P transport (experimental)
 - [#1211] Integration test for mediated transfers
 
 [#1211]: https://github.com/raiden-network/light-client/issues/1211
@@ -151,7 +151,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/raiden-network/light-client/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/raiden-network/light-client/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/raiden-network/light-client/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/raiden-network/light-client/compare/v0.4.2...v0.5.0
