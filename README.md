@@ -64,7 +64,6 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
       - [Build the Raiden SDK](#build-the-raiden-sdk)
       - [Install the dApp Dependencies](#install-the-dapp-dependencies)
       - [Running the dApp locally](#running-the-dapp-locally)
-- [Backup the state to keep your tokens](#backup-the-state-to-keep-your-tokens)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
 - [License](#license)
@@ -186,6 +185,42 @@ These step-by-step instructions will guide you through the process for trying ou
 2. [Join the TTT token network](https://docs.raiden.network/using-raiden/the-raiden-web-interface/join-a-token-network)
 3. [Make a transfer](https://docs.raiden.network/using-raiden/the-raiden-web-interface/payment#pay-from-the-tokens-screen) to the hub `hub.raiden.network`
 
+#### Backup the state to keep your tokens
+
+Store a backup of your state to **avoid loosing tokens** in case you:
+
+- Delete your local browser storage
+- Change your computer
+- Change your browser
+
+If you want to continue using the dApp with a specific account when switching browser or changing computer you need to make sure that the dApp is connecting with the most recent state.
+
+This is important because your state contains all the off-chain information which is needed to make transactions in the Raiden Network. Your state is stored in the browser across sessions and therefore it needs to be downloaded and uploaded whenever you switch browser or change computer.
+
+You can download and upload your state via the `General Menu`. Note that if you loose or delete your state you will also loose your tokens.
+
+Structure of the state file:
+
+```json
+{
+  "address": "0x2a23F385d32dcce35824D4498Bb10f9B6575B2de",
+  "version": 2,
+  "chainId": 5,
+  "registry": "0x9b0c8C8C75904CEf5B7a8dbF59c3459Ea85c6526",
+  "blockNumber": 2561973,
+  "config": {},
+  "channels": {},
+  "tokens": {
+    "0xE2b702eD684bEb02850ac604278f078A4ce8b6E6": "0x2001E8851d33CA476e209e37ED8db1BB9E72334F"
+  },
+  "transport": {},
+  "sent": {},
+  "received": {},
+  "path": { "iou": {} },
+  "pendingTxs": []
+}
+```
+
 #### Minting Manually
 
 It is possible that the minting feature in the Light Client does not work out-of-the-box with every custom token. You can still try to mint the token manually:
@@ -243,42 +278,6 @@ npm run serve
 ```
 
 After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp. It requires either MetaMask to be installed on your browser or some other web3 provider (e.g. Wallet apps with dApp support).
-
-## Backup the state to keep your tokens
-
-Store a backup of your state to **avoid loosing tokens** in case you:
-
-- Delete your local browser storage
-- Change your computer
-- Change your browser
-
-If you want to continue using the dApp with a specific account when switching browser or changing computer you need to make sure that the dApp is connecting with the most recent state.
-
-This is important because your state contains all the off-chain information which is needed to make transactions in the Raiden Network. Your state is stored in the browser across sessions and therefore it needs to be downloaded and uploaded whenever you switch browser or change computer.
-
-You can download and upload your state via the `General Menu`. Note that if you loose or delete your state you will also loose your tokens.
-
-Structure of the state file:
-
-```json
-{
-  "address": "0x2a23F385d32dcce35824D4498Bb10f9B6575B2de",
-  "version": 2,
-  "chainId": 5,
-  "registry": "0x9b0c8C8C75904CEf5B7a8dbF59c3459Ea85c6526",
-  "blockNumber": 2561973,
-  "config": {},
-  "channels": {},
-  "tokens": {
-    "0xE2b702eD684bEb02850ac604278f078A4ce8b6E6": "0x2001E8851d33CA476e209e37ED8db1BB9E72334F"
-  },
-  "transport": {},
-  "sent": {},
-  "received": {},
-  "path": { "iou": {} },
-  "pendingTxs": []
-}
-```
 
 ## Roadmap and Timeline
 
