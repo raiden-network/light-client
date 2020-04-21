@@ -39,7 +39,9 @@
     }
   },
   "backup-state": {
-    "description": "Download and upload your state",
+    "description": "The state holds all account information except the private key. You can backup your state to make sure the dApp is kept in sync when switching between browsers.",
+    "disabled-download": "Downloading the state is only possible when connected to the dApp",
+    "disabled-upload": "Uploading the state is only possible when the dApp is disconnected",
     "download": "Download State",
     "download-warning": "Downloading the state will force the dApp to shut down",
     "download-button": "Download",

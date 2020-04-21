@@ -6,41 +6,66 @@
       </v-col>
     </v-row>
     <v-list class="backup-state__buttons">
-      <v-list-item
-        :disabled="!isConnected"
-        class="backup-state__buttons__download-state"
-        @click="downloadState = true"
-      >
-        <div class="backup-state__buttons__download-state__icon">
-          <v-img :src="require('../assets/state_download.png')"></v-img>
-        </div>
-        <v-list-item-content>
-          <div class="backup-state__buttons__download-state__title">
-            {{ $t('backup-state.download') }}
+      <v-tooltip color="#ea6464" bottom>
+        <template #activator="{ on }">
+          <div v-on="!isConnected ? on : null">
+            <v-list-item
+              :disabled="!isConnected"
+              class="backup-state__buttons__download-state"
+              @click="downloadState = true"
+            >
+              <div
+                class="backup-state__buttons__download-state__icon"
+                :class="{
+                  'backup-state__buttons__dowload-state__icon disabled-icon': !isConnected
+                }"
+              >
+                <v-img :src="require('../assets/state_download.png')"></v-img>
+              </div>
+              <v-list-item-content>
+                <div class="backup-state__buttons__download-state__title">
+                  {{ $t('backup-state.download') }}
+                </div>
+              </v-list-item-content>
+            </v-list-item>
           </div>
-        </v-list-item-content>
-      </v-list-item>
-      <v-list-item
-        class="backup-state__buttons__upload-state"
-        @click="uploadState = true"
-      >
-        <div class="backup-state__buttons__upload-state__icon">
-          <v-img :src="require('../assets/state_upload.png')"></v-img>
-        </div>
-        <v-list-item-content>
-          <div class="backup-state__buttons__upload-state__title">
-            {{ $t('backup-state.upload') }}
+        </template>
+        <span>{{ $t('backup-state.disabled-download') }}</span>
+      </v-tooltip>
+      <v-tooltip color="#ea6464" bottom>
+        <template #activator="{ on }">
+          <div v-on="isConnected ? on : null">
+            <v-list-item
+              class="backup-state__buttons__upload-state"
+              @click="uploadState = true"
+            >
+              <div
+                class="backup-state__buttons__upload-state__icon"
+                :class="{
+                  'backup-state__buttons__upload-state__icon disabled-icon': isConnected
+                }"
+              >
+                <v-img :src="require('../assets/state_upload.png')"></v-img>
+              </div>
+              <v-list-item-content>
+                <div class="backup-state__buttons__upload-state__title">
+                  {{ $t('backup-state.upload') }}
+                </div>
+              </v-list-item-content>
+            </v-list-item>
           </div>
-        </v-list-item-content>
-      </v-list-item>
+        </template>
+        <span>{{ $t('backup-state.disabled-upload') }}</span>
+      </v-tooltip>
     </v-list>
     <download-state-dialog
       :visible="downloadState"
       @cancel="downloadState = false"
-    >
-    </download-state-dialog>
-    <upload-state-dialog :visible="uploadState" @cancel="uploadState = false">
-    </upload-state-dialog>
+    ></download-state-dialog>
+    <upload-state-dialog
+      :visible="uploadState"
+      @cancel="uploadState = false"
+    ></upload-state-dialog>
   </div>
 </template>
 
@@ -69,8 +94,8 @@ export default class BackupState extends Vue {
 
 .backup-state {
   &__description {
-    color: $secondary-text-color;
-    font-size: 20px;
+    color: $color-white;
+    font-size: 16px;
     padding: 50px 100px 0 100px;
     text-align: center;
   }
@@ -78,7 +103,7 @@ export default class BackupState extends Vue {
   &__buttons {
     background-color: transparent;
     margin: 0 auto;
-    padding-top: 166px;
+    padding-top: 100px;
     width: 283px;
 
     &__download-state,
@@ -91,6 +116,10 @@ export default class BackupState extends Vue {
       &__icon {
         padding: 0 10px 0 15px;
         width: 110px;
+      }
+
+      .disabled-icon {
+        filter: grayscale(1);
       }
 
       &__title {
