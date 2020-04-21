@@ -64,7 +64,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
       - [Build the Raiden SDK](#build-the-raiden-sdk)
       - [Install the dApp Dependencies](#install-the-dapp-dependencies)
       - [Running the dApp locally](#running-the-dapp-locally)
-- [Use the dApp in Different Environments](#use-the-dapp-in-different-environments)
+- [Backup the state to keep your tokens](#backup-the-state-to-keep-your-tokens)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
 - [License](#license)
@@ -244,15 +244,21 @@ npm run serve
 
 After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp. It requires either MetaMask to be installed on your browser or some other web3 provider (e.g. Wallet apps with dApp support).
 
-## Use the dApp in Different Environments
+## Backup the state to keep your tokens
+
+Store a backup of your state to **avoid loosing tokens** in case you:
+
+- Delete your local browser storage
+- Change your computer
+- Change your browser
 
 If you want to continue using the dApp with a specific account when switching browser or changing computer you need to make sure that the dApp is connecting with the most recent state.
 
 This is important because your state contains all the off-chain information which is needed to make transactions in the Raiden Network. Your state is stored in the browser across sessions and therefore it needs to be downloaded and uploaded whenever you switch browser or change computer.
 
-If you loose or delete your state you will also loose your tokens. Luckily the dApp provides an easy way to download and upload your state via the `General Menu`.
+You can download and upload your state via the `General Menu`. Note that if you loose or delete your state you will also loose your tokens.
 
-Example of state file:
+Structure of the state file:
 
 ```json
 {
