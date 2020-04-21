@@ -174,6 +174,12 @@ export default class RaidenService {
         window.addEventListener('beforeunload', () => this.raiden.stop());
         raiden.start();
         this.store.commit('balance', await this.getBalance());
+        if (subkey) {
+          this.store.commit(
+            'raidenAccountBalance',
+            await this.getBalance(raiden.address)
+          );
+        }
       }
     } catch (e) {
       let deniedReason: DeniedReason;
@@ -203,8 +209,8 @@ export default class RaidenService {
     return this.raiden.address;
   }
 
-  async getBalance(): Promise<string> {
-    const balance = await this.raiden.getBalance();
+  async getBalance(address?: string): Promise<string> {
+    const balance = await this.raiden.getBalance(address);
     return BalanceUtils.toEth(balance);
   }
 

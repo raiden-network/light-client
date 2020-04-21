@@ -32,6 +32,7 @@ const _defaultState: RootState = {
   loading: true,
   defaultAccount: '',
   accountBalance: '0.0',
+  raidenAccountBalance: '',
   providerDetected: true,
   accessDenied: DeniedReason.UNDEFINED,
   channels: {},
@@ -63,6 +64,9 @@ const store: StoreOptions<RootState> = {
     },
     balance(state: RootState, balance: string) {
       state.accountBalance = balance;
+    },
+    raidenAccountBalance(state: RootState, balance: string) {
+      state.raidenAccountBalance = balance;
     },
     updateChannels(state: RootState, channels: RaidenChannels) {
       state.channels = channels;
@@ -169,7 +173,12 @@ const store: StoreOptions<RootState> = {
       return undefined;
     },
     isConnected: (state: RootState): boolean =>
-      !!(state.defaultAccount && state.defaultAccount !== '')
+      !!(state.defaultAccount && state.defaultAccount !== ''),
+    balance: (state: RootState): string => {
+      return state.raidenAccountBalance
+        ? state.raidenAccountBalance
+        : state.accountBalance;
+    }
   }
 };
 
