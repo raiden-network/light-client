@@ -85,6 +85,22 @@ describe('RaidenService', () => {
     );
   });
 
+  test('raidenAccountBalance should be fetched when subkey is used', async () => {
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(
+      mockRaiden({
+        getBalance: jest
+          .fn()
+          .mockResolvedValueOnce(bigNumberify('1000000000000000000'))
+          .mockResolvedValueOnce(bigNumberify('100000000000000000'))
+      })
+    );
+    await raidenService.connect('', true);
+    await flushPromises();
+    expect(store.commit).toBeCalledWith('balance', '1.0');
+    expect(store.commit).toBeCalledWith('raidenAccountBalance', '0.1');
+  });
+
   test('return the account when the sdk is connected', async () => {
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden());
