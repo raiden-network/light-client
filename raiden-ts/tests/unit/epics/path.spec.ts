@@ -976,8 +976,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ),
       pathFind.failure(
         expect.objectContaining({
-          message: ErrorCodes.PFS_ERROR_RESPONSE,
-          details: { errorCode: 2201, errors: 'No route between nodes found.' },
+          message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
         }),
         { tokenNetwork, target, value },
       ),

@@ -16,6 +16,7 @@ export enum ErrorCodes {
   PFS_TARGET_NO_RECEIVE = "The requested target doesn't receive transfers.",
   PFS_LAST_IOU_REQUEST_FAILED = 'The request for the last IOU has failed.',
   PFS_IOU_SIGNATURE_MISMATCH = 'The signature of the last IOU did not match.',
+  PFS_NO_ROUTES_BETWEEN_NODES = 'No route between nodes found.',
 
   // Channel errors
   CNL_INVALID_STATE = 'Invalid channel state.',
