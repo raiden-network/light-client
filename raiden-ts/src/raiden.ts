@@ -2,7 +2,7 @@ import './polyfills';
 import { Signer } from 'ethers/abstract-signer';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
-import { Zero, AddressZero } from 'ethers/constants';
+import { Zero, AddressZero, MaxUint256 } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { applyMiddleware, createStore, Store } from 'redux';
@@ -1091,28 +1091,41 @@ export class Raiden {
    * Example:
    *   // transfer 0.1 ETH from main account to subkey account, when subkey is used
    *   await raiden.transferOnchainBalance(raiden.address, parseEther('0.1'));
-   *   // transfer 0.1 ETH back from subkey account to main account
-   *   await raiden.transferOnchainBalance(raiden.mainAddress, parseEther('0.1'), true);
-   * TODO: expose a nice way to transfer ALL, considering gas price & limit
+   *   // transfer entire balance from subkey account back to main account
+   *   await raiden.transferOnchainBalance(raiden.mainAddress, undefined, { subkey: true });
    *
    * @param to - Recipient address
    * @param value - Amount of ETH (in Wei) to transfer. Use ethers/utils::parseEther if needed
+   *    Defaults to a very big number, which will cause all entire balance to be transfered
    * @param options - tx options
    * @param options.subkey - By default, if using subkey, main account is used to send transactions
    *    Set this to true if one wants to force sending the transaction with the subkey
+   * @param options.gasPrice - Set to force a specific gasPrice; used to calculate transferable
+   *    amount when transfering entire balance. If left unset, uses average network gasPrice
    * @returns transaction hash
    */
   public async transferOnchainBalance(
     to: string,
-    value: BigNumberish,
-    { subkey }: { subkey?: boolean } = {},
+    value: BigNumberish = MaxUint256,
+    { subkey, gasPrice }: { subkey?: boolean; gasPrice?: BigNumberish } = {},
   ): Promise<Hash> {
     assert(Address.is(to), 'Invalid address', this.log.debug);
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.debug);
 
-    const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
+    const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
-    const tx = await signer.sendTransaction({ to, value: bigNumberify(value) });
+    const price = gasPrice ? bigNumberify(gasPrice) : await this.deps.provider.getGasPrice();
+    const gasLimit = bigNumberify(21000);
+
+    const curBalance = await this.getBalance(address);
+    // transferableBalance is current balance minus the cost of a single transfer as per gasPrice
+    const transferableBalance = curBalance.sub(price.mul(gasLimit));
+    assert(transferableBalance.gt(Zero), 'Not enough balance for a transfer', this.log.error);
+
+    // caps value to transferableBalance, so if it's too big, transfer all
+    const amount = transferableBalance.lte(value) ? transferableBalance : bigNumberify(value);
+
+    const tx = await signer.sendTransaction({ to, value: amount, gasPrice: price, gasLimit });
     const receipt = await tx.wait();
 
     if (!receipt.status) throw new RaidenError(ErrorCodes.RDN_TRANSFER_ONCHAIN_BALANCE_FAILED);
@@ -1122,11 +1135,11 @@ export class Raiden {
   /**
    * Transfer value tokens on-chain to address.
    * If subkey is being used, use main account by default, or subkey account if 'subkey' is true
-   * TODO: expose a nice way to transfer ALL tokens
    *
    * @param token - Token address
    * @param to - Recipient address
    * @param value - Amount of tokens (in Wei) to transfer. Use ethers/utils::parseUnits if needed
+   *    Defaults to a very big number, which will cause all entire balance to be transfered
    * @param options - tx options
    * @param options.subkey - By default, if using subkey, main account is used to send transactions
    *    Set this to true if one wants to force sending the transaction with the subkey
@@ -1135,19 +1148,23 @@ export class Raiden {
   public async transferOnchainTokens(
     token: string,
     to: string,
-    value: BigNumberish,
+    value: BigNumberish = MaxUint256,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token) && Address.is(to), 'Invalid address', this.log.debug);
     assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.debug);
 
-    const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
+    const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     const tokenContract = getContractWithSigner(this.deps.getTokenContract(token), signer);
+
+    const curBalance = await this.getTokenBalance(token, address);
+    // caps value to balance, so if it's too big, transfer all
+    const amount = curBalance.lte(value) ? curBalance : bigNumberify(value);
 
     const receipt = await callAndWaitMined(
       tokenContract,
       'transfer',
-      [to, bigNumberify(value)],
+      [to, amount],
       ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED,
       { log: this.log },
     );

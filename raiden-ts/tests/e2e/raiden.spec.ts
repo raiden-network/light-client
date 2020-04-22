@@ -1236,7 +1236,7 @@ describe('Raiden', () => {
   });
 
   test('subkey', async () => {
-    expect.assertions(28);
+    expect.assertions(30);
     const sub = await createRaiden(0, storage, true);
 
     const subStarted = sub.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
@@ -1323,9 +1323,13 @@ describe('Raiden', () => {
     expect((await sub.getTokenBalance(token, sub.address)).eq(200)).toBe(true);
 
     // transfer on chain from subkey to main account
-    await expect(sub.transferOnchainTokens(token, sub.mainAddress!, 200)).resolves.toMatch(/^0x/);
+    await expect(sub.transferOnchainTokens(token, sub.mainAddress!)).resolves.toMatch(/^0x/);
+    // config.subkey is true, transfering ETH to mainAddress without specifying value should transfer everything
+    await expect(sub.transferOnchainBalance(sub.mainAddress!)).resolves.toMatch(/^0x/);
     expect((await sub.getTokenBalance(token)).isZero()).toBe(true);
     expect((await sub.getTokenBalance(token, sub.mainAddress)).eq(mainTokenBalance)).toBe(true);
+    // subkey is emptied of ETH
+    expect((await sub.getBalance()).isZero()).toBe(true);
 
     sub.stop();
   });
