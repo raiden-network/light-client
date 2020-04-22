@@ -54,6 +54,26 @@ describe('store', () => {
     expect(store.state.accountBalance).toBe('12.0');
   });
 
+  test('raidenAccountBalance mutation changes the raidenAccountBalance', () => {
+    expect(store.state.raidenAccountBalance).toBe('');
+    store.commit('raidenAccountBalance', '0.1');
+    expect(store.state.raidenAccountBalance).toBe('0.1');
+  });
+
+  test('balance getter retuns balance if no raidenAccountBalance exists', () => {
+    expect(store.state.raidenAccountBalance).toBe('');
+    expect(store.state.accountBalance).toBe('0.0');
+    store.commit('balance', '12.0');
+    expect(store.getters.balance).toBe('12.0');
+  });
+
+  test('balance getter returns raidenAccountBalance if it exists', () => {
+    expect(store.state.raidenAccountBalance).toBe('');
+    expect(store.state.accountBalance).toBe('0.0');
+    store.commit('raidenAccountBalance', '13.0');
+    expect(store.getters.balance).toBe('13.0');
+  });
+
   test('account mutation changes the defaultAccount state', () => {
     expect(store.state.defaultAccount).toBe('');
     store.commit('account', 'test');

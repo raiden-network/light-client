@@ -85,6 +85,22 @@ describe('RaidenService', () => {
     );
   });
 
+  test('raidenAccountBalance should be fetched when subkey is used', async () => {
+    providerMock.mockResolvedValue(mockProvider);
+    factory.mockResolvedValue(
+      mockRaiden({
+        getBalance: jest
+          .fn()
+          .mockResolvedValueOnce(bigNumberify('1000000000000000000'))
+          .mockResolvedValueOnce(bigNumberify('100000000000000000'))
+      })
+    );
+    await raidenService.connect('', true);
+    await flushPromises();
+    expect(store.commit).toBeCalledWith('balance', '1.0');
+    expect(store.commit).toBeCalledWith('raidenAccountBalance', '0.1');
+  });
+
   test('return the account when the sdk is connected', async () => {
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(mockRaiden());
@@ -208,8 +224,7 @@ describe('RaidenService', () => {
     await flushPromises();
 
     await raidenService.fetchTokenData(['0xtoken']);
-    expect(store.commit).toHaveBeenNthCalledWith(
-      5,
+    expect(store.commit).toHaveBeenCalledWith(
       'updateTokens',
       expect.objectContaining({
         '0xtoken': {
@@ -243,11 +258,10 @@ describe('RaidenService', () => {
     await raidenService.connect();
     await flushPromises();
 
-    expect(store.commit).toHaveBeenNthCalledWith(5, 'loadComplete');
-    expect(store.commit).toHaveBeenCalledTimes(5);
     raidenService.disconnect();
     expect(raidenMock.stop).toHaveBeenCalledTimes(1);
     expect(raidenMock.start).toHaveBeenCalledTimes(1);
+    expect(store.commit).toHaveBeenLastCalledWith('loadComplete');
   });
 
   test('resolves successfully when the channel closes', async () => {
@@ -428,21 +442,19 @@ describe('RaidenService', () => {
       await raidenService.connect();
       await flushPromises();
 
-      expect(store.commit).toHaveBeenCalledTimes(4);
-
-      expect(store.commit).toHaveBeenNthCalledWith(1, 'account', '123');
-      expect(store.commit).toHaveBeenNthCalledWith(3, 'balance', '0.0');
-      expect(store.commit).toHaveBeenNthCalledWith(4, 'loadComplete');
+      expect(store.commit).toBeCalledWith('account', '123');
+      expect(store.commit).toBeCalledWith('balance', '0.0');
 
       await raidenService.fetchTokenData(['0xtoken1']);
 
-      expect(store.commit).toHaveBeenNthCalledWith(5, 'updateTokens', {
+      expect(store.commit).toHaveBeenLastCalledWith('updateTokens', {
         [mockToken1]: tokens[mockToken1]
       });
+      expect(store.commit).toHaveBeenCalledWith('loadComplete');
     });
 
     test('checks for the connected token balances when it receives a new block event', async () => {
-      expect.assertions(2);
+      expect.assertions(1);
 
       const mockStore = store as any;
 
@@ -490,9 +502,7 @@ describe('RaidenService', () => {
       subject.next({ type: 'newBlock' });
       await flushPromises();
 
-      expect(store.commit).toHaveBeenCalledTimes(5);
-      expect(store.commit).toHaveBeenNthCalledWith(
-        5,
+      expect(store.commit).toBeCalledWith(
         'updateTokens',
         expect.objectContaining({
           [mockToken1]: {
@@ -546,7 +556,7 @@ describe('RaidenService', () => {
   });
 
   test('clears the app state when it receives a raidenShutdown event', async () => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const mockStore = store as any;
     mockStore.getters = {
@@ -573,7 +583,6 @@ describe('RaidenService', () => {
     subject.next({ type: 'raidenShutdown' });
     await flushPromises();
 
-    expect(store.commit).toHaveBeenCalledTimes(5);
     expect(store.commit).toHaveBeenLastCalledWith('reset');
   });
 
@@ -756,8 +765,6 @@ describe('RaidenService', () => {
       const isAvailable = await raidenService.getAvailability('0xtarget');
       expect(isAvailable).toBe(false);
       expect(getAvailability).toHaveBeenCalledTimes(1);
-      expect(getAvailability).rejects;
-      expect(store.commit).toBeCalledTimes(5);
       expect(store.commit).toBeCalledWith('updatePresence', {
         ['0xtarget']: false
       });
@@ -780,7 +787,6 @@ describe('RaidenService', () => {
       await raidenService.connect();
       await flushPromises();
 
-      expect(store.commit).toBeCalledTimes(5);
       expect(store.commit).toHaveBeenCalledWith(
         'updateTransfers',
         expect.objectContaining({

@@ -28,7 +28,7 @@
         </v-col>
         <v-col cols="10">
           <span class="general-screen-menu__account-details__eth--balance">
-            {{ accountBalance | decimals }}
+            {{ balance | decimals }}
           </span>
         </v-col>
       </v-row>
@@ -63,7 +63,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { mapState } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 import { getLogsFromStore } from '@/utils/logstore';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import AddressDisplay from '@/components/AddressDisplay.vue';
@@ -73,11 +73,15 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
     AddressDisplay
   },
   computed: {
-    ...mapState(['loading', 'defaultAccount', 'accountBalance'])
+    ...mapState(['loading', 'defaultAccount']),
+    ...mapGetters(['balance'])
   }
 })
 export default class GeneralMenu extends Mixins(NavigationMixin) {
   menuItems: {}[] = [];
+  loading!: boolean;
+  defaultAccount!: string;
+  balance!: string;
 
   mounted() {
     this.menuItems = [

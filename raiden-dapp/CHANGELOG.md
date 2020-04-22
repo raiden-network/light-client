@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+### Fixed
+
+- [#1300] General screen shows Raiden account balance when using subkey.
+
+[#1300]: https://github.com/raiden-network/light-client/issues/1300
+
 ## [0.6.0] - 2020-04-21
 
 ### Added

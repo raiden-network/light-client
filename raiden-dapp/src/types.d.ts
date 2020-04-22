@@ -16,6 +16,7 @@ export interface RootState {
   loading: boolean;
   defaultAccount: string;
   accountBalance: string;
+  raidenAccountBalance: string;
   providerDetected: boolean;
   accessDenied: DeniedReason;
   channels: RaidenChannels;
