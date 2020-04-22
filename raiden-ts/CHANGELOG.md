@@ -2,8 +2,10 @@
 
 ## [Unreleased]
 ### Added
+- [#1392] Raiden on-chain methods provide easy ways to transfer entire token & ETH balances
 - [#1252] Mediate transfers (experimental)
 
+[#1392]: https://github.com/raiden-network/light-client/issues/1392
 [#1252]: https://github.com/raiden-network/light-client/issues/1252
 
 ## [0.6.0] - 2020-04-21
