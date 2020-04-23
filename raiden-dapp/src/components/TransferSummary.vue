@@ -49,24 +49,8 @@
 
     <div class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.transfer-amount') }}</span>
-      <div
-        @mouseover="exactTransferAmountDisplay = true"
-        @mouseleave="exactTransferAmountDisplay = false"
-      >
-        <span
-          v-if="exactTransferAmountDisplay"
-          class="transfer-summary__transfer-amount"
-        >
-          {{ transfer.transferAmount }}
-        </span>
-        <span v-else class="transfer-summary__transfer-amount">
-          {{
-            transfer.transferAmount
-              | displayFormat(transfer.transferToken.decimals)
-          }}
-        </span>
-        <span>{{ transfer.transferToken.symbol || '' }}</span>
-      </div>
+      <amount-display exact-amount :amount="transfer.transferAmount" />
+      <span>{{ transfer.transferToken.symbol || '' }}</span>
     </div>
 
     <div v-if="!isDirectTransfer" class="transfer-summary__row">
@@ -93,24 +77,8 @@
 
     <div class="transfer-summary__row transfer-summary__row--total">
       <span>{{ $t('transfer.steps.summary.total-amount') }}</span>
-      <div
-        @mouseover="exactTotalAmountDisplay = true"
-        @mouseleave="exactTotalAmountDisplay = false"
-      >
-        <span
-          v-if="exactTotalAmountDisplay"
-          class="transfer-summary__transfer-total"
-        >
-          {{ transfer.transferTotal }}
-        </span>
-        <span v-else class="transfer-summary__transfer-total">
-          {{
-            transfer.transferTotal
-              | displayFormat(transfer.transferToken.decimals)
-          }}
-        </span>
-        <span>{{ transfer.transferToken.symbol || '' }}</span>
-      </div>
+      <amount-display exact-amount :amount="transfer.transferTotal" />
+      <span>{{ transfer.transferToken.symbol || '' }}</span>
     </div>
 
     <ol class="transfer-summary__explanation">
@@ -128,10 +96,11 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Checkmark from '@/components/Checkmark.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
+import AmountDisplay from '@/components/AmountDisplay.vue';
 import { Transfer } from '@/model/types';
 import Filters from '@/filters';
 
-@Component({ components: { Checkmark, AddressDisplay } })
+@Component({ components: { Checkmark, AddressDisplay, AmountDisplay } })
 export default class TransferSummary extends Vue {
   @Prop({ required: true })
   transfer!: Transfer;
@@ -168,6 +137,14 @@ export default class TransferSummary extends Vue {
     > span {
       display: flex;
       align-items: center;
+
+      &:first-child {
+        flex: 1;
+      }
+
+      &:last-child {
+        margin-left: 5px;
+      }
     }
 
     &--total {
