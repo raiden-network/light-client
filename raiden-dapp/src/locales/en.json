@@ -471,7 +471,7 @@
     },
     "PFS_NO_ROUTES_BETWEEN_NODES": {
       "title": "No route between you and your target",
-      "problem": "The Pathfinding Service was not able to find a route between you and the target you want to transfer tokens to.",
+      "problem": "The Pathfinding Service was not able to find a usable route between you and the target you want to transfer tokens to.",
       "solution": [
         "Hit the ← button in the top left",
         "Click on the current token network",
