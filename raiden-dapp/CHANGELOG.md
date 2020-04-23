@@ -1,10 +1,13 @@
 # Changelog
 
 ## [Unreleased]
+
 ### Fixed
 
+- [#1381] Summary screen display exact amounts on hover
 - [#1300] General screen shows Raiden account balance when using subkey.
 
+[#1381]: https://github.com/raiden-network/light-client/issues/1381
 [#1300]: https://github.com/raiden-network/light-client/issues/1300
 
 ## [0.6.0] - 2020-04-21
@@ -229,7 +232,7 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.6.0...HEAD
+[unreleased]: https://github.com/raiden-network/light-client/compare/v0.6.0...HEAD
 [0.6.0]: https://github.com/raiden-network/light-client/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/raiden-network/light-client/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/raiden-network/light-client/compare/v0.5.0...v0.5.1
