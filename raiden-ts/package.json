@@ -98,8 +98,7 @@
     "ethers": "^4.0.46"
   },
   "files": [
-    "/dist*",
-    "/typings"
+    "/dist*"
   ],
   "eslintConfig": {
     "parser": "@typescript-eslint/parser",
@@ -159,7 +158,6 @@
     "raiden-contracts/*",
     "scripts/*",
     "dist*/*",
-    "typings/*",
     "src/contracts/*"
   ],
   "prettier": {
