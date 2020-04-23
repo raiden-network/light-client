@@ -328,9 +328,14 @@ export const pathFindServiceEpic = (
               }
               // if error, don't proceed
               if (!data.paths) {
+                const { errors, error_code } = data.error;
+                if (error_code === 2201) {
+                  throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES);
+                }
+
                 throw new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, {
-                  errorCode: data.error.error_code,
-                  errors: data.error.errors,
+                  errorCode: error_code,
+                  errors,
                 });
               }
               const filteredPaths: Paths = [],
