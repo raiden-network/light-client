@@ -26,9 +26,8 @@ request((opts: object, cb: ReqCb) => {
   });
 });
 
-import wrtc from 'wrtc';
 if (!('RTCPeerConnection' in globalThis)) {
-  Object.assign(globalThis, wrtc);
+  Object.assign(globalThis, require('wrtc')); // eslint-disable-line @typescript-eslint/no-var-requires
 }
 
 // patch createNewMatrixCall to prevent matrix-js-sdk from hooking WebRTC events in browser;

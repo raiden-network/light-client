@@ -258,6 +258,7 @@ export class Raiden {
    * An async factory is needed so we can do the needed async requests to construct the required
    * parameters ahead of construction time, and avoid partial initialization then
    *
+   * @param this - Raiden class or subclass
    * @param connection - A URL or provider to connect to, one of:
    *     <ul>
    *       <li>JsonRpcProvider instance,</li>
@@ -279,8 +280,9 @@ export class Raiden {
    * @param config - Raiden configuration
    * @param subkey - Whether to use a derived subkey or not
    * @returns Promise to Raiden SDK client instance
-   **/
-  public static async create(
+   */
+  public static async create<R extends typeof Raiden>(
+    this: R,
     connection: JsonRpcProvider | AsyncSendable | string,
     account: Signer | string | number,
     storageOrState?:
@@ -291,7 +293,7 @@ export class Raiden {
     contracts?: ContractsInfo,
     config?: PartialRaidenConfig,
     subkey?: true,
-  ): Promise<Raiden> {
+  ): Promise<InstanceType<R>> {
     let provider: JsonRpcProvider;
     if (typeof connection === 'string') {
       provider = new JsonRpcProvider(connection);
@@ -332,7 +334,15 @@ export class Raiden {
       `Mismatch between network or registry address and loaded state`,
     );
 
-    const raiden = new Raiden(provider, network, signer, contracts, state, defaultConfig, main);
+    const raiden = new this(
+      provider,
+      network,
+      signer,
+      contracts,
+      state,
+      defaultConfig,
+      main,
+    ) as InstanceType<R>;
     if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
     return raiden;
   }
