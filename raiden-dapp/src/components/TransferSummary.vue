@@ -42,18 +42,31 @@
 
     <div class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.target') }}</span>
-      <span><address-display :address="transfer.target"/></span>
+      <span>
+        <address-display :address="transfer.target" />
+      </span>
     </div>
 
     <div class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.transfer-amount') }}</span>
-      <span class="transfer-summary__transfer-amount">
-        {{
-          transfer.transferAmount
-            | displayFormat(transfer.transferToken.decimals)
-        }}
-        {{ transfer.transferToken.symbol || '' }}
-      </span>
+      <div
+        @mouseover="exactTransferAmountDisplay = true"
+        @mouseleave="exactTransferAmountDisplay = false"
+      >
+        <span
+          v-if="exactTransferAmountDisplay"
+          class="transfer-summary__transfer-amount"
+        >
+          {{ transfer.transferAmount }}
+        </span>
+        <span v-else class="transfer-summary__transfer-amount">
+          {{
+            transfer.transferAmount
+              | displayFormat(transfer.transferToken.decimals)
+          }}
+        </span>
+        <span>{{ transfer.transferToken.symbol || '' }}</span>
+      </div>
     </div>
 
     <div v-if="!isDirectTransfer" class="transfer-summary__row">
@@ -80,13 +93,24 @@
 
     <div class="transfer-summary__row transfer-summary__row--total">
       <span>{{ $t('transfer.steps.summary.total-amount') }}</span>
-      <span class="transfer-summary__transfer-total">
-        {{
-          transfer.transferTotal
-            | displayFormat(transfer.transferToken.decimals)
-        }}
-        {{ transfer.transferToken.symbol || '' }}
-      </span>
+      <div
+        @mouseover="exactTotalAmountDisplay = true"
+        @mouseleave="exactTotalAmountDisplay = false"
+      >
+        <span
+          v-if="exactTotalAmountDisplay"
+          class="transfer-summary__transfer-total"
+        >
+          {{ transfer.transferTotal }}
+        </span>
+        <span v-else class="transfer-summary__transfer-total">
+          {{
+            transfer.transferTotal
+              | displayFormat(transfer.transferToken.decimals)
+          }}
+        </span>
+        <span>{{ transfer.transferToken.symbol || '' }}</span>
+      </div>
     </div>
 
     <ol class="transfer-summary__explanation">
@@ -113,6 +137,8 @@ export default class TransferSummary extends Vue {
   transfer!: Transfer;
 
   truncate = Filters.truncate;
+  exactTransferAmountDisplay = false;
+  exactTotalAmountDisplay = false;
 
   get isDirectTransfer() {
     return this.transfer.hops === 0;
