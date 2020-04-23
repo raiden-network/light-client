@@ -59,21 +59,13 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
   - [Learn about Raiden](#learn-about-raiden)
 - [Try Out the Raiden Demo dApp](#try-out-the-raiden-demo-dapp)
   - [Prerequisites](#prerequisites)
-  - [Acquire ETH](#acquire-eth)
-  - [Navigate to the Raiden Hub](#navigate-to-the-raiden-hub)
-  - [Connect to the Raiden dApp](#connect-to-the-raiden-dapp)
-  - [Select a Hub and Open a Channel](#select-a-hub-and-open-a-channel)
-  - [Make a transfer](#make-a-transfer)
-  - [Minting Manually](#minting-manually)
-  - [Optional: Use a Raiden Full Node](#optional-use-a-raiden-full-node)
-- [Backup the State to Keep Your Tokens](#backup-the-state-to-keep-your-tokens)
+  - [Steps to Make Your First Transfer](#steps-to-make-your-first-transfer)
+  - [Backup the State to Keep Your Tokens](#backup-the-state-to-keep-your-tokens)
+  - [Additional options for minting and target](#additional-options-for-minting-and-target)
 - [Run Repository Code](#run-repository-code)
   - [Prerequisites](#prerequisites)
   - [SDK Documentation](#sdk-documentation)
   - [dApp Installation](#dapp-installation)
-    - [Build the Raiden SDK](#build-the-raiden-sdk)
-    - [Install the dApp Dependencies](#install-the-dapp-dependencies)
-    - [Running the dApp locally](#running-the-dapp-locally)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
 - [License](#license)
@@ -160,21 +152,22 @@ These step-by-step instructions will guide you through the process for trying ou
 1. You need to have MetaMask installed for your browser. If you don't have MetaMask, [visit their website](https://metamask.io/) to download and install it.
 2. It is NOT recommended to use the dApp on mobile (but it works).
 
-### Acquire ETH
+### Steps to Make Your First Transfer
+#### 1. Acquire ETH
 
 1. Go to the Goerli faucet at [htts://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/)
 2. Follow the instructions on how to acquire Goerli ETH on respective website
 
-### Navigate to the Raiden Hub
+#### 2. Navigate to the Raiden Hub
 
 1. Visit the Raiden Hub Page at [https://hub.raiden.network/](https://hub.raiden.network/)
 2. Click **Open Channel with Hub** to get forwarded to [https://lightclient.raiden.network/](https://lightclient.raiden.network/)
 
-### Connect to the Raiden dApp
+#### 3. Connect to the Raiden dApp
 
 1. Click **Connect** to connect the dApp to your MetaMask
 
-### Select a Hub and Open a Channel
+#### 4. Select a Hub and Open a Channel
 
 1. Click the mint button next to your token balance, to mint some TTT tokens.
 2. Click **Select Hub**
@@ -183,31 +176,13 @@ These step-by-step instructions will guide you through the process for trying ou
 5. Click **Open Channel**.
 6. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
 
-### Make a transfer
+#### 5. Make a transfer
 
 1. Enter the address of the node receiving your transfer (eg. `hub.raiden.network`)
 2. Enter the amount you want to transfer
 3. Click **Transfer**
 
-### Minting Manually
-
-It is possible that the minting feature in the Light Client does not work out-of-the-box with every custom token. You can still try to mint the token manually:
-
-1. Visit [this page on Etherscan](https://goerli.etherscan.io/token/0xE2b702eD684bEb02850ac604278f078A4ce8b6E6#writeContract) where you'll be able to write to the TTT contract
-2. Open your MetaMask and choose your Goerli account with ETH
-3. Go back to Etherscan and click "Connect to Web3"
-4. Scroll down to the "mint" field and enter `1000000000000000000000`
-5. Click the "Write" button and confirm the transaction in MetaMask. MetaMask will show the transaction status as "Confirmed" when it has succeeded
-
-![Etherscan TTT acquisition](https://drive.google.com/uc?export=view&id=1M81D3dsWnHCDeP25rY0RpGS9DsPg2lUa)
-
-### Optional: Use a Raiden Full Node
-
-1. Navigate to https://docs.raiden.network/quick-start and follow the instructions
-2. [Join the TTT token network](https://docs.raiden.network/using-raiden/the-raiden-web-interface/join-a-token-network)
-3. [Make a transfer](https://docs.raiden.network/using-raiden/the-raiden-web-interface/payment#pay-from-the-tokens-screen) to the hub `hub.raiden.network`
-
-## Backup the State to Keep Your Tokens
+### Backup the State to Keep Your Tokens
 
 Store a backup of your state to **avoid loosing tokens** in case you:
 
@@ -242,6 +217,25 @@ Structure of the state file:
   "pendingTxs": []
 }
 ```
+
+### Additional options for minting and target
+#### Minting Manually
+
+It is possible that the minting feature in the Light Client does not work out-of-the-box with every custom token. You can still try to mint the token manually:
+
+1. Visit [this page on Etherscan](https://goerli.etherscan.io/token/0xE2b702eD684bEb02850ac604278f078A4ce8b6E6#writeContract) where you'll be able to write to the TTT contract
+2. Open your MetaMask and choose your Goerli account with ETH
+3. Go back to Etherscan and click "Connect to Web3"
+4. Scroll down to the "mint" field and enter `1000000000000000000000`
+5. Click the "Write" button and confirm the transaction in MetaMask. MetaMask will show the transaction status as "Confirmed" when it has succeeded
+
+![Etherscan TTT acquisition](https://drive.google.com/uc?export=view&id=1M81D3dsWnHCDeP25rY0RpGS9DsPg2lUa)
+
+#### Use a Raiden Full Node
+
+1. Navigate to https://docs.raiden.network/quick-start and follow the instructions
+2. [Join the TTT token network](https://docs.raiden.network/using-raiden/the-raiden-web-interface/join-a-token-network)
+3. [Make a transfer](https://docs.raiden.network/using-raiden/the-raiden-web-interface/payment#pay-from-the-tokens-screen) to the hub `hub.raiden.network`
 
 ## Run Repository Code
 
