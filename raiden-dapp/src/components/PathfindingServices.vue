@@ -55,20 +55,11 @@
           </template>
 
           <template #item.price="{ item }">
-            <v-tooltip bottom>
-              <template #activator="{ on }">
-                <div class="pathfinding-services__table__price">
-                  <span v-on="on">
-                    {{ item.price | displayFormat(token(item.token).decimals) }}
-                    {{ token(item.token).symbol || '' }}
-                  </span>
-                </div>
-              </template>
-              <span>
-                {{ item.price | toUnits(token(item.token).decimals) }}
-                {{ token(item.token).symbol || '' }}
-              </span>
-            </v-tooltip>
+            <amount-display
+              exact-amount
+              :amount="item.price"
+              :token="token(item.tokem)"
+            />
           </template>
         </v-data-table>
       </v-col>
@@ -82,10 +73,11 @@ import { RaidenPFS, RaidenError } from 'raiden-ts';
 
 import { Token } from '@/model/types';
 import Filters from '@/filters';
+import AmountDisplay from '@/components/AmountDisplay.vue';
 import Spinner from '@/components/Spinner.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 
-@Component({ components: { Spinner, ErrorMessage } })
+@Component({ components: { AmountDisplay, Spinner, ErrorMessage } })
 export default class PathfindingServices extends Vue {
   headers: { text: string; align: string; value: string }[] = [];
 
