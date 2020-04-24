@@ -132,6 +132,17 @@ describe('NavigationMixin', () => {
     );
   });
 
+  test('navigate to raiden account', () => {
+    wrapper.vm.navigateToRaidenAccountTransfer();
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.RAIDEN_ACCOUNT
+      })
+    );
+  });
+
   test('general modal back navigation', () => {
     wrapper.vm.$route.name = RouteNames.TRANSFER;
     wrapper.vm.navigateToGeneralHome();
