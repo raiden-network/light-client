@@ -71,6 +71,7 @@ import { RaidenError, ErrorCodes } from './utils/error';
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
   private readonly deps: RaidenEpicDeps;
+  public config: RaidenConfig;
 
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
@@ -231,6 +232,9 @@ export class Raiden {
         nextState: 'debug',
       },
     });
+
+    this.config = { ...defaultConfig, ...state.config };
+    this.deps.config$.subscribe((config) => (this.config = config));
 
     this.deps.config$
       .pipe(pluckDistinct('logger'))
@@ -426,17 +430,6 @@ export class Raiden {
    */
   public async getBlockNumber(): Promise<number> {
     return this.deps.provider.blockNumber || (await this.deps.provider.getBlockNumber());
-  }
-
-  /**
-   * Getter for current Raiden Config
-   *
-   * @returns Current Raiden config
-   */
-  public get config(): RaidenConfig {
-    let config!: RaidenConfig;
-    this.deps.config$.pipe(first()).subscribe((c) => (config = c));
-    return config;
   }
 
   /**
