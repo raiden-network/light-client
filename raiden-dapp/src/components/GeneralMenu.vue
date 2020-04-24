@@ -44,6 +44,7 @@
             :src="require(`../assets/${menuItem.icon}`)"
             max-width="40px"
             height="36px"
+            contain
           >
           </v-img>
         </div>
@@ -74,7 +75,7 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
   },
   computed: {
     ...mapState(['loading', 'defaultAccount']),
-    ...mapGetters(['balance'])
+    ...mapGetters(['balance', 'isConnected'])
   }
 })
 export default class GeneralMenu extends Mixins(NavigationMixin) {
@@ -82,8 +83,9 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
   loading!: boolean;
   defaultAccount!: string;
   balance!: string;
+  isConnected!: boolean;
 
-  mounted() {
+  async mounted() {
     this.menuItems = [
       {
         icon: 'state.svg',
@@ -106,6 +108,22 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
         }
       }
     ];
+
+    // if sub key is used
+    if (this.isConnected) {
+      const mainAccount = await this.$raiden.getMainAccount();
+      const raidenAccount = await this.$raiden.getAccount();
+      if (mainAccount && raidenAccount) {
+        this.menuItems.unshift({
+          icon: 'eth.svg',
+          title: 'Raiden Account',
+          subtitle: 'Transfer ETH between your main and Raiden account',
+          route: () => {
+            this.navigateToRaidenAccountTransfer();
+          }
+        });
+      }
+    }
   }
 
   /* istanbul ignore next */

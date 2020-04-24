@@ -10,7 +10,7 @@ import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
-import { BigNumber, BigNumberish } from 'ethers/utils';
+import { BigNumber, BigNumberish, parseEther } from 'ethers/utils';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import { ConfigProvider } from './config-provider';
@@ -53,6 +53,14 @@ export default class RaidenService {
     } else {
       return this._raiden;
     }
+  }
+
+  private async updateBalances(): Promise<void> {
+    this.store.commit('balance', await this.getBalance());
+    this.store.commit(
+      'raidenAccountBalance',
+      await this.getBalance(this.raiden.address)
+    );
   }
 
   async fetchTokenList() {
@@ -207,6 +215,10 @@ export default class RaidenService {
 
   async getAccount(): Promise<string> {
     return this.raiden.address;
+  }
+
+  async getMainAccount(): Promise<string | undefined> {
+    return this.raiden.mainAddress;
   }
 
   async getBalance(address?: string): Promise<string> {
@@ -380,6 +392,26 @@ export default class RaidenService {
   async getState() {
     this._raiden?.stop();
     return await this._raiden?.state$.toPromise();
+  }
+
+  async transferToRaidenAccount(amount: string) {
+    await this.raiden.transferOnchainBalance(
+      this.raiden.address,
+      parseEther(amount)
+    );
+    await this.updateBalances();
+  }
+
+  async transferToMainAccount(amount: string) {
+    const { mainAddress } = this.raiden;
+    if (mainAddress) {
+      await this.raiden.transferOnchainBalance(
+        mainAddress,
+        parseEther(amount),
+        { subkey: true }
+      );
+      await this.updateBalances();
+    }
   }
 }
 
