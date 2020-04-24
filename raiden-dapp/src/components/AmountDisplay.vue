@@ -3,8 +3,10 @@
     @mouseover="exactAmount ? (displayExactAmount = true) : null"
     @mouseleave="exactAmount ? (displayExactAmount = false) : null"
   >
-    <span v-if="displayExactAmount">{{ amount }}</span>
-    <span v-else>{{ amount | displayFormat(amount.decimals) }}</span>
+    <span v-if="displayExactAmount">{{ amount }} {{ symbol }}</span>
+    <span v-else>
+      {{ amount | displayFormat(amount.decimals) }} {{ symbol }}
+    </span>
   </div>
 </template>
 
@@ -18,6 +20,8 @@ export default class AmountDisplay extends Vue {
   exactAmount!: boolean;
   @Prop({ required: true })
   amount!: string | BigNumber;
+  @Prop({ required: false })
+  symbol!: string;
 
   displayExactAmount = false;
 }
