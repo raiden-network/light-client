@@ -43,12 +43,13 @@
               </v-list-item-subtitle>
             </v-list-item-content>
             <v-list-item-action-text>
-              <span
+              <amount-display
                 v-if="typeof item.decimals === 'number'"
                 class="select-token__tokens__token__balance"
-              >
-                {{ item.balance | displayFormat(item.decimals) }}
-              </span>
+                exact-amount
+                :amount="item.balance"
+                :token="item"
+              />
             </v-list-item-action-text>
           </v-list-item>
         </recycle-scroller>
@@ -64,11 +65,12 @@ import { Token } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ListHeader from '@/components/ListHeader.vue';
+import AmountDisplay from '@/components/AmountDisplay.vue';
 import Spinner from '@/components/Spinner.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 
 @Component({
-  components: { Spinner, ListHeader, AddressDisplay },
+  components: { Spinner, ListHeader, AddressDisplay, AmountDisplay },
   computed: mapGetters(['allTokens'])
 })
 export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
