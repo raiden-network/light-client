@@ -21,10 +21,11 @@
     <div v-if="!isDirectTransfer" class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.service-fee') }}</span>
       <span class="transfer-summary__service-fee">
-        {{
-          transfer.serviceFee | displayFormat(transfer.serviceToken.decimals)
-        }}
-        {{ transfer.serviceToken.symbol || '' }}
+        <amount-display
+          exact-amount
+          :amount="transfer.serviceFee"
+          :token="transfer.serviceToken"
+        />
         <checkmark class="transfer-summary__checkmark" />
       </span>
     </div>
@@ -49,8 +50,11 @@
 
     <div class="transfer-summary__row">
       <span>{{ $t('transfer.steps.summary.transfer-amount') }}</span>
-      <amount-display exact-amount :amount="transfer.transferAmount" />
-      <span>{{ transfer.transferToken.symbol || '' }}</span>
+      <amount-display
+        exact-amount
+        :amount="transfer.transferAmount"
+        :token="transfer.transferToken"
+      />
     </div>
 
     <div v-if="!isDirectTransfer" class="transfer-summary__row">
@@ -61,10 +65,11 @@
         </sup>
       </span>
       <span class="transfer-summary__mediation-fee">
-        {{
-          transfer.mediationFee | displayFormat(transfer.transferToken.decimals)
-        }}
-        {{ transfer.transferToken.symbol || '' }}
+        <amount-display
+          exact-amount
+          :amount="transfer.mediationFee"
+          :token="transfer.transferToken"
+        />
       </span>
     </div>
 
@@ -77,8 +82,11 @@
 
     <div class="transfer-summary__row transfer-summary__row--total">
       <span>{{ $t('transfer.steps.summary.total-amount') }}</span>
-      <amount-display exact-amount :amount="transfer.transferTotal" />
-      <span>{{ transfer.transferToken.symbol || '' }}</span>
+      <amount-display
+        exact-amount
+        :amount="transfer.transferTotal"
+        :token="transfer.transferToken"
+      />
     </div>
 
     <ol class="transfer-summary__explanation">

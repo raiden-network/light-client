@@ -5,7 +5,7 @@
         class="transfer__token-network-amount"
         exact-amount
         :amount="capacity"
-        :symbol="token.symbol || ''"
+        :token="token"
       />
       <token-overlay
         :show="showTokenNetworks"

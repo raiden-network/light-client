@@ -3,9 +3,12 @@
     @mouseover="exactAmount ? (displayExactAmount = true) : null"
     @mouseleave="exactAmount ? (displayExactAmount = false) : null"
   >
-    <span v-if="displayExactAmount">{{ amount }} {{ symbol }}</span>
+    <span v-if="displayExactAmount">
+      {{ amount | toUnits(token.decimals) }} {{ token.symbol || '' }}
+    </span>
     <span v-else>
-      {{ amount | displayFormat(amount.decimals) }} {{ symbol }}
+      {{ amount | displayFormat(token.decimals) }}
+      {{ token.symbol || '' }}
     </span>
   </div>
 </template>
@@ -13,6 +16,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { BigNumber } from 'ethers/utils';
+import { Token } from '@/model/types';
 
 @Component({})
 export default class AmountDisplay extends Vue {
@@ -20,8 +24,8 @@ export default class AmountDisplay extends Vue {
   exactAmount!: boolean;
   @Prop({ required: true })
   amount!: string | BigNumber;
-  @Prop({ required: false })
-  symbol!: string;
+  @Prop({ required: true })
+  token!: Token;
 
   displayExactAmount = false;
 }
