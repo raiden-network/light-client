@@ -10,10 +10,10 @@
       <v-row justify="center" align-content="center">
         <v-col cols="3" class="raiden-account__column">
           <span v-if="isFromMainToRaidenAccount">
-            Main Account
+            {{ $t('general.main-account') }}
           </span>
           <span v-else>
-            Raiden Account
+            {{ $t('general.raiden-account') }}
           </span>
         </v-col>
         <v-col cols="3" class="raiden-account__column">
@@ -23,10 +23,10 @@
         </v-col>
         <v-col cols="3" class="raiden-account__column">
           <span v-if="isFromMainToRaidenAccount">
-            Raiden Account
+            {{ $t('general.raiden-account') }}
           </span>
           <span v-else>
-            Main Account
+            {{ $t('general.main-account') }}
           </span>
         </v-col>
       </v-row>
@@ -60,7 +60,9 @@
         indeterminate
         color="primary"
       />
-      <p class="raiden-account__progress-hint">Transfer in progress</p>
+      <p class="raiden-account__progress-hint">
+        {{ $t('raiden-account.in-progress') }}
+      </p>
     </div>
   </v-row>
 </template>
