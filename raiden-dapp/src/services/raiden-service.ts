@@ -394,6 +394,7 @@ export default class RaidenService {
     return await this._raiden?.state$.toPromise();
   }
 
+  /* istanbul ignore next */
   async transferToRaidenAccount(amount: string) {
     await this.raiden.transferOnchainBalance(
       this.raiden.address,
@@ -402,6 +403,7 @@ export default class RaidenService {
     await this.updateBalances();
   }
 
+  /* istanbul ignore next */
   async transferToMainAccount(amount: string) {
     const { mainAddress } = this.raiden;
     if (mainAddress) {

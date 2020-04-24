@@ -171,12 +171,14 @@ export default class RaidenAccount extends Vue {
   }
 
   ::v-deep {
-    .v-btn:active {
-      .v-icon {
-        animation-name: spin;
-        animation-duration: 250ms;
-        animation-iteration-count: infinite;
-        animation-timing-function: linear;
+    .v-btn {
+      &:active {
+        .v-icon {
+          animation-name: spin;
+          animation-duration: 250ms;
+          animation-iteration-count: infinite;
+          animation-timing-function: linear;
+        }
       }
     }
   }
