@@ -108,9 +108,5 @@ describe('TokenOverlay.vue', () => {
         }
       } as RaidenChannels);
     });
-
-    test('show the balances as zero', () => {
-      expect(wrapper.find('.token-list__token-balance').text()).toMatch('0.0');
-    });
   });
 });

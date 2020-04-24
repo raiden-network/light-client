@@ -179,10 +179,6 @@ describe('TransferSteps.vue', () => {
     );
     transferDone = jest.spyOn(wrapper.vm.$data, 'transferDone', 'set');
 
-    // Displays total amount
-    const totalAmount = wrapper.find('.transfer-summary__transfer-total');
-    expect(totalAmount.text()).toMatch(/≈100000.000000.*\n.*SVT/);
-
     // Confirmation btn is enabled
     const button = wrapper.find('.action-button__button');
     expect(button.attributes()['disabled']).toBeUndefined();
@@ -226,10 +222,6 @@ describe('TransferSteps.vue', () => {
       'set'
     );
     transferDone = jest.spyOn(wrapper.vm.$data, 'transferDone', 'set');
-
-    // Displays total amount
-    const totalAmount = wrapper.find('.transfer-summary__transfer-total');
-    expect(totalAmount.text()).toMatch(/≈100000.000000.*\n.*SVT/);
 
     // Confirmation btn is enabled
     const button = wrapper.find('.action-button__button');
