@@ -1,3 +1,5 @@
+**Thank you for submitting this pull request :)**
+
 Fixes # 
 
 **Short description**
@@ -10,5 +12,6 @@ Fixes #
 - [ ] Change has been manually tested by the reviewer (dApp) 
 
 **Steps to manually test the change (dApp)**
+
 1.
 2.
