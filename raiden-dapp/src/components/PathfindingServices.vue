@@ -99,7 +99,7 @@ export default class PathfindingServices extends Vue {
       {
         text: this.$t('pathfinding-services.headers.price') as string,
         value: 'price',
-        align: 'left'
+        align: 'right'
       }
     ];
     this.fetchServices();

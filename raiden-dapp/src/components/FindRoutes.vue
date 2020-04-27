@@ -75,7 +75,7 @@ export default class FindRoutes extends Vue {
       },
       {
         text: this.$t('find-routes.price') as string,
-        align: 'left',
+        align: 'right',
         value: 'fee'
       }
     ];
