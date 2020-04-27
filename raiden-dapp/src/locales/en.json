@@ -1,5 +1,6 @@
 {
   "home": {
+    "title": "Raiden dApp",
     "welcome": "Welcome to the Raiden dApp",
     "connect-button": "Connect",
     "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and can only be used on Ethereum testnets.",

@@ -29,7 +29,7 @@ const router = new Router({
       meta: {
         title: 'Transfer'
       },
-      component: () => import('../views/Transfer.vue')
+      component: () => import('../views/TransferRoute.vue')
     },
     {
       path: '/transfer/:token/:target',
@@ -37,7 +37,7 @@ const router = new Router({
       meta: {
         title: 'Transfer'
       },
-      component: () => import('../views/TransferSteps.vue')
+      component: () => import('../views/TransferStepsRoute.vue')
     },
     {
       path: '/connect',
@@ -45,7 +45,7 @@ const router = new Router({
       meta: {
         title: 'Select Token'
       },
-      component: () => import('../views/SelectToken.vue')
+      component: () => import('../views/SelectTokenRoute.vue')
     },
     {
       path: '/connect/:token',
@@ -53,7 +53,7 @@ const router = new Router({
       meta: {
         title: 'Select Hub'
       },
-      component: () => import('../views/SelectHub.vue')
+      component: () => import('../views/SelectHubRoute.vue')
     },
     {
       path: '/connect/:token/:partner',
@@ -61,7 +61,7 @@ const router = new Router({
       meta: {
         title: 'Open Channel'
       },
-      component: () => import('../views/OpenChannel.vue')
+      component: () => import('../views/OpenChannelRoute.vue')
     },
     {
       path: '/channels/:token',
@@ -69,7 +69,7 @@ const router = new Router({
       meta: {
         title: 'Channels'
       },
-      component: () => import('../views/Channels.vue')
+      component: () => import('../views/ChannelsRoute.vue')
     },
     {
       path: '/general',

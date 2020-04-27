@@ -21,7 +21,12 @@
           <v-spacer />
           <v-col>
             <div class="app-header__top__content__title">
-              {{ $route.meta.title }}
+              <span v-if="isConnected">
+                {{ $route.meta.title }}
+              </span>
+              <span v-else>
+                {{ $t('home.title') }}
+              </span>
             </div>
             <div
               v-if="!loading && defaultAccount"
@@ -62,10 +67,11 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
   },
   computed: {
     ...mapState(['loading', 'defaultAccount']),
-    ...mapGetters(['network'])
+    ...mapGetters(['network', 'isConnected'])
   }
 })
 export default class AppHeader extends Mixins(NavigationMixin) {
+  isConnected!: boolean;
   defaultAccount!: string;
   network!: string;
 
@@ -74,7 +80,9 @@ export default class AppHeader extends Mixins(NavigationMixin) {
       RouteNames.HOME,
       RouteNames.TRANSFER
     ];
-    return !routesWithoutBackBtn.includes(this.$route.name!);
+    return (
+      this.isConnected && !routesWithoutBackBtn.includes(this.$route.name!)
+    );
   }
 }
 </script>

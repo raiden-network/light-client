@@ -23,7 +23,7 @@
             <v-list-item-avatar class="select-token__tokens__token__blockie">
               <img
                 :src="$blockie(item.address)"
-                :src-lazy="require('../assets/generic.svg')"
+                :src-lazy="require('../../assets/generic.svg')"
                 :alt="$t('select-token.tokens.token.blockie-alt')"
               />
             </v-list-item-avatar>
@@ -83,9 +83,9 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/scroll';
-@import '../scss/colors';
-@import '../scss/fonts';
+@import '../../scss/scroll';
+@import '../../scss/colors';
+@import '../../scss/fonts';
 
 .select-token {
   height: 100%;

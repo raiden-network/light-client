@@ -4,19 +4,19 @@ jest.useFakeTimers();
 
 import { Token } from '@/model/types';
 import { ChannelState } from 'raiden-ts';
-import { mockInput } from '../utils/interaction-utils';
+import { mockInput } from '../../utils/interaction-utils';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
-import Transfer from '@/views/Transfer.vue';
-import store from '@/store/index';
+import Transfer from '@/components/navigation/Transfer.vue';
+import store from '@/store';
 import VueRouter from 'vue-router';
-import { TestData } from '../data/mock-data';
+import { TestData } from '../../data/mock-data';
 import RaidenService from '@/services/raiden-service';
 import { One, Zero } from 'ethers/constants';
 import { BigNumber } from 'ethers/utils';
-import { $identicon } from '../utils/mocks';
+import { $identicon } from '../../utils/mocks';
 
 import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';

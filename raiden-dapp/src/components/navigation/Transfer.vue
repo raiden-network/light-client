@@ -226,9 +226,9 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/colors';
-@import '../scss/mixins';
-@import '../scss/fonts';
+@import '../../scss/colors';
+@import '../../scss/mixins';
+@import '../../scss/fonts';
 
 .transfer {
   width: 100%;

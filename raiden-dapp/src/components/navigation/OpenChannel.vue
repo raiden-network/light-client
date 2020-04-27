@@ -51,7 +51,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import AmountInput from '../components/AmountInput.vue';
+import AmountInput from '../AmountInput.vue';
 import { emptyDescription, StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Zero } from 'ethers/constants';
@@ -189,7 +189,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/fonts';
+@import '../../scss/fonts';
 
 .open-channel {
   height: 100%;

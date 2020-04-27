@@ -521,8 +521,8 @@ export default class TransferSteps extends Mixins(
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/colors';
-@import '../scss/fonts';
+@import '../../scss/colors';
+@import '../../scss/fonts';
 
 .transfer-steps {
   background: transparent !important;
