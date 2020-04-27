@@ -1,3 +1,8 @@
+codecov:
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true
+
 coverage:
   range: 80..100
   round: down
@@ -26,6 +31,3 @@ flags:
   sdk:
     paths:
       - raiden-ts/
-
-comment:
-  after_n_builds: 2
