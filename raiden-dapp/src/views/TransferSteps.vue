@@ -65,7 +65,6 @@
                       selectedPfs !== null &&
                       !udcCapacity.gte(selectedPfs.price)
                   }"
-                  v-on="on"
                 >
                   <amount-display
                     exact-amount
