@@ -1,7 +1,19 @@
 <template>
-  <v-container fluid class="transfer__settings">
-    <v-row justify="center" no-gutters class="transfer__actions">
-      <v-col cols="3" sm="2" class="transfer__channels">
+  <v-container fluid class="transfer">
+    <v-row justify="center" no-gutters>
+      <amount-display
+        class="transfer__token-network-amount"
+        exact-amount
+        :amount="capacity"
+        :token="token"
+      />
+      <token-overlay
+        :show="showTokenNetworks"
+        @cancel="showTokenNetworks = false"
+      />
+    </v-row>
+    <v-row class="transfer__actions" justify="center" no-gutters>
+      <v-col cols="3" sm="2">
         <action-button
           :text="$t('transfer.channel-button')"
           ghost
@@ -11,21 +23,7 @@
           @click="navigateToChannels(token.address)"
         ></action-button>
       </v-col>
-      <v-col cols="6" class="transfer__token-networks">
-        <div class="transfer__token-networks__amount">
-          <v-tooltip top>
-            <template #activator="{ on }">
-              <span v-on="on">
-                {{ capacity | displayFormat(token.decimals) }}
-                {{ token.symbol || '' }}
-              </span>
-            </template>
-            <span>
-              {{ capacity | toUnits(token.decimals) }}
-              {{ token.symbol || '' }}
-            </span>
-          </v-tooltip>
-        </div>
+      <v-col cols="6">
         <action-button
           :text="token.name"
           ghost
@@ -34,12 +32,8 @@
           class="transfer__top-button"
           @click="showTokenNetworks = true"
         ></action-button>
-        <token-overlay
-          :show="showTokenNetworks"
-          @cancel="showTokenNetworks = false"
-        />
       </v-col>
-      <v-col cols="3" sm="2" class="transfer__deposit">
+      <v-col cols="3" sm="2">
         <action-button
           :text="$t('transfer.deposit-button')"
           ghost
@@ -59,7 +53,6 @@
         />
       </v-col>
     </v-row>
-
     <v-form
       v-model="valid"
       autocomplete="off"
@@ -114,6 +107,7 @@ import Divider from '@/components/Divider.vue';
 import TokenOverlay from '@/components/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
+import AmountDisplay from '@/components/AmountDisplay.vue';
 import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
@@ -134,7 +128,8 @@ import BlockieMixin from '@/mixins/blockie-mixin';
     AmountInput,
     Stepper,
     ErrorDialog,
-    TokenOverlay
+    TokenOverlay,
+    AmountDisplay
   },
   computed: {
     ...mapState(['defaultAccount']),
@@ -236,14 +231,16 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 @import '../scss/fonts';
 
 .transfer {
-  &__settings {
-    width: 100%;
-    height: 100%;
-  }
+  width: 100%;
+  height: 100%;
 
-  &__channels,
-  &__deposit {
-    margin-top: 29px;
+  &__token-network-amount {
+    color: $color-white;
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 19px;
+    margin: 20px 0 10px 0;
+    text-align: center;
   }
 
   &__actions {
@@ -255,48 +252,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
     @include respond-to(handhelds) {
       margin-top: 0;
-    }
-
-    &__label {
-      color: $secondary-color;
-      font-size: 13px;
-      font-weight: bold;
-      letter-spacing: 3px;
-      line-height: 15px;
-      text-transform: uppercase;
-    }
-  }
-
-  &__recipient,
-  &__amount {
-    max-height: 150px;
-  }
-
-  &__action-button {
-    margin-bottom: 24px;
-  }
-
-  &__top-button {
-    ::v-deep {
-      .v-btn {
-        text-transform: none;
-        font-size: 16px;
-        letter-spacing: 1px;
-        font-weight: 500;
-        font-family: $main-font;
-      }
-    }
-  }
-
-  &__token-networks {
-    &__amount {
-      color: $color-white;
-      font-size: 24px;
-      font-weight: bold;
-      line-height: 19px;
-      padding-left: 11px;
-      margin-bottom: 10px;
-      text-align: center;
     }
   }
 }

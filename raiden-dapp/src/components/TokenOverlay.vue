@@ -79,9 +79,12 @@
               <v-col cols="3">
                 <v-row justify="end">
                   <v-list-item-action-text>
-                    <span class="token-list__token-balance">
-                      {{ getBalance(token) }}
-                    </span>
+                    <amount-display
+                      class="token-list__token-balance"
+                      exact-amount
+                      :amount="getTokenDetails(token).balance"
+                      :token="getTokenDetails(token)"
+                    />
                   </v-list-item-action-text>
                 </v-row>
               </v-col>
@@ -101,11 +104,10 @@ import BlockieMixin from '@/mixins/blockie-mixin';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { TokenModel, Token } from '@/model/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
-import Filters from '@/filters';
-import { Zero } from 'ethers/constants';
+import AmountDisplay from '@/components/AmountDisplay.vue';
 
 @Component({
-  components: { AddressDisplay },
+  components: { AddressDisplay, AmountDisplay },
   computed: {
     ...mapGetters(['tokens', 'allTokens'])
   }
@@ -129,9 +131,8 @@ export default class TokenOverlay extends Mixins(
     }
   }
 
-  getBalance(token: TokenModel) {
-    const { balance, decimals } = this.$store.getters.token(token.address);
-    return Filters.displayFormat(balance || Zero, decimals);
+  getTokenDetails(token: TokenModel) {
+    return this.$store.getters.token(token.address);
   }
 
   @Emit()

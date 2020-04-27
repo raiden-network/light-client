@@ -178,7 +178,11 @@ describe('Transfer.vue', () => {
 
   test('navigates to the "ChannelList" when the user presses the channel button', async () => {
     // click on channels button
-    wrapper.find('.transfer__channels .action-button__button').trigger('click');
+    wrapper
+      .find('.transfer__actions')
+      .findAll('.action-button__button')
+      .at(0)
+      .trigger('click');
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
@@ -191,7 +195,9 @@ describe('Transfer.vue', () => {
   test('show the "TokenOverlay" when the user presses the token networks dropdown', async () => {
     // click on channels button
     wrapper
-      .find('.transfer__token-networks .action-button__button')
+      .find('.transfer__actions')
+      .findAll('.action-button__button')
+      .at(1)
       .trigger('click');
 
     await flushPromises();

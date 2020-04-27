@@ -7,7 +7,7 @@
             :complete="step > 1"
             :class="{ active: step >= 1, skipped: pfsSelectionSkipped }"
             :complete-icon="pfsSelectionSkipped ? 'mdi-redo' : 'mdi-check'"
-            step=""
+            step
             class="transfer-steps__step"
           >
             {{ this.$t('transfer.steps.request-route.title') }}
@@ -28,7 +28,7 @@
               skipped: pfsSelectionSkipped || routeSelectionSkipped
             }"
             :complete-icon="routeSelectionSkipped ? 'mdi-redo' : 'mdi-check'"
-            step=""
+            step
             class="transfer-steps__step"
           >
             {{ this.$t('transfer.steps.select-route.title') }}
@@ -42,7 +42,7 @@
           <v-stepper-step
             :complete="step > 3"
             :class="{ active: step >= 3 }"
-            step=""
+            step
             class="transfer-steps__step"
           >
             {{ this.$t('transfer.steps.confirm-transfer.title') }}
@@ -54,30 +54,24 @@
             <v-row
               justify="center"
               align-content="center"
-              no-gutters=""
+              no-gutters
               class="udc-balance__container"
             >
               <v-col cols="10">
-                <v-tooltip top>
-                  <template #activator="{ on }">
-                    <span
-                      class="udc-balance__amount"
-                      :class="{
-                        'low-balance':
-                          selectedPfs !== null &&
-                          !udcCapacity.gte(selectedPfs.price)
-                      }"
-                      v-on="on"
-                    >
-                      {{ udcCapacity | displayFormat(udcToken.decimals) }}
-                      {{ udcToken.symbol || '' }}
-                    </span>
-                  </template>
-                  <span>
-                    {{ udcCapacity | toUnits(udcToken.decimals) }}
-                    {{ udcToken.symbol || '' }}
-                  </span>
-                </v-tooltip>
+                <span
+                  class="udc-balance__amount"
+                  :class="{
+                    'low-balance':
+                      selectedPfs !== null &&
+                      !udcCapacity.gte(selectedPfs.price)
+                  }"
+                >
+                  <amount-display
+                    exact-amount
+                    :amount="udcCapacity"
+                    :token="udcToken"
+                  />
+                </span>
                 <v-tooltip bottom>
                   <template #activator="{ on }">
                     <v-btn
@@ -106,11 +100,7 @@
                 />
               </v-col>
             </v-row>
-            <v-row
-              justify="center"
-              no-gutters=""
-              class="udc-balance__container"
-            >
+            <v-row justify="center" no-gutters class="udc-balance__container">
               <v-col cols="10">
                 <span
                   v-if="
@@ -170,8 +160,7 @@
       :visible="pfsFeesConfirmed && step === 1"
       :pfs-fees-paid="pfsFeesPaid"
       :free-pfs="freePfs"
-    >
-    </pfs-fees-dialog>
+    ></pfs-fees-dialog>
 
     <transfer-progress-dialog
       :visible="processingTransfer"
@@ -185,8 +174,7 @@
       v-if="!processingTransfer"
       :error="error"
       @dismiss="navigateToSelectTransferTarget(token.address)"
-    >
-    </error-dialog>
+    ></error-dialog>
 
     <action-button
       :enabled="continueBtnEnabled"
@@ -194,8 +182,7 @@
       sticky
       arrow
       @click="handleStep()"
-    >
-    </action-button>
+    ></action-button>
   </v-container>
 </template>
 
@@ -215,6 +202,7 @@ import TransferSummary from '@/components/TransferSummary.vue';
 import Spinner from '@/components/Spinner.vue';
 import MintDepositDialog from '@/components/MintDepositDialog.vue';
 import Checkmark from '@/components/Checkmark.vue';
+import AmountDisplay from '@/components/AmountDisplay.vue';
 import Stepper from '@/components/Stepper.vue';
 import ErrorDialog from '@/components/ErrorDialog.vue';
 import { Zero } from 'ethers/constants';
@@ -236,7 +224,8 @@ import PfsFeesDialog from '@/components/PfsFeesDialog.vue';
     Checkmark,
     MintDepositDialog,
     TransferSummary,
-    PfsFeesDialog
+    PfsFeesDialog,
+    AmountDisplay
   }
 })
 export default class TransferSteps extends Mixins(
