@@ -15,7 +15,7 @@ import { Address, Signed, Storage, decode } from './utils/types';
 import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { TransfersState } from './transfers/state';
-import { IOU } from './path/types';
+import { IOU } from './services/types';
 import { getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
 

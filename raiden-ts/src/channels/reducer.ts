@@ -216,7 +216,8 @@ const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
  * name of the reducer. channels root reducer instead must be handled the complete state instead,
  * so it compose the output with each key/nested/combined state.
  */
-export const channelsReducer = partialCombineReducers(
+const channelsReducer = partialCombineReducers(
   { blockNumber, tokens, channels, pendingTxs },
   initialState,
 );
+export default channelsReducer;
