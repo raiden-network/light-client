@@ -1,0 +1,26 @@
+{
+  "name": "changelog-reminder",
+  "version": "0.0.1",
+  "description": "Reminds the user to enter a changelog entry",
+  "main": "index.js",
+  "scripts": {
+    "package": "ncc build index.js -o dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "GitHub",
+    "Actions",
+    "JavaScript",
+    "Changelog",
+    "Reminder"
+  ],
+  "author": "brainbot labs est.",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.2.3",
+    "@actions/github": "^2.1.1"
+  },
+  "devDependencies": {
+    "@zeit/ncc": "^0.22.1"
+  }
+}
