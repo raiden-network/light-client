@@ -2,14 +2,14 @@ jest.mock('vue-router');
 
 import flushPromises from 'flush-promises';
 import { mount, shallowMount, Wrapper } from '@vue/test-utils';
-import Channels from '@/views/Channels.vue';
+import Channels from '@/components/navigation/Channels.vue';
 import Vuex from 'vuex';
-import { TestData } from '../data/mock-data';
+import { TestData } from '../../data/mock-data';
 import Vuetify from 'vuetify';
 import Filters from '@/filters';
 import Vue from 'vue';
-import store from '@/store/index';
-import { $identicon } from '../utils/mocks';
+import store from '@/store';
+import { $identicon } from '../../utils/mocks';
 import RaidenService from '@/services/raiden-service';
 import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';

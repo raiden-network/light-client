@@ -1,0 +1,8 @@
+node_modules/
+build*/
+storage/
+
+src/deployment/*
+src/abi/*
+
+docs/

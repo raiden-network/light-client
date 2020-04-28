@@ -172,8 +172,12 @@ const store: StoreOptions<RootState> = {
 
       return undefined;
     },
-    isConnected: (state: RootState): boolean =>
-      !!(state.defaultAccount && state.defaultAccount !== ''),
+    isConnected: (state: RootState): boolean => {
+      return (
+        !state.loading &&
+        !!(state.defaultAccount && state.defaultAccount !== '')
+      );
+    },
     balance: (state: RootState): string => {
       return state.raidenAccountBalance
         ? state.raidenAccountBalance

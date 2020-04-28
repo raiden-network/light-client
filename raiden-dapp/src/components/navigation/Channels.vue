@@ -160,8 +160,8 @@ export default class Channels extends Mixins(NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/dimensions';
-@import '../scss/scroll';
+@import '../../scss/dimensions';
+@import '../../scss/scroll';
 
 .channels {
   width: 100%;

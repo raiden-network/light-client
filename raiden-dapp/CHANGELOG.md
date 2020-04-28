@@ -9,10 +9,12 @@
 ### Fixed
 
 - [#1413] Token select overlay closes as soon as a new token is selected.
+- [#1395] Fixes navigation issues due to early redirect.
 - [#1381] Summary screen display exact amounts on hover
 - [#1300] General screen shows Raiden account balance when using subkey.
 - [#1382] Better error handling when PFS can't find routes between nodes.
 
+[#1395]: https://github.com/raiden-network/light-client/issues/1395
 [#1381]: https://github.com/raiden-network/light-client/issues/1381
 [#1300]: https://github.com/raiden-network/light-client/issues/1300
 [#1382]: https://github.com/raiden-network/light-client/issues/1382

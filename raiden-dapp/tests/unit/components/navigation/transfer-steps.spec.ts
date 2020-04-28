@@ -10,9 +10,9 @@ import flushPromises from 'flush-promises';
 import Mocked = jest.Mocked;
 import VueRouter from 'vue-router';
 
-import TransferSteps from '@/views/TransferSteps.vue';
+import TransferSteps from '@/components/navigation/TransferSteps.vue';
 import { Route, Token } from '@/model/types';
-import store from '@/store/index';
+import store from '@/store';
 import { Tokens } from '@/types';
 
 import { RouteNames } from '@/router/route-names';

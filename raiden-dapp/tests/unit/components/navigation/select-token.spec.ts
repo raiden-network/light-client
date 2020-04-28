@@ -1,10 +1,10 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuex, { Store } from 'vuex';
-import { TestData } from '../data/mock-data';
-import SelectToken from '@/views/SelectToken.vue';
+import { TestData } from '../../data/mock-data';
+import SelectToken from '@/components/navigation/SelectToken.vue';
 import Vuetify from 'vuetify';
 import VueVirtualScroller from 'vue-virtual-scroller';
-import { $identicon } from '../utils/mocks';
+import { $identicon } from '../../utils/mocks';
 import Vue from 'vue';
 
 Vue.use(Vuex);
