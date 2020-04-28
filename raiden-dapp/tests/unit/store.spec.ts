@@ -281,4 +281,9 @@ describe('store', () => {
     const transfer = store.getters.transfer('0x1');
     expect(transfer.secrethash).toEqual('0x1');
   });
+
+  test('isConnected should be false if loading', () => {
+    store.commit('account', '0x0000000000000000000000000000000000020001');
+    expect(store.getters.isConnected).toBe(false);
+  });
 });
