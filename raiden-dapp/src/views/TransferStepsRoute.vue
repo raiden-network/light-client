@@ -1,16 +1,16 @@
 <template>
   <lazy-route>
-    <select-token></select-token>
+    <transfer-steps></transfer-steps>
   </lazy-route>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import SelectToken from '../components/navigation/SelectToken.vue';
 import LazyRoute from '@/views/LazyRoute.vue';
+import TransferSteps from '@/components/navigation/TransferSteps.vue';
 
 @Component({
-  components: { LazyRoute, SelectToken }
+  components: { TransferSteps, LazyRoute }
 })
 export default class TransferStepsRoute extends Vue {}
 </script>
