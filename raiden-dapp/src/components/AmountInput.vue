@@ -236,7 +236,7 @@ $header-vertical-margin-mobile: 2rem;
     color: $text-color;
     font-weight: 500;
     font-size: 14px;
-    line-height: 27px;
+    line-height: 21px;
     text-align: center;
   }
 
