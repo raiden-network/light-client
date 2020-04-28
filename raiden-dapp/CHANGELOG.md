@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- [#1413] Token select overlay closes as soon as a new token is selected.
 - [#1381] Summary screen display exact amounts on hover
 - [#1300] General screen shows Raiden account balance when using subkey.
 - [#1382] Better error handling when PFS can't find routes between nodes.
