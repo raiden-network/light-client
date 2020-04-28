@@ -21,12 +21,9 @@
             class="find-routes__table"
             @item-selected="select($event)"
           >
-            <template #items.hops="{ item }">
-              {{ item.hops }}
-            </template>
+            <template #items.hops="{ item }">{{ item.hops }}</template>
             <template #item.fee="{ item }">
-              {{ item.fee | displayFormat(token.decimals) }}
-              {{ token.symbol }}
+              <amount-display exact-amount :amount="item.fee" :token="token" />
             </template>
           </v-data-table>
         </v-col>
@@ -37,11 +34,11 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
-
+import AmountDisplay from '@/components/AmountDisplay.vue';
 import Spinner from '@/components/Spinner.vue';
 import { Route, Token } from '@/model/types';
 
-@Component({ components: { Spinner } })
+@Component({ components: { AmountDisplay, Spinner } })
 export default class FindRoutes extends Vue {
   @Prop({ required: true })
   token!: Token;
@@ -78,7 +75,7 @@ export default class FindRoutes extends Vue {
       },
       {
         text: this.$t('find-routes.price') as string,
-        align: 'left',
+        align: 'right',
         value: 'fee'
       }
     ];

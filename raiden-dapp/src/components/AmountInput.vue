@@ -101,8 +101,12 @@ export default class AmountInput extends Vue {
     }
   }
 
-  @Watch('value')
-  onChange(value: string) {
+  @Watch('value', { immediate: true })
+  onChange(value: string | undefined) {
+    if (value === undefined) {
+      return;
+    }
+
     this.updateIfValid(value);
   }
 
