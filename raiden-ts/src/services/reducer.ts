@@ -28,4 +28,5 @@ const path = createReducer(initialState.path)
  * Nested combined reducer for path
  * Handles the 'path' substate.
  */
-export const pathReducer = partialCombineReducers({ path }, initialState);
+const servicesReducer = partialCombineReducers({ path }, initialState);
+export default servicesReducer;

@@ -372,7 +372,7 @@ function withdrawReceiveSuccessReducer(
 /**
  * Handles all transfers actions and requests
  */
-export const transfersReducer: Reducer<RaidenState, RaidenAction> = createReducer(initialState)
+const transfersReducer: Reducer<RaidenState, RaidenAction> = createReducer(initialState)
   .handle([transferSecret, transferSecretRegister.success], transferSecretReducer)
   .handle(transferSigned, transferSignedReducer)
   .handle(
@@ -386,3 +386,4 @@ export const transfersReducer: Reducer<RaidenState, RaidenAction> = createReduce
   .handle(channelClose.success, channelCloseSuccessReducer)
   .handle(transferClear, transferClearReducer)
   .handle(withdrawReceive.success, withdrawReceiveSuccessReducer);
+export default transfersReducer;

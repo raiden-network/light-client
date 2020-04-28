@@ -1,9 +1,9 @@
 import unset from 'lodash/fp/unset';
 
-import { channelsReducer } from './channels/reducer';
-import { pathReducer } from './path/reducer';
-import { transportReducer } from './transport/reducer';
-import { transfersReducer } from './transfers/reducer';
+import channelsReducer from './channels/reducer';
+import transportReducer from './transport/reducer';
+import transfersReducer from './transfers/reducer';
+import servicesReducer from './services/reducer';
 
 import { PartialRaidenConfig } from './config';
 import { RaidenAction, raidenConfigUpdate } from './actions';
@@ -28,9 +28,9 @@ const configReducer = createReducer(initialState).handle(
 const raidenReducers = {
   configReducer,
   channelsReducer,
-  pathReducer,
   transportReducer,
   transfersReducer,
+  servicesReducer,
 };
 
 /**

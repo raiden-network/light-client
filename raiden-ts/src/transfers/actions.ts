@@ -16,7 +16,7 @@ import {
   WithdrawRequest,
   WithdrawConfirmation,
 } from '../messages/types';
-import { Paths } from '../path/types';
+import { Paths } from '../services/types';
 
 const TransferId = t.type({
   secrethash: Hash,

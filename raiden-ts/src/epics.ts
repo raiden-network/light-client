@@ -20,14 +20,14 @@ import { PartialRaidenConfig, RaidenConfig } from './config';
 import { pluckDistinct } from './utils/rx';
 import { getPresences$ } from './transport/utils';
 import { rtcChannel } from './transport/actions';
-import { pfsListUpdated } from './path/actions';
+import { pfsListUpdated } from './services/actions';
 import { Address } from './utils/types';
 import { isActionOf } from './utils/actions';
 
 import * as ChannelsEpics from './channels/epics';
 import * as TransportEpics from './transport/epics';
 import * as TransfersEpics from './transfers/epics';
-import * as PathFindEpics from './path/epics';
+import * as ServicesEpics from './services/epics';
 
 /**
  * This function maps cached/latest relevant values from action$ & state$
@@ -82,7 +82,7 @@ const RaidenEpics = {
   ...ChannelsEpics,
   ...TransportEpics,
   ...TransfersEpics,
-  ...PathFindEpics,
+  ...ServicesEpics,
 };
 
 export const raidenRootEpic = (

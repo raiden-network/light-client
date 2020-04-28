@@ -15,7 +15,7 @@ import { Processed, MessageType } from 'raiden-ts/messages/types';
 import { makeMessageId, makePaymentId } from 'raiden-ts/transfers/utils';
 
 import { makeMatrix, MockRaidenEpicDeps } from './mocks';
-import { IOU } from 'raiden-ts/path/types';
+import { IOU } from 'raiden-ts/services/types';
 import { RaidenState } from 'raiden-ts/state';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { RaidenAction } from 'raiden-ts/actions';
