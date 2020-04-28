@@ -105,6 +105,14 @@ const router = new Router({
             title: 'Backup State'
           },
           component: () => import('../views/BackupState.vue')
+        },
+        {
+          path: 'raiden-account',
+          name: RouteNames.RAIDEN_ACCOUNT,
+          meta: {
+            title: 'Raiden Account'
+          },
+          component: () => import('../views/RaidenAccount.vue')
         }
       ]
     }

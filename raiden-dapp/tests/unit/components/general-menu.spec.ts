@@ -14,7 +14,10 @@ describe('GeneralMenu.vue', () => {
   let wrapper: Wrapper<GeneralMenu>;
   let router: Mocked<VueRouter>;
   let vuetify: typeof Vuetify;
-
+  let $raiden = {
+    getMainAccount: jest.fn().mockResolvedValue('0x1'),
+    getAccount: jest.fn().mockResolvedValue('0x2')
+  };
   beforeEach(async () => {
     vuetify = new Vuetify();
     router = new VueRouter() as Mocked<VueRouter>;
@@ -25,7 +28,8 @@ describe('GeneralMenu.vue', () => {
       store,
       mocks: {
         $router: router,
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
+        $raiden
       }
     });
 
@@ -114,6 +118,10 @@ describe('GeneralMenu.vue', () => {
     expect(reportBugsSubtitle.text()).toBe(
       'general-menu.menu-items.report-bugs-subtitle'
     );
+  });
+
+  test('show raiden account menu item, if connected via sub key', () => {
+    expect(wrapper.vm.$data.menuItems[0].title).toEqual('Raiden Account');
   });
 
   test('calls method for downloading logs', async () => {

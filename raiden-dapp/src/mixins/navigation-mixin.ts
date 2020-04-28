@@ -81,6 +81,12 @@ export default class NavigationMixin extends Vue {
     });
   }
 
+  navigateToRaidenAccountTransfer() {
+    this.$router.push({
+      name: RouteNames.RAIDEN_ACCOUNT
+    });
+  }
+
   onGeneralBackClicked() {
     this.$router.go(-1);
   }

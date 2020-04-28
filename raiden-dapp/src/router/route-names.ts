@@ -8,5 +8,6 @@ export enum RouteNames {
   OPEN_CHANNEL = 'open-channel',
   GENERAL = 'general',
   GENERAL_HOME = 'general-home',
-  BACKUP_STATE = 'backup-state'
+  BACKUP_STATE = 'backup-state',
+  RAIDEN_ACCOUNT = 'raiden-account'
 }

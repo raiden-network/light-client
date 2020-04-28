@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- [#1365] Allow user to transfer ETH between Main and Raiden account.
+
 ### Fixed
 
 - [#1381] Summary screen display exact amounts on hover
@@ -11,6 +15,7 @@
 [#1381]: https://github.com/raiden-network/light-client/issues/1381
 [#1300]: https://github.com/raiden-network/light-client/issues/1300
 [#1382]: https://github.com/raiden-network/light-client/issues/1382
+[#1365]: https://github.com/raiden-network/light-client/issues/1365
 
 ## [0.6.0] - 2020-04-21
 

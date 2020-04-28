@@ -25,7 +25,9 @@
       "continue": "Continue",
       "confirm": "Confirm"
     },
-    "offline": "Please connect to the internet."
+    "offline": "Please connect to the internet.",
+    "raiden-account": "Raiden Account",
+    "main-account": "Main Account"
   },
   "general-menu": {
     "account-details": "Account Details",
@@ -50,6 +52,9 @@
     "upload-divider": "or",
     "upload-button": "Browse files",
     "upload-error": "Only one state file in valid JSON format can be uploaded"
+  },
+  "raiden-account": {
+    "in-progress": "Transfer in progress"
   },
   "update": {
     "available": "A new version is available.",
