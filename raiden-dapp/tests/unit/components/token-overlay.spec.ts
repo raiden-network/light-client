@@ -84,6 +84,11 @@ describe('TokenOverlay.vue', () => {
       expect(connectNewToken.exists()).toBe(true);
     });
 
+    test('emit a cancel event when token is selected', () => {
+      wrapper.find('.v-list-item__content').trigger('click');
+      expect(wrapper.emitted('cancel')).toBeTruthy();
+    });
+
     test('should navigate to select token', async () => {
       wrapper.find('.v-list-item').trigger('click');
       expect(router.push).toHaveBeenCalledWith(
