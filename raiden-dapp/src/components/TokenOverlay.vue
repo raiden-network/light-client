@@ -127,6 +127,7 @@ export default class TokenOverlay extends Mixins(
     if (token === tokenAddress) {
       this.cancel();
     } else {
+      this.cancel();
       this.navigateToSelectTransferTarget(tokenAddress);
     }
   }
