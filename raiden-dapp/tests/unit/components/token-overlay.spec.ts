@@ -97,6 +97,19 @@ describe('TokenOverlay.vue', () => {
         })
       );
     });
+
+    test('should navigate back to Transfer view with new token selected', async () => {
+      await (wrapper.vm as any).handleTokenClick('0xnewtoken');
+
+      expect(wrapper.emitted('cancel')).toBeTruthy();
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          params: {
+            token: '0xnewtoken'
+          }
+        })
+      );
+    });
   });
 
   describe('with token placeholder', () => {
