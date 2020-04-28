@@ -84,11 +84,29 @@ describe('TokenOverlay.vue', () => {
       expect(connectNewToken.exists()).toBe(true);
     });
 
+    test('emit a cancel event when token is selected', () => {
+      wrapper.find('.v-list-item__content').trigger('click');
+      expect(wrapper.emitted('cancel')).toBeTruthy();
+    });
+
     test('should navigate to select token', async () => {
       wrapper.find('.v-list-item').trigger('click');
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.SELECT_TOKEN
+        })
+      );
+    });
+
+    test('should navigate back to Transfer view with new token selected', async () => {
+      await (wrapper.vm as any).handleTokenClick('0xnewtoken');
+
+      expect(wrapper.emitted('cancel')).toBeTruthy();
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          params: {
+            token: '0xnewtoken'
+          }
         })
       );
     });

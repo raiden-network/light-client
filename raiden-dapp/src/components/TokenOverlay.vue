@@ -124,11 +124,12 @@ export default class TokenOverlay extends Mixins(
 
   handleTokenClick(tokenAddress: string) {
     const { token } = this.$route.params;
-    if (token === tokenAddress) {
-      this.cancel();
-    } else {
+
+    if (token !== tokenAddress) {
       this.navigateToSelectTransferTarget(tokenAddress);
     }
+
+    this.cancel();
   }
 
   getTokenDetails(token: TokenModel) {

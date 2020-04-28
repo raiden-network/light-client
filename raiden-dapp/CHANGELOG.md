@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- [#1413] Token select overlay closes as soon as a new token is selected.
 - [#1395] Fixes navigation issues due to early redirect.
 - [#1381] Summary screen display exact amounts on hover
 - [#1300] General screen shows Raiden account balance when using subkey.
