@@ -19,6 +19,7 @@ import { TokenNetworkRegistryFactory } from 'raiden-ts/contracts/TokenNetworkReg
 import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
 import { SecretRegistry } from 'raiden-ts/contracts/SecretRegistry';
 import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
+import { MonitoringService } from 'raiden-ts/contracts/MonitoringService';
 
 export class TestProvider extends Web3Provider {
   public constructor(web3?: AsyncSendable, opts?: GanacheServerOptions) {
@@ -140,12 +141,25 @@ export class TestProvider extends Web3Provider {
     await (await serviceRegistryContract.functions.setURL('https://pfs.raiden.test')).wait();
 
     const userDepositContract = (await new ContractFactory(
-      Contracts.contracts.UserDeposit.abi as ParamType[],
+      Contracts.contracts.UserDeposit.abi,
       Contracts.contracts.UserDeposit.bin,
       signer,
     ).deploy(tokenContract.address, 1e10)) as UserDeposit;
     await userDepositContract.deployed();
     const userDepositDeployBlock = userDepositContract.deployTransaction.blockNumber;
+
+    const monitoringServiceContract = (await new ContractFactory(
+      Contracts.contracts.MonitoringService.abi,
+      Contracts.contracts.MonitoringService.bin,
+      signer,
+    ).deploy(
+      tokenContract.address,
+      serviceRegistryContract.address,
+      userDepositContract.address,
+      registryContract.address,
+    )) as MonitoringService;
+    await monitoringServiceContract.deployed();
+    const monitoringServiceDeployBlock = monitoringServiceContract.deployTransaction.blockNumber;
 
     return {
       TokenNetworkRegistry: {
@@ -163,6 +177,10 @@ export class TestProvider extends Web3Provider {
       SecretRegistry: {
         address: secretRegistryContract.address as Address,
         block_number: secretRegistryDeployBlock!,
+      },
+      MonitoringService: {
+        address: monitoringServiceContract.address as Address,
+        block_number: monitoringServiceDeployBlock!,
       },
     };
   }

@@ -216,14 +216,11 @@ describe('Raiden', () => {
             {
               network,
               contractsInfo: {
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 TokenNetworkRegistry: { address: token as Address, block_number: 0 },
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 ServiceRegistry: { address: partner as Address, block_number: 1 },
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 UserDeposit: { address: partner as Address, block_number: 2 },
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 SecretRegistry: { address: partner as Address, block_number: 3 },
+                MonitoringService: { address: partner as Address, block_number: 3 },
               },
               address: accounts[1] as Address,
             },

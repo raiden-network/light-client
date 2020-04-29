@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { Wallet } from 'ethers';
+import { bigNumberify } from 'ethers/utils';
+import { HashZero, One, Zero } from 'ethers/constants';
 import {
   Delivered,
   LockedTransfer,
@@ -15,6 +17,7 @@ import {
   WithdrawConfirmation,
   WithdrawExpired,
   PFSFeeUpdate,
+  MonitorRequest,
 } from 'raiden-ts/messages/types';
 import {
   packMessage,
@@ -25,10 +28,9 @@ import {
   getBalanceProofFromEnvelopeMessage,
   createMessageHash,
   createMetadataHash,
+  createBalanceHash,
 } from 'raiden-ts/messages/utils';
-import { Address, Hash, Secret, UInt, Signed, Int } from 'raiden-ts/utils/types';
-import { bigNumberify } from 'ethers/utils';
-import { HashZero, One, Zero } from 'ethers/constants';
+import { Address, Hash, Secret, UInt, Signed, Int, Signature } from 'raiden-ts/utils/types';
 
 // sign/verify & en/decode to avoid having to duplicate all examples
 describe('sign/verify, pack & encode/decode ', () => {
@@ -549,6 +551,50 @@ describe('sign/verify, pack & encode/decode ', () => {
     const encoded = encodeJsonMessage(signed);
     expect(encoded).toBe(
       '{"type":"PFSFeeUpdate","canonical_identifier":{"chain_identifier":"337","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":"1338"},"updating_participant":"0x14791697260E4c9A71f18484C9f997B308e59325","timestamp":"1970-01-01T00:00:00","fee_schedule":{"cap_fees":true,"imbalance_penalty":null,"proportional":"0","flat":"0"},"signature":"0x444213b2b0a3e390b0e288ebb92cc219e1177ff8359d51517cc894643b3fdbc56da603289a967bacf42c2dcc0ba1cc98425e4524e4eca86023c776a284c2a71f1c"}',
+    );
+
+    const decoded = decodeJsonMessage(encoded);
+    expect(decoded).toEqual(signed);
+  });
+
+  test('RequestMonitoring', async () => {
+    const balanceHash = createBalanceHash(
+      Zero as UInt<32>,
+      One as UInt<32>,
+      '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
+    );
+    const message: MonitorRequest = {
+      type: MessageType.MONITOR_REQUEST,
+      balance_proof: {
+        chain_id: bigNumberify(337) as UInt<32>,
+        nonce: One as UInt<8>,
+        token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
+        channel_identifier: bigNumberify(1338) as UInt<32>,
+        balance_hash: balanceHash,
+        // data from LockedTransfer test
+        additional_hash: '0xb6ab946232e2b8271c21a921389b8fc8537ebb05e25e7d5eca95e25ce82c7da5' as Hash,
+        signature: '0xa4beb47c2067e196de4cd9d5643d1c7af37caf4ac87de346e10ac27351505d405272f3d68960322bd53d1ea95460e4dd323dbef7c862fa6596444a57732ddb2b1c' as Signature,
+      },
+      monitoring_service_contract_address: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
+      non_closing_participant: address,
+      non_closing_signature: '0x8c52419a6f5c71b7618c066e2570592e861544f3a9d7c8de87965ee09281983068ac46f0e9116eac43f6a3628667d5109fa18ce86fc03f94321203df75c8afd81b' as Signature,
+      reward_amount: bigNumberify(5) as UInt<32>,
+    };
+
+    expect(packMessage(message)).toEqual(
+      '0x2a915fda69746f515b46c520ed511401d5ccd5e200000000000000000000000000000000000000000000000000000000000001510000000000000000000000000000000000000000000000000000000000000006e82ae5475589b828d3644e1b56546f93cd27d1a414791697260e4c9a71f18484c9f997b308e593258c52419a6f5c71b7618c066e2570592e861544f3a9d7c8de87965ee09281983068ac46f0e9116eac43f6a3628667d5109fa18ce86fc03f94321203df75c8afd81b0000000000000000000000000000000000000000000000000000000000000005',
+    );
+
+    const signed = await signMessage(signer, message);
+    expect(Signed(MonitorRequest).is(signed)).toBe(true);
+    expect(signed.signature).toBe(
+      '0x0d998188ae1202dc7fc76e4fe5b5d534f54a98480701f73dbdcde8385238f995470618bbcbeccabc5573338d0e06f2ad31da872f5cac0cfa4ccd7d4ecc8628d01c',
+    );
+    expect(getMessageSigner(signed)).toBe(address);
+
+    const encoded = encodeJsonMessage(signed);
+    expect(encoded).toBe(
+      '{"type":"RequestMonitoring","balance_proof":{"chain_id":"337","nonce":"1","token_network_address":"0xe82ae5475589b828D3644e1B56546F93cD27d1a4","channel_identifier":"1338","balance_hash":"0x30862afe192e832c677eadbd6e30feea77a16d82308560562bac998b00f190bb","additional_hash":"0xb6ab946232e2b8271c21a921389b8fc8537ebb05e25e7d5eca95e25ce82c7da5","signature":"0xa4beb47c2067e196de4cd9d5643d1c7af37caf4ac87de346e10ac27351505d405272f3d68960322bd53d1ea95460e4dd323dbef7c862fa6596444a57732ddb2b1c"},"monitoring_service_contract_address":"0x2A915FDA69746F515b46C520eD511401d5CCD5e2","non_closing_participant":"0x14791697260E4c9A71f18484C9f997B308e59325","non_closing_signature":"0x8c52419a6f5c71b7618c066e2570592e861544f3a9d7c8de87965ee09281983068ac46f0e9116eac43f6a3628667d5109fa18ce86fc03f94321203df75c8afd81b","reward_amount":"5","signature":"0x0d998188ae1202dc7fc76e4fe5b5d534f54a98480701f73dbdcde8385238f995470618bbcbeccabc5573338d0e06f2ad31da872f5cac0cfa4ccd7d4ecc8628d01c"}',
     );
 
     const decoded = decodeJsonMessage(encoded);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import get from 'lodash/get';
 import set from 'lodash/fp/set';
 
@@ -80,14 +81,11 @@ describe('raidenReducer', () => {
         network: getNetwork('unspecified'),
         address,
         contractsInfo: {
-          // eslint-disable-next-line @typescript-eslint/camelcase
           TokenNetworkRegistry: { address: AddressZero as Address, block_number: 0 },
-          // eslint-disable-next-line @typescript-eslint/camelcase
           ServiceRegistry: { address: AddressZero as Address, block_number: 0 },
-          // eslint-disable-next-line @typescript-eslint/camelcase
           UserDeposit: { address: AddressZero as Address, block_number: 0 },
-          // eslint-disable-next-line @typescript-eslint/camelcase
           SecretRegistry: { address: AddressZero as Address, block_number: 0 },
+          MonitoringService: { address: AddressZero as Address, block_number: 0 },
         },
       },
       { blockNumber: 1337 },
