@@ -10,6 +10,7 @@ import {
   map,
   scan,
 } from 'rxjs/operators';
+import { Zero } from 'ethers/constants';
 import negate from 'lodash/negate';
 import unset from 'lodash/fp/unset';
 
@@ -20,8 +21,8 @@ import { PartialRaidenConfig, RaidenConfig } from './config';
 import { pluckDistinct } from './utils/rx';
 import { getPresences$ } from './transport/utils';
 import { rtcChannel } from './transport/actions';
-import { pfsListUpdated } from './services/actions';
-import { Address } from './utils/types';
+import { pfsListUpdated, udcDeposited } from './services/actions';
+import { Address, UInt } from './utils/types';
 import { isActionOf } from './utils/actions';
 
 import * as ChannelsEpics from './channels/epics';
@@ -41,40 +42,43 @@ export function getLatest$(
   state$: Observable<RaidenState>,
   { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
 ): Observable<Latest> {
+  // the nested combineLatest is needed because it can only infer the type of 6 params
   return combineLatest([
-    action$,
-    state$,
-    state$.pipe(
-      pluckDistinct('config'),
-      map((c: PartialRaidenConfig): RaidenConfig => ({ ...defaultConfig, ...c })),
-    ),
-    getPresences$(action$),
-    action$.pipe(
-      filter(isActionOf(pfsListUpdated)),
-      pluck('payload', 'pfsList'),
-      startWith([] as readonly Address[]),
-    ),
-    action$.pipe(
-      filter(rtcChannel.is),
-      // scan: if v.payload is defined, set it; else, unset
-      scan(
-        (acc, v) =>
-          v.payload ? { ...acc, [v.meta.address]: v.payload } : unset(v.meta.address, acc),
-        {} as Latest['rtc'],
+    combineLatest([
+      action$,
+      state$,
+      state$.pipe(
+        pluckDistinct('config'),
+        map((c: PartialRaidenConfig): RaidenConfig => ({ ...defaultConfig, ...c })),
       ),
-      startWith({} as Latest['rtc']),
-    ),
+      getPresences$(action$),
+      action$.pipe(
+        filter(pfsListUpdated.is),
+        pluck('payload', 'pfsList'),
+        startWith([] as readonly Address[]),
+      ),
+      action$.pipe(
+        filter(rtcChannel.is),
+        // scan: if v.payload is defined, set it; else, unset
+        scan(
+          (acc, v) =>
+            v.payload ? { ...acc, [v.meta.address]: v.payload } : unset(v.meta.address, acc),
+          {} as Latest['rtc'],
+        ),
+        startWith({} as Latest['rtc']),
+      ),
+    ]),
+    action$.pipe(filter(udcDeposited.is), pluck('payload'), startWith(Zero as UInt<32>)),
   ]).pipe(
-    map(([action, state, config, presences, pfsList, rtc]) => {
-      return {
-        action,
-        state,
-        config,
-        presences,
-        pfsList,
-        rtc,
-      };
-    }),
+    map(([[action, state, config, presences, pfsList, rtc], udcBalance]) => ({
+      action,
+      state,
+      config,
+      presences,
+      pfsList,
+      rtc,
+      udcBalance,
+    })),
   );
 }
 
@@ -105,7 +109,10 @@ export const raidenRootEpic = (
   // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
   return from(Object.values(RaidenEpics)).pipe(
     mergeMap((epic) => epic(limitedAction$, limitedState$, deps)),
-    catchError((err) => of(raidenShutdown({ reason: err }))),
+    catchError((err) => {
+      deps.log.error('Fatal error:', err);
+      return of(raidenShutdown({ reason: err }));
+    }),
     takeUntil(shutdownNotification),
   );
 };

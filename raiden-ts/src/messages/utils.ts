@@ -26,13 +26,17 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.WITHDRAW_EXPIRED]: 17,
   [MessageType.PFS_CAPACITY_UPDATE]: -1,
   [MessageType.PFS_FEE_UPDATE]: -1,
+  [MessageType.MONITOR_REQUEST]: -1,
 };
 
 // raiden_contracts.constants.MessageTypeId
 export enum MessageTypeId {
   BALANCE_PROOF = 1,
+  BALANCE_PROOF_UPDATE = 2,
   WITHDRAW = 3,
+  COOP_SETTLE = 4,
   IOU = 5,
+  MS_REWARD = 6,
 }
 
 /**
@@ -243,6 +247,18 @@ export function packMessage(message: Message) {
           encode(message.timestamp, 19),
         ]),
       ) as HexString; // variable size of fee_schedule.imbalance_penalty rlpEncoding, when not null
+    case MessageType.MONITOR_REQUEST:
+      return hexlify(
+        concat([
+          encode(message.monitoring_service_contract_address, 20),
+          encode(message.balance_proof.chain_id, 32),
+          encode(MessageTypeId.MS_REWARD, 32),
+          encode(message.balance_proof.token_network_address, 20),
+          encode(message.non_closing_participant, 20),
+          encode(message.non_closing_signature, 65),
+          encode(message.reward_amount, 32),
+        ]),
+      ) as HexString<221>;
   }
 }
 

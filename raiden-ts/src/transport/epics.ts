@@ -116,7 +116,7 @@ type CapsMapping = { readonly [k: string]: any };
  * @returns Array of room names
  */
 function globalRoomNames(config: RaidenConfig) {
-  return [config.discoveryRoom, config.pfsRoom].filter(isntNil);
+  return [config.discoveryRoom, config.pfsRoom, config.monitoringRoom].filter(isntNil);
 }
 
 /**

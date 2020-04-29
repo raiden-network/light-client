@@ -52,7 +52,7 @@ import { pluckDistinct } from '../utils/rx';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
 import { encode } from '../utils/data';
 import { RaidenError, ErrorCodes } from '../utils/error';
-import { createBalanceHash } from '../messages/utils';
+import { createBalanceHash, MessageTypeId } from '../messages/utils';
 import {
   newBlock,
   tokenMonitored,
@@ -788,7 +788,7 @@ export const channelCloseEpic = (
       const closingMessage = concat([
         encode(tokenNetwork, 20),
         encode(network.chainId, 32),
-        encode(1, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF
+        encode(MessageTypeId.BALANCE_PROOF, 32),
         encode(channel.id, 32),
         encode(balanceHash, 32),
         encode(nonce, 32),
@@ -877,7 +877,7 @@ export const channelUpdateEpic = (
       const nonClosingMessage = concat([
         encode(tokenNetwork, 20),
         encode(network.chainId, 32),
-        encode(2, 32), // raiden_contracts.constants.MessageTypeId.BALANCE_PROOF_UPDATE
+        encode(MessageTypeId.BALANCE_PROOF_UPDATE, 32),
         encode(channel.id, 32),
         encode(balanceHash, 32),
         encode(nonce, 32),

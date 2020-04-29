@@ -43,3 +43,6 @@ export interface iouPersist extends ActionType<typeof iouPersist> {}
 
 export const iouClear = createAction('iouClear', undefined, ServiceId);
 export interface iouClear extends ActionType<typeof iouClear> {}
+
+export const udcDeposited = createAction('udcDeposited', UInt(32));
+export interface udcDeposited extends ActionType<typeof udcDeposited> {}

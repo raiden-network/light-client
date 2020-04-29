@@ -2,7 +2,7 @@ import * as t from 'io-ts';
 import { Network } from 'ethers/utils';
 
 import { Capabilities } from './constants';
-import { Address } from './utils/types';
+import { Address, UInt } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 
 const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
@@ -23,6 +23,7 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - httpTimeout - Used in http fetch requests
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
+ * - monitoringRoom - MS global room to auto-join and send RequestMonitoring messages, use null to disable
  * - pfs - Path Finding Service URL or Address. Set to null to disable, or empty string to enable
  *         automatic fetching from ServiceRegistry.
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10%
@@ -30,6 +31,7 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
  *                       Leave LRU beyond this threshold.
  * - confirmationBlocks - How many blocks to wait before considering a transaction as confirmed
+ * - monitoringReward - Reward to be paid to MS, in SVT/RDN; use Zero or null to disable
  * - logger - String specifying the console log level of redux-logger. Use '' to silence.
  * - caps - Own transport capabilities
  * - matrixServer? - Specify a matrix server to use.
@@ -45,10 +47,12 @@ export const RaidenConfig = t.readonly(
       httpTimeout: t.number,
       discoveryRoom: t.union([t.string, t.null]),
       pfsRoom: t.union([t.string, t.null]),
+      monitoringRoom: t.union([t.string, t.null]),
       pfs: t.union([Address, t.string, t.null]),
       pfsSafetyMargin: t.number,
       matrixExcessRooms: t.number,
       confirmationBlocks: t.number,
+      monitoringReward: t.union([t.null, UInt(32)]),
       logger: t.keyof({
         ['']: null, // silent/disabled
         trace: null,
@@ -93,10 +97,12 @@ export function makeDefaultConfig(
     httpTimeout: 30e3,
     discoveryRoom: `raiden_${getNetworkName(network)}_discovery`,
     pfsRoom: `raiden_${getNetworkName(network)}_path_finding`,
+    monitoringRoom: `raiden_${getNetworkName(network)}_monitoring`,
     pfs: '', // empty string = auto mode
     matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0,
     confirmationBlocks: 5,
+    monitoringReward: null,
     logger: 'info',
     caps: {
       [Capabilities.NO_DELIVERY]: true,

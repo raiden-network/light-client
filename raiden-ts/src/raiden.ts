@@ -12,7 +12,7 @@ import { createLogger } from 'redux-logger';
 import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
+import { first, filter, map, mergeMap, skip, pluck } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
@@ -52,7 +52,7 @@ import { makeSecret, getSecrethash, makePaymentId, raidenSentTransfer } from './
 import { pathFind } from './services/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
 import { pfsListInfo } from './services/utils';
-import { Address, Secret, Storage, Hash, UInt, decode, assert } from './utils/types';
+import { Address, Secret, Storage, Hash, UInt, decode, assert, isntNil } from './utils/types';
 import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
@@ -988,7 +988,7 @@ export class Raiden {
    * @returns Promise to UDC remaining capacity
    */
   public async getUDCCapacity(): Promise<BigNumber> {
-    const balance = await this.deps.userDepositContract.functions.balances(this.deps.address);
+    const balance = await this.deps.latest$.pipe(pluck('udcBalance'), first(isntNil)).toPromise();
     const blockNumber = this.state.blockNumber;
     const owedAmount = Object.values(this.state.path.iou)
       .reduce((acc, value) => {
@@ -1058,7 +1058,9 @@ export class Raiden {
       },
     });
 
-    const currentUDCBalance = await userDepositContract.functions.balances(this.address);
+    const currentUDCBalance = await this.deps.latest$
+      .pipe(pluck('udcBalance'), first(isntNil))
+      .toPromise();
 
     const depositReceipt = await callAndWaitMined(
       userDepositContract,

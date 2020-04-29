@@ -161,6 +161,7 @@ export const initialState = makeInitialState({
     ServiceRegistry: { address: AddressZero as Address, block_number: 0 },
     UserDeposit: { address: AddressZero as Address, block_number: 0 },
     SecretRegistry: { address: AddressZero as Address, block_number: 0 },
+    MonitoringService: { address: AddressZero as Address, block_number: 0 },
   },
 });
 
