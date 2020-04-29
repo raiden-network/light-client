@@ -13,12 +13,14 @@
 - [#1381] Summary screen display exact amounts on hover
 - [#1300] General screen shows Raiden account balance when using subkey.
 - [#1382] Better error handling when PFS can't find routes between nodes.
+- [#1427] Scroll bar issue in Channel List view.
 
 [#1395]: https://github.com/raiden-network/light-client/issues/1395
 [#1381]: https://github.com/raiden-network/light-client/issues/1381
 [#1300]: https://github.com/raiden-network/light-client/issues/1300
 [#1382]: https://github.com/raiden-network/light-client/issues/1382
 [#1365]: https://github.com/raiden-network/light-client/issues/1365
+[#1427]: https://github.com/raiden-network/light-client/issues/1427
 
 ## [0.6.0] - 2020-04-21
 
