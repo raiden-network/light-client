@@ -57,4 +57,5 @@ const transport = createReducer(initialState.transport)
  * Nested/combined reducer for transport
  * Currently only handles 'transport' substate
  */
-export const transportReducer = partialCombineReducers({ transport }, initialState);
+const transportReducer = partialCombineReducers({ transport }, initialState);
+export default transportReducer;

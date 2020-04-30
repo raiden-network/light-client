@@ -49,9 +49,9 @@ import {
 import { matrixPresence } from './transport/actions';
 import { transfer, transferSigned } from './transfers/actions';
 import { makeSecret, getSecrethash, makePaymentId, raidenSentTransfer } from './transfers/utils';
-import { pathFind } from './path/actions';
-import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
-import { pfsListInfo } from './path/utils';
+import { pathFind } from './services/actions';
+import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
+import { pfsListInfo } from './services/utils';
 import { Address, Secret, Storage, Hash, UInt, decode, assert } from './utils/types';
 import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
 import { patchSignSend } from './utils/ethers';

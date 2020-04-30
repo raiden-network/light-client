@@ -9,18 +9,23 @@
 
 ### Fixed
 
+- [#1402] Aligning token symbol on input fields
 - [#1413] Token select overlay closes as soon as a new token is selected.
 - [#1395] Fixes navigation issues due to early redirect.
 - [#1381] Summary screen display exact amounts on hover
 - [#1300] General screen shows Raiden account balance when using subkey.
 - [#1382] Better error handling when PFS can't find routes between nodes.
+- [#1427] Scroll bar issue in Channel List view.
 
+[#1402]: https://github.com/raiden-network/light-client/issues/1402
+[#1413]: https://github.com/raiden-network/light-client/issues/1413
 [#1395]: https://github.com/raiden-network/light-client/issues/1395
 [#1381]: https://github.com/raiden-network/light-client/issues/1381
 [#1300]: https://github.com/raiden-network/light-client/issues/1300
 [#1382]: https://github.com/raiden-network/light-client/issues/1382
 [#1365]: https://github.com/raiden-network/light-client/issues/1365
 [#1424]: https://github.com/raiden-network/light-client/issues/1424
+[#1427]: https://github.com/raiden-network/light-client/issues/1427
 
 ## [0.6.0] - 2020-04-21
 

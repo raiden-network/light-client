@@ -21,8 +21,8 @@ import {
   pfsCapacityUpdateEpic,
   pfsServiceRegistryMonitorEpic,
   pfsFeeUpdateEpic,
-} from 'raiden-ts/path/epics';
-import { pathFind, pfsListUpdated, iouPersist, iouClear } from 'raiden-ts/path/actions';
+} from 'raiden-ts/services/epics';
+import { pathFind, pfsListUpdated, iouPersist, iouClear } from 'raiden-ts/services/actions';
 import { messageGlobalSend } from 'raiden-ts/messages/actions';
 import { MessageType } from 'raiden-ts/messages/types';
 import { losslessStringify } from 'raiden-ts/utils/data';

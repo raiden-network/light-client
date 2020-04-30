@@ -82,6 +82,7 @@ export default class App extends Mixins(NavigationMixin) {
 .container {
   height: calc(100% - 8px);
   overflow-x: hidden;
+  overflow-y: hidden;
   padding: 0 !important;
 }
 

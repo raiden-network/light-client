@@ -100,6 +100,7 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
     background-color: transparent !important;
     padding-bottom: 0;
     padding-top: 0;
+    overflow-y: scroll;
 
     ::v-deep {
       .v-list-item {
