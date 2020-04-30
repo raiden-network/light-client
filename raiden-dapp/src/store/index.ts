@@ -47,6 +47,15 @@ export function defaultState(): RootState {
   return clone(_defaultState);
 }
 
+/*
+ * Helper function that checks whether two Tokens a and b
+ * have a balance and if one of them isn't zero.
+ */
+const hasNonZeroBalance = (a: Token, b: Token) =>
+  a.balance &&
+  b.balance &&
+  (!(a.balance as BigNumber).isZero() || !(b.balance as BigNumber).isZero());
+
 const store: StoreOptions<RootState> = {
   state: defaultState(),
   mutations: {
@@ -121,24 +130,14 @@ const store: StoreOptions<RootState> = {
         }
       );
     },
-    allTokens: (state: RootState): Token[] => {
-      return Object.values(state.tokens).sort((a: Token, b: Token) => {
-        if (
-          a.balance &&
-          b.balance &&
-          (!(a.balance as BigNumber).isZero() ||
-            !(b.balance as BigNumber).isZero())
-        ) {
-          return a.balance < b.balance ? 1 : -1;
+    allTokens: (state: RootState): Token[] =>
+      Object.values(state.tokens).sort((a: Token, b: Token) => {
+        if (hasNonZeroBalance(a, b)) {
+          return a.balance! < b.balance! ? 1 : -1;
         }
 
-        if (a.symbol && b.symbol) {
-          return a.symbol.localeCompare(b.symbol);
-        }
-
-        return 0;
-      });
-    },
+        return a.symbol && b.symbol ? a.symbol.localeCompare(b.symbol) : 0;
+      }),
     channels: (state: RootState) => (tokenAddress: string) => {
       let channels: RaidenChannel[] = [];
       const tokenChannels = state.channels[tokenAddress];
