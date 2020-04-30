@@ -43,7 +43,7 @@
     "@namics/stylelint-bem": "^6.3.1",
     "@types/jest": "^25.2.1",
     "@types/lodash": "^4.14.150",
-    "@types/node": "13.11.1",
+    "@types/node": "13.13.4",
     "@types/tiny-async-pool": "^1.0.0",
     "@types/vue-i18n": "^7.0.0",
     "@types/webpack": "^4.41.12",
