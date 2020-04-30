@@ -5,6 +5,7 @@
 ### Added
 
 - [#1365] Allow user to transfer ETH between Main and Raiden account.
+- [#1424] Sort tokens in token list by balance and symbol.
 
 ### Fixed
 
@@ -19,6 +20,7 @@
 [#1300]: https://github.com/raiden-network/light-client/issues/1300
 [#1382]: https://github.com/raiden-network/light-client/issues/1382
 [#1365]: https://github.com/raiden-network/light-client/issues/1365
+[#1424]: https://github.com/raiden-network/light-client/issues/1424
 
 ## [0.6.0] - 2020-04-21
 

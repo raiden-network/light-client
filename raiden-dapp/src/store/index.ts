@@ -122,7 +122,22 @@ const store: StoreOptions<RootState> = {
       );
     },
     allTokens: (state: RootState): Token[] => {
-      return Object.values(state.tokens);
+      return Object.values(state.tokens).sort((a: Token, b: Token) => {
+        if (
+          a.balance &&
+          b.balance &&
+          (!(a.balance as BigNumber).isZero() ||
+            !(b.balance as BigNumber).isZero())
+        ) {
+          return a.balance < b.balance ? 1 : -1;
+        }
+
+        if (a.symbol && b.symbol) {
+          return a.symbol.localeCompare(b.symbol);
+        }
+
+        return 0;
+      });
     },
     channels: (state: RootState) => (tokenAddress: string) => {
       let channels: RaidenChannel[] = [];
