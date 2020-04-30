@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 
-import { Address, Hash, Signature, UInt } from '../utils/types';
+import { Address, Hash, UInt } from '../utils/types';
 
 // Represents a HashTime-Locked amount in a channel
 export const Lock = t.type(
@@ -19,7 +19,7 @@ export type Lock = t.TypeOf<typeof Lock>;
  * because BP signature requires the hash of the message, for authentication of data not included
  * nor relevant for the smartcontract/BP itself, but so for the peers (e.g. payment_id)
  */
-export const SignedBalanceProof = t.type({
+export const BalanceProof = t.type({
   // channel data
   chainId: UInt(32),
   tokenNetworkAddress: Address,
@@ -29,8 +29,6 @@ export const SignedBalanceProof = t.type({
   transferredAmount: UInt(32),
   lockedAmount: UInt(32),
   locksroot: Hash,
-  messageHash: Hash,
-  signature: Signature,
-  sender: Address,
+  additionalHash: Hash,
 });
-export type SignedBalanceProof = t.TypeOf<typeof SignedBalanceProof>;
+export interface BalanceProof extends t.TypeOf<typeof BalanceProof> {}

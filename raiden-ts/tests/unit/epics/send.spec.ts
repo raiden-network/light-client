@@ -1589,7 +1589,11 @@ describe('send transfers', () => {
       await expect(promise).resolves.toEqual(
         expect.arrayContaining([
           transfer.success(
-            { balanceProof: expect.objectContaining({ sender: depsMock.address }) },
+            {
+              balanceProof: expect.objectContaining({
+                transferredAmount: unlock.transferred_amount,
+              }),
+            },
             { secrethash, direction },
           ),
           transferUnlockProcessed(
@@ -1721,7 +1725,11 @@ describe('send transfers', () => {
         await expect(promise).resolves.toEqual(
           expect.arrayContaining([
             transfer.success(
-              { balanceProof: expect.objectContaining({ sender: depsMock.address }) },
+              {
+                balanceProof: expect.objectContaining({
+                  transferredAmount: expect.any(BigNumber),
+                }),
+              },
               { secrethash, direction },
             ),
           ]),

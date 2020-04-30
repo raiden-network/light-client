@@ -7,10 +7,10 @@ import { hexlify } from 'ethers/utils';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
 import { Channel, ChannelState } from '../channels/state';
-import { SignedBalanceProof } from '../channels/types';
+import { BalanceProof } from '../channels/types';
 import { channelClose } from '../channels/actions';
 import { SignatureZero } from '../constants';
-import { timed, UInt, Signature, Hash } from '../utils/types';
+import { timed, UInt, Signature, Hash, Signed } from '../utils/types';
 import { Reducer, createReducer } from '../utils/actions';
 import { getBalanceProofFromEnvelopeMessage, getMessageSigner } from '../messages/utils';
 import { getLocksroot } from './utils';
@@ -339,7 +339,7 @@ function withdrawReceiveSuccessReducer(
   let channel: Channel | undefined = get(channelPath, state);
   if (!channel || channel.state !== ChannelState.open) return state;
   // current own balanceProof, or zero balance proof, with some known fields filled
-  const balanceProof: SignedBalanceProof = channel.own.balanceProof || {
+  const balanceProof: Signed<BalanceProof> = channel.own.balanceProof || {
     chainId: message.chain_id,
     tokenNetworkAddress: action.meta.tokenNetwork,
     channelId: message.channel_identifier,
@@ -348,9 +348,8 @@ function withdrawReceiveSuccessReducer(
     transferredAmount: Zero as UInt<32>,
     lockedAmount: Zero as UInt<32>,
     locksroot: HashZero as Hash,
-    messageHash: HashZero as Hash,
+    additionalHash: HashZero as Hash,
     signature: hexlify(SignatureZero) as Signature,
-    sender: state.address,
   };
   // if it's the next nonce, update balance proof
   if (message.nonce.eq(balanceProof.nonce.add(1)) && message.expiration.gt(state.blockNumber)) {

@@ -20,7 +20,7 @@ import pick from 'lodash/pick';
 import { RaidenAction } from '../../actions';
 import { RaidenConfig } from '../../config';
 import { Channel, ChannelState } from '../../channels/state';
-import { Lock, SignedBalanceProof } from '../../channels/types';
+import { Lock, BalanceProof } from '../../channels/types';
 import { channelAmounts } from '../../channels/utils';
 import {
   LockedTransfer,
@@ -69,7 +69,7 @@ import { Direction } from '../state';
  * @param balanceProof - Balance proof to increase nonce from
  * @returns Increased nonce, or One if no balance proof provided
  */
-function nextNonce(balanceProof?: SignedBalanceProof): UInt<8> {
+function nextNonce(balanceProof?: BalanceProof): UInt<8> {
   return (balanceProof?.nonce ?? Zero).add(1) as UInt<8>;
 }
 

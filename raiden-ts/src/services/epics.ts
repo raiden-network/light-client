@@ -652,7 +652,7 @@ function makeMonitoringRequest$({
       encode(channel.id, 32),
       encode(balanceHash, 32),
       encode(balanceProof.nonce, 32),
-      encode(balanceProof.messageHash, 32),
+      encode(balanceProof.additionalHash, 32),
       encode(balanceProof.signature, 65), // partner's signature for this balance proof
     ]); // UInt8Array of 277 bytes
 
@@ -674,7 +674,7 @@ function makeMonitoringRequest$({
               channel_identifier: bigNumberify(channel.id) as UInt<32>,
               nonce: balanceProof.nonce,
               balance_hash: balanceHash,
-              additional_hash: balanceProof.messageHash,
+              additional_hash: balanceProof.additionalHash,
               signature: balanceProof.signature,
             },
             non_closing_participant: address,

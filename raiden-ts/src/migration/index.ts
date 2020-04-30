@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import logging from 'loglevel';
-import { assert } from '../utils/types';
 
 import m0 from './0';
 import m1 from './1';
 import m2 from './2';
+import m3 from './3';
 
-// import above and populate this dict with new migrator functions
-// must be ordered, continuous, and last one MUST be state.CURRENT_STATE_VERSION
-const migrations = { 0: m0, 1: m1, 2: m2 };
+// import above and populate this array with new migrator functions, index is version
+const migrations = [m0, m1, m2, m3];
+export const CURRENT_STATE_VERSION = migrations.length - 1;
 
 /**
  * Migrate a RaidenState from any previous version to latest one
@@ -19,16 +19,12 @@ const migrations = { 0: m0, 1: m1, 2: m2 };
  */
 export default function migrateState(
   state: any,
-  toVersion: number,
+  toVersion: number = CURRENT_STATE_VERSION,
   { log }: { log: logging.Logger } = { log: logging },
 ) {
-  for (let v = 0; v <= toVersion; v++) assert(v in migrations, `missing migration for ${v}`);
-  for (const [key, migrate] of Object.entries(migrations)) {
-    const version = +key;
-    if ((state?.version ?? -1) !== version - 1) continue;
-    if (version > toVersion) continue;
+  for (let version = (state?.version ?? -1) + 1; version <= toVersion; version++) {
     try {
-      state = Object.assign(migrate(state), { version });
+      state = Object.assign(migrations[version](state), { version });
     } catch (err) {
       log.error(`Error migrating state from version ${version - 1} to ${version}`, state, err);
       throw err;

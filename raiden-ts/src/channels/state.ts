@@ -1,8 +1,8 @@
 import * as t from 'io-ts';
 import { BigNumber } from 'ethers/utils';
 
-import { UInt, Address } from '../utils/types';
-import { Lock, SignedBalanceProof } from './types';
+import { UInt, Address, Signed } from '../utils/types';
+import { Lock, BalanceProof } from './types';
 
 export enum ChannelState {
   opening = 'opening',
@@ -24,7 +24,7 @@ export const ChannelEnd = t.readonly(
     }),
     t.partial({
       locks: t.readonlyArray(Lock),
-      balanceProof: SignedBalanceProof,
+      balanceProof: Signed(BalanceProof),
       withdraw: UInt(32),
     }),
   ]),
