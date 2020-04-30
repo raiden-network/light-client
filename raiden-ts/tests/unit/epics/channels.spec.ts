@@ -1160,14 +1160,14 @@ describe('channels epic', () => {
       expect(tokenNetworkContract.functions.settleChannel).toHaveBeenCalledTimes(1);
       expect(tokenNetworkContract.functions.settleChannel).toHaveBeenCalledWith(
         channelId,
-        depsMock.address,
-        expect.anything(), // self transfered amount
-        expect.anything(), // self locked amount
-        expect.anything(), // self locksroot
         partner,
-        expect.anything(), // partner transfered amount
-        expect.anything(), // partner locked amount
-        expect.anything(), // partner locksroot
+        Zero, // self transfered amount
+        Zero, // self locked amount
+        HashZero, // self locksroot
+        depsMock.address,
+        Zero, // partner transfered amount
+        Zero, // partner locked amount
+        HashZero, // partner locksroot
       );
       expect(settleTx.wait).toHaveBeenCalledTimes(1);
     });

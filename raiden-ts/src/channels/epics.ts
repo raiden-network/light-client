@@ -958,13 +958,21 @@ export const channelSettleEpic = (
       };
       let part1 = {
           address: partner,
-          ...(channel.partner.balanceProof || zeroBalanceProof),
+          ...zeroBalanceProof,
+          ...channel.partner.balanceProof,
         },
         part2 = {
           address,
-          ...(channel.own.balanceProof || zeroBalanceProof),
+          ...zeroBalanceProof,
+          ...channel.own.balanceProof,
         };
-      if (channel.isFirstParticipant) [part1, part2] = [part2, part1];
+
+      if (
+        part2.transferredAmount
+          .add(part2.lockedAmount)
+          .lt(part1.transferredAmount.add(part1.lockedAmount))
+      )
+        [part1, part2] = [part2, part1];
 
       // send settleChannel transaction
       return from(
