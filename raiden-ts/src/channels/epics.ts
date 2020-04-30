@@ -781,7 +781,7 @@ export const channelCloseEpic = (
           channel.partner.balanceProof.locksroot,
         );
         nonce = channel.partner.balanceProof.nonce;
-        additionalHash = channel.partner.balanceProof.messageHash;
+        additionalHash = channel.partner.balanceProof.additionalHash;
         nonClosingSignature = channel.partner.balanceProof.signature;
       }
 
@@ -871,7 +871,7 @@ export const channelUpdateEpic = (
         channel.partner.balanceProof.locksroot,
       );
       const nonce = channel.partner.balanceProof.nonce;
-      const additionalHash = channel.partner.balanceProof.messageHash;
+      const additionalHash = channel.partner.balanceProof.additionalHash;
       const closingSignature = channel.partner.balanceProof.signature;
 
       const nonClosingMessage = concat([

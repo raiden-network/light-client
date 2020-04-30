@@ -385,9 +385,8 @@ describe('sign/verify, pack & encode/decode ', () => {
       transferredAmount: message.transferred_amount,
       lockedAmount: message.locked_amount,
       locksroot: message.locksroot,
-      messageHash: createMessageHash(message),
+      additionalHash: createMessageHash(message),
       signature: expect.any(String),
-      sender: address,
     });
   });
 

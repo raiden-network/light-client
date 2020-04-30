@@ -9,7 +9,7 @@ import logging from 'loglevel';
 import { PartialRaidenConfig, makeDefaultConfig, RaidenConfig } from './config';
 import { ContractsInfo } from './types';
 import { ConfirmableAction } from './actions';
-import migrateState from './migration';
+import migrateState, { CURRENT_STATE_VERSION } from './migration';
 import { losslessParse, losslessStringify } from './utils/data';
 import { Address, Signed, Storage, decode } from './utils/types';
 import { Channel } from './channels/state';
@@ -20,7 +20,7 @@ import { getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
 // same as highest migrator function in migration.index.migrators
-export const CURRENT_STATE_VERSION = 2;
+export { CURRENT_STATE_VERSION } from './migration';
 
 // types
 export const RaidenState = t.readonly(
