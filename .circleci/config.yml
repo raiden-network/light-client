@@ -127,7 +127,7 @@ jobs:
           path: reports/junit
       - run:
           name: "Upload coverage"
-          command: cd .. && bash <(curl -s https://codecov.io/bash) -F sdk
+          command: cd .. && bash <(curl -s https://codecov.io/bash) -F sdk -C $CIRCLE_SHA1
 
   test_dapp:
     executor: base-executor
@@ -145,7 +145,7 @@ jobs:
           path: reports/junit
       - run:
           name: "Upload coverage"
-          command: cd .. && bash <(curl -s https://codecov.io/bash) -F dapp
+          command: cd .. && bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
 
   build_dapp:
     executor: base-executor
@@ -210,7 +210,7 @@ jobs:
           path: reports/junit
       - run:
           name: "Upload coverage"
-          command: cd .. && bash <(curl -s https://codecov.io/bash) -F sdk-integration
+          command: cd .. && bash <(curl -s https://codecov.io/bash) -F sdk_integration -C $CIRCLE_SHA1
 
 workflows:
   version: 2
