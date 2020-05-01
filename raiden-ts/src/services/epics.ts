@@ -39,7 +39,7 @@ import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '..
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
 import { channelMonitor } from '../channels/actions';
 import { ChannelState, Channel } from '../channels/state';
-import { channelAmounts } from '../channels/utils';
+import { channelAmounts, channelKey } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil, assert } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
@@ -200,7 +200,7 @@ export const pathFindServiceEpic = (
         mergeMap(
           ({ state, presences, config: { pfs: configPfs, httpTimeout, pfsSafetyMargin } }) => {
             const { tokenNetwork, target } = action.meta;
-            if (!(tokenNetwork in state.channels))
+            if (!Object.values(state.tokens).includes(tokenNetwork))
               throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, { tokenNetwork });
             if (!(target in presences) || !presences[target].payload.available)
               throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, { target });
@@ -389,27 +389,10 @@ export const pathFindServiceEpic = (
   );
 };
 
-function channelEntries(channels: RaidenState['channels']): ReadonlyArray<[string, Channel]> {
-  return Object.entries(channels)
-    .map(([tokenNetwork, partnerChannels]) =>
-      Object.entries(partnerChannels).map(
-        ([partner, channel]) => [`${partner}@${tokenNetwork}`, channel] as [string, Channel],
-      ),
-    )
-    .reduce((acc, val) => [...acc, ...val], []);
-}
-
-function keyToTNP(key: string): { key: string; tokenNetwork: Address; partnerAddr: Address } {
-  const [partner, tokenNetwork] = key.split('@');
-  return { key, tokenNetwork: tokenNetwork as Address, partnerAddr: partner as Address };
-}
-
-type ChangedChannel = Channel & ReturnType<typeof keyToTNP>;
-
 function distinctChannel$(latest$: RaidenEpicDeps['latest$']) {
   return latest$.pipe(
     pluckDistinct('state', 'channels'),
-    concatMap((channels) => from(channelEntries(channels))),
+    concatMap((channels) => from(Object.entries(channels))),
     /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
      * changes from last time seen. It relies on value references changing only if needed */
     scan(
@@ -420,9 +403,9 @@ function distinctChannel$(latest$: RaidenEpicDeps['latest$']) {
           : // else, update ref in 'acc' and emit value in 'changed' prop
             {
               acc: { ...acc, [key]: channel },
-              changed: { ...channel, ...keyToTNP(key) } as ChangedChannel,
+              changed: channel,
             },
-      { acc: {} } as { acc: { [k: string]: Channel }; changed?: ChangedChannel },
+      { acc: {} } as { acc: RaidenState['channels']; changed?: Channel },
     ),
     pluck('changed'),
     filter(isntNil), // filter out if reference didn't change from last emit
@@ -442,7 +425,7 @@ export const pfsCapacityUpdateEpic = (
   { log, address, network, signer, latest$, config$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
   distinctChannel$(latest$).pipe(
-    groupBy(({ key }) => key),
+    groupBy(channelKey),
     withLatestFrom(config$),
     mergeMap(([grouped$, { httpTimeout }]) =>
       grouped$.pipe(
@@ -450,7 +433,8 @@ export const pfsCapacityUpdateEpic = (
         filter(([, { pfsRoom }]) => !!pfsRoom), // ignore actions while/if config.pfsRoom isn't set
         debounceTime(httpTimeout / 2), // default: 15s
         concatMap(([channel, { revealTimeout, pfsRoom }]) => {
-          const { tokenNetwork, partnerAddr: partner } = channel;
+          const tokenNetwork = channel.tokenNetwork;
+          const partner = channel.partner.address;
           if (channel.state !== ChannelState.open) return EMPTY;
           const { ownCapacity, partnerCapacity } = channelAmounts(channel);
 
@@ -463,8 +447,8 @@ export const pfsCapacityUpdateEpic = (
             },
             updating_participant: address,
             other_participant: partner,
-            updating_nonce: channel.own.balanceProof?.nonce ?? (Zero as UInt<8>),
-            other_nonce: channel.partner.balanceProof?.nonce ?? (Zero as UInt<8>),
+            updating_nonce: channel.own.balanceProof.nonce,
+            other_nonce: channel.partner.balanceProof.nonce,
             updating_capacity: ownCapacity,
             other_capacity: partnerCapacity,
             reveal_timeout: bigNumberify(revealTimeout) as UInt<32>,
@@ -503,7 +487,7 @@ export const pfsFeeUpdateEpic = (
     // ignore actions while/if mediating not enabled
     filter(([, , { pfsRoom, caps }]) => !!pfsRoom && !caps?.[Capabilities.NO_MEDIATE]),
     mergeMap(([action, state, { pfsRoom }]) => {
-      const channel = state.channels[action.meta.tokenNetwork]?.[action.meta.partner];
+      const channel = state.channels[channelKey(action.meta)];
       if (channel?.state !== ChannelState.open) return EMPTY;
 
       const message: PFSFeeUpdate = {
@@ -632,11 +616,9 @@ function makeMonitoringRequest$({
   contractsInfo,
   latest$,
 }: RaidenEpicDeps) {
-  return ([channel, { monitoringRoom, monitoringReward }]: [ChangedChannel, RaidenConfig]) => {
+  return ([channel, { monitoringRoom, monitoringReward }]: [Channel, RaidenConfig]) => {
     // asserts never fail because of filter, here just to narrow types
-    assert(
-      channel.state === ChannelState.open && channel.partner.balanceProof && monitoringReward,
-    );
+    assert(monitoringReward);
 
     const balanceProof = channel.partner.balanceProof;
     const balanceHash = createBalanceHash(
@@ -709,19 +691,16 @@ export const monitorRequestEpic = (
 ): Observable<messageGlobalSend> =>
   distinctChannel$(deps.latest$).pipe(
     // per channel
-    groupBy(({ key }) => key),
+    groupBy(channelKey),
     withLatestFrom(deps.config$),
     mergeMap(([grouped$, { httpTimeout }]) =>
       grouped$.pipe(
         // act only if partner's transferredAmount or lockedAmount changes
         distinctUntilChanged(
           (x, y) =>
-            y.partner.balanceProof?.transferredAmount?.eq?.(
-              x.partner.balanceProof?.transferredAmount ?? Zero,
-            ) !== false &&
-            y.partner.balanceProof?.lockedAmount?.eq?.(
-              x.partner.balanceProof?.lockedAmount ?? Zero,
-            ) !== false,
+            y.partner.balanceProof.transferredAmount.eq(
+              x.partner.balanceProof.transferredAmount,
+            ) && y.partner.balanceProof.lockedAmount.eq(x.partner.balanceProof.lockedAmount),
         ),
         skip(1), // distinctUntilChanged allows first, we want to skip and act only on changes
         withLatestFrom(deps.config$),

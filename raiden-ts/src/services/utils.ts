@@ -11,7 +11,7 @@ import { Address, UInt, decode } from '../utils/types';
 import { losslessParse } from '../utils/data';
 import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
-import { channelAmounts } from '../channels/utils';
+import { channelAmounts, channelKey } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
 import { RaidenError, ErrorCodes } from '../utils/error';
 import { Capabilities } from '../constants';
@@ -41,9 +41,8 @@ export function channelCanRoute(
     return `path: partner "${partner}" not available in transport`;
   if (target !== partner && presences[partner].payload.caps?.[Capabilities.NO_MEDIATE])
     return `path: partner "${partner}" doesn't mediate transfers`;
-  if (!(partner in state.channels[tokenNetwork]))
-    return `path: there's no direct channel with partner "${partner}"`;
-  const channel = state.channels[tokenNetwork][partner];
+  const channel = state.channels[channelKey({ tokenNetwork, partner })];
+  if (!channel) return `path: there's no direct channel with partner "${partner}"`;
   if (channel.state !== ChannelState.open)
     return `path: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`;
   const { ownCapacity: capacity } = channelAmounts(channel);

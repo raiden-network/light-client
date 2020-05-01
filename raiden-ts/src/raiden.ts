@@ -46,6 +46,7 @@ import {
   channelSettle,
   tokenMonitored,
 } from './channels/actions';
+import { channelKey } from './channels/utils';
 import { matrixPresence } from './transport/actions';
 import { transfer, transferSigned } from './transfers/actions';
 import { makeSecret, getSecrethash, makePaymentId, raidenSentTransfer } from './transfers/utils';
@@ -60,7 +61,7 @@ import {
   getContracts,
   getSigner,
   initTransfers$,
-  mapTokenToPartner,
+  mapRaidenChannels,
   chooseOnchainAccount,
   getContractWithSigner,
   waitConfirmation,
@@ -164,7 +165,7 @@ export class Raiden {
     this.state$ = latest$.pipe(pluckDistinct('state'));
     // pipe action, skipping cached
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
-    this.channels$ = this.state$.pipe(map((state) => mapTokenToPartner(state)));
+    this.channels$ = this.state$.pipe(pluckDistinct('channels'), map(mapRaidenChannels));
     this.transfers$ = initTransfers$(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
 
@@ -569,7 +570,7 @@ export class Raiden {
 
     await this.state$
       .pipe(
-        pluckDistinct('channels', tokenNetwork, partner, 'state'),
+        pluckDistinct('channels', channelKey({ tokenNetwork, partner }), 'state'),
         first((state) => state === ChannelState.open),
       )
       .toPromise();

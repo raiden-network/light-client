@@ -110,9 +110,7 @@ export default class Channels extends Mixins(NavigationMixin) {
 
   get open(): RaidenChannel[] {
     return this.channels(this.$route.params.token).filter(
-      channel =>
-        channel.state === ChannelState.open ||
-        channel.state === ChannelState.opening
+      channel => channel.state === ChannelState.open
     );
   }
 

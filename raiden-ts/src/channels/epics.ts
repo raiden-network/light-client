@@ -28,25 +28,24 @@ import {
   publishReplay,
   ignoreElements,
   skip,
-  startWith,
   retryWhen,
 } from 'rxjs/operators';
 import findKey from 'lodash/findKey';
 import isEmpty from 'lodash/isEmpty';
 import negate from 'lodash/negate';
 
-import { BigNumber, hexlify, concat, defaultAbiCoder } from 'ethers/utils';
+import { BigNumber, concat, defaultAbiCoder } from 'ethers/utils';
 import { Event } from 'ethers/contract';
-import { HashZero, Zero } from 'ethers/constants';
+import { Zero } from 'ethers/constants';
 import { Filter } from 'ethers/providers';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
 import { ChannelState } from '../channels';
 import { RaidenState } from '../state';
-import { SignatureZero, ShutdownReason } from '../constants';
+import { ShutdownReason } from '../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
-import { Address, Hash, UInt, Signature, isntNil, assert, HexString } from '../utils/types';
+import { Address, Hash, UInt, Signature, isntNil, HexString } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { pluckDistinct } from '../utils/rx';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
@@ -64,7 +63,7 @@ import {
   channelSettleable,
   channelWithdrawn,
 } from './actions';
-import { assertTx } from './utils';
+import { assertTx, channelKey } from './utils';
 
 /**
  * Receives an async function and returns an observable which will retry it every interval until it
@@ -126,8 +125,8 @@ export const initTokensRegistryEpic = (
       // if tokens are already initialized, use it
       if (!isEmpty(state.tokens))
         return from(
-          Object.entries(state.tokens).map(([token, tokenNetwork]) =>
-            tokenMonitored({ token: token as Address, tokenNetwork }),
+          (Object.entries(state.tokens) as [Address, Address][]).map(([token, tokenNetwork]) =>
+            tokenMonitored({ token, tokenNetwork }),
           ),
         );
       // else, do an initial registry scan, from deploy to now
@@ -203,14 +202,11 @@ export const initMonitorChannelsEpic = (
   state$.pipe(
     first(),
     mergeMap(function* (state) {
-      for (const [tokenNetwork, obj] of Object.entries(state.channels)) {
-        for (const [partner, channel] of Object.entries(obj)) {
-          if (channel.state === ChannelState.opening) continue;
-          yield channelMonitor(
-            { id: channel.id },
-            { tokenNetwork: tokenNetwork as Address, partner: partner as Address },
-          );
-        }
+      for (const channel of Object.values(state.channels)) {
+        yield channelMonitor(
+          { id: channel.id },
+          { tokenNetwork: channel.tokenNetwork, partner: channel.partner.address },
+        );
       }
     }),
   );
@@ -305,6 +301,7 @@ export const tokenMonitoredEpic = (
               channelOpen.success(
                 {
                   id: id.toNumber(),
+                  token: action.payload.token,
                   settleTimeout: settleTimeout.toNumber(),
                   isFirstParticipant: address === p1,
                   txHash: event.transactionHash! as Hash,
@@ -362,18 +359,18 @@ export const channelOpenedEpic = (action$: Observable<RaidenAction>): Observable
  */
 export const channelMonitoredEpic = (
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-  { getTokenNetworkContract }: RaidenEpicDeps,
+  {}: Observable<RaidenState>,
+  { getTokenNetworkContract, latest$ }: RaidenEpicDeps,
 ): Observable<
   channelDeposit.success | channelWithdrawn | channelClose.success | channelSettle.success
 > =>
   action$.pipe(
     filter(isActionOf(channelMonitor)),
-    groupBy((action) => `${action.payload.id}#${action.meta.partner}@${action.meta.tokenNetwork}`),
+    groupBy((action) => `${action.payload.id}#${channelKey(action.meta)}`),
     mergeMap((grouped$) =>
       grouped$.pipe(
         exhaustMap((action) => {
-          const { tokenNetwork, partner } = action.meta;
+          const { tokenNetwork } = action.meta;
           const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
 
           // type of elements emitted by getEventsStream (past and new events coming from
@@ -454,7 +451,7 @@ export const channelMonitoredEpic = (
             // fetch Channel's pastEvents since channelOpen.success blockNumber as fromBlock$
             action.payload.fromBlock ? of(action.payload.fromBlock) : undefined,
           ).pipe(
-            withLatestFrom(state$.pipe(pluck('channels'), startWith<RaidenState['channels']>({}))),
+            withLatestFrom(latest$.pipe(pluck('state', 'channels'))),
             map(([data, channels]) => {
               if (isEvent<ChannelNewDepositEvent>(depositFilter, data)) {
                 const [id, participant, totalDeposit, event] = data;
@@ -502,7 +499,7 @@ export const channelMonitoredEpic = (
                     txHash: event.transactionHash! as Hash,
                     txBlock: event.blockNumber!,
                     confirmed: undefined,
-                    locks: channels[tokenNetwork]?.[partner]?.partner?.locks,
+                    locks: channels[channelKey(action.meta)]?.partner?.locks,
                   },
                   action.meta,
                 );
@@ -552,9 +549,9 @@ export const channelOpenEpic = (
     withLatestFrom(state$, config$),
     mergeMap(([action, state, { settleTimeout, subkey: configSubkey }]) => {
       const { tokenNetwork, partner } = action.meta;
-      const channelState = state.channels[tokenNetwork]?.[partner]?.state;
-      // proceed only if channel is in 'opening' state, set by this action
-      if (channelState !== ChannelState.opening)
+      const channelState = state.channels[channelKey(action.meta)]?.state;
+      // fails if channel already exist
+      if (channelState)
         return of(
           channelOpen.failure(
             new RaidenError(ErrorCodes.CNL_INVALID_STATE, { state: channelState }),
@@ -700,7 +697,8 @@ export const channelDepositEpic = (
         getTokenNetworkContract(tokenNetwork),
         onchainSigner,
       );
-      const channel = state.channels[tokenNetwork][partner];
+      const key = channelKey(action.meta);
+      const channel = state.channels[key];
       if (channel?.state !== ChannelState.open) {
         const error = new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND, action.meta);
         return of(channelDeposit.failure(error, action.meta));
@@ -715,7 +713,7 @@ export const channelDepositEpic = (
           tokenNetworkContract.functions.setTotalDeposit(
             channel.id,
             address,
-            state.channels[tokenNetwork][partner].own.deposit.add(action.payload.deposit),
+            state.channels[key].own.deposit.add(action.payload.deposit),
             partner,
           ),
         ),
@@ -760,7 +758,7 @@ export const channelCloseEpic = (
         getTokenNetworkContract(tokenNetwork),
         onchainSigner,
       );
-      const channel = state.channels[tokenNetwork]?.[partner];
+      const channel = state.channels[channelKey(action.meta)];
       if (channel?.state !== ChannelState.open && channel?.state !== ChannelState.closing) {
         const error = new RaidenError(
           ErrorCodes.CNL_NO_OPEN_OR_CLOSING_CHANNEL_FOUND,
@@ -769,21 +767,14 @@ export const channelCloseEpic = (
         return of(channelClose.failure(error, action.meta));
       }
 
-      let balanceHash = HashZero as Hash,
-        nonce = Zero as UInt<8>,
-        additionalHash = HashZero as Hash,
-        nonClosingSignature = hexlify(SignatureZero) as Signature;
-
-      if (channel.partner.balanceProof) {
-        balanceHash = createBalanceHash(
-          channel.partner.balanceProof.transferredAmount,
-          channel.partner.balanceProof.lockedAmount,
-          channel.partner.balanceProof.locksroot,
-        );
-        nonce = channel.partner.balanceProof.nonce;
-        additionalHash = channel.partner.balanceProof.additionalHash;
-        nonClosingSignature = channel.partner.balanceProof.signature;
-      }
+      const balanceHash = createBalanceHash(
+        channel.partner.balanceProof.transferredAmount,
+        channel.partner.balanceProof.lockedAmount,
+        channel.partner.balanceProof.locksroot,
+      );
+      const nonce = channel.partner.balanceProof.nonce;
+      const additionalHash = channel.partner.balanceProof.additionalHash;
+      const nonClosingSignature = channel.partner.balanceProof.signature;
 
       const closingMessage = concat([
         encode(tokenNetwork, 20),
@@ -844,11 +835,13 @@ export const channelUpdateEpic = (
     mergeMap((action) => action$.pipe(filter(newBlock.is), skip(1), take(1), mapTo(action))),
     withLatestFrom(state$, config$),
     filter(([action, state]) => {
-      const channel = state.channels[action.meta.tokenNetwork]?.[action.meta.partner];
+      const channel = state.channels[channelKey(action.meta)];
       return (
         channel?.state === ChannelState.closed &&
         channel.id === action.payload.id &&
-        !!channel.partner.balanceProof && // there's partners balanceProof (i.e. received transfers)
+        channel.partner.balanceProof.transferredAmount
+          .add(channel.partner.balanceProof.lockedAmount)
+          .gt(Zero) && // there's partners balanceProof (i.e. received transfers)
         channel.closeParticipant !== address // we're not the closing end
       );
     }),
@@ -859,11 +852,7 @@ export const channelUpdateEpic = (
         getTokenNetworkContract(tokenNetwork),
         onchainSigner,
       );
-
-      const channel = state.channels[tokenNetwork][partner];
-      // should never happen because of filter, just here to narrow union
-      assert(channel?.state === ChannelState.closed);
-      assert(channel.partner.balanceProof);
+      const channel = state.channels[channelKey(action.meta)];
 
       const balanceHash = createBalanceHash(
         channel.partner.balanceProof.transferredAmount,
@@ -933,7 +922,7 @@ export const channelSettleEpic = (
     filter(isActionOf(channelSettle.request)),
     withLatestFrom(state$, config$),
     mergeMap(([action, state, { subkey: configSubkey }]) => {
-      const { tokenNetwork, partner } = action.meta;
+      const { tokenNetwork } = action.meta;
       const { signer: onchainSigner } = chooseOnchainAccount(
         { signer, address, main },
         action.payload?.subkey ?? configSubkey,
@@ -942,7 +931,7 @@ export const channelSettleEpic = (
         getTokenNetworkContract(tokenNetwork),
         onchainSigner,
       );
-      const channel = state.channels[tokenNetwork]?.[partner];
+      const channel = state.channels[channelKey(action.meta)];
       if (channel?.state !== ChannelState.settleable && channel?.state !== ChannelState.settling) {
         const error = new RaidenError(
           ErrorCodes.CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND,
@@ -951,26 +940,14 @@ export const channelSettleEpic = (
         return of(channelSettle.failure(error, action.meta));
       }
 
-      const zeroBalanceProof = {
-        transferredAmount: Zero as UInt<32>,
-        lockedAmount: Zero as UInt<32>,
-        locksroot: HashZero as Hash,
-      };
-      let part1 = {
-          address: partner,
-          ...zeroBalanceProof,
-          ...channel.partner.balanceProof,
-        },
-        part2 = {
-          address,
-          ...zeroBalanceProof,
-          ...channel.own.balanceProof,
-        };
+      let part1 = channel.own;
+      let part2 = channel.partner;
 
+      // part1 total amounts must be <= part2 total amounts on settleChannel call
       if (
-        part2.transferredAmount
-          .add(part2.lockedAmount)
-          .lt(part1.transferredAmount.add(part1.lockedAmount))
+        part2.balanceProof.transferredAmount
+          .add(part2.balanceProof.lockedAmount)
+          .lt(part1.balanceProof.transferredAmount.add(part1.balanceProof.lockedAmount))
       )
         [part1, part2] = [part2, part1];
 
@@ -979,13 +956,13 @@ export const channelSettleEpic = (
         tokenNetworkContract.functions.settleChannel(
           channel.id,
           part1.address,
-          part1.transferredAmount,
-          part1.lockedAmount,
-          part1.locksroot,
+          part1.balanceProof.transferredAmount,
+          part1.balanceProof.lockedAmount,
+          part1.balanceProof.locksroot,
           part2.address,
-          part2.transferredAmount,
-          part2.lockedAmount,
-          part2.locksroot,
+          part2.balanceProof.transferredAmount,
+          part2.balanceProof.lockedAmount,
+          part2.balanceProof.locksroot,
         ),
       ).pipe(
         assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log }),
@@ -1019,20 +996,15 @@ export const channelSettleableEpic = (
       },
       state,
     ]) {
-      for (const tokenNetwork in state.channels) {
-        for (const partner in state.channels[tokenNetwork]) {
-          const channel = state.channels[tokenNetwork][partner];
-          if (
-            channel.state === ChannelState.closed &&
-            channel.settleTimeout && // closed channels always have settleTimeout & closeBlock set
-            channel.closeBlock &&
-            blockNumber > channel.closeBlock + channel.settleTimeout
-          ) {
-            yield channelSettleable(
-              { settleableBlock: blockNumber },
-              { tokenNetwork: tokenNetwork as Address, partner: partner as Address },
-            );
-          }
+      for (const channel of Object.values(state.channels)) {
+        if (
+          channel.state === ChannelState.closed &&
+          blockNumber > channel.closeBlock + channel.settleTimeout
+        ) {
+          yield channelSettleable(
+            { settleableBlock: blockNumber },
+            { tokenNetwork: channel.tokenNetwork, partner: channel.partner.address },
+          );
         }
       }
     }),
@@ -1057,10 +1029,8 @@ export const channelUnlockEpic = (
     filter(isActionOf(channelSettle.success)),
     filter((action) => !!(action.payload.confirmed && action.payload.locks?.length)),
     withLatestFrom(state$, config$),
-    filter(([action, state]) => {
-      const channel = state.channels[action.meta.tokenNetwork]?.[action.meta.partner];
-      return !channel || !('id' in channel) || channel.id !== action.payload.id;
-    }),
+    // ensure there's no channel, or if yes, it's a different (by channelId)
+    filter(([action, state]) => state.channels[channelKey(action.meta)]?.id !== action.payload.id),
     mergeMap(([action, , { subkey }]) => {
       const { tokenNetwork, partner } = action.meta;
       const tokenNetworkContract = getContractWithSigner(

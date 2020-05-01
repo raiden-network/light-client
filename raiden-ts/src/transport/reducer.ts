@@ -1,9 +1,3 @@
-import get from 'lodash/fp/get';
-import getOr from 'lodash/fp/getOr';
-import isEmpty from 'lodash/fp/isEmpty';
-import set from 'lodash/fp/set';
-import unset from 'lodash/fp/unset';
-
 import { partialCombineReducers } from '../utils/redux';
 import { createReducer } from '../utils/actions';
 import { initialState } from '../state';
@@ -31,27 +25,33 @@ const transport = createReducer(initialState.transport)
       },
     };
   })
-  .handle(matrixRoom, (state, action) => {
-    const path = ['matrix', 'rooms', action.meta.address];
-    return set(
-      path,
-      [
-        action.payload.roomId,
-        ...(getOr([], path, state) as string[]).filter((room) => room !== action.payload.roomId),
-      ],
-      state,
-    );
-  })
-  .handle(matrixRoomLeave, (state, action) => {
-    const path = ['matrix', 'rooms', action.meta.address];
-    state = set(
-      path,
-      (getOr([], path, state) as string[]).filter((r) => r !== action.payload.roomId),
-      state,
-    );
-    if (isEmpty(get(path, state))) state = unset(path, state);
-    return state;
-  });
+  .handle(matrixRoom, (state, action) => ({
+    ...state,
+    matrix: {
+      ...state.matrix!,
+      rooms: {
+        ...state.matrix?.rooms,
+        [action.meta.address]: [
+          action.payload.roomId,
+          ...(state.matrix?.rooms?.[action.meta.address] ?? []).filter(
+            (room) => room !== action.payload.roomId,
+          ),
+        ],
+      },
+    },
+  }))
+  .handle(matrixRoomLeave, (state, action) => ({
+    ...state,
+    matrix: {
+      ...state.matrix!,
+      rooms: {
+        ...state.matrix?.rooms,
+        [action.meta.address]: (state.matrix?.rooms?.[action.meta.address] ?? []).filter(
+          (room) => room !== action.payload.roomId,
+        ),
+      },
+    },
+  }));
 
 /**
  * Nested/combined reducer for transport

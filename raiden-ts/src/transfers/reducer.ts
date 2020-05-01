@@ -1,16 +1,11 @@
-import get from 'lodash/fp/get';
-import set from 'lodash/fp/set';
 import unset from 'lodash/fp/unset';
-import { Zero, HashZero } from 'ethers/constants';
-import { hexlify } from 'ethers/utils';
 
+import { channelKey } from '../channels/utils';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
-import { Channel, ChannelState } from '../channels/state';
-import { BalanceProof } from '../channels/types';
+import { ChannelState } from '../channels/state';
 import { channelClose } from '../channels/actions';
-import { SignatureZero } from '../constants';
-import { timed, UInt, Signature, Hash, Signed } from '../utils/types';
+import { timed } from '../utils/types';
 import { Reducer, createReducer } from '../utils/actions';
 import { getBalanceProofFromEnvelopeMessage, getMessageSigner } from '../messages/utils';
 import { getLocksroot } from './utils';
@@ -73,22 +68,18 @@ function transferSignedReducer(state: RaidenState, action: transferSigned): Raid
 
   // transferSigned must be the first action, to init TransferState state
   if (secrethash in state[action.meta.direction]) return state;
-  const channelPath = ['channels', transfer.token_network_address, partner];
-  let channel: Channel | undefined = get(channelPath, state);
+  const key = channelKey({ tokenNetwork: transfer.token_network_address, partner });
+  let channel = state.channels[key];
   if (!channel) return state;
 
-  const locks = [...(channel[end].locks ?? []), lock]; // append lock
+  const locks = [...channel[end].locks, lock]; // append lock
   const locksroot = getLocksroot(locks);
   if (
     transfer.locksroot !== locksroot ||
     // nonce must be next
-    !transfer.nonce.eq(
-      (channel[end].balanceProof ? channel[end].balanceProof!.nonce : Zero).add(1),
-    ) ||
-    !transfer.transferred_amount.eq(
-      channel[end].balanceProof ? channel[end].balanceProof!.transferredAmount : Zero,
-    ) ||
-    !transfer.locked_amount.eq((channel[end].balanceProof?.lockedAmount ?? Zero).add(lock.amount))
+    !transfer.nonce.eq(channel[end].balanceProof.nonce.add(1)) ||
+    !transfer.transferred_amount.eq(channel[end].balanceProof.transferredAmount) ||
+    !transfer.locked_amount.eq(channel[end].balanceProof.lockedAmount.add(lock.amount))
   )
     return state;
 
@@ -107,9 +98,11 @@ function transferSignedReducer(state: RaidenState, action: transferSigned): Raid
     partner,
   };
 
-  state = set(channelPath, channel, state);
-  state = set([action.meta.direction, secrethash], transferState, state);
-  return state;
+  return {
+    ...state,
+    channels: { ...state.channels, [key]: channel },
+    [action.meta.direction]: { ...state[action.meta.direction], [secrethash]: transferState },
+  };
 }
 
 function transferSecretRequestedReducer(
@@ -168,18 +161,18 @@ function transferUnlockSuccessReducer(
   const partner = state[action.meta.direction][secrethash].partner;
   const end = END[action.meta.direction];
 
+  const key = channelKey({ tokenNetwork: transfer.token_network_address, partner });
+  let channel = state.channels[key];
   const lock = transfer.lock;
-  const channelPath = ['channels', transfer.token_network_address, partner];
-  let channel: Channel | undefined = get(channelPath, state);
-  if (!channel || !channel[end].locks || !channel[end].balanceProof) return state;
+  if (!channel || !channel[end].locks.length) return state;
 
-  const locks = channel[end].locks!.filter((l) => l.secrethash !== secrethash);
+  const locks = channel[end].locks.filter((l) => l.secrethash !== secrethash);
   const locksroot = getLocksroot(locks);
   if (
     unlock.locksroot !== locksroot ||
-    !channel[end].balanceProof!.nonce.add(1).eq(unlock.nonce) || // nonce must be next
-    !unlock.transferred_amount.eq(channel[end].balanceProof!.transferredAmount.add(lock.amount)) ||
-    !unlock.locked_amount.eq(channel[end].balanceProof!.lockedAmount.sub(lock.amount))
+    !channel[end].balanceProof.nonce.add(1).eq(unlock.nonce) || // nonce must be next
+    !unlock.transferred_amount.eq(channel[end].balanceProof.transferredAmount.add(lock.amount)) ||
+    !unlock.locked_amount.eq(channel[end].balanceProof.lockedAmount.sub(lock.amount))
   )
     return state;
 
@@ -197,9 +190,11 @@ function transferUnlockSuccessReducer(
     unlock: timed(unlock),
   };
 
-  state = set(channelPath, channel, state);
-  state = set([action.meta.direction, secrethash], transferState, state);
-  return state;
+  return {
+    ...state,
+    channels: { ...state.channels, [key]: channel },
+    [action.meta.direction]: { ...state[action.meta.direction], [secrethash]: transferState },
+  };
 }
 
 function transferExpireSuccessReducer(
@@ -219,18 +214,18 @@ function transferExpireSuccessReducer(
   const partner = state[action.meta.direction][secrethash].partner;
   const end = END[action.meta.direction];
 
+  const key = channelKey({ tokenNetwork: transfer.token_network_address, partner });
+  let channel = state.channels[key];
   const lock = transfer.lock;
-  const channelPath = ['channels', transfer.token_network_address, partner];
-  let channel: Channel | undefined = get(channelPath, state);
-  if (!channel || !channel[end].locks || !channel[end].balanceProof) return state;
+  if (!channel || !channel[end].locks.length) return state;
 
-  const locks = channel[end].locks!.filter((l) => l.secrethash !== secrethash);
+  const locks = channel[end].locks.filter((l) => l.secrethash !== secrethash);
   const locksroot = getLocksroot(locks);
   if (
     expired.locksroot !== locksroot ||
-    !channel[end].balanceProof!.nonce.add(1).eq(expired.nonce) || // nonce must be next
-    !expired.transferred_amount.eq(channel[end].balanceProof!.transferredAmount) ||
-    !expired.locked_amount.eq(channel[end].balanceProof!.lockedAmount.sub(lock.amount))
+    !channel[end].balanceProof.nonce.add(1).eq(expired.nonce) || // nonce must be next
+    !expired.transferred_amount.eq(channel[end].balanceProof.transferredAmount) ||
+    !expired.locked_amount.eq(channel[end].balanceProof.lockedAmount.sub(lock.amount))
   )
     return state;
 
@@ -248,9 +243,11 @@ function transferExpireSuccessReducer(
     lockExpired: timed(expired),
   };
 
-  state = set(channelPath, channel, state);
-  state = set([action.meta.direction, secrethash], transferState, state);
-  return state;
+  return {
+    ...state,
+    channels: { ...state.channels, [key]: channel },
+    [action.meta.direction]: { ...state[action.meta.direction], [secrethash]: transferState },
+  };
 }
 
 function transferStateReducer(
@@ -335,22 +332,11 @@ function withdrawReceiveSuccessReducer(
   // TODO: subtract this pending withdraw request from partner's capacity (maybe some pending
   // withdraws state), revert upon expiration or consolidate on confirmed channelWithdrawn
   const message = action.payload.message;
-  const channelPath = ['channels', action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(channelPath, state);
+  const key = channelKey(action.meta);
+  let channel = state.channels[key];
   if (!channel || channel.state !== ChannelState.open) return state;
   // current own balanceProof, or zero balance proof, with some known fields filled
-  const balanceProof: Signed<BalanceProof> = channel.own.balanceProof || {
-    chainId: message.chain_id,
-    tokenNetworkAddress: action.meta.tokenNetwork,
-    channelId: message.channel_identifier,
-    // balance proof data
-    nonce: Zero as UInt<8>,
-    transferredAmount: Zero as UInt<32>,
-    lockedAmount: Zero as UInt<32>,
-    locksroot: HashZero as Hash,
-    additionalHash: HashZero as Hash,
-    signature: hexlify(SignatureZero) as Signature,
-  };
+  const balanceProof = channel.own.balanceProof;
   // if it's the next nonce, update balance proof
   if (message.nonce.eq(balanceProof.nonce.add(1)) && message.expiration.gt(state.blockNumber)) {
     channel = {
@@ -363,7 +349,7 @@ function withdrawReceiveSuccessReducer(
         },
       },
     };
-    state = set(channelPath, channel, state);
+    state = { ...state, channels: { ...state.channels, [key]: channel } };
   }
   return state;
 }
