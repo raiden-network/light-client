@@ -21,7 +21,7 @@
           full-width
           class="transfer__top-button"
           @click="navigateToChannels(token.address)"
-        ></action-button>
+        />
       </v-col>
       <v-col cols="6">
         <action-button
@@ -31,7 +31,7 @@
           full-width
           class="transfer__top-button"
           @click="showTokenNetworks = true"
-        ></action-button>
+        />
       </v-col>
       <v-col cols="3" sm="2">
         <action-button
@@ -41,7 +41,7 @@
           enabled
           class="transfer__top-button"
           @click="depositing = true"
-        ></action-button>
+        />
         <channel-deposit-dialog
           :loading="loading"
           :done="done"
@@ -53,46 +53,52 @@
         />
       </v-col>
     </v-row>
-    <v-form
-      v-model="valid"
-      autocomplete="off"
-      class="transfer"
-      novalidate
-      @submit.prevent="navigateToTransferSteps(target, amount)"
-    >
-      <v-row justify="center" align="center" class="transfer__recipient">
-        <v-col cols="10">
-          <address-input
-            v-model="target"
-            :exclude="[token.address, defaultAccount]"
-            :block="blockedHubs"
-          ></address-input>
-        </v-col>
-      </v-row>
 
-      <v-row justify="center" align="center">
-        <v-col cols="10">
-          <amount-input
-            v-model="amount"
-            :token="token"
-            :placeholder="$t('transfer.amount-placeholder')"
-            :max="capacity"
-            limit
-          ></amount-input>
-        </v-col>
-      </v-row>
-
-      <v-spacer></v-spacer>
-
-      <action-button
-        :enabled="valid"
-        :text="$t('general.buttons.continue')"
-        class="transfer__action-button"
-        sticky
-        arrow
-      ></action-button>
-      <error-dialog :error="error" @dismiss="error = null"></error-dialog>
-    </v-form>
+    <div class="transfer__form-container">
+      <v-form
+        v-model="valid"
+        autocomplete="off"
+        novalidate
+        @submit.prevent="navigateToTransferSteps(target, amount)"
+      >
+        <v-row class="transfer__form-container__title" no-gutters>
+          {{ $t('transfer.transfer-title') }}
+        </v-row>
+        <div class="transfer__form-container__form">
+          <v-row no-gutters>
+            <v-col>
+              <address-input
+                v-model="target"
+                class="transfer__form-container__form__address-input"
+                :exclude="[token.address, defaultAccount]"
+                :block="blockedHubs"
+              />
+            </v-col>
+            <v-col>
+              <amount-input
+                v-model="amount"
+                class="transfer__form-container__form__amount-input"
+                :token="token"
+                :placeholder="$t('transfer.amount-placeholder')"
+                :max="capacity"
+                limit
+              />
+            </v-col>
+          </v-row>
+          <v-row no-gutters>
+            <action-button
+              class="transfer__form-container__form__transfer-button"
+              full-width
+              :enabled="valid"
+              :text="$t('general.buttons.continue')"
+              arrow
+            />
+          </v-row>
+        </div>
+      </v-form>
+    </div>
+    <error-dialog :error="error" @dismiss="error = null" />
+    <transactions-list />
   </v-container>
 </template>
 
@@ -109,6 +115,7 @@ import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
+import TransactionsList from '@/components/transaction-history/TransactionsList.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
 import { RaidenChannel, ChannelState, RaidenError } from 'raiden-ts';
@@ -129,7 +136,8 @@ import BlockieMixin from '@/mixins/blockie-mixin';
     Stepper,
     ErrorDialog,
     TokenOverlay,
-    AmountDisplay
+    AmountDisplay,
+    TransactionsList
   },
   computed: {
     ...mapState(['defaultAccount']),
@@ -231,8 +239,8 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 @import '../../scss/fonts';
 
 .transfer {
-  width: 100%;
   height: 100%;
+  width: 100%;
 
   &__token-network-amount {
     color: $color-white;
@@ -247,11 +255,49 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
     margin-top: 10px;
   }
 
-  &__recipient {
-    margin-top: 75px;
+  &__form-container {
+    margin-top: 50px;
 
-    @include respond-to(handhelds) {
-      margin-top: 0;
+    &__title {
+      color: $color-gray;
+      font-weight: bold;
+      margin-left: 50px;
+      padding-bottom: 20px;
+    }
+
+    &__form {
+      background-color: $transfer-form-color;
+      border-radius: 15px;
+      height: 175px;
+      margin: 0 auto;
+      width: 511px;
+
+      &__address-input {
+        margin-left: 23px;
+        margin-top: 9px;
+        width: 226px;
+      }
+
+      &__amount-input {
+        margin-left: auto;
+        margin-right: 23px;
+        margin-top: 9px;
+        width: 189px;
+      }
+
+      &__transfer-button {
+        margin: 13px 23px 0 23px;
+
+        ::v-deep {
+          .col-10 {
+            flex: 1;
+            max-width: 100%;
+          }
+          .v-btn {
+            border-radius: 8px;
+          }
+        }
+      }
     }
   }
 }

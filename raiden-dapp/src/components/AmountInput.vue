@@ -1,8 +1,6 @@
 <template>
   <fieldset class="amount-input">
-    <div class="amount-input__label">
-      {{ label }}
-    </div>
+    <div class="amount-input__label">{{ label }}</div>
     <v-text-field
       id="amount"
       ref="input"
@@ -208,8 +206,9 @@ $header-vertical-margin-mobile: 2rem;
     .v-messages {
       border: 1px solid transparent;
       font-family: $main-font;
-      font-size: 14px;
+      font-size: 11px;
       line-height: 16px;
+      margin: -5px 0 0 -19px;
 
       &__wrapper {
         height: 25px;
@@ -226,6 +225,7 @@ $header-vertical-margin-mobile: 2rem;
       }
 
       &__message {
+        color: $error-color;
         line-height: 1.1;
       }
     }
