@@ -21,6 +21,7 @@ import {
 } from 'raiden-ts/transfers/utils';
 import { monitorRequestEpic, monitorUdcBalanceEpic } from 'raiden-ts/services/epics';
 import { udcDeposited } from 'raiden-ts/services/actions';
+import { transferProcessed } from 'raiden-ts/transfers/actions';
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps } from '../mocks';
@@ -40,7 +41,7 @@ test('monitorUdcBalanceEpic', async () => {
     depsMock.userDepositContract.functions.balances.mockResolvedValueOnce(deposit);
     action$.next(newBlock({ blockNumber: 2 }));
   }, 10);
-  setTimeout(() => action$.complete(), 500);
+  setTimeout(() => action$.complete(), 50);
 
   await expect(promise).resolves.toEqual([udcDeposited(Zero as UInt<32>), udcDeposited(deposit)]);
   expect(depsMock.userDepositContract.functions.balances).toHaveBeenCalledTimes(2);
@@ -159,12 +160,17 @@ describe('monitorRequestEpic', () => {
         state.channels[tokenNetwork][partner].partner.balanceProof?.lockedAmount ?? Zero
       ).add(lock.amount) as UInt<32>,
     };
+
     const transf = await signMessage(partnerSigner, unsigned, depsMock);
+    const received = action$.pipe(first(transferProcessed.is)).toPromise();
+
     transferGenerateAndSignEnvelopeMessageEpic(
       of(messageReceived({ text: '', message: transf, ts: Date.now() }, { address: partner })),
       state$,
       depsMock,
     ).subscribe((a) => action$.next(a));
+
+    return received;
   }
 
   afterEach(() => {
@@ -181,9 +187,8 @@ describe('monitorRequestEpic', () => {
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
     action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
-
     await receiveTransfer(10);
-    setTimeout(() => action$.complete(), 500);
+    setTimeout(() => action$.complete(), 50);
 
     await expect(promise).resolves.toEqual(
       messageGlobalSend(
@@ -205,7 +210,7 @@ describe('monitorRequestEpic', () => {
     action$.next(udcDeposited(monitoringReward.sub(1) as UInt<32>));
 
     await receiveTransfer(10);
-    setTimeout(() => action$.complete(), 500);
+    setTimeout(() => action$.complete(), 50);
 
     await expect(promise).resolves.toBeUndefined();
   });
@@ -218,7 +223,7 @@ describe('monitorRequestEpic', () => {
     action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
 
     await receiveTransfer(10);
-    setTimeout(() => action$.complete(), 500);
+    setTimeout(() => action$.complete(), 50);
 
     await expect(promise).resolves.toBeUndefined();
   });
@@ -235,7 +240,7 @@ describe('monitorRequestEpic', () => {
 
     // to reject AFTER receiveTransfer signed Processed
     signerSpy.mockRejectedValueOnce(new Error('Signature rejected'));
-    setTimeout(() => action$.complete(), 500);
+    setTimeout(() => action$.complete(), 50);
 
     await expect(promise).resolves.toBeUndefined();
 
