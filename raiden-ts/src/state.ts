@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
 import * as t from 'io-ts';
 import { AddressZero } from 'ethers/constants';
 import { Network, getNetwork } from 'ethers/utils';
@@ -12,6 +11,7 @@ import { ConfirmableAction } from './actions';
 import migrateState, { CURRENT_STATE_VERSION } from './migration';
 import { losslessParse, losslessStringify } from './utils/data';
 import { Address, Signed, Storage, decode } from './utils/types';
+import { ChannelKey } from './channels/types';
 import { Channel } from './channels/state';
 import { RaidenMatrixSetup } from './transport/state';
 import { TransfersState } from './transfers/state';
@@ -31,12 +31,8 @@ export const RaidenState = t.readonly(
     registry: Address,
     blockNumber: t.number,
     config: PartialRaidenConfig,
-    channels: t.readonly(
-      t.record(
-        t.string /* tokenNetwork: Address */,
-        t.readonly(t.record(t.string /* partner: Address */, Channel)),
-      ),
-    ),
+    channels: t.readonly(t.record(ChannelKey, Channel)),
+    oldChannels: t.readonly(t.record(t.string, Channel)),
     tokens: t.readonly(t.record(t.string /* token: Address */, Address)),
     transport: t.readonly(
       t.partial({
@@ -138,6 +134,7 @@ export function makeInitialState(
     blockNumber: contractsInfo.TokenNetworkRegistry.block_number,
     config: overwrites.config ?? {},
     channels: {},
+    oldChannels: {},
     tokens: {},
     transport: {},
     sent: {},

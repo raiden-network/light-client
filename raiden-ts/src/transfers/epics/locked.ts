@@ -13,15 +13,14 @@ import {
   withLatestFrom,
 } from 'rxjs/operators';
 import findKey from 'lodash/findKey';
-import get from 'lodash/get';
 import isMatchWith from 'lodash/isMatchWith';
 import pick from 'lodash/pick';
 
 import { RaidenAction } from '../../actions';
 import { RaidenConfig } from '../../config';
-import { Channel, ChannelState } from '../../channels/state';
+import { ChannelState, ChannelEnd } from '../../channels/state';
 import { Lock, BalanceProof } from '../../channels/types';
-import { channelAmounts } from '../../channels/utils';
+import { channelAmounts, channelKey } from '../../channels/utils';
 import {
   LockedTransfer,
   LockExpired,
@@ -69,12 +68,12 @@ import { Direction } from '../state';
  * @param balanceProof - Balance proof to increase nonce from
  * @returns Increased nonce, or One if no balance proof provided
  */
-function nextNonce(balanceProof?: BalanceProof): UInt<8> {
-  return (balanceProof?.nonce ?? Zero).add(1) as UInt<8>;
+function nextNonce(balanceProof: BalanceProof): UInt<8> {
+  return balanceProof.nonce.add(1) as UInt<8>;
 }
 
-function getChannelLocksroot(channel: Channel, secrethash: Hash): Hash {
-  const locks: Lock[] = (channel.own.locks ?? []).filter((l) => l.secrethash !== secrethash);
+function withoutLock(end: ChannelEnd, secrethash: Hash): Hash {
+  const locks = end.locks.filter((l) => l.secrethash !== secrethash);
   return getLocksroot(locks);
 }
 
@@ -105,9 +104,10 @@ function makeAndSignTransfer$(
     routes: action.payload.paths.map(({ path }) => ({ route: path })),
   };
   const fee = action.payload.paths[0].fee;
-  const recipient = action.payload.paths[0].path[0];
+  const partner = action.payload.paths[0].path[0];
 
-  const channel = state.channels[action.payload.tokenNetwork][recipient];
+  const channel =
+    state.channels[channelKey({ tokenNetwork: action.payload.tokenNetwork, partner })];
   // check below shouldn't fail because of route validation in pathFindServiceEpic
   // used here mostly for type narrowing on channel union
   assert(channel?.state === ChannelState.open, 'not open');
@@ -123,8 +123,7 @@ function makeAndSignTransfer$(
     ) as UInt<32>,
     secrethash: action.meta.secrethash,
   };
-  const locks: Lock[] = [...(channel.own.locks ?? []), lock];
-  const locksroot = getLocksroot(locks);
+  const locksroot = getLocksroot([...channel.own.locks, lock]);
   const token = findKey(state.tokens, (tn) => tn === action.payload.tokenNetwork)! as Address;
 
   log.info(
@@ -148,12 +147,12 @@ function makeAndSignTransfer$(
     token_network_address: action.payload.tokenNetwork,
     channel_identifier: bigNumberify(channel.id) as UInt<32>,
     nonce: nextNonce(channel.own.balanceProof),
-    transferred_amount: (channel.own.balanceProof?.transferredAmount ?? Zero) as UInt<32>,
-    locked_amount: (channel.own.balanceProof?.lockedAmount ?? Zero).add(lock.amount) as UInt<32>,
+    transferred_amount: channel.own.balanceProof.transferredAmount,
+    locked_amount: channel.own.balanceProof.lockedAmount.add(lock.amount) as UInt<32>,
     locksroot,
     payment_identifier: action.payload.paymentId,
     token,
-    recipient,
+    recipient: partner,
     lock,
     target: action.payload.target,
     initiator: action.payload.initiator ?? address,
@@ -212,15 +211,11 @@ function makeAndSignUnlock$(
   const secrethash = action.meta.secrethash;
   assert(secrethash in state.sent, 'unknown transfer');
   const transfer = state.sent[secrethash].transfer[1];
-  const channel: Channel | undefined = get(state.channels, [
-    transfer.token_network_address,
-    transfer.recipient,
-  ]);
-  // shouldn't happen, channel close clears transfers, but unlock may already have been queued
-  assert(
-    channel?.state === ChannelState.open && channel.own.balanceProof,
-    'channel gone, not open or no balanceProof',
-  );
+  const partner = state.sent[secrethash].partner;
+  const channel =
+    state.channels[channelKey({ tokenNetwork: transfer.token_network_address, partner })];
+  // shouldn't happen
+  assert(channel?.state === ChannelState.open, 'channel not open');
 
   let signed$: Observable<Signed<Unlock>>;
   if (state.sent[secrethash].unlock) {
@@ -234,7 +229,7 @@ function makeAndSignUnlock$(
         transfer.lock.expiration.gt(state.blockNumber),
       'lock expired',
     );
-    const locksroot = getChannelLocksroot(channel, secrethash);
+    const locksroot = withoutLock(channel.own, secrethash);
 
     const message: Unlock = {
       type: MessageType.UNLOCK,
@@ -313,15 +308,11 @@ function makeAndSignLockExpired$(
   const secrethash = action.meta.secrethash;
   assert(secrethash in state.sent, 'unknown transfer');
   const transfer = state.sent[secrethash].transfer[1];
-  const channel: Channel | undefined = get(state.channels, [
-    transfer.token_network_address,
-    transfer.recipient,
-  ]);
+  const partner = state.sent[secrethash].partner;
+  const channel =
+    state.channels[channelKey({ tokenNetwork: transfer.token_network_address, partner })];
 
-  assert(
-    channel?.state === ChannelState.open && channel.own.balanceProof,
-    'channel gone, not open or no balanceProof',
-  );
+  assert(channel?.state === ChannelState.open, 'channel not open');
 
   let signed$: Observable<Signed<LockExpired>>;
   if (state.sent[secrethash].lockExpired) {
@@ -331,7 +322,7 @@ function makeAndSignLockExpired$(
     assert(transfer.lock.expiration.lt(state.blockNumber), 'lock not yet expired');
     assert(!state.sent[secrethash].unlock, 'transfer already unlocked');
 
-    const locksroot = getChannelLocksroot(channel, secrethash);
+    const locksroot = withoutLock(channel.own, secrethash);
 
     const message: LockExpired = {
       type: MessageType.LOCK_EXPIRED,
@@ -343,7 +334,7 @@ function makeAndSignLockExpired$(
       transferred_amount: channel.own.balanceProof.transferredAmount,
       locked_amount: channel.own.balanceProof.lockedAmount.sub(transfer.lock.amount) as UInt<32>,
       locksroot,
-      recipient: transfer.recipient,
+      recipient: partner,
       secrethash,
     };
     signed$ = from(signMessage(signer, message, { log }));
@@ -386,20 +377,17 @@ function makeAndSignWithdrawConfirmation$(
 ) {
   const request = action.payload.message;
 
-  const channel: Channel | undefined = get(state.channels, [
-    action.meta.tokenNetwork,
-    action.meta.partner,
-  ]);
+  const channel = state.channels[channelKey(action.meta)];
   // check channel is in valid state and requested total_withdraw is valid
   // withdrawable amount is: total_withdraw <= partner.deposit + own.transferredAmount
   assert(
-    channel && channel.state === ChannelState.open && request.channel_identifier.eq(channel.id),
-    'channel gone or not open',
+    channel?.state === ChannelState.open && request.channel_identifier.eq(channel.id),
+    'channel not open or wrong id',
   );
   assert(request.expiration.gt(state.blockNumber), 'WithdrawRequest expired');
   assert(
     request.total_withdraw.lte(
-      channel.partner.deposit.add(channel.own.balanceProof?.transferredAmount ?? Zero),
+      channel.partner.deposit.add(channel.own.balanceProof.transferredAmount),
     ),
     'invalid total_withdraw, greater than partner.deposit + own.transferredAmount',
   );
@@ -527,18 +515,18 @@ function receiveTransferSigned(
       // full balance proof validation
       const tokenNetwork = transfer.token_network_address;
       const partner = action.meta.address;
-      const channel = state.channels[tokenNetwork]?.[partner];
-      assert(channel?.state === ChannelState.open, 'channel not found or not open');
+      const channel = state.channels[channelKey({ tokenNetwork, partner })];
+      assert(channel?.state === ChannelState.open, 'channel not open');
       assert(transfer.chain_id.eq(network.chainId), 'chainId mismatch');
       assert(transfer.channel_identifier.eq(channel.id), 'channelId mismatch');
       assert(transfer.nonce.eq(nextNonce(channel.partner.balanceProof)), 'nonce mismatch');
       assert(
-        transfer.transferred_amount.eq(channel.partner.balanceProof?.transferredAmount ?? Zero),
+        transfer.transferred_amount.eq(channel.partner.balanceProof.transferredAmount),
         'transferredAmount mismatch',
       );
       assert(
         transfer.locked_amount.eq(
-          (channel.partner.balanceProof?.lockedAmount ?? Zero).add(transfer.lock.amount),
+          channel.partner.balanceProof.lockedAmount.add(transfer.lock.amount),
         ),
         'lockedAmount mismatch',
       );
@@ -555,8 +543,7 @@ function receiveTransferSigned(
         transfer.lock.expiration.sub(state.blockNumber).gt(revealTimeout),
         'lock expires too soon',
       );
-      const locks = [...(channel.partner.locks ?? []), transfer.lock];
-      const locksroot = getLocksroot(locks);
+      const locksroot = getLocksroot([...channel.partner.locks, transfer.lock]);
       assert(transfer.locksroot === locksroot, 'locksroot mismatch');
       const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
 
@@ -647,13 +634,8 @@ function receiveTransferUnlocked(
       const tokenNetwork = unlock.token_network_address;
       assert(tokenNetwork === transf.token_network_address, 'wrong tokenNetwork');
 
-      const channel = state.channels[tokenNetwork]?.[partner];
-      assert(
-        channel?.state === ChannelState.open &&
-          channel.partner.balanceProof &&
-          channel.partner.locks,
-        'channel not found or not open',
-      );
+      const channel = state.channels[channelKey({ tokenNetwork, partner })];
+      assert(channel?.state === ChannelState.open, 'channel not open');
       assert(unlock.chain_id.eq(network.chainId), 'chainId mismatch');
       assert(unlock.channel_identifier.eq(channel.id), 'channelId mismatch');
       assert(unlock.nonce.eq(nextNonce(channel.partner.balanceProof)), 'nonce mismatch');
@@ -669,8 +651,7 @@ function receiveTransferUnlocked(
         'lockedAmount mismatch',
       );
 
-      const locks: Lock[] = channel.partner.locks.filter((lock) => lock.secrethash !== secrethash);
-      const locksroot = getLocksroot(locks);
+      const locksroot = withoutLock(channel.partner, secrethash);
       assert(unlock.locksroot === locksroot, 'locksroot mismatch');
 
       const processed: Processed = {
@@ -739,13 +720,8 @@ function receiveTransferExpired(
       const tokenNetwork = expired.token_network_address;
       assert(tokenNetwork === transf.token_network_address, 'wrong tokenNetwork');
 
-      const channel = state.channels[tokenNetwork]?.[partner];
-      assert(
-        channel?.state === ChannelState.open &&
-          channel.partner.balanceProof &&
-          channel.partner.locks,
-        'channel not found or not open',
-      );
+      const channel = state.channels[channelKey({ tokenNetwork, partner })];
+      assert(channel?.state === ChannelState.open, 'channel not open');
       assert(expired.chain_id.eq(network.chainId), 'chainId mismatch');
       assert(expired.channel_identifier.eq(channel.id), 'channelId mismatch');
       assert(expired.nonce.eq(nextNonce(channel.partner.balanceProof)), 'nonce mismatch');

@@ -4,9 +4,24 @@ import { Zero } from 'ethers/constants';
 import { ContractTransaction } from 'ethers/contract';
 
 import { RaidenEpicDeps } from '../types';
-import { UInt, Hash } from '../utils/types';
+import { UInt, Hash, Address } from '../utils/types';
 import { ErrorCodes, RaidenError } from '../utils/error';
 import { Channel, ChannelState } from './state';
+import { ChannelKey } from './types';
+
+/**
+ * Returns a unique key (string) for a channel
+ *
+ * @param channel - Either a Channel or a { tokenNetwork, partner } pair of addresses
+ * @returns A string, for now
+ */
+export function channelKey<
+  C extends { tokenNetwork: Address } & ({ partner: { address: Address } } | { partner: Address })
+>({ tokenNetwork, partner }: C): ChannelKey {
+  return `${
+    typeof partner === 'string' ? partner : (partner as { address: Address }).address
+  }@${tokenNetwork}`;
+}
 
 /**
  * Calculates and returns partial and total amounts of given channel state
@@ -33,12 +48,12 @@ export function channelAmounts(channel: Channel) {
       partnerCapacity: Zero32,
     };
 
-  const ownWithdraw = channel.own.withdraw ?? Zero32,
-    partnerWithdraw = channel.partner.withdraw ?? Zero32,
-    ownTransferred = channel.own.balanceProof?.transferredAmount ?? Zero32,
-    partnerTransferred = channel.partner.balanceProof?.transferredAmount ?? Zero32,
-    ownLocked = channel.own.balanceProof?.lockedAmount ?? Zero32,
-    partnerLocked = channel.partner.balanceProof?.lockedAmount ?? Zero32,
+  const ownWithdraw = channel.own.withdraw,
+    partnerWithdraw = channel.partner.withdraw,
+    ownTransferred = channel.own.balanceProof.transferredAmount,
+    partnerTransferred = channel.partner.balanceProof.transferredAmount,
+    ownLocked = channel.own.balanceProof.lockedAmount,
+    partnerLocked = channel.partner.balanceProof.lockedAmount,
     ownBalance = partnerTransferred.sub(ownTransferred) as UInt<32>,
     partnerBalance = ownTransferred.sub(partnerTransferred) as UInt<32>, // == -ownBalance
     ownCapacity = channel.own.deposit.sub(ownWithdraw).sub(ownLocked).add(ownBalance) as UInt<32>,

@@ -2,6 +2,10 @@ import * as t from 'io-ts';
 
 import { Address, Hash, UInt } from '../utils/types';
 
+// should this become a brand?
+export const ChannelKey = t.string;
+export type ChannelKey = string;
+
 // Represents a HashTime-Locked amount in a channel
 export const Lock = t.type(
   {

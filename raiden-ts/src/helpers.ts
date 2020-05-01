@@ -14,9 +14,6 @@ import {
   first,
   exhaustMap,
 } from 'rxjs/operators';
-import pick from 'lodash/pick';
-import transform from 'lodash/transform';
-import findKey from 'lodash/findKey';
 import logging from 'loglevel';
 
 import { RaidenState } from './state';
@@ -24,7 +21,7 @@ import { ContractsInfo, RaidenEpicDeps } from './types';
 import { raidenSentTransfer } from './transfers/utils';
 import { TransferState, TransfersState, RaidenTransfer } from './transfers/state';
 import { channelAmounts } from './channels/utils';
-import { RaidenChannels, RaidenChannel, Channel } from './channels/state';
+import { RaidenChannels, RaidenChannel } from './channels/state';
 import { pluckDistinct } from './utils/rx';
 import { Address, PrivateKey, isntNil, Hash, assert } from './utils/types';
 import { getNetworkName } from './utils/ethers';
@@ -180,61 +177,41 @@ export const initTransfers$ = (state$: Observable<RaidenState>): Observable<Raid
   );
 
 /**
- * Returns an object that maps partner addresses to their [[RaidenChannel]].
- *
- * @param partnerChannelMap - an object that maps partnerAddress to a channel
- * @param token - a token address
- * @param tokenNetwork - a token network
- * @returns raiden channel
- */
-const mapPartnerToChannel = (
-  partnerChannelMap: {
-    [partner: string]: Channel;
-  },
-  token: Address,
-  tokenNetwork: string,
-): { [partner: string]: RaidenChannel } =>
-  transform(
-    // transform Channel to RaidenChannel, with more info
-    partnerChannelMap,
-    (partner2raidenChannel, channel, partner) => {
-      const {
-        ownDeposit,
-        partnerDeposit,
-        ownBalance: balance,
-        ownCapacity: capacity,
-      } = channelAmounts(channel);
-
-      partner2raidenChannel[partner] = {
-        state: channel.state,
-        ...pick(channel, ['id', 'settleTimeout', 'openBlock', 'closeBlock']),
-        token,
-        tokenNetwork: tokenNetwork as Address,
-        partner: partner as Address,
-        ownDeposit,
-        partnerDeposit,
-        balance,
-        capacity,
-      };
-    },
-  );
-
-/**
  * Transforms the redux channel state to [[RaidenChannels]]
  *
- * @param state - current state
- * @returns raiden channels
+ * @param channels - RaidenState.channels
+ * @returns Raiden public channels mapping
  */
-export const mapTokenToPartner = (state: RaidenState): RaidenChannels =>
-  transform(
-    // transform state.channels to token-partner-raidenChannel map
-    state.channels,
-    (result: RaidenChannels, partnerChannelMap, tokenNetwork) => {
-      const token = findKey(state.tokens, (tn) => tn === tokenNetwork) as Address | undefined;
-      if (!token) return; // shouldn't happen, token mapping is always bi-directional
-      result[token] = mapPartnerToChannel(partnerChannelMap, token, tokenNetwork);
-    },
-  );
+export const mapRaidenChannels = (channels: RaidenState['channels']): RaidenChannels =>
+  Object.values(channels).reduce((acc, channel) => {
+    const {
+      ownDeposit,
+      partnerDeposit,
+      ownBalance: balance,
+      ownCapacity: capacity,
+    } = channelAmounts(channel);
+    const raidenChannel: RaidenChannel = {
+      state: channel.state,
+      id: channel.id,
+      token: channel.token,
+      tokenNetwork: channel.tokenNetwork,
+      settleTimeout: channel.settleTimeout,
+      openBlock: channel.openBlock,
+      closeBlock: 'closeBlock' in channel ? channel.closeBlock : undefined,
+      partner: channel.partner.address,
+      ownDeposit,
+      partnerDeposit,
+      balance,
+      capacity,
+    };
+    return {
+      ...acc,
+      [channel.token]: {
+        ...acc[channel.token],
+        [channel.partner.address]: raidenChannel,
+      },
+    };
+  }, {} as { [token: string]: { [partner: string]: RaidenChannel } });
 
 /**
  * Return signer & address to use for on-chain txs depending on subkey param
