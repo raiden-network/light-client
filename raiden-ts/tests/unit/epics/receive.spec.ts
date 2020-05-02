@@ -106,6 +106,7 @@ describe('receive transfers', () => {
           id: channelId,
           settleTimeout,
           isFirstParticipant,
+          token,
           txHash,
           txBlock: 121,
           confirmed: true,
