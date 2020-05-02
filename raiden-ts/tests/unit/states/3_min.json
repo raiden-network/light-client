@@ -6,10 +6,11 @@
   "blockNumber": 123,
   "config": {},
   "channels": {},
+  "oldChannels": {},
   "tokens": {},
   "transport": {},
   "sent": {},
   "received": {},
-  "path": { "iou": {} },
+  "iou": {},
   "pendingTxs": []
 }

@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
 import { bigNumberify, parseUnits, BigNumberish } from 'ethers/utils';
-import { Zero, One } from 'ethers/constants';
+import { Zero } from 'ethers/constants';
 import { of } from 'rxjs';
-import { first, toArray } from 'rxjs/operators';
+import { first, toArray, pluck } from 'rxjs/operators';
 
 import { Capabilities } from 'raiden-ts/constants';
 import { raidenConfigUpdate } from 'raiden-ts/actions';
 import { MessageType, LockedTransfer } from 'raiden-ts/messages/types';
-import { signMessage } from 'raiden-ts/messages/utils';
+import { signMessage, createBalanceHash } from 'raiden-ts/messages/utils';
 import { tokenMonitored, channelOpen, channelDeposit, newBlock } from 'raiden-ts/channels/actions';
 import { messageReceived, messageGlobalSend } from 'raiden-ts/messages/actions';
 import { transferGenerateAndSignEnvelopeMessageEpic } from 'raiden-ts/transfers/epics';
@@ -22,6 +22,7 @@ import {
 import { monitorRequestEpic, monitorUdcBalanceEpic } from 'raiden-ts/services/epics';
 import { udcDeposited } from 'raiden-ts/services/actions';
 import { transferProcessed } from 'raiden-ts/transfers/actions';
+import { channelKey } from 'raiden-ts/channels/utils';
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps } from '../mocks';
@@ -57,6 +58,7 @@ describe('monitorRequestEpic', () => {
     isFirstParticipant: ReturnType<typeof epicFixtures>['isFirstParticipant'],
     txHash: ReturnType<typeof epicFixtures>['txHash'],
     partnerSigner: ReturnType<typeof epicFixtures>['partnerSigner'],
+    key: ReturnType<typeof epicFixtures>['key'],
     action$: ReturnType<typeof epicFixtures>['action$'],
     state$: ReturnType<typeof epicFixtures>['state$'];
 
@@ -73,6 +75,7 @@ describe('monitorRequestEpic', () => {
       isFirstParticipant,
       txHash,
       partnerSigner,
+      key,
       action$,
       state$,
     } = epicFixtures(depsMock));
@@ -93,6 +96,7 @@ describe('monitorRequestEpic', () => {
           id: channelId,
           settleTimeout,
           isFirstParticipant,
+          token,
           txHash,
           txBlock: 121,
           confirmed: true,
@@ -150,15 +154,12 @@ describe('monitorRequestEpic', () => {
       channel_identifier: bigNumberify(channelId) as UInt<32>,
       metadata: { routes: [{ route: [depsMock.address, partner] }] },
       lock,
-      locksroot: getLocksroot([
-        ...(state.channels[tokenNetwork][partner].partner.locks ?? []),
-        lock,
-      ]),
-      nonce: One as UInt<8>,
+      locksroot: getLocksroot([...state.channels[key].partner.locks, lock]),
+      nonce: state.channels[key].partner.balanceProof.nonce.add(1) as UInt<8>,
       transferred_amount: Zero as UInt<32>,
-      locked_amount: (
-        state.channels[tokenNetwork][partner].partner.balanceProof?.lockedAmount ?? Zero
-      ).add(lock.amount) as UInt<32>,
+      locked_amount: state.channels[key].partner.balanceProof.lockedAmount.add(
+        lock.amount,
+      ) as UInt<32>,
     };
 
     const transf = await signMessage(partnerSigner, unsigned, depsMock);
@@ -170,7 +171,11 @@ describe('monitorRequestEpic', () => {
       depsMock,
     ).subscribe((a) => action$.next(a));
 
-    return received;
+    await received;
+    // return channel state
+    return depsMock.latest$
+      .pipe(pluck('state', 'channels', channelKey({ tokenNetwork, partner })), first())
+      .toPromise();
   }
 
   afterEach(() => {
@@ -187,14 +192,35 @@ describe('monitorRequestEpic', () => {
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
     action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
-    await receiveTransfer(10);
+    const channelState = await receiveTransfer(10);
+    const partnerBP = channelState.partner.balanceProof;
     setTimeout(() => action$.complete(), 50);
 
     await expect(promise).resolves.toEqual(
       messageGlobalSend(
-        expect.objectContaining({
-          message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }),
-        }),
+        {
+          message: {
+            type: MessageType.MONITOR_REQUEST,
+            balance_proof: {
+              chain_id: partnerBP.chainId,
+              token_network_address: tokenNetwork,
+              channel_identifier: partnerBP.channelId,
+              nonce: partnerBP.nonce,
+              balance_hash: createBalanceHash(
+                partnerBP.transferredAmount,
+                partnerBP.lockedAmount,
+                partnerBP.locksroot,
+              ),
+              additional_hash: partnerBP.additionalHash,
+              signature: partnerBP.signature,
+            },
+            non_closing_participant: depsMock.address,
+            non_closing_signature: expect.any(String),
+            monitoring_service_contract_address: expect.any(String),
+            reward_amount: monitoringReward,
+            signature: expect.any(String),
+          },
+        },
         { roomName: expect.stringMatching(/_monitoring$/) },
       ),
     );

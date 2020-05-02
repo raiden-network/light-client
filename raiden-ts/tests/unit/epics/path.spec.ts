@@ -99,6 +99,7 @@ describe('PFS: pathFindServiceEpic', () => {
           id: channelId,
           settleTimeout,
           isFirstParticipant,
+          token,
           txHash,
           txBlock: openBlock,
           confirmed: true,
@@ -1232,6 +1233,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
           id: channelId,
           settleTimeout,
           isFirstParticipant,
+          token,
           txHash,
           txBlock: openBlock,
           confirmed: true,
@@ -1356,6 +1358,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
           id: channelId,
           settleTimeout,
           isFirstParticipant,
+          token,
           txHash,
           txBlock: 121,
           confirmed: true,
@@ -1583,7 +1586,7 @@ describe('PFS: reducer', () => {
       iouPersist({ iou }, { tokenNetwork, serviceAddress: iou.receiver }),
     );
 
-    expect(newState.path.iou).toMatchObject({
+    expect(newState.iou).toMatchObject({
       [tokenNetwork]: {
         [iou.receiver]: iou,
       },
@@ -1594,7 +1597,7 @@ describe('PFS: reducer', () => {
       iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
     );
 
-    expect(lastState.path.iou).toMatchObject({
+    expect(lastState.iou).toMatchObject({
       [tokenNetwork]: {},
     });
   });
