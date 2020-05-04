@@ -36,17 +36,9 @@ export const RaidenState = t.readonly(
     tokens: t.readonly(t.record(t.string /* token: Address */, Address)),
     transport: t.readonly(
       t.partial({
-        matrix: t.readonly(
-          t.intersection([
-            t.type({
-              server: t.string,
-            }),
-            t.partial({
-              setup: RaidenMatrixSetup,
-              rooms: t.readonly(t.record(t.string /* partner: Address */, t.array(t.string))),
-            }),
-          ]),
-        ),
+        server: t.string,
+        setup: RaidenMatrixSetup,
+        rooms: t.readonly(t.record(t.string /* partner: Address */, t.array(t.string))),
       }),
     ),
     sent: TransfersState,

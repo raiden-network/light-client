@@ -549,8 +549,8 @@ export const initMatrixEpic = (
   combineLatest([latest$.pipe(pluck('state')), config$]).pipe(
     first(), // at startup
     mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout, caps }]) => {
-      const server = state.transport.matrix?.server,
-        setup = state.transport.matrix?.setup;
+      const server = state.transport.server,
+        setup = state.transport.setup;
 
       const servers$Array: Observable<{ server: string; setup?: RaidenMatrixSetup }>[] = [];
 
@@ -841,7 +841,7 @@ export const matrixCreateRoomEpic = (
             filter(({ presences }) => address in presences),
             take(1),
             // if there's already a room in state for address, skip
-            filter(({ state }) => !state.transport.matrix?.rooms?.[address]?.[0]),
+            filter(({ state }) => !state.transport.rooms?.[address]?.[0]),
             // else, create a room, invite known user and persist roomId in state
             mergeMap(({ presences }) =>
               matrix.createRoom({
@@ -889,7 +889,7 @@ export const matrixInviteEpic = (
           !action.payload.available
             ? EMPTY
             : latest$.pipe(
-                map(({ state }) => state.transport.matrix?.rooms?.[action.meta.address]?.[0]),
+                map(({ state }) => state.transport.rooms?.[action.meta.address]?.[0]),
                 distinctUntilChanged(),
                 switchMap((roomId) =>
                   concat(
@@ -1002,7 +1002,7 @@ export const matrixLeaveExcessRoomsEpic = (
     mergeMap((action) => matrix$.pipe(map((matrix) => ({ action, matrix })))),
     withLatestFrom(state$, config$),
     mergeMap(([{ action, matrix }, state, { matrixExcessRooms }]) => {
-      const rooms = state.transport.matrix?.rooms?.[action.meta.address] ?? [];
+      const rooms = state.transport.rooms?.[action.meta.address] ?? [];
       return from(rooms.filter(({}, i) => i >= matrixExcessRooms)).pipe(
         mergeMap((roomId) =>
           matrix
@@ -1042,14 +1042,13 @@ export const matrixLeaveUnknownRoomsEpic = (
     ),
     withLatestFrom(state$, config$),
     // filter for leave events to us
-    filter(([{ matrix, roomId }, state, config]) => {
+    filter(([{ matrix, roomId }, { transport }, config]) => {
       const room = matrix.getRoom(roomId);
       if (!room) return false; // room already gone while waiting
       const globalRooms = globalRoomNames(config);
       if (room.name && globalRooms.some((g) => room.name.match(`#${g}:`))) return false;
-      const rooms = state.transport.matrix?.rooms ?? {};
-      for (const address in rooms) {
-        for (const roomId of rooms[address]) {
+      for (const rooms of Object.values(transport.rooms ?? {})) {
+        for (const roomId of rooms) {
           if (roomId === room.roomId) return false;
         }
       }
@@ -1091,10 +1090,9 @@ export const matrixCleanLeftRoomsEpic = (
     // filter for leave events to us
     filter(({ membership }) => membership === 'leave'),
     withLatestFrom(state$),
-    mergeMap(function* ([{ room }, state]) {
-      const rooms = state.transport.matrix?.rooms ?? {};
-      for (const address in rooms) {
-        for (const roomId of rooms[address]) {
+    mergeMap(function* ([{ room }, { transport }]) {
+      for (const [address, rooms] of Object.entries(transport.rooms ?? {})) {
+        for (const roomId of rooms) {
           if (roomId === room.roomId) {
             log.warn('Left event for peer room detected, forgetting', address, roomId);
             yield matrixRoomLeave({ roomId }, { address: address as Address });
@@ -1118,11 +1116,11 @@ export const matrixCleanMissingRoomsEpic = (
   { log, matrix$, config$ }: RaidenEpicDeps,
 ): Observable<matrixRoomLeave> =>
   state$.pipe(
-    pluckDistinct('transport', 'matrix'),
-    mergeMap(function* (matrix) {
-      const rooms = matrix?.rooms ?? {};
-      for (const address in rooms) {
-        for (const roomId of rooms[address]) {
+    pluckDistinct('transport', 'rooms'),
+    filter(isntNil),
+    mergeMap(function* (rooms) {
+      for (const [address, peerRooms] of Object.entries(rooms)) {
+        for (const roomId of peerRooms) {
           yield { roomId, address: address as Address };
         }
       }
@@ -1162,7 +1160,7 @@ function waitMemberAndSend$(
       if (allowRtc && rtc?.[address]?.readyState === 'open') return of(rtc[address]);
       // else, wait for member to join in the first room, and return roomId
       return latest$.pipe(
-        map(({ state }) => state.transport.matrix?.rooms?.[address]?.[0]),
+        map(({ state }) => state.transport.rooms?.[address]?.[0]),
         // wait for a room to exist (created or invited) for address
         filter(isntNil),
         distinctUntilChanged(),
@@ -1408,7 +1406,7 @@ export const matrixMessageReceivedEpic = (
         filter(({ presences, state }) => {
           const presence = find(presences, ['payload.userId', event.getSender()]);
           if (!presence) return false;
-          const rooms = state.transport.matrix?.rooms?.[presence.meta.address] ?? [];
+          const rooms = state.transport.rooms?.[presence.meta.address] ?? [];
           if (!rooms.includes(room.roomId)) return false;
           return true;
         }),
@@ -1452,7 +1450,7 @@ export const matrixMessageReceivedUpdateRoomEpic = (
     filter(messageReceived.is),
     withLatestFrom(state$),
     filter(([action, state]) => {
-      const rooms = state.transport.matrix?.rooms?.[action.meta.address] ?? [];
+      const rooms = state.transport.rooms?.[action.meta.address] ?? [];
       return (
         !!action.payload.roomId &&
         rooms.includes(action.payload.roomId) &&

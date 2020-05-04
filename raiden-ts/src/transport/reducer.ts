@@ -14,42 +14,32 @@ import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
 
 const transport = createReducer(initialState.transport)
   .handle(matrixSetup, (state, action) => {
-    // immutably remove rooms from state.matrix
-    const { rooms: _, ...noRooms } = { ...state.matrix };
+    // immutably remove rooms from state.transport
+    const { rooms: _, ...noRooms } = state;
     return {
-      ...state,
-      matrix: {
-        // invalidate rooms map if server has changed
-        ...(state.matrix?.server !== action.payload.server ? noRooms : state.matrix),
-        ...action.payload,
-      },
+      ...(state.server !== action.payload.server ? noRooms : state),
+      ...action.payload,
     };
   })
   .handle(matrixRoom, (state, action) => ({
     ...state,
-    matrix: {
-      ...state.matrix!,
-      rooms: {
-        ...state.matrix?.rooms,
-        [action.meta.address]: [
-          action.payload.roomId,
-          ...(state.matrix?.rooms?.[action.meta.address] ?? []).filter(
-            (room) => room !== action.payload.roomId,
-          ),
-        ],
-      },
+    rooms: {
+      ...state.rooms,
+      [action.meta.address]: [
+        action.payload.roomId,
+        ...(state.rooms?.[action.meta.address] ?? []).filter(
+          (room) => room !== action.payload.roomId,
+        ),
+      ],
     },
   }))
   .handle(matrixRoomLeave, (state, action) => ({
     ...state,
-    matrix: {
-      ...state.matrix!,
-      rooms: {
-        ...state.matrix?.rooms,
-        [action.meta.address]: (state.matrix?.rooms?.[action.meta.address] ?? []).filter(
-          (room) => room !== action.payload.roomId,
-        ),
-      },
+    rooms: {
+      ...state.rooms,
+      [action.meta.address]: (state.rooms?.[action.meta.address] ?? []).filter(
+        (room) => room !== action.payload.roomId,
+      ),
     },
   }));
 
