@@ -2,7 +2,7 @@ jest.useFakeTimers();
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import UploadStateDialog from '@/components/UploadStateDialog.vue';
+import UploadStateDialog from '@/components/account/backup-state/UploadStateDialog.vue';
 
 Vue.use(Vuetify);
 

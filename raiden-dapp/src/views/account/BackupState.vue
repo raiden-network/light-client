@@ -17,10 +17,10 @@
               <div
                 class="backup-state__buttons__download-state__icon"
                 :class="{
-                  'backup-state__buttons__dowload-state__icon disabled-icon': !isConnected
+                  'backup-state__buttons__download-state__icon disabled-icon': !isConnected
                 }"
               >
-                <v-img :src="require('../assets/state_download.png')"></v-img>
+                <v-img :src="require('@/assets/state_download.png')"></v-img>
               </div>
               <v-list-item-content>
                 <div class="backup-state__buttons__download-state__title">
@@ -45,7 +45,7 @@
                   'backup-state__buttons__upload-state__icon disabled-icon': isConnected
                 }"
               >
-                <v-img :src="require('../assets/state_upload.png')"></v-img>
+                <v-img :src="require('@/assets/state_upload.png')"></v-img>
               </div>
               <v-list-item-content>
                 <div class="backup-state__buttons__upload-state__title">
@@ -72,8 +72,8 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import DownloadStateDialog from '@/components/DownloadStateDialog.vue';
-import UploadStateDialog from '@/components/UploadStateDialog.vue';
+import DownloadStateDialog from '@/components/account/backup-state/DownloadStateDialog.vue';
+import UploadStateDialog from '@/components/account/backup-state/UploadStateDialog.vue';
 
 @Component({
   components: {
@@ -90,7 +90,7 @@ export default class BackupState extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
+@import '../../scss/colors';
 
 .backup-state {
   &__description {

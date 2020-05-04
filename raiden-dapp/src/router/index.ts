@@ -72,8 +72,8 @@ const router = new Router({
       component: () => import('../views/ChannelsRoute.vue')
     },
     {
-      path: '/general',
-      name: RouteNames.GENERAL,
+      path: '/account',
+      name: RouteNames.ACCOUNT,
       beforeEnter: (to, from, next) => {
         // Remembers the route that was visited just before the General view is opened and
         // then loads the General view in a separate <router-view>. The last visited route
@@ -85,34 +85,34 @@ const router = new Router({
         } else if (to.matched.length) {
           to.matched[0].components.default = from.matched[0].components.default;
           to.matched[0].components.modal = () =>
-            import('../views/GeneralDialog.vue');
+            import('../views/AccountRoute.vue');
         }
         next();
       },
       children: [
         {
-          path: 'general-home',
-          name: RouteNames.GENERAL_HOME,
+          path: '/',
+          name: RouteNames.ACCOUNT_ROOT,
           meta: {
-            title: 'General'
+            title: 'Account'
           },
-          component: () => import('../views/GeneralHome.vue')
+          component: () => import('../views/account/AccountRoot.vue')
         },
         {
-          path: 'backup-state',
-          name: RouteNames.BACKUP_STATE,
+          path: 'backup',
+          name: RouteNames.ACCOUNT_BACKUP,
           meta: {
             title: 'Backup State'
           },
-          component: () => import('../views/BackupState.vue')
+          component: () => import('../views/account/BackupState.vue')
         },
         {
-          path: 'raiden-account',
-          name: RouteNames.RAIDEN_ACCOUNT,
+          path: 'raiden',
+          name: RouteNames.ACCOUNT_RAIDEN,
           meta: {
             title: 'Raiden Account'
           },
-          component: () => import('../views/RaidenAccount.vue')
+          component: () => import('../views/account/RaidenAccount.vue')
         }
       ]
     }

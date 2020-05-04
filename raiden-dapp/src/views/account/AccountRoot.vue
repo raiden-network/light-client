@@ -1,28 +1,28 @@
 <template>
-  <div class="general-screen-home">
-    <v-row class="general-screen-home__identicon" no-gutters>
+  <div class="account-root">
+    <v-row class="account-root__identicon" no-gutters>
       <header-identicon />
     </v-row>
-    <general-menu />
+    <account-content />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
-import GeneralMenu from '@/components/GeneralMenu.vue';
+import AccountContent from '@/components/account/AccountContent.vue';
 
 @Component({
   components: {
-    HeaderIdenticon,
-    GeneralMenu
+    AccountContent,
+    HeaderIdenticon
   }
 })
-export default class GeneralHome extends Vue {}
+export default class AccountRoot extends Vue {}
 </script>
 
 <style scoped lang="scss">
-.general-screen-home {
+.account-root {
   &__identicon {
     align-self: center;
     border-bottom: solid 1px #707070;

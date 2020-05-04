@@ -3,8 +3,8 @@ import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 
-import store from '@/store/index';
-import BackupState from '@/views/BackupState.vue';
+import store from '@/store';
+import BackupState from '@/views/account/BackupState.vue';
 
 Vue.use(Vuetify);
 

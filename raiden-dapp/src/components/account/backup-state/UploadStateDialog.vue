@@ -56,7 +56,7 @@
         <v-row class="upload-state__dropzone__button">
           <input ref="stateInput" type="file" hidden @change="onFileSelect" />
           <action-button
-            :enabled="!activeDropzone ? true : false"
+            :enabled="!activeDropzone"
             ghost
             :text="$t('backup-state.upload-button')"
             @click="$refs.stateInput.click()"
@@ -167,7 +167,7 @@ export default class UploadStateDialog extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/colors';
+@import '../../../scss/colors';
 
 .upload-state {
   &__error {

@@ -4,8 +4,8 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 import flushPromises from 'flush-promises';
 
-import store from '@/store/index';
-import RaidenAccount from '@/views/RaidenAccount.vue';
+import store from '@/store';
+import RaidenAccount from '@/views/account/RaidenAccount.vue';
 
 Vue.use(Vuetify);
 

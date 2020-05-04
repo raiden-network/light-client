@@ -30,15 +30,23 @@
     "raiden-account": "Raiden Account",
     "main-account": "Main Account"
   },
-  "general-menu": {
+  "account-content": {
     "account-details": "Account Details",
     "address": "Address:",
     "currency": "ETH:",
     "menu-items": {
-      "backup-state-title": "Backup state",
-      "backup-state-subtitle": "Download & upload your state",
-      "report-bugs-title": "Report bugs",
-      "report-bugs-subtitle": "Download logs"
+      "backup-state": {
+        "title": "Backup state",
+        "subtitle": "Download & upload your state"
+      },
+      "report-bugs": {
+        "title": "Report bugs",
+        "subtitle": "Download logs"
+      },
+      "raiden-account": {
+        "title": "Raiden Account",
+        "subtitle": "Transfer ETH between your main and Raiden account"
+      }
     }
   },
   "backup-state": {

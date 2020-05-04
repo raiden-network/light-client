@@ -1,3 +1,5 @@
+import AccountRoute from '@/views/AccountRoute.vue';
+
 jest.mock('vue-router');
 import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
@@ -5,12 +7,11 @@ import { TestData } from '../data/mock-data';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
-import GeneralDialog from '@/views/GeneralDialog.vue';
 
 Vue.use(Vuetify);
 
-describe('GeneralDialog.vue', () => {
-  let wrapper: Wrapper<GeneralDialog>;
+describe('AccountRoute.vue', () => {
+  let wrapper: Wrapper<AccountRoute>;
   let router: Mocked<VueRouter>;
   let vuetify: typeof Vuetify;
 
@@ -18,7 +19,7 @@ describe('GeneralDialog.vue', () => {
     vuetify = new Vuetify();
     router = new VueRouter() as Mocked<VueRouter>;
 
-    wrapper = mount(GeneralDialog, {
+    wrapper = mount(AccountRoute, {
       vuetify,
       stubs: ['router-view'],
       mocks: {

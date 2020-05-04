@@ -1,9 +1,9 @@
 <template>
-  <div id="general-screen-wrapper">
-    <div class="general-screen">
-      <v-row class="general-screen__header" no-gutters>
-        <div class="general-screen__header__content">
-          <div class="general-screen__header__content__back">
+  <div id="account-route-wrapper">
+    <div class="account-route">
+      <v-row class="account-route__header" no-gutters>
+        <div class="account-route__header__content">
+          <div class="account-route__header__content__back">
             <v-btn
               height="40px"
               text
@@ -12,21 +12,21 @@
               @click="onGeneralBackClicked()"
             >
               <v-img
-                :src="require('../assets/back_arrow.svg')"
+                :src="require('@/assets/back_arrow.svg')"
                 max-width="34px"
               />
             </v-btn>
           </div>
-          <div class="general-screen__header__content__title">
+          <div class="account-route__header__content__title">
             {{ $route.meta.title }}
           </div>
         </div>
       </v-row>
       <router-view />
-      <v-row class="general-screen__footer" no-gutters>
+      <v-row class="account-route__footer" no-gutters>
         <div v-if="version">
           <span>{{ $t('versions.sdk', { version }) }}</span>
-          <span class="general-screen__footer__contracts-version">
+          <span class="account-route__footer__contracts-version">
             {{ $t('versions.contracts', { version: contractVersion }) }}
           </span>
         </div>
@@ -41,7 +41,7 @@ import { Raiden } from 'raiden-ts';
 import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({})
-export default class GeneralDialog extends Mixins(NavigationMixin) {
+export default class AccountRoute extends Mixins(NavigationMixin) {
   get version() {
     return Raiden.version;
   }
@@ -57,7 +57,7 @@ export default class GeneralDialog extends Mixins(NavigationMixin) {
 @import '../scss/fonts';
 @import '../scss/colors';
 
-#general-screen-wrapper {
+#account-route-wrapper {
   align-items: center;
   display: flex;
   height: 100%;
@@ -70,7 +70,7 @@ export default class GeneralDialog extends Mixins(NavigationMixin) {
   }
 }
 
-.general-screen {
+.account-route {
   background-color: black;
   border-radius: 10px;
   display: flex;

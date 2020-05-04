@@ -110,13 +110,13 @@ describe('NavigationMixin', () => {
     );
   });
 
-  test('navigate to general home', () => {
-    wrapper.vm.navigateToGeneralHome();
+  test('navigate to account', () => {
+    wrapper.vm.navigateToAccoount();
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.GENERAL_HOME
+        name: RouteNames.ACCOUNT_ROOT
       })
     );
   });
@@ -127,7 +127,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.BACKUP_STATE
+        name: RouteNames.ACCOUNT_BACKUP
       })
     );
   });
@@ -138,14 +138,14 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.RAIDEN_ACCOUNT
+        name: RouteNames.ACCOUNT_RAIDEN
       })
     );
   });
 
   test('general modal back navigation', () => {
     wrapper.vm.$route.name = RouteNames.TRANSFER;
-    wrapper.vm.navigateToGeneralHome();
+    wrapper.vm.navigateToAccoount();
     wrapper.vm.onGeneralBackClicked();
 
     expect(router.push).toHaveBeenCalledTimes(1);
