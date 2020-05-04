@@ -1,7 +1,20 @@
 <template>
   <div class="transaction">
     <v-row class="transaction__item" no-gutters>
-      <v-col class="transaction__item__icon" cols="2"></v-col>
+      <v-col class="transaction__item__icon" cols="1">
+        <v-img
+          v-if="transfer.direction === 'sent'"
+          height="45px"
+          width="45px"
+          :src="require('../../assets/sent_transfer.svg')"
+        />
+        <v-img
+          v-else
+          height="45px"
+          width="45px"
+          :src="require('../../assets/received_transfer.svg')"
+        />
+      </v-col>
       <v-col class="transaction__item__details-left">
         <v-row no-gutters>
           {{
@@ -11,7 +24,9 @@
           }}
           <address-display :address="transfer.partner" />
         </v-row>
-        <v-row no-gutters>{{ 'Time stamp goes here' }}</v-row>
+        <v-row class="transaction__item__details-left__time-stamp" no-gutters>
+          {{ transfer.changedAt }}
+        </v-row>
       </v-col>
       <v-col class="transaction__item__details-right">
         <v-row no-gutters>
@@ -84,10 +99,17 @@ export default class Transaction extends Vue {
 
 <style scoped lang="scss">
 .transaction {
+  height: 74px;
+
   &__item {
     &__icon {
     }
     &__details-left {
+      margin-left: 20px;
+
+      &__time-stamp {
+        font-size: 10px;
+      }
     }
     &__details-right {
       &__amount {

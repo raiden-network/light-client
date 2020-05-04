@@ -320,7 +320,9 @@
   "transaction-history": {
     "title": "Transaction history",
     "sent-title": "Sent to",
+    "sent-symbol": "-",
     "received-title": "Received from",
+    "received-symbol": "+",
     "pending-transfer": "PENDING",
     "successful-transfer": "CONFIRMED",
     "failed-transfer": "FAILED"

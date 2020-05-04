@@ -53,7 +53,6 @@
         />
       </v-col>
     </v-row>
-
     <div class="transfer__form-container">
       <v-form
         v-model="valid"
