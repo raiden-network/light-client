@@ -991,7 +991,7 @@ export class Raiden {
   public async getUDCCapacity(): Promise<BigNumber> {
     const balance = await this.deps.latest$.pipe(pluck('udcBalance'), first(isntNil)).toPromise();
     const blockNumber = this.state.blockNumber;
-    const owedAmount = Object.values(this.state.path.iou)
+    const owedAmount = Object.values(this.state.iou)
       .reduce((acc, value) => {
         const nonExpiredIOUs = Object.values(value).filter((value) =>
           value.expiration_block.gte(blockNumber),
