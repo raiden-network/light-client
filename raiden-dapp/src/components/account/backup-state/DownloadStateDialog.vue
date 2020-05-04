@@ -9,7 +9,7 @@
         <v-col cols="6">
           <v-img
             class="download-state__warning"
-            :src="require('../assets/warning.svg')"
+            :src="require('@/assets/warning.svg')"
           ></v-img>
         </v-col>
         <v-col cols="12">
@@ -33,7 +33,7 @@
 import { Component, Prop, Emit, Mixins } from 'vue-property-decorator';
 import RaidenDialog from '@/components/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import NavigationMixin from '../mixins/navigation-mixin';
+import NavigationMixin from '../../../mixins/navigation-mixin';
 
 @Component({
   components: {

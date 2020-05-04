@@ -74,7 +74,7 @@ import { mapGetters, mapState } from 'vuex';
 import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
-import { Token } from '../model/types';
+import { Token } from '@/model/types';
 import { bigNumberify, parseEther, BigNumber } from 'ethers/utils';
 
 @Component({
@@ -140,7 +140,7 @@ export default class RaidenAccount extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
+@import '../../scss/colors';
 
 .raiden-account {
   width: 100%;

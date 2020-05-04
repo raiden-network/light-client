@@ -1,7 +1,7 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import DownloadStateDialog from '@/components/DownloadStateDialog.vue';
+import DownloadStateDialog from '@/components/account/backup-state/DownloadStateDialog.vue';
 
 Vue.use(Vuetify);
 

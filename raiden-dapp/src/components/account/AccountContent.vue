@@ -1,47 +1,47 @@
 <template>
-  <div class="general-screen-menu">
+  <div class="account-content">
     <div v-if="!loading && defaultAccount">
-      <v-row class="general-screen-menu__account-details" no-gutters>
+      <v-row class="account-content__account-details" no-gutters>
         <v-col cols="12">
-          <div class="general-screen-menu__account-details--title">
-            {{ $t('general-menu.account-details') }}
+          <div class="account-content__account-details--title">
+            {{ $t('account-content.account-details') }}
           </div>
         </v-col>
       </v-row>
       <v-row no-gutters>
         <v-col cols="2">
-          <span class="general-screen-menu__account-details--address">
-            {{ $t('general-menu.address') }}
+          <span class="account-content__account-details--address">
+            {{ $t('account-content.address') }}
           </span>
         </v-col>
         <v-col cols="10">
-          <span class="general-screen-menu__account-details--address">
+          <span class="account-content__account-details--address">
             <address-display :address="defaultAccount" full-address />
           </span>
         </v-col>
       </v-row>
-      <v-row class="general-screen-menu__account-details__eth" no-gutters>
+      <v-row class="account-content__account-details__eth" no-gutters>
         <v-col cols="2">
-          <span class="general-screen-menu__account-details__eth--currency">
-            {{ $t('general-menu.currency') }}
+          <span class="account-content__account-details__eth--currency">
+            {{ $t('account-content.currency') }}
           </span>
         </v-col>
         <v-col cols="10">
-          <span class="general-screen-menu__account-details__eth--balance">
+          <span class="account-content__account-details__eth--balance">
             {{ balance | decimals }}
           </span>
         </v-col>
       </v-row>
     </div>
-    <v-list two-line class="general-screen-menu__menu">
+    <v-list two-line class="account-content__menu">
       <v-list-item
         v-for="(menuItem, index) in menuItems"
         :key="index"
-        class="general-screen-menu__menu__list-items"
+        class="account-content__menu__list-items"
       >
-        <div class="general-screen-menu__menu__list-items__icon">
+        <div class="account-content__menu__list-items__icon">
           <v-img
-            :src="require(`../assets/${menuItem.icon}`)"
+            :src="require(`@/assets/${menuItem.icon}`)"
             max-width="40px"
             height="36px"
             contain
@@ -78,7 +78,7 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
     ...mapGetters(['balance', 'isConnected'])
   }
 })
-export default class GeneralMenu extends Mixins(NavigationMixin) {
+export default class AccountContent extends Mixins(NavigationMixin) {
   menuItems: {}[] = [];
   loading!: boolean;
   defaultAccount!: string;
@@ -89,9 +89,11 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
     this.menuItems = [
       {
         icon: 'state.svg',
-        title: this.$t('general-menu.menu-items.backup-state-title') as string,
+        title: this.$t(
+          'account-content.menu-items.backup-state.title'
+        ) as string,
         subtitle: this.$t(
-          'general-menu.menu-items.backup-state-subtitle'
+          'account-content.menu-items.backup-state.subtitle'
         ) as string,
         route: () => {
           this.navigateToBackupState();
@@ -99,9 +101,11 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
       },
       {
         icon: 'bug.svg',
-        title: this.$t('general-menu.menu-items.report-bugs-title') as string,
+        title: this.$t(
+          'account-content.menu-items.report-bugs.title'
+        ) as string,
         subtitle: this.$t(
-          'general-menu.menu-items.report-bugs-subtitle'
+          'account-content.menu-items.report-bugs.subtitle'
         ) as string,
         route: () => {
           this.downloadLogs();
@@ -114,14 +118,19 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
       const mainAccount = await this.$raiden.getMainAccount();
       const raidenAccount = await this.$raiden.getAccount();
       if (mainAccount && raidenAccount) {
-        this.menuItems.unshift({
+        const raidenAccount = {
           icon: 'eth.svg',
-          title: 'Raiden Account',
-          subtitle: 'Transfer ETH between your main and Raiden account',
+          title: this.$t(
+            'account-content.menu-items.raiden-account.title'
+          ) as string,
+          subtitle: this.$t(
+            'account-content.menu-items.raiden-account.subtitle'
+          ) as string,
           route: () => {
             this.navigateToRaidenAccountTransfer();
           }
-        });
+        };
+        this.menuItems.unshift(raidenAccount);
       }
     }
   }
@@ -147,9 +156,9 @@ export default class GeneralMenu extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
+@import '../../scss/colors';
 
-.general-screen-menu {
+.account-content {
   margin: 0 64px 0 64px;
 
   &__account-details {

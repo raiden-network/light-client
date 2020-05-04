@@ -69,21 +69,21 @@ export default class NavigationMixin extends Vue {
     });
   }
 
-  navigateToGeneralHome() {
+  navigateToAccoount() {
     this.$router.push({
-      name: RouteNames.GENERAL_HOME
+      name: RouteNames.ACCOUNT_ROOT
     });
   }
 
   navigateToBackupState() {
     this.$router.push({
-      name: RouteNames.BACKUP_STATE
+      name: RouteNames.ACCOUNT_BACKUP
     });
   }
 
   navigateToRaidenAccountTransfer() {
     this.$router.push({
-      name: RouteNames.RAIDEN_ACCOUNT
+      name: RouteNames.ACCOUNT_RAIDEN
     });
   }
 

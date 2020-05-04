@@ -13,7 +13,7 @@
               @click="onBackClicked()"
             >
               <v-img
-                :src="require('../assets/back_arrow.svg')"
+                :src="require('@/assets/back_arrow.svg')"
                 max-width="34px"
               />
             </v-btn>
@@ -37,7 +37,7 @@
           </v-col>
           <v-spacer />
           <span class="app-header__account-wrapper">
-            <header-identicon @click.native="navigateToGeneralHome()" />
+            <header-identicon @click.native="navigateToAccoount()" />
           </span>
         </div>
       </v-col>
