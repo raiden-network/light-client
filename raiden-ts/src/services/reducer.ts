@@ -1,10 +1,10 @@
 /**
- * state.path reducer
- * Handles all path actions and requests
+ * state.iou reducer
+ * Handles all iou actions and requests
  *
- * @param state - Current RaidenState['path'] slice
+ * @param state - Current RaidenState['iou'] slice
  * @param action - RaidenAction to handle
- * @returns New RaidenState['path'] slice
+ * @returns New RaidenState['iou'] slice
  */
 import unset from 'lodash/fp/unset';
 
@@ -13,25 +13,21 @@ import { partialCombineReducers } from '../utils/redux';
 import { createReducer } from '../utils/actions';
 import { iouClear, iouPersist } from './actions';
 
-const path = createReducer(initialState.path)
+const iou = createReducer(initialState.iou)
   .handle(iouPersist, (state, action) => ({
     ...state,
-    iou: {
-      ...state.iou,
-      [action.meta.tokenNetwork]: {
-        ...state.iou[action.meta.tokenNetwork],
-        [action.meta.serviceAddress]: action.payload.iou,
-      },
+    [action.meta.tokenNetwork]: {
+      ...state[action.meta.tokenNetwork],
+      [action.meta.serviceAddress]: action.payload.iou,
     },
   }))
-  .handle(iouClear, (state, action) => {
-    const path = ['iou', action.meta.tokenNetwork, action.meta.serviceAddress];
-    return unset(path, state);
-  });
+  .handle(iouClear, (state, action) =>
+    unset([action.meta.tokenNetwork, action.meta.serviceAddress], state),
+  );
 
 /**
- * Nested combined reducer for path
- * Handles the 'path' substate.
+ * Nested combined reducer for iou
+ * Handles the 'iou' substate.
  */
-const servicesReducer = partialCombineReducers({ path }, initialState);
+const servicesReducer = partialCombineReducers({ iou }, initialState);
 export default servicesReducer;

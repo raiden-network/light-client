@@ -43,14 +43,12 @@ export const RaidenState = t.readonly(
     ),
     sent: TransfersState,
     received: TransfersState,
-    path: t.type({
-      iou: t.readonly(
-        t.record(
-          t.string /* tokenNetwork: Address */,
-          t.record(t.string /* service: Address */, Signed(IOU)),
-        ),
+    iou: t.readonly(
+      t.record(
+        t.string /* tokenNetwork: Address */,
+        t.record(t.string /* service: Address */, Signed(IOU)),
       ),
-    }),
+    ),
     pendingTxs: t.readonlyArray(ConfirmableAction),
   }),
 );
@@ -131,9 +129,7 @@ export function makeInitialState(
     transport: {},
     sent: {},
     received: {},
-    path: {
-      iou: {},
-    },
+    iou: {},
     pendingTxs: [],
   };
 }
