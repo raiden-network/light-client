@@ -17,6 +17,11 @@
 - [#1382] Better error handling when PFS can't find routes between nodes.
 - [#1427] Scroll bar issue in Channel List view.
 
+### Changed
+
+- [#1458] General screen has been renamed to account.
+
+[#1458]: https://github.com/raiden-network/light-client/issues/1458
 [#1402]: https://github.com/raiden-network/light-client/issues/1402
 [#1413]: https://github.com/raiden-network/light-client/issues/1413
 [#1395]: https://github.com/raiden-network/light-client/issues/1395
