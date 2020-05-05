@@ -46,8 +46,15 @@
       "raiden-account": {
         "title": "Raiden Account",
         "subtitle": "Transfer ETH between your main and Raiden account"
+      },
+      "withdrawal": {
+        "title": "Withdrawal",
+        "subtitle": "Withdraw tokens to your main account"
       }
     }
+  },
+  "withdrawal": {
+    "title": "Transfer token amount back to your main account."
   },
   "backup-state": {
     "description": "The state holds all account information except the private key. You can backup your state to make sure the dApp is kept in sync when switching between browsers.",

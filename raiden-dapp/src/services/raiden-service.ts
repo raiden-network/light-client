@@ -226,6 +226,21 @@ export default class RaidenService {
     return BalanceUtils.toEth(balance);
   }
 
+  async getUpdatedBalances(tokens: Tokens): Promise<Token[]> {
+    if (!Object.keys(tokens).length) return [];
+    const accountAddress = this.raiden.address;
+    const updatedTokens = { ...tokens };
+    const addresses = Object.keys(updatedTokens);
+    const fetchToken = async (address: string): Promise<void> =>
+      this.raiden.getTokenBalance(address, accountAddress).then(balance => {
+        if (!balance) return;
+        updatedTokens[address] = { ...updatedTokens[address], balance };
+      });
+
+    await asyncPool(6, addresses, fetchToken);
+    return Object.values(updatedTokens);
+  }
+
   private async getToken(tokenAddress: string): Promise<Token | null> {
     const raiden = this.raiden;
     try {
