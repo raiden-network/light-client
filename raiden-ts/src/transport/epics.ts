@@ -558,7 +558,8 @@ export const initMatrixEpic = (
         // if config.matrixServer is set, we must use it (possibly re-using stored credentials,
         // if matching), not fetch from lookup address
         if (matrixServer === server) servers$Array.push(of({ server, setup }));
-        else servers$Array.push(of({ server: matrixServer }));
+        // even if same server, also append without setup to retry if auth fails
+        servers$Array.push(of({ server: matrixServer }));
       } else {
         // previously used server
         if (server) servers$Array.push(of({ server, setup }));
