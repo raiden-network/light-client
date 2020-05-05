@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import FindRoutes from '@/components/FindRoutes.vue';
+import FindRoutes from '@/components/transfer/FindRoutes.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { RaidenPaths } from 'raiden-ts';

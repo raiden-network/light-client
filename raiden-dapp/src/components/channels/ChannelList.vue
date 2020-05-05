@@ -67,8 +67,8 @@
 import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
 import { RaidenChannel } from 'raiden-ts';
 import { Token } from '@/model/types';
-import ChannelActions from '@/components/ChannelActions.vue';
-import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
+import ChannelActions from '@/components/channels/ChannelActions.vue';
+import ChannelLifeCycle from '@/components/channels/ChannelLifeCycle.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import Filters from '@/filters';
@@ -100,7 +100,7 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/mixins';
+@import '@/scss/mixins';
 
 ::v-deep {
   .v-dialog {

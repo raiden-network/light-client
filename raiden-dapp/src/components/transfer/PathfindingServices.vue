@@ -74,7 +74,7 @@ import { RaidenPFS, RaidenError } from 'raiden-ts';
 import { Token } from '@/model/types';
 import Filters from '@/filters';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import Spinner from '@/components/Spinner.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 
 @Component({ components: { AmountDisplay, Spinner, ErrorMessage } })
@@ -150,8 +150,8 @@ export default class PathfindingServices extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
-@import '../scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/mixins';
 
 .pathfinding-services {
   &__wrapper {

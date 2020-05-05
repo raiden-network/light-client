@@ -102,7 +102,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Checkmark from '@/components/Checkmark.vue';
+import Checkmark from '@/components/icons/Checkmark.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import { Transfer } from '@/model/types';

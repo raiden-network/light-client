@@ -3,7 +3,7 @@ import Vuex from 'vuex';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { TestData, paymentId } from '../data/mock-data';
-import TransferSummary from '@/components/TransferSummary.vue';
+import TransferSummary from '@/components/transfer/TransferSummary.vue';
 import { BigNumber } from 'ethers/utils';
 import { Transfer } from '@/model/types';
 

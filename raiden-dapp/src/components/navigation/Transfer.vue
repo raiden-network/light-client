@@ -101,7 +101,6 @@ import { Component, Mixins } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
 import { Token } from '@/model/types';
-import Stepper from '@/components/Stepper.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import Divider from '@/components/Divider.vue';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
@@ -126,7 +125,6 @@ import BlockieMixin from '@/mixins/blockie-mixin';
     Divider,
     AddressInput,
     AmountInput,
-    Stepper,
     ErrorDialog,
     TokenOverlay,
     AmountDisplay
