@@ -3,7 +3,7 @@ jest.mock('@/services/raiden-service');
 import { One } from 'ethers/constants';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import { mount, Wrapper } from '@vue/test-utils';
-import ChannelDialogs from '@/components/ChannelDialogs.vue';
+import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { TestData } from '../data/mock-data';

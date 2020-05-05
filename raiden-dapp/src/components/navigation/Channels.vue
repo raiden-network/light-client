@@ -61,12 +61,12 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import { ChannelState, RaidenChannel } from 'raiden-ts';
-import ChannelList from '@/components/ChannelList.vue';
 import ListHeader from '@/components/ListHeader.vue';
 import { Token } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import ChannelDialogs from '@/components/ChannelDialogs.vue';
+import ChannelList from '@/components/channels/ChannelList.vue';
+import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
 import { ChannelAction } from '@/types';
 
 @Component({

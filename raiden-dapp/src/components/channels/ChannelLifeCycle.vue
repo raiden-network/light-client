@@ -67,9 +67,9 @@ export default class ChannelLifeCycle extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../main';
-@import '../scss/colors';
-@import '../scss/fonts';
+@import '@/main';
+@import '@/scss/colors';
+@import '@/scss/fonts';
 
 $inactive-color: #646464;
 $active-color: $secondary-color;

@@ -10,7 +10,7 @@ import VueRouter from 'vue-router';
 import Filters from '@/filters';
 import { $identicon } from '../utils/mocks';
 import { parseUnits } from 'ethers/utils';
-import ChannelList from '@/components/ChannelList.vue';
+import ChannelList from '@/components/channels/ChannelList.vue';
 import { Token } from '@/model/types';
 
 Vue.use(Vuetify);
