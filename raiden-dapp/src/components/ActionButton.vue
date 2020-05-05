@@ -32,6 +32,7 @@ import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 
 @Component({})
 export default class ActionButton extends Vue {
+  // Just a test
   @Prop({ required: true, type: Boolean })
   enabled!: boolean;
 
