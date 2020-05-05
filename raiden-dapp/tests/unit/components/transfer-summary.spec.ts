@@ -24,7 +24,7 @@ const createWrapper = (transfer: Transfer) =>
     }
   });
 
-describe('TokenOverlay.vue', () => {
+describe('TransferSummary.vue', () => {
   const directTransfer = TestData.mockDirectTransfer;
   const mediatedTransfer = TestData.mockMediatedTransfer;
 

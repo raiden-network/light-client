@@ -1,5 +1,5 @@
 import { mount, Wrapper } from '@vue/test-utils';
-import MintDepositDialog from '@/components/MintDepositDialog.vue';
+import MintDepositDialog from '@/components/dialogs/MintDepositDialog.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { Zero } from 'ethers/constants';

@@ -47,8 +47,8 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
-import ChannelDepositDialog from './ChannelDepositDialog.vue';
-import ConfirmationDialog from './ConfirmationDialog.vue';
+import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
+import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
 import { BigNumber } from 'ethers/utils';
 import { ChannelAction } from '@/types';

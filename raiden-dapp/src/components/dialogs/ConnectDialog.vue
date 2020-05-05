@@ -50,8 +50,8 @@
 import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 import { Web3Provider } from '@/services/web3-provider';
-import { DeniedReason } from '../model/types';
-import RaidenDialog from '@/components/RaidenDialog.vue';
+import { DeniedReason } from '@/model/types';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
 

@@ -2,7 +2,7 @@ import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 
-import QrCodeOverlay from '@/components/QrCodeOverlay.vue';
+import QrCodeOverlay from '@/components/overlays/QrCodeOverlay.vue';
 
 Vue.use(Vuetify);
 

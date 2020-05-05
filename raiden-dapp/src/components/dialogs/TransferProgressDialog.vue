@@ -33,7 +33,7 @@
         <v-col cols="6">
           <div v-if="error">
             <v-img
-              :src="require('../assets/error.png')"
+              :src="require('@/assets/error.png')"
               class="transfer-progress-dialog--error"
             ></v-img>
           </div>
@@ -70,8 +70,8 @@ import { RaidenTransferStatus, RaidenTransfer } from 'raiden-ts';
 import { mapGetters, mapState } from 'vuex';
 import { BigNumber } from 'ethers/utils';
 
-import RaidenDialog from '@/components/RaidenDialog.vue';
-import { Transfers } from '../types';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import { Transfers } from '@/types';
 
 @Component({
   components: { RaidenDialog },
@@ -118,7 +118,7 @@ export default class TransferProgressDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
+@import '@/scss/colors';
 
 .transfer-progress-dialog {
   &__description {
@@ -145,7 +145,7 @@ export default class TransferProgressDialog extends Vue {
       content: ' ';
       width: 14px;
       height: 14px;
-      background-image: url(../assets/done.svg);
+      background-image: url(../../assets/done.svg);
       background-size: 14px;
       display: inline-block;
       margin-left: 7px;

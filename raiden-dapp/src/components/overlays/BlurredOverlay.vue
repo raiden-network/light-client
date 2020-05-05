@@ -17,7 +17,7 @@ export default class BlurredOverlay extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
+@import '@/scss/colors';
 
 .blurred-overlay {
   background-color: rgba($color-white, 0.05);

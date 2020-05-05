@@ -68,7 +68,7 @@ export default class QrCodeOverlay extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/mixins';
+@import '@/scss/mixins';
 
 .scanner {
   &__close-button {
