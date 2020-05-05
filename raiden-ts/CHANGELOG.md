@@ -10,6 +10,11 @@
 [#1368]: https://github.com/raiden-network/light-client/issues/1368
 [#1252]: https://github.com/raiden-network/light-client/issues/1252
 
+### Fixed
+- [#1456] Retry without stored setup if auth fails
+
+[#1456]: https://github.com/raiden-network/light-client/issues/1456
+
 ## [0.6.0] - 2020-04-21
 ### Added
 - [#1338] Allow HTTP URLs for Path Finding Service (non-production)
