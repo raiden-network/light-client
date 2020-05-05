@@ -200,17 +200,17 @@ import FindRoutes from '@/components/FindRoutes.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import TransferSummary from '@/components/TransferSummary.vue';
 import Spinner from '@/components/Spinner.vue';
-import MintDepositDialog from '@/components/MintDepositDialog.vue';
+import MintDepositDialog from '@/components/dialogs/MintDepositDialog.vue';
 import Checkmark from '@/components/Checkmark.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import Stepper from '@/components/Stepper.vue';
-import ErrorDialog from '@/components/ErrorDialog.vue';
+import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { Zero } from 'ethers/constants';
 import { getAddress, getAmount } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
 import Filter from '@/filters';
-import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
-import PfsFeesDialog from '@/components/PfsFeesDialog.vue';
+import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
+import PfsFeesDialog from '@/components/dialogs/PfsFeesDialog.vue';
 
 @Component({
   components: {

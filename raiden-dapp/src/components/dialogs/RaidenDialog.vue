@@ -24,7 +24,7 @@
 </template>
 
 <script lang="ts">
-import BlurredOverlay from '@/components/BlurredOverlay.vue';
+import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
 import { Component, Emit, Vue, Prop } from 'vue-property-decorator';
 
 @Component({ components: { BlurredOverlay } })
@@ -40,8 +40,8 @@ export default class RaidenDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
-@import '../scss/fonts';
+@import '@/scss/colors';
+@import '@/scss/fonts';
 
 ::v-deep {
   .v-dialog {

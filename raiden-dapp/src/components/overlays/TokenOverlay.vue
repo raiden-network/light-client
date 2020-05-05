@@ -56,7 +56,7 @@
                 <v-list-item-avatar>
                   <img
                     :src="$blockie(token.address)"
-                    :src-lazy="require('../assets/generic.svg')"
+                    :src-lazy="require('@/assets/generic.svg')"
                     :alt="$t('select-token.tokens.token.blockie-alt')"
                   />
                 </v-list-item-avatar>
@@ -142,10 +142,10 @@ export default class TokenOverlay extends Mixins(
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/colors';
-@import '../scss/scroll';
-@import '../scss/fonts';
-@import '../scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/scroll';
+@import '@/scss/fonts';
+@import '@/scss/mixins';
 
 .token-network-overlay {
   border-bottom-left-radius: 10px;

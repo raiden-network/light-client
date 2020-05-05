@@ -23,7 +23,7 @@
         <v-col cols="6">
           <v-img
             class="open-channel-dialog__done"
-            :src="require('../assets/done.svg')"
+            :src="require('@/assets/done.svg')"
           ></v-img>
         </v-col>
       </v-row>
@@ -56,7 +56,7 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
-import RaidenDialog from '@/components/RaidenDialog.vue';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import { StepDescription } from '@/model/types';
 @Component({
   components: {
@@ -81,7 +81,7 @@ export default class OpenChannelDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
+@import '@/scss/colors';
 
 .open-channel-dialog {
   &__progress {

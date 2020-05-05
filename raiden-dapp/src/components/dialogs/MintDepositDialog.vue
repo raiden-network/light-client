@@ -83,7 +83,7 @@ import { mapState } from 'vuex';
 import ActionButton from '@/components/ActionButton.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Token } from '@/model/types';
-import RaidenDialog from '@/components/RaidenDialog.vue';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import { RaidenError } from 'raiden-ts';
 
@@ -147,7 +147,7 @@ export default class MintDepositDialog extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/colors';
+@import '@/scss/colors';
 
 .mint-deposit-dialog {
   background-color: #141414;

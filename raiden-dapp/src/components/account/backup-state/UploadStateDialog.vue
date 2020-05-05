@@ -69,7 +69,7 @@
 
 <script lang="ts">
 import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
-import RaidenDialog from '@/components/RaidenDialog.vue';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
 
 @Component({

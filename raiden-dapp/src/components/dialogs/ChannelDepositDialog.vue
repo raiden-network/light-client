@@ -32,7 +32,7 @@
         <v-col cols="6">
           <v-img
             class="channel-deposit__done"
-            :src="require('../assets/done.svg')"
+            :src="require('@/assets/done.svg')"
           ></v-img>
         </v-col>
       </v-row>
@@ -76,7 +76,7 @@ import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import RaidenDialog from '@/components/RaidenDialog.vue';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({
@@ -114,7 +114,7 @@ export default class ChannelDepositDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
+@import '@/scss/colors';
 
 .channel-deposit {
   &__button {

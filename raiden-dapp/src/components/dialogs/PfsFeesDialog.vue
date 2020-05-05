@@ -14,7 +14,7 @@
         <v-col cols="6">
           <v-img
             class="pfs-fees-dialog__done"
-            :src="require('../assets/done.svg')"
+            :src="require('@/assets/done.svg')"
           >
           </v-img>
         </v-col>
@@ -37,7 +37,7 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import RaidenDialog from '@/components/RaidenDialog.vue';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 
 @Component({
   components: {
@@ -55,7 +55,7 @@ export default class PfsFeesDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/colors';
+@import '@/scss/colors';
 
 .pfs-fees-dialog {
   &__progress {

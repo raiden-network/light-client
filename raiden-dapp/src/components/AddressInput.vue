@@ -63,7 +63,7 @@ import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 
 import QrCode from '@/components/icons/QrCode.vue';
-import QrCodeOverlay from '@/components/QrCodeOverlay.vue';
+import QrCodeOverlay from '@/components/overlays/QrCodeOverlay.vue';
 import { Presences } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';

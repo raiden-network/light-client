@@ -5,7 +5,7 @@ import Vuetify from 'vuetify';
 
 import { RouteNames } from '@/router/route-names';
 import { TestData } from '../data/mock-data';
-import TokenOverlay from '@/components/TokenOverlay.vue';
+import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
 import { $identicon } from '../utils/mocks';
 import store from '@/store/index';
 import { Tokens } from '@/types';
