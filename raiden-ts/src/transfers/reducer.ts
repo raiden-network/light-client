@@ -72,14 +72,15 @@ function transferSignedReducer(state: RaidenState, action: transferSigned): Raid
   let channel = state.channels[key];
   if (!channel) return state;
 
+  const balanceProof = channel[end].balanceProof;
   const locks = [...channel[end].locks, lock]; // append lock
   const locksroot = getLocksroot(locks);
   if (
     transfer.locksroot !== locksroot ||
     // nonce must be next
-    !transfer.nonce.eq(channel[end].balanceProof.nonce.add(1)) ||
-    !transfer.transferred_amount.eq(channel[end].balanceProof.transferredAmount) ||
-    !transfer.locked_amount.eq(channel[end].balanceProof.lockedAmount.add(lock.amount))
+    !transfer.nonce.eq(balanceProof.nonce.add(1)) ||
+    !transfer.transferred_amount.eq(balanceProof.transferredAmount) ||
+    !transfer.locked_amount.eq(balanceProof.lockedAmount.add(lock.amount))
   )
     return state;
 

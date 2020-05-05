@@ -15,6 +15,11 @@
 
 [#1456]: https://github.com/raiden-network/light-client/issues/1456
 
+### Changed
+- [#1462] Refactor state schema and types to be simpler and safer
+
+[#1462]: https://github.com/raiden-network/light-client/issues/1462
+
 ## [0.6.0] - 2020-04-21
 ### Added
 - [#1338] Allow HTTP URLs for Path Finding Service (non-production)

@@ -767,14 +767,15 @@ export const channelCloseEpic = (
         return of(channelClose.failure(error, action.meta));
       }
 
+      const balanceProof = channel.partner.balanceProof;
       const balanceHash = createBalanceHash(
-        channel.partner.balanceProof.transferredAmount,
-        channel.partner.balanceProof.lockedAmount,
-        channel.partner.balanceProof.locksroot,
+        balanceProof.transferredAmount,
+        balanceProof.lockedAmount,
+        balanceProof.locksroot,
       );
-      const nonce = channel.partner.balanceProof.nonce;
-      const additionalHash = channel.partner.balanceProof.additionalHash;
-      const nonClosingSignature = channel.partner.balanceProof.signature;
+      const nonce = balanceProof.nonce;
+      const additionalHash = balanceProof.additionalHash;
+      const nonClosingSignature = balanceProof.signature;
 
       const closingMessage = concat([
         encode(tokenNetwork, 20),
