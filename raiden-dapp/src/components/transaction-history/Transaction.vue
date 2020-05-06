@@ -108,8 +108,6 @@ export default class Transaction extends Vue {
   height: 74px;
 
   &__item {
-    &__icon {
-    }
     &__details-left {
       margin-left: 20px;
 

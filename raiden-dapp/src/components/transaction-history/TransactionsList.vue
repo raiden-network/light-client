@@ -58,8 +58,13 @@ export default class TransactionLists extends Vue {
       padding-top: 22px;
     }
   }
-  &__list > div:first-of-type {
-    border: none;
+
+  &__list {
+    > div {
+      &:first-of-type {
+        border: none;
+      }
+    }
   }
 }
 </style>
