@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { EMPTY, timer, Observable, of } from 'rxjs';
+import { EMPTY, timer, Observable } from 'rxjs';
 import { first, takeUntil, toArray, pluck } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
@@ -1377,7 +1377,13 @@ describe('PFS: pfsFeeUpdateEpic', () => {
   test('success: send PFSFeeUpdate to global pfsRoom on channelMonitor', async () => {
     expect.assertions(1);
 
-    await expect(pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise()).resolves.toEqual(
+    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
+    setTimeout(() => {
+      action$.next(action);
+      action$.complete();
+    }, 10);
+
+    await expect(promise).resolves.toEqual(
       messageGlobalSend(
         {
           message: expect.objectContaining({
@@ -1396,9 +1402,13 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
     signerSpy.mockRejectedValueOnce(new Error('Signature rejected'));
 
-    await expect(
-      pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise(),
-    ).resolves.toBeUndefined();
+    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
+    setTimeout(() => {
+      action$.next(action);
+      action$.complete();
+    }, 10);
+
+    await expect(promise).resolves.toBeUndefined();
 
     expect(signerSpy).toHaveBeenCalledTimes(1);
     signerSpy.mockRestore();
@@ -1410,9 +1420,13 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     // put channel in 'closing' state
     action$.next(channelClose.request(undefined, { tokenNetwork, partner }));
 
-    await expect(
-      pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise(),
-    ).resolves.toBeUndefined();
+    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
+    setTimeout(() => {
+      action$.next(action);
+      action$.complete();
+    }, 10);
+
+    await expect(promise).resolves.toBeUndefined();
   });
 
   test('skip: NO_MEDIATE', async () => {
@@ -1428,9 +1442,13 @@ describe('PFS: pfsFeeUpdateEpic', () => {
       }),
     );
 
-    await expect(
-      pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise(),
-    ).resolves.toBeUndefined();
+    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
+    setTimeout(() => {
+      action$.next(action);
+      action$.complete();
+    }, 10);
+
+    await expect(promise).resolves.toBeUndefined();
   });
 });
 
