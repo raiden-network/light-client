@@ -12,7 +12,6 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
-import findKey from 'lodash/findKey';
 import isMatchWith from 'lodash/isMatchWith';
 import pick from 'lodash/pick';
 
@@ -44,7 +43,7 @@ import { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { LruCache } from '../../utils/lru';
 import { pluckDistinct } from '../../utils/rx';
-import { Address, assert, BigNumberC, Hash, Signed, UInt, Int } from '../../utils/types';
+import { assert, BigNumberC, Hash, Signed, UInt, Int } from '../../utils/types';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Capabilities } from '../../constants';
 import {
@@ -124,13 +123,12 @@ function makeAndSignTransfer$(
     secrethash: action.meta.secrethash,
   };
   const locksroot = getLocksroot([...channel.own.locks, lock]);
-  const token = findKey(state.tokens, (tn) => tn === action.payload.tokenNetwork)! as Address;
 
   log.info(
     'Signing transfer of value',
     action.payload.value.toString(),
     'of token',
-    token,
+    channel.token,
     ', to',
     action.payload.target,
     ', through routes',
@@ -151,7 +149,7 @@ function makeAndSignTransfer$(
     locked_amount: channel.own.balanceProof.lockedAmount.add(lock.amount) as UInt<32>,
     locksroot,
     payment_identifier: action.payload.paymentId,
-    token,
+    token: channel.token,
     recipient: partner,
     lock,
     target: action.payload.target,
@@ -545,13 +543,12 @@ function receiveTransferSigned(
       );
       const locksroot = getLocksroot([...channel.partner.locks, transfer.lock]);
       assert(transfer.locksroot === locksroot, 'locksroot mismatch');
-      const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
 
       log.info(
         'Receiving transfer of value',
         transfer.lock.amount.toString(),
         'of token',
-        token,
+        channel.token,
         ', from',
         transfer.initiator,
         ', through partner',

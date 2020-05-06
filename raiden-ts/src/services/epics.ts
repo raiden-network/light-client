@@ -37,10 +37,9 @@ import { RaidenConfig } from '../config';
 import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
-import { channelMonitor } from '../channels/actions';
 import { ChannelState, Channel } from '../channels/state';
-import { channelAmounts, channelKey } from '../channels/utils';
-import { Address, decode, Int, Signature, Signed, UInt, isntNil, assert } from '../utils/types';
+import { channelAmounts, groupChannel$ } from '../channels/utils';
+import { Address, decode, Int, Signature, Signed, UInt, assert } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
@@ -389,29 +388,6 @@ export const pathFindServiceEpic = (
   );
 };
 
-function distinctChannel$(latest$: RaidenEpicDeps['latest$']) {
-  return latest$.pipe(
-    pluckDistinct('state', 'channels'),
-    concatMap((channels) => from(Object.entries(channels))),
-    /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
-     * changes from last time seen. It relies on value references changing only if needed */
-    scan(
-      ({ acc }, [key, channel]) =>
-        // if ref didn't change, emit previous accumulator, without 'changed' value
-        acc[key] === channel
-          ? { acc }
-          : // else, update ref in 'acc' and emit value in 'changed' prop
-            {
-              acc: { ...acc, [key]: channel },
-              changed: channel,
-            },
-      { acc: {} } as { acc: RaidenState['channels']; changed?: Channel },
-    ),
-    pluck('changed'),
-    filter(isntNil), // filter out if reference didn't change from last emit
-  );
-}
-
 /**
  * Sends a [[PFSCapacityUpdate]] to PFS global room on new deposit on our side of channels
  *
@@ -424,8 +400,9 @@ export const pfsCapacityUpdateEpic = (
   {}: Observable<RaidenState>,
   { log, address, network, signer, latest$, config$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
-  distinctChannel$(latest$).pipe(
-    groupBy(channelKey),
+  latest$.pipe(
+    pluck('state'),
+    groupChannel$,
     withLatestFrom(config$),
     mergeMap(([grouped$, { httpTimeout }]) =>
       grouped$.pipe(
@@ -477,24 +454,25 @@ export const pfsCapacityUpdateEpic = (
  * @returns Observable of messageGlobalSend actions
  */
 export const pfsFeeUpdateEpic = (
-  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, address, network, signer, config$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
-  action$.pipe(
-    filter(channelMonitor.is),
-    withLatestFrom(state$, config$),
+  state$.pipe(
+    groupChannel$,
+    // get only first state per channel
+    mergeMap((grouped$) => grouped$.pipe(first())),
+    withLatestFrom(config$),
     // ignore actions while/if mediating not enabled
-    filter(([, , { pfsRoom, caps }]) => !!pfsRoom && !caps?.[Capabilities.NO_MEDIATE]),
-    mergeMap(([action, state, { pfsRoom }]) => {
-      const channel = state.channels[channelKey(action.meta)];
-      if (channel?.state !== ChannelState.open) return EMPTY;
+    filter(([, { pfsRoom, caps }]) => !!pfsRoom && !caps?.[Capabilities.NO_MEDIATE]),
+    mergeMap(([channel, { pfsRoom }]) => {
+      if (channel.state !== ChannelState.open) return EMPTY;
 
       const message: PFSFeeUpdate = {
         type: MessageType.PFS_FEE_UPDATE,
         canonical_identifier: {
           chain_identifier: bigNumberify(network.chainId) as UInt<32>,
-          token_network_address: action.meta.tokenNetwork,
+          token_network_address: channel.tokenNetwork,
           channel_identifier: bigNumberify(channel.id) as UInt<32>,
         },
         updating_participant: address,
@@ -689,9 +667,9 @@ export const monitorRequestEpic = (
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
-  distinctChannel$(deps.latest$).pipe(
-    // per channel
-    groupBy(channelKey),
+  deps.latest$.pipe(
+    pluck('state'),
+    groupChannel$,
     withLatestFrom(deps.config$),
     mergeMap(([grouped$, { httpTimeout }]) =>
       grouped$.pipe(
