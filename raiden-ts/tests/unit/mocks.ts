@@ -11,7 +11,7 @@ import { memoize } from 'lodash';
 import logging from 'loglevel';
 
 jest.mock('ethers/providers');
-import { Zero } from 'ethers/constants';
+import { Zero, HashZero } from 'ethers/constants';
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
 import { Log } from 'ethers/providers/abstract-provider';
 import { Network, parseEther } from 'ethers/utils';
@@ -157,6 +157,15 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       for (const func in tokenNetworkContract.functions) {
         jest.spyOn(tokenNetworkContract.functions, func as keyof TokenNetwork['functions']);
       }
+      tokenNetworkContract.functions.getChannelParticipantInfo.mockResolvedValue([
+        Zero,
+        Zero,
+        false,
+        HashZero,
+        Zero,
+        HashZero,
+        Zero,
+      ]);
       return tokenNetworkContract;
     },
   );
