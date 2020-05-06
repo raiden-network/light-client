@@ -91,6 +91,12 @@ export function assertTx(
   error: ErrorCodes,
   { log }: Pick<RaidenEpicDeps, 'log'>,
 ): OperatorFunction<ContractTransaction, Hash> {
+  /**
+   * Operator to check for tx
+   *
+   * @param tx - pending contract tx
+   * @returns Observable of txHash
+   */
   return (tx) =>
     tx.pipe(
       tap((tx) => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
