@@ -53,17 +53,15 @@ export default class TransactionLists extends Vue {
   &__list {
     margin: 0 34px 0 32px;
 
-    &__item {
-      border-top: solid 1px $input-background;
-      padding-top: 22px;
-    }
-  }
-
-  &__list {
     > div {
       &:first-of-type {
         border: none;
       }
+    }
+
+    &__item {
+      border-top: solid 1px $input-background;
+      padding-top: 22px;
     }
   }
 }
