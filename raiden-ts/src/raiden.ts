@@ -31,7 +31,7 @@ import { RaidenConfig, PartialRaidenConfig } from './config';
 import { RaidenChannels, ChannelState } from './channels/state';
 import { RaidenTransfer, Direction } from './transfers/state';
 import { raidenReducer } from './reducer';
-import { raidenRootEpic } from './epics';
+import { raidenRootEpic, getLatest$ } from './epics';
 import {
   RaidenAction,
   RaidenEvents,
@@ -72,7 +72,7 @@ import { RaidenError, ErrorCodes } from './utils/error';
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
   private readonly deps: RaidenEpicDeps;
-  public config: RaidenConfig;
+  public config!: RaidenConfig;
 
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
@@ -234,7 +234,6 @@ export class Raiden {
       },
     });
 
-    this.config = { ...defaultConfig, ...state.config };
     this.deps.config$.subscribe((config) => (this.config = config));
 
     this.deps.config$
@@ -255,6 +254,13 @@ export class Raiden {
       state as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       applyMiddleware(loggerMiddleware, this.epicMiddleware),
     );
+
+    // populate deps.latest$, to ensure config & logger subscriptions are setup before start
+    getLatest$(
+      of(raidenConfigUpdate({})),
+      of(this.store.getState()),
+      this.deps,
+    ).subscribe((latest) => this.deps.latest$.next(latest));
   }
 
   /**

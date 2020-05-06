@@ -17,7 +17,7 @@ import {
   channelWithdrawn,
 } from './actions';
 import { Channel, ChannelState, ChannelEnd } from './state';
-import { channelKey } from './utils';
+import { channelKey, channelUniqueKey } from './utils';
 
 // state.blockNumber specific reducer, handles only newBlock action
 const blockNumber = createReducer(initialState.blockNumber).handle(
@@ -70,7 +70,12 @@ const emptyChannelEnd: ChannelEnd = {
 function channelOpenSuccessReducer(state: RaidenState, action: channelOpen.success): RaidenState {
   const key = channelKey(action.meta);
   // ignore if older than currently set channel, or unconfirmed or removed
-  if ((state.channels[key]?.openBlock ?? 0) >= action.payload.txBlock || !action.payload.confirmed)
+  const prevChannel = state.channels[key];
+  if (
+    (prevChannel?.openBlock ?? 0) >= action.payload.txBlock ||
+    (prevChannel?.id ?? 0) >= action.payload.id ||
+    !action.payload.confirmed
+  )
     return state;
   const channel: Channel = {
     state: ChannelState.open,
@@ -102,22 +107,20 @@ function channelUpdateOnchainBalanceStateReducer(
   let channel = state.channels[key];
   if (channel?.state !== ChannelState.open || channel.id !== action.payload.id) return state;
 
-  const prop = channelWithdrawn.is(action) ? 'withdraw' : 'deposit';
-  const total = channelWithdrawn.is(action)
-    ? action.payload.totalWithdraw
-    : action.payload.totalDeposit;
+  const [prop, total] = channelWithdrawn.is(action)
+    ? ['withdraw' as const, action.payload.totalWithdraw]
+    : ['deposit' as const, action.payload.totalDeposit];
+  const end = action.payload.participant === channel.partner.address ? 'partner' : 'own';
 
-  const isPartner = action.payload.participant === action.meta.partner;
-  const channelSide = isPartner ? 'partner' : 'own';
+  if (total.lte(channel[end][prop])) return state; // ignore if past event
 
   channel = {
     ...channel,
-    [channelSide]: {
-      ...channel[channelSide],
+    [end]: {
+      ...channel[end],
       [prop]: total,
     },
   };
-
   return { ...state, channels: { ...state.channels, [key]: channel } };
 }
 
@@ -131,7 +134,7 @@ function channelCloseSuccessReducer(
   // even on non-confirmed action, already set channel state as closing, so it can't be used for new transfers
   if (action.payload.confirmed === undefined && channel.state === ChannelState.open)
     channel = { ...channel, state: ChannelState.closing };
-  else if (action.payload.confirmed)
+  else if (!('closeBlock' in channel) && action.payload.confirmed)
     channel = {
       ...channel,
       state: ChannelState.closed,
@@ -182,7 +185,7 @@ function channelSettleSuccessReducer(
       oldChannels: {
         // persist popped channel on oldChannels with augmented channelKey
         ...state.oldChannels,
-        [`${channel.id}#${key}`]: {
+        [channelUniqueKey(channel)]: {
           ...channel,
           state: ChannelState.settled,
           settleBlock: action.payload.txBlock,

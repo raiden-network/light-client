@@ -2,9 +2,11 @@ import * as t from 'io-ts';
 
 import { Address, Hash, UInt } from '../utils/types';
 
-// should this become a brand?
+// should these become brands?
 export const ChannelKey = t.string;
 export type ChannelKey = string;
+export const ChannelUniqueKey = t.string;
+export type ChannelUniqueKey = string;
 
 // Represents a HashTime-Locked amount in a channel
 export const Lock = t.type(
