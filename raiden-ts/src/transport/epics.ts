@@ -97,6 +97,7 @@ import { RaidenState } from '../state';
 import { getServerName, getUserPresence } from '../utils/matrix';
 import { LruCache } from '../utils/lru';
 import { pluckDistinct } from '../utils/rx';
+import { Direction } from '../transfers/state';
 import { matrixRoom, matrixRoomLeave, matrixSetup, matrixPresence, rtcChannel } from './actions';
 import { RaidenMatrixSetup } from './state';
 
@@ -810,20 +811,38 @@ export const matrixPresenceUpdateEpic = (
 export const matrixCreateRoomEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, matrix$, latest$ }: RaidenEpicDeps,
+  { address, log, matrix$, latest$ }: RaidenEpicDeps,
 ): Observable<matrixRoom> =>
   // actual output observable, selects addresses of interest from actions
   action$.pipe(
     // ensure there's a room for address of interest for each of these actions
     // matrixRoomLeave ensures a new room is created if all we had are forgotten/left
     filter(isActionOf([transferSigned, channelMonitor, messageSend.request, matrixRoomLeave])),
-    map((action) =>
-      isActionOf(transferSigned, action)
-        ? action.payload.message.target
-        : isActionOf(channelMonitor, action)
-        ? action.meta.partner
-        : action.meta.address,
-    ),
+    map((action) => {
+      let peer;
+      switch (action.type) {
+        case transferSigned.type:
+          if (
+            action.meta.direction === Direction.SENT &&
+            action.payload.message.initiator === address
+          )
+            peer = action.payload.message.target;
+          else if (
+            action.meta.direction === Direction.RECEIVED &&
+            action.payload.message.target === address
+          )
+            peer = action.payload.message.initiator;
+          break;
+        case channelMonitor.type:
+          peer = action.meta.partner;
+          break;
+        default:
+          peer = action.meta.address;
+          break;
+      }
+      return peer;
+    }),
+    filter(isntNil),
     // groupby+mergeMap ensures different addresses are processed in parallel, and also
     // prevents one stuck address observable (e.g. presence delayed) from holding whole queue
     groupBy((address) => address),
