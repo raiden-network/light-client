@@ -19,17 +19,16 @@
           ghost
           enabled
           full-width
-          class="transfer__top-button"
+          class="transfer__actions__channel-button"
           @click="navigateToChannels(token.address)"
         />
       </v-col>
-      <v-col cols="6">
+      <v-col cols="7">
         <action-button
           :text="token.name"
           ghost
           enabled
           full-width
-          class="transfer__top-button"
           @click="showTokenNetworks = true"
         />
       </v-col>
@@ -39,7 +38,7 @@
           ghost
           full-width
           enabled
-          class="transfer__top-button"
+          class="transfer__actions__deposit-button"
           @click="depositing = true"
         />
         <channel-deposit-dialog
@@ -252,15 +251,23 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
   &__actions {
     margin-top: 10px;
+
+    &__channel-button {
+      margin-left: 10px;
+    }
+
+    &__deposit-button {
+      margin-right: 50px;
+    }
   }
 
   &__form-container {
     margin-top: 50px;
 
     &__title {
-      color: $color-gray;
+      color: $secondary-text-color;
       font-weight: bold;
-      margin-left: 50px;
+      margin-left: 45px;
       padding-bottom: 20px;
     }
 

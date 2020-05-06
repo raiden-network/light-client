@@ -22,10 +22,14 @@
               ? $t('transaction-history.sent-title')
               : $t('transaction-history.received-title')
           }}
-          <address-display :address="transfer.partner" />
+          <address-display
+            class="transaction__item__details-left__address"
+            :address="transfer.partner"
+          />
         </v-row>
         <v-row class="transaction__item__details-left__time-stamp" no-gutters>
-          {{ transfer.changedAt }}
+          {{ new Intl.DateTimeFormat('en-US').format(transfer.changedAt) }}
+          {{ transfer.changedAt.toLocaleTimeString('en-US') }}
         </v-row>
       </v-col>
       <v-col class="transaction__item__details-right">
@@ -98,6 +102,8 @@ export default class Transaction extends Vue {
 </script>
 
 <style scoped lang="scss">
+@import '../../scss/colors';
+
 .transaction {
   height: 74px;
 
@@ -107,7 +113,12 @@ export default class Transaction extends Vue {
     &__details-left {
       margin-left: 20px;
 
+      &__address {
+        padding: 0 0 2px 5px;
+      }
+
       &__time-stamp {
+        color: $secondary-text-color;
         font-size: 10px;
       }
     }

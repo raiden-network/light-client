@@ -1,6 +1,8 @@
 <template>
   <v-container class="transaction-history" fluid>
-    <v-row no-gutters>{{ $t('transaction-history.title') }}</v-row>
+    <v-row class="transaction-history__title" no-gutters>
+      {{ $t('transaction-history.title') }}
+    </v-row>
     <v-list class="transaction-history__list" color="transparent">
       <div
         v-for="(transfer, index) in Object.values(transfers)"
@@ -35,10 +37,6 @@ import Transaction from '@/components/transaction-history/Transaction.vue';
 })
 export default class TransactionLists extends Vue {
   transfers!: Transfers;
-
-  mounted() {
-    console.log(Object.values(this.transfers));
-  }
 }
 </script>
 
@@ -46,8 +44,14 @@ export default class TransactionLists extends Vue {
 @import '../../scss/colors';
 
 .transaction-history {
+  &__title {
+    color: $secondary-text-color;
+    font-weight: bold;
+    margin: 24px 0 0 32px;
+  }
+
   &__list {
-    margin: 0 30px 0 30px;
+    margin: 0 34px 0 32px;
 
     &__item {
       border-top: solid 1px $input-background;
