@@ -177,7 +177,7 @@
       "<rootDir>/tests/**/*.spec.ts"
     ],
     "setupFiles": [
-      "<rootDir>/src/polyfills.ts"
+      "<rootDir>/tests/setup.ts"
     ],
     "verbose": true,
     "collectCoverageFrom": [
@@ -195,6 +195,11 @@
           "outputDirectory": ".coverage"
         }
       ]
-    ]
+    ],
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "<rootDir>/tests/tsconfig.json"
+      }
+    }
   }
 }
