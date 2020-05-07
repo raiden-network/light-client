@@ -113,6 +113,14 @@ const router = new Router({
             title: 'Raiden Account'
           },
           component: () => import('../views/account/RaidenAccount.vue')
+        },
+        {
+          path: 'settings',
+          name: RouteNames.ACCOUNT_SETTINGS,
+          meta: {
+            title: 'Settings'
+          },
+          component: () => import('../views/account/Settings.vue')
         }
       ]
     }

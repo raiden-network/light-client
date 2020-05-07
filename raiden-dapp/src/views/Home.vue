@@ -41,14 +41,14 @@
         </v-col>
       </v-row>
       <action-button
-        enabled
         :text="$t('home.connect-button')"
+        :loading="connecting"
+        :enabled="!connecting"
         sticky
-        @click="connectDialog = true"
+        @click="connect"
       />
       <connect-dialog
         :connecting="connecting"
-        :connecting-subkey="connectingSubkey"
         :visible="connectDialog"
         @connect="connect"
         @close="connectDialog = false"
@@ -60,7 +60,6 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
-import { ConnectOptions } from '@/types';
 import { DeniedReason } from '@/model/types';
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
@@ -68,7 +67,7 @@ import NoTokens from '@/components/NoTokens.vue';
 
 @Component({
   computed: {
-    ...mapState(['loading', 'accessDenied']),
+    ...mapState(['loading', 'accessDenied', 'stateBackup']),
     ...mapGetters(['isConnected'])
   },
   components: {
@@ -81,9 +80,9 @@ export default class Home extends Vue {
   isConnected!: boolean;
   connectDialog: boolean = false;
   connecting: boolean = false;
-  connectingSubkey: boolean = false;
   loading!: boolean;
   accessDenied!: DeniedReason;
+  stateBackup!: string;
 
   get inaccessible() {
     return (
@@ -93,19 +92,19 @@ export default class Home extends Vue {
     );
   }
 
-  async connect(connectOptions: ConnectOptions) {
-    const stateBackup = connectOptions.uploadedState;
-    let subkey = connectOptions.subkey;
-
-    if (subkey) {
-      this.connectingSubkey = true;
-    } else {
-      this.connecting = true;
+  async connect() {
+    const settings = window.localStorage.getItem('raiden_dapp');
+    debugger;
+    if (!settings) {
+      this.connectDialog = true;
+      return;
     }
-
+    let subkey = settings ? JSON.parse(settings).raidenAccount : undefined;
+    this.connectDialog = false;
+    this.connecting = true;
     this.$store.commit('reset');
-    await this.$raiden.connect(stateBackup, subkey);
-    this.connectingSubkey = false;
+    debugger;
+    await this.$raiden.connect(this.stateBackup, subkey);
     this.connecting = false;
     if (!this.accessDenied) {
       this.connectDialog = false;

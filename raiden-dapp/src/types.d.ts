@@ -6,11 +6,7 @@ import { Network } from 'ethers/utils';
 export type Tokens = { [token: string]: Token };
 export type Transfers = { [secretHash: string]: RaidenTransfer };
 export type ChannelAction = 'close' | 'deposit' | 'settle';
-
-export interface ConnectOptions {
-  uploadedState: string;
-  subkey?: true;
-}
+export type Settings = { [setting: string]: boolean | number | string };
 
 export interface RootState {
   loading: boolean;
@@ -25,6 +21,7 @@ export interface RootState {
   presences: Presences;
   transfers: Transfers;
   stateBackup: string;
+  settings: Settings;
 }
 
 declare global {

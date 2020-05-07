@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import VuexPersistence from 'vuex-persist';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState, Tokens, Transfers } from '@/types';
 import {
@@ -40,7 +41,10 @@ const _defaultState: RootState = {
   transfers: {},
   presences: {},
   network: PlaceHolderNetwork,
-  stateBackup: ''
+  stateBackup: '',
+  settings: {
+    useRaidenAccount: true
+  }
 };
 
 export function defaultState(): RootState {
@@ -55,6 +59,12 @@ const hasNonZeroBalance = (a: Token, b: Token) =>
   a.balance &&
   b.balance &&
   (!(a.balance as BigNumber).isZero() || !(b.balance as BigNumber).isZero());
+
+const vuexLocal = new VuexPersistence<RootState>({
+  storage: window.localStorage,
+  reducer: state => ({ settings: state.settings }),
+  filter: mutation => mutation.type == 'addNavItem'
+});
 
 const store: StoreOptions<RootState> = {
   state: defaultState(),
@@ -197,7 +207,8 @@ const store: StoreOptions<RootState> = {
         ? state.raidenAccountBalance
         : state.accountBalance;
     }
-  }
+  },
+  plugins: [vuexLocal.plugin]
 };
 
 export default new Vuex.Store(store);

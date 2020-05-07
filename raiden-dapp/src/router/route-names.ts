@@ -9,5 +9,6 @@ export enum RouteNames {
   ACCOUNT = 'account',
   ACCOUNT_ROOT = 'account-root',
   ACCOUNT_BACKUP = 'account-backup',
-  ACCOUNT_RAIDEN = 'account-raiden'
+  ACCOUNT_RAIDEN = 'account-raiden',
+  ACCOUNT_SETTINGS = 'account-settings'
 }

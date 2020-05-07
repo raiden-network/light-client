@@ -9,13 +9,10 @@
       "link-name": "getting started guide"
     },
     "connect-dialog": {
-      "connect-title": "Connect",
-      "divider": "-OR-",
-      "web3-provider": "Use Web3 Provider",
-      "raiden-account": {
-        "description": "Connect to Web3 and re-generate a {0}",
-        "link-name": "dedicated Raiden account."
-      },
+      "title": "Connect",
+      "raiden-account": "Generate Account & Key",
+      "description-raiden-account": "A Raiden Account will be generated.",
+      "description-web3-account": "You can use your Web3 account directly by enabling it in the settings menu.",
       "no-provider": "No Web3 provider detected, please install e.g. MetaMask."
     }
   },
@@ -35,6 +32,10 @@
     "address": "Address:",
     "currency": "ETH:",
     "menu-items": {
+      "settings":{
+        "title": "Settings",
+        "subtitle": "Change how you interact with the dApp"
+      },
       "backup-state": {
         "title": "Backup state",
         "subtitle": "Download & upload your state"

@@ -53,9 +53,9 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/mixins';
-@import '../scss/fonts';
-@import '../scss/colors';
+@import '@/scss/mixins';
+@import '@/scss/fonts';
+@import '@/scss/colors';
 
 #account-route-wrapper {
   align-items: center;
@@ -71,7 +71,7 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
 }
 
 .account-route {
-  background-color: black;
+  background-color: $card-background;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
