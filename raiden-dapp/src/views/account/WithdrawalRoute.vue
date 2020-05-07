@@ -9,7 +9,7 @@ import Withdrawal from '@/components/account/Withdrawal.vue';
 @Component({
   components: { Withdrawal }
 })
-export default class withdrawalRoute extends Vue {}
+export default class WithdrawalRoute extends Vue {}
 </script>
 
 <style scoped></style>

@@ -430,6 +430,16 @@ export default class RaidenService {
       await this.updateBalances();
     }
   }
+
+  async transferOnChainTokens(address: string, amount: BigNumberish) {
+    const mainAddress = this.raiden.mainAddress;
+    if (!mainAddress) {
+      return;
+    }
+    await this.raiden.transferOnchainTokens(address, mainAddress, amount, {
+      subkey: true
+    });
+  }
 }
 
 export class ChannelSettleFailed extends Error {}
