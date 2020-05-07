@@ -12,8 +12,10 @@
 
 ### Fixed
 - [#1456] Retry without stored setup if auth fails
+- [#1434] Ensure past channel events are correctly fetched
 
 [#1456]: https://github.com/raiden-network/light-client/issues/1456
+[#1434]: https://github.com/raiden-network/light-client/issues/1434
 
 ### Changed
 - [#1462] Refactor state schema and types to be simpler and safer
