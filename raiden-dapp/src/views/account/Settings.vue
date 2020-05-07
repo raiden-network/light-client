@@ -49,7 +49,7 @@ export default class RaidenSettings extends Vue {
     background-color: $card-background !important;
   }
   .v-list-item {
-    &___action {
+    &__action {
       align-self: start !important;
       margin: 12px 0;
     }
