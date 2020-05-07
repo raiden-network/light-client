@@ -5,7 +5,7 @@
     </v-row>
     <v-list class="transaction-history__list" color="transparent">
       <div
-        v-for="(transfer, index) in Object.values(transfers)"
+        v-for="(transfer, index) in orderedTransfers"
         :key="index"
         class="transaction-history__list__item"
       >
@@ -37,6 +37,12 @@ import Transaction from '@/components/transaction-history/Transaction.vue';
 })
 export default class TransactionLists extends Vue {
   transfers!: Transfers;
+
+  get orderedTransfers() {
+    return Object.values(this.transfers).sort(
+      (a: any, b: any) => b.changedAt - a.changedAt
+    );
+  }
 }
 </script>
 
