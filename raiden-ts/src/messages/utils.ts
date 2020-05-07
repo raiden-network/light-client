@@ -370,6 +370,12 @@ export type messageReceivedTyped<M extends Message> = messageReceived & {
  * @returns Typeguard intersecting messageReceived action and payload.message schemas
  */
 export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | [C, C, ...C[]]) {
+  /**
+   * Typeguard function
+   *
+   * @param action - Some action to guard to be a messageReceved
+   * @returns Whether or not action is a messageReceved of given type
+   */
   return (action: unknown): action is messageReceivedTyped<t.TypeOf<C>> =>
     messageReceived.is(action) &&
     (Array.isArray(messageCodecs)

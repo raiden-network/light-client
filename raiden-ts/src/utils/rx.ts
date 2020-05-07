@@ -43,11 +43,15 @@ export function pluckDistinct<T, R>(...properties: string[]): OperatorFunction<T
  * and emits only if the value changed since last emission
  *
  * It's a combination of `pluck` and `distinctUntilChanged` operators.
- 
+ *
  * @param properties - The nested properties to pluck from each source value (an object).
  * @returns A new Observable of property values from the source values.
  */
 export function pluckDistinct<T, R>(...properties: string[]): OperatorFunction<T, R> {
+  /**
+   * @param source - Input observable
+   * @returns Observable of plucked & distinct values
+   */
   return (source: Observable<T>) =>
     source.pipe(pluck<T, R>(...properties), distinctUntilChanged());
 }

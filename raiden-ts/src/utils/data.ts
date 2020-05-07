@@ -75,11 +75,12 @@ export function losslessParse(text: string): any {
   });
 }
 
+/* eslint-disable jsdoc/check-param-names */
 /**
  * Stringify object losslessly, by converting BigNumbers to 'string's
  *
  * @param value - Object to be serialized as a string
- * @param replacer - Replacer function. Leave default to stringify BigNumbers
+ * @param replacer - Replacer function; leave default to stringify BigNumbers
  * @param space - indentation spaces
  * @returns serialized representation of value
  */
@@ -91,3 +92,4 @@ export function losslessStringify(
 ) {
   return LosslessJSON.stringify(value, replacer, space);
 }
+/* eslint-enable jsdoc/check-param-names */
