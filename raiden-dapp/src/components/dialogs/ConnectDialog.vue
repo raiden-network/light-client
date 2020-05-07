@@ -64,10 +64,7 @@ export default class ConnectDialog extends Vue {
 
   @Emit()
   connect() {
-    window.localStorage.setItem(
-      'raiden_dapp',
-      JSON.stringify({ raidenAccount: true })
-    );
+    this.$store.commit('updateSettings', { useRaidenAccount: true });
   }
 
   get injectedProvider(): boolean {

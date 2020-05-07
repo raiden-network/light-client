@@ -64,10 +64,11 @@ import { DeniedReason } from '@/model/types';
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
 import NoTokens from '@/components/NoTokens.vue';
+import { Settings } from '@/types';
 
 @Component({
   computed: {
-    ...mapState(['loading', 'accessDenied', 'stateBackup']),
+    ...mapState(['loading', 'accessDenied', 'stateBackup', 'settings']),
     ...mapGetters(['isConnected'])
   },
   components: {
@@ -83,6 +84,7 @@ export default class Home extends Vue {
   loading!: boolean;
   accessDenied!: DeniedReason;
   stateBackup!: string;
+  settings!: Settings;
 
   get inaccessible() {
     return (
@@ -93,18 +95,21 @@ export default class Home extends Vue {
   }
 
   async connect() {
-    const settings = window.localStorage.getItem('raiden_dapp');
-    debugger;
-    if (!settings) {
+    // On first time connect, show the connect dialog
+    let { useRaidenAccount } = this.settings;
+    if (useRaidenAccount === undefined) {
       this.connectDialog = true;
       return;
     }
-    let subkey = settings ? JSON.parse(settings).raidenAccount : undefined;
+
     this.connectDialog = false;
     this.connecting = true;
     this.$store.commit('reset');
-    debugger;
-    await this.$raiden.connect(this.stateBackup, subkey);
+
+    await this.$raiden.connect(
+      this.stateBackup,
+      useRaidenAccount ? true : undefined
+    );
     this.connecting = false;
     if (!this.accessDenied) {
       this.connectDialog = false;

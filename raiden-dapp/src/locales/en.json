@@ -521,5 +521,11 @@
       "REQUESTED": "Secret requested by target",
       "REGISTERED": "Secret registered on-chain"
     }
+  },
+  "settings": {
+    "raiden-account": {
+      "title": "Use Raiden Account",
+      "description": "By default the dApp uses a generated Raiden account to sign messages. Enable main account to use your Web3 provider account. All messages will then have to be signed manually."
+    }
   }
 }

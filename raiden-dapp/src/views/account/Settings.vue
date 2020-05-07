@@ -3,15 +3,18 @@
     <v-list two-line subheader>
       <v-list-item>
         <v-list-item-content>
-          <v-list-item-title>Use Raiden Account</v-list-item-title>
+          <v-list-item-title>
+            {{ $t('settings.raiden-account.title') }}
+          </v-list-item-title>
           <v-list-item-subtitle>
-            By default the dApp uses a generated Raiden account to sign
-            messages. Enable main account to use your Web3 provider account. All
-            messages will then have to be signed manually.
+            {{ $t('settings.raiden-account.description') }}
           </v-list-item-subtitle>
         </v-list-item-content>
         <v-list-item-action>
-          <v-switch v-model="useRaidenAccount" @change="toggleMainAccount" />
+          <v-switch
+            v-model="settings.useRaidenAccount"
+            @change="toggleMainAccount"
+          />
         </v-list-item-action>
       </v-list-item>
     </v-list>
@@ -20,24 +23,17 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { mapState } from 'vuex';
+import { Settings } from '@/types';
 
-@Component({})
-export default class Settings extends Vue {
-  useRaidenAccount = true;
-
-  mounted() {
-    const raidenDapp = window.localStorage.getItem('raiden_dapp');
-    const raidenAccount = raidenDapp
-      ? JSON.parse(raidenDapp).raidenAccount
-      : true;
-    this.useRaidenAccount = raidenAccount;
-  }
+@Component({
+  computed: { ...mapState(['settings']) }
+})
+export default class RaidenSettings extends Vue {
+  settings!: Settings;
 
   toggleMainAccount() {
-    window.localStorage.setItem(
-      'raiden_dapp',
-      JSON.stringify({ raidenAccount: this.useRaidenAccount })
-    );
+    this.$store.commit('updateSettings', this.settings);
   }
 }
 </script>

@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import VuexPersistence from 'vuex-persist';
 import Vuex, { StoreOptions } from 'vuex';
-import { RootState, Tokens, Transfers } from '@/types';
+import { RootState, Tokens, Transfers, Settings } from '@/types';
 import {
   ChannelState,
   RaidenChannel,
@@ -42,9 +42,7 @@ const _defaultState: RootState = {
   presences: {},
   network: PlaceHolderNetwork,
   stateBackup: '',
-  settings: {
-    useRaidenAccount: true
-  }
+  settings: {}
 };
 
 export function defaultState(): RootState {
@@ -60,10 +58,11 @@ const hasNonZeroBalance = (a: Token, b: Token) =>
   b.balance &&
   (!(a.balance as BigNumber).isZero() || !(b.balance as BigNumber).isZero());
 
-const vuexLocal = new VuexPersistence<RootState>({
+const settingsLocalStorage = new VuexPersistence<RootState>({
   storage: window.localStorage,
   reducer: state => ({ settings: state.settings }),
-  filter: mutation => mutation.type == 'addNavItem'
+  filter: mutation => mutation.type == 'updateSettings',
+  key: 'raiden_dapp_settings'
 });
 
 const store: StoreOptions<RootState> = {
@@ -112,6 +111,9 @@ const store: StoreOptions<RootState> = {
     },
     backupState(state: RootState, uploadedState: string) {
       state.stateBackup = uploadedState;
+    },
+    updateSettings(state: RootState, settings: Settings) {
+      state.settings = settings;
     }
   },
   actions: {},
@@ -208,7 +210,7 @@ const store: StoreOptions<RootState> = {
         : state.accountBalance;
     }
   },
-  plugins: [vuexLocal.plugin]
+  plugins: [settingsLocalStorage.plugin]
 };
 
 export default new Vuex.Store(store);
