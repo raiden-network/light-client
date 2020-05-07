@@ -444,7 +444,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       font-family: $main-font;
       font-size: 14px;
       line-height: 16px;
-      margin-left: -19px;
       text-align: left;
       border: 1px solid transparent;
 

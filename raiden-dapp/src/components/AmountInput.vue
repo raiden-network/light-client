@@ -208,7 +208,7 @@ $header-vertical-margin-mobile: 2rem;
       font-family: $main-font;
       font-size: 14px;
       line-height: 16px;
-      margin: 2px 0 0 -19px;
+      margin-top: 2px;
 
       &__wrapper {
         height: 25px;

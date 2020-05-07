@@ -47,12 +47,9 @@ export default class TransactionLists extends Vue {
   &__title {
     color: $secondary-text-color;
     font-weight: bold;
-    margin: 24px 0 0 32px;
   }
 
   &__list {
-    margin: 0 34px 0 32px;
-
     > div {
       &:first-of-type {
         border: none;
