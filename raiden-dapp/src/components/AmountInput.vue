@@ -206,9 +206,9 @@ $header-vertical-margin-mobile: 2rem;
     .v-messages {
       border: 1px solid transparent;
       font-family: $main-font;
-      font-size: 11px;
+      font-size: 14px;
       line-height: 16px;
-      margin: -5px 0 0 -19px;
+      margin: 2px 0 0 -19px;
 
       &__wrapper {
         height: 25px;
@@ -225,7 +225,7 @@ $header-vertical-margin-mobile: 2rem;
       }
 
       &__message {
-        color: $error-color;
+        color: $secondary-text-color;
         line-height: 1.1;
       }
     }

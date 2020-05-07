@@ -442,9 +442,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
     .v-messages {
       font-family: $main-font;
-      font-size: 11px;
-      line-height: 21px;
-      margin: -5px 0 0 -19px;
+      font-size: 14px;
+      line-height: 16px;
+      margin-left: -19px;
       text-align: left;
       border: 1px solid transparent;
 
@@ -462,7 +462,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       }
 
       &__message {
-        color: $error-color;
+        color: $secondary-text-color;
         line-height: 1.1;
       }
     }

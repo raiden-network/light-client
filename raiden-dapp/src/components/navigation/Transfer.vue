@@ -280,19 +280,19 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
       &__address-input {
         margin-left: 23px;
-        margin-top: 9px;
+        margin-top: 5px;
         width: 226px;
       }
 
       &__amount-input {
         margin-left: auto;
         margin-right: 23px;
-        margin-top: 9px;
+        margin-top: 5px;
         width: 189px;
       }
 
       &__transfer-button {
-        margin: 13px 23px 0 23px;
+        margin: 10px 23px 0 23px;
 
         ::v-deep {
           .col-10 {
