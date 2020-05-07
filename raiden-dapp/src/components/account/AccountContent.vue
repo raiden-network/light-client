@@ -136,6 +136,8 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 
     // if not connected we display the settings menu item
     // to toggle between sub and main key
+    // this check should probably be removed once we get
+    // more settings
     if (!this.isConnected) {
       this.menuItems.unshift({
         icon: 'gear.svg',

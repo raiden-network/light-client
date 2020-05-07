@@ -6,6 +6,7 @@
 
 - [#1365] Allow user to transfer ETH between Main and Raiden account.
 - [#1424] Sort tokens in token list by balance and symbol.
+- [#1302] Raiden Account as default account.
 
 ### Fixed
 
@@ -31,6 +32,7 @@
 [#1365]: https://github.com/raiden-network/light-client/issues/1365
 [#1424]: https://github.com/raiden-network/light-client/issues/1424
 [#1427]: https://github.com/raiden-network/light-client/issues/1427
+[#1302]: https://github.com/raiden-network/light-client/issues/1302
 
 ## [0.6.0] - 2020-04-21
 

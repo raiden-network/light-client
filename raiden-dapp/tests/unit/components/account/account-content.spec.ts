@@ -1,6 +1,7 @@
 import AccountContent from '@/components/account/AccountContent.vue';
 
 jest.mock('vue-router');
+import flushPromises from 'flush-promises';
 import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
@@ -137,5 +138,42 @@ describe('AccountContent.vue', () => {
 
     // @ts-ignore
     expect(wrapper.vm.downloadLogs).toBeCalled();
+  });
+
+  test('settings menu item when disconnected', async () => {
+    store.commit('reset');
+    wrapper = mount(AccountContent, {
+      vuetify,
+      store,
+      mocks: {
+        $router: router,
+        $t: (msg: string) => msg,
+        $raiden
+      }
+    });
+    await wrapper.vm.$nextTick();
+    await flushPromises();
+
+    const settingsMenuItem = wrapper
+      .findAll('.account-content__menu__list-items')
+      .at(0);
+    const settingsMenuTitle = settingsMenuItem.find('.v-list-item__title');
+    const settingsMenuSubtitle = settingsMenuItem.find(
+      '.v-list-item__subtitle'
+    );
+    settingsMenuItem.find('button').trigger('click');
+
+    expect(settingsMenuTitle.text()).toEqual(
+      'account-content.menu-items.settings.title'
+    );
+    expect(settingsMenuSubtitle.text()).toEqual(
+      'account-content.menu-items.settings.subtitle'
+    );
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.ACCOUNT_SETTINGS
+      })
+    );
   });
 });
