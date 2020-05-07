@@ -281,10 +281,9 @@ function setupMatrixClient$(
   }).pipe(
     // the APIs below are authenticated, and therefore also act as validator
     mergeMap(({ matrix, server, setup }) =>
-      // ensure displayName is set even on restarts
+      // set these properties before starting sync
       merge(
         from(matrix.setDisplayName(setup.displayName)),
-        from(matrix.setPresence({ presence: 'online', status_msg: '' })),
         caps ? from(matrix.setAvatarUrl(stringifyCaps(caps))) : EMPTY,
       ).pipe(
         mapTo({ matrix, server, setup }), // return triplet again
@@ -390,10 +389,10 @@ export const matrixShutdownEpic = (
     mergeMap((matrix) =>
       action$.pipe(
         finalize(() => {
+          matrix.stopClient();
           matrix.setPresence({ presence: 'offline', status_msg: '' }).catch(() => {
             /* stopping, ignore exceptions */
           });
-          matrix.stopClient();
         }),
       ),
     ),

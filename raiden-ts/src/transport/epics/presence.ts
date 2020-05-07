@@ -13,15 +13,16 @@ import {
   toArray,
   pluck,
   exhaustMap,
+  skip,
+  ignoreElements,
 } from 'rxjs/operators';
 import minBy from 'lodash/minBy';
-
+import isEmpty from 'lodash/isEmpty';
 import { getAddress, verifyMessage } from 'ethers/utils';
-
 import { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 
 import { RaidenError, ErrorCodes } from '../../utils/error';
-import { Address, isntNil, assert, Signature } from '../../utils/types';
+import { Address, isntNil, assert } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
@@ -30,7 +31,7 @@ import { getUserPresence } from '../../utils/matrix';
 import { pluckDistinct } from '../../utils/rx';
 import { matrixPresence } from '../actions';
 import { channelMonitor } from '../../channels/actions';
-import { parseCaps } from './helpers';
+import { parseCaps, stringifyCaps } from './helpers';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available/online then
@@ -167,50 +168,37 @@ export const matrixPresenceUpdateEpic = (
       map(({ event, matrix }) => {
         // as 'event' is emitted after user is (created and) updated, getUser always returns it
         const user = matrix.getUser(event.getSender());
-        if (!user || !user.presence) return;
-        const match = userRe.exec(user.userId),
-          peerAddress = match && match[1];
-        if (!peerAddress) return;
-        // getAddress will convert any valid address into checksummed-format
-        const address = getAddress(peerAddress) as Address | undefined;
-        if (!address) return;
-        return { matrix, user, address };
+        try {
+          assert(user?.presence);
+          const peerAddress = userRe.exec(user.userId)?.[1];
+          assert(peerAddress);
+          // getAddress will convert any valid address into checksummed-format
+          const address = getAddress(peerAddress) as Address | undefined;
+          assert(address);
+          return { matrix, user, address };
+        } catch (err) {}
       }),
       // filter out events without userId in the right format (startWith hex-address)
       filter(isntNil),
       withLatestFrom(
         // observable of all addresses whose presence monitoring was requested since init
         action$.pipe(
-          filter(isActionOf(matrixPresence.request)),
+          filter(matrixPresence.request.is),
           scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<Address>()),
           startWith(new Set<Address>()),
         ),
-        // known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
-        latest$.pipe(pluckDistinct('presences')),
       ),
       // filter out events from users we don't care about
       // i.e.: presence monitoring never requested
       filter(([{ address }, toMonitor]) => toMonitor.has(address)),
-      mergeMap(([{ matrix, user, address }, , presences]) => {
+      mergeMap(([{ matrix, user, address }]) => {
         // first filter can't tell typescript this property will always be set!
         const userId = user.userId,
           presence = user.presence!,
           available = AVAILABLE.includes(presence);
 
-        if (
-          address in presences &&
-          presences[address].payload.userId === userId &&
-          presences[address].payload.available === available
-        )
-          // even if signature verification passes, this wouldn't change presence, so return early
-          return EMPTY;
-
-        // fetch profile info if user have no valid displayName set
-        const profile$ = Signature.is(user.displayName)
-          ? of({ displayname: user.displayName, avatar_url: user.avatarUrl })
-          : defer(() => matrix.getProfileInfo(userId));
-
-        return profile$.pipe(
+        // always fetch profile info, to get up-to-date displayname & avatar_url
+        return defer(() => matrix.getProfileInfo(userId)).pipe(
           map((profile) => {
             // errors raised here will be logged and ignored on catchError below
             assert(profile?.displayname, 'no displayname');
@@ -261,4 +249,29 @@ export const matrixMonitorChannelPresenceEpic = (
   action$.pipe(
     filter(channelMonitor.is),
     map((action) => matrixPresence.request(undefined, { address: action.meta.partner })),
+  );
+
+/**
+ * Update our matrix's avatarUrl on config.caps changes
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @returns Observable which never emits
+ */
+export const matrixUpdateCapsEpic = (
+  {}: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { matrix$, config$ }: RaidenEpicDeps,
+): Observable<never> =>
+  config$.pipe(
+    pluckDistinct('caps'),
+    skip(1), // skip replay(1) and act only on changes
+    mergeMap((caps) => matrix$.pipe(map((matrix) => [caps, matrix] as const))),
+    mergeMap(async ([caps, matrix]) =>
+      matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : '').catch(() => {
+        /* ignore http errors */
+      }),
+    ),
+    ignoreElements(),
   );
