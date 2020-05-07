@@ -4,6 +4,7 @@
 
 ### Added
 
+- [#1212] Allows user to view history of all transactions that has been made.
 - [#1365] Allow user to transfer ETH between Main and Raiden account.
 
 ### Fixed
@@ -15,6 +16,7 @@
 - [#1300] General screen shows Raiden account balance when using subkey.
 - [#1382] Better error handling when PFS can't find routes between nodes.
 
+[#1212]: https://github.com/raiden-network/light-client/issues/1212
 [#1402]: https://github.com/raiden-network/light-client/issues/1402
 [#1413]: https://github.com/raiden-network/light-client/issues/1413
 [#1395]: https://github.com/raiden-network/light-client/issues/1395
