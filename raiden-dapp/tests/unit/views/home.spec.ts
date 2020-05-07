@@ -32,17 +32,18 @@ describe('Home.vue', () => {
     });
   });
 
-  test('connect without subkey', async () => {
+  test('shows connect dialog if there is no sub key setting yet', async () => {
     // @ts-ignore
-    await wrapper.vm.connect('');
+    await wrapper.vm.connect();
     await flushPromises();
 
-    expect($raiden.connect).toHaveBeenCalledTimes(1);
+    expect(wrapper.vm.$data.connectDialog).toBe(true);
   });
 
-  test('connect with subkey', async () => {
+  test('connects with sub key by default', async () => {
+    store.commit('updateSettings', { useRaidenAccount: true });
     // @ts-ignore
-    await wrapper.vm.connect(true);
+    await wrapper.vm.connect();
     await flushPromises();
 
     expect($raiden.connect).toHaveBeenCalledTimes(1);
@@ -50,8 +51,9 @@ describe('Home.vue', () => {
 
   test('connect can be called without displaying error after failing initially', async () => {
     store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
+    store.commit('updateSettings', { useRaidenAccount: true });
     // @ts-ignore
-    await wrapper.vm.connect('');
+    await wrapper.vm.connect();
     await flushPromises();
 
     expect(store.state.accessDenied).toEqual(DeniedReason.UNDEFINED);
