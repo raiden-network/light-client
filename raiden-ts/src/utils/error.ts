@@ -20,7 +20,6 @@ export enum ErrorCodes {
 
   // Channel errors
   CNL_INVALID_STATE = 'Invalid channel state.',
-  CNL_TOKEN_NOT_FOUND = 'Could not find token for token network.',
   CNL_NO_OPEN_CHANNEL_FOUND = 'No open channel has been found.',
   CNL_NO_OPEN_OR_CLOSING_CHANNEL_FOUND = 'No open or closing channel has been found.',
   CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND = 'No settleable or settling channel has been found.',

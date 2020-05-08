@@ -1,6 +1,7 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.0] - 2020-05-08
+
 ### Added
 - [#1392] Raiden on-chain methods provide easy ways to transfer entire token & ETH balances
 - [#1368] Monitoring transfers (experimental)
@@ -12,8 +13,10 @@
 
 ### Fixed
 - [#1456] Retry without stored setup if auth fails
+- [#1434] Ensure past channel events are correctly fetched
 
 [#1456]: https://github.com/raiden-network/light-client/issues/1456
+[#1434]: https://github.com/raiden-network/light-client/issues/1434
 
 ### Changed
 - [#1462] Refactor state schema and types to be simpler and safer
@@ -171,7 +174,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.6.0...HEAD
+[unreleased]: https://github.com/raiden-network/light-client/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/raiden-network/light-client/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/raiden-network/light-client/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/raiden-network/light-client/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/raiden-network/light-client/compare/v0.5.0...v0.5.1

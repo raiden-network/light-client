@@ -53,7 +53,7 @@ import {
 } from 'raiden-ts/transfers/utils';
 import { RaidenError, ErrorCodes } from 'raiden-ts/utils/error';
 import { Direction } from 'raiden-ts/transfers/state';
-import { channelKey } from 'raiden-ts/channels/utils';
+import { channelKey, channelUniqueKey } from 'raiden-ts/channels/utils';
 
 import { makeSignature } from './mocks';
 
@@ -785,7 +785,9 @@ describe('raidenReducer', () => {
         ),
       ].reduce(raidenReducer, state);
       expect(newState.channels[key]).toBeUndefined();
-      expect(newState.oldChannels[`${channelId}#${key}`]).toMatchObject({
+      expect(
+        newState.oldChannels[channelUniqueKey({ id: channelId, tokenNetwork, partner })],
+      ).toMatchObject({
         state: ChannelState.settled,
         id: channelId,
         settleBlock,
@@ -807,7 +809,9 @@ describe('raidenReducer', () => {
         ),
       ].reduce(raidenReducer, state);
       expect(newState.channels[key]).toBeUndefined();
-      expect(newState.oldChannels[`${channelId}#${key}`]).toMatchObject({
+      expect(
+        newState.oldChannels[channelUniqueKey({ id: channelId, tokenNetwork, partner })],
+      ).toMatchObject({
         state: ChannelState.settled,
         id: channelId,
         settleBlock: settleBlock + 1,
@@ -831,7 +835,9 @@ describe('raidenReducer', () => {
         ),
       ].reduce(raidenReducer, state);
       expect(newState.channels[key]).toBeUndefined();
-      expect(newState.oldChannels[`${channelId}#${key}`]).toMatchObject({
+      expect(
+        newState.oldChannels[channelUniqueKey({ id: channelId, tokenNetwork, partner })],
+      ).toMatchObject({
         state: ChannelState.settled,
         id: channelId,
         settleBlock: settleBlock + 2,
