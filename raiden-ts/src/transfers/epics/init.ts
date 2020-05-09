@@ -66,7 +66,7 @@ export const initQueuePendingEnvelopeMessagesEpic = (
 export const initQueuePendingReceivedEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { config$ }: RaidenEpicDeps,
+  { latest$ }: RaidenEpicDeps,
 ) =>
   state$.pipe(
     first(),
@@ -80,7 +80,7 @@ export const initQueuePendingReceivedEpic = (
         !received.secret?.[1]?.registerBlock &&
         !received.channelClosed,
     ),
-    withLatestFrom(config$),
+    withLatestFrom(latest$),
     mergeMap(function* ([[secrethash, received], { caps }]) {
       // loop over all pending transfers
       const meta = { secrethash, direction: Direction.RECEIVED };
@@ -94,7 +94,7 @@ export const initQueuePendingReceivedEpic = (
         yield transferSecretReveal({ message: received.secretReveal[1] }, meta);
       // secret not yet known; request iff receiving is enabled
       // secretRequest should always be defined as we sign it when receiving transfer
-      if (!caps?.[Capabilities.NO_RECEIVE] && !received.secret && received.secretRequest) {
+      if (!caps[Capabilities.NO_RECEIVE] && !received.secret && received.secretRequest) {
         yield matrixPresence.request(undefined, { address: received.transfer[1].initiator });
         yield transferSecretRequest({ message: received.secretRequest[1] }, meta);
       }

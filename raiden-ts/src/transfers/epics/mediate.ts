@@ -27,7 +27,7 @@ import { Direction } from '../state';
 export const transferMediateEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, config$ }: RaidenEpicDeps,
+  { address, latest$ }: RaidenEpicDeps,
 ) =>
   action$.pipe(
     filter(transferSigned.is),
@@ -36,11 +36,11 @@ export const transferMediateEpic = (
       (action) =>
         action.meta.direction === Direction.RECEIVED && action.payload.message.target !== address,
     ),
-    withLatestFrom(state$, config$),
+    withLatestFrom(state$, latest$),
     // filter when mediating is enabled and outgoing transfer isn't set
     filter(
       ([action, { sent }, { caps }]) =>
-        !caps?.[Capabilities.NO_MEDIATE] && !(action.meta.secrethash in sent),
+        !caps[Capabilities.NO_MEDIATE] && !(action.meta.secrethash in sent),
     ),
     map(([{ payload: { message: transf }, meta: { secrethash } }]) =>
       // request an outbound transfer to target

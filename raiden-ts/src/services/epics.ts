@@ -456,15 +456,15 @@ export const pfsCapacityUpdateEpic = (
 export const pfsFeeUpdateEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, address, network, signer, config$ }: RaidenEpicDeps,
+  { log, address, network, signer, config$, latest$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
   state$.pipe(
     groupChannel$,
     // get only first state per channel
     mergeMap((grouped$) => grouped$.pipe(first())),
-    withLatestFrom(config$),
+    withLatestFrom(config$, latest$),
     // ignore actions while/if mediating not enabled
-    filter(([, { pfsRoom, caps }]) => !!pfsRoom && !caps?.[Capabilities.NO_MEDIATE]),
+    filter(([, { pfsRoom }, { caps }]) => !!pfsRoom && !caps[Capabilities.NO_MEDIATE]),
     mergeMap(([channel, { pfsRoom }]) => {
       if (channel.state !== ChannelState.open) return EMPTY;
 

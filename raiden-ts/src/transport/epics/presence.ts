@@ -31,7 +31,7 @@ import { getUserPresence } from '../../utils/matrix';
 import { pluckDistinct } from '../../utils/rx';
 import { matrixPresence } from '../actions';
 import { channelMonitor } from '../../channels/actions';
-import { parseCaps, stringifyCaps } from './helpers';
+import { parseCaps, stringifyCaps } from '../utils';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available/online then
@@ -262,9 +262,9 @@ export const matrixMonitorChannelPresenceEpic = (
 export const matrixUpdateCapsEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, config$ }: RaidenEpicDeps,
+  { matrix$, latest$ }: RaidenEpicDeps,
 ): Observable<never> =>
-  config$.pipe(
+  latest$.pipe(
     pluckDistinct('caps'),
     skip(1), // skip replay(1) and act only on changes
     mergeMap((caps) => matrix$.pipe(map((matrix) => [caps, matrix] as const))),

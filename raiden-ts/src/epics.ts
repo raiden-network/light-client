@@ -19,7 +19,7 @@ import { RaidenEpicDeps, Latest } from './types';
 import { RaidenAction, raidenShutdown } from './actions';
 import { PartialRaidenConfig, RaidenConfig } from './config';
 import { pluckDistinct } from './utils/rx';
-import { getPresences$ } from './transport/utils';
+import { getPresences$, getCaps$ } from './transport/utils';
 import { rtcChannel } from './transport/actions';
 import { pfsListUpdated, udcDeposited } from './services/actions';
 import { Address, UInt } from './utils/types';
@@ -40,37 +40,41 @@ import * as ServicesEpics from './services/epics';
 export function getLatest$(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
+  // do not use latest$ or dependents (e.g. config$), as they're defined here
   { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
 ): Observable<Latest> {
+  const config$ = state$.pipe(
+    pluckDistinct('config'),
+    map((c: PartialRaidenConfig): RaidenConfig => ({ ...defaultConfig, ...c })),
+  );
+  const presences$ = getPresences$(action$);
+  const pfsList$ = action$.pipe(
+    filter(pfsListUpdated.is),
+    pluck('payload', 'pfsList'),
+    startWith([] as readonly Address[]),
+  );
+  const rtc$ = action$.pipe(
+    filter(rtcChannel.is),
+    // scan: if v.payload is defined, set it; else, unset
+    scan(
+      (acc, v) =>
+        v.payload ? { ...acc, [v.meta.address]: v.payload } : unset(v.meta.address, acc),
+      {} as Latest['rtc'],
+    ),
+    startWith({} as Latest['rtc']),
+  );
+  const udcBalance$ = action$.pipe(
+    filter(udcDeposited.is),
+    pluck('payload'),
+    startWith(Zero as UInt<32>),
+  );
+  const caps$ = getCaps$(config$, udcBalance$);
   // the nested combineLatest is needed because it can only infer the type of 6 params
   return combineLatest([
-    combineLatest([
-      action$,
-      state$,
-      state$.pipe(
-        pluckDistinct('config'),
-        map((c: PartialRaidenConfig): RaidenConfig => ({ ...defaultConfig, ...c })),
-      ),
-      getPresences$(action$),
-      action$.pipe(
-        filter(pfsListUpdated.is),
-        pluck('payload', 'pfsList'),
-        startWith([] as readonly Address[]),
-      ),
-      action$.pipe(
-        filter(rtcChannel.is),
-        // scan: if v.payload is defined, set it; else, unset
-        scan(
-          (acc, v) =>
-            v.payload ? { ...acc, [v.meta.address]: v.payload } : unset(v.meta.address, acc),
-          {} as Latest['rtc'],
-        ),
-        startWith({} as Latest['rtc']),
-      ),
-    ]),
-    action$.pipe(filter(udcDeposited.is), pluck('payload'), startWith(Zero as UInt<32>)),
+    combineLatest([action$, state$, config$, presences$, pfsList$, rtc$]),
+    combineLatest([udcBalance$, caps$]),
   ]).pipe(
-    map(([[action, state, config, presences, pfsList, rtc], udcBalance]) => ({
+    map(([[action, state, config, presences, pfsList, rtc], [udcBalance, caps]]) => ({
       action,
       state,
       config,
@@ -78,6 +82,7 @@ export function getLatest$(
       pfsList,
       rtc,
       udcBalance,
+      caps,
     })),
   );
 }
