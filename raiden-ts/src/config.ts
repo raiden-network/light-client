@@ -1,9 +1,10 @@
 import * as t from 'io-ts';
-import { Network } from 'ethers/utils';
+import { Network, parseUnits } from 'ethers/utils';
 
 import { Capabilities } from './constants';
 import { Address, UInt } from './utils/types';
 import { getNetworkName } from './utils/ethers';
+import { Caps } from './transport/types';
 
 const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
 
@@ -33,7 +34,7 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - confirmationBlocks - How many blocks to wait before considering a transaction as confirmed
  * - monitoringReward - Reward to be paid to MS, in SVT/RDN; use Zero or null to disable
  * - logger - String specifying the console log level of redux-logger. Use '' to silence.
- * - caps - Own transport capabilities
+ * - caps - Own transport capabilities overrides. Set to null to disable all, including defaults
  * - matrixServer? - Specify a matrix server to use.
  * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly
  *             set in on-chain method calls. false (default) = use main key; true = use subkey
@@ -61,7 +62,7 @@ export const RaidenConfig = t.readonly(
         warn: null,
         error: null,
       }),
-      caps: t.readonly(t.record(t.string /* Capabilities */, t.any)),
+      caps: t.union([t.null, Caps]),
       fallbackIceServers: t.array(RTCIceServer),
     }),
     t.partial({
@@ -102,11 +103,10 @@ export function makeDefaultConfig(
     matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0,
     confirmationBlocks: 5,
-    monitoringReward: null,
+    monitoringReward: parseUnits('5', 18) as UInt<32>,
     logger: 'info',
     caps: {
       [Capabilities.NO_DELIVERY]: true,
-      [Capabilities.NO_RECEIVE]: true,
       [Capabilities.NO_MEDIATE]: true,
       [Capabilities.WEBRTC]: true,
     },
