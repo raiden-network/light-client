@@ -93,7 +93,10 @@
               :token="withdraw"
             />
           </i18n>
-          <div class="error--text mt-2">
+          <div
+            v-if="parseFloat(raidenAccountBalance) === 0"
+            class="error--text mt-2"
+          >
             {{ $t('withdrawal.dialog.no-eth') }}
           </div>
         </div>
