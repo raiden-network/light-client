@@ -11,7 +11,6 @@ import Withdrawal from '@/components/account/Withdrawal.vue';
 import RaidenService from '@/services/raiden-service';
 import Mocked = jest.Mocked;
 import { parseEther, parseUnits } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
 
 Vue.use(Vuetify);
 
@@ -40,7 +39,7 @@ describe('Withdrawal.vue', () => {
 
   describe('no tokens', () => {
     beforeEach(() => {
-      $raiden.getUpdatedBalances.mockResolvedValue([]);
+      $raiden.getRaidenAccountBalances.mockResolvedValue([]);
       wrapper = createWrapper();
     });
 
@@ -55,27 +54,16 @@ describe('Withdrawal.vue', () => {
 
   describe('with tokens', () => {
     beforeEach(() => {
-      $raiden.getUpdatedBalances.mockResolvedValue([
+      $raiden.getRaidenAccountBalances.mockResolvedValue([
         {
           address: '0xtoken',
           decimals: 5,
           balance: parseUnits('1.2', 5),
           name: 'TestToken',
           symbol: 'TTT'
-        },
-        {
-          address: '0xtoken2',
-          decimals: 5,
-          balance: Zero,
-          name: 'TestToken2',
-          symbol: 'TTT2'
         }
       ]);
       wrapper = createWrapper();
-    });
-
-    test('display only tokens with balance', () => {
-      expect(wrapper.findAll('.withdrawal__tokens__name')).toHaveLength(1);
     });
 
     test('open a dialog when clicking withdraw for a token', async () => {

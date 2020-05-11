@@ -125,7 +125,6 @@ import { Component, Mixins } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 import { Tokens } from '@/types';
 import { Token } from '@/model/types';
-import { BigNumber } from 'ethers/utils';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import AmountDisplay from '@/components/AmountDisplay.vue';
@@ -147,9 +146,7 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
   withdraw: Token | null = null;
 
   async mounted() {
-    this.balances = (await this.$raiden.getUpdatedBalances(this.tokens)).filter(
-      token => token.balance && (token.balance as BigNumber)?.gt(0)
-    );
+    this.balances = await this.$raiden.getRaidenAccountBalances();
     this.loading = false;
   }
 
