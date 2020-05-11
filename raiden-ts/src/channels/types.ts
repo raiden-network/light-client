@@ -9,15 +9,18 @@ export const ChannelUniqueKey = t.string;
 export type ChannelUniqueKey = string;
 
 // Represents a HashTime-Locked amount in a channel
-export const Lock = t.type(
-  {
-    amount: UInt(32),
-    expiration: UInt(32),
-    secrethash: Hash,
-  },
+export const Lock = t.intersection(
+  [
+    t.type({
+      amount: UInt(32),
+      expiration: UInt(32),
+      secrethash: Hash,
+    }),
+    t.partial({ registered: t.literal(true) }),
+  ],
   'Lock',
 );
-export type Lock = t.TypeOf<typeof Lock>;
+export interface Lock extends t.TypeOf<typeof Lock> {}
 
 /**
  * Balance Proof constructed from an EnvelopeMessage
