@@ -453,6 +453,92 @@ describe('RaidenService', () => {
         );
       });
     });
+
+    describe('raiden account balances', () => {
+      beforeEach(async () => {
+        providerMock.mockResolvedValue(mockProvider);
+        const stub = new BehaviorSubject({});
+        raiden.getTokenList = jest.fn().mockResolvedValue([]);
+        factory.mockResolvedValue(raiden);
+        stub.next({});
+        await raidenService.connect();
+      });
+
+      test('empty list is returned if not subkey', async () => {
+        await expect(
+          raidenService.getRaidenAccountBalances()
+        ).resolves.toStrictEqual([]);
+      });
+
+      describe('with tokens and subkey', () => {
+        const createToken = (address: string) => ({
+          address,
+          name: address,
+          symbol: address.toLocaleUpperCase(),
+          decimals: 18,
+          balance: Zero
+        });
+
+        beforeEach(() => {
+          (raiden as any).mainAddress = '0x001';
+          raiden.getTokenList = jest.fn().mockResolvedValue(['0x1', '0x2']);
+        });
+
+        test('return empty list if no balances are found', async () => {
+          await expect(
+            raidenService.getRaidenAccountBalances()
+          ).resolves.toStrictEqual([]);
+        });
+
+        describe('with balances', () => {
+          const tokens = [
+            {
+              ...createToken('0x1'),
+              balance: One
+            },
+            {
+              ...createToken('0x2'),
+              balance: One
+            }
+          ];
+
+          beforeEach(() => {
+            raiden.getTokenBalance = jest.fn().mockResolvedValue(One);
+            raiden.getTokenInfo = jest
+              .fn()
+              .mockImplementation(async (address: string) =>
+                createToken(address)
+              );
+          });
+
+          test('load from chain if no token info is cached', async () => {
+            (store.state as any) = {
+              tokens: {}
+            };
+
+            await expect(
+              raidenService.getRaidenAccountBalances()
+            ).resolves.toMatchObject(tokens);
+            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(2);
+          });
+
+          test('load from cache if found', async () => {
+            (store.state as any) = {
+              tokens: {
+                '0x1': {
+                  ...createToken('0x1')
+                }
+              }
+            };
+
+            await expect(
+              raidenService.getRaidenAccountBalances()
+            ).resolves.toMatchObject(tokens);
+            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(1);
+          });
+        });
+      });
+    });
   });
 
   describe('token caching', () => {

@@ -219,6 +219,7 @@ export default class RaidenService {
     return this.raiden.address;
   }
 
+  /* istanbul ignore next */
   async getMainAccount(): Promise<string | undefined> {
     return this.raiden.mainAddress;
   }
