@@ -1,12 +1,13 @@
 import { Observable, combineLatest } from 'rxjs';
-import { filter, scan, startWith, share, map } from 'rxjs/operators';
+import { filter, scan, startWith, share, map, distinctUntilChanged } from 'rxjs/operators';
 import memoize from 'lodash/memoize';
+import isEmpty from 'lodash/isEmpty';
+import isEqual from 'lodash/isEqual';
 
 import { Latest } from '../types';
 import { RaidenAction } from '../actions';
 import { Capabilities } from '../constants';
 import { RaidenConfig } from '../config';
-import { pluckDistinct } from '../utils/rx';
 import { Presences, Caps } from './types';
 import { matrixPresence } from './actions';
 
@@ -80,16 +81,17 @@ export function getCaps$(
   config$: Observable<RaidenConfig>,
   udcBalance$: Observable<Latest['udcBalance']>,
 ): Observable<Caps> {
-  return combineLatest([
-    config$.pipe(pluckDistinct('caps')),
-    config$.pipe(pluckDistinct('monitoringReward')),
-    udcBalance$,
-  ]).pipe(
-    map(([caps, monitoringReward, udcBalance]) => ({
+  return combineLatest([config$, udcBalance$]).pipe(
+    map(([{ caps, monitoringReward, rateToSvt }, udcBalance]) => ({
       // 'noReceive' is false (i.e. receiving enabled) iff (0 < monitoringReward <= udcBalance)
       // TODO: set per token?
-      [Capabilities.NO_RECEIVE]: !(monitoringReward?.gt(0) && monitoringReward.lte(udcBalance)),
+      [Capabilities.NO_RECEIVE]: !(
+        monitoringReward?.gt(0) &&
+        monitoringReward.lte(udcBalance) &&
+        !isEmpty(rateToSvt)
+      ),
       ...caps, // default & user's config.caps has priority over keys above, but unset by default
     })),
+    distinctUntilChanged(isEqual),
   );
 }

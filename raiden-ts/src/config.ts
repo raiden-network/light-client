@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import { Network, parseUnits } from 'ethers/utils';
+import { Network, parseEther } from 'ethers/utils';
 
 import { Capabilities } from './constants';
 import { Address, UInt } from './utils/types';
@@ -35,6 +35,8 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - monitoringReward - Reward to be paid to MS, in SVT/RDN; use Zero or null to disable
  * - logger - String specifying the console log level of redux-logger. Use '' to silence.
  * - caps - Own transport capabilities overrides. Set to null to disable all, including defaults
+ * - fallbackIceServers - STUN servers to be used as a fallback for WebRTC
+ * - rateToSvt - Exchange rate between tokens and SVT, in wei: e.g. rate[TKN]=2e18 => 1TKN = 2SVT
  * - matrixServer? - Specify a matrix server to use.
  * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly
  *             set in on-chain method calls. false (default) = use main key; true = use subkey
@@ -64,6 +66,7 @@ export const RaidenConfig = t.readonly(
       }),
       caps: t.union([t.null, Caps]),
       fallbackIceServers: t.array(RTCIceServer),
+      rateToSvt: t.record(t.string, UInt(32)),
     }),
     t.partial({
       matrixServer: t.string,
@@ -103,7 +106,8 @@ export function makeDefaultConfig(
     matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0,
     confirmationBlocks: 5,
-    monitoringReward: parseUnits('5', 18) as UInt<32>,
+    // SVT also uses 18 decimals, like Ether, so parseEther works
+    monitoringReward: parseEther('5') as UInt<32>,
     logger: 'info',
     caps: {
       [Capabilities.NO_DELIVERY]: true,
@@ -111,6 +115,7 @@ export function makeDefaultConfig(
       [Capabilities.WEBRTC]: true,
     },
     fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    rateToSvt: {},
     ...overwrites,
   };
 }
