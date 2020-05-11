@@ -19,8 +19,8 @@
         <v-row no-gutters>
           {{
             transfer.direction === 'sent'
-              ? $t('transaction-history.sent-title')
-              : $t('transaction-history.received-title')
+              ? $t('transfer-history.sent-title')
+              : $t('transfer-history.received-title')
           }}
           <address-display
             class="transaction__item__details-left__address"
@@ -38,8 +38,8 @@
             <span class="transaction__item__details-right__amount--direction">
               {{
                 transfer.direction === 'sent'
-                  ? $t('transaction-history.sent-symbol')
-                  : $t('transaction-history.received-symbol')
+                  ? $t('transfer-history.sent-symbol')
+                  : $t('transfer-history.received-symbol')
               }}
             </span>
             <amount-display
@@ -58,7 +58,7 @@
               color="rgba(253, 211, 39, 0.3)"
               text-color="#fdd327"
             >
-              {{ $t('transaction-history.pending-transfer') }}
+              {{ $t('transfer-history.pending-transfer') }}
             </v-chip>
             <v-chip
               v-else-if="transfer.success"
@@ -66,7 +66,7 @@
               color="rgba(29, 197, 18, 0.3)"
               text-color="#1dc512"
             >
-              {{ $t('transaction-history.successful-transfer') }}
+              {{ $t('transfer-history.successful-transfer') }}
             </v-chip>
             <v-chip
               v-else
@@ -74,7 +74,7 @@
               color="rgba(234, 100, 100, 0.3)"
               text-color="#ea6464"
             >
-              {{ $t('transaction-history.failed-transfer') }}
+              {{ $t('transfer-history.failed-transfer') }}
             </v-chip>
           </span>
         </v-row>

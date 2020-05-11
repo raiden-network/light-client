@@ -317,8 +317,8 @@
       }
     }
   },
-  "transaction-history": {
-    "title": "Transaction history",
+  "transfer-history": {
+    "title": "Transfer History",
     "sent-title": "Sent to",
     "sent-symbol": "-",
     "received-title": "Received from",

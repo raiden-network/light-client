@@ -1,7 +1,7 @@
 <template>
   <v-container class="transaction-history" fluid>
     <v-row class="transaction-history__title" no-gutters>
-      {{ $t('transaction-history.title') }}
+      {{ $t('transfer-history.title') }}
     </v-row>
     <v-list class="transaction-history__list" color="transparent">
       <div
