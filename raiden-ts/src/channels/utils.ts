@@ -1,4 +1,4 @@
-import { OperatorFunction, from, Observable } from 'rxjs';
+import { OperatorFunction, from, Observable, ReplaySubject } from 'rxjs';
 import {
   tap,
   mergeMap,
@@ -67,12 +67,16 @@ export function channelAmounts(channel: Channel) {
       ownLocked: Zero32,
       ownBalance: Zero32,
       ownCapacity: Zero32,
+      ownOnchainUnlocked: Zero32,
+      ownUnlocked: Zero32, // total of off & onchain unlocked
       partnerDeposit: Zero32,
       partnerWithdraw: Zero32,
       partnerTransferred: Zero32,
       partnerLocked: Zero32,
       partnerBalance: Zero32,
       partnerCapacity: Zero32,
+      partnerOnchainUnlocked: Zero32,
+      partnerUnlocked: Zero32, // total of off & onchain unlocked
     };
 
   const ownWithdraw = channel.own.withdraw,
@@ -87,7 +91,15 @@ export function channelAmounts(channel: Channel) {
     partnerCapacity = channel.partner.deposit
       .sub(partnerWithdraw)
       .sub(partnerLocked)
-      .add(partnerBalance) as UInt<32>;
+      .add(partnerBalance) as UInt<32>,
+    ownOnchainUnlocked = channel.own.locks
+      .filter((lock) => lock.registered)
+      .reduce((acc, lock) => acc.add(lock.amount), Zero) as UInt<32>,
+    partnerOnchainUnlocked = channel.partner.locks
+      .filter((lock) => lock.registered)
+      .reduce((acc, lock) => acc.add(lock.amount), Zero) as UInt<32>,
+    ownUnlocked = ownTransferred.add(ownOnchainUnlocked) as UInt<32>,
+    partnerUnlocked = partnerTransferred.add(partnerOnchainUnlocked) as UInt<32>;
 
   return {
     ownDeposit: channel.own.deposit,
@@ -96,12 +108,16 @@ export function channelAmounts(channel: Channel) {
     ownLocked,
     ownBalance,
     ownCapacity,
+    ownOnchainUnlocked,
+    ownUnlocked,
     partnerDeposit: channel.partner.deposit,
     partnerWithdraw,
     partnerTransferred,
     partnerLocked,
     partnerBalance,
     partnerCapacity,
+    partnerOnchainUnlocked,
+    partnerUnlocked,
   };
 }
 
@@ -167,7 +183,9 @@ export function groupChannel$(state$: Observable<RaidenState>) {
     ),
     pluck('changed'),
     filter(isntNil), // filter out if reference didn't change from last emit
-    groupBy(channelUniqueKey),
+    // grouped$ output will be backed by a ReplaySubject(1), so will emit latest channel state
+    // immediately if resubscribed or withLatestFrom'd
+    groupBy(channelUniqueKey, undefined, undefined, () => new ReplaySubject<Channel>(1)),
     map((grouped$) => {
       const [_id, key] = grouped$.key.split('#');
       const id = +_id;
