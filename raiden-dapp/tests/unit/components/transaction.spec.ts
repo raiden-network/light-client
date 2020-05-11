@@ -39,7 +39,7 @@ describe('Transaction.vue', () => {
       '.transaction__item__details-left'
     );
     expect(transactionHistoryDirection.text()).toContain(
-      'transaction-history.sent-title'
+      'transfer-history.sent-title'
     );
   });
 
@@ -49,7 +49,7 @@ describe('Transaction.vue', () => {
       '.transaction__item__details-left'
     );
     expect(transactionHistoryDirection.text()).toContain(
-      'transaction-history.received-title'
+      'transfer-history.received-title'
     );
   });
 
@@ -57,23 +57,21 @@ describe('Transaction.vue', () => {
     wrapper = createWrapper('sent', true);
     const confirmedTransferChip = wrapper.find('.v-chip__content');
     expect(confirmedTransferChip.text()).toBe(
-      'transaction-history.successful-transfer'
+      'transfer-history.successful-transfer'
     );
   });
 
   test('transaction item displays a "FAILED" chip for failed transfers', () => {
     wrapper = createWrapper('sent', false);
     const failedTransferChip = wrapper.find('.v-chip__content');
-    expect(failedTransferChip.text()).toBe(
-      'transaction-history.failed-transfer'
-    );
+    expect(failedTransferChip.text()).toBe('transfer-history.failed-transfer');
   });
 
   test('transaction item displays a "PENDING" chip for pending transfers', () => {
     wrapper = createWrapper('sent', undefined);
     const pendingTransferChip = wrapper.find('.v-chip__content');
     expect(pendingTransferChip.text()).toBe(
-      'transaction-history.pending-transfer'
+      'transfer-history.pending-transfer'
     );
   });
 

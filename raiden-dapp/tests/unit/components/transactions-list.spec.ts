@@ -23,6 +23,6 @@ describe('TransactionsList.vue', () => {
 
   test('displays transaction history title', () => {
     const transactionHistoryTitle = wrapper.find('.transaction-history__title');
-    expect(transactionHistoryTitle.text()).toBe('transaction-history.title');
+    expect(transactionHistoryTitle.text()).toBe('transfer-history.title');
   });
 });
