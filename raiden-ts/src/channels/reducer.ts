@@ -6,6 +6,8 @@ import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
 import { SignatureZero } from '../constants';
 import { RaidenAction, ConfirmableActions } from '../actions';
+import { transferSecretRegister } from '../transfers/actions';
+import { Direction } from '../transfers/state';
 import {
   channelClose,
   channelDeposit,
@@ -196,6 +198,45 @@ function channelSettleSuccessReducer(
   return state;
 }
 
+function channelLockRegisteredReducer(
+  state: RaidenState,
+  action: transferSecretRegister.success,
+): RaidenState {
+  const secrethash = action.meta.secrethash;
+
+  // now that secret is stored in transfer, if it's a confirmed on-chain registration,
+  // also update channel's lock to reflect it
+  if (!action.payload.confirmed || !(secrethash in state[action.meta.direction])) return state;
+  const transf = state[action.meta.direction][secrethash].transfer[1];
+  const key = channelKey({
+    tokenNetwork: transf.token_network_address,
+    partner: state[action.meta.direction][secrethash].partner,
+  });
+  if (!(key in state.channels)) return state;
+
+  const end = action.meta.direction === Direction.SENT ? 'own' : 'partner';
+  const locks = state.channels[key][end].locks;
+  if (!locks.some((lock) => lock.secrethash === secrethash && !lock.registered)) return state;
+
+  return {
+    ...state,
+    channels: {
+      ...state.channels,
+      [key]: {
+        ...state.channels[key],
+        [end]: {
+          ...state.channels[key][end],
+          locks: locks.map((lock) =>
+            lock.secrethash === secrethash && !lock.registered
+              ? { ...lock, registered: true } // mark lock as registered
+              : lock,
+          ),
+        },
+      },
+    },
+  };
+}
+
 // handles actions which reducers need RaidenState
 const completeReducer = createReducer(initialState)
   .handle(channelOpen.success, channelOpenSuccessReducer)
@@ -205,7 +246,8 @@ const completeReducer = createReducer(initialState)
     channelUpdateStateReducer,
   )
   .handle(channelClose.success, channelCloseSuccessReducer)
-  .handle(channelSettle.success, channelSettleSuccessReducer);
+  .handle(channelSettle.success, channelSettleSuccessReducer)
+  .handle(transferSecretRegister.success, channelLockRegisteredReducer);
 
 /**
  * Nested/combined reducer for channels
