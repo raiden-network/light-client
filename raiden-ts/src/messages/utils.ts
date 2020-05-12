@@ -8,7 +8,7 @@ import logging from 'loglevel';
 
 import { Address, Hash, HexString, Signature, UInt, Signed, decode, assert } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
-import { SignedBalanceProof } from '../channels/types';
+import { BalanceProof } from '../channels/types';
 import { EnvelopeMessage, Message, MessageType, Metadata } from './types';
 import { messageReceived } from './actions';
 
@@ -26,13 +26,17 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.WITHDRAW_EXPIRED]: 17,
   [MessageType.PFS_CAPACITY_UPDATE]: -1,
   [MessageType.PFS_FEE_UPDATE]: -1,
+  [MessageType.MONITOR_REQUEST]: -1,
 };
 
 // raiden_contracts.constants.MessageTypeId
 export enum MessageTypeId {
   BALANCE_PROOF = 1,
+  BALANCE_PROOF_UPDATE = 2,
   WITHDRAW = 3,
+  COOP_SETTLE = 4,
   IOU = 5,
+  MS_REWARD = 6,
 }
 
 /**
@@ -67,7 +71,7 @@ export function createBalanceHash(
 }
 
 /**
- * Create the messageHash for a given EnvelopeMessage
+ * Create the messageHash/additionalHash for a given EnvelopeMessage
  *
  * @param message - EnvelopeMessage to pack
  * @returns Hash of the message pack
@@ -146,7 +150,7 @@ export function packMessage(message: Message) {
     case MessageType.REFUND_TRANSFER:
     case MessageType.UNLOCK:
     case MessageType.LOCK_EXPIRED: {
-      const messageHash = createMessageHash(message),
+      const additionalHash = createMessageHash(message),
         balanceHash = createBalanceHash(
           message.transferred_amount,
           message.locked_amount,
@@ -160,7 +164,7 @@ export function packMessage(message: Message) {
           encode(message.channel_identifier, 32),
           encode(balanceHash, 32), // balance hash
           encode(message.nonce, 32),
-          encode(messageHash, 32), // additional hash
+          encode(additionalHash, 32),
         ]),
       ) as HexString<212>;
     }
@@ -243,6 +247,18 @@ export function packMessage(message: Message) {
           encode(message.timestamp, 19),
         ]),
       ) as HexString; // variable size of fee_schedule.imbalance_penalty rlpEncoding, when not null
+    case MessageType.MONITOR_REQUEST:
+      return hexlify(
+        concat([
+          encode(message.monitoring_service_contract_address, 20),
+          encode(message.balance_proof.chain_id, 32),
+          encode(MessageTypeId.MS_REWARD, 32),
+          encode(message.balance_proof.token_network_address, 20),
+          encode(message.non_closing_participant, 20),
+          encode(message.non_closing_signature, 65),
+          encode(message.reward_amount, 32),
+        ]),
+      ) as HexString<221>;
   }
 }
 
@@ -269,14 +285,14 @@ export function getMessageSigner(message: Signed<Message>): Address {
 }
 
 /**
- * Get the SignedBalanceProof associated with an EnvelopeMessage
+ * Get the signed BalanceProof associated with an EnvelopeMessage
  *
  * @param message - Signed EnvelopeMessage
- * @returns SignedBalanceProof object for message
+ * @returns Signed BalanceProof object for message
  */
 export function getBalanceProofFromEnvelopeMessage(
   message: Signed<EnvelopeMessage>,
-): SignedBalanceProof {
+): Signed<BalanceProof> {
   return {
     chainId: message.chain_id,
     tokenNetworkAddress: message.token_network_address,
@@ -285,9 +301,8 @@ export function getBalanceProofFromEnvelopeMessage(
     transferredAmount: message.transferred_amount,
     lockedAmount: message.locked_amount,
     locksroot: message.locksroot,
-    messageHash: createMessageHash(message),
+    additionalHash: createMessageHash(message),
     signature: message.signature,
-    sender: getMessageSigner(message),
   };
 }
 
@@ -355,6 +370,12 @@ export type messageReceivedTyped<M extends Message> = messageReceived & {
  * @returns Typeguard intersecting messageReceived action and payload.message schemas
  */
 export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | [C, C, ...C[]]) {
+  /**
+   * Typeguard function
+   *
+   * @param action - Some action to guard to be a messageReceved
+   * @returns Whether or not action is a messageReceved of given type
+   */
   return (action: unknown): action is messageReceivedTyped<t.TypeOf<C>> =>
     messageReceived.is(action) &&
     (Array.isArray(messageCodecs)

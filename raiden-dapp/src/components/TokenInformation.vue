@@ -61,7 +61,7 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
-import MintDialog from '@/components/MintDialog.vue';
+import MintDialog from '@/components/dialogs/MintDialog.vue';
 
 @Component({
   components: { AddressDisplay, MintDialog }

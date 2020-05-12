@@ -1,11 +1,12 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.0] - 2020-05-08
 
 ### Added
 
 - [#1212] Allows user to view history of all transactions that has been made.
 - [#1365] Allow user to transfer ETH between Main and Raiden account.
+- [#1424] Sort tokens in token list by balance and symbol.
 
 ### Fixed
 
@@ -15,15 +16,23 @@
 - [#1381] Summary screen display exact amounts on hover
 - [#1300] General screen shows Raiden account balance when using subkey.
 - [#1382] Better error handling when PFS can't find routes between nodes.
+- [#1427] Scroll bar issue in Channel List view.
 
-[#1212]: https://github.com/raiden-network/light-client/issues/1212
+### Changed
+
+- [#1458] General screen has been renamed to account.
+
+[#1458]: https://github.com/raiden-network/light-client/issues/1458
 [#1402]: https://github.com/raiden-network/light-client/issues/1402
 [#1413]: https://github.com/raiden-network/light-client/issues/1413
 [#1395]: https://github.com/raiden-network/light-client/issues/1395
 [#1381]: https://github.com/raiden-network/light-client/issues/1381
 [#1300]: https://github.com/raiden-network/light-client/issues/1300
 [#1382]: https://github.com/raiden-network/light-client/issues/1382
+[#1212]: https://github.com/raiden-network/light-client/issues/1212
 [#1365]: https://github.com/raiden-network/light-client/issues/1365
+[#1424]: https://github.com/raiden-network/light-client/issues/1424
+[#1427]: https://github.com/raiden-network/light-client/issues/1427
 
 ## [0.6.0] - 2020-04-21
 
@@ -247,7 +256,8 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[unreleased]: https://github.com/raiden-network/light-client/compare/v0.6.0...HEAD
+[unreleased]: https://github.com/raiden-network/light-client/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/raiden-network/light-client/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/raiden-network/light-client/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/raiden-network/light-client/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/raiden-network/light-client/compare/v0.5.0...v0.5.1

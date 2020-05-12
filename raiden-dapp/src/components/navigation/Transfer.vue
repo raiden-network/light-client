@@ -103,15 +103,14 @@ import { Component, Mixins } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
 import { Token } from '@/model/types';
-import Stepper from '@/components/Stepper.vue';
-import ErrorDialog from '@/components/ErrorDialog.vue';
+import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import Divider from '@/components/Divider.vue';
-import TokenOverlay from '@/components/TokenOverlay.vue';
+import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import ChannelDepositDialog from '@/components/ChannelDepositDialog.vue';
 import TransactionsList from '@/components/transaction-history/TransactionsList.vue';
+import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
 import { RaidenChannel, ChannelState, RaidenError } from 'raiden-ts';
@@ -129,7 +128,6 @@ import BlockieMixin from '@/mixins/blockie-mixin';
     Divider,
     AddressInput,
     AmountInput,
-    Stepper,
     ErrorDialog,
     TokenOverlay,
     AmountDisplay,

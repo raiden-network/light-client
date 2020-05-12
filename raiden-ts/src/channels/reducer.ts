@@ -1,13 +1,10 @@
-import get from 'lodash/fp/get';
-import set from 'lodash/fp/set';
-import unset from 'lodash/fp/unset';
-import getOr from 'lodash/fp/getOr';
-import { Zero } from 'ethers/constants';
+import { Zero, AddressZero, HashZero } from 'ethers/constants';
 
-import { UInt } from '../utils/types';
+import { UInt, Address, Hash } from '../utils/types';
 import { Reducer, createReducer, isActionOf } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
+import { SignatureZero } from '../constants';
 import { RaidenAction, ConfirmableActions } from '../actions';
 import {
   channelClose,
@@ -19,7 +16,8 @@ import {
   tokenMonitored,
   channelWithdrawn,
 } from './actions';
-import { Channel, ChannelState } from './state';
+import { Channel, ChannelState, ChannelEnd } from './state';
+import { channelKey, channelUniqueKey } from './utils';
 
 // state.blockNumber specific reducer, handles only newBlock action
 const blockNumber = createReducer(initialState.blockNumber).handle(
@@ -32,165 +30,6 @@ const tokens = createReducer(initialState.tokens).handle(
   tokenMonitored,
   (state, { payload: { token, tokenNetwork } }) => ({ ...state, [token]: tokenNetwork }),
 );
-
-// Reducers for different actions
-function channelOpenRequestReducer(
-  state: RaidenState['channels'],
-  action: channelOpen.request,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  if (get(path, state)) return state; // there's already a channel with partner
-  const channel: Channel = {
-    state: ChannelState.opening,
-    own: { deposit: Zero as UInt<32> },
-    partner: { deposit: Zero as UInt<32> },
-  };
-  return set(path, channel, state);
-}
-
-function channelOpenSuccessReducer(
-  state: RaidenState['channels'],
-  action: channelOpen.success,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  // ignore if older than currently set channel, or unconfirmed or removed
-  if (
-    getOr(0, [...path, 'openBlock'], state) >= action.payload.txBlock ||
-    !action.payload.confirmed
-  )
-    return state;
-  const channel: Channel = {
-    state: ChannelState.open,
-    own: { deposit: Zero as UInt<32> },
-    partner: { deposit: Zero as UInt<32> },
-    id: action.payload.id,
-    settleTimeout: action.payload.settleTimeout,
-    isFirstParticipant: action.payload.isFirstParticipant,
-    openBlock: action.payload.txBlock,
-  };
-  return set(path, channel, state);
-}
-
-function channelOpenFailureReducer(
-  state: RaidenState['channels'],
-  action: channelOpen.failure,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  if (get([...path, 'state'], state) !== ChannelState.opening) return state;
-  return unset(path, state);
-}
-
-function channelUpdateOnchainBalanceStateReducer(
-  state: RaidenState['channels'],
-  action: channelDeposit.success | channelWithdrawn,
-): RaidenState['channels'] {
-  // ignore event if unconfirmed or removed
-  if (!action.payload.confirmed) return state;
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(path, state);
-  if (!channel || channel.state !== ChannelState.open || channel.id !== action.payload.id)
-    return state;
-
-  const key = channelWithdrawn.is(action) ? 'withdraw' : 'deposit';
-  const total = channelWithdrawn.is(action)
-    ? action.payload.totalWithdraw
-    : action.payload.totalDeposit;
-
-  const isPartner = action.payload.participant === action.meta.partner;
-  const channelSide = isPartner ? 'partner' : 'own';
-  const channelEndData = isPartner ? channel.partner : channel.own;
-
-  channel = {
-    ...channel,
-    [channelSide]: {
-      ...channelEndData,
-      [key]: total,
-    },
-  };
-
-  return set(path, channel, state);
-}
-
-function channelCloseSuccessReducer(
-  state: RaidenState['channels'],
-  action: channelClose.success,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(path, state);
-  if (
-    !channel ||
-    !(channel.state === ChannelState.open || channel.state === ChannelState.closing) ||
-    channel.id !== action.payload.id
-  )
-    return state;
-  // even on non-confirmed action, already set channel state as closing, so it can't be used for new transfers
-  if (action.payload.confirmed === undefined && channel.state === ChannelState.open)
-    channel = { ...channel, state: ChannelState.closing };
-  else if (action.payload.confirmed)
-    channel = {
-      ...channel,
-      state: ChannelState.closed,
-      closeBlock: action.payload.txBlock,
-      closeParticipant: action.payload.participant,
-    };
-  else return state;
-  return set(path, channel, state);
-}
-
-function channelUpdateStateReducer(
-  state: RaidenState['channels'],
-  action: channelClose.request | channelSettle.request | channelSettleable,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  let channel: Channel | undefined = get(path, state);
-  if (!channel) return state;
-  if (channelClose.request.is(action) && channel.state === ChannelState.open) {
-    channel = { ...channel, state: ChannelState.closing };
-  } else if (channelSettle.request.is(action) && channel.state === ChannelState.settleable) {
-    channel = { ...channel, state: ChannelState.settling };
-  } else if (channelSettleable.is(action) && channel.state === ChannelState.closed) {
-    channel = { ...channel, state: ChannelState.settleable };
-  } else {
-    return state;
-  }
-  return set(path, channel, state);
-}
-
-function channelSettleSuccessReducer(
-  state: RaidenState['channels'],
-  action: channelSettle.success,
-): RaidenState['channels'] {
-  const path = [action.meta.tokenNetwork, action.meta.partner];
-  const channel: Channel | undefined = get(path, state);
-  if (
-    !channel ||
-    channel.state === ChannelState.opening ||
-    channel.state === ChannelState.open ||
-    channel.state === ChannelState.closing ||
-    channel.id !== action.payload.id
-  )
-    return state;
-  // even on non-confirmed action, already set channel as settling
-  if (action.payload.confirmed === undefined && channel.state !== ChannelState.settling)
-    return set(path, { ...channel, state: ChannelState.settling }, state);
-  else if (action.payload.confirmed) return unset(path, state);
-  else return state;
-}
-
-// handles all channel actions and requests
-const channels: Reducer<RaidenState['channels'], RaidenAction> = createReducer(
-  initialState.channels,
-)
-  .handle(channelOpen.request, channelOpenRequestReducer)
-  .handle(channelOpen.success, channelOpenSuccessReducer)
-  .handle(channelOpen.failure, channelOpenFailureReducer)
-  .handle([channelDeposit.success, channelWithdrawn], channelUpdateOnchainBalanceStateReducer)
-  .handle(
-    [channelClose.request, channelSettleable, channelSettle.request],
-    channelUpdateStateReducer,
-  )
-  .handle(channelClose.success, channelCloseSuccessReducer)
-  .handle(channelSettle.success, channelSettleSuccessReducer);
 
 const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
   state = initialState.pendingTxs,
@@ -210,13 +49,181 @@ const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
   }
 };
 
+const emptyChannelEnd: ChannelEnd = {
+  address: AddressZero as Address,
+  deposit: Zero as UInt<32>,
+  withdraw: Zero as UInt<32>,
+  locks: [],
+  balanceProof: {
+    chainId: Zero as UInt<32>,
+    tokenNetworkAddress: AddressZero as Address,
+    channelId: Zero as UInt<32>,
+    nonce: Zero as UInt<8>,
+    transferredAmount: Zero as UInt<32>,
+    lockedAmount: Zero as UInt<32>,
+    locksroot: HashZero as Hash,
+    additionalHash: HashZero as Hash,
+    signature: SignatureZero,
+  },
+};
+
+function channelOpenSuccessReducer(state: RaidenState, action: channelOpen.success): RaidenState {
+  const key = channelKey(action.meta);
+  // ignore if older than currently set channel, or unconfirmed or removed
+  const prevChannel = state.channels[key];
+  if (
+    (prevChannel?.openBlock ?? 0) >= action.payload.txBlock ||
+    (prevChannel?.id ?? 0) >= action.payload.id ||
+    !action.payload.confirmed
+  )
+    return state;
+  const channel: Channel = {
+    state: ChannelState.open,
+    id: action.payload.id,
+    token: action.payload.token,
+    tokenNetwork: action.meta.tokenNetwork,
+    settleTimeout: action.payload.settleTimeout,
+    isFirstParticipant: action.payload.isFirstParticipant,
+    openBlock: action.payload.txBlock,
+    own: {
+      ...emptyChannelEnd,
+      address: state.address,
+    },
+    partner: {
+      ...emptyChannelEnd,
+      address: action.meta.partner,
+    },
+  };
+  return { ...state, channels: { ...state.channels, [key]: channel } };
+}
+
+function channelUpdateOnchainBalanceStateReducer(
+  state: RaidenState,
+  action: channelDeposit.success | channelWithdrawn,
+): RaidenState {
+  // ignore event if unconfirmed or removed
+  if (!action.payload.confirmed) return state;
+  const key = channelKey(action.meta);
+  let channel = state.channels[key];
+  if (channel?.state !== ChannelState.open || channel.id !== action.payload.id) return state;
+
+  const [prop, total] = channelWithdrawn.is(action)
+    ? ['withdraw' as const, action.payload.totalWithdraw]
+    : ['deposit' as const, action.payload.totalDeposit];
+  const end = action.payload.participant === channel.partner.address ? 'partner' : 'own';
+
+  if (total.lte(channel[end][prop])) return state; // ignore if past event
+
+  channel = {
+    ...channel,
+    [end]: {
+      ...channel[end],
+      [prop]: total,
+    },
+  };
+  return { ...state, channels: { ...state.channels, [key]: channel } };
+}
+
+function channelCloseSuccessReducer(
+  state: RaidenState,
+  action: channelClose.success,
+): RaidenState {
+  const key = channelKey(action.meta);
+  let channel = state.channels[key];
+  if (channel?.id !== action.payload.id) return state;
+  // even on non-confirmed action, already set channel state as closing, so it can't be used for new transfers
+  if (action.payload.confirmed === undefined && channel.state === ChannelState.open)
+    channel = { ...channel, state: ChannelState.closing };
+  else if (!('closeBlock' in channel) && action.payload.confirmed)
+    channel = {
+      ...channel,
+      state: ChannelState.closed,
+      closeBlock: action.payload.txBlock,
+      closeParticipant: action.payload.participant,
+    };
+  else return state;
+  return { ...state, channels: { ...state.channels, [key]: channel } };
+}
+
+function channelUpdateStateReducer(
+  state: RaidenState,
+  action: channelClose.request | channelSettle.request | channelSettleable,
+): RaidenState {
+  const key = channelKey(action.meta);
+  let channel = state.channels[key];
+  if (!channel) return state;
+  if (channelClose.request.is(action) && channel.state === ChannelState.open) {
+    channel = { ...channel, state: ChannelState.closing };
+  } else if (channelSettle.request.is(action) && channel.state === ChannelState.settleable) {
+    channel = { ...channel, state: ChannelState.settling };
+  } else if (channelSettleable.is(action) && channel.state === ChannelState.closed) {
+    channel = { ...channel, state: ChannelState.settleable };
+  } else {
+    return state;
+  }
+  return { ...state, channels: { ...state.channels, [key]: channel } };
+}
+
+function channelSettleSuccessReducer(
+  state: RaidenState,
+  action: channelSettle.success,
+): RaidenState {
+  const key = channelKey(action.meta);
+  const channel = state.channels[key];
+  if (channel?.id !== action.payload.id || !('closeBlock' in channel)) return state;
+  if (action.payload.confirmed === undefined && channel.state !== ChannelState.settling)
+    // on non-confirmed action, set channel as settling
+    return {
+      ...state,
+      channels: { ...state.channels, [key]: { ...channel, state: ChannelState.settling } },
+    };
+  else if (action.payload.confirmed) {
+    const { [key]: _, ...channels } = state.channels; // pop [key] channel out of state.channels
+    return {
+      ...state,
+      channels, // replace channels without [key]
+      oldChannels: {
+        // persist popped channel on oldChannels with augmented channelKey
+        ...state.oldChannels,
+        [channelUniqueKey(channel)]: {
+          ...channel,
+          state: ChannelState.settled,
+          settleBlock: action.payload.txBlock,
+        },
+      },
+    };
+  }
+  return state;
+}
+
+// handles actions which reducers need RaidenState
+const completeReducer = createReducer(initialState)
+  .handle(channelOpen.success, channelOpenSuccessReducer)
+  .handle([channelDeposit.success, channelWithdrawn], channelUpdateOnchainBalanceStateReducer)
+  .handle(
+    [channelClose.request, channelSettleable, channelSettle.request],
+    channelUpdateStateReducer,
+  )
+  .handle(channelClose.success, channelCloseSuccessReducer)
+  .handle(channelSettle.success, channelSettleSuccessReducer);
+
 /**
  * Nested/combined reducer for channels
- * blockNumber, tokens & channels reducers get its own slice of the state, corresponding to the
+ * blockNumber, tokens & pendingTxs reducers get its own slice of the state, corresponding to the
  * name of the reducer. channels root reducer instead must be handled the complete state instead,
  * so it compose the output with each key/nested/combined state.
  */
-export const channelsReducer = partialCombineReducers(
-  { blockNumber, tokens, channels, pendingTxs },
-  initialState,
-);
+const partialReducer = partialCombineReducers({ blockNumber, tokens, pendingTxs }, initialState);
+/**
+ * channelsReducer is a reduce-reducers like reducer; in contract with combineReducers, which
+ * gives just a specific slice of the state to the reducer (like blockNumber above, which receives
+ * only blockNumber), it actually act as a normal reducer by getting the whole state, but can do
+ * it over several reducers, passing the output of one as the input for next
+ *
+ * @param state - previous root RaidenState
+ * @param action - RaidenAction to try to handle
+ * @returns - new RaidenState
+ */
+const channelsReducer = (state: RaidenState = initialState, action: RaidenAction) =>
+  [partialReducer, completeReducer].reduce((s, reducer) => reducer(s, action), state);
+export default channelsReducer;

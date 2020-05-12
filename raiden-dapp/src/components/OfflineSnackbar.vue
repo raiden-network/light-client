@@ -10,7 +10,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import BlurredOverlay from '@/components/BlurredOverlay.vue';
+import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
 
 @Component({ components: { BlurredOverlay } })
 export default class OfflineSnackbar extends Vue {

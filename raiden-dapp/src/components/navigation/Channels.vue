@@ -61,12 +61,12 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 import { ChannelState, RaidenChannel } from 'raiden-ts';
-import ChannelList from '@/components/ChannelList.vue';
 import ListHeader from '@/components/ListHeader.vue';
 import { Token } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import ChannelDialogs from '@/components/ChannelDialogs.vue';
+import ChannelList from '@/components/channels/ChannelList.vue';
+import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
 import { ChannelAction } from '@/types';
 
 @Component({
@@ -110,9 +110,7 @@ export default class Channels extends Mixins(NavigationMixin) {
 
   get open(): RaidenChannel[] {
     return this.channels(this.$route.params.token).filter(
-      channel =>
-        channel.state === ChannelState.open ||
-        channel.state === ChannelState.opening
+      channel => channel.state === ChannelState.open
     );
   }
 
@@ -166,7 +164,8 @@ export default class Channels extends Mixins(NavigationMixin) {
 .channels {
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow-y: scroll;
+  @extend .themed-scrollbar;
 
   &:first-child {
     padding-top: 50px;
@@ -185,8 +184,7 @@ export default class Channels extends Mixins(NavigationMixin) {
   &__wrapper {
     height: 100%;
     width: 100%;
-    overflow-y: auto;
-    @extend .themed-scrollbar;
+    overflow-y: visible;
   }
 
   &__header {

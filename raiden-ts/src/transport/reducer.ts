@@ -1,9 +1,3 @@
-import get from 'lodash/fp/get';
-import getOr from 'lodash/fp/getOr';
-import isEmpty from 'lodash/fp/isEmpty';
-import set from 'lodash/fp/set';
-import unset from 'lodash/fp/unset';
-
 import { partialCombineReducers } from '../utils/redux';
 import { createReducer } from '../utils/actions';
 import { initialState } from '../state';
@@ -20,41 +14,38 @@ import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
 
 const transport = createReducer(initialState.transport)
   .handle(matrixSetup, (state, action) => {
-    // immutably remove rooms from state.matrix
-    const { rooms: _, ...noRooms } = { ...state.matrix };
+    // immutably remove rooms from state.transport
+    const { rooms: _, ...noRooms } = state;
     return {
-      ...state,
-      matrix: {
-        // invalidate rooms map if server has changed
-        ...(state.matrix?.server !== action.payload.server ? noRooms : state.matrix),
-        ...action.payload,
-      },
+      ...(state.server !== action.payload.server ? noRooms : state),
+      ...action.payload,
     };
   })
-  .handle(matrixRoom, (state, action) => {
-    const path = ['matrix', 'rooms', action.meta.address];
-    return set(
-      path,
-      [
+  .handle(matrixRoom, (state, action) => ({
+    ...state,
+    rooms: {
+      ...state.rooms,
+      [action.meta.address]: [
         action.payload.roomId,
-        ...(getOr([], path, state) as string[]).filter((room) => room !== action.payload.roomId),
+        ...(state.rooms?.[action.meta.address] ?? []).filter(
+          (room) => room !== action.payload.roomId,
+        ),
       ],
-      state,
-    );
-  })
-  .handle(matrixRoomLeave, (state, action) => {
-    const path = ['matrix', 'rooms', action.meta.address];
-    state = set(
-      path,
-      (getOr([], path, state) as string[]).filter((r) => r !== action.payload.roomId),
-      state,
-    );
-    if (isEmpty(get(path, state))) state = unset(path, state);
-    return state;
-  });
+    },
+  }))
+  .handle(matrixRoomLeave, (state, action) => ({
+    ...state,
+    rooms: {
+      ...state.rooms,
+      [action.meta.address]: (state.rooms?.[action.meta.address] ?? []).filter(
+        (room) => room !== action.payload.roomId,
+      ),
+    },
+  }));
 
 /**
  * Nested/combined reducer for transport
  * Currently only handles 'transport' substate
  */
-export const transportReducer = partialCombineReducers({ transport }, initialState);
+const transportReducer = partialCombineReducers({ transport }, initialState);
+export default transportReducer;

@@ -1,6 +1,7 @@
 const path = require('path');
 
 module.exports = {
+  productionSourceMap: false,
   publicPath: process.env.DEPLOYMENT === 'staging' ? '/staging/' : '/',
   chainWebpack: config => {
     if (process.env.NODE_ENV !== 'production' && !process.env.CI) {

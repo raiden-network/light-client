@@ -195,22 +195,21 @@ import { BalanceUtils } from '@/utils/balance-utils';
 import { Token, Route, Transfer } from '@/model/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
-import PathfindingServices from '@/components/PathfindingServices.vue';
-import FindRoutes from '@/components/FindRoutes.vue';
+import PathfindingServices from '@/components/transfer/PathfindingServices.vue';
+import FindRoutes from '@/components/transfer/FindRoutes.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import TransferSummary from '@/components/TransferSummary.vue';
-import Spinner from '@/components/Spinner.vue';
-import MintDepositDialog from '@/components/MintDepositDialog.vue';
-import Checkmark from '@/components/Checkmark.vue';
+import TransferSummary from '@/components/transfer/TransferSummary.vue';
+import Spinner from '@/components/icons/Spinner.vue';
+import MintDepositDialog from '@/components/dialogs/MintDepositDialog.vue';
+import Checkmark from '@/components/icons/Checkmark.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import Stepper from '@/components/Stepper.vue';
-import ErrorDialog from '@/components/ErrorDialog.vue';
+import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { Zero } from 'ethers/constants';
 import { getAddress, getAmount } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
 import Filter from '@/filters';
-import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
-import PfsFeesDialog from '@/components/PfsFeesDialog.vue';
+import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
+import PfsFeesDialog from '@/components/dialogs/PfsFeesDialog.vue';
 
 @Component({
   components: {
@@ -219,7 +218,6 @@ import PfsFeesDialog from '@/components/PfsFeesDialog.vue';
     ActionButton,
     FindRoutes,
     Spinner,
-    Stepper,
     ErrorDialog,
     Checkmark,
     MintDepositDialog,

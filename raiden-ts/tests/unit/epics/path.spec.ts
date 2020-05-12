@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import { EMPTY, timer, Observable, of } from 'rxjs';
+import { EMPTY, timer, Observable } from 'rxjs';
 import { first, takeUntil, toArray, pluck } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
@@ -21,8 +21,8 @@ import {
   pfsCapacityUpdateEpic,
   pfsServiceRegistryMonitorEpic,
   pfsFeeUpdateEpic,
-} from 'raiden-ts/path/epics';
-import { pathFind, pfsListUpdated, iouPersist, iouClear } from 'raiden-ts/path/actions';
+} from 'raiden-ts/services/epics';
+import { pathFind, pfsListUpdated, iouPersist, iouClear } from 'raiden-ts/services/actions';
 import { messageGlobalSend } from 'raiden-ts/messages/actions';
 import { MessageType } from 'raiden-ts/messages/types';
 import { losslessStringify } from 'raiden-ts/utils/data';
@@ -99,6 +99,7 @@ describe('PFS: pathFindServiceEpic', () => {
           id: channelId,
           settleTimeout,
           isFirstParticipant,
+          token,
           txHash,
           txBlock: openBlock,
           confirmed: true,
@@ -1232,6 +1233,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
           id: channelId,
           settleTimeout,
           isFirstParticipant,
+          token,
           txHash,
           txBlock: openBlock,
           confirmed: true,
@@ -1356,6 +1358,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
           id: channelId,
           settleTimeout,
           isFirstParticipant,
+          token,
           txHash,
           txBlock: 121,
           confirmed: true,
@@ -1374,7 +1377,13 @@ describe('PFS: pfsFeeUpdateEpic', () => {
   test('success: send PFSFeeUpdate to global pfsRoom on channelMonitor', async () => {
     expect.assertions(1);
 
-    await expect(pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise()).resolves.toEqual(
+    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
+    setTimeout(() => {
+      action$.next(action);
+      action$.complete();
+    }, 10);
+
+    await expect(promise).resolves.toEqual(
       messageGlobalSend(
         {
           message: expect.objectContaining({
@@ -1393,9 +1402,13 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
     signerSpy.mockRejectedValueOnce(new Error('Signature rejected'));
 
-    await expect(
-      pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise(),
-    ).resolves.toBeUndefined();
+    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
+    setTimeout(() => {
+      action$.next(action);
+      action$.complete();
+    }, 10);
+
+    await expect(promise).resolves.toBeUndefined();
 
     expect(signerSpy).toHaveBeenCalledTimes(1);
     signerSpy.mockRestore();
@@ -1407,9 +1420,13 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     // put channel in 'closing' state
     action$.next(channelClose.request(undefined, { tokenNetwork, partner }));
 
-    await expect(
-      pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise(),
-    ).resolves.toBeUndefined();
+    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
+    setTimeout(() => {
+      action$.next(action);
+      action$.complete();
+    }, 10);
+
+    await expect(promise).resolves.toBeUndefined();
   });
 
   test('skip: NO_MEDIATE', async () => {
@@ -1425,9 +1442,13 @@ describe('PFS: pfsFeeUpdateEpic', () => {
       }),
     );
 
-    await expect(
-      pfsFeeUpdateEpic(of(action), state$, depsMock).toPromise(),
-    ).resolves.toBeUndefined();
+    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
+    setTimeout(() => {
+      action$.next(action);
+      action$.complete();
+    }, 10);
+
+    await expect(promise).resolves.toBeUndefined();
   });
 });
 
@@ -1583,7 +1604,7 @@ describe('PFS: reducer', () => {
       iouPersist({ iou }, { tokenNetwork, serviceAddress: iou.receiver }),
     );
 
-    expect(newState.path.iou).toMatchObject({
+    expect(newState.iou).toMatchObject({
       [tokenNetwork]: {
         [iou.receiver]: iou,
       },
@@ -1594,7 +1615,7 @@ describe('PFS: reducer', () => {
       iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
     );
 
-    expect(lastState.path.iou).toMatchObject({
+    expect(lastState.iou).toMatchObject({
       [tokenNetwork]: {},
     });
   });

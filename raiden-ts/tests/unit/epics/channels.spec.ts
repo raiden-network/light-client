@@ -3,8 +3,8 @@ import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog } from '../mocks';
 
 import { marbles } from 'rxjs-marbles/jest';
-import { of, from, timer } from 'rxjs';
-import { first, takeUntil, toArray, delay, pluck } from 'rxjs/operators';
+import { of, from, timer, concat } from 'rxjs';
+import { first, toArray, pluck, tap, ignoreElements } from 'rxjs/operators';
 import { ContractTransaction } from 'ethers/contract';
 import { bigNumberify, BigNumber } from 'ethers/utils';
 import { Zero, HashZero, One } from 'ethers/constants';
@@ -12,7 +12,7 @@ import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { range } from 'lodash';
 
 import { UInt, Int } from 'raiden-ts/utils/types';
-import { RaidenAction } from 'raiden-ts/actions';
+import { RaidenAction, raidenConfigUpdate } from 'raiden-ts/actions';
 import { RaidenState } from 'raiden-ts/state';
 import {
   newBlock,
@@ -37,6 +37,7 @@ import {
   channelUnlockEpic,
 } from 'raiden-ts/channels/epics';
 import { raidenReducer } from 'raiden-ts/reducer';
+import { getLatest$ } from 'raiden-ts/epics';
 import {
   makeSecret,
   getSecrethash,
@@ -64,6 +65,13 @@ describe('channels epic', () => {
     state,
   } = epicFixtures(depsMock);
 
+  beforeEach(async () => {
+    // reset depsMock.latest$ to state
+    await getLatest$(of(raidenConfigUpdate({})), of(state), depsMock)
+      .pipe(tap((latest) => depsMock.latest$.next(latest)))
+      .toPromise();
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -80,6 +88,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: 121,
             confirmed: true,
@@ -125,6 +134,7 @@ describe('channels epic', () => {
               id: channelId,
               settleTimeout,
               isFirstParticipant,
+              token,
               txHash,
               txBlock: 125,
               confirmed: true,
@@ -217,6 +227,7 @@ describe('channels epic', () => {
         id: channelId,
         settleTimeout,
         isFirstParticipant,
+        token,
         txHash,
         txBlock: 125,
         confirmed: true,
@@ -241,7 +252,8 @@ describe('channels epic', () => {
       settleDataEncoded = defaultAbiCoder.encode(
         ['uint256', 'bytes32', 'uint256', 'bytes32'],
         [Zero, HashZero, Zero, HashZero],
-      );
+      ),
+      delayEnd$ = timer(10).pipe(ignoreElements());
 
     test('first channelMonitor with past$ own ChannelNewDeposit event', async () => {
       const curState = [
@@ -251,6 +263,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -260,8 +273,10 @@ describe('channels epic', () => {
       ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(
           channelMonitor({ id: channelId, fromBlock: openBlock }, { tokenNetwork, partner }),
-        ).pipe(delay(1)), // give time to state multicast to register
-        state$ = of<RaidenState>(curState);
+        ),
+        // give some time so takeUntil doesn't unsubscribe ahead of time
+        state$ = concat(of<RaidenState>(curState), delayEnd$);
+      getLatest$(action$, state$, depsMock).subscribe((latest) => depsMock.latest$.next(latest));
 
       depsMock.provider.getLogs.mockResolvedValueOnce([
         makeLog({
@@ -275,9 +290,7 @@ describe('channels epic', () => {
         }),
       ]);
 
-      await expect(
-        channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise(),
-      ).resolves.toEqual(
+      await expect(channelMonitoredEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
         channelDeposit.success(
           {
             id: channelId,
@@ -301,6 +314,7 @@ describe('channels epic', () => {
               id: channelId,
               settleTimeout,
               isFirstParticipant,
+              token,
               txHash,
               txBlock: openBlock,
               confirmed: true,
@@ -309,9 +323,10 @@ describe('channels epic', () => {
           ),
         ].reduce(raidenReducer, state);
       const action$ = of<RaidenAction>(action),
-        state$ = of<RaidenState>(curState);
+        state$ = concat(of<RaidenState>(curState), delayEnd$);
+      getLatest$(action$, state$, depsMock).subscribe((latest) => depsMock.latest$.next(latest));
 
-      const promise = channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).toPromise();
 
       depsMock.provider.emit(
         '*',
@@ -346,6 +361,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -356,14 +372,11 @@ describe('channels epic', () => {
       const action$ = from(
           range(multiple).map(() => channelMonitor({ id: channelId }, { tokenNetwork, partner })),
         ),
-        state$ = of<RaidenState>(curState);
+        state$ = concat(of<RaidenState>(curState), delayEnd$);
+      getLatest$(action$, state$, depsMock).subscribe((latest) => depsMock.latest$.next(latest));
 
       const promise = channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(
-          // wait a little and then complete observable, so it doesn't keep listening forever
-          takeUntil(timer(100)),
-          toArray(), // aggregate all emitted values in this period in a single array
-        )
+        .pipe(toArray()) // aggregate all emitted values in this period in a single array
         .toPromise();
 
       // even though multiple channelMonitor events were fired, blockchain fires a single event
@@ -407,6 +420,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -428,9 +442,10 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(
           channelMonitor({ id: channelId }, { tokenNetwork, partner }),
         ),
-        state$ = of<RaidenState>(curState);
+        state$ = concat(of<RaidenState>(curState), delayEnd$);
+      getLatest$(action$, state$, depsMock).subscribe((latest) => depsMock.latest$.next(latest));
 
-      const promise = channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).toPromise();
 
       depsMock.provider.emit(
         '*',
@@ -465,6 +480,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -475,9 +491,10 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(
           channelMonitor({ id: channelId }, { tokenNetwork, partner }),
         ),
-        state$ = of<RaidenState>(curState);
+        state$ = concat(of<RaidenState>(curState), delayEnd$);
+      getLatest$(action$, state$, depsMock).subscribe((latest) => depsMock.latest$.next(latest));
 
-      const promise = channelMonitoredEpic(action$, state$, depsMock).pipe(first()).toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).toPromise();
 
       depsMock.provider.emit(
         '*',
@@ -511,6 +528,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -531,12 +549,11 @@ describe('channels epic', () => {
       const action$ = of<RaidenAction>(
           channelMonitor({ id: channelId }, { tokenNetwork, partner }),
         ),
-        state$ = of<RaidenState>(curState);
+        state$ = concat(of<RaidenState>(curState), delayEnd$);
+      getLatest$(action$, state$, depsMock).subscribe((latest) => depsMock.latest$.next(latest));
 
       expect(depsMock.provider.removeListener).not.toHaveBeenCalled();
-      const promise = channelMonitoredEpic(action$, state$, depsMock)
-        .pipe(takeUntil(timer(100)))
-        .toPromise();
+      const promise = channelMonitoredEpic(action$, state$, depsMock).toPromise();
 
       expect(depsMock.provider.listenerCount()).toBe(1);
 
@@ -552,7 +569,7 @@ describe('channels epic', () => {
 
       await expect(promise).resolves.toEqual(
         channelSettle.success(
-          { id: channelId, txHash, txBlock: settleBlock, confirmed: undefined },
+          { id: channelId, txHash, txBlock: settleBlock, confirmed: undefined, locks: [] },
           { tokenNetwork, partner },
         ),
       );
@@ -596,6 +613,7 @@ describe('channels epic', () => {
     });
 
     test('approve tx fails', async () => {
+      expect.assertions(3);
       // there's a channel already opened in state
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
@@ -604,6 +622,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -633,6 +652,8 @@ describe('channels epic', () => {
       await expect(channelDepositEpic(action$, state$, depsMock).toPromise()).resolves.toEqual(
         channelDeposit.failure(expect.any(Error), { tokenNetwork, partner }),
       );
+      expect(tokenContract.functions.approve).toHaveBeenCalledTimes(1);
+      expect(tokenContract.functions.approve).toHaveBeenCalledWith(tokenNetwork, deposit);
     });
 
     test('setTotalDeposit tx fails', async () => {
@@ -644,6 +665,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -691,6 +713,7 @@ describe('channels epic', () => {
 
     test('success', async () => {
       // there's a channel already opened in state
+      const prevDeposit = bigNumberify(330) as UInt<32>;
       const curState = [
         tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
         channelOpen.success(
@@ -698,6 +721,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -709,7 +733,7 @@ describe('channels epic', () => {
           {
             id: channelId,
             participant: depsMock.address,
-            totalDeposit: bigNumberify(330) as UInt<32>,
+            totalDeposit: prevDeposit,
             txHash,
             txBlock: openBlock + 1,
             confirmed: true,
@@ -749,6 +773,15 @@ describe('channels epic', () => {
         wait: jest.fn().mockResolvedValue({ byzantium: true, status: 1 }),
       };
       tokenNetworkContract.functions.setTotalDeposit.mockResolvedValueOnce(setTotalDepositTx);
+      tokenNetworkContract.functions.getChannelParticipantInfo.mockResolvedValueOnce([
+        prevDeposit,
+        Zero,
+        true,
+        '',
+        Zero,
+        '',
+        Zero,
+      ]);
 
       // result is undefined on success as the respective channelDeposit.success is emitted by the
       // channelMonitoredEpic, which monitors the blockchain for ChannelNewDeposit events
@@ -761,7 +794,7 @@ describe('channels epic', () => {
       expect(tokenNetworkContract.functions.setTotalDeposit).toHaveBeenCalledWith(
         channelId,
         depsMock.address,
-        deposit.add(330),
+        deposit.add(prevDeposit),
         partner,
       );
       expect(setTotalDepositTx.wait).toHaveBeenCalledTimes(1);
@@ -807,6 +840,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -1023,6 +1057,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -1060,6 +1095,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -1113,6 +1149,7 @@ describe('channels epic', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -1161,13 +1198,13 @@ describe('channels epic', () => {
       expect(tokenNetworkContract.functions.settleChannel).toHaveBeenCalledWith(
         channelId,
         depsMock.address,
-        expect.anything(), // self transfered amount
-        expect.anything(), // self locked amount
-        expect.anything(), // self locksroot
+        Zero, // self transfered amount
+        Zero, // self locked amount
+        HashZero, // self locksroot
         partner,
-        expect.anything(), // partner transfered amount
-        expect.anything(), // partner locked amount
-        expect.anything(), // partner locksroot
+        Zero, // partner transfered amount
+        Zero, // partner locked amount
+        HashZero, // partner locksroot
       );
       expect(settleTx.wait).toHaveBeenCalledTimes(1);
     });

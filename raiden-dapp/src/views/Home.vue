@@ -63,7 +63,7 @@ import { mapState, mapGetters } from 'vuex';
 import { ConnectOptions } from '@/types';
 import { DeniedReason } from '@/model/types';
 import ActionButton from '@/components/ActionButton.vue';
-import ConnectDialog from '@/components/ConnectDialog.vue';
+import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
 import NoTokens from '@/components/NoTokens.vue';
 
 @Component({

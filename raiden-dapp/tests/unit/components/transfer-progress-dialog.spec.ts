@@ -3,7 +3,7 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 
 import store from '@/store/index';
-import TransferProgressDialog from '@/components/TransferProgressDialog.vue';
+import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
 
 Vue.use(Vuetify);
 

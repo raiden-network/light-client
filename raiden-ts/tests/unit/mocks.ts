@@ -11,9 +11,10 @@ import { memoize } from 'lodash';
 import logging from 'loglevel';
 
 jest.mock('ethers/providers');
+import { Zero, HashZero } from 'ethers/constants';
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
 import { Log } from 'ethers/providers/abstract-provider';
-import { Network } from 'ethers/utils';
+import { Network, parseEther } from 'ethers/utils';
 import { Contract, EventFilter } from 'ethers/contract';
 import { Wallet } from 'ethers/wallet';
 
@@ -30,11 +31,13 @@ import { HumanStandardTokenFactory } from 'raiden-ts/contracts/HumanStandardToke
 import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
 import { UserDepositFactory } from 'raiden-ts/contracts/UserDepositFactory';
 import { SecretRegistryFactory } from 'raiden-ts/contracts/SecretRegistryFactory';
+import { MonitoringServiceFactory } from 'raiden-ts/contracts/MonitoringServiceFactory';
+import { MonitoringService } from 'raiden-ts/contracts/MonitoringService';
 
 import 'raiden-ts/polyfills';
 import { RaidenEpicDeps, ContractsInfo, Latest } from 'raiden-ts/types';
 import { makeInitialState } from 'raiden-ts/state';
-import { Address, Signature } from 'raiden-ts/utils/types';
+import { Address, Signature, UInt } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { raidenConfigUpdate } from 'raiden-ts/actions';
@@ -154,6 +157,15 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       for (const func in tokenNetworkContract.functions) {
         jest.spyOn(tokenNetworkContract.functions, func as keyof TokenNetwork['functions']);
       }
+      tokenNetworkContract.functions.getChannelParticipantInfo.mockResolvedValue([
+        Zero,
+        Zero,
+        false,
+        HashZero,
+        Zero,
+        HashZero,
+        Zero,
+      ]);
       return tokenNetworkContract;
     },
   );
@@ -193,6 +205,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   userDepositContract.functions.one_to_n_address.mockResolvedValue(
     '0x0A0000000000000000000000000000000000000a',
   );
+  userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
 
   const secretRegistryContract = SecretRegistryFactory.connect(address, signer) as MockedContract<
     SecretRegistry
@@ -200,6 +213,15 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
 
   for (const func in secretRegistryContract.functions) {
     jest.spyOn(secretRegistryContract.functions, func as keyof SecretRegistry['functions']);
+  }
+
+  const monitoringServiceContract = MonitoringServiceFactory.connect(
+    address,
+    signer,
+  ) as MockedContract<MonitoringService>;
+
+  for (const func in monitoringServiceContract.functions) {
+    jest.spyOn(monitoringServiceContract.functions, func as keyof MonitoringService['functions']);
   }
 
   const contractsInfo: ContractsInfo = {
@@ -217,6 +239,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       },
       SecretRegistry: {
         address: secretRegistryContract.address as Address,
+        block_number: 102,
+      },
+      MonitoringService: {
+        address: monitoringServiceContract.address as Address,
         block_number: 102,
       },
     },
@@ -238,6 +264,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       presences: {},
       pfsList: [],
       rtc: {},
+      udcBalance: Zero as UInt<32>,
     }),
     config$ = latest$.pipe(pluckDistinct('config'));
 

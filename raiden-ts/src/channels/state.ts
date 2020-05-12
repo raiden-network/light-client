@@ -1,11 +1,10 @@
 import * as t from 'io-ts';
 import { BigNumber } from 'ethers/utils';
 
-import { UInt, Address } from '../utils/types';
-import { Lock, SignedBalanceProof } from './types';
+import { UInt, Address, Signed } from '../utils/types';
+import { Lock, BalanceProof } from './types';
 
 export enum ChannelState {
-  opening = 'opening',
   open = 'open',
   closing = 'closing',
   closed = 'closed',
@@ -18,22 +17,26 @@ export enum ChannelState {
  * Contains info of each side of a channel
  */
 export const ChannelEnd = t.readonly(
-  t.intersection([
-    t.type({
-      deposit: UInt(32), // total deposit/contract balance
-    }),
-    t.partial({
-      locks: t.readonlyArray(Lock),
-      balanceProof: SignedBalanceProof,
-      withdraw: UInt(32),
-    }),
-  ]),
+  t.type({
+    address: Address,
+    deposit: UInt(32), // total deposit/contract balance
+    withdraw: UInt(32),
+    locks: t.readonlyArray(Lock),
+    balanceProof: Signed(BalanceProof),
+  }),
 );
 export interface ChannelEnd extends t.TypeOf<typeof ChannelEnd> {}
 
 export const Channel = t.intersection([
+  // readonly needs to be applied to the individual types to allow tagged union narrowing
   t.readonly(
     t.type({
+      id: t.number,
+      token: Address,
+      tokenNetwork: Address,
+      settleTimeout: t.number,
+      isFirstParticipant: t.boolean,
+      openBlock: t.number,
       own: ChannelEnd,
       partner: ChannelEnd,
     }),
@@ -45,31 +48,36 @@ export const Channel = t.intersection([
      *   closeBlock = channel.closeBlock; // error: closeBlock only exist on states closed|settling
      * }
      */
-    t.readonly(t.type({ state: t.literal(ChannelState.opening) })),
     t.readonly(
       t.type({
         state: t.union([t.literal(ChannelState.open), t.literal(ChannelState.closing)]),
-        id: t.number,
-        settleTimeout: t.number,
-        openBlock: t.number,
-        isFirstParticipant: t.boolean,
       }),
     ),
-    t.readonly(
-      t.type({
-        state: t.union([
-          t.literal(ChannelState.closed),
-          t.literal(ChannelState.settleable),
-          t.literal(ChannelState.settling),
-        ]),
-        id: t.number,
-        settleTimeout: t.number,
-        openBlock: t.number,
-        isFirstParticipant: t.boolean,
-        closeBlock: t.number,
-        closeParticipant: Address,
-      }),
-    ),
+    t.intersection([
+      t.readonly(
+        t.type({
+          closeBlock: t.number,
+          closeParticipant: Address,
+        }),
+      ),
+      t.union([
+        t.readonly(
+          t.type({
+            state: t.union([
+              t.literal(ChannelState.closed),
+              t.literal(ChannelState.settleable),
+              t.literal(ChannelState.settling),
+            ]),
+          }),
+        ),
+        t.readonly(
+          t.type({
+            state: t.literal(ChannelState.settled),
+            settleBlock: t.number,
+          }),
+        ),
+      ]),
+    ]),
   ]),
 ]);
 export type Channel = t.TypeOf<typeof Channel>;

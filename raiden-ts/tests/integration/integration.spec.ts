@@ -7,7 +7,7 @@ import { bigNumberify } from 'ethers/utils';
 import { MockStorage } from '../e2e/mocks';
 import { filter } from 'rxjs/operators';
 import { Signer, Wallet } from 'ethers';
-import { RaidenPaths } from 'raiden-ts/path/types';
+import { RaidenPaths } from 'raiden-ts/services/types';
 
 jest.setTimeout(80000);
 

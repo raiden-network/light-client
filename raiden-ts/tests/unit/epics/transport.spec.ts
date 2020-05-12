@@ -42,6 +42,7 @@ import {
   matrixMessageGlobalSendEpic,
   matrixCleanMissingRoomsEpic,
   rtcConnectEpic,
+  matrixUpdateCapsEpic,
 } from 'raiden-ts/transport/epics';
 import { MessageType, Delivered, Processed } from 'raiden-ts/messages/types';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
@@ -482,72 +483,6 @@ describe('transport epic', () => {
       );
     });
 
-    test('update without changing availability does not emit', async () => {
-      expect.assertions(1);
-
-      matrix.getUser.mockImplementationOnce(
-        (userId) =>
-          ({
-            userId,
-            presence: 'unavailable',
-            setDisplayName: jest.fn(),
-          } as any),
-      );
-
-      const promise = matrixPresenceUpdateEpic(action$, state$, depsMock)
-        .pipe(takeUntil(timer(50)))
-        .toPromise();
-
-      action$.next(matrixPresence.request(undefined, { address: partner }));
-      action$.next(
-        matrixPresence.success(
-          { userId: partnerUserId, available: true, ts: 123 },
-          { address: partner },
-        ),
-      );
-
-      matrix.emit('event', {
-        getType: () => 'm.presence',
-        getSender: () => partnerUserId,
-      });
-
-      await expect(promise).resolves.toBeUndefined();
-    });
-
-    test('cached displayName but invalid signature', async () => {
-      expect.assertions(1);
-      const action$ = of(
-          matrixPresence.request(undefined, { address: partner }),
-          matrixPresence.success(
-            { userId: partnerUserId, available: true, ts: 123 },
-            { address: partner },
-          ),
-        ),
-        state$ = of(state);
-
-      matrix.getUser.mockImplementationOnce(
-        (userId) =>
-          ({
-            userId,
-            presence: 'offline',
-            displayName: `partner_display_name`,
-            setDisplayName: jest.fn(),
-          } as any),
-      );
-      (verifyMessage as jest.Mock).mockReturnValueOnce(token);
-
-      const promise = matrixPresenceUpdateEpic(action$, state$, depsMock)
-        .pipe(takeUntil(timer(50)))
-        .toPromise();
-
-      matrix.emit('event', {
-        getType: () => 'm.presence',
-        getSender: () => partnerUserId,
-      });
-
-      await expect(promise).resolves.toBeUndefined();
-    });
-
     test('getProfileInfo error', async () => {
       expect.assertions(1);
       const action$ = of(
@@ -572,6 +507,44 @@ describe('transport epic', () => {
 
       await expect(promise).resolves.toBeUndefined();
     });
+  });
+
+  test('matrixUpdateCapsEpic', async () => {
+    expect.assertions(8);
+    action$.next(raidenConfigUpdate({ caps: { [Capabilities.NO_DELIVERY]: true } }));
+
+    // don't call on first replayed value from config$
+    await expect(
+      matrixUpdateCapsEpic(action$, state$, depsMock)
+        .pipe(takeUntil(timer(10)))
+        .toPromise(),
+    ).resolves.toBeUndefined();
+    expect(matrix.setAvatarUrl).not.toHaveBeenCalled();
+
+    // promise failure doesn't error observable
+    matrix.setAvatarUrl.mockRejectedValueOnce(new Error('failed'));
+    let promise = matrixUpdateCapsEpic(action$, state$, depsMock)
+      .pipe(takeUntil(timer(10)))
+      .toPromise();
+    action$.next(
+      raidenConfigUpdate({
+        caps: { [Capabilities.NO_DELIVERY]: true, [Capabilities.WEBRTC]: true },
+      }),
+    );
+    await expect(promise).resolves.toBeUndefined();
+    expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(1);
+    expect(matrix.setAvatarUrl).toHaveBeenCalledWith(`noDelivery,webRTC`);
+
+    promise = matrixUpdateCapsEpic(action$, state$, depsMock).toPromise();
+    action$.next(
+      raidenConfigUpdate({
+        caps: { [Capabilities.NO_DELIVERY]: true, customCap: 'abc' },
+      }),
+    );
+    setTimeout(() => action$.complete(), 10);
+    await expect(promise).resolves.toBeUndefined();
+    expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(2);
+    expect(matrix.setAvatarUrl).toHaveBeenCalledWith(`noDelivery,customCap="abc"`);
   });
 
   describe('matrixCreateRoomEpic', () => {
