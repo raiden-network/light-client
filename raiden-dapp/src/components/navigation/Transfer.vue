@@ -236,8 +236,11 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
 .transfer {
   height: 100%;
-  overflow-x: hidden;
+  scrollbar-width: none;
   width: 100%;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   &__token-network-amount {
     color: $color-white;
