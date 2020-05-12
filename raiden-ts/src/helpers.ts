@@ -4,12 +4,12 @@ import { Contract, ContractReceipt, ContractTransaction } from 'ethers/contract'
 import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
 import { JsonRpcProvider } from 'ethers/providers';
 import { Observable, defer } from 'rxjs';
-import { filter, map, pluck, withLatestFrom, first, exhaustMap } from 'rxjs/operators';
+import { filter, map, pluck, withLatestFrom, first, exhaustMap, mergeMap } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { RaidenState } from './state';
 import { ContractsInfo, RaidenEpicDeps } from './types';
-import { raidenSentTransfer } from './transfers/utils';
+import { raidenTransfer } from './transfers/utils';
 import { RaidenTransfer } from './transfers/state';
 import { channelAmounts } from './channels/utils';
 import { RaidenChannels, RaidenChannel } from './channels/state';
@@ -148,11 +148,14 @@ export const getSigner = async (
  */
 export const initTransfers$ = (state$: Observable<RaidenState>): Observable<RaidenTransfer> =>
   state$.pipe(
-    pluck('sent'),
+    mergeMap(function* ({ sent, received }) {
+      yield sent;
+      yield received;
+    }),
     distinctRecordValues(),
-    pluck(1),
+    pluck(1), // pluck values
     // from here, we get TransferState objects which changed from previous state (all on first)
-    map(raidenSentTransfer),
+    map(raidenTransfer),
   );
 
 /**
