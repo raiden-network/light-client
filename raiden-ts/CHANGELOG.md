@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#1369] Monitoring based on channel's balance
+
+[#1369]: https://github.com/raiden-network/light-client/issues/1369
+
 ### Changed
 - [#1480] Update profile's caps on config.caps change and react on peers updates
 
