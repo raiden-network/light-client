@@ -26,6 +26,8 @@ describe('Transaction.vue', () => {
           changedAt: new Date('June 5, 1986 23:59:59'),
           direction: transferDirection,
           partner: '0x123',
+          initiator: '0x123',
+          target: '0x456',
           success: successStatus,
           token: '0xtoken'
         }
