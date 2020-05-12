@@ -14,6 +14,7 @@ import { BigNumber, BigNumberish, parseEther } from 'ethers/utils';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import { ConfigProvider } from './config-provider';
+import { Zero } from 'ethers/constants';
 
 export default class RaidenService {
   private _raiden?: Raiden;
@@ -113,6 +114,7 @@ export default class RaidenService {
         this.store.commit('noProvider');
       } else {
         if (config) {
+          /* istanbul ignore next */
           raiden = await RaidenService.createRaiden(
             provider,
             config.PRIVATE_KEY,
@@ -217,6 +219,7 @@ export default class RaidenService {
     return this.raiden.address;
   }
 
+  /* istanbul ignore next */
   async getMainAccount(): Promise<string | undefined> {
     return this.raiden.mainAddress;
   }
@@ -414,6 +417,57 @@ export default class RaidenService {
       );
       await this.updateBalances();
     }
+  }
+
+  /* istanbul ignore next */
+  async transferOnChainTokens(address: string, amount: BigNumberish) {
+    const mainAddress = this.raiden.mainAddress;
+    if (!mainAddress) {
+      return;
+    }
+    await this.raiden.transferOnchainTokens(address, mainAddress, amount, {
+      subkey: true
+    });
+  }
+
+  async getRaidenAccountBalances(): Promise<Token[]> {
+    const raiden = this.raiden;
+    if (!raiden.mainAddress) {
+      return [];
+    }
+    const allTokens = await raiden.getTokenList();
+    const balances: Tokens = {};
+    const fetchTokenBalance = async (address: string): Promise<void> =>
+      raiden.getTokenBalance(address, raiden.address).then(balance => {
+        if (balance.gt(Zero)) {
+          balances[address] = {
+            address,
+            balance
+          };
+        }
+      });
+
+    await asyncPool(6, allTokens, fetchTokenBalance);
+    const tokens: Tokens = {};
+    Object.keys(balances).forEach(address => {
+      const cached = this.store.state.tokens[address];
+      if (cached) {
+        tokens[address] = { ...cached, ...balances[address] };
+        delete balances[address];
+      }
+    });
+
+    const fetchTokenInfo = async (address: string): Promise<void> =>
+      raiden.getTokenInfo(address).then(token => {
+        tokens[address] = { ...token, ...balances[address] };
+      });
+
+    const missingInfo = Object.keys(balances);
+    if (missingInfo.length > 0) {
+      await asyncPool(6, missingInfo, fetchTokenInfo);
+    }
+
+    return Object.values(tokens);
   }
 }
 
