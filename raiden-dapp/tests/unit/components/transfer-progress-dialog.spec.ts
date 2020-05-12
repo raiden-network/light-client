@@ -11,12 +11,12 @@ describe('TransferProgressDialog.vue', () => {
   let wrapper: Wrapper<TransferProgressDialog>;
   let vuetify: typeof Vuetify;
   const transferPending = {
-    secrethash: '0x1',
+    key: 'sent:0x1',
     paymentId: '0x1',
     status: 'PENDING'
   };
   const transferRequested = {
-    secrethash: '0x1',
+    key: 'sent:0x1',
     paymentId: '0x1',
     status: 'REQUESTED'
   };

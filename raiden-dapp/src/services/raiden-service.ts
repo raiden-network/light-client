@@ -174,9 +174,7 @@ export default class RaidenService {
 
         // Subscribe to our pending transfers
         raiden.transfers$.subscribe(transfer => {
-          if (transfer.initiator === account) {
-            this.store.commit('updateTransfers', transfer);
-          }
+          this.store.commit('updateTransfers', transfer);
         });
 
         this.store.commit('network', raiden.network);
@@ -318,13 +316,13 @@ export default class RaidenService {
     paymentId: BigNumber
   ) {
     try {
-      const secretHash = await this.raiden.transfer(token, target, amount, {
+      const key = await this.raiden.transfer(token, target, amount, {
         paymentId,
         paths
       });
 
       // Wait for transaction to be completed
-      await this.raiden.waitTransfer(secretHash);
+      await this.raiden.waitTransfer(key);
     } catch (e) {
       throw new TransferFailed(e);
     }

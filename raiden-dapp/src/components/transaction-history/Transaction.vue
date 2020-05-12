@@ -24,7 +24,11 @@
           }}
           <address-display
             class="transaction__item__details-left__address"
-            :address="transfer.partner"
+            :address="
+              transfer.direction === 'sent'
+                ? transfer.target
+                : transfer.initiator
+            "
           />
         </v-row>
         <v-row class="transaction__item__details-left__time-stamp" no-gutters>

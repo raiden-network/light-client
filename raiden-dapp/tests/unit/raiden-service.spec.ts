@@ -302,8 +302,9 @@ describe('RaidenService', () => {
     describe('settleChannel', () => {
       test('resolves when settle is successful', async () => {
         raiden.settleChannel = jest.fn().mockResolvedValue('txhash' as Hash);
-        await expect(raidenService.settleChannel('0xtoken', '0xpartner'))
-          .resolves;
+        await expect(
+          raidenService.settleChannel('0xtoken', '0xpartner')
+        ).resolves.toBeUndefined();
         expect(raiden.settleChannel).toHaveBeenCalledTimes(1);
         expect(raiden.settleChannel).toHaveBeenCalledWith(
           '0xtoken',
@@ -329,7 +330,7 @@ describe('RaidenService', () => {
 
         await expect(
           raidenService.transfer('0xtoken', '0xpartner', One, path, paymentId)
-        ).resolves;
+        ).resolves.toBeUndefined();
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
         expect(raiden.transfer).toHaveBeenCalledWith(
           '0xtoken',
@@ -435,7 +436,7 @@ describe('RaidenService', () => {
       test('save transfers in store', async () => {
         const dummyTransfer = {
           initiator: '123',
-          secrethash: '0x1',
+          key: 'sent:0x1',
           completed: false
         };
         (raiden as any).transfers$ = new BehaviorSubject(dummyTransfer);

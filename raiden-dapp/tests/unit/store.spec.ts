@@ -310,8 +310,8 @@ describe('store', () => {
 
   test('return only pending transfers', () => {
     [
-      { secrethash: '0x1', completed: true },
-      { secrethash: '0x2', completed: false }
+      { key: 'sent:0x1', completed: true },
+      { key: 'sent:0x2', completed: false }
     ].forEach(transfer => store.commit('updateTransfers', transfer));
     const { pendingTransfers } = store.getters;
     expect(Object.keys(pendingTransfers).length).toEqual(1);
@@ -319,11 +319,11 @@ describe('store', () => {
 
   test('return transfer with specific identifier ', () => {
     [
-      { secrethash: '0x1', paymentId: '0x1' },
-      { secrethash: '0x2', paymentId: '0x2' }
+      { key: 'sent:0x1', paymentId: '0x1' },
+      { key: 'sent:0x2', paymentId: '0x2' }
     ].forEach(transfer => store.commit('updateTransfers', transfer));
     const transfer = store.getters.transfer('0x1');
-    expect(transfer.secrethash).toEqual('0x1');
+    expect(transfer.key).toEqual('sent:0x1');
   });
 
   test('isConnected should be false if loading', () => {

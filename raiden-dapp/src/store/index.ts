@@ -98,7 +98,7 @@ const store: StoreOptions<RootState> = {
       Object.assign(state, defaultState());
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {
-      state.transfers = { ...state.transfers, [transfer.secrethash]: transfer };
+      state.transfers = { ...state.transfers, [transfer.key]: transfer };
     },
     backupState(state: RootState, uploadedState: string) {
       state.stateBackup = uploadedState;
@@ -165,23 +165,23 @@ const store: StoreOptions<RootState> = {
     },
     pendingTransfers: ({ transfers }: RootState) =>
       Object.keys(transfers)
-        .filter(secretHash => {
-          const { completed } = transfers[secretHash];
+        .filter(key => {
+          const { completed } = transfers[key];
 
           // return whether transfer is pending or not
           return !completed;
         })
-        .reduce((pendingTransfers: Transfers, secretHash: string) => {
-          pendingTransfers[secretHash] = transfers[secretHash];
+        .reduce((pendingTransfers: Transfers, key: string) => {
+          pendingTransfers[key] = transfers[key];
           return pendingTransfers;
         }, {}),
     transfer: (state: RootState) => (paymentId: BigNumber) => {
-      const secretHash = Object.keys(state.transfers).find(
-        secretHash => state.transfers[secretHash].paymentId === paymentId
+      const key = Object.keys(state.transfers).find(
+        key => state.transfers[key].paymentId === paymentId
       );
 
-      if (secretHash) {
-        return state.transfers[secretHash];
+      if (key) {
+        return state.transfers[key];
       }
 
       return undefined;
