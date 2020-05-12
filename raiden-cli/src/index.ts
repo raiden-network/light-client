@@ -83,14 +83,14 @@ async function raidenTransfer(
   let unlockAt: number;
   await raiden.getAvailability(target);
   const { identifier: paymentId, ...rest } = opts;
-  const transferId = await raiden.transfer(token, target, amount, {
+  const key = await raiden.transfer(token, target, amount, {
     paymentId,
     ...rest,
   });
 
   const transfer = await new Promise<RaidenTransfer>((resolve, reject) => {
     const sub = raiden.transfers$.subscribe((t) => {
-      if (t.secrethash !== transferId) return;
+      if (t.key !== key) return;
       log.debug('Transfer:', t);
       if (!revealAt && t.success !== undefined) revealAt = t.changedAt.getTime();
       if (!unlockAt && t.status.startsWith('UNLOCK')) unlockAt = t.changedAt.getTime();
