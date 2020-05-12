@@ -1,5 +1,6 @@
-import { Observable, OperatorFunction } from 'rxjs';
-import { pluck, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, OperatorFunction, from } from 'rxjs';
+import { pluck, distinctUntilChanged, mergeMap, scan, filter } from 'rxjs/operators';
+import { isntNil } from './types';
 
 // overloads
 export function pluckDistinct<T, K1 extends keyof T>(k1: K1): OperatorFunction<T, T[K1]>;
@@ -54,4 +55,34 @@ export function pluckDistinct<T, R>(...properties: string[]): OperatorFunction<T
    */
   return (source: Observable<T>) =>
     source.pipe(pluck<T, R>(...properties), distinctUntilChanged());
+}
+
+/**
+ * Creates an operator to output changed values unique by key ([key, value] tuples)
+ * It's equivalent to (from(Object.entries) + distinct), but uses key to prevent memory leak
+ *
+ * @param compareFn - Function to compare equality between two values, default to === (reference)
+ * @returns Operator to map from a record to changed values (all on first)
+ */
+export function distinctRecordValues<R>(
+  compareFn: (x: R, y: R) => boolean = (x, y) => x === y,
+): OperatorFunction<{ [k: string]: R }, [string, R]> {
+  return (input: Observable<Record<string, R>>): Observable<[string, R]> =>
+    input.pipe(
+      distinctUntilChanged(),
+      mergeMap((map) => from(Object.entries(map))),
+      /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
+       * changes from last time seen. It relies on value references changing only if needed */
+      scan<[string, R], { acc: { [k: string]: R }; changed?: [string, R] }>(
+        ({ acc }, [key, value]) =>
+          // if ref didn't change, emit previous accumulator, without 'changed' value
+          compareFn(acc[key], value)
+            ? { acc }
+            : // else, update ref in 'acc' and emit value in 'changed' prop
+              { acc: { ...acc, [key]: value }, changed: [key, value] },
+        { acc: {} as { [k: string]: R } },
+      ),
+      pluck('changed'),
+      filter(isntNil), // filter out if reference didn't change from last emit
+    );
 }

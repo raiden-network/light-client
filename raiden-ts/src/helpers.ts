@@ -3,26 +3,17 @@ import { Wallet } from 'ethers/wallet';
 import { Contract, ContractReceipt, ContractTransaction } from 'ethers/contract';
 import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
 import { JsonRpcProvider } from 'ethers/providers';
-import { Observable, from, defer } from 'rxjs';
-import {
-  filter,
-  map,
-  scan,
-  concatMap,
-  pluck,
-  withLatestFrom,
-  first,
-  exhaustMap,
-} from 'rxjs/operators';
+import { Observable, defer } from 'rxjs';
+import { filter, map, pluck, withLatestFrom, first, exhaustMap } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { RaidenState } from './state';
 import { ContractsInfo, RaidenEpicDeps } from './types';
 import { raidenSentTransfer } from './transfers/utils';
-import { TransferState, TransfersState, RaidenTransfer } from './transfers/state';
+import { RaidenTransfer } from './transfers/state';
 import { channelAmounts } from './channels/utils';
 import { RaidenChannels, RaidenChannel } from './channels/state';
-import { pluckDistinct } from './utils/rx';
+import { pluckDistinct, distinctRecordValues } from './utils/rx';
 import { Address, PrivateKey, isntNil, Hash, assert } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 
@@ -157,21 +148,9 @@ export const getSigner = async (
  */
 export const initTransfers$ = (state$: Observable<RaidenState>): Observable<RaidenTransfer> =>
   state$.pipe(
-    pluckDistinct('sent'),
-    concatMap((sent) => from(Object.entries(sent))),
-    /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
-     * changes from last time seen. It relies on value references changing only if needed */
-    scan<[string, TransferState], { acc: TransfersState; changed?: TransferState }>(
-      ({ acc }, [secrethash, sent]) =>
-        // if ref didn't change, emit previous accumulator, without 'changed' value
-        acc[secrethash] === sent
-          ? { acc }
-          : // else, update ref in 'acc' and emit value in 'changed' prop
-            { acc: { ...acc, [secrethash]: sent }, changed: sent },
-      { acc: {} },
-    ),
-    pluck('changed'),
-    filter(isntNil), // filter out if reference didn't change from last emit
+    pluck('sent'),
+    distinctRecordValues(),
+    pluck(1),
     // from here, we get TransferState objects which changed from previous state (all on first)
     map(raidenSentTransfer),
   );
