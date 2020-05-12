@@ -28,8 +28,7 @@
           />
         </v-row>
         <v-row class="transaction__item__details-left__time-stamp" no-gutters>
-          {{ new Intl.DateTimeFormat('en-US').format(transfer.changedAt) }}
-          {{ transfer.changedAt.toLocaleTimeString('en-US') }}
+          {{ transfer.changedAt | formatDate }}
         </v-row>
       </v-col>
       <v-col class="transaction__item__details-right">
