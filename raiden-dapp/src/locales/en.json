@@ -261,7 +261,7 @@
         "title": "Request Route",
         "tooltip": "Mint and deposit {token} to the User Deposit Contract to pay for PFS requests",
         "udc-description": "Balance to pay the Pathfinding Service",
-        "udc-description-low-balance": "Your {token} token balance is to low to pay for the Pathfinding Service. Use the button above to mint and deposit more tokens.",
+        "udc-description-low-balance": "Your {token} token balance is too low to pay for the Pathfinding Service. Use the button above to mint and deposit more tokens.",
         "in-progress": "Paying for the route request",
         "searching-for-route": "Searching for route...",
         "done": "Route request payment complete"
@@ -334,7 +334,10 @@
     }
   },
   "select-hub": {
-    "select-button": "Select Hub"
+    "select-button": "Select Hub",
+    "service-token-tooltip": "Mint and deposit {token} to the User Deposit Contract to pay for the Monitoring Service.",
+    "service-token-balance-too-low": "Your {token} balance is too low to pay for the Monitoring Service. Use the button above to mint and deposit more tokens.",
+    "service-token-description": "Balance to pay the Monitoring Service"
   },
   "open-channel": {
     "error": {
