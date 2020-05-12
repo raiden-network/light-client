@@ -13,10 +13,12 @@ import {
 } from '../messages/types';
 import { Address, Timed, Hash, Int, Signed, Secret } from '../utils/types';
 
-export enum Direction {
-  SENT = 'sent',
-  RECEIVED = 'received',
-}
+// it's like an enum, but with literals
+export const Direction = {
+  SENT: 'sent',
+  RECEIVED: 'received',
+} as const;
+export type Direction = typeof Direction[keyof typeof Direction];
 
 /**
  * This struct holds the relevant messages exchanged in a transfer
@@ -117,6 +119,7 @@ export enum RaidenTransferStatus {
  * This should be only used as a public view of the internal transfer state
  */
 export interface RaidenTransfer {
+  key: string; // some key which uniquely identifies this transfer
   secrethash: Hash; // used as transfer identifier
   direction: 'sent' | 'received';
   status: RaidenTransferStatus;

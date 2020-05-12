@@ -803,14 +803,14 @@ describe('Raiden', () => {
       test('success: direct route', async () => {
         expect.assertions(4);
 
-        const transfers: { [h: string]: RaidenTransfer } = {};
-        raiden.transfers$.subscribe((t) => (transfers[t.secrethash] = t));
+        const transfers: { [k: string]: RaidenTransfer } = {};
+        raiden.transfers$.subscribe((t) => (transfers[t.key] = t));
 
-        const secrethash = await raiden.transfer(token, partner, 23);
-        expect(secrethash).toMatch(/^0x[0-9a-fA-F]{64}$/);
+        const key = await raiden.transfer(token, partner, 23);
+        expect(key).toMatch(/^sent:0x[0-9a-fA-F]{64}$/);
 
-        expect(secrethash in transfers).toBe(true);
-        expect(transfers[secrethash].status).toBe(RaidenTransferStatus.pending);
+        expect(key in transfers).toBe(true);
+        expect(transfers[key].status).toBe(RaidenTransferStatus.pending);
       });
 
       test('success: auto pfs route', async () => {
@@ -873,17 +873,17 @@ describe('Raiden', () => {
           text: jest.fn(async () => losslessStringify(result)),
         });
 
-        const transfers: { [h: string]: RaidenTransfer } = {};
-        raiden.transfers$.subscribe((t) => (transfers[t.secrethash] = t));
+        const transfers: { [k: string]: RaidenTransfer } = {};
+        raiden.transfers$.subscribe((t) => (transfers[t.key] = t));
 
-        const secrethash = await raiden.transfer(token, target, 23);
-        expect(secrethash).toMatch(/^0x[0-9a-fA-F]{64}$/);
+        const key = await raiden.transfer(token, target, 23);
+        expect(key).toMatch(/^sent:0x[0-9a-fA-F]{64}$/);
 
-        expect(secrethash in transfers).toBe(true);
-        expect(transfers[secrethash].status).toBe(RaidenTransferStatus.pending);
+        expect(key in transfers).toBe(true);
+        expect(transfers[key].status).toBe(RaidenTransferStatus.pending);
 
         // transfer metadata contains the actual used routes (removing invalid ones)
-        expect(transfers[secrethash].metadata).toEqual({
+        expect(transfers[key].metadata).toEqual({
           routes: [{ route: [partner, target] }],
         });
 

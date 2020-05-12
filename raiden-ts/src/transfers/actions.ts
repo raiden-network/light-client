@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/class-name-casing */
 import * as t from 'io-ts';
+import invert from 'lodash/invert';
 
 import { Address, UInt, Int, Secret, Hash, Signed } from '../utils/types';
 import { createAction, ActionType, createAsyncAction } from '../utils/actions';
@@ -17,10 +18,11 @@ import {
   WithdrawConfirmation,
 } from '../messages/types';
 import { Paths } from '../services/types';
+import { Direction } from './state';
 
 const TransferId = t.type({
   secrethash: Hash,
-  direction: t.keyof({ sent: null, received: null }),
+  direction: t.keyof(invert(Direction) as Record<Direction, string>),
 });
 
 /**

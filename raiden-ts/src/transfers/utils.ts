@@ -1,10 +1,10 @@
 import { concat, hexlify } from 'ethers/utils/bytes';
 import { keccak256, randomBytes, bigNumberify, sha256 } from 'ethers/utils';
 
-import { Hash, Secret, UInt, HexString } from '../utils/types';
+import { Hash, Secret, UInt, HexString, assert } from '../utils/types';
 import { encode } from '../utils/data';
 import { Lock } from '../channels/types';
-import { TransferState, RaidenTransfer, RaidenTransferStatus } from './state';
+import { TransferState, RaidenTransfer, RaidenTransferStatus, Direction } from './state';
 
 /**
  * Get the locksroot of a given array of pending locks
@@ -59,12 +59,50 @@ export function makeMessageId(): UInt<8> {
   return bigNumberify(Date.now()) as UInt<8>;
 }
 
+/**
+ * Return the transfer direction for a TransferState
+ *
+ * @param state - transfer to get direction from, or TransferId
+ * @returns Direction of transfer
+ */
+export function transferDirection(state: TransferState | { direction: Direction }): Direction {
+  if ('direction' in state) return state.direction;
+  const transfer = state.transfer[1];
+  return transfer.recipient === state.partner ? Direction.SENT : Direction.RECEIVED;
+}
+
+/**
+ * Get a unique key for a tranfer state or TransferId
+ *
+ * @param state - transfer to get key from, or TransferId
+ * @returns string containing a unique key for transfer
+ */
+export function transferKey(
+  state: TransferState | { secrethash: Hash; direction: Direction },
+): string {
+  if ('direction' in state) return `${state.direction}:${state.secrethash}`;
+  return `${transferDirection(state)}:${state.transfer[1].lock.secrethash}`;
+}
+
+const _keyRe = new RegExp(`^(${Object.values(Direction).join('|')}):0x[a-z0-9]{64}$`, 'i');
+/**
+ * Parse a transferKey into a TransferId object ({ secrethash, direction })
+ *
+ * @param key - string to parse as transferKey
+ * @returns secrethash, direction contained in transferKey
+ */
+export function transferKeyToMeta(key: string): { secrethash: Hash; direction: Direction } {
+  assert(_keyRe.test(key), 'Invalid transferKey format');
+  const [direction, secrethash] = key.split(':');
+  return { direction: direction as Direction, secrethash: secrethash as Hash };
+}
+
 function getTimeIfPresent<T>(k: keyof T): (o: T) => number | undefined {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (o: T) => (o[k] ? (o[k] as any)[0] : undefined);
 }
 
-const statusesMap: { [K in RaidenTransferStatus]: (s: TransferState) => number | undefined } = {
+const statusesMap: { [K in RaidenTransferStatus]: (t: TransferState) => number | undefined } = {
   [RaidenTransferStatus.expired]: getTimeIfPresent<TransferState>('lockExpiredProcessed'),
   [RaidenTransferStatus.unlocked]: getTimeIfPresent<TransferState>('unlockProcessed'),
   [RaidenTransferStatus.expiring]: getTimeIfPresent<TransferState>('lockExpired'),
@@ -81,45 +119,47 @@ const statusesMap: { [K in RaidenTransferStatus]: (s: TransferState) => number |
 };
 
 /**
- * Convert a state.sent: TransferState to a public RaidenTransfer object
+ * Convert a TransferState to a public RaidenTransfer object
  *
- * @param sent - RaidenState.sent value
+ * @param state - RaidenState.sent value
  * @returns Public raiden sent transfer info object
  */
-export function raidenSentTransfer(sent: TransferState): RaidenTransfer {
-  const startedAt = new Date(sent.transfer[0]);
+export function raidenTransfer(state: TransferState): RaidenTransfer {
+  const startedAt = new Date(state.transfer[0]);
   let changedAt = startedAt;
   let status = RaidenTransferStatus.pending;
   // order matters! from top to bottom priority, first match breaks loop
   for (const [s, g] of Object.entries(statusesMap)) {
-    const ts = g(sent);
+    const ts = g(state);
     if (ts !== undefined) {
       status = s as RaidenTransferStatus;
       changedAt = new Date(ts);
       break;
     }
   }
-  const transfer = sent.transfer[1];
-  const value = transfer.lock.amount.sub(sent.fee);
-  const invalidSecretRequest = sent.secretRequest && sent.secretRequest[1].amount.lt(value);
+  const transfer = state.transfer[1];
+  const direction = transferDirection(state);
+  const value = transfer.lock.amount.sub(state.fee);
+  const invalidSecretRequest = state.secretRequest && state.secretRequest[1].amount.lt(value);
   const success =
-    sent.secretReveal || sent.unlock || sent.secret?.[1]?.registerBlock
+    state.secretReveal || state.unlock || state.secret?.[1]?.registerBlock
       ? true
-      : invalidSecretRequest || sent.refund || sent.lockExpired || sent.channelClosed
+      : invalidSecretRequest || state.refund || state.lockExpired || state.channelClosed
       ? false
       : undefined;
   const completed = !!(
-    sent.unlockProcessed ||
-    sent.lockExpiredProcessed ||
-    sent.secret?.[1]?.registerBlock ||
-    sent.channelClosed
+    state.unlockProcessed ||
+    state.lockExpiredProcessed ||
+    state.secret?.[1]?.registerBlock ||
+    state.channelClosed
   );
   return {
+    key: transferKey(state),
     secrethash: transfer.lock.secrethash,
-    direction: 'sent',
+    direction,
     status,
     initiator: transfer.initiator,
-    partner: transfer.recipient,
+    partner: state.partner,
     target: transfer.target,
     metadata: transfer.metadata,
     paymentId: transfer.payment_identifier,
@@ -128,7 +168,7 @@ export function raidenSentTransfer(sent: TransferState): RaidenTransfer {
     tokenNetwork: transfer.token_network_address,
     channelId: transfer.channel_identifier,
     value,
-    fee: sent.fee,
+    fee: state.fee,
     amount: transfer.lock.amount,
     expirationBlock: transfer.lock.expiration.toNumber(),
     startedAt,

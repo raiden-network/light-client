@@ -49,7 +49,14 @@ import {
 import { channelKey } from './channels/utils';
 import { matrixPresence } from './transport/actions';
 import { transfer, transferSigned } from './transfers/actions';
-import { makeSecret, getSecrethash, makePaymentId, raidenSentTransfer } from './transfers/utils';
+import {
+  makeSecret,
+  getSecrethash,
+  makePaymentId,
+  raidenTransfer,
+  transferKey,
+  transferKeyToMeta,
+} from './transfers/utils';
 import { pathFind } from './services/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
 import { pfsListInfo } from './services/utils';
@@ -99,7 +106,7 @@ export class Raiden {
 
   /**
    * Observable of completed and pending transfers
-   * Every time a transfer state is updated, it's emitted here. 'secrethash' property is unique and
+   * Every time a transfer state is updated, it's emitted here. 'key' property is unique and
    * may be used as identifier to know which transfer got updated.
    */
   public readonly transfers$: Observable<RaidenTransfer>;
@@ -736,7 +743,7 @@ export class Raiden {
    *          disabled (null), use it if set or if undefined (auto mode), fetches the best
    *          PFS from ServiceRegistry and automatically fetch routes from it.</li>
    *    </ul>
-   * @returns A promise to transfer's secrethash (unique id) when it's accepted
+   * @returns A promise to transfer's unique key (id) when it's accepted
    */
   public async transfer(
     token: string,
@@ -749,7 +756,7 @@ export class Raiden {
       paths?: RaidenPaths;
       pfs?: RaidenPFS;
     } = {},
-  ): Promise<Hash> {
+  ): Promise<string> {
     assert(Address.is(token) && Address.is(target), 'Invalid address');
     const tokenNetwork = this.state.tokens[token];
     assert(tokenNetwork, 'Unknown token network');
@@ -800,10 +807,14 @@ export class Raiden {
             // wait for transfer response
             this.action$.pipe(
               filter(isActionOf([transferSigned, transfer.failure])),
-              first((action) => action.meta.secrethash === secrethash),
+              first(
+                (action) =>
+                  action.meta.direction === Direction.SENT &&
+                  action.meta.secrethash === secrethash,
+              ),
               map((action) => {
                 if (transfer.failure.is(action)) throw action.payload;
-                return secrethash;
+                return transferKey(action.meta);
               }),
             ),
             // request transfer with returned/validated paths at 'merge' subscription time
@@ -834,25 +845,23 @@ export class Raiden {
    *
    * The returned promise will resolve with the final amount received by the target
    *
-   * @param secrethash - Transfer identifier
+   * @param transferKey - Transfer identifier
    * @returns Amount received by target, as informed by them on SecretRequest
    */
-  public async waitTransfer(secrethash: string): Promise<BigNumber | undefined> {
-    assert(Hash.is(secrethash), 'Invalid secrethash for transfer');
-    let state = this.state;
-    assert(secrethash in state.sent, 'Unknown secrethash');
+  public async waitTransfer(transferKey: string): Promise<BigNumber | undefined> {
+    const { direction, secrethash } = transferKeyToMeta(transferKey);
+    assert(secrethash in this.state[direction], 'Unknown transfer');
 
-    const sent = raidenSentTransfer(state.sent[secrethash]);
+    const transf = raidenTransfer(this.state[direction][secrethash]);
     // already completed/past transfer
-    if (sent.completed) {
-      if (sent.success) return this.state.sent[secrethash].secretRequest?.[1]?.amount;
-      else throw new RaidenError(ErrorCodes.XFER_ALREADY_COMPLETED, { status: sent.status });
+    if (transf.completed) {
+      if (transf.success) return this.state[direction][secrethash].secretRequest?.[1]?.amount;
+      else throw new RaidenError(ErrorCodes.XFER_ALREADY_COMPLETED, { status: transf.status });
     }
 
     // throws/rejects if a failure occurs
-    await asyncActionToPromise(transfer, { secrethash, direction: Direction.SENT }, this.action$);
-    state = this.state;
-    return state.sent[secrethash].secretRequest?.[1]?.amount;
+    await asyncActionToPromise(transfer, { secrethash, direction }, this.action$);
+    return this.state[direction][secrethash].secretRequest?.[1]?.amount;
   }
 
   /**
