@@ -53,21 +53,21 @@
           <span class="transaction__item__details-right--status">
             <v-chip
               v-if="transfer.success === undefined"
-              x-small
               color="pending-chip"
+              x-small
               text-color="pending"
             >
               {{ $t('transfer-history.pending-transfer') }}
             </v-chip>
             <v-chip
               v-else-if="transfer.success"
-              x-small
               color="success-chip"
+              x-small
               text-color="success"
             >
               {{ $t('transfer-history.successful-transfer') }}
             </v-chip>
-            <v-chip v-else x-small color="failed-chip" text-color="failed">
+            <v-chip v-else color="failed-chip" x-small text-color="failed">
               {{ $t('transfer-history.failed-transfer') }}
             </v-chip>
           </span>
@@ -96,6 +96,7 @@ export default class Transaction extends Vue {
 </script>
 
 <style scoped lang="scss">
+@import '../../main';
 @import '../../scss/colors';
 
 .transaction {
