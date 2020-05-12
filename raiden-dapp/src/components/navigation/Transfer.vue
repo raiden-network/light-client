@@ -235,6 +235,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 .transfer {
   height: 100%;
   scrollbar-width: none;
+  overflow-y: scroll;
   width: 100%;
   &::-webkit-scrollbar {
     display: none;
