@@ -29,7 +29,7 @@
       <v-col cols="8">
         <div class="token-information__description">
           <span class="token-information__balance">
-            {{ token.balance | displayFormat(token.decimals) }}
+            {{ (token.balance || 0) | displayFormat(token.decimals) }}
           </span>
           <v-tooltip bottom>
             <template #activator="{ on }">
@@ -44,7 +44,9 @@
                 <v-icon color="primary">play_for_work</v-icon>
               </v-btn>
             </template>
-            <span>{{ $t('mint-dialog.title', { symbol: token.symbol }) }}</span>
+            <span>
+              {{ $t('mint-dialog.title', { symbol: token.symbol || '' }) }}
+            </span>
           </v-tooltip>
         </div>
       </v-col>
