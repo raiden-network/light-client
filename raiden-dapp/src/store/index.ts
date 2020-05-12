@@ -109,7 +109,8 @@ const store: StoreOptions<RootState> = {
     reset(state: RootState) {
       // Preserve settings when resetting state
       const { settings } = state;
-      state = { ...defaultState(), settings };
+
+      Object.assign(state, { ...defaultState(), settings });
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {
       state.transfers = { ...state.transfers, [transfer.secrethash]: transfer };

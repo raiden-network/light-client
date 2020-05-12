@@ -41,7 +41,10 @@ describe('Home.vue', () => {
   });
 
   test('connects with sub key by default', async () => {
-    store.commit('updateSettings', { useRaidenAccount: true });
+    store.commit('updateSettings', {
+      useRaidenAccount: true,
+      isFirstTimeConnect: false
+    });
     // @ts-ignore
     await wrapper.vm.connect();
     await flushPromises();
@@ -51,7 +54,10 @@ describe('Home.vue', () => {
 
   test('connect can be called without displaying error after failing initially', async () => {
     store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
-    store.commit('updateSettings', { useRaidenAccount: true });
+    store.commit('updateSettings', {
+      useRaidenAccount: true,
+      isFirstTimeConnect: false
+    });
     // @ts-ignore
     await wrapper.vm.connect();
     await flushPromises();
@@ -80,6 +86,10 @@ describe('Home.vue', () => {
   });
 
   test('connect button displays connect dialog', async () => {
+    store.commit('updateSettings', {
+      useRaidenAccount: true,
+      isFirstTimeConnect: true
+    });
     expect(wrapper.vm.$data.connectDialog).toBe(false);
 
     const connectButton = wrapper.find('button');
