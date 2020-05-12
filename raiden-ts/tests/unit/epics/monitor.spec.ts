@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
-import { bigNumberify, parseUnits, BigNumberish } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { bigNumberify, BigNumberish } from 'ethers/utils';
+import { Zero, WeiPerEther } from 'ethers/constants';
 import { of } from 'rxjs';
 import { first, toArray, pluck } from 'rxjs/operators';
 
@@ -21,8 +21,9 @@ import {
 } from 'raiden-ts/transfers/utils';
 import { monitorRequestEpic, monitorUdcBalanceEpic } from 'raiden-ts/services/epics';
 import { udcDeposited } from 'raiden-ts/services/actions';
-import { transferProcessed } from 'raiden-ts/transfers/actions';
+import { transferProcessed, transferSecretRegister } from 'raiden-ts/transfers/actions';
 import { channelKey } from 'raiden-ts/channels/utils';
+import { Direction } from 'raiden-ts/transfers/state';
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps } from '../mocks';
@@ -62,7 +63,7 @@ describe('monitorRequestEpic', () => {
     action$: ReturnType<typeof epicFixtures>['action$'],
     state$: ReturnType<typeof epicFixtures>['state$'];
 
-  const monitoringReward = parseUnits('5', 18) as UInt<32>;
+  const monitoringReward = bigNumberify(5) as UInt<32>;
 
   beforeEach(async () => {
     depsMock = raidenEpicDeps();
@@ -82,13 +83,15 @@ describe('monitorRequestEpic', () => {
 
     [
       raidenConfigUpdate({
+        httpTimeout: 30,
+        monitoringReward,
         caps: {
           [Capabilities.NO_DELIVERY]: true,
           [Capabilities.NO_MEDIATE]: true,
-          // disable NO_RECEIVE
+          // 'noReceive' should be auto-disabled by 'getCaps$'
         },
-        monitoringReward,
-        httpTimeout: 30,
+        // rate=WeiPerEther == 1:1 to SVT
+        rateToSvt: { [token]: WeiPerEther as UInt<32> },
       }),
       tokenMonitored({ token, tokenNetwork }),
       channelOpen.success(
@@ -128,7 +131,7 @@ describe('monitorRequestEpic', () => {
     ].forEach((a) => action$.next(a));
   });
 
-  async function receiveTransfer(value: BigNumberish) {
+  async function receiveTransfer(value: BigNumberish, unlock = true) {
     const amount = decode(UInt(32), value);
     const secret = makeSecret();
     const secrethash = getSecrethash(secret);
@@ -172,6 +175,15 @@ describe('monitorRequestEpic', () => {
     ).subscribe((a) => action$.next(a));
 
     await received;
+    if (unlock) {
+      // register secret on-chain
+      action$.next(
+        transferSecretRegister.success(
+          { secret, txHash, txBlock: state.blockNumber + 1, confirmed: true },
+          { secrethash, direction: Direction.RECEIVED },
+        ),
+      );
+    }
     // return channel state
     return depsMock.latest$
       .pipe(pluck('state', 'channels', channelKey({ tokenNetwork, partner })), first())
@@ -192,9 +204,9 @@ describe('monitorRequestEpic', () => {
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
     action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
-    const channelState = await receiveTransfer(10);
+    const channelState = await receiveTransfer(20);
     const partnerBP = channelState.partner.balanceProof;
-    setTimeout(() => action$.complete(), 50);
+    setTimeout(() => action$.complete(), 100);
 
     await expect(promise).resolves.toEqual(
       messageGlobalSend(
@@ -272,5 +284,46 @@ describe('monitorRequestEpic', () => {
 
     expect(signerSpy).toHaveBeenCalledTimes(2);
     signerSpy.mockRestore();
+  });
+
+  test('ignore: non economically viable channels', async () => {
+    expect.assertions(1);
+
+    const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
+    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+
+    // transfer <= monitoringReward isn't worth to be monitored
+    await receiveTransfer(monitoringReward.toNumber());
+    setTimeout(() => action$.complete(), 50);
+
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  test('ignore: non unlocked amount', async () => {
+    expect.assertions(1);
+
+    const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
+    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+
+    // transfer <= monitoringReward isn't worth to be monitored
+    await receiveTransfer(20, false);
+    setTimeout(() => action$.complete(), 50);
+
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  test('ignore: token without known rateToSvt', async () => {
+    expect.assertions(1);
+
+    action$.next(raidenConfigUpdate({ rateToSvt: {} }));
+
+    const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
+    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+
+    // transfer <= monitoringReward isn't worth to be monitored
+    await receiveTransfer(20);
+    setTimeout(() => action$.complete(), 50);
+
+    await expect(promise).resolves.toBeUndefined();
   });
 });

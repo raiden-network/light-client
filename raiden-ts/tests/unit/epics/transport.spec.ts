@@ -533,7 +533,8 @@ describe('transport epic', () => {
     );
     await expect(promise).resolves.toBeUndefined();
     expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(1);
-    expect(matrix.setAvatarUrl).toHaveBeenCalledWith(`noDelivery,webRTC`);
+    // noReceive is dynamic
+    expect(matrix.setAvatarUrl).toHaveBeenCalledWith('noReceive,noDelivery,webRTC');
 
     promise = matrixUpdateCapsEpic(action$, state$, depsMock).toPromise();
     action$.next(
@@ -544,7 +545,7 @@ describe('transport epic', () => {
     setTimeout(() => action$.complete(), 10);
     await expect(promise).resolves.toBeUndefined();
     expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(2);
-    expect(matrix.setAvatarUrl).toHaveBeenCalledWith(`noDelivery,customCap="abc"`);
+    expect(matrix.setAvatarUrl).toHaveBeenCalledWith('noReceive,noDelivery,customCap="abc"');
   });
 
   describe('matrixCreateRoomEpic', () => {
