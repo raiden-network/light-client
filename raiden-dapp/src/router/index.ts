@@ -113,6 +113,14 @@ const router = new Router({
             title: 'Raiden Account'
           },
           component: () => import('../views/account/RaidenAccount.vue')
+        },
+        {
+          path: 'withdrawal',
+          name: RouteNames.ACCOUNT_WITHDRAWAL,
+          meta: {
+            title: 'Withdrawal'
+          },
+          component: () => import('../views/account/WithdrawalRoute.vue')
         }
       ]
     }

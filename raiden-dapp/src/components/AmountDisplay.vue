@@ -1,5 +1,6 @@
 <template>
   <div
+    :class="{ 'amount-display--inline': inline }"
     @mouseover="exactAmount ? (displayExactAmount = true) : null"
     @mouseleave="exactAmount ? (displayExactAmount = false) : null"
   >
@@ -26,7 +27,16 @@ export default class AmountDisplay extends Vue {
   amount!: string | BigNumber;
   @Prop({ required: true })
   token!: Token;
+  @Prop({ required: false, default: false, type: Boolean })
+  inline!: boolean;
 
   displayExactAmount = false;
 }
 </script>
+<style lang="scss" scoped>
+.amount-display {
+  &--inline {
+    display: inline;
+  }
+}
+</style>
