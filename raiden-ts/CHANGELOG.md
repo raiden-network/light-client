@@ -8,8 +8,10 @@
 
 ### Changed
 - [#1480] Update profile's caps on config.caps change and react on peers updates
+- [#1503] Expose received transfers through transfers$ observable
 
 [#1480]: https://github.com/raiden-network/light-client/pull/1480
+[#1503]: https://github.com/raiden-network/light-client/issues/1503
 
 ## [0.7.0] - 2020-05-08
 ### Added
