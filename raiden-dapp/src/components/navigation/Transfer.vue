@@ -236,6 +236,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
 .transfer {
   height: 100%;
+  overflow-x: hidden;
   width: 100%;
 
   &__token-network-amount {
