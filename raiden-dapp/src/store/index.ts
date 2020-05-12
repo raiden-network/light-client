@@ -42,7 +42,10 @@ const _defaultState: RootState = {
   presences: {},
   network: PlaceHolderNetwork,
   stateBackup: '',
-  settings: {}
+  settings: {
+    isFirstTimeConnect: true,
+    useRaidenAccount: true
+  }
 };
 
 export function defaultState(): RootState {
@@ -104,7 +107,9 @@ const store: StoreOptions<RootState> = {
       state.network = network;
     },
     reset(state: RootState) {
-      Object.assign(state, defaultState());
+      // Preserve settings when resetting state
+      const { settings } = state;
+      state = { ...defaultState(), settings };
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {
       state.transfers = { ...state.transfers, [transfer.secrethash]: transfer };

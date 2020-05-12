@@ -64,7 +64,10 @@ export default class ConnectDialog extends Vue {
 
   @Emit()
   connect() {
-    this.$store.commit('updateSettings', { useRaidenAccount: true });
+    this.$store.commit('updateSettings', {
+      ...this.$store.state.settings,
+      isFirstTimeConnect: false
+    });
   }
 
   get injectedProvider(): boolean {

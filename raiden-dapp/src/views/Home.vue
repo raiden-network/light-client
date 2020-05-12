@@ -38,6 +38,11 @@
               {{ $t('home.getting-started.link-name') }}
             </a>
           </i18n>
+          <no-access-message
+            v-if="accessDenied"
+            :reason="accessDenied"
+            class="home__no-access"
+          />
         </v-col>
       </v-row>
       <action-button
@@ -64,6 +69,7 @@ import { DeniedReason } from '@/model/types';
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
 import NoTokens from '@/components/NoTokens.vue';
+import NoAccessMessage from '@/components/NoAccessMessage.vue';
 import { Settings } from '@/types';
 
 @Component({
@@ -74,7 +80,8 @@ import { Settings } from '@/types';
   components: {
     ActionButton,
     ConnectDialog,
-    NoTokens
+    NoTokens,
+    NoAccessMessage
   }
 })
 export default class Home extends Vue {
@@ -96,8 +103,8 @@ export default class Home extends Vue {
 
   async connect() {
     // On first time connect, show the connect dialog
-    let { useRaidenAccount } = this.settings;
-    if (useRaidenAccount === undefined) {
+    let { useRaidenAccount, isFirstTimeConnect } = this.settings;
+    if (isFirstTimeConnect) {
       this.connectDialog = true;
       return;
     }
@@ -105,6 +112,8 @@ export default class Home extends Vue {
     this.connectDialog = false;
     this.connecting = true;
     this.$store.commit('reset');
+    // Have to reset this explicitly, for some reason
+    this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
 
     await this.$raiden.connect(
       this.stateBackup,
@@ -134,7 +143,6 @@ export default class Home extends Vue {
   &__logo-container {
     display: flex;
     justify-content: center;
-    margin-top: 80px;
 
     &__logo {
       filter: invert(100%);
@@ -148,7 +156,8 @@ export default class Home extends Vue {
   }
 
   &__disclaimer,
-  &__getting-started {
+  &__getting-started,
+  &__no-access {
     margin: 30px 130px 0 130px;
     @include respond-to(handhelds) {
       margin: 30px 20px 0 20px;
