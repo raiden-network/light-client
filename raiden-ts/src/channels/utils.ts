@@ -1,23 +1,13 @@
 import { OperatorFunction, from, Observable, ReplaySubject } from 'rxjs';
-import {
-  tap,
-  mergeMap,
-  map,
-  concatMap,
-  scan,
-  pluck,
-  filter,
-  groupBy,
-  takeUntil,
-} from 'rxjs/operators';
+import { tap, mergeMap, map, pluck, filter, groupBy, takeUntil } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { ContractTransaction } from 'ethers/contract';
 
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
-import { UInt, Hash, Address, isntNil } from '../utils/types';
+import { UInt, Hash, Address } from '../utils/types';
 import { ErrorCodes, RaidenError } from '../utils/error';
-import { pluckDistinct } from '../utils/rx';
+import { distinctRecordValues } from '../utils/rx';
 import { Channel, ChannelState } from './state';
 import { ChannelKey, ChannelUniqueKey } from './types';
 
@@ -165,24 +155,9 @@ export function assertTx(
  */
 export function groupChannel$(state$: Observable<RaidenState>) {
   return state$.pipe(
-    pluckDistinct('channels'),
-    concatMap((channels) => from(Object.entries(channels))),
-    /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
-     * changes from last time seen. It relies on value references changing only if needed */
-    scan(
-      ({ acc }, [key, channel]) =>
-        // if ref didn't change, emit previous accumulator, without 'changed' value
-        acc[key] === channel
-          ? { acc }
-          : // else, update ref in 'acc' and emit value in 'changed' prop
-            {
-              acc: { ...acc, [key]: channel },
-              changed: channel,
-            },
-      { acc: {} } as { acc: RaidenState['channels']; changed?: Channel },
-    ),
-    pluck('changed'),
-    filter(isntNil), // filter out if reference didn't change from last emit
+    pluck('channels'),
+    distinctRecordValues(),
+    pluck(1),
     // grouped$ output will be backed by a ReplaySubject(1), so will emit latest channel state
     // immediately if resubscribed or withLatestFrom'd
     groupBy(channelUniqueKey, undefined, undefined, () => new ReplaySubject<Channel>(1)),
