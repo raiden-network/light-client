@@ -8,6 +8,11 @@
 - [#1380] Allow the user to withdraw tokens from the Raiden Account.
 - [#1371] Mint and deposit utility token to pay Monitoring Service.
 
+### Fixed
+
+- [#1490] Fixes scrollbar always showing up in channels screen.
+
+[#1490]: https://github.com/raiden-network/light-client/issues/1490
 [#1212]: https://github.com/raiden-network/light-client/issues/1212
 [#1380]: https://github.com/raiden-network/light-client/issues/1380
 [#1371]: https://github.com/raiden-network/light-client/issues/1371
