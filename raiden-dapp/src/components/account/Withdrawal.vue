@@ -172,6 +172,8 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
 </script>
 
 <style scoped lang="scss">
+@import '@/scss/colors';
+
 .withdrawal {
   &__description {
     margin-top: 30px;
@@ -193,8 +195,10 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
 
     &__address {
       ::v-deep {
-        .address__label {
-          color: #ffffffb3 !important;
+        .address {
+          &__label {
+            color: rgba($color-white, 0.7) !important;
+          }
         }
       }
     }
