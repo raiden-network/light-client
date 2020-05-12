@@ -26,3 +26,14 @@ $background-gradient: linear-gradient(90deg, #313030 0%, #000000 100%);
 // Color vars
 $color-white: #ffffff;
 $color-gray: #d8d8d8;
+
+// Transfer history chip background colors
+.pending-chip {
+  background-color: rgba(253, 211, 39, 0.3) !important;
+}
+.success-chip {
+  background-color: rgba(29, 197, 18, 0.3) !important;
+}
+.failed-chip {
+  background-color: rgba(234, 100, 100, 0.3) !important;
+}

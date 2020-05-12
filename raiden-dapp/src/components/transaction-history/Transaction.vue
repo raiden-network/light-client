@@ -6,13 +6,13 @@
           v-if="transfer.direction === 'sent'"
           height="45px"
           width="45px"
-          :src="require('../../assets/sent_transfer.svg')"
+          :src="require('@/assets/sent_transfer.svg')"
         />
         <v-img
           v-else
           height="45px"
           width="45px"
-          :src="require('../../assets/received_transfer.svg')"
+          :src="require('@/assets/received_transfer.svg')"
         />
       </v-col>
       <v-col class="transaction__item__details-left">
@@ -55,25 +55,20 @@
             <v-chip
               v-if="transfer.success === undefined"
               x-small
-              color="rgba(253, 211, 39, 0.3)"
-              text-color="#fdd327"
+              color="pending-chip"
+              text-color="pending"
             >
               {{ $t('transfer-history.pending-transfer') }}
             </v-chip>
             <v-chip
               v-else-if="transfer.success"
               x-small
-              color="rgba(29, 197, 18, 0.3)"
-              text-color="#1dc512"
+              color="success-chip"
+              text-color="success"
             >
               {{ $t('transfer-history.successful-transfer') }}
             </v-chip>
-            <v-chip
-              v-else
-              x-small
-              color="rgba(234, 100, 100, 0.3)"
-              text-color="#ea6464"
-            >
+            <v-chip v-else x-small color="failed-chip" text-color="failed">
               {{ $t('transfer-history.failed-transfer') }}
             </v-chip>
           </span>
