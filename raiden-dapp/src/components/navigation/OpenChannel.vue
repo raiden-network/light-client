@@ -58,14 +58,14 @@ import { Zero } from 'ethers/constants';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { Route } from 'vue-router';
-import ErrorDialog from '@/components/ErrorDialog.vue';
+import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import { mapGetters } from 'vuex';
 import { getAmount } from '@/utils/query-params';
-import OpenChannelDialog from '@/components/OpenChannelDialog.vue';
+import OpenChannelDialog from '@/components/dialogs/OpenChannelDialog.vue';
 import { RaidenError } from 'raiden-ts';
 
 @Component({

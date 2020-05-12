@@ -12,7 +12,7 @@ import { createLogger } from 'redux-logger';
 import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
+import { first, filter, map, mergeMap, skip, pluck } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
@@ -31,7 +31,7 @@ import { RaidenConfig, PartialRaidenConfig } from './config';
 import { RaidenChannels, ChannelState } from './channels/state';
 import { RaidenTransfer, Direction } from './transfers/state';
 import { raidenReducer } from './reducer';
-import { raidenRootEpic } from './epics';
+import { raidenRootEpic, getLatest$ } from './epics';
 import {
   RaidenAction,
   RaidenEvents,
@@ -46,13 +46,14 @@ import {
   channelSettle,
   tokenMonitored,
 } from './channels/actions';
+import { channelKey } from './channels/utils';
 import { matrixPresence } from './transport/actions';
 import { transfer, transferSigned } from './transfers/actions';
 import { makeSecret, getSecrethash, makePaymentId, raidenSentTransfer } from './transfers/utils';
-import { pathFind } from './path/actions';
-import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './path/types';
-import { pfsListInfo } from './path/utils';
-import { Address, Secret, Storage, Hash, UInt, decode, assert } from './utils/types';
+import { pathFind } from './services/actions';
+import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
+import { pfsListInfo } from './services/utils';
+import { Address, Secret, Storage, Hash, UInt, decode, assert, isntNil } from './utils/types';
 import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
@@ -60,7 +61,7 @@ import {
   getContracts,
   getSigner,
   initTransfers$,
-  mapTokenToPartner,
+  mapRaidenChannels,
   chooseOnchainAccount,
   getContractWithSigner,
   waitConfirmation,
@@ -71,7 +72,7 @@ import { RaidenError, ErrorCodes } from './utils/error';
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
   private readonly deps: RaidenEpicDeps;
-  public config: RaidenConfig;
+  public config!: RaidenConfig;
 
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
@@ -164,7 +165,7 @@ export class Raiden {
     this.state$ = latest$.pipe(pluckDistinct('state'));
     // pipe action, skipping cached
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
-    this.channels$ = this.state$.pipe(map((state) => mapTokenToPartner(state)));
+    this.channels$ = this.state$.pipe(pluckDistinct('channels'), map(mapRaidenChannels));
     this.transfers$ = initTransfers$(this.state$);
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
 
@@ -233,7 +234,6 @@ export class Raiden {
       },
     });
 
-    this.config = { ...defaultConfig, ...state.config };
     this.deps.config$.subscribe((config) => (this.config = config));
 
     this.deps.config$
@@ -254,6 +254,13 @@ export class Raiden {
       state as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       applyMiddleware(loggerMiddleware, this.epicMiddleware),
     );
+
+    // populate deps.latest$, to ensure config & logger subscriptions are setup before start
+    getLatest$(
+      of(raidenConfigUpdate({})),
+      of(this.store.getState()),
+      this.deps,
+    ).subscribe((latest) => this.deps.latest$.next(latest));
   }
 
   /**
@@ -569,7 +576,7 @@ export class Raiden {
 
     await this.state$
       .pipe(
-        pluckDistinct('channels', tokenNetwork, partner, 'state'),
+        pluckDistinct('channels', channelKey({ tokenNetwork, partner }), 'state'),
         first((state) => state === ChannelState.open),
       )
       .toPromise();
@@ -988,9 +995,9 @@ export class Raiden {
    * @returns Promise to UDC remaining capacity
    */
   public async getUDCCapacity(): Promise<BigNumber> {
-    const balance = await this.deps.userDepositContract.functions.balances(this.deps.address);
+    const balance = await this.deps.latest$.pipe(pluck('udcBalance'), first(isntNil)).toPromise();
     const blockNumber = this.state.blockNumber;
-    const owedAmount = Object.values(this.state.path.iou)
+    const owedAmount = Object.values(this.state.iou)
       .reduce((acc, value) => {
         const nonExpiredIOUs = Object.values(value).filter((value) =>
           value.expiration_block.gte(blockNumber),
@@ -1058,7 +1065,9 @@ export class Raiden {
       },
     });
 
-    const currentUDCBalance = await userDepositContract.functions.balances(this.address);
+    const currentUDCBalance = await this.deps.latest$
+      .pipe(pluck('udcBalance'), first(isntNil))
+      .toPromise();
 
     const depositReceipt = await callAndWaitMined(
       userDepositContract,

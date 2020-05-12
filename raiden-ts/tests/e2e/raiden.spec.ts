@@ -3,7 +3,6 @@ import { timer } from 'rxjs';
 import { first, filter, takeUntil } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
-import { get } from 'lodash';
 
 import { TestProvider } from './provider';
 import { MockStorage, MockMatrixRequestFn } from './mocks';
@@ -40,6 +39,7 @@ import { matrixSetup } from 'raiden-ts/transport/actions';
 import { losslessStringify } from 'raiden-ts/utils/data';
 import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
 import { ErrorCodes } from 'raiden-ts/utils/error';
+import { channelKey } from 'raiden-ts/channels/utils';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -216,14 +216,11 @@ describe('Raiden', () => {
             {
               network,
               contractsInfo: {
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 TokenNetworkRegistry: { address: token as Address, block_number: 0 },
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 ServiceRegistry: { address: partner as Address, block_number: 1 },
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 UserDeposit: { address: partner as Address, block_number: 2 },
-                // eslint-disable-next-line @typescript-eslint/camelcase
                 SecretRegistry: { address: partner as Address, block_number: 3 },
+                MonitoringService: { address: partner as Address, block_number: 3 },
               },
               address: accounts[1] as Address,
             },
@@ -422,11 +419,8 @@ describe('Raiden', () => {
       await expect(
         raiden1.channels$
           .pipe(
-            filter(
-              (channels) => get(channels, [token, raiden.address, 'state']) === ChannelState.open,
-            ),
-            filter((channels) => !!get(channels, [token, raiden.address, 'partnerDeposit'])),
-            filter((channels) => get(channels, [token, raiden.address, 'partnerDeposit']).gt(0)),
+            filter((channels) => channels[token]?.[raiden.address]?.state === ChannelState.open),
+            filter((channels) => channels[token]?.[raiden.address]?.partnerDeposit?.gt?.(0)),
             first(),
           )
           .toPromise(), // resolves on first emitted value which passes all filters above
@@ -446,16 +440,11 @@ describe('Raiden', () => {
 
       // wait for raiden1 to pick up main tokenNetwork channel
       await expect(
-        raiden1.state$
-          .pipe(first((state) => !!get(state.channels, [tokenNetwork, raiden.address])))
+        raiden1.channels$
+          .pipe(first((channels) => !!channels[token]?.[raiden.address]))
           .toPromise(),
       ).resolves.toMatchObject({
-        tokens: {
-          [token]: tokenNetwork,
-        },
-        channels: {
-          [tokenNetwork]: { [raiden.address]: { state: ChannelState.open } },
-        },
+        [token]: { [raiden.address]: { state: ChannelState.open } },
       });
 
       let raidenState: RaidenState | undefined;
@@ -497,28 +486,21 @@ describe('Raiden', () => {
 
       // wait token & channel on it to be fetched, even if it happened while we were offline
       await expect(
-        raiden.state$
-          .pipe(
-            filter((state) => state.tokens[newToken] === newTokenNetwork),
-            first((state) => !!get(state.channels, [newTokenNetwork, partner])),
-          )
-          .toPromise(),
+        raiden.channels$.pipe(first((channels) => !!channels[newToken]?.[partner])).toPromise(),
       ).resolves.toMatchObject({
-        tokens: {
-          [token]: tokenNetwork,
-          [newToken]: newTokenNetwork,
+        // test edge case 1: channel closed at stop block is picked up correctly
+        [token]: {
+          [partner]: { state: ChannelState.closed, closeBlock },
         },
-        channels: {
-          // test edge case 1: channel closed at stop block is picked up correctly
-          [tokenNetwork]: {
-            [partner]: { state: ChannelState.closed, closeBlock },
-          },
-          // test edge case 2: channel opened at restart block is picked up correctly
-          [newTokenNetwork]: { [partner]: { state: ChannelState.open, openBlock: restartBlock } },
-        },
+        // test edge case 2: channel opened at restart block is picked up correctly
+        [newToken]: { [partner]: { state: ChannelState.open, openBlock: restartBlock } },
       });
       // test sync state$ subscribe
-      expect(get(raidenState!.channels, [newTokenNetwork, partner])).toBeDefined();
+      expect(
+        raidenState!.channels[
+          channelKey({ tokenNetwork: newTokenNetwork as Address, partner: partner as Address })
+        ],
+      ).toBeDefined();
     });
   });
 
@@ -601,9 +583,7 @@ describe('Raiden', () => {
         },
       });
       await expect(raiden.settleChannel(token, partner)).resolves.toMatch(/^0x/);
-      await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toEqual({
-        [token]: {},
-      });
+      await expect(raiden.channels$.pipe(first()).toPromise()).resolves.toEqual({});
     }, 90e3);
   });
 
@@ -795,7 +775,9 @@ describe('Raiden', () => {
           .pipe(
             first(
               (state) =>
-                state.channels[tokenNetwork]?.[raiden.address]?.state === ChannelState.open,
+                state.channels[
+                  channelKey({ tokenNetwork: tokenNetwork as Address, partner: raiden.address })
+                ]?.state === ChannelState.open,
             ),
           )
           .toPromise();

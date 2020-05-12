@@ -4,7 +4,7 @@ import * as t from 'io-ts';
 
 import { Address, UInt, Int, Secret, Hash, Signed } from '../utils/types';
 import { createAction, ActionType, createAsyncAction } from '../utils/actions';
-import { SignedBalanceProof } from '../channels/types';
+import { BalanceProof } from '../channels/types';
 import {
   LockedTransfer,
   Processed,
@@ -16,7 +16,7 @@ import {
   WithdrawRequest,
   WithdrawConfirmation,
 } from '../messages/types';
-import { Paths } from '../path/types';
+import { Paths } from '../services/types';
 
 const TransferId = t.type({
   secrethash: Hash,
@@ -59,7 +59,7 @@ export const transfer = createAsyncAction(
       initiator: Address,
     }),
   ]),
-  t.partial({ balanceProof: SignedBalanceProof }),
+  t.partial({ balanceProof: Signed(BalanceProof) }),
 );
 
 export namespace transfer {

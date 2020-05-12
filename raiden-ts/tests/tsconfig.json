@@ -2,5 +2,9 @@
   "extends": "../tsconfig.json",
   "include": [
     "./**/*.ts"
+  ],
+  "files": [
+    "../src/global.d.ts",
+    "../tests/global.d.ts"
   ]
 }

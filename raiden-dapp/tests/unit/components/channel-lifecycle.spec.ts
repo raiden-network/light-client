@@ -1,4 +1,4 @@
-import ChannelLifeCycle from '@/components/ChannelLifeCycle.vue';
+import ChannelLifeCycle from '@/components/channels/ChannelLifeCycle.vue';
 import { mount, Wrapper } from '@vue/test-utils';
 import { ChannelState } from 'raiden-ts';
 import Vuetify from 'vuetify';

@@ -1,12 +1,32 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- [#1480] Update profile's caps on config.caps change and react on peers updates
+
+[#1480]: https://github.com/raiden-network/light-client/pull/1480
+
+## [0.7.0] - 2020-05-08
 ### Added
 - [#1392] Raiden on-chain methods provide easy ways to transfer entire token & ETH balances
+- [#1368] Monitoring transfers (experimental)
 - [#1252] Mediate transfers (experimental)
 
 [#1392]: https://github.com/raiden-network/light-client/issues/1392
+[#1368]: https://github.com/raiden-network/light-client/issues/1368
 [#1252]: https://github.com/raiden-network/light-client/issues/1252
+
+### Fixed
+- [#1456] Retry without stored setup if auth fails
+- [#1434] Ensure past channel events are correctly fetched
+
+[#1456]: https://github.com/raiden-network/light-client/issues/1456
+[#1434]: https://github.com/raiden-network/light-client/issues/1434
+
+### Changed
+- [#1462] Refactor state schema and types to be simpler and safer
+
+[#1462]: https://github.com/raiden-network/light-client/issues/1462
 
 ## [0.6.0] - 2020-04-21
 ### Added
@@ -159,7 +179,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/raiden-network/light-client/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/raiden-network/light-client/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/raiden-network/light-client/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/raiden-network/light-client/compare/v0.5.0...v0.5.1

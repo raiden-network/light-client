@@ -13,7 +13,7 @@ import * as ChannelsActions from './channels/actions';
 import * as TransportActions from './transport/actions';
 import * as MessagesActions from './messages/actions';
 import * as TransfersActions from './transfers/actions';
-import * as PathFindActions from './path/actions';
+import * as ServicesActions from './services/actions';
 
 export const raidenShutdown = createAction(
   'raidenShutdown',
@@ -38,7 +38,7 @@ const RaidenActions = {
   ...TransportActions,
   ...MessagesActions,
   ...TransfersActions,
-  ...PathFindActions,
+  ...ServicesActions,
 };
 
 /* Tagged union of all action types from the action creators */

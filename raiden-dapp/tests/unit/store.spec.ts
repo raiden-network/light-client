@@ -3,7 +3,7 @@ import { TestData } from './data/mock-data';
 import { DeniedReason, emptyTokenModel, Token } from '@/model/types';
 import { Tokens } from '@/types';
 import { Zero } from 'ethers/constants';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, bigNumberify } from 'ethers/utils';
 
 describe('store', () => {
   const testTokens = (token: string, name?: string, symbol?: string) => {
@@ -144,20 +144,64 @@ describe('store', () => {
   });
 
   test('the allTokens getter returns the cached tokens as an array', () => {
-    const tokens = testTokens(
-      '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
-      'Test Token',
-      'TTT'
-    );
+    const tokens: Tokens = {
+      '0x123': {
+        address: '0x123',
+        balance: Zero,
+        decimals: 18,
+        name: 'Test Token 1',
+        symbol: 'TT1'
+      },
+      '0x456': {
+        address: '0x456',
+        balance: bigNumberify('3'),
+        decimals: 18,
+        name: 'Test Token 2',
+        symbol: 'TT2'
+      },
+      '0x789': {
+        address: '0x789',
+        balance: Zero,
+        decimals: 18,
+        name: 'Test Token 3',
+        symbol: 'TT3'
+      },
+      '0x012': {
+        address: '0x789',
+        balance: Zero,
+        decimals: 18,
+        name: 'Test Token 4'
+      }
+    };
 
     store.commit('updateTokens', tokens);
     expect(store.getters.allTokens).toEqual([
       {
-        address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+        address: '0x456',
+        balance: bigNumberify('3'),
+        decimals: 18,
+        name: 'Test Token 2',
+        symbol: 'TT2'
+      },
+      {
+        address: '0x123',
         balance: Zero,
         decimals: 18,
-        symbol: 'TTT',
-        name: 'Test Token'
+        name: 'Test Token 1',
+        symbol: 'TT1'
+      },
+      {
+        address: '0x789',
+        balance: Zero,
+        decimals: 18,
+        name: 'Test Token 3',
+        symbol: 'TT3'
+      },
+      {
+        address: '0x789',
+        balance: Zero,
+        decimals: 18,
+        name: 'Test Token 4'
       }
     ]);
   });

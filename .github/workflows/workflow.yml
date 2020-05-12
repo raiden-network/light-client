@@ -1,0 +1,23 @@
+name: Checks
+
+on:
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  changelog-check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [12.x]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: 'ChangeLog Reminder'
+        uses: ./.github/actions/changelog-reminder
+        with:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_ROOTS: '["raiden-ts", "raiden-dapp"]'
+          CHANGELOG_FILE: 'CHANGELOG.md'

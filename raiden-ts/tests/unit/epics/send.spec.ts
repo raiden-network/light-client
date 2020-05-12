@@ -95,6 +95,7 @@ describe('send transfers', () => {
     paymentId: ReturnType<typeof epicFixtures>['paymentId'],
     fee: ReturnType<typeof epicFixtures>['fee'],
     paths: ReturnType<typeof epicFixtures>['paths'],
+    key: ReturnType<typeof epicFixtures>['key'],
     action$: ReturnType<typeof epicFixtures>['action$'],
     state$: ReturnType<typeof epicFixtures>['state$'];
   const direction = Direction.SENT;
@@ -115,6 +116,7 @@ describe('send transfers', () => {
       paymentId,
       fee,
       paths,
+      key,
       action$,
       state$,
     } = epicFixtures(depsMock));
@@ -156,6 +158,7 @@ describe('send transfers', () => {
             id: channelId - 2,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -178,6 +181,7 @@ describe('send transfers', () => {
             id: channelId - 1,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -201,6 +205,7 @@ describe('send transfers', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -289,6 +294,7 @@ describe('send transfers', () => {
             id: channelId + 1,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -353,6 +359,7 @@ describe('send transfers', () => {
             id: channelId,
             settleTimeout,
             isFirstParticipant,
+            token,
             txHash,
             txBlock: openBlock,
             confirmed: true,
@@ -1589,7 +1596,11 @@ describe('send transfers', () => {
       await expect(promise).resolves.toEqual(
         expect.arrayContaining([
           transfer.success(
-            { balanceProof: expect.objectContaining({ sender: depsMock.address }) },
+            {
+              balanceProof: expect.objectContaining({
+                transferredAmount: unlock.transferred_amount,
+              }),
+            },
             { secrethash, direction },
           ),
           transferUnlockProcessed(
@@ -1721,7 +1732,11 @@ describe('send transfers', () => {
         await expect(promise).resolves.toEqual(
           expect.arrayContaining([
             transfer.success(
-              { balanceProof: expect.objectContaining({ sender: depsMock.address }) },
+              {
+                balanceProof: expect.objectContaining({
+                  transferredAmount: expect.any(BigNumber),
+                }),
+              },
               { secrethash, direction },
             ),
           ]),
@@ -1959,7 +1974,7 @@ describe('send transfers', () => {
               ...request,
               type: MessageType.WITHDRAW_CONFIRMATION,
               message_identifier: expect.any(BigNumber),
-              nonce: state.channels[tokenNetwork][partner].own.balanceProof!.nonce.add(1),
+              nonce: state.channels[key].own.balanceProof.nonce.add(1),
               signature: expect.any(String),
             },
           },

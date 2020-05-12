@@ -1,6 +1,7 @@
-import { padZeros } from 'ethers/utils';
+import { padZeros, hexlify } from 'ethers/utils';
+import { Signature } from './utils/types';
 
-export const SignatureZero = padZeros([], 65);
+export const SignatureZero = hexlify(padZeros([], 65)) as Signature;
 
 export enum ShutdownReason {
   STOP = 'raidenStopped',

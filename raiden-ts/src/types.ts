@@ -14,7 +14,7 @@ import { SecretRegistry } from './contracts/SecretRegistry';
 
 import { RaidenAction } from './actions';
 import { RaidenState } from './state';
-import { Address } from './utils/types';
+import { Address, UInt } from './utils/types';
 import { RaidenConfig } from './config';
 import { Presences } from './transport/types';
 
@@ -28,6 +28,7 @@ export interface ContractsInfo {
   ServiceRegistry: Info;
   UserDeposit: Info;
   SecretRegistry: Info;
+  MonitoringService: Info;
 }
 
 export interface Latest {
@@ -37,6 +38,7 @@ export interface Latest {
   presences: Presences;
   pfsList: readonly Address[];
   rtc: { [address: string]: RTCDataChannel };
+  udcBalance: UInt<32>;
 }
 
 export interface RaidenEpicDeps {

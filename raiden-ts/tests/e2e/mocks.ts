@@ -139,7 +139,7 @@ export class MockMatrixRequestFn {
       return () => undefined;
     }
 
-    let timeoutId: NodeJS.Timeout | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
     const cancel = () => {
       if (timeoutId) {
         clearTimeout(timeoutId);

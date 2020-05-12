@@ -66,7 +66,7 @@ import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import ListHeader from '@/components/ListHeader.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import Spinner from '@/components/Spinner.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 
 @Component({
@@ -100,6 +100,7 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
     background-color: transparent !important;
     padding-bottom: 0;
     padding-top: 0;
+    overflow-y: scroll;
 
     ::v-deep {
       .v-list-item {

@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import PathfindingServices from '@/components/PathfindingServices.vue';
+import PathfindingServices from '@/components/transfer/PathfindingServices.vue';
 import store from '@/store/index';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
