@@ -3,14 +3,15 @@ import {
   EventTypes,
   Raiden,
   RaidenPaths,
-  RaidenPFS
+  RaidenPFS,
+  UInt
 } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
-import { BigNumber, BigNumberish, parseEther } from 'ethers/utils';
+import { BigNumber, BigNumberish, parseEther, parseUnits } from 'ethers/utils';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import { ConfigProvider } from './config-provider';
@@ -39,7 +40,8 @@ export default class RaidenService {
         {
           pfsSafetyMargin: 1.1,
           pfs: process.env.VUE_APP_PFS,
-          matrixServer: process.env.VUE_APP_TRANSPORT
+          matrixServer: process.env.VUE_APP_TRANSPORT,
+          monitoringReward: parseUnits('5', 18) as UInt<32>
         },
         subkey
       );
@@ -86,6 +88,11 @@ export default class RaidenService {
   get userDepositTokenAddress(): string {
     if (!this._userDepositTokenAddress) throw new Error('address empty');
     return this._userDepositTokenAddress;
+  }
+
+  /* istanbul ignore next */
+  get monitoringReward(): BigNumber | null {
+    return this.raiden.config.monitoringReward;
   }
 
   async ensResolve(name: string): Promise<string> {

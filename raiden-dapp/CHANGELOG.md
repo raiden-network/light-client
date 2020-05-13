@@ -4,16 +4,20 @@
 
 ### Added
 
+- [#1212] Allows user to view history of all transactions that has been made.
+- [#1380] Allow the user to withdraw tokens from the Raiden Account.
+- [#1371] Mint and deposit utility token to pay Monitoring Service.
 - [#1302] Raiden Account as default account.
 
+[#1212]: https://github.com/raiden-network/light-client/issues/1212
+[#1380]: https://github.com/raiden-network/light-client/issues/1380
+[#1371]: https://github.com/raiden-network/light-client/issues/1371
 [#1302]: https://github.com/raiden-network/light-client/issues/1302
 
 ## [0.7.0] - 2020-05-08
 
 ### Added
 
-- [#1212] Allows user to view history of all transactions that has been made.
-- [#1380] Allow the user to withdraw tokens from the Raiden Account.
 - [#1365] Allow user to transfer ETH between Main and Raiden account.
 - [#1424] Sort tokens in token list by balance and symbol.
 
@@ -31,7 +35,6 @@
 
 - [#1458] General screen has been renamed to account.
 
-[#1380]: https://github.com/raiden-network/light-client/issues/1380
 [#1458]: https://github.com/raiden-network/light-client/issues/1458
 [#1402]: https://github.com/raiden-network/light-client/issues/1402
 [#1413]: https://github.com/raiden-network/light-client/issues/1413
@@ -39,7 +42,6 @@
 [#1381]: https://github.com/raiden-network/light-client/issues/1381
 [#1300]: https://github.com/raiden-network/light-client/issues/1300
 [#1382]: https://github.com/raiden-network/light-client/issues/1382
-[#1212]: https://github.com/raiden-network/light-client/issues/1212
 [#1365]: https://github.com/raiden-network/light-client/issues/1365
 [#1424]: https://github.com/raiden-network/light-client/issues/1424
 [#1427]: https://github.com/raiden-network/light-client/issues/1427
