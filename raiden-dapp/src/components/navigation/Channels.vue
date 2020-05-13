@@ -164,8 +164,6 @@ export default class Channels extends Mixins(NavigationMixin) {
 .channels {
   width: 100%;
   height: 100%;
-  overflow-y: scroll;
-  @extend .themed-scrollbar;
 
   &:first-child {
     padding-top: 50px;
@@ -182,9 +180,10 @@ export default class Channels extends Mixins(NavigationMixin) {
   }
 
   &__wrapper {
-    height: 100%;
+    height: calc(100% - 60px);
     width: 100%;
-    overflow-y: visible;
+    overflow-y: auto;
+    @extend .themed-scrollbar;
   }
 
   &__header {
