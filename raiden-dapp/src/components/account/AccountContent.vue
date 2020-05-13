@@ -130,6 +130,20 @@ export default class AccountContent extends Mixins(NavigationMixin) {
             this.navigateToRaidenAccountTransfer();
           }
         };
+
+        const withdrawal = {
+          icon: 'withdrawal.svg',
+          title: this.$t(
+            'account-content.menu-items.withdrawal.title'
+          ) as string,
+          subtitle: this.$t(
+            'account-content.menu-items.withdrawal.subtitle'
+          ) as string,
+          route: () => {
+            this.navigateToWithdrawal();
+          }
+        };
+        this.menuItems.unshift(withdrawal);
         this.menuItems.unshift(raidenAccount);
       }
     }

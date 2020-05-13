@@ -364,10 +364,14 @@ export const transferAutoRegisterEpic = (
     mergeMap((secrethash) =>
       action$.pipe(
         filter(newBlock.is),
-        withLatestFrom(latest$.pipe(pluck('state', Direction.RECEIVED, secrethash)), config$),
+        withLatestFrom(
+          latest$.pipe(pluck('state', Direction.RECEIVED, secrethash)),
+          config$,
+          latest$,
+        ),
         filter(
-          ([action, received, { caps, revealTimeout }]) =>
-            !caps?.[Capabilities.NO_RECEIVE] && // ignore if receiving is disabled
+          ([action, received, { revealTimeout }, { caps }]) =>
+            !caps[Capabilities.NO_RECEIVE] && // ignore if receiving is disabled
             !!received.secret && // register only if we know the secret
             received.transfer[1].lock.expiration
               .sub(revealTimeout)

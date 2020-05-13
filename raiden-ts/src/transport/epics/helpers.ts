@@ -21,41 +21,6 @@ import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Message } from '../../messages/types';
 import { decodeJsonMessage, getMessageSigner } from '../../messages/utils';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CapsMapping = { readonly [k: string]: any };
-
-/**
- * Stringify a caps mapping
- *
- * @param caps - Capabilities object/mapping
- * @returns stringified version of caps
- */
-export function stringifyCaps(caps: CapsMapping): string {
-  return Object.entries(caps)
-    .filter(([, v]) => typeof v !== 'boolean' || v)
-    .map(([k, v]) => (typeof v === 'boolean' ? k : `${k}="${v}"`))
-    .join(',');
-}
-
-/**
- * Parse a caps string in the format 'k1,k2=v2,k3="v3"' to { k1: true, k2: v2, k3: v3 } object
- *
- * @param caps - caps string
- * @returns Caps mapping object
- */
-export function parseCaps(caps?: string | null): CapsMapping | undefined {
-  if (!caps) return;
-  const result: { [k: string]: string | boolean } = {};
-  try {
-    // this regex splits by comma, but respecting strings inside double-quotes
-    for (const cap of caps.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/g)) {
-      const match = cap.match(/^\s*([^=]+)(?: ?= ?"?(.*?)"?\s*)?$/);
-      if (match) result[match[1]] = match[2] ?? true;
-    }
-    return result;
-  } catch (err) {}
-}
-
 /**
  * Return the array of configured global rooms
  *

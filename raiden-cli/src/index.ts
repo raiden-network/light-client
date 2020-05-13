@@ -73,11 +73,20 @@ async function raidenEnsureChannelIsOpen(
   return channel;
 }
 
-async function raidenTransfer(token: string, target: string, value: BigNumberish) {
+async function raidenTransfer(
+  token: string,
+  target: string,
+  amount: BigNumberish,
+  opts: { identifier?: BigNumberish } = {},
+) {
   let revealAt: number;
   let unlockAt: number;
   await raiden.getAvailability(target);
-  const transferId = await raiden.transfer(token, target, value);
+  const { identifier: paymentId, ...rest } = opts;
+  const transferId = await raiden.transfer(token, target, amount, {
+    paymentId,
+    ...rest,
+  });
 
   const transfer = await new Promise<RaidenTransfer>((resolve, reject) => {
     const sub = raiden.transfers$.subscribe((t) => {
@@ -168,7 +177,7 @@ async function setupApi(port: number) {
   });
 
   app.post(`${api}/payments/:token/:target`, (req, res) => {
-    raidenTransfer(req.params.token, req.params.target, req.body.amount).then(
+    raidenTransfer(req.params.token, req.params.target, req.body['amount'], req.body).then(
       (tr) => res.json(tr),
       (err) => res.status(400).json(err),
     );

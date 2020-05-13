@@ -121,6 +121,14 @@ const router = new Router({
             title: 'Settings'
           },
           component: () => import('../views/account/Settings.vue')
+        },
+        {
+          path: 'withdrawal',
+          name: RouteNames.ACCOUNT_WITHDRAWAL,
+          meta: {
+            title: 'Withdrawal'
+          },
+          component: () => import('../views/account/WithdrawalRoute.vue')
         }
       ]
     }

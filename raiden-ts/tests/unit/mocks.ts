@@ -255,16 +255,18 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
         httpTimeout: 300,
         confirmationBlocks: 2,
       },
-    );
+    ),
+    config = { ...defaultConfig, ...state.config };
 
   const latest$ = new BehaviorSubject<Latest>({
       action: raidenConfigUpdate({}),
       state,
-      config: { ...defaultConfig, ...state.config },
+      config,
       presences: {},
       pfsList: [],
       rtc: {},
       udcBalance: Zero as UInt<32>,
+      caps: config.caps ?? {},
     }),
     config$ = latest$.pipe(pluckDistinct('config'));
 

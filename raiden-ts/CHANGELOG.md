@@ -1,7 +1,17 @@
 # Changelog
 
-## [0.7.0] - 2020-05-08
+## [Unreleased]
+### Added
+- [#1369] Monitoring based on channel's balance
 
+[#1369]: https://github.com/raiden-network/light-client/issues/1369
+
+### Changed
+- [#1480] Update profile's caps on config.caps change and react on peers updates
+
+[#1480]: https://github.com/raiden-network/light-client/pull/1480
+
+## [0.7.0] - 2020-05-08
 ### Added
 - [#1392] Raiden on-chain methods provide easy ways to transfer entire token & ETH balances
 - [#1368] Monitoring transfers (experimental)
@@ -174,7 +184,7 @@
 - Add protocol message implementation.
 
 
-[unreleased]: https://github.com/raiden-network/light-client/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.7.0...HEAD
 [0.7.0]: https://github.com/raiden-network/light-client/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/raiden-network/light-client/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/raiden-network/light-client/compare/v0.5.1...v0.5.2

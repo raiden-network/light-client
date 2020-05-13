@@ -1,17 +1,18 @@
 // Please also check plugins/vuetify.ts for theme colors
-$primary-color: #28A5C8;
+$primary-color: #28a5c8;
 $primary-disabled-color: rgba($primary-color, 0.3);
-$secondary-color: #0A6E87;
+$secondary-color: #0a6e87;
 $disabled-text-color: rgba(255, 255, 255, 0.3);
 
 $secondary-text-color: #646464;
 $text-color: #969696;
 
-$error-color: #EA6464;
+$error-color: #ea6464;
+$transfer-form-color: rgba(88, 88, 88, 0.25);
 
-$error-tooltip-background: #1E1E21;
-$input-background: $error-tooltip-background;
-$card-background: #0F0E10;
+$error-tooltip-background: #1e1e21;
+$input-background: rgba(255, 255, 255, 0.1);
+$card-background: #0f0e10;
 $secondary-button-color: #323232;
 $secondary-button-color-disabled: rgba($secondary-button-color, 0.3);
 

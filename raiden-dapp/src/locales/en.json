@@ -47,8 +47,25 @@
       "raiden-account": {
         "title": "Raiden Account",
         "subtitle": "Transfer ETH between your main and Raiden account"
+      },
+      "withdrawal": {
+        "title": "Withdrawal",
+        "subtitle": "Withdraw tokens to your main account"
       }
     }
+  },
+  "withdrawal": {
+    "title": "Transfer token amount back to your main account.",
+    "dialog": {
+      "title": "Withdraw {0}",
+      "body": "You are about to withdraw {0} from your Raiden account.",
+      "progress": "Withdrawing...",
+      "button": "Confirm",
+      "no-eth": "Your Raiden account does not have sufficient ETH to withdraw."
+    },
+    "blockie-alt": "Token address blockie",
+    "no-tokens": "The Raiden account has no tokens"
+
   },
   "backup-state": {
     "description": "The state holds all account information except the private key. You can backup your state to make sure the dApp is kept in sync when switching between browsers.",
@@ -72,13 +89,13 @@
   },
   "address-input": {
     "input": {
-      "placeholder": "Enter an address or ENS name..."
+      "placeholder": "Address / ENS name"
     },
     "blockie-alt": "Selected token address blockie",
     "error": {
-      "invalid-address": "Please enter a valid address or ENS name",
+      "invalid-address": "Enter a valid address or ENS name",
       "no-checksum": "Please enter an address in checksum format. You can convert your address on https://ethsum.netlify.com",
-      "empty": "Please enter an address or ENS name",
+      "empty": "Enter an address or ENS name",
       "ens-resolve-failed": "Please enter a resolvable ENS name",
       "invalid-excluded-address": "Please enter a different address or ENS name. You can't use your own address or the address of the token network.",
       "channel-not-open": "Please enter a hub address you have an open channel with.",
@@ -93,7 +110,7 @@
       "empty": "Please enter an amount",
       "too-many-decimals": "Please use only up to {decimals} decimals for this token",
       "not-enough-funds": "Your maximum usable amount is {funds} {symbol}",
-      "zero": "Please enter an amount larger than zero",
+      "zero": "Enter an amount larger than zero",
       "invalid": "Please enter a valid amount"
     }
   },
@@ -246,12 +263,13 @@
     }
   },
   "transfer": {
+    "transfer-title": "Make Transfer",
     "deposit-button": "Deposit",
     "channel-button": "Channels",
     "capacity-label": "Capacity",
     "recipient-label": "Recipient",
     "amount-label": "Amount",
-    "amount-placeholder": "Specify amount...",
+    "amount-placeholder": "Amount",
     "error": {
       "button": "Dismiss",
       "title": "Token transfer unsuccessful",
@@ -324,6 +342,16 @@
         }
       }
     }
+  },
+  "transfer-history": {
+    "title": "Transfer History",
+    "sent-title": "Sent to",
+    "sent-symbol": "-",
+    "received-title": "Received from",
+    "received-symbol": "+",
+    "pending-transfer": "PENDING",
+    "successful-transfer": "CONFIRMED",
+    "failed-transfer": "FAILED"
   },
   "select-token": {
     "header": "Available",
