@@ -90,6 +90,7 @@ export default class RaidenService {
     return this._userDepositTokenAddress;
   }
 
+  /* istanbul ignore next */
   get monitoringReward(): BigNumber | null {
     return this.raiden.config.monitoringReward;
   }

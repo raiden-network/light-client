@@ -47,7 +47,7 @@ describe('SelectHub.vue', () => {
         $raiden: {
           fetchTokenData: jest.fn().mockResolvedValue(null),
           getAvailability: jest.fn().mockResolvedValue(true),
-          monitoringReward: jest.fn().mockResolvedValue(bigNumberify('1')),
+          monitoringReward: bigNumberify('1'),
           getUDCCapacity: jest.fn().mockResolvedValue(bigNumberify('2')),
           ...raidenMocks
         },
@@ -99,11 +99,12 @@ describe('SelectHub.vue', () => {
       token: tokenAddress
     });
     wrapper = createWrapper(route, {
-      monitoringReward: jest.fn().mockReturnValue(bigNumberify('2')),
+      monitoringReward: bigNumberify('2'),
       getUDCCapacity: jest.fn().mockReturnValue(bigNumberify('1'))
     });
 
     await wrapper.vm.$nextTick();
+    await flushPromises();
 
     expect(wrapper.find('.udc-balance__description').text()).toContain(
       'select-hub.service-token-balance-too-low'
