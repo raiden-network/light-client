@@ -14,6 +14,7 @@ import Vue from 'vue';
 import store from '@/store';
 import { $identicon } from '../../utils/mocks';
 import flushPromises from 'flush-promises';
+import { bigNumberify } from 'ethers/utils';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -29,7 +30,11 @@ describe('SelectHub.vue', () => {
       address: address
     });
 
-  function createWrapper(route: Route, token: any, shallow: boolean = false) {
+  function createWrapper(
+    route: Route,
+    raidenMocks: any = {},
+    shallow: boolean = false
+  ) {
     vuetify = new Vuetify();
     const options = {
       vuetify,
@@ -41,7 +46,10 @@ describe('SelectHub.vue', () => {
         $identicon: $identicon(),
         $raiden: {
           fetchTokenData: jest.fn().mockResolvedValue(null),
-          getAvailability: jest.fn().mockResolvedValue(true)
+          getAvailability: jest.fn().mockResolvedValue(true),
+          monitoringReward: jest.fn().mockResolvedValue(bigNumberify('1')),
+          getUDCCapacity: jest.fn().mockResolvedValue(bigNumberify('2')),
+          ...raidenMocks
         },
         $t: (msg: string) => msg
       }
@@ -72,7 +80,7 @@ describe('SelectHub.vue', () => {
     });
     const token = testToken(tokenAddress);
     store.commit('updateTokens', { [tokenAddress]: token });
-    wrapper = createWrapper(route, token);
+    wrapper = createWrapper(route);
     mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
@@ -85,11 +93,31 @@ describe('SelectHub.vue', () => {
     );
   });
 
+  test('displays error if UDC capacity is not sufficient', async () => {
+    const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
+    const route = TestData.mockRoute({
+      token: tokenAddress
+    });
+    wrapper = createWrapper(route, {
+      monitoringReward: jest.fn().mockReturnValue(bigNumberify('2')),
+      getUDCCapacity: jest.fn().mockReturnValue(bigNumberify('1'))
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('.udc-balance__description').text()).toContain(
+      'select-hub.service-token-balance-too-low'
+    );
+    expect(
+      wrapper.find('.action-button__button').element.getAttribute('disabled')
+    ).toBe('disabled');
+  });
+
   test('navigate to "Home" when the token address is not in checksum format', async () => {
     const route = TestData.mockRoute({
       token: '0xtoken'
     });
-    wrapper = createWrapper(route, undefined, true);
+    wrapper = createWrapper(route, {}, true);
     await wrapper.vm.$nextTick();
     await flushPromises();
     expect(router.push).toHaveBeenCalledTimes(1);
@@ -105,7 +133,7 @@ describe('SelectHub.vue', () => {
       token: '0xc778417E063141139Fce010982780140Aa0cD5Ab'
     });
 
-    wrapper = createWrapper(route, null, true);
+    wrapper = createWrapper(route, {}, true);
 
     await wrapper.vm.$nextTick();
     await flushPromises();
@@ -126,7 +154,7 @@ describe('SelectHub.vue', () => {
     const token = testToken(tokenAddress);
     store.commit('updateTokens', { [tokenAddress]: token });
     store.commit('network', { name: 'goerli' });
-    wrapper = createWrapper(route, token);
+    wrapper = createWrapper(route);
 
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
