@@ -6,36 +6,23 @@
     @close="close"
   >
     <v-card-title>
-      {{ $t('home.connect-dialog.connect-title') }}
+      {{ $t('home.connect-dialog.title') }}
     </v-card-title>
     <div v-if="injectedProvider">
       <div class="connect__button">
         <action-button
-          :text="$t('home.connect-dialog.web3-provider')"
-          :enabled="!connecting && !connectingSubkey"
+          :text="$t('home.connect-dialog.raiden-account')"
+          :enabled="!connecting"
           :loading="connecting"
-          @click="connect(stateBackup)"
+          @click="connect()"
         />
       </div>
-      <div class="text-center font-weight-light">
-        {{ $t('home.connect-dialog.divider') }}
-      </div>
-      <i18n
-        v-if="!connectingSubkey"
-        path="home.connect-dialog.raiden-account.description"
-        tag="div"
-        class="connect__raiden-account text-center font-weight-light"
-      >
-        <a v-if="!connecting" @click="connect(stateBackup, true)">
-          {{ $t('home.connect-dialog.raiden-account.link-name') }}
-        </a>
-        <span v-else>
-          {{ $t('home.connect-dialog.raiden-account.link-name') }}
-        </span>
-      </i18n>
-      <div v-else class="connect__raiden-account-spinner text-center">
-        <v-progress-circular :size="30" :width="1" indeterminate />
-      </div>
+      <p class="text-center connect__description">
+        {{ $t('home.connect-dialog.description-raiden-account') }}
+      </p>
+      <p class="text-center connect__description">
+        {{ $t('home.connect-dialog.description-web3-account') }}
+      </p>
     </div>
     <no-access-message v-if="accessDenied" :reason="accessDenied" />
     <v-card-text v-if="!injectedProvider">
@@ -61,26 +48,26 @@ import NoAccessMessage from '@/components/NoAccessMessage.vue';
     ActionButton,
     NoAccessMessage
   },
-  computed: mapState(['stateBackup', 'accessDenied'])
+  computed: mapState(['accessDenied'])
 })
 export default class ConnectDialog extends Vue {
   hideClose: boolean = false;
-  stateBackup!: string;
   accessDenied!: DeniedReason;
 
   @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
   @Prop({ default: false, required: true, type: Boolean })
   connecting!: boolean;
-  @Prop({ default: false, required: true, type: Boolean })
-  connectingSubkey!: boolean;
 
   @Emit()
   close() {}
 
   @Emit()
-  connect(uploadedState: string, subkey?: true) {
-    return { uploadedState, subkey };
+  connect() {
+    this.$store.commit('updateSettings', {
+      ...this.$store.state.settings,
+      isFirstTimeConnect: false
+    });
   }
 
   get injectedProvider(): boolean {
@@ -95,9 +82,12 @@ export default class ConnectDialog extends Vue {
     margin: 45px 0 28px 0;
   }
 
-  &__raiden-account,
-  &__raiden-account-spinner {
+  &__raiden-account {
     margin: 28px 0 45px 0;
+  }
+
+  &__description {
+    font-size: 14px;
   }
 }
 </style>

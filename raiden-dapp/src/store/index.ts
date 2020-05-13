@@ -1,6 +1,7 @@
 import Vue from 'vue';
+import VuexPersistence from 'vuex-persist';
 import Vuex, { StoreOptions } from 'vuex';
-import { RootState, Tokens, Transfers } from '@/types';
+import { RootState, Tokens, Transfers, Settings } from '@/types';
 import {
   ChannelState,
   RaidenChannel,
@@ -40,7 +41,11 @@ const _defaultState: RootState = {
   transfers: {},
   presences: {},
   network: PlaceHolderNetwork,
-  stateBackup: ''
+  stateBackup: '',
+  settings: {
+    isFirstTimeConnect: true,
+    useRaidenAccount: true
+  }
 };
 
 export function defaultState(): RootState {
@@ -55,6 +60,13 @@ const hasNonZeroBalance = (a: Token, b: Token) =>
   a.balance &&
   b.balance &&
   (!(a.balance as BigNumber).isZero() || !(b.balance as BigNumber).isZero());
+
+const settingsLocalStorage = new VuexPersistence<RootState>({
+  storage: window.localStorage,
+  reducer: state => ({ settings: state.settings }),
+  filter: mutation => mutation.type == 'updateSettings',
+  key: 'raiden_dapp_settings'
+});
 
 const store: StoreOptions<RootState> = {
   state: defaultState(),
@@ -95,13 +107,19 @@ const store: StoreOptions<RootState> = {
       state.network = network;
     },
     reset(state: RootState) {
-      Object.assign(state, defaultState());
+      // Preserve settings when resetting state
+      const { settings } = state;
+
+      Object.assign(state, { ...defaultState(), settings });
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {
       state.transfers = { ...state.transfers, [transfer.key]: transfer };
     },
     backupState(state: RootState, uploadedState: string) {
       state.stateBackup = uploadedState;
+    },
+    updateSettings(state: RootState, settings: Settings) {
+      state.settings = settings;
     }
   },
   actions: {},
@@ -197,7 +215,8 @@ const store: StoreOptions<RootState> = {
         ? state.raidenAccountBalance
         : state.accountBalance;
     }
-  }
+  },
+  plugins: [settingsLocalStorage.plugin]
 };
 
 export default new Vuex.Store(store);

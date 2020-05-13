@@ -38,17 +38,22 @@
               {{ $t('home.getting-started.link-name') }}
             </a>
           </i18n>
+          <no-access-message
+            v-if="accessDenied"
+            :reason="accessDenied"
+            class="home__no-access"
+          />
         </v-col>
       </v-row>
       <action-button
-        enabled
         :text="$t('home.connect-button')"
+        :loading="connecting"
+        :enabled="!connecting"
         sticky
-        @click="connectDialog = true"
+        @click="connect"
       />
       <connect-dialog
         :connecting="connecting"
-        :connecting-subkey="connectingSubkey"
         :visible="connectDialog"
         @connect="connect"
         @close="connectDialog = false"
@@ -60,30 +65,33 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
-import { ConnectOptions } from '@/types';
 import { DeniedReason } from '@/model/types';
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
 import NoTokens from '@/components/NoTokens.vue';
+import NoAccessMessage from '@/components/NoAccessMessage.vue';
+import { Settings } from '@/types';
 
 @Component({
   computed: {
-    ...mapState(['loading', 'accessDenied']),
+    ...mapState(['loading', 'accessDenied', 'stateBackup', 'settings']),
     ...mapGetters(['isConnected'])
   },
   components: {
     ActionButton,
     ConnectDialog,
-    NoTokens
+    NoTokens,
+    NoAccessMessage
   }
 })
 export default class Home extends Vue {
   isConnected!: boolean;
   connectDialog: boolean = false;
   connecting: boolean = false;
-  connectingSubkey: boolean = false;
   loading!: boolean;
   accessDenied!: DeniedReason;
+  stateBackup!: string;
+  settings!: Settings;
 
   get inaccessible() {
     return (
@@ -93,19 +101,24 @@ export default class Home extends Vue {
     );
   }
 
-  async connect(connectOptions: ConnectOptions) {
-    const stateBackup = connectOptions.uploadedState;
-    let subkey = connectOptions.subkey;
-
-    if (subkey) {
-      this.connectingSubkey = true;
-    } else {
-      this.connecting = true;
+  async connect() {
+    // On first time connect, show the connect dialog
+    let { useRaidenAccount, isFirstTimeConnect } = this.settings;
+    if (isFirstTimeConnect && useRaidenAccount) {
+      this.connectDialog = true;
+      return;
     }
 
+    this.connectDialog = false;
+    this.connecting = true;
     this.$store.commit('reset');
-    await this.$raiden.connect(stateBackup, subkey);
-    this.connectingSubkey = false;
+    // Have to reset this explicitly, for some reason
+    this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
+
+    await this.$raiden.connect(
+      this.stateBackup,
+      useRaidenAccount ? true : undefined
+    );
     this.connecting = false;
     if (!this.accessDenied) {
       this.connectDialog = false;
@@ -130,7 +143,6 @@ export default class Home extends Vue {
   &__logo-container {
     display: flex;
     justify-content: center;
-    margin-top: 80px;
 
     &__logo {
       filter: invert(100%);
@@ -144,7 +156,8 @@ export default class Home extends Vue {
   }
 
   &__disclaimer,
-  &__getting-started {
+  &__getting-started,
+  &__no-access {
     margin: 30px 130px 0 130px;
     @include respond-to(handhelds) {
       margin: 30px 20px 0 20px;

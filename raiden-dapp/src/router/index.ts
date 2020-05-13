@@ -115,6 +115,14 @@ const router = new Router({
           component: () => import('../views/account/RaidenAccount.vue')
         },
         {
+          path: 'settings',
+          name: RouteNames.ACCOUNT_SETTINGS,
+          meta: {
+            title: 'Settings'
+          },
+          component: () => import('../views/account/Settings.vue')
+        },
+        {
           path: 'withdrawal',
           name: RouteNames.ACCOUNT_WITHDRAWAL,
           meta: {

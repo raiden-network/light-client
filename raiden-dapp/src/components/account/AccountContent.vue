@@ -147,6 +147,23 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         this.menuItems.unshift(raidenAccount);
       }
     }
+
+    // if not connected we display the settings menu item
+    // to toggle between sub and main key
+    // this check should probably be removed once we get
+    // more settings
+    if (!this.isConnected) {
+      this.menuItems.unshift({
+        icon: 'gear.svg',
+        title: this.$t('account-content.menu-items.settings.title') as string,
+        subtitle: this.$t(
+          'account-content.menu-items.settings.subtitle'
+        ) as string,
+        route: () => {
+          this.navigateToSettings();
+        }
+      });
+    }
   }
 
   /* istanbul ignore next */

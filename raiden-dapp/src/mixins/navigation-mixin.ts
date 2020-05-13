@@ -87,6 +87,12 @@ export default class NavigationMixin extends Vue {
     });
   }
 
+  navigateToSettings() {
+    this.$router.push({
+      name: RouteNames.ACCOUNT_SETTINGS
+    });
+  }
+
   navigateToWithdrawal() {
     this.$router.push({
       name: RouteNames.ACCOUNT_WITHDRAWAL

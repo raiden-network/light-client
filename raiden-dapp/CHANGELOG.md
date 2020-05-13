@@ -7,6 +7,7 @@
 - [#1212] Allows user to view history of all transactions that has been made.
 - [#1380] Allow the user to withdraw tokens from the Raiden Account.
 - [#1371] Mint and deposit utility token to pay Monitoring Service.
+- [#1302] Raiden Account as default account.
 
 ### Fixed
 
@@ -16,6 +17,7 @@
 [#1212]: https://github.com/raiden-network/light-client/issues/1212
 [#1380]: https://github.com/raiden-network/light-client/issues/1380
 [#1371]: https://github.com/raiden-network/light-client/issues/1371
+[#1302]: https://github.com/raiden-network/light-client/issues/1302
 
 ## [0.7.0] - 2020-05-08
 
