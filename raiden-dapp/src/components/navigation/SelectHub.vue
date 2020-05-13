@@ -156,13 +156,13 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   }
 
   private async updateUDCCapacity() {
-    const address = this.$raiden.userDepositTokenAddress;
-    await this.$raiden.fetchTokenData([address]);
+    const { userDepositTokenAddress, monitoringReward } = this.$raiden;
+    await this.$raiden.fetchTokenData([userDepositTokenAddress]);
     this.udcCapacity = await this.$raiden.getUDCCapacity();
-    if (this.udcCapacity.eq(Zero)) {
-      this.hasEnoughServiceTokens = false;
-    } else {
+    if (monitoringReward && this.udcCapacity.gte(monitoringReward)) {
       this.hasEnoughServiceTokens = true;
+    } else {
+      this.hasEnoughServiceTokens = false;
     }
   }
 
