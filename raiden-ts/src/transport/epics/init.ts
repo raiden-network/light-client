@@ -32,6 +32,7 @@ import {
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import sortBy from 'lodash/sortBy';
+import isEmpty from 'lodash/isEmpty';
 
 import { createClient, MatrixClient, MatrixEvent, Filter } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
@@ -46,7 +47,9 @@ import { getServerName } from '../../utils/matrix';
 import { pluckDistinct } from '../../utils/rx';
 import { matrixSetup } from '../actions';
 import { RaidenMatrixSetup } from '../state';
-import { CapsMapping, stringifyCaps, globalRoomNames } from './helpers';
+import { Caps } from '../types';
+import { stringifyCaps } from '../utils';
+import { globalRoomNames } from './helpers';
 
 const DEVICE_ID = 'RAIDEN';
 
@@ -226,7 +229,7 @@ function setupMatrixClient$(
   server: string,
   setup: RaidenMatrixSetup | undefined,
   { address, signer }: Pick<RaidenEpicDeps, 'address' | 'signer'>,
-  caps?: CapsMapping,
+  caps: Caps,
 ) {
   const serverName = getServerName(server);
   if (!serverName) throw new RaidenError(ErrorCodes.TRNS_NO_SERVERNAME, { server });
@@ -281,11 +284,10 @@ function setupMatrixClient$(
   }).pipe(
     // the APIs below are authenticated, and therefore also act as validator
     mergeMap(({ matrix, server, setup }) =>
-      // ensure displayName is set even on restarts
+      // set these properties before starting sync
       merge(
         from(matrix.setDisplayName(setup.displayName)),
-        from(matrix.setPresence({ presence: 'online', status_msg: '' })),
-        caps ? from(matrix.setAvatarUrl(stringifyCaps(caps))) : EMPTY,
+        from(matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : '')),
       ).pipe(
         mapTo({ matrix, server, setup }), // return triplet again
       ),
@@ -308,9 +310,9 @@ export const initMatrixEpic = (
   {}: Observable<RaidenState>,
   { address, signer, matrix$, latest$, config$ }: RaidenEpicDeps,
 ): Observable<matrixSetup> =>
-  combineLatest([latest$.pipe(pluck('state')), config$]).pipe(
+  combineLatest([latest$, config$]).pipe(
     first(), // at startup
-    mergeMap(([state, { matrixServer, matrixServerLookup, httpTimeout, caps }]) => {
+    mergeMap(([{ state, caps }, { matrixServer, matrixServerLookup, httpTimeout }]) => {
       const server = state.transport.server,
         setup = state.transport.setup;
 
@@ -390,10 +392,10 @@ export const matrixShutdownEpic = (
     mergeMap((matrix) =>
       action$.pipe(
         finalize(() => {
+          matrix.stopClient();
           matrix.setPresence({ presence: 'offline', status_msg: '' }).catch(() => {
             /* stopping, ignore exceptions */
           });
-          matrix.stopClient();
         }),
       ),
     ),

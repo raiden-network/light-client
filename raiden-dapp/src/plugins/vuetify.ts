@@ -14,7 +14,10 @@ export default new Vuetify({
     themes: {
       dark: {
         primary: '#28A5C8',
-        secondary: '#0A6E87'
+        secondary: '#0A6E87',
+        pending: '#fdd327',
+        success: '#1dc512',
+        failed: '#ea6464'
       }
     }
   }

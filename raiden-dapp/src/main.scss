@@ -9,5 +9,16 @@
   height: 50px;
   width: 50px;
   border: 1px solid #979797;
-  background-color: #D8D8D8;
+  background-color: #d8d8d8;
+}
+
+// Transfer history chip background colors
+.pending-chip {
+  background-color: rgba(253, 211, 39, 0.3) !important;
+}
+.success-chip {
+  background-color: rgba(29, 197, 18, 0.3) !important;
+}
+.failed-chip {
+  background-color: rgba(234, 100, 100, 0.3) !important;
 }

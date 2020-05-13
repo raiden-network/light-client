@@ -55,6 +55,12 @@ export default class Filters {
 
   static toUnits = (wei: BigNumber, decimals?: number) =>
     BalanceUtils.toUnits(wei, decimals || 18);
+
+  static formatDate = (value: Date): string => {
+    return `${new Intl.DateTimeFormat('en-US').format(
+      value
+    )} ${value.toLocaleTimeString('en-US')}`;
+  };
 }
 
 Vue.filter('truncate', Filters.truncate);
@@ -63,3 +69,4 @@ Vue.filter('upper', Filters.upper);
 Vue.filter('displayFormat', Filters.displayFormat);
 Vue.filter('capitalizeFirst', Filters.capitalizeFirst);
 Vue.filter('toUnits', Filters.toUnits);
+Vue.filter('formatDate', Filters.formatDate);

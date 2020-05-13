@@ -481,7 +481,7 @@ function makeAndSignWithdrawConfirmation(
 function receiveTransferSigned(
   state$: Observable<RaidenState>,
   action: messageReceivedTyped<Signed<LockedTransfer>>,
-  { address, log, network, signer, config$ }: RaidenEpicDeps,
+  { address, log, network, signer, config$, latest$ }: RaidenEpicDeps,
 ): Observable<
   | transferSigned
   | transfer.failure
@@ -491,9 +491,9 @@ function receiveTransferSigned(
 > {
   const secrethash = action.payload.message.lock.secrethash;
   const meta = { secrethash, direction: Direction.RECEIVED };
-  return combineLatest([state$, config$]).pipe(
+  return combineLatest([state$, config$, latest$]).pipe(
     first(),
-    mergeMap(([state, { revealTimeout, caps }]) => {
+    mergeMap(([state, { revealTimeout }, { caps }]) => {
       const transfer: Signed<LockedTransfer> = action.payload.message;
       if (secrethash in state.received) {
         log.warn('transfer already present', action.meta);
@@ -556,7 +556,7 @@ function receiveTransferSigned(
       );
 
       let request$: Observable<Signed<SecretRequest> | undefined> = of(undefined);
-      if (!caps?.[Capabilities.NO_RECEIVE] && transfer.target === address)
+      if (!caps[Capabilities.NO_RECEIVE] && transfer.target === address)
         request$ = defer(() => {
           const request: SecretRequest = {
             type: MessageType.SECRET_REQUEST,

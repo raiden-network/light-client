@@ -34,7 +34,7 @@ export const TransferState = t.readonly(
       /**
        * Transfer secret, if known
        * registerBlock is 0 if not yet registered on-chain
-       * */
+       */
       secret: Timed(t.type({ value: Secret, registerBlock: t.number })),
       /** <- incoming processed for locked transfer */
       transferProcessed: Timed(Signed(Processed)),

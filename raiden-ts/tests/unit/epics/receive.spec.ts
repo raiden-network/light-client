@@ -95,7 +95,7 @@ describe('receive transfers', () => {
     [
       raidenConfigUpdate({
         caps: {
-          // disable NO_RECEIVE
+          [Capabilities.NO_RECEIVE]: false, // disable NO_RECEIVE
           [Capabilities.NO_MEDIATE]: true,
           [Capabilities.NO_DELIVERY]: true,
         },
