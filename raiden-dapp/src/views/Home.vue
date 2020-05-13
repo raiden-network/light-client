@@ -104,7 +104,7 @@ export default class Home extends Vue {
   async connect() {
     // On first time connect, show the connect dialog
     let { useRaidenAccount, isFirstTimeConnect } = this.settings;
-    if (isFirstTimeConnect) {
+    if (isFirstTimeConnect && useRaidenAccount) {
       this.connectDialog = true;
       return;
     }
