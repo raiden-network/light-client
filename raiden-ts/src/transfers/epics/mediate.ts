@@ -22,6 +22,8 @@ import { Direction } from '../state';
  * @param action$ - Observable of incoming transferSigned transfers
  * @param state$ - Observable of RaidenStates
  * @param deps - Raiden epic deps
+ * @param deps.address - Our address
+ * @param deps.latest$ - Latest observable
  * @returns Observable of outbound transfer.request actions
  */
 export const transferMediateEpic = (

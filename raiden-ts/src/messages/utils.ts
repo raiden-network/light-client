@@ -343,6 +343,8 @@ export function decodeJsonMessage(text: string): Message | Signed<Message> {
  *
  * @param signer - Signer instance
  * @param message - Unsigned message to pack and sign
+ * @param opts - Options
+ * @param opts.log - Logger instance
  * @returns Promise to signed message
  */
 export async function signMessage<M extends Message>(

@@ -79,6 +79,8 @@ export function encodeRaidenState(state: RaidenState): string {
  * 'number'. The data may be migrated from previous versions, then validated as current RaidenState
  *
  * @param data - string | any which may be decoded as RaidenState
+ * @param deps - Options
+ * @param deps.log - Logger instance
  * @returns RaidenState parsed, migrated and validated
  */
 export function decodeRaidenState(
@@ -105,6 +107,7 @@ type PartialState = { config?: PartialRaidenConfig } & Omit<Partial<RaidenState>
  * @param obj - Object containing common parameters for state
  * @param obj.network - ether's Network object for the current blockchain
  * @param obj.address - current account's address
+ * @param obj.contractsInfo - ContractsInfo mapping
  * @param overwrites - A partial object to overwrite top-level properties of the returned config
  * @returns A full config object
  */

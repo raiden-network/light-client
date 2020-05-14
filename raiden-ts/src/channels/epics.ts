@@ -93,7 +93,8 @@ function retryAsync$<T>(func: () => Promise<T>, interval = 1e3, retries = 10): O
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @param provider - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.provider - Eth provider
  * @returns Observable of newBlock actions
  */
 export const initNewBlockEpic = (
@@ -113,7 +114,11 @@ export const initNewBlockEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @param registryContract,contractsInfo - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.address - Our address
+ * @param deps.provider - Eth provider
+ * @param deps.registryContract - TokenNetworkRegistry contract instance
+ * @param deps.contractsInfo - Contracts info mapping
  * @returns Observable of tokenMonitored actions
  */
 export const initTokensRegistryEpic = (
@@ -219,7 +224,10 @@ export const initMonitorChannelsEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @param address,network,provider - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.address - Our address
+ * @param deps.network - Current network
+ * @param deps.provider - Eth provider
  * @returns Observable of raidenShutdown actions
  */
 export const initMonitorProviderEpic = (
@@ -272,7 +280,9 @@ export const initMonitorProviderEpic = (
  *
  * @param action$ - Observable of tokenMonitored actions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.address - Our address
+ * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @returns Observable of channelOpen.success actions
  */
 export const tokenMonitoredEpic = (
@@ -459,7 +469,9 @@ function mapChannelEvents(tokenNetworkContract: TokenNetwork, partner: Address) 
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
+ * @param deps.latest$ - Latest observable
  * @returns Observable of channelDeposit.success,channelClose.success,channelSettle.success actions
  */
 export const channelMonitoredEpic = (
@@ -516,7 +528,14 @@ export const channelMonitoredEpic = (
  *
  * @param action$ - Observable of channelOpen actions
  * @param state$ - Observable of RaidenStates
- * @param getTokenNetworkContract - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.address - Our address
+ * @param deps.main - Main signer/address
+ * @param deps.getTokenContract - Token contract instance getter
+ * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
+ * @param deps.config$ - Config observable
  * @returns Observable of channelOpen.failure actions
  */
 export const channelOpenEpic = (
@@ -650,7 +669,14 @@ export const channelOpenEpic = (
  *
  * @param action$ - Observable of channelDeposit.request actions
  * @param state$ - Observable of RaidenStates
- * @param address,getTokenContract,getTokenNetworkContract - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.address - Our address
+ * @param deps.main - Main signer/address
+ * @param deps.getTokenContract - Token contract instance getter
+ * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
+ * @param deps.config$ - Config observable
  * @returns Observable of channelDeposit.failure actions
  */
 export const channelDepositEpic = (
@@ -731,7 +757,14 @@ export const channelDepositEpic = (
  *
  * @param action$ - Observable of channelClose actions
  * @param state$ - Observable of RaidenStates
- * @param getTokenNetworkContract - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.address - Our address
+ * @param deps.main - Main signer/address
+ * @param deps.network - Current network
+ * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
+ * @param deps.config$ - Config observable
  * @returns Observable of channelClose.failure actions
  */
 export const channelCloseEpic = (
@@ -815,6 +848,13 @@ export const channelCloseEpic = (
  * @param action$ - Observable of channelClose.success|newBlock actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.address - Our address
+ * @param deps.main - Main signer/address
+ * @param deps.network - Current network
+ * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
+ * @param deps.config$ - Config observable
  * @returns Empty observable
  */
 export const channelUpdateEpic = (
@@ -905,7 +945,13 @@ export const channelUpdateEpic = (
  *
  * @param action$ - Observable of channelSettle actions
  * @param state$ - Observable of RaidenStates
- * @param address,getTokenNetworkContract - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.address - Our address
+ * @param deps.main - Main signer/address
+ * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
+ * @param deps.config$ - Config observable
  * @returns Observable of channelSettle.failure actions
  */
 export const channelSettleEpic = (
@@ -1013,6 +1059,12 @@ export const channelSettleableEpic = (
  * @param action$ - Observable of channelSettle.success actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.address - Our address
+ * @param deps.main - Main signer/address
+ * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
+ * @param deps.config$ - Config observable
  * @returns Empty observable
  */
 export const channelUnlockEpic = (
@@ -1093,8 +1145,9 @@ function checkPendingAction(
  *
  * @param action$ - Observable of channelSettle actions
  * @param state$ - Observable of RaidenStates
- * @param deps - RaidenEpicDeps
- * @param deps.config$,deps.provider - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.config$ - Config observable
+ * @param deps.provider - Eth provider
  * @returns Observable of confirmed or removed actions
  */
 export const confirmationEpic = (

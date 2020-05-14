@@ -81,8 +81,13 @@ function withoutLock(end: ChannelEnd, secrethash: Hash): Hash {
  *
  * @param state - Contains The current state of the app
  * @param action - transfer request action to be sent.
- * @param revealTimeout - The reveal timeout for the transfer.
+ * @param config - Config object
+ * @param config.revealTimeout - The reveal timeout for the transfer.
  * @param deps - {@link RaidenEpicDeps}
+ * @param deps.log - Logger instance
+ * @param deps.address - Our address
+ * @param deps.network - Current Network
+ * @param deps.signer - Signer instance
  * @returns Observable of {@link transferSecret} or {@link transferSigned} actions
  */
 function makeAndSignTransfer$(
@@ -197,7 +202,9 @@ function makeAndSignTransfer(
  * @param state$ - Observable of the latest app state.
  * @param state - Contains The current state of the app
  * @param action - The transfer unlock action that will generate the transferUnlock.success action.
- * @param signer - The signer that will sign the message
+ * @param deps - Epics dependencies
+ * @param deps.signer - The signer that will sign the message
+ * @param deps.log - Logger instance
  * @returns Observable of {@link transferUnlock.success} action.
  */
 function makeAndSignUnlock$(
@@ -272,7 +279,9 @@ function makeAndSignUnlock$(
  *
  * @param state$ - Observable of current state
  * @param action - transferUnlock.request request action to be sent
- * @param signer - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.signer - Signer instance
+ * @param deps.log - Logger instance
  * @returns Observable of transferUnlock.success actions
  */
 function makeAndSignUnlock(
@@ -296,6 +305,8 @@ function makeAndSignUnlock(
  * @param state - Contains The current state of the app
  * @param action - The transfer expire action.
  * @param signer - RaidenEpicDeps members
+ * @param signer.signer - Signer instance
+ * @param signer.log - Logger instance
  * @returns Observable of transferExpire.success actions
  */
 function makeAndSignLockExpired$(
@@ -353,6 +364,8 @@ function makeAndSignLockExpired$(
  * @param state$ - Observable of current state
  * @param action - transfer request action to be sent
  * @param signer - RaidenEpicDeps members
+ * @param signer.log - Logger instance
+ * @param signer.signer - Signer instance
  * @returns Observable of transferExpire.success|transferExpire.failure actions
  */
 function makeAndSignLockExpired(
@@ -459,6 +472,8 @@ function makeAndSignWithdrawConfirmation$(
  * @param state$ - Observable of current state
  * @param action - Withdraw request which caused this handling
  * @param signer - RaidenEpicDeps members
+ * @param signer.signer - Signer instance
+ * @param signer.log - Logger instance
  * @param cache - A Map to store and reuse previously Signed<WithdrawConfirmation>
  * @returns Observable of transferExpire.success|transferExpire.failure actions
  */

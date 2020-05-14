@@ -47,6 +47,8 @@ import { globalRoomNames, getRoom$ } from './helpers';
  * @param roomId - room to invite user to
  * @param userId - user to be invited
  * @param config$ - Observable of config object containing httpTimeout used as iteration delay
+ * @param opts - Options object
+ * @param opts.log - Logger instance
  * @returns Cold observable which keep inviting user if needed and then completes.
  */
 function inviteLoop$(
@@ -104,7 +106,11 @@ function inviteLoop$(
  *
  * @param action$ - Observable of transferSigned|channelMonitor|messageSend.request actions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.address - Our address
+ * @param deps.log - Logger instance
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.latest$ - Latest values
  * @returns Observable of matrixRoom actions
  */
 export const matrixCreateRoomEpic = (
@@ -186,6 +192,8 @@ export const matrixCreateRoomEpic = (
  * @param deps - RaidenEpicDeps
  * @param deps.matrix$ - MatrixClient AsyncSubject
  * @param deps.config$ - RaidenConfig BehaviorSubject
+ * @param deps.latest$ - Latest values
+ * @param deps.log - Logger instance
  * @returns Empty observable (whole side-effect on matrix instance)
  */
 export const matrixInviteEpic = (
@@ -250,7 +258,11 @@ export const matrixInviteEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.config$ - Config ReplaySubject
+ * @param deps.latest$ - Latest values
  * @returns Observable of matrixRoom actions
  */
 export const matrixHandleInvitesEpic = (
@@ -305,7 +317,10 @@ export const matrixHandleInvitesEpic = (
  *
  * @param action$ - Observable of matrixRoom actions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.config$ - Config object
  * @returns Observable of matrixRoomLeave actions
  */
 export const matrixLeaveExcessRoomsEpic = (
@@ -338,7 +353,10 @@ export const matrixLeaveExcessRoomsEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.config$ - Config object
  * @returns Empty observable (whole side-effect on matrix instance)
  */
 export const matrixLeaveUnknownRoomsEpic = (
@@ -388,7 +406,9 @@ export const matrixLeaveUnknownRoomsEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.log - Logger instance
  * @returns Observable of matrixRoomLeave actions
  */
 export const matrixCleanLeftRoomsEpic = (
@@ -426,6 +446,9 @@ export const matrixCleanLeftRoomsEpic = (
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.config$ - Config object
  * @returns Observable of matrixRoomLeave actions
  */
 export const matrixCleanMissingRoomsEpic = (

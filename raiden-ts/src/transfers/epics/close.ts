@@ -19,6 +19,8 @@ import { Direction } from '../state';
  *
  * @param action$ - Observable of channelClose.{requet,success} actions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.address - Our address
  * @returns Observable of transfer.{success|failure} actions
  */
 export const transferChannelClosedEpic = (

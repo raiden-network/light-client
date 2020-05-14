@@ -19,6 +19,7 @@ import { dispatchAndWait$ } from './utils';
  * @param action$ - Observable of {@link RaidenAction} actions
  * @param state - Contains The current state of the app
  * @param config - Contains the current app config
+ * @param config.confirmationBlocks - Confirmation blocks config param
  * @param blockNumber - The current block number
  * @returns Observable of {@link transferExpire.request} or {@link transfer.failure} actions
  */
@@ -70,6 +71,8 @@ function autoExpire$(
  *
  * @param action$ - Observable of newBlock|transferExpire.success|transferExpire.failure actions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.config$ - Config observable
  * @returns Observable of transferExpire.request|transfer.failure actions
  */
 export const transferAutoExpireEpic = (
