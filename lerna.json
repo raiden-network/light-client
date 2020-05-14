@@ -1,0 +1,6 @@
+{
+  "packages": [
+    "raiden-cli", "raiden-dapp", "raiden-ts"
+  ],
+  "version": "0.0.0"
+}

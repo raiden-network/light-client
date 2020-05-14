@@ -21,7 +21,7 @@
     "ethers": "^4.0.47",
     "idb": "^5.0.2",
     "lodash": "^4.17.15",
-    "raiden-ts": "file:../raiden-ts",
+    "raiden-ts": "^0.8.0",
     "register-service-worker": "^1.7.1",
     "rxjs": "^6.5.5",
     "tiny-async-pool": "^1.1.0",

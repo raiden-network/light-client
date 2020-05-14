@@ -43,7 +43,7 @@
     "inquirer": "^7.1.0",
     "loglevel": "^1.6.8",
     "node-localstorage": "^2.1.6",
-    "raiden-ts": "file:../raiden-ts",
+    "raiden-ts": "^0.8.0",
     "rxjs": "^6.5.5",
     "wrtc": "^0.4.4",
     "yargs": "^15.3.1"
