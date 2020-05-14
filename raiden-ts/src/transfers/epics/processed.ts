@@ -163,7 +163,9 @@ export const transferExpireProcessedEpic = (
  *
  * @param action$ - Observable of messageReceived actions
  * @param state$ - Observable of RaidenStates
- * @param signer - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
  * @returns Observable of messageSend.request actions
  */
 export const transferReceivedReplyProcessedEpic = (

@@ -199,6 +199,9 @@ export const mapRaidenChannels = (channels: RaidenState['channels']): RaidenChan
  * Return signer & address to use for on-chain txs depending on subkey param
  *
  * @param deps - RaidenEpicDeps subset
+ * @param deps.signer - Signer instance
+ * @param deps.address - Own address
+ * @param deps.main - Main signer/address, if any
  * @param subkey - Whether to prefer the subkey or the main key
  * @returns Signer & Address to use for on-chain operations
  */
@@ -237,6 +240,8 @@ export function getContractWithSigner<C extends Contract>(contract: C, signer: S
  * @param method - Method name
  * @param params - Params tuple to method
  * @param errorCode - ErrorCode to throw in case of failure
+ * @param opts - Options
+ * @param opts.log - Logger instance
  * @returns Promise to successful receipt
  */
 export async function callAndWaitMined<
@@ -279,6 +284,9 @@ export async function callAndWaitMined<
  *
  * @param receipt - Receipt to wait for confirmation
  * @param deps - RaidenEpicDeps
+ * @param deps.latest$ - Latest observable
+ * @param deps.config$ - Config observable
+ * @param deps.provider - Eth provider
  * @param confBlocks - Overwrites config
  * @returns Promise final block of transaction
  */

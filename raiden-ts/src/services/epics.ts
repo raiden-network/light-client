@@ -392,6 +392,13 @@ export const pathFindServiceEpic = (
  *
  * @param action$ - Observable of channelDeposit.success actions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.log - Logger instance
+ * @param deps.address - Our address
+ * @param deps.network - Current Network
+ * @param deps.signer - Signer instance
+ * @param deps.latest$ - Latest observable
+ * @param deps.config$ - Config observable
  * @returns Observable of messageGlobalSend actions
  */
 export const pfsCapacityUpdateEpic = (
@@ -450,6 +457,12 @@ export const pfsCapacityUpdateEpic = (
  * @param action$ - Observable of channelMonitor actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Raiden epic dependencies
+ * @param deps.log - Logger instance
+ * @param deps.address - Our address
+ * @param deps.network - Current network
+ * @param deps.signer - Signer instance
+ * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of messageGlobalSend actions
  */
 export const pfsFeeUpdateEpic = (
@@ -504,6 +517,9 @@ export const pfsFeeUpdateEpic = (
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps object
+ * @param deps.serviceRegistryContract - ServiceRegistry contract instance
+ * @param deps.contractsInfo - Contracts info mapping
+ * @param deps.config$ - Config observable
  * @returns Observable of pfsListUpdated actions
  */
 export const pfsServiceRegistryMonitorEpic = (
@@ -562,6 +578,10 @@ export const pfsServiceRegistryMonitorEpic = (
  *
  * @param action$ - Observable of aidenActions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.address - Our address
+ * @param deps.latest$ - Latest observable
+ * @param deps.userDepositContract - UserDeposit contract instance
  * @returns Observable of udcDeposited actions
  */
 export const monitorUdcBalanceEpic = (
@@ -582,8 +602,15 @@ export const monitorUdcBalanceEpic = (
  * Makes a *Map callback which returns an observable of actions to send RequestMonitoring messages
  *
  * @param deps - Epics dependencies
+ * @param deps.address - Our Address
+ * @param deps.log - Logger instance
+ * @param deps.network - Current network
+ * @param deps.signer - Signer instance
+ * @param deps.contractsInfo - Contracts info mapping
+ * @param deps.latest$ - Latest observable
+ * @param deps.config$ - Config observable
  * @returns An operator which receives a ChangedChannel and RaidenConfig and returns a cold
- *      Observable of messageGlobalSend actions to the global monitoring room
+ * Observable of messageGlobalSend actions to the global monitoring room
  */
 function makeMonitoringRequest$({
   address,

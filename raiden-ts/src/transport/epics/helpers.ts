@@ -70,6 +70,9 @@ export function getRoom$(matrix: MatrixClient, roomIdOrAlias: string): Observabl
  * @param type - EventType (if allowRtc=false)
  * @param content - Event content
  * @param deps - Some members of RaidenEpicDeps needed
+ * @param deps.log - Logger instance
+ * @param deps.latest$ - Latest observable
+ * @param deps.config$ - Config observable
  * @param allowRtc - False to force Room message, or true to allow webRTC channel, if available
  * @returns Observable of a string containing the roomAlias or channel label
  */
@@ -174,7 +177,8 @@ export function waitMemberAndSend$(
  *
  * @param line - String to be parsed as a single message
  * @param address - Sender's address
- * @param deps - Logger dependency
+ * @param deps - Dependencies
+ * @param deps.log - Logger instance
  * @returns Validated Signed or unsigned Message, or undefined
  */
 export function parseMessage(

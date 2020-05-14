@@ -61,6 +61,10 @@ const serviceRegistryToken = memoize(
  *
  * @param pfsAddrOrUrl - PFS account/address or URL
  * @param deps - RaidenEpicDeps needed for various parameters
+ * @param deps.serviceRegistryContract - ServiceRegistry contract instance
+ * @param deps.network - Current Network
+ * @param deps.contractsInfo - ContractsInfo mapping
+ * @param deps.config$ - Config observable
  * @returns Observable containing PFS server info
  */
 export function pfsInfo(

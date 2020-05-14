@@ -43,7 +43,8 @@ const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
  *
  * @param matrix - Matrix client to search users from
  * @param address - Address of interest
- * @param log - Logger object
+ * @param opts - Options
+ * @param opts.log - Logger instance
  * @returns Observable of user with most recent presence
  */
 function searchAddressPresence$(
@@ -100,7 +101,10 @@ function searchAddressPresence$(
  *
  * @param action$ - Observable of matrixPresence.request actions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.latest$ - Latest values
+ * @param deps.log - Logger instance
  * @returns Observable of presence updates or fail action
  */
 export const matrixMonitorPresenceEpic = (
@@ -147,7 +151,10 @@ export const matrixMonitorPresenceEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.latest$ - Latest values
  * @returns Observable of presence updates
  */
 export const matrixPresenceUpdateEpic = (
@@ -257,6 +264,8 @@ export const matrixMonitorChannelPresenceEpic = (
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.latest$ - Latest values
  * @returns Observable which never emits
  */
 export const matrixUpdateCapsEpic = (

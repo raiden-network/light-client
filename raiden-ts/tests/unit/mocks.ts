@@ -293,7 +293,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
 /**
  * Create a mocked ethers Log object
  *
- * @param filter - EventFilter object
+ * @param filter - Options
+ * @param filter.filter - EventFilter object
  * @returns Log object
  */
 export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<Log>): Log {

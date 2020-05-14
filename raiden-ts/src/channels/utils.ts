@@ -15,6 +15,8 @@ import { ChannelKey, ChannelUniqueKey } from './types';
  * Returns a key (string) for a channel unique per tokenNetwork+partner
  *
  * @param channel - Either a Channel or a { tokenNetwork, partner } pair of addresses
+ * @param channel.tokenNetwork - TokenNetwork address
+ * @param channel.partner - Partner address
  * @returns A string, for now
  */
 export function channelKey<
@@ -117,6 +119,7 @@ export function channelAmounts(channel: Channel) {
  * @param method - method name to use in logs
  * @param error - ErrorCode to throw if transaction fails
  * @param deps - object containing logger
+ * @param deps.log - Logger instance
  * @returns operator function to wait for transaction and output hash
  */
 export function assertTx(

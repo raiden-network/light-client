@@ -15,6 +15,8 @@ export const CURRENT_STATE_VERSION = migrations.length - 1;
  *
  * @param state - Previous raiden state
  * @param toVersion - Migrate up to this version
+ * @param opts - Options
+ * @param opts.log - Logger instance
  * @returns A current RaidenState (hopefully), to be validated
  */
 export default function migrateState(

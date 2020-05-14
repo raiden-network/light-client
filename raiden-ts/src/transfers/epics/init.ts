@@ -61,6 +61,8 @@ export const initQueuePendingEnvelopeMessagesEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.latest$ - Latest observable
  * @returns Observable of transferSigned|transferUnlock.success actions
  */
 export const initQueuePendingReceivedEpic = (
