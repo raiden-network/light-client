@@ -254,16 +254,17 @@ export function createAction<
     process.env.NODE_ENV === 'development'
       ? (action: unknown) => codec.is(action)
       : (action: unknown) => (action as any)?.['type'] === type;
-  return Object.assign(
-    (payload?: t.TypeOf<NonNullable<TPayload>>, meta?: t.TypeOf<NonNullable<TMeta>>) => ({
-      type,
-      ...(payloadC ? { payload } : null),
-      ...(metaC ? { meta } : null),
-      ...(error !== undefined ? { error } : null),
-    }),
-    { codec, type, is },
-    error !== undefined ? { error } : null,
-  ) as ActionCreator<TType, TPayload, TMeta, TError>;
+  const members = { codec, type, is, ...(error !== undefined ? { error } : null) };
+  const factory = (
+    payload?: t.TypeOf<NonNullable<TPayload>>,
+    meta?: t.TypeOf<NonNullable<TMeta>>,
+  ) => ({
+    type,
+    ...(payloadC ? { payload } : null),
+    ...(metaC ? { meta } : null),
+    ...(error !== undefined ? { error } : null),
+  });
+  return Object.assign(factory, members) as ActionCreator<TType, TPayload, TMeta, TError>;
 }
 
 /*** Async Actions ***/
