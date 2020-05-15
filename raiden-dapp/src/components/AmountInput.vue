@@ -211,7 +211,6 @@ $header-vertical-margin-mobile: 2rem;
       margin-top: 2px;
 
       &__wrapper {
-        height: 25px;
         display: flex;
         flex-direction: column;
         align-items: flex-start;

@@ -296,9 +296,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
     &__form {
       background-color: $transfer-form-color;
       border-radius: 15px;
-      height: 175px;
       margin: 0 auto;
       width: 511px;
+      padding-bottom: 16px;
+
       @include respond-to(handhelds) {
         width: 100%;
         height: 270px;
