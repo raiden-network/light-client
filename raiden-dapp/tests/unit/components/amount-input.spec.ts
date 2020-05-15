@@ -19,6 +19,7 @@ describe('AmountInput.vue', () => {
       propsData: {
         label: 'Has Label',
         token: TestData.token,
+        value: '0.00',
         ...params
       },
       mocks: {

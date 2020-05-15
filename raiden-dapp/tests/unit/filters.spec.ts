@@ -1,6 +1,6 @@
 import Filters from '@/filters';
 import { BigNumber } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { One, Zero } from 'ethers/constants';
 
 describe('filters', () => {
   describe('truncate', () => {
@@ -32,6 +32,14 @@ describe('filters', () => {
   });
 
   describe('displayFormat', () => {
+    test('displays 0 if 0 is passed without decimals', () => {
+      expect(Filters.displayFormat(Zero, 0)).toEqual('0');
+    });
+
+    test('displays 1 if 1 is passed without decimals', () => {
+      expect(Filters.displayFormat(One, 0)).toEqual('1');
+    });
+
     test('return the number prefixed with "<" when the number is less than 0.000001', () => {
       expect(Filters.displayFormat(new BigNumber(10 ** 3), 18)).toEqual(
         '<0.000001'
