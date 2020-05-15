@@ -32,10 +32,3 @@ export class BalanceUtils {
     );
   }
 }
-
-export function getDecimals(decimals?: number) {
-  if (decimals === undefined) {
-    return 18;
-  }
-  return decimals;
-}

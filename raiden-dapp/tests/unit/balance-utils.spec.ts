@@ -47,4 +47,8 @@ describe('BalanceUtils', () => {
   test('return only integer part if decimals are 0', () => {
     expect(BalanceUtils.toUnits(One, 0)).toBe('1');
   });
+
+  test('parse ignores trailing dot', () => {
+    expect(BalanceUtils.parse('1.', 0)).toEqual(One);
+  });
 });

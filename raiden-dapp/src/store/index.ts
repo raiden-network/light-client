@@ -64,7 +64,7 @@ const hasNonZeroBalance = (a: Token, b: Token) =>
 const settingsLocalStorage = new VuexPersistence<RootState>({
   storage: window.localStorage,
   reducer: state => ({ settings: state.settings }),
-  filter: mutation => mutation.type == 'updateSettinSyugs',
+  filter: mutation => mutation.type == 'updateSettings',
   key: 'raiden_dapp_settings'
 });
 

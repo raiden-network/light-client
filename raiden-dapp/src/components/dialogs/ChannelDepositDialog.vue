@@ -77,7 +77,7 @@ import { Token } from '@/model/types';
 import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
-import { BalanceUtils, getDecimals } from '@/utils/balance-utils';
+import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({
   components: {
@@ -114,7 +114,7 @@ export default class ChannelDepositDialog extends Vue {
   }
 
   private updateDeposit() {
-    this.deposit = getDecimals(this.token.decimals) === 0 ? '0' : '0.0';
+    this.deposit = (this.token.decimals ?? 18) === 0 ? '0' : '0.0';
   }
 
   @Emit()

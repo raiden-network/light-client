@@ -23,7 +23,7 @@
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import { Token } from '@/model/types';
-import { BalanceUtils, getDecimals } from '@/utils/balance-utils';
+import { BalanceUtils } from '@/utils/balance-utils';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 
@@ -73,10 +73,7 @@ export default class AmountInput extends Vue {
       !this.limit ||
       (v && this.hasEnoughBalance(v, this.max)) ||
       this.$parent.$t('amount-input.error.not-enough-funds', {
-        funds: BalanceUtils.toUnits(
-          this.max,
-          getDecimals(this.token!.decimals)
-        ),
+        funds: BalanceUtils.toUnits(this.max, this.token!.decimals ?? 18),
         symbol: this.token!.symbol
       })
   ];
@@ -84,7 +81,7 @@ export default class AmountInput extends Vue {
   private noDecimalOverflow(v: string) {
     return (
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, getDecimals(this.token!.decimals))
+      !BalanceUtils.decimalsOverflow(v, this.token!.decimals ?? 18)
     );
   }
 

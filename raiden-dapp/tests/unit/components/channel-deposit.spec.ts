@@ -13,7 +13,7 @@ describe('ChannelDeposit.vue', () => {
   let wrapper: Wrapper<ChannelDepositDialog>;
   let vuetify: typeof Vuetify;
 
-  beforeAll(() => {
+  beforeEach(() => {
     vuetify = new Vuetify();
     wrapper = mount(ChannelDepositDialog, {
       vuetify,
@@ -42,5 +42,19 @@ describe('ChannelDeposit.vue', () => {
     const events = depositTokensEvent?.shift();
     const deposit: BigNumber = events?.shift() as BigNumber;
     expect(new BigNumber(0.5 * 10 ** 5).eq(deposit)).toBeTruthy();
+  });
+
+  test('do not update the deposit placeholder if dialog hides', async () => {
+    wrapper.setProps({ token: { ...TestData.token, decimals: 0 } });
+    expect(wrapper.vm.$data.deposit).toBe('0.0');
+    (wrapper.vm as any).onVisibilityChanged(false);
+    expect(wrapper.vm.$data.deposit).toBe('0.0');
+  });
+
+  test('update the deposit placeholder if dialog shows', async () => {
+    wrapper.setProps({ token: { ...TestData.token, decimals: 0 } });
+    expect(wrapper.vm.$data.deposit).toBe('0.0');
+    (wrapper.vm as any).onVisibilityChanged(true);
+    expect(wrapper.vm.$data.deposit).toBe('0');
   });
 });
