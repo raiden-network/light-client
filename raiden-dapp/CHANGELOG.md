@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- [#1485] Fixed token list sorting.
+
+[#1485]: https://github.com/raiden-network/light-client/issues/1485
+
 ## [0.8.0] - 2020-05-14
 
 ### Added

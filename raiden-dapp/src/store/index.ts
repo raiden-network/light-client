@@ -151,7 +151,7 @@ const store: StoreOptions<RootState> = {
     allTokens: (state: RootState): Token[] =>
       Object.values(state.tokens).sort((a: Token, b: Token) => {
         if (hasNonZeroBalance(a, b)) {
-          return a.balance! < b.balance! ? 1 : -1;
+          return (b.balance! as BigNumber).gt(a.balance! as BigNumber) ? 1 : -1;
         }
 
         return a.symbol && b.symbol ? a.symbol.localeCompare(b.symbol) : 0;
