@@ -6,7 +6,11 @@ export class BalanceUtils {
   }
 
   static toUnits(wei: BigNumber, decimals: number): string {
-    return formatUnits(wei, decimals);
+    const units = formatUnits(wei, decimals);
+    if (decimals === 0) {
+      return units.split('.')[0];
+    }
+    return units;
   }
 
   static decimalsOverflow(depositTokens: string, decimals: number): boolean {
@@ -20,6 +24,18 @@ export class BalanceUtils {
   }
 
   static parse(deposit: string, decimals: number) {
-    return parseUnits(deposit, decimals);
+    return parseUnits(
+      deposit.endsWith('.')
+        ? deposit.substring(0, deposit.length - 1)
+        : deposit,
+      decimals
+    );
   }
+}
+
+export function getDecimals(decimals?: number) {
+  if (decimals === undefined) {
+    return 18;
+  }
+  return decimals;
 }

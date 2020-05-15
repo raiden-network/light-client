@@ -52,6 +52,7 @@
     </v-row>
     <div class="transfer__form-container">
       <v-form
+        ref="transfer"
         v-model="valid"
         autocomplete="off"
         novalidate
@@ -99,7 +100,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator';
+import { Component, Mixins, Watch } from 'vue-property-decorator';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
 import { Token } from '@/model/types';
@@ -158,6 +159,11 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
     tokenAddress: string
   ) => RaidenChannel | undefined;
 
+  @Watch('$route', { immediate: true, deep: true })
+  onRouteChange() {
+    (this.$refs?.transfer as any)?.reset();
+  }
+
   get token(): Token {
     const { token: address } = this.$route.params;
     return this.$store.getters.token(address) || ({ address } as Token);
@@ -196,6 +202,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
     if (typeof this.token.decimals !== 'number') {
       this.navigateToHome();
+    }
+
+    if (this.token.decimals === 0 && this.amount.indexOf('.') > -1) {
+      this.amount = this.amount.split('.')[0];
     }
   }
 

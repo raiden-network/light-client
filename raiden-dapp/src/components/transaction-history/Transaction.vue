@@ -49,7 +49,7 @@
               class="transaction__item__details-right__amount--sum"
               exact-amount
               :amount="transfer.amount"
-              :token="transfer.token"
+              :token="tokens[transfer.token]"
             />
           </div>
         </v-row>
@@ -83,19 +83,24 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { Transfers } from '../../types';
+import { Tokens, Transfers } from '@/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
+import { mapState } from 'vuex';
 
 @Component({
   components: {
     AddressDisplay,
     AmountDisplay
+  },
+  computed: {
+    ...mapState(['tokens'])
   }
 })
 export default class Transaction extends Vue {
   @Prop({ required: true })
   transfer!: Transfers;
+  tokens!: Tokens;
 }
 </script>
 

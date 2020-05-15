@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import { BigNumber } from 'ethers/utils';
-import { BalanceUtils } from '@/utils/balance-utils';
+import { BalanceUtils, getDecimals } from '@/utils/balance-utils';
 import split from 'lodash/split';
 import capitalize from 'lodash/capitalize';
 
@@ -31,10 +31,11 @@ export default class Filters {
   }
 
   static displayFormat(amount: BigNumber, decimals?: number): string {
-    const units = BalanceUtils.toUnits(amount, decimals || 18);
+    const numberOfDecimals = getDecimals(decimals);
+    const units = BalanceUtils.toUnits(amount, numberOfDecimals);
     const deposit = parseFloat(units);
     if (deposit === 0) {
-      return '0.0';
+      return numberOfDecimals === 0 ? '0' : '0.0';
     } else if (deposit < 0.000001) {
       return '<0.000001';
     } else {
@@ -44,7 +45,7 @@ export default class Filters {
         let newDecimal = decimalPart.substring(0, 6);
         return `≈${integerPart}.${newDecimal}`;
       } else {
-        return units;
+        return decimals === 0 ? integerPart : units;
       }
     }
   }
@@ -54,7 +55,7 @@ export default class Filters {
   }
 
   static toUnits = (wei: BigNumber, decimals?: number) =>
-    BalanceUtils.toUnits(wei, decimals || 18);
+    BalanceUtils.toUnits(wei, getDecimals(decimals));
 
   static formatDate = (value: Date): string => {
     return `${new Intl.DateTimeFormat('en-US').format(
