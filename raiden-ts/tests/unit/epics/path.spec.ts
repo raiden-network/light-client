@@ -30,6 +30,7 @@ import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { ErrorCodes } from 'raiden-ts/utils/error';
 import { RaidenState } from 'raiden-ts/state';
 import { Capabilities } from 'raiden-ts/constants';
+import { signIOU } from 'raiden-ts/services/utils';
 
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog } from '../mocks';
@@ -700,7 +701,12 @@ describe('PFS: pathFindServiceEpic', () => {
   test('success with cached iou and valid route', async () => {
     expect.assertions(1);
 
-    action$.next(iouPersist({ iou }, { tokenNetwork, serviceAddress: iou.receiver }));
+    action$.next(
+      iouPersist(
+        { iou: await signIOU(depsMock.signer, iou) },
+        { tokenNetwork, serviceAddress: iou.receiver },
+      ),
+    );
 
     const value = bigNumberify(100) as UInt<32>;
 
@@ -925,7 +931,7 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const lastIOUResult = {
       last_iou: {
-        ...iou,
+        ...(await signIOU(depsMock.signer, iou)),
         chain_id: UInt(32).encode(iou.chain_id),
         amount: UInt(32).encode(iou.amount),
         expiration_block: UInt(32).encode(iou.expiration_block),
@@ -1080,8 +1086,8 @@ describe('PFS: pathFindServiceEpic', () => {
         expect.objectContaining({
           message: ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH,
           details: expect.objectContaining({
-            signer: '0x9EE8539c8C7215AcAE56Fed72E7035a307e24989',
-            address: '0x14791697260E4c9A71f18484C9f997B308e59325',
+            signer: expect.any(String),
+            address: depsMock.address,
           }),
         }),
         { tokenNetwork, target, value },
@@ -1103,7 +1109,7 @@ describe('PFS: pathFindServiceEpic', () => {
 
     const lastIOUResult = {
       last_iou: {
-        ...iou,
+        ...(await signIOU(depsMock.signer, iou)),
         chain_id: UInt(32).encode(iou.chain_id),
         amount: UInt(32).encode(iou.amount),
         expiration_block: UInt(32).encode(iou.expiration_block),
@@ -1593,7 +1599,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
 });
 
 describe('PFS: reducer', () => {
-  test('persist and clear', () => {
+  test('persist and clear', async () => {
     expect.assertions(2);
 
     const depsMock = raidenEpicDeps();
@@ -1601,7 +1607,10 @@ describe('PFS: reducer', () => {
 
     const newState = raidenReducer(
       state,
-      iouPersist({ iou }, { tokenNetwork, serviceAddress: iou.receiver }),
+      iouPersist(
+        { iou: await signIOU(depsMock.signer, iou) },
+        { tokenNetwork, serviceAddress: iou.receiver },
+      ),
     );
 
     expect(newState.iou).toMatchObject({

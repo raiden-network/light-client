@@ -4,15 +4,15 @@ import { patchEthersDefineReadOnly, patchMatrixGetNetwork } from './patches';
 patchEthersDefineReadOnly();
 patchMatrixGetNetwork();
 
-import { AsyncSubject, of, BehaviorSubject } from 'rxjs';
+import { AsyncSubject, of, BehaviorSubject, Subject } from 'rxjs';
 import { MatrixClient } from 'matrix-js-sdk';
 import { EventEmitter } from 'events';
 import { memoize } from 'lodash';
 import logging from 'loglevel';
 
 jest.mock('ethers/providers');
-import { Zero, HashZero } from 'ethers/constants';
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
+import { Zero, HashZero } from 'ethers/constants';
 import { Log } from 'ethers/providers/abstract-provider';
 import { Network, parseEther } from 'ethers/utils';
 import { Contract, EventFilter } from 'ethers/contract';
@@ -34,14 +34,14 @@ import { SecretRegistryFactory } from 'raiden-ts/contracts/SecretRegistryFactory
 import { MonitoringServiceFactory } from 'raiden-ts/contracts/MonitoringServiceFactory';
 import { MonitoringService } from 'raiden-ts/contracts/MonitoringService';
 
-import 'raiden-ts/polyfills';
 import { RaidenEpicDeps, ContractsInfo, Latest } from 'raiden-ts/types';
-import { makeInitialState } from 'raiden-ts/state';
+import { makeInitialState, RaidenState } from 'raiden-ts/state';
 import { Address, Signature, UInt } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
-import { raidenConfigUpdate } from 'raiden-ts/actions';
+import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
 import { makeDefaultConfig } from 'raiden-ts/config';
+import { makeSecret } from 'raiden-ts/transfers/utils';
 
 export type MockedContract<T extends Contract> = jest.Mocked<T> & {
   functions: {
@@ -60,6 +60,138 @@ export interface MockRaidenEpicDeps extends RaidenEpicDeps {
   serviceRegistryContract: MockedContract<ServiceRegistry>;
   userDepositContract: MockedContract<UserDeposit>;
   secretRegistryContract: MockedContract<SecretRegistry>;
+}
+
+export type MockedEpicClient = [Subject<RaidenAction>, Subject<RaidenState>, MockRaidenEpicDeps];
+
+/**
+ * Create a mocked ethers Log object
+ *
+ * @param filter - Options
+ * @param filter.filter - EventFilter object
+ * @returns Log object
+ */
+export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<Log>): Log {
+  const blockNumber = opts.blockNumber || 1337;
+  return {
+    blockNumber: blockNumber,
+    blockHash: `0xblockHash${blockNumber}`,
+    transactionIndex: 1,
+    removed: false,
+    transactionLogIndex: 1,
+    data: '0x',
+    transactionHash: `0xtxHash${blockNumber}`,
+    logIndex: 1,
+    ...opts,
+    address: filter.address!,
+    topics: filter.topics!,
+  };
+}
+
+/**
+ * Returns a mocked MatrixClient
+ *
+ * @param userId - userId of account owner
+ * @param server - server mock hostname
+ * @returns Mocked MatrixClient
+ */
+export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixClient> {
+  return (Object.assign(new EventEmitter(), {
+    startClient: jest.fn(async () => true),
+    stopClient: jest.fn(() => true),
+    joinRoom: jest.fn(async () => true),
+    // reject to test register
+    login: jest.fn().mockRejectedValue(new Error('invalid password')),
+    register: jest.fn(async (userName) => {
+      userId = `@${userName}:${server}`;
+      return {
+        user_id: userId,
+        device_id: `${userName}_device_id`,
+        access_token: `${userName}_access_token`,
+      };
+    }),
+    searchUserDirectory: jest.fn(async ({ term }) => ({
+      results: [{ user_id: `@${term}:${server}`, display_name: `${term}_display_name` }],
+    })),
+    getUserId: jest.fn(() => userId),
+    getUsers: jest.fn(() => []),
+    getUser: jest.fn((userId) => ({ userId, presence: 'offline', setDisplayName: jest.fn() })),
+    getProfileInfo: jest.fn(async (userId) => ({ displayname: `${userId}_display_name` })),
+    setDisplayName: jest.fn(async () => null),
+    setAvatarUrl: jest.fn(async () => null),
+    setPresence: jest.fn(async () => null),
+    createRoom: jest.fn(async ({ visibility, invite }) => ({
+      room_id: `!roomId_${visibility || 'public'}_with_${(invite || []).join('_')}:${server}`,
+      getMember: jest.fn(),
+      getCanonicalAlias: jest.fn(() => null),
+      getAliases: jest.fn(() => []),
+    })),
+    getRoom: jest.fn((roomId) => ({
+      roomId,
+      getMember: jest.fn(),
+      getCanonicalAlias: jest.fn(() => null),
+      getAliases: jest.fn(() => []),
+    })),
+    getRooms: jest.fn(() => []),
+    getHomeserverUrl: jest.fn(() => getServerName(server)),
+    invite: jest.fn(async () => true),
+    leave: jest.fn(async () => true),
+    sendEvent: jest.fn(async () => true),
+    _http: {
+      opts: {},
+      // mock request done by raiden/utils::getUserPresence
+      authedRequest: jest.fn(async () => ({
+        user_id: 'user_id',
+        last_active_ago: 1,
+        presence: 'online',
+      })),
+    },
+    turnServer: jest.fn(async () => ({
+      uris: 'https://turn.raiden.test',
+      ttl: 86400,
+      username: 'user',
+      password: 'password',
+    })),
+  }) as unknown) as jest.Mocked<MatrixClient>;
+}
+
+/**
+ * Returns some valid signature
+ *
+ * @returns Some arbitrary valid signature hex string
+ */
+export function makeSignature(): Signature {
+  return '0x5770d597b270ad9d1225c901b1ef6bfd8782b15d7541379619c5dae02c5c03c1196291b042a4fea9dbddcb1c6bcd2a5ee19180e8dc881c2e9298757e84ad190b1c' as Signature;
+}
+
+/**
+ * Spies and mocks classes constructors on globalThis
+ *
+ * @returns Mocked spies
+ */
+export function mockRTC() {
+  const rtcDataChannel = (Object.assign(new EventEmitter(), {
+    close: jest.fn(),
+  }) as unknown) as jest.Mocked<RTCDataChannel & EventEmitter>;
+
+  const rtcConnection = (Object.assign(new EventEmitter(), {
+    createDataChannel: jest.fn(() => rtcDataChannel),
+    createOffer: jest.fn(async () => ({})),
+    createAnswer: jest.fn(async () => ({})),
+    setLocalDescription: jest.fn(async () => {
+      /* local */
+    }),
+    setRemoteDescription: jest.fn(async () => {
+      /* remote */
+    }),
+    addIceCandidate: jest.fn(),
+  }) as unknown) as jest.Mocked<RTCPeerConnection & EventEmitter>;
+
+  const RTCPeerConnection = jest
+    .spyOn(globalThis, 'RTCPeerConnection')
+    .mockImplementation(() => rtcConnection);
+
+  return { rtcDataChannel, rtcConnection, RTCPeerConnection };
 }
 
 /**
@@ -124,15 +256,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     .spyOn(provider, 'getBlockNumber')
     .mockImplementation(async () => (of(blockNumber) as unknown) as Promise<number>);
   // use provider.resetEventsBlock used to set current block number for provider
-  jest
-    .spyOn(provider, 'resetEventsBlock')
-    .mockImplementation((number: number) => (blockNumber = number));
+  jest.spyOn(provider, 'resetEventsBlock').mockImplementation((n: number) => (blockNumber = n));
   mockEthersEventEmitter(provider);
 
-  const signer = new Wallet(
-    '0x0123456789012345678901234567890123456789012345678901234567890123',
-    provider,
-  );
+  const signer = new Wallet(makeSecret(), provider);
   const address = signer.address as Address;
   logging.setLevel(logging.levels.DEBUG);
   const log = logging.getLogger(`raiden:${address}`);
@@ -287,134 +414,4 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     userDepositContract,
     secretRegistryContract,
   };
-}
-
-/**
- * Create a mocked ethers Log object
- *
- * @param filter - Options
- * @param filter.filter - EventFilter object
- * @returns Log object
- */
-export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<Log>): Log {
-  const blockNumber = opts.blockNumber || 1337;
-  return {
-    blockNumber: blockNumber,
-    blockHash: `0xblockHash${blockNumber}`,
-    transactionIndex: 1,
-    removed: false,
-    transactionLogIndex: 1,
-    data: '0x',
-    transactionHash: `0xtxHash${blockNumber}`,
-    logIndex: 1,
-    ...opts,
-    address: filter.address!,
-    topics: filter.topics!,
-  };
-}
-
-/**
- * Returns a mocked MatrixClient
- *
- * @param userId - userId of account owner
- * @param server - server mock hostname
- * @returns Mocked MatrixClient
- */
-export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixClient> {
-  return (Object.assign(new EventEmitter(), {
-    startClient: jest.fn(async () => true),
-    stopClient: jest.fn(() => true),
-    joinRoom: jest.fn(async () => true),
-    // reject to test register
-    login: jest.fn().mockRejectedValue(new Error('invalid password')),
-    register: jest.fn(async (userName) => {
-      userId = `@${userName}:${server}`;
-      return {
-        user_id: userId,
-        device_id: `${userName}_device_id`,
-        access_token: `${userName}_access_token`,
-      };
-    }),
-    searchUserDirectory: jest.fn(async ({ term }) => ({
-      results: [{ user_id: `@${term}:${server}`, display_name: `${term}_display_name` }],
-    })),
-    getUserId: jest.fn(() => userId),
-    getUsers: jest.fn(() => []),
-    getUser: jest.fn((userId) => ({ userId, presence: 'offline', setDisplayName: jest.fn() })),
-    getProfileInfo: jest.fn(async (userId) => ({ displayname: `${userId}_display_name` })),
-    setDisplayName: jest.fn(async () => null),
-    setAvatarUrl: jest.fn(async () => null),
-    setPresence: jest.fn(async () => null),
-    createRoom: jest.fn(async ({ visibility, invite }) => ({
-      room_id: `!roomId_${visibility || 'public'}_with_${(invite || []).join('_')}:${server}`,
-      getMember: jest.fn(),
-      getCanonicalAlias: jest.fn(() => null),
-      getAliases: jest.fn(() => []),
-    })),
-    getRoom: jest.fn((roomId) => ({
-      roomId,
-      getMember: jest.fn(),
-      getCanonicalAlias: jest.fn(() => null),
-      getAliases: jest.fn(() => []),
-    })),
-    getRooms: jest.fn(() => []),
-    getHomeserverUrl: jest.fn(() => getServerName(server)),
-    invite: jest.fn(async () => true),
-    leave: jest.fn(async () => true),
-    sendEvent: jest.fn(async () => true),
-    _http: {
-      opts: {},
-      // mock request done by raiden/utils::getUserPresence
-      authedRequest: jest.fn(async () => ({
-        user_id: 'user_id',
-        last_active_ago: 1,
-        presence: 'online',
-      })),
-    },
-    turnServer: jest.fn(async () => ({
-      uris: 'https://turn.raiden.test',
-      ttl: 86400,
-      username: 'user',
-      password: 'password',
-    })),
-  }) as unknown) as jest.Mocked<MatrixClient>;
-}
-
-/**
- * Returns some valid signature
- *
- * @returns Some arbitrary valid signature hex string
- */
-export function makeSignature(): Signature {
-  return '0x5770d597b270ad9d1225c901b1ef6bfd8782b15d7541379619c5dae02c5c03c1196291b042a4fea9dbddcb1c6bcd2a5ee19180e8dc881c2e9298757e84ad190b1c' as Signature;
-}
-
-/**
- * Spies and mocks classes constructors on globalThis
- *
- * @returns Mocked spies
- */
-export function mockRTC() {
-  const rtcDataChannel = (Object.assign(new EventEmitter(), {
-    close: jest.fn(),
-  }) as unknown) as jest.Mocked<RTCDataChannel & EventEmitter>;
-
-  const rtcConnection = (Object.assign(new EventEmitter(), {
-    createDataChannel: jest.fn(() => rtcDataChannel),
-    createOffer: jest.fn(async () => ({})),
-    createAnswer: jest.fn(async () => ({})),
-    setLocalDescription: jest.fn(async () => {
-      /* local */
-    }),
-    setRemoteDescription: jest.fn(async () => {
-      /* remote */
-    }),
-    addIceCandidate: jest.fn(),
-  }) as unknown) as jest.Mocked<RTCPeerConnection & EventEmitter>;
-
-  const RTCPeerConnection = jest
-    .spyOn(globalThis, 'RTCPeerConnection')
-    .mockImplementation(() => rtcConnection);
-
-  return { rtcDataChannel, rtcConnection, RTCPeerConnection };
 }
