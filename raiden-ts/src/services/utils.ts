@@ -3,20 +3,23 @@ import * as t from 'io-ts';
 import { Observable, from, of, EMPTY } from 'rxjs';
 import { mergeMap, map, timeout, withLatestFrom, catchError, toArray } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
+import { concat } from 'ethers/utils';
 import memoize from 'lodash/memoize';
 
+import { Signer } from 'ethers/abstract-signer';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
-import { Address, UInt, decode } from '../utils/types';
-import { losslessParse } from '../utils/data';
+import { Address, UInt, decode, Signed, Signature } from '../utils/types';
+import { losslessParse, encode } from '../utils/data';
 import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
 import { channelAmounts, channelKey } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
 import { RaidenError, ErrorCodes } from '../utils/error';
+import { MessageTypeId } from '../messages/utils';
 import { Capabilities } from '../constants';
 import { isValidUrl } from '../helpers';
-import { PFS } from './types';
+import { PFS, IOU } from './types';
 
 /**
  * Either returns true if given channel can route a payment, or a reason as string if not
@@ -160,4 +163,35 @@ export function pfsListInfo(
       });
     }),
   );
+}
+
+/**
+ * Pack an IOU for signing or verification
+ *
+ * @param iou - IOU to be packed
+ * @returns Packed IOU as a UInt8Array
+ */
+export function packIOU(iou: IOU) {
+  return concat([
+    encode(iou.one_to_n_address, 20),
+    encode(iou.chain_id, 32),
+    encode(MessageTypeId.IOU, 32),
+    encode(iou.sender, 20),
+    encode(iou.receiver, 20),
+    encode(iou.amount, 32),
+    encode(iou.expiration_block, 32),
+  ]);
+}
+
+/**
+ * Sign an IOU with signer
+ *
+ * @param signer - Signer instance
+ * @param iou - IOU to be signed
+ * @returns Signed IOU
+ */
+export async function signIOU(signer: Signer, iou: IOU): Promise<Signed<IOU>> {
+  return signer
+    .signMessage(packIOU(iou))
+    .then((signature) => ({ ...iou, signature: signature as Signature }));
 }

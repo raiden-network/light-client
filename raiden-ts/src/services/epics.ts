@@ -23,7 +23,6 @@ import {
   take,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
-import { Signer } from 'ethers/abstract-signer';
 import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, toUtf8Bytes, verifyMessage, concat } from 'ethers/utils';
 import { Two, Zero, WeiPerEther } from 'ethers/constants';
@@ -46,7 +45,7 @@ import { RaidenError, ErrorCodes } from '../utils/error';
 import { pluckDistinct } from '../utils/rx';
 import { Capabilities } from '../constants';
 import { iouClear, pathFind, iouPersist, pfsListUpdated, udcDeposited } from './actions';
-import { channelCanRoute, pfsInfo, pfsListInfo } from './utils';
+import { channelCanRoute, pfsInfo, pfsListInfo, packIOU, signIOU } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
 
 const oneToNAddress = memoize(
@@ -72,109 +71,75 @@ function makeTimestamp(time?: Date): string {
   return (time ?? new Date()).toISOString().substr(0, 19);
 }
 
-const makeIOU = (
-  sender: Address,
-  receiver: Address,
-  chainId: number,
-  oneToNAddress: Address,
-  blockNumber: number,
-): IOU => ({
-  sender: sender,
-  receiver: receiver,
-  chain_id: bigNumberify(chainId) as UInt<32>,
-  amount: Zero as UInt<32>,
-  one_to_n_address: oneToNAddress,
-  expiration_block: bigNumberify(blockNumber).add(2 * 10 ** 5) as UInt<32>,
-});
-
-const updateIOU = (iou: IOU, price: UInt<32>): IOU => ({
-  ...iou,
-  amount: iou.amount.add(price) as UInt<32>,
-});
-
-const packIOU = (iou: IOU) =>
-  concat([
-    encode(iou.one_to_n_address, 20),
-    encode(iou.chain_id, 32),
-    encode(MessageTypeId.IOU, 32),
-    encode(iou.sender, 20),
-    encode(iou.receiver, 20),
-    encode(iou.amount, 32),
-    encode(iou.expiration_block, 32),
-  ]);
-
-const signIOU$ = (iou: IOU, signer: Signer): Observable<Signed<IOU>> =>
-  from(signer.signMessage(packIOU(iou)) as Promise<Signature>).pipe(
-    map((signature) => ({ ...iou, signature })),
-  );
-
-const makeAndSignLastIOURequest$ = (sender: Address, receiver: Address, signer: Signer) =>
-  defer(() => {
-    const timestamp = makeTimestamp(),
-      message = concat([sender, receiver, toUtf8Bytes(timestamp)]);
-    return from(signer.signMessage(message) as Promise<Signature>).pipe(
-      map((signature) => ({ sender, receiver, timestamp, signature })),
-    );
-  });
-
-const prepareNextIOU$ = (
+function fetchLastIou$(
   pfs: PFS,
   tokenNetwork: Address,
-  { address, signer, network, userDepositContract, latest$ }: RaidenEpicDeps,
-): Observable<Signed<IOU>> => {
-  return latest$.pipe(
-    first(),
-    switchMap(({ state, config: { httpTimeout } }) => {
-      const cachedIOU: IOU | undefined = state.iou[tokenNetwork]?.[pfs.address];
-      return (cachedIOU
-        ? of(cachedIOU)
-        : makeAndSignLastIOURequest$(address, pfs.address, signer).pipe(
-            mergeMap((payload) =>
-              fromFetch(
-                `${pfs.url}/api/v1/${tokenNetwork}/payment/iou?${new URLSearchParams(
-                  payload,
-                ).toString()}`,
-                {
-                  method: 'GET',
-                  headers: { 'Content-Type': 'application/json' },
-                },
-              ).pipe(timeout(httpTimeout)),
-            ),
-            withLatestFrom(latest$.pipe(pluck('state'))),
-            mergeMap(async ([response, { blockNumber }]) => {
-              if (response.status === 404) {
-                return makeIOU(
-                  address,
-                  pfs.address,
-                  network.chainId,
-                  await oneToNAddress(userDepositContract),
-                  blockNumber,
-                );
-              }
-              const text = await response.text();
-              if (!response.ok)
-                throw new RaidenError(ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, {
-                  responseStatus: response.status,
-                  responseText: text,
-                });
+  { address, signer, network, userDepositContract, latest$, config$ }: RaidenEpicDeps,
+): Observable<IOU> {
+  return defer(() => {
+    const timestamp = makeTimestamp(),
+      message = concat([address, pfs.address, toUtf8Bytes(timestamp)]);
+    return from(signer.signMessage(message) as Promise<Signature>).pipe(
+      map((signature) => ({ sender: address, receiver: pfs.address, timestamp, signature })),
+    );
+  }).pipe(
+    withLatestFrom(config$),
+    mergeMap(([payload, { httpTimeout }]) =>
+      fromFetch(
+        `${pfs.url}/api/v1/${tokenNetwork}/payment/iou?${new URLSearchParams(payload).toString()}`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ).pipe(timeout(httpTimeout)),
+    ),
+    withLatestFrom(latest$.pipe(pluck('state', 'blockNumber'))),
+    mergeMap(async ([response, blockNumber]) => {
+      if (response.status === 404) {
+        return {
+          sender: address,
+          receiver: pfs.address,
+          chain_id: bigNumberify(network.chainId) as UInt<32>,
+          amount: Zero as UInt<32>,
+          one_to_n_address: await oneToNAddress(userDepositContract),
+          expiration_block: bigNumberify(blockNumber).add(2 * 10 ** 5) as UInt<32>,
+        }; // return empty/zeroed IOU
+      }
+      const text = await response.text();
+      if (!response.ok)
+        throw new RaidenError(ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, {
+          responseStatus: response.status,
+          responseText: text,
+        });
 
-              const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
-              const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
-              if (signer !== address)
-                throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, {
-                  signer,
-                  address,
-                });
-              return lastIou;
-            }),
-          )
-      ).pipe(
-        map((iou) => updateIOU(iou, pfs.price)),
-        mergeMap((iou) => signIOU$(iou, signer)),
-      );
+      const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
+      const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
+      if (signer !== address)
+        throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, {
+          signer,
+          address,
+        });
+      return lastIou;
     }),
   );
-};
+}
+
+function prepareNextIOU$(
+  pfs: PFS,
+  tokenNetwork: Address,
+  deps: RaidenEpicDeps,
+): Observable<Signed<IOU>> {
+  return deps.latest$.pipe(
+    first(),
+    mergeMap(({ state }) => {
+      const cachedIOU = state.iou[tokenNetwork]?.[pfs.address];
+      return cachedIOU ? of(cachedIOU) : fetchLastIou$(pfs, tokenNetwork, deps);
+    }),
+    // increment lastIou by pfs.price
+    map((iou) => ({ ...iou, amount: iou.amount.add(pfs.price) as UInt<32> })),
+    mergeMap((iou) => signIOU(deps.signer, iou)),
+  );
+}
 
 /**
  * Check if a transfer can be made and return a set of paths for it.
