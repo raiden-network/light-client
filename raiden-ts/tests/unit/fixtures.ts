@@ -10,7 +10,7 @@ import { Wallet } from 'ethers';
 import { AddressZero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
 
-import { Address, Hash, Int, Signature, Signed, UInt } from 'raiden-ts/utils/types';
+import { Address, Hash, Int, UInt } from 'raiden-ts/utils/types';
 import { Processed, MessageType } from 'raiden-ts/messages/types';
 import { makeMessageId, makePaymentId } from 'raiden-ts/transfers/utils';
 import { IOU } from 'raiden-ts/services/types';
@@ -75,8 +75,7 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
       chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
       expiration_block: bigNumberify(3232341) as UInt<32>,
       amount: bigNumberify(100) as UInt<32>,
-      signature: '0x87ea2a9c6834513dcabfca011c4422eb02a824b8bbbfc8f555d6a6dd2ebbbe953e1a47ad27b9715d8c8cf2da833f7b7d6c8f9bdb997591b7234999901f042caf1b' as Signature,
-    } as Signed<IOU>,
+    } as IOU,
     key = channelKey({ tokenNetwork, partner }),
     action$ = new Subject<RaidenAction>(),
     state$ = new Subject<RaidenState>();

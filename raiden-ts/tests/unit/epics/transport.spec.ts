@@ -539,13 +539,13 @@ describe('transport epic', () => {
     promise = matrixUpdateCapsEpic(action$, state$, depsMock).toPromise();
     action$.next(
       raidenConfigUpdate({
-        caps: { [Capabilities.NO_DELIVERY]: true, customCap: 'abc' },
+        caps: { [Capabilities.NO_RECEIVE]: true, customCap: 'abc' },
       }),
     );
     setTimeout(() => action$.complete(), 10);
     await expect(promise).resolves.toBeUndefined();
     expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(2);
-    expect(matrix.setAvatarUrl).toHaveBeenCalledWith('noReceive,noDelivery,customCap="abc"');
+    expect(matrix.setAvatarUrl).toHaveBeenCalledWith('noReceive,customCap="abc"');
   });
 
   describe('matrixCreateRoomEpic', () => {
@@ -1619,6 +1619,10 @@ describe('transport epic', () => {
 
     test('success caller & candidates', async () => {
       expect.assertions(4);
+
+      // change partner to one with higher address, to be the callee
+      partner = '0xFffFfFFF00000000000000000000000000000088' as Address;
+      partnerUserId = `@${partner.toLowerCase()}:${matrixServer}`;
 
       const promise = rtcConnectEpic(action$, state$, depsMock)
         .pipe(takeUntil(timer(200)), toArray())
