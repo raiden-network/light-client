@@ -18,26 +18,44 @@
     </div>
     <offline-snackbar />
     <update-snackbar />
+    <receiving-disabled-dialog
+      :visible="showReceivingDisabled"
+      @dismiss="showReceivingDisabled = false"
+    />
   </v-app>
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator';
+import { Component, Mixins, Watch } from 'vue-property-decorator';
+import { mapGetters } from 'vuex';
 import NavigationMixin from './mixins/navigation-mixin';
 import AppHeader from '@/components/AppHeader.vue';
 import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
+import ReceivingDisabledDialog from '@/components/dialogs/ReceivingDisabledDialog.vue';
 
 @Component({
+  computed: {
+    ...mapGetters(['canReceive'])
+  },
   components: {
     AppHeader,
     OfflineSnackbar,
-    UpdateSnackbar
+    UpdateSnackbar,
+    ReceivingDisabledDialog
   }
 })
 export default class App extends Mixins(NavigationMixin) {
+  canReceive!: boolean;
+  showReceivingDisabled = false;
+
   destroyed() {
     this.$raiden.disconnect();
+  }
+
+  @Watch('canReceive')
+  onCanReceiveChanged(canReceive: boolean | undefined) {
+    this.showReceivingDisabled = canReceive === false;
   }
 }
 </script>
