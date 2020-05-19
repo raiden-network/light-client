@@ -52,7 +52,7 @@ export const getContracts = (network: Network): ContractsInfo => {
         ...goerliDeploy.contracts,
         ...goerliServicesDeploy.contracts,
       } as unknown) as ContractsInfo;
-    case 'homestead': 
+    case 'homestead':
       return ({
         ...mainnetDeploy.contracts,
         ...mainnetServicesDeploy.contracts,
