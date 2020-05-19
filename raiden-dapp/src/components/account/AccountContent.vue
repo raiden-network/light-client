@@ -10,12 +10,12 @@
         <v-col cols="10">
           <span class="account-content__account-details--address">
             <address-display
-              class="account-content__account-details--address__desktop"
+              class="account-content__account-details--address--desktop"
               :address="defaultAccount"
               full-address
             />
             <address-display
-              class="account-content__account-details--address__mobile"
+              class="account-content__account-details--address--mobile"
               :address="defaultAccount"
             />
           </span>
@@ -205,24 +205,31 @@ export default class AccountContent extends Mixins(NavigationMixin) {
     &--address {
       font-size: 16px;
 
-      &__desktop {
+      &--desktop {
         margin-top: 2px;
         @include respond-to(handhelds) {
           display: none;
         }
       }
 
-      &__mobile {
+      &--mobile {
         display: none;
         margin-top: 2px;
         @include respond-to(handhelds) {
           display: flex;
+          margin-left: 30px;
         }
       }
     }
 
     &__eth {
       margin-bottom: 66px;
+
+      &--balance {
+        @include respond-to(handhelds) {
+          margin-left: 30px;
+        }
+      }
 
       &__currency,
       &__balance {

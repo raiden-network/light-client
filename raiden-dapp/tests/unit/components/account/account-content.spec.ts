@@ -45,10 +45,10 @@ describe('AccountContent.vue', () => {
       .findAll('.account-content__account-details--address')
       .at(0);
     const addressDesktop = wrapper.find(
-      '.account-content__account-details--address__desktop'
+      '.account-content__account-details--address--desktop'
     );
     const addressMobile = wrapper.find(
-      '.account-content__account-details--address__mobile'
+      '.account-content__account-details--address--mobile'
     );
 
     expect(addressTitle.text()).toBe('account-content.address');
