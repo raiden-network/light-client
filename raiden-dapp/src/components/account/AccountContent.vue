@@ -2,13 +2,6 @@
   <div class="account-content">
     <div v-if="!loading && defaultAccount">
       <v-row class="account-content__account-details" no-gutters>
-        <v-col cols="12">
-          <div class="account-content__account-details--title">
-            {{ $t('account-content.account-details') }}
-          </div>
-        </v-col>
-      </v-row>
-      <v-row no-gutters>
         <v-col cols="2">
           <span class="account-content__account-details--address">
             {{ $t('account-content.address') }}
@@ -16,7 +9,15 @@
         </v-col>
         <v-col cols="10">
           <span class="account-content__account-details--address">
-            <address-display :address="defaultAccount" full-address />
+            <address-display
+              class="account-content__account-details--address__desktop"
+              :address="defaultAccount"
+              full-address
+            />
+            <address-display
+              class="account-content__account-details--address__mobile"
+              :address="defaultAccount"
+            />
           </span>
         </v-col>
       </v-row>
@@ -45,8 +46,7 @@
             max-width="40px"
             height="36px"
             contain
-          >
-          </v-img>
+          ></v-img>
         </div>
         <v-list-item-content>
           <v-list-item-title>{{ menuItem.title }}</v-list-item-title>
@@ -187,6 +187,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
+@import '../../scss/mixins';
 @import '../../scss/colors';
 
 .account-content {
@@ -201,8 +202,23 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       padding-bottom: 15px;
     }
 
-    &__address {
+    &--address {
       font-size: 16px;
+
+      &__desktop {
+        margin-top: 2px;
+        @include respond-to(handhelds) {
+          display: none;
+        }
+      }
+
+      &__mobile {
+        display: none;
+        margin-top: 2px;
+        @include respond-to(handhelds) {
+          display: flex;
+        }
+      }
     }
 
     &__eth {
