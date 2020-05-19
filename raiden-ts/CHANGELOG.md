@@ -1,7 +1,6 @@
 # Changelog
 
 ## [Unreleased]
-
 ### Changed
 - [#842] Don't enforce test nets.
 

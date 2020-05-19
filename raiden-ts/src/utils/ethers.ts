@@ -162,5 +162,9 @@ export function patchSignSend(provider: JsonRpcProvider): void {
  * @returns name or chainId as string
  */
 export function getNetworkName(network: Network) {
-  return network.name !== 'unknown' ? network.name : network.chainId.toString();
+  return network.name === 'unknown'
+    ? network.chainId.toString()
+    : network.name === 'homestead'
+    ? 'mainnet'
+    : network.name;
 }
