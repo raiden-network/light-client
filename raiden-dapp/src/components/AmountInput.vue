@@ -208,10 +208,8 @@ $header-vertical-margin-mobile: 2rem;
       font-family: $main-font;
       font-size: 14px;
       line-height: 16px;
-      margin-top: 2px;
 
       &__wrapper {
-        height: 25px;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
