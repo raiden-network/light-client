@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { timer } from 'rxjs';
 import { first, filter, takeUntil } from 'rxjs/operators';
-import { Zero } from 'ethers/constants';
+import { Zero, MaxUint256 } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
 
 import { TestProvider } from './provider';
@@ -312,7 +312,11 @@ describe('Raiden', () => {
 
   describe('getUDCCapacity', () => {
     test('no balance', async () => {
-      expect.assertions(1);
+      expect.assertions(3);
+      // initial high, to avoid it interferring with caps[Capabilities.NO_RECEIVE]
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(MaxUint256);
+      await expect(raiden.userDepositTokenAddress()).resolves.toMatch(/^0x/);
+      // should be updated soonish
       await expect(raiden.getUDCCapacity()).resolves.toEqual(Zero);
     });
 

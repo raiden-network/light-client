@@ -9,17 +9,21 @@ import {
   startWith,
   map,
   scan,
+  distinctUntilChanged,
 } from 'rxjs/operators';
-import { Zero } from 'ethers/constants';
+import { MaxUint256 } from 'ethers/constants';
 import negate from 'lodash/negate';
 import unset from 'lodash/fp/unset';
+import isEmpty from 'lodash/isEmpty';
+import isEqual from 'lodash/isEqual';
 
 import { RaidenState } from './state';
 import { RaidenEpicDeps, Latest } from './types';
 import { RaidenAction, raidenShutdown } from './actions';
-import { PartialRaidenConfig, RaidenConfig } from './config';
+import { RaidenConfig } from './config';
+import { Capabilities } from './constants';
 import { pluckDistinct } from './utils/rx';
-import { getPresences$, getCaps$ } from './transport/utils';
+import { getPresences$ } from './transport/utils';
 import { rtcChannel } from './transport/actions';
 import { pfsListUpdated, udcDeposited } from './services/actions';
 import { Address, UInt } from './utils/types';
@@ -29,6 +33,36 @@ import * as ChannelsEpics from './channels/epics';
 import * as TransportEpics from './transport/epics';
 import * as TransfersEpics from './transfers/epics';
 import * as ServicesEpics from './services/epics';
+
+// calculate dynamic config, based on default, user and udcBalance (for receiving caps)
+function getConfig$(
+  defaultConfig: RaidenConfig,
+  state$: Observable<RaidenState>,
+  udcBalance$: Observable<UInt<32>>,
+): Observable<RaidenConfig> {
+  const partialConfig$ = state$.pipe(pluckDistinct('config'));
+  return combineLatest([partialConfig$, udcBalance$]).pipe(
+    map(
+      ([userConfig, udcBalance]): RaidenConfig => {
+        const config: RaidenConfig = { ...defaultConfig, ...userConfig };
+        // if user config caps is null, disable it; else, calculate dynamic default values
+        const caps =
+          userConfig.caps === null
+            ? userConfig.caps
+            : {
+                [Capabilities.NO_RECEIVE]: !(
+                  config.monitoringReward?.gt(0) &&
+                  config.monitoringReward.lte(udcBalance) &&
+                  !isEmpty(config.rateToSvt)
+                ),
+                ...config.caps, // default and user config overwrite runtime caps above
+              };
+        return { ...config, caps };
+      },
+    ),
+    distinctUntilChanged(isEqual),
+  );
+}
 
 /**
  * This function maps cached/latest relevant values from action$ & state$
@@ -45,10 +79,13 @@ export function getLatest$(
   // do not use latest$ or dependents (e.g. config$), as they're defined here
   { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
 ): Observable<Latest> {
-  const config$ = state$.pipe(
-    pluckDistinct('config'),
-    map((c: PartialRaidenConfig): RaidenConfig => ({ ...defaultConfig, ...c })),
+  const udcBalance$ = action$.pipe(
+    filter(udcDeposited.is),
+    pluck('payload'),
+    // starts with max, to prevent receiving starting as disabled before actual balance is fetched
+    startWith(MaxUint256 as UInt<32>),
   );
+  const config$ = getConfig$(defaultConfig, state$, udcBalance$);
   const presences$ = getPresences$(action$);
   const pfsList$ = action$.pipe(
     filter(pfsListUpdated.is),
@@ -65,18 +102,12 @@ export function getLatest$(
     ),
     startWith({} as Latest['rtc']),
   );
-  const udcBalance$ = action$.pipe(
-    filter(udcDeposited.is),
-    pluck('payload'),
-    startWith(Zero as UInt<32>),
-  );
-  const caps$ = getCaps$(config$, udcBalance$);
   // the nested combineLatest is needed because it can only infer the type of 6 params
   return combineLatest([
     combineLatest([action$, state$, config$, presences$, pfsList$, rtc$]),
-    combineLatest([udcBalance$, caps$]),
+    combineLatest([udcBalance$]),
   ]).pipe(
-    map(([[action, state, config, presences, pfsList, rtc], [udcBalance, caps]]) => ({
+    map(([[action, state, config, presences, pfsList, rtc], [udcBalance]]) => ({
       action,
       state,
       config,
@@ -84,7 +115,6 @@ export function getLatest$(
       pfsList,
       rtc,
       udcBalance,
-      caps,
     })),
   );
 }

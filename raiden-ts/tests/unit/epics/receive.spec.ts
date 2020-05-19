@@ -5,7 +5,7 @@ import { of, EMPTY } from 'rxjs';
 import { first, toArray, tap, pluck } from 'rxjs/operators';
 
 import { Capabilities } from 'raiden-ts/constants';
-import { raidenConfigUpdate } from 'raiden-ts/actions';
+import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
 import {
   MessageType,
   LockedTransfer,
@@ -805,7 +805,7 @@ describe('receive transfers', () => {
     });
 
     test('initQueuePendingReceivedEpic', async () => {
-      expect.assertions(4);
+      expect.assertions(5);
       const state$ = depsMock.latest$.pipe(pluckDistinct('state'));
 
       // receiving enabled, unknown secret
@@ -825,11 +825,25 @@ describe('receive transfers', () => {
 
       // with receiving disabled, ensure transferSigned but no secret requested
       action$.next(raidenConfigUpdate({ caps: { [Capabilities.NO_RECEIVE]: true } }));
-      await expect(
-        initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
-      ).resolves.toEqual([
+      const output: RaidenAction[] = [];
+      const sub = initQueuePendingReceivedEpic(EMPTY, state$, depsMock).subscribe((o) =>
+        output.push(o),
+      );
+      expect(output).toEqual([
         transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
       ]);
+      // enable receiving at runtime, and expect presence & secret requests to be emitted
+      action$.next(raidenConfigUpdate({ caps: { [Capabilities.NO_RECEIVE]: false } }));
+      expect(output).toEqual([
+        transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
+        matrixPresence.request(undefined, { address: partner }),
+        transferSecretRequest(
+          { message: expect.objectContaining({ type: MessageType.SECRET_REQUEST }) },
+          { secrethash, direction },
+        ),
+      ]);
+
+      sub.unsubscribe();
 
       // secret known, no reveal signed, emits transferSecret to prompt reveal signing again
       action$.next(transferSecret({ secret }, { secrethash, direction }));
