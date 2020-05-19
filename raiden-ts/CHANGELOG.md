@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+- [#842] Enabled mainnet.
+
+[#842]: https://github.com/raiden-network/light-client/issues/842
+
 ## [0.8.0] - 2020-05-14
 ### Added
 - [#1369] Monitoring based on channel's balance

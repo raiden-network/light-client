@@ -8,6 +8,9 @@
 - [#1493] Properly handles tokens with zero decimals, fixes transaction history token display.
 - [#1485] Fixed token list sorting.
 
+### Changed
+- [#842] Disable mainnet w/ environment variable.
+
 [#1506]: https://github.com/raiden-network/light-client/issues/1506
 [#1493]: https://github.com/raiden-network/light-client/issues/1493
 [#1485]: https://github.com/raiden-network/light-client/issues/1485
