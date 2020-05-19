@@ -23,7 +23,7 @@ describe('getContracts', () => {
   });
 
   test('throw if network is not supported', async () => {
-    const mainNetwork = { name: 'homestead', chainId: 1 } as Network;
+    const mainNetwork = { name: 'private-chain', chainId: 666 } as Network;
     expect(() => getContracts(mainNetwork)).toThrow();
   });
 });
