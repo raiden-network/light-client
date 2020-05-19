@@ -352,10 +352,10 @@ function handlePresenceChange$(
       (a, b) =>
         a.payload.userId === b.payload.userId && a.payload.available === b.payload.available,
     ),
-    withLatestFrom(matrix$, config$, latest$),
+    withLatestFrom(matrix$, config$),
     filter(
-      ([action, , , { caps }]) =>
-        !!action.payload.caps?.[Capabilities.WEBRTC] && !!caps[Capabilities.WEBRTC],
+      ([action, , { caps }]) =>
+        !!action.payload.caps?.[Capabilities.WEBRTC] && !!caps?.[Capabilities.WEBRTC],
     ),
     switchMap(([action, matrix, config]) => {
       // if peer goes offline in Matrix, reset dataChannel & unsubscribe defer to close dataChannel

@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#1473] Expose config$ observable
+
+[#1473]: https://github.com/raiden-network/light-client/issues/1473
+
 ### Changed
 - [#842] Don't enforce test nets.
 

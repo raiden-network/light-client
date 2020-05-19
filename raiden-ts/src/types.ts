@@ -16,7 +16,7 @@ import { RaidenAction } from './actions';
 import { RaidenState } from './state';
 import { Address, UInt } from './utils/types';
 import { RaidenConfig } from './config';
-import { Presences, Caps } from './transport/types';
+import { Presences } from './transport/types';
 
 interface Info {
   address: Address;
@@ -39,7 +39,6 @@ export interface Latest {
   pfsList: readonly Address[];
   rtc: { [address: string]: RTCDataChannel };
   udcBalance: UInt<32>;
-  caps: Caps;
 }
 
 export interface RaidenEpicDeps {

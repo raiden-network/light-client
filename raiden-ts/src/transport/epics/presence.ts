@@ -15,9 +15,11 @@ import {
   exhaustMap,
   skip,
   ignoreElements,
+  distinctUntilChanged,
 } from 'rxjs/operators';
 import minBy from 'lodash/minBy';
 import isEmpty from 'lodash/isEmpty';
+import isEqual from 'lodash/isEqual';
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 
@@ -265,16 +267,17 @@ export const matrixMonitorChannelPresenceEpic = (
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
  * @param deps.matrix$ - MatrixClient async subject
- * @param deps.latest$ - Latest values
+ * @param deps.config$ - Config object
  * @returns Observable which never emits
  */
 export const matrixUpdateCapsEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, latest$ }: RaidenEpicDeps,
+  { matrix$, config$ }: RaidenEpicDeps,
 ): Observable<never> =>
-  latest$.pipe(
-    pluckDistinct('caps'),
+  config$.pipe(
+    pluck('caps'),
+    distinctUntilChanged(isEqual),
     skip(1), // skip replay(1) and act only on changes
     mergeMap((caps) => matrix$.pipe(map((matrix) => [caps, matrix] as const))),
     mergeMap(async ([caps, matrix]) =>
