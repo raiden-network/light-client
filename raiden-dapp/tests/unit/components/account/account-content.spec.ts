@@ -62,9 +62,9 @@ describe('AccountContent.vue', () => {
     store.commit('balance', '12.0');
     await wrapper.vm.$nextTick();
     const ethTitle = wrapper.find(
-      '.account-content__account-details__eth--currency'
+      '.account-content__account-details__eth__currency'
     );
-    const eth = wrapper.find('.account-content__account-details__eth--balance');
+    const eth = wrapper.find('.account-content__account-details__eth__balance');
 
     expect(ethTitle.text()).toBe('account-content.currency');
     expect(eth.text()).toBe('12.000');
