@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Changed
-- [#842] Enabled mainnet.
+- [#842] Don't enforce test nets.
 
 [#842]: https://github.com/raiden-network/light-client/issues/842
 
