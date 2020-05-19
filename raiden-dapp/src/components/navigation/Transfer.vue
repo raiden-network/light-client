@@ -302,9 +302,9 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
       @include respond-to(handhelds) {
         width: 100%;
-        height: 270px;
         display: flex;
         flex-direction: column;
+        padding-bottom: 6px;
       }
 
       &__inputs {
@@ -329,6 +329,16 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
           margin-right: 23px;
           margin-top: 5px;
           width: 189px;
+          height: 140px;
+
+          ::v-deep {
+            .v-text-field {
+              &__details {
+                padding-top: 8px;
+              }
+            }
+          }
+
           @include respond-to(handhelds) {
             flex: none;
             margin: 0 auto;
