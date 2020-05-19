@@ -4,7 +4,9 @@ import {
   Raiden,
   RaidenPaths,
   RaidenPFS,
-  UInt
+  UInt,
+  ErrorCodes,
+  RaidenError
 } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
@@ -129,6 +131,17 @@ export default class RaidenService {
             subkey
           );
         } else {
+          // Check if trying to connect to main net
+          // and whether main net is allowed
+          /* istanbul ignore if */
+          if (
+            'networkVersion' in provider &&
+            provider.networkVersion === '1' &&
+            process.env.VUE_APP_ALLOW_MAINNET === 'false'
+          ) {
+            throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK);
+          }
+
           raiden = await RaidenService.createRaiden(
             provider,
             undefined,
