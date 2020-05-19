@@ -44,7 +44,11 @@ import { globalRoomNames, roomMatch, getRoom$, waitMemberAndSend$, parseMessage 
  *
  * @param action$ - Observable of messageSend.request actions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.config$ - Config object
+ * @param deps.latest$ - Latest values
  * @returns Observable of messageSend.success actions
  */
 export const matrixMessageSendEpic = (
@@ -94,7 +98,10 @@ export const matrixMessageSendEpic = (
  *
  * @param action$ - Observable of messageGlobalSend actions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.config$ - Config observable
  * @returns Empty observable (whole side-effect on matrix instance)
  */
 export const matrixMessageGlobalSendEpic = (
@@ -149,7 +156,11 @@ export const matrixMessageGlobalSendEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
- * @param matrix$ - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.matrix$ - MatrixClient async subject
+ * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest values
  * @returns Observable of messageReceived actions
  */
 export const matrixMessageReceivedEpic = (
@@ -217,7 +228,10 @@ export const matrixMessageReceivedEpic = (
  *
  * @param action$ - Observable of messageReceived actions
  * @param state$ - Observable of RaidenStates
- * @param signer - RaidenEpicDeps members
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.latest$ - Latest observable
  * @returns Observable of messageSend.request actions
  */
 export const deliveredEpic = (

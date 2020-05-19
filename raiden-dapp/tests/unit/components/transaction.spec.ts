@@ -3,6 +3,8 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { BigNumber } from 'ethers/utils';
 import Transaction from '@/components/transaction-history/Transaction.vue';
+import store from '@/store';
+import { Zero } from 'ethers/constants';
 
 Vue.use(Vuetify);
 
@@ -16,6 +18,7 @@ describe('Transaction.vue', () => {
   ) => {
     vuetify = new Vuetify();
     return mount(Transaction, {
+      store,
       vuetify,
       mocks: {
         $t: (msg: string) => msg
@@ -34,6 +37,18 @@ describe('Transaction.vue', () => {
       }
     });
   };
+
+  beforeEach(() => {
+    store.commit('updateTokens', {
+      '0xtoken': {
+        address: '0xtoken',
+        decimals: 18,
+        name: 'TestToken',
+        symbol: 'TTT',
+        balance: Zero
+      }
+    });
+  });
 
   test('transactions are prefixed with "sent to" for sent transfers', () => {
     wrapper = createWrapper('sent', true);

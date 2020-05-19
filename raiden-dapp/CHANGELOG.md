@@ -4,9 +4,13 @@
 
 ### Fixed
 
--[#1506] Fixed error label display on transfer screen for amount input.
+- [#1506] Fixed error label display on transfer screen for amount input.
+- [#1493] Properly handles tokens with zero decimals, fixes transaction history token display.
+- [#1485] Fixed token list sorting.
 
 [#1506]: https://github.com/raiden-network/light-client/issues/1506
+[#1493]: https://github.com/raiden-network/light-client/issues/1493
+[#1485]: https://github.com/raiden-network/light-client/issues/1485
 
 ## [0.8.0] - 2020-05-14
 

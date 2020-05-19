@@ -343,6 +343,8 @@ export function decodeJsonMessage(text: string): Message | Signed<Message> {
  *
  * @param signer - Signer instance
  * @param message - Unsigned message to pack and sign
+ * @param opts - Options
+ * @param opts.log - Logger instance
  * @returns Promise to signed message
  */
 export async function signMessage<M extends Message>(
@@ -369,7 +371,7 @@ export type messageReceivedTyped<M extends Message> = messageReceived & {
  * @param messageCodecs - Message codec to test action.payload.message against
  * @returns Typeguard intersecting messageReceived action and payload.message schemas
  */
-export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | [C, C, ...C[]]) {
+export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | C[]) {
   /**
    * Typeguard function
    *
@@ -379,6 +381,6 @@ export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | [C
   return (action: unknown): action is messageReceivedTyped<t.TypeOf<C>> =>
     messageReceived.is(action) &&
     (Array.isArray(messageCodecs)
-      ? t.union(messageCodecs).is(action.payload.message)
+      ? messageCodecs.some((c) => c.is(action.payload.message))
       : messageCodecs.is(action.payload.message));
 }

@@ -35,6 +35,8 @@ import * as ServicesEpics from './services/epics';
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
+ * @param opts - Options
+ * @param opts.defaultConfig - defaultConfig mapping
  * @returns latest$ observable
  */
 export function getLatest$(

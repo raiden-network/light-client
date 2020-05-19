@@ -72,7 +72,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+import { Component, Emit, Prop, Vue, Watch } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
@@ -98,8 +98,24 @@ export default class ChannelDepositDialog extends Vue {
   @Prop({ required: false, default: false })
   done?: boolean;
 
-  deposit: string = '0.0';
+  deposit: string = '';
   valid: boolean = false;
+
+  @Watch('visible')
+  onVisibilityChanged(visible: boolean) {
+    if (!visible) {
+      return;
+    }
+    this.updateDeposit();
+  }
+
+  mounted() {
+    this.updateDeposit();
+  }
+
+  private updateDeposit() {
+    this.deposit = (this.token.decimals ?? 18) === 0 ? '0' : '0.0';
+  }
 
   @Emit()
   cancel() {}

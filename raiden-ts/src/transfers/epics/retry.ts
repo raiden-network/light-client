@@ -260,7 +260,9 @@ const secretRevealRetryMessage$ = (
  *
  * @param action$ - Observable of transferExpire.success actions
  * @param state$ - Observable of RaidenStates
- * @param latest$ - RaidenEpicDeps latest
+ * @param deps - Epics dependencies
+ * @param deps.latest$ - Latest observable
+ * @param deps.config$ - Config observable
  * @returns Observable of messageSend.request actions
  */
 export const transferRetryMessageEpic = (

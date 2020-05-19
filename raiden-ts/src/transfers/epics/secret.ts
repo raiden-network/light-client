@@ -48,6 +48,9 @@ import { dispatchAndWait$ } from './utils';
  *
  * @param action$ - Observable of messageReceived actions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.address - Our address
+ * @param deps.log - Logger instance
  * @returns Observable of transferSecretRequest actions
  */
 export const transferSecretRequestedEpic = (
@@ -88,9 +91,11 @@ export const transferSecretRequestedEpic = (
  *
  * @param state - Contains the current state of the app
  * @param action - The {@link transferSecretRequest} action that
- * @param signer - The singer that will sign the message
+ * @param deps - Epics dependencies
+ * @param deps.signer - Signer instance
+ * @param deps.log - Logger instance
  * @returns Observable of {@link transfer.failure}, {@link transferSecretReveal} or
- *      {@link messageSend.request} actions
+ * {@link messageSend.request} actions
  */
 const secretReveal$ = (
   state: RaidenState,
@@ -162,8 +167,9 @@ const secretReveal$ = (
  * @param action$ - Observable of transferSecretRequest actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps
- * @param deps.signer - RaidenEpicDeps signer
- * @param deps.latest$ - RaidenEpicDeps latest$
+ * @param deps.signer - Signer instance
+ * @param deps.latest$ - Latest observable
+ * @param deps.log - Logger instance
  * @returns Observable of transfer.failure|transferSecretReveal|messageSend.request actions
  */
 export const transferSecretRevealEpic = (
@@ -240,6 +246,9 @@ export const transferSecretRevealedEpic = (
  * @param action$ - Observable of transferSecret|transferSecretReveal actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.latest$ - Latest observable
  * @returns Observable of transferSecretReveal actions
  */
 export const transferRequestUnlockEpic = (
@@ -278,6 +287,8 @@ export const transferRequestUnlockEpic = (
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.secretRegistryContract - SecretRegistry contract instance
  * @returns Observable of transferSecretRegister.success actions
  */
 export const monitorSecretRegistryEpic = (
@@ -350,6 +361,9 @@ export const transferSuccessOnSecretRegisteredEpic = (
  *
  * @param action$ - Observable of newBlock actions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of transferSecretRegister.request actions
  */
 export const transferAutoRegisterEpic = (
@@ -413,7 +427,13 @@ export const transferAutoRegisterEpic = (
  *
  * @param action$ - Observable of transferSecretRegister.request actions
  * @param state$ - Observable of RaidenStates
- * @param deps - Dependencies
+ * @param deps - Epics dependencies
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.address - Our address
+ * @param deps.main - Main signer/address
+ * @param deps.secretRegistryContract - SecretRegistry contract instance
+ * @param deps.config$ - Config observable
  * @returns Observable of transferSecretRegister.failure actions
  */
 export const transferSecretRegisterEpic = (

@@ -178,6 +178,10 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
       this.navigateToHome();
     }
 
+    if (this.token.decimals === 0 && this.deposit.indexOf('.') > -1) {
+      this.deposit = this.deposit.split('.')[0];
+    }
+
     if (!AddressUtils.checkAddressChecksum(partner)) {
       this.navigateToTokenSelect();
       return;

@@ -556,6 +556,7 @@ export class Raiden {
    * @param options - (optional) option parameter
    * @param options.settleTimeout - Custom, one-time settle timeout
    * @param options.subkey - Whether to use the subkey for on-chain tx or main account (default)
+   * @param options.deposit - Deposit to perform in parallel with channel opening
    * @param onChange - Optional callback for status change notification
    * @returns txHash of channelOpen call, iff it succeeded
    */
@@ -732,17 +733,15 @@ export class Raiden {
    * @param target - Target address (must be getAvailability before)
    * @param value - Amount to try to transfer
    * @param options - Optional parameters for transfer:
-   *    <ul>
-   *      <li>paymentId - payment identifier, a random one will be generated if missing</li>
-   *      <li>secret - Secret to register, a random one will be generated if missing</li>
-   *      <li>secrethash - Must match secret, if both provided, or else, secret must be
-   *          informed to target by other means, and reveal can't be performed</li>
-   *      <li>paths - Used to specify possible routes & fees instead of querying PFS.</li>
-   *      <li>pfs - Use this PFS instead of configured or automatically choosen ones.
-   *          Is ignored if paths were already provided. If neither are set and config.pfs is not
-   *          disabled (null), use it if set or if undefined (auto mode), fetches the best
-   *          PFS from ServiceRegistry and automatically fetch routes from it.</li>
-   *    </ul>
+   * @param options.paymentId - payment identifier, a random one will be generated if missing</li>
+   * @param options.secret - Secret to register, a random one will be generated if missing</li>
+   * @param options.secrethash - Must match secret, if both provided, or else, secret must be
+   *     informed to target by other means, and reveal can't be performed</li>
+   * @param options.paths - Used to specify possible routes & fees instead of querying PFS.</li>
+   * @param options.pfs - Use this PFS instead of configured or automatically choosen ones.
+   *     Is ignored if paths were already provided. If neither are set and config.pfs is not
+   *     disabled (null), use it if set or if undefined (auto mode), fetches the best
+   *     PFS from ServiceRegistry and automatically fetch routes from it.</li>
    * @returns A promise to transfer's unique key (id) when it's accepted
    */
   public async transfer(
