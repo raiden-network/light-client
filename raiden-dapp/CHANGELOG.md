@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+-[#1506] Fixed error label display on transfer screen for amount input.
+
+[#1506]: https://github.com/raiden-network/light-client/issues/1506
+
 ## [0.8.0] - 2020-05-14
 
 ### Added
