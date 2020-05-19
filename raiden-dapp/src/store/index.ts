@@ -6,7 +6,9 @@ import {
   ChannelState,
   RaidenChannel,
   RaidenChannels,
-  RaidenTransfer
+  RaidenTransfer,
+  RaidenConfig,
+  Capabilities
 } from 'raiden-ts';
 import {
   AccTokenModel,
@@ -45,7 +47,8 @@ const _defaultState: RootState = {
   settings: {
     isFirstTimeConnect: true,
     useRaidenAccount: true
-  }
+  },
+  config: {}
 };
 
 export function defaultState(): RootState {
@@ -120,6 +123,9 @@ const store: StoreOptions<RootState> = {
     },
     updateSettings(state: RootState, settings: Settings) {
       state.settings = settings;
+    },
+    updateConfig(state: RootState, config: Partial<RaidenConfig>) {
+      state.config = config;
     }
   },
   actions: {},
@@ -214,6 +220,9 @@ const store: StoreOptions<RootState> = {
       return state.raidenAccountBalance
         ? state.raidenAccountBalance
         : state.accountBalance;
+    },
+    canReceive: (state: RootState): boolean => {
+      return !state.config.caps?.[Capabilities.NO_RECEIVE];
     }
   },
   plugins: [settingsLocalStorage.plugin]
