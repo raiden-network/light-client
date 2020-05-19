@@ -42,13 +42,13 @@ describe('AccountContent.vue', () => {
     store.commit('account', '0x31aA9D3E2bd38d22CA3Ae9be7aae1D518fe46043');
     await wrapper.vm.$nextTick();
     const addressTitle = wrapper
-      .findAll('.account-content__account-details--address')
+      .findAll('.account-content__account-details__address')
       .at(0);
     const addressDesktop = wrapper.find(
-      '.account-content__account-details--address--desktop'
+      '.account-content__account-details__address__desktop'
     );
     const addressMobile = wrapper.find(
-      '.account-content__account-details--address--mobile'
+      '.account-content__account-details__address__mobile'
     );
 
     expect(addressTitle.text()).toBe('account-content.address');

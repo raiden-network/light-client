@@ -3,19 +3,19 @@
     <div v-if="!loading && defaultAccount">
       <v-row class="account-content__account-details" no-gutters>
         <v-col cols="2">
-          <span class="account-content__account-details--address">
+          <span class="account-content__account-details__address">
             {{ $t('account-content.address') }}
           </span>
         </v-col>
         <v-col cols="10">
-          <span class="account-content__account-details--address">
+          <span class="account-content__account-details__address">
             <address-display
-              class="account-content__account-details--address--desktop"
+              class="account-content__account-details__address__desktop"
               :address="defaultAccount"
               full-address
             />
             <address-display
-              class="account-content__account-details--address--mobile"
+              class="account-content__account-details__address__mobile"
               :address="defaultAccount"
             />
           </span>
@@ -202,17 +202,17 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       padding-bottom: 15px;
     }
 
-    &--address {
+    &__address {
       font-size: 16px;
 
-      &--desktop {
+      &__desktop {
         margin-top: 2px;
         @include respond-to(handhelds) {
           display: none;
         }
       }
 
-      &--mobile {
+      &__mobile {
         display: none;
         margin-top: 2px;
         @include respond-to(handhelds) {
