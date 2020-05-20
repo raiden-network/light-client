@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- [#1473] Notify when receiving transfers get disabled (e.g. by low UDC balance)
+
 ### Fixed
 
 - [#1516] Fixed truncation of address on Account screen
@@ -12,6 +16,7 @@
 ### Changed
 - [#842] Disable mainnet w/ environment variable.
 
+[#1473]: https://github.com/raiden-network/light-client/issues/1473
 [#1516]: https://github.com/raiden-network/light-client/issues/1516
 [#1506]: https://github.com/raiden-network/light-client/issues/1506
 [#1493]: https://github.com/raiden-network/light-client/issues/1493
