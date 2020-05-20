@@ -239,7 +239,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         debounceTime(600),
         switchMap(value => {
           if (!value) {
-            if(this.touched) {
+            if (this.touched) {
               return of<ValidationResult>({
                 error: this.$t('address-input.error.empty') as string,
                 value: ''
@@ -330,7 +330,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     if (!this.$refs.address) {
       return;
     }
-    
+
     this.valid = this.errorMessages.length === 0;
     if (!this.valid) {
       return;
