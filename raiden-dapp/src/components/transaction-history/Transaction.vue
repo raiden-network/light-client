@@ -121,7 +121,7 @@ export default class Transaction extends Vue {
 
       &__time-stamp {
         color: $secondary-text-color;
-        font-size: 10px;
+        font-size: 12px;
       }
     }
     &__details-right {
