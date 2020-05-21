@@ -28,7 +28,7 @@
     "typeface-roboto": "0.0.75",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",
-    "vue-i18n": "^8.17.5",
+    "vue-i18n": "^8.17.7",
     "vue-property-decorator": "^8.4.2",
     "vue-qrcode-reader": "^2.3.0",
     "vue-router": "^3.1.6",
