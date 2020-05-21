@@ -43,7 +43,7 @@
     "@kazupon/vue-i18n-loader": "^0.5.0",
     "@mdi/font": "^5.2.45",
     "@namics/stylelint-bem": "^6.3.1",
-    "@types/jest": "^25.2.1",
+    "@types/jest": "^25.2.3",
     "@types/lodash": "^4.14.150",
     "@types/tiny-async-pool": "^1.0.0",
     "@types/vue-i18n": "^7.0.0",
