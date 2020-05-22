@@ -14,8 +14,11 @@
 - [#1485] Fixed token list sorting.
 
 ### Changed
+
+- [#1443] Eth transfer screen redesign
 - [#842] Disable mainnet w/ environment variable.
 
+[#1443]: https://github.com/raiden-network/light-client/issues/1443
 [#1473]: https://github.com/raiden-network/light-client/issues/1473
 [#1516]: https://github.com/raiden-network/light-client/issues/1516
 [#1506]: https://github.com/raiden-network/light-client/issues/1506
