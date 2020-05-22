@@ -462,21 +462,20 @@ export const pfsCapacityUpdateEpic = (
  * @param deps.network - Current network
  * @param deps.signer - Signer instance
  * @param deps.config$ - Config observable
- * @param deps.latest$ - Latest observable
  * @returns Observable of messageGlobalSend actions
  */
 export const pfsFeeUpdateEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, address, network, signer, config$, latest$ }: RaidenEpicDeps,
+  { log, address, network, signer, config$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
   state$.pipe(
     groupChannel$,
     // get only first state per channel
     mergeMap((grouped$) => grouped$.pipe(first())),
-    withLatestFrom(config$, latest$),
+    withLatestFrom(config$),
     // ignore actions while/if mediating not enabled
-    filter(([, { pfsRoom }, { caps }]) => !!pfsRoom && !caps[Capabilities.NO_MEDIATE]),
+    filter(([, { pfsRoom, caps }]) => !!pfsRoom && !caps?.[Capabilities.NO_MEDIATE]),
     mergeMap(([channel, { pfsRoom }]) => {
       if (channel.state !== ChannelState.open) return EMPTY;
 

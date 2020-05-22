@@ -1,5 +1,5 @@
-import { from, Observable } from 'rxjs';
-import { filter, first, mergeMap, withLatestFrom } from 'rxjs/operators';
+import { from, Observable, merge, of, EMPTY } from 'rxjs';
+import { filter, first, mergeMap, pluck, take, mergeMapTo } from 'rxjs/operators';
 
 import { Capabilities } from '../../constants';
 import { RaidenAction } from '../../actions';
@@ -62,13 +62,13 @@ export const initQueuePendingEnvelopeMessagesEpic = (
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
- * @param deps.latest$ - Latest observable
+ * @param deps.config$ - Config observable
  * @returns Observable of transferSigned|transferUnlock.success actions
  */
 export const initQueuePendingReceivedEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { latest$ }: RaidenEpicDeps,
+  { config$ }: RaidenEpicDeps,
 ) =>
   state$.pipe(
     first(),
@@ -82,23 +82,35 @@ export const initQueuePendingReceivedEpic = (
         !received.secret?.[1]?.registerBlock &&
         !received.channelClosed,
     ),
-    withLatestFrom(latest$),
-    mergeMap(function* ([[secrethash, received], { caps }]) {
+    mergeMap(([secrethash, received]) => {
       // loop over all pending transfers
       const meta = { secrethash, direction: Direction.RECEIVED };
-      // on init, request monitor presence of any pending transfer initiator
-      yield transferSigned({ message: received.transfer[1], fee: received.fee }, meta);
-      // already revealed to us, but user didn't sign SecretReveal yet
-      if (received.secret && !received.secretReveal)
-        yield transferSecret({ secret: received.secret[1].value }, meta);
-      // already revealed to sender, but they didn't Unlock yet
-      if (received.secretReveal)
-        yield transferSecretReveal({ message: received.secretReveal[1] }, meta);
-      // secret not yet known; request iff receiving is enabled
-      // secretRequest should always be defined as we sign it when receiving transfer
-      if (!caps[Capabilities.NO_RECEIVE] && !received.secret && received.secretRequest) {
-        yield matrixPresence.request(undefined, { address: received.transfer[1].initiator });
-        yield transferSecretRequest({ message: received.secretRequest[1] }, meta);
-      }
+      return merge(
+        // on init, request monitor presence of any pending transfer initiator
+        of(transferSigned({ message: received.transfer[1], fee: received.fee }, meta)),
+        // already revealed to us, but user didn't sign SecretReveal yet
+        received.secret && !received.secretReveal
+          ? of(transferSecret({ secret: received.secret[1].value }, meta))
+          : EMPTY,
+        // already revealed to sender, but they didn't Unlock yet
+        received.secretReveal
+          ? of(transferSecretReveal({ message: received.secretReveal[1] }, meta))
+          : EMPTY,
+        // secret not yet known; request *when* receiving is enabled (may be later)
+        // secretRequest should always be defined as we sign it when receiving transfer
+        !received.secret && received.secretRequest
+          ? config$.pipe(
+              pluck('caps', Capabilities.NO_RECEIVE),
+              filter((noReceive) => !noReceive),
+              take(1),
+              mergeMapTo(
+                of(
+                  matrixPresence.request(undefined, { address: received.transfer[1].initiator }),
+                  transferSecretRequest({ message: received.secretRequest[1] }, meta),
+                ),
+              ),
+            )
+          : EMPTY,
+      );
     }),
   );

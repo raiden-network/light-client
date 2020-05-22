@@ -266,7 +266,6 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       pfsList: [],
       rtc: {},
       udcBalance: Zero as UInt<32>,
-      caps: config.caps ?? {},
     }),
     config$ = latest$.pipe(pluckDistinct('config'));
 

@@ -19,7 +19,8 @@ import {
   Hash,
   Raiden,
   RaidenError,
-  RaidenTransfer
+  RaidenTransfer,
+  Capabilities
 } from 'raiden-ts';
 import { BigNumber, bigNumberify } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
@@ -58,6 +59,7 @@ describe('RaidenService', () => {
     raidenMock.address = '123';
     raidenMock.channels$ = EMPTY;
     raidenMock.events$ = EMPTY;
+    raidenMock.config$ = EMPTY;
     // Emit a dummy transfer event every time raiden is mocked
     raidenMock.transfers$ = of({}).pipe(delay(1000));
   };
@@ -714,5 +716,17 @@ describe('RaidenService', () => {
       DeniedReason.INITIALIZATION_FAILED
     );
     expect(store.commit).toBeCalledWith('loadComplete');
+  });
+
+  test('commit config$ updates', async () => {
+    expect.assertions(1);
+
+    const subject = new BehaviorSubject({});
+    (raiden as any).config$ = subject;
+    await setupSDK();
+    const config = { caps: { [Capabilities.NO_RECEIVE]: true } };
+    subject.next(config);
+
+    expect(store.commit).toHaveBeenLastCalledWith('updateConfig', config);
   });
 });

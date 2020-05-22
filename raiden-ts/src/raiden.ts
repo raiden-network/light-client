@@ -79,7 +79,6 @@ import { RaidenError, ErrorCodes } from './utils/error';
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
   private readonly deps: RaidenEpicDeps;
-  public config!: RaidenConfig;
 
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
@@ -110,6 +109,11 @@ export class Raiden {
    * may be used as identifier to know which transfer got updated.
    */
   public readonly transfers$: Observable<RaidenTransfer>;
+
+  /** RaidenConfig object */
+  public config!: RaidenConfig;
+  /** RaidenConfig observable (for reactive use)  */
+  public config$: Observable<RaidenConfig>;
 
   /**
    * Expose ether's Provider.resolveName for ENS support
@@ -241,9 +245,10 @@ export class Raiden {
       },
     });
 
-    this.deps.config$.subscribe((config) => (this.config = config));
+    this.config$ = this.deps.config$;
+    this.config$.subscribe((config) => (this.config = config));
 
-    this.deps.config$
+    this.config$
       .pipe(pluckDistinct('logger'))
       .subscribe((logger) => this.log.setLevel(logger || 'silent', false));
 

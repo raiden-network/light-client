@@ -424,6 +424,10 @@
     "problem": "Problem:",
     "solution": "Solution:"
   },
+  "receiving-disabled-dialog": {
+    "title": "Receiving transfers is disabled",
+    "body": "This may be due to configuration or UDC deposit being too low. If your client can receive, ensure you have enough UDC balance to pay for Monitoring Service (on Account menu) to enable receiving again."
+  },
   "errors": {
     "RDN_GENERAL_ERROR": {
       "title": "An error occured",

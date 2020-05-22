@@ -229,7 +229,7 @@ function setupMatrixClient$(
   server: string,
   setup: RaidenMatrixSetup | undefined,
   { address, signer }: Pick<RaidenEpicDeps, 'address' | 'signer'>,
-  caps: Caps,
+  caps: Caps | null,
 ) {
   const serverName = getServerName(server);
   if (!serverName) throw new RaidenError(ErrorCodes.TRNS_NO_SERVERNAME, { server });
@@ -317,7 +317,7 @@ export const initMatrixEpic = (
 ): Observable<matrixSetup> =>
   combineLatest([latest$, config$]).pipe(
     first(), // at startup
-    mergeMap(([{ state, caps }, { matrixServer, matrixServerLookup, httpTimeout }]) => {
+    mergeMap(([{ state }, { matrixServer, matrixServerLookup, httpTimeout, caps }]) => {
       const server = state.transport.server,
         setup = state.transport.setup;
 
