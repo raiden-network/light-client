@@ -32,7 +32,11 @@
                 :src="require('../../assets/eth.svg')"
                 width="30px"
               />
-              <v-img v-else :src="require('../../assets/logo_blue.svg')" />
+              <v-img
+                v-else
+                class="raiden-account__column__card__image__raiden-logo"
+                :src="require('../../assets/logo.svg')"
+              />
             </div>
           </div>
         </v-col>
@@ -59,7 +63,8 @@
             <div class="raiden-account__column__card__image">
               <v-img
                 v-if="isFromMainToRaidenAccount"
-                :src="require('../../assets/logo_blue.svg')"
+                class="raiden-account__column__card__image__raiden-logo"
+                :src="require('../../assets/logo.svg')"
               />
               <v-img v-else :src="require('../../assets/eth.svg')" />
             </div>
@@ -237,6 +242,11 @@ export default class RaidenAccount extends Vue {
         flex: 1;
         justify-content: center;
         width: 30px;
+
+        &__raiden-logo {
+          filter: invert(77%) sepia(19%) saturate(6534%) hue-rotate(157deg)
+            brightness(81%) contrast(91%);
+        }
       }
 
       @keyframes spin {
@@ -246,6 +256,26 @@ export default class RaidenAccount extends Vue {
         to {
           transform: rotate(360deg);
         }
+      }
+    }
+  }
+
+  &__transfer-button {
+    margin-top: 115px;
+    margin-left: 80px;
+    margin-right: 90px;
+    @include respond-to(handhelds) {
+      margin-left: 40px;
+      margin-right: 40px;
+    }
+
+    ::v-deep {
+      .col-10 {
+        flex: 1;
+        max-width: 100%;
+      }
+      .v-btn {
+        border-radius: 8px;
       }
     }
   }
@@ -270,26 +300,6 @@ export default class RaidenAccount extends Vue {
             animation-timing-function: linear;
           }
         }
-      }
-    }
-  }
-
-  &__transfer-button {
-    margin-top: 115px;
-    margin-left: 80px;
-    margin-right: 90px;
-    @include respond-to(handhelds) {
-      margin-left: 40px;
-      margin-right: 40px;
-    }
-
-    ::v-deep {
-      .col-10 {
-        flex: 1;
-        max-width: 100%;
-      }
-      .v-btn {
-        border-radius: 8px;
       }
     }
   }
