@@ -1,58 +1,115 @@
 <template>
-  <v-row class="fill-height" justify="center" align="center">
+  <div justify="center">
     <v-form
       v-if="!loading && !error"
       ref="form"
       v-model="valid"
-      class="raiden-account"
       @submit.prevent="transfer"
     >
-      <v-row justify="center" align-content="center">
+      <v-row class="raiden-account__title" no-gutters justify="center">
+        <span v-if="isFromMainToRaidenAccount">
+          {{ $t('raiden-account.transfer-from-main-account') }}
+        </span>
+        <span v-else>
+          {{ $t('raiden-account.transfer-from-raiden-account') }}
+        </span>
+      </v-row>
+      <v-row no-gutters justify="center">
         <v-col cols="3" class="raiden-account__column">
-          <span v-if="isFromMainToRaidenAccount">
-            {{ $t('general.main-account') }}
-          </span>
-          <span v-else>
-            {{ $t('general.raiden-account') }}
-          </span>
+          <div class="raiden-account__column__card">
+            <span
+              v-if="isFromMainToRaidenAccount"
+              class="raiden-account__column__card__title"
+            >
+              {{ $t('general.main-account') }}
+            </span>
+            <span v-else class="raiden-account__column__card__title">
+              {{ $t('general.raiden-account') }}
+            </span>
+            <div class="raiden-account__column__card__image">
+              <v-img
+                v-if="isFromMainToRaidenAccount"
+                :src="require('../../assets/eth.svg')"
+                width="30px"
+              />
+              <v-img v-else :src="require('../../assets/logo_blue.svg')" />
+            </div>
+          </div>
         </v-col>
-        <v-col cols="3" class="raiden-account__column">
-          <v-btn icon x-large @click="toggleDirection">
-            <v-icon x-large color="primary">mdi-autorenew</v-icon>
+        <v-col cols="3" class="raiden-account__column" @click="toggleDirection">
+          <v-btn icon>
+            <v-img
+              class="bla"
+              width="90px"
+              :src="require('../../assets/eth_transfer_arrow.svg')"
+            />
           </v-btn>
         </v-col>
         <v-col cols="3" class="raiden-account__column">
-          <span v-if="isFromMainToRaidenAccount">
-            {{ $t('general.raiden-account') }}
-          </span>
-          <span v-else>
-            {{ $t('general.main-account') }}
-          </span>
+          <div class="raiden-account__column__card">
+            <span
+              v-if="isFromMainToRaidenAccount"
+              class="raiden-account__column__card__title"
+            >
+              {{ $t('general.raiden-account') }}
+            </span>
+            <span v-else class="raiden-account__column__card__title">
+              {{ $t('general.main-account') }}
+            </span>
+            <div class="raiden-account__column__card__image">
+              <v-img
+                v-if="isFromMainToRaidenAccount"
+                :src="require('../../assets/logo_blue.svg')"
+              />
+              <v-img v-else :src="require('../../assets/eth.svg')" />
+            </div>
+          </div>
         </v-col>
       </v-row>
-      <v-row justify="center">
-        <v-col cols="10">
-          <amount-input
-            v-model="amount"
-            :token="token"
-            :max="maximumAmount"
-            limit
-          />
-        </v-col>
+      <v-row no-gutters justify="center" class="raiden-account__amount-input">
+        <amount-input
+          v-model="amount"
+          :token="token"
+          :max="maximumAmount"
+          limit
+        />
+        <v-btn
+          icon
+          large
+          class="raiden-account__amount-input__toggle"
+          @click="toggleDirection"
+        >
+          <v-icon large color="primary">mdi-autorenew</v-icon>
+        </v-btn>
       </v-row>
-      <v-row justify="center">
-        <v-col cols="10">
-          <action-button
-            :enabled="valid"
-            :text="$t('general.buttons.transfer')"
-          />
-        </v-col>
+      <v-row
+        no-gutters
+        justify="center"
+        class="raiden-account__transfer-button"
+      >
+        <action-button
+          full-width
+          :enabled="valid"
+          :text="$t('general.buttons.transfer')"
+        />
       </v-row>
     </v-form>
-    <div v-else-if="error" class="raiden-account__progress-wrapper">
+    <v-row
+      v-else-if="error"
+      no-gutters
+      class="raiden-account__error"
+      justify="center"
+      align="center"
+    >
       <error-message :error="error" />
-    </div>
-    <div v-else class="raiden-account__progress-wrapper">
+    </v-row>
+    <v-row
+      v-else
+      no-gutters
+      class="raiden-account__progress-wrapper"
+      justify="center"
+      align="center"
+    >
       <v-progress-circular
         :size="125"
         :width="4"
@@ -63,8 +120,8 @@
       <p class="raiden-account__progress-hint">
         {{ $t('raiden-account.in-progress') }}
       </p>
-    </div>
-  </v-row>
+    </v-row>
+  </div>
 </template>
 
 <script lang="ts">
@@ -140,86 +197,117 @@ export default class RaidenAccount extends Vue {
 </script>
 
 <style scoped lang="scss">
+@import '../../scss/mixins';
 @import '../../scss/colors';
 
 .raiden-account {
   width: 100%;
 
+  &__title {
+    font-size: 18px;
+    margin-top: 50px;
+    padding-bottom: 75px;
+    text-align: center;
+  }
+
   &__column {
-    display: flex;
     align-items: center;
+    display: flex;
     justify-content: center;
-    font-size: 20px;
+
+    &__card {
+      align-items: center;
+      background-color: $input-background;
+      border-radius: 15px;
+      display: flex;
+      flex-direction: column;
+      height: 140px;
+      width: 140px;
+
+      &__title {
+        padding-top: 20px;
+        flex: none;
+        font-size: 16px;
+        text-align: center;
+      }
+
+      &__image {
+        align-items: center;
+        display: flex;
+        flex: 1;
+        justify-content: center;
+        width: 30px;
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    }
+  }
+
+  &__amount-input {
+    align-items: center;
+    display: flex;
+    margin-top: 50px;
+
+    &__toggle {
+      margin-bottom: 5px;
+      margin-left: 10px;
+    }
+
+    ::v-deep {
+      .v-btn {
+        &:active {
+          .v-icon {
+            animation-name: spin;
+            animation-duration: 250ms;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+          }
+        }
+      }
+    }
+  }
+
+  &__transfer-button {
+    margin-top: 115px;
+    margin-left: 80px;
+    margin-right: 90px;
+    @include respond-to(handhelds) {
+      margin-left: 40px;
+      margin-right: 40px;
+    }
+
+    ::v-deep {
+      .col-10 {
+        flex: 1;
+        max-width: 100%;
+      }
+      .v-btn {
+        border-radius: 8px;
+      }
+    }
+  }
+
+  &__error {
+    margin-left: 90px;
+    margin-right: 90px;
+    margin-top: 70px;
+  }
+
+  &__progress-wrapper {
+    flex-direction: column;
+    padding-top: 40%;
     text-align: center;
   }
 
   &__progress-hint {
     margin-top: 30px;
-  }
-
-  &__progress-wrapper {
-    text-align: center;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  ::v-deep {
-    .v-btn {
-      &:active {
-        .v-icon {
-          animation-name: spin;
-          animation-duration: 250ms;
-          animation-iteration-count: infinite;
-          animation-timing-function: linear;
-        }
-      }
-    }
-  }
-
-  &__amount {
-    font-size: 24px;
-    font-weight: bold;
-    color: $color-white;
-
-    ::v-deep {
-      input {
-        text-align: right;
-      }
-
-      .v-input {
-        &__slot {
-          display: flex;
-          align-items: center;
-
-          &::before {
-            border: none !important;
-          }
-
-          &::after {
-            border: none !important;
-          }
-        }
-      }
-
-      .v-text-field {
-        &__details {
-          display: none;
-        }
-
-        &__suffix {
-          padding-left: 8px;
-          color: white;
-          padding-right: 18px;
-        }
-      }
-    }
   }
 }
 </style>
