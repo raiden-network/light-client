@@ -24,7 +24,7 @@
       </v-col>
       <v-col class="transfer__actions__token-button">
         <action-button
-          :text="token.name"
+          :text="token.name | truncate(22)"
           ghost
           enabled
           full-width
