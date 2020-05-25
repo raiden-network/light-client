@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('ethers/providers');
 import { JsonRpcProvider } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 
@@ -19,9 +18,9 @@ export const patchVerifyMessage = () =>
 // raiden-ts/utils.getNetwork has the same functionality as provider.getNetwork
 // but fetches everytime instead of just returning a cached property
 // On mocked tests, we unify both again, so we can just mock provider.getNetwork in-place
-export const patchMatrixGetNetwork = () =>
-  jest.mock('raiden-ts/utils/matrix', () => ({
-    ...jest.requireActual<any>('raiden-ts/utils/matrix'),
+export const patchEthersGetNetwork = () =>
+  jest.mock('raiden-ts/utils/ethers', () => ({
+    ...jest.requireActual<any>('raiden-ts/utils/ethers'),
     getNetwork: jest.fn((provider: JsonRpcProvider): Promise<Network> => provider.getNetwork()),
   }));
 
