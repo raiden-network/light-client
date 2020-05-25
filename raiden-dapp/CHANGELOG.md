@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- [#1541] Truncates long token names in the transfer screen.
 - [#1516] Fixed truncation of address on Account screen
 - [#1506] Fixed error label display on transfer screen for amount input.
 - [#1493] Properly handles tokens with zero decimals, fixes transaction history token display.
@@ -18,6 +19,7 @@
 - [#1443] Eth transfer screen redesign
 - [#842] Disable mainnet w/ environment variable.
 
+[#1541]: https://github.com/raiden-network/light-client/issues/1541
 [#1443]: https://github.com/raiden-network/light-client/issues/1443
 [#1473]: https://github.com/raiden-network/light-client/issues/1473
 [#1516]: https://github.com/raiden-network/light-client/issues/1516
