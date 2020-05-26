@@ -79,7 +79,7 @@ describe('AccountContent.vue', () => {
   test('backup state menu item', () => {
     const backupStateMenuItem = wrapper
       .findAll('.account-content__menu__list-items')
-      .at(0);
+      .at(1);
     const backupStateTitle = backupStateMenuItem.find('.v-list-item__title');
     const backupStateSubtitle = backupStateMenuItem.find(
       '.v-list-item__subtitle'
@@ -104,7 +104,7 @@ describe('AccountContent.vue', () => {
   test('report bugs menu item', () => {
     const reportBugsMenuItem = wrapper
       .findAll('.account-content__menu__list-items')
-      .at(1);
+      .at(2);
     const reportBugsTitle = reportBugsMenuItem.find('.v-list-item__title');
     const reportBugsSubtitle = reportBugsMenuItem.find(
       '.v-list-item__subtitle'
@@ -129,7 +129,7 @@ describe('AccountContent.vue', () => {
     wrapper.vm.downloadLogs = jest.fn();
     const reportBugsMenuItem = wrapper
       .findAll('.account-content__menu__list-items')
-      .at(1);
+      .at(2);
     const reportBugsButton = reportBugsMenuItem.find('button');
     reportBugsButton.trigger('click');
     await wrapper.vm.$nextTick();
