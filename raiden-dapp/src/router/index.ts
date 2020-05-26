@@ -129,6 +129,14 @@ const router = new Router({
             title: 'Withdrawal'
           },
           component: () => import('../views/account/WithdrawalRoute.vue')
+        },
+        {
+          path: 'udc',
+          name: RouteNames.ACCOUNT_UDC,
+          meta: {
+            title: 'UDC'
+          },
+          component: () => import('../views/account/UDC.vue')
         }
       ]
     }

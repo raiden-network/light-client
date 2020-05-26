@@ -5,6 +5,7 @@
 ### Added
 
 - [#1473] Notify when receiving transfers get disabled (e.g. by low UDC balance)
+- [#1489] UDC balance view
 
 ### Fixed
 
@@ -26,6 +27,7 @@
 [#1506]: https://github.com/raiden-network/light-client/issues/1506
 [#1493]: https://github.com/raiden-network/light-client/issues/1493
 [#1485]: https://github.com/raiden-network/light-client/issues/1485
+[#1489]: https://github.com/raiden-network/light-client/issues/1489
 
 ## [0.8.0] - 2020-05-14
 

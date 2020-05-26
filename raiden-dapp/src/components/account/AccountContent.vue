@@ -113,10 +113,20 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       }
     ];
 
-    // if sub key is used
     if (this.isConnected) {
+      // add UDC item
+      this.menuItems.unshift({
+        icon: 'udc.svg',
+        title: this.$t('account-content.menu-items.udc.title') as string,
+        subtitle: this.$t('account-content.menu-items.udc.subtitle') as string,
+        route: () => {
+          this.navigateToUDC();
+        }
+      });
+
       const mainAccount = await this.$raiden.getMainAccount();
       const raidenAccount = await this.$raiden.getAccount();
+      // if sub key is used
       if (mainAccount && raidenAccount) {
         const raidenAccount = {
           icon: 'eth.svg',
