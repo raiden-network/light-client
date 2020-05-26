@@ -70,6 +70,12 @@
     "blockie-alt": "Token address blockie",
     "no-tokens": "The Raiden account has no tokens"
   },
+  "udc": {
+    "description": "Your UDC (User Deposit Contract) contains utility tokens for your current account. The tokens are used to pay for services such as pathfinding and monitoring.",
+    "mint-deposit": "Mint and deposit",
+    "balance": "UDC Balance:",
+    "balance-too-low": "Your SVT balance is too low to pay for the Monitoring Service. Receiving transfers has been temporarily disabled. Use the button above to mint an deposit more tokens. A minimum amount of 5 SVT is needed to enable receiving."
+  },
   "backup-state": {
     "description": "The state holds all account information except the private key. You can backup your state to make sure the dApp is kept in sync when switching between browsers.",
     "disabled-download": "Downloading the state is only possible when connected to the dApp",
