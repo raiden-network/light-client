@@ -2,12 +2,27 @@
 
 ## [Unreleased]
 
+### Added
+
+- [#1473] Notify when receiving transfers get disabled (e.g. by low UDC balance)
+
 ### Fixed
 
+- [#1541] Truncates long token names in the transfer screen.
+- [#1516] Fixed truncation of address on Account screen
 - [#1506] Fixed error label display on transfer screen for amount input.
 - [#1493] Properly handles tokens with zero decimals, fixes transaction history token display.
 - [#1485] Fixed token list sorting.
 
+### Changed
+
+- [#1443] Eth transfer screen redesign
+- [#842] Disable mainnet w/ environment variable.
+
+[#1541]: https://github.com/raiden-network/light-client/issues/1541
+[#1443]: https://github.com/raiden-network/light-client/issues/1443
+[#1473]: https://github.com/raiden-network/light-client/issues/1473
+[#1516]: https://github.com/raiden-network/light-client/issues/1516
 [#1506]: https://github.com/raiden-network/light-client/issues/1506
 [#1493]: https://github.com/raiden-network/light-client/issues/1493
 [#1485]: https://github.com/raiden-network/light-client/issues/1485
@@ -285,7 +300,7 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.8.0...HEAD
+[unreleased]: https://github.com/raiden-network/light-client/compare/v0.8.0...HEAD
 [0.8.0]: https://github.com/raiden-network/light-client/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/raiden-network/light-client/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/raiden-network/light-client/compare/v0.5.2...v0.6.0

@@ -16,14 +16,16 @@ import { RaidenChannels, RaidenChannel } from './channels/state';
 import { pluckDistinct, distinctRecordValues } from './utils/rx';
 import { Address, PrivateKey, isntNil, Hash, assert } from './utils/types';
 import { getNetworkName } from './utils/ethers';
+import { RaidenError, ErrorCodes } from './utils/error';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import goerliDeploy from './deployment/deployment_goerli.json';
+import mainnetDeploy from './deployment/deployment_mainnet.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
-import { RaidenError, ErrorCodes } from './utils/error';
+import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
 
 /**
  * Returns contract information depending on the passed [[Network]]. Currently, only
@@ -49,6 +51,11 @@ export const getContracts = (network: Network): ContractsInfo => {
       return ({
         ...goerliDeploy.contracts,
         ...goerliServicesDeploy.contracts,
+      } as unknown) as ContractsInfo;
+    case 'homestead':
+      return ({
+        ...mainnetDeploy.contracts,
+        ...mainnetServicesDeploy.contracts,
       } as unknown) as ContractsInfo;
     default:
       throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, { network: network.name });

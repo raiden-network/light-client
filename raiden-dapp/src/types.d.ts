@@ -1,5 +1,5 @@
 import RaidenService from '@/services/raiden-service';
-import { RaidenChannels, RaidenTransfer } from 'raiden-ts';
+import { RaidenChannels, RaidenTransfer, RaidenConfig } from 'raiden-ts';
 import { DeniedReason, Token, Presences } from '@/model/types';
 import { Network } from 'ethers/utils';
 
@@ -22,6 +22,7 @@ export interface RootState {
   transfers: Transfers;
   stateBackup: string;
   settings: Settings;
+  config: Partial<RaidenConfig>;
 }
 
 declare global {

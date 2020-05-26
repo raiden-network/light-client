@@ -239,12 +239,20 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         debounceTime(600),
         switchMap(value => {
           if (!value) {
+            if (this.touched) {
+              return of<ValidationResult>({
+                error: this.$t('address-input.error.empty') as string,
+                value: ''
+              });
+            }
+
             return of<ValidationResult>({
-              error: this.$t('address-input.error.empty') as string,
+              error: '',
               value: ''
             });
           }
 
+          this.touched = true;
           const [addresses, nonAddresses] = partition(of(value), value =>
             AddressUtils.isAddress(value)
           );
@@ -322,7 +330,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     if (!this.$refs.address) {
       return;
     }
-    this.touched = true;
+
     this.valid = this.errorMessages.length === 0;
     if (!this.valid) {
       return;

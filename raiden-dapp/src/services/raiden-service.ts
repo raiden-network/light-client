@@ -4,14 +4,15 @@ import {
   Raiden,
   RaidenPaths,
   RaidenPFS,
-  UInt
+  ErrorCodes,
+  RaidenError
 } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
-import { BigNumber, BigNumberish, parseEther, parseUnits } from 'ethers/utils';
+import { BigNumber, BigNumberish, parseEther } from 'ethers/utils';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import { ConfigProvider } from './config-provider';
@@ -40,8 +41,7 @@ export default class RaidenService {
         {
           pfsSafetyMargin: 1.1,
           pfs: process.env.VUE_APP_PFS,
-          matrixServer: process.env.VUE_APP_TRANSPORT,
-          monitoringReward: parseUnits('5', 18) as UInt<32>
+          matrixServer: process.env.VUE_APP_TRANSPORT
         },
         subkey
       );
@@ -129,6 +129,17 @@ export default class RaidenService {
             subkey
           );
         } else {
+          // Check if trying to connect to main net
+          // and whether main net is allowed
+          /* istanbul ignore if */
+          if (
+            'networkVersion' in provider &&
+            provider.networkVersion === '1' &&
+            process.env.VUE_APP_ALLOW_MAINNET === 'false'
+          ) {
+            throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK);
+          }
+
           raiden = await RaidenService.createRaiden(
             provider,
             undefined,
@@ -159,6 +170,10 @@ export default class RaidenService {
         raiden.events$
           .pipe(filter(value => value.type === 'raidenShutdown'))
           .subscribe(() => this.store.commit('reset'));
+
+        raiden.config$.subscribe(config =>
+          this.store.commit('updateConfig', config)
+        );
 
         raiden.events$.subscribe(value => {
           if (value.type === 'tokenMonitored') {

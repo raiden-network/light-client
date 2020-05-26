@@ -10,7 +10,12 @@ import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils';
 import { LosslessNumber } from 'lossless-json';
 
-import { fromEthersEvent, getEventsStream, patchSignSend } from 'raiden-ts/utils/ethers';
+import {
+  fromEthersEvent,
+  getEventsStream,
+  patchSignSend,
+  getNetworkName,
+} from 'raiden-ts/utils/ethers';
 import {
   Address,
   BigNumberC,
@@ -431,4 +436,10 @@ describe('RaidenError', () => {
       expect(err.details).toStrictEqual({ value: 'bar', key: 'foo' });
     }
   });
+});
+
+test('getNetworkName', () => {
+  expect(getNetworkName({ name: 'unknown', chainId: 1337 })).toBe('1337');
+  expect(getNetworkName({ name: 'homestead', chainId: 1 })).toBe('mainnet');
+  expect(getNetworkName({ name: 'goerli', chainId: 5 })).toBe('goerli');
 });
