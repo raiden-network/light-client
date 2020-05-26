@@ -26,3 +26,4 @@ yarn-error.log*
 coverage
 
 public/wizard.json
+/.nyc_output/out.json

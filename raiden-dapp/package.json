@@ -6,14 +6,14 @@
   "author": "brainbot labs est.",
   "scripts": {
     "serve": "vue-cli-service serve",
-    "serve:no-logging": "export NODE_ENV=nologging && vue-cli-service serve",
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
-    "test:e2e": "vue-cli-service test:e2e",
+    "test:e2e": "vue-cli-service test:e2e --mode e2e",
     "lint": "vue-cli-service lint && stylelint --fix ./src/**/*.{vue,scss}",
     "build:raiden-package": "vue-cli-service build --mode raiden-package",
     "i18n:report": "vue-cli-service i18n:report --src './src/**/*.?(js|vue)' --locales './src/locales/**/*.json'",
-    "lint:check": "vue-cli-service lint --no-fix --max-warnings 0 && stylelint ./src/**/*.{vue,scss}"
+    "lint:check": "vue-cli-service lint --no-fix --max-warnings 0 && stylelint ./src/**/*.{vue,scss}",
+    "serve:no-logging": "export NODE_ENV=nologging && vue-cli-service serve"
   },
   "dependencies": {
     "core-js": "^3.6.5",
@@ -40,6 +40,8 @@
   "devDependencies": {
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.8.3",
     "@babel/plugin-proposal-optional-chaining": "^7.9.0",
+    "@cypress/code-coverage": "^3.7.5",
+    "@cypress/webpack-preprocessor": "^5.4.1",
     "@kazupon/vue-i18n-loader": "^0.5.0",
     "@mdi/font": "^5.2.45",
     "@namics/stylelint-bem": "^6.3.1",
@@ -52,6 +54,7 @@
     "@typescript-eslint/parser": "^2.34.0",
     "@vue/cli": "^4.3.1",
     "@vue/cli-plugin-babel": "^4.3.1",
+    "@vue/cli-plugin-e2e-cypress": "^4.3.1",
     "@vue/cli-plugin-eslint": "^4.3.1",
     "@vue/cli-plugin-pwa": "^4.3.1",
     "@vue/cli-plugin-router": "^4.3.1",
@@ -64,6 +67,7 @@
     "@vue/test-utils": "^1.0.3",
     "babel-core": "^7.0.0-bridge.0",
     "babel-eslint": "^10.1.0",
+    "copy-webpack-plugin": "^6.0.1",
     "eslint": "^6.8.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.20.2",
