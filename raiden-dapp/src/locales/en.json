@@ -51,6 +51,10 @@
       "withdrawal": {
         "title": "Withdrawal",
         "subtitle": "Withdraw tokens to your main account"
+      },
+      "udc": {
+        "title": "UDC",
+        "subtitle": "Manage User Deposit Contract funds"
       }
     }
   },

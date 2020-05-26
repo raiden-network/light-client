@@ -11,5 +11,6 @@ export enum RouteNames {
   ACCOUNT_BACKUP = 'account-backup',
   ACCOUNT_RAIDEN = 'account-raiden',
   ACCOUNT_SETTINGS = 'account-settings',
-  ACCOUNT_WITHDRAWAL = 'account-withdrawal'
+  ACCOUNT_WITHDRAWAL = 'account-withdrawal',
+  ACCOUNT_UDC = 'account-udc'
 }
