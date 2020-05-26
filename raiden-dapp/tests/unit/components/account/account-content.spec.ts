@@ -118,6 +118,28 @@ describe('AccountContent.vue', () => {
     );
   });
 
+  test('udc menu item', () => {
+    const udcMenuItem = wrapper
+      .findAll('.account-content__menu__list-items')
+      .at(0);
+    const udcMenuTitle = udcMenuItem.find('.v-list-item__title');
+    const udcMenuSubtitle = udcMenuItem.find('.v-list-item__subtitle');
+
+    expect(udcMenuTitle.text()).toEqual('account-content.menu-items.udc.title');
+    expect(udcMenuSubtitle.text()).toBe(
+      'account-content.menu-items.udc.subtitle'
+    );
+
+    udcMenuItem.find('button').trigger('click');
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.ACCOUNT_UDC
+      })
+    );
+  });
+
   test('show raiden account menu item, if connected via sub key', () => {
     expect(wrapper.vm.$data.menuItems[0].title).toEqual(
       'account-content.menu-items.raiden-account.title'

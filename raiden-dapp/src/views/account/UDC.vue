@@ -63,11 +63,7 @@
         </v-row>
       </v-col>
     </v-row>
-    <v-row
-      v-if="!loading && !error"
-      class="mint-deposit-dialog__available"
-      justify="center"
-    >
+    <v-row v-if="!loading && !error" justify="center">
       <v-col cols="10" class="text-center">
         <p>
           {{
@@ -84,7 +80,7 @@
         arrow
         :enabled="valid && !loading"
         :text="$t('mint-deposit-dialog.button')"
-        class="mint-deposit-dialog__action"
+        class="udc__action"
         @click="mintDeposit()"
       />
     </v-row>
