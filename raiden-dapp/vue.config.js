@@ -88,11 +88,13 @@ module.exports = {
       });
     }
 
-    config.plugins.push(
-      new CopyWebpackPlugin({
-        patterns: patterns
-      })
-    );
+    if (patterns.length > 0) {
+      config.plugins.push(
+        new CopyWebpackPlugin({
+          patterns: patterns
+        })
+      );
+    }
   },
   pwa: {
     workboxPluginMode: 'InjectManifest',

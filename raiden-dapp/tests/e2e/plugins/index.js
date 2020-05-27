@@ -26,9 +26,15 @@ module.exports = (on, config) => {
       module: {
         rules: [
           {
-            test: /\.tsx?$/,
-            loader: 'ts-loader',
-            options: { transpileOnly: true }
+            // Include ts, tsx, js, and jsx files.
+            test: /\.(ts|js)x?$/,
+            exclude: /node_modules/,
+            loader: 'babel-loader'
+          },
+          {
+            test: /\.js$/,
+            use: ['source-map-loader'],
+            enforce: 'pre'
           }
         ]
       }

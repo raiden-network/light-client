@@ -2,11 +2,15 @@
 
 describe('connects', () => {
   it('connects to the dApp', () => {
+    cy.viewport('macbook-13');
     cy.visit('/');
-    cy.get('.home__app-welcome').should(
-      'include.text',
-      'Welcome to the Raiden dApp'
-    );
-    cy.get('.action-button__button').click();
+    cy.contains('Welcome to the Raiden dApp').should('be.visible');
+    cy.contains('Connect').click();
+    cy.contains('Generate Account & Key').should('be.visible');
+    cy.contains('Generate Account & Key').click();
+
+    cy.contains('Receiving transfers is disabled').should('be.visible');
+    cy.get('.raiden-dialog__close').click();
+    cy.contains('Connect new token').should('be.visible');
   });
 });
