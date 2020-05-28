@@ -83,7 +83,7 @@
     "nyc": "^15.0.1",
     "sass": "^1.26.5",
     "sass-loader": "^8.0.2",
-    "source-map-loader": "^0.2.4",
+    "source-map-loader": "^1.0.0",
     "stylelint": "^13.5.0",
     "stylelint-config-recommended-scss": "^4.2.0",
     "stylelint-scss": "^3.17.2",
