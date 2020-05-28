@@ -31,6 +31,7 @@
                 v-if="isFromMainToRaidenAccount"
                 :src="require('../../assets/eth.svg')"
                 width="30px"
+                height="53px"
               />
               <v-img
                 v-else
@@ -43,8 +44,8 @@
         <v-col cols="3" class="raiden-account__column" @click="toggleDirection">
           <v-btn icon>
             <v-img
-              class="bla"
               width="90px"
+              height="84px"
               :src="require('../../assets/eth_transfer_arrow.svg')"
             />
           </v-btn>
@@ -66,7 +67,12 @@
                 class="raiden-account__column__card__image__raiden-logo"
                 :src="require('../../assets/logo.svg')"
               />
-              <v-img v-else :src="require('../../assets/eth.svg')" />
+              <v-img
+                v-else
+                :src="require('../../assets/eth.svg')"
+                width="30px"
+                height="53px"
+              />
             </div>
           </div>
         </v-col>
