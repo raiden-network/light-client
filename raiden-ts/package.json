@@ -92,7 +92,7 @@
     "redux-logger": "^3.0.6",
     "redux-observable": "^1.2.0",
     "rxjs": "^6.5.5",
-    "wrtc": "^0.4.4"
+    "wrtc": "^0.4.5"
   },
   "peerDependencies": {
     "ethers": "^4.0.47"
