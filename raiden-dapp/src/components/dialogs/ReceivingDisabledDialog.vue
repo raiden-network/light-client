@@ -14,6 +14,7 @@
           <v-img
             class="receiving-disabled-dialog__icon"
             :src="require('@/assets/warning.svg')"
+            height="110px"
           ></v-img>
         </v-col>
         <v-col cols="12">
