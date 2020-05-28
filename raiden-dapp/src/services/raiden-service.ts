@@ -30,6 +30,7 @@ export default class RaidenService {
     subkey?: true
   ): Promise<Raiden> {
     try {
+      const contracts = await ConfigProvider.contracts();
       return await Raiden.create(
         provider,
         account,
@@ -37,7 +38,7 @@ export default class RaidenService {
           storage: window.localStorage,
           state: stateBackup
         },
-        undefined,
+        contracts,
         {
           pfsSafetyMargin: 1.1,
           pfs: process.env.VUE_APP_PFS,
@@ -120,33 +121,24 @@ export default class RaidenService {
       if (!provider) {
         this.store.commit('noProvider');
       } else {
-        if (config) {
-          /* istanbul ignore next */
-          raiden = await RaidenService.createRaiden(
-            provider,
-            config.PRIVATE_KEY,
-            stateBackup,
-            subkey
-          );
-        } else {
-          // Check if trying to connect to main net
-          // and whether main net is allowed
-          /* istanbul ignore if */
-          if (
-            'networkVersion' in provider &&
-            provider.networkVersion === '1' &&
-            process.env.VUE_APP_ALLOW_MAINNET === 'false'
-          ) {
-            throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK);
-          }
-
-          raiden = await RaidenService.createRaiden(
-            provider,
-            undefined,
-            stateBackup,
-            subkey
-          );
+        // Check if trying to connect to main net
+        // and whether main net is allowed
+        /* istanbul ignore if */
+        if (
+          typeof provider !== 'string' &&
+          'networkVersion' in provider &&
+          provider.networkVersion === '1' &&
+          process.env.VUE_APP_ALLOW_MAINNET === 'false'
+        ) {
+          throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK);
         }
+
+        raiden = await RaidenService.createRaiden(
+          provider,
+          config?.PRIVATE_KEY,
+          stateBackup,
+          subkey
+        );
 
         this._raiden = raiden;
 

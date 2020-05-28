@@ -8,7 +8,7 @@
     <v-card-title>
       {{ $t('home.connect-dialog.title') }}
     </v-card-title>
-    <div v-if="injectedProvider">
+    <div v-if="hasProvider">
       <div class="connect__button">
         <action-button
           :text="$t('home.connect-dialog.raiden-account')"
@@ -25,7 +25,7 @@
       </p>
     </div>
     <no-access-message v-if="accessDenied" :reason="accessDenied" />
-    <v-card-text v-if="!injectedProvider">
+    <v-card-text v-if="!hasProvider">
       <div class="text-center">
         {{ $t('home.connect-dialog.no-provider') }}
       </div>
@@ -70,8 +70,11 @@ export default class ConnectDialog extends Vue {
     });
   }
 
-  get injectedProvider(): boolean {
-    return Web3Provider.injectedWeb3Available();
+  get hasProvider(): boolean {
+    return (
+      !!process.env.VUE_APP_RAIDEN_PACKAGE ||
+      Web3Provider.injectedWeb3Available()
+    );
   }
 }
 </script>

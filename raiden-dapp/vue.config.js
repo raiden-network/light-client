@@ -1,4 +1,5 @@
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   productionSourceMap: false,
@@ -63,6 +64,36 @@ module.exports = {
         // If not generated, filter as webpack-vue
         return `webpack-vue:///${info.resourcePath}`;
       };
+    }
+
+    const patterns = [];
+
+    if (process.env.DEPLOYMENT_INFO && process.env.DEPLOYMENT_SERVICES_INFO) {
+      patterns.push(
+        {
+          from: path.resolve(process.env.DEPLOYMENT_INFO),
+          to: path.resolve(__dirname, 'dist')
+        },
+        {
+          from: path.resolve(process.env.DEPLOYMENT_SERVICES_INFO),
+          to: path.resolve(__dirname, 'dist')
+        }
+      );
+    }
+
+    if (process.env.E2E) {
+      patterns.push({
+        from: path.resolve(__dirname, 'tests', 'e2e', 'e2e.json'),
+        to: path.resolve(__dirname, 'dist')
+      });
+    }
+
+    if (patterns.length > 0) {
+      config.plugins.push(
+        new CopyWebpackPlugin({
+          patterns: patterns
+        })
+      );
     }
   },
   pwa: {

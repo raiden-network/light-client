@@ -4,7 +4,11 @@ export class Web3Provider {
     let provider = null;
 
     if (config) {
-      provider = `https://${config.INFURA_ENDPOINT}`;
+      if (!config.INFURA_ENDPOINT.startsWith('http')) {
+        provider = `https://${config.INFURA_ENDPOINT}`;
+      } else {
+        provider = config.INFURA_ENDPOINT;
+      }
     } else if (typeof ethereum !== 'undefined') {
       await ethereum.enable();
       provider = ethereum;
