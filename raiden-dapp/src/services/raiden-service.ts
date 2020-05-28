@@ -135,7 +135,7 @@ export default class RaidenService {
 
         raiden = await RaidenService.createRaiden(
           provider,
-          config?.PRIVATE_KEY ?? undefined,
+          config?.PRIVATE_KEY,
           stateBackup,
           subkey
         );
