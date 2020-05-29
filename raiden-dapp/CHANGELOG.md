@@ -8,8 +8,11 @@
 
 ### Fixed
 
+- [#1579] Removes minting references when detected network is mainnet.
+
 ### Changed
 
+[#1579]: https://github.com/raiden-network/light-client/issues/1579
 [#168]: https://github.com/raiden-network/light-client/issues/168
 
 ## [0.9.0] - 2020-05-28
