@@ -6,7 +6,7 @@ import { mount, Wrapper } from '@vue/test-utils';
 import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
-import { TestData } from '../data/mock-data';
+import { TestData } from '../../data/mock-data';
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
 import RaidenService from '@/services/raiden-service';
 import Mocked = jest.Mocked;

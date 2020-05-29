@@ -180,6 +180,9 @@ const store: StoreOptions<RootState> = {
     network: (state: RootState) => {
       return state.network.name || `Chain ${state.network.chainId}`;
     },
+    mainnet: (state: RootState) => {
+      return state.network.chainId === 1;
+    },
     channelWithBiggestCapacity: (_, getters) => (tokenAddress: string) => {
       const channels: RaidenChannel[] = getters.channels(tokenAddress);
       const openChannels = channels.filter(

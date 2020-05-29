@@ -6,7 +6,7 @@ import Vue from 'vue';
 
 Vue.use(Vuetify);
 
-describe('NoAccessScreen.vue', () => {
+describe('NoAccessMessage.vue', () => {
   let vuetify: typeof Vuetify;
 
   function createWrapper(reason: DeniedReason) {

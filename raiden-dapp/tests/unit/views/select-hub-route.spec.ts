@@ -3,20 +3,20 @@ import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
 import store from '@/store';
 import { $identicon } from '../utils/mocks';
-import ChannelsRoute from '@/views/ChannelsRoute.vue';
+import SelectHubRoute from '@/views/SelectHubRoute.vue';
 
 Vue.use(Vuetify);
 
-describe('ChannelsRoute.vue', () => {
-  let wrapper: Wrapper<ChannelsRoute>;
+describe('SelectHubRoute.vue', () => {
+  let wrapper: Wrapper<SelectHubRoute>;
   let vuetify: typeof Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();
-    wrapper = mount(ChannelsRoute, {
+    wrapper = mount(SelectHubRoute, {
       vuetify,
       store,
-      stubs: ['home', 'channels'],
+      stubs: ['home', 'select-hub'],
       mocks: {
         $identicon: $identicon(),
         $t: (msg: string) => msg
@@ -33,6 +33,6 @@ describe('ChannelsRoute.vue', () => {
     store.commit('loadComplete', true);
     await wrapper.vm.$nextTick();
     expect(wrapper.find('home-stub').exists()).toBe(false);
-    expect(wrapper.find('channels-stub').exists()).toBe(true);
+    expect(wrapper.find('select-hub-stub').exists()).toBe(true);
   });
 });

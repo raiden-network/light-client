@@ -4,10 +4,10 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 
 import { RouteNames } from '@/router/route-names';
-import { TestData } from '../data/mock-data';
+import { TestData } from '../../data/mock-data';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
-import { $identicon } from '../utils/mocks';
-import store from '@/store/index';
+import { $identicon } from '../../utils/mocks';
+import store from '@/store';
 import { Tokens } from '@/types';
 import { RaidenChannel, RaidenChannels } from 'raiden-ts';
 import VueRouter from 'vue-router';

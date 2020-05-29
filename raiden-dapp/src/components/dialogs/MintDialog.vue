@@ -48,7 +48,7 @@ import { BalanceUtils } from '@/utils/balance-utils';
 @Component({
   components: { ActionButton, RaidenDialog, ErrorMessage }
 })
-export default class MintDepositDialog extends Vue {
+export default class MintDialog extends Vue {
   @Prop({ required: true })
   token!: Token;
 

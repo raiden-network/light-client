@@ -1,6 +1,7 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import store from '@/store';
 
 import TokenInformation from '@/components/TokenInformation.vue';
 import { TestData } from '../data/mock-data';
@@ -14,10 +15,11 @@ describe('TokenInformation.vue', () => {
   let wrapper: Wrapper<TokenInformation>;
   let vuetify: typeof Vuetify;
 
-  beforeAll(() => {
+  beforeEach(() => {
     vuetify = new Vuetify();
     wrapper = mount(TokenInformation, {
       vuetify,
+      store,
       stubs: ['v-dialog'],
       propsData: {
         token: TestData.token
@@ -34,6 +36,7 @@ describe('TokenInformation.vue', () => {
   });
 
   test('shows minting dialog if mint button is clicked', () => {
+    store.commit('network', { name: 'homestead', chainId: 1 });
     wrapper.find('button').trigger('click');
     expect(wrapper.vm.$data.showMintDialog).toBeTruthy();
   });

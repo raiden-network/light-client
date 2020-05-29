@@ -72,9 +72,10 @@
   },
   "udc": {
     "description": "Your UDC (User Deposit Contract) contains utility tokens for your current account. The tokens are used to pay for services such as pathfinding and monitoring.",
+    "deposit": "Deposit",
     "mint-deposit": "Mint and deposit",
     "balance": "UDC Balance:",
-    "balance-too-low": "Your SVT balance is too low to pay for the Monitoring Service. Receiving transfers has been temporarily disabled. Use the button above to mint an deposit more tokens. A minimum amount of 5 SVT is needed to enable receiving."
+    "balance-too-low": "Your {symbol} balance is too low to pay for the Monitoring Service. Receiving transfers has been temporarily disabled. Use the button above to mint an deposit more tokens. A minimum amount of 5 {service} is needed to enable receiving."
   },
   "backup-state": {
     "description": "The state holds all account information except the private key. You can backup your state to make sure the dApp is kept in sync when switching between browsers.",
@@ -263,10 +264,12 @@
   "application": {
     "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
   },
-  "mint-deposit-dialog": {
+  "udc-deposit-dialog": {
     "button": "Mint and deposit",
+    "button-main": "Deposit",
     "available": "Available {currency} to pay for on-chain transaction: {balance} {currency}",
     "error": "The mint and deposit operation failed.",
+    "error-main": "The deposit operation failed.",
     "progress": {
       "mint": "Minting {currency} tokens",
       "approve": "Allow UDC to access {currency} tokens",
@@ -290,6 +293,7 @@
       "request-route": {
         "title": "Request Route",
         "tooltip": "Mint and deposit {token} to the User Deposit Contract to pay for PFS requests",
+        "tooltip-main": "Deposit {token} to the User Deposit Contract to pay for PFS requests",
         "udc-description": "Balance to pay the Pathfinding Service",
         "udc-description-low-balance": "Your {token} token balance is too low to pay for the Pathfinding Service. Use the button above to mint and deposit more tokens.",
         "in-progress": "Paying for the route request",
@@ -376,6 +380,7 @@
   "select-hub": {
     "select-button": "Select Hub",
     "service-token-tooltip": "Mint and deposit {token} to the User Deposit Contract to pay for the Monitoring Service.",
+    "service-token-tooltip-main": "Deposit {token} to the User Deposit Contract to pay for the Monitoring Service.",
     "service-token-balance-too-low": "Your {token} balance is too low to pay for the Monitoring Service. Use the button above to mint and deposit more tokens.",
     "service-token-description": "Balance to pay the Monitoring Service"
   },
@@ -428,7 +433,7 @@
   },
   "mint-dialog": {
     "title": "Mint {symbol}",
-    "description": "If you continue, you will get prompted by MetaMask to sign off a minting transction. In order to mint tokens, you need test net ETH in your wallet."
+    "description": "If you continue, you will get prompted by MetaMask to sign off a minting transaction. In order to mint tokens, you need test net ETH in your wallet."
   },
   "error-message": {
     "problem": "Problem:",
@@ -440,7 +445,7 @@
   },
   "errors": {
     "RDN_GENERAL_ERROR": {
-      "title": "An error occured",
+      "title": "An error occurred",
       "problem": "We do not know this error, sorry.",
       "solution": [
         "Please help us and report the issue",

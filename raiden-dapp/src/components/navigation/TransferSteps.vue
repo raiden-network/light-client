@@ -79,7 +79,7 @@
                       icon
                       x-large
                       class="udc-balance__deposit"
-                      @click="showMintDeposit = true"
+                      @click="showUdcDeposit = true"
                       v-on="on"
                     >
                       <v-icon color="primary">play_for_work</v-icon>
@@ -87,15 +87,20 @@
                   </template>
                   <span>
                     {{
-                      $t('transfer.steps.request-route.tooltip', {
-                        token: udcToken.symbol
-                      })
+                      $t(
+                        mainnet
+                          ? 'transfer.steps.request-route.tooltip-main'
+                          : 'transfer.steps.request-route.tooltip',
+                        {
+                          token: udcToken.symbol
+                        }
+                      )
                     }}
                   </span>
                 </v-tooltip>
-                <mint-deposit-dialog
-                  :visible="showMintDeposit"
-                  @cancel="showMintDeposit = false"
+                <udc-deposit-dialog
+                  :visible="showUdcDeposit"
+                  @cancel="showUdcDeposit = false"
                   @done="mintDone()"
                 />
               </v-col>
@@ -200,7 +205,7 @@ import FindRoutes from '@/components/transfer/FindRoutes.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import TransferSummary from '@/components/transfer/TransferSummary.vue';
 import Spinner from '@/components/icons/Spinner.vue';
-import MintDepositDialog from '@/components/dialogs/MintDepositDialog.vue';
+import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import Checkmark from '@/components/icons/Checkmark.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
@@ -210,6 +215,7 @@ import AddressUtils from '@/utils/address-utils';
 import Filter from '@/filters';
 import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
 import PfsFeesDialog from '@/components/dialogs/PfsFeesDialog.vue';
+import { mapGetters } from 'vuex';
 
 @Component({
   components: {
@@ -220,10 +226,13 @@ import PfsFeesDialog from '@/components/dialogs/PfsFeesDialog.vue';
     Spinner,
     ErrorDialog,
     Checkmark,
-    MintDepositDialog,
+    UdcDepositDialog,
     TransferSummary,
     PfsFeesDialog,
     AmountDisplay
+  },
+  computed: {
+    ...mapGetters(['mainnet'])
   }
 })
 export default class TransferSteps extends Mixins(
@@ -240,7 +249,7 @@ export default class TransferSteps extends Mixins(
   routeSelectionSkipped: boolean = false;
   paymentId: BigNumber = bigNumberify(Date.now());
   freePfs: boolean = false;
-  showMintDeposit: boolean = false;
+  showUdcDeposit: boolean = false;
   mediationFeesConfirmed: boolean = false;
   processingTransfer: boolean = false;
   transferDone: boolean = false;
@@ -249,6 +258,8 @@ export default class TransferSteps extends Mixins(
 
   amount: string = '';
   target: string = '';
+
+  mainnet!: boolean;
 
   get transferSummary(): Transfer {
     return {
@@ -352,7 +363,7 @@ export default class TransferSteps extends Mixins(
   }
 
   mintDone() {
-    this.showMintDeposit = false;
+    this.showUdcDeposit = false;
     this.updateUDCCapacity();
   }
 

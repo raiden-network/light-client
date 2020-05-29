@@ -1,7 +1,13 @@
 <template>
   <raiden-dialog :visible="visible" @close="cancel">
     <v-card-title v-if="!error">
-      {{ $t('mint-deposit-dialog.button') }}
+      {{
+        $t(
+          mainnet
+            ? 'udc-deposit-dialog.button-main'
+            : 'udc-deposit-dialog.button'
+        )
+      }}
     </v-card-title>
     <v-card-text>
       <v-row v-if="!loading && !error" justify="center" no-gutters>
@@ -10,15 +16,15 @@
             v-model="amount"
             autofocus
             type="text"
-            :suffix="udcToken.symbol || 'SVT'"
-            class="mint-deposit-dialog__amount"
+            :suffix="serviceToken"
+            class="udc-deposit-dialog__amount"
           />
         </v-col>
       </v-row>
       <v-row v-else-if="error">
         <error-message :error="error" />
       </v-row>
-      <v-row v-else class="mint-deposit-dialog--progress">
+      <v-row v-else class="udc-deposit-dialog--progress">
         <v-col cols="12">
           <v-row no-gutters align="center" justify="center">
             <v-progress-circular
@@ -31,31 +37,31 @@
           <v-row no-gutters align="center" justify="center">
             <span v-if="step === 'mint'">
               {{
-                $t('mint-deposit-dialog.progress.mint', {
-                  currency: udcToken.symbol || 'SVT'
+                $t('udc-deposit-dialog.progress.mint', {
+                  currency: serviceToken
                 })
               }}
             </span>
             <span v-else-if="step === 'approve'">
               {{
-                $t('mint-deposit-dialog.progress.approve', {
-                  currency: udcToken.symbol || 'SVT'
+                $t('udc-deposit-dialog.progress.approve', {
+                  currency: serviceToken
                 })
               }}
             </span>
             <span v-else-if="step === 'deposit'">
               {{
-                $t('mint-deposit-dialog.progress.deposit', {
-                  currency: udcToken.symbol || 'SVT'
+                $t('udc-deposit-dialog.progress.deposit', {
+                  currency: serviceToken
                 })
               }}
             </span>
           </v-row>
         </v-col>
       </v-row>
-      <v-row v-if="!loading && !error" class="mint-deposit-dialog__available">
+      <v-row v-if="!loading && !error" class="udc-deposit-dialog__available">
         {{
-          $t('mint-deposit-dialog.available', {
+          $t('udc-deposit-dialog.available', {
             balance: accountBalance,
             currency: $t('app-header.currency')
           })
@@ -67,9 +73,15 @@
         arrow
         full-width
         :enabled="valid && !loading"
-        :text="$t('mint-deposit-dialog.button')"
-        class="mint-deposit-dialog__action"
-        @click="mintDeposit()"
+        :text="
+          $t(
+            mainnet
+              ? 'udc-deposit-dialog.button-main'
+              : 'udc-deposit-dialog.button'
+          )
+        "
+        class="udc-deposit-dialog__action"
+        @click="udcDeposit()"
       >
       </action-button>
     </v-card-actions>
@@ -78,7 +90,7 @@
 
 <script lang="ts">
 import { Component, Vue, Emit, Prop } from 'vue-property-decorator';
-import { mapState } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
@@ -90,10 +102,11 @@ import { RaidenError } from 'raiden-ts';
 @Component({
   components: { ActionButton, RaidenDialog, ErrorMessage },
   computed: {
-    ...mapState(['accountBalance'])
+    ...mapState(['accountBalance']),
+    ...mapGetters(['mainnet'])
   }
 })
-export default class MintDepositDialog extends Vue {
+export default class UdcDepositDialog extends Vue {
   amount: string = '10';
   loading: boolean = false;
   error: Error | RaidenError | null = null;
@@ -102,6 +115,12 @@ export default class MintDepositDialog extends Vue {
 
   @Prop({ required: true, type: Boolean })
   visible!: boolean;
+
+  mainnet!: boolean;
+
+  get serviceToken(): string {
+    return this.udcToken.symbol || this.mainnet ? 'RDN' : 'SVT';
+  }
 
   get udcToken(): Token {
     const address = this.$raiden.userDepositTokenAddress;
@@ -117,7 +136,7 @@ export default class MintDepositDialog extends Vue {
     this.error = null;
   }
 
-  async mintDeposit() {
+  async udcDeposit() {
     this.error = null;
     this.loading = true;
 
@@ -126,7 +145,7 @@ export default class MintDepositDialog extends Vue {
     const depositAmount = BalanceUtils.parse(this.amount, token.decimals!);
 
     try {
-      if (depositAmount.gt(token.balance!)) {
+      if (!this.mainnet && depositAmount.gt(token.balance!)) {
         this.step = 'mint';
         await this.$raiden.mint(tokenAddress, depositAmount);
       }
@@ -149,7 +168,7 @@ export default class MintDepositDialog extends Vue {
 <style lang="scss" scoped>
 @import '@/scss/colors';
 
-.mint-deposit-dialog {
+.udc-deposit-dialog {
   background-color: #141414;
   border-radius: 10px !important;
   padding: 20px 20px 55px 20px;

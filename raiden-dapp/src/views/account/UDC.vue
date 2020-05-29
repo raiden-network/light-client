@@ -9,7 +9,9 @@
     </v-row>
     <v-row justify="center">
       <v-col cols="10">
-        <h3 class="udc__sub-head">{{ $t('udc.mint-deposit') }}</h3>
+        <h3 class="udc__sub-head">
+          {{ $t(mainnet ? 'udc.deposit' : 'udc.mint-deposit') }}
+        </h3>
       </v-col>
     </v-row>
     <v-row v-if="!loading && !error" justify="center" no-gutters>
@@ -18,7 +20,7 @@
           v-model="amount"
           autofocus
           type="text"
-          :suffix="udcToken.symbol || 'SVT'"
+          :suffix="serviceToken"
           class="udc__mint-deposit--amount"
         />
       </v-col>
@@ -41,22 +43,22 @@
         <v-row no-gutters align="center" justify="center">
           <span v-if="step === 'mint'">
             {{
-              $t('mint-deposit-dialog.progress.mint', {
-                currency: udcToken.symbol || 'SVT'
+              $t('udc-deposit-dialog.progress.mint', {
+                currency: serviceToken
               })
             }}
           </span>
           <span v-else-if="step === 'approve'">
             {{
-              $t('mint-deposit-dialog.progress.approve', {
-                currency: udcToken.symbol || 'SVT'
+              $t('udc-deposit-dialog.progress.approve', {
+                currency: serviceToken
               })
             }}
           </span>
           <span v-else-if="step === 'deposit'">
             {{
-              $t('mint-deposit-dialog.progress.deposit', {
-                currency: udcToken.symbol || 'SVT'
+              $t('udc-deposit-dialog.progress.deposit', {
+                currency: serviceToken
               })
             }}
           </span>
@@ -67,7 +69,7 @@
       <v-col cols="10" class="text-center">
         <p>
           {{
-            $t('mint-deposit-dialog.available', {
+            $t('udc-deposit-dialog.available', {
               balance: accountBalance,
               currency: $t('app-header.currency')
             })
@@ -79,9 +81,15 @@
       <action-button
         arrow
         :enabled="valid && !loading"
-        :text="$t('mint-deposit-dialog.button')"
+        :text="
+          $t(
+            mainnet
+              ? 'udc-deposit-dialog.button-main'
+              : 'udc-deposit-dialog.button'
+          )
+        "
         class="udc__action"
-        @click="mintDeposit()"
+        @click="udcDeposit()"
       />
     </v-row>
     <v-row justify="center">
@@ -105,7 +113,11 @@
             'udc__low-balance': !hasEnoughServiceTokens
           }"
         >
-          {{ $t('udc.balance-too-low') }}
+          {{
+            $t('udc.balance-too-low', {
+              symbol: serviceToken
+            })
+          }}
         </p>
       </v-col>
     </v-row>
@@ -114,7 +126,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { mapState } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 import { RaidenError } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 
@@ -123,12 +135,13 @@ import { BalanceUtils } from '@/utils/balance-utils';
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
-import MintDepositDialog from '@/components/dialogs/MintDepositDialog.vue';
+import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 
 @Component({
-  components: { ActionButton, MintDepositDialog, AmountDisplay, ErrorMessage },
+  components: { ActionButton, UdcDepositDialog, AmountDisplay, ErrorMessage },
   computed: {
-    ...mapState(['accountBalance'])
+    ...mapState(['accountBalance']),
+    ...mapGetters(['mainnet'])
   }
 })
 export default class UDC extends Vue {
@@ -138,6 +151,11 @@ export default class UDC extends Vue {
   step: 'mint' | 'approve' | 'deposit' | '' = '';
   udcCapacity = Zero;
   hasEnoughServiceTokens = false;
+  mainnet!: boolean;
+
+  get serviceToken(): string {
+    return this.udcToken.symbol || this.mainnet ? 'RDN' : 'SVT';
+  }
 
   get udcToken(): Token {
     const address = this.$raiden.userDepositTokenAddress;
@@ -152,7 +170,7 @@ export default class UDC extends Vue {
     return /^[1-9]\d*$/.test(this.amount);
   }
 
-  async mintDeposit() {
+  async udcDeposit() {
     this.error = null;
     this.loading = true;
 
@@ -161,7 +179,7 @@ export default class UDC extends Vue {
     const depositAmount = BalanceUtils.parse(this.amount, token.decimals!);
 
     try {
-      if (depositAmount.gt(token.balance!)) {
+      if (!this.mainnet && depositAmount.gt(token.balance!)) {
         this.step = 'mint';
         await this.$raiden.mint(tokenAddress, depositAmount);
       }
@@ -184,11 +202,9 @@ export default class UDC extends Vue {
     const { userDepositTokenAddress, monitoringReward } = this.$raiden;
     await this.$raiden.fetchTokenData([userDepositTokenAddress]);
     this.udcCapacity = await this.$raiden.getUDCCapacity();
-    if (monitoringReward && this.udcCapacity.gte(monitoringReward)) {
-      this.hasEnoughServiceTokens = true;
-    } else {
-      this.hasEnoughServiceTokens = false;
-    }
+    this.hasEnoughServiceTokens = !!(
+      monitoringReward && this.udcCapacity.gte(monitoringReward)
+    );
   }
 }
 </script>

@@ -31,7 +31,7 @@
           <span class="token-information__balance">
             {{ (token.balance || 0) | displayFormat(token.decimals) }}
           </span>
-          <v-tooltip bottom>
+          <v-tooltip v-if="!mainnet" bottom>
             <template #activator="{ on }">
               <v-btn
                 text
@@ -64,15 +64,20 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import MintDialog from '@/components/dialogs/MintDialog.vue';
+import { mapGetters } from 'vuex';
 
 @Component({
-  components: { AddressDisplay, MintDialog }
+  components: { AddressDisplay, MintDialog },
+  computed: {
+    ...mapGetters(['mainnet'])
+  }
 })
 export default class TokenInformation extends Vue {
   @Prop()
   token!: Token;
 
   getToken!: (address: string) => Token;
+  mainnet!: boolean;
   showMintDialog: boolean = false;
 
   async tokenMinted() {
