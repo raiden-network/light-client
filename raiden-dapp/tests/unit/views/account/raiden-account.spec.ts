@@ -12,7 +12,7 @@ Vue.use(Vuetify);
 describe('RaidenAccount.vue', () => {
   let wrapper: Wrapper<RaidenAccount>;
   let vuetify: typeof Vuetify;
-  let $raiden = {
+  const $raiden = {
     transferToRaidenAccount: jest.fn(),
     transferToMainAccount: jest.fn(),
     getMainAccount: jest.fn().mockResolvedValue('0x1'),

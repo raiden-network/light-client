@@ -46,7 +46,7 @@ describe('TransferSteps.vue', () => {
     fee: Zero
   } as Route;
 
-  let $raiden = {
+  const $raiden = {
     transfer: jest.fn(),
     fetchTokenData: jest.fn().mockResolvedValue(undefined),
     fetchServices: jest.fn().mockResolvedValue([raidenPFS]),

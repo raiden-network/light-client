@@ -16,7 +16,7 @@ describe('AccountContent.vue', () => {
   let wrapper: Wrapper<AccountContent>;
   let router: Mocked<VueRouter>;
   let vuetify: typeof Vuetify;
-  let $raiden = {
+  const $raiden = {
     getMainAccount: jest.fn().mockResolvedValue('0x1'),
     getAccount: jest.fn().mockResolvedValue('0x2')
   };

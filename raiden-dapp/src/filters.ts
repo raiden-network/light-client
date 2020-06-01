@@ -46,7 +46,7 @@ export default class Filters {
     const [integerPart, decimalPart] = split(units, '.');
 
     if (decimalPart && decimalPart.length > 6) {
-      let newDecimal = decimalPart.substring(0, 6);
+      const newDecimal = decimalPart.substring(0, 6);
       return `≈${integerPart}.${newDecimal}`;
     } else {
       return decimals === 0 ? integerPart : units;

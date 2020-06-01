@@ -15,7 +15,7 @@ Vue.filter('displayFormat', Filters.displayFormat);
 describe('MintDialog.vue', () => {
   let wrapper: Wrapper<MintDialog>;
   let vuetify: typeof Vuetify;
-  let $raiden = { mint: jest.fn().mockResolvedValue(null) };
+  const $raiden = { mint: jest.fn().mockResolvedValue(null) };
 
   beforeEach(() => {
     vuetify = new Vuetify();

@@ -251,7 +251,7 @@ describe('store', () => {
 
   describe('channelWithBiggestCapacity', () => {
     test('return the open channel when there is only one open channel', () => {
-      let mockChannels = TestData.mockChannels;
+      const mockChannels = TestData.mockChannels;
       store.commit('updateChannels', mockChannels);
       expect(
         store.getters.channelWithBiggestCapacity(

@@ -4,7 +4,7 @@ import { Token } from '@/model/types';
 import { One } from 'ethers/constants';
 
 describe('BalanceUtils', () => {
-  let token: Token = {
+  const token: Token = {
     address: '',
     balance: new BigNumber(0),
     decimals: 18,
