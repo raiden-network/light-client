@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { Observable, from, of, EMPTY, fromEvent, timer, defer, concat } from 'rxjs';
 import {
   catchError,

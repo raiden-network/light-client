@@ -12,16 +12,12 @@ export const PathResults = t.readonly(
         t.readonly(
           t.type({
             path: t.readonlyArray(Address),
-            /* eslint-disable-next-line @typescript-eslint/camelcase */
             estimated_fee: Int(32),
           }),
         ),
       ),
     }),
-    t.partial({
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      feedback_token: t.string,
-    }),
+    t.partial({ feedback_token: t.string }),
   ]),
 );
 export interface PathResults extends t.TypeOf<typeof PathResults> {}
@@ -77,23 +73,14 @@ export const IOU = t.readonly(
     sender: Address,
     receiver: Address,
     amount: UInt(32),
-    // eslint-disable-next-line @typescript-eslint/camelcase
     expiration_block: UInt(32),
-    // eslint-disable-next-line @typescript-eslint/camelcase
     one_to_n_address: Address,
-    // eslint-disable-next-line @typescript-eslint/camelcase
     chain_id: UInt(32),
   }),
 );
 
-// eslint-disable-next-line @typescript-eslint/interface-name-prefix
 export interface IOU extends t.TypeOf<typeof IOU> {}
 
-export const LastIOUResults = t.readonly(
-  t.type({
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    last_iou: Signed(IOU),
-  }),
-);
+export const LastIOUResults = t.readonly(t.type({ last_iou: Signed(IOU) }));
 
 export interface LastIOUResults extends t.TypeOf<typeof LastIOUResults> {}

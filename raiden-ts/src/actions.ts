@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/class-name-casing */
 /**
  * Aggregate types and exported properties from actions from all modules
  */

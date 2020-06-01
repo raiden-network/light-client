@@ -137,7 +137,6 @@ const secretReveal$ = (
   else {
     const message: SecretReveal = {
       type: MessageType.SECRET_REVEAL,
-      // eslint-disable-next-line @typescript-eslint/camelcase
       message_identifier: makeMessageId(),
       secret: state.sent[action.meta.secrethash].secret![1].value,
     };
@@ -267,7 +266,6 @@ export const transferRequestUnlockEpic = (
         mergeMap(() => {
           const message: SecretReveal = {
             type: MessageType.SECRET_REVEAL,
-            // eslint-disable-next-line @typescript-eslint/camelcase
             message_identifier: makeMessageId(),
             secret: action.payload.secret,
           };

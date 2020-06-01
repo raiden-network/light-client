@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('ethers/providers');
 import { JsonRpcProvider } from 'ethers/providers';

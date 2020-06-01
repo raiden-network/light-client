@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { Zero } from 'ethers/constants';
 import { bigNumberify } from 'ethers/utils';
 import { combineLatest, EMPTY, from, Observable, of, merge, defer } from 'rxjs';
@@ -587,7 +586,6 @@ function receiveTransferSigned(
       const processed$ = defer(() => {
         const processed: Processed = {
           type: MessageType.PROCESSED,
-          // eslint-disable-next-line @typescript-eslint/camelcase
           message_identifier: transfer.message_identifier,
         };
         return signMessage(signer, processed, { log });
@@ -668,7 +666,6 @@ function receiveTransferUnlocked(
 
       const processed: Processed = {
         type: MessageType.PROCESSED,
-        // eslint-disable-next-line @typescript-eslint/camelcase
         message_identifier: unlock.message_identifier,
       };
       // if any of these signature prompts fail, none of these actions will be emitted
@@ -755,7 +752,6 @@ function receiveTransferExpired(
 
       const processed: Processed = {
         type: MessageType.PROCESSED,
-        // eslint-disable-next-line @typescript-eslint/camelcase
         message_identifier: expired.message_identifier,
       };
       // if any of these signature prompts fail, none of these actions will be emitted

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import * as t from 'io-ts';
 import { Observable, from, of, EMPTY } from 'rxjs';
 import { mergeMap, map, timeout, withLatestFrom, catchError, toArray } from 'rxjs/operators';

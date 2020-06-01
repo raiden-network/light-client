@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-/* eslint-disable @typescript-eslint/class-name-casing */
 import * as t from 'io-ts';
 import invert from 'lodash/invert';
 

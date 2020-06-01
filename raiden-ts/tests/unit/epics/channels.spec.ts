@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { epicFixtures } from '../fixtures';
 import { raidenEpicDeps, makeLog } from '../mocks';
 

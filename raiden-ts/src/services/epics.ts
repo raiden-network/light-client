@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import * as t from 'io-ts';
 import { defer, EMPTY, from, merge, Observable, of, combineLatest } from 'rxjs';
 import {
@@ -60,7 +59,6 @@ const oneToNAddress = memoize(
  */
 const PathError = t.readonly(
   t.type({
-    /* eslint-disable-next-line @typescript-eslint/camelcase */
     error_code: t.number,
     errors: t.string,
   }),

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import ganache, { GanacheServerOptions } from 'ganache-cli';
 import memdown from 'memdown';
 import { range } from 'lodash';
