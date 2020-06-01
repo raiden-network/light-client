@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { patchEthersDefineReadOnly, patchEthersGetNetwork } from './patches';
+import { patchEthersDefineReadOnly, patchEthersGetNetwork, patchVerifyMessage } from './patches';
+patchVerifyMessage();
 patchEthersDefineReadOnly();
 patchEthersGetNetwork();
 
@@ -11,6 +11,7 @@ import { memoize } from 'lodash';
 import logging from 'loglevel';
 import { Store, createStore, applyMiddleware } from 'redux';
 
+// TODO: remove this mock
 jest.mock('ethers/providers');
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
 import { Zero, HashZero } from 'ethers/constants';
