@@ -190,7 +190,6 @@ export const transferReceivedReplyProcessedEpic = (
 
         const processed: Processed = {
           type: MessageType.PROCESSED,
-          // eslint-disable-next-line @typescript-eslint/camelcase
           message_identifier: msgId,
         };
         return from(signMessage(signer, processed, { log })).pipe(

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { Wallet } from 'ethers';
 import { bigNumberify } from 'ethers/utils';
 import { HashZero, One, Zero } from 'ethers/constants';

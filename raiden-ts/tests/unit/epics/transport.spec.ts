@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('matrix-js-sdk');
 
 import { createClient } from 'matrix-js-sdk';

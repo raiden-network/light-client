@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { bigNumberify, BigNumber } from 'ethers/utils';
 import { Zero, One, HashZero } from 'ethers/constants';
 import { of, EMPTY } from 'rxjs';

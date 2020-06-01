@@ -1,5 +1,3 @@
-/* istanbul ignore file */
-/* eslint-disable @typescript-eslint/camelcase */
 /**
  * These io-ts codecs validate and decode JSON Raiden messages
  * They include BigNumber strings validation, enum validation (if needed), Address checksum

@@ -15,7 +15,7 @@ const origRequest = getRequest();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ReqCb = (err?: Error, res?: any, body?: any) => void;
 // 'request' replaces matrix's request
-request((opts: object, cb: ReqCb) => {
+request((opts: Record<string, unknown>, cb: ReqCb) => {
   const req = origRequest(opts, cb);
   const origAbort = req.abort.bind(req);
   return Object.assign(req, {

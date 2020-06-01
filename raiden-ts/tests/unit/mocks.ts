@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/camelcase */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { patchEthersDefineReadOnly, patchMatrixGetNetwork } from './patches';
 patchEthersDefineReadOnly();

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { Zero, One, AddressZero } from 'ethers/constants';
 import { bigNumberify, keccak256, getNetwork } from 'ethers/utils';
 
@@ -888,7 +887,6 @@ describe('raidenReducer', () => {
     });
   });
 
-  /* eslint-disable @typescript-eslint/camelcase */
   describe('transfers', () => {
     const secret = keccak256('0xdeadbeef') as Secret,
       secrethash = getSecrethash(secret),

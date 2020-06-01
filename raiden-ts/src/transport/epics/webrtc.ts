@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import {
   Observable,
   from,
@@ -64,7 +63,6 @@ async function getMatrixIceServers(matrix: MatrixClient): Promise<RTCIceServer[]
         username: string;
         password: string;
       }
-    | {}
     | undefined;
   // if request returns nothing, caches empty list for 1h
   let expire = Date.now() + 36e5;

@@ -14,7 +14,7 @@
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "clean": "rimraf dist/ dist:cjs/ .coverage/ src/contracts/ src/abi/ src/deployment/ src/versions.json",
     "contracts:pre": "node ./scripts/copyContracts.js prebuild",
-    "contracts:build": "typechain --target=ethers 'src/abi/*.json' --outDir src/contracts",
+    "contracts:build": "typechain --target=ethers-v4 'src/abi/*.json' --outDir src/contracts",
     "contracts:post": "node ./scripts/copyContracts.js postbuild",
     "contracts": "npm run contracts:pre && npm run contracts:build",
     "versions": "node ./scripts/versions.js",
@@ -47,22 +47,22 @@
     "@types/events": "^3.0.0",
     "@types/isomorphic-fetch": "^0.0.35",
     "@types/jest": "^25.2.3",
-    "@types/lodash": "^4.14.153",
+    "@types/lodash": "^4.14.154",
     "@types/lossless-json": "^1.0.0",
     "@types/matrix-js-sdk": "^5.1.0",
     "@types/memdown": "^3.0.0",
     "@types/node-localstorage": "^1.3.0",
-    "@types/redux-logger": "^3.0.7",
+    "@types/redux-logger": "^3.0.8",
     "@types/tiny-async-pool": "^1.0.0",
-    "@typescript-eslint/eslint-plugin": "^2.34.0",
-    "@typescript-eslint/parser": "^2.34.0",
-    "eslint": "^6.8.0",
+    "@typescript-eslint/eslint-plugin": "^3.1.0",
+    "@typescript-eslint/parser": "^3.1.0",
+    "eslint": "^7.1.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-import": "^2.20.2",
-    "eslint-plugin-jsdoc": "^25.4.3",
+    "eslint-plugin-jsdoc": "^26.0.1",
     "eslint-plugin-prettier": "^3.1.3",
     "ganache-cli": "^6.9.1",
-    "jest": "~25.5.4",
+    "jest": "~26.0.1",
     "jest-junit": "^10.0.0",
     "memdown": "^5.1.0",
     "node-localstorage": "^2.1.6",
@@ -70,9 +70,9 @@
     "rimraf": "^3.0.2",
     "rxjs-marbles": "^6.0.0",
     "tiny-async-pool": "^1.1.0",
-    "ts-jest": "25.5.1",
+    "ts-jest": "26.1.0",
     "typechain": "^2.0.0",
-    "typechain-target-ethers": "^1.0.4",
+    "@typechain/ethers-v4": "^1.0.0",
     "typedoc": "^0.17.7",
     "typedoc-plugin-markdown": "^2.2.17",
     "typescript": "^3.9.3",
@@ -106,6 +106,15 @@
       "@typescript-eslint",
       "jsdoc"
     ],
+    "extends": [
+      "plugin:@typescript-eslint/recommended",
+      "prettier/@typescript-eslint",
+      "plugin:prettier/recommended",
+      "plugin:jsdoc/recommended",
+      "plugin:import/errors",
+      "plugin:import/warnings",
+      "plugin:import/typescript"
+    ],
     "env": {
       "browser": true,
       "es6": true,
@@ -117,13 +126,15 @@
     },
     "parserOptions": {
       "ecmaVersion": 2018,
-      "sourceType": "module"
+      "sourceType": "module",
+      "project": "./tsconfig.json"
     },
     "rules": {
       "import/order": [
         "error"
       ],
       "import/export": "off",
+      "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/no-empty-interface": "off",
@@ -143,16 +154,7 @@
           "publicOnly": true
         }
       ]
-    },
-    "extends": [
-      "plugin:@typescript-eslint/recommended",
-      "prettier/@typescript-eslint",
-      "plugin:prettier/recommended",
-      "plugin:jsdoc/recommended",
-      "plugin:import/errors",
-      "plugin:import/warnings",
-      "plugin:import/typescript"
-    ]
+    }
   },
   "eslintIgnore": [
     "raiden-contracts/*",

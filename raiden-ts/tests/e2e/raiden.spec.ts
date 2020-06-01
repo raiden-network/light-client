@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { timer } from 'rxjs';
 import { first, filter, takeUntil } from 'rxjs/operators';
 import { Zero, MaxUint256 } from 'ethers/constants';
@@ -862,12 +861,9 @@ describe('Raiden', () => {
         const result = {
           result: [
             // first returned route is invalid and should be filtered
-            // eslint-disable-next-line @typescript-eslint/camelcase
             { path: [tokenNetwork, target], estimated_fee: 0 },
-            // eslint-disable-next-line @typescript-eslint/camelcase
             { path: [partner, target], estimated_fee: 0 },
           ],
-          // eslint-disable-next-line @typescript-eslint/camelcase
           feedback_token: '0xfeedback',
         };
         fetch.mockResolvedValueOnce({
@@ -1024,12 +1020,9 @@ describe('Raiden', () => {
       const result = {
         result: [
           // first returned route is invalid and should be filtered
-          // eslint-disable-next-line @typescript-eslint/camelcase
           { path: [tokenNetwork, target], estimated_fee: 0 },
-          // eslint-disable-next-line @typescript-eslint/camelcase
           { path: [raiden.address, partner, target], estimated_fee: 0 },
         ],
-        // eslint-disable-next-line @typescript-eslint/camelcase
         feedback_token: '0xfeedback',
       };
       fetch.mockResolvedValueOnce({
@@ -1085,12 +1078,9 @@ describe('Raiden', () => {
       const result = {
         result: [
           // first returned route is invalid and should be filtered
-          // eslint-disable-next-line @typescript-eslint/camelcase
           { path: [tokenNetwork, target], estimated_fee: 0 },
-          // eslint-disable-next-line @typescript-eslint/camelcase
           { path: [raiden.address, partner, target], estimated_fee: 0 },
         ],
-        // eslint-disable-next-line @typescript-eslint/camelcase
         feedback_token: '0xfeedback',
       };
       fetch.mockResolvedValueOnce({
@@ -1142,12 +1132,9 @@ describe('Raiden', () => {
       const result = {
         result: [
           // first returned route is invalid and should be filtered
-          // eslint-disable-next-line @typescript-eslint/camelcase
           { path: [tokenNetwork, target], estimated_fee: 0 },
-          // eslint-disable-next-line @typescript-eslint/camelcase
           { path: [raiden.address, partner, target], estimated_fee: 0 },
         ],
-        // eslint-disable-next-line @typescript-eslint/camelcase
         feedback_token: '0xfeedback',
       };
       fetch.mockResolvedValueOnce({

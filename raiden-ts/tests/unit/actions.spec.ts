@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/class-name-casing */
-/* eslint-disable @typescript-eslint/no-namespace */
 import * as t from 'io-ts';
 import { from } from 'rxjs';
 import { bigNumberify } from 'ethers/utils';

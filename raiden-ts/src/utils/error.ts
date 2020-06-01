@@ -101,7 +101,7 @@ const serializedErr = t.intersection([
  */
 export const ErrorCodec = new t.Type<
   Error,
-  { name: string; message?: string; stack?: string } & ({} | { details: ErrorDetails })
+  { name: string; message?: string; stack?: string; details?: ErrorDetails }
 >(
   'Error',
   // if it quacks like a duck... without relying on instanceof

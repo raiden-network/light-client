@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { EMPTY, timer, Observable } from 'rxjs';
 import { first, takeUntil, toArray, pluck } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
