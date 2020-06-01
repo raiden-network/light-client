@@ -348,20 +348,14 @@ export default class RaidenService {
     amount: BigNumber,
     raidenPFS?: RaidenPFS
   ): Promise<RaidenPaths> {
-    let routes: RaidenPaths;
-
     await this.raiden.getAvailability(target);
-    routes = await this.raiden.findRoutes(token, target, amount, {
+    return await this.raiden.findRoutes(token, target, amount, {
       pfs: raidenPFS
     });
-
-    return routes;
   }
 
   async fetchServices(): Promise<RaidenPFS[]> {
-    let raidenPFS: RaidenPFS[];
-    raidenPFS = await this.raiden.findPFS();
-    return raidenPFS;
+    return await this.raiden.findPFS();
   }
 
   /* istanbul ignore next */

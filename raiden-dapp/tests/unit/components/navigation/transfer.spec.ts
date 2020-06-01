@@ -45,7 +45,7 @@ describe('Transfer.vue', () => {
   ): Wrapper<Transfer> {
     vuetify = new Vuetify();
 
-    let options = {
+    const options = {
       vuetify,
       store,
       stubs: ['router-link', 'v-dialog'],
