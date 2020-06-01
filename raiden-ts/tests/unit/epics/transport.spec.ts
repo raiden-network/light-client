@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('matrix-js-sdk');
+
+import { raidenEpicDeps, makeSignature, mockRTC } from '../mocks';
+import { epicFixtures } from '../fixtures';
 
 import { createClient } from 'matrix-js-sdk';
-
-import { patchVerifyMessage } from '../patches';
-patchVerifyMessage();
-
 import { of, timer, EMPTY, Observable } from 'rxjs';
 import { first, tap, takeUntil, toArray } from 'rxjs/operators';
 import { fakeSchedulers } from 'rxjs-marbles/jest';
@@ -50,9 +48,6 @@ import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
 import { ErrorCodes } from 'raiden-ts/utils/error';
 import { Signed, Address } from 'raiden-ts/utils/types';
 import { Capabilities } from 'raiden-ts/constants';
-
-import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps, makeSignature, mockRTC } from '../mocks';
 
 describe('transport epic', () => {
   let depsMock: ReturnType<typeof raidenEpicDeps>,

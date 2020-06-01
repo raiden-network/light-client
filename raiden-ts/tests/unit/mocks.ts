@@ -348,7 +348,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
 
   let blockNumber = 125;
-  Object.assign(provider, { network });
+  Object.assign(provider, { network, _ethersType: 'Provider' });
   Object.defineProperty(provider, 'blockNumber', { get: () => blockNumber });
   jest.spyOn(provider, 'getNetwork').mockImplementation(async () => network);
   jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
@@ -626,7 +626,7 @@ function mockedMatrixCreateClient({ baseUrl }: { baseUrl: string }): jest.Mocked
 
 jest.mock('matrix-js-sdk', () => ({
   ...jest.requireActual<any>('matrix-js-sdk'),
-  createClient: mockedMatrixCreateClient,
+  createClient: jest.fn(mockedMatrixCreateClient),
 }));
 
 export interface MockedRaiden {
