@@ -28,9 +28,12 @@ export const patchVerifyMessage = () => {
       ...origSepc256k1,
       __esModule: true,
       KeyPair: MockedKeyPair,
-      verifyMessage: jest.fn(({}: string, sig: string): string =>
-        getAddress('0x' + sig.substr(-44, 40)),
-      ),
+      verifyMessage: jest.fn((msg: string, sig: string): string => {
+        // TODO: remove userId special case after mockedMatrixCreateClient is used
+        const match = /^@(0x[0-9a-f]{40})[.:]/i.exec(msg);
+        if (match?.[1]) return getAddress(match[1]);
+        return getAddress('0x' + sig.substr(-44, 40));
+      }),
     };
   });
 };
