@@ -36,6 +36,23 @@
             </div>
           </v-col>
           <v-spacer />
+          <span
+            v-if="!loading && defaultAccount"
+            class="app-header__notifications-wrapper"
+          >
+            <v-btn
+              icon
+              height="30px"
+              width="25px"
+              @click.native="navigateToNotifications()"
+            >
+              <v-img
+                height="30px"
+                width="25px"
+                :src="require('@/assets/notifications.svg')"
+              />
+            </v-btn>
+          </span>
           <span class="app-header__account-wrapper">
             <header-identicon @click.native="navigateToAccoount()" />
           </span>
@@ -106,7 +123,7 @@ export default class AppHeader extends Mixins(NavigationMixin) {
       align-items: center;
       display: flex;
       justify-content: center;
-      margin: 0 20px 0 20px;
+      margin: 0 20px 0 40px;
 
       &__back {
         align-items: center;
@@ -145,6 +162,11 @@ export default class AppHeader extends Mixins(NavigationMixin) {
       height: 40px;
       padding: 0 20px 0 20px;
     }
+  }
+
+  &__notifications-wrapper {
+    margin-right: 20px;
+    cursor: pointer;
   }
 
   &__account-wrapper {
