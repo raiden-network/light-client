@@ -1,10 +1,10 @@
 <template>
-  <div id="notification-panel-wrapper">
-    <div class="notification-panel">
-      <div class="notification-panel__close">
+  <div id="notification-panel">
+    <div class="notification-panel-content">
+      <div class="notification-panel-content__close">
         <v-icon icon @click="onModalBackClicked()">mdi-close</v-icon>
       </div>
-      <div class="notification-panel__notification-wrapper">
+      <div class="notification-panel-content__notification-wrapper">
         <notification-card />
       </div>
     </div>
@@ -28,7 +28,7 @@ export default class NotificationPanel extends Mixins(NavigationMixin) {}
 @import '@/scss/mixins';
 @import '@/scss/colors';
 
-#notification-panel-wrapper {
+#notification-panel {
   align-items: center;
   display: flex;
   height: 100%;
@@ -41,7 +41,7 @@ export default class NotificationPanel extends Mixins(NavigationMixin) {}
   }
 }
 
-.notification-panel {
+.notification-panel-content {
   background-color: $card-background;
   border-radius: 10px;
   display: flex;

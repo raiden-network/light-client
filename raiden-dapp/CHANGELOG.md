@@ -2,11 +2,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- [#168] Notification panel
+
+### Fixed
+
+### Changed
+
+[#168]: https://github.com/raiden-network/light-client/issues/168
+
 ## [0.9.0] - 2020-05-28
 
 ### Added
 
-- [#168] Notification panel
 - [#1473] Notify when receiving transfers get disabled (e.g. by low UDC balance)
 - [#1489] UDC balance view
 
@@ -23,7 +32,6 @@
 - [#1443] Eth transfer screen redesign
 - [#842] Disable mainnet w/ environment variable.
 
-[#168]: https://github.com/raiden-network/light-client/issues/168
 [#1541]: https://github.com/raiden-network/light-client/issues/1541
 [#1443]: https://github.com/raiden-network/light-client/issues/1443
 [#1473]: https://github.com/raiden-network/light-client/issues/1473
