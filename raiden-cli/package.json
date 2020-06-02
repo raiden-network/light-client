@@ -38,8 +38,10 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
+    "@types/http-errors": "^1.6.3",
     "ethers": "^4.0.47",
     "express": "^4.17.1",
+    "http-errors": "^1.7.3",
     "inquirer": "^7.1.0",
     "loglevel": "^1.6.8",
     "node-localstorage": "^2.1.6",
