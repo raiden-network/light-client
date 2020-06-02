@@ -10,3 +10,4 @@ export * from './constants';
 export * from './types';
 export * from './utils/types';
 export * from './utils/error';
+export { getNetworkName } from './utils/ethers';

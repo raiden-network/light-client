@@ -8,7 +8,8 @@ import {
   RaidenChannels,
   RaidenTransfer,
   RaidenConfig,
-  Capabilities
+  Capabilities,
+  getNetworkName
 } from 'raiden-ts';
 import {
   AccTokenModel,
@@ -178,7 +179,7 @@ const store: StoreOptions<RootState> = {
       }
     },
     network: (state: RootState) => {
-      return state.network.name || `Chain ${state.network.chainId}`;
+      return getNetworkName(state.network);
     },
     mainnet: (state: RootState) => {
       return state.network.chainId === 1;
