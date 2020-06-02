@@ -1,18 +1,18 @@
 import { mount, Wrapper } from '@vue/test-utils';
-import MintDepositDialog from '@/components/dialogs/MintDepositDialog.vue';
+import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { Zero } from 'ethers/constants';
 import { Token } from '@/model/types';
-import store from '@/store/index';
+import store from '@/store';
 import flushPromises from 'flush-promises';
 import { bigNumberify } from 'ethers/utils';
 
 Vue.use(Vuetify);
 
-describe('MintDepositDialog.vue', () => {
+describe('UdcDepositDialog.vue', () => {
   let vuetify: typeof Vuetify;
-  let wrapper: Wrapper<MintDepositDialog>;
+  let wrapper: Wrapper<UdcDepositDialog>;
 
   const $raiden = {
     userDepositTokenAddress: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
@@ -28,9 +28,9 @@ describe('MintDepositDialog.vue', () => {
     balance: Zero
   } as Token;
 
-  function createWrapper(): Wrapper<MintDepositDialog> {
+  function createWrapper(): Wrapper<UdcDepositDialog> {
     vuetify = new Vuetify();
-    return mount(MintDepositDialog, {
+    return mount(UdcDepositDialog, {
       vuetify,
       store,
       stubs: ['v-dialog'],
@@ -57,7 +57,7 @@ describe('MintDepositDialog.vue', () => {
     $raiden.depositToUDC.mockImplementation(async (_, call: () => void) => {
       call();
     });
-    wrapper.find('.mint-deposit-dialog__action button').trigger('click');
+    wrapper.find('.udc-deposit-dialog__action button').trigger('click');
     await flushPromises();
     expect($raiden.mint).toHaveBeenCalledTimes(1);
     expect($raiden.depositToUDC).toHaveBeenCalledTimes(1);
@@ -67,7 +67,7 @@ describe('MintDepositDialog.vue', () => {
   test('show an error message when the minting fails', async () => {
     expect.assertions(3);
     $raiden.mint.mockRejectedValueOnce(new Error('error'));
-    wrapper.find('.mint-deposit-dialog__action button').trigger('click');
+    wrapper.find('.udc-deposit-dialog__action button').trigger('click');
     await flushPromises();
     expect($raiden.mint).toHaveBeenCalledTimes(1);
     expect($raiden.depositToUDC).toHaveBeenCalledTimes(0);
@@ -83,7 +83,7 @@ describe('MintDepositDialog.vue', () => {
       }
     });
 
-    wrapper.find('.mint-deposit-dialog__action button').trigger('click');
+    wrapper.find('.udc-deposit-dialog__action button').trigger('click');
     await flushPromises();
     expect($raiden.mint).toHaveBeenCalledTimes(0);
     expect($raiden.depositToUDC).toHaveBeenCalledTimes(1);

@@ -1,6 +1,6 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
-import store from '@/store/index';
+import store from '@/store';
 import Vuetify from 'vuetify';
 import TransactionsList from '@/components/transaction-history/TransactionsList.vue';
 

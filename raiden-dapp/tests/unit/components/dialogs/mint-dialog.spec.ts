@@ -4,7 +4,7 @@ import Vue from 'vue';
 import flushPromises from 'flush-promises';
 
 import MintDialog from '@/components/dialogs/MintDialog.vue';
-import { TestData } from '../data/mock-data';
+import { TestData } from '../../data/mock-data';
 import Filters from '@/filters';
 import { RaidenError, ErrorCodes } from 'raiden-ts';
 

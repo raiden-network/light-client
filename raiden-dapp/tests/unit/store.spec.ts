@@ -233,8 +233,8 @@ describe('store', () => {
   });
 
   test('the network getter returns "Chain x" when there is no chain name', () => {
-    store.commit('network', { name: '', chainId: 89 });
-    expect(store.getters.network).toEqual('Chain 89');
+    store.commit('network', { name: 'unknown', chainId: 89 });
+    expect(store.getters.network).toEqual('89');
   });
 
   test('the network getter returns the chain name when it exists', () => {

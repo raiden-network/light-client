@@ -38,7 +38,7 @@
               icon
               x-large
               class="udc-balance__deposit"
-              @click="showMintDeposit = true"
+              @click="showUdcDeposit = true"
               v-on="on"
             >
               <v-icon color="primary">play_for_work</v-icon>
@@ -46,15 +46,20 @@
           </template>
           <span>
             {{
-              $t('select-hub.service-token-tooltip', {
-                token: udcToken.symbol || 'SVT'
-              })
+              $t(
+                mainnet
+                  ? 'select-hub.service-token-tooltip-main'
+                  : 'select-hub.service-token-tooltip',
+                {
+                  token: serviceToken
+                }
+              )
             }}
           </span>
         </v-tooltip>
-        <mint-deposit-dialog
-          :visible="showMintDeposit"
-          @cancel="showMintDeposit = false"
+        <udc-deposit-dialog
+          :visible="showUdcDeposit"
+          @cancel="showUdcDeposit = false"
           @done="mintDone()"
         />
       </v-col>
@@ -67,7 +72,7 @@
         >
           {{
             $t('select-hub.service-token-balance-too-low', {
-              token: udcToken.symbol || 'SVT'
+              token: serviceToken
             })
           }}
         </span>
@@ -112,7 +117,7 @@ import NavigationMixin from '@/mixins/navigation-mixin';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import MintDepositDialog from '@/components/dialogs/MintDepositDialog.vue';
+import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 
 @Component({
   components: {
@@ -120,13 +125,14 @@ import MintDepositDialog from '@/components/dialogs/MintDepositDialog.vue';
     Divider,
     AddressInput,
     ActionButton,
-    MintDepositDialog,
+    UdcDepositDialog,
     AmountDisplay
   },
   computed: {
     ...mapState(['defaultAccount', 'channels', 'network']),
     ...mapGetters({
-      getToken: 'token'
+      getToken: 'token',
+      mainnet: 'mainnet'
     })
   }
 })
@@ -135,10 +141,11 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   channels!: RaidenChannels;
   network!: Network;
   getToken!: (address: string) => Token;
+  mainnet!: boolean;
 
   partner = '';
   valid = true;
-  showMintDeposit = false;
+  showUdcDeposit = false;
   udcCapacity = Zero;
   hasEnoughServiceTokens = false;
 
@@ -159,16 +166,18 @@ export default class SelectHub extends Mixins(NavigationMixin) {
     const { userDepositTokenAddress, monitoringReward } = this.$raiden;
     await this.$raiden.fetchTokenData([userDepositTokenAddress]);
     this.udcCapacity = await this.$raiden.getUDCCapacity();
-    if (monitoringReward && this.udcCapacity.gte(monitoringReward)) {
-      this.hasEnoughServiceTokens = true;
-    } else {
-      this.hasEnoughServiceTokens = false;
-    }
+    this.hasEnoughServiceTokens = !!(
+      monitoringReward && this.udcCapacity.gte(monitoringReward)
+    );
   }
 
   get isConnectedToHub() {
     const { token: address } = this.$route.params;
     return !isEmpty(this.channels[address]);
+  }
+
+  get serviceToken(): string {
+    return this.udcToken.symbol || this.mainnet ? 'RDN' : 'SVT';
   }
 
   get udcToken(): Token {
@@ -198,7 +207,7 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   }
 
   async mintDone() {
-    this.showMintDeposit = false;
+    this.showUdcDeposit = false;
     await this.updateUDCCapacity();
   }
 }
