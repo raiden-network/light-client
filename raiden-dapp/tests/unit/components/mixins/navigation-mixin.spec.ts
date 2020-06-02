@@ -146,7 +146,7 @@ describe('NavigationMixin', () => {
   test('general modal back navigation', () => {
     wrapper.vm.$route.name = RouteNames.TRANSFER;
     wrapper.vm.navigateToAccoount();
-    wrapper.vm.onGeneralBackClicked();
+    wrapper.vm.onModalBackClicked();
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.go).toHaveBeenCalledTimes(1);

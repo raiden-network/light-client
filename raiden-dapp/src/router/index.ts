@@ -72,6 +72,22 @@ const router = new Router({
       component: () => import('../views/ChannelsRoute.vue')
     },
     {
+      path: '/notifications',
+      name: RouteNames.NOTIFICATIONS,
+      beforeEnter: (to, from, next) => {
+        if (from.name === null) {
+          next({
+            name: RouteNames.HOME
+          });
+        } else if (to.matched.length) {
+          to.matched[0].components.default = from.matched[0].components.default;
+          to.matched[0].components.notifications = () =>
+            import('../views/NotificationPanel.vue');
+        }
+        next();
+      }
+    },
+    {
       path: '/account',
       name: RouteNames.ACCOUNT,
       beforeEnter: (to, from, next) => {

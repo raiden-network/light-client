@@ -69,6 +69,12 @@ export default class NavigationMixin extends Vue {
     });
   }
 
+  navigateToNotifications() {
+    this.$router.push({
+      name: RouteNames.NOTIFICATIONS
+    });
+  }
+
   navigateToAccoount() {
     this.$router.push({
       name: RouteNames.ACCOUNT_ROOT
@@ -105,7 +111,7 @@ export default class NavigationMixin extends Vue {
     });
   }
 
-  onGeneralBackClicked() {
+  onModalBackClicked() {
     this.$router.go(-1);
   }
 

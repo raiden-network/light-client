@@ -2,6 +2,7 @@
   <v-app dark>
     <div id="application-wrapper">
       <router-view name="modal" />
+      <router-view name="notifications" />
       <div id="application-content">
         <app-header />
         <v-content>
