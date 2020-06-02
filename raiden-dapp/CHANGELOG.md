@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- [#168] Notification panel
+
+### Fixed
+
+### Changed
+
+[#168]: https://github.com/raiden-network/light-client/issues/168
+
 ## [0.9.0] - 2020-05-28
 
 ### Added

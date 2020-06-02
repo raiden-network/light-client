@@ -9,7 +9,7 @@
               text
               icon
               width="40px"
-              @click="onGeneralBackClicked()"
+              @click="onModalBackClicked()"
             >
               <v-img
                 :src="require('@/assets/back_arrow.svg')"
