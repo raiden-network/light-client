@@ -40,23 +40,23 @@ export const transferRefundedEpic = (
       const message = action.payload.message;
       const secrethash = message.lock.secrethash;
       if (!(secrethash in state.sent)) return;
-      const sent = state.sent[secrethash],
-        transf = sent.transfer[1];
+      const sent = state.sent[secrethash];
+      const locked = sent.transfer[1];
       if (
-        message.initiator !== transf.recipient ||
-        !message.payment_identifier.eq(transf.payment_identifier) ||
-        !bnIsEqual(message.lock, transf.lock)
+        message.initiator !== locked.recipient ||
+        !message.payment_identifier.eq(locked.payment_identifier) ||
+        !bnIsEqual(message.lock, locked.lock)
       )
         return;
       if (
         sent.unlock || // already unlocked
         sent.lockExpired || // already expired
         sent.channelClosed || // channel closed
-        transf.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
+        locked.lock.expiration.lte(state.blockNumber) // lock expired but transfer didn't yet
       )
         return;
       const meta = { secrethash, direction: Direction.SENT };
-      yield transferRefunded({ message }, meta);
+      yield transferRefunded({ message, partner: sent.partner }, meta);
       yield transfer.failure(new RaidenError(ErrorCodes.XFER_REFUNDED), meta);
     }),
   );
