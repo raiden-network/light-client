@@ -150,7 +150,7 @@ export default class RaidenService {
         // update connected tokens data on each newBlock
         raiden.events$
           .pipe(
-            filter(value => value.type === 'new/block'),
+            filter(value => value.type === 'block/new'),
             exhaustMap(() =>
               this.fetchTokenData(
                 this.store.getters.tokens.map((m: TokenModel) => m.address)

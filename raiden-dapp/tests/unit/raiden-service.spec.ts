@@ -626,7 +626,7 @@ describe('RaidenService', () => {
         await raidenService.connect();
         await flushPromises();
         store.commit.mockReset();
-        subject.next({ type: 'new/block' });
+        subject.next({ type: 'block/new' });
         await flushPromises();
 
         expect(store.commit).toBeCalledWith(

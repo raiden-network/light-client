@@ -12,7 +12,7 @@ const ChannelId = t.type({
 });
 
 /* A new head in the blockchain is detected by provider */
-export const newBlock = createAction('new/block', t.type({ blockNumber: t.number }));
+export const newBlock = createAction('block/new', t.type({ blockNumber: t.number }));
 export interface newBlock extends ActionType<typeof newBlock> {}
 
 /**
