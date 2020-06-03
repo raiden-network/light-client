@@ -74,7 +74,7 @@ jobs:
       - save_cache:
           <<: *sdk_package_lock_key
           paths:
-            - "node_modules"
+            - ~/.npm
       - persist_to_workspace:
           root: ~/src
           paths:
@@ -85,13 +85,13 @@ jobs:
     working_directory: *dapp_working_dir
     steps:
       - attach_workspace: *attach_options
-      - restore_cache: *sdk_package_lock_key
       - restore_cache: *dapp_package_lock_key
       - run: npm ci
       - save_cache:
           <<: *dapp_package_lock_key
           paths:
-            - "node_modules"
+            - ~/.cache/Cypress
+            - ~/.npm
       - persist_to_workspace:
           root: ~/src
           paths:
