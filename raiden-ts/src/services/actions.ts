@@ -32,16 +32,16 @@ export namespace pathFind {
 }
 
 export const pfsListUpdated = createAction(
-  'pfsListUpdated',
+  'pfs/list/updated',
   t.type({ pfsList: t.readonlyArray(Address) }),
 );
 export interface pfsListUpdated extends ActionType<typeof pfsListUpdated> {}
 
-export const iouPersist = createAction('iouPersist', t.type({ iou: Signed(IOU) }), ServiceId);
+export const iouPersist = createAction('iou/persist', t.type({ iou: Signed(IOU) }), ServiceId);
 export interface iouPersist extends ActionType<typeof iouPersist> {}
 
-export const iouClear = createAction('iouClear', undefined, ServiceId);
+export const iouClear = createAction('iou/clear', undefined, ServiceId);
 export interface iouClear extends ActionType<typeof iouClear> {}
 
-export const udcDeposited = createAction('udcDeposited', UInt(32));
+export const udcDeposited = createAction('udc/deposited', UInt(32));
 export interface udcDeposited extends ActionType<typeof udcDeposited> {}

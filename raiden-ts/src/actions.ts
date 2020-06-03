@@ -15,7 +15,7 @@ import * as TransfersActions from './transfers/actions';
 import * as ServicesActions from './services/actions';
 
 export const raidenShutdown = createAction(
-  'raidenShutdown',
+  'raiden/shutdown',
   t.type({
     reason: t.union([
       t.literal(ShutdownReason.STOP),
@@ -27,7 +27,7 @@ export const raidenShutdown = createAction(
 );
 export interface raidenShutdown extends ActionType<typeof raidenShutdown> {}
 
-export const raidenConfigUpdate = createAction('raidenConfigUpdate', PartialRaidenConfig);
+export const raidenConfigUpdate = createAction('raiden/config/update', PartialRaidenConfig);
 export interface raidenConfigUpdate extends ActionType<typeof raidenConfigUpdate> {}
 
 const RaidenActions = {

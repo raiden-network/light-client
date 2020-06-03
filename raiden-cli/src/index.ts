@@ -127,8 +127,8 @@ async function raidenInit({
 } = {}) {
   const start = Date.now();
   // wait started
-  await raiden.action$.pipe(first((a) => a.type === 'matrixSetup')).toPromise();
-  await raiden.events$.pipe(first((a) => a.type === 'newBlock')).toPromise();
+  await raiden.action$.pipe(first((a) => a.type === 'matrix/setup')).toPromise();
+  await raiden.events$.pipe(first((a) => a.type === 'new/block')).toPromise();
   log.warn(
     'Started: #',
     await raiden.getBlockNumber(),
