@@ -66,15 +66,15 @@ export const transferSecretRequestedEpic = (
       // proceed only if we know the secret and the SENT transfer
       if (!(message.secrethash in state.sent)) return;
 
-      const transfer = state.sent[message.secrethash].transfer[1];
+      const locked = state.sent[message.secrethash].transfer[1];
       // we do only some basic verification here, as most of it is done upon SecretReveal,
       // to persist the request in most cases in TransferState.secretRequest
       if (
-        transfer.initiator !== address || // only the initiator may reply a SecretRequest
-        transfer.target !== action.meta.address || // reveal only to target
-        !transfer.payment_identifier.eq(message.payment_identifier)
+        locked.initiator !== address || // only the initiator may reply a SecretRequest
+        locked.target !== action.meta.address || // reveal only to target
+        !locked.payment_identifier.eq(message.payment_identifier)
       ) {
-        log.warn('Invalid SecretRequest for transfer', message, transfer);
+        log.warn('Invalid SecretRequest for transfer', message, locked);
         return;
       }
       yield transferSecretRequest(
@@ -110,25 +110,25 @@ const secretReveal$ = (
     return EMPTY;
   }
 
-  const transf = state.sent[secrethash].transfer[1];
-  const target = transf.target;
+  const locked = state.sent[secrethash].transfer[1];
+  const target = locked.target;
   const fee = state.sent[secrethash].fee;
-  const value = transf.lock.amount.sub(fee) as UInt<32>;
+  const value = locked.lock.amount.sub(fee) as UInt<32>;
 
   if (
-    !request.expiration.lte(transf.lock.expiration) ||
+    !request.expiration.lte(locked.lock.expiration) ||
     !request.expiration.gt(state.blockNumber)
   ) {
-    log.error('SecretRequest for expired transfer', request, transf);
+    log.error('SecretRequest for expired transfer', request, locked);
     return EMPTY;
   } else if (request.amount.lt(value)) {
-    log.error('SecretRequest for amount too small!', request, transf);
+    log.error('SecretRequest for amount too small!', request, locked);
     return of(
       transfer.failure(new RaidenError(ErrorCodes.XFER_INVALID_SECRETREQUEST), action.meta),
     );
   } else if (!request.amount.eq(value)) {
     // accept request
-    log.info('Accepted SecretRequest for amount different than sent', request, transf);
+    log.info('Accepted SecretRequest for amount different than sent', request, locked);
   }
 
   let reveal$: Observable<Signed<SecretReveal>>;

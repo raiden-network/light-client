@@ -122,10 +122,10 @@ const unlockedRetryMessage$ = (
     switchMap(([state, { httpTimeout }]) => {
       const secrethash = action.meta.secrethash;
       const unlock = action.payload.message;
-      const transfer = state.sent[secrethash].transfer[1];
+      const locked = state.sent[secrethash].transfer[1];
       const send = messageSend.request(
         { message: unlock },
-        { address: transfer.recipient, msgId: unlock.message_identifier.toString() },
+        { address: locked.recipient, msgId: unlock.message_identifier.toString() },
       );
 
       const notifier = state$.pipe(

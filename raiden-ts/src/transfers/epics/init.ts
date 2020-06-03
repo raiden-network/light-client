@@ -47,11 +47,19 @@ export const initQueuePendingEnvelopeMessagesEpic = (
         yield matrixPresence.request(undefined, { address: sent.transfer[1].target });
         // Processed not received yet for LockedTransfer
         if (!sent.transferProcessed)
-          yield transferSigned({ message: sent.transfer[1], fee: sent.fee }, meta);
+          yield transferSigned(
+            { message: sent.transfer[1], fee: sent.fee, partner: sent.partner },
+            meta,
+          );
         // already unlocked, but Processed not received yet for Unlock
-        if (sent.unlock) yield transferUnlock.success({ message: sent.unlock[1] }, meta);
+        if (sent.unlock)
+          yield transferUnlock.success({ message: sent.unlock[1], partner: sent.partner }, meta);
         // lock expired, but Processed not received yet for LockExpired
-        if (sent.lockExpired) yield transferExpire.success({ message: sent.lockExpired[1] }, meta);
+        if (sent.lockExpired)
+          yield transferExpire.success(
+            { message: sent.lockExpired[1], partner: sent.partner },
+            meta,
+          );
       }
     }),
   );
@@ -87,7 +95,12 @@ export const initQueuePendingReceivedEpic = (
       const meta = { secrethash, direction: Direction.RECEIVED };
       return merge(
         // on init, request monitor presence of any pending transfer initiator
-        of(transferSigned({ message: received.transfer[1], fee: received.fee }, meta)),
+        of(
+          transferSigned(
+            { message: received.transfer[1], fee: received.fee, partner: received.partner },
+            meta,
+          ),
+        ),
         // already revealed to us, but user didn't sign SecretReveal yet
         received.secret && !received.secretReveal
           ? of(transferSecret({ secret: received.secret[1].value }, meta))

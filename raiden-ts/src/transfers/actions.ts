@@ -72,7 +72,7 @@ export namespace transfer {
 /** A LockedTransfer was signed and should be sent to partner */
 export const transferSigned = createAction(
   'transfer/signed',
-  t.type({ message: Signed(LockedTransfer), fee: Int(32) }),
+  t.type({ message: Signed(LockedTransfer), fee: Int(32), partner: Address }),
   TransferId,
 );
 export interface transferSigned extends ActionType<typeof transferSigned> {}
@@ -136,7 +136,7 @@ export const transferUnlock = createAsyncAction(
   'transfer/unlock/success',
   'transfer/unlock/failure',
   undefined,
-  t.type({ message: Signed(Unlock) }),
+  t.type({ message: Signed(Unlock), partner: Address }),
 );
 
 export namespace transferUnlock {
@@ -166,7 +166,7 @@ export const transferExpire = createAsyncAction(
   'transfer/expire/success',
   'transfer/expire/failure',
   undefined,
-  t.type({ message: Signed(LockExpired) }),
+  t.type({ message: Signed(LockExpired), partner: Address }),
 );
 
 export namespace transferExpire {
@@ -186,7 +186,7 @@ export interface transferExpireProcessed extends ActionType<typeof transferExpir
 /** A transfer was refunded */
 export const transferRefunded = createAction(
   'transfer/refunded',
-  t.type({ message: Signed(RefundTransfer) }),
+  t.type({ message: Signed(RefundTransfer), partner: Address }),
   TransferId,
 );
 export interface transferRefunded extends ActionType<typeof transferRefunded> {}
