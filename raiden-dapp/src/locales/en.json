@@ -181,7 +181,9 @@
     "settleable": {
       "header": "Settleable"
     },
-    "snackbar-close": "Close"
+    "snackbar-close": "Close",
+    "token-info": "{symbol} | {name}",
+    "title": "Channels on"
   },
   "channel-list": {
     "channel": {
