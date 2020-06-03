@@ -71,7 +71,7 @@ export namespace transfer {
 
 /** A LockedTransfer was signed and should be sent to partner */
 export const transferSigned = createAction(
-  'transferSigned',
+  'transfer/signed',
   t.type({ message: Signed(LockedTransfer), fee: Int(32) }),
   TransferId,
 );
@@ -79,7 +79,7 @@ export interface transferSigned extends ActionType<typeof transferSigned> {}
 
 /** Partner acknowledge they received and processed our LockedTransfer */
 export const transferProcessed = createAction(
-  'transferProcessed',
+  'transfer/processed',
   t.type({ message: Signed(Processed) }),
   TransferId,
 );
@@ -87,7 +87,7 @@ export interface transferProcessed extends ActionType<typeof transferProcessed> 
 
 /** Register a secret */
 export const transferSecret = createAction(
-  'transferSecret',
+  'transfer/secret',
   t.type({ secret: Secret }),
   TransferId,
 );
@@ -95,9 +95,9 @@ export interface transferSecret extends ActionType<typeof transferSecret> {}
 
 export const transferSecretRegister = createAsyncAction(
   TransferId,
-  'transferSecret/register/request',
-  'transferSecret/register/success',
-  'transferSecret/register/failure',
+  'transfer/secret/register/request',
+  'transfer/secret/register/success',
+  'transfer/secret/register/failure',
   t.intersection([t.type({ secret: Secret }), t.partial({ subkey: t.boolean })]),
   t.type({
     secret: Secret,
@@ -116,7 +116,7 @@ export namespace transferSecretRegister {
 
 /** A valid SecretRequest received from target */
 export const transferSecretRequest = createAction(
-  'transferSecretRequest',
+  'transfer/secret/request',
   t.type({ message: Signed(SecretRequest) }),
   TransferId,
 );
@@ -124,7 +124,7 @@ export interface transferSecretRequest extends ActionType<typeof transferSecretR
 
 /** A SecretReveal sent to target */
 export const transferSecretReveal = createAction(
-  'transferSecretReveal',
+  'transfer/secret/reveal',
   t.type({ message: Signed(SecretReveal) }),
   TransferId,
 );
@@ -147,7 +147,7 @@ export namespace transferUnlock {
 
 /** Partner acknowledge they received and processed our Unlock */
 export const transferUnlockProcessed = createAction(
-  'transferUnlockProcessed',
+  'transfer/unlock/processed',
   t.type({ message: Signed(Processed) }),
   TransferId,
 );
@@ -177,7 +177,7 @@ export namespace transferExpire {
 
 /** Partner acknowledge they received and processed our LockExpired */
 export const transferExpireProcessed = createAction(
-  'transferExpireProcessed',
+  'transfer/expire/processed',
   t.type({ message: Signed(Processed) }),
   TransferId,
 );
@@ -185,14 +185,14 @@ export interface transferExpireProcessed extends ActionType<typeof transferExpir
 
 /** A transfer was refunded */
 export const transferRefunded = createAction(
-  'transferRefunded',
+  'transfer/refunded',
   t.type({ message: Signed(RefundTransfer) }),
   TransferId,
 );
 export interface transferRefunded extends ActionType<typeof transferRefunded> {}
 
 /** A pending transfer isn't needed anymore and should be cleared from state */
-export const transferClear = createAction('transferClear', undefined, TransferId);
+export const transferClear = createAction('transfer/clear', undefined, TransferId);
 export interface transferClear extends ActionType<typeof transferClear> {}
 
 // Withdraw actions

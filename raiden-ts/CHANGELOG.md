@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+- [#837] Changes the action tags from camel to path format. This change affects the event types exposed through the public API.
+
+[#837]: https://github.com/raiden-network/light-client/issues/837
+
 ## [0.9.0] - 2020-05-28
 
 ### Added

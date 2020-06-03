@@ -1509,7 +1509,7 @@ describe('transport epic', () => {
       await expect(promise).resolves.toEqual({
         meta: { address: partner },
         payload: undefined,
-        type: 'rtcChannel',
+        type: 'rtc/channel',
       });
     });
 
@@ -1523,7 +1523,7 @@ describe('transport epic', () => {
       await expect(promise).resolves.toEqual({
         meta: { address: partner },
         payload: undefined,
-        type: 'rtcChannel',
+        type: 'rtc/channel',
       });
     });
 

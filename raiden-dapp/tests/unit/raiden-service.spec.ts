@@ -626,7 +626,7 @@ describe('RaidenService', () => {
         await raidenService.connect();
         await flushPromises();
         store.commit.mockReset();
-        subject.next({ type: 'newBlock' });
+        subject.next({ type: 'block/new' });
         await flushPromises();
 
         expect(store.commit).toBeCalledWith(
@@ -698,7 +698,7 @@ describe('RaidenService', () => {
     (raiden as any).events$ = subject;
     raiden.getTokenList = jest.fn().mockResolvedValue([]);
     await setupSDK();
-    subject.next({ type: 'raidenShutdown' });
+    subject.next({ type: 'raiden/shutdown' });
     await flushPromises();
 
     expect(store.commit).toHaveBeenLastCalledWith('reset');

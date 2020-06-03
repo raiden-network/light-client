@@ -150,7 +150,7 @@ export default class RaidenService {
         // update connected tokens data on each newBlock
         raiden.events$
           .pipe(
-            filter(value => value.type === 'newBlock'),
+            filter(value => value.type === 'block/new'),
             exhaustMap(() =>
               this.fetchTokenData(
                 this.store.getters.tokens.map((m: TokenModel) => m.address)
@@ -160,7 +160,7 @@ export default class RaidenService {
           .subscribe();
 
         raiden.events$
-          .pipe(filter(value => value.type === 'raidenShutdown'))
+          .pipe(filter(value => value.type === 'raiden/shutdown'))
           .subscribe(() => this.store.commit('reset'));
 
         raiden.config$.subscribe(config =>
@@ -168,7 +168,7 @@ export default class RaidenService {
         );
 
         raiden.events$.subscribe(value => {
-          if (value.type === 'tokenMonitored') {
+          if (value.type === 'token/monitored') {
             this.store.commit('updateTokens', {
               [value.payload.token]: { address: value.payload.token }
             });

@@ -22,7 +22,7 @@ export namespace messageSend {
 
 /** One-shot send payload.message to a global room in transport */
 export const messageGlobalSend = createAction(
-  'messageGlobalSend',
+  'message/global/send',
   t.type({ message: t.union([t.string, Signed(Message)]) }),
   t.type({ roomName: t.string }),
 );
@@ -33,7 +33,7 @@ export interface messageGlobalSend extends ActionType<typeof messageGlobalSend> 
  * payload.userId and payload.roomId are optional and specific to matrix transport, as sender info
  */
 export const messageReceived = createAction(
-  'messageReceived',
+  'message/received',
   t.intersection([
     t.type({
       text: t.string,

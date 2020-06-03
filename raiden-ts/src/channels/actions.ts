@@ -12,7 +12,7 @@ const ChannelId = t.type({
 });
 
 /* A new head in the blockchain is detected by provider */
-export const newBlock = createAction('newBlock', t.type({ blockNumber: t.number }));
+export const newBlock = createAction('block/new', t.type({ blockNumber: t.number }));
 export interface newBlock extends ActionType<typeof newBlock> {}
 
 /**
@@ -20,7 +20,7 @@ export interface newBlock extends ActionType<typeof newBlock> {}
  * fromBlock is only set on the first time, to fetch and handle past events
  */
 export const tokenMonitored = createAction(
-  'tokenMonitored',
+  'token/monitored',
   t.intersection([
     t.type({
       token: Address,
