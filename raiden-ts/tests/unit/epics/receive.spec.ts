@@ -190,7 +190,10 @@ describe('receive transfers', () => {
           .toPromise(),
       ).resolves.toEqual(
         expect.arrayContaining([
-          transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
+          transferSigned(
+            { message: transf, fee: Zero as Int<32>, partner },
+            { secrethash, direction },
+          ),
           matrixPresence.request(undefined, { address: partner }),
           transferProcessed(
             {
@@ -355,7 +358,7 @@ describe('receive transfers', () => {
           .toPromise(),
       ).resolves.toEqual(
         expect.arrayContaining([
-          transferUnlock.success({ message: unlock }, { secrethash, direction }),
+          transferUnlock.success({ message: unlock, partner }, { secrethash, direction }),
           transferUnlockProcessed(
             {
               message: expect.objectContaining({
@@ -480,7 +483,7 @@ describe('receive transfers', () => {
           .toPromise(),
       ).resolves.toEqual(
         expect.arrayContaining([
-          transferExpire.success({ message: expired }, { secrethash, direction }),
+          transferExpire.success({ message: expired, partner }, { secrethash, direction }),
           transferExpireProcessed(
             {
               message: expect.objectContaining({
@@ -815,7 +818,10 @@ describe('receive transfers', () => {
       await expect(
         initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
-        transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
+        transferSigned(
+          { message: transf, fee: Zero as Int<32>, partner },
+          { secrethash, direction },
+        ),
         matrixPresence.request(undefined, { address: partner }),
         transferSecretRequest(
           { message: expect.objectContaining({ type: MessageType.SECRET_REQUEST }) },
@@ -830,12 +836,18 @@ describe('receive transfers', () => {
         output.push(o),
       );
       expect(output).toEqual([
-        transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
+        transferSigned(
+          { message: transf, fee: Zero as Int<32>, partner },
+          { secrethash, direction },
+        ),
       ]);
       // enable receiving at runtime, and expect presence & secret requests to be emitted
       action$.next(raidenConfigUpdate({ caps: { [Capabilities.NO_RECEIVE]: false } }));
       expect(output).toEqual([
-        transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
+        transferSigned(
+          { message: transf, fee: Zero as Int<32>, partner },
+          { secrethash, direction },
+        ),
         matrixPresence.request(undefined, { address: partner }),
         transferSecretRequest(
           { message: expect.objectContaining({ type: MessageType.SECRET_REQUEST }) },
@@ -850,7 +862,10 @@ describe('receive transfers', () => {
       await expect(
         initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
-        transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
+        transferSigned(
+          { message: transf, fee: Zero as Int<32>, partner },
+          { secrethash, direction },
+        ),
         transferSecret({ secret }, { secrethash, direction }),
       ]);
 
@@ -865,7 +880,10 @@ describe('receive transfers', () => {
       await expect(
         initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
-        transferSigned({ message: transf, fee: Zero as Int<32> }, { secrethash, direction }),
+        transferSigned(
+          { message: transf, fee: Zero as Int<32>, partner },
+          { secrethash, direction },
+        ),
         transferSecretReveal({ message: reveal }, { secrethash, direction }),
       ]);
     });

@@ -266,6 +266,7 @@ describe('send transfers', () => {
                 signature: expect.any(String),
               }),
               fee,
+              partner,
             },
             { secrethash, direction },
           ),
@@ -442,6 +443,7 @@ describe('send transfers', () => {
                   message_identifier: expect.any(BigNumber),
                   signature: expect.any(String),
                 }),
+                partner,
               },
               { secrethash, direction },
             ),
@@ -618,6 +620,7 @@ describe('send transfers', () => {
                   message_identifier: expect.any(BigNumber),
                   signature: expect.any(String),
                 }),
+                partner,
               },
               { secrethash, direction },
             ),
@@ -1185,7 +1188,7 @@ describe('send transfers', () => {
 
         await expect(promise).resolves.toEqual([
           matrixPresence.request(undefined, { address: partner }),
-          transferSigned({ message: signedTransfer, fee }, { secrethash, direction }),
+          transferSigned({ message: signedTransfer, fee, partner }, { secrethash, direction }),
         ]);
       });
 
@@ -1861,7 +1864,7 @@ describe('send transfers', () => {
         // success case
         await expect(promise).resolves.toEqual(
           expect.arrayContaining([
-            transferRefunded({ message: refund }, { secrethash, direction }),
+            transferRefunded({ message: refund, partner }, { secrethash, direction }),
             {
               type: transfer.failure.type,
               payload: expect.any(Error),
