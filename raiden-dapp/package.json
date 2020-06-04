@@ -67,7 +67,7 @@
     "@vue/test-utils": "^1.0.3",
     "babel-core": "^7.0.0-bridge.0",
     "babel-eslint": "^10.1.0",
-    "copy-webpack-plugin": "^6.0.1",
+    "copy-webpack-plugin": "^6.0.2",
     "eslint": "^7.1.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.20.2",
