@@ -12,7 +12,6 @@ update_configs:
     default_reviewers:
       - "kelsos"
       - "andrevmatos"
-      - "nephix"
 
   - package_manager: "javascript"
     directory: "/raiden-dapp"
@@ -24,5 +23,4 @@ update_configs:
     version_requirement_updates: "increase_versions"
     default_reviewers:
       - "kelsos"
-      - "andrevmatos"
-      - "nephix"
+      - "taleldayekh"
