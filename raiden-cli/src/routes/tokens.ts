@@ -1,21 +1,31 @@
 import { Router, Request, Response } from 'express';
+import { validate, isAddress } from '../utils/validation';
 
 const router = Router();
 
 router.get('/', function (_request: Request, response: Response): void {
-  response.send('All tokens');
+  response.status(404).send('Not implemented yet');
 });
 
-router.get('/:tokenAddress', function (request: Request, response: Response): void {
-  response.send(`Get token ${request.params.tokenAddress}`);
+router.get('/:tokenAddress', validate([isAddress('tokenaddress', 'params')]), function (
+  _request: Request,
+  response: Response,
+): void {
+  response.status(404).send('Not implemented yet');
 });
 
-router.get('/:tokenAddress/partners', function (request: Request, response: Response): void {
-  response.send(`Get token partners for ${request.params.tokenAddress}`);
+router.get('/:tokenAddress/partners', validate([isAddress('tokenAddress', 'params')]), function (
+  _request: Request,
+  response: Response,
+): void {
+  response.status(404).send('Not implemented yet');
 });
 
-router.put('/:tokenAddress', function (request: Request, response: Response): void {
-  response.send(`Add token ${request.params.tokenAddress}`);
+router.put('/:tokenAddress', validate([isAddress('tokenAddress', 'params')]), function (
+  _request: Request,
+  response: Response,
+): void {
+  response.status(404).send('Not implemented yet');
 });
 
 export default router;
