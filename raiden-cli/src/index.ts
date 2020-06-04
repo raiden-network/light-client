@@ -1,21 +1,19 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { Server } from 'http';
 import inquirer from 'inquirer';
 import yargs from 'yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
 import logging from 'loglevel';
-import app from './app';
-import RaidenService from './raiden';
 import { CliArguments } from './types';
+import { startServer, stopServer } from './app';
+import RaidenService from './raiden';
 
 let log: logging.Logger = logging;
-let server: Server;
 
 function parseArguments(): CliArguments {
   return yargs
-    .usage('Usage: $0 -k <private_json_path> -e <node_url> --serve <port>')
+    .usage('Usage: $0 -k <private_json_path> -e <node_url> --port <port>')
     .options({
       privateKey: {
         type: 'string',
@@ -48,7 +46,7 @@ function parseArguments(): CliArguments {
       },
       port: {
         type: 'number',
-        default: 8080,
+        default: 5001,
         desc: 'Serve HTTP API on given port',
       },
     })
@@ -80,18 +78,10 @@ function initLogging(address: string): void {
 }
 
 function shutdown(): void {
-  log.info('Stopping...');
   try {
+    log.info('Stopping...');
     RaidenService.getInstance().stop();
-    if (server?.listening) server.close();
-    // TODO: unsubscribe
-    //
-    // if events$ completes, it means raiden shut down
-    // let stopSub: ReturnType<typeof raiden.events$.subscribe>;
-    // stopSub = raiden.events$.subscribe(undefined, raidenStop, raidenStop);
-    // const raidenStop = () => {
-    //   if (stopSub) stopSub.unsubscribe();
-    // };
+    stopServer();
   } catch (err) {
     log.error(err);
     process.exit(1);
@@ -103,14 +93,9 @@ function registerShutdownHooks(): void {
   process.on('SIGTERM', shutdown);
 }
 
-function startServer(port: number): void {
-  server = app.listen(port, () => {
-    log.info(`Serving Raiden LC API at http://localhost:${port}...`);
-  });
-}
-
 async function main() {
   logging.setLevel(logging.levels.DEBUG);
+
   const argv = parseArguments();
   const password = argv.password ?? (await askUserForPassword());
   const wallet = await getWallet(argv.privateKey, password);
@@ -118,10 +103,10 @@ async function main() {
 
   initLogging(wallet.address);
   registerShutdownHooks();
+  startServer(argv.port, log);
   await RaidenService.connect(argv.ethNode, wallet.privateKey, localStorage, {
     ...argv.config,
   });
-  startServer(argv.port);
 }
 
 main().catch((err) => {
