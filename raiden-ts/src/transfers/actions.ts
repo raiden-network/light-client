@@ -15,6 +15,7 @@ import {
   RefundTransfer,
   WithdrawRequest,
   WithdrawConfirmation,
+  WithdrawExpired,
 } from '../messages/types';
 import { Paths } from '../services/types';
 import { Direction } from './state';
@@ -212,6 +213,7 @@ export const withdrawReceive = createAsyncAction(
   'withdraw/receive/failure',
   t.type({ message: Signed(WithdrawRequest) }),
   t.type({ message: Signed(WithdrawConfirmation) }),
+  t.type({ message: Signed(WithdrawExpired) }),
 );
 
 export namespace withdrawReceive {
@@ -219,3 +221,10 @@ export namespace withdrawReceive {
   export interface success extends ActionType<typeof withdrawReceive.success> {}
   export interface failure extends ActionType<typeof withdrawReceive.failure> {}
 }
+
+export const withdrawExpired = createAction(
+  'withdraw/expired',
+  t.type({ participant: Address }), // participant is the withdraw 'requester', as on messages
+  WithdrawId,
+);
+export interface withdrawExpired extends ActionType<typeof withdrawExpired> {}

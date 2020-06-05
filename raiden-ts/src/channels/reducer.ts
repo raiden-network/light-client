@@ -1,4 +1,4 @@
-import { Zero, AddressZero, HashZero } from 'ethers/constants';
+import { Zero, AddressZero, HashZero, One } from 'ethers/constants';
 
 import { UInt, Address, Hash } from '../utils/types';
 import { Reducer, createReducer, isActionOf } from '../utils/actions';
@@ -67,6 +67,8 @@ const emptyChannelEnd: ChannelEnd = {
     additionalHash: HashZero as Hash,
     signature: SignatureZero,
   },
+  withdrawRequests: [],
+  nextNonce: One as UInt<8>,
 };
 
 function channelOpenSuccessReducer(state: RaidenState, action: channelOpen.success): RaidenState {
@@ -109,10 +111,16 @@ function channelUpdateOnchainBalanceStateReducer(
   let channel = state.channels[key];
   if (channel?.state !== ChannelState.open || channel.id !== action.payload.id) return state;
 
-  const [prop, total] = channelWithdrawn.is(action)
-    ? ['withdraw' as const, action.payload.totalWithdraw]
-    : ['deposit' as const, action.payload.totalDeposit];
   const end = action.payload.participant === channel.partner.address ? 'partner' : 'own';
+  const [prop, total, withdrawRequests] = channelWithdrawn.is(action)
+    ? [
+        'withdraw' as const,
+        action.payload.totalWithdraw,
+        channel[end].withdrawRequests.filter((req) =>
+          req.total_withdraw.gt(action.payload.totalWithdraw),
+        ), // on-chain withdraw clears <= WithdrawRequests, including the confirmed one
+      ]
+    : ['deposit' as const, action.payload.totalDeposit, channel[end].withdrawRequests];
 
   if (total.lte(channel[end][prop])) return state; // ignore if past event
 
@@ -121,6 +129,7 @@ function channelUpdateOnchainBalanceStateReducer(
     [end]: {
       ...channel[end],
       [prop]: total,
+      withdrawRequests,
     },
   };
   return { ...state, channels: { ...state.channels, [key]: channel } };

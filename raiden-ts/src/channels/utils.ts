@@ -42,6 +42,11 @@ export function channelUniqueKey<
   return `${channel.id}#${channelKey(channel)}`;
 }
 
+// get the biggest UInt BigNumber from an array, or Zero if empty
+function bnMax<T extends UInt>(...args: T[]): T {
+  return args.reduce((a, b) => (b.gt(a) ? b : a), Zero as T);
+}
+
 /**
  * Calculates and returns partial and total amounts of given channel state
  *
@@ -79,9 +84,21 @@ export function channelAmounts(channel: Channel) {
     partnerLocked = channel.partner.balanceProof.lockedAmount,
     ownBalance = partnerTransferred.sub(ownTransferred) as UInt<32>,
     partnerBalance = ownTransferred.sub(partnerTransferred) as UInt<32>, // == -ownBalance
-    ownCapacity = channel.own.deposit.sub(ownWithdraw).sub(ownLocked).add(ownBalance) as UInt<32>,
+    ownPendingWithdraw = bnMax(
+      // get maximum between actual and pending withdraws (as it's a total)
+      ownWithdraw,
+      ...channel.own.withdrawRequests.map((req) => req.total_withdraw),
+    ),
+    partnerPendingWithdraw = bnMax(
+      partnerWithdraw,
+      ...channel.partner.withdrawRequests.map((req) => req.total_withdraw),
+    ),
+    ownCapacity = channel.own.deposit
+      .sub(ownPendingWithdraw) // pending withdraws reduce capacity
+      .sub(ownLocked)
+      .add(ownBalance) as UInt<32>,
     partnerCapacity = channel.partner.deposit
-      .sub(partnerWithdraw)
+      .sub(partnerPendingWithdraw)
       .sub(partnerLocked)
       .add(partnerBalance) as UInt<32>,
     ownOnchainUnlocked = channel.own.locks

@@ -5,7 +5,7 @@ import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
 import { ChannelState } from '../channels/state';
 import { channelClose } from '../channels/actions';
-import { timed } from '../utils/types';
+import { timed, UInt } from '../utils/types';
 import { Reducer, createReducer } from '../utils/actions';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import { Direction } from './state';
@@ -23,6 +23,7 @@ import {
   withdrawReceive,
   transferSecretRequest,
   transferSecretRegister,
+  withdrawExpired,
 } from './actions';
 
 const END = { [Direction.SENT]: 'own', [Direction.RECEIVED]: 'partner' } as const;
@@ -68,12 +69,12 @@ function transferEnvelopeReducer(
   const end = END[action.meta.direction];
   let channel = state.channels[key];
 
-  // nonce must be next, otherwise we already processed this message
-  // rest of validation happens on epic
+  // nonce must be next, otherwise we already processed this message; validation happens on epic;
+  // transferSigned messages must not be in state, other envelopes do (corresponding transfer)
   if (
     transferSigned.is(action) === secrethash in state[action.meta.direction] ||
     channel?.state !== ChannelState.open ||
-    !message.nonce.eq(channel[end].balanceProof.nonce.add(1))
+    !message.nonce.eq(channel[end].nextNonce)
   )
     return state;
 
@@ -84,7 +85,7 @@ function transferEnvelopeReducer(
           transfer: timed(action.payload.message),
           fee: action.payload.fee,
           partner,
-        }, // initialize transfer state
+        }, // initialize transfer state on transferSigned
       ]
     : [
         channel[end].locks.filter((l) => l.secrethash !== secrethash), // pop lock
@@ -93,7 +94,7 @@ function transferEnvelopeReducer(
           [transferUnlock.success.is(action) ? 'unlock' : 'lockExpired']: timed(
             action.payload.message,
           ),
-        }, // set unlock or lockExpired members
+        }, // set unlock or lockExpired members on already present tranferState
       ];
   channel = {
     ...channel,
@@ -102,6 +103,7 @@ function transferEnvelopeReducer(
       locks,
       // set current/latest channel[end].balanceProof
       balanceProof: getBalanceProofFromEnvelopeMessage(message),
+      nextNonce: channel[end].nextNonce.add(1) as UInt<8>, // always increment nextNonce
     },
   };
 
@@ -231,33 +233,59 @@ function transferClearReducer(state: RaidenState, action: transferClear): Raiden
   return state;
 }
 
-function withdrawReceiveSuccessReducer(
+function withdrawReducer(
   state: RaidenState,
-  action: withdrawReceive.success,
+  action: withdrawReceive.request | withdrawReceive.success | withdrawReceive.failure,
 ): RaidenState {
-  // TODO: subtract this pending withdraw request from partner's capacity (maybe some pending
-  // withdraws state), revert upon expiration or consolidate on confirmed channelWithdrawn
   const message = action.payload.message;
   const key = channelKey(action.meta);
+  // if it's a confirmation, it goes on requestee's side, else, on requester's
+  const end =
+    (message.participant === action.meta.partner) !== withdrawReceive.success.is(action)
+      ? 'partner'
+      : 'own';
   let channel = state.channels[key];
-  if (!channel || channel.state !== ChannelState.open) return state;
-  // current own balanceProof, or zero balance proof, with some known fields filled
-  const balanceProof = channel.own.balanceProof;
-  // if it's the next nonce, update balance proof
-  if (message.nonce.eq(balanceProof.nonce.add(1)) && message.expiration.gt(state.blockNumber)) {
-    channel = {
-      ...channel,
-      own: {
-        ...channel.own,
-        balanceProof: {
-          ...balanceProof,
-          nonce: message.nonce,
-        },
-      },
-    };
-    state = { ...state, channels: { ...state.channels, [key]: channel } };
-  }
-  return state;
+  // nonce must be next, otherwise already processed message, skip
+  if (channel?.state !== ChannelState.open || !message.nonce.eq(channel[end].nextNonce))
+    return state;
+
+  let withdrawRequests = channel[end].withdrawRequests;
+  // append withraw request to channel end state's withdrawRequests array
+  if (withdrawReceive.request.is(action))
+    withdrawRequests = [...channel[end].withdrawRequests, action.payload.message];
+
+  // confirmations and expirations don't mutate pending requests array, only nextNonce;
+  // expiration is handled and pending request cleared on expiration block confirmation
+  channel = {
+    ...channel,
+    [end]: {
+      ...channel[end],
+      withdrawRequests,
+      nextNonce: channel[end].nextNonce.add(1) as UInt<8>, // no BP, but increment nextNonce
+    },
+  };
+  return { ...state, channels: { ...state.channels, [key]: channel } };
+}
+
+function withdrawExpiredReducer(state: RaidenState, action: withdrawExpired): RaidenState {
+  const key = channelKey(action.meta);
+  const end = action.payload.participant === action.meta.partner ? 'partner' : 'own';
+  let channel = state.channels[key];
+  if (channel?.state !== ChannelState.open) return state;
+
+  const withdrawRequests = channel[end].withdrawRequests.filter(
+    (req) =>
+      !req.expiration.eq(action.meta.expiration) ||
+      !req.total_withdraw.eq(action.meta.totalWithdraw),
+  );
+  channel = {
+    ...channel,
+    [end]: {
+      ...channel[end],
+      withdrawRequests,
+    },
+  };
+  return { ...state, channels: { ...state.channels, [key]: channel } };
 }
 
 /**
@@ -277,5 +305,9 @@ const transfersReducer: Reducer<RaidenState, RaidenAction> = createReducer(initi
   .handle(transferSecretReveal, transferSecretReveledReducer)
   .handle(channelClose.success, channelCloseSuccessReducer)
   .handle(transferClear, transferClearReducer)
-  .handle(withdrawReceive.success, withdrawReceiveSuccessReducer);
+  .handle(
+    [withdrawReceive.request, withdrawReceive.success, withdrawReceive.failure],
+    withdrawReducer,
+  )
+  .handle(withdrawExpired, withdrawExpiredReducer);
 export default transfersReducer;
