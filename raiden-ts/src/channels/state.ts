@@ -2,6 +2,7 @@ import * as t from 'io-ts';
 import { BigNumber } from 'ethers/utils';
 
 import { UInt, Address, Signed } from '../utils/types';
+import { WithdrawRequest } from '../messages';
 import { Lock, BalanceProof } from './types';
 
 export enum ChannelState {
@@ -23,6 +24,8 @@ export const ChannelEnd = t.readonly(
     withdraw: UInt(32),
     locks: t.readonlyArray(Lock),
     balanceProof: Signed(BalanceProof),
+    withdrawRequests: t.readonlyArray(Signed(WithdrawRequest)),
+    nextNonce: UInt(8), // usually balanceProof.nonce+1, but withdraw messages also increment it
   }),
 );
 export interface ChannelEnd extends t.TypeOf<typeof ChannelEnd> {}
