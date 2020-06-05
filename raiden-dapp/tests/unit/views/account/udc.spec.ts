@@ -30,6 +30,7 @@ describe('UDC.vue', () => {
     return mount(UDC, {
       vuetify,
       store,
+      stubs: ['v-dialog'],
       mocks: {
         $identicon: $identicon(),
         $t: (msg: string) => msg,
@@ -85,5 +86,15 @@ describe('UDC.vue', () => {
     await flushPromises();
 
     expect(wrapper.vm.$data.loading).toBe(false);
+  });
+
+  test('clicking withdrawal button enables withdrawal dialog', async () => {
+    expect(wrapper.vm.$data.withdrawFromUdc).toBe(false);
+
+    const withdrawalButton = wrapper.find('.udc__withdrawal-button');
+    withdrawalButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.$data.withdrawFromUdc).toBe(true);
   });
 });
