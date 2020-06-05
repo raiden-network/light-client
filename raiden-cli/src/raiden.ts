@@ -1,6 +1,6 @@
 import { Raiden, RaidenChannel, RaidenChannels, ChannelState } from 'raiden-ts';
 import { LocalStorage } from 'node-localstorage';
-import _ from 'lodash';
+import { flatMap, values, filter } from 'lodash';
 import { Subscription } from 'rxjs';
 
 const DEFAULT_CONFIG = {
@@ -63,7 +63,7 @@ export default class RaidenService {
 
   get allChannels(): RaidenChannel[] {
     // To resolve structure {token: {partner: [channel..], partner:...}, token...}
-    return _.flatMap(_.values(this._channels), (partnerChannels) => _.values(partnerChannels));
+    return flatMap(values(this._channels), (partnerChannels) => values(partnerChannels));
   }
 
   start(): void {
@@ -86,16 +86,13 @@ export default class RaidenService {
     let filteredChannels = this.allChannels;
 
     if (state) {
-      filteredChannels = _.filter(filteredChannels, (channel) => channel.state === state);
+      filteredChannels = filter(filteredChannels, (channel) => channel.state === state);
     }
     if (tokenAddress) {
-      filteredChannels = _.filter(filteredChannels, (channel) => channel.token === tokenAddress);
+      filteredChannels = filter(filteredChannels, (channel) => channel.token === tokenAddress);
     }
     if (partnerAddress) {
-      filteredChannels = _.filter(
-        filteredChannels,
-        (channel) => channel.partner === partnerAddress,
-      );
+      filteredChannels = filter(filteredChannels, (channel) => channel.partner === partnerAddress);
     }
 
     return filteredChannels;

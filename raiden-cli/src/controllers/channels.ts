@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ChannelState } from 'raiden-ts';
-import _ from 'lodash';
+import { map } from 'lodash';
 import RaidenService from '../raiden';
 import { transformChannelFormatSdkToApi } from '../utils/formatting';
 
@@ -10,7 +10,7 @@ export function transformAndSendChannels(
   next: NextFunction,
 ) {
   if (request.channels !== undefined) {
-    response.json(_.map(request.channels, transformChannelFormatSdkToApi));
+    response.json(map(request.channels, transformChannelFormatSdkToApi));
   } else {
     next();
   }

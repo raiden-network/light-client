@@ -7,7 +7,6 @@ import {
   Location,
   buildCheckFunction,
 } from 'express-validator';
-import _ from 'lodash';
 import { getAddress } from 'ethers/utils';
 
 function formatValdiationErrors(error: ValidationError): string {
