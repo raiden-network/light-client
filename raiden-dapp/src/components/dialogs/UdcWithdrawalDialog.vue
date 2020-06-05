@@ -12,6 +12,11 @@
             class="udc-withdrawal-dialog__amount"
           />
         </v-col>
+        <v-col class="udc-withdrawal-dialog__asterisk" cols="1">
+          <sup>
+            {{ $t('udc.asterisk') }}
+          </sup>
+        </v-col>
       </v-row>
       <v-row
         no-gutters
@@ -32,6 +37,14 @@
         :text="$t('general.buttons.confirm')"
       />
     </v-card-actions>
+    <v-card-text>
+      <v-row class="udc-withdrawal-dialog__footnote" no-gutters>
+        <span>
+          <sup>{{ $t('udc.asterisk') }}</sup>
+          {{ $t('udc.withdrawal-footnote') }}
+        </span>
+      </v-row>
+    </v-card-text>
   </raiden-dialog>
 </template>
 
@@ -94,15 +107,26 @@ export default class UdcWithdrawalDialog extends Vue {
         &__suffix {
           padding-left: 8px;
           color: white;
-          padding-right: 18px;
         }
       }
     }
   }
 
+  &__asterisk {
+    align-items: center;
+    color: $color-white;
+    display: flex;
+    margin-right: 18px;
+    padding-top: 5px;
+  }
+
   &__available {
     color: $color-white;
     margin-top: 25px;
+  }
+
+  &__footnote {
+    margin-left: 5px;
   }
 }
 </style>

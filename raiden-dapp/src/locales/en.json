@@ -76,6 +76,8 @@
     "mint-deposit": "Mint and deposit",
     "balance": "UDC Balance:",
     "withdrawal": "Withdrawal",
+    "asterisk": "*",
+    "withdrawal-footnote": "Actual withdrawal amount might vary",
     "balance-too-low": "Your {symbol} balance is too low to pay for the Monitoring Service. Receiving transfers has been temporarily disabled. Use the button above to mint an deposit more tokens. A minimum amount of 5 {service} is needed to enable receiving."
   },
   "backup-state": {
