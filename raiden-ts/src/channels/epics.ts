@@ -565,7 +565,7 @@ export const channelOpenEpic = (
             action.meta,
           ),
         );
-      const { signer: onchainSigner } = chooseOnchainAccount(
+      const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
         { signer, address, main },
         action.payload.subkey ?? configSubkey,
       );
@@ -594,44 +594,52 @@ export const channelOpenEpic = (
               action.payload.settleTimeout ?? settleTimeout,
             ),
           ).pipe(
+            tap((tx) => log.debug(`sent openChannel tx "${tx.hash}" to "${tokenNetwork}"`)),
             // Wallet signer depends on fetching the 'pending' tx count to fill 'nonce'
             // therefore we need to send open then approve, instead of doing them parallely
             mergeMap((openTx) =>
               deposit
-                ? from(tokenContract.functions.approve(tokenNetwork, deposit)).pipe(
-                    map((approveTx) => [openTx, approveTx] as const),
+                ? from(tokenContract.functions.allowance(onchainAddress, tokenNetwork)).pipe(
+                    mergeMap((allowance) =>
+                      allowance.gte(deposit)
+                        ? // approveTx=false indicates allowance was enough
+                          of([openTx, false] as const)
+                        : from(tokenContract.functions.approve(tokenNetwork, deposit)).pipe(
+                            tap((tx) => log.debug(`sent approve tx "${tx.hash}" to "${token}"`)),
+                            map((approveTx) => [openTx, approveTx] as const),
+                          ),
+                    ),
                   )
                 : of([openTx] as const),
             ),
             // can't share logic with channelDepositEpic, because parallelism of txs needs to be
             // strict, nor use assertTx for approve|openChannel parallel txs
-            tap(([tx]) => log.debug(`sent openChannel tx "${tx.hash}" to "${tokenNetwork}"`)),
-            tap(([, tx]) => (tx ? log.debug(`sent approve tx "${tx.hash}" to "${token}"`) : 0)),
             mergeMap(([openTx, approveTx]) =>
               combineLatest([
-                from(openTx.wait()).pipe(map((receipt) => ({ tx: openTx, receipt }))),
-                approveTx
-                  ? from(approveTx.wait()).pipe(map((receipt) => ({ tx: approveTx, receipt })))
-                  : of(undefined),
+                from(openTx.wait()),
+                approveTx ? from(approveTx.wait()) : of(approveTx),
               ]),
             ),
             mergeMap(([open, approve]) => {
-              if (!open.receipt.status)
+              if (!open.status)
                 throw new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED, {
                   ...action.meta,
-                  transactionHash: open.tx.hash!,
+                  transactionHash: open.transactionHash!,
                 });
-              log.debug(`openChannel tx "${open.tx.hash}" successfuly mined!`);
-              // now that channel is opened, check approve and proceed to setTotalDeposit
-              // if no deposit requested, EMPTY will skip rest of this chain
-              return (approve ? of(approve) : EMPTY).pipe(
-                mergeMap(({ tx, receipt }) => {
-                  if (!receipt.status)
-                    throw new RaidenError(ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, {
-                      token,
-                      transactionHash: tx.hash!,
-                    });
-                  log.debug(`approve tx "${tx.hash}" successfuly mined!`);
+              log.debug(`openChannel tx "${open.transactionHash}" successfuly mined!`);
+              // now that channel is opened, check approve or allowance and proceed to
+              // setTotalDeposit; if no deposit requested, EMPTY will skip rest of this chain
+              // if allowance was enough, proceed directly to setTotalDeposit
+              return (approve === undefined ? EMPTY : of(approve)).pipe(
+                mergeMap((receipt) => {
+                  if (receipt !== false) {
+                    if (!receipt.status)
+                      throw new RaidenError(ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, {
+                        token,
+                        transactionHash: receipt.transactionHash!,
+                      });
+                    log.debug(`approve tx "${receipt.transactionHash}" successfuly mined!`);
+                  }
                   // wait or use cached channelOpen.success, unconfirmed
                   return opened$.pipe(
                     first(),
@@ -703,7 +711,7 @@ export const channelDepositEpic = (
         const error = new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND, action.meta);
         return of(channelDeposit.failure(error, action.meta));
       }
-      const { signer: onchainSigner } = chooseOnchainAccount(
+      const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
         { signer, address, main },
         action.payload.subkey ?? configSubkey,
       );
@@ -715,17 +723,20 @@ export const channelDepositEpic = (
 
       return defer(() =>
         // fetch on-chain deposit right now (despite pending/unconfirmed deposits)
-        tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, address, partner),
+        Promise.all([
+          tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, address, partner),
+          tokenContract.functions.allowance(onchainAddress, tokenNetwork),
+        ]),
       ).pipe(
-        mergeMap(({ 0: totalDeposit }) =>
-          from(
-            // send approve transaction
-            tokenContract.functions.approve(
-              tokenNetwork,
-              action.payload.deposit.add(totalDeposit),
-            ),
+        mergeMap(([{ 0: totalDeposit }, allowance]) =>
+          defer(() =>
+            allowance.gte(action.payload.deposit)
+              ? of(false)
+              : from(
+                  // only send and assert approve transaction if allowance isn't enough
+                  tokenContract.functions.approve(tokenNetwork, action.payload.deposit),
+                ).pipe(assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log })),
           ).pipe(
-            assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
             mergeMap(() =>
               // send setTotalDeposit transaction
               tokenNetworkContract.functions.setTotalDeposit(

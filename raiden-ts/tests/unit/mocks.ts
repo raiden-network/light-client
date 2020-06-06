@@ -407,6 +407,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       for (const func in tokenContract.functions) {
         jest.spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions']);
       }
+      tokenContract.functions.allowance.mockResolvedValue(Zero);
       return tokenContract;
     },
   );
@@ -435,6 +436,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     '0x0A0000000000000000000000000000000000000a',
   );
   userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
+  userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
+  userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
 
   const secretRegistryContract = SecretRegistryFactory.connect(address, signer) as MockedContract<
     SecretRegistry
@@ -674,8 +677,11 @@ export async function makeRaiden(wallet?: Wallet): Promise<MockedRaiden> {
   jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
   jest.spyOn(provider, 'send').mockImplementation(async (method) => {
     if (method === 'net_version') return network.chainId;
-    throw new Error('provider.send called');
+    throw new Error(`provider.send called: "${method}"`);
   });
+  jest
+    .spyOn(provider, 'getCode')
+    .mockImplementation((addr) => (console.trace('getCode called', addr), Promise.resolve('')));
   jest.spyOn(provider, 'getLogs').mockResolvedValue([]);
   jest.spyOn(provider, 'getBlock');
   jest.spyOn(provider, 'getTransaction');
@@ -743,6 +749,7 @@ export async function makeRaiden(wallet?: Wallet): Promise<MockedRaiden> {
         jest.spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions']);
       }
       tokenContract.functions.approve.mockResolvedValue(makeTransaction());
+      tokenContract.functions.allowance.mockResolvedValue(Zero);
       return tokenContract;
     },
   );
@@ -760,13 +767,13 @@ export async function makeRaiden(wallet?: Wallet): Promise<MockedRaiden> {
   const userDepositContract = UserDepositFactory.connect(address, signer) as MockedContract<
     UserDeposit
   >;
-
   for (const func in userDepositContract.functions) {
     jest.spyOn(userDepositContract.functions, func as keyof UserDeposit['functions']);
   }
-
   userDepositContract.functions.one_to_n_address.mockResolvedValue(oneToNAddress);
   userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
+  userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
+  userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
 
   const secretRegistryContract = SecretRegistryFactory.connect(address, signer) as MockedContract<
     SecretRegistry
