@@ -555,7 +555,7 @@ export const monitorUdcBalanceEpic = (
     pluckDistinct('state', 'blockNumber'),
     // it's seems ugly to call on each block, but UserDepositContract doesn't expose deposits as
     // events, and ethers actually do that to monitor token balances, so it's equivalent
-    exhaustMap(() => userDepositContract.functions.balances(address) as Promise<UInt<32>>),
+    exhaustMap(() => userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>),
     distinctUntilChanged((x, y) => y.eq(x)),
     map(udcDeposited),
   );
