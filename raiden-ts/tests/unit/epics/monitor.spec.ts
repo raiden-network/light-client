@@ -35,18 +35,18 @@ test('monitorUdcBalanceEpic', async () => {
   const { action$, state$ } = epicFixtures(depsMock);
   const deposit = bigNumberify(23) as UInt<32>;
 
-  depsMock.userDepositContract.functions.balances.mockResolvedValue(Zero);
+  depsMock.userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
 
   const promise = monitorUdcBalanceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
 
   setTimeout(() => {
-    depsMock.userDepositContract.functions.balances.mockResolvedValueOnce(deposit);
+    depsMock.userDepositContract.functions.effectiveBalance.mockResolvedValueOnce(deposit);
     action$.next(newBlock({ blockNumber: 2 }));
   }, 10);
   setTimeout(() => action$.complete(), 50);
 
   await expect(promise).resolves.toEqual([udcDeposited(Zero as UInt<32>), udcDeposited(deposit)]);
-  expect(depsMock.userDepositContract.functions.balances).toHaveBeenCalledTimes(2);
+  expect(depsMock.userDepositContract.functions.effectiveBalance).toHaveBeenCalledTimes(2);
 });
 
 describe('monitorRequestEpic', () => {
