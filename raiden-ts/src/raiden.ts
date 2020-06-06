@@ -2,7 +2,7 @@ import './polyfills';
 import { Signer } from 'ethers/abstract-signer';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
-import { Zero, AddressZero, MaxUint256 } from 'ethers/constants';
+import { Zero, AddressZero, MaxUint256, HashZero } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { applyMiddleware, createStore, Store } from 'redux';
@@ -1011,13 +1011,13 @@ export class Raiden {
     const balance = await this.deps.latest$.pipe(pluck('udcBalance'), first(isntNil)).toPromise();
     const blockNumber = this.state.blockNumber;
     const owedAmount = Object.values(this.state.iou)
-      .reduce((acc, value) => {
-        const nonExpiredIOUs = Object.values(value).filter((value) =>
-          value.expiration_block.gte(blockNumber),
-        );
-        acc.push(...nonExpiredIOUs);
-        return acc;
-      }, new Array<IOU>())
+      .reduce(
+        (acc, value) => [
+          ...acc,
+          ...Object.values(value).filter((value) => value.expiration_block.gte(blockNumber)),
+        ],
+        [] as IOU[],
+      )
       .reduce((acc, iou) => acc.add(iou.amount), Zero);
     return balance.sub(owedAmount);
   }
@@ -1040,52 +1040,64 @@ export class Raiden {
    * @param options - tx options
    * @param options.subkey - By default, if using subkey, main account is used to send transactions
    *    Set this to true if one wants to force sending the transaction with the subkey
+   * @param options.allowance - Value to approve on service token. Allows further deposits without
+   *    needing to approve again. Defaults to exact amount.
    * @returns transaction hash
    */
   public async depositToUDC(
     amount: BigNumberish,
     onChange?: OnChange<EventTypes, { txHash: string }>,
-    { subkey }: { subkey?: boolean } = {},
+    { subkey, allowance }: { subkey?: boolean; allowance?: BigNumberish } = {},
   ): Promise<Hash> {
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.debug);
+    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.error);
 
-    const depositAmount = bigNumberify(amount);
-    assert(depositAmount.gt(Zero), 'Please deposit a positive amount.', this.log.debug);
+    const deposit = bigNumberify(amount);
+    assert(deposit.gt(Zero), 'Please deposit a positive amount.', this.log.error);
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
     const userDepositContract = getContractWithSigner(this.deps.userDepositContract, signer);
-    const serviceTokenContract = getContractWithSigner(
+    const tokenContract = getContractWithSigner(
       this.deps.getTokenContract(await this.userDepositTokenAddress()),
       signer,
     );
-    const balance = await serviceTokenContract.functions.balanceOf(address);
+    const tokenBalance = await tokenContract.functions.balanceOf(address);
 
-    assert(balance.gte(amount), `Insufficient token balance (${balance}).`, this.log.debug);
-
-    const approveReceipt = await callAndWaitMined(
-      serviceTokenContract,
-      'approve',
-      [userDepositContract.address, depositAmount],
-      ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
-      { log: this.log },
+    assert(
+      tokenBalance.gte(amount),
+      `Insufficient token balance (${tokenBalance}).`,
+      this.log.error,
+    );
+    assert(
+      !allowance || bigNumberify(allowance).gte(amount),
+      'requested allowance smaller than amount',
+      this.log.error,
     );
 
-    onChange?.({
-      type: EventTypes.APPROVED,
-      payload: {
-        txHash: approveReceipt.transactionHash as Hash,
-      },
-    });
+    const tokenAllowance = await tokenContract.functions.allowance(
+      address,
+      userDepositContract.address,
+    );
+    let approveTxHash = HashZero as Hash;
+    if (tokenAllowance.lt(deposit))
+      approveTxHash = (
+        await callAndWaitMined(
+          tokenContract,
+          'approve',
+          [userDepositContract.address, allowance ?? deposit],
+          ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
+          { log: this.log },
+        )
+      ).transactionHash as Hash;
 
-    const currentUDCBalance = await this.deps.latest$
-      .pipe(pluck('udcBalance'), first(isntNil))
-      .toPromise();
+    onChange?.({ type: EventTypes.APPROVED, payload: { txHash: approveTxHash } });
+
+    const udcTotalDeposit = await userDepositContract.functions.total_deposit(this.address);
 
     const depositReceipt = await callAndWaitMined(
       userDepositContract,
       'deposit',
-      [this.address, currentUDCBalance.add(depositAmount)],
+      [this.address, udcTotalDeposit.add(deposit)],
       ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED,
       { log: this.log },
     );
