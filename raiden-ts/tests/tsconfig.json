@@ -6,5 +6,12 @@
   "files": [
     "../src/global.d.ts",
     "../tests/global.d.ts"
-  ]
+  ],
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "raiden-ts/*": ["src/*"],
+      "matrix-js-sdk": ["node_modules/@types/matrix-js-sdk/index.d.ts"]
+    }
+  }
 }
