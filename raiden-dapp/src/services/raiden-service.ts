@@ -461,6 +461,14 @@ export default class RaidenService {
 
     return Object.values(tokens);
   }
+
+  deleteNotification(id: string) {
+    this.store.commit('deleteNotification', id);
+  }
+
+  viewedNotifications() {
+    this.store.commit('viewedNotifications');
+  }
 }
 
 export class EnsResolveFailed extends Error {}

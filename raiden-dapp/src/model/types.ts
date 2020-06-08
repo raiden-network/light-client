@@ -69,6 +69,13 @@ export interface Transfer {
   transferTotal: BigNumber;
 }
 
+export interface Notification {
+  id: string;
+  title: string;
+  description: string;
+  received: Date;
+}
+
 export const emptyDescription = (): StepDescription => ({
   label: '',
   title: '',

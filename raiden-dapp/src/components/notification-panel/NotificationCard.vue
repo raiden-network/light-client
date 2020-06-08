@@ -1,25 +1,47 @@
 <template>
   <v-card class="notification-card">
-    <div class="notification-card__details-wrapper">
-      <v-avatar
-        class="notification-card__details-wrapper__icon"
-        tile
-        size="80"
-        color="grey"
-      />
-      <div>
-        <v-card-title></v-card-title>
-        <v-card-subtitle></v-card-subtitle>
-      </div>
-    </div>
+    <v-row class="notification-card__content" no-gutters>
+      <v-col cols="3">
+        <v-avatar
+          class="notification-card__content__icon"
+          tile
+          size="80"
+          color="grey"
+        />
+      </v-col>
+      <v-col class="notification-card__content__details">
+        <div class="notification-card__content__details__header">
+          <span class="notification-card__content__details__header--title">
+            {{ notification.title }}
+          </span>
+          <v-btn icon x-small @click="deleteNotification(notification.id)">
+            <v-icon icon>mdi-close</v-icon>
+          </v-btn>
+        </div>
+        <div class="notification-card__content__details__description">
+          <span>{{ notification.description }}</span>
+        </div>
+        <span class="notification-card__content__details--received">
+          {{ notification.received | formatDate }}
+        </span>
+      </v-col>
+    </v-row>
   </v-card>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Notification } from '@/model/types';
 
 @Component({})
-export default class NotificationCard extends Vue {}
+export default class NotificationCard extends Vue {
+  @Prop({ required: true })
+  notification!: Notification;
+
+  deleteNotification(id: string) {
+    this.$raiden.deleteNotification(id);
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -27,14 +49,42 @@ export default class NotificationCard extends Vue {}
 
 .notification-card {
   background-color: $notification-card-background;
-  border-radius: 50px;
+  border-radius: 20px !important;
   height: 200px;
 
-  &__details-wrapper {
-    display: flex;
+  &__content {
+    height: 100%;
+    padding: 30px 30px 0 30px;
+
+    &__details {
+      display: flex;
+      flex-direction: column;
+
+      &__header {
+        display: flex;
+
+        &--title {
+          display: flex;
+          flex: 1;
+        }
+      }
+
+      &__description {
+        padding-top: 10px;
+      }
+
+      &--received {
+        color: $secondary-text-color;
+        display: flex;
+        align-items: flex-end;
+        flex: 1;
+        padding-bottom: 30px;
+        font-size: 12px;
+      }
+    }
 
     &__icon {
-      margin: 24px 10px 0 20px;
+      margin-top: 5px;
     }
   }
 }
