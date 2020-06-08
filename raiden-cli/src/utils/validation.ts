@@ -21,6 +21,8 @@ export function validate(validations: ValidationChain[]) {
     if (errors.isEmpty()) {
       next();
     } else {
+      // FIXME: The 404 is set in compatibility to the Python Raiden API. Code
+      // 400 might be a better option and worth a discussion.
       response.status(404).json({ errors: errors.array() });
     }
   };
