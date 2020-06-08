@@ -49,6 +49,14 @@ export default class RaidenService {
     return service;
   }
 
+  static get started(): boolean {
+    if (RaidenService._instance) {
+      return RaidenService._instance._raiden.started ?? false;
+    } else {
+      return false;
+    }
+  }
+
   static get status(): string {
     return RaidenService._status;
   }
@@ -72,10 +80,12 @@ export default class RaidenService {
   }
 
   stop(): void {
-    this._subscriptions.forEach((subscription) => subscription.unsubscribe());
-    this._subscriptions = [];
-    this._raiden.stop();
-    RaidenService._status = 'unavailable;';
+    if (this._raiden?.started) {
+      this._subscriptions.forEach((subscription) => subscription.unsubscribe());
+      this._subscriptions = [];
+      this._raiden.stop();
+      RaidenService._status = 'unavailable';
+    }
   }
 
   filterChannels(

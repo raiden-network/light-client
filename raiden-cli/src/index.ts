@@ -78,12 +78,12 @@ function initLogging(address: string): void {
 }
 
 function shutdown(): void {
-  try {
-    log.info('Stopping...');
+  stopServer();
+
+  if (RaidenService.started) {
+    log.info('Stopping raiden...');
     RaidenService.getInstance().stop();
-    stopServer();
-  } catch (err) {
-    log.error(err);
+  } else {
     process.exit(1);
   }
 }
