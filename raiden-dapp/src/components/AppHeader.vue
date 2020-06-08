@@ -44,9 +44,23 @@
               icon
               height="30px"
               width="25px"
-              @click.native="navigateToNotifications()"
+              @click.native="notificationPanel()"
             >
+              <v-badge
+                v-if="newNotifications"
+                color="notification"
+                overlap
+                bordered
+                dot
+              >
+                <v-img
+                  height="30px"
+                  width="25px"
+                  :src="require('@/assets/notifications.svg')"
+                />
+              </v-badge>
               <v-img
+                v-else
                 height="30px"
                 width="25px"
                 :src="require('@/assets/notifications.svg')"
@@ -83,7 +97,7 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
     AddressDisplay
   },
   computed: {
-    ...mapState(['loading', 'defaultAccount']),
+    ...mapState(['loading', 'defaultAccount', 'newNotifications']),
     ...mapGetters(['network', 'isConnected'])
   }
 })
@@ -91,6 +105,12 @@ export default class AppHeader extends Mixins(NavigationMixin) {
   isConnected!: boolean;
   defaultAccount!: string;
   network!: string;
+  newNotifications!: boolean;
+
+  notificationPanel = () => {
+    this.$raiden.viewedNotifications();
+    this.navigateToNotifications();
+  };
 
   get canGoBack(): boolean {
     const routesWithoutBackBtn: string[] = [

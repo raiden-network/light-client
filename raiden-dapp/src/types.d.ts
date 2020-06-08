@@ -1,6 +1,6 @@
 import RaidenService from '@/services/raiden-service';
 import { RaidenChannels, RaidenTransfer, RaidenConfig } from 'raiden-ts';
-import { DeniedReason, Token, Presences } from '@/model/types';
+import { DeniedReason, Token, Presences, Notification } from '@/model/types';
 import { Network } from 'ethers/utils';
 
 export type Tokens = { [token: string]: Token };
@@ -25,6 +25,8 @@ export interface RootState {
   settings: Settings;
   config: Partial<RaidenConfig>;
   userDepositTokenAddress: string;
+  notifications: Notification[];
+  newNotifications: boolean;
 }
 
 declare global {

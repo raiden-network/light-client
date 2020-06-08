@@ -16,6 +16,9 @@
       "no-provider": "No Web3 provider detected, please install e.g. MetaMask."
     }
   },
+  "notifications": {
+    "no-notifications": "No notifications"
+  },
   "general": {
     "buttons": {
       "cancel": "Cancel",

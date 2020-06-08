@@ -16,9 +16,10 @@ import {
   DeniedReason,
   emptyTokenModel,
   PlaceHolderNetwork,
-  Presences,
   Token,
-  TokenModel
+  TokenModel,
+  Presences,
+  Notification
 } from '@/model/types';
 import map from 'lodash/map';
 import flatMap from 'lodash/flatMap';
@@ -51,7 +52,9 @@ const _defaultState: RootState = {
     useRaidenAccount: true
   },
   config: {},
-  userDepositTokenAddress: ''
+  userDepositTokenAddress: '',
+  notifications: [],
+  newNotifications: false
 };
 
 export function defaultState(): RootState {
@@ -135,6 +138,14 @@ const store: StoreOptions<RootState> = {
     },
     userDepositTokenAddress(state: RootState, address: string) {
       state.userDepositTokenAddress = address;
+    },
+    deleteNotification(state: RootState, id: string) {
+      state.notifications = state.notifications.filter(
+        notification => notification.id != id
+      );
+    },
+    viewedNotifications(state: RootState) {
+      state.newNotifications = false;
     }
   },
   actions: {},
@@ -241,6 +252,9 @@ const store: StoreOptions<RootState> = {
     },
     udcToken: (state: RootState): Token => {
       return state.tokens[state.userDepositTokenAddress];
+    },
+    notifications: (state: RootState): Notification[] => {
+      return state.notifications;
     }
   },
   plugins: [settingsLocalStorage.plugin]
