@@ -1,7 +1,7 @@
 import { Server } from 'http';
-import { Logger } from 'loglevel';
 import express, { Request, Response, NextFunction, Errback } from 'express';
 import createError from 'http-errors';
+import { log } from './utils/logging';
 import apiV1 from './routes/api.v1';
 
 let server: Server;
@@ -16,7 +16,7 @@ function internalErrorHandler(
   _response: Response,
   next: NextFunction,
 ) {
-  console.log(error); // TODO: proper error logging
+  log.error(error);
   next(createError(500, 'Internal Raiden node error'));
 }
 
@@ -27,7 +27,7 @@ app.use('/api/v1', apiV1);
 app.use(notFoundHandler);
 app.use(internalErrorHandler);
 
-export function startServer(port: number, log: Logger): void {
+export function startServer(port: number): void {
   if (server === undefined) {
     server = app.listen(port, () => {
       log.info(`Serving Raiden LC API at http://localhost:${port}...`);

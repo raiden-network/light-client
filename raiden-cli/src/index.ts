@@ -4,12 +4,10 @@ import inquirer from 'inquirer';
 import yargs from 'yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
-import logging from 'loglevel';
+import { log } from './utils/logging';
 import { CliArguments } from './types';
 import { startServer, stopServer } from './app';
 import RaidenService from './raiden';
-
-let log: logging.Logger = logging;
 
 function parseArguments(): CliArguments {
   return yargs
@@ -72,11 +70,6 @@ function createLocalStorage(name: string): LocalStorage {
   return localStorage;
 }
 
-function initLogging(address: string): void {
-  log = logging.getLogger(`cli:${address}`);
-  log.info('Address:', address);
-}
-
 function shutdown(): void {
   stopServer();
 
@@ -94,16 +87,13 @@ function registerShutdownHooks(): void {
 }
 
 async function main() {
-  logging.setLevel(logging.levels.DEBUG);
-
   const argv = parseArguments();
   const password = argv.password ?? (await askUserForPassword());
   const wallet = await getWallet(argv.privateKey, password);
   const localStorage = createLocalStorage(argv.store);
 
-  initLogging(wallet.address);
   registerShutdownHooks();
-  startServer(argv.port, log);
+  startServer(argv.port);
   await RaidenService.connect(argv.ethNode, wallet.privateKey, localStorage, {
     ...argv.config,
   });
