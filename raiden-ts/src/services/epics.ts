@@ -198,9 +198,9 @@ export const pathFindServiceEpic = (
                 ? // first, use action.payload.pfs as is, if present
                   of(action.payload.pfs)
                 : configPfs
-                ? // or if config.pfs isn't disabled (null) nor auto (''), fetch & use it
+                ? // or if config.pfs isn't disabled (null) nor auto (''|undefined), fetch & use it
                   pfsInfo(configPfs, deps)
-                : // else (action unset, config.pfs=''=auto mode)
+                : // else (action unset, config.pfs=''|undefined=auto mode)
                   latest$.pipe(
                     pluck('pfsList'), // get cached pfsList
                     // if needed, wait for list to be populated
@@ -493,7 +493,7 @@ export const pfsServiceRegistryMonitorEpic = (
     // monitors config.pfs, and only monitors contract if it's empty
     pluckDistinct('pfs'),
     switchMap((pfs) =>
-      pfs !== ''
+      pfs !== '' && pfs !== undefined
         ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
           EMPTY
         : // type of elements emitted by getEventsStream (past and new events coming from contract):

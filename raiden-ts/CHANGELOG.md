@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Fixed
 - [#1637] Fix depositToUDC failing if services already have withdrawn some fees
+- [#1651] Fix PFS being disabled if passed an undefined default config
 
 ### Added
 - [#1642] Check token's allowance before deposit and skip approve
@@ -15,6 +16,7 @@
 [#1637]: https://github.com/raiden-network/light-client/issues/1637
 [#1642]: https://github.com/raiden-network/light-client/issues/1642
 [#1649]: https://github.com/raiden-network/light-client/pull/1649
+[#1651]: https://github.com/raiden-network/light-client/issues/1651
 
 ## [0.9.0] - 2020-05-28
 ### Added
