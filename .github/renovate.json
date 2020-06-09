@@ -1,0 +1,12 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "commitMessagePrefix": "dependencies",
+  "lockFileMaintenance": { "enabled": true },
+  "schedule": ["before 8am on thursday"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "rangeStrategy": "pin",
+  "timezone": "Europe/Berlin"
+}
