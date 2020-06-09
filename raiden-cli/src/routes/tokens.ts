@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { Cli } from '../types';
-import { validate, isAddress } from '../utils/validation';
 
 export function makeTokensRouter(this: Cli): Router {
   const router = Router();
@@ -9,24 +8,15 @@ export function makeTokensRouter(this: Cli): Router {
     response.status(404).send('Not implemented yet');
   });
 
-  router.get('/:tokenAddress', validate([isAddress('tokenaddress', 'params')]), function (
-    _request: Request,
-    response: Response,
-  ): void {
+  router.get('/:tokenAddress', (_request: Request, response: Response) => {
     response.status(404).send('Not implemented yet');
   });
 
-  router.get('/:tokenAddress/partners', validate([isAddress('tokenAddress', 'params')]), function (
-    _request: Request,
-    response: Response,
-  ): void {
+  router.get('/:tokenAddress/partners', (_request: Request, response: Response) => {
     response.status(404).send('Not implemented yet');
   });
 
-  router.put('/:tokenAddress', validate([isAddress('tokenAddress', 'params')]), function (
-    _request: Request,
-    response: Response,
-  ): void {
+  router.put('/:tokenAddress', (_request: Request, response: Response) => {
     response.status(404).send('Not implemented yet');
   });
 
