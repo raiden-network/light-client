@@ -902,7 +902,7 @@ describe('Raiden', () => {
       expect.assertions(1);
 
       raiden.updateConfig({ pfs: null }); // disabled pfs
-      await expect(raiden.findPFS()).rejects.toThrowError('PFS disabled in config');
+      await expect(raiden.findPFS()).rejects.toThrowError('disabled');
     });
 
     test('success: config.pfs set', async () => {
@@ -1193,12 +1193,12 @@ describe('Raiden', () => {
   describe('depositToUDC', () => {
     test('deposit 0 tokens', async () => {
       expect.assertions(1);
-      await expect(raiden.depositToUDC(0)).rejects.toThrow('Please deposit a positive amount.');
+      await expect(raiden.depositToUDC(0)).rejects.toThrow('positive');
     });
 
     test('deposit without a token balance', async () => {
       expect.assertions(1);
-      await expect(raiden.depositToUDC(100)).rejects.toThrow('Insufficient token balance (0).');
+      await expect(raiden.depositToUDC(100)).rejects.toThrow('Insufficient balance');
     });
 
     test('deposit success', async () => {

@@ -1,7 +1,8 @@
 import { concat, hexlify } from 'ethers/utils/bytes';
 import { keccak256, randomBytes, bigNumberify, sha256 } from 'ethers/utils';
 
-import { Hash, Secret, UInt, HexString, assert } from '../utils/types';
+import { assert } from '../utils';
+import { Hash, Secret, UInt, HexString } from '../utils/types';
 import { encode } from '../utils/data';
 import { Lock } from '../channels/types';
 import { TransferState, RaidenTransfer, RaidenTransferStatus, Direction } from './state';

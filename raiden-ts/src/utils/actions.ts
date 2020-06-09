@@ -5,8 +5,9 @@ import isMatchWith from 'lodash/isMatchWith';
 import { Observable } from 'rxjs';
 import { first, map } from 'rxjs/operators';
 
+import { assert } from '../utils';
 import { RaidenError, ErrorCodes, ErrorCodec } from '../utils/error';
-import { BigNumberC, assert } from './types';
+import { BigNumberC } from './types';
 
 /**
  * The type of a generic action

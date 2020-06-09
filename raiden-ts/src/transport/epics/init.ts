@@ -36,8 +36,8 @@ import isEmpty from 'lodash/isEmpty';
 import { createClient, MatrixClient, MatrixEvent, Filter } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 
+import { assert } from '../../utils';
 import { RaidenError, ErrorCodes } from '../../utils/error';
-import { assert } from '../../utils/types';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
 import { RaidenConfig } from '../../config';

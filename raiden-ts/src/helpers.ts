@@ -9,12 +9,13 @@ import logging from 'loglevel';
 
 import { RaidenState } from './state';
 import { ContractsInfo, RaidenEpicDeps } from './types';
+import { assert } from './utils';
 import { raidenTransfer } from './transfers/utils';
 import { RaidenTransfer } from './transfers/state';
 import { channelAmounts } from './channels/utils';
 import { RaidenChannels, RaidenChannel } from './channels/state';
 import { pluckDistinct, distinctRecordValues } from './utils/rx';
-import { Address, PrivateKey, isntNil, Hash, assert } from './utils/types';
+import { Address, PrivateKey, isntNil, Hash } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
@@ -246,7 +247,7 @@ export function getContractWithSigner<C extends Contract>(contract: C, signer: S
  * @param contract - Contract instance
  * @param method - Method name
  * @param params - Params tuple to method
- * @param errorCode - ErrorCode to throw in case of failure
+ * @param error - Error message to throw in case of failure
  * @param opts - Options
  * @param opts.log - Logger instance
  * @returns Promise to successful receipt
@@ -259,7 +260,7 @@ export async function callAndWaitMined<
   contract: C,
   method: M,
   params: P,
-  errorCode: ErrorCodes,
+  error: string,
   { log }: { log: logging.Logger } = { log: logging },
 ): Promise<ContractReceipt> {
   let tx: ContractTransaction;
@@ -268,7 +269,7 @@ export async function callAndWaitMined<
     tx = await (contract.functions as C)[method](...params);
   } catch (err) {
     log.error(`Error sending ${method} tx`, err);
-    throw new RaidenError(errorCode, { error: err.message });
+    throw new RaidenError(error, { error: err.message });
   }
   log.debug(`sent ${method} tx "${tx.hash}" to "${contract.address}"`);
 
@@ -278,7 +279,7 @@ export async function callAndWaitMined<
     assert(receipt.status, `tx status: ${receipt.status}`);
   } catch (err) {
     log.error(`Error mining ${method} tx`, err);
-    throw new RaidenError(errorCode, {
+    throw new RaidenError(error, {
       transactionHash: tx.hash!,
     });
   }

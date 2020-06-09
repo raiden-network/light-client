@@ -41,7 +41,7 @@ export function encode<S extends number = number>(
     hex = hexZeroPad(hexlify(data), length) as HexString<S>;
   } else if (typeof data === 'string') {
     if (hexDataLength(data) !== length)
-      throw new RaidenError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFRENCE);
+      throw new RaidenError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFERENCE);
     hex = data as HexString<S>;
   } else {
     throw new RaidenError(ErrorCodes.DTA_UNENCODABLE_DATA);

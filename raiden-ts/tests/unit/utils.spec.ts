@@ -340,7 +340,7 @@ describe('data', () => {
 
     expect(() => encode(-1, 2)).toThrowError('negative');
     expect(() => encode(bigNumberify(65537), 2)).toThrowError('too large');
-    expect(() => encode('0x01', 2)).toThrowError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFRENCE);
+    expect(() => encode('0x01', 2)).toThrowError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFERENCE);
     // @ts-expect-error
     expect(() => encode(null, 2)).toThrowError(
       'Passed data is not a HEX string nor integer array',
