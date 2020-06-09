@@ -41,4 +41,30 @@ describe('AppHeader.vue', () => {
     wrapper = createWrapper(RouteNames.CHANNELS);
     expect((wrapper.vm as any).canGoBack).toBe(true);
   });
+
+  test('new notifications displays notification badge', async () => {
+    wrapper = createWrapper(RouteNames.CHANNELS);
+    let newNotificationsBadge = wrapper.find('.v-badge__badge');
+
+    expect(newNotificationsBadge.exists()).toBe(false);
+
+    // TODO: Needs the proper action/mutation for setting newNotifications flag to true
+    store.state.newNotifications = true;
+
+    await wrapper.vm.$nextTick();
+    newNotificationsBadge = wrapper.find('.v-badge__badge');
+
+    expect(newNotificationsBadge.exists()).toBe(true);
+  });
+
+  test('clicking notification icon calls notificationPanel method', async () => {
+    wrapper = createWrapper(RouteNames.CHANNELS);
+    (wrapper.vm as any).notificationPanel = jest.fn();
+    const notificationsButton = wrapper.findAll('button').at(1);
+
+    notificationsButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).notificationPanel).toHaveBeenCalled();
+  });
 });
