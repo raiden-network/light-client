@@ -1,4 +1,4 @@
-import { Token, Transfer } from '@/model/types';
+import { Token, Transfer, Notification } from '@/model/types';
 import { parseUnits, BigNumber } from 'ethers/utils';
 
 import { Zero } from 'ethers/constants';
@@ -158,5 +158,12 @@ export class TestData {
     } as Token,
     pfsAddress: 'https://pfsadr.org',
     paymentId
+  };
+
+  static notifications: Notification = {
+    id: '1',
+    title: 'BALANCE PROOF SUBMITTED',
+    description: 'The monitoring service has submitted a balance proof.',
+    received: new Date('June 5, 1986')
   };
 }

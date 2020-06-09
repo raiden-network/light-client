@@ -711,4 +711,14 @@ describe('RaidenService', () => {
 
     expect(store.commit).toHaveBeenLastCalledWith('updateConfig', config);
   });
+
+  test('commit deleteNotification when a user deletes a notification', () => {
+    raidenService.deleteNotification('1');
+    expect(store.commit).toBeCalledWith('deleteNotification', '1');
+  });
+
+  test('commits viewedNotifications when a user views the notification panel', () => {
+    raidenService.viewedNotifications();
+    expect(store.commit).toBeCalledWith('viewedNotifications');
+  });
 });
