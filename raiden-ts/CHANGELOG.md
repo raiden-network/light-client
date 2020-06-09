@@ -9,10 +9,12 @@
 
 ### Changed
 - [#837] Changes the action tags from camel to path format. This change affects the event types exposed through the public API.
+- [#1649] Have constant error messages and codes in public Raiden API.
 
 [#837]: https://github.com/raiden-network/light-client/issues/837
 [#1637]: https://github.com/raiden-network/light-client/issues/1637
 [#1642]: https://github.com/raiden-network/light-client/issues/1642
+[#1649]: https://github.com/raiden-network/light-client/pull/1649
 
 ## [0.9.0] - 2020-05-28
 ### Added
