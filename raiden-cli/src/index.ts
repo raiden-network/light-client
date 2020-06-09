@@ -4,10 +4,17 @@ import inquirer from 'inquirer';
 import yargs from 'yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
-import { log } from './utils/logging';
-import { CliArguments } from './types';
-import { startServer, stopServer } from './app';
-import RaidenService from './raiden';
+import { Raiden } from 'raiden-ts';
+import { CliArguments, Cli } from './types';
+import { makeCli } from './cli';
+import { setupLoglevel } from './utils/logging';
+
+const DEFAULT_RAIDEN_CONFIG = {
+  matrixServer: 'https://raidentransport.test001.env.raiden.network',
+  pfs: 'https://pfs.raidentransport.test001.env.raiden.network',
+  pfsSafetyMargin: 1.1,
+  caps: { noDelivery: true, webRTC: true },
+};
 
 function parseArguments(): CliArguments {
   return yargs
@@ -70,20 +77,23 @@ function createLocalStorage(name: string): LocalStorage {
   return localStorage;
 }
 
-function shutdown(): void {
-  stopServer();
+function shutdown(this: Cli): void {
+  if (this.server?.listening) {
+    this.log.info('Closing server...');
+    this.server.close();
+  }
 
-  if (RaidenService.started) {
-    log.info('Stopping raiden...');
-    RaidenService.getInstance().stop();
+  if (this.raiden.started) {
+    this.log.info('Stopping raiden...');
+    this.raiden.stop();
   } else {
     process.exit(1);
   }
 }
 
-function registerShutdownHooks(): void {
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+function registerShutdownHooks(this: Cli): void {
+  process.on('SIGINT', shutdown.bind(this));
+  process.on('SIGTERM', shutdown.bind(this));
 }
 
 async function main() {
@@ -91,12 +101,14 @@ async function main() {
   const password = argv.password ?? (await askUserForPassword());
   const wallet = await getWallet(argv.privateKey, password);
   const localStorage = createLocalStorage(argv.store);
-
-  registerShutdownHooks();
-  startServer(argv.port);
-  await RaidenService.connect(argv.ethNode, wallet.privateKey, localStorage, {
+  const log = setupLoglevel();
+  const raiden = await Raiden.create(argv.ethNode, wallet.privateKey, localStorage, undefined, {
+    ...DEFAULT_RAIDEN_CONFIG,
     ...argv.config,
   });
+  const cli = await makeCli(log, raiden, argv.port);
+  registerShutdownHooks.call(cli);
+  cli.raiden.start();
 }
 
 main().catch((err) => {

@@ -1,6 +1,6 @@
 import log, { Logger, methodFactory, LoggingMethod } from 'loglevel';
 
-function setupLoglevel(): Logger {
+export function setupLoglevel(): Logger {
   log.methodFactory = (
     methodName: string,
     level: 0 | 1 | 2 | 3 | 4 | 5,
@@ -20,6 +20,3 @@ function setupLoglevel(): Logger {
   }
   return log;
 }
-
-const logger = setupLoglevel();
-export { logger as log };

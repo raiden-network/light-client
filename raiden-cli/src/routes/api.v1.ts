@@ -1,39 +1,42 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { Router, Request, Response } from 'express';
-import RaidenService from '../raiden';
-import channelsRouter from './channels';
-import tokensRouter from './tokens';
-import pendingTransfersRouter from './pendingTransfers';
-import connectionsRouter from './connections';
-import paymentsRouter from './payments';
-import testingRouter from './testing';
+import { Raiden } from 'raiden-ts';
+import { Cli } from '../types';
+import { makeChannelsRouter } from './channels';
+import { makeConnectionsRouter } from './connections';
+import { makePaymentsRouter } from './payments';
+import { makePendingTransfersRouter } from './pendingTransfers';
+import { makeTestingRouter } from './testing';
+import { makeTokensRouter } from './tokens';
 
-const router = Router();
+export function makeApiV1Router(this: Cli): Router {
+  const router = Router();
 
-router.use('/channels', channelsRouter);
-router.use('/tokens', tokensRouter);
-router.use('/pending_transfers', pendingTransfersRouter);
-router.use('/connections', connectionsRouter);
-router.use('/payments', paymentsRouter);
-router.use('/testing', testingRouter);
+  router.use('/channels', makeChannelsRouter.call(this));
+  router.use('/tokens', makeTokensRouter.call(this));
+  router.use('/pending_transfers', makePendingTransfersRouter.call(this));
+  router.use('/connections', makeConnectionsRouter.call(this));
+  router.use('/payments', makePaymentsRouter.call(this));
+  router.use('/testing', makeTestingRouter.call(this));
 
-router.get('/version', function (_request: Request, response: Response): void {
-  response.json({
-    version: RaidenService.version,
+  router.get('/version', (_request: Request, response: Response) => {
+    response.json({
+      version: Raiden.version,
+    });
   });
-});
 
-router.get('/address', function (_request: Request, response: Response): void {
-  response.json({
-    our_address: RaidenService.getInstance().unlockedAddress,
+  router.get('/address', (_request: Request, response: Response) => {
+    response.json({
+      our_address: this.raiden.address,
+    });
   });
-});
 
-router.get('/status', function (_request: Request, response: Response): void {
-  response.json({
-    status: RaidenService.status,
-    blocks_to_syn: 'unknown', // TODO: How to determine?
+  router.get('/status', (_request: Request, response: Response) => {
+    response.json({
+      status: this.raiden.started ? 'ready' : 'unknown', // TODO: handle 'syncing' status phase
+      blocks_to_syn: 'unknown', // TODO: Related to the 'syncing' status
+    });
   });
-});
 
-export default router;
+  return router;
+}

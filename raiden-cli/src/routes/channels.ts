@@ -1,56 +1,54 @@
-import { Router } from 'express';
-import { validate, isAddress, isAmount, isTimeout, isState } from '../utils/validation';
+import { Router, Request, Response } from 'express';
+import { first } from 'rxjs/operators';
+import { Cli } from '../types';
 import {
-  attachOpenChannels,
-  attachOpenChannelsMatchingTokenAddress,
-  attachOpenChannelsMatchingTokenAndPartnerAddress,
-  openChannelAndAttach,
-  updateChannelAndAttach,
-  transformAndSendChannels,
-} from '../controllers/channels';
+  flattenChannelDictionary,
+  transformSdkChannelFormatToApi,
+  filterChannels,
+} from '../utils/channels';
 
-const router = Router();
+export function makeChannelsRouter(this: Cli): Router {
+  const router = Router();
 
-router.get('/', attachOpenChannels, transformAndSendChannels);
-router.get(
-  '/:tokenAddress',
-  validate([isAddress('tokenAddress', 'params')]),
-  attachOpenChannelsMatchingTokenAddress,
-  transformAndSendChannels,
-);
+  router.get('/', async (_request: Request, response: Response) => {
+    const channelDictionary = await this.raiden.channels$.pipe(first()).toPromise();
+    const channelList = flattenChannelDictionary(channelDictionary);
+    const formattedChannels = transformSdkChannelFormatToApi(channelList);
+    response.json(formattedChannels);
+  });
 
-router.get(
-  '/:tokenAddress/:partnerAddress',
-  validate([isAddress('tokenAddress', 'params'), isAddress('partnerAddress', 'params')]),
-  attachOpenChannelsMatchingTokenAndPartnerAddress,
-  transformAndSendChannels,
-);
+  router.get('/:tokenAddress', async (request: Request, response: Response) => {
+    const channelDictionary = await this.raiden.channels$.pipe(first()).toPromise();
+    const channelList = flattenChannelDictionary(channelDictionary);
+    const filteredChannels = filterChannels(channelList, request.params.tokenAddress);
+    const formattedChannels = transformSdkChannelFormatToApi(filteredChannels);
+    response.json(formattedChannels);
+  });
 
-router.put(
-  '/',
-  validate([
-    isAddress('token_address', 'body'),
-    isAddress('partner_address', 'body'),
-    isAmount('total_deposit', 'body'),
-    isTimeout('settle_timeout', 'body'),
-    isTimeout('reveal_timeout', 'body'),
-  ]),
-  openChannelAndAttach,
-  transformAndSendChannels,
-);
+  router.get('/:tokenAddress/:partnerAddress', async (request: Request, response: Response) => {
+    const channelDictionary = await this.raiden.channels$.pipe(first()).toPromise();
+    const channelList = flattenChannelDictionary(channelDictionary);
+    const filteredChannels = filterChannels(
+      channelList,
+      request.params.tokenAddress,
+      request.params.partnerAddress,
+    );
+    const formattedChannels = transformSdkChannelFormatToApi(filteredChannels);
 
-router.patch(
-  '/:tokenAddress/:partnerAddress',
-  validate([
-    isAddress('tokenAddress', 'params'),
-    isAddress('partnerAddress', 'params'),
-    isState('state', 'body', true),
-    isAmount('total_deposit', 'body', true),
-    isAmount('total_withdraw', 'body', true),
-    isTimeout('reveal_timeout', 'body', true),
-  ]),
-  updateChannelAndAttach,
-  transformAndSendChannels,
-);
+    if (formattedChannels.length) {
+      response.json(formattedChannels[0]);
+    } else {
+      response.status(404).send('The channel does not exist');
+    }
+  });
 
-export default router;
+  router.put('/', (_request: Request, response: Response) => {
+    response.status(404).send('Not implemented yet');
+  });
+
+  router.patch('/:tokenAddress/:partnerAddress', (_request: Request, response: Response) => {
+    response.status(404).send('Not implemented yet');
+  });
+
+  return router;
+}
