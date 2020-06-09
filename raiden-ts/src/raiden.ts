@@ -11,8 +11,17 @@ import { createLogger } from 'redux-logger';
 
 import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
-import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import { first, filter, map, mergeMap, skip, pluck } from 'rxjs/operators';
+import {
+  Observable,
+  AsyncSubject,
+  merge,
+  defer,
+  EMPTY,
+  ReplaySubject,
+  of,
+  throwError,
+} from 'rxjs';
+import { first, filter, map, mergeMap, skip, pluck, switchMap } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
@@ -58,7 +67,7 @@ import {
   transferKey,
   transferKeyToMeta,
 } from './transfers/utils';
-import { pathFind } from './services/actions';
+import { pathFind, udcWithdraw, udcWithdrawPlanned } from './services/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
 import { pfsListInfo } from './services/utils';
 import { Address, Secret, Storage, Hash, UInt, decode, isntNil } from './utils/types';
@@ -1255,6 +1264,25 @@ export class Raiden {
       { log: this.log },
     );
     return receipt.transactionHash as Hash;
+  }
+
+  public async planUdcWithdraw(value: BigNumberish): Promise<Hash> {
+    const withdrawPlan = merge(
+      this.action$.pipe(
+        filter(udcWithdraw.failure.is),
+        switchMap((action) => throwError(action.payload)),
+      ),
+      this.action$.pipe(
+        filter(udcWithdrawPlanned.is),
+        filter((action) => !!action.meta.txHash),
+        map((action) => action.meta.txHash!),
+      ),
+    )
+      .pipe(first())
+      .toPromise();
+
+    this.store.dispatch(udcWithdraw.request({ amount: bigNumberify(value) as UInt<32> }, {}));
+    return withdrawPlan;
   }
 }
 

@@ -2,7 +2,7 @@
 import * as t from 'io-ts';
 
 import { createAction, ActionType, createAsyncAction } from '../utils/actions';
-import { Address, UInt, Signed } from '../utils/types';
+import { Address, UInt, Signed, Hash } from '../utils/types';
 import { Paths, PFS, IOU } from './types';
 
 const PathId = t.type({
@@ -45,3 +45,26 @@ export interface iouClear extends ActionType<typeof iouClear> {}
 
 export const udcDeposited = createAction('udc/deposited', UInt(32));
 export interface udcDeposited extends ActionType<typeof udcDeposited> {}
+
+export const udcWithdraw = createAsyncAction(
+  t.partial({}),
+  'udc/withdraw/request',
+  'udc/withdraw/success',
+  'udc/withdraw/failure',
+  t.type({ amount: UInt(32) }),
+  t.type({ txHash: Hash, amount: UInt(32) }),
+);
+
+export namespace udcWithdraw {
+  export interface request extends ActionType<typeof udcWithdraw.request> {}
+  export interface success extends ActionType<typeof udcWithdraw.success> {}
+  export interface failure extends ActionType<typeof udcWithdraw.failure> {}
+}
+
+export const udcWithdrawPlanned = createAction(
+  'udc/withdraw/planned',
+  t.type({ amount: UInt(32), block: UInt(32) }),
+  t.partial({ txHash: Hash }),
+);
+
+export interface udcWithdrawPlanned extends ActionType<typeof udcWithdrawPlanned> {}
