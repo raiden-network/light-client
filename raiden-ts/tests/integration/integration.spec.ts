@@ -1,5 +1,6 @@
 import { RaidenState } from 'raiden-ts/state';
-import { assert, Storage } from 'raiden-ts/utils/types';
+import { assert } from 'raiden-ts/utils';
+import { Storage } from 'raiden-ts/utils/types';
 import { Raiden } from 'raiden-ts/raiden';
 import { OpenMode, promises as fs } from 'fs';
 import { ContractsInfo } from 'raiden-ts/types';

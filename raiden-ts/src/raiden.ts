@@ -39,6 +39,7 @@ import {
   raidenShutdown,
   raidenConfigUpdate,
 } from './actions';
+import { assert } from './utils';
 import {
   channelOpen,
   channelDeposit,
@@ -60,7 +61,7 @@ import {
 import { pathFind } from './services/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
 import { pfsListInfo } from './services/utils';
-import { Address, Secret, Storage, Hash, UInt, decode, assert, isntNil } from './utils/types';
+import { Address, Secret, Storage, Hash, UInt, decode, isntNil } from './utils/types';
 import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
@@ -181,7 +182,7 @@ export class Raiden {
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
 
     this.getTokenInfo = memoize(async function (this: Raiden, token: string) {
-      assert(Address.is(token), 'Invalid address');
+      assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
       const tokenContract = this.deps.getTokenContract(token);
       const [totalSupply, decimals, name, symbol] = await Promise.all([
         tokenContract.functions.totalSupply(),
@@ -190,7 +191,7 @@ export class Raiden {
         tokenContract.functions.symbol().catch(constant(undefined)),
       ]);
       // workaround for https://github.com/microsoft/TypeScript/issues/33752
-      assert(totalSupply && decimals != null, 'Not a token contract');
+      assert(totalSupply && decimals != null, ErrorCodes.RDN_NOT_A_TOKEN, this.log.info);
       return { totalSupply, decimals, name, symbol };
     });
 
@@ -347,14 +348,25 @@ export class Raiden {
       config && decode(PartialRaidenConfig, config),
     );
 
-    assert(
-      address === state.address,
-      `Mismatch between provided account and loaded state: "${address}" !== "${state.address}"`,
-    );
+    assert(address === state.address, [
+      ErrorCodes.RDN_STATE_ADDRESS_MISMATCH,
+      {
+        account: address,
+        state: state.address,
+      },
+    ]);
     assert(
       network.chainId === state.chainId &&
         contracts.TokenNetworkRegistry.address === state.registry,
-      `Mismatch between network or registry address and loaded state`,
+      [
+        ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
+        {
+          network: network.chainId,
+          contracts: contracts.TokenNetworkRegistry.address,
+          stateNetwork: state.chainId,
+          stateRegistry: state.registry,
+        },
+      ],
     );
 
     const raiden = new this(
@@ -376,7 +388,7 @@ export class Raiden {
    * No event should be emitted before start is called
    */
   public start(): void {
-    assert(this.epicMiddleware, 'Already started or stopped!');
+    assert(this.epicMiddleware, ErrorCodes.RDN_ALREADY_STARTED, this.log.info);
     // on complete, sets epicMiddleware to null, so this.started === false
     this.deps.latest$.subscribe(undefined, undefined, () => (this.epicMiddleware = null));
     this.epicMiddleware.run(raidenRootEpic);
@@ -486,7 +498,7 @@ export class Raiden {
    */
   public getBalance(address?: string): Promise<BigNumber> {
     address = address ?? chooseOnchainAccount(this.deps, this.config.subkey).address;
-    assert(Address.is(address), 'Invalid address');
+    assert(Address.is(address), [ErrorCodes.DTA_INVALID_ADDRESS, { address }], this.log.info);
     return this.deps.provider.getBalance(address);
   }
 
@@ -499,7 +511,8 @@ export class Raiden {
    */
   public async getTokenBalance(token: string, address?: string): Promise<BigNumber> {
     address = address ?? chooseOnchainAccount(this.deps, this.config.subkey).address;
-    assert(Address.is(address) && Address.is(token), 'Invalid address');
+    assert(Address.is(address), [ErrorCodes.DTA_INVALID_ADDRESS, { address }], this.log.info);
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
 
     const tokenContract = this.deps.getTokenContract(token);
     return tokenContract.functions.balanceOf(address);
@@ -535,13 +548,17 @@ export class Raiden {
    * @returns Address of TokenNetwork contract
    */
   public async monitorToken(token: string): Promise<Address> {
-    assert(Address.is(token), 'Invalid address');
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     const alreadyMonitoredTokens = this.state.tokens;
     if (token in alreadyMonitoredTokens) return alreadyMonitoredTokens[token];
     const tokenNetwork = (await this.deps.registryContract.token_to_token_networks(
       token,
     )) as Address;
-    assert(tokenNetwork && tokenNetwork !== AddressZero, 'Unknown token network');
+    assert(
+      tokenNetwork && tokenNetwork !== AddressZero,
+      ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK,
+      this.log.info,
+    );
     this.store.dispatch(
       tokenMonitored({
         token,
@@ -571,9 +588,10 @@ export class Raiden {
     options: { settleTimeout?: number; subkey?: boolean; deposit?: BigNumberish } = {},
     onChange?: OnChange<EventTypes, { txHash: string }>,
   ): Promise<Hash> {
-    assert(Address.is(token) && Address.is(partner), 'Invalid address');
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const tokenNetwork = await this.monitorToken(token);
-    assert(!options.subkey || this.deps.main, "Can't send tx from subkey if not set");
+    assert(!options.subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
     const deposit = options.deposit === undefined ? undefined : decode(UInt(32), options.deposit);
 
     const meta = { tokenNetwork, partner };
@@ -624,11 +642,12 @@ export class Raiden {
     amount: BigNumberish,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
-    assert(Address.is(token) && Address.is(partner), 'Invalid address');
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const state = this.state;
     const tokenNetwork = state.tokens[token];
-    assert(tokenNetwork, 'Unknown token network');
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+    assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
+    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     const deposit = decode(UInt(32), amount);
     const meta = { tokenNetwork, partner };
@@ -660,11 +679,12 @@ export class Raiden {
     partner: string,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
-    assert(Address.is(token) && Address.is(partner), 'Invalid address');
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const state = this.state;
     const tokenNetwork = state.tokens[token];
-    assert(tokenNetwork, 'Unknown token network');
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+    assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
+    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     const meta = { tokenNetwork, partner };
     const promise = asyncActionToPromise(channelClose, meta, this.action$, true).then(
@@ -694,11 +714,12 @@ export class Raiden {
     partner: string,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
-    assert(Address.is(token) && Address.is(partner), 'Invalid address');
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const state = this.state;
     const tokenNetwork = state.tokens[token];
-    assert(tokenNetwork, 'Unknown token network');
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+    assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
+    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     // wait for the corresponding success or error action
     const meta = { tokenNetwork, partner };
@@ -720,7 +741,7 @@ export class Raiden {
   public async getAvailability(
     address: string,
   ): Promise<{ userId: string; available: boolean; ts: number }> {
-    assert(Address.is(address), 'Invalid address');
+    assert(Address.is(address), [ErrorCodes.DTA_INVALID_ADDRESS, { address }], this.log.info);
     const meta = { address };
     const promise = asyncActionToPromise(matrixPresence, meta, this.action$);
     this.store.dispatch(matrixPresence.request(undefined, meta));
@@ -761,19 +782,25 @@ export class Raiden {
       pfs?: RaidenPFS;
     } = {},
   ): Promise<string> {
-    assert(Address.is(token) && Address.is(target), 'Invalid address');
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(Address.is(target), [ErrorCodes.DTA_INVALID_ADDRESS, { target }], this.log.info);
     const tokenNetwork = this.state.tokens[token];
-    assert(tokenNetwork, 'Unknown token network');
+    assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
 
     const decodedValue = decode(UInt(32), value);
     const paymentId = options.paymentId ? decode(UInt(8), options.paymentId) : makePaymentId();
     const paths = options.paths ? decode(Paths, options.paths) : undefined;
     const pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
 
-    assert(options.secret === undefined || Secret.is(options.secret), 'Invalid options.secret');
+    assert(
+      options.secret === undefined || Secret.is(options.secret),
+      ErrorCodes.RDN_INVALID_SECRET,
+      this.log.info,
+    );
     assert(
       options.secrethash === undefined || Hash.is(options.secrethash),
-      'Invalid options.secrethash',
+      ErrorCodes.RDN_INVALID_SECRETHASH,
+      this.log.info,
     );
 
     // use provided secret or create one if no secrethash was provided
@@ -785,7 +812,8 @@ export class Raiden {
     const secrethash = options.secrethash || getSecrethash(secret!);
     assert(
       !secret || getSecrethash(secret) === secrethash,
-      'Provided secrethash must match the sha256 hash of provided secret',
+      ErrorCodes.RDN_SECRET_SECRETHASH_MISMATCH,
+      this.log.info,
     );
 
     const pathFindMeta = { tokenNetwork, target, value: decodedValue };
@@ -854,7 +882,7 @@ export class Raiden {
    */
   public async waitTransfer(transferKey: string): Promise<BigNumber | undefined> {
     const { direction, secrethash } = transferKeyToMeta(transferKey);
-    assert(secrethash in this.state[direction], 'Unknown transfer');
+    assert(secrethash in this.state[direction], ErrorCodes.RDN_UNKNOWN_TRANSFER, this.log.info);
 
     const transf = raidenTransfer(this.state[direction][secrethash]);
     // already completed/past transfer
@@ -888,9 +916,10 @@ export class Raiden {
     value: BigNumberish,
     options: { pfs?: RaidenPFS } = {},
   ): Promise<Paths> {
-    assert(Address.is(token) && Address.is(target), 'Invalid address');
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(Address.is(target), [ErrorCodes.DTA_INVALID_ADDRESS, { target }], this.log.info);
     const tokenNetwork = this.state.tokens[token];
-    assert(tokenNetwork, 'Unknown token network');
+    assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
 
     const decodedValue = decode(UInt(32), value);
     const pfs = options.pfs ? decode(PFS, options.pfs) : undefined;
@@ -916,9 +945,10 @@ export class Raiden {
     target: string,
     value: BigNumberish,
   ): Promise<Paths | undefined> {
-    assert(Address.is(token) && Address.is(target), 'Invalid address');
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(Address.is(target), [ErrorCodes.DTA_INVALID_ADDRESS, { target }], this.log.info);
     const tokenNetwork = this.state.tokens[token];
-    assert(tokenNetwork, 'Unknown token network');
+    assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
 
     const decodedValue = decode(UInt(32), value);
 
@@ -943,7 +973,7 @@ export class Raiden {
    * @returns Promise to array of PFS, which is the interface which describes a PFS
    */
   public async findPFS(): Promise<PFS[]> {
-    assert(this.config.pfs !== null, 'PFS disabled in config');
+    assert(this.config.pfs !== null, ErrorCodes.PFS_DISABLED, this.log.info);
     return (this.config.pfs
       ? of<readonly (string | Address)[]>([this.config.pfs])
       : this.deps.latest$.pipe(
@@ -979,11 +1009,11 @@ export class Raiden {
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     // Check whether address is valid
-    assert(Address.is(token), 'Invalid address');
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set");
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     // Check whether we are on a test network
-    assert(this.deps.network.name !== 'homestead', 'Minting is only allowed on test networks.');
+    assert(this.deps.network.chainId !== 1, ErrorCodes.RDN_MINT_MAINNET, this.log.info);
 
     const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     // Mint token
@@ -1049,10 +1079,10 @@ export class Raiden {
     onChange?: OnChange<EventTypes, { txHash: string }>,
     { subkey, allowance }: { subkey?: boolean; allowance?: BigNumberish } = {},
   ): Promise<Hash> {
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.error);
+    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     const deposit = bigNumberify(amount);
-    assert(deposit.gt(Zero), 'Please deposit a positive amount.', this.log.error);
+    assert(deposit.gt(Zero), ErrorCodes.DTA_NON_POSITIVE_NUMBER, this.log.info);
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
@@ -1065,13 +1095,27 @@ export class Raiden {
 
     assert(
       tokenBalance.gte(amount),
-      `Insufficient token balance (${tokenBalance}).`,
-      this.log.error,
+      [
+        ErrorCodes.RDN_INSUFFICIENT_BALANCE,
+        {
+          token: tokenContract.address,
+          account: address,
+          balance: tokenBalance.toString(),
+          required: bigNumberify(amount).toString(),
+        },
+      ],
+      this.log.info,
     );
     assert(
       !allowance || bigNumberify(allowance).gte(amount),
-      'requested allowance smaller than amount',
-      this.log.error,
+      [
+        ErrorCodes.RDN_INSUFFICIENT_ALLOWANCE,
+        {
+          allowance: bigNumberify(tokenBalance).toString(),
+          required: bigNumberify(amount).toString(),
+        },
+      ],
+      this.log.info,
     );
 
     const tokenAllowance = await tokenContract.functions.allowance(
@@ -1146,8 +1190,8 @@ export class Raiden {
     value: BigNumberish = MaxUint256,
     { subkey, gasPrice }: { subkey?: boolean; gasPrice?: BigNumberish } = {},
   ): Promise<Hash> {
-    assert(Address.is(to), 'Invalid address', this.log.debug);
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.debug);
+    assert(Address.is(to), [ErrorCodes.DTA_INVALID_ADDRESS, { to }], this.log.info);
+    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
@@ -1157,7 +1201,11 @@ export class Raiden {
     const curBalance = await this.getBalance(address);
     // transferableBalance is current balance minus the cost of a single transfer as per gasPrice
     const transferableBalance = curBalance.sub(price.mul(gasLimit));
-    assert(transferableBalance.gt(Zero), 'Not enough balance for a transfer', this.log.error);
+    assert(
+      transferableBalance.gt(Zero),
+      [ErrorCodes.RDN_INSUFFICIENT_BALANCE, { transferable: transferableBalance.toString() }],
+      this.log.info,
+    );
 
     // caps value to transferableBalance, so if it's too big, transfer all
     const amount = transferableBalance.lte(value) ? transferableBalance : bigNumberify(value);
@@ -1165,7 +1213,7 @@ export class Raiden {
     const tx = await signer.sendTransaction({ to, value: amount, gasPrice: price, gasLimit });
     const receipt = await tx.wait();
 
-    if (!receipt.status) throw new RaidenError(ErrorCodes.RDN_TRANSFER_ONCHAIN_BALANCE_FAILED);
+    assert(receipt.status, ErrorCodes.RDN_TRANSFER_ONCHAIN_BALANCE_FAILED, this.log.info);
     return tx.hash! as Hash;
   }
 
@@ -1188,8 +1236,9 @@ export class Raiden {
     value: BigNumberish = MaxUint256,
     { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
-    assert(Address.is(token) && Address.is(to), 'Invalid address', this.log.debug);
-    assert(!subkey || this.deps.main, "Can't send tx from subkey if not set", this.log.debug);
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(Address.is(to), [ErrorCodes.DTA_INVALID_ADDRESS, { to }], this.log.info);
+    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     const tokenContract = getContractWithSigner(this.deps.getTokenContract(token), signer);

@@ -47,7 +47,8 @@ import { MonitoringService } from 'raiden-ts/contracts/MonitoringService';
 
 import { RaidenEpicDeps, ContractsInfo, Latest } from 'raiden-ts/types';
 import { makeInitialState, RaidenState } from 'raiden-ts/state';
-import { Address, Signature, UInt, Hash, assert } from 'raiden-ts/utils/types';
+import { assert } from 'raiden-ts/utils';
+import { Address, Signature, UInt, Hash } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { raidenConfigUpdate, RaidenAction, raidenShutdown } from 'raiden-ts/actions';

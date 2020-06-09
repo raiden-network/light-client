@@ -6,7 +6,7 @@ import { ContractTransaction } from 'ethers/contract';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { UInt, Hash, Address } from '../utils/types';
-import { ErrorCodes, RaidenError } from '../utils/error';
+import { RaidenError } from '../utils/error';
 import { distinctRecordValues } from '../utils/rx';
 import { Channel, ChannelState } from './state';
 import { ChannelKey, ChannelUniqueKey } from './types';
@@ -124,7 +124,7 @@ export function channelAmounts(channel: Channel) {
  */
 export function assertTx(
   method: string,
-  error: ErrorCodes,
+  error: string,
   { log }: Pick<RaidenEpicDeps, 'log'>,
 ): OperatorFunction<ContractTransaction, Hash> {
   /**

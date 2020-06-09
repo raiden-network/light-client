@@ -22,8 +22,9 @@ import isEqual from 'lodash/isEqual';
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 
+import { assert } from '../../utils';
 import { RaidenError, ErrorCodes } from '../../utils/error';
-import { Address, isntNil, assert } from '../../utils/types';
+import { Address, isntNil } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';

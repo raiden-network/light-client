@@ -13,29 +13,6 @@ export interface Storage {
   removeItem(key: string): void | Promise<void>;
 }
 
-/**
- * Error for assertion functions/type guards
- */
-export class AssertionError extends Error {}
-
-/**
- * Type-safe assertion function (TS3.7)
- *
- * @param condition - Condition to validate as truthy
- * @param msg - Message to throw if condition is falsy
- * @param log - Logger to log error to
- */
-export function assert(
-  condition: any,
-  msg?: string,
-  log?: (...args: any[]) => void,
-): asserts condition {
-  if (!condition) {
-    log?.('AssertionError', condition, msg);
-    throw new AssertionError(msg ?? 'AssertionError');
-  }
-}
-
 function reporterAssert<T>(value: Either<t.Errors, T>): asserts value is Right<T> {
   ThrowReporter.report(value);
 }

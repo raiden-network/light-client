@@ -6,7 +6,8 @@ import { encode as rlpEncode } from 'ethers/utils/rlp';
 import { HashZero } from 'ethers/constants';
 import logging from 'loglevel';
 
-import { Address, Hash, HexString, Signature, UInt, Signed, decode, assert } from '../utils/types';
+import { assert } from '../utils';
+import { Address, Hash, HexString, Signature, UInt, Signed, decode } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { BalanceProof } from '../channels/types';
 import { EnvelopeMessage, Message, MessageType, Metadata } from './types';

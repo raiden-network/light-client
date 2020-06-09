@@ -16,6 +16,7 @@ import pick from 'lodash/pick';
 
 import { RaidenAction } from '../../actions';
 import { RaidenConfig } from '../../config';
+import { assert } from '../../utils';
 import { ChannelState, ChannelEnd } from '../../channels/state';
 import { Lock, BalanceProof } from '../../channels/types';
 import { channelAmounts, channelKey } from '../../channels/utils';
@@ -42,7 +43,7 @@ import { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { LruCache } from '../../utils/lru';
 import { pluckDistinct } from '../../utils/rx';
-import { assert, BigNumberC, Hash, Signed, UInt, Int } from '../../utils/types';
+import { BigNumberC, Hash, Signed, UInt, Int } from '../../utils/types';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Capabilities } from '../../constants';
 import {
