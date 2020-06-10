@@ -1,5 +1,6 @@
 import express, { Express, Request, Response, NextFunction, Errback } from 'express';
 import createError from 'http-errors';
+import logger from 'morgan';
 import { Cli } from './types';
 import { makeApiV1Router } from './routes/api.v1';
 
@@ -21,6 +22,11 @@ function internalErrorHandler(
 export function makeApp(this: Cli): Express {
   const app = express();
   app.use(express.json());
+  app.use(
+    logger(
+      ':remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
+    ),
+  );
   app.use('/api/v1', makeApiV1Router.call(this));
   app.use(notFoundHandler);
   app.use(internalErrorHandler.bind(this));
