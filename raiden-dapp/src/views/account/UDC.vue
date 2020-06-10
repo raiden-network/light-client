@@ -1,11 +1,9 @@
 <template>
   <div>
-    <v-row justify="center">
-      <v-col cols="10">
-        <p>
-          {{ $t('udc.description') }}
-        </p>
-      </v-col>
+    <v-row class="udc__description" justify="center" no-gutters>
+      <p>
+        {{ $t('udc.description') }}
+      </p>
     </v-row>
     <v-row justify="center">
       <v-col cols="10">
@@ -106,6 +104,20 @@
         >
           {{ $t('udc.balance') }}
           <amount-display inline :amount="udcCapacity" :token="udcToken" />
+          <v-btn
+            v-if="hasEnoughServiceTokens"
+            class="udc__withdrawal-button"
+            height="20px"
+            width="22px"
+            icon
+            @click="withdrawFromUdc = true"
+          >
+            <v-img
+              height="20px"
+              width="20px"
+              :src="require('@/assets/withdrawal.svg')"
+            ></v-img>
+          </v-btn>
         </p>
         <p
           v-if="!hasEnoughServiceTokens"
@@ -121,6 +133,12 @@
         </p>
       </v-col>
     </v-row>
+    <udc-withdrawal-dialog
+      :visible="withdrawFromUdc"
+      :account-balance="accountBalance"
+      :service-token="serviceToken"
+      @cancel="withdrawFromUdc = false"
+    />
   </div>
 </template>
 
@@ -136,9 +154,16 @@ import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
+import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
 
 @Component({
-  components: { ActionButton, UdcDepositDialog, AmountDisplay, ErrorMessage },
+  components: {
+    ActionButton,
+    UdcDepositDialog,
+    UdcWithdrawalDialog,
+    AmountDisplay,
+    ErrorMessage
+  },
   computed: {
     ...mapState(['accountBalance']),
     ...mapGetters(['mainnet'])
@@ -152,6 +177,7 @@ export default class UDC extends Vue {
   udcCapacity = Zero;
   hasEnoughServiceTokens = false;
   mainnet!: boolean;
+  withdrawFromUdc: boolean = false;
 
   get serviceToken(): string {
     return this.udcToken.symbol || this.mainnet ? 'RDN' : 'SVT';
@@ -218,6 +244,12 @@ hr {
 }
 
 .udc {
+  &__description {
+    margin-top: 30px;
+    padding: 0 20px 0 20px;
+    text-align: center;
+  }
+
   &__sub-head {
     font-size: 20px;
     text-align: center;
@@ -276,6 +308,10 @@ hr {
         }
       }
     }
+  }
+
+  &__withdrawal-button {
+    margin-left: 20px;
   }
 }
 </style>
