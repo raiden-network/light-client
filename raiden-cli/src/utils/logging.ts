@@ -1,9 +1,9 @@
-import log, { LoggingMethod } from 'loglevel';
+import logging, { LoggingMethod } from 'loglevel';
 
 export function setupLoglevel(): void {
-  const originalFactory = log.methodFactory;
+  const originalFactory = logging.methodFactory;
 
-  log.methodFactory = (
+  logging.methodFactory = (
     methodName: string,
     level: 0 | 1 | 2 | 3 | 4 | 5,
     loggerName: string,
@@ -16,8 +16,8 @@ export function setupLoglevel(): void {
     };
   };
   if (process.env.NODE_ENV === 'production') {
-    log.setLevel('INFO');
+    logging.setLevel('INFO');
   } else {
-    log.setLevel('DEBUG');
+    logging.setLevel('DEBUG');
   }
 }

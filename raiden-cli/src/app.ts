@@ -15,7 +15,7 @@ function internalErrorHandler(
   _response: Response,
   next: NextFunction,
 ) {
-  this.logging.error(error);
+  this.log.error(error);
   next(createError(500, 'Internal Raiden node error'));
 }
 

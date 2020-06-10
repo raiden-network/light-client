@@ -1,20 +1,19 @@
+import { Server } from 'http';
 import { Raiden } from 'raiden-ts';
 import { Logger } from 'loglevel';
 import { Express } from 'express';
-import { Server } from 'http';
 
-/* eslint-disable @typescript-eslint/camelcase */
 export interface CliArguments {
   ethNode: string;
   privateKey: string;
   store: string;
   port: number;
   password?: string;
-  config?: object;
+  config?: Record<string, unknown>;
 }
 
 export interface Cli {
-  logging: Logger;
+  log: Logger;
   raiden: Raiden;
   app?: Express;
   server?: Server;
