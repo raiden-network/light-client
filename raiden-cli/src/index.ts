@@ -5,6 +5,7 @@ import yargs from 'yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
 import { Raiden } from 'raiden-ts';
+import { getLogger } from 'loglevel';
 import { CliArguments, Cli } from './types';
 import { makeCli } from './cli';
 import { setupLoglevel } from './utils/logging';
@@ -73,12 +74,12 @@ function createLocalStorage(name: string): LocalStorage {
 
 function shutdown(this: Cli): void {
   if (this.server?.listening) {
-    this.log.info('Closing server...');
+    this.logging.info('Closing server...');
     this.server.close();
   }
 
   if (this.raiden.started) {
-    this.log.info('Stopping raiden...');
+    this.logging.info('Stopping raiden...');
     this.raiden.stop();
   } else {
     process.exit(1);
@@ -91,16 +92,17 @@ function registerShutdownHooks(this: Cli): void {
 }
 
 async function main() {
+  setupLoglevel();
   const argv = parseArguments();
   const password = argv.password ?? (await askUserForPassword());
   const wallet = await getWallet(argv.privateKey, password);
   const localStorage = createLocalStorage(argv.store);
-  const log = setupLoglevel();
+  const logging = getLogger(`cli:${wallet.address}`);
   const raiden = await Raiden.create(argv.ethNode, wallet.privateKey, localStorage, undefined, {
     ...DEFAULT_RAIDEN_CONFIG,
     ...argv.config,
   });
-  const cli = await makeCli(log, raiden, argv.port);
+  const cli = await makeCli(logging, raiden, argv.port);
   registerShutdownHooks.call(cli);
   cli.raiden.start();
 }

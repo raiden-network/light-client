@@ -1,6 +1,6 @@
-import log, { Logger, methodFactory, LoggingMethod } from 'loglevel';
+import log, { methodFactory, LoggingMethod } from 'loglevel';
 
-export function setupLoglevel(): Logger {
+export function setupLoglevel(): void {
   log.methodFactory = (
     methodName: string,
     level: 0 | 1 | 2 | 3 | 4 | 5,
@@ -18,5 +18,4 @@ export function setupLoglevel(): Logger {
   } else {
     log.setLevel('DEBUG');
   }
-  return log;
 }
