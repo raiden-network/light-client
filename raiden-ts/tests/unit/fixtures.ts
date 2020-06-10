@@ -25,7 +25,7 @@ import { raidenReducer } from 'raiden-ts/reducer';
 import { getLatest$ } from 'raiden-ts/epics';
 import { channelKey } from 'raiden-ts/channels/utils';
 import { tokenMonitored } from 'raiden-ts/channels/actions';
-import { ChannelState } from 'raiden-ts/channels';
+import { ChannelState, Channel } from 'raiden-ts/channels';
 import { Direction } from 'raiden-ts/transfers/state';
 import { transfer, transferUnlock } from 'raiden-ts/transfers/actions';
 import { messageReceived } from 'raiden-ts/messages/actions';
@@ -165,6 +165,23 @@ export const secrethash = getSecrethash(secret);
 export const amount = bigNumberify(10) as UInt<32>;
 
 /**
+ * Get channel state with partner for tokenNetwork
+ *
+ * @param raiden - Our instance
+ * @param partner - Partner's client
+ * @param partner.address - Partner's address
+ * @param _tokenNetwork - token network for channel, defaults to fixture's tokenNetwork
+ * @returns Channel with partner from raiden's perspective
+ */
+export function getChannel(
+  raiden: MockedRaiden,
+  partner: { address: Address },
+  _tokenNetwork = tokenNetwork,
+): Channel {
+  return raiden.store.getState().channels[channelKey({ tokenNetwork: _tokenNetwork, partner })];
+}
+
+/**
  * Ensure token is monitored on raiden's state
  *
  * @param raiden - Client instance
@@ -186,8 +203,8 @@ export async function ensureChannelIsOpen([raiden, partner]: [
   MockedRaiden,
 ]): Promise<void> {
   await ensureTokenIsMonitored(raiden);
-  const key = channelKey({ tokenNetwork, partner: partner.address });
-  if (key in raiden.store.getState().channels) return;
+  await ensureTokenIsMonitored(partner);
+  if (getChannel(raiden, partner)) return;
 
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   providersEmit(
@@ -221,10 +238,9 @@ export async function ensureChannelIsDeposited(
   totalDeposit: UInt<32> = deposit,
 ): Promise<void> {
   await ensureChannelIsOpen([raiden, partner]);
-  const key = channelKey({ tokenNetwork, partner: partner.address });
-  if (raiden.store.getState().channels[key].own.deposit.gte(totalDeposit)) return;
+  if (getChannel(raiden, partner).own.deposit.gte(totalDeposit)) return;
   const txHash = makeHash();
-  const txBlock = openBlock + 1;
+  const txBlock = raiden.store.getState().blockNumber + 1;
   const participant = raiden.address;
 
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
@@ -250,8 +266,12 @@ export async function ensureChannelIsDeposited(
       data: defaultAbiCoder.encode(['uint256'], [totalDeposit]),
     }),
   );
-  await waitBlock();
-  await waitBlock(); // confirmation
+  while (
+    getChannel(raiden, partner).own.deposit.lt(totalDeposit) ||
+    getChannel(partner, raiden).partner.deposit.lt(totalDeposit)
+  ) {
+    await waitBlock();
+  }
 }
 
 /**
@@ -266,8 +286,7 @@ export async function ensureChannelIsClosed([raiden, partner]: [
   MockedRaiden,
 ]): Promise<void> {
   await ensureChannelIsOpen([raiden, partner]);
-  const key = channelKey({ tokenNetwork, partner: partner.address });
-  if (raiden.store.getState().channels[key].state === ChannelState.closed) return;
+  if (getChannel(raiden, partner).state === ChannelState.closed) return;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   const events = tokenNetworkContract.interface.events;
   const monitorFilter: Filter = {
@@ -307,8 +326,7 @@ export async function ensureChannelIsSettled([raiden, partner]: [
   MockedRaiden,
 ]): Promise<void> {
   await ensureChannelIsClosed([raiden, partner]);
-  const key = channelKey({ tokenNetwork, partner: partner.address });
-  if (!(key in raiden.store.getState().channels)) return;
+  if (!getChannel(raiden, partner)) return;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   const events = tokenNetworkContract.interface.events;
   const monitorFilter: Filter = {
@@ -340,34 +358,34 @@ export async function ensureChannelIsSettled([raiden, partner]: [
 }
 
 /**
- * Ensure there's a pending received transfer from partner
+ * Ensure there's a pending sent transfer to partner
  *
  * @param clients - Clients tuple
- * @param clients.0 - Own raiden
- * @param clients.1 - Partner raiden to send transfer from
+ * @param clients.0 - Transfer sender node
+ * @param clients.1 - Transfer receiver node
  * @param value - Amount to transfer
  */
-export async function ensureTransferReceivedPending(
+export async function ensureTransferPending(
   [raiden, partner]: [MockedRaiden, MockedRaiden],
   value = amount,
 ): Promise<void> {
-  await ensureChannelIsDeposited([partner, raiden]); // from partner to raiden
-  if (secrethash in raiden.store.getState().received) return;
+  await ensureChannelIsDeposited([raiden, partner], value); // from partner to raiden
+  if (secrethash in partner.store.getState().received) return;
 
   const paymentId = makePaymentId();
-  const sentPromise = partner.deps.latest$
+  const sentPromise = raiden.deps.latest$
     .pipe(
       first(({ state }) => secrethash in state.sent),
       pluck('state', 'sent', secrethash),
     )
     .toPromise();
-  partner.store.dispatch(
+  raiden.store.dispatch(
     transfer.request(
       {
         tokenNetwork,
-        target: raiden.address,
+        target: partner.address,
         value,
-        paths: [{ path: [raiden.address], fee: Zero as Int<32> }],
+        paths: [{ path: [partner.address], fee: Zero as Int<32> }],
         paymentId,
         secret,
       },
@@ -376,50 +394,51 @@ export async function ensureTransferReceivedPending(
   );
   const sent = await sentPromise;
 
-  const receivedPromise = raiden.deps.latest$
+  const receivedPromise = partner.deps.latest$
     .pipe(first(({ state }) => secrethash in state.received))
     .toPromise();
-  raiden.store.dispatch(
+  partner.store.dispatch(
     messageReceived(
       { text: '', message: sent.transfer[1], ts: Date.now() },
-      { address: partner.address },
+      { address: raiden.address },
     ),
   );
   await receivedPromise;
 }
 
 /**
- * Ensure there's an unlocked transfer received from partner
+ * Ensure there's an unlocked transfer sent to partner
  *
  * @param clients - Clients tuple
- * @param clients.0 - Own raiden
- * @param clients.1 - Partner raiden to send transfer from
+ * @param clients.0 - Transfer sender node
+ * @param clients.1 - Transfer receiver node
+ * @param value - Value to transfer
  */
-export async function ensureTransferReceivedUnlocked([raiden, partner]: [
-  MockedRaiden,
-  MockedRaiden,
-]): Promise<void> {
-  await ensureTransferReceivedPending([raiden, partner]); // from partner to raiden
-  if (raiden.store.getState().received[secrethash]?.unlock) return;
+export async function ensureTransferUnlocked(
+  [raiden, partner]: [MockedRaiden, MockedRaiden],
+  value = amount,
+): Promise<void> {
+  await ensureTransferPending([raiden, partner], value); // from partner to raiden
+  if (partner.store.getState().received[secrethash]?.unlock) return;
 
-  const sentPromise = partner.deps.latest$
+  const sentPromise = raiden.deps.latest$
     .pipe(
       first(({ state }) => !!state.sent[secrethash]?.unlock),
       pluck('state', 'sent', secrethash),
     )
     .toPromise();
-  partner.store.dispatch(
+  raiden.store.dispatch(
     transferUnlock.request(undefined, { secrethash, direction: Direction.SENT }),
   );
   const sent = await sentPromise;
 
-  const receivedPromise = raiden.deps.latest$
+  const receivedPromise = partner.deps.latest$
     .pipe(first(({ state }) => !!state.received[secrethash]?.unlock))
     .toPromise();
-  raiden.store.dispatch(
+  partner.store.dispatch(
     messageReceived(
       { text: '', message: sent.unlock![1], ts: Date.now() },
-      { address: partner.address },
+      { address: raiden.address },
     ),
   );
   await receivedPromise;

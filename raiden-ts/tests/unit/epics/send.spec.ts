@@ -33,7 +33,6 @@ import {
   SecretReveal,
   LockExpired,
   RefundTransfer,
-  WithdrawRequest,
 } from 'raiden-ts/messages/types';
 import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
 import { messageSend, messageReceived } from 'raiden-ts/messages/actions';
@@ -49,7 +48,6 @@ import {
   transferRefunded,
   transferUnlockProcessed,
   transferExpireProcessed,
-  withdrawReceive,
   transferSecretRegister,
 } from 'raiden-ts/transfers/actions';
 import {
@@ -66,8 +64,6 @@ import {
   transferRetryMessageEpic,
   transferReceivedReplyProcessedEpic,
   transferRefundedEpic,
-  withdrawRequestReceivedEpic,
-  withdrawSendConfirmationEpic,
   monitorSecretRegistryEpic,
   transferSuccessOnSecretRegisteredEpic,
 } from 'raiden-ts/transfers/epics';
@@ -95,7 +91,6 @@ describe('send transfers', () => {
     paymentId: ReturnType<typeof epicFixtures>['paymentId'],
     fee: ReturnType<typeof epicFixtures>['fee'],
     paths: ReturnType<typeof epicFixtures>['paths'],
-    key: ReturnType<typeof epicFixtures>['key'],
     action$: ReturnType<typeof epicFixtures>['action$'],
     state$: ReturnType<typeof epicFixtures>['state$'];
   const direction = Direction.SENT;
@@ -116,7 +111,6 @@ describe('send transfers', () => {
       paymentId,
       fee,
       paths,
-      key,
       action$,
       state$,
     } = epicFixtures(depsMock));
@@ -1882,213 +1876,6 @@ describe('send transfers', () => {
 
         // if transfer expired, refund is ignored
         await expect(promise2).resolves.toBeUndefined();
-      });
-    });
-
-    describe('withdraw request', () => {
-      let partnerDeposit: UInt<32>, transferredAmount: UInt<32>, withdrawableAmount: UInt<32>;
-
-      /* state$ holds the state when a transfer unlocked and completed */
-      beforeEach(async () => {
-        partnerDeposit = bigNumberify(30) as UInt<32>;
-        transferredAmount = value.add(fee) as UInt<32>;
-        withdrawableAmount = partnerDeposit.add(transferredAmount) as UInt<32>;
-
-        action$.next(
-          channelDeposit.success(
-            {
-              id: channelId,
-              participant: partner,
-              totalDeposit: partnerDeposit,
-              txHash,
-              txBlock: openBlock + 1,
-              confirmed: true,
-            },
-            { tokenNetwork, partner },
-          ),
-        );
-        await transferGenerateAndSignEnvelopeMessageEpic(
-          of(transferUnlock.request(undefined, { secrethash, direction })),
-          depsMock.latest$.pipe(pluck('state')),
-          depsMock,
-        )
-          .pipe(tap((action) => action$.next(action)))
-          .toPromise();
-      });
-
-      test('success', async () => {
-        expect.assertions(7);
-
-        const request: WithdrawRequest = {
-            type: MessageType.WITHDRAW_REQUEST,
-            message_identifier: makeMessageId(),
-            chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
-            token_network_address: tokenNetwork,
-            channel_identifier: bigNumberify(channelId) as UInt<32>,
-            participant: partner,
-            // withdrawable amount is partner.deposit + own.g
-            total_withdraw: withdrawableAmount,
-            nonce: bigNumberify(1) as UInt<8>,
-            expiration: bigNumberify(125 + 20) as UInt<32>,
-          },
-          signed = await signMessage(partnerSigner, request),
-          messageReceivedAction = messageReceived(
-            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-            { address: partner },
-          );
-
-        const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
-
-        const withdrawRequestAction = await withdrawRequestReceivedEpic(
-          of(messageReceivedAction),
-        ).toPromise();
-
-        expect(withdrawRequestAction).toMatchObject({
-          type: withdrawReceive.request.type,
-          payload: { message: signed },
-          meta: {
-            tokenNetwork,
-            partner,
-            totalWithdraw: request.total_withdraw,
-            expiration: request.expiration.toNumber(),
-          },
-        });
-
-        const promise = transferGenerateAndSignEnvelopeMessageEpic(action$, state$, depsMock)
-          .pipe(toArray())
-          .toPromise();
-
-        const statePromise = state$.toPromise();
-        [withdrawRequestAction, withdrawRequestAction].forEach((a) => action$.next(a));
-        setTimeout(() => action$.complete(), 50);
-
-        const output = await promise;
-        const state = await statePromise;
-
-        expect(output).toHaveLength(2);
-        const payload0 = 'payload' in output[0] && output[0].payload;
-        const payload1 = 'payload' in output[1] && output[1].payload;
-        expect(payload0 && payload1).toBeTruthy();
-        expect(payload0).toEqual(payload1);
-        expect(output[0]).toEqual({
-          type: withdrawReceive.success.type,
-          payload: {
-            message: {
-              ...request,
-              type: MessageType.WITHDRAW_CONFIRMATION,
-              message_identifier: expect.any(BigNumber),
-              nonce: state.channels[key].own.balanceProof.nonce.add(1),
-              signature: expect.any(String),
-            },
-          },
-          meta: withdrawRequestAction.meta,
-        });
-
-        const withdrawConfirmationAction = output[0] as ActionType<typeof withdrawReceive.success>;
-
-        await expect(
-          withdrawSendConfirmationEpic(of(withdrawConfirmationAction)).toPromise(),
-        ).resolves.toMatchObject({
-          type: messageSend.request.type,
-          payload: { message: withdrawConfirmationAction.payload.message },
-          meta: { address: partner },
-        });
-
-        // ensure signMessage was cached
-        expect(signerSpy).toHaveBeenCalledTimes(1);
-        signerSpy.mockRestore();
-      });
-
-      test('fail with totalWithdraw larger than partner.deposit + own.g', async () => {
-        expect.assertions(1);
-
-        const request: WithdrawRequest = {
-            type: MessageType.WITHDRAW_REQUEST,
-            message_identifier: makeMessageId(),
-            chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
-            token_network_address: tokenNetwork,
-            channel_identifier: bigNumberify(channelId) as UInt<32>,
-            participant: partner,
-            // withdrawable amount is partner.deposit + own.g
-            total_withdraw: withdrawableAmount.add(1) as UInt<32>,
-            nonce: bigNumberify(1) as UInt<8>,
-            expiration: bigNumberify(125 + 20) as UInt<32>,
-          },
-          signed = await signMessage(partnerSigner, request),
-          messageReceivedAction = messageReceived(
-            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-            { address: partner },
-          );
-
-        withdrawRequestReceivedEpic(action$).subscribe((a) => action$.next(a));
-        const promise = transferGenerateAndSignEnvelopeMessageEpic(
-          action$,
-          state$,
-          depsMock,
-        ).toPromise();
-
-        action$.next(messageReceivedAction);
-        action$.complete();
-
-        await expect(promise).resolves.toBeUndefined();
-      });
-
-      test('fail WithdrawRequest expired', async () => {
-        expect.assertions(1);
-
-        const request: WithdrawRequest = {
-            type: MessageType.WITHDRAW_REQUEST,
-            message_identifier: makeMessageId(),
-            chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
-            token_network_address: tokenNetwork,
-            channel_identifier: bigNumberify(channelId) as UInt<32>,
-            participant: partner,
-            // withdrawable amount is partner.deposit + own.g
-            total_withdraw: withdrawableAmount,
-            nonce: bigNumberify(1) as UInt<8>,
-            expiration: bigNumberify(125 + 20) as UInt<32>,
-          },
-          signed = await signMessage(partnerSigner, request),
-          messageReceivedAction = messageReceived(
-            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-            { address: partner },
-          ),
-          action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
-
-        action$.next(newBlock({ blockNumber: 125 + 20 + 2 }));
-
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(of(action), state$, depsMock).toPromise(),
-        ).resolves.toBeUndefined();
-      });
-
-      test('fail channel not open', async () => {
-        expect.assertions(1);
-
-        const request: WithdrawRequest = {
-            type: MessageType.WITHDRAW_REQUEST,
-            message_identifier: makeMessageId(),
-            chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
-            token_network_address: tokenNetwork,
-            channel_identifier: bigNumberify(channelId) as UInt<32>,
-            participant: partner,
-            // withdrawable amount is partner.deposit + own.g
-            total_withdraw: withdrawableAmount,
-            nonce: bigNumberify(1) as UInt<8>,
-            expiration: bigNumberify(125 + 20) as UInt<32>,
-          },
-          signed = await signMessage(partnerSigner, request),
-          messageReceivedAction = messageReceived(
-            { text: encodeJsonMessage(signed), message: signed, ts: Date.now() },
-            { address: partner },
-          ),
-          action = await withdrawRequestReceivedEpic(of(messageReceivedAction)).toPromise();
-
-        action$.next(channelClose.request(undefined, { tokenNetwork, partner }));
-
-        await expect(
-          transferGenerateAndSignEnvelopeMessageEpic(of(action), state$, depsMock).toPromise(),
-        ).resolves.toBeUndefined();
       });
     });
   });

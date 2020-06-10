@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 import { bigNumberify } from 'ethers/utils';
-import { Zero, AddressZero, HashZero } from 'ethers/constants';
+import { Zero, AddressZero, HashZero, One } from 'ethers/constants';
 
 import { ChannelState } from 'raiden-ts/channels';
 import {
@@ -50,6 +50,8 @@ describe('RaidenState codecs', () => {
               additionalHash: HashZero as Hash,
               signature: SignatureZero,
             },
+            withdrawRequests: [],
+            nextNonce: One as UInt<8>,
           },
           partner: {
             address: partner,
@@ -67,6 +69,8 @@ describe('RaidenState codecs', () => {
               additionalHash: HashZero as Hash,
               signature: SignatureZero,
             },
+            withdrawRequests: [],
+            nextNonce: One as UInt<8>,
           },
           id: 17,
           settleTimeout: 500,
@@ -110,6 +114,8 @@ describe('RaidenState codecs', () => {
               additionalHash: HashZero,
               signature: SignatureZero,
             },
+            withdrawRequests: [],
+            nextNonce: '1',
           },
           partner: {
             address: partner,
@@ -127,6 +133,8 @@ describe('RaidenState codecs', () => {
               additionalHash: HashZero,
               signature: SignatureZero,
             },
+            withdrawRequests: [],
+            nextNonce: '1',
           },
           id: 17,
           settleTimeout: 500,
@@ -208,6 +216,8 @@ describe('RaidenState codecs', () => {
                 additionalHash: HashZero,
                 signature: SignatureZero,
               },
+              withdrawRequests: [],
+              nextNonce: '1',
             },
             partner: {
               address: partner,
@@ -225,6 +235,8 @@ describe('RaidenState codecs', () => {
                 additionalHash: HashZero,
                 signature: SignatureZero,
               },
+              withdrawRequests: [],
+              nextNonce: '1',
             },
             id: 17,
             settleTimeout: 500,
@@ -268,6 +280,8 @@ describe('RaidenState codecs', () => {
               additionalHash: HashZero,
               signature: SignatureZero,
             },
+            withdrawRequests: [],
+            nextNonce: One,
           },
           partner: {
             address: partner,
@@ -285,6 +299,8 @@ describe('RaidenState codecs', () => {
               additionalHash: HashZero,
               signature: SignatureZero,
             },
+            withdrawRequests: [],
+            nextNonce: One,
           },
           id: 17,
           settleTimeout: 500,

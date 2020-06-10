@@ -867,9 +867,10 @@ export async function makeRaiden(wallet?: Wallet): Promise<MockedRaiden> {
     raidenReducer,
     initialState as any,
     applyMiddleware(epicMiddleware, () => (next) => (action) => {
-      log.debug('action$', action);
       output.push(action);
-      return next(action);
+      const result = next(action);
+      log.debug(`[${address}] action$:`, action);
+      return result;
     }),
   );
 

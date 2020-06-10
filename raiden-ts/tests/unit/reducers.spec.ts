@@ -1268,7 +1268,7 @@ describe('raidenReducer', () => {
           },
         ),
       );
-      expect(newState.channels[key].own.balanceProof.nonce).toEqual(One);
+      expect(newState.channels[key].own.nextNonce).toEqual(bigNumberify(2));
 
       const unlock: Signed<Unlock> = {
         type: MessageType.UNLOCK,
@@ -1289,7 +1289,7 @@ describe('raidenReducer', () => {
         transferSigned({ message: transfer, fee, partner }, { secrethash, direction }),
         transferUnlock.success({ message: unlock, partner }, { secrethash, direction }),
       ].reduce(raidenReducer, state);
-      const prevNonce = newState1.channels[key].own.balanceProof!.nonce;
+      const prevNonce = newState1.channels[key].own.nextNonce;
 
       // forgot to update nonce, reducer must be noop
       let newState2 = raidenReducer(
@@ -1326,7 +1326,7 @@ describe('raidenReducer', () => {
       );
 
       // nonce updated
-      expect(newState2.channels[key].own.balanceProof.nonce).toEqual(prevNonce.add(1));
+      expect(newState2.channels[key].own.nextNonce).toEqual(prevNonce.add(1));
     });
   });
 
