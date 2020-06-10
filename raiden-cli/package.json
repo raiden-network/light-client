@@ -38,10 +38,14 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
+    "@types/http-errors": "^1.6.3",
+    "@types/morgan": "^1.9.0",
     "ethers": "^4.0.47",
     "express": "^4.17.1",
+    "http-errors": "^1.7.3",
     "inquirer": "^7.1.0",
     "loglevel": "^1.6.8",
+    "morgan": "^1.10.0",
     "node-localstorage": "^2.1.6",
     "raiden-ts": "file:../raiden-ts",
     "rxjs": "^6.5.5",
@@ -50,7 +54,9 @@
   },
   "eslintConfig": {
     "parser": "@typescript-eslint/parser",
-    "plugins": ["@typescript-eslint"],
+    "plugins": [
+      "@typescript-eslint"
+    ],
     "extends": [
       "plugin:@typescript-eslint/recommended",
       "prettier/@typescript-eslint",
