@@ -25,7 +25,6 @@ module.exports = {
     extensions: ['.ts', '.js'], //resolve all the modules other than index.ts
     alias: {
       ethers: path.resolve('./node_modules/ethers'),
-      lodash: path.resolve('./node_modules/lodash'),
       wrtc: path.resolve('./node_modules/wrtc'),
     },
   },

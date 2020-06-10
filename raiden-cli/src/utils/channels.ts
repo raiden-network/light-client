@@ -1,10 +1,12 @@
 import { RaidenChannel, RaidenChannels } from 'raiden-ts';
-import { flatMap, values, map, filter } from 'lodash';
 import { ApiChannel } from '../types';
 
 export function flattenChannelDictionary(channelDict: RaidenChannels): RaidenChannel[] {
   // To flatten structure {token: {partner: [channel..], partner:...}, token...}
-  return flatMap(values(channelDict), (partnerChannels) => values(partnerChannels));
+  return Object.values(channelDict).reduce(
+    (allChannels, tokenPartners) => allChannels.concat(Object.values(tokenPartners)),
+    [] as RaidenChannel[],
+  );
 }
 
 export function filterChannels(
@@ -15,10 +17,10 @@ export function filterChannels(
   let filteredChannels = channels;
 
   if (tokenAddress) {
-    filteredChannels = filter(filteredChannels, (channel) => channel.token === tokenAddress);
+    filteredChannels = filteredChannels.filter((channel) => channel.token === tokenAddress);
   }
   if (partnerAddress) {
-    filteredChannels = filter(filteredChannels, (channel) => channel.partner === partnerAddress);
+    filteredChannels = filteredChannels.filter((channel) => channel.token === partnerAddress);
   }
 
   return filteredChannels;
@@ -26,7 +28,7 @@ export function filterChannels(
 
 /* eslint-disable @typescript-eslint/camelcase */
 export function transformSdkChannelFormatToApi(channels: RaidenChannel[]): ApiChannel[] {
-  return map(channels, (channel) => {
+  return channels.map((channel) => {
     return {
       channel_identifier: channel.id ?? 0, // FIXME: old "bug" in the SDK
       token_network_address: channel.tokenNetwork,
