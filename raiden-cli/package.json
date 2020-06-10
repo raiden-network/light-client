@@ -42,7 +42,6 @@
     "@types/morgan": "^1.9.0",
     "ethers": "^4.0.47",
     "express": "^4.17.1",
-    "express-validator": "^6.5.0",
     "http-errors": "^1.7.3",
     "inquirer": "^7.1.0",
     "loglevel": "^1.6.8",
