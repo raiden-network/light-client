@@ -14,11 +14,12 @@ import {
   deposit,
   confirmationBlocks,
   ensureChannelIsDeposited,
-  ensureTransferReceivedUnlocked,
-  ensureTransferReceivedPending,
+  ensureTransferUnlocked,
+  ensureTransferPending,
   secrethash,
   secret,
   ensureChannelIsSettled,
+  getChannel,
 } from '../fixtures';
 
 import { bigNumberify, BigNumber } from 'ethers/utils';
@@ -35,7 +36,7 @@ import {
   channelSettle,
   channelWithdrawn,
 } from 'raiden-ts/channels/actions';
-import { channelKey, channelUniqueKey } from 'raiden-ts/channels/utils';
+import { channelUniqueKey } from 'raiden-ts/channels/utils';
 import { ChannelState } from 'raiden-ts/channels';
 import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
 import { Filter } from 'ethers/providers';
@@ -46,13 +47,11 @@ test('channelSettleableEpic', async () => {
   const [raiden, partner] = await makeRaidens(2);
   await ensureChannelIsClosed([raiden, partner]);
 
-  const key = channelKey({ tokenNetwork, partner });
-
   await waitBlock(closeBlock + settleTimeout - 1);
-  expect(raiden.store.getState().channels[key].state).toBe(ChannelState.closed);
+  expect(getChannel(raiden, partner).state).toBe(ChannelState.closed);
 
   await waitBlock(closeBlock + settleTimeout + 7);
-  expect(raiden.store.getState().channels[key].state).toBe(ChannelState.settleable);
+  expect(getChannel(raiden, partner).state).toBe(ChannelState.settleable);
   expect(raiden.output).toContainEqual(
     channelSettleable(
       { settleableBlock: closeBlock + settleTimeout + 7 },
@@ -71,9 +70,7 @@ describe('channelOpenEpic', () => {
     raiden.store.dispatch(
       channelOpen.request({ settleTimeout }, { tokenNetwork, partner: partner.address }),
     );
-    expect(raiden.store.getState().channels[channelKey({ tokenNetwork, partner })].state).toBe(
-      ChannelState.open,
-    );
+    expect(getChannel(raiden, partner).state).toBe(ChannelState.open);
     expect(raiden.output).toContainEqual(
       channelOpen.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
     );
@@ -298,9 +295,7 @@ describe('channelMonitoredEpic', () => {
         { tokenNetwork, partner: partner.address },
       ),
     );
-    expect(raiden.store.getState().channels[channelKey({ tokenNetwork, partner })].state).toBe(
-      ChannelState.closing,
-    );
+    expect(getChannel(raiden, partner).state).toBe(ChannelState.closing);
   });
 
   test('new$ ChannelSettled event', async () => {
@@ -359,7 +354,7 @@ describe('channelMonitoredEpic', () => {
     expect(raiden.deps.provider.listenerCount(filter)).toBe(0);
 
     // ensure channel state is moved from 'channels' to 'oldChannels'
-    expect(channelKey({ tokenNetwork, partner }) in raiden.store.getState().channels).toBe(false);
+    expect(getChannel(raiden, partner)).toBeUndefined();
     expect(
       channelUniqueKey({ id, tokenNetwork, partner }) in raiden.store.getState().oldChannels,
     ).toBe(true);
@@ -566,7 +561,7 @@ test('channelUpdateEpic', async () => {
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
 
   await ensureChannelIsOpen([raiden, partner]);
-  await ensureTransferReceivedUnlocked([raiden, partner]);
+  await ensureTransferUnlocked([partner, raiden]);
   await ensureChannelIsClosed([partner, raiden]); // partner closes
   await waitBlock();
   await waitBlock();
@@ -647,9 +642,7 @@ describe('channelSettleEpic', () => {
     expect(raiden.output).not.toContainEqual(
       channelSettle.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
     );
-    expect(
-      raiden.store.getState().channels[channelKey({ tokenNetwork, partner })],
-    ).toBeUndefined();
+    expect(getChannel(raiden, partner)).toBeUndefined();
     expect(
       raiden.store.getState().oldChannels[channelUniqueKey({ tokenNetwork, partner, id })],
     ).toBeDefined();
@@ -678,7 +671,7 @@ describe('channelUnlockEpic', () => {
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
 
     await ensureChannelIsOpen([raiden, partner]);
-    await ensureTransferReceivedPending([raiden, partner]);
+    await ensureTransferPending([partner, raiden]);
 
     raiden.deps.provider.emit(
       secretRegistryContract.filters.SecretRevealed(null, null),
@@ -711,7 +704,7 @@ describe('channelUnlockEpic', () => {
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
 
     await ensureChannelIsOpen([raiden, partner]);
-    await ensureTransferReceivedPending([raiden, partner]);
+    await ensureTransferPending([partner, raiden]);
 
     raiden.deps.provider.emit(
       secretRegistryContract.filters.SecretRevealed(null, null),
