@@ -8,13 +8,7 @@ import { Raiden } from 'raiden-ts';
 import { CliArguments, Cli } from './types';
 import { makeCli } from './cli';
 import { setupLoglevel } from './utils/logging';
-
-const DEFAULT_RAIDEN_CONFIG = {
-  matrixServer: 'https://raidentransport.test001.env.raiden.network',
-  pfs: 'https://pfs.raidentransport.test001.env.raiden.network',
-  pfsSafetyMargin: 1.1,
-  caps: { noDelivery: true, webRTC: true },
-};
+import DEFAULT_RAIDEN_CONFIG from './config.json';
 
 function parseArguments(): CliArguments {
   return yargs
