@@ -20,6 +20,7 @@ import {
   secret,
   ensureChannelIsSettled,
   getChannel,
+  amount,
 } from '../fixtures';
 
 import { bigNumberify, BigNumber } from 'ethers/utils';
@@ -40,6 +41,8 @@ import { channelUniqueKey } from 'raiden-ts/channels/utils';
 import { ChannelState } from 'raiden-ts/channels';
 import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
 import { Filter } from 'ethers/providers';
+import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from 'raiden-ts/messages';
+import { getLocksroot } from 'raiden-ts/transfers/utils';
 
 test('channelSettleableEpic', async () => {
   expect.assertions(3);
@@ -605,7 +608,7 @@ describe('channelSettleEpic', () => {
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
 
     await ensureChannelIsClosed([raiden, partner]);
-    await waitBlock(settleBlock);
+    await waitBlock(settleBlock + confirmationBlocks + 1);
 
     const settleTx = makeTransaction(0);
     tokenNetworkContract.functions.settleChannel.mockResolvedValue(settleTx);
@@ -625,6 +628,9 @@ describe('channelSettleEpic', () => {
     const [raiden, partner] = await makeRaidens(2);
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
 
+    // despite we doing a transfer, leave default getChannelParticipantInfo mock which will
+    // tell we closed with BalanceProofZero, and should still work
+    await ensureTransferUnlocked([raiden, partner], amount);
     await ensureChannelIsClosed([raiden, partner]);
     await waitBlock(settleBlock + confirmationBlocks + 1);
 
@@ -660,6 +666,144 @@ describe('channelSettleEpic', () => {
       HashZero, // partner locksroot
     );
     expect(settleTx.wait).toHaveBeenCalledTimes(1);
+  });
+
+  test('success with own outdated balanceHash', async () => {
+    expect.assertions(8);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
+
+    // deposit and make a transfer to partner
+    await ensureTransferUnlocked([raiden, partner], amount);
+    await ensureChannelIsClosed([partner, raiden]); // partner closes channel
+
+    // LockedTransfer message we sent, not one before latest BP
+    const locked = partner.store.getState().received[secrethash].transfer[1];
+    // ensure our latest own BP is the unlocked one, the one after Locked
+    expect(getChannel(raiden, partner).own.balanceProof.nonce).toEqual(locked.nonce.add(1));
+
+    // lets mock getChannelParticipantInfo to look like partner closed with BP from locked state
+    // instead of current/latest one, which is unlocked
+    const settleTx = makeTransaction();
+    tokenNetworkContract.functions.settleChannel.mockResolvedValue(settleTx);
+    tokenNetworkContract.functions.getChannelParticipantInfo.mockImplementation(
+      async ({}, participant, {}) => {
+        // from our perspective, partner closed the channel with wrong balanceProof
+        if (participant === raiden.address)
+          return [
+            Zero,
+            Zero,
+            false,
+            createBalanceHash(getBalanceProofFromEnvelopeMessage(locked)),
+            locked.nonce,
+            locked.locksroot,
+            locked.locked_amount,
+          ];
+        else return [Zero, Zero, true, HashZero, Zero, HashZero, Zero];
+      },
+    );
+
+    await waitBlock(settleBlock + confirmationBlocks + 1);
+    raiden.store.dispatch(
+      channelSettle.request(undefined, { tokenNetwork, partner: partner.address }),
+    );
+    await ensureChannelIsSettled([raiden, partner]);
+    await waitBlock();
+
+    // result is undefined on success as the respective channelSettle.success is emitted by the
+    // channelMonitoredEpic, which monitors the blockchain for channel events
+    expect(raiden.output).not.toContainEqual(
+      channelSettle.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
+    );
+    expect(getChannel(raiden, partner)).toBeUndefined();
+    expect(
+      raiden.store.getState().oldChannels[channelUniqueKey({ tokenNetwork, partner, id })],
+    ).toBeDefined();
+
+    expect(tokenNetworkContract.functions.settleChannel).toHaveBeenCalledTimes(1);
+    expect(tokenNetworkContract.functions.settleChannel).toHaveBeenCalledWith(
+      id,
+      partner.address,
+      Zero, // partner transfered amount
+      Zero, // partner locked amount
+      HashZero, // partner locksroot
+      raiden.address,
+      Zero, // self transfered amount
+      amount, // self locked amount
+      getLocksroot([locked.lock]), // self locksroot
+    );
+    expect(settleTx.wait).toHaveBeenCalledTimes(1);
+    expect(tokenNetworkContract.functions.getChannelParticipantInfo).toHaveBeenCalledTimes(2);
+  });
+
+  test('success with partner outdated balanceHash', async () => {
+    expect.assertions(8);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
+
+    // deposit and make a transfer to partner
+    await ensureTransferUnlocked([partner, raiden], amount);
+    await ensureChannelIsClosed([partner, raiden]); // partner closes channel
+
+    // LockedTransfer message we received, not one before latest BP
+    const locked = raiden.store.getState().received[secrethash].transfer[1];
+    // ensure our latest partner BP is the unlocked one, the one after Locked
+    expect(getChannel(raiden, partner).partner.balanceProof.nonce).toEqual(locked.nonce.add(1));
+
+    // lets mock getChannelParticipantInfo to look like partner closed with BP from locked state
+    // instead of current/latest one, which is unlocked
+    const settleTx = makeTransaction();
+    tokenNetworkContract.functions.settleChannel.mockResolvedValue(settleTx);
+    tokenNetworkContract.functions.getChannelParticipantInfo.mockImplementation(
+      async ({}, participant, {}) => {
+        // from our perspective, partner closed the channel with wrong balanceProof
+        if (participant === partner.address)
+          return [
+            Zero,
+            Zero,
+            false,
+            createBalanceHash(getBalanceProofFromEnvelopeMessage(locked)),
+            locked.nonce,
+            locked.locksroot,
+            locked.locked_amount,
+          ];
+        else return [Zero, Zero, true, HashZero, Zero, HashZero, Zero];
+      },
+    );
+
+    await waitBlock(settleBlock + confirmationBlocks + 1);
+    raiden.store.dispatch(
+      channelSettle.request(undefined, { tokenNetwork, partner: partner.address }),
+    );
+    await ensureChannelIsSettled([raiden, partner]);
+    await waitBlock();
+
+    // result is undefined on success as the respective channelSettle.success is emitted by the
+    // channelMonitoredEpic, which monitors the blockchain for channel events
+    expect(raiden.output).not.toContainEqual(
+      channelSettle.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
+    );
+    expect(getChannel(raiden, partner)).toBeUndefined();
+    expect(
+      raiden.store.getState().oldChannels[channelUniqueKey({ tokenNetwork, partner, id })],
+    ).toBeDefined();
+
+    expect(tokenNetworkContract.functions.settleChannel).toHaveBeenCalledTimes(1);
+    expect(tokenNetworkContract.functions.settleChannel).toHaveBeenCalledWith(
+      id,
+      raiden.address,
+      Zero, // self transfered amount
+      Zero, // self locked amount
+      HashZero, // self locksroot
+      partner.address,
+      Zero, // partner transfered amount
+      amount, // partner locked amount
+      getLocksroot([locked.lock]), // partner locksroot
+    );
+    expect(settleTx.wait).toHaveBeenCalledTimes(1);
+    expect(tokenNetworkContract.functions.getChannelParticipantInfo).toHaveBeenCalledTimes(2);
   });
 });
 
