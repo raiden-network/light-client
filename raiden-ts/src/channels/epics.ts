@@ -51,9 +51,10 @@ import { isActionOf } from '../utils/actions';
 import { pluckDistinct } from '../utils/rx';
 import { fromEthersEvent, getEventsStream, getNetwork } from '../utils/ethers';
 import { encode } from '../utils/data';
-import { RaidenError, ErrorCodes } from '../utils/error';
+import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { createBalanceHash, MessageTypeId } from '../messages/utils';
 import { TokenNetwork } from '../contracts/TokenNetwork';
+import { findBalanceProofMatchingBalanceHash } from '../transfers/utils';
 import { ChannelState, Channel } from './state';
 import {
   newBlock,
@@ -966,7 +967,7 @@ export const channelSettleEpic = (
     filter(isActionOf(channelSettle.request)),
     withLatestFrom(state$, config$),
     mergeMap(([action, state, { subkey: configSubkey }]) => {
-      const { tokenNetwork } = action.meta;
+      const { tokenNetwork, partner } = action.meta;
       const { signer: onchainSigner } = chooseOnchainAccount(
         { signer, address, main },
         action.payload?.subkey ?? configSubkey,
@@ -984,31 +985,65 @@ export const channelSettleEpic = (
         return of(channelSettle.failure(error, action.meta));
       }
 
-      let part1 = channel.own;
-      let part2 = channel.partner;
-
-      // part1 total amounts must be <= part2 total amounts on settleChannel call
-      if (
-        part2.balanceProof.transferredAmount
-          .add(part2.balanceProof.lockedAmount)
-          .lt(part1.balanceProof.transferredAmount.add(part1.balanceProof.lockedAmount))
-      )
-        [part1, part2] = [part2, part1];
-
-      // send settleChannel transaction
       return from(
-        tokenNetworkContract.functions.settleChannel(
-          channel.id,
-          part1.address,
-          part1.balanceProof.transferredAmount,
-          part1.balanceProof.lockedAmount,
-          part1.balanceProof.locksroot,
-          part2.address,
-          part2.balanceProof.transferredAmount,
-          part2.balanceProof.lockedAmount,
-          part2.balanceProof.locksroot,
-        ),
+        // fetch closing/updated balanceHash for each end
+        Promise.all([
+          tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, address, partner),
+          tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, partner, address),
+        ]),
       ).pipe(
+        mergeMap(([{ 3: ownBH }, { 3: partnerBH }]) => {
+          let ownBP = channel.own.balanceProof;
+          if (ownBH !== createBalanceHash(ownBP)) {
+            // partner closed/updated the channel with a non-latest BP from us
+            // they would lose our later transfers, but to settle we must search transfer history
+            const bp = findBalanceProofMatchingBalanceHash(state.sent, ownBH as Hash, action.meta);
+            assert(bp, [
+              ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH,
+              { address, ownBalanceHash: ownBH },
+            ]);
+            ownBP = bp;
+          }
+
+          let partnerBP = channel.partner.balanceProof;
+          if (partnerBH !== createBalanceHash(partnerBP)) {
+            // shouldn't happen: if we closed, we must have done so with partner's latest BP
+            const bp = findBalanceProofMatchingBalanceHash(
+              state.received,
+              partnerBH as Hash,
+              action.meta,
+            );
+            assert(bp, [
+              ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH,
+              { partner, partnerBalanceHash: partnerBH },
+            ]);
+            partnerBP = bp;
+          }
+
+          let part1 = [address, ownBP] as const;
+          let part2 = [partner, partnerBP] as const;
+
+          // part1 total amounts must be <= part2 total amounts on settleChannel call
+          if (
+            part2[1].transferredAmount
+              .add(part2[1].lockedAmount)
+              .lt(part1[1].transferredAmount.add(part1[1].lockedAmount))
+          )
+            [part1, part2] = [part2, part1]; // swap
+
+          // send settleChannel transaction
+          return tokenNetworkContract.functions.settleChannel(
+            channel.id,
+            part1[0],
+            part1[1].transferredAmount,
+            part1[1].lockedAmount,
+            part1[1].locksroot,
+            part2[0],
+            part2[1].transferredAmount,
+            part2[1].lockedAmount,
+            part2[1].locksroot,
+          );
+        }),
         assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log }),
         // if succeeded, return a empty/completed observable
         // actual ChannelSettledAction will be detected and handled by channelMonitoredEpic

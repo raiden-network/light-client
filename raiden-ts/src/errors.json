@@ -20,6 +20,7 @@
   "CNL_OPENCHANNEL_FAILED": "Token networks openChannel transaction failed.",
   "CNL_SETTOTALDEPOSIT_FAILED": "Token networks setTotalDeposit transaction failed.",
   "CNL_CLOSECHANNEL_FAILED": "Token networks closeChannel transaction failed.",
+  "CNL_SETTLECHANNEL_INVALID_BALANCEHASH": "Could not find BalanceProof matching on-chain closing data. This client may have had its state cleared and can't settle.",
   "CNL_SETTLECHANNEL_FAILED": "Token networks settleChannel transaction failed.",
   "CNL_UPDATE_NONCLOSING_BP_FAILED": "updateNonClosingBalanceProof transaction failed.",
   "CNL_ONCHAIN_UNLOCK_FAILED": "on-chain unlock transaction failed.",
