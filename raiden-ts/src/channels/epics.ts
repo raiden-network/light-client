@@ -806,11 +806,7 @@ export const channelCloseEpic = (
       }
 
       const balanceProof = channel.partner.balanceProof;
-      const balanceHash = createBalanceHash(
-        balanceProof.transferredAmount,
-        balanceProof.lockedAmount,
-        balanceProof.locksroot,
-      );
+      const balanceHash = createBalanceHash(balanceProof);
       const nonce = balanceProof.nonce;
       const additionalHash = balanceProof.additionalHash;
       const nonClosingSignature = balanceProof.signature;
@@ -900,11 +896,7 @@ export const channelUpdateEpic = (
       );
       const channel = state.channels[channelKey(action.meta)];
 
-      const balanceHash = createBalanceHash(
-        channel.partner.balanceProof.transferredAmount,
-        channel.partner.balanceProof.lockedAmount,
-        channel.partner.balanceProof.locksroot,
-      );
+      const balanceHash = createBalanceHash(channel.partner.balanceProof);
       const nonce = channel.partner.balanceProof.nonce;
       const additionalHash = channel.partner.balanceProof.additionalHash;
       const closingSignature = channel.partner.balanceProof.signature;
@@ -1154,7 +1146,7 @@ function checkPendingAction(
 /**
  * Process new blocks and re-emit confirmed or removed actions
  *
- * @param action$ - Observable of channelSettle actions
+ * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
  * @param deps.config$ - Config observable

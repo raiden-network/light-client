@@ -556,11 +556,11 @@ describe('sign/verify, pack & encode/decode ', () => {
   });
 
   test('RequestMonitoring', async () => {
-    const balanceHash = createBalanceHash(
-      Zero as UInt<32>,
-      One as UInt<32>,
-      '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
-    );
+    const balanceHash = createBalanceHash({
+      transferredAmount: Zero as UInt<32>,
+      lockedAmount: One as UInt<32>,
+      locksroot: '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
+    });
     const message: MonitorRequest = {
       type: MessageType.MONITOR_REQUEST,
       balance_proof: {

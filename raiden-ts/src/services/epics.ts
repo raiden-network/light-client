@@ -607,11 +607,7 @@ function makeMonitoringRequest$({
       take(1), // take/act on first time all conditions above pass
       mergeMap(([, { monitoringReward, monitoringRoom }]) => {
         const balanceProof = channel.partner.balanceProof;
-        const balanceHash = createBalanceHash(
-          balanceProof.transferredAmount,
-          balanceProof.lockedAmount,
-          balanceProof.locksroot,
-        );
+        const balanceHash = createBalanceHash(balanceProof);
 
         const nonClosingMessage = concat([
           encode(channel.tokenNetwork, 20),
