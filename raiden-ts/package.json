@@ -46,7 +46,7 @@
   "devDependencies": {
     "@types/events": "3.0.0",
     "@types/isomorphic-fetch": "0.0.35",
-    "@types/jest": "25.2.3",
+    "@types/jest": "26.0.0",
     "@types/lodash": "4.14.155",
     "@types/lossless-json": "1.0.0",
     "@types/matrix-js-sdk": "5.1.0",
