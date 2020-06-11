@@ -1,10 +1,9 @@
-import { Zero, AddressZero, HashZero, One } from 'ethers/constants';
+import { Zero, AddressZero, One } from 'ethers/constants';
 
-import { UInt, Address, Hash } from '../utils/types';
+import { UInt, Address } from '../utils/types';
 import { Reducer, createReducer, isActionOf } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
-import { SignatureZero } from '../constants';
 import { RaidenAction, ConfirmableActions } from '../actions';
 import { transferSecretRegister } from '../transfers/actions';
 import { Direction } from '../transfers/state';
@@ -20,6 +19,7 @@ import {
 } from './actions';
 import { Channel, ChannelState, ChannelEnd } from './state';
 import { channelKey, channelUniqueKey } from './utils';
+import { BalanceProofZero } from './types';
 
 // state.blockNumber specific reducer, handles only newBlock action
 const blockNumber = createReducer(initialState.blockNumber).handle(
@@ -56,17 +56,7 @@ const emptyChannelEnd: ChannelEnd = {
   deposit: Zero as UInt<32>,
   withdraw: Zero as UInt<32>,
   locks: [],
-  balanceProof: {
-    chainId: Zero as UInt<32>,
-    tokenNetworkAddress: AddressZero as Address,
-    channelId: Zero as UInt<32>,
-    nonce: Zero as UInt<8>,
-    transferredAmount: Zero as UInt<32>,
-    lockedAmount: Zero as UInt<32>,
-    locksroot: HashZero as Hash,
-    additionalHash: HashZero as Hash,
-    signature: SignatureZero,
-  },
+  balanceProof: BalanceProofZero,
   withdrawRequests: [],
   nextNonce: One as UInt<8>,
 };

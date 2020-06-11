@@ -1,6 +1,8 @@
 import * as t from 'io-ts';
+import { Zero, AddressZero, HashZero } from 'ethers/constants';
 
-import { Address, Hash, UInt } from '../utils/types';
+import { SignatureZero } from '../constants';
+import { Address, Hash, UInt, Signed } from '../utils/types';
 
 // should these become brands?
 export const ChannelKey = t.string;
@@ -28,16 +30,30 @@ export interface Lock extends t.TypeOf<typeof Lock> {}
  * because BP signature requires the hash of the message, for authentication of data not included
  * nor relevant for the smartcontract/BP itself, but so for the peers (e.g. payment_id)
  */
-export const BalanceProof = t.type({
-  // channel data
-  chainId: UInt(32),
-  tokenNetworkAddress: Address,
-  channelId: UInt(32),
-  // balance proof data
-  nonce: UInt(8),
-  transferredAmount: UInt(32),
-  lockedAmount: UInt(32),
-  locksroot: Hash,
-  additionalHash: Hash,
-});
+export const BalanceProof = t.readonly(
+  t.type({
+    // channel data
+    chainId: UInt(32),
+    tokenNetworkAddress: Address,
+    channelId: UInt(32),
+    // balance proof data
+    nonce: UInt(8),
+    transferredAmount: UInt(32),
+    lockedAmount: UInt(32),
+    locksroot: Hash,
+    additionalHash: Hash,
+  }),
+);
 export interface BalanceProof extends t.TypeOf<typeof BalanceProof> {}
+
+export const BalanceProofZero: Signed<BalanceProof> = {
+  chainId: Zero as UInt<32>,
+  tokenNetworkAddress: AddressZero as Address,
+  channelId: Zero as UInt<32>,
+  nonce: Zero as UInt<8>,
+  transferredAmount: Zero as UInt<32>,
+  lockedAmount: Zero as UInt<32>,
+  locksroot: HashZero as Hash,
+  additionalHash: HashZero as Hash,
+  signature: SignatureZero,
+};
