@@ -1,11 +1,19 @@
 import { concat, hexlify } from 'ethers/utils/bytes';
 import { keccak256, randomBytes, bigNumberify, sha256 } from 'ethers/utils';
+import { HashZero } from 'ethers/constants';
 
 import { assert } from '../utils';
-import { Hash, Secret, UInt, HexString } from '../utils/types';
+import { Hash, Secret, UInt, HexString, Address, isntNil } from '../utils/types';
 import { encode } from '../utils/data';
-import { Lock } from '../channels/types';
-import { TransferState, RaidenTransfer, RaidenTransferStatus, Direction } from './state';
+import { Lock, BalanceProofZero } from '../channels/types';
+import { getBalanceProofFromEnvelopeMessage, createBalanceHash } from '../messages';
+import {
+  TransferState,
+  RaidenTransfer,
+  RaidenTransferStatus,
+  Direction,
+  TransfersState,
+} from './state';
 
 /**
  * Get the locksroot of a given array of pending locks
@@ -177,4 +185,36 @@ export function raidenTransfer(state: TransferState): RaidenTransfer {
     success,
     completed,
   };
+}
+
+/**
+ * Look for a BalanceProof matching given balanceHash among EnvelopeMessages in transfers
+ *
+ * @param transfers - RaidenState['received' | 'sent'] mapping
+ * @param balanceHash -
+ * @param channel - Channel key of hash
+ * @param channel.tokenNetwork - channel's tokenNetwork
+ * @param channel.partner - channel's partner
+ * @returns BalanceProof matching balanceHash or undefined
+ */
+export function findBalanceProofMatchingBalanceHash(
+  transfers: TransfersState,
+  balanceHash: Hash,
+  { tokenNetwork, partner }: { tokenNetwork: Address; partner: Address },
+) {
+  if (balanceHash === HashZero) return BalanceProofZero;
+  // later transfers have higher chance of being the right one, iterate in reverse order
+  for (const transfer of Object.values(transfers).reverse()) {
+    if (
+      transfer.transfer[1].token_network_address === tokenNetwork &&
+      transfer.partner === partner
+    ) {
+      // EnvelopeMessages: messages bearing a BalanceProof
+      const bp = [transfer.transfer[1], transfer.unlock?.[1], transfer.lockExpired?.[1]]
+        .filter(isntNil)
+        .map(getBalanceProofFromEnvelopeMessage)
+        .find((bp) => createBalanceHash(bp) === balanceHash);
+      if (bp) return bp;
+    }
+  }
 }
