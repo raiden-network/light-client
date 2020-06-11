@@ -710,9 +710,13 @@ export const udcWithdrawRequestEpic = (
 ): Observable<udcWithdrawPlanned | udcWithdraw.failure> => {
   return action$.pipe(
     filter(udcWithdraw.request.is),
-    withLatestFrom(from(userDepositContract.functions.balances(address))),
+    mergeMap((action) =>
+      userDepositContract.functions
+        .balances(address)
+        .then((balance) => [action, balance] as const),
+    ),
     concatMap(([action, balance]) => {
-      const amount = action.payload.amount;
+      const amount = action.meta.amount;
       try {
         assert(amount.gt(Zero), [
           ErrorCodes.UDC_PLAN_WITHDRAW_GT_ZERO,
@@ -752,11 +756,11 @@ export const udcWithdrawRequestEpic = (
             map(({ amount, withdraw_block }) =>
               udcWithdrawPlanned(
                 {
-                  amount: amount as UInt<32>,
-                  block: withdraw_block as UInt<32>,
+                  txHash,
+                  block: withdraw_block.toNumber(),
                 },
                 {
-                  txHash,
+                  amount: amount as UInt<32>,
                 },
               ),
             ),
@@ -785,10 +789,11 @@ export const udcCheckWithdrawPlannedEpic = (
         map(({ amount, withdraw_block }) =>
           udcWithdrawPlanned(
             {
-              amount: amount as UInt<32>,
-              block: withdraw_block as UInt<32>,
+              block: withdraw_block.toNumber(),
             },
-            {},
+            {
+              amount: amount as UInt<32>,
+            },
           ),
         ),
       ),
@@ -805,7 +810,7 @@ export const udcWithdrawPlannedEpic = (
     mergeMap((action) =>
       state$.pipe(
         pluck('blockNumber'),
-        first((blockNumber) => action.payload.block.lte(blockNumber)),
+        first((blockNumber) => action.payload.block <= blockNumber),
         map(() => action),
       ),
     ),
@@ -819,27 +824,29 @@ export const udcWithdrawPlannedEpic = (
           },
         ]);
       } catch (e) {
-        return of(udcWithdraw.failure(e, {}));
+        return of(udcWithdraw.failure(e, { amount: action.meta.amount }));
       }
       const contract = getContractWithSigner(userDepositContract, signer);
-      return from(contract.functions.withdraw(action.payload.amount)).pipe(
+      return from(contract.functions.withdraw(action.meta.amount)).pipe(
         assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log }),
         concatMap((txHash) => {
           return from(contract.functions.balances(address)).pipe(
             map((newBalance) =>
               udcWithdraw.success(
                 {
-                  amount: balance.sub(newBalance) as UInt<32>,
                   txHash,
+                  withdrawal: balance.sub(newBalance) as UInt<32>,
                 },
-                {},
+                {
+                  amount: action.meta.amount,
+                },
               ),
             ),
           );
         }),
         catchError((err) => {
           log.error('Error when processing the withdraw plan', err);
-          return of(udcWithdraw.failure(err, {}));
+          return of(udcWithdraw.failure(err, { amount: action.meta.amount }));
         }),
       );
     }),

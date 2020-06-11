@@ -46,13 +46,17 @@ export interface iouClear extends ActionType<typeof iouClear> {}
 export const udcDeposited = createAction('udc/deposited', UInt(32));
 export interface udcDeposited extends ActionType<typeof udcDeposited> {}
 
+const UdcWithdrawId = t.type({
+  amount: UInt(32),
+});
+
 export const udcWithdraw = createAsyncAction(
-  t.partial({}),
+  UdcWithdrawId,
   'udc/withdraw/request',
   'udc/withdraw/success',
   'udc/withdraw/failure',
-  t.type({ amount: UInt(32) }),
-  t.type({ txHash: Hash, amount: UInt(32) }),
+  t.type({}),
+  t.type({ txHash: Hash, withdrawal: UInt(32) }),
 );
 
 export namespace udcWithdraw {
@@ -63,8 +67,8 @@ export namespace udcWithdraw {
 
 export const udcWithdrawPlanned = createAction(
   'udc/withdraw/planned',
-  t.type({ amount: UInt(32), block: UInt(32) }),
-  t.partial({ txHash: Hash }),
+  t.intersection([t.partial({ txHash: Hash }), t.type({ block: t.number })]),
+  UdcWithdrawId,
 );
 
 export interface udcWithdrawPlanned extends ActionType<typeof udcWithdrawPlanned> {}

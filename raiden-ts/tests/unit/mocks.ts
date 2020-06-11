@@ -442,6 +442,12 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
+  userDepositContract.functions.withdraw_plans.mockResolvedValue({
+    amount: Zero,
+    withdraw_block: Zero,
+    0: Zero,
+    1: Zero,
+  });
 
   const secretRegistryContract = SecretRegistryFactory.connect(address, signer) as MockedContract<
     SecretRegistry
@@ -778,6 +784,12 @@ export async function makeRaiden(wallet?: Wallet): Promise<MockedRaiden> {
   userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
+  userDepositContract.functions.withdraw_plans.mockResolvedValue({
+    amount: Zero,
+    withdraw_block: Zero,
+    0: Zero,
+    1: Zero,
+  });
 
   const secretRegistryContract = SecretRegistryFactory.connect(address, signer) as MockedContract<
     SecretRegistry

@@ -1274,14 +1274,14 @@ export class Raiden {
       ),
       this.action$.pipe(
         filter(udcWithdrawPlanned.is),
-        filter((action) => !!action.meta.txHash),
-        map((action) => action.meta.txHash!),
+        filter((action) => !!action.payload.txHash),
+        map((action) => action.payload.txHash!),
       ),
     )
       .pipe(first())
       .toPromise();
 
-    this.store.dispatch(udcWithdraw.request({ amount: bigNumberify(value) as UInt<32> }, {}));
+    this.store.dispatch(udcWithdraw.request({}, { amount: bigNumberify(value) as UInt<32> }));
     return withdrawPlan;
   }
 }
