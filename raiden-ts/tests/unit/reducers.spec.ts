@@ -23,7 +23,6 @@ import {
   transferSigned,
   transferProcessed,
   transferUnlock,
-  transferClear,
   transferExpire,
   transferSecretReveal,
   transferRefunded,
@@ -1217,26 +1216,6 @@ describe('raidenReducer', () => {
       ].reduce(raidenReducer, newState);
 
       expect(newState.sent[secrethash]?.channelClosed?.[1]).toBe(txHash);
-    });
-
-    test('transfer cleared', () => {
-      let newState = [
-        transferSigned({ message: transfer, fee, partner }, { secrethash, direction }),
-        transferSecret({ secret }, { secrethash, direction }),
-      ].reduce(raidenReducer, state);
-
-      expect(newState.sent[secrethash].transfer[1]).toBe(transfer);
-      expect(newState.sent[secrethash].secret).toStrictEqual([
-        expect.any(Number),
-        { value: secret, registerBlock: 0 },
-      ]);
-
-      newState = [transferClear(undefined, { secrethash, direction })].reduce(
-        raidenReducer,
-        newState,
-      );
-
-      expect(newState.sent[secrethash]).toBeUndefined();
     });
 
     // withdraw request is under transfer just to use its pending transfer setup/vars
