@@ -93,7 +93,7 @@ export function decodeRaidenState(
   try {
     return decode(RaidenState, state);
   } catch (err) {
-    log.error(`Error validating migrated state version=${state?.version}`, state);
+    log.error(`Error validating migrated state version=${state?.version}`, state, err);
     throw err;
   }
 }
