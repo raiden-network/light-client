@@ -218,11 +218,7 @@ describe('monitorRequestEpic', () => {
               token_network_address: tokenNetwork,
               channel_identifier: partnerBP.channelId,
               nonce: partnerBP.nonce,
-              balance_hash: createBalanceHash(
-                partnerBP.transferredAmount,
-                partnerBP.lockedAmount,
-                partnerBP.locksroot,
-              ),
+              balance_hash: createBalanceHash(partnerBP),
               additional_hash: partnerBP.additionalHash,
               signature: partnerBP.signature,
             },
