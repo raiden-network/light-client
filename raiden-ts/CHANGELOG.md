@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Fixed
 - [#1514] Fix handling of expired LockedTransfer and WithdrawRequest
+- [#1607] Fix settling when one side closes/updates with outdated BalanceProof
 - [#1637] Fix depositToUDC failing if services already have withdrawn some fees
 - [#1651] Fix PFS being disabled if passed an undefined default config
 
@@ -15,6 +16,7 @@
 
 [#837]: https://github.com/raiden-network/light-client/issues/837
 [#1514]: https://github.com/raiden-network/light-client/issues/1514
+[#1607]: https://github.com/raiden-network/light-client/issues/1607
 [#1637]: https://github.com/raiden-network/light-client/issues/1637
 [#1642]: https://github.com/raiden-network/light-client/issues/1642
 [#1649]: https://github.com/raiden-network/light-client/pull/1649
