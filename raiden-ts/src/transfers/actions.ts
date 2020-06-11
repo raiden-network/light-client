@@ -192,10 +192,6 @@ export const transferRefunded = createAction(
 );
 export interface transferRefunded extends ActionType<typeof transferRefunded> {}
 
-/** A pending transfer isn't needed anymore and should be cleared from state */
-export const transferClear = createAction('transfer/clear', undefined, TransferId);
-export interface transferClear extends ActionType<typeof transferClear> {}
-
 // Withdraw actions
 
 const WithdrawId = t.type({

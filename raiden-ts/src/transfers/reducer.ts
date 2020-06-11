@@ -1,5 +1,3 @@
-import unset from 'lodash/fp/unset';
-
 import { channelKey } from '../channels/utils';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
@@ -19,7 +17,6 @@ import {
   transferRefunded,
   transferUnlockProcessed,
   transferExpireProcessed,
-  transferClear,
   withdrawReceive,
   transferSecretRequest,
   transferSecretRegister,
@@ -226,13 +223,6 @@ function channelCloseSuccessReducer(
   return state;
 }
 
-function transferClearReducer(state: RaidenState, action: transferClear): RaidenState {
-  const secrethash = action.meta.secrethash;
-  if (!(secrethash in state[action.meta.direction])) return state;
-  state = unset([action.meta.direction, secrethash], state);
-  return state;
-}
-
 function withdrawReducer(
   state: RaidenState,
   action: withdrawReceive.request | withdrawReceive.success | withdrawReceive.failure,
@@ -304,7 +294,6 @@ const transfersReducer: Reducer<RaidenState, RaidenAction> = createReducer(initi
   .handle(transferSecretRequest, transferSecretRequestedReducer)
   .handle(transferSecretReveal, transferSecretReveledReducer)
   .handle(channelClose.success, channelCloseSuccessReducer)
-  .handle(transferClear, transferClearReducer)
   .handle(
     [withdrawReceive.request, withdrawReceive.success, withdrawReceive.failure],
     withdrawReducer,
