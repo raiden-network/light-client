@@ -1,20 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { AddressZero, Zero, HashZero } from 'ethers/constants';
+import { Zero } from 'ethers/constants';
 import findKey from 'lodash/findKey';
 
-import { SignatureZero } from '../constants';
-
-const emptyBP = {
-  chainId: Zero,
-  tokenNetworkAddress: AddressZero,
-  channelId: Zero,
-  nonce: Zero,
-  transferredAmount: Zero,
-  lockedAmount: Zero,
-  locksroot: HashZero,
-  additionalHash: HashZero,
-  signature: SignatureZero,
-};
+import { BalanceProofZero } from '../channels';
 
 function migrateChannelEnd(channel: any, endsAddr: any) {
   for (const [prop, addr] of Object.entries<any>(endsAddr)) {
@@ -25,7 +13,7 @@ function migrateChannelEnd(channel: any, endsAddr: any) {
       delete channel[prop].balanceProof.messageHash;
       delete channel[prop].balanceProof.sender;
     } else {
-      Object.assign(channel[prop], { balanceProof: emptyBP, locks: [] });
+      Object.assign(channel[prop], { balanceProof: BalanceProofZero, locks: [] });
     }
     Object.assign(channel[prop], { address: addr });
     if (!('withdraw' in channel[prop])) {
