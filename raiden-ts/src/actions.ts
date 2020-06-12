@@ -56,6 +56,8 @@ export const RaidenEvents = [
   RaidenActions.newBlock,
   RaidenActions.matrixPresence.success,
   RaidenActions.tokenMonitored,
+  RaidenActions.udcWithdrawn,
+  RaidenActions.udcWithdraw.failure,
 ];
 /* Tagged union of RaidenEvents actions */
 export type RaidenEvent = ActionType<typeof RaidenEvents>;
