@@ -145,6 +145,9 @@ describe('store', () => {
   });
 
   test('the allTokens getter returns the cached tokens as an array', () => {
+    const tokenAddresses: string[] = ['0x456', '0x123', '0x789', '0x789'];
+    store.commit('updateTokenAddresses', tokenAddresses);
+
     const tokens: Tokens = {
       '0x123': {
         address: '0x123',
