@@ -1,10 +1,10 @@
 import { Zero, AddressZero, One } from 'ethers/constants';
 
 import { UInt, Address } from '../utils/types';
-import { Reducer, createReducer, isActionOf } from '../utils/actions';
+import { Reducer, createReducer } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
-import { RaidenAction, ConfirmableActions } from '../actions';
+import { RaidenAction, ConfirmableAction } from '../actions';
 import { transferSecretRegister } from '../transfers/actions';
 import { Direction } from '../transfers/state';
 import {
@@ -38,7 +38,7 @@ const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
   action: RaidenAction,
 ): RaidenState['pendingTxs'] => {
   // filter out non-ConfirmableActions's
-  if (!isActionOf(ConfirmableActions, action)) return state;
+  if (!ConfirmableAction.is(action)) return state;
   // if confirmed==undefined, add action to state
   else if (action.payload.confirmed === undefined) return [...state, action];
   // else (either confirmed or removed), remove from state
