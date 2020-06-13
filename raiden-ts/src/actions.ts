@@ -7,6 +7,7 @@ import { ShutdownReason } from './constants';
 import { PartialRaidenConfig } from './config';
 import { ActionType, createAction, Action } from './utils/actions';
 import { ErrorCodec } from './utils/error';
+import { Hash } from './utils/types';
 
 import * as ChannelsActions from './channels/actions';
 import * as TransportActions from './transport/actions';
@@ -55,43 +56,24 @@ export const RaidenEvents = [
 export type RaidenEvent = ActionType<typeof RaidenEvents>;
 
 /**
- * Set of [serializable] actions which are first emitted with
- * payload.confirmed=undefined, then, after confirmation blocks, either with confirmed=true if tx
- * is still present on blockchain, or confirmed=false if it got removed by a reorg.
+ * Codec which decodes/validates actions which can be confirmed on-chain
  *
- * These actions must comply with the following type:
- * {
- *   payload: {
- *     txHash: Hash;
- *     txBlock: number;
- *     confirmed: undefined | boolean;
- *   };
- *   meta: any;
- * }
+ * Note that this isn't a complete ActionCreator, but it helps identify and narrow actions which
+ * matches this schema. Also important is that this codec isn't `t.exact`, and therefore it wil
+ * validate objects with additional properties (like meta and payload properties), as long as it
+ * matches the required schema below.
  */
-export const ConfirmableActions = [
-  ChannelsActions.channelOpen.success,
-  ChannelsActions.channelDeposit.success,
-  ChannelsActions.channelWithdrawn,
-  ChannelsActions.channelClose.success,
-  ChannelsActions.channelSettle.success,
-  TransfersActions.transferSecretRegister.success,
-];
-/**
- * Union of codecs of actions above
- */
-export const ConfirmableAction = t.union([
-  ChannelsActions.channelOpen.success.codec,
-  ChannelsActions.channelDeposit.success.codec,
-  ChannelsActions.channelWithdrawn.codec,
-  ChannelsActions.channelClose.success.codec,
-  ChannelsActions.channelSettle.success.codec,
-  TransfersActions.transferSecretRegister.success.codec,
-]);
-export type ConfirmableAction =
-  | ChannelsActions.channelOpen.success
-  | ChannelsActions.channelDeposit.success
-  | ChannelsActions.channelWithdrawn
-  | ChannelsActions.channelClose.success
-  | ChannelsActions.channelSettle.success
-  | TransfersActions.transferSecretRegister.success;
+export const ConfirmableAction = t.readonly(
+  t.type({
+    type: t.string,
+    payload: t.readonly(
+      t.type({
+        txHash: Hash,
+        txBlock: t.number,
+        confirmed: t.union([t.undefined, t.boolean]),
+      }),
+    ),
+  }),
+);
+/** The type of a confirmable action object. */
+export type ConfirmableAction = t.TypeOf<typeof ConfirmableAction>;

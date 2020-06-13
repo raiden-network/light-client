@@ -25,7 +25,7 @@ import 'raiden-ts/polyfills';
 import { Raiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { makeInitialState, RaidenState } from 'raiden-ts/state';
-import { raidenShutdown, ConfirmableActions } from 'raiden-ts/actions';
+import { raidenShutdown, ConfirmableAction } from 'raiden-ts/actions';
 import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
 import { Storage, Secret, Address } from 'raiden-ts/utils/types';
@@ -81,7 +81,7 @@ describe('Raiden', () => {
     );
     raiden.action$
       .pipe(
-        filter(isActionOf(ConfirmableActions)),
+        filter(ConfirmableAction.is),
         filter((a) => a.payload.confirmed === undefined),
       )
       .subscribe((a) =>
