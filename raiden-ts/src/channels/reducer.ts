@@ -254,7 +254,10 @@ const completeReducer = createReducer(initialState)
  * name of the reducer. channels root reducer instead must be handled the complete state instead,
  * so it compose the output with each key/nested/combined state.
  */
-const partialReducer = partialCombineReducers({ blockNumber, tokens, pendingTxs }, initialState);
+const partialReducer = partialCombineReducers<RaidenState, RaidenAction>(
+  { blockNumber, tokens, pendingTxs },
+  initialState,
+);
 /**
  * channelsReducer is a reduce-reducers like reducer; in contract with combineReducers, which
  * gives just a specific slice of the state to the reducer (like blockNumber above, which receives

@@ -1153,7 +1153,7 @@ function checkPendingAction(
   provider: RaidenEpicDeps['provider'],
   blockNumber: number,
   confirmationBlocks: number,
-): Observable<ConfirmableAction> {
+): Observable<RaidenAction> {
   return retryAsync$(
     () => provider.getTransactionReceipt(action.payload.txHash),
     provider.pollingInterval,
@@ -1165,13 +1165,13 @@ function checkPendingAction(
           // beyond setting confirmed, also re-set blockNumber,
           // which may have changed on a reorg
           payload: { ...action.payload, txBlock: receipt.blockNumber!, confirmed: true },
-        };
+        } as RaidenAction;
       } else if (action.payload.txBlock + 2 * confirmationBlocks < blockNumber) {
         // if this txs didn't get confirmed for more than 2*confirmationBlocks, it was removed
         return {
           ...action,
           payload: { ...action.payload, confirmed: false },
-        };
+        } as RaidenAction;
       } // else, it seems removed, but give it twice confirmationBlocks to be picked up again
     }),
     filter(isntNil),
@@ -1192,7 +1192,7 @@ export const confirmationEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$, provider }: RaidenEpicDeps,
-): Observable<ConfirmableAction> =>
+): Observable<RaidenAction> =>
   combineLatest(
     state$.pipe(pluckDistinct('blockNumber')),
     state$.pipe(pluck('pendingTxs')),

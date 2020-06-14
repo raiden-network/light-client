@@ -122,6 +122,9 @@ export type ActionCreator<
 > = ActionFactory<TType, TPayload, TMeta, TError> &
   ActionCreatorMembers<TType, TPayload, TMeta, TError>;
 
+export type AnyAC = ActionCreator<any, any, any, any>;
+export type TTypeOf<T> = T extends ActionCreator<infer TType, any, any, any> ? TType : never;
+
 /**
  * Type helper to extract the type of an action or a mapping of actions
  * Usage: const action: ActionType<typeof actionCreator>;
@@ -283,6 +286,8 @@ export type AsyncActionCreator<
   success: ActionCreator<TSuccessType, TSuccessPayload, TMeta>;
   failure: ActionCreator<TFailureType, TFailurePayload, TMeta, true>;
 };
+
+export type AnyAAC = AsyncActionCreator<any, any, any, any, any, any, any>;
 
 // overloads to account for the optional failure payload (defaults to ErrorCodec)
 export function createAsyncAction<
@@ -543,14 +548,6 @@ export async function asyncActionToPromise<
 // createReducer
 
 /**
- * A simplified schema for ActionCreator<any, any, any, any>, to optimize createReducer
- */
-export type AnyAC = ((payload: any, meta: any) => Action) & {
-  type: string;
-  is: (action: unknown) => action is Action;
-};
-
-/**
  * Create a reducer which can be extended with additional actions handlers
  *
  * Usage:
@@ -563,6 +560,13 @@ export type AnyAC = ((payload: any, meta: any) => Action) & {
  * @returns A reducer function, extended with a handle method to extend it
  */
 export function createReducer<S, A extends Action = Action>(initialState: S) {
+  /**
+   * A simplified schema for ActionCreator<any, any, any, any>, to optimize createReducer
+   */
+  type AnyAC = ((payload: any, meta: any) => Action) & {
+    type: string;
+    is: (action: unknown) => action is Action;
+  };
   // generic handlers as a indexed type for `makeReducer`
   type Handlers = {
     [type: string]: [AnyAC, (state: S, action: A) => S];
