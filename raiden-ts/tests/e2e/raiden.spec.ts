@@ -39,6 +39,7 @@ import { losslessStringify } from 'raiden-ts/utils/data';
 import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
 import { ErrorCodes } from 'raiden-ts/utils/error';
 import { channelKey } from 'raiden-ts/channels/utils';
+import { confirmationBlocks } from '../unit/fixtures';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -1190,7 +1191,7 @@ describe('Raiden', () => {
     });
   });
 
-  describe('depositToUDC', () => {
+  describe('UDC', () => {
     test('deposit 0 tokens', async () => {
       expect.assertions(1);
       await expect(raiden.depositToUDC(0)).rejects.toThrow('positive');
@@ -1205,6 +1206,33 @@ describe('Raiden', () => {
       expect.assertions(1);
       await raiden.mint(await raiden.userDepositTokenAddress(), 10);
       await expect(raiden.depositToUDC(10)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+    });
+
+    test('withdraw success', async (done) => {
+      expect.assertions(3);
+      await raiden.mint(await raiden.userDepositTokenAddress(), 100);
+      await expect(raiden.depositToUDC(100)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(bigNumberify(100));
+      raiden.planUdcWithdraw(100).then((txHash) => {
+        expect(txHash).toMatch(/^0x[0-9a-fA-F]{64}$/);
+        done();
+      });
+      await provider.mine();
+      await provider.mine(confirmationBlocks);
+    });
+
+    test('withdraw failure zero amount', async () => {
+      expect.assertions(1);
+      await expect(raiden.planUdcWithdraw(0)).rejects.toThrow(
+        'The planned withdraw amount has to be greater than zero.',
+      );
+    });
+
+    test('withdraw failure zero balance', async () => {
+      expect.assertions(1);
+      await expect(raiden.planUdcWithdraw(10)).rejects.toThrow(
+        'The planned withdraw amount exceeds the total amount available for withdrawing.',
+      );
     });
   });
 

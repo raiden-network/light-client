@@ -73,7 +73,7 @@
 
   "UDC_PLAN_WITHDRAW_FAILED" : "An error occurred while planning to withdraw from the User Deposit contract.",
   "UDC_PLAN_WITHDRAW_GT_ZERO" : "The planned withdraw amount has to be greater than zero.",
-  "UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE" : "The planned withdraw amount exceed the total amount available for withdrawing.",
+  "UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE" : "The planned withdraw amount exceeds the total amount available for withdrawing.",
   "UDC_PLAN_WITHDRAW_NO_BALANCE" : "There is no balances left to withdraw from UDC.",
   "UDC_WITHDRAW_FAILED" : "An error occurred while withdrawing from the UDC."
 }
