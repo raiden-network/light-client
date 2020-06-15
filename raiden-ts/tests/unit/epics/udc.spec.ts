@@ -40,7 +40,7 @@ describe('udcWithdraw', () => {
       blockNumber: raiden.deps.provider.blockNumber,
     });
 
-    raiden.store.dispatch(udcWithdraw.request({}, { amount: amount as UInt<32> }));
+    raiden.store.dispatch(udcWithdraw.request(undefined, { amount: amount as UInt<32> }));
 
     await waitBlock(raiden.deps.provider.blockNumber + confirmationBlocks);
     expect(raiden.output).toContainEqual(
@@ -53,7 +53,7 @@ describe('udcWithdraw', () => {
 
   test('withdraw require: zero amount', async () => {
     const [raiden] = await makeRaidens(1);
-    raiden.store.dispatch(udcWithdraw.request({}, { amount: Zero as UInt<32> }));
+    raiden.store.dispatch(udcWithdraw.request(undefined, { amount: Zero as UInt<32> }));
     await waitBlock();
     expect(raiden.output).toContainEqual(
       udcWithdraw.failure(expect.any(Error), { amount: Zero as UInt<32> }),
@@ -63,7 +63,7 @@ describe('udcWithdraw', () => {
   test('withdraw require: not enough balance', async () => {
     const [raiden] = await makeRaidens(1);
     const amount = parseEther('500');
-    raiden.store.dispatch(udcWithdraw.request({}, { amount: amount as UInt<32> }));
+    raiden.store.dispatch(udcWithdraw.request(undefined, { amount: amount as UInt<32> }));
     await waitBlock();
     expect(raiden.output).toContainEqual(
       udcWithdraw.failure(expect.any(Error), { amount: amount as UInt<32> }),

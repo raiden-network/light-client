@@ -55,7 +55,7 @@ export const udcWithdraw = createAsyncAction(
   'udc/withdraw/request',
   'udc/withdraw/success',
   'udc/withdraw/failure',
-  t.type({}),
+  t.undefined,
   t.intersection([t.partial({ txHash: Hash }), t.type({ block: t.number })]),
 );
 

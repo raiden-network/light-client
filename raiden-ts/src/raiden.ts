@@ -1262,7 +1262,7 @@ export class Raiden {
     const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, false).then(
       ({ txHash }) => txHash!,
     );
-    this.store.dispatch(udcWithdraw.request({}, meta));
+    this.store.dispatch(udcWithdraw.request(undefined, meta));
     return promise;
   }
 }
