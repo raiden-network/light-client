@@ -1,11 +1,11 @@
-import { OperatorFunction, from, Observable, ReplaySubject } from 'rxjs';
+import { OperatorFunction, Observable, ReplaySubject } from 'rxjs';
 import { tap, mergeMap, map, pluck, filter, groupBy, takeUntil } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
-import { ContractTransaction } from 'ethers/contract';
+import { ContractTransaction, ContractReceipt } from 'ethers/contract';
 
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
-import { UInt, Hash, Address } from '../utils/types';
+import { UInt, Address, Hash } from '../utils/types';
 import { RaidenError } from '../utils/error';
 import { distinctRecordValues } from '../utils/rx';
 import { Channel, ChannelState } from './state';
@@ -143,7 +143,10 @@ export function assertTx(
   method: string,
   error: string,
   { log }: Pick<RaidenEpicDeps, 'log'>,
-): OperatorFunction<ContractTransaction, Hash> {
+): OperatorFunction<
+  ContractTransaction,
+  ContractReceipt & { transactionHash: Hash; blockNumber: number }
+> {
   /**
    * Operator to check for tx
    *
@@ -153,15 +156,17 @@ export function assertTx(
   return (tx) =>
     tx.pipe(
       tap((tx) => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
-      mergeMap((tx) =>
-        from(tx.wait()).pipe(
-          map((receipt) => {
-            if (!receipt.status) throw new RaidenError(error, { transactionHash: tx.hash! });
-            log.debug(`${method} tx "${tx.hash}" successfuly mined!`);
-            return tx.hash as Hash;
-          }),
-        ),
-      ),
+      mergeMap((tx) => tx.wait()),
+      map((receipt) => {
+        if (!receipt.status || !receipt.transactionHash || !receipt.blockNumber)
+          throw new RaidenError(error, {
+            status: receipt.status ?? null,
+            transactionHash: receipt.transactionHash ?? null,
+            blockNumber: receipt.blockNumber ?? null,
+          });
+        log.debug(`${method} tx "${receipt.transactionHash}" successfuly mined!`);
+        return receipt as ContractReceipt & { transactionHash: Hash; blockNumber: number };
+      }),
     );
 }
 
