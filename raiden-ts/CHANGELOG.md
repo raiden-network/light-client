@@ -10,6 +10,8 @@
 ### Added
 - [#1421] Adds support for withdrawing tokens from the UDC
 - [#1642] Check token's allowance before deposit and skip approve
+- [#1701] Allow parameter decoding to throw and log customized errors
+- [#1701] Add and extend error codes for user parameter validation
 
 ### Changed
 - [#837] Changes the action tags from camel to path format. This change affects the event types exposed through the public API.
@@ -23,6 +25,7 @@
 [#1642]: https://github.com/raiden-network/light-client/issues/1642
 [#1649]: https://github.com/raiden-network/light-client/pull/1649
 [#1651]: https://github.com/raiden-network/light-client/issues/1651
+[#1701]: https://github.com/raiden-network/light-client/pull/1701
 
 ## [0.9.0] - 2020-05-28
 ### Added
