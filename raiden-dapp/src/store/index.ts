@@ -161,6 +161,7 @@ const store: StoreOptions<RootState> = {
     },
     allTokens: (state: RootState): Token[] =>
       Object.values(state.tokens)
+        .filter(token => state.tokenAddresses.includes(token.address))
         .sort((a: Token, b: Token) => {
           if (hasNonZeroBalance(a, b)) {
             return (b.balance! as BigNumber).gt(a.balance! as BigNumber)
@@ -168,8 +169,7 @@ const store: StoreOptions<RootState> = {
               : -1;
           }
           return a.symbol && b.symbol ? a.symbol.localeCompare(b.symbol) : 0;
-        })
-        .filter(token => state.tokenAddresses.includes(token.address)),
+        }),
     channels: (state: RootState) => (tokenAddress: string) => {
       let channels: RaidenChannel[] = [];
       const tokenChannels = state.channels[tokenAddress];
