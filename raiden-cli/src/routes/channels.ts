@@ -61,16 +61,15 @@ async function openChannel(this: Cli, request: Request, response: Response, next
       channelDictionary[request.body.token_address]?.[request.body.partner_address];
     response.status(201).json(transformSdkChannelFormatToApi(newChannel));
   } catch (error) {
-    console.log(error.code);
     if (isInvalidParameterError(error)) {
       response.status(400).send(error.message);
+    } else if (error.code === 'INSUFFICIENT_FUNDS') {
+      response.status(402).send(error.message);
     } else if (isConflictError(error)) {
       response.status(409).send(error.message);
     } else {
       next(error);
     }
-
-    // FIXME: Based on #1698 there must be a case with status code 402
   }
 }
 
