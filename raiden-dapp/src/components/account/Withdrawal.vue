@@ -29,7 +29,13 @@
     >
       <v-col cols="auto">
         <v-row align="center" justify="center">
-          <v-icon color="primary" size="160">info_outline</v-icon>
+          <div>
+            <v-img
+              height="150px"
+              width="150px"
+              :src="require('@/assets/info.svg')"
+            ></v-img>
+          </div>
         </v-row>
         <v-row>
           <v-col cols="auto">{{ $t('withdrawal.no-tokens') }}</v-col>
