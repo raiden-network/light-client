@@ -10,12 +10,7 @@ import { defaultAbiCoder } from 'ethers/utils/abi-coder';
 import { range } from 'lodash';
 
 import { UInt } from 'raiden-ts/utils/types';
-import {
-  RaidenAction,
-  raidenShutdown,
-  raidenConfigUpdate,
-  ConfirmableAction,
-} from 'raiden-ts/actions';
+import { RaidenAction, raidenShutdown, raidenConfigUpdate } from 'raiden-ts/actions';
 import { RaidenState } from 'raiden-ts/state';
 import {
   newBlock,
@@ -433,7 +428,7 @@ describe('raiden epic', () => {
 
     test('confirmed', async () => {
       expect.assertions(7);
-      let output: ConfirmableAction | undefined = undefined;
+      let output: RaidenAction | undefined = undefined;
 
       const sub = confirmationEpic(action$, state$, depsMock).subscribe((o) => {
         action$.next(o);
@@ -505,7 +500,7 @@ describe('raiden epic', () => {
 
     test('confirmed', async () => {
       expect.assertions(4);
-      let output: ConfirmableAction | undefined = undefined;
+      let output: RaidenAction | undefined = undefined;
 
       const sub = confirmationEpic(action$, state$, depsMock).subscribe((o) => {
         action$.next(o);
