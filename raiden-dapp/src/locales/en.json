@@ -326,8 +326,7 @@
         }
       },
       "transfer": {
-        "title": "Transferring Tokens",
-        "description": "Sign the transaction in MetaMask and close this dialogue to continue using the dApp. Your transfer will finish in the background."
+        "title": "Transferring Tokens"
       },
       "done": {
         "title": "Send Successful",

@@ -51,10 +51,7 @@
             <span v-if="error">
               {{ error }}
             </span>
-            <span v-else-if="inProgress">
-              {{ $t('transfer.steps.transfer.description') }}
-            </span>
-            <span v-else>
+            <span v-else-if="!inProgress">
               {{ $t('transfer.steps.done.description') }}
             </span>
           </div>
