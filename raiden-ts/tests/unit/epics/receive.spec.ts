@@ -903,7 +903,7 @@ describe('receive transfers', () => {
       data: '0x',
       chainId: depsMock.network.chainId,
       from: depsMock.address,
-      wait: jest.fn().mockResolvedValue({ byzantium: true, status: 0 }),
+      wait: jest.fn().mockResolvedValue({ status: 0, transactionHash: txHash, blockNumber: 1 }),
     });
 
     // then succeeds
@@ -917,7 +917,7 @@ describe('receive transfers', () => {
       data: '0x',
       chainId: depsMock.network.chainId,
       from: depsMock.address,
-      wait: jest.fn().mockResolvedValue({ byzantium: true, status: 1 }),
+      wait: jest.fn().mockResolvedValue({ status: 1, transactionHash: txHash, blockNumber: 1 }),
     });
 
     await expect(

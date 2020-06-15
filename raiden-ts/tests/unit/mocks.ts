@@ -160,8 +160,9 @@ export function makeTransaction(
   status = 1,
   overrides?: Partial<MockedTransaction>,
 ): MockedTransaction {
+  const transactionHash = makeHash();
   return {
-    hash: makeHash(),
+    hash: transactionHash,
     confirmations: 1,
     nonce: 0,
     gasLimit: bigNumberify(1e5),
@@ -170,7 +171,9 @@ export function makeTransaction(
     data: '0x',
     chainId: 1337,
     from: makeAddress(),
-    wait: jest.fn().mockResolvedValue({ byzantium: true, status }),
+    wait: jest
+      .fn()
+      .mockResolvedValue({ byzantium: true, status, transactionHash, blockNumber: 1 }),
     ...overrides,
   };
 }
