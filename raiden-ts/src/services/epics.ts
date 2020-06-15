@@ -20,6 +20,7 @@ import {
   exhaustMap,
   skip,
   take,
+  mapTo,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { Event } from 'ethers/contract';
@@ -35,15 +36,25 @@ import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
-import { channelAmounts, groupChannel$ } from '../channels/utils';
+import { assertTx, channelAmounts, groupChannel$ } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
-import { RaidenError, ErrorCodes } from '../utils/error';
+import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { pluckDistinct } from '../utils/rx';
 import { Capabilities } from '../constants';
-import { iouClear, pathFind, iouPersist, pfsListUpdated, udcDeposited } from './actions';
+import { getContractWithSigner } from '../helpers';
+
+import {
+  iouClear,
+  pathFind,
+  iouPersist,
+  pfsListUpdated,
+  udcDeposited,
+  udcWithdraw,
+  udcWithdrawn,
+} from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo, packIOU, signIOU } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
 
@@ -691,3 +702,132 @@ export const monitorRequestEpic = (
       ),
     ),
   );
+
+export const udcWithdrawRequestEpic = (
+  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { userDepositContract, address, log, signer }: RaidenEpicDeps,
+): Observable<udcWithdraw.success | udcWithdraw.failure> =>
+  action$.pipe(
+    filter(udcWithdraw.request.is),
+    mergeMap((action) =>
+      userDepositContract.functions
+        .balances(address)
+        .then((balance) => [action, balance] as const),
+    ),
+    concatMap(([action, balance]) => {
+      const contract = getContractWithSigner(userDepositContract, signer);
+      const amount = action.meta.amount;
+      return defer(() => {
+        assert(amount.gt(Zero), [
+          ErrorCodes.UDC_PLAN_WITHDRAW_GT_ZERO,
+          {
+            amount: amount.toString(),
+          },
+        ]);
+
+        assert(balance.sub(amount).gte(Zero), [
+          ErrorCodes.UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE,
+          {
+            balance: balance.toString(),
+            amount: amount.toString(),
+          },
+        ]);
+
+        return contract.functions.planWithdraw(amount);
+      }).pipe(
+        assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log }),
+        mergeMap(({ transactionHash: txHash, blockNumber: txBlock }) =>
+          from(userDepositContract.functions.withdraw_plans(address)).pipe(
+            map(({ amount, withdraw_block }) =>
+              udcWithdraw.success(
+                {
+                  block: withdraw_block.toNumber(),
+                  txHash,
+                  txBlock,
+                  confirmed: undefined,
+                },
+                { amount: amount as UInt<32> },
+              ),
+            ),
+          ),
+        ),
+        catchError((err) => {
+          log.error('Planning udc withdraw failed', err);
+          return of(udcWithdraw.failure(err, action.meta));
+        }),
+      );
+    }),
+  );
+
+export const udcCheckWithdrawPlannedEpic = (
+  {}: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { userDepositContract, address }: RaidenEpicDeps,
+): Observable<udcWithdraw.success> => {
+  return defer(() => userDepositContract.functions.withdraw_plans(address)).pipe(
+    filter((value) => value.withdraw_block.gt(Zero)),
+    map(({ amount, withdraw_block }) =>
+      udcWithdraw.success(
+        { block: withdraw_block.toNumber(), confirmed: true },
+        { amount: amount as UInt<32> },
+      ),
+    ),
+  );
+};
+
+export const udcWithdrawPlannedEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { log, userDepositContract, address, signer }: RaidenEpicDeps,
+): Observable<udcWithdrawn | udcWithdraw.failure> => {
+  return action$.pipe(
+    filter(udcWithdraw.success.is),
+    filter((action) => action.payload.confirmed === true),
+    mergeMap((action) =>
+      state$.pipe(
+        pluck('blockNumber'),
+        first((blockNumber) => action.payload.block < blockNumber),
+        mapTo(action),
+      ),
+    ),
+    mergeMap((action) =>
+      userDepositContract.functions
+        .balances(address)
+        .then((balance) => [action, balance] as const),
+    ),
+    concatMap(([action, balance]) => {
+      const contract = getContractWithSigner(userDepositContract, signer);
+      return defer(() => {
+        assert(balance.gt(Zero), [
+          ErrorCodes.UDC_PLAN_WITHDRAW_NO_BALANCE,
+          {
+            balance: balance.toString(),
+          },
+        ]);
+        return contract.functions.withdraw(action.meta.amount);
+      }).pipe(
+        assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log }),
+        concatMap(({ transactionHash, blockNumber }) =>
+          defer(() => contract.functions.balances(address)).pipe(
+            map((newBalance) =>
+              udcWithdrawn(
+                {
+                  withdrawal: balance.sub(newBalance) as UInt<32>,
+                  txHash: transactionHash,
+                  txBlock: blockNumber,
+                  confirmed: undefined,
+                },
+                action.meta,
+              ),
+            ),
+          ),
+        ),
+        catchError((err) => {
+          log.error('Error when processing the withdraw plan', err);
+          return of(udcWithdraw.failure(err, action.meta));
+        }),
+      );
+    }),
+  );
+};

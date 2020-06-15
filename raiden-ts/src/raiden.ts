@@ -58,7 +58,7 @@ import {
   transferKey,
   transferKeyToMeta,
 } from './transfers/utils';
-import { pathFind } from './services/actions';
+import { pathFind, udcWithdraw } from './services/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
 import { pfsListInfo } from './services/utils';
 import { Address, Secret, Storage, Hash, UInt, decode, isntNil } from './utils/types';
@@ -1255,6 +1255,15 @@ export class Raiden {
       { log: this.log },
     );
     return receipt.transactionHash as Hash;
+  }
+
+  public async planUdcWithdraw(value: BigNumberish): Promise<Hash> {
+    const meta = { amount: bigNumberify(value) as UInt<32> };
+    const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
+      ({ txHash }) => txHash!,
+    );
+    this.store.dispatch(udcWithdraw.request(undefined, meta));
+    return promise;
   }
 }
 

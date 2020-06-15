@@ -8,6 +8,7 @@
 - [#1651] Fix PFS being disabled if passed an undefined default config
 
 ### Added
+- [#1421] Adds support for withdrawing tokens from the UDC
 - [#1642] Check token's allowance before deposit and skip approve
 
 ### Changed
@@ -15,6 +16,7 @@
 - [#1649] Have constant error messages and codes in public Raiden API.
 
 [#837]: https://github.com/raiden-network/light-client/issues/837
+[#1421]: https://github.com/raiden-network/light-client/issues/1421
 [#1514]: https://github.com/raiden-network/light-client/issues/1514
 [#1607]: https://github.com/raiden-network/light-client/issues/1607
 [#1637]: https://github.com/raiden-network/light-client/issues/1637

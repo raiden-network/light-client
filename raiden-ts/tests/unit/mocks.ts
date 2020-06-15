@@ -442,6 +442,12 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
+  userDepositContract.functions.withdraw_plans.mockResolvedValue({
+    amount: Zero,
+    withdraw_block: Zero,
+    0: Zero,
+    1: Zero,
+  });
 
   const secretRegistryContract = SecretRegistryFactory.connect(address, signer) as MockedContract<
     SecretRegistry
@@ -641,6 +647,8 @@ export interface MockedRaiden {
   store: Store<RaidenState, RaidenAction>;
   deps: MockRaidenEpicDeps;
   output: RaidenAction[];
+  start: () => Promise<void>;
+  started: boolean;
 }
 
 const mockedClients: MockedRaiden[] = [];
@@ -661,9 +669,10 @@ export function stopRaiden(raiden: MockedRaiden) {
  * Create a mock of a Raiden client for epics
  *
  * @param wallet - Use this wallet instead of generating a random one
+ * @param start - Automatically starts the client if set too true (default)
  * @returns Mocked Raiden Epics params
  */
-export async function makeRaiden(wallet?: Wallet): Promise<MockedRaiden> {
+export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedRaiden> {
   const network: Network = { name: 'testnet', chainId: 1337 };
   const { JsonRpcProvider } = jest.requireActual('ethers/providers');
   const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
@@ -778,6 +787,12 @@ export async function makeRaiden(wallet?: Wallet): Promise<MockedRaiden> {
   userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
+  userDepositContract.functions.withdraw_plans.mockResolvedValue({
+    amount: Zero,
+    withdraw_block: Zero,
+    0: Zero,
+    1: Zero,
+  });
 
   const secretRegistryContract = SecretRegistryFactory.connect(address, signer) as MockedContract<
     SecretRegistry
@@ -882,6 +897,17 @@ export async function makeRaiden(wallet?: Wallet): Promise<MockedRaiden> {
     store,
     deps,
     output,
+    start: async () => {
+      epicMiddleware.run(raidenRootEpic);
+      await raiden.deps.latest$
+        .pipe(
+          filter(({ state }) => state.blockNumber >= raiden.deps.provider.blockNumber),
+          take(1),
+        )
+        .toPromise();
+      // raiden.store.dispatch(newBlock({ blockNumber: provider.blockNumber }));
+    },
+    started: false,
   };
   mockedClients.push(raiden);
   mockedCleanups.push(() => {
@@ -891,14 +917,10 @@ export async function makeRaiden(wallet?: Wallet): Promise<MockedRaiden> {
     if (idx >= 0) mockedClients.splice(idx, 1);
   });
 
-  epicMiddleware.run(raidenRootEpic);
-  await raiden.deps.latest$
-    .pipe(
-      filter(({ state }) => state.blockNumber >= raiden.deps.provider.blockNumber),
-      take(1),
-    )
-    .toPromise();
-  // raiden.store.dispatch(newBlock({ blockNumber: provider.blockNumber }));
+  if (start) {
+    await raiden.start();
+    raiden.started = true;
+  }
   return raiden;
 }
 
@@ -908,10 +930,11 @@ const cachedWallets = Array.from({ length: 3 }, makeWallet);
  * Create multiple mocked clients
  *
  * @param length - Number of clients to create
+ * @param start - Automatically starts the client if set too true (default)
  * @returns Array of mocked clients
  */
-export async function makeRaidens(length: number): Promise<MockedRaiden[]> {
-  return Promise.all(Array.from({ length }, (_, i) => makeRaiden(cachedWallets[i])));
+export async function makeRaidens(length: number, start = true): Promise<MockedRaiden[]> {
+  return Promise.all(Array.from({ length }, (_, i) => makeRaiden(cachedWallets[i], start)));
 }
 
 /**
