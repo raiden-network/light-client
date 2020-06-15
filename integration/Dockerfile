@@ -1,15 +1,15 @@
 # The version of the raiden smart contracts that will be deployed on chain.
-ARG CONTRACTS_VERSION="0.36.0"
+ARG CONTRACTS_VERSION="0.37.0"
 # The version of the python package. It is always equal or greater than the CONTRACTS_VERSION
 # It is used only for the deployment of the smart-contracts.
-ARG CONTRACTS_PACKAGE_VERSION="0.37.0b3"
-ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
-ARG RAIDEN_VERSION="ea7025739b460f940c26616ca1fccdb739b218ed"
-ARG SYNAPSE_VERSION=1.10.0
+ARG CONTRACTS_PACKAGE_VERSION="0.37.0"
+ARG SERVICES_VERSION="50d986991d04143448cb0d16061c98e73f6f5692"
+ARG RAIDEN_VERSION="0bb7220d6a7058c1fac2dc78ba0ccda8d81034d0"
+ARG SYNAPSE_VERSION=1.10.1
 ARG OS_NAME="LINUX"
-ARG GETH_VERSION="1.9.9"
-ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.9-01744997.tar.gz"
-ARG GETH_MD5_LINUX="de1b31439dc6697fcbe2d729d2080d22"
+ARG GETH_VERSION="1.9.11"
+ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.11-6a62fe39.tar.gz"
+ARG GETH_MD5_LINUX="6b226753430e33edf983c5581b52d6d1"
 
 FROM python:3.7 as raiden-builder
 ARG RAIDEN_VERSION
