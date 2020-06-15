@@ -23,7 +23,7 @@ function isConflictError(error: RaidenError): boolean {
 async function getAllChannels(this: Cli, _request: Request, response: Response) {
   const channelDictionary = await this.raiden.channels$.pipe(first()).toPromise();
   const channelList = flattenChannelDictionary(channelDictionary);
-  const formattedChannels = transformSdkChannelFormatToApi(channelList);
+  const formattedChannels = channelList.map((channel) => transformSdkChannelFormatToApi(channel));
   response.json(formattedChannels);
 }
 
@@ -31,22 +31,18 @@ async function getChannelsForToken(this: Cli, request: Request, response: Respon
   const channelDictionary = await this.raiden.channels$.pipe(first()).toPromise();
   const channelList = flattenChannelDictionary(channelDictionary);
   const filteredChannels = filterChannels(channelList, request.params.tokenAddress);
-  const formattedChannels = transformSdkChannelFormatToApi(filteredChannels);
+  const formattedChannels = filteredChannels.map((channel) =>
+    transformSdkChannelFormatToApi(channel),
+  );
   response.json(formattedChannels);
 }
 
 async function getChannelsForTokenAndPartner(this: Cli, request: Request, response: Response) {
   const channelDictionary = await this.raiden.channels$.pipe(first()).toPromise();
-  const channelList = flattenChannelDictionary(channelDictionary);
-  const filteredChannels = filterChannels(
-    channelList,
-    request.params.tokenAddress,
-    request.params.partnerAddress,
-  );
-  const formattedChannels = transformSdkChannelFormatToApi(filteredChannels);
+  const channel = channelDictionary[request.params.tokenAddress]?.[request.params.partnerAddress];
 
-  if (formattedChannels.length) {
-    response.json(formattedChannels[0]);
+  if (channel) {
+    response.json(transformSdkChannelFormatToApi(channel));
   } else {
     response.status(404).send('The channel does not exist');
   }
@@ -61,8 +57,9 @@ async function openChannel(this: Cli, request: Request, response: Response, next
       deposit: request.body.total_deposit,
     });
     const channelDictionary = await this.raiden.channels$.pipe(first()).toPromise();
-    const newChannel = channelDictionary[request.body.token_address][request.body.partner_address];
-    response.status(201).json(newChannel);
+    const newChannel =
+      channelDictionary[request.body.token_address]?.[request.body.partner_address];
+    response.status(201).json(transformSdkChannelFormatToApi(newChannel));
   } catch (error) {
     console.log(error.code);
     if (isInvalidParameterError(error)) {
