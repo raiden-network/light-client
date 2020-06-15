@@ -1,5 +1,5 @@
 import { timer } from 'rxjs';
-import { first, filter, takeUntil } from 'rxjs/operators';
+import { first, filter, takeUntil, take, toArray } from 'rxjs/operators';
 import { Zero, MaxUint256 } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
 
@@ -28,7 +28,7 @@ import { makeInitialState, RaidenState } from 'raiden-ts/state';
 import { raidenShutdown, ConfirmableAction } from 'raiden-ts/actions';
 import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
-import { Storage, Secret, Address } from 'raiden-ts/utils/types';
+import { Storage, Secret, Address, UInt } from 'raiden-ts/utils/types';
 import { isActionOf } from 'raiden-ts/utils/actions';
 import { ContractsInfo } from 'raiden-ts/types';
 import { PartialRaidenConfig } from 'raiden-ts/config';
@@ -40,6 +40,7 @@ import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFacto
 import { ErrorCodes } from 'raiden-ts/utils/error';
 import { channelKey } from 'raiden-ts/channels/utils';
 import { confirmationBlocks } from '../unit/fixtures';
+import { udcWithdrawn } from 'raiden-ts/services/actions';
 
 describe('Raiden', () => {
   const provider = new TestProvider();
@@ -1208,17 +1209,56 @@ describe('Raiden', () => {
       await expect(raiden.depositToUDC(10)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
     });
 
-    test('withdraw success', async (done) => {
-      expect.assertions(3);
-      await raiden.mint(await raiden.userDepositTokenAddress(), 100);
-      await expect(raiden.depositToUDC(100)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
-      await expect(raiden.getUDCCapacity()).resolves.toEqual(bigNumberify(100));
-      raiden.planUdcWithdraw(100).then((txHash) => {
-        expect(txHash).toMatch(/^0x[0-9a-fA-F]{64}$/);
-        done();
-      });
-      await provider.mine();
+    test('withdraw success', async () => {
+      expect.assertions(5);
+      const deposit = bigNumberify(100) as UInt<32>;
+      const withdraw = bigNumberify(80) as UInt<32>;
+      await raiden.mint(await raiden.userDepositTokenAddress(), deposit);
+      await expect(raiden.depositToUDC(deposit)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(deposit);
+      await expect(raiden.planUdcWithdraw(withdraw)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+
+      const result = raiden.action$.pipe(filter(udcWithdrawn.is), take(2), toArray()).toPromise();
+      await provider.mine(100 + confirmationBlocks * 2);
+
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(deposit.sub(withdraw));
+      await expect(result).resolves.toEqual([
+        udcWithdrawn(expect.objectContaining({ withdrawal: withdraw, confirmed: undefined }), {
+          amount: withdraw,
+        }),
+        udcWithdrawn(expect.objectContaining({ withdrawal: withdraw, confirmed: true }), {
+          amount: withdraw,
+        }),
+      ]);
+    });
+
+    test('withdraw success with restart', async () => {
+      expect.assertions(5);
+      const deposit = bigNumberify(100) as UInt<32>;
+      const withdraw = bigNumberify(80) as UInt<32>;
+      await raiden.mint(await raiden.userDepositTokenAddress(), deposit);
+      await expect(raiden.depositToUDC(deposit)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(deposit);
+      await expect(raiden.planUdcWithdraw(withdraw)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+
+      // stop and restart node
+      raiden.stop();
       await provider.mine(confirmationBlocks);
+      raiden = await createRaiden(0, storage);
+      raiden.start();
+
+      const result = raiden.action$.pipe(filter(udcWithdrawn.is), take(2), toArray()).toPromise();
+      await provider.mine(100 + confirmationBlocks);
+
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(deposit.sub(withdraw));
+      await expect(result).resolves.toEqual([
+        udcWithdrawn(expect.objectContaining({ withdrawal: withdraw, confirmed: undefined }), {
+          amount: withdraw,
+        }),
+        udcWithdrawn(expect.objectContaining({ withdrawal: withdraw, confirmed: true }), {
+          amount: withdraw,
+        }),
+      ]);
     });
 
     test('withdraw failure zero amount', async () => {

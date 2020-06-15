@@ -56,7 +56,10 @@ export const udcWithdraw = createAsyncAction(
   'udc/withdraw/success',
   'udc/withdraw/failure',
   t.undefined,
-  t.intersection([t.partial({ txHash: Hash }), t.type({ block: t.number })]),
+  t.intersection([
+    t.type({ block: t.number }),
+    t.partial({ txHash: Hash, txBlock: t.number, confirmed: t.union([t.undefined, t.boolean]) }),
+  ]),
 );
 
 export namespace udcWithdraw {
@@ -67,7 +70,12 @@ export namespace udcWithdraw {
 
 export const udcWithdrawn = createAction(
   'udc/withdrawn',
-  t.type({ txHash: Hash, withdrawal: UInt(32) }),
+  t.type({
+    withdrawal: UInt(32),
+    txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
+  }),
   UdcWithdrawId,
 );
 

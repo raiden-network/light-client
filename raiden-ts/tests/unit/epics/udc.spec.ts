@@ -18,7 +18,10 @@ describe('udcWithdraw', () => {
     });
     await raiden.start();
     expect(raiden.output).toContainEqual(
-      udcWithdraw.success({ block: withdrawBlock.toNumber() }, { amount: amount as UInt<32> }),
+      udcWithdraw.success(
+        { block: withdrawBlock.toNumber(), confirmed: true },
+        { amount: amount as UInt<32> },
+      ),
     );
   });
 
@@ -45,7 +48,12 @@ describe('udcWithdraw', () => {
     await waitBlock(raiden.deps.provider.blockNumber + confirmationBlocks);
     expect(raiden.output).toContainEqual(
       udcWithdraw.success(
-        { block: withdrawBlock.toNumber(), txHash: planTx.hash as Hash },
+        {
+          block: withdrawBlock.toNumber(),
+          txHash: planTx.hash as Hash,
+          txBlock: expect.any(Number),
+          confirmed: undefined,
+        },
         { amount: amount as UInt<32> },
       ),
     );
@@ -79,13 +87,18 @@ describe('udcWithdraw', () => {
       .mockClear()
       .mockResolvedValueOnce(parseEther('5'))
       .mockResolvedValueOnce(Zero);
-    raiden.store.dispatch(udcWithdraw.success({ block: 200 }, { amount: amount as UInt<32> }));
+    raiden.store.dispatch(
+      udcWithdraw.success({ block: 200, confirmed: true }, { amount: amount as UInt<32> }),
+    );
     await waitBlock(200);
+    await waitBlock();
     expect(raiden.output).toContainEqual(
       udcWithdrawn(
         {
           withdrawal: amount as UInt<32>,
           txHash: withdrawTx.hash as Hash,
+          txBlock: expect.any(Number),
+          confirmed: true,
         },
         { amount: amount as UInt<32> },
       ),
@@ -98,8 +111,11 @@ describe('udcWithdraw', () => {
     const withdrawTx = makeTransaction(1);
     raiden.deps.userDepositContract.functions.withdraw.mockResolvedValue(withdrawTx);
     raiden.deps.userDepositContract.functions.balances.mockClear().mockResolvedValueOnce(Zero);
-    raiden.store.dispatch(udcWithdraw.success({ block: 200 }, { amount: amount as UInt<32> }));
+    raiden.store.dispatch(
+      udcWithdraw.success({ block: 200, confirmed: true }, { amount: amount as UInt<32> }),
+    );
     await waitBlock(200);
+    await waitBlock();
     expect(raiden.output).toContainEqual(
       udcWithdraw.failure(expect.any(Error), { amount: amount as UInt<32> }),
     );
