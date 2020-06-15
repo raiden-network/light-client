@@ -77,6 +77,7 @@ export default class RaidenService {
       placeholders[token] = { address: token };
     }
 
+    this.store.commit('updateTokenAddresses', allTokens);
     this.store.commit('updateTokens', placeholders);
     await this.fetchTokenData(toFetch);
   }

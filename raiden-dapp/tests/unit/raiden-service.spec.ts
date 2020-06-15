@@ -659,16 +659,14 @@ describe('RaidenService', () => {
       store.commit.mockReset();
       await raidenService.fetchTokenList();
       await flushPromises();
-      expect(store.commit).toBeCalledTimes(2);
-      expect(store.commit).toHaveBeenNthCalledWith(
-        1,
+      expect(store.commit).toBeCalledTimes(3);
+      expect(store.commit).toHaveBeenCalledWith(
         'updateTokens',
         expect.objectContaining({
           [mockToken1]: { address: mockToken1 }
         })
       );
-      expect(store.commit).toHaveBeenNthCalledWith(
-        2,
+      expect(store.commit).toHaveBeenCalledWith(
         'updateTokens',
         expect.objectContaining({
           [mockToken1]: {
@@ -679,6 +677,10 @@ describe('RaidenService', () => {
             name: 'Mock Token'
           }
         })
+      );
+      expect(store.commit).toHaveBeenCalledWith(
+        'updateTokenAddresses',
+        expect.arrayContaining([mockToken1, mockToken2])
       );
     });
   });
