@@ -69,7 +69,9 @@
   "DTA_ARRAY_LENGTH_DIFFERENCE": "Expected length of HEX string differs from integer array input.",
   "DTA_UNENCODABLE_DATA": "Passed data is not a HEX string nor integer array.",
   "DTA_NON_POSITIVE_NUMBER": "Number must be positive.",
-  "DTA_INVALID_ADDRESS": "Invalid address.",
+  "DTA_INVALID_ADDRESS": "Invalid address parameter.",
+  "DTA_INVALID_DEPOSIT": "Invalid deposit parameter.",
+  "DTA_INVALID_TIMEOUT": "Invalid timeout parameter.",
 
   "UDC_PLAN_WITHDRAW_FAILED" : "An error occurred while planning to withdraw from the User Deposit contract.",
   "UDC_PLAN_WITHDRAW_GT_ZERO" : "The planned withdraw amount has to be greater than zero.",

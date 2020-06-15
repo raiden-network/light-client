@@ -5,6 +5,7 @@ import { Two, Zero } from 'ethers/constants';
 import { Either, Right } from 'fp-ts/lib/Either';
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import memoize from 'lodash/memoize';
+import { RaidenError } from './error';
 
 /* A Subset of DOM's Storage/localStorage interface which supports async/await */
 export interface Storage {
@@ -22,12 +23,29 @@ function reporterAssert<T>(value: Either<t.Errors, T>): asserts value is Right<T
  *
  * @param codec - io-ts codec to be used for decoding/validation
  * @param data - data to decode/validate
+ * @param customError - Message or error to throw if the decoding fails
+ * @param log - Logger to log error to
  * @returns Decoded value of codec type
  */
-export function decode<C extends t.Mixed>(codec: C, data: C['_I']): C['_A'] {
-  const decoded = codec.decode(data);
-  reporterAssert(decoded);
-  return decoded.right;
+export function decode<C extends t.Mixed>(
+  codec: C,
+  data: C['_I'],
+  customError?: string | Error,
+  log?: (...args: any[]) => void,
+): C['_A'] {
+  try {
+    const decoded = codec.decode(data);
+    reporterAssert(decoded);
+    return decoded.right;
+  } catch (originalError) {
+    log?.('__decode failed:', codec, data);
+
+    if (!customError) {
+      throw originalError;
+    } else {
+      throw customError instanceof Error ? customError : new RaidenError(customError);
+    }
+  }
 }
 
 /**
