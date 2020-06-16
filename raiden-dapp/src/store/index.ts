@@ -1,24 +1,24 @@
 import Vue from 'vue';
 import VuexPersistence from 'vuex-persist';
 import Vuex, { StoreOptions } from 'vuex';
-import { RootState, Tokens, Transfers, Settings } from '@/types';
+import { RootState, Settings, Tokens, Transfers } from '@/types';
 import {
+  Capabilities,
   ChannelState,
+  getNetworkName,
   RaidenChannel,
   RaidenChannels,
-  RaidenTransfer,
   RaidenConfig,
-  Capabilities,
-  getNetworkName
+  RaidenTransfer
 } from 'raiden-ts';
 import {
   AccTokenModel,
   DeniedReason,
   emptyTokenModel,
   PlaceHolderNetwork,
+  Presences,
   Token,
-  TokenModel,
-  Presences
+  TokenModel
 } from '@/model/types';
 import map from 'lodash/map';
 import flatMap from 'lodash/flatMap';
@@ -28,7 +28,7 @@ import reduce from 'lodash/reduce';
 import orderBy from 'lodash/orderBy';
 import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
-import { Network, BigNumber } from 'ethers/utils';
+import { BigNumber, Network } from 'ethers/utils';
 
 Vue.use(Vuex);
 
@@ -50,7 +50,8 @@ const _defaultState: RootState = {
     isFirstTimeConnect: true,
     useRaidenAccount: true
   },
-  config: {}
+  config: {},
+  userDepositTokenAddress: ''
 };
 
 export function defaultState(): RootState {
@@ -131,6 +132,9 @@ const store: StoreOptions<RootState> = {
     },
     updateConfig(state: RootState, config: Partial<RaidenConfig>) {
       state.config = config;
+    },
+    userDepositTokenAddress(state: RootState, address: string) {
+      state.userDepositTokenAddress = address;
     }
   },
   actions: {},
@@ -234,6 +238,9 @@ const store: StoreOptions<RootState> = {
     },
     canReceive: (state: RootState): boolean => {
       return !state.config.caps?.[Capabilities.NO_RECEIVE];
+    },
+    udcToken: (state: RootState): Token => {
+      return state.tokens[state.userDepositTokenAddress];
     }
   },
   plugins: [settingsLocalStorage.plugin]

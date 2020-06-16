@@ -86,12 +86,6 @@ describe('RaidenService', () => {
     window.ethereum = undefined;
   });
 
-  test('throw when the user accesses the user deposit address before connecting', async () => {
-    expect.assertions(1);
-    const udcAddress = () => raidenService.userDepositTokenAddress;
-    expect(udcAddress).toThrowError('address empty');
-  });
-
   test('throw an error when the user calls getAccount before connecting', async () => {
     expect.assertions(1);
     await expect(raidenService.getAccount()).rejects.toThrowError(
@@ -194,13 +188,6 @@ describe('RaidenService', () => {
       expect(raiden.getTokenBalance).toHaveBeenCalledWith('0xtoken');
       expect(raiden.getTokenInfo).toHaveBeenCalledTimes(1);
       expect(raiden.getTokenInfo).toHaveBeenCalledWith('0xtoken');
-    });
-
-    test('verify that the user deposit address is available when the user connects', async () => {
-      expect.assertions(1);
-      expect(raidenService.userDepositTokenAddress).toEqual(
-        '0xuserdeposittoken'
-      );
     });
 
     test('return the account when the sdk is connected', async () => {
@@ -645,10 +632,8 @@ describe('RaidenService', () => {
       raiden.getTokenList = jest
         .fn()
         .mockResolvedValue([mockToken1, mockToken2]);
-      raiden.getTokenBalance = jest
-        .fn()
-        .mockResolvedValueOnce(bigNumberify(100));
-      raiden.getTokenInfo = jest.fn().mockResolvedValueOnce({
+      raiden.getTokenBalance = jest.fn().mockResolvedValue(bigNumberify(100));
+      raiden.getTokenInfo = jest.fn().mockResolvedValue({
         decimals: 0,
         symbol: 'MKT',
         name: 'Mock Token'
@@ -659,11 +644,16 @@ describe('RaidenService', () => {
       store.commit.mockReset();
       await raidenService.fetchTokenList();
       await flushPromises();
-      expect(store.commit).toBeCalledTimes(3);
+      expect(store.commit).toBeCalledTimes(4);
+      expect(store.commit).toHaveBeenCalledWith(
+        'updateTokenAddresses',
+        expect.arrayContaining([mockToken1, mockToken2])
+      );
       expect(store.commit).toHaveBeenCalledWith(
         'updateTokens',
         expect.objectContaining({
-          [mockToken1]: { address: mockToken1 }
+          [mockToken1]: { address: mockToken1 },
+          [mockToken2]: { address: mockToken2 }
         })
       );
       expect(store.commit).toHaveBeenCalledWith(
@@ -677,10 +667,6 @@ describe('RaidenService', () => {
             name: 'Mock Token'
           }
         })
-      );
-      expect(store.commit).toHaveBeenCalledWith(
-        'updateTokenAddresses',
-        expect.arrayContaining([mockToken1, mockToken2])
       );
     });
   });
