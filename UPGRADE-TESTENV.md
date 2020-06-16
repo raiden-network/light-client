@@ -1,4 +1,4 @@
-# How to upgrade the test environment `testenv001`
+# How to upgrade the test environment
 
 ## Upgrading the SDK
 
@@ -42,22 +42,22 @@ $ npm run build
 ### Prerequisites
 
 - Access to https://hub.docker.com/r/raidennetwork/raiden
-- Docker Image ID of the Raiden Python image that `testenv001` should use, e.g. `373170d05c6c`
+- Docker Image ID of the Raiden Python image that `demoenv001` should use, e.g. `373170d05c6c`
 
 Next, tag the image:
 
 ```sh
-$ docker tag 373170d05c6c raidennetwork/raiden:testenv001
+$ docker tag 373170d05c6c raidennetwork/raiden:demoenv001
 ```
 
-## Upgrade Matrix & PFS `testenv001` server
+## Upgrade Matrix & PFS server
 
-Every [Raiden](https://github.com/raiden-network/raiden) release comes hand-in-hand with a [Raiden Service Bundle](https://github.com/raiden-network/raiden-service-bundle) release, and upgrades of `testenv001` are usually handled by the RSB team.
+Every [Raiden](https://github.com/raiden-network/raiden) release comes hand-in-hand with a [Raiden Service Bundle](https://github.com/raiden-network/raiden-service-bundle) release, and upgrades of `demoenv001` are usually handled by the RSB team.
 
 In order to upgrade:
 
-- https://raidentransport.test001.env.raiden.network, and
-- https://pfs.raidentransport.test001.env.raiden.network
+- https://transport.demo001.env.raiden.network, and
+- https://pfs.demo001.env.raiden.network
 
 a new Raiden Service Bundle needs to be set up according to the [Readme](https://github.com/raiden-network/raiden-service-bundle).
 
@@ -86,6 +86,6 @@ Visit https://hub.raiden.network and check whether:
 
 ## (Optional) Upgrade the Light Client Integration Tests
 
-The Light client uses a Docker image to run nightly integration tests based on the `testenv001` tag.
+The Light client uses a Docker image to run nightly integration tests based on the `Alderaan` tag.
 
 To update and publish a new test image you can follow the steps in the integration image [readme](https://github.com/raiden-network/light-client/tree/master/integration#updating-the-image).

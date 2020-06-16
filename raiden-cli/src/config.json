@@ -1,6 +1,6 @@
 {
-  "matrixServer": "https://raidentransport.test001.env.raiden.network",
-  "pfs": "https://pfs.raidentransport.test001.env.raiden.network",
+  "matrixServer": "https://transport.demo001.env.raiden.network",
+  "pfs": "https://pfs.demo001.env.raiden.network",
   "pfsSafetyMargin": 1.1,
   "caps": {
     "noDelivery": true,
