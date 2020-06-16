@@ -9,32 +9,32 @@ For development purposes, the Light Client uses a standalone environment. The dA
 This environment uses:
 
 - A specific version of [Raiden](https://github.com/raiden-network/raiden/commit/ea7025739b460f940c26616ca1fccdb739b218ed)
-- A matrix transport server - `https://raidentransport.test001.env.raiden.network`
-- A PFS server - `https://pfs.raidentransport.test001.env.raiden.network`
+- A matrix transport server - `https://transport.demo001.env.raiden.network`
+- A PFS server - `https://pfs.demo001.env.raiden.network`
  
-You can find the raiden version tagged on Docker Hub under `raidennetwork/raiden:testenv001`. To pull the image you need to run the following: 
+You can find the raiden version tagged on Docker Hub under `raidennetwork/raiden:demoenv001`. To pull the image you need to run the following: 
 
 ```bash
-docker pull raidennetwork/raiden:testenv001
+docker pull raidennetwork/raiden:demoenv001
 ```
 
 The transport server does not participate in the matrix federation. For this reason, you have to explicitly specify it when starting raiden. You can use the following flag:
 
 ```bash
---matrix-server=https://raidentransport.test001.env.raiden.network
+--matrix-server=https://transport.demo001.env.raiden.network
 ``` 
 
 Similarly, you also have to specify the path-finding server:
 
  ```bash
---pathfinding-service-address https://pfs.raidentransport.test001.env.raiden.network
+--pathfinding-service-address https://pfs.demo001.env.raiden.network
 ```
 
 ## Running a Raiden node in the test environment
 You can easily run a python node in the test environment by using Docker. To get the supported Raiden version from [Docker Hub](https://hub.docker.com/r/raidennetwork/raiden) you need to run the following command:
 
 ```bash
-docker pull raidennetwork/raiden:testenv001
+docker pull raidennetwork/raiden:demoenv001
 ```
 
 The test environment uses the **Görli** testnet. For the purposes of this guide, we assume that a [geth](https://geth.ethereum.org/docs/) node runs locally on your computer. If you use a different ethereum client or RPC provider, please adjust accordingly.  
@@ -50,14 +50,14 @@ You can start the container, by using the following command:
 docker run --rm -it \
     --network=host \
     --mount src=/path/to/keystore,target=/keystore,type=bind \
-    raidennetwork/raiden:testenv001 \
+    raidennetwork/raiden:demoenv001 \
     --keystore-path /keystore \
     --network-id 5 \
     --environment-type development \
     --eth-rpc-endpoint http://127.0.0.1:8545 \
     --accept-disclaimer \
-    --matrix-server=https://raidentransport.test001.env.raiden.network \
-    --pathfinding-service-address https://pfs.raidentransport.test001.env.raiden.network \
+    --matrix-server=https://transport.demo001.env.raiden.network \
+    --pathfinding-service-address https://pfs.demo001.env.raiden.network \
     --api-address "http://0.0.0.0:5001"
 ```
 
@@ -96,8 +96,8 @@ raiden --keystore-path ~/.keystore \
     --network-id 5 \
     --environment-type development \
     --routing-mode=pfs \
-    --matrix-server=https://raidentransport.test001.env.raiden.network \
-    --pathfinding-service-address https://pfs.raidentransport.test001.env.raiden.network 
+    --matrix-server=https://transport.demo001.env.raiden.network \
+    --pathfinding-service-address https://pfs.demo001.env.raiden.network 
 
 ```
 
