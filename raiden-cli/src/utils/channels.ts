@@ -27,18 +27,16 @@ export function filterChannels(
 }
 
 /* eslint-disable @typescript-eslint/camelcase */
-export function transformSdkChannelFormatToApi(channels: RaidenChannel[]): ApiChannel[] {
-  return channels.map((channel) => {
-    return {
-      channel_identifier: channel.id ?? 0, // FIXME: old "bug" in the SDK
-      token_network_address: channel.tokenNetwork,
-      partner_address: channel.partner,
-      token_address: channel.token,
-      balance: channel.balance.toString(),
-      total_deposit: channel.ownDeposit.toString(),
-      state: channel.state,
-      settle_timeout: channel.settleTimeout ?? 0,
-      reveal_timeout: 0, // FIXME: Not defined here. Python client handles reveal timeout differently,
-    } as ApiChannel;
-  });
+export function transformSdkChannelFormatToApi(channel: RaidenChannel): ApiChannel {
+  return {
+    channel_identifier: channel.id ?? 0, // FIXME: old "bug" in the SDK
+    token_network_address: channel.tokenNetwork,
+    partner_address: channel.partner,
+    token_address: channel.token,
+    balance: channel.balance.toString(),
+    total_deposit: channel.ownDeposit.toString(),
+    state: channel.state,
+    settle_timeout: channel.settleTimeout ?? 0,
+    reveal_timeout: 0, // FIXME: Not defined here. Python client handles reveal timeout differently,
+  };
 }

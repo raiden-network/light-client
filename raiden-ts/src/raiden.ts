@@ -592,7 +592,21 @@ export class Raiden {
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const tokenNetwork = await this.monitorToken(token);
     assert(!options.subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
-    const deposit = options.deposit === undefined ? undefined : decode(UInt(32), options.deposit);
+
+    // Note that we use the advantage of the UInt decoding here, but immediately
+    // convert it to a plain number again.
+    const settleTimeout = !options.settleTimeout
+      ? undefined
+      : decode(
+          UInt(4),
+          options.settleTimeout,
+          ErrorCodes.DTA_INVALID_TIMEOUT,
+          this.log.info,
+        ).toNumber();
+
+    const deposit = !options.deposit
+      ? undefined
+      : decode(UInt(32), options.deposit, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
 
     const meta = { tokenNetwork, partner };
     // wait for confirmation
@@ -600,7 +614,7 @@ export class Raiden {
       ({ txHash }) => txHash, // pluck txHash
     );
 
-    this.store.dispatch(channelOpen.request({ ...options, deposit }, meta));
+    this.store.dispatch(channelOpen.request({ ...options, settleTimeout, deposit }, meta));
 
     const openTxHash = await openPromise;
     onChange?.({ type: EventTypes.OPENED, payload: { txHash: openTxHash } });
