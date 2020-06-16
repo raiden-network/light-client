@@ -72,6 +72,10 @@
   "DTA_INVALID_ADDRESS": "Invalid address parameter.",
   "DTA_INVALID_DEPOSIT": "Invalid deposit parameter.",
   "DTA_INVALID_TIMEOUT": "Invalid timeout parameter.",
+  "DTA_INVALID_AMOUNT": "Invalid amount parameter.",
+  "DTA_INVALID_PAYMENT_ID": "Invalid payment identifier parameter.",
+  "DTA_INVALID_PATH": "Invalid path parameter.",
+  "DTA_INVALID_PFS": "Invalid path finding service parameter.",
 
   "UDC_PLAN_WITHDRAW_FAILED" : "An error occurred while planning to withdraw from the User Deposit contract.",
   "UDC_PLAN_WITHDRAW_GT_ZERO" : "The planned withdraw amount has to be greater than zero.",

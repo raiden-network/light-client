@@ -713,7 +713,7 @@ describe('Raiden', () => {
     test('invalid amount', async () => {
       expect.assertions(1);
       await expect(raiden.transfer(token, partner, -1)).rejects.toThrowError(
-        /Invalid value.*UInt/i,
+        /Invalid amount parameter./i,
       );
     });
 
@@ -743,7 +743,7 @@ describe('Raiden', () => {
     test('invalid provided paymentId', async () => {
       expect.assertions(1);
       await expect(raiden.transfer(token, partner, 23, { paymentId: -1 })).rejects.toThrowError(
-        /Invalid value.*UInt/i,
+        /Invalid payment identifier parameter./i,
       );
     });
 
@@ -753,7 +753,7 @@ describe('Raiden', () => {
         raiden.transfer(token, partner, 23, {
           paths: [{ path: ['0xnotAnAddress'], fee: 0 }],
         }),
-      ).rejects.toThrowError(/Invalid value.*Address/i);
+      ).rejects.toThrowError(/Invalid path parameter./i);
     });
 
     test('target not available', async () => {
