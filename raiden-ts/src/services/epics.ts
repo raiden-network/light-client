@@ -37,7 +37,7 @@ import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '..
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
 import { assertTx, channelAmounts, groupChannel$ } from '../channels/utils';
-import { Address, decode, Int, Signature, Signed, UInt } from '../utils/types';
+import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
@@ -54,6 +54,7 @@ import {
   udcDeposited,
   udcWithdraw,
   udcWithdrawn,
+  msBalanceProofSent,
 } from './actions';
 import { channelCanRoute, pfsInfo, pfsListInfo, packIOU, signIOU } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
@@ -829,5 +830,64 @@ export const udcWithdrawPlannedEpic = (
         }),
       );
     }),
+  );
+};
+
+/**
+ * Monitors MonitoringService contract and fires events when an MS sent a BP in our behalf.
+ *
+ * When this epic is subscribed (startup), it fetches events since 'provider.resetEventsBlock',
+ * which is set to latest monitored block, so on startup we always pick up events that were fired
+ * while offline, and keep monitoring while online, although it isn't probable that MS would quick
+ * in while we're online, since [[channelUpdateEpic]] would update the channel ourselves.
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.monitoringServiceContract - MonitoringService contract instance
+ * @param deps.address - Our address
+ * @returns Observable of msBalanceProofSent actions
+ */
+export const msMonitorNewBPEpic = (
+  {}: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { monitoringServiceContract, address }: RaidenEpicDeps,
+): Observable<msBalanceProofSent> => {
+  // NewBalanceProofReceived event: [tokenNetwork, channelId, reward, nonce, monitoringService, ourAddress]
+  return getEventsStream<[Address, UInt<32>, UInt<32>, UInt<8>, Address, Address, Event]>(
+    monitoringServiceContract,
+    [
+      monitoringServiceContract.filters.NewBalanceProofReceived(
+        null,
+        null,
+        null,
+        null,
+        null,
+        address,
+      ),
+    ],
+    // no fromBlock, since we want to always track since 'resetEventsBlock'
+  ).pipe(
+    // should never fail, as per filter
+    filter(([, , , , , raidenAddress]) => raidenAddress === address),
+    withLatestFrom(state$),
+    map(([[tokenNetwork, id, reward, nonce, monitoringService, , event], state]) => {
+      const channel = Object.values(state.channels).find(
+        (c) => c.tokenNetwork === tokenNetwork && id.eq(c.id),
+      );
+      if (!channel) return;
+      return msBalanceProofSent({
+        tokenNetwork,
+        partner: channel.partner.address,
+        id: channel.id,
+        reward,
+        nonce,
+        monitoringService,
+        txHash: event.transactionHash as Hash,
+        txBlock: event.blockNumber!,
+        confirmed: undefined,
+      });
+    }),
+    filter(isntNil),
   );
 };

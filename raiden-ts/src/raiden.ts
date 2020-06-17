@@ -22,6 +22,7 @@ import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
 import { CustomTokenFactory } from './contracts/CustomTokenFactory';
 import { UserDepositFactory } from './contracts/UserDepositFactory';
 import { SecretRegistryFactory } from './contracts/SecretRegistryFactory';
+import { MonitoringServiceFactory } from './contracts/MonitoringServiceFactory';
 
 import versions from './versions.json';
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps, Latest } from './types';
@@ -226,6 +227,10 @@ export class Raiden {
       ),
       secretRegistryContract: SecretRegistryFactory.connect(
         contractsInfo.SecretRegistry.address,
+        main?.signer ?? signer,
+      ),
+      monitoringServiceContract: MonitoringServiceFactory.connect(
+        contractsInfo.MonitoringService.address,
         main?.signer ?? signer,
       ),
       main,

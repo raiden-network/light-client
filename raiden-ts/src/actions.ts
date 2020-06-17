@@ -58,6 +58,7 @@ export const RaidenEvents = [
   RaidenActions.tokenMonitored,
   RaidenActions.udcWithdrawn,
   RaidenActions.udcWithdraw.failure,
+  RaidenActions.msBalanceProofSent,
 ];
 /* Tagged union of RaidenEvents actions */
 export type RaidenEvent = ActionType<typeof RaidenEvents>;

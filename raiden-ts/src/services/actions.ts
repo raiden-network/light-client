@@ -80,3 +80,19 @@ export const udcWithdrawn = createAction(
 );
 
 export interface udcWithdrawn extends ActionType<typeof udcWithdrawn> {}
+
+export const msBalanceProofSent = createAction(
+  'ms/balanceProof/sent',
+  t.type({
+    tokenNetwork: Address,
+    partner: Address,
+    id: t.number,
+    reward: UInt(32),
+    nonce: UInt(8),
+    monitoringService: Address,
+    txHash: Hash,
+    txBlock: t.number,
+    confirmed: t.union([t.undefined, t.boolean]),
+  }),
+);
+export interface msBalanceProofSent extends ActionType<typeof msBalanceProofSent> {}
