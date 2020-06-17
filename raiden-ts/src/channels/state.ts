@@ -104,9 +104,9 @@ export interface RaidenChannel {
   // "distributable" capacity of channel, sum of own total deposit and balance (which as usually
   // negative, decreases capacity)
   capacity: BigNumber;
-  id?: number;
-  settleTimeout?: number;
-  openBlock?: number;
+  id: number;
+  settleTimeout: number;
+  openBlock: number;
   closeBlock?: number;
 }
 
