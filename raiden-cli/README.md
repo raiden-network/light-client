@@ -17,7 +17,9 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
-The CLI is considered experimental and mostly used for testing internally, not yet stable enough for production usage.
+The goal of the CLI is provide a HTTP REST server that is fully compatible with the [Raiden API specification](https://raiden-network.readthedocs.io/en/latest/rest_api.html). 
+
+The CLI is considered experimental and mostly used for testing internally, not yet stable enough for production usage. Be aware that not all endpoints the specification defines are already implemented yet.
 
 It requires the latest [Node.js LTS (12.x - Erbium)](https://github.com/nodejs/Release)
 
@@ -55,29 +57,25 @@ node build/index.js --help
 node build/bundle.js --help
 ```
 
-The CLI currently exposes a very limited set of actions. Some of them are exposed through cli parameters, and some through a served REST API which resembles the [Raiden API](https://raiden-network.readthedocs.io/en/stable/rest_api.html), but we aim at being fully compatible with it in the future.
+The CLI currently exposes parameters to configure the Raiden node that runs behind the REST service.
 
-On first run, if you don't have channels yet, the only way to opening and funding them right now is through cli options:
+To run the CLI for the very first time, the only two thing necessary are a keystore file and an Ethereum node.
+
 ```sh
-node build/index.js -e https://provider.web3:8545 -k /path/privkey.json --token <token_address> --partner <partner_address> --deposit <token_wei> --mint
+node build/index.js -e https://provider.web3:8545 -k /path/privkey.json
 ```
 
-This should start the client, perform initial sync, open channel with partner on token network, mint and deposit an amount, then exit. The state is stored in `./storage` as JSON files. It's expected the account to already be funded at least of ETH, since tokens can be minted on the testnets. If you run CI with these options again, it should be idempotent, detect the open and funded channel, and skip if not needed.
+This starts the Raiden node and connects to a REST interface. The state is stored in `./storage` as JSON files. It's expected that the account is already funded with ETH to pay for on-chain transactions.
 
-### Serving and transfering
-```sh
-node build/index.js -e https://provider.web3:8545 -k /path/privkey.json --serve 5001
-# on another terminal
-curl -v -H 'Content-Type: application/json' http://localhost:5001/api/v1/payments/<token_address>/<target_address> -d '{ "amount": 2  }'
-# check channels and balances
-curl -v http://localhost:5001/api/v1/channels
-```
-
-The served instance can be stopped with `Ctrl+C` (interrupt signal). It'll try to stop gracefully, but you can safely send the signal again after a couple of seconds if it's taking longer than expected to exit (due to Node's leftover requests or promises), and it'll force-exit.
+How the REST interface looks like and how the request and respond messages look like, please investigate on the [Raiden API documentation](https://raiden-network.readthedocs.io/en/latest/rest_api.html).
 
 ## Contributing
 
-Any contributions you make are **greatly appreciated**. Refer to the [Raiden Light Client Development Guide](../CONTRIBUTING.md) for details on how to comply with our codestyle, patterns and quality requirements. Although this is still more experimental and internal than SDK and dApp, questions and issues can be reported in the issue tracker.
+Any contributions you make are **greatly appreciated**. Refer to the
+[development guide](./CONTRIBUTING.md) for details on how to comply with our
+codestyle, patterns and quality requirements. Although this is still more
+experimental and internal than SDK and dApp, questions and issues can be
+reported in the issue tracker.
 
 ## License
 
