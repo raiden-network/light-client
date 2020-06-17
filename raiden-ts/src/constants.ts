@@ -1,7 +1,10 @@
-import { padZeros, hexlify } from 'ethers/utils';
-import { Signature } from './utils/types';
+import { padZeros, hexlify, keccak256 } from 'ethers/utils';
+import { Signature, Hash } from './utils/types';
 
 export const SignatureZero = hexlify(padZeros([], 65)) as Signature;
+
+// LocksrootZero = getLocksroot([]) = '0xc5d2...a470';
+export const LocksrootZero = keccak256([]) as Hash;
 
 export enum ShutdownReason {
   STOP = 'raidenStopped',

@@ -6,6 +6,7 @@ import { encode as rlpEncode } from 'ethers/utils/rlp';
 import { HashZero } from 'ethers/constants';
 import logging from 'loglevel';
 
+import { LocksrootZero } from '../constants';
 import { assert } from '../utils';
 import { Address, Hash, HexString, Signature, Signed, decode } from '../utils/types';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
@@ -65,7 +66,9 @@ export function createBalanceHash({
   lockedAmount,
   locksroot,
 }: Pick<BalanceProof, 'transferredAmount' | 'lockedAmount' | 'locksroot'>): Hash {
-  return (transferredAmount.isZero() && lockedAmount.isZero() && locksroot === HashZero
+  return (transferredAmount.isZero() &&
+  lockedAmount.isZero() &&
+  (locksroot === HashZero || locksroot === LocksrootZero)
     ? HashZero
     : keccak256(
         concat([encode(transferredAmount, 32), encode(lockedAmount, 32), encode(locksroot, 32)]),

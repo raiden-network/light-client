@@ -34,6 +34,7 @@ import { LruCache } from 'raiden-ts/utils/lru';
 import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { Lock } from 'raiden-ts/channels';
+import { LocksrootZero } from 'raiden-ts/constants';
 
 const { JsonRpcProvider } = jest.requireActual('ethers/providers');
 
@@ -364,6 +365,7 @@ describe('messages', () => {
     expect(getLocksroot([])).toBe(
       '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470',
     );
+    expect(getLocksroot([])).toBe(LocksrootZero);
     const locks: Lock[] = [
       {
         amount: bigNumberify(1) as UInt<32>,

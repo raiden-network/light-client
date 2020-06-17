@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { Zero, AddressZero, HashZero } from 'ethers/constants';
 
-import { SignatureZero } from '../constants';
+import { SignatureZero, LocksrootZero } from '../constants';
 import { Address, Hash, UInt, Signed } from '../utils/types';
 
 // should these become brands?
@@ -53,7 +53,7 @@ export const BalanceProofZero: Signed<BalanceProof> = {
   nonce: Zero as UInt<8>,
   transferredAmount: Zero as UInt<32>,
   lockedAmount: Zero as UInt<32>,
-  locksroot: HashZero as Hash,
+  locksroot: LocksrootZero,
   additionalHash: HashZero as Hash,
   signature: SignatureZero,
 };
