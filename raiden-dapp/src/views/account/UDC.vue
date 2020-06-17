@@ -136,7 +136,8 @@
     <udc-withdrawal-dialog
       :visible="withdrawFromUdc"
       :account-balance="accountBalance"
-      :service-token="serviceToken"
+      :token="udcToken"
+      :capacity="udcCapacity"
       @cancel="withdrawFromUdc = false"
     />
   </div>
@@ -166,7 +167,7 @@ import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
   },
   computed: {
     ...mapState(['accountBalance']),
-    ...mapGetters(['mainnet'])
+    ...mapGetters(['mainnet', 'udcToken'])
   }
 })
 export default class UDC extends Vue {
@@ -177,15 +178,11 @@ export default class UDC extends Vue {
   udcCapacity = Zero;
   hasEnoughServiceTokens = false;
   mainnet!: boolean;
+  udcToken!: Token;
   withdrawFromUdc: boolean = false;
 
   get serviceToken(): string {
-    return this.udcToken.symbol || this.mainnet ? 'RDN' : 'SVT';
-  }
-
-  get udcToken(): Token {
-    const address = this.$raiden.userDepositTokenAddress;
-    return this.$store.state.tokens[address] || ({ address } as Token);
+    return this.udcToken.symbol ?? (this.mainnet ? 'RDN' : 'SVT');
   }
 
   async mounted() {
@@ -200,14 +197,13 @@ export default class UDC extends Vue {
     this.error = null;
     this.loading = true;
 
-    const tokenAddress = this.$raiden.userDepositTokenAddress;
-    const token: Token = this.$store.state.tokens[tokenAddress];
+    const token: Token = this.udcToken;
     const depositAmount = BalanceUtils.parse(this.amount, token.decimals!);
 
     try {
       if (!this.mainnet && depositAmount.gt(token.balance!)) {
         this.step = 'mint';
-        await this.$raiden.mint(tokenAddress, depositAmount);
+        await this.$raiden.mint(token.address, depositAmount);
       }
 
       this.step = 'approve';
@@ -225,8 +221,7 @@ export default class UDC extends Vue {
   }
 
   private async updateUDCCapacity() {
-    const { userDepositTokenAddress, monitoringReward } = this.$raiden;
-    await this.$raiden.fetchTokenData([userDepositTokenAddress]);
+    const { monitoringReward } = this.$raiden;
     this.udcCapacity = await this.$raiden.getUDCCapacity();
     this.hasEnoughServiceTokens = !!(
       monitoringReward && this.udcCapacity.gte(monitoringReward)

@@ -232,7 +232,7 @@ import { mapGetters } from 'vuex';
     AmountDisplay
   },
   computed: {
-    ...mapGetters(['mainnet'])
+    ...mapGetters(['mainnet', 'udcToken'])
   }
 })
 export default class TransferSteps extends Mixins(
@@ -255,6 +255,7 @@ export default class TransferSteps extends Mixins(
   transferDone: boolean = false;
   error: Error | RaidenError | null = null;
   udcCapacity: BigNumber = Zero;
+  udcToken!: Token;
 
   amount: string = '';
   target: string = '';
@@ -441,17 +442,12 @@ export default class TransferSteps extends Mixins(
     }
 
     if (this.step === 3 && this.selectedRoute) {
-      this.transfer();
+      await this.transfer();
     }
   }
 
   get token(): Token {
     const { token: address } = this.$route.params;
-    return this.$store.state.tokens[address] || ({ address } as Token);
-  }
-
-  get udcToken(): Token {
-    const address = this.$raiden.userDepositTokenAddress;
     return this.$store.state.tokens[address] || ({ address } as Token);
   }
 

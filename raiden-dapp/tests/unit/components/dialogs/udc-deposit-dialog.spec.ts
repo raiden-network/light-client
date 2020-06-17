@@ -45,6 +45,10 @@ describe('UdcDepositDialog.vue', () => {
   }
 
   beforeEach(() => {
+    store.commit(
+      'userDepositTokenAddress',
+      '0x3a989D97388a39A0B5796306C615d10B7416bE77'
+    );
     store.commit('updateTokens', {
       '0x3a989D97388a39A0B5796306C615d10B7416bE77': token
     });

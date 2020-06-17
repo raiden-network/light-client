@@ -132,7 +132,8 @@ import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
     ...mapState(['defaultAccount', 'channels', 'network']),
     ...mapGetters({
       getToken: 'token',
-      mainnet: 'mainnet'
+      mainnet: 'mainnet',
+      udcToken: 'udcToken'
     })
   }
 })
@@ -142,6 +143,7 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   network!: Network;
   getToken!: (address: string) => Token;
   mainnet!: boolean;
+  udcToken!: Token;
 
   partner = '';
   valid = true;
@@ -163,8 +165,8 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   }
 
   private async updateUDCCapacity() {
-    const { userDepositTokenAddress, monitoringReward } = this.$raiden;
-    await this.$raiden.fetchTokenData([userDepositTokenAddress]);
+    const { monitoringReward } = this.$raiden;
+
     this.udcCapacity = await this.$raiden.getUDCCapacity();
     this.hasEnoughServiceTokens = !!(
       monitoringReward && this.udcCapacity.gte(monitoringReward)
@@ -177,14 +179,7 @@ export default class SelectHub extends Mixins(NavigationMixin) {
   }
 
   get serviceToken(): string {
-    return this.udcToken.symbol || this.mainnet ? 'RDN' : 'SVT';
-  }
-
-  get udcToken(): Token {
-    const address = this.$raiden.userDepositTokenAddress;
-    return (
-      this.$store.state.tokens[address] || ({ address, symbol: 'SVT' } as Token)
-    );
+    return this.udcToken.symbol ?? (this.mainnet ? 'RDN' : 'SVT');
   }
 
   async created() {

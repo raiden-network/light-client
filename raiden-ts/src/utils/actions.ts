@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
 import { first, map } from 'rxjs/operators';
 
 import { assert } from '../utils';
-import { RaidenError, ErrorCodes, ErrorCodec } from '../utils/error';
+import { RaidenError, ErrorCodes } from '../utils/error';
 import { BigNumberC } from './types';
 
 /**
@@ -280,7 +280,7 @@ export type AsyncActionCreator<
   TFailureType extends string,
   TRequestPayload extends t.Mixed | undefined,
   TSuccessPayload extends t.Mixed | undefined,
-  TFailurePayload extends t.Mixed | undefined = typeof ErrorCodec
+  TFailurePayload extends t.Mixed | undefined = typeof t.any
 > = {
   request: ActionCreator<TRequestType, TRequestPayload, TMeta>;
   success: ActionCreator<TSuccessType, TSuccessPayload, TMeta>;
@@ -289,7 +289,7 @@ export type AsyncActionCreator<
 
 export type AnyAAC = AsyncActionCreator<any, any, any, any, any, any, any>;
 
-// overloads to account for the optional failure payload (defaults to ErrorCodec)
+// overloads to account for the optional failure payload (defaults to t.any)
 export function createAsyncAction<
   TMeta extends t.Mixed,
   TRequestType extends string,
@@ -311,7 +311,7 @@ export function createAsyncAction<
   TFailureType,
   TRequestPayload,
   TSuccessPayload,
-  typeof ErrorCodec
+  typeof t.any
 >;
 export function createAsyncAction<
   TMeta extends t.Mixed,
@@ -354,7 +354,7 @@ export function createAsyncAction<
  * @param ftype - Failure literal string tag
  * @param rpayload - Request payload codec
  * @param spayload - Success payload codec
- * @param args - Optional fpayload - Failure payload codec, defaults to ErrorCodec
+ * @param args - Optional fpayload - Failure payload codec, defaults to t.any
  * @returns Async actions
  */
 export function createAsyncAction<
@@ -364,7 +364,7 @@ export function createAsyncAction<
   TFailureType extends string,
   TRequestPayload extends t.Mixed | undefined,
   TSuccessPayload extends t.Mixed | undefined,
-  TFailurePayload extends t.Mixed | undefined = typeof ErrorCodec
+  TFailurePayload extends t.Mixed | undefined = typeof t.any
 >(
   meta: TMeta,
   rtype: TRequestType,
@@ -372,7 +372,7 @@ export function createAsyncAction<
   ftype: TFailureType,
   rpayload: TRequestPayload,
   spayload: TSuccessPayload,
-  ...args: TFailurePayload extends typeof ErrorCodec ? [TFailurePayload] | [] : [TFailurePayload]
+  ...args: TFailurePayload extends typeof t.any ? [TFailurePayload] | [] : [TFailurePayload]
 ): AsyncActionCreator<
   TMeta,
   TRequestType,
@@ -382,7 +382,7 @@ export function createAsyncAction<
   TSuccessPayload,
   TFailurePayload
 > {
-  const fpayload = args.length ? (args[0] as TFailurePayload) : ErrorCodec;
+  const fpayload = args.length ? (args[0] as TFailurePayload) : t.any;
   const request = createAction(rtype, rpayload, meta);
   const success = createAction(stype, spayload, meta);
   const failure = createAction(ftype, fpayload, meta, true) as ActionCreator<

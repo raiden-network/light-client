@@ -9,7 +9,7 @@
         {{ $t('error-message.problem') }}
       </label>
       <p>{{ problem }}</p>
-      <label class="error-message__label">
+      <label v-if="solution" class="error-message__label">
         {{ $t('error-message.solution') }}
       </label>
       <ol v-if="Array.isArray(solution)">
@@ -31,6 +31,7 @@ export default class ErrorMessage extends Vue {
 
   get code() {
     return this.error &&
+      typeof this.error === 'object' &&
       'code' in this.error &&
       this.$te(`errors.${this.error.code}.title`)
       ? this.error.code
@@ -42,10 +43,22 @@ export default class ErrorMessage extends Vue {
   }
 
   get problem() {
+    if (
+      this.code === 'RDN_GENERAL_ERROR' &&
+      typeof this.error?.message === 'string'
+    ) {
+      return this.error.message;
+    }
     return this.$t(`errors.${this.code}.problem`);
   }
 
   get solution() {
+    if (
+      this.code === 'RDN_GENERAL_ERROR' &&
+      typeof this.error?.message === 'string'
+    ) {
+      return undefined;
+    }
     return this.$t(`errors.${this.code}.solution`);
   }
 }

@@ -49,6 +49,7 @@ describe('UDC.vue', () => {
       mint: jest.fn(),
       depositToUDC: jest.fn()
     };
+    store.commit('userDepositTokenAddress', '0x1234');
     store.commit('updateTokens', { '0x1234': token });
     wrapper = createWrapper();
 

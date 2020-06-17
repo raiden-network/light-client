@@ -1,3 +1,5 @@
+import { One } from 'ethers/constants';
+
 jest.useFakeTimers();
 
 import Filters from '@/filters';
@@ -15,6 +17,8 @@ import store from '@/store';
 import { $identicon } from '../../utils/mocks';
 import flushPromises from 'flush-promises';
 import { bigNumberify } from 'ethers/utils';
+import { Token } from '@/model/types';
+import { Tokens } from '@/types';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -67,6 +71,19 @@ describe('SelectHub.vue', () => {
     store.commit('updatePresence', {
       ['0x1D36124C90f53d491b6832F1c073F43E2550E35b']: true
     });
+    store.commit(
+      'userDepositTokenAddress',
+      '0x3a989D97388a39A0B5796306C615d10B7416bE77'
+    );
+    store.commit('updateTokens', {
+      '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
+        address: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
+        name: 'ServiceToken',
+        symbol: 'SVT',
+        decimals: 18,
+        balance: One
+      } as Token
+    } as Tokens);
   });
 
   beforeAll(() => {

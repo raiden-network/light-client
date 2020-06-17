@@ -87,11 +87,6 @@ export default class RaidenService {
     this.store = store;
   }
 
-  get userDepositTokenAddress(): string {
-    if (!this._userDepositTokenAddress) throw new Error('address empty');
-    return this._userDepositTokenAddress;
-  }
-
   /* istanbul ignore next */
   get monitoringReward(): BigNumber | null {
     return this.raiden.config.monitoringReward;
@@ -147,6 +142,11 @@ export default class RaidenService {
         this.store.commit('account', account);
 
         this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
+        await this.fetchTokenData([this._userDepositTokenAddress]);
+        this.store.commit(
+          'userDepositTokenAddress',
+          this._userDepositTokenAddress
+        );
 
         // update connected tokens data on each newBlock
         raiden.events$
@@ -380,6 +380,11 @@ export default class RaidenService {
       (event: ChangeEvent<EventTypes, { txHash: string }>) =>
         event.type === EventTypes.APPROVED ? depositing() : null
     );
+  }
+
+  /* istanbul ignore next */
+  async planUdcWithdraw(amount: BigNumber): Promise<string> {
+    return this.raiden.planUdcWithdraw(amount);
   }
 
   /* istanbul ignore next */

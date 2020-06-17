@@ -24,6 +24,7 @@ export interface RootState {
   stateBackup: string;
   settings: Settings;
   config: Partial<RaidenConfig>;
+  userDepositTokenAddress: string;
 }
 
 declare global {

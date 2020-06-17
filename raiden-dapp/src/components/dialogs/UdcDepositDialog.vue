@@ -103,7 +103,7 @@ import { RaidenError } from 'raiden-ts';
   components: { ActionButton, RaidenDialog, ErrorMessage },
   computed: {
     ...mapState(['accountBalance']),
-    ...mapGetters(['mainnet'])
+    ...mapGetters(['mainnet', 'udcToken'])
   }
 })
 export default class UdcDepositDialog extends Vue {
@@ -117,14 +117,10 @@ export default class UdcDepositDialog extends Vue {
   visible!: boolean;
 
   mainnet!: boolean;
+  udcToken!: Token;
 
   get serviceToken(): string {
-    return this.udcToken.symbol || this.mainnet ? 'RDN' : 'SVT';
-  }
-
-  get udcToken(): Token {
-    const address = this.$raiden.userDepositTokenAddress;
-    return this.$store.state.tokens[address] || ({ address } as Token);
+    return this.udcToken.symbol ?? (this.mainnet ? 'RDN' : 'SVT');
   }
 
   get valid(): boolean {
@@ -139,15 +135,13 @@ export default class UdcDepositDialog extends Vue {
   async udcDeposit() {
     this.error = null;
     this.loading = true;
-
-    const tokenAddress = this.$raiden.userDepositTokenAddress;
-    const token: Token = this.$store.state.tokens[tokenAddress];
+    const token = this.udcToken;
     const depositAmount = BalanceUtils.parse(this.amount, token.decimals!);
 
     try {
       if (!this.mainnet && depositAmount.gt(token.balance!)) {
         this.step = 'mint';
-        await this.$raiden.mint(tokenAddress, depositAmount);
+        await this.$raiden.mint(token.address, depositAmount);
       }
 
       this.step = 'approve';
