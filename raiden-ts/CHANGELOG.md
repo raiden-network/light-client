@@ -19,6 +19,8 @@
 - [#837] Changes the action tags from camel to path format. This change affects the event types exposed through the public API.
 - [#1610] Updates smart contracts to v0.37.0 (Alderaan)
 - [#1649] Have constant error messages and codes in public Raiden API.
+- [#1657] Expose RaidenChannel's id,settleTimeout,openBlock as required properties
+- [#1708] Expose RaidenTransfer's secret as optional property
 
 [#837]: https://github.com/raiden-network/light-client/issues/837
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
@@ -30,8 +32,10 @@
 [#1642]: https://github.com/raiden-network/light-client/issues/1642
 [#1649]: https://github.com/raiden-network/light-client/pull/1649
 [#1651]: https://github.com/raiden-network/light-client/issues/1651
+[#1657]: https://github.com/raiden-network/light-client/issues/1657
 [#1690]: https://github.com/raiden-network/light-client/issues/1690
 [#1701]: https://github.com/raiden-network/light-client/pull/1701
+[#1708]: https://github.com/raiden-network/light-client/issues/1708
 
 ## [0.9.0] - 2020-05-28
 ### Added
