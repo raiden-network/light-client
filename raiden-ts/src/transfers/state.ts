@@ -148,4 +148,5 @@ export interface RaidenTransfer {
    * False if transfer still has pending actions (even if success status is already known)
    */
   completed: boolean;
+  secret?: Secret;
 }

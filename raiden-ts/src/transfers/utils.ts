@@ -184,6 +184,7 @@ export function raidenTransfer(state: TransferState): RaidenTransfer {
     changedAt,
     success,
     completed,
+    secret: state.secret?.[1]?.value,
   };
 }
 
