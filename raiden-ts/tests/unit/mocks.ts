@@ -52,7 +52,7 @@ import { Address, Signature, UInt, Hash } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { raidenConfigUpdate, RaidenAction, raidenShutdown } from 'raiden-ts/actions';
-import { makeDefaultConfig } from 'raiden-ts/config';
+import { makeDefaultConfig, RaidenConfig } from 'raiden-ts/config';
 import { makeSecret } from 'raiden-ts/transfers/utils';
 import { raidenReducer } from 'raiden-ts/reducer';
 import { ShutdownReason } from 'raiden-ts/constants';
@@ -529,6 +529,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     serviceRegistryContract,
     userDepositContract,
     secretRegistryContract,
+    monitoringServiceContract,
   };
 }
 
@@ -646,24 +647,17 @@ export interface MockedRaiden {
   address: Address;
   store: Store<RaidenState, RaidenAction>;
   deps: MockRaidenEpicDeps;
+  config: RaidenConfig;
   output: RaidenAction[];
   start: () => Promise<void>;
-  started: boolean;
+  started: boolean | undefined;
+  stop: () => void;
 }
 
 const mockedClients: MockedRaiden[] = [];
 const registryAddress = makeAddress();
 const svtAddress = makeAddress();
 const oneToNAddress = makeAddress();
-
-/**
- * Stop a client and complete its observables
- *
- * @param raiden - Client to stop
- */
-export function stopRaiden(raiden: MockedRaiden) {
-  raiden.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
-}
 
 /**
  * Create a mock of a Raiden client for epics
@@ -704,8 +698,7 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
   jest
     .spyOn(provider, 'getTransactionReceipt')
     .mockImplementation(
-      async (txHash: string) =>
-        ({ txHash, confirmations: 6, blockNumber: provider.blockNumber } as any),
+      async (txHash: string) => ({ txHash, confirmations: 6, blockNumber: undefined } as any),
     );
   // use provider.resetEventsBlock used to set current block number for provider
   jest
@@ -838,7 +831,7 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
     { network },
     {
       // matrixServerLookup: 'https://matrixLookup.raiden.test',
-      matrixServer: 'matrix.raiden.test',
+      matrixServer: 'https://matrix.raiden.test',
       pfsSafetyMargin: 1.1,
       pfs: 'pfs.raiden.test',
       httpTimeout: 300,
@@ -867,6 +860,7 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
     serviceRegistryContract,
     userDepositContract,
     secretRegistryContract,
+    monitoringServiceContract,
   };
 
   const initialState = makeInitialState(
@@ -885,10 +879,12 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
     raidenReducer,
     initialState as any,
     applyMiddleware(epicMiddleware, () => (next) => (action) => {
-      output.push(action);
-      const result = next(action);
-      log.debug(`[${address}] action$:`, action);
-      return result;
+      // don't output before starting, so we can change state without side-effects
+      if (raiden.started) {
+        output.push(action);
+        log.debug(`[${address}] action$:`, action);
+      }
+      return next(action);
     }),
   );
 
@@ -897,7 +893,15 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
     store,
     deps,
     output,
+    config: defaultConfig,
     start: async () => {
+      if (raiden.started !== undefined) return;
+      raiden.started = true;
+      raiden.deps.config$.subscribe(
+        (config) => (raiden.config = config),
+        undefined,
+        () => (raiden.started = false),
+      );
       epicMiddleware.run(raidenRootEpic);
       await raiden.deps.latest$
         .pipe(
@@ -907,19 +911,20 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
         .toPromise();
       // raiden.store.dispatch(newBlock({ blockNumber: provider.blockNumber }));
     },
-    started: false,
+    started: undefined,
+    stop: () => {
+      raiden.deps.provider.removeAllListeners();
+      raiden.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
+      const idx = mockedClients.indexOf(raiden);
+      if (idx >= 0) mockedClients.splice(idx, 1);
+    },
   };
+
   mockedClients.push(raiden);
-  mockedCleanups.push(() => {
-    raiden.deps.provider.removeAllListeners();
-    stopRaiden(raiden);
-    const idx = mockedClients.indexOf(raiden);
-    if (idx >= 0) mockedClients.splice(idx, 1);
-  });
+  mockedCleanups.push(raiden.stop);
 
   if (start) {
     await raiden.start();
-    raiden.started = true;
   }
   return raiden;
 }

@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { bigNumberify, BigNumberish } from 'ethers/utils';
-import { Zero, WeiPerEther } from 'ethers/constants';
+import { raidenEpicDeps, makeLog, makeAddress, makeHash, makeRaidens, waitBlock } from '../mocks';
+import { epicFixtures, tokenNetwork, ensureChannelIsOpen, id } from '../fixtures';
+
+import { bigNumberify, BigNumberish, defaultAbiCoder } from 'ethers/utils';
+import { Zero, WeiPerEther, Two } from 'ethers/constants';
 import { of } from 'rxjs';
 import { first, toArray, pluck } from 'rxjs/operators';
 
@@ -20,13 +23,10 @@ import {
   getLocksroot,
 } from 'raiden-ts/transfers/utils';
 import { monitorRequestEpic, monitorUdcBalanceEpic } from 'raiden-ts/services/epics';
-import { udcDeposited } from 'raiden-ts/services/actions';
+import { udcDeposited, msBalanceProofSent } from 'raiden-ts/services/actions';
 import { transferProcessed, transferSecretRegister } from 'raiden-ts/transfers/actions';
 import { channelKey } from 'raiden-ts/channels/utils';
 import { Direction } from 'raiden-ts/transfers/state';
-
-import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps } from '../mocks';
 
 test('monitorUdcBalanceEpic', async () => {
   expect.assertions(2);
@@ -322,4 +322,60 @@ describe('monitorRequestEpic', () => {
 
     await expect(promise).resolves.toBeUndefined();
   });
+});
+
+test('msMonitorNewBPEpic', async () => {
+  expect.assertions(1);
+
+  const [raiden, partner] = await makeRaidens(2);
+  await ensureChannelIsOpen([raiden, partner]);
+
+  const { monitoringServiceContract } = raiden.deps;
+  const monitoringService = makeAddress();
+  const nonce = Two as UInt<8>;
+  const txHash = makeHash();
+  const txBlock = 68;
+
+  // emit a NewBalanceProofReceived event
+  raiden.deps.provider.emit(
+    monitoringServiceContract.filters.NewBalanceProofReceived(
+      null,
+      null,
+      null,
+      null,
+      null,
+      raiden.address,
+    ),
+    makeLog({
+      transactionHash: txHash,
+      blockNumber: txBlock,
+      filter: monitoringServiceContract.filters.NewBalanceProofReceived(
+        null,
+        null,
+        null,
+        nonce,
+        monitoringService,
+        raiden.address,
+      ),
+      data: defaultAbiCoder.encode(
+        ['address', 'uint256', 'uint256'], // first 3 event arguments, non-indexed
+        [tokenNetwork, id, raiden.config.monitoringReward!],
+      ),
+    }),
+  );
+
+  await waitBlock();
+  expect(raiden.output).toContainEqual(
+    msBalanceProofSent({
+      tokenNetwork,
+      partner: partner.address,
+      id,
+      reward: raiden.config.monitoringReward!,
+      nonce,
+      monitoringService,
+      txHash,
+      txBlock,
+      confirmed: true,
+    }),
+  );
 });
