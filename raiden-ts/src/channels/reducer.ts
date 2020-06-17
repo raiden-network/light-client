@@ -30,7 +30,8 @@ const blockNumber = createReducer(initialState.blockNumber).handle(
 // state.tokens specific reducer, handles only tokenMonitored action
 const tokens = createReducer(initialState.tokens).handle(
   tokenMonitored,
-  (state, { payload: { token, tokenNetwork } }) => ({ ...state, [token]: tokenNetwork }),
+  (state, { payload: { token, tokenNetwork } }) =>
+    state[token] === tokenNetwork ? state : { ...state, [token]: tokenNetwork },
 );
 
 const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
