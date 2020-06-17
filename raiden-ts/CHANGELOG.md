@@ -6,6 +6,7 @@
 - [#1607] Fix settling when one side closes/updates with outdated BalanceProof
 - [#1637] Fix depositToUDC failing if services already have withdrawn some fees
 - [#1651] Fix PFS being disabled if passed an undefined default config
+- [#1690] Fix LockExpired with empty balanceHash verification
 
 ### Added
 - [#1421] Adds support for withdrawing tokens from the UDC
@@ -27,6 +28,7 @@
 [#1642]: https://github.com/raiden-network/light-client/issues/1642
 [#1649]: https://github.com/raiden-network/light-client/pull/1649
 [#1651]: https://github.com/raiden-network/light-client/issues/1651
+[#1690]: https://github.com/raiden-network/light-client/issues/1690
 [#1701]: https://github.com/raiden-network/light-client/pull/1701
 
 ## [0.9.0] - 2020-05-28
