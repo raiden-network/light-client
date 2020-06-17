@@ -26,8 +26,10 @@ import {
 import { bigNumberify, BigNumber } from 'ethers/utils';
 import { Zero, HashZero } from 'ethers/constants';
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
+import { Filter } from 'ethers/providers';
 
 import { UInt } from 'raiden-ts/utils/types';
+import { LocksrootZero } from 'raiden-ts/constants';
 import {
   channelMonitor,
   channelOpen,
@@ -40,7 +42,6 @@ import {
 import { channelUniqueKey } from 'raiden-ts/channels/utils';
 import { ChannelState } from 'raiden-ts/channels';
 import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
-import { Filter } from 'ethers/providers';
 import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from 'raiden-ts/messages';
 import { getLocksroot } from 'raiden-ts/transfers/utils';
 
@@ -659,11 +660,11 @@ describe('channelSettleEpic', () => {
       raiden.address,
       Zero, // self transfered amount
       Zero, // self locked amount
-      HashZero, // self locksroot
+      LocksrootZero, // self locksroot
       partner.address,
       Zero, // partner transfered amount
       Zero, // partner locked amount
-      HashZero, // partner locksroot
+      LocksrootZero, // partner locksroot
     );
     expect(settleTx.wait).toHaveBeenCalledTimes(1);
   });
@@ -727,7 +728,7 @@ describe('channelSettleEpic', () => {
       partner.address,
       Zero, // partner transfered amount
       Zero, // partner locked amount
-      HashZero, // partner locksroot
+      LocksrootZero, // partner locksroot
       raiden.address,
       Zero, // self transfered amount
       amount, // self locked amount
@@ -796,7 +797,7 @@ describe('channelSettleEpic', () => {
       raiden.address,
       Zero, // self transfered amount
       Zero, // self locked amount
-      HashZero, // self locksroot
+      LocksrootZero, // self locksroot
       partner.address,
       Zero, // partner transfered amount
       amount, // partner locked amount

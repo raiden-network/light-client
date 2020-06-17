@@ -13,7 +13,7 @@ import {
 } from 'raiden-ts/state';
 import { Address, UInt } from 'raiden-ts/utils/types';
 import { makeDefaultConfig } from 'raiden-ts/config';
-import { SignatureZero } from 'raiden-ts/constants';
+import { SignatureZero, LocksrootZero } from 'raiden-ts/constants';
 
 describe('RaidenState codecs', () => {
   const address = '0x1111111111111111111111111111111111111111' as Address,
@@ -90,7 +90,7 @@ describe('RaidenState codecs', () => {
               nonce: '0',
               transferredAmount: '0',
               lockedAmount: '0',
-              locksroot: HashZero,
+              locksroot: LocksrootZero,
               additionalHash: HashZero,
               signature: SignatureZero,
             },
@@ -109,7 +109,7 @@ describe('RaidenState codecs', () => {
               nonce: '0',
               transferredAmount: '0',
               lockedAmount: '0',
-              locksroot: HashZero,
+              locksroot: LocksrootZero,
               additionalHash: HashZero,
               signature: SignatureZero,
             },
@@ -192,7 +192,7 @@ describe('RaidenState codecs', () => {
                 nonce: '0',
                 transferredAmount: '0',
                 lockedAmount: '0',
-                locksroot: HashZero,
+                locksroot: LocksrootZero,
                 additionalHash: HashZero,
                 signature: SignatureZero,
               },
@@ -211,7 +211,7 @@ describe('RaidenState codecs', () => {
                 nonce: '0',
                 transferredAmount: '0',
                 lockedAmount: '0',
-                locksroot: HashZero,
+                locksroot: LocksrootZero,
                 additionalHash: HashZero,
                 signature: SignatureZero,
               },
