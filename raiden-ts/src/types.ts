@@ -11,6 +11,7 @@ import { TokenNetwork } from './contracts/TokenNetwork';
 import { HumanStandardToken } from './contracts/HumanStandardToken';
 import { UserDeposit } from './contracts/UserDeposit';
 import { SecretRegistry } from './contracts/SecretRegistry';
+import { MonitoringService } from './contracts/MonitoringService';
 
 import { RaidenAction } from './actions';
 import { RaidenState } from './state';
@@ -58,6 +59,7 @@ export interface RaidenEpicDeps {
   serviceRegistryContract: ServiceRegistry;
   userDepositContract: UserDeposit;
   secretRegistryContract: SecretRegistry;
+  monitoringServiceContract: MonitoringService;
   main?: { signer: Signer; address: Address };
 }
 
