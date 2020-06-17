@@ -9,17 +9,19 @@
 - [#1690] Fix LockExpired with empty balanceHash verification
 
 ### Added
+- [#1374] Monitors MonitoringService contract and emit event when MS acts
 - [#1421] Adds support for withdrawing tokens from the UDC
 - [#1642] Check token's allowance before deposit and skip approve
 - [#1701] Allow parameter decoding to throw and log customized errors
 - [#1701] Add and extend error codes for user parameter validation
 
 ### Changed
-- [#1610] Updates smart contracts to v0.37.0 (Alderaan)
 - [#837] Changes the action tags from camel to path format. This change affects the event types exposed through the public API.
+- [#1610] Updates smart contracts to v0.37.0 (Alderaan)
 - [#1649] Have constant error messages and codes in public Raiden API.
 
 [#837]: https://github.com/raiden-network/light-client/issues/837
+[#1374]: https://github.com/raiden-network/light-client/issues/1374
 [#1421]: https://github.com/raiden-network/light-client/issues/1421
 [#1514]: https://github.com/raiden-network/light-client/issues/1514
 [#1607]: https://github.com/raiden-network/light-client/issues/1607
