@@ -1,13 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { patchEthersDefineReadOnly } from './patches';
-patchEthersDefineReadOnly();
+import {
+  makeMatrix,
+  MockRaidenEpicDeps,
+  MockedRaiden,
+  makeAddress,
+  makeHash,
+  waitBlock,
+  providersEmit,
+  makeLog,
+} from './mocks';
 
 import { Subject } from 'rxjs';
 import { first, scan, pluck } from 'rxjs/operators';
 import { Wallet } from 'ethers';
 import { AddressZero, Zero, HashZero } from 'ethers/constants';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
+import { Filter } from 'ethers/providers';
 
 import { Address, Hash, Int, UInt } from 'raiden-ts/utils/types';
 import { Processed, MessageType } from 'raiden-ts/messages/types';
@@ -29,18 +38,6 @@ import { ChannelState, Channel } from 'raiden-ts/channels';
 import { Direction } from 'raiden-ts/transfers/state';
 import { transfer, transferUnlock } from 'raiden-ts/transfers/actions';
 import { messageReceived } from 'raiden-ts/messages/actions';
-
-import {
-  makeMatrix,
-  MockRaidenEpicDeps,
-  MockedRaiden,
-  makeAddress,
-  makeHash,
-  waitBlock,
-  providersEmit,
-  makeLog,
-} from './mocks';
-import { Filter } from 'ethers/providers';
 
 /**
  * Composes several constants used across epics
