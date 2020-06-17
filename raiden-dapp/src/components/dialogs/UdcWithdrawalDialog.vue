@@ -59,14 +59,14 @@
         </v-col>
       </v-row>
     </v-card-text>
-    <v-card-actions>
+    <v-card-actions v-if="!error">
       <action-button
         :enabled="isValid"
         :text="$t('general.buttons.confirm')"
         @click="planWithdraw"
       />
     </v-card-actions>
-    <v-card-text>
+    <v-card-text v-if="!error">
       <v-row class="udc-withdrawal-dialog__footnote" no-gutters>
         <span>
           <sup>{{ $t('udc.asterisk') }}</sup>
@@ -100,7 +100,7 @@ import ErrorMessage from '@/components/ErrorMessage.vue';
 export default class UdcWithdrawalDialog extends Vue {
   amount: string = '0';
   inProgress: boolean = false;
-  error: string = '';
+  error: any = null;
   isDone: boolean = false;
 
   @Prop({ required: true, type: Boolean })
@@ -143,14 +143,19 @@ export default class UdcWithdrawalDialog extends Vue {
       await this.$raiden.planUdcWithdraw(this.withdrawAmount);
       this.done();
     } catch (e) {
-      this.error = e.message;
+      this.error = e;
     } finally {
       this.inProgress = false;
     }
   }
 
   @Emit()
-  cancel() {}
+  cancel() {
+    this.isDone = false;
+    this.inProgress = false;
+    this.error = '';
+    this.amount = '0';
+  }
 }
 </script>
 
