@@ -110,7 +110,7 @@ export default class Channels extends Mixins(NavigationMixin) {
     const { expanded, channel } = payload;
     if (expanded) {
       this.selectedChannel = channel;
-      this.expanded = { [channel.id ?? -1]: true };
+      this.expanded = { [channel.id]: true };
     } else {
       this.selectedChannel = null;
       const updates = { ...this.expanded };
