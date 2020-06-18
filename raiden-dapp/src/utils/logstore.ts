@@ -92,7 +92,11 @@ export async function setupLogStore(
         if (!filtered) return;
         db.put(
           collectionName,
-          { logger: loggerName, level: methodName, message },
+          {
+            logger: loggerName,
+            level: methodName,
+            message: filtered
+          },
           Date.now()
         ).catch(() =>
           db.put(
