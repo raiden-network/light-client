@@ -43,7 +43,6 @@ async function doTransfer(this: Cli, request: Request, response: Response, next:
       request.body.amount,
       { paymentId: request.body.identifier },
     );
-    this.log.info(`Transfer key: ${transferKey}`);
     await this.raiden.waitTransfer(transferKey);
     const newTransfer = await this.raiden.transfers$
       .pipe(first(({ key }: RaidenTransfer) => key === transferKey))
@@ -53,7 +52,8 @@ async function doTransfer(this: Cli, request: Request, response: Response, next:
     if (isInvalidParameterError(error)) {
       response.status(400).send(error.message);
     } else if (isConflictError(error)) {
-      response.status(409).send(error.message);
+      const pfsErrorDetail = error.details?.errors ? ` (${error.details.errors})` : '';
+      response.status(409).send(error.message + pfsErrorDetail);
     } else {
       next(error);
     }
