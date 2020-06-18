@@ -89,10 +89,23 @@ export async function setupLogStore(
       return (...message: any[]): void => {
         rawMethod(...message);
         const filtered = filterMessage(message);
+
         if (!filtered) return;
+
+        const serializedFilteredMessage = filtered.map(message => {
+          if (message === 'object') {
+            JSON.stringify(message);
+          }
+          return message;
+        });
+
         db.put(
           collectionName,
-          { logger: loggerName, level: methodName, message },
+          {
+            logger: loggerName,
+            level: methodName,
+            message: serializedFilteredMessage
+          },
           Date.now()
         ).catch(() =>
           db.put(
