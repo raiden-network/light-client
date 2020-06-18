@@ -3,6 +3,8 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   productionSourceMap: false,
+  // https://forum.vuejs.org/t/solution-to-building-error-in-circleci-or-any-other-machine-with-cpu-limitations/40862
+  parallel: !process.env.CIRCLECI,
   publicPath: process.env.DEPLOYMENT === 'staging' ? '/staging/' : '/',
   chainWebpack: config => {
     if (process.env.NODE_ENV !== 'production' && !process.env.CI) {
