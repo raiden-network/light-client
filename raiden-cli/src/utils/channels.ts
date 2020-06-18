@@ -26,7 +26,6 @@ export function filterChannels(
   return filteredChannels;
 }
 
-/* eslint-disable @typescript-eslint/camelcase */
 export function transformSdkChannelFormatToApi(channel: RaidenChannel): ApiChannel {
   return {
     channel_identifier: channel.id ?? 0, // FIXME: old "bug" in the SDK

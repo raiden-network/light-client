@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { Router, Request, Response } from 'express';
 import { Raiden } from 'raiden-ts';
 import { Cli } from '../types';

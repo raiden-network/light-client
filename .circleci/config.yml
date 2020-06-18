@@ -12,6 +12,8 @@ var_2: &sdk_cache_key raiden-ts-{{ .Branch }}-{{ checksum "package-lock.json" }}
 var_3: &dapp_cache_key raiden-dapp-{{ .Branch }}-{{ checksum "package-lock.json" }}
 var_4: &sdk_working_dir ~/src/raiden-ts
 var_5: &dapp_working_dir ~/src/raiden-dapp
+var_6: &cli_cache_key raiden-cli-{{ .Branch }}-{{ checksum "package-lock.json" }}
+var_7: &cli_working_dir ~/src/raiden-cli
 
 anchor_1: &sdk_package_lock_key
   key: *sdk_cache_key
@@ -21,6 +23,9 @@ anchor_2: &attach_options
 
 anchor_3: &dapp_package_lock_key
   key: *dapp_cache_key
+
+anchor_4: &cli_package_lock_key
+  key: *cli_cache_key
 
 executors:
   base-executor:
@@ -63,6 +68,9 @@ jobs:
       - run:
           name: Check dApp Licenses
           command: cd ~/src/raiden-dapp && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
+      - run:
+          name: Check CLI Licenses
+          command: cd ~/src/raiden-cli && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
 
   install_sdk:
     executor: base-executor
@@ -97,6 +105,22 @@ jobs:
           paths:
             - ./*
 
+  install_cli:
+    executor: base-executor
+    working_directory: *cli_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - restore_cache: *cli_package_lock_key
+      - run: npm ci
+      - save_cache:
+          <<: *cli_package_lock_key
+          paths:
+            - ~/.npm
+      - persist_to_workspace:
+          root: ~/src
+          paths:
+            - ./*
+
   lint_sdk:
     executor: base-executor
     working_directory: *sdk_working_dir
@@ -110,6 +134,13 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - run: npm run lint:check
+
+  lint_cli:
+    executor: base-executor
+    working_directory: *cli_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run: npm run lint
 
   test_sdk:
     executor: base-executor
@@ -157,6 +188,13 @@ jobs:
           root: ~/src
           paths:
             - ./*
+
+  build_cli:
+    executor: base-executor
+    working_directory: *cli_working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run: npm run build
 
   generate_documentation:
     executor: base-executor
@@ -222,29 +260,37 @@ workflows:
             - checkout
       - install_dapp:
           requires:
-            - checkout
             - install_sdk
+      - install_cli:
+          requires:
+            - install_dapp
       - check_licenses:
           requires:
             - install_sdk
             - install_dapp
+            - install_cli
       - lint_sdk:
           requires:
             - install_sdk
       - lint_dapp:
           requires:
             - install_dapp
+      - lint_cli:
+          requires:
+            - install_cli
       - build_dapp:
           requires:
             - install_dapp
           context: "Raiden-LC-Deploy"
+      - build_cli:
+          requires:
+            - install_cli
       - test_sdk:
           requires:
-            - lint_sdk
+            - install_sdk
       - test_dapp:
           requires:
             - lint_dapp
-            - build_dapp
       - deploy_gh_pages:
           requires:
             - test_dapp
