@@ -184,6 +184,11 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - run: npm run build -- --mode ghpages
+      - run:
+          name: Compress dapp
+          command: tar -cJf dapp.tar.xz dist
+      - store_artifacts:
+          path: dapp.tar.xz
       - persist_to_workspace:
           root: ~/src
           paths:
