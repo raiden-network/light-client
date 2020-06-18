@@ -40,7 +40,7 @@
   "dependencies": {
     "@types/http-errors": "1.6.3",
     "@types/morgan": "1.9.1",
-    "ethers": "4.0.47",
+    "ethers": "5.0.2",
     "express": "4.17.1",
     "http-errors": "1.7.3",
     "inquirer": "7.2.0",
