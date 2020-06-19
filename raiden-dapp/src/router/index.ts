@@ -8,7 +8,7 @@ Vue.use(Router);
 
 /* istanbul ignore next */
 const router = new Router({
-  mode: 'history',
+  mode: process.env.NODE_ENV === 'production' ? 'history' : 'hash',
   base: process.env.BASE_URL,
   routes: [
     {
