@@ -22,6 +22,8 @@ import { parseUnits } from 'ethers/utils';
 import { RaidenError, ErrorCodes } from 'raiden-ts';
 import RaidenService from '@/services/raiden-service';
 
+jest.mock('@/i18n', () => jest.fn());
+
 Vue.use(Vuetify);
 Vue.filter('truncate', Filters.truncate);
 

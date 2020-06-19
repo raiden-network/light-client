@@ -1,4 +1,6 @@
 jest.mock('@/services/raiden-service');
+jest.mock('@/i18n', () => jest.fn());
+
 import flushPromises from 'flush-promises';
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';

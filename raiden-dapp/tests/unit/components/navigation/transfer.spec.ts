@@ -18,6 +18,8 @@ import { One, Zero } from 'ethers/constants';
 import { BigNumber } from 'ethers/utils';
 import { $identicon } from '../../utils/mocks';
 
+jest.mock('@/i18n', () => jest.fn());
+
 import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';
 

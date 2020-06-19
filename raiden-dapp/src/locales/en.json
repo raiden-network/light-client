@@ -17,7 +17,25 @@
     }
   },
   "notifications": {
-    "no-notifications": "No notifications"
+    "no-notifications": "No notifications",
+    "ms-balance-proof": {
+      "title": "Balance proof submitted",
+      "description": "The monitoring service {monitoringService} successfully submitted a balance proof for a channel with {partner} claiming a reward of {reward}. ({txHash})"
+    },
+    "withdrawal": {
+      "success": {
+        "title": "User Deposit Withdrawal",
+        "description": "A planned withdrawal of {amount} {symbol} was successfully completed withdrawing {withdrawal} {symbol}"
+      },
+      "failure": {
+        "title": "User Deposit Withdrawal",
+        "description": "The planned withdrawal of {amount} {symbol} failed: {message}",
+        "descriptions": {
+          "UDC_WITHDRAW_NO_BALANCE": "We could not complete the withdrawal of {amount} {symbol} because there was not enough balance.",
+          "UDC_WITHDRAW_FAILED": "We could not complete the withdrawal of {amount} {symbol} because the transaction failed."
+        }
+      }
+    }
   },
   "general": {
     "buttons": {

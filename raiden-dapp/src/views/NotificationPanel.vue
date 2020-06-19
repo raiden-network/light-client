@@ -43,10 +43,12 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
-import { Notification } from '@/model/types';
+import { createNamespacedHelpers } from 'vuex';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import NotificationCard from '@/components/notification-panel/NotificationCard.vue';
+import { Notification } from '@/store/notifications/types';
+
+const { mapGetters } = createNamespacedHelpers('notifications');
 
 @Component({
   components: {

@@ -5,11 +5,11 @@
       <router-view name="notifications" />
       <div id="application-content">
         <app-header />
-        <v-content>
+        <v-main>
           <v-container fluid class="application__container fill-height">
             <router-view />
           </v-container>
-        </v-content>
+        </v-main>
       </div>
     </div>
     <div class="policy">
@@ -93,7 +93,7 @@ export default class App extends Mixins(NavigationMixin) {
   }
 }
 
-.v-content {
+.v-main {
   height: calc(100% - 120px);
   margin-bottom: auto;
 }

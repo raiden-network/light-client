@@ -18,8 +18,7 @@ import {
   PlaceHolderNetwork,
   Token,
   TokenModel,
-  Presences,
-  Notification
+  Presences
 } from '@/model/types';
 import map from 'lodash/map';
 import flatMap from 'lodash/flatMap';
@@ -30,6 +29,7 @@ import orderBy from 'lodash/orderBy';
 import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
 import { BigNumber, Network } from 'ethers/utils';
+import { notifications } from '@/store/notifications';
 
 Vue.use(Vuex);
 
@@ -52,9 +52,7 @@ const _defaultState: RootState = {
     useRaidenAccount: true
   },
   config: {},
-  userDepositTokenAddress: '',
-  notifications: [],
-  newNotifications: false
+  userDepositTokenAddress: ''
 };
 
 export function defaultState(): RootState {
@@ -138,14 +136,6 @@ const store: StoreOptions<RootState> = {
     },
     userDepositTokenAddress(state: RootState, address: string) {
       state.userDepositTokenAddress = address;
-    },
-    deleteNotification(state: RootState, id: string) {
-      state.notifications = state.notifications.filter(
-        notification => notification.id != id
-      );
-    },
-    viewedNotifications(state: RootState) {
-      state.newNotifications = false;
     }
   },
   actions: {},
@@ -252,12 +242,12 @@ const store: StoreOptions<RootState> = {
     },
     udcToken: (state: RootState): Token => {
       return state.tokens[state.userDepositTokenAddress];
-    },
-    notifications: (state: RootState): Notification[] => {
-      return state.notifications;
     }
   },
-  plugins: [settingsLocalStorage.plugin]
+  plugins: [settingsLocalStorage.plugin],
+  modules: {
+    notifications
+  }
 };
 
 export default new Vuex.Store(store);

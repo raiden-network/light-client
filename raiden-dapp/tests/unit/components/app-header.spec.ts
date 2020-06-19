@@ -5,6 +5,7 @@ import store from '@/store';
 import { $identicon } from '../utils/mocks';
 import AppHeader from '@/components/AppHeader.vue';
 import { RouteNames } from '@/router/route-names';
+import { TestData } from '../data/mock-data';
 
 Vue.use(Vuetify);
 
@@ -48,8 +49,7 @@ describe('AppHeader.vue', () => {
 
     expect(newNotificationsBadge.exists()).toBe(false);
 
-    // TODO: Needs the proper action/mutation for setting newNotifications flag to true
-    store.state.newNotifications = true;
+    await store.dispatch('notifications/notify', TestData.notifications);
 
     await wrapper.vm.$nextTick();
     newNotificationsBadge = wrapper.find('.v-badge__badge');

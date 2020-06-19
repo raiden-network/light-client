@@ -1,5 +1,6 @@
 jest.mock('vuex');
 jest.mock('raiden-ts');
+jest.mock('@/i18n', () => jest.fn());
 
 import { DeniedReason, Token, TokenModel } from '@/model/types';
 import RaidenService from '@/services/raiden-service';
@@ -710,15 +711,5 @@ describe('RaidenService', () => {
     subject.next(config);
 
     expect(store.commit).toHaveBeenLastCalledWith('updateConfig', config);
-  });
-
-  test('commit deleteNotification when a user deletes a notification', () => {
-    raidenService.deleteNotification('1');
-    expect(store.commit).toBeCalledWith('deleteNotification', '1');
-  });
-
-  test('commits viewedNotifications when a user views the notification panel', () => {
-    raidenService.viewedNotifications();
-    expect(store.commit).toBeCalledWith('viewedNotifications');
   });
 });
