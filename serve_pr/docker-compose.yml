@@ -1,0 +1,16 @@
+version: '3'
+services:
+  dapp:
+    image: openresty/openresty:buster-fat
+    volumes:
+      - ./app:/app
+      - ./ci_dapp.sh:/app/ci_dapp.sh:ro
+      - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+    logging:
+      options:
+        max-file: "1"
+        max-size: "1g"
+    ports:
+      - "127.0.0.1:8888:8888"
+    environment:
+      - CIRCLE_TOKEN
