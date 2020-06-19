@@ -38,6 +38,35 @@ executors:
     docker:
       - image: raidennetwork/lightclient-integration:latest
 
+commands:
+  build_dapp:
+    description: Build the dApp
+    parameters:
+      mode:
+        type: string
+        default: "ghpages"
+      artifact_name:
+        type: string
+        default: "dapp"
+      persistent:
+        type: boolean
+        default: no
+    steps:
+      - attach_workspace: *attach_options
+      - run: npm run build -- --mode << parameters.mode >>
+      - run:
+          name: Compress dapp
+          command: tar -cJf << parameters.artifact_name >>.tar.gz dist
+      - store_artifacts:
+          path: << parameters.artifact_name >>.tar.xz
+      - when:
+          condition: << parameters.persistent >>
+          steps:
+            - persist_to_workspace:
+                root: ~/src
+                paths:
+                  - ./*
+
 jobs:
   checkout:
     executor: base-executor
@@ -178,21 +207,19 @@ jobs:
           name: "Upload coverage"
           command: cd .. && bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
 
-  build_dapp:
+  build_dapp_dev:
     executor: base-executor
     working_directory: *dapp_working_dir
     steps:
-      - attach_workspace: *attach_options
-      - run: npm run build -- --mode ghpages
-      - run:
-          name: Compress dapp
-          command: tar -cJf dapp.tar.xz dist
-      - store_artifacts:
-          path: dapp.tar.xz
-      - persist_to_workspace:
-          root: ~/src
-          paths:
-            - ./*
+      - build_dapp:
+          mode: "development"
+          artifact_name: "dapp-dev"
+
+  build_dapp_ghpages:
+    executor: base-executor
+    working_directory: *dapp_working_dir
+    steps:
+      - build_dapp
 
   build_cli:
     executor: base-executor
@@ -210,7 +237,7 @@ jobs:
       - persist_to_workspace:
           root: ~/src/
           paths:
-           - ./raiden-dapp/dist/docs
+            - ./raiden-dapp/dist/docs
 
   deploy_gh_pages:
     executor: base-executor
@@ -283,7 +310,10 @@ workflows:
       - lint_cli:
           requires:
             - install_cli
-      - build_dapp:
+      - build_dapp_dev:
+          requires:
+            - install_dapp
+      - build_dapp_ghpages:
           requires:
             - install_dapp
           context: "Raiden-LC-Deploy"
@@ -320,14 +350,14 @@ workflows:
             - install_sdk
           filters:
             <<: *filter-version-regex
-      - build_dapp:
+      - build_dapp_ghpages:
           requires:
             - install_dapp
           filters:
             <<: *filter-version-regex
       - generate_documentation:
           requires:
-            - build_dapp
+            - build_dapp_ghpages
           filters:
             <<: *filter-version-regex
       - deploy_gh_pages:
