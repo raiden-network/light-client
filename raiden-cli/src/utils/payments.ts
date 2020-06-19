@@ -1,7 +1,6 @@
 import { RaidenTransfer } from 'raiden-ts';
 import { ApiPayment } from '../types';
 
-/* eslint-disable @typescript-eslint/camelcase */
 export function transformSdkTransferToApiPayment(transfer: RaidenTransfer): ApiPayment {
   return {
     initiator_address: transfer.initiator,
