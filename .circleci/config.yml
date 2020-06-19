@@ -183,12 +183,19 @@ jobs:
     working_directory: *dapp_working_dir
     steps:
       - attach_workspace: *attach_options
-      - run: npm run build -- --mode ghpages
+      - run:
+          name: Build dapp
+          command: >
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              npm run build -- --mode ghpages;
+            else
+              npm run build -- --mode development;
+            fi
       - run:
           name: Compress dapp
-          command: tar -cJf dapp.tar.xz dist
+          command: tar -czf dapp.tar.gz dist
       - store_artifacts:
-          path: dapp.tar.xz
+          path: dapp.tar.gz
       - persist_to_workspace:
           root: ~/src
           paths:
