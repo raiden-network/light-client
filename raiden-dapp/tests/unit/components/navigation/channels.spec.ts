@@ -15,6 +15,8 @@ import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';
 import VueRouter from 'vue-router';
 
+jest.mock('@/i18n', () => jest.fn());
+
 Vue.use(Vuetify);
 Vue.use(Vuex);
 Vue.filter('displayFormat', Filters.displayFormat);

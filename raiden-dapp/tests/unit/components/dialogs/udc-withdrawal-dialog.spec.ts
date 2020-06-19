@@ -1,4 +1,5 @@
 jest.mock('@/services/raiden-service');
+jest.mock('@/i18n', () => jest.fn());
 
 import flushPromises from 'flush-promises';
 import RaidenService from '@/services/raiden-service';

@@ -5,7 +5,10 @@ import split from 'lodash/split';
 import capitalize from 'lodash/capitalize';
 
 export default class Filters {
-  static truncate(value: string, width: number = 12) {
+  static truncate(value?: string, width: number = 12) {
+    if (!value) {
+      return '';
+    }
     const separator = '...';
     if (value.length <= width) {
       return value;

@@ -14,7 +14,7 @@
           <span class="notification-card__content__details__header--title">
             {{ notification.title }}
           </span>
-          <v-btn icon x-small @click="deleteNotification(notification.id)">
+          <v-btn icon x-small @click="notificationDelete(notification.id)">
             <v-icon icon>mdi-close</v-icon>
           </v-btn>
         </div>
@@ -31,16 +31,21 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { Notification } from '@/model/types';
+import { Notification } from '@/store/notifications/types';
+import { createNamespacedHelpers } from 'vuex';
 
-@Component({})
+const { mapMutations } = createNamespacedHelpers('notifications');
+
+@Component({
+  methods: {
+    ...mapMutations(['notificationDelete'])
+  }
+})
 export default class NotificationCard extends Vue {
   @Prop({ required: true })
   notification!: Notification;
 
-  deleteNotification(id: string) {
-    this.$raiden.deleteNotification(id);
-  }
+  notificationDelete!: (id: number) => void;
 }
 </script>
 

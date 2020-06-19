@@ -85,11 +85,16 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { mapGetters, mapState } from 'vuex';
+import { createNamespacedHelpers, mapGetters, mapState } from 'vuex';
 import { RouteNames } from '@/router/route-names';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
+
+const {
+  mapState: mapNotificationsState,
+  mapMutations
+} = createNamespacedHelpers('notifications');
 
 @Component({
   components: {
@@ -97,8 +102,12 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
     AddressDisplay
   },
   computed: {
-    ...mapState(['loading', 'defaultAccount', 'newNotifications']),
+    ...mapState(['loading', 'defaultAccount']),
+    ...mapNotificationsState(['newNotifications']),
     ...mapGetters(['network', 'isConnected'])
+  },
+  methods: {
+    ...mapMutations(['notificationsViewed'])
   }
 })
 export default class AppHeader extends Mixins(NavigationMixin) {
@@ -106,11 +115,12 @@ export default class AppHeader extends Mixins(NavigationMixin) {
   defaultAccount!: string;
   network!: string;
   newNotifications!: boolean;
+  notificationsViewed!: () => void;
 
-  notificationPanel = () => {
-    this.$raiden.viewedNotifications();
+  notificationPanel() {
+    this.notificationsViewed();
     this.navigateToNotifications();
-  };
+  }
 
   get canGoBack(): boolean {
     const routesWithoutBackBtn: string[] = [

@@ -1,5 +1,6 @@
 jest.mock('vue-router');
 jest.mock('@/services/raiden-service');
+jest.mock('@/i18n', () => jest.fn());
 import Mocked = jest.Mocked;
 import { shallowMount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';

@@ -1,6 +1,7 @@
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 
 jest.mock('@/services/raiden-service');
+jest.mock('@/i18n', () => jest.fn());
 
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';

@@ -4,6 +4,7 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 import Filters from '@/filters';
 import NotificationCard from '@/components/notification-panel/NotificationCard.vue';
+import store from '@/store';
 
 Vue.use(Vuetify);
 Vue.filter('formatDate', Filters.formatDate);
@@ -16,6 +17,7 @@ describe('NotificationCard.vue', () => {
     vuetify = new Vuetify();
     wrapper = mount(NotificationCard, {
       vuetify,
+      store,
       propsData: { notification: TestData.notifications }
     });
   });
@@ -47,14 +49,12 @@ describe('NotificationCard.vue', () => {
   });
 
   test('clicking "x"-icon calls method for deleting notification', async () => {
-    (wrapper.vm as any).deleteNotification = jest.fn();
+    await store.dispatch('notifications/notify', TestData.notifications);
     const deleteNotificationButton = wrapper.find('button');
     deleteNotificationButton.trigger('click');
     await wrapper.vm.$nextTick();
 
-    expect((wrapper.vm as any).deleteNotification).toHaveBeenCalledTimes(1);
-    expect((wrapper.vm as any).deleteNotification).toHaveBeenCalledWith(
-      TestData.notifications.id
-    );
+    // @ts-ignore
+    expect(store.state.notifications.notifications).toHaveLength(0);
   });
 });

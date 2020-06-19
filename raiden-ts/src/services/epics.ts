@@ -802,7 +802,7 @@ export const udcWithdrawPlannedEpic = (
       const contract = getContractWithSigner(userDepositContract, signer);
       return defer(() => {
         assert(balance.gt(Zero), [
-          ErrorCodes.UDC_PLAN_WITHDRAW_NO_BALANCE,
+          ErrorCodes.UDC_WITHDRAW_NO_BALANCE,
           {
             balance: balance.toString(),
           },

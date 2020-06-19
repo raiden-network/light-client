@@ -5,6 +5,8 @@ import { createLocalVue } from '@vue/test-utils';
 import { RaidenPlugin } from '@/plugins/raiden';
 import RaidenService from '@/services/raiden-service';
 
+jest.mock('@/i18n', () => jest.fn());
+
 Vue.config.productionTip = false;
 
 describe('plugins', () => {

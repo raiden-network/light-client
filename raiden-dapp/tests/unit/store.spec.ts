@@ -342,16 +342,4 @@ describe('store', () => {
     store.commit('updateConfig', { caps: {} });
     expect(store.getters.canReceive).toBe(true);
   });
-
-  test('notifications getter returns an empty array when there are no notifications', () => {
-    expect(store.getters.notifications).toEqual([]);
-  });
-
-  test('viewedNotifications mutations sets newNotifications state to false', () => {
-    // TODO: Needs the proper action/mutation for setting newNotifications flag to true
-    store.state.newNotifications = true;
-
-    store.commit('viewedNotifications');
-    expect(store.state.newNotifications).toBe(false);
-  });
 });

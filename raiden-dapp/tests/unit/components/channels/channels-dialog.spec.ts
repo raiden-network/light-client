@@ -1,4 +1,5 @@
 jest.mock('@/services/raiden-service');
+jest.mock('@/i18n', () => jest.fn());
 
 import { One } from 'ethers/constants';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
