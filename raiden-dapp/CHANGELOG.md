@@ -10,11 +10,13 @@
 ### Fixed
 
 - [#1579] Removes minting references when detected network is mainnet.
+- [#1756] Fix non-informative error message on SDK's wrapped errors
 
 ### Changed
 - [#1610] Adds alderaan compatibility.
 - [#1540] Adds title to channels list to clarify that only channels for the selected token display.
 
+[#1756]: https://github.com/raiden-network/light-client/issues/1756
 [#1610]: https://github.com/raiden-network/light-client/issues/1610
 [#1540]: https://github.com/raiden-network/light-client/issues/1540
 [#1579]: https://github.com/raiden-network/light-client/issues/1579
