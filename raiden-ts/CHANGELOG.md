@@ -23,6 +23,7 @@
 - [#1649] Have constant error messages and codes in public Raiden API.
 - [#1657] Expose RaidenChannel's id,settleTimeout,openBlock as required properties
 - [#1708] Expose RaidenTransfer's secret as optional property
+- [#1705] All transfers become monitored per default to make receiving transfers safe
 
 [#837]: https://github.com/raiden-network/light-client/issues/837
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
@@ -39,6 +40,7 @@
 [#1698]: https://github.com/raiden-network/light-client/issues/1698
 [#1701]: https://github.com/raiden-network/light-client/pull/1701
 [#1708]: https://github.com/raiden-network/light-client/issues/1708
+[#1705]: https://github.com/raiden-network/light-client/issues/1705
 
 ## [0.9.0] - 2020-05-28
 ### Added

@@ -237,6 +237,19 @@ describe('monitorRequestEpic', () => {
     signerSpy.mockRestore();
   });
 
+  test('success: token without known rateToSvt gets monitored', async () => {
+    expect.assertions(1);
+
+    action$.next(raidenConfigUpdate({ rateToSvt: {} }));
+
+    const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
+    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+    await receiveTransfer(20);
+    setTimeout(() => action$.complete(), 50);
+
+    await expect(promise).resolves.toBeDefined();
+  });
+
   test('ignore: not enough udcBalance', async () => {
     expect.assertions(1);
 
@@ -303,21 +316,6 @@ describe('monitorRequestEpic', () => {
 
     // transfer <= monitoringReward isn't worth to be monitored
     await receiveTransfer(20, false);
-    setTimeout(() => action$.complete(), 50);
-
-    await expect(promise).resolves.toBeUndefined();
-  });
-
-  test('ignore: token without known rateToSvt', async () => {
-    expect.assertions(1);
-
-    action$.next(raidenConfigUpdate({ rateToSvt: {} }));
-
-    const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
-    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
-
-    // transfer <= monitoringReward isn't worth to be monitored
-    await receiveTransfer(20);
     setTimeout(() => action$.complete(), 50);
 
     await expect(promise).resolves.toBeUndefined();
