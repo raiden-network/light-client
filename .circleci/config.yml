@@ -295,7 +295,7 @@ workflows:
             - install_sdk
       - test_dapp:
           requires:
-            - lint_dapp
+            - build_dapp
       - deploy_gh_pages:
           requires:
             - test_dapp
