@@ -14,7 +14,6 @@ import {
 import { MaxUint256 } from 'ethers/constants';
 import negate from 'lodash/negate';
 import unset from 'lodash/fp/unset';
-import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 
 import { RaidenState } from './state';
@@ -51,9 +50,7 @@ function getConfig$(
             ? userConfig.caps
             : {
                 [Capabilities.NO_RECEIVE]: !(
-                  config.monitoringReward?.gt(0) &&
-                  config.monitoringReward.lte(udcBalance) &&
-                  !isEmpty(config.rateToSvt)
+                  config.monitoringReward?.gt(0) && config.monitoringReward.lte(udcBalance)
                 ),
                 ...config.caps, // default and user config overwrite runtime caps above
               };

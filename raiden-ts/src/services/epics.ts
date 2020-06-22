@@ -25,7 +25,7 @@ import {
 import { fromFetch } from 'rxjs/fetch';
 import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, toUtf8Bytes, verifyMessage, concat } from 'ethers/utils';
-import { Two, Zero, WeiPerEther } from 'ethers/constants';
+import { Two, Zero, MaxUint256, WeiPerEther } from 'ethers/constants';
 import memoize from 'lodash/memoize';
 
 import { UserDeposit } from '../contracts/UserDeposit';
@@ -596,8 +596,9 @@ function makeMonitoringRequest$({
   config$,
 }: RaidenEpicDeps) {
   return (channel: Channel) => {
-    const { partnerUnlocked } = channelAmounts(channel);
-    if (!partnerUnlocked.gt(Zero)) return EMPTY; // give up early if nothing to lose
+    const { partnerUnlocked, ownDeposit } = channelAmounts(channel);
+    // give up early if nothing to lose
+    if (partnerUnlocked.isZero() || ownDeposit.isZero()) return EMPTY;
 
     return combineLatest([latest$, config$]).pipe(
       // combineLatest + filter ensures it'll pass if anything here changes
@@ -611,8 +612,8 @@ function makeMonitoringRequest$({
           // use partner's total off & on-chain unlocked, total we'd lose if don't update BP
           partnerUnlocked
             // use rateToSvt to convert to equivalent SVT, and pass only if > monitoringReward;
-            // default rate=0 means it'll NEVER monitor if no rate is set for token
-            .mul(rateToSvt[channel.token] ?? Zero)
+            // default rate=MaxUint256 means it'll ALWAYS monitor if no rate is set for token
+            .mul(rateToSvt[channel.token] ?? MaxUint256)
             .div(WeiPerEther)
             .gt(monitoringReward),
       ),

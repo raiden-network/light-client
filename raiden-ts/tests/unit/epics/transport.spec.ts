@@ -528,8 +528,7 @@ describe('transport epic', () => {
     );
     await expect(promise).resolves.toBeUndefined();
     expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(1);
-    // noReceive is dynamic
-    expect(matrix.setAvatarUrl).toHaveBeenCalledWith('noReceive,noDelivery,webRTC');
+    expect(matrix.setAvatarUrl).toHaveBeenCalledWith('noDelivery,webRTC');
 
     promise = matrixUpdateCapsEpic(action$, state$, depsMock).toPromise();
     action$.next(
