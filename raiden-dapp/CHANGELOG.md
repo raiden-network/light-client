@@ -4,6 +4,7 @@
 
 ### Added
 
+- [#1374] Adds notifications when a monitoring service submits a proof.
 - [#1421] Dialog to withdraw from the user deposit.
 - [#168] Notification panel
 
@@ -21,6 +22,7 @@
 [#1540]: https://github.com/raiden-network/light-client/issues/1540
 [#1579]: https://github.com/raiden-network/light-client/issues/1579
 [#1421]: https://github.com/raiden-network/light-client/issues/1421
+[#1374]: https://github.com/raiden-network/light-client/issues/1374
 [#168]: https://github.com/raiden-network/light-client/issues/168
 
 ## [0.9.0] - 2020-05-28
