@@ -615,9 +615,15 @@ export class Raiden {
 
     const meta = { tokenNetwork, partner };
     // wait for confirmation
-    const openPromise = asyncActionToPromise(channelOpen, meta, this.action$, false).then(
+    const openPromise = asyncActionToPromise(channelOpen, meta, this.action$, true).then(
       ({ txHash }) => txHash, // pluck txHash
     );
+    let depositPromise;
+    if (deposit) {
+      depositPromise = asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
+        ({ txHash }) => txHash, // pluck txHash
+      );
+    }
 
     this.store.dispatch(channelOpen.request({ ...options, settleTimeout, deposit }, meta));
 
@@ -632,10 +638,8 @@ export class Raiden {
       .toPromise();
     onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash: openTxHash } });
 
-    if (deposit) {
-      const depositTx = await asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
-        ({ txHash }) => txHash, // pluck txHash
-      );
+    if (depositPromise) {
+      const depositTx = await depositPromise;
       onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: depositTx } });
     }
 

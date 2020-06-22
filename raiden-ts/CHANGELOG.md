@@ -8,6 +8,7 @@
 - [#1651] Fix PFS being disabled if passed an undefined default config
 - [#1690] Fix LockExpired with empty balanceHash verification
 - [#1698] Fix estimateGas errors on channelOpen not properly being handled
+- [#1761] Fix deposit error on openChannel not rejecting promise
 
 ### Added
 - [#1374] Monitors MonitoringService contract and emit event when MS acts
@@ -41,6 +42,8 @@
 [#1701]: https://github.com/raiden-network/light-client/pull/1701
 [#1708]: https://github.com/raiden-network/light-client/issues/1708
 [#1705]: https://github.com/raiden-network/light-client/issues/1705
+[#1711]: https://github.com/raiden-network/light-client/pull/1711
+[#1761]: https://github.com/raiden-network/light-client/issues/1761
 
 ## [0.9.0] - 2020-05-28
 ### Added
