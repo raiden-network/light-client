@@ -28,6 +28,10 @@ export function isInvalidParameterError(error: RaidenError): boolean {
     ErrorCodes.DTA_INVALID_ADDRESS,
     ErrorCodes.DTA_INVALID_DEPOSIT,
     ErrorCodes.DTA_INVALID_TIMEOUT,
+    ErrorCodes.DTA_INVALID_AMOUNT,
+    ErrorCodes.DTA_INVALID_PAYMENT_ID,
+    ErrorCodes.DTA_INVALID_PATH,
+    ErrorCodes.DTA_INVALID_PFS,
   ].includes(error.message);
 }
 

@@ -14,7 +14,8 @@
 - [#1421] Adds support for withdrawing tokens from the UDC
 - [#1642] Check token's allowance before deposit and skip approve
 - [#1701] Allow parameter decoding to throw and log customized errors
-- [#1701] Add and extend error codes for user parameter validation
+- [#1701] Add and extend error codes for user parameter validation for open channel
+- [#1711] Add and extend error codes for user parameter validation for transfer
 
 ### Changed
 - [#837] Changes the action tags from camel to path format. This change affects the event types exposed through the public API.

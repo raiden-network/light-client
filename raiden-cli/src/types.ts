@@ -31,3 +31,13 @@ export interface ApiChannel {
   settle_timeout: number;
   reveal_timeout: number;
 }
+
+export interface ApiPayment {
+  initiator_address: string;
+  target_address: string;
+  token_address: string;
+  amount: string;
+  identifier: number;
+  secret: string;
+  secret_hash: string;
+}
