@@ -2,32 +2,21 @@ jest.mock('vuex');
 jest.mock('raiden-ts');
 
 import { DeniedReason, Token, TokenModel } from '@/model/types';
-import RaidenService, {
-  ChannelCloseFailed,
-  ChannelDepositFailed,
-  ChannelOpenFailed,
-  ChannelSettleFailed,
-  TransferFailed
-} from '@/services/raiden-service';
+import RaidenService from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
-import {
-  Address,
-  ErrorCodes,
-  Hash,
-  Raiden,
-  RaidenError,
-  RaidenTransfer,
-  Capabilities
-} from 'raiden-ts';
+import { Address, Hash, Raiden, RaidenTransfer } from 'raiden-ts';
 import { BigNumber, bigNumberify } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
 import { AddressZero, One, Zero } from 'ethers/constants';
 import { paymentId } from './data/mock-data';
 import Mocked = jest.Mocked;
+const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual(
+  'raiden-ts'
+);
 
 describe('RaidenService', () => {
   let raidenService: RaidenService;
@@ -225,12 +214,13 @@ describe('RaidenService', () => {
 
     test('throw an exception when channel open fails', async () => {
       expect.assertions(1);
-      raiden.openChannel = jest.fn().mockRejectedValue('failed');
+      const error = new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED);
+      raiden.openChannel = jest.fn().mockRejectedValue(error);
 
       const depositAmount = new BigNumber(100);
       await expect(
         raidenService.openChannel('0xtoken', '0xpartner', depositAmount)
-      ).rejects.toBeInstanceOf(ChannelOpenFailed);
+      ).rejects.toThrow(RaidenError);
     });
 
     test('call stop when disconnect is called', async () => {
@@ -249,11 +239,12 @@ describe('RaidenService', () => {
 
     test('throw an exception when close fails', async () => {
       expect.assertions(3);
-      raiden.closeChannel.mockRejectedValue(new Error('txfailed'));
+      const error = new RaidenError(ErrorCodes.CNL_CLOSECHANNEL_FAILED);
+      raiden.closeChannel.mockRejectedValue(error);
 
       await expect(
         raidenService.closeChannel('0xtoken', '0xpartner')
-      ).rejects.toBeInstanceOf(ChannelCloseFailed);
+      ).rejects.toThrowError(RaidenError);
       expect(raiden.closeChannel).toHaveBeenCalledTimes(1);
       expect(raiden.closeChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
     });
@@ -274,12 +265,13 @@ describe('RaidenService', () => {
 
     test('throw when deposit fails', async () => {
       expect.assertions(3);
-      raiden.depositChannel.mockRejectedValue('txfailed');
+      const error = new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED);
+      raiden.depositChannel.mockRejectedValue(error);
 
       const depositAmount = new BigNumber(6000);
       await expect(
         raidenService.deposit('0xtoken', '0xpartner', depositAmount)
-      ).rejects.toBeInstanceOf(ChannelDepositFailed);
+      ).rejects.toThrowError(RaidenError);
       expect(raiden.depositChannel).toHaveBeenCalledTimes(1);
       expect(raiden.depositChannel).toHaveBeenCalledWith(
         '0xtoken',
@@ -302,10 +294,11 @@ describe('RaidenService', () => {
       });
 
       test('throw when settle fails', async () => {
-        raiden.settleChannel = jest.fn().mockRejectedValue('txfailed');
+        const error = new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_FAILED);
+        raiden.settleChannel = jest.fn().mockRejectedValue(error);
         await expect(
           raidenService.settleChannel('0xtoken', '0xpartner')
-        ).rejects.toBeInstanceOf(ChannelSettleFailed);
+        ).rejects.toThrowError(RaidenError);
         expect(raiden.settleChannel).toHaveBeenCalledTimes(1);
         expect(raiden.settleChannel).toHaveBeenCalledWith(
           '0xtoken',
@@ -333,11 +326,12 @@ describe('RaidenService', () => {
       });
 
       test('throw when a transfer fails', async () => {
-        raiden.waitTransfer.mockRejectedValue('txfailed');
+        const error = new RaidenError(ErrorCodes.XFER_REFUNDED);
+        raiden.waitTransfer.mockRejectedValue(error);
 
         await expect(
           raidenService.transfer('0xtoken', '0xpartner', One, path, paymentId)
-        ).rejects.toBeInstanceOf(TransferFailed);
+        ).rejects.toThrow(RaidenError);
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
         expect(raiden.transfer).toHaveBeenCalledWith(
           '0xtoken',

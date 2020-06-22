@@ -279,37 +279,21 @@ export default class RaidenService {
     const raiden = this.raiden;
     progressUpdater(1, 3);
 
-    try {
-      await raiden.openChannel(token, partner, { deposit: amount }, e =>
-        e.type === EventTypes.OPENED ? progressUpdater(2, 3) : ''
-      );
-    } catch (e) {
-      throw new ChannelOpenFailed(e);
-    }
+    await raiden.openChannel(token, partner, { deposit: amount }, e =>
+      e.type === EventTypes.OPENED ? progressUpdater(2, 3) : ''
+    );
   }
 
   async closeChannel(token: string, partner: string) {
-    try {
-      await this.raiden.closeChannel(token, partner);
-    } catch (e) {
-      throw new ChannelCloseFailed(e);
-    }
+    await this.raiden.closeChannel(token, partner);
   }
 
   async deposit(token: string, partner: string, amount: BigNumber) {
-    try {
-      await this.raiden.depositChannel(token, partner, amount);
-    } catch (e) {
-      throw new ChannelDepositFailed(e);
-    }
+    await this.raiden.depositChannel(token, partner, amount);
   }
 
   async settleChannel(token: string, partner: string) {
-    try {
-      await this.raiden.settleChannel(token, partner);
-    } catch (e) {
-      throw new ChannelSettleFailed(e);
-    }
+    await this.raiden.settleChannel(token, partner);
   }
 
   async fetchTokenData(tokens: string[]): Promise<void> {
@@ -330,17 +314,13 @@ export default class RaidenService {
     paths: RaidenPaths,
     paymentId: BigNumber
   ) {
-    try {
-      const key = await this.raiden.transfer(token, target, amount, {
-        paymentId,
-        paths
-      });
+    const key = await this.raiden.transfer(token, target, amount, {
+      paymentId,
+      paths
+    });
 
-      // Wait for transaction to be completed
-      await this.raiden.waitTransfer(key);
-    } catch (e) {
-      throw new TransferFailed(e);
-    }
+    // Wait for transaction to be completed
+    await this.raiden.waitTransfer(key);
   }
 
   async findRoutes(
@@ -483,16 +463,6 @@ export default class RaidenService {
   }
 }
 
-export class ChannelSettleFailed extends Error {}
-
-export class ChannelCloseFailed extends Error {}
-
-export class ChannelOpenFailed extends Error {}
-
-export class ChannelDepositFailed extends Error {}
-
 export class EnsResolveFailed extends Error {}
-
-export class TransferFailed extends Error {}
 
 export class RaidenInitializationFailed extends Error {}
