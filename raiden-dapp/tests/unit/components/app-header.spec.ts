@@ -57,14 +57,14 @@ describe('AppHeader.vue', () => {
     expect(newNotificationsBadge.exists()).toBe(true);
   });
 
-  test('clicking notification icon calls notificationPanel method', async () => {
+  test('clicking notification icon calls navigates to notifications', async () => {
     wrapper = createWrapper(RouteNames.CHANNELS);
-    (wrapper.vm as any).notificationPanel = jest.fn();
+    (wrapper.vm as any).navigateToNotifications = jest.fn();
     const notificationsButton = wrapper.findAll('button').at(1);
 
     notificationsButton.trigger('click');
     await wrapper.vm.$nextTick();
 
-    expect((wrapper.vm as any).notificationPanel).toHaveBeenCalled();
+    expect((wrapper.vm as any).navigateToNotifications).toHaveBeenCalled();
   });
 });

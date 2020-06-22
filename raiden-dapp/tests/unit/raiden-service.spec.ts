@@ -1,6 +1,11 @@
 jest.mock('vuex');
 jest.mock('raiden-ts');
-jest.mock('@/i18n', () => jest.fn());
+jest.mock('@/i18n', () => ({
+  __esModule: true,
+  default: {
+    t: jest.fn(args => args.toString())
+  }
+}));
 
 import { DeniedReason, Token, TokenModel } from '@/model/types';
 import RaidenService from '@/services/raiden-service';
@@ -9,7 +14,7 @@ import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
 import { Address, Hash, Raiden, RaidenTransfer } from 'raiden-ts';
-import { BigNumber, bigNumberify } from 'ethers/utils';
+import { BigNumber, bigNumberify, parseEther } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
 import { AddressZero, One, Zero } from 'ethers/constants';
@@ -711,5 +716,141 @@ describe('RaidenService', () => {
     subject.next(config);
 
     expect(store.commit).toHaveBeenLastCalledWith('updateConfig', config);
+  });
+
+  test('notify that monitor balance proof was send', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    subject.next({
+      type: 'ms/balanceProof/sent',
+      payload: {
+        monitoringService: '0x1234',
+        partner: '0x1001',
+        reward: parseEther('5'),
+        txHash: '0x0001'
+      },
+      meta: {}
+    });
+
+    await flushPromises();
+
+    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
+      description: 'notifications.ms-balance-proof.description',
+      title: 'notifications.ms-balance-proof.title'
+    });
+  });
+
+  test('notify that withdraw was successful', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.getters as any) = {
+      udcToken: {}
+    };
+    subject.next({
+      type: 'udc/withdrawn',
+      payload: {
+        withdrawal: parseEther('5')
+      },
+      meta: {
+        amount: parseEther('5')
+      }
+    });
+
+    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
+      description: 'notifications.withdrawal.success.description',
+      title: 'notifications.withdrawal.success.title'
+    });
+  });
+
+  test('do not notify that withdraw failed if validation error', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.getters as any) = {
+      udcToken: {}
+    };
+    subject.next({
+      type: 'udc/withdraw/failure',
+      payload: {
+        code: 'UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE'
+      },
+      meta: {
+        amount: parseEther('5')
+      }
+    });
+
+    expect(store.dispatch).toHaveBeenCalledTimes(0);
+  });
+
+  test('notify that withdraw failed', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.getters as any) = {
+      udcToken: {}
+    };
+    subject.next({
+      type: 'udc/withdraw/failure',
+      payload: {
+        code: -3200,
+        message: 'gas'
+      },
+      meta: {
+        amount: parseEther('5')
+      }
+    });
+
+    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
+      description: 'notifications.withdrawal.failure.description',
+      title: 'notifications.withdrawal.failure.title'
+    });
+  });
+
+  test('token monitored', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+
+    subject.next({
+      type: 'token/monitored',
+      payload: {
+        token: '0x1234'
+      },
+      meta: {
+        amount: parseEther('5')
+      }
+    });
+
+    expect(store.commit).toHaveBeenCalledWith('updateTokens', {
+      '0x1234': { address: '0x1234' }
+    });
+  });
+
+  test('update presence', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+
+    subject.next({
+      type: 'matrix/presence/success',
+      payload: {
+        available: true
+      },
+      meta: {
+        address: '0x1234'
+      }
+    });
+
+    expect(store.commit).toHaveBeenCalledWith('updatePresence', {
+      '0x1234': true
+    });
   });
 });

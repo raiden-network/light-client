@@ -1,11 +1,11 @@
 import {
   ChangeEvent,
+  ErrorCodes,
   EventTypes,
   Raiden,
+  RaidenError,
   RaidenPaths,
-  RaidenPFS,
-  ErrorCodes,
-  RaidenError
+  RaidenPFS
 } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
@@ -170,7 +170,7 @@ export default class RaidenService {
           this.store.commit('updateConfig', config)
         );
 
-        raiden.events$.subscribe(value => {
+        raiden.events$.subscribe(async value => {
           if (value.type === 'token/monitored') {
             this.store.commit('updateTokens', {
               [value.payload.token]: { address: value.payload.token }
@@ -183,79 +183,20 @@ export default class RaidenService {
               [value.meta.address]: value.payload.available
             });
           } else if (value.type === 'ms/balanceProof/sent') {
-            const {
-              monitoringService,
-              partner,
-              reward,
-              txHash
-            } = value.payload;
-            this.store.dispatch('notifications/notify', {
-              title: i18n.t('notifications.ms-balance-proof.title'),
-              description: i18n.t(
-                'notifications.ms-balance-proof.description',
-                {
-                  monitoringService,
-                  partner,
-                  reward,
-                  txHash
-                }
-              )
-            } as Notification);
-          } else if (value.type === 'udc/withdrawn') {
-            const token = this.store.getters.udcToken;
-            const decimals = token.decimals ?? 18;
-            const amount = BalanceUtils.toUnits(value.meta.amount, decimals);
-            const withdrawn = BalanceUtils.toUnits(
-              value.payload.withdrawal,
-              decimals
+            await this.notifyBalanceProofSend(
+              value.payload.monitoringService,
+              value.payload.partner,
+              value.payload.reward,
+              value.payload.txHash
             );
-
-            this.store.dispatch('notifications/notify', {
-              title: i18n.t('notifications.withdrawal.success.title'),
-              description: i18n.t(
-                'notifications.withdrawal.success.description',
-                {
-                  amount,
-                  withdrawn,
-                  symbol: token.symbol
-                }
-              )
-            } as Notification);
+          } else if (value.type === 'udc/withdrawn') {
+            this.notifyWithdrawal(value.meta.amount, value.payload.withdrawal);
           } else if (value.type === 'udc/withdraw/failure') {
-            const code = value.payload?.code;
-            if (
-              [
-                'UDC_PLAN_WITHDRAW_GT_ZERO',
-                'UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE',
-                'UDC_PLAN_WITHDRAW_FAILED'
-              ].indexOf(code) >= 0
-            ) {
-              return;
-            }
-            const token = this.store.getters.udcToken;
-            const decimals = token.decimals ?? 18;
-            const amount = BalanceUtils.toUnits(value.meta.amount, decimals);
-
-            const codeDescription =
-              typeof code === 'string'
-                ? i18n.t(
-                    `notifications.withdrawal.failure.descriptions.${code}`,
-                    { amount, symbol: token.symbol }
-                  )
-                : undefined;
-
-            const description = codeDescription
-              ? codeDescription
-              : i18n.t('notifications.withdrawal.failure.description', {
-                  amount,
-                  symbol: token.symbol,
-                  message: value.payload.message
-                });
-
-            this.store.dispatch('notifications/notify', {
-              title: i18n.t('notifications.withdrawal.failure.title'),
-              description
-            } as Notification);
+            this.notifyWithdrawalFailure(
+              value.payload?.code,
+              value.meta.amount,
+              value.payload.message
+            );
           }
         });
 
@@ -298,6 +239,79 @@ export default class RaidenService {
     }
 
     this.store.commit('loadComplete');
+  }
+
+  private notifyWithdrawalFailure(
+    code: any,
+    plannedAmount: BigNumber,
+    message: string
+  ) {
+    if (
+      [
+        'UDC_PLAN_WITHDRAW_GT_ZERO',
+        'UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE',
+        'UDC_PLAN_WITHDRAW_FAILED'
+      ].indexOf(code) >= 0
+    ) {
+      return;
+    }
+    const token = this.store.getters.udcToken;
+    const decimals = token.decimals ?? 18;
+    const amount = BalanceUtils.toUnits(plannedAmount, decimals);
+
+    const codeDescription =
+      typeof code === 'string'
+        ? i18n.t(`notifications.withdrawal.failure.descriptions.${code}`, {
+            amount,
+            symbol: token.symbol
+          })
+        : undefined;
+
+    const description = codeDescription
+      ? codeDescription
+      : i18n.t('notifications.withdrawal.failure.description', {
+          amount,
+          symbol: token.symbol,
+          message: message
+        });
+
+    this.store.dispatch('notifications/notify', {
+      title: i18n.t('notifications.withdrawal.failure.title'),
+      description
+    } as Notification);
+  }
+
+  private notifyWithdrawal(plannedAmount: BigNumber, withdrawal: BigNumber) {
+    const token = this.store.getters.udcToken;
+    const decimals = token.decimals ?? 18;
+    const amount = BalanceUtils.toUnits(plannedAmount, decimals);
+    const withdrawn = BalanceUtils.toUnits(withdrawal, decimals);
+
+    this.store.dispatch('notifications/notify', {
+      title: i18n.t('notifications.withdrawal.success.title'),
+      description: i18n.t('notifications.withdrawal.success.description', {
+        amount,
+        withdrawn,
+        symbol: token.symbol
+      })
+    } as Notification);
+  }
+
+  private async notifyBalanceProofSend(
+    monitoringService: string,
+    partner: string,
+    reward: BigNumber,
+    txHash: string
+  ) {
+    await this.store.dispatch('notifications/notify', {
+      title: i18n.t('notifications.ms-balance-proof.title'),
+      description: i18n.t('notifications.ms-balance-proof.description', {
+        monitoringService,
+        partner,
+        reward,
+        txHash
+      })
+    } as Notification);
   }
 
   disconnect() {
