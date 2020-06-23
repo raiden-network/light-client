@@ -720,6 +720,9 @@ describe('RaidenService', () => {
 
   test('notify that monitor balance proof was send', async () => {
     expect.assertions(1);
+    (store.getters as any) = {
+      udcToken: {}
+    };
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
