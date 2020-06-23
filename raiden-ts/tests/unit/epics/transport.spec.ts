@@ -774,21 +774,21 @@ describe('transport epic', () => {
     );
 
     test(
-      'do not leave discovery room',
+      'do not leave global room',
       fakeSchedulers((advance) => {
         expect.assertions(2);
 
         const roomId = `!discoveryRoomId:${matrixServer}`,
           state$ = of(state),
-          name = `#raiden_${depsMock.network.name}_discovery:${matrixServer}`;
+          roomAlias = `#raiden_${depsMock.network.name}_discovery:${matrixServer}`;
 
         matrix.getRoom.mockReturnValueOnce({
           roomId,
-          name,
+          name: undefined,
           getMember: jest.fn(),
           getJoinedMembers: jest.fn(() => []),
-          getCanonicalAlias: jest.fn(() => name),
-          getAliases: jest.fn(() => []),
+          getCanonicalAlias: jest.fn(() => null),
+          getAliases: jest.fn(() => [roomAlias]),
           currentState: {
             roomId,
             setStateEvents: jest.fn(),
