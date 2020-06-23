@@ -873,9 +873,9 @@ export const msMonitorNewBPEpic = (
     filter(([, , , , , raidenAddress]) => raidenAddress === address),
     withLatestFrom(state$),
     map(([[tokenNetwork, id, reward, nonce, monitoringService, , event], state]) => {
-      const channel = Object.values(state.channels).find(
-        (c) => c.tokenNetwork === tokenNetwork && id.eq(c.id),
-      );
+      const channel = Object.values(state.channels)
+        .concat(Object.values(state.oldChannels))
+        .find((c) => c.tokenNetwork === tokenNetwork && id.eq(c.id));
       if (!channel) return;
       return msBalanceProofSent({
         tokenNetwork,
