@@ -11,12 +11,17 @@
       </v-col>
       <v-col class="notification-card__content__details">
         <div class="notification-card__content__details__header">
-          <span
+          <div
             class="notification-card__content__details__header--title text--primary title"
           >
             {{ notification.title }}
-          </span>
-          <v-btn icon x-small @click="notificationDelete(notification.id)">
+          </div>
+          <v-btn
+            icon
+            x-small
+            class="notification-card__dismiss"
+            @click="notificationDelete(notification.id)"
+          >
             <v-icon icon>mdi-close</v-icon>
           </v-btn>
         </div>
@@ -62,6 +67,10 @@ export default class NotificationCard extends Vue {
   border-radius: 20px !important;
   height: 200px;
 
+  &__dismiss {
+    padding-left: 14px;
+  }
+
   &__content {
     height: 100%;
     padding: 30px 30px 0 30px;
@@ -69,11 +78,14 @@ export default class NotificationCard extends Vue {
     &__details {
       display: flex;
       flex-direction: column;
+      max-width: 350px;
 
       &__header {
         display: flex;
 
         &--title {
+          overflow-x: hidden;
+          text-overflow: ellipsis;
           display: flex;
           flex: 1;
         }

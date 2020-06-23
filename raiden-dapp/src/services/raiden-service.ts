@@ -312,12 +312,16 @@ export default class RaidenService {
     reward: BigNumber,
     txHash: string
   ) {
+    const token = this.store.getters.udcToken;
+    const decimals = token.decimals ?? 18;
+    const amount = BalanceUtils.toUnits(reward, decimals);
+
     await this.store.dispatch('notifications/notify', {
       title: i18n.t('notifications.ms-balance-proof.title'),
       description: i18n.t('notifications.ms-balance-proof.description', {
         monitoringService,
         partner,
-        reward,
+        reward: amount,
         txHash
       })
     } as Notification);
