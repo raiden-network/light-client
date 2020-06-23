@@ -729,7 +729,8 @@ describe('RaidenService', () => {
         monitoringService: '0x1234',
         partner: '0x1001',
         reward: parseEther('5'),
-        txHash: '0x0001'
+        txHash: '0x0001',
+        confirmed: true
       },
       meta: {}
     });

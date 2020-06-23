@@ -11,14 +11,18 @@
       </v-col>
       <v-col class="notification-card__content__details">
         <div class="notification-card__content__details__header">
-          <span class="notification-card__content__details__header--title">
+          <span
+            class="notification-card__content__details__header--title text--primary title"
+          >
             {{ notification.title }}
           </span>
           <v-btn icon x-small @click="notificationDelete(notification.id)">
             <v-icon icon>mdi-close</v-icon>
           </v-btn>
         </div>
-        <div class="notification-card__content__details__description">
+        <div
+          class="notification-card__content__details__description text--secondary"
+        >
           <span>{{ notification.description }}</span>
         </div>
         <span class="notification-card__content__details--received">
@@ -51,6 +55,7 @@ export default class NotificationCard extends Vue {
 
 <style scoped lang="scss">
 @import '@/scss/colors';
+@import '@/scss/scroll';
 
 .notification-card {
   background-color: $notification-card-background;
@@ -75,7 +80,11 @@ export default class NotificationCard extends Vue {
       }
 
       &__description {
-        padding-top: 10px;
+        margin-top: 10px;
+        max-height: 100px;
+        overflow-y: scroll;
+        padding-bottom: 10px;
+        @extend .themed-scrollbar;
       }
 
       &--received {
