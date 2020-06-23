@@ -78,6 +78,7 @@ function joinGlobalRooms(config: RaidenConfig, matrix: MatrixClient): Observable
           }),
         ]);
         matrix.store.storeRoom(room);
+        matrix.emit('Room', room);
         return room;
       }),
     ),

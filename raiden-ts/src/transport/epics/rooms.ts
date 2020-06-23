@@ -33,9 +33,10 @@ import { messageSend, messageReceived } from '../../messages/actions';
 import { transferSigned } from '../../transfers/actions';
 import { RaidenState } from '../../state';
 import { pluckDistinct } from '../../utils/rx';
+import { getServerName } from '../../utils/matrix';
 import { Direction } from '../../transfers/state';
 import { matrixRoom, matrixRoomLeave, matrixPresence } from '../actions';
-import { globalRoomNames, getRoom$ } from './helpers';
+import { globalRoomNames, getRoom$, roomMatch } from './helpers';
 
 /**
  * Returns an observable which keeps inviting userId to roomId while user doesn't join
@@ -380,8 +381,9 @@ export const matrixLeaveUnknownRoomsEpic = (
     filter(([{ matrix, roomId }, { transport }, config]) => {
       const room = matrix.getRoom(roomId);
       if (!room) return false; // room already gone while waiting
-      const globalRooms = globalRoomNames(config);
-      if (room.name && globalRooms.some((g) => room.name.match(`#${g}:`))) return false;
+      const serverName = getServerName(matrix.getHomeserverUrl());
+      if (globalRoomNames(config).some((g) => roomMatch(`#${g}:${serverName}`, room)))
+        return false;
       for (const rooms of Object.values(transport.rooms ?? {})) {
         for (const roomId of rooms) {
           if (roomId === room.roomId) return false;
