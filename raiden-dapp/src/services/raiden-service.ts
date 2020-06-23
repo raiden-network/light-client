@@ -183,6 +183,9 @@ export default class RaidenService {
               [value.meta.address]: value.payload.available
             });
           } else if (value.type === 'ms/balanceProof/sent') {
+            if (!value.payload.confirmed) {
+              return;
+            }
             await this.notifyBalanceProofSend(
               value.payload.monitoringService,
               value.payload.partner,
@@ -190,9 +193,12 @@ export default class RaidenService {
               value.payload.txHash
             );
           } else if (value.type === 'udc/withdrawn') {
-            this.notifyWithdrawal(value.meta.amount, value.payload.withdrawal);
+            await this.notifyWithdrawal(
+              value.meta.amount,
+              value.payload.withdrawal
+            );
           } else if (value.type === 'udc/withdraw/failure') {
-            this.notifyWithdrawalFailure(
+            await this.notifyWithdrawalFailure(
               value.payload?.code,
               value.meta.amount,
               value.payload.message
@@ -241,7 +247,7 @@ export default class RaidenService {
     this.store.commit('loadComplete');
   }
 
-  private notifyWithdrawalFailure(
+  private async notifyWithdrawalFailure(
     code: any,
     plannedAmount: BigNumber,
     message: string
@@ -275,19 +281,22 @@ export default class RaidenService {
           message: message
         });
 
-    this.store.dispatch('notifications/notify', {
+    await this.store.dispatch('notifications/notify', {
       title: i18n.t('notifications.withdrawal.failure.title'),
       description
     } as Notification);
   }
 
-  private notifyWithdrawal(plannedAmount: BigNumber, withdrawal: BigNumber) {
+  private async notifyWithdrawal(
+    plannedAmount: BigNumber,
+    withdrawal: BigNumber
+  ) {
     const token = this.store.getters.udcToken;
     const decimals = token.decimals ?? 18;
     const amount = BalanceUtils.toUnits(plannedAmount, decimals);
     const withdrawn = BalanceUtils.toUnits(withdrawal, decimals);
 
-    this.store.dispatch('notifications/notify', {
+    await this.store.dispatch('notifications/notify', {
       title: i18n.t('notifications.withdrawal.success.title'),
       description: i18n.t('notifications.withdrawal.success.description', {
         amount,
