@@ -9,9 +9,7 @@ Vue.use(Router);
 /* istanbul ignore next */
 const router = new Router({
   mode: process.env.NODE_ENV === 'production' ? 'history' : 'hash',
-  base:
-    process.env.BASE_URL ||
-    (process.env.DEPLOYMENT === 'staging' ? '/staging/' : '/'),
+  base: process.env.BASE_URL,
   routes: [
     {
       path: '/',
