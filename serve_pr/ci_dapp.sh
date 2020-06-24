@@ -30,8 +30,8 @@ for PIPELINE in $PIPELINES; do
     log "Pull Request: ${PULL}"
     PULLDIR="${PWD}/${PULL}"
     mkdir -p "${PULLDIR}"
-    OLDFILE="$PULLDIR/dapp.prev.tar.bz2"
-    OUTFILE="$PULLDIR/dapp.tar.bz2"
+    OLDFILE="$PULLDIR/dapp.prev.tar.gz"
+    OUTFILE="$PULLDIR/dapp.tar.gz"
     $CURL -L -o "$OUTFILE" -z "$OLDFILE" "$URL" && SUCCESS=1
     [[ "$SUCCESS" == 1 ]] && break
   done
