@@ -193,6 +193,9 @@ export default class RaidenService {
               value.payload.txHash
             );
           } else if (value.type === 'udc/withdrawn') {
+            if (!value.payload.confirmed) {
+              return;
+            }
             await this.notifyWithdrawal(
               value.meta.amount,
               value.payload.withdrawal

@@ -757,7 +757,8 @@ describe('RaidenService', () => {
     subject.next({
       type: 'udc/withdrawn',
       payload: {
-        withdrawal: parseEther('5')
+        withdrawal: parseEther('5'),
+        confirmed: true
       },
       meta: {
         amount: parseEther('5')
