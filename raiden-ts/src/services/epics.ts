@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import { defer, EMPTY, from, merge, Observable, of, combineLatest } from 'rxjs';
+import { defer, EMPTY, from, merge, Observable, of, combineLatest, timer } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -21,6 +21,8 @@ import {
   skip,
   take,
   mapTo,
+  debounce,
+  pairwise,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { Event } from 'ethers/contract';
@@ -372,28 +374,33 @@ export const pathFindServiceEpic = (
  * @param deps.address - Our address
  * @param deps.network - Current Network
  * @param deps.signer - Signer instance
- * @param deps.latest$ - Latest observable
  * @param deps.config$ - Config observable
  * @returns Observable of messageGlobalSend actions
  */
 export const pfsCapacityUpdateEpic = (
   {}: Observable<RaidenAction>,
-  {}: Observable<RaidenState>,
-  { log, address, network, signer, latest$, config$ }: RaidenEpicDeps,
+  state$: Observable<RaidenState>,
+  { log, address, network, signer, config$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend> =>
-  latest$.pipe(
-    pluck('state'),
+  state$.pipe(
     groupChannel$,
-    withLatestFrom(config$),
-    mergeMap(([grouped$, { httpTimeout }]) =>
+    mergeMap((grouped$) =>
       grouped$.pipe(
+        pairwise(), // skips first emission on startup
         withLatestFrom(config$),
-        filter(([, { pfsRoom }]) => !!pfsRoom), // ignore actions while/if config.pfsRoom isn't set
-        debounceTime(httpTimeout / 2), // default: 15s
-        concatMap(([channel, { revealTimeout, pfsRoom }]) => {
+        // ignore actions if channel not open or while/if config.pfsRoom isn't set
+        filter(([[, channel], { pfsRoom }]) => channel.state === ChannelState.open && !!pfsRoom),
+        debounce(
+          ([[prev, cur], { httpTimeout }]) =>
+            cur.own.locks.length > prev.own.locks.length ||
+            cur.partner.locks.length > prev.partner.locks.length
+              ? // if either lock increases, a transfer is pending, debounce by httpTimeout/2=15s
+                timer(httpTimeout / 2)
+              : of(1), // otherwise, deposited or a transfer completed, fires immediatelly
+        ),
+        switchMap(([[, channel], { revealTimeout, pfsRoom }]) => {
           const tokenNetwork = channel.tokenNetwork;
           const partner = channel.partner.address;
-          if (channel.state !== ChannelState.open) return EMPTY;
           const { ownCapacity, partnerCapacity } = channelAmounts(channel);
 
           const message: PFSCapacityUpdate = {
