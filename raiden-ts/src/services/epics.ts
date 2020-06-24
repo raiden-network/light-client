@@ -18,7 +18,6 @@ import {
   timeout,
   withLatestFrom,
   exhaustMap,
-  skip,
   take,
   mapTo,
   debounce,
@@ -394,8 +393,8 @@ export const pfsCapacityUpdateEpic = (
           ([[prev, cur], { httpTimeout }]) =>
             cur.own.locks.length > prev.own.locks.length ||
             cur.partner.locks.length > prev.partner.locks.length
-              ? // if either lock increases, a transfer is pending, debounce by httpTimeout/2=15s
-                timer(httpTimeout / 2)
+              ? // if either lock increases, a transfer is pending, debounce by httpTimeout=30s
+                timer(httpTimeout)
               : of(1), // otherwise, deposited or a transfer completed, fires immediatelly
         ),
         switchMap(([[, channel], { revealTimeout, pfsRoom }]) => {
@@ -457,10 +456,11 @@ export const pfsFeeUpdateEpic = (
     mergeMap((grouped$) => grouped$.pipe(first())),
     withLatestFrom(config$),
     // ignore actions while/if mediating not enabled
-    filter(([, { pfsRoom, caps }]) => !!pfsRoom && !caps?.[Capabilities.NO_MEDIATE]),
+    filter(
+      ([channel, { pfsRoom, caps }]) =>
+        channel.state === ChannelState.open && !!pfsRoom && !caps?.[Capabilities.NO_MEDIATE],
+    ),
     mergeMap(([channel, { pfsRoom }]) => {
-      if (channel.state !== ChannelState.open) return EMPTY;
-
       const message: PFSFeeUpdate = {
         type: MessageType.PFS_FEE_UPDATE,
         canonical_identifier: {
@@ -590,8 +590,8 @@ export const monitorUdcBalanceEpic = (
  * @param deps.contractsInfo - Contracts info mapping
  * @param deps.latest$ - Latest observable
  * @param deps.config$ - Config observable
- * @returns An operator which receives a ChangedChannel and RaidenConfig and returns a cold
- * Observable of messageGlobalSend actions to the global monitoring room
+ * @returns An operator which receives prev and current Channel states and returns a cold
+ *      Observable of messageGlobalSend actions to the global monitoring room
  */
 function makeMonitoringRequest$({
   address,
@@ -602,7 +602,7 @@ function makeMonitoringRequest$({
   latest$,
   config$,
 }: RaidenEpicDeps) {
-  return (channel: Channel) => {
+  return ([, channel]: [Channel, Channel]) => {
     const { partnerUnlocked, ownDeposit } = channelAmounts(channel);
     // give up early if nothing to lose
     if (partnerUnlocked.isZero() || ownDeposit.isZero()) return EMPTY;
@@ -696,15 +696,19 @@ export const monitorRequestEpic = (
       grouped$.pipe(
         // act only if partner's transferredAmount or lockedAmount changes
         distinctUntilChanged(
-          (x, y) =>
-            y.partner.balanceProof.transferredAmount.eq(
-              x.partner.balanceProof.transferredAmount,
+          (a, b) =>
+            b.partner.balanceProof.transferredAmount.eq(
+              a.partner.balanceProof.transferredAmount,
             ) &&
-            y.partner.balanceProof.lockedAmount.eq(x.partner.balanceProof.lockedAmount) &&
-            y.partner.locks === x.partner.locks,
+            b.partner.balanceProof.lockedAmount.eq(a.partner.balanceProof.lockedAmount) &&
+            b.partner.locks === a.partner.locks,
         ),
-        skip(1), // distinctUntilChanged allows first, we want to skip and act only on changes
-        debounceTime(httpTimeout / 2), // default: 15s
+        pairwise(), // distinctUntilChanged allows first, so pair and skips it
+        debounce(([prev, cur]) =>
+          // if partner lock increases, a transfer is pending, debounce by httpTimeout=30s
+          // otherwise transfer completed, emits immediately
+          cur.partner.locks.length > prev.partner.locks.length ? timer(httpTimeout) : of(1),
+        ),
         // switchMap may unsubscribe from previous udcBalance wait/signature prompts if partner's
         // balanceProof balance changes in the meantime
         switchMap(makeMonitoringRequest$(deps)),

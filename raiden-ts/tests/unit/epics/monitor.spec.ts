@@ -278,16 +278,20 @@ describe('monitorRequestEpic', () => {
   test('ignore: signing rejected not fatal', async () => {
     expect.assertions(2);
 
-    const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
-
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
     action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
 
-    await receiveTransfer(10);
+    // fails only after transfer's signatures
+    const originalSign = depsMock.signer.signMessage;
+    const signerSpy = jest
+      .spyOn(depsMock.signer, 'signMessage')
+      .mockImplementation(async (message) => {
+        if (signerSpy.mock.calls.length > 1) throw new Error('Signature rejected');
+        return originalSign.call(depsMock.signer, message);
+      });
 
-    // to reject AFTER receiveTransfer signed Processed
-    signerSpy.mockRejectedValueOnce(new Error('Signature rejected'));
-    setTimeout(() => action$.complete(), 50);
+    await receiveTransfer(10);
+    setTimeout(() => action$.complete(), 100);
 
     await expect(promise).resolves.toBeUndefined();
 
