@@ -193,9 +193,9 @@ jobs:
             fi
       - run:
           name: Compress dapp
-          command: tar -cjf dapp.tar.bz2 dist
+          command: tar -czvf dapp.tar.gz dist
       - store_artifacts:
-          path: dapp.tar.bz2
+          path: dapp.tar.gz
       - persist_to_workspace:
           root: ~/src
           paths:
