@@ -7,12 +7,12 @@
       alt='' 
       src="https://user-images.githubusercontent.com/35398162/54018436-ee3f6300-4188-11e9-9b4e-0666c44cda53.png" /></a>
   <br/>
-  Raiden Light Client SDK and dApp
+  Raiden Light Client SDK, CLI and dApp
   <br/>
 </h2>
 
 <h4 align="center">
-  JavaScript SDK and dApp to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
+  JavaScript SDK, CLI and dApp to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
 </h4>
 
 <p align="center">
@@ -44,13 +44,15 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
+The Raiden CLI aims to provide a HTTP REST server that is fully compatible with the [Raiden API specification](https://docs.raiden.network/raiden-api-1/resources).
+
 The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
-> **INFO:** The Light Client SDK and dApp are **work in progress**.
+> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects.
 
 ## Table of Contents
 
-- [About The Project](#about-the-project)
+- [About the Project](#about-the-project)
 - [Architecture](#architecture)
   - [Raiden Light Client SDK](#raiden-light-client-sdk)
   - [Architecture diagram](#architecture-diagram)
@@ -63,6 +65,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
 - [Run Repository Code](#run-repository-code)
   - [Prerequisites](#prerequisites)
   - [SDK Documentation](#sdk-documentation)
+  - [CLI Documentation](#cli-documentation)
   - [dApp Installation](#dapp-installation)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
@@ -227,6 +230,10 @@ To run the code in this repository, you must have Node.js 10+ on your computer a
 
 Go to the [SDK Documentation](https://lightclient.raiden.network/docs/) for more information on how to install and use the SDK.
 
+### CLI Documentation
+
+Go to the [CLI README](https://github.com/raiden-network/light-client/tree/master/raiden-cli) for installation instructions and the current status of the API.
+
 ### dApp Installation
 
 ```bash
@@ -268,8 +275,6 @@ After the development server starts you have to navigate to `http://localhost:80
 ## Roadmap and Timeline
 
 We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1).
-
-With the [first testnet release](https://github.com/raiden-network/light-client/releases) we have reached milestone 0, where the SDK and dApp are able to send transfers, but will not be able to receive transfers.
 
 ## Contributing
 
