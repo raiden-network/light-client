@@ -68,7 +68,7 @@
     "node-localstorage": "2.1.6",
     "prettier": "2.0.5",
     "rimraf": "3.0.2",
-    "rxjs-marbles": "6.0.0",
+    "rxjs-marbles": "6.0.1",
     "tiny-async-pool": "1.1.0",
     "ts-jest": "26.1.0",
     "typechain": "2.0.0",
