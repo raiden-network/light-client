@@ -554,11 +554,9 @@ export class Raiden {
    */
   public async monitorToken(token: string): Promise<Address> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
-    const alreadyMonitoredTokens = this.state.tokens;
-    if (token in alreadyMonitoredTokens) return alreadyMonitoredTokens[token];
-    const tokenNetwork = (await this.deps.registryContract.token_to_token_networks(
-      token,
-    )) as Address;
+    let tokenNetwork = this.state.tokens[token];
+    if (tokenNetwork) return tokenNetwork;
+    tokenNetwork = (await this.deps.registryContract.token_to_token_networks(token)) as Address;
     assert(
       tokenNetwork && tokenNetwork !== AddressZero,
       ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK,

@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction, from } from 'rxjs';
+import { Observable, OperatorFunction, pairs } from 'rxjs';
 import { pluck, distinctUntilChanged, mergeMap, scan, filter } from 'rxjs/operators';
 import { isntNil } from './types';
 
@@ -70,7 +70,7 @@ export function distinctRecordValues<R>(
   return (input: Observable<Record<string, R>>): Observable<[string, R]> =>
     input.pipe(
       distinctUntilChanged(),
-      mergeMap((map) => from(Object.entries(map))),
+      mergeMap((map) => pairs<R>(map)),
       /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
        * changes from last time seen. It relies on value references changing only if needed */
       scan<[string, R], { acc: { [k: string]: R }; changed?: [string, R] }>(

@@ -28,7 +28,7 @@ import { Address, isntNil } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
-import { channelMonitor } from '../../channels/actions';
+import { channelMonitored } from '../../channels/actions';
 import { messageSend, messageReceived } from '../../messages/actions';
 import { transferSigned } from '../../transfers/actions';
 import { RaidenState } from '../../state';
@@ -104,7 +104,7 @@ function inviteLoop$(
  * Create room (if needed) for a transfer's target, channel's partner or, as a fallback, for any
  * recipient of a messageSend.request action
  *
- * @param action$ - Observable of transferSigned|channelMonitor|messageSend.request actions
+ * @param action$ - Observable of transferSigned|channelMonitored|messageSend.request actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
  * @param deps.address - Our address
@@ -122,7 +122,7 @@ export const matrixCreateRoomEpic = (
   action$.pipe(
     // ensure there's a room for address of interest for each of these actions
     // matrixRoomLeave ensures a new room is created if all we had are forgotten/left
-    filter(isActionOf([transferSigned, channelMonitor, messageSend.request, matrixRoomLeave])),
+    filter(isActionOf([transferSigned, channelMonitored, messageSend.request, matrixRoomLeave])),
     map((action) => {
       let peer;
       switch (action.type) {
@@ -138,7 +138,7 @@ export const matrixCreateRoomEpic = (
           )
             peer = action.payload.message.initiator;
           break;
-        case channelMonitor.type:
+        case channelMonitored.type:
           peer = action.meta.partner;
           break;
         default:

@@ -28,6 +28,7 @@ export const tokenMonitored = createAction(
     }),
     t.partial({
       fromBlock: t.number,
+      toBlock: t.number,
     }),
   ]),
 );
@@ -60,12 +61,12 @@ export namespace channelOpen {
 }
 
 /* Channel with meta:ChannelId + payload.id should be monitored */
-export const channelMonitor = createAction(
-  'channel/monitor',
-  t.intersection([t.type({ id: t.number }), t.partial({ fromBlock: t.number })]),
+export const channelMonitored = createAction(
+  'channel/monitored',
+  t.type({ id: t.number }),
   ChannelId,
 );
-export interface channelMonitor extends ActionType<typeof channelMonitor> {}
+export interface channelMonitored extends ActionType<typeof channelMonitored> {}
 
 export const channelDeposit = createAsyncAction(
   ChannelId,
