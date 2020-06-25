@@ -44,7 +44,7 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
-The Raiden CLI aims to provide a HTTP REST server that is fully compatible with the [Raiden API specification](https://docs.raiden.network/raiden-api-1/resources).
+The Raiden CLI provides an HTTP REST server that is fully compatible with the [Raiden API specification](https://docs.raiden.network/raiden-api-1/resources).
 
 The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
