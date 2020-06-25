@@ -435,7 +435,7 @@ export const pfsCapacityUpdateEpic = (
  * PFSFeeUpdate to path_finding global room, so PFSs can pick us for mediation
  * TODO: Currently, we always send Zero fees; we should send correct fee data from config
  *
- * @param action$ - Observable of channelMonitor actions
+ * @param action$ - Observable of channelMonitored actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Raiden epic dependencies
  * @param deps.log - Logger instance
