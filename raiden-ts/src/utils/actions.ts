@@ -230,10 +230,6 @@ export function createAction<
  *   const addTodo = createAction('ADD_TODO', undefined, t.type({ folder: t.string }));
  *
  * @param args - typesafe args tuple
- * @param args.0 - type literal string tag for action
- * @param args.1 - payload codec, optional
- * @param args.2 - meta codec, optional
- * @param args.3 - error flag, will only be present if defined (either false or true)
  * @returns ActionCreator factory function with useful properties. See [[ActionCreatorMembers]]
  */
 export function createAction<
@@ -405,7 +401,6 @@ function matchMeta(meta: any): (action: { meta: any }) => boolean;
  *
  * @param meta - meta base for comparison
  * @param args - curried args array
- * @param args.0 - action to test meta against the 1st param
  * @returns true if metas are compatible, false otherwise
  */
 function matchMeta(meta: any, ...args: [{ meta: any }] | []) {
