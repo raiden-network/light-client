@@ -8,6 +8,8 @@
   "schedule": ["after 8am on thursday"],
   "prConcurrentLimit": 15,
   "prHourlyLimit": 5,
+  "reviewers": ["team:raiden-network/light-client"],
+  "reviewersSampleSize": 1,
   "rangeStrategy": "pin",
   "timezone": "Europe/Berlin"
 }
