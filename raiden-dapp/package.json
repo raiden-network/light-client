@@ -78,7 +78,7 @@
     "eslint-plugin-vuetify": "1.0.0-beta.6",
     "flush-promises": "1.0.2",
     "jest": "26.1.0",
-    "jest-junit": "10.0.0",
+    "jest-junit": "11.0.1",
     "material-design-icons-iconfont": "5.0.1",
     "nyc": "15.1.0",
     "sass": "1.26.9",
