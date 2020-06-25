@@ -188,6 +188,7 @@ export async function ensureTokenIsMonitored(raiden: MockedRaiden): Promise<void
   raiden.store.dispatch(tokenMonitored({ token, tokenNetwork }));
 }
 
+/* eslint-disable jsdoc/valid-types */
 /**
  * Ensure there's a channel open with partner
  *
