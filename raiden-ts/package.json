@@ -47,7 +47,7 @@
     "@types/events": "3.0.0",
     "@types/isomorphic-fetch": "0.0.35",
     "@types/jest": "26.0.3",
-    "@types/lodash": "4.14.155",
+    "@types/lodash": "4.14.157",
     "@types/lossless-json": "1.0.0",
     "@types/matrix-js-sdk": "5.1.1",
     "@types/memdown": "3.0.0",
