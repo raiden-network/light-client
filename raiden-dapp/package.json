@@ -81,7 +81,7 @@
     "jest-junit": "10.0.0",
     "material-design-icons-iconfont": "5.0.1",
     "nyc": "15.1.0",
-    "sass": "1.26.8",
+    "sass": "1.26.9",
     "sass-loader": "8.0.2",
     "source-map-loader": "1.0.0",
     "stylelint": "13.6.1",
