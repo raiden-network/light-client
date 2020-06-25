@@ -87,7 +87,7 @@
     "lodash": "4.17.15",
     "loglevel": "1.6.8",
     "lossless-json": "1.0.4",
-    "matrix-js-sdk": "6.2.2",
+    "matrix-js-sdk": "7.0.0",
     "redux": "4.0.5",
     "redux-logger": "3.0.6",
     "redux-observable": "1.2.0",
