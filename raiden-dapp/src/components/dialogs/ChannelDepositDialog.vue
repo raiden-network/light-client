@@ -19,13 +19,7 @@
     <v-card-actions>
       <v-row v-if="loading" align="center" justify="center">
         <v-col cols="6">
-          <v-progress-circular
-            class="channel-deposit__progress"
-            :size="110"
-            :width="7"
-            indeterminate
-          >
-          </v-progress-circular>
+          <v-progress-linear color="primary" indeterminate />
         </v-col>
       </v-row>
       <v-row v-else-if="done" align="center" justify="center">
@@ -135,10 +129,6 @@ export default class ChannelDepositDialog extends Vue {
 .channel-deposit {
   &__button {
     margin-top: 45px;
-  }
-
-  &__progress {
-    color: $secondary-color;
   }
 
   &__done {

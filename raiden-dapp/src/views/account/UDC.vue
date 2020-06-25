@@ -31,12 +31,7 @@
     <v-row v-else class="udc__progress" justify="center">
       <v-col cols="10">
         <v-row no-gutters align="center" justify="center">
-          <v-progress-circular
-            :size="125"
-            :width="4"
-            color="primary"
-            indeterminate
-          ></v-progress-circular>
+          <v-progress-linear color="primary" indeterminate />
         </v-row>
         <v-row no-gutters align="center" justify="center">
           <span v-if="step === 'mint'">

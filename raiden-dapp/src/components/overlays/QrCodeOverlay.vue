@@ -9,9 +9,7 @@
       align-content="center"
       class="fill-height"
     >
-      <v-progress-circular
-        :size="125"
-        :width="4"
+      <v-progress-linear
         color="primary"
         indeterminate
         class="scanner__progress"
@@ -114,9 +112,8 @@ export default class QrCodeOverlay extends Vue {
   }
 
   &__progress {
-    display: block;
-    margin-bottom: 25px;
-    width: 100% !important;
+    margin-bottom: 45px;
+    width: 66% !important;
   }
 
   &__video {

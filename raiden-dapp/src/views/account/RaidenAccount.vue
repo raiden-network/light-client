@@ -121,13 +121,7 @@
       justify="center"
       align="center"
     >
-      <v-progress-circular
-        :size="125"
-        :width="4"
-        class="address-input__prepend"
-        indeterminate
-        color="primary"
-      />
+      <v-progress-linear color="primary" indeterminate />
       <p class="raiden-account__progress-hint">
         {{ $t('raiden-account.in-progress') }}
       </p>

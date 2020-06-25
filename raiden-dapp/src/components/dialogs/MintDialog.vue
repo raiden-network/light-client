@@ -7,12 +7,7 @@
       <v-row v-if="loading" class="mint-dialog--progress">
         <v-col cols="12">
           <v-row no-gutters align="center" justify="center">
-            <v-progress-circular
-              :size="125"
-              :width="4"
-              color="primary"
-              indeterminate
-            ></v-progress-circular>
+            <v-progress-linear color="primary" indeterminate />
           </v-row>
         </v-col>
       </v-row>

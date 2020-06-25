@@ -14,12 +14,7 @@
       justify="center"
       class="withdrawal__loading"
     >
-      <v-progress-circular
-        :size="125"
-        :width="4"
-        color="primary"
-        indeterminate
-      ></v-progress-circular>
+      <v-progress-linear color="primary" indeterminate />
     </v-row>
     <v-row
       v-else-if="balances.length === 0"
@@ -107,12 +102,7 @@
           </div>
         </div>
         <div v-else class="mt-4">
-          <v-progress-circular
-            :size="86"
-            :width="4"
-            color="primary"
-            indeterminate
-          ></v-progress-circular>
+          <v-progress-linear color="primary" indeterminate></v-progress-linear>
           <div class="mt-4">{{ $t('withdrawal.dialog.progress') }}</div>
         </div>
       </v-card-text>
