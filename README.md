@@ -44,7 +44,7 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
-The Raiden CLI provides an HTTP REST server that is fully compatible with the [Raiden API specification](https://docs.raiden.network/raiden-api-1/resources).
+The Raiden CLI is a reference implementation which provides a HTTP REST server that is fully compatible with the [Raiden API specification](https://docs.raiden.network/raiden-api-1/resources).
 
 The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
@@ -87,11 +87,11 @@ The Raiden client code is available [here](https://github.com/raiden-network/rai
 
 The goal of the Raiden Light Client SDK is to provide an easy-to-use framework, which can be integrated by any JavaScript developer. The SDK will simplify the process of embedding and using the Raiden Network for token transfers in decentralized applications
 
-With the SDK we want to make your life as a dApp developer easier by:
+With the SDK we want to make your life as a dApp developer easier.
 
-- Providing an easy way for your dApp to interact with the Raiden Network.
-- Providing help for you to enable your users to make transfers and receive tokens using their consumer wallets like imToken and MetaMask.
-- Making it possible to transfer and receive tokens using low end devices.
+- You should be able to interact with the Raiden Network easily with your dApp.
+- We want to help you to enable your users to make token transfers using their consumer wallets like imToken or Metamask.
+- You should be able to transfer and receive tokens using low end devices.
 
 ## Architecture
 
@@ -99,7 +99,7 @@ With the SDK we want to make your life as a dApp developer easier by:
 
 This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and the Raiden Network.
 
-Its target audience is blockchain and dApp developers looking to interact with the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows the SDK to reach a majority of the current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other languages and environments.
+Its target audience is blockchain and dApp developers looking to perform transfers in the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows the SDK to reach a majority of the current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other languages and environments.
 
 Look at the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) for more information and a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions. Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
