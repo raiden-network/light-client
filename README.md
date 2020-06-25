@@ -7,12 +7,12 @@
       alt='' 
       src="https://user-images.githubusercontent.com/35398162/54018436-ee3f6300-4188-11e9-9b4e-0666c44cda53.png" /></a>
   <br/>
-  Raiden Light Client SDK and dApp
+  Raiden Light Client SDK, CLI and dApp
   <br/>
 </h2>
 
 <h4 align="center">
-  JavaScript SDK and dApp to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
+  JavaScript SDK, CLI and dApp to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
 </h4>
 
 <p align="center">
@@ -44,14 +44,15 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
+The Raiden CLI is a reference implementation which provides a HTTP REST server that is fully compatible with the [Raiden API specification](https://docs.raiden.network/raiden-api-1/resources).
+
 The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
-> **INFO:** The Light Client SDK and dApp are **work in progress** and can only be used on the Ethereum **Testnets**.
+> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects.
 
 ## Table of Contents
 
-- [Table of Contents](#table-of-contents)
-- [About The Project](#about-the-project)
+- [About the Project](#about-the-project)
 - [Architecture](#architecture)
   - [Raiden Light Client SDK](#raiden-light-client-sdk)
   - [Architecture diagram](#architecture-diagram)
@@ -64,6 +65,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
 - [Run Repository Code](#run-repository-code)
   - [Prerequisites](#prerequisites)
   - [SDK Documentation](#sdk-documentation)
+  - [CLI Documentation](#cli-documentation)
   - [dApp Installation](#dapp-installation)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
@@ -74,22 +76,22 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
 
 The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, enabling near-instant, low-fee and scalable payments. It’s complementary to the Ethereum blockchain and works with any ERC20 compatible token.
 
-The Raiden client code is available [here](https://github.com/raiden-network/raiden) and has been [released for mainnet](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c) with a limited alpha release of the Raiden Network in December 2018.
+The Raiden client code is available [here](https://github.com/raiden-network/raiden) and has been [released for mainnet](https://medium.com/raiden-network/alderaan-mainnet-release-announcement-7f701e58c236).
 
 <center>
 <img 
       width='750px' 
       alt='' 
-      src="https://user-images.githubusercontent.com/43838780/67964837-438d2080-fc01-11e9-93a7-c38129b7d566.png" />
+      src="https://user-images.githubusercontent.com/43838780/85526750-8ecdc680-b60a-11ea-8a42-07da6b0f8296.png" />
 </center>
 
 The goal of the Raiden Light Client SDK is to provide an easy-to-use framework, which can be integrated by any JavaScript developer. The SDK will simplify the process of embedding and using the Raiden Network for token transfers in decentralized applications
 
-With the SDK we want to make your life as a dApp dev easier:
+With the SDK we want to make your life as a dApp developer easier.
 
 - You should be able to interact with the Raiden Network easily with your dApp.
 - We want to help you to enable your users to make token transfers using their consumer wallets like imToken or Metamask.
-- It should be possible to send tokens using low end devices, which would not be capable of running a full Raiden node.
+- You should be able to transfer and receive tokens using low end devices.
 
 ## Architecture
 
@@ -97,9 +99,9 @@ With the SDK we want to make your life as a dApp dev easier:
 
 This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and the Raiden Network.
 
-Its target audience is blockchain and dApp developers looking into interacting with and performing transfers through the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows it to reach the majority of current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other future languages and environments.
+Its target audience is blockchain and dApp developers looking to perform transfers in the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows the SDK to reach a majority of the current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other languages and environments.
 
-Look at the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) for more information. Also, a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [project's Wiki page](https://github.com/raiden-network/light-client/wiki/SDK-Development). Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
+Look at the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) for more information and a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions. Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
 ### Architecture diagram
 
@@ -133,12 +135,12 @@ Look at the [Raiden Light Client SDK folder of this repository](./raiden-ts/READ
 
 ### Learn about Raiden
 
-If you didn't use Raiden before, you can
+If you haven't used Raiden before we recommend that you:
 
 - Checkout the [developer portal](http://developer.raiden.network)
-- Look at the [documentation](https://raiden-network.readthedocs.io/en/stable/index.html)
+- Look at the [documentation](https://docs.raiden.network/)
 - Learn more by watching explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
-- Read the blog posts on [Medium](https://medium.com/@raiden_network)
+- Read our blog posts on [Medium](https://medium.com/@raiden_network)
 
 ## Try Out the Raiden Demo dApp
 
@@ -152,6 +154,7 @@ These step-by-step instructions will guide you through the process for trying ou
 2. It is NOT recommended to use the dApp on mobile (but it works).
 
 ### Steps to Make Your First Transfer
+
 #### 1. Acquire ETH
 
 1. Go to the Goerli faucet at [htts://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/)
@@ -227,6 +230,10 @@ To run the code in this repository, you must have Node.js 10+ on your computer a
 
 Go to the [SDK Documentation](https://lightclient.raiden.network/docs/) for more information on how to install and use the SDK.
 
+### CLI Documentation
+
+Go to the [CLI README](https://github.com/raiden-network/light-client/tree/master/raiden-cli) for installation instructions and the current status of the API.
+
 ### dApp Installation
 
 ```bash
@@ -268,8 +275,6 @@ After the development server starts you have to navigate to `http://localhost:80
 ## Roadmap and Timeline
 
 We are working in [2 weekly iterations](https://github.com/raiden-network/light-client/projects). Priorities are managed within the [Product Backlog](https://github.com/raiden-network/light-client/milestone/1).
-
-With the [first testnet release](https://github.com/raiden-network/light-client/releases) we have reached milestone 0, where the SDK and dApp are able to send transfers, but will not be able to receive transfers.
 
 ## Contributing
 
