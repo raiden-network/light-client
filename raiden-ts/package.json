@@ -62,7 +62,7 @@
     "eslint-plugin-jsdoc": "27.1.2",
     "eslint-plugin-prettier": "3.1.4",
     "ganache-cli": "6.9.1",
-    "jest": "26.0.1",
+    "jest": "26.1.0",
     "jest-junit": "10.0.0",
     "memdown": "5.1.0",
     "node-localstorage": "2.1.6",
