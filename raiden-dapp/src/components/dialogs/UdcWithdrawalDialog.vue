@@ -53,7 +53,7 @@
         </v-col>
       </v-row>
     </v-card-text>
-    <v-card-actions v-if="!error">
+    <v-card-actions v-if="!error && !isDone">
       <action-button
         :enabled="isValid"
         :text="$t('general.buttons.confirm')"
@@ -112,6 +112,7 @@ export default class UdcWithdrawalDialog extends Vue {
     this.isDone = true;
     setTimeout(() => {
       this.isDone = false;
+      this.cancel();
     }, 5000);
   }
 
