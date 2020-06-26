@@ -18,7 +18,6 @@
               />
             </v-btn>
           </div>
-          <v-spacer />
           <v-col>
             <div class="app-header__top__content__title">
               <span v-if="isConnected">
@@ -35,7 +34,6 @@
               {{ network }}
             </div>
           </v-col>
-          <v-spacer />
           <span
             v-if="!loading && defaultAccount"
             class="app-header__notifications-wrapper"

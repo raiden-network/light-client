@@ -101,6 +101,7 @@ export default class AddressDisplay extends Vue {
   }
 
   &__input {
+    color: $color-white;
     width: 340px;
     text-align: center;
   }

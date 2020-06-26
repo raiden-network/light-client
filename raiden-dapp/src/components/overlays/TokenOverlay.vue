@@ -61,7 +61,7 @@
                   />
                 </v-list-item-avatar>
               </v-col>
-              <v-col cols="7">
+              <v-col>
                 <v-list-item-content>
                   <v-list-item-title class="token-list__token-title">
                     {{
@@ -76,7 +76,7 @@
                   </v-list-item-subtitle>
                 </v-list-item-content>
               </v-col>
-              <v-col cols="3">
+              <v-col>
                 <v-row justify="end">
                   <v-list-item-action-text>
                     <amount-display
