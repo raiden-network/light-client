@@ -116,7 +116,7 @@ export default class Transaction extends Vue {
       margin-left: 20px;
 
       &__address {
-        padding: 0 0 2px 5px;
+        padding: 1px 0 2px 5px;
       }
 
       &__time-stamp {
