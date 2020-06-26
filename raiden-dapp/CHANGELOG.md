@@ -13,8 +13,10 @@
 - [#1783] Minor visual alignments
 - [#1579] Removes minting references when detected network is mainnet.
 - [#1756] Fix non-informative error message on SDK's wrapped errors
+- [#1773] Fix performance issues of progress indicators
 
 ### Changed
+
 - [#1610] Adds alderaan compatibility.
 - [#1540] Adds title to channels list to clarify that only channels for the selected token display.
 
@@ -26,6 +28,7 @@
 [#1421]: https://github.com/raiden-network/light-client/issues/1421
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
 [#168]: https://github.com/raiden-network/light-client/issues/168
+[#1773]: https://github.com/raiden-network/light-client/issues/1773
 
 ## [0.9.0] - 2020-05-28
 
