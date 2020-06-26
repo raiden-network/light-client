@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "build": "tsc",
-    "build:bundle": "webpack --progress"
+    "build:bundle": "webpack --progress",
+    "preinstall": "npx only-allow pnpm"
   },
   "repository": {
     "type": "git",
@@ -31,7 +32,9 @@
     "eslint-plugin-import": "2.21.2",
     "eslint-plugin-prettier": "3.1.4",
     "native-ext-loader": "2.3.0",
+    "node-pre-gyp": "^0.15.0",
     "prettier": "2.0.5",
+    "symbol-observable": "^1.2.0",
     "ts-loader": "7.0.5",
     "typescript": "3.9.5",
     "webpack": "4.43.0",
@@ -47,7 +50,7 @@
     "loglevel": "1.6.8",
     "morgan": "1.10.0",
     "node-localstorage": "2.1.6",
-    "raiden-ts": "file:../raiden-ts",
+    "raiden-ts": "*",
     "rxjs": "6.5.5",
     "wrtc": "0.4.5",
     "yargs": "15.3.1"

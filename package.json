@@ -1,0 +1,22 @@
+{
+  "name": "light-client",
+  "version": "0.9.0",
+  "description": "Raiden Light Client monorepo",
+  "author": "brainbot labs est.",
+  "private": true,
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "preinstall": "npx only-allow pnpm"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raiden-network/light-client.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/raiden-network/light-client/issues"
+  },
+  "homepage": "https://github.com/raiden-network/light-client#readme"
+}
