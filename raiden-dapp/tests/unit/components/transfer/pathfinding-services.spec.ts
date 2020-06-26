@@ -68,11 +68,9 @@ describe('PathfindingService.vue', () => {
     $raiden.fetchServices.mockResolvedValueOnce([raidenPFS, raidenPFS2]);
     const wrapper = createWrapper();
     await wrapper.vm.$nextTick();
-    expect(wrapper.find('.pathfinding-services__loading').isVisible()).toBe(
-      true
-    );
+    expect(wrapper.find('.spinner').isVisible()).toBe(true);
     await flushPromises();
-    expect(wrapper.find('.pathfinding-services__loading').exists()).toBe(false);
+    expect(wrapper.find('.spinner').exists()).toBe(false);
     expect(wrapper.find('.pathfinding-services__table').isVisible()).toBe(true);
 
     wrapper

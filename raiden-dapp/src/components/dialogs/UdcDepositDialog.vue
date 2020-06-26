@@ -26,13 +26,8 @@
       </v-row>
       <v-row v-else class="udc-deposit-dialog--progress">
         <v-col cols="12">
-          <v-row no-gutters align="center" justify="center">
-            <v-progress-circular
-              :size="125"
-              :width="4"
-              color="primary"
-              indeterminate
-            ></v-progress-circular>
+          <v-row>
+            <spinner />
           </v-row>
           <v-row no-gutters align="center" justify="center">
             <span v-if="step === 'mint'">
@@ -97,10 +92,11 @@ import { BalanceUtils } from '@/utils/balance-utils';
 import { Token } from '@/model/types';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 import { RaidenError } from 'raiden-ts';
 
 @Component({
-  components: { ActionButton, RaidenDialog, ErrorMessage },
+  components: { ActionButton, RaidenDialog, ErrorMessage, Spinner },
   computed: {
     ...mapState(['accountBalance']),
     ...mapGetters(['mainnet', 'udcToken'])

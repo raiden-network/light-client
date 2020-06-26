@@ -7,19 +7,8 @@
         </div>
       </v-col>
     </v-row>
-    <v-row
-      v-if="loading"
-      no-gutters
-      align="center"
-      justify="center"
-      class="withdrawal__loading"
-    >
-      <v-progress-circular
-        :size="125"
-        :width="4"
-        color="primary"
-        indeterminate
-      ></v-progress-circular>
+    <v-row v-if="loading" class="withdrawal__loading">
+      <spinner />
     </v-row>
     <v-row
       v-else-if="balances.length === 0"
@@ -107,12 +96,7 @@
           </div>
         </div>
         <div v-else class="mt-4">
-          <v-progress-circular
-            :size="86"
-            :width="4"
-            color="primary"
-            indeterminate
-          ></v-progress-circular>
+          <spinner />
           <div class="mt-4">{{ $t('withdrawal.dialog.progress') }}</div>
         </div>
       </v-card-text>
@@ -139,9 +123,16 @@ import BlockieMixin from '@/mixins/blockie-mixin';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 
 @Component({
-  components: { ActionButton, RaidenDialog, AddressDisplay, AmountDisplay },
+  components: {
+    ActionButton,
+    RaidenDialog,
+    AddressDisplay,
+    AmountDisplay,
+    Spinner
+  },
   computed: {
     ...mapState(['tokens', 'raidenAccountBalance'])
   }

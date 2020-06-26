@@ -35,10 +35,9 @@
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import Spinner from '@/components/icons/Spinner.vue';
 import { Route, Token } from '@/model/types';
 
-@Component({ components: { AmountDisplay, Spinner } })
+@Component({ components: { AmountDisplay } })
 export default class FindRoutes extends Vue {
   @Prop({ required: true })
   token!: Token;

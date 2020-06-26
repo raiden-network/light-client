@@ -7,12 +7,7 @@
       justify="center"
     >
       <v-col cols="12">
-        <v-row
-          v-if="loading"
-          align="center"
-          justify="center"
-          class="pathfinding-services__loading"
-        >
+        <v-row v-if="loading">
           <spinner />
         </v-row>
         <v-row

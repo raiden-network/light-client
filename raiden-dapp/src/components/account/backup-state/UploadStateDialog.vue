@@ -9,14 +9,7 @@
     </v-card-text>
 
     <v-card-actions v-else-if="uploadingStateProgress">
-      <v-row justify="center" no-gutters>
-        <v-progress-circular
-          class="upload-state__progress"
-          :size="110"
-          :width="7"
-          indeterminate
-        ></v-progress-circular>
-      </v-row>
+      <spinner />
     </v-card-actions>
 
     <v-card-actions v-else>
@@ -71,11 +64,13 @@
 import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 
 @Component({
   components: {
     RaidenDialog,
-    ActionButton
+    ActionButton,
+    Spinner
   }
 })
 export default class UploadStateDialog extends Vue {
@@ -177,9 +172,6 @@ export default class UploadStateDialog extends Vue {
     height: 307px;
   }
 
-  &__progress {
-    color: $secondary-color;
-  }
   &__dropzone {
     border: dashed 2px $secondary-button-color;
     display: flex;
