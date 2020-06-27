@@ -482,6 +482,8 @@ describe('Raiden', () => {
       raiden.state$.subscribe((state) => (raidenState = state));
       raiden.start();
 
+      await provider.mine(5);
+
       // ensure after hot boot, state is rehydrated and contains (only) previous token
       expect(raidenState).toBeDefined();
       expect(raidenState!.tokens).toEqual({ [token]: tokenNetwork });
@@ -633,11 +635,13 @@ describe('Raiden', () => {
       await expect(raiden.monitorToken(token)).resolves.toBe(tokenNetwork);
 
       await expect(promise).resolves.toEqual(
-        tokenMonitored({
-          fromBlock: expect.any(Number),
-          token: token as Address,
-          tokenNetwork: tokenNetwork as Address,
-        }),
+        tokenMonitored(
+          expect.objectContaining({
+            fromBlock: expect.any(Number),
+            token: token as Address,
+            tokenNetwork: tokenNetwork as Address,
+          }),
+        ),
       );
 
       // while partner is not yet initialized, open a channel with them
@@ -654,11 +658,13 @@ describe('Raiden', () => {
       // promise1, contrary to promise, should resolve at initialization, upon first scan
       // detects tokenNetwork as being of interest for having a channel with parner
       await expect(promise1).resolves.toEqual(
-        tokenMonitored({
-          fromBlock: expect.any(Number),
-          token: token as Address,
-          tokenNetwork: tokenNetwork as Address,
-        }),
+        tokenMonitored(
+          expect.objectContaining({
+            fromBlock: expect.any(Number),
+            token: token as Address,
+            tokenNetwork: tokenNetwork as Address,
+          }),
+        ),
       );
 
       raiden1.stop();

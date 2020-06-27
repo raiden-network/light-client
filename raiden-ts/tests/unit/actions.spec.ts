@@ -2,7 +2,7 @@ import * as t from 'io-ts';
 import { from } from 'rxjs';
 import { bigNumberify } from 'ethers/utils';
 
-import { channelDeposit, channelMonitor } from 'raiden-ts/channels/actions';
+import { channelDeposit, channelMonitored } from 'raiden-ts/channels/actions';
 import { RaidenError, ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
 import { Address, UInt, decode } from 'raiden-ts/utils/types';
 import {
@@ -19,12 +19,11 @@ import { ConfirmableAction } from 'raiden-ts/actions';
 describe('action factories not tested in reducers.spec.ts', () => {
   const tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,
     partner = '0x0000000000000000000000000000000000000020' as Address;
-  test('channelMonitor', () => {
-    const id = 12,
-      fromBlock = 5123;
-    expect(channelMonitor({ id, fromBlock }, { tokenNetwork, partner })).toEqual({
-      type: channelMonitor.type,
-      payload: { id, fromBlock },
+  test('channelMonitored', () => {
+    const id = 12;
+    expect(channelMonitored({ id }, { tokenNetwork, partner })).toEqual({
+      type: channelMonitored.type,
+      payload: { id },
       meta: { tokenNetwork, partner },
     });
   });

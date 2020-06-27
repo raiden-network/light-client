@@ -38,6 +38,7 @@ import { ChannelState, Channel } from 'raiden-ts/channels';
 import { Direction } from 'raiden-ts/transfers/state';
 import { transfer, transferUnlock } from 'raiden-ts/transfers/actions';
 import { messageReceived } from 'raiden-ts/messages/actions';
+import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
 
 /**
  * Composes several constants used across epics
@@ -179,6 +180,28 @@ export function getChannel(
 }
 
 /**
+ * Returns the filter used to monitor for channel events
+ *
+ * @param tokenNetworkContract - TokenNetwork contract
+ * @returns Filter used to monitor TokenNetwork for Channel events
+ */
+export function getChannelEventsFilter(tokenNetworkContract: TokenNetwork): Filter {
+  const events = tokenNetworkContract.interface.events;
+  return {
+    address: tokenNetworkContract.address,
+    topics: [
+      [
+        events.ChannelOpened.topic,
+        events.ChannelNewDeposit.topic,
+        events.ChannelWithdraw.topic,
+        events.ChannelClosed.topic,
+        events.ChannelSettled.topic,
+      ],
+    ],
+  };
+}
+
+/**
  * Ensure token is monitored on raiden's state
  *
  * @param raiden - Client instance
@@ -206,7 +229,7 @@ export async function ensureChannelIsOpen([raiden, partner]: [
 
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   providersEmit(
-    tokenNetworkContract.filters.ChannelOpened(null, null, null, null),
+    getChannelEventsFilter(tokenNetworkContract),
     makeLog({
       transactionHash: makeHash(),
       blockNumber: openBlock,
@@ -242,21 +265,8 @@ export async function ensureChannelIsDeposited(
   const participant = raiden.address;
 
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
-  const events = tokenNetworkContract.interface.events;
-  const monitorFilter: Filter = {
-    address: tokenNetwork,
-    topics: [
-      [
-        events.ChannelNewDeposit.topic,
-        events.ChannelWithdraw.topic,
-        events.ChannelClosed.topic,
-        events.ChannelSettled.topic,
-      ],
-      [defaultAbiCoder.encode(['uint256'], [id])],
-    ],
-  };
   providersEmit(
-    monitorFilter,
+    getChannelEventsFilter(tokenNetworkContract),
     makeLog({
       transactionHash: txHash,
       blockNumber: txBlock,
@@ -286,21 +296,8 @@ export async function ensureChannelIsClosed([raiden, partner]: [
   await ensureChannelIsOpen([raiden, partner]);
   if (getChannel(raiden, partner).state === ChannelState.closed) return;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
-  const events = tokenNetworkContract.interface.events;
-  const monitorFilter: Filter = {
-    address: tokenNetwork,
-    topics: [
-      [
-        events.ChannelNewDeposit.topic,
-        events.ChannelWithdraw.topic,
-        events.ChannelClosed.topic,
-        events.ChannelSettled.topic,
-      ],
-      [defaultAbiCoder.encode(['uint256'], [id])],
-    ],
-  };
   providersEmit(
-    monitorFilter,
+    getChannelEventsFilter(tokenNetworkContract),
     makeLog({
       transactionHash: makeHash(),
       blockNumber: closeBlock,
@@ -326,21 +323,8 @@ export async function ensureChannelIsSettled([raiden, partner]: [
   await ensureChannelIsClosed([raiden, partner]);
   if (!getChannel(raiden, partner)) return;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
-  const events = tokenNetworkContract.interface.events;
-  const monitorFilter: Filter = {
-    address: tokenNetwork,
-    topics: [
-      [
-        events.ChannelNewDeposit.topic,
-        events.ChannelWithdraw.topic,
-        events.ChannelClosed.topic,
-        events.ChannelSettled.topic,
-      ],
-      [defaultAbiCoder.encode(['uint256'], [id])],
-    ],
-  };
   providersEmit(
-    monitorFilter,
+    getChannelEventsFilter(tokenNetworkContract),
     makeLog({
       transactionHash: makeHash(),
       blockNumber: settleBlock,
