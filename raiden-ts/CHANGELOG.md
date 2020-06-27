@@ -9,6 +9,7 @@
 - [#1690] Fix LockExpired with empty balanceHash verification
 - [#1698] Fix estimateGas errors on channelOpen not properly being handled
 - [#1761] Fix deposit error on openChannel not rejecting promise
+- [#1787] Fix TokenNetwork monitoring losing events
 
 ### Added
 - [#1374] Monitors MonitoringService contract and emit event when MS acts
@@ -25,6 +26,7 @@
 - [#1657] Expose RaidenChannel's id,settleTimeout,openBlock as required properties
 - [#1708] Expose RaidenTransfer's secret as optional property
 - [#1705] All transfers become monitored per default to make receiving transfers safe
+- [#1822] Refactor and optimize TokenNetwork events monitoring: one filter per Tokennetwork
 
 [#837]: https://github.com/raiden-network/light-client/issues/837
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
@@ -44,6 +46,8 @@
 [#1705]: https://github.com/raiden-network/light-client/issues/1705
 [#1711]: https://github.com/raiden-network/light-client/pull/1711
 [#1761]: https://github.com/raiden-network/light-client/issues/1761
+[#1787]: https://github.com/raiden-network/light-client/issues/1787
+[#1822]: https://github.com/raiden-network/light-client/pull/1822
 
 ## [0.9.0] - 2020-05-28
 ### Added
