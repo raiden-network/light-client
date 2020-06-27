@@ -11,7 +11,7 @@ import { verifyMessage, BigNumber } from 'ethers/utils';
 
 import { RaidenAction, raidenConfigUpdate } from 'raiden-ts/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
-import { channelMonitor } from 'raiden-ts/channels/actions';
+import { channelMonitored } from 'raiden-ts/channels/actions';
 import {
   matrixPresence,
   matrixRoom,
@@ -267,9 +267,9 @@ describe('transport epic', () => {
   });
 
   describe('matrixMonitorChannelPresenceEpic', () => {
-    test('channelMonitor triggers matrixPresence.request', async () => {
+    test('channelMonitored triggers matrixPresence.request', async () => {
       const action$ = of<RaidenAction>(
-        channelMonitor({ id: channelId }, { tokenNetwork, partner }),
+        channelMonitored({ id: channelId }, { tokenNetwork, partner }),
       );
       const promise = matrixMonitorChannelPresenceEpic(action$).toPromise();
       await expect(promise).resolves.toEqual(

@@ -13,7 +13,7 @@ import {
   channelOpen,
   channelDeposit,
   channelClose,
-  channelMonitor,
+  channelMonitored,
 } from 'raiden-ts/channels/actions';
 import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
 import { matrixPresence } from 'raiden-ts/transport/actions';
@@ -1282,7 +1282,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
       txHash,
     } = epicFixtures(depsMock));
     state$ = depsMock.latest$.pipe(pluck('state'));
-    action = channelMonitor({ id: channelId }, { tokenNetwork, partner });
+    action = channelMonitored({ id: channelId }, { tokenNetwork, partner });
 
     [
       raidenConfigUpdate({
@@ -1313,7 +1313,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     depsMock.latest$.complete();
   });
 
-  test('success: send PFSFeeUpdate to global pfsRoom on channelMonitor', async () => {
+  test('success: send PFSFeeUpdate to global pfsRoom on channelMonitored', async () => {
     expect.assertions(1);
 
     const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
