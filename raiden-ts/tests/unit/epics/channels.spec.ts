@@ -411,7 +411,9 @@ describe('channelDepositEpic', () => {
       channelDeposit.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
     );
     expect(tokenContract.functions.approve).toHaveBeenCalledTimes(1);
-    expect(tokenContract.functions.approve).toHaveBeenCalledWith(tokenNetwork, deposit);
+    expect(tokenContract.functions.approve).toHaveBeenCalledWith(tokenNetwork, deposit, {
+      nonce: undefined,
+    });
   });
 
   test('setTotalDeposit tx fails', async () => {
