@@ -37,6 +37,9 @@ flags:
   sdk_e2e:
     paths:
       - raiden-ts/
+  sdk:
+    paths:
+      - raiden-ts/
   sdk_integration:
     carryforward: true
     paths:
