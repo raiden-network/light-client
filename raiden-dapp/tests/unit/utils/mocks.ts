@@ -1,3 +1,3 @@
 export const $identicon = () => ({
-  getIdenticon: jest.fn().mockReturnValue('')
+  getIdenticon: jest.fn().mockReturnValue(''),
 });

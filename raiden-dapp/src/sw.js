@@ -1,4 +1,4 @@
-self.addEventListener('message', e => {
+self.addEventListener('message', (e) => {
   if (!e.data) {
     return;
   }

@@ -20,11 +20,11 @@ describe('AmountInput.vue', () => {
         label: 'Has Label',
         token: TestData.token,
         value: '0.00',
-        ...params
+        ...params,
       },
       mocks: {
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   }
 
@@ -95,9 +95,9 @@ describe('AmountInput.vue', () => {
     test('call preventDefault when pasting an invalid value', () => {
       const event = {
         clipboardData: {
-          getData: jest.fn().mockReturnValue('invalid')
+          getData: jest.fn().mockReturnValue('invalid'),
         },
-        preventDefault: jest.fn().mockReturnValue(null)
+        preventDefault: jest.fn().mockReturnValue(null),
       };
       // @ts-ignore
       wrapper.vm.onPaste(event);
@@ -108,13 +108,13 @@ describe('AmountInput.vue', () => {
     test('select the previous value when pasting a valid value', () => {
       const event = {
         clipboardData: {
-          getData: jest.fn().mockReturnValue('1.2')
+          getData: jest.fn().mockReturnValue('1.2'),
         },
         target: {
           value: '1.2',
-          setSelectionRange: jest.fn().mockReturnValue(null)
+          setSelectionRange: jest.fn().mockReturnValue(null),
         },
-        preventDefault: jest.fn().mockReturnValue(null)
+        preventDefault: jest.fn().mockReturnValue(null),
       };
       // @ts-ignore
       wrapper.vm.onPaste(event);

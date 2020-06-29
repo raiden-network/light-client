@@ -24,13 +24,13 @@ describe('MintDialog.vue', () => {
       stubs: ['v-dialog'],
       propsData: {
         token: TestData.token,
-        visible: true
+        visible: true,
       },
       mocks: {
         $t: (msg: string) => msg,
         $te: (msg: string) => msg,
-        $raiden
-      }
+        $raiden,
+      },
     });
   });
 

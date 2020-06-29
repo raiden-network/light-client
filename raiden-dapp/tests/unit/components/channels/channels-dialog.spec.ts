@@ -34,12 +34,12 @@ describe('ChannelDialogs.vue', () => {
       stubs: ['v-dialog'],
       propsData: {
         action: null,
-        channel: null
+        channel: null,
       },
       mocks: {
         $raiden,
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   }
 
@@ -54,7 +54,7 @@ describe('ChannelDialogs.vue', () => {
   test('close', async () => {
     wrapper.setProps({
       channel: TestData.openChannel,
-      action: 'close'
+      action: 'close',
     });
 
     await wrapper.vm.$nextTick();
@@ -64,7 +64,7 @@ describe('ChannelDialogs.vue', () => {
   test('settle', async () => {
     wrapper.setProps({
       channel: TestData.settlableChannel,
-      action: 'settle'
+      action: 'settle',
     });
 
     await wrapper.vm.$nextTick();
@@ -74,11 +74,11 @@ describe('ChannelDialogs.vue', () => {
   test('deposit', async () => {
     const tokenAddress = TestData.openChannel.token;
     store.commit('updateTokens', {
-      [tokenAddress]: { ...TestData.token, address: tokenAddress }
+      [tokenAddress]: { ...TestData.token, address: tokenAddress },
     } as Tokens);
     wrapper.setProps({
       channel: TestData.openChannel,
-      action: 'deposit'
+      action: 'deposit',
     });
 
     await wrapper.vm.$nextTick();
@@ -88,7 +88,7 @@ describe('ChannelDialogs.vue', () => {
   describe('depositing', () => {
     beforeEach(() => {
       wrapper.setProps({
-        channel: TestData.openChannel
+        channel: TestData.openChannel,
       });
     });
 
@@ -115,7 +115,7 @@ describe('ChannelDialogs.vue', () => {
   describe('closing', () => {
     beforeEach(() => {
       wrapper.setProps({
-        channel: TestData.openChannel
+        channel: TestData.openChannel,
       });
     });
 
@@ -142,7 +142,7 @@ describe('ChannelDialogs.vue', () => {
   describe('settling', () => {
     beforeEach(() => {
       wrapper.setProps({
-        channel: TestData.settlableChannel
+        channel: TestData.settlableChannel,
       });
     });
 

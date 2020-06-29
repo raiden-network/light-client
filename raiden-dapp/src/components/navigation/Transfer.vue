@@ -132,12 +132,12 @@ import BlockieMixin from '@/mixins/blockie-mixin';
     ErrorDialog,
     TokenOverlay,
     AmountDisplay,
-    TransactionsList
+    TransactionsList,
   },
   computed: {
     ...mapState(['defaultAccount']),
-    ...mapGetters(['channelWithBiggestCapacity', 'channels'])
-  }
+    ...mapGetters(['channelWithBiggestCapacity', 'channels']),
+  },
 })
 export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   showTokenNetworks: boolean = false;

@@ -2,7 +2,7 @@ import { NotificationsState } from '@/store/notifications/types';
 
 export const defaultState = (): NotificationsState => ({
   notifications: [],
-  newNotifications: false
+  newNotifications: false,
 });
 
 const state: NotificationsState = defaultState();

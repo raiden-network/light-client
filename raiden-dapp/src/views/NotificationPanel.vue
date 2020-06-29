@@ -52,11 +52,11 @@ const { mapGetters } = createNamespacedHelpers('notifications');
 
 @Component({
   components: {
-    NotificationCard
+    NotificationCard,
   },
   computed: {
-    ...mapGetters(['notifications'])
-  }
+    ...mapGetters(['notifications']),
+  },
 })
 export default class NotificationPanel extends Mixins(NavigationMixin) {
   notifications!: Notification[];

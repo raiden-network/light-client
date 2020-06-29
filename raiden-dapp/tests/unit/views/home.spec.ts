@@ -29,8 +29,8 @@ describe('Home.vue', () => {
       stubs: ['i18n', 'v-dialog'],
       mocks: {
         $raiden: $raiden,
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 
@@ -45,7 +45,7 @@ describe('Home.vue', () => {
   test('connects with sub key by default', async () => {
     store.commit('updateSettings', {
       useRaidenAccount: true,
-      isFirstTimeConnect: false
+      isFirstTimeConnect: false,
     });
     // @ts-ignore
     await wrapper.vm.connect();
@@ -58,7 +58,7 @@ describe('Home.vue', () => {
     store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
     store.commit('updateSettings', {
       useRaidenAccount: true,
-      isFirstTimeConnect: false
+      isFirstTimeConnect: false,
     });
     // @ts-ignore
     await wrapper.vm.connect();
@@ -90,7 +90,7 @@ describe('Home.vue', () => {
   test('connect button displays connect dialog', async () => {
     store.commit('updateSettings', {
       useRaidenAccount: true,
-      isFirstTimeConnect: true
+      isFirstTimeConnect: true,
     });
     expect(wrapper.vm.$data.connectDialog).toBe(false);
 

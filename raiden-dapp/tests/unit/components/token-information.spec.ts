@@ -22,11 +22,11 @@ describe('TokenInformation.vue', () => {
       store,
       stubs: ['v-dialog'],
       propsData: {
-        token: TestData.token
+        token: TestData.token,
       },
       mocks: {
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

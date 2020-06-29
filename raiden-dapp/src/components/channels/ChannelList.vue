@@ -34,7 +34,7 @@
                         channel.ownDeposit,
                         token.decimals || 0
                       ),
-                      state: capitalizeFirst(channel.state)
+                      state: capitalizeFirst(channel.state),
                     })
                   }}
                 </v-list-item-subtitle>
@@ -77,8 +77,8 @@ import Filters from '@/filters';
   components: {
     ChannelActions,
     ChannelLifeCycle,
-    AddressDisplay
-  }
+    AddressDisplay,
+  },
 })
 export default class ChannelList extends Mixins(BlockieMixin) {
   displayFormat = Filters.displayFormat;

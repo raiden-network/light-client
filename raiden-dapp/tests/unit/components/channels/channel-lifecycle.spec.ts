@@ -14,11 +14,11 @@ describe('ChannelLifeCycle.vue', () => {
     return mount(ChannelLifeCycle, {
       vuetify,
       propsData: {
-        state: channelState
+        state: channelState,
       },
       mocks: {
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   }
 

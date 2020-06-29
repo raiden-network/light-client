@@ -15,7 +15,7 @@
         :class="{
           sticky: sticky,
           'action-button__button--ghost': ghost,
-          'action-button__button--full-width': fullWidth
+          'action-button__button--full-width': fullWidth,
         }"
         depressed
         large

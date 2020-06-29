@@ -27,7 +27,7 @@ import { mapState } from 'vuex';
 import { Settings } from '@/types';
 
 @Component({
-  computed: { ...mapState(['settings']) }
+  computed: { ...mapState(['settings']) },
 })
 export default class RaidenSettings extends Vue {
   settings!: Settings;

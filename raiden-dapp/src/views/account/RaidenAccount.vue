@@ -144,8 +144,8 @@ import { bigNumberify, parseEther, BigNumber } from 'ethers/utils';
   components: { AmountInput, ActionButton, ErrorMessage, Spinner },
   computed: {
     ...mapState(['raidenAccountBalance', 'accountBalance']),
-    ...mapGetters(['isConnected'])
-  }
+    ...mapGetters(['isConnected']),
+  },
 })
 export default class RaidenAccount extends Vue {
   isConnected!: boolean;
@@ -161,7 +161,7 @@ export default class RaidenAccount extends Vue {
     decimals: 18,
     symbol: 'ETH',
     name: 'Ether',
-    balance: 0
+    balance: 0,
   };
 
   mounted() {

@@ -89,13 +89,13 @@ export default class PathfindingServices extends Vue {
       {
         text: this.$t('pathfinding-services.headers.host') as string,
         value: 'host',
-        align: 'left'
+        align: 'left',
       },
       {
         text: this.$t('pathfinding-services.headers.price') as string,
         value: 'price',
-        align: 'right'
-      }
+        align: 'right',
+      },
     ];
     this.fetchServices();
   }
@@ -103,7 +103,7 @@ export default class PathfindingServices extends Vue {
   @Emit()
   select({
     item,
-    value
+    value,
   }: {
     item: RaidenPFS;
     value: boolean;
@@ -127,7 +127,7 @@ export default class PathfindingServices extends Vue {
         this.select({ item: preSelectedPfs, value: true });
       }
       const tokens = this.services
-        .map(value => value.token)
+        .map((value) => value.token)
         .filter((value, index, array) => array.indexOf(value) === index);
 
       await this.$raiden.fetchTokenData(tokens);

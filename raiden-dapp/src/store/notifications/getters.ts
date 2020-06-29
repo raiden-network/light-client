@@ -11,7 +11,7 @@ export const getters: GetterTree<NotificationsState, RootState> = {
       return 1;
     }
     return notifications
-      .map(notification => notification.id)
+      .map((notification) => notification.id)
       .sort((a, b) => b - a)[0];
-  }
+  },
 };

@@ -11,7 +11,7 @@
           {{
             $t('token-information.description', {
               symbol: token.symbol,
-              name: token.name
+              name: token.name,
             })
           }}
         </div>
@@ -69,8 +69,8 @@ import { mapGetters } from 'vuex';
 @Component({
   components: { AddressDisplay, MintDialog },
   computed: {
-    ...mapGetters(['mainnet'])
-  }
+    ...mapGetters(['mainnet']),
+  },
 })
 export default class TokenInformation extends Vue {
   @Prop()

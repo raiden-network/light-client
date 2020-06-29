@@ -72,7 +72,7 @@ export interface Transfer {
 export const emptyDescription = (): StepDescription => ({
   label: '',
   title: '',
-  description: ''
+  description: '',
 });
 
 export const emptyTokenModel = (): AccTokenModel => ({
@@ -84,12 +84,12 @@ export const emptyTokenModel = (): AccTokenModel => ({
   closing: 0,
   closed: 0,
   settling: 0,
-  settled: 0
+  settled: 0,
 });
 
 export const PlaceHolderNetwork: Network = {
   name: '',
-  chainId: -1
+  chainId: -1,
 };
 
 export enum DeniedReason {
@@ -97,5 +97,5 @@ export enum DeniedReason {
   NO_ACCOUNT,
   UNSUPPORTED_NETWORK,
   INITIALIZATION_FAILED,
-  RDN_STATE_MIGRATION
+  RDN_STATE_MIGRATION,
 }

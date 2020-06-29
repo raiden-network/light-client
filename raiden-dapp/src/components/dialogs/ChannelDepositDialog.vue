@@ -77,8 +77,8 @@ import { BalanceUtils } from '@/utils/balance-utils';
     AmountInput,
     ActionButton,
     RaidenDialog,
-    Spinner
-  }
+    Spinner,
+  },
 })
 export default class ChannelDepositDialog extends Vue {
   @Prop({ required: true })

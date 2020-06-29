@@ -47,8 +47,8 @@ const { mapMutations } = createNamespacedHelpers('notifications');
 
 @Component({
   methods: {
-    ...mapMutations(['notificationDelete'])
-  }
+    ...mapMutations(['notificationDelete']),
+  },
 })
 export default class NotificationCard extends Vue {
   @Prop({ required: true })

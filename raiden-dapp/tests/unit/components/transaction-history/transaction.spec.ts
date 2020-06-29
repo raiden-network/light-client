@@ -21,7 +21,7 @@ describe('Transaction.vue', () => {
       store,
       vuetify,
       mocks: {
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
       },
       propsData: {
         transfer: {
@@ -32,9 +32,9 @@ describe('Transaction.vue', () => {
           initiator: '0x123',
           target: '0x456',
           success: successStatus,
-          token: '0xtoken'
-        }
-      }
+          token: '0xtoken',
+        },
+      },
     });
   };
 
@@ -45,8 +45,8 @@ describe('Transaction.vue', () => {
         decimals: 18,
         name: 'TestToken',
         symbol: 'TTT',
-        balance: Zero
-      }
+        balance: Zero,
+      },
     });
   });
 

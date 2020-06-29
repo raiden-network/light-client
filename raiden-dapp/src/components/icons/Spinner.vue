@@ -22,7 +22,7 @@ export default class Spinner extends Vue {
     return {
       width: `${this.size}px`,
       height: `${this.size}px`,
-      borderWidth: `${this.width}px`
+      borderWidth: `${this.width}px`,
     };
   }
 }

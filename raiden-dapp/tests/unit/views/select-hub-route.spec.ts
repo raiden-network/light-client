@@ -19,8 +19,8 @@ describe('SelectHubRoute.vue', () => {
       stubs: ['home', 'select-hub'],
       mocks: {
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

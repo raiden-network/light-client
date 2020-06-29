@@ -23,12 +23,12 @@ describe('AddressDisplay.vue', () => {
         $route: TestData.mockRoute(
           {},
           {
-            title: 'Home'
+            title: 'Home',
           }
         ),
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

@@ -14,18 +14,18 @@ describe('UploadStateDialog.vue', () => {
   beforeEach(() => {
     vuetify = new Vuetify();
     mockStateFile = new File([''], 'raiden-state-file.json', {
-      type: 'application/json'
+      type: 'application/json',
     });
 
     wrapper = mount(UploadStateDialog, {
       vuetify,
       stubs: ['v-dialog'],
       mocks: {
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
       },
       propsData: {
-        visible: true
-      }
+        visible: true,
+      },
     });
   });
 
@@ -93,7 +93,7 @@ describe('UploadStateDialog.vue', () => {
     const fileList = {
       0: mockStateFile,
       1: mockStateFile,
-      length: 2
+      length: 2,
     };
     // @ts-ignore
     wrapper.vm.uploadState(fileList);
@@ -106,7 +106,7 @@ describe('UploadStateDialog.vue', () => {
 
     const fileList = {
       0: mockStateFile,
-      length: 1
+      length: 1,
     };
     // @ts-ignore
     wrapper.vm.uploadState(fileList);

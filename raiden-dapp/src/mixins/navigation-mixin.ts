@@ -7,15 +7,15 @@ export default class NavigationMixin extends Vue {
     this.$router.push({
       name: RouteNames.SELECT_HUB,
       params: {
-        token: token
-      }
+        token: token,
+      },
     });
   }
 
   navigateToHome() {
     this.$router
       .push({
-        name: RouteNames.HOME
+        name: RouteNames.HOME,
       })
       .catch(() => {});
   }
@@ -25,8 +25,8 @@ export default class NavigationMixin extends Vue {
       name: RouteNames.OPEN_CHANNEL,
       params: {
         token: token,
-        partner: partner
-      }
+        partner: partner,
+      },
     });
   }
 
@@ -34,8 +34,8 @@ export default class NavigationMixin extends Vue {
     this.$router.push({
       name: RouteNames.CHANNELS,
       params: {
-        token: token
-      }
+        token: token,
+      },
     });
   }
 
@@ -47,7 +47,7 @@ export default class NavigationMixin extends Vue {
     const route = {
       name: RouteNames.TRANSFER,
       params: { token: token },
-      query: {}
+      query: {},
     };
     if (target && amount) {
       route.query = { target, amount };
@@ -57,7 +57,7 @@ export default class NavigationMixin extends Vue {
 
   navigateToTokenSelect() {
     this.$router.push({
-      name: RouteNames.SELECT_TOKEN
+      name: RouteNames.SELECT_TOKEN,
     });
   }
 
@@ -65,49 +65,49 @@ export default class NavigationMixin extends Vue {
     this.$router.push({
       name: RouteNames.TRANSFER_STEPS,
       params: { target },
-      query: { amount }
+      query: { amount },
     });
   }
 
   navigateToNotifications() {
     this.$router.push({
-      name: RouteNames.NOTIFICATIONS
+      name: RouteNames.NOTIFICATIONS,
     });
   }
 
   navigateToAccoount() {
     this.$router.push({
-      name: RouteNames.ACCOUNT_ROOT
+      name: RouteNames.ACCOUNT_ROOT,
     });
   }
 
   navigateToBackupState() {
     this.$router.push({
-      name: RouteNames.ACCOUNT_BACKUP
+      name: RouteNames.ACCOUNT_BACKUP,
     });
   }
 
   navigateToRaidenAccountTransfer() {
     this.$router.push({
-      name: RouteNames.ACCOUNT_RAIDEN
+      name: RouteNames.ACCOUNT_RAIDEN,
     });
   }
 
   navigateToSettings() {
     this.$router.push({
-      name: RouteNames.ACCOUNT_SETTINGS
+      name: RouteNames.ACCOUNT_SETTINGS,
     });
   }
 
   navigateToWithdrawal() {
     this.$router.push({
-      name: RouteNames.ACCOUNT_WITHDRAWAL
+      name: RouteNames.ACCOUNT_WITHDRAWAL,
     });
   }
 
   navigateToUDC() {
     this.$router.push({
-      name: RouteNames.ACCOUNT_UDC
+      name: RouteNames.ACCOUNT_UDC,
     });
   }
 
