@@ -577,6 +577,8 @@ function mockedMatrixCreateClient({ baseUrl }: { baseUrl: string }): jest.Mocked
     joinRoom: jest.fn(async (alias) => ({
       roomId: `!${alias}_room_id:${server}`,
       currentState: { setStateEvents: jest.fn() },
+      getCanonicalAlias: jest.fn(),
+      getAliases: jest.fn(() => [alias]),
     })),
     // reject to test register
     login: jest.fn().mockRejectedValue(new Error('invalid password')),
