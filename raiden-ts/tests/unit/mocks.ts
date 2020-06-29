@@ -15,7 +15,7 @@ import { Store, createStore, applyMiddleware } from 'redux';
 jest.mock('ethers/providers');
 import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
 import { Zero, HashZero } from 'ethers/constants';
-import { Log } from 'ethers/providers/abstract-provider';
+import { Log, Filter } from 'ethers/providers/abstract-provider';
 import {
   Network,
   parseEther,
@@ -135,9 +135,8 @@ export function makeHash() {
  * @returns Log object
  */
 export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<Log>): Log {
-  const blockNumber = opts.blockNumber || 1337;
   return {
-    blockNumber: blockNumber,
+    blockNumber: opts.blockNumber || mockedClients[0]?.deps?.provider?.blockNumber || 1337,
     blockHash: makeHash(),
     transactionIndex: 1,
     removed: false,
@@ -356,7 +355,6 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   Object.defineProperty(provider, 'blockNumber', { get: () => blockNumber });
   jest.spyOn(provider, 'getNetwork').mockImplementation(async () => network);
   jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
-  jest.spyOn(provider, 'getLogs').mockResolvedValue([]);
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([]);
   // See: https://github.com/cartant/rxjs-marbles/issues/11
   jest
@@ -364,6 +362,31 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     .mockImplementation(async () => (of(blockNumber) as unknown) as Promise<number>);
   // use provider.resetEventsBlock used to set current block number for provider
   jest.spyOn(provider, 'resetEventsBlock').mockImplementation((n: number) => (blockNumber = n));
+
+  const logs: Log[] = [];
+  const origEmit = provider.emit;
+  jest.spyOn(provider, 'emit').mockImplementation((event: EventType, ...args: any[]) => {
+    if (typeof event !== 'string' && !Array.isArray(event)) logs.push(args[0] as Log);
+    return origEmit.call(provider, event, ...args);
+  });
+  jest.spyOn(provider, 'getLogs').mockImplementation(async (filter: Filter) => {
+    return logs.filter((log) => {
+      if (filter.address && filter.address !== log.address) return false;
+      if (
+        filter.topics &&
+        !filter.topics.every(
+          (f, i) =>
+            f == null ||
+            f === log.topics[i] ||
+            (Array.isArray(f) && f.some((f1) => f1 === log.topics[i])),
+        )
+      )
+        return false;
+      if (filter.fromBlock && log.blockNumber! < filter.fromBlock) return false;
+      if (typeof filter.toBlock === 'number' && log.blockNumber! > filter.toBlock!) return false;
+      return true;
+    });
+  });
   mockEthersEventEmitter(provider);
 
   const signer = makeWallet().connect(provider);
@@ -656,8 +679,10 @@ export interface MockedRaiden {
 
 const mockedClients: MockedRaiden[] = [];
 const registryAddress = makeAddress();
+const serviceRegistryAddress = makeAddress();
 const svtAddress = makeAddress();
 const oneToNAddress = makeAddress();
+const udcAddress = makeAddress();
 
 /**
  * Create a mock of a Raiden client for epics
@@ -689,7 +714,6 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
   jest
     .spyOn(provider, 'getCode')
     .mockImplementation((addr) => (console.trace('getCode called', addr), Promise.resolve('')));
-  jest.spyOn(provider, 'getLogs').mockResolvedValue([]);
   jest.spyOn(provider, 'getBlock');
   jest.spyOn(provider, 'getTransaction');
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([address]);
@@ -706,6 +730,31 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
     .mockImplementation((n: number) => Object.assign(provider, { _fastBlockNumber: n }));
   // mockEthersEventEmitter(provider);
   provider.on('block', (n: number) => provider.resetEventsBlock(n));
+
+  const logs: Log[] = [];
+  const origEmit = provider.emit;
+  jest.spyOn(provider, 'emit').mockImplementation((event: EventType, ...args: any[]) => {
+    if (typeof event !== 'string' && !Array.isArray(event)) logs.push(args[0] as Log);
+    return origEmit.call(provider, event, ...args);
+  });
+  jest.spyOn(provider, 'getLogs').mockImplementation(async (filter: Filter) => {
+    return logs.filter((log) => {
+      if (filter.address && filter.address !== log.address) return false;
+      if (
+        filter.topics &&
+        !filter.topics.every(
+          (f, i) =>
+            f == null ||
+            f === log.topics[i] ||
+            (Array.isArray(f) && f.some((f1) => f1 === log.topics[i])),
+        )
+      )
+        return false;
+      if (filter.fromBlock && log.blockNumber! < filter.fromBlock) return false;
+      if (typeof filter.toBlock === 'number' && log.blockNumber! > filter.toBlock!) return false;
+      return true;
+    });
+  });
   provider.resetEventsBlock(100);
 
   const registryContract = TokenNetworkRegistryFactory.connect(
@@ -761,7 +810,7 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
   );
 
   const serviceRegistryContract = ServiceRegistryFactory.connect(
-    registryAddress,
+    serviceRegistryAddress,
     signer,
   ) as MockedContract<ServiceRegistry>;
   for (const func in serviceRegistryContract.functions) {
@@ -770,7 +819,7 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
   serviceRegistryContract.functions.token.mockResolvedValue(svtAddress);
   serviceRegistryContract.functions.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
-  const userDepositContract = UserDepositFactory.connect(address, signer) as MockedContract<
+  const userDepositContract = UserDepositFactory.connect(udcAddress, signer) as MockedContract<
     UserDeposit
   >;
   for (const func in userDepositContract.functions) {
@@ -961,9 +1010,7 @@ export async function sleep(ms = 10): Promise<void> {
  */
 export async function providersEmit(eventName: EventType, ...args: any[]): Promise<void> {
   const promise = Promise.all(
-    mockedClients.map(
-      (r) => new Promise((resolve) => r.deps.provider.once(eventName, () => resolve())),
-    ),
+    mockedClients.map((r) => new Promise((resolve) => r.deps.provider.once(eventName, resolve))),
   );
   mockedClients.forEach((r) => r.deps.provider.emit(eventName, ...args));
   await promise;
