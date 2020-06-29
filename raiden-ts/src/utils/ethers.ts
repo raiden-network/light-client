@@ -1,14 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Contract, Event } from 'ethers/contract';
-import { Provider, JsonRpcProvider, Listener, EventType, Filter, Log } from 'ethers/providers';
+import { JsonRpcProvider, Listener, EventType, Filter, Log } from 'ethers/providers';
 import { Network } from 'ethers/utils';
 import { getNetwork as parseNetwork } from 'ethers/utils/networks';
 import { Observable, fromEventPattern, merge, from, of, EMPTY, combineLatest, defer } from 'rxjs';
-import { filter, first, map, mergeMap, share, toArray } from 'rxjs/operators';
+import { filter, first, map, mergeMap, share, toArray, debounceTime, tap } from 'rxjs/operators';
 import sortBy from 'lodash/sortBy';
 
 import { isntNil } from './types';
 
+export function fromEthersEvent<T>(
+  target: JsonRpcProvider,
+  event: string | string[],
+  resultSelector?: (...args: any[]) => T,
+): Observable<T>;
+export function fromEthersEvent<T extends Log>(
+  target: JsonRpcProvider,
+  event: Filter,
+  resultSelector?: (...args: any[]) => T,
+  range?: number,
+): Observable<T>;
 /**
  * Like rxjs' fromEvent, but event can be an EventFilter
  *
@@ -16,18 +27,46 @@ import { isntNil } from './types';
  * @param event - EventFilter or string representing the event to listen to
  * @param resultSelector - A map of events arguments to output parameters
  *      Default is to pass only first parameter
+ * @param range - Range (confirmation) blocks in the past to fetch events from
  * @returns Observable of target.on(event) events
  */
 export function fromEthersEvent<T>(
-  target: Provider,
+  target: JsonRpcProvider,
   event: EventType,
   resultSelector?: (...args: any[]) => T,
-): Observable<T> {
-  return fromEventPattern<T>(
-    (handler: Listener) => target.on(event, handler),
-    (handler: Listener) => target.removeListener(event, handler),
-    resultSelector,
-  ) as Observable<T>;
+  range = 5,
+) {
+  if (typeof event === 'string' || Array.isArray(event))
+    return fromEventPattern<T>(
+      (handler: Listener) => target.on(event, handler),
+      (handler: Listener) => target.removeListener(event, handler),
+      resultSelector,
+    ) as Observable<T>;
+
+  let first = 0;
+  let latestEventBlock = 0;
+  return defer(() => {
+    // 'first' starts with subscription-time's private value set with provider.resetEventsBlock
+    first = (target as any)._lastBlockNumber || target.blockNumber || Number.POSITIVE_INFINITY;
+    return fromEthersEvent<number>(target, 'block');
+  }).pipe(
+    debounceTime(Math.ceil(target.pollingInterval / 10)), // debounce bursts of blocks
+    mergeMap(async (blockNumber, cnt) =>
+      target.getLogs({
+        ...event,
+        // on first [range] calls, getLogs since [first], unless an event was found on a previous
+        // call, on which case use block after [latestEventBlock];
+        // after [range] calls, ignore 'first' to get only since [-range] blocks
+        fromBlock: Math.max(
+          Math.min(blockNumber - range, cnt < range ? first : Number.POSITIVE_INFINITY),
+          latestEventBlock + 1,
+        ),
+        toBlock: 'latest',
+      }),
+    ),
+    mergeMap((logs) => from(logs)), // unwind
+    tap((log) => (latestEventBlock = Math.max(latestEventBlock, log.blockNumber!))),
+  );
 }
 
 export type ContractEvent =

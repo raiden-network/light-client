@@ -468,7 +468,7 @@ function fetchPastChannelEvents$(
 }
 
 function fetchNewChannelEvents$([token, tokenNetwork]: [Address, Address], deps: RaidenEpicDeps) {
-  const { provider, getTokenNetworkContract } = deps;
+  const { provider, getTokenNetworkContract, config$ } = deps;
   const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
 
   // this mapping is needed to handle channel events emitted before open is confirmed/stored
@@ -478,7 +478,11 @@ function fetchNewChannelEvents$([token, tokenNetwork]: [Address, Address], deps:
     topics: [Object.values(getChannelEventsTopics(tokenNetworkContract))],
   };
 
-  return fromEthersEvent<Log>(provider, channelFilter).pipe(
+  return config$.pipe(
+    first(),
+    mergeMap(({ confirmationBlocks }) =>
+      fromEthersEvent<Log>(provider, channelFilter, undefined, confirmationBlocks),
+    ),
     map(logToContractEvent<ChannelEvents>(tokenNetworkContract)),
     filter(isntNil),
     mapChannelEventsToAction([token, tokenNetwork], deps),
