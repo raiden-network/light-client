@@ -27,6 +27,7 @@
 - [#1708] Expose RaidenTransfer's secret as optional property
 - [#1705] All transfers become monitored per default to make receiving transfers safe
 - [#1822] Refactor and optimize TokenNetwork events monitoring: one filter per Tokennetwork
+- [#1832] Make Provider events fetching more reliable with Infura
 
 [#837]: https://github.com/raiden-network/light-client/issues/837
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
@@ -48,6 +49,7 @@
 [#1761]: https://github.com/raiden-network/light-client/issues/1761
 [#1787]: https://github.com/raiden-network/light-client/issues/1787
 [#1822]: https://github.com/raiden-network/light-client/pull/1822
+[#1832]: https://github.com/raiden-network/light-client/pull/1832
 
 ## [0.9.0] - 2020-05-28
 ### Added
