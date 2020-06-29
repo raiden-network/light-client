@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { makeLog, makeRaiden, waitBlock, makeAddress } from './mocks';
+import { makeLog, makeRaiden, waitBlock, makeAddress, providersEmit, sleep } from './mocks';
 import { token, tokenNetwork } from './fixtures';
 
 import * as t from 'io-ts';
@@ -60,7 +60,7 @@ describe('getEventsStream', () => {
   test('newEvents$ only', async () => {
     expect.assertions(4);
     const raiden = await makeRaiden();
-    const { provider, registryContract } = raiden.deps;
+    const { registryContract } = raiden.deps;
     const filter = registryContract.filters.TokenNetworkCreated(null, null);
 
     const output: TokenNetworkCreatedEvent[] = [];
@@ -71,9 +71,10 @@ describe('getEventsStream', () => {
     const log = makeLog({
       filter: registryContract.filters.TokenNetworkCreated(token, tokenNetwork),
     });
-    provider.emit(filter, log);
+    await providersEmit(filter, log);
 
     await waitBlock();
+    await sleep(raiden.deps.provider.pollingInterval);
 
     expect(output).toHaveLength(1);
     const event = output[0];
@@ -81,7 +82,7 @@ describe('getEventsStream', () => {
     expect(event[1]).toBe(tokenNetwork);
     expect(event[2]).toMatchObject({
       address: registryContract.address,
-      blockNumber: 1337,
+      blockNumber: expect.any(Number),
       args: { '0': token, '1': tokenNetwork, length: 2 },
     });
 
@@ -103,8 +104,8 @@ describe('getEventsStream', () => {
     });
 
     // ensure getEventsStream will need to wait for next block
-    provider.resetEventsBlock(0);
-    provider.getLogs.mockResolvedValueOnce([pastLog]);
+    provider.resetEventsBlock(20);
+    await providersEmit(filter, pastLog);
 
     const output: TokenNetworkCreatedEvent[] = [];
     const sub = getEventsStream<TokenNetworkCreatedEvent>(
@@ -115,13 +116,16 @@ describe('getEventsStream', () => {
 
     await waitBlock();
     await waitBlock(1336);
+    await sleep(raiden.deps.provider.pollingInterval);
 
     const log = makeLog({
+      blockNumber: 1337,
       filter: registryContract.filters.TokenNetworkCreated(token, tokenNetwork),
     });
-    provider.emit(filter, log);
+    await providersEmit(filter, log);
 
     await waitBlock();
+    await sleep(raiden.deps.provider.pollingInterval);
 
     expect(output).toHaveLength(2);
 
