@@ -30,13 +30,8 @@
     </v-row>
     <v-row v-else class="udc__progress" justify="center">
       <v-col cols="10">
-        <v-row no-gutters align="center" justify="center">
-          <v-progress-circular
-            :size="125"
-            :width="4"
-            color="primary"
-            indeterminate
-          ></v-progress-circular>
+        <v-row>
+          <spinner />
         </v-row>
         <v-row no-gutters align="center" justify="center">
           <span v-if="step === 'mint'">
@@ -156,6 +151,7 @@ import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 
 @Component({
   components: {
@@ -163,7 +159,8 @@ import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
     UdcDepositDialog,
     UdcWithdrawalDialog,
     AmountDisplay,
-    ErrorMessage
+    ErrorMessage,
+    Spinner
   },
   computed: {
     ...mapState(['accountBalance']),

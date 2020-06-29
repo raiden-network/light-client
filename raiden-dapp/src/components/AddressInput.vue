@@ -29,25 +29,19 @@
           <img
             :src="$blockie(value)"
             :alt="$t('address-input.blockie-alt')"
-            class="address-input__blockie address-input__prepend"
+            class="address-input__blockie"
           />
         </div>
-        <div v-else-if="busy">
-          <v-progress-circular
-            size="22"
-            class="address-input__prepend"
-            indeterminate
-            color="primary"
-          ></v-progress-circular>
-        </div>
-        <div v-else></div>
       </template>
       <template #append>
-        <span class="address-input__qr-code">
+        <span v-if="!busy" class="address-input__qr-code">
           <qr-code
             @click.native="isQrCodeOverlayVisible = !isQrCodeOverlayVisible"
           />
         </span>
+        <div v-else>
+          <spinner :size="22" :width="2" :inline="true" />
+        </div>
       </template>
     </v-text-field>
     <qr-code-overlay
@@ -64,6 +58,7 @@ import { mapState } from 'vuex';
 
 import QrCode from '@/components/icons/QrCode.vue';
 import QrCodeOverlay from '@/components/overlays/QrCodeOverlay.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 import { Presences } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import BlockieMixin from '@/mixins/blockie-mixin';
@@ -92,7 +87,7 @@ type ValidationResult = {
 };
 
 @Component({
-  components: { QrCode, QrCodeOverlay },
+  components: { QrCode, QrCodeOverlay, Spinner },
   computed: { ...mapState(['presences']) }
 })
 export default class AddressInput extends Mixins(BlockieMixin) {
@@ -422,10 +417,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
             border: 1.5px solid $primary-color;
           }
         }
-      }
-
-      &__prepend-inner {
-        margin-top: 0;
       }
     }
 

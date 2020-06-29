@@ -22,14 +22,8 @@
             <v-col cols="10"> {{ $t('udc.withdrawal-planned') }}</v-col>
           </v-row>
         </v-col>
-        <v-col v-else-if="inProgress" cols="12">
-          <v-progress-circular
-            class="udc-withdrawal-dialog__progress"
-            :size="110"
-            :width="7"
-            indeterminate
-          >
-          </v-progress-circular>
+        <v-col v-else-if="inProgress">
+          <spinner class="udc-withdrawal-dialog__progress" />
         </v-col>
         <v-col v-else cols="12">
           <v-row no-gutters justify="center">
@@ -86,12 +80,14 @@ import { Token } from '@/model/types';
 import { BigNumber, parseUnits } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
 import ErrorMessage from '@/components/ErrorMessage.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 
 @Component({
   components: {
     ErrorMessage,
     RaidenDialog,
-    ActionButton
+    ActionButton,
+    Spinner
   },
   computed: {
     ...mapGetters(['udcToken'])

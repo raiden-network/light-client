@@ -9,13 +9,7 @@
       align-content="center"
       class="fill-height"
     >
-      <v-progress-circular
-        :size="125"
-        :width="4"
-        color="primary"
-        indeterminate
-        class="scanner__progress"
-      />
+      <spinner class="scanner__progress" />
       <h2>{{ $t('scan.permission.title') }}</h2>
       <p>{{ $t('scan.permission.description') }}</p>
     </v-row>
@@ -36,10 +30,11 @@
 <script lang="ts">
 import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
 import { QrcodeStream } from 'vue-qrcode-reader';
+import Spinner from '@/components/icons/Spinner.vue';
 
 import ErrorMessage from '@/components/ErrorMessage.vue';
 
-@Component({ components: { QrcodeStream, ErrorMessage } })
+@Component({ components: { QrcodeStream, ErrorMessage, Spinner } })
 export default class QrCodeOverlay extends Vue {
   @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
@@ -114,9 +109,7 @@ export default class QrCodeOverlay extends Vue {
   }
 
   &__progress {
-    display: block;
     margin-bottom: 25px;
-    width: 100% !important;
   }
 
   &__video {

@@ -4,22 +4,13 @@
       {{ $t('mint-dialog.title', { symbol: token.symbol }) }}
     </v-card-title>
     <v-card-text>
-      <v-row v-if="loading" class="mint-dialog--progress">
-        <v-col cols="12">
-          <v-row no-gutters align="center" justify="center">
-            <v-progress-circular
-              :size="125"
-              :width="4"
-              color="primary"
-              indeterminate
-            ></v-progress-circular>
-          </v-row>
-        </v-col>
+      <v-row v-if="loading">
+        <spinner />
       </v-row>
       <v-row v-if="error">
         <error-message :error="error" />
       </v-row>
-      <v-row v-if="!loading && !error" class="mint-dialog__available">
+      <v-row v-if="!loading && !error">
         {{ $t('mint-dialog.description') }}
       </v-row>
     </v-card-text>
@@ -28,7 +19,6 @@
         arrow
         :enabled="!loading"
         :text="$t('general.buttons.continue')"
-        class="mint-dialog__action"
         @click="mint()"
       ></action-button>
     </v-card-actions>
@@ -43,10 +33,11 @@ import ActionButton from '@/components/ActionButton.vue';
 import { Token } from '@/model/types';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({
-  components: { ActionButton, RaidenDialog, ErrorMessage }
+  components: { ActionButton, RaidenDialog, ErrorMessage, Spinner }
 })
 export default class MintDialog extends Vue {
   @Prop({ required: true })

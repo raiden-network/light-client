@@ -1,22 +1,12 @@
 <template>
-  <raiden-dialog class="pfs-fees-dialog" :visible="visible" hide-close>
+  <raiden-dialog :visible="visible" hide-close>
     <v-card-actions>
-      <v-row v-if="!pfsFeesPaid" align="center" justify="center">
-        <v-progress-circular
-          class="pfs-fees-dialog__progress"
-          :size="110"
-          :width="7"
-          indeterminate
-        >
-        </v-progress-circular>
+      <v-row v-if="!pfsFeesPaid">
+        <spinner />
       </v-row>
       <v-row v-else align="center" justify="center">
         <v-col cols="6">
-          <v-img
-            class="pfs-fees-dialog__done"
-            :src="require('@/assets/done.svg')"
-          >
-          </v-img>
+          <v-img :src="require('@/assets/done.svg')"> </v-img>
         </v-col>
       </v-row>
     </v-card-actions>
@@ -38,11 +28,10 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 
 @Component({
-  components: {
-    RaidenDialog
-  }
+  components: { RaidenDialog, Spinner }
 })
 export default class PfsFeesDialog extends Vue {
   @Prop({ required: true, type: Boolean })
@@ -53,13 +42,3 @@ export default class PfsFeesDialog extends Vue {
   freePfs!: boolean;
 }
 </script>
-
-<style scoped lang="scss">
-@import '@/scss/colors';
-
-.pfs-fees-dialog {
-  &__progress {
-    color: $secondary-color;
-  }
-}
-</style>

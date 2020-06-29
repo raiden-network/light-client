@@ -28,16 +28,8 @@
         </v-col>
       </v-row>
 
-      <v-row v-else align="center" justify="center">
-        <v-col cols="6">
-          <v-progress-circular
-            class="open-channel-dialog__progress"
-            :size="110"
-            :width="7"
-            indeterminate
-          >
-          </v-progress-circular>
-        </v-col>
+      <v-row v-else>
+        <spinner />
       </v-row>
     </v-card-actions>
 
@@ -57,11 +49,11 @@
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 import { StepDescription } from '@/model/types';
+
 @Component({
-  components: {
-    RaidenDialog
-  }
+  components: { RaidenDialog, Spinner }
 })
 export default class OpenChannelDialog extends Vue {
   @Prop({ required: true })
@@ -79,13 +71,3 @@ export default class OpenChannelDialog extends Vue {
   cancel() {}
 }
 </script>
-
-<style scoped lang="scss">
-@import '@/scss/colors';
-
-.open-channel-dialog {
-  &__progress {
-    color: $secondary-color;
-  }
-}
-</style>

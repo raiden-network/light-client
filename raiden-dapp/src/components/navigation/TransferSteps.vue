@@ -204,7 +204,6 @@ import PathfindingServices from '@/components/transfer/PathfindingServices.vue';
 import FindRoutes from '@/components/transfer/FindRoutes.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import TransferSummary from '@/components/transfer/TransferSummary.vue';
-import Spinner from '@/components/icons/Spinner.vue';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import Checkmark from '@/components/icons/Checkmark.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
@@ -223,7 +222,6 @@ import { mapGetters } from 'vuex';
     PathfindingServices,
     ActionButton,
     FindRoutes,
-    Spinner,
     ErrorDialog,
     Checkmark,
     UdcDepositDialog,
@@ -626,9 +624,6 @@ export default class TransferSteps extends Mixins(
       line-height: 21px;
       text-align: center;
       margin-top: 2rem;
-    }
-    &__spinner {
-      margin: 3rem 0;
     }
   }
 
