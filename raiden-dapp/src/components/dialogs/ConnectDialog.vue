@@ -36,7 +36,6 @@
 <script lang="ts">
 import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
-import { Web3Provider } from '@/services/web3-provider';
 import { DeniedReason } from '@/model/types';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
@@ -58,6 +57,8 @@ export default class ConnectDialog extends Vue {
   visible!: boolean;
   @Prop({ default: false, required: true, type: Boolean })
   connecting!: boolean;
+  @Prop({ required: true })
+  hasProvider!: boolean;
 
   @Emit()
   close() {}
@@ -68,13 +69,6 @@ export default class ConnectDialog extends Vue {
       ...this.$store.state.settings,
       isFirstTimeConnect: false
     });
-  }
-
-  get hasProvider(): boolean {
-    return (
-      !!process.env.VUE_APP_RAIDEN_PACKAGE ||
-      Web3Provider.injectedWeb3Available()
-    );
   }
 }
 </script>

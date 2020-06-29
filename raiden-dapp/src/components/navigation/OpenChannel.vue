@@ -178,6 +178,8 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
       this.navigateToHome();
     }
 
+    await this.$raiden.monitorToken(address);
+
     if (this.token.decimals === 0 && this.deposit.indexOf('.') > -1) {
       this.deposit = this.deposit.split('.')[0];
     }

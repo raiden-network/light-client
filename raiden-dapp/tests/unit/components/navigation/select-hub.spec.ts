@@ -52,6 +52,7 @@ describe('SelectHub.vue', () => {
           fetchTokenData: jest.fn().mockResolvedValue(null),
           getAvailability: jest.fn().mockResolvedValue(true),
           monitoringReward: bigNumberify('1'),
+          monitorToken: jest.fn(),
           getUDCCapacity: jest.fn().mockResolvedValue(bigNumberify('2')),
           ...raidenMocks
         },

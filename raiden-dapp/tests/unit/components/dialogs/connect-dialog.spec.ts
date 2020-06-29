@@ -24,7 +24,8 @@ describe('ConnectDialog.vue', () => {
       stubs: ['v-dialog'],
       propsData: {
         connecting: false,
-        visible: true
+        visible: true,
+        hasProvider: true
       },
       mocks: {
         $t: (msg: string) => msg
