@@ -37,4 +37,10 @@ export default class BlurredOverlay extends Vue {
     z-index: 101;
   }
 }
+
+@supports (-moz-appearance: none) {
+  .blurred-overlay {
+    background-color: rgba($card-background, 0.7);
+  }
+}
 </style>
