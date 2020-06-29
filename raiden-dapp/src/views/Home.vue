@@ -78,14 +78,14 @@ import { ConfigProvider } from '@/services/config-provider';
 @Component({
   computed: {
     ...mapState(['loading', 'accessDenied', 'stateBackup', 'settings']),
-    ...mapGetters(['isConnected'])
+    ...mapGetters(['isConnected']),
   },
   components: {
     ActionButton,
     ConnectDialog,
     NoTokens,
-    NoAccessMessage
-  }
+    NoAccessMessage,
+  },
 })
 export default class Home extends Vue {
   isConnected!: boolean;

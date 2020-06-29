@@ -15,8 +15,8 @@ describe('RaidenDialog.vue', () => {
       vuetify,
       stubs: ['v-dialog'],
       propsData: {
-        visible: true
-      }
+        visible: true,
+      },
     });
   });
 

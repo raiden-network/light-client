@@ -16,7 +16,7 @@
           <v-divider
             :class="{
               active: step >= 2,
-              skipped: pfsSelectionSkipped || routeSelectionSkipped
+              skipped: pfsSelectionSkipped || routeSelectionSkipped,
             }"
             class="transfer-steps__divider"
           ></v-divider>
@@ -25,7 +25,7 @@
             :complete="step > 2"
             :class="{
               active: step >= 2,
-              skipped: pfsSelectionSkipped || routeSelectionSkipped
+              skipped: pfsSelectionSkipped || routeSelectionSkipped,
             }"
             :complete-icon="routeSelectionSkipped ? 'mdi-redo' : 'mdi-check'"
             step
@@ -63,7 +63,7 @@
                   :class="{
                     'low-balance':
                       selectedPfs !== null &&
-                      !udcCapacity.gte(selectedPfs.price)
+                      !udcCapacity.gte(selectedPfs.price),
                   }"
                 >
                   <amount-display
@@ -92,7 +92,7 @@
                           ? 'transfer.steps.request-route.tooltip-main'
                           : 'transfer.steps.request-route.tooltip',
                         {
-                          token: udcToken.symbol
+                          token: udcToken.symbol,
                         }
                       )
                     }}
@@ -227,11 +227,11 @@ import { mapGetters } from 'vuex';
     UdcDepositDialog,
     TransferSummary,
     PfsFeesDialog,
-    AmountDisplay
+    AmountDisplay,
   },
   computed: {
-    ...mapGetters(['mainnet', 'udcToken'])
-  }
+    ...mapGetters(['mainnet', 'udcToken']),
+  },
 })
 export default class TransferSteps extends Mixins(
   BlockieMixin,
@@ -271,7 +271,7 @@ export default class TransferSteps extends Mixins(
       transferAmount: BalanceUtils.parse(this.amount, this.token.decimals!),
       transferToken: this.token,
       transferTotal: this.totalAmount,
-      paymentId: this.paymentId
+      paymentId: this.paymentId,
     } as Transfer;
   }
 
@@ -283,7 +283,7 @@ export default class TransferSteps extends Mixins(
           this.selectedPfs.price as BigNumber,
           this.udcToken.decimals
         ),
-        symbol: this.udcToken.symbol
+        symbol: this.udcToken.symbol,
       });
     }
 
@@ -295,14 +295,14 @@ export default class TransferSteps extends Mixins(
               this.token.decimals
             )
           : '',
-        symbol: this.token.symbol
+        symbol: this.token.symbol,
       });
     }
 
     if (this.step === 3) {
       return this.$t(amountLocalized, {
         amount: Filter.displayFormat(this.totalAmount, this.token.decimals),
-        symbol: this.token.symbol
+        symbol: this.token.symbol,
       });
     }
 
@@ -310,7 +310,7 @@ export default class TransferSteps extends Mixins(
   }
 
   private updateUDCCapacity() {
-    this.$raiden.getUDCCapacity().then(value => (this.udcCapacity = value));
+    this.$raiden.getUDCCapacity().then((value) => (this.udcCapacity = value));
   }
 
   async created() {
@@ -348,7 +348,7 @@ export default class TransferSteps extends Mixins(
         fee: Zero,
         displayFee: '0',
         path: [...route.path],
-        hops: 0
+        hops: 0,
       };
 
       this.step = 3;
@@ -388,7 +388,7 @@ export default class TransferSteps extends Mixins(
             key: index,
             hops: path.length - 1,
             fee,
-            path
+            path,
           } as Route)
       );
 

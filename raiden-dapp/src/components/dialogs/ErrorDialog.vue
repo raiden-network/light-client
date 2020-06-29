@@ -15,7 +15,7 @@ import ErrorMessage from '@/components/ErrorMessage.vue';
 import { RaidenError } from 'raiden-ts';
 
 @Component({
-  components: { RaidenDialog, ErrorMessage }
+  components: { RaidenDialog, ErrorMessage },
 })
 export default class ErrorDialog extends Vue {
   @Prop({ required: true })

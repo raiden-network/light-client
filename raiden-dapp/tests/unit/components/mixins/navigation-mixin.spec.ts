@@ -17,14 +17,14 @@ describe('NavigationMixin', () => {
 
     const component = {
       render() {},
-      mixins: [NavigationMixin]
+      mixins: [NavigationMixin],
     };
 
     wrapper = shallowMount(component as any, {
       mocks: {
         $router: router,
-        $route: TestData.mockRoute()
-      }
+        $route: TestData.mockRoute(),
+      },
     });
   });
 
@@ -36,8 +36,8 @@ describe('NavigationMixin', () => {
       expect.objectContaining({
         name: RouteNames.SELECT_HUB,
         params: {
-          token: '0xtoken'
-        }
+          token: '0xtoken',
+        },
       })
     );
   });
@@ -48,7 +48,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.HOME
+        name: RouteNames.HOME,
       })
     );
   });
@@ -62,8 +62,8 @@ describe('NavigationMixin', () => {
         name: RouteNames.OPEN_CHANNEL,
         params: {
           token: '0xtoken',
-          partner: '0xpartner'
-        }
+          partner: '0xpartner',
+        },
       })
     );
   });
@@ -74,7 +74,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.SELECT_TOKEN
+        name: RouteNames.SELECT_TOKEN,
       })
     );
   });
@@ -87,8 +87,8 @@ describe('NavigationMixin', () => {
       expect.objectContaining({
         name: RouteNames.TRANSFER,
         params: {
-          token: '0xtoken'
-        }
+          token: '0xtoken',
+        },
       })
     );
   });
@@ -101,11 +101,11 @@ describe('NavigationMixin', () => {
       expect.objectContaining({
         name: RouteNames.TRANSFER_STEPS,
         params: {
-          target: '0xtarget'
+          target: '0xtarget',
         },
         query: {
-          amount: '100'
-        }
+          amount: '100',
+        },
       })
     );
   });
@@ -116,7 +116,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.ACCOUNT_ROOT
+        name: RouteNames.ACCOUNT_ROOT,
       })
     );
   });
@@ -127,7 +127,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.ACCOUNT_BACKUP
+        name: RouteNames.ACCOUNT_BACKUP,
       })
     );
   });
@@ -138,7 +138,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.ACCOUNT_RAIDEN
+        name: RouteNames.ACCOUNT_RAIDEN,
       })
     );
   });
@@ -162,7 +162,7 @@ describe('NavigationMixin', () => {
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.HOME
+          name: RouteNames.HOME,
         })
       );
     });
@@ -174,7 +174,7 @@ describe('NavigationMixin', () => {
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.HOME
+          name: RouteNames.HOME,
         })
       );
     });
@@ -186,7 +186,7 @@ describe('NavigationMixin', () => {
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.SELECT_TOKEN
+          name: RouteNames.SELECT_TOKEN,
         })
       );
     });
@@ -198,7 +198,7 @@ describe('NavigationMixin', () => {
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.HOME
+          name: RouteNames.HOME,
         })
       );
     });
@@ -206,7 +206,7 @@ describe('NavigationMixin', () => {
     test('from open-channel', async () => {
       wrapper.vm.$route.name = RouteNames.OPEN_CHANNEL;
       wrapper.vm.$route.params = {
-        token: '0xtoken'
+        token: '0xtoken',
       };
       wrapper.vm.onBackClicked();
 
@@ -215,8 +215,8 @@ describe('NavigationMixin', () => {
         expect.objectContaining({
           name: RouteNames.SELECT_HUB,
           params: {
-            token: '0xtoken'
-          }
+            token: '0xtoken',
+          },
         })
       );
     });
@@ -226,7 +226,7 @@ describe('NavigationMixin', () => {
       wrapper.vm.$route.params = {
         token: '0xtoken',
         target: '0xtarget',
-        amount: '100'
+        amount: '100',
       };
       wrapper.vm.onBackClicked();
 
@@ -235,12 +235,12 @@ describe('NavigationMixin', () => {
         expect.objectContaining({
           name: RouteNames.TRANSFER,
           params: {
-            token: '0xtoken'
+            token: '0xtoken',
           },
           query: {
             target: '0xtarget',
-            amount: '100'
-          }
+            amount: '100',
+          },
         })
       );
     });

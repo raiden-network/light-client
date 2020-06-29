@@ -30,7 +30,7 @@ describe('TransferSteps.vue', () => {
     price: 100,
     rtt: 62,
     token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-    url: 'https://pfs-goerli-with-fee.services-test.raiden.network'
+    url: 'https://pfs-goerli-with-fee.services-test.raiden.network',
   };
 
   const route = {
@@ -38,12 +38,12 @@ describe('TransferSteps.vue', () => {
     fee: bigNumberify(100),
     hops: 0,
     key: 0,
-    path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77']
+    path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
   } as Route;
 
   const freeRoute = {
     path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
-    fee: Zero
+    fee: Zero,
   } as Route;
 
   const $raiden = {
@@ -58,9 +58,9 @@ describe('TransferSteps.vue', () => {
     findRoutes: jest.fn().mockResolvedValue([
       {
         path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
-        fee: bigNumberify(100)
-      }
-    ])
+        fee: bigNumberify(100),
+      },
+    ]),
   };
 
   function createWrapper(data: any) {
@@ -74,21 +74,21 @@ describe('TransferSteps.vue', () => {
         $route: {
           params: {
             target: '0xtarget',
-            token: '0x3a989D97388a39A0B5796306C615d10B7416bE77'
+            token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
           },
           query: {
-            amount: '100000'
-          }
+            amount: '100000',
+          },
         },
         $t: (msg: string, args: object) =>
           `${msg} args: ${JSON.stringify(args)}`,
-        $raiden
+        $raiden,
       },
-      data: function() {
+      data: function () {
         return {
-          ...data
+          ...data,
         };
-      }
+      },
     });
   }
 
@@ -103,8 +103,8 @@ describe('TransferSteps.vue', () => {
         name: 'ServiceToken',
         symbol: 'SVT',
         decimals: 18,
-        balance: One
-      } as Token
+        balance: One,
+      } as Token,
     } as Tokens);
   });
 
@@ -124,7 +124,7 @@ describe('TransferSteps.vue', () => {
     expect.assertions(2);
     const wrapper = createWrapper({
       step: 1,
-      selectedPfs: raidenPFS
+      selectedPfs: raidenPFS,
     });
     await flushPromises();
     const button = wrapper.find('.action-button__button');
@@ -139,7 +139,7 @@ describe('TransferSteps.vue', () => {
     expect.assertions(3);
     const wrapper = createWrapper({
       step: 1,
-      selectedPfs: raidenPFS
+      selectedPfs: raidenPFS,
     });
     $raiden.findRoutes.mockRejectedValueOnce(new Error('failed'));
     await flushPromises();
@@ -158,7 +158,7 @@ describe('TransferSteps.vue', () => {
       step: 2,
       selectedPfs: raidenPFS,
       routes: [route],
-      selectedRoute: route
+      selectedRoute: route,
     });
 
     const button = wrapper.find('.action-button__button');
@@ -173,7 +173,7 @@ describe('TransferSteps.vue', () => {
       step: 3,
       selectedPfs: raidenPFS,
       selectedRoute: route,
-      processingTransfer: false
+      processingTransfer: false,
     });
 
     processingTransfer = jest.spyOn(
@@ -204,7 +204,7 @@ describe('TransferSteps.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.TRANSFER
+        name: RouteNames.TRANSFER,
       })
     );
   });
@@ -217,7 +217,7 @@ describe('TransferSteps.vue', () => {
       selectedPfs: raidenPFS,
       selectedRoute: route,
       route: [route],
-      processingTransfer: false
+      processingTransfer: false,
     });
 
     processingTransfer = jest.spyOn(
@@ -261,7 +261,7 @@ describe('TransferSteps.vue', () => {
     const wrapper = createWrapper({
       step: 1,
       selectedPfs: raidenPFS,
-      processingTransfer: false
+      processingTransfer: false,
     });
 
     await flushPromises();
@@ -278,7 +278,7 @@ describe('TransferSteps.vue', () => {
     $raiden.findRoutes.mockResolvedValue([freeRoute]);
     const wrapper = createWrapper({
       step: 1,
-      processingTransfer: false
+      processingTransfer: false,
     });
 
     // @ts-ignore

@@ -19,8 +19,8 @@ describe('ChannelsRoute.vue', () => {
       stubs: ['home', 'channels'],
       mocks: {
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

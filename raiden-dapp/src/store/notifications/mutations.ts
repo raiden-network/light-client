@@ -4,7 +4,7 @@ import { MutationTree } from 'vuex';
 export const mutations: MutationTree<NotificationsState> = {
   notificationDelete(state: NotificationsState, id: number) {
     state.notifications = state.notifications.filter(
-      notification => notification.id !== id
+      (notification) => notification.id !== id
     );
   },
   notificationsViewed(state: NotificationsState) {
@@ -13,5 +13,5 @@ export const mutations: MutationTree<NotificationsState> = {
   notificationAdd(state: NotificationsState, notification: Notification) {
     state.notifications.push(notification);
     state.newNotifications = true;
-  }
+  },
 };

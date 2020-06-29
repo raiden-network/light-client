@@ -10,7 +10,7 @@ import Transfer from '@/components/navigation/Transfer.vue';
 import LazyRoute from '@/views/LazyRoute.vue';
 
 @Component({
-  components: { LazyRoute, Transfer }
+  components: { LazyRoute, Transfer },
 })
 export default class TransferRoute extends Vue {}
 </script>

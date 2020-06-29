@@ -19,8 +19,8 @@ describe('AccountRoot.vue', () => {
       store,
       mocks: {
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

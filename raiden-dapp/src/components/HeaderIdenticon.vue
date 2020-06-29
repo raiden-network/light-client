@@ -20,7 +20,7 @@
       <span>
         {{
           $tc('app-header.pending-transfers', pendingTransferAmount, {
-            amount: pendingTransferAmount
+            amount: pendingTransferAmount,
           })
         }}
       </span>
@@ -32,7 +32,7 @@
       aspect-ratio="1"
       :class="{
         'header-identicon__blockie': defaultAccount,
-        'header-identicon__blockie header-identicon__blockie__grayscale': !defaultAccount
+        'header-identicon__blockie header-identicon__blockie__grayscale': !defaultAccount,
       }"
     />
   </div>
@@ -47,8 +47,8 @@ import { Transfers } from '@/types';
 @Component({
   computed: {
     ...mapState(['defaultAccount']),
-    ...mapGetters(['pendingTransfers'])
-  }
+    ...mapGetters(['pendingTransfers']),
+  },
 })
 export default class HeaderIdenticon extends Mixins(BlockieMixin) {
   defaultAccount!: string;

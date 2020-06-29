@@ -16,8 +16,8 @@ describe('FindRoutes.vue', () => {
   const routes = [
     {
       path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
-      fee: bigNumberify(100)
-    }
+      fee: bigNumberify(100),
+    },
   ] as RaidenPaths;
 
   const token = {
@@ -25,11 +25,11 @@ describe('FindRoutes.vue', () => {
     name: 'Test Token',
     symbol: 'TTT',
     decimals: 18,
-    balance: Zero
+    balance: Zero,
   } as Token;
 
   const $raiden = {
-    findRoutes: jest.fn()
+    findRoutes: jest.fn(),
   };
 
   function createWrapper() {
@@ -38,13 +38,13 @@ describe('FindRoutes.vue', () => {
       vuetify,
       mocks: {
         $t: (msg: string) => msg,
-        $raiden
+        $raiden,
       },
       propsData: {
         token,
         routes,
-        pfsUrl: 'http://pfs.test.raiden.network'
-      }
+        pfsUrl: 'http://pfs.test.raiden.network',
+      },
     });
   }
 
@@ -62,7 +62,7 @@ describe('FindRoutes.vue', () => {
     expect(selectEvent).toBeTruthy();
     expect(selectEvent?.shift()).toContainEqual({
       fee: bigNumberify(100),
-      path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77']
+      path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
     });
   });
 });

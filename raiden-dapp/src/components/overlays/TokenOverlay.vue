@@ -67,7 +67,7 @@
                     {{
                       $t('select-token.tokens.token.token-information', {
                         symbol: token.symbol,
-                        name: token.name
+                        name: token.name,
                       })
                     }}
                   </v-list-item-title>
@@ -109,8 +109,8 @@ import AmountDisplay from '@/components/AmountDisplay.vue';
 @Component({
   components: { AddressDisplay, AmountDisplay },
   computed: {
-    ...mapGetters(['tokens', 'allTokens'])
-  }
+    ...mapGetters(['tokens', 'allTokens']),
+  },
 })
 export default class TokenOverlay extends Mixins(
   BlockieMixin,

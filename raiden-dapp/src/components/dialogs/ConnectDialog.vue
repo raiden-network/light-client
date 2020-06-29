@@ -45,9 +45,9 @@ import NoAccessMessage from '@/components/NoAccessMessage.vue';
   components: {
     RaidenDialog,
     ActionButton,
-    NoAccessMessage
+    NoAccessMessage,
   },
-  computed: mapState(['accessDenied'])
+  computed: mapState(['accessDenied']),
 })
 export default class ConnectDialog extends Vue {
   hideClose: boolean = false;
@@ -67,7 +67,7 @@ export default class ConnectDialog extends Vue {
   connect() {
     this.$store.commit('updateSettings', {
       ...this.$store.state.settings,
-      isFirstTimeConnect: false
+      isFirstTimeConnect: false,
     });
   }
 }

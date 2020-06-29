@@ -24,8 +24,8 @@ describe('NotificationPanel.vue', () => {
       store,
       mocks: {
         $router: router,
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

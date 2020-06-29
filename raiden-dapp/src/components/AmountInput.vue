@@ -56,7 +56,7 @@ export default class AmountInput extends Vue {
       !this.limit ||
       (v && this.noDecimalOverflow(v)) ||
       this.$parent.$t('amount-input.error.too-many-decimals', {
-        decimals: this.token!.decimals
+        decimals: this.token!.decimals,
       }),
     (v: string) => {
       let parsedAmount;
@@ -74,8 +74,8 @@ export default class AmountInput extends Vue {
       (v && this.hasEnoughBalance(v, this.max)) ||
       this.$parent.$t('amount-input.error.not-enough-funds', {
         funds: BalanceUtils.toUnits(this.max, this.token!.decimals ?? 18),
-        symbol: this.token!.symbol
-      })
+        symbol: this.token!.symbol,
+      }),
   ];
 
   private noDecimalOverflow(v: string) {

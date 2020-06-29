@@ -14,22 +14,19 @@ describe('NoAccessMessage.vue', () => {
     return mount(NoAccessMessage, {
       vuetify,
       propsData: {
-        reason: reason
+        reason: reason,
       },
       mocks: {
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   }
 
   test('unsupported network', () => {
     const wrapper = createWrapper(DeniedReason.UNSUPPORTED_NETWORK);
-    expect(
-      wrapper
-        .find('span')
-        .text()
-        .trim()
-    ).toEqual('no-access.unsupported-network');
+    expect(wrapper.find('span').text().trim()).toEqual(
+      'no-access.unsupported-network'
+    );
   });
 
   test('user denied', () => {
@@ -40,7 +37,7 @@ describe('NoAccessMessage.vue', () => {
         .text()
         .trim()
         .split('\n')
-        .map(text => text.trim())
+        .map((text) => text.trim())
         .join(' ')
     ).toEqual('no-access.generic-error');
   });
@@ -53,7 +50,7 @@ describe('NoAccessMessage.vue', () => {
         .text()
         .trim()
         .split('\n')
-        .map(text => text.trim())
+        .map((text) => text.trim())
         .join(' ')
     ).toEqual('no-access.sdk-initialization-failure');
   });

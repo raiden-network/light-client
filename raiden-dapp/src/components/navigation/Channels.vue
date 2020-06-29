@@ -11,7 +11,7 @@
               {{
                 $t('channels.token-info', {
                   name: truncate(token.name, 22),
-                  symbol: truncate(token.symbol, 8)
+                  symbol: truncate(token.symbol, 8),
                 })
               }}
             </span>
@@ -93,8 +93,8 @@ import Filters from '@/filters';
 @Component({
   components: { ChannelDialogs, ListHeader, ChannelList },
   computed: {
-    ...mapGetters(['channels'])
-  }
+    ...mapGetters(['channels']),
+  },
 })
 export default class Channels extends Mixins(NavigationMixin) {
   message: string = '';
@@ -132,13 +132,13 @@ export default class Channels extends Mixins(NavigationMixin) {
 
   get open(): RaidenChannel[] {
     return this.channels(this.$route.params.token).filter(
-      channel => channel.state === ChannelState.open
+      (channel) => channel.state === ChannelState.open
     );
   }
 
   get closed(): RaidenChannel[] {
     return this.channels(this.$route.params.token).filter(
-      channel =>
+      (channel) =>
         channel.state === ChannelState.closed ||
         channel.state === ChannelState.closing
     );
@@ -146,7 +146,7 @@ export default class Channels extends Mixins(NavigationMixin) {
 
   get settleable(): RaidenChannel[] {
     return this.channels(this.$route.params.token).filter(
-      channel =>
+      (channel) =>
         channel.state === ChannelState.settling ||
         channel.state === ChannelState.settleable
     );

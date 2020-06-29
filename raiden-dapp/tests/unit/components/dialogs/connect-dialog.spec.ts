@@ -25,11 +25,11 @@ describe('ConnectDialog.vue', () => {
       propsData: {
         connecting: false,
         visible: true,
-        hasProvider: true
+        hasProvider: true,
       },
       mocks: {
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

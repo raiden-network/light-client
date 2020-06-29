@@ -9,10 +9,10 @@
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
     "test:e2e": "nyc vue-cli-service test:e2e --mode e2e",
-    "lint": "vue-cli-service lint && stylelint --fix ./src/**/*.{vue,scss}",
+    "lint:fix": "vue-cli-service lint && stylelint --fix ./src/**/*.{vue,scss}",
     "build:raiden-package": "vue-cli-service build --mode raiden-package",
     "i18n:report": "vue-cli-service i18n:report --src './src/**/*.?(js|vue)' --locales './src/locales/**/*.json'",
-    "lint:check": "vue-cli-service lint --no-fix --max-warnings 0 && stylelint ./src/**/*.{vue,scss}",
+    "lint": "vue-cli-service lint --no-fix --max-warnings 0 && stylelint ./src/**/*.{vue,scss}",
     "serve:no-logging": "export NODE_ENV=nologging && vue-cli-service serve",
     "preinstall": "npx only-allow pnpm"
   },

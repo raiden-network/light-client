@@ -28,7 +28,7 @@
     {{
       $t('channel-list.channel.settle_dialog.description', {
         partner: channel.partner,
-        token: channel.token
+        token: channel.token,
       })
     }}
   </confirmation-dialog>
@@ -58,11 +58,11 @@ import { Token } from '@/model/types';
 @Component({
   components: {
     ChannelDepositDialog,
-    ConfirmationDialog
+    ConfirmationDialog,
   },
   computed: {
-    ...mapGetters(['token'])
-  }
+    ...mapGetters(['token']),
+  },
 })
 export default class ChannelDialogs extends Vue {
   @Prop({ required: true })

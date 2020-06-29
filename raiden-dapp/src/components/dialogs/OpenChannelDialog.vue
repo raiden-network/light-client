@@ -53,7 +53,7 @@ import Spinner from '@/components/icons/Spinner.vue';
 import { StepDescription } from '@/model/types';
 
 @Component({
-  components: { RaidenDialog, Spinner }
+  components: { RaidenDialog, Spinner },
 })
 export default class OpenChannelDialog extends Vue {
   @Prop({ required: true })

@@ -15,7 +15,7 @@ describe('AmountDisplay.vue', () => {
     balance: One,
     decimals: 18,
     symbol: 'TTT',
-    name: 'Test Token'
+    name: 'Test Token',
   };
 
   const createWrapper = (exactAmount: boolean) => {
@@ -23,8 +23,8 @@ describe('AmountDisplay.vue', () => {
       propsData: {
         exactAmount: exactAmount,
         amount: token.balance,
-        token: token
-      }
+        token: token,
+      },
     });
   };
 

@@ -18,7 +18,7 @@ describe('AccountContent.vue', () => {
   let vuetify: typeof Vuetify;
   const $raiden = {
     getMainAccount: jest.fn().mockResolvedValue('0x1'),
-    getAccount: jest.fn().mockResolvedValue('0x2')
+    getAccount: jest.fn().mockResolvedValue('0x2'),
   };
   beforeEach(async () => {
     vuetify = new Vuetify();
@@ -31,8 +31,8 @@ describe('AccountContent.vue', () => {
       mocks: {
         $router: router,
         $t: (msg: string) => msg,
-        $raiden
-      }
+        $raiden,
+      },
     });
 
     await wrapper.vm.$nextTick();
@@ -96,7 +96,7 @@ describe('AccountContent.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.ACCOUNT_BACKUP
+        name: RouteNames.ACCOUNT_BACKUP,
       })
     );
   });
@@ -135,7 +135,7 @@ describe('AccountContent.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.ACCOUNT_UDC
+        name: RouteNames.ACCOUNT_UDC,
       })
     );
   });
@@ -168,8 +168,8 @@ describe('AccountContent.vue', () => {
       mocks: {
         $router: router,
         $t: (msg: string) => msg,
-        $raiden
-      }
+        $raiden,
+      },
     });
     await wrapper.vm.$nextTick();
     await flushPromises();
@@ -192,7 +192,7 @@ describe('AccountContent.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.ACCOUNT_SETTINGS
+        name: RouteNames.ACCOUNT_SETTINGS,
       })
     );
   });

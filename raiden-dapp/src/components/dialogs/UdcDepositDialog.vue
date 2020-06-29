@@ -33,21 +33,21 @@
             <span v-if="step === 'mint'">
               {{
                 $t('udc-deposit-dialog.progress.mint', {
-                  currency: serviceToken
+                  currency: serviceToken,
                 })
               }}
             </span>
             <span v-else-if="step === 'approve'">
               {{
                 $t('udc-deposit-dialog.progress.approve', {
-                  currency: serviceToken
+                  currency: serviceToken,
                 })
               }}
             </span>
             <span v-else-if="step === 'deposit'">
               {{
                 $t('udc-deposit-dialog.progress.deposit', {
-                  currency: serviceToken
+                  currency: serviceToken,
                 })
               }}
             </span>
@@ -58,7 +58,7 @@
         {{
           $t('udc-deposit-dialog.available', {
             balance: accountBalance,
-            currency: $t('app-header.currency')
+            currency: $t('app-header.currency'),
           })
         }}
       </v-row>
@@ -99,8 +99,8 @@ import { RaidenError } from 'raiden-ts';
   components: { ActionButton, RaidenDialog, ErrorMessage, Spinner },
   computed: {
     ...mapState(['accountBalance']),
-    ...mapGetters(['mainnet', 'udcToken'])
-  }
+    ...mapGetters(['mainnet', 'udcToken']),
+  },
 })
 export default class UdcDepositDialog extends Vue {
   amount: string = '10';

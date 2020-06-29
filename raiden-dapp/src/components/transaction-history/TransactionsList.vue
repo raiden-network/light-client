@@ -29,11 +29,11 @@ import Transaction from '@/components/transaction-history/Transaction.vue';
 
 @Component({
   components: {
-    Transaction
+    Transaction,
   },
   computed: {
-    ...mapState(['transfers'])
-  }
+    ...mapState(['transfers']),
+  },
 })
 export default class TransactionLists extends Vue {
   transfers!: Transfers;

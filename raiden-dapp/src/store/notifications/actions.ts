@@ -10,7 +10,7 @@ export const actions: ActionTree<NotificationsState, RootState> = {
     commit('notificationAdd', {
       ...notification,
       id: nextNotificationId,
-      received: new Date()
+      received: new Date(),
     });
-  }
+  },
 };

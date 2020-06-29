@@ -25,8 +25,8 @@ describe('AccountRoute.vue', () => {
       mocks: {
         $router: router,
         $route: TestData.mockRoute(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

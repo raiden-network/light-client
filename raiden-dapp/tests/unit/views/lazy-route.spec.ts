@@ -18,12 +18,12 @@ describe('LazyRoute.vue', () => {
       store,
       stubs: ['home'],
       slots: {
-        default: '<div class="actual-route"/>'
+        default: '<div class="actual-route"/>',
       },
       mocks: {
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

@@ -9,7 +9,7 @@ Vue.use(Vuetify);
 
 export default new Vuetify({
   icons: {
-    iconfont: 'mdi'
+    iconfont: 'mdi',
   },
   theme: {
     dark: true,
@@ -20,8 +20,8 @@ export default new Vuetify({
         secondary: '#0A6E87',
         pending: '#fdd327',
         success: '#1dc512',
-        failed: '#ea6464'
-      }
-    }
-  }
+        failed: '#ea6464',
+      },
+    },
+  },
 });

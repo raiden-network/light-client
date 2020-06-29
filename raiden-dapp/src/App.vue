@@ -37,14 +37,14 @@ import ReceivingDisabledDialog from '@/components/dialogs/ReceivingDisabledDialo
 
 @Component({
   computed: {
-    ...mapGetters(['canReceive'])
+    ...mapGetters(['canReceive']),
   },
   components: {
     AppHeader,
     OfflineSnackbar,
     UpdateSnackbar,
-    ReceivingDisabledDialog
-  }
+    ReceivingDisabledDialog,
+  },
 })
 export default class App extends Mixins(NavigationMixin) {
   canReceive!: boolean;

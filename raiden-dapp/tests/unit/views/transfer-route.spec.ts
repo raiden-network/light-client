@@ -19,8 +19,8 @@ describe('TransferRoute.vue', () => {
       stubs: ['home', 'transfer'],
       mocks: {
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

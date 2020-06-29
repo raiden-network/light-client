@@ -21,12 +21,12 @@ describe('ChannelDeposit.vue', () => {
         token: TestData.token,
         identifier: 1,
         visible: true,
-        loading: false
+        loading: false,
       },
       stubs: ['raiden-dialog'],
       mocks: {
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 
