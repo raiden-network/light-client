@@ -15,7 +15,7 @@ import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
 import { BigNumber, BigNumberish, parseEther } from 'ethers/utils';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
-import { ConfigProvider } from './config-provider';
+import { ConfigProvider, Configuration } from '@/services/config-provider';
 import { Zero } from 'ethers/constants';
 import i18n from '@/i18n';
 import { Notification } from '@/store/notifications/types';
@@ -24,6 +24,7 @@ export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
   private _userDepositTokenAddress: string = '';
+  private _configuration?: Configuration;
 
   private static async createRaiden(
     provider: any,
@@ -104,17 +105,9 @@ export default class RaidenService {
 
   async connect(stateBackup?: string, subkey?: true) {
     try {
-      const raidenPackageConfigUrl = process.env.VUE_APP_RAIDEN_PACKAGE;
-      let config;
-      let provider;
       let raiden;
-
-      if (raidenPackageConfigUrl) {
-        config = await ConfigProvider.fetch(raidenPackageConfigUrl);
-        provider = await Web3Provider.provider(config);
-      } else {
-        provider = await Web3Provider.provider();
-      }
+      const configuration = await ConfigProvider.configuration();
+      const provider = await Web3Provider.provider(configuration.rpc_endpoint);
 
       if (!provider) {
         this.store.commit('noProvider');
@@ -133,12 +126,13 @@ export default class RaidenService {
 
         raiden = await RaidenService.createRaiden(
           provider,
-          config?.PRIVATE_KEY,
+          configuration?.private_key,
           stateBackup,
           subkey
         );
 
         this._raiden = raiden;
+        this._configuration = configuration;
 
         const account = await this.getAccount();
         this.store.commit('account', account);
@@ -149,6 +143,8 @@ export default class RaidenService {
           'userDepositTokenAddress',
           this._userDepositTokenAddress
         );
+
+        await this.monitorPreSetTokens();
 
         // update connected tokens data on each newBlock
         raiden.events$
@@ -248,6 +244,19 @@ export default class RaidenService {
     }
 
     this.store.commit('loadComplete');
+  }
+
+  private async monitorPreSetTokens() {
+    const { chainId } = this.raiden.network;
+    if (!this._configuration?.per_network?.[chainId]) {
+      return;
+    }
+
+    const networkConfiguration = this._configuration.per_network[chainId];
+
+    for (const token of networkConfiguration.monitored) {
+      await this.raiden.monitorToken(token);
+    }
   }
 
   private async notifyWithdrawalFailure(
@@ -566,6 +575,10 @@ export default class RaidenService {
     }
 
     return Object.values(tokens);
+  }
+
+  async monitorToken(address: string) {
+    await this.raiden.monitorToken(address);
   }
 }
 

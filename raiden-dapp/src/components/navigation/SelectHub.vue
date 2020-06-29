@@ -195,6 +195,8 @@ export default class SelectHub extends Mixins(NavigationMixin) {
       this.navigateToHome();
     }
 
+    await this.$raiden.monitorToken(address);
+
     // On goerli, we can suggest our hub if the user is not connected yet
     if (!this.isConnectedToHub && this.network.name === 'goerli') {
       this.partner = process.env.VUE_APP_HUB ?? '';

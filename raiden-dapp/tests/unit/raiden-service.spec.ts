@@ -1,3 +1,5 @@
+import { ConfigProvider, Configuration } from '@/services/config-provider';
+
 jest.mock('vuex');
 jest.mock('raiden-ts');
 jest.mock('@/i18n', () => ({
@@ -6,6 +8,7 @@ jest.mock('@/i18n', () => ({
     t: jest.fn(args => args.toString())
   }
 }));
+jest.mock('@/services/config-provider');
 
 import { DeniedReason, Token, TokenModel } from '@/model/types';
 import RaidenService from '@/services/raiden-service';
@@ -14,7 +17,7 @@ import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
 import { Address, Hash, Raiden, RaidenTransfer } from 'raiden-ts';
-import { BigNumber, bigNumberify, parseEther } from 'ethers/utils';
+import { BigNumber, bigNumberify, Network, parseEther } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
 import { AddressZero, One, Zero } from 'ethers/constants';
@@ -50,18 +53,35 @@ describe('RaidenService', () => {
       ts: 0
     });
 
-    const raidenMock = mock as any;
-    raidenMock.address = '123';
+    mock.monitorToken.mockResolvedValue('0xaddr' as Address);
+
+    const raidenMock: {
+      -readonly [P in keyof Raiden]: Raiden[P];
+    } = mock;
+    raidenMock.address = '123' as Address;
     raidenMock.channels$ = EMPTY;
     raidenMock.events$ = EMPTY;
     raidenMock.config$ = EMPTY;
     // Emit a dummy transfer event every time raiden is mocked
-    raidenMock.transfers$ = of({}).pipe(delay(1000));
+    raidenMock.transfers$ = of({} as RaidenTransfer).pipe(delay(1000));
+    raidenMock.network = {
+      name: 'Test',
+      chainId: 1337
+    } as Network;
   };
 
-  async function setupSDK(stateBackup?: string, subkey?: true) {
+  async function setupSDK({
+    config,
+    stateBackup,
+    subkey
+  }: {
+    stateBackup?: string;
+    subkey?: true;
+    config?: Configuration;
+  } = {}) {
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(raiden);
+    (ConfigProvider as any).configuration.mockResolvedValue(config ?? {});
     await raidenService.connect(stateBackup, subkey);
     await flushPromises();
   }
@@ -94,7 +114,10 @@ describe('RaidenService', () => {
       .mockResolvedValueOnce(bigNumberify('1000000000000000000'))
       .mockResolvedValueOnce(bigNumberify('100000000000000000'));
 
-    await setupSDK('', true);
+    await setupSDK({
+      stateBackup: '',
+      subkey: true
+    });
     expect(store.commit).toBeCalledWith('balance', '1.0');
     expect(store.commit).toBeCalledWith('raidenAccountBalance', '0.1');
   });
@@ -857,5 +880,18 @@ describe('RaidenService', () => {
     expect(store.commit).toHaveBeenCalledWith('updatePresence', {
       '0x1234': true
     });
+  });
+
+  test('pre-set tokens are monitored', async () => {
+    expect.assertions(1);
+    const config: Configuration = {
+      per_network: {
+        '1337': {
+          monitored: ['0xtoken']
+        }
+      }
+    };
+    await setupSDK({ config });
+    expect(raiden.monitorToken).toHaveBeenCalledWith('0xtoken');
   });
 });
