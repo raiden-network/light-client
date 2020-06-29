@@ -599,21 +599,23 @@ export const channelMonitoredEpic = (
   );
 
 const makeDeposit$ = (
-  tokenContract: HumanStandardToken,
-  tokenNetworkContract: TokenNetwork,
-  sender: Address,
-  address: Address,
-  partner: Address,
+  [tokenContract, tokenNetworkContract]: [HumanStandardToken, TokenNetwork],
+  [sender, address, partner]: [Address, Address, Address],
   deposit: UInt<32> | undefined,
   channelId$: Observable<number>,
   { log }: Pick<RaidenEpicDeps, 'log'>,
+  approveNonce?: number,
 ): Observable<channelDeposit.failure> => {
   if (!deposit?.gt(Zero)) return EMPTY;
   return defer(() => tokenContract.functions.allowance(sender, tokenNetworkContract.address)).pipe(
     mergeMap((allowance) =>
       allowance.gte(deposit)
         ? of(true)
-        : from(tokenContract.functions.approve(tokenNetworkContract.address, deposit)).pipe(
+        : from(
+            tokenContract.functions.approve(tokenNetworkContract.address, deposit, {
+              nonce: approveNonce,
+            }),
+          ).pipe(
             // if needed, send approveTx and wait/assert it before proceeding
             assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
           ),
@@ -731,14 +733,12 @@ export const channelOpenEpic = (
                 // errors on makeDeposit$ are handled independently and don't fail open request
                 // but the channelDeposit.failure action may be fired
                 makeDeposit$(
-                  tokenContract,
-                  tokenNetworkContract,
-                  onchainAddress,
-                  address,
-                  partner,
+                  [tokenContract, tokenNetworkContract],
+                  [onchainAddress, address, partner],
                   action.payload.deposit,
                   channelId$,
                   { log },
+                  tx.nonce + 1,
                 ),
               ),
             ),
@@ -804,11 +804,8 @@ export const channelDepositEpic = (
       );
 
       return makeDeposit$(
-        tokenContract,
-        tokenNetworkContract,
-        onchainAddress,
-        address,
-        partner,
+        [tokenContract, tokenNetworkContract],
+        [onchainAddress, address, partner],
         action.payload.deposit,
         of(channel.id),
         { log },

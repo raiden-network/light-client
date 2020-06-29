@@ -10,6 +10,7 @@
 - [#1698] Fix estimateGas errors on channelOpen not properly being handled
 - [#1761] Fix deposit error on openChannel not rejecting promise
 - [#1787] Fix TokenNetwork monitoring losing events
+- [#1830] Fix a nonce race when openining + depositing concurrently
 
 ### Added
 - [#1374] Monitors MonitoringService contract and emit event when MS acts
@@ -49,6 +50,7 @@
 [#1761]: https://github.com/raiden-network/light-client/issues/1761
 [#1787]: https://github.com/raiden-network/light-client/issues/1787
 [#1822]: https://github.com/raiden-network/light-client/pull/1822
+[#1830]: https://github.com/raiden-network/light-client/issues/1830
 [#1832]: https://github.com/raiden-network/light-client/pull/1832
 
 ## [0.9.0] - 2020-05-28
