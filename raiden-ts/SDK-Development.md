@@ -224,7 +224,7 @@ action.pipe(
 
 ## Testing
 
-The SDK tests are located at the [raiden/tests](https://github.com/raiden-network/light-client/tree/master/raiden/tests) subfolder. The testing framework used is [jest](http://jestjs.io), and the complete suite can be run with `npm test` command in the SDK root folder. This will run both [unit](https://github.com/raiden-network/light-client/tree/master/raiden/tests/unit) and [e2e](https://github.com/raiden-network/light-client/tree/master/raiden/tests/e2e) tests (files ending with `.spec.ts`), and collect coverage in the `raiden/.coverage` folder. Keeping an eye on `raiden/.coverage/lcov-report/index.html` during test writting can be a good guide to writing them, although just covering the lines aren't enough, and some thought must be put into imagining possible scenarios, invariants, critical and edge states, and testing them throughout the respective tests.
+The SDK tests are located at the [raiden/tests](https://github.com/raiden-network/light-client/tree/master/raiden/tests) subfolder. The testing framework used is [jest](http://jestjs.io), and the complete suite can be run with `pnpm test` command in the SDK root folder. This will run both [unit](https://github.com/raiden-network/light-client/tree/master/raiden/tests/unit) and [e2e](https://github.com/raiden-network/light-client/tree/master/raiden/tests/e2e) tests (files ending with `.spec.ts`), and collect coverage in the `raiden/.coverage` folder. Keeping an eye on `raiden/.coverage/lcov-report/index.html` during test writting can be a good guide to writing them, although just covering the lines aren't enough, and some thought must be put into imagining possible scenarios, invariants, critical and edge states, and testing them throughout the respective tests.
 
 ### Unit tests
 
@@ -253,8 +253,8 @@ The SDK being a TypeScript/JavaScript library, debugging it can use a lot of the
 
 ### Browser/live session:
 
-1. Build the SDK: on `raiden` folder, run `npm run build`
-2. Run the dApp on development mode: on the `raiden-dapp` folder, run `npm run serve`
+1. Build the SDK: on `root` folder, run `pnpm run build --filter raiden-ts`
+2. Run the dApp on development mode: on the `root` folder, run `pnpm run serve --filter raiden-dapp`
 3. On a browser, go to the local dApp instance, usually http://localhost:8080
 4. Open Dev Tools (usually, shortcut `Ctrl+Shift+I`). You can already see the `redux-logger` output in `Console` tab, which can be very useful to see the live actions going through the Redux state machine, as you navigate through the dApp.
 5. Install Vue DevTools for [Firefox](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/) or [Chrome](https://chrome.google.com/webstore/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd): now, you can go to the `Vue` tab, click on the `app` component (which will be bound to the console's `vm0` var), and access the SDK instance from with `raiden = $vm0.$raiden.raiden`. Now, the variable `raiden` is the SDK instance, and one can use it to access and call properties and methods from the API. `await` or `.then()` can be useful when dealing with the `async` methods.

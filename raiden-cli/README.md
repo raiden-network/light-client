@@ -29,10 +29,7 @@ It requires the latest [Node.js LTS (12.x - Erbium)](https://github.com/nodejs/R
 
 ### Build the SDK
 ```sh
-cd ../raiden-ts/
-npm ci  # install/update SDK's dependencies, if needed; it'll also build the SDK
-npm run build  # or if dependencies are already installed, just rebuild
-cd -
+pnpm install  # install/update SDK's dependencies, if needed; it'll also build the SDK
 ```
 
 The SDK transpilation can be quite heavy on memory. If you are building on low-end devices and get out-of-memory errors on the build step, try increasing memory or swap size. Optionally, you can build the SDK on a more capable machine (even of different architecture) and copy/rsync `dist` and `dist:cjs` output folders to `../raiden-ts`.
@@ -40,9 +37,8 @@ The SDK transpilation can be quite heavy on memory. If you are building on low-e
 
 ### Build the CLI
 ```sh
-npm ci  # install/update CLI dependencies, if needed
-npm run build  # build the dependent output
-npm run build:bundle  # build the bundled output
+pnpm run build --filter raiden-cli # build the dependent output
+pnpm run build:bundle --filter raiden-cli # build the bundled output
 ```
 
 The `build` script will output `./build/index.js`, which requires dependencies in place in `../raiden-ts/node_modules`, `../raiden-ts/dist*/` and `./node_modules/` folders.
