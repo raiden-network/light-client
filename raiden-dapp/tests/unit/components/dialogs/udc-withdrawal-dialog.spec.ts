@@ -76,4 +76,23 @@ describe('UdcWithdrawalDialog.vue', function() {
     wrapper.setData({ amount: '10' });
     expect((wrapper.vm as any).isValid).toBe(true);
   });
+
+  describe('with timers', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('emits cancel after done', async () => {
+      jest.useFakeTimers();
+      wrapper.setData({ amount: '10' });
+      await (wrapper.vm as any).planWithdraw();
+      jest.advanceTimersByTime(5000);
+      expect(wrapper.emitted('cancel')).toBeTruthy();
+      jest.useRealTimers();
+    });
+  });
 });
