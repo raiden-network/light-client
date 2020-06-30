@@ -7,9 +7,9 @@
   "esnext": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "start": "npm run versions && npm run contracts && tsc -p src/tsconfig.cjs.json -w",
-    "build": "npm run versions && npm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json && npm run contracts:post",
-    "test": "npm run lint && NODE_ENV=development jest --coverage=true --testPathIgnorePatterns tests/integration",
+    "start": "pnpm run versions && pnpm run contracts && tsc -p src/tsconfig.cjs.json -w",
+    "build": "pnpm run versions && pnpm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json && pnpm run contracts:post",
+    "test": "pnpm run lint && NODE_ENV=development jest --coverage=true --testPathIgnorePatterns tests/integration",
     "test:integration": "NODE_ENV=development jest --runInBand --ci --coverage=true --testPathIgnorePatterns tests/unit tests/e2e",
     "test:unit": "NODE_ENV=development jest --runInBand --ci --coverage=true --testPathIgnorePatterns tests/integration tests/e2e",
     "test:e2e": "NODE_ENV=development jest --runInBand --ci --coverage=true --testPathIgnorePatterns tests/integration tests/unit",
@@ -18,12 +18,12 @@
     "contracts:pre": "node ./scripts/copyContracts.js prebuild",
     "contracts:build": "typechain --target=ethers-v4 'src/abi/*.json' --outDir src/contracts",
     "contracts:post": "node ./scripts/copyContracts.js postbuild",
-    "contracts": "npm run contracts:pre && npm run contracts:build",
+    "contracts": "pnpm run contracts:pre && pnpm run contracts:build",
     "versions": "node ./scripts/versions.js",
     "docs:generate": "typedoc --ignoreCompilerErrors --mode file --theme markdown --platform vuepress --out ./docs ./src",
     "docs:build": "vuepress build docs",
     "docs:dev": "vuepress dev docs",
-    "prepare": "npm run clean && npm run build"
+    "prepare": "pnpm run clean && pnpm run build"
   },
   "repository": {
     "type": "git",
