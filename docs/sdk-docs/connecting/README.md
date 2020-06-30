@@ -4,7 +4,7 @@ The SDK provides out of the box support for the deployed networks on `Görli`, `
 If you need to use the SDK on a private network, or a custom deployment you can find more information in the following [guide](../private-chain/README.md).
 
 ## Raiden Light Client test environment
-For development purposes, the Light Client uses a standalone environment. The dApp deployment [lightclient.raiden.network](https://lightclient.raiden.network/) and the development version served by 'npm run serve' also conforms to this configuration. 
+For development purposes, the Light Client uses a standalone environment. The dApp deployment [lightclient.raiden.network](https://lightclient.raiden.network/) and the development version served by 'pnpm run serve' also conforms to this configuration. 
 
 This environment uses:
 

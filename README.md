@@ -246,28 +246,16 @@ cd light-client/raiden-dapp
 First you need to build the sdk. For this you have to go to the `raiden` directory and run the following commands.
 
 ```bash
-cd ../raiden-ts
-npm install
-npm run build
+pnpm install
+pnpm run build --filter raiden-ts
 ```
-
-#### Install the dApp Dependencies
-
-Then you need to install the wallet app dependencies.
-
-```bash
-cd ../raiden-dapp
-npm install --save raiden-ts
-```
-
-This will also create a symbolic link in `raiden-dapp/node_modules/raiden-ts` to `raiden-ts`.
 
 #### Running the dApp locally
 
 To start the development server you have to run the following command.
 
 ```bash
-npm run serve
+pnpm run serve --filter raiden-dapp
 ```
 
 After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp. It requires either MetaMask to be installed on your browser or some other web3 provider (e.g. Wallet apps with dApp support).
