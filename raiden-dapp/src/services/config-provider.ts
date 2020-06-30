@@ -30,7 +30,7 @@ export class ConfigProvider {
 
   static async configuration(): Promise<Configuration> {
     const configurationUrl =
-      process.env.VUE_APP_CONFIGURATION_URL || '/config.json';
+      process.env.VUE_APP_CONFIGURATION_URL || './config.json';
     const response = await fetch(configurationUrl);
     return (await response.json()) as Configuration;
   }
