@@ -155,9 +155,10 @@ jobs:
             fi
       - run:
           name: Compress dapp
-          command: tar -czvf dapp.tar.gz raiden-dapp/dist
+          command: cd raiden-dapp && tar -czvf dapp.tar.gz dist
       - store_artifacts:
-          path: dapp.tar.gz
+          path: raiden-dapp/dapp.tar.gz
+          destination: dapp.tar.gz
       - persist_to_workspace:
           root: ~/src
           paths:
