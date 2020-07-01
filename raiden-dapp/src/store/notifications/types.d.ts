@@ -7,5 +7,6 @@ export interface Notification {
 
 export interface NotificationsState {
   notifications: Notification[];
+  visibleNotification: Notification | null;
   newNotifications: boolean;
 }

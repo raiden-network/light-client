@@ -19,10 +19,9 @@
     </div>
     <offline-snackbar />
     <update-snackbar />
-    <receiving-disabled-dialog
-      :visible="showReceivingDisabled"
-      @dismiss="showReceivingDisabled = false"
-    />
+    <v-snackbar top :value="showNotification" :timeout="5000">
+      {{}}
+    </v-snackbar>
   </v-app>
 </template>
 
@@ -33,7 +32,7 @@ import NavigationMixin from './mixins/navigation-mixin';
 import AppHeader from '@/components/AppHeader.vue';
 import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
-import ReceivingDisabledDialog from '@/components/dialogs/ReceivingDisabledDialog.vue';
+import { Notification } from '@/store/notifications/types';
 
 @Component({
   computed: {
@@ -43,12 +42,11 @@ import ReceivingDisabledDialog from '@/components/dialogs/ReceivingDisabledDialo
     AppHeader,
     OfflineSnackbar,
     UpdateSnackbar,
-    ReceivingDisabledDialog,
   },
 })
 export default class App extends Mixins(NavigationMixin) {
   canReceive!: boolean;
-  showReceivingDisabled = false;
+  showNotification = false;
 
   destroyed() {
     this.$raiden.disconnect();
@@ -56,7 +54,13 @@ export default class App extends Mixins(NavigationMixin) {
 
   @Watch('canReceive')
   onCanReceiveChanged(canReceive: boolean | undefined) {
-    this.showReceivingDisabled = canReceive === false;
+    if (canReceive !== false) {
+      return;
+    }
+    this.$store.dispatch('notifications/notify', {
+      title: this.$t('receiving-disabled-dialog.title'),
+      description: this.$t('receiving-disabled-dialog.body'),
+    } as Notification);
   }
 }
 </script>
