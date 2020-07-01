@@ -20,7 +20,7 @@
     "no-notifications": "No notifications",
     "ms-balance-proof": {
       "title": "Balance proof submitted",
-      "description": "The monitoring service {monitoringService} successfully submitted a balance proof for a channel with {partner} claiming a reward of {reward}. ({txHash})"
+      "description": "A monitoring service successfully submitted a balance proof for a channel claiming a reward of {reward} {symbol}. Service: {monitoringService}, Partner: {partner}, Transaction: {txHash}"
     },
     "withdrawal": {
       "success": {
@@ -35,7 +35,8 @@
           "UDC_WITHDRAW_FAILED": "We could not complete the withdrawal of {amount} {symbol} because the transaction failed."
         }
       }
-    }
+    },
+    "clear": "Clear"
   },
   "general": {
     "buttons": {
@@ -628,5 +629,8 @@
       "title": "Use Raiden Account",
       "description": "By default the dApp uses a generated Raiden account to sign messages. Disable the Raiden account to use your Web3 provider account. All messages will then have to be signed manually."
     }
+  },
+  "notification-area": {
+    "dismiss": "Dismiss"
   }
 }

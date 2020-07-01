@@ -19,9 +19,7 @@
     </div>
     <offline-snackbar />
     <update-snackbar />
-    <v-snackbar top :value="showNotification" :timeout="5000">
-      {{}}
-    </v-snackbar>
+    <notification-area />
   </v-app>
 </template>
 
@@ -32,7 +30,10 @@ import NavigationMixin from './mixins/navigation-mixin';
 import AppHeader from '@/components/AppHeader.vue';
 import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
-import { Notification } from '@/store/notifications/types';
+import { NotificationPayload } from '@/store/notifications/types';
+import NotificationArea from '@/components/notification-panel/NotificationArea.vue';
+import { NotificationImportance } from '@/store/notifications/notification-importance';
+import { NotificationContext } from '@/store/notifications/notification-context';
 
 @Component({
   computed: {
@@ -42,11 +43,11 @@ import { Notification } from '@/store/notifications/types';
     AppHeader,
     OfflineSnackbar,
     UpdateSnackbar,
+    NotificationArea,
   },
 })
 export default class App extends Mixins(NavigationMixin) {
   canReceive!: boolean;
-  showNotification = false;
 
   destroyed() {
     this.$raiden.disconnect();
@@ -60,7 +61,9 @@ export default class App extends Mixins(NavigationMixin) {
     this.$store.dispatch('notifications/notify', {
       title: this.$t('receiving-disabled-dialog.title'),
       description: this.$t('receiving-disabled-dialog.body'),
-    } as Notification);
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.WARNING,
+    } as NotificationPayload);
   }
 }
 </script>

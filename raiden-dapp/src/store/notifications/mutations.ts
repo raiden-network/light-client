@@ -1,4 +1,7 @@
-import { Notification, NotificationsState } from '@/store/notifications/types';
+import {
+  NotificationPayload,
+  NotificationsState,
+} from '@/store/notifications/types';
 import { MutationTree } from 'vuex';
 
 export const mutations: MutationTree<NotificationsState> = {
@@ -10,8 +13,20 @@ export const mutations: MutationTree<NotificationsState> = {
   notificationsViewed(state: NotificationsState) {
     state.newNotifications = false;
   },
-  notificationAdd(state: NotificationsState, notification: Notification) {
+  notificationAdd(
+    state: NotificationsState,
+    notification: NotificationPayload
+  ) {
     state.notifications.push(notification);
     state.newNotifications = true;
+  },
+  notifications(
+    state: NotificationsState,
+    notifications: NotificationPayload[]
+  ) {
+    state.notifications = notifications;
+  },
+  clear(state: NotificationsState) {
+    state.notifications = [];
   },
 };

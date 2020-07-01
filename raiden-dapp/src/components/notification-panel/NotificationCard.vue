@@ -40,7 +40,7 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { Notification } from '@/store/notifications/types';
+import { NotificationPayload } from '@/store/notifications/types';
 import { createNamespacedHelpers } from 'vuex';
 
 const { mapMutations } = createNamespacedHelpers('notifications');
@@ -52,7 +52,7 @@ const { mapMutations } = createNamespacedHelpers('notifications');
 })
 export default class NotificationCard extends Vue {
   @Prop({ required: true })
-  notification!: Notification;
+  notification!: NotificationPayload;
 
   notificationDelete!: (id: number) => void;
 }
