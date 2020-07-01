@@ -3,8 +3,8 @@ import { defer, EMPTY, from, merge, Observable, of, combineLatest, timer } from 
 import {
   catchError,
   concatMap,
-  debounceTime,
   delay,
+  debounceTime,
   distinctUntilChanged,
   filter,
   first,
@@ -32,7 +32,7 @@ import memoize from 'lodash/memoize';
 import { UserDeposit } from '../contracts/UserDeposit';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
-import { RaidenEpicDeps } from '../types';
+import { RaidenEpicDeps, Latest } from '../types';
 import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
@@ -76,6 +76,14 @@ const PathError = t.readonly(
     errors: t.string,
   }),
 );
+
+interface PathError extends t.TypeOf<typeof PathError> {}
+
+interface Route {
+  iou: Signed<IOU> | undefined;
+  paths?: Paths;
+  error?: PathError;
+}
 
 // returns a ISO string truncated at the integer second resolution
 function makeTimestamp(time?: Date): string {
@@ -165,198 +173,14 @@ export const pathFindServiceEpic = (
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<pathFind.success | pathFind.failure | iouPersist | iouClear> => {
-  const { log, latest$ } = deps;
   return action$.pipe(
     filter(isActionOf(pathFind.request)),
     concatMap((action) =>
-      latest$.pipe(
+      deps.latest$.pipe(
         first(),
-        mergeMap(
-          ({ state, presences, config: { pfs: configPfs, httpTimeout, pfsSafetyMargin } }) => {
-            const { tokenNetwork, target } = action.meta;
-            if (!Object.values(state.tokens).includes(tokenNetwork))
-              throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, { tokenNetwork });
-            if (!(target in presences) || !presences[target].payload.available)
-              throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, { target });
-            if (presences[target].payload.caps?.[Capabilities.NO_RECEIVE])
-              throw new RaidenError(ErrorCodes.PFS_TARGET_NO_RECEIVE, { target });
-
-            // if pathFind received a set of paths, pass it through to validation/cleanup
-            if (action.payload.paths) return of({ paths: action.payload.paths, iou: undefined });
-            // else, if possible, use a direct transfer
-            else if (
-              channelCanRoute(
-                state,
-                presences,
-                tokenNetwork,
-                target,
-                target,
-                action.meta.value,
-              ) === true
-            ) {
-              return of({
-                paths: [{ path: [deps.address, target], fee: Zero as Int<32> }],
-                iou: undefined,
-              });
-            } else if (
-              action.payload.pfs === null || // explicitly disabled in action
-              (!action.payload.pfs && configPfs === null) // undefined in action and disabled in config
-            ) {
-              // pfs not specified in action and disabled (null) in config
-              throw new RaidenError(ErrorCodes.PFS_DISABLED);
-            } else {
-              // else, request a route from PFS.
-              // pfs$ - Observable which emits one PFS info and then completes
-              const pfs$ = action.payload.pfs
-                ? // first, use action.payload.pfs as is, if present
-                  of(action.payload.pfs)
-                : configPfs
-                ? // or if config.pfs isn't disabled (null) nor auto (''|undefined), fetch & use it
-                  pfsInfo(configPfs, deps)
-                : // else (action unset, config.pfs=''|undefined=auto mode)
-                  latest$.pipe(
-                    pluck('pfsList'), // get cached pfsList
-                    // if needed, wait for list to be populated
-                    first((pfsList) => pfsList.length > 0),
-                    // fetch pfsInfo from whole list & sort it
-                    mergeMap((pfsList) => pfsListInfo(pfsList, deps)),
-                    tap((pfss) => log.info('Auto-selecting best PFS from:', pfss)),
-                    // pop best ranked
-                    pluck(0),
-                  );
-              return pfs$.pipe(
-                mergeMap((pfs) =>
-                  pfs.price.isZero()
-                    ? of({ pfs, iou: undefined })
-                    : prepareNextIOU$(pfs, tokenNetwork, deps).pipe(map((iou) => ({ pfs, iou }))),
-                ),
-                mergeMap(({ pfs, iou }) =>
-                  fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: losslessStringify({
-                      from: deps.address,
-                      to: target,
-                      value: UInt(32).encode(action.meta.value),
-                      max_paths: 10,
-                      iou: iou
-                        ? {
-                            ...iou,
-                            amount: UInt(32).encode(iou.amount),
-                            expiration_block: UInt(32).encode(iou.expiration_block),
-                            chain_id: UInt(32).encode(iou.chain_id),
-                          }
-                        : undefined,
-                    }),
-                  }).pipe(
-                    timeout(httpTimeout),
-                    map((response) => ({ response, iou })),
-                  ),
-                ),
-                mergeMap(async ({ response, iou }) => ({
-                  response,
-                  text: await response.text(),
-                  iou,
-                })),
-                map(({ response, text, iou }) => {
-                  // any decode error here will throw early and end up in catchError
-                  const data = losslessParse(text);
-                  if (!response.ok) {
-                    return { error: decode(PathError, data), iou };
-                  }
-                  return {
-                    paths: decode(PathResults, data).result.map(
-                      (r) =>
-                        ({
-                          path: r.path,
-                          // Add PFS safety margin to estimated fees
-                          fee: r.estimated_fee
-                            .mul(Math.round(pfsSafetyMargin * 1e6))
-                            .div(1e6) as Int<32>,
-                        } as const),
-                    ),
-                    iou,
-                  };
-                }),
-              );
-            }
-          },
-        ),
-        withLatestFrom(latest$),
-        // validate/cleanup received routes/paths/results
-        mergeMap(([data, { state, presences }]) =>
-          // looks like mergeMap with generator doesn't handle exceptions correctly
-          // use from+iterator from iife generator instead
-          from(
-            (function* () {
-              const { iou } = data;
-              if (iou) {
-                // if not error or error_code of "no route found", iou accepted => persist
-                if (data.paths || data.error.error_code === 2201)
-                  yield iouPersist(
-                    { iou },
-                    { tokenNetwork: action.meta.tokenNetwork, serviceAddress: iou.receiver },
-                  );
-                // else (error and error_code of "iou rejected"), clear
-                else
-                  yield iouClear(undefined, {
-                    tokenNetwork: action.meta.tokenNetwork,
-                    serviceAddress: iou.receiver,
-                  });
-              }
-              // if error, don't proceed
-              if (!data.paths) {
-                const { errors, error_code } = data.error;
-                if (error_code === 2201) {
-                  throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES);
-                }
-
-                throw new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, {
-                  errorCode: error_code,
-                  errors,
-                });
-              }
-              const filteredPaths: Paths = [],
-                invalidatedRecipients = new Set<Address>();
-              // eslint-disable-next-line prefer-const
-              for (let { path, fee } of data.paths) {
-                // if route has us as first hop, cleanup/shift
-                if (path[0] === deps.address) path = path.slice(1);
-                const recipient = path[0];
-                // if this recipient was already invalidated in a previous iteration, skip
-                if (invalidatedRecipients.has(recipient)) continue;
-                // if we already found some valid route, allow only new routes through this peer
-                const canTransferOrReason = !filteredPaths.length
-                  ? channelCanRoute(
-                      state,
-                      presences,
-                      action.meta.tokenNetwork,
-                      recipient,
-                      action.meta.target,
-                      action.meta.value.add(fee) as UInt<32>,
-                    )
-                  : recipient !== filteredPaths[0].path[0]
-                  ? 'path: already selected another recipient'
-                  : fee.gt(filteredPaths[0].fee)
-                  ? 'path: already selected a smaller fee'
-                  : true;
-                if (canTransferOrReason !== true) {
-                  log.warn(
-                    'Invalidated received route. Reason:',
-                    canTransferOrReason,
-                    'Route:',
-                    path,
-                  );
-                  invalidatedRecipients.add(recipient);
-                  continue;
-                }
-                filteredPaths.push({ path, fee });
-              }
-              if (!filteredPaths.length) throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_FOUND);
-              yield pathFind.success({ paths: filteredPaths }, action.meta);
-            })(),
-          ),
-        ),
+        mergeMap((latest) => getRoute$(action, deps, latest)),
+        withLatestFrom(deps.latest$),
+        mergeMap(([route, latest]) => validateRoute$(action, deps, route, latest)),
         catchError((err) => of(pathFind.failure(err, action.meta))),
       ),
     ),
@@ -903,3 +727,277 @@ export const msMonitorNewBPEpic = (
     filter(isntNil),
   );
 };
+
+function getRoute$(
+  action: pathFind.request,
+  deps: RaidenEpicDeps,
+  latest: Latest,
+): Observable<{ paths?: Paths; iou: Signed<IOU> | undefined; error?: PathError }> {
+  validateRouteTargetAndEventuallyThrow(action, latest);
+
+  if (action.payload.paths) {
+    return of({ paths: action.payload.paths, iou: undefined });
+  } else if (directTransferIsPossible(action, latest)) {
+    return of({
+      paths: [{ path: [deps.address, action.meta.target], fee: Zero as Int<32> }],
+      iou: undefined,
+    });
+  } else if (pfsIsDisabled(action, latest)) {
+    throw new RaidenError(ErrorCodes.PFS_DISABLED);
+  } else {
+    return getRouteFromPfs$(action, deps, latest);
+  }
+}
+
+function validateRoute$(
+  action: pathFind.request,
+  deps: RaidenEpicDeps,
+  route: Route,
+  latest: Latest,
+): Observable<pathFind.success | pathFind.failure | iouPersist | iouClear> {
+  const { tokenNetwork } = action.meta;
+  const { iou, paths, error } = route;
+
+  return from(
+    // looks like mergeMap with generator doesn't handle exceptions correctly
+    // use from+iterator from iife generator instead
+    (function* () {
+      if (iou) {
+        if (shouldPersistIou(route)) {
+          yield iouPersist({ iou }, { tokenNetwork: tokenNetwork, serviceAddress: iou.receiver });
+        } else {
+          yield iouClear(undefined, {
+            tokenNetwork: tokenNetwork,
+            serviceAddress: iou.receiver,
+          });
+        }
+      }
+
+      if (error) {
+        if (isNoRouteFoundError(error)) {
+          throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES);
+        } else {
+          throw new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, {
+            errorCode: error.error_code,
+            errors: error.errors,
+          });
+        }
+      }
+
+      const filteredPaths = filterPaths(action, deps, latest, paths);
+
+      if (filteredPaths.length) {
+        yield pathFind.success({ paths: filteredPaths }, action.meta);
+      } else {
+        throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_FOUND);
+      }
+    })(),
+  );
+}
+
+function validateRouteTargetAndEventuallyThrow(action: pathFind.request, latest: Latest): void {
+  const { tokenNetwork, target } = action.meta;
+  const { state, presences } = latest;
+
+  if (!Object.values(state.tokens).includes(tokenNetwork))
+    throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, { tokenNetwork });
+
+  if (!(target in presences) || !presences[target].payload.available)
+    throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, { target });
+
+  if (presences[target].payload.caps?.[Capabilities.NO_RECEIVE])
+    throw new RaidenError(ErrorCodes.PFS_TARGET_NO_RECEIVE, { target });
+}
+
+function pfsIsDisabled(action: pathFind.request, latest: Latest): boolean {
+  const disabledByAction = action.payload.pfs === null;
+  const disabledByConfig = !action.payload.pfs && latest.config.pfs === null;
+  return disabledByAction || disabledByConfig;
+}
+
+function getRouteFromPfs$(
+  action: pathFind.request,
+  deps: RaidenEpicDeps,
+  latest: Latest,
+): Observable<Route> {
+  const { tokenNetwork, target, value } = action.meta;
+
+  return getPsfInfo$(action.payload.pfs, latest.config.pfs, deps).pipe(
+    mergeMap((pfs) => getIouForPfs(pfs, tokenNetwork, deps)),
+    mergeMap(({ pfs, iou }) =>
+      requestPfs$(
+        pfs,
+        iou,
+        tokenNetwork,
+        deps.address,
+        target,
+        UInt(32).encode(value),
+        latest.config.httpTimeout,
+      ),
+    ),
+    map(({ pfsResponse, responseText, iou }) =>
+      parsePfsResponse(pfsResponse, responseText, iou, latest.config.pfsSafetyMargin),
+    ),
+  );
+}
+
+function filterPaths(
+  action: pathFind.request,
+  deps: RaidenEpicDeps,
+  latest: Latest,
+  paths: Paths | undefined,
+): Paths {
+  const { address, log } = deps;
+  const filteredPaths: Paths = [];
+  const invalidatedRecipients = new Set<Address>();
+
+  if (paths) {
+    for (const { path, fee } of paths) {
+      const cleanPath = getCleanPath(path, address);
+      const recipient = cleanPath[0];
+      let shouldSelectPath = false;
+      let reasonToNotSelect = '';
+
+      if (invalidatedRecipients.has(recipient)) continue;
+      if (filteredPaths.length === 0) {
+        shouldSelectPath = directTransferIsPossible(action, latest, recipient);
+      } else if (recipient !== filteredPaths[0].path[0]) {
+        reasonToNotSelect = 'path: already selected another recipient';
+      } else if (fee.gt(filteredPaths[0].fee)) {
+        reasonToNotSelect = 'path: already selected a smaller fee';
+      } else {
+        shouldSelectPath = true;
+      }
+
+      if (shouldSelectPath) {
+        filteredPaths.push({ path: cleanPath, fee });
+      } else {
+        log.warn('Invalidated received route. Reason:', reasonToNotSelect, 'Route:', cleanPath);
+        invalidatedRecipients.add(recipient);
+      }
+    }
+  }
+
+  return filteredPaths;
+}
+
+function getPsfInfo$(
+  pfsByAction: PFS | null | undefined,
+  pfsByConfig: string | Address | null,
+  deps: RaidenEpicDeps,
+): Observable<PFS> {
+  if (pfsByAction) return of(pfsByAction);
+  else if (pfsByConfig) return pfsInfo(pfsByConfig, deps);
+  else {
+    const { log, latest$ } = deps;
+    return latest$.pipe(
+      pluck('pfsList'), // get cached pfsList
+      first((pfsList) => pfsList.length > 0), // if needed, wait for list to be populated
+      mergeMap((pfsList) => pfsListInfo(pfsList, deps)), // fetch pfsInfo from whole list & sort it
+      tap((pfsInfos) => log.info('Auto-selecting best PFS from:', pfsInfos)),
+      pluck(0), // pop best ranked
+    );
+  }
+}
+
+function getIouForPfs(
+  pfs: PFS,
+  tokenNetwork: Address,
+  deps: RaidenEpicDeps,
+): Observable<{ pfs: PFS; iou: Signed<IOU> | undefined }> {
+  if (pfs.price.isZero()) {
+    return of({ pfs, iou: undefined });
+  } else {
+    return prepareNextIOU$(pfs, tokenNetwork, deps).pipe(map((iou) => ({ pfs, iou })));
+  }
+}
+
+function requestPfs$(
+  pfs: PFS,
+  iou: Signed<IOU> | undefined,
+  tokenNetwork: Address,
+  address: Address,
+  target: Address,
+  value: string,
+  httpTimeout: number,
+): Observable<{ pfsResponse: Response; responseText: string; iou: Signed<IOU> | undefined }> {
+  const body = losslessStringify({
+    from: address,
+    to: target,
+    value: value,
+    max_paths: 10,
+    iou: iou
+      ? {
+          ...iou,
+          amount: UInt(32).encode(iou.amount),
+          expiration_block: UInt(32).encode(iou.expiration_block),
+          chain_id: UInt(32).encode(iou.chain_id),
+        }
+      : undefined,
+  });
+
+  return fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  }).pipe(
+    timeout(httpTimeout),
+    map((pfsResponse) => ({ pfsResponse, iou })),
+    mergeMap(async ({ pfsResponse, iou }) => ({
+      pfsResponse,
+      responseText: await pfsResponse.text(),
+      iou,
+    })),
+  );
+}
+
+function parsePfsResponse(
+  pfsResponse: Response,
+  responseText: string,
+  iou: Signed<IOU> | undefined,
+  pfsSafetyMargin: number,
+): Route {
+  // any decode error here will throw early and end up in catchError
+  const data = losslessParse(responseText);
+
+  if (!pfsResponse.ok) {
+    const error = decode(PathError, data);
+    return { iou, error };
+  } else {
+    const results = decode(PathResults, data).result;
+    const paths = results.map(({ path, estimated_fee }) => {
+      const fee = estimated_fee.mul(Math.round(pfsSafetyMargin * 1e6)).div(1e6) as Int<32>;
+      return { path, fee } as const;
+    });
+    return { paths, iou };
+  }
+}
+
+function directTransferIsPossible(
+  action: pathFind.request,
+  latest: Latest,
+  recipient?: Address,
+): boolean {
+  const { tokenNetwork, target, value } = action.meta;
+  const { state, presences } = latest;
+  return (
+    channelCanRoute(state, presences, tokenNetwork, recipient ?? target, target, value) === true
+  );
+}
+
+function shouldPersistIou(route: Route): boolean {
+  const { paths, error } = route;
+  return paths !== undefined || isNoRouteFoundError(error);
+}
+
+function getCleanPath(path: readonly Address[], address: Address): readonly Address[] {
+  if (path[0] === address) {
+    return path.slice(1);
+  } else {
+    return path;
+  }
+}
+
+function isNoRouteFoundError(error: PathError | undefined): boolean {
+  return error?.error_code === 2201;
+}
