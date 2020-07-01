@@ -1,5 +1,5 @@
 import { Token, Transfer } from '@/model/types';
-import { parseUnits, BigNumber } from 'ethers/utils';
+import { BigNumber, parseUnits } from 'ethers/utils';
 
 import { Zero } from 'ethers/constants';
 import {
@@ -11,7 +11,9 @@ import {
 import { Route } from 'vue-router';
 import { RouteNames } from '@/router/route-names';
 import { Tokens } from '@/types';
-import { Notification } from '@/store/notifications/types';
+import { NotificationPayload } from '@/store/notifications/types';
+import { NotificationImportance } from '@/store/notifications/notification-importance';
+import { NotificationContext } from '@/store/notifications/notification-context';
 
 export const paymentId = new BigNumber(4444);
 
@@ -168,10 +170,14 @@ export class TestData {
     paymentId,
   };
 
-  static notifications: Notification = {
+  static notifications: NotificationPayload = {
     id: 1,
     title: 'BALANCE PROOF SUBMITTED',
     description: 'The monitoring service has submitted a balance proof.',
+    display: false,
+    duration: 5000,
+    importance: NotificationImportance.LOW,
+    context: NotificationContext.NONE,
     received: new Date('June 5, 1986'),
   };
 }

@@ -2,6 +2,10 @@
   <div id="notification-panel">
     <div class="notification-panel-content">
       <div class="notification-panel-content__close">
+        <v-btn text @click="clear()">
+          {{ $t('notifications.clear') }}
+        </v-btn>
+        <v-spacer />
         <v-icon icon @click="onModalBackClicked()">mdi-close</v-icon>
       </div>
       <v-row
@@ -43,23 +47,25 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { createNamespacedHelpers } from 'vuex';
+import { mapGetters, mapMutations } from 'vuex';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import NotificationCard from '@/components/notification-panel/NotificationCard.vue';
-import { Notification } from '@/store/notifications/types';
-
-const { mapGetters } = createNamespacedHelpers('notifications');
+import { NotificationPayload } from '@/store/notifications/types';
 
 @Component({
   components: {
     NotificationCard,
   },
   computed: {
-    ...mapGetters(['notifications']),
+    ...mapGetters('notifications', ['notifications']),
+  },
+  methods: {
+    ...mapMutations('notifications', ['clear']),
   },
 })
 export default class NotificationPanel extends Mixins(NavigationMixin) {
-  notifications!: Notification[];
+  notifications!: NotificationPayload[];
+  clear!: () => void;
 }
 </script>
 

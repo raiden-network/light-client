@@ -18,7 +18,9 @@ import asyncPool from 'tiny-async-pool';
 import { ConfigProvider, Configuration } from '@/services/config-provider';
 import { Zero } from 'ethers/constants';
 import i18n from '@/i18n';
-import { Notification } from '@/store/notifications/types';
+import { NotificationPayload } from '@/store/notifications/types';
+import { NotificationContext } from '@/store/notifications/notification-context';
+import { NotificationImportance } from '@/store/notifications/notification-importance';
 
 export default class RaidenService {
   private _raiden?: Raiden;
@@ -307,7 +309,9 @@ export default class RaidenService {
     await this.store.dispatch('notifications/notify', {
       title: i18n.t('notifications.withdrawal.failure.title'),
       description,
-    } as Notification);
+      context: NotificationContext.ERROR,
+      importance: NotificationImportance.HIGH,
+    } as NotificationPayload);
   }
 
   private async notifyWithdrawal(
@@ -326,7 +330,9 @@ export default class RaidenService {
         withdrawn,
         symbol: token.symbol,
       }),
-    } as Notification);
+      context: NotificationContext.INFO,
+      importance: NotificationImportance.HIGH,
+    } as NotificationPayload);
   }
 
   private async notifyBalanceProofSend(
@@ -345,9 +351,12 @@ export default class RaidenService {
         monitoringService,
         partner,
         reward: amount,
+        symbol: token.symbol,
         txHash,
       }),
-    } as Notification);
+      context: NotificationContext.INFO,
+      importance: NotificationImportance.HIGH,
+    } as NotificationPayload);
   }
 
   disconnect() {
