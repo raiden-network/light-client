@@ -45,7 +45,7 @@
     "@types/morgan": "1.9.1",
     "ethers": "4.0.47",
     "express": "4.17.1",
-    "http-errors": "1.7.3",
+    "http-errors": "1.8.0",
     "inquirer": "7.3.0",
     "loglevel": "1.6.8",
     "morgan": "1.10.0",
