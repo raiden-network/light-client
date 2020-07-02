@@ -32,7 +32,13 @@ export interface ApiChannel {
   reveal_timeout: number;
 }
 
+export enum ApiPaymentEvents {
+  sent = 'EventPaymentSentSuccess',
+  received = 'EventPaymentReceivedSuccess',
+}
+
 export interface ApiPayment {
+  event: ApiPaymentEvents;
   initiator_address: string;
   target_address: string;
   token_address: string;

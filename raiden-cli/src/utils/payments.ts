@@ -1,8 +1,9 @@
 import { RaidenTransfer } from 'raiden-ts';
-import { ApiPayment } from '../types';
+import { ApiPayment, ApiPaymentEvents } from '../types';
 
 export function transformSdkTransferToApiPayment(transfer: RaidenTransfer): ApiPayment {
   return {
+    event: ApiPaymentEvents[transfer.direction],
     initiator_address: transfer.initiator,
     target_address: transfer.target,
     token_address: transfer.token,
