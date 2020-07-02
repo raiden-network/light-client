@@ -30,7 +30,7 @@ export interface Lock extends t.TypeOf<typeof Lock> {}
  * because BP signature requires the hash of the message, for authentication of data not included
  * nor relevant for the smartcontract/BP itself, but so for the peers (e.g. payment_id)
  */
-export const BalanceProof = t.readonly(
+const _BalanceProof = t.readonly(
   t.type({
     // channel data
     chainId: UInt(32),
@@ -44,7 +44,9 @@ export const BalanceProof = t.readonly(
     additionalHash: Hash,
   }),
 );
-export interface BalanceProof extends t.TypeOf<typeof BalanceProof> {}
+export interface BalanceProof extends t.TypeOf<typeof _BalanceProof> {}
+export interface BalanceProofC extends t.Type<BalanceProof, t.OutputOf<typeof _BalanceProof>> {}
+export const BalanceProof: BalanceProofC = _BalanceProof;
 
 export const BalanceProofZero: Signed<BalanceProof> = {
   chainId: Zero as UInt<32>,
