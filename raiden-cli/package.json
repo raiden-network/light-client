@@ -51,7 +51,7 @@
     "morgan": "1.10.0",
     "node-localstorage": "2.1.6",
     "raiden-ts": "*",
-    "rxjs": "6.5.5",
+    "rxjs": "6.6.0",
     "wrtc": "0.4.5",
     "yargs": "15.3.1"
   },
