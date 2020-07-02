@@ -69,7 +69,7 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - restore_cache: *package_lock_key
-      - run: pnpm install
+      - run: pnpm install --prefer-frozen-lockfile
       - save_cache:
           <<: *package_lock_key
           paths:
