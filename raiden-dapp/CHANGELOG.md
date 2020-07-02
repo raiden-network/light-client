@@ -17,6 +17,7 @@
 - [#1579] Removes minting references when detected network is mainnet.
 - [#1773] Fix performance issues of progress indicators
 - [#1756] Fix non-informative error message on SDK's wrapped errors
+- [#1805] Fix unintended automatic stop of Raiden Service by web-browser
 
 ### Changed
 
@@ -35,6 +36,7 @@
 [#1421]: https://github.com/raiden-network/light-client/issues/1421
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
 [#168]: https://github.com/raiden-network/light-client/issues/168
+[#1805]: https://github.com/raiden-network/light-client/issues/1805
 
 ## [0.9.0] - 2020-05-28
 

@@ -216,7 +216,12 @@ export default class RaidenService {
 
         this.store.commit('network', raiden.network);
 
-        window.addEventListener('beforeunload', () => this.raiden.stop());
+        /* istanbul ignore next */
+        window.addEventListener('beforeunload', (event) => {
+          event.preventDefault();
+          return ''; // Some engines like Chrome expect this.
+        });
+
         raiden.start();
         this.store.commit('balance', await this.getBalance());
         if (subkey) {
