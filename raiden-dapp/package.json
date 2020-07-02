@@ -25,7 +25,7 @@
     "loglevel": "1.6.8",
     "raiden-ts": "*",
     "register-service-worker": "1.7.1",
-    "rxjs": "6.5.5",
+    "rxjs": "6.6.0",
     "tiny-async-pool": "1.1.0",
     "typeface-roboto": "0.0.75",
     "vue": "2.6.11",
