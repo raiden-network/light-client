@@ -17,7 +17,7 @@ export enum ChannelState {
 /**
  * Contains info of each side of a channel
  */
-export const ChannelEnd = t.readonly(
+const _ChannelEnd = t.readonly(
   t.type({
     address: Address,
     deposit: UInt(32), // total deposit/contract balance
@@ -28,7 +28,9 @@ export const ChannelEnd = t.readonly(
     nextNonce: UInt(8), // usually balanceProof.nonce+1, but withdraw messages also increment it
   }),
 );
-export interface ChannelEnd extends t.TypeOf<typeof ChannelEnd> {}
+export interface ChannelEnd extends t.TypeOf<typeof _ChannelEnd> {}
+export interface ChannelEndC extends t.Type<ChannelEnd, t.OutputOf<typeof _ChannelEnd>> {}
+export const ChannelEnd: ChannelEndC = _ChannelEnd;
 
 export const Channel = t.intersection([
   // readonly needs to be applied to the individual types to allow tagged union narrowing
