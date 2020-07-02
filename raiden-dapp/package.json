@@ -94,7 +94,7 @@
     "symbol-observable": "1.2.0",
     "ts-jest": "26.1.1",
     "tslib": "2.0.0",
-    "typescript": "3.9.5",
+    "typescript": "3.9.6",
     "vue-cli-plugin-i18n": "1.0.1",
     "vue-cli-plugin-vuetify": "2.0.6",
     "vue-jest": "3.0.5",
