@@ -73,25 +73,28 @@
       :channel="selectedChannel"
       @dismiss="action = null"
       @message="showMessage($event)"
+      @error="error = $event"
     ></channel-dialogs>
+    <error-dialog :error="error" @dismiss="error = null" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { ChannelState, RaidenChannel } from 'raiden-ts';
+import { ChannelState, RaidenChannel, RaidenError } from 'raiden-ts';
 import ListHeader from '@/components/ListHeader.vue';
 import { Token } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import ChannelList from '@/components/channels/ChannelList.vue';
 import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
+import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { ChannelAction } from '@/types';
 import Filters from '@/filters';
 
 @Component({
-  components: { ChannelDialogs, ListHeader, ChannelList },
+  components: { ChannelDialogs, ListHeader, ChannelList, ErrorDialog },
   computed: {
     ...mapGetters(['channels']),
   },
@@ -101,6 +104,7 @@ export default class Channels extends Mixins(NavigationMixin) {
   snackbar: boolean = false;
   channels!: (address: string) => RaidenChannel[];
   action: ChannelAction | null = null;
+  error: Error | RaidenError | null = null;
 
   selectedChannel: RaidenChannel | null = null;
   expanded: { [id: number]: boolean } = {};

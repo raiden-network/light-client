@@ -3,7 +3,7 @@
     v-if="channel && action === 'close'"
     :identifier="channel.id"
     :positive-action="$t('confirmation.buttons.close')"
-    :visible="action === 'close'"
+    :visible="visible"
     @confirm="close()"
     @cancel="dismiss()"
   >
@@ -18,7 +18,7 @@
     v-else-if="channel && action === 'settle'"
     :identifier="channel.id"
     :positive-action="$t('confirmation.buttons.settle')"
-    :visible="action === 'settle'"
+    :visible="visible"
     @confirm="settle()"
     @cancel="dismiss()"
   >
@@ -37,7 +37,7 @@
     v-else-if="channel && action === 'deposit'"
     :identifier="channel.id"
     :token="token(channel.token)"
-    :visible="action === 'deposit'"
+    :visible="visible"
     :loading="depositInProgress"
     :done="false"
     @depositTokens="deposit($event)"
@@ -72,6 +72,7 @@ export default class ChannelDialogs extends Vue {
   token!: (address: string) => Token;
 
   depositInProgress = false;
+  visible = true;
 
   @Emit()
   message(_message: string) {}
@@ -81,38 +82,46 @@ export default class ChannelDialogs extends Vue {
     this.depositInProgress = false;
   }
 
+  @Emit()
+  error(_error: Error) {}
+
   async deposit(deposit: BigNumber) {
     const { token, partner } = this.channel!;
     try {
       this.depositInProgress = true;
       await this.$raiden.deposit(token, partner, deposit);
-      this.dismiss();
       this.message(this.$t('channel-list.messages.deposit.success') as string);
     } catch (e) {
       this.message(this.$t('channel-list.messages.deposit.failure') as string);
+      this.error(e);
     }
+    this.dismiss();
   }
 
   async close() {
     const { token, partner } = this.channel!;
-    this.dismiss();
+    this.visible = false;
     try {
       await this.$raiden.closeChannel(token, partner);
       this.message(this.$t('channel-list.messages.close.success') as string);
     } catch (e) {
       this.message(this.$t('channel-list.messages.close.failure') as string);
+      this.error(e);
     }
+    this.dismiss();
   }
 
   async settle() {
     const { token, partner } = this.channel!;
-    this.dismiss();
+    this.visible = false;
     try {
       await this.$raiden.settleChannel(token, partner);
       this.message(this.$t('channel-list.messages.settle.success') as string);
     } catch (e) {
       this.message(this.$t('channel-list.messages.settle.failure') as string);
+      this.error(e);
     }
+    this.dismiss();
   }
 }
 </script>
