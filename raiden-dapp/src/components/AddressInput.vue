@@ -4,7 +4,7 @@
       id="address-input"
       ref="address"
       v-model="address"
-      :error-messages="errorMessages"
+      :error-messages="!hideErrorLabel ? errorMessages : !errorMessages"
       :rules="isAddressValid"
       :class="{
         'address-input--invalid': !valid && touched,
@@ -94,6 +94,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   private valueChange = new BehaviorSubject<string | undefined>('');
   private subscription?: Subscription;
 
+  @Prop({ required: false, default: false, type: Boolean })
+  hideErrorLabel!: boolean;
   @Prop({})
   disabled!: boolean;
   @Prop({ required: true })
@@ -112,6 +114,12 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     }
   })
   block!: Array<string>;
+
+  @Emit()
+  inputError(errorMessage: string) {
+    console.log(errorMessage);
+    return errorMessage;
+  }
 
   address: string = '';
 
@@ -262,6 +270,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
         if (error) {
           this.errorMessages.push(error);
+          this.inputError(this.errorMessages[0]);
         } else {
           this.address = value;
         }
