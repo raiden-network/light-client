@@ -211,7 +211,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Restore dependencies
-          command: pnpm install
+          command: pnpm install --prefer-frozen-lockfile
       - run:
           name: Run integration tests
           command: source /etc/profile.d/smartcontracts.sh && pnpm run test:integration --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
