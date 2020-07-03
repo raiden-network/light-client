@@ -44,10 +44,6 @@ describe('Withdrawal.vue', () => {
       wrapper = createWrapper();
     });
 
-    test('render component', () => {
-      expect(wrapper.is(Withdrawal)).toBe(true);
-    });
-
     test('show an empty screen', () => {
       expect(wrapper.find('.withdrawal__empty').exists()).toBe(true);
     });
@@ -72,7 +68,7 @@ describe('Withdrawal.vue', () => {
 
       await wrapper.vm.$nextTick();
 
-      expect(wrapper.find(RaidenDialog).exists()).toBe(true);
+      expect(wrapper.findComponent(RaidenDialog).exists()).toBe(true);
     });
 
     test('disables withdrawal if the Raiden account has no funds', async () => {

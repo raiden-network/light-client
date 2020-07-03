@@ -1,7 +1,7 @@
 <template>
   <span v-if="updateAvailable">
     <blurred-overlay :show="updateAvailable" :fullscreen="true" />
-    <v-snackbar v-model="updateAvailable" :timeout="0" color="primary">
+    <v-snackbar v-model="updateAvailable" :timeout="-1" color="primary">
       {{ $t('update.available') }}
       <v-btn dark text :loading="isUpdating" @click="update">
         {{ $t('update.update') }}

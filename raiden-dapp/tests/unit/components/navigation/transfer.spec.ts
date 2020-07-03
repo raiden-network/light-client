@@ -81,6 +81,7 @@ describe('Transfer.vue', () => {
         fee: new BigNumber(1 ** 8),
       },
     ]);
+    router.push = jest.fn().mockImplementation(() => Promise.resolve());
 
     router.currentRoute = TestData.mockRoute({
       token: '0xtoken',

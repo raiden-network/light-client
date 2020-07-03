@@ -22,7 +22,6 @@ describe('OfflineSnackbar.vue', () => {
     const vuetify = new Vuetify();
     const wrapper = mount(OfflineSnackbar, {
       vuetify,
-      attachToDocument: true,
       mocks: {
         $t: (msg: string) => msg,
       },
@@ -37,7 +36,6 @@ describe('OfflineSnackbar.vue', () => {
     const vuetify = new Vuetify();
     const wrapper = mount(OfflineSnackbar, {
       vuetify,
-      attachToDocument: true,
       mocks: {
         $t: (msg: string) => msg,
       },

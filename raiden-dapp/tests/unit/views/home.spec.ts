@@ -1,4 +1,7 @@
+import { ConfigProvider } from '@/services/config-provider';
+
 jest.mock('@/services/raiden-service');
+jest.mock('@/services/config-provider');
 jest.mock('@/i18n', () => jest.fn());
 
 import flushPromises from 'flush-promises';
@@ -20,6 +23,7 @@ describe('Home.vue', () => {
   let $raiden: RaidenService;
 
   beforeEach(() => {
+    (ConfigProvider as any).configuration.mockResolvedValue({});
     vuetify = new Vuetify();
     $raiden = new RaidenService(store);
     $raiden.connect = jest.fn();

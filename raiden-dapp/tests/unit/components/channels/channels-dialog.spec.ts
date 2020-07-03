@@ -48,7 +48,7 @@ describe('ChannelDialogs.vue', () => {
   });
 
   test('default state is empty', () => {
-    expect(wrapper.isEmpty()).toBeTruthy();
+    expect(wrapper.element.tagName).toBeUndefined();
   });
 
   test('close', async () => {
@@ -58,7 +58,7 @@ describe('ChannelDialogs.vue', () => {
     });
 
     await wrapper.vm.$nextTick();
-    expect(wrapper.find(ConfirmationDialog).exists()).toBeTruthy();
+    expect(wrapper.findComponent(ConfirmationDialog).exists()).toBeTruthy();
   });
 
   test('settle', async () => {
@@ -68,7 +68,7 @@ describe('ChannelDialogs.vue', () => {
     });
 
     await wrapper.vm.$nextTick();
-    expect(wrapper.find(ConfirmationDialog).exists()).toBeTruthy();
+    expect(wrapper.findComponent(ConfirmationDialog).exists()).toBeTruthy();
   });
 
   test('deposit', async () => {
@@ -82,7 +82,7 @@ describe('ChannelDialogs.vue', () => {
     });
 
     await wrapper.vm.$nextTick();
-    expect(wrapper.find(ChannelDepositDialog).exists()).toBeTruthy();
+    expect(wrapper.findComponent(ChannelDepositDialog).exists()).toBeTruthy();
   });
 
   describe('depositing', () => {

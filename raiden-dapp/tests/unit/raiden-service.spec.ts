@@ -23,6 +23,8 @@ import { delay } from 'rxjs/internal/operators';
 import { AddressZero, One, Zero } from 'ethers/constants';
 import { paymentId } from './data/mock-data';
 import Mocked = jest.Mocked;
+import { NotificationImportance } from '@/store/notifications/notification-importance';
+import { NotificationContext } from '@/store/notifications/notification-context';
 const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual(
   'raiden-ts'
 );
@@ -788,6 +790,8 @@ describe('RaidenService', () => {
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       description: 'notifications.ms-balance-proof.description',
       title: 'notifications.ms-balance-proof.title',
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.INFO,
     });
   });
 
@@ -813,6 +817,8 @@ describe('RaidenService', () => {
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       description: 'notifications.withdrawal.success.description',
       title: 'notifications.withdrawal.success.title',
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.INFO,
     });
   });
 
@@ -859,6 +865,8 @@ describe('RaidenService', () => {
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       description: 'notifications.withdrawal.failure.description',
       title: 'notifications.withdrawal.failure.title',
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.ERROR,
     });
   });
 

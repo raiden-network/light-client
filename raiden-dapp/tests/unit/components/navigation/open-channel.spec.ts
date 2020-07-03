@@ -68,11 +68,10 @@ describe('OpenChannel.vue', () => {
     service = new RaidenService(store) as Mocked<RaidenService>;
     service.fetchTokenData = jest.fn().mockResolvedValue(undefined);
     router = new VueRouter() as Mocked<VueRouter>;
-    router.push = jest.fn().mockResolvedValue(null);
   });
 
   beforeEach(() => {
-    router.push.mockReset();
+    router.push = jest.fn().mockImplementation(() => Promise.resolve());
   });
 
   afterEach(async () => {

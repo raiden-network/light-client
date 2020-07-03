@@ -1,7 +1,7 @@
 <template>
   <span v-if="offline">
     <blurred-overlay :show="offline" :fullscreen="true" />
-    <v-snackbar v-model="offline" :timeout="0" color="error">
+    <v-snackbar v-model="offline" :timeout="-1" color="error">
       {{ $t('general.offline') }}
       <v-icon>mdi-alert</v-icon>
     </v-snackbar>
