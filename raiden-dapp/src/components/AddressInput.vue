@@ -4,7 +4,7 @@
       id="address-input"
       ref="address"
       v-model="address"
-      :error-messages="!hideErrorLabel ? errorMessages : !errorMessages"
+      :error-messages="!hideErrorLabel ? errorMessages : []"
       :rules="isAddressValid"
       :class="{
         'address-input--invalid': !valid && touched,
@@ -117,7 +117,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   @Emit()
   inputError(errorMessage: string) {
-    console.log(errorMessage);
     return errorMessage;
   }
 
