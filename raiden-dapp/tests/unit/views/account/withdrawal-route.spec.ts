@@ -26,6 +26,6 @@ describe('WithdrawalRoute.vue', () => {
   });
 
   test('component renders', () => {
-    expect(wrapper.is(WithdrawalRoute)).toBe(true);
+    expect(wrapper.find('withdrawal-stub')).toBeDefined();
   });
 });

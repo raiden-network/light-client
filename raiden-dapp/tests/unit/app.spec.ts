@@ -1,3 +1,5 @@
+import flushPromises from 'flush-promises';
+
 jest.mock('vue-router');
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
@@ -59,13 +61,21 @@ describe('App.vue', () => {
     store.commit('updateConfig', {
       caps: { [Capabilities.NO_RECEIVE]: false },
     });
-    await wrapper.vm.$nextTick();
-    expect(wrapper.vm.$data.showReceivingDisabled).toBe(false);
+    await flushPromises();
+    // @ts-ignore
+    expect(store.state.notifications.notifications).toHaveLength(0);
 
     store.commit('updateConfig', {
       caps: { [Capabilities.NO_RECEIVE]: true },
     });
     await wrapper.vm.$nextTick();
-    expect(wrapper.vm.$data.showReceivingDisabled).toBe(true);
+    // @ts-ignore
+    expect(store.state.notifications.notifications[0]).toMatchObject(
+      expect.objectContaining({
+        context: 'warning',
+        description: 'receiving-disabled-dialog.body',
+        title: 'receiving-disabled-dialog.title',
+      })
+    );
   });
 });

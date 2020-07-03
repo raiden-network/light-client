@@ -51,7 +51,7 @@ describe('FindRoutes.vue', () => {
   test('emit a select event when the user selects a route', async () => {
     const wrapper = createWrapper();
     await wrapper.vm.$nextTick();
-    expect(wrapper.find('.find-routes__table').isVisible()).toBe(true);
+    expect(wrapper.find('.find-routes__table').element).toBeVisible();
 
     wrapper
       .findAll('.find-routes__table .v-data-table__checkbox')

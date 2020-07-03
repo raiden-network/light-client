@@ -38,7 +38,7 @@ describe('NotificationPanel.vue', () => {
   });
 
   test('go to previous screen when close button is clicked', () => {
-    const notificationPanelCloseButton = wrapper.find('button');
+    const notificationPanelCloseButton = wrapper.findAll('button').at(1);
     notificationPanelCloseButton.trigger('click');
 
     expect(router.go).toHaveBeenCalledTimes(1);
