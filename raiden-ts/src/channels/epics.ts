@@ -38,7 +38,7 @@ import isEmpty from 'lodash/isEmpty';
 import { BigNumber, concat, defaultAbiCoder } from 'ethers/utils';
 import { Event } from 'ethers/contract';
 import { Zero } from 'ethers/constants';
-import { Filter, Log } from 'ethers/providers';
+import { Filter, Log, JsonRpcProvider } from 'ethers/providers';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
@@ -78,13 +78,19 @@ import { assertTx, channelKey, groupChannel$, channelUniqueKey } from './utils';
  *
  * @param func - An async function (e.g. a Promise factory, like a defer callback)
  * @param interval - Interval to retry in case of rejection
- * @param retries - Max number of times to retry
+ * @param stopPredicate - Stops retrying and throws if this function returns a truty value;
+ *      Receives error and retry count; Default: stops after 10 retries
  * @returns Observable version of async function, with retries
  */
-function retryAsync$<T>(func: () => Promise<T>, interval = 1e3, retries = 10): Observable<T> {
+function retryAsync$<T>(
+  func: () => Promise<T>,
+  interval = 1e3,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
+): Observable<T> {
   return defer(func).pipe(
     retryWhen((err$) =>
-      err$.pipe(mergeMap((err, i) => (i < retries ? timer(interval) : throwError(err)))),
+      err$.pipe(mergeMap((err, i) => (stopPredicate(err, i) ? throwError(err) : timer(interval)))),
     ),
   );
 }
@@ -607,14 +613,24 @@ const makeDeposit$ = (
   approveNonce?: number,
 ): Observable<channelDeposit.failure> => {
   if (!deposit?.gt(Zero)) return EMPTY;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function stopRetryIfRejected(err: any, count: number) {
+    // 4001 is Metamask's code for rejected/denied signature prompt
+    return count >= 10 || err?.code === 4001;
+  }
+
   return defer(() => tokenContract.functions.allowance(sender, tokenNetworkContract.address)).pipe(
     mergeMap((allowance) =>
       allowance.gte(deposit)
         ? of(true)
-        : from(
-            tokenContract.functions.approve(tokenNetworkContract.address, deposit, {
-              nonce: approveNonce,
-            }),
+        : retryAsync$(
+            () =>
+              tokenContract.functions.approve(tokenNetworkContract.address, deposit, {
+                nonce: approveNonce,
+              }),
+            (tokenContract.provider as JsonRpcProvider).pollingInterval,
+            stopRetryIfRejected,
           ).pipe(
             // if needed, send approveTx and wait/assert it before proceeding
             assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
@@ -630,11 +646,16 @@ const makeDeposit$ = (
     ),
     mergeMap(([id, totalDeposit]) =>
       // send setTotalDeposit transaction
-      tokenNetworkContract.functions.setTotalDeposit(
-        id,
-        address,
-        totalDeposit.add(deposit),
-        partner,
+      retryAsync$(
+        () =>
+          tokenNetworkContract.functions.setTotalDeposit(
+            id,
+            address,
+            totalDeposit.add(deposit),
+            partner,
+          ),
+        (tokenNetworkContract.provider as JsonRpcProvider).pollingInterval,
+        stopRetryIfRejected,
       ),
     ),
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log }),
