@@ -18,6 +18,7 @@
 - [#1773] Fix performance issues of progress indicators
 - [#1756] Fix non-informative error message on SDK's wrapped errors
 - [#1805] Fix unintended automatic stop of Raiden Service by web-browser
+- [#1876] Show error message on Channels screen if an exception occurs
 
 ### Changed
 
@@ -37,6 +38,7 @@
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
 [#168]: https://github.com/raiden-network/light-client/issues/168
 [#1805]: https://github.com/raiden-network/light-client/issues/1805
+[#1876]: https://github.com/raiden-network/light-client/pull/1876
 
 ## [0.9.0] - 2020-05-28
 

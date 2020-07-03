@@ -11,6 +11,7 @@
 - [#1761] Fix deposit error on openChannel not rejecting promise
 - [#1787] Fix TokenNetwork monitoring losing events
 - [#1830] Fix a nonce race when openining + depositing concurrently
+- [#1848] Fix a Metamask error by retry on deposit
 
 ### Added
 - [#1374] Monitors MonitoringService contract and emit event when MS acts
@@ -52,6 +53,7 @@
 [#1822]: https://github.com/raiden-network/light-client/pull/1822
 [#1830]: https://github.com/raiden-network/light-client/issues/1830
 [#1832]: https://github.com/raiden-network/light-client/pull/1832
+[#1848]: https://github.com/raiden-network/light-client/issues/1848
 
 ## [0.9.0] - 2020-05-28
 ### Added
