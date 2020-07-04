@@ -48,9 +48,9 @@ import {
   channelSettle,
   tokenMonitored,
 } from './channels/actions';
-import { channelKey } from './channels/utils';
+import { channelKey, channelAmounts } from './channels/utils';
 import { matrixPresence } from './transport/actions';
-import { transfer, transferSigned } from './transfers/actions';
+import { transfer, transferSigned, withdraw } from './transfers/actions';
 import {
   makeSecret,
   getSecrethash,
@@ -1290,6 +1290,42 @@ export class Raiden {
       ({ txHash }) => txHash!,
     );
     this.store.dispatch(udcWithdraw.request(undefined, meta));
+    return promise;
+  }
+
+  public async withdrawChannel(
+    token: string,
+    partner: string,
+    amount?: BigNumberish,
+  ): Promise<Hash> {
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
+    const tokenNetwork = this.state.tokens[token];
+    assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
+    const channel = this.state.channels[channelKey({ tokenNetwork, partner })];
+    assert(
+      channel?.state === ChannelState.open,
+      ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND,
+      this.log.error,
+    );
+    const { ownWithdrawable, ownWithdraw } = channelAmounts(channel);
+    // if it's too big, it'll fail on withdraw request handling epic
+    const totalWithdraw = ownWithdraw.add(
+      decode(UInt(32), amount ?? ownWithdrawable, ErrorCodes.DTA_INVALID_AMOUNT, this.log.info),
+    ) as UInt<32>;
+    const expiration = this.state.blockNumber + 2 * this.config.revealTimeout;
+
+    const meta = {
+      direction: Direction.SENT,
+      tokenNetwork,
+      partner,
+      totalWithdraw,
+      expiration,
+    };
+    const promise = asyncActionToPromise(withdraw, meta, this.action$, true).then(
+      ({ txHash }) => txHash,
+    );
+    this.store.dispatch(withdraw.request(undefined, meta));
     return promise;
   }
 }
