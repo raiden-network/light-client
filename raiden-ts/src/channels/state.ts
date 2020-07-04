@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { BigNumber } from 'ethers/utils';
 
-import { UInt, Address, Signed } from '../utils/types';
+import { UInt, Address, Signed, Int } from '../utils/types';
 import { WithdrawRequest, WithdrawExpired } from '../messages';
 import { Lock, BalanceProof } from './types';
 
@@ -87,18 +87,43 @@ export const Channel = t.intersection([
 ]);
 export type Channel = t.TypeOf<typeof Channel>;
 
+export interface ChannelBalances {
+  ownDeposit: UInt<32>; // on-chain totalDeposit
+  ownWithdraw: UInt<32>; // on-chain totalWithdraw
+  ownTransferred: UInt<32>; // off-chain unlocked
+  ownLocked: UInt<32>; // sum of locks not unlocked on- nor off-chain
+  ownBalance: Int<32>; // received minus paid, unlocked either on- or off-chain
+  ownCapacity: UInt<32>; // how much still available to be sent on channel
+  ownOnchainUnlocked: UInt<32>; // total of locks registered on-chain and not unlocked off-chain
+  ownUnlocked: UInt<32>; // off & on-chain unlocked amount *sent* from this end
+  ownTotalWithdrawable: UInt<32>; // total which can be sent in a setTotalWithdraw call
+  ownWithdrawable: UInt<32>; // maximum amount available currently to be withdrawn
+  partnerDeposit: UInt<32>;
+  partnerWithdraw: UInt<32>;
+  partnerTransferred: UInt<32>;
+  partnerLocked: UInt<32>;
+  partnerBalance: Int<32>;
+  partnerCapacity: UInt<32>;
+  partnerOnchainUnlocked: UInt<32>;
+  partnerUnlocked: UInt<32>;
+  partnerTotalWithdrawable: UInt<32>;
+  partnerWithdrawable: UInt<32>;
+}
+
 /**
  * Public exposed channels interface (Raiden.channels$)
  *
  * This should be only used as a public view of the internal channel state
  */
-export interface RaidenChannel {
+export interface RaidenChannel extends ChannelBalances {
+  state: ChannelState;
+  id: number;
   token: Address;
   tokenNetwork: Address;
+  settleTimeout: number;
+  openBlock: number;
+  closeBlock?: number;
   partner: Address;
-  state: ChannelState;
-  ownDeposit: BigNumber;
-  partnerDeposit: BigNumber;
   // balance is difference between partner's sent tokens minus own sent tokens
   // as of now we can only send, balance usually is a negative number, as once you send
   // X tokens, you have X less tokens than before, and initial balance is zero
@@ -106,10 +131,6 @@ export interface RaidenChannel {
   // "distributable" capacity of channel, sum of own total deposit and balance (which as usually
   // negative, decreases capacity)
   capacity: BigNumber;
-  id: number;
-  settleTimeout: number;
-  openBlock: number;
-  closeBlock?: number;
 }
 
 /**
