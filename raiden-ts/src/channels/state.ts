@@ -2,7 +2,7 @@ import * as t from 'io-ts';
 import { BigNumber } from 'ethers/utils';
 
 import { UInt, Address, Signed } from '../utils/types';
-import { WithdrawRequest } from '../messages';
+import { WithdrawRequest, WithdrawExpired } from '../messages';
 import { Lock, BalanceProof } from './types';
 
 export enum ChannelState {
@@ -24,7 +24,7 @@ const _ChannelEnd = t.readonly(
     withdraw: UInt(32),
     locks: t.readonlyArray(Lock),
     balanceProof: Signed(BalanceProof),
-    withdrawRequests: t.readonlyArray(Signed(WithdrawRequest)),
+    pendingWithdraws: t.readonlyArray(t.union([Signed(WithdrawRequest), Signed(WithdrawExpired)])),
     nextNonce: UInt(8), // usually balanceProof.nonce+1, but withdraw messages also increment it
   }),
 );

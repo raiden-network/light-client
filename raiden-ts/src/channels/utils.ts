@@ -5,9 +5,10 @@ import { ContractTransaction, ContractReceipt } from 'ethers/contract';
 
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
-import { UInt, Address, Hash } from '../utils/types';
+import { UInt, Address, Hash, Signed } from '../utils/types';
 import { RaidenError } from '../utils/error';
 import { distinctRecordValues } from '../utils/rx';
+import { WithdrawRequest } from '../messages/types';
 import { Channel, ChannelState } from './state';
 import { ChannelKey, ChannelUniqueKey } from './types';
 
@@ -74,6 +75,10 @@ export function channelAmounts(channel: Channel) {
       partnerCapacity: Zero32,
       partnerOnchainUnlocked: Zero32,
       partnerUnlocked: Zero32, // total of off & onchain unlocked
+      ownTotalWithdrawable: Zero32,
+      ownWithdrawable: Zero32,
+      partnerTotalWithdrawable: Zero32,
+      partnerWithdrawable: Zero32,
     };
 
   const ownWithdraw = channel.own.withdraw,
@@ -87,11 +92,15 @@ export function channelAmounts(channel: Channel) {
     ownPendingWithdraw = bnMax(
       // get maximum between actual and pending withdraws (as it's a total)
       ownWithdraw,
-      ...channel.own.withdrawRequests.map((req) => req.total_withdraw),
+      ...channel.own.pendingWithdraws
+        .filter(Signed(WithdrawRequest).is)
+        .map((req) => req.total_withdraw),
     ),
     partnerPendingWithdraw = bnMax(
       partnerWithdraw,
-      ...channel.partner.withdrawRequests.map((req) => req.total_withdraw),
+      ...channel.partner.pendingWithdraws
+        .filter(Signed(WithdrawRequest).is)
+        .map((req) => req.total_withdraw),
     ),
     ownCapacity = channel.own.deposit
       .sub(ownPendingWithdraw) // pending withdraws reduce capacity
@@ -108,7 +117,13 @@ export function channelAmounts(channel: Channel) {
       .filter((lock) => lock.registered)
       .reduce((acc, lock) => acc.add(lock.amount), Zero) as UInt<32>,
     ownUnlocked = ownTransferred.add(ownOnchainUnlocked) as UInt<32>,
-    partnerUnlocked = partnerTransferred.add(partnerOnchainUnlocked) as UInt<32>;
+    partnerUnlocked = partnerTransferred.add(partnerOnchainUnlocked) as UInt<32>,
+    ownTotalWithdrawable = channel.own.deposit.add(ownBalance).sub(ownLocked) as UInt<32>,
+    ownWithdrawable = ownTotalWithdrawable.sub(ownWithdraw) as UInt<32>,
+    partnerTotalWithdrawable = channel.partner.deposit
+      .add(partnerBalance)
+      .sub(partnerLocked) as UInt<32>,
+    partnerWithdrawable = partnerTotalWithdrawable.sub(partnerWithdraw) as UInt<32>;
 
   return {
     ownDeposit: channel.own.deposit,
@@ -127,6 +142,10 @@ export function channelAmounts(channel: Channel) {
     partnerCapacity,
     partnerOnchainUnlocked,
     partnerUnlocked,
+    ownTotalWithdrawable,
+    ownWithdrawable,
+    partnerTotalWithdrawable,
+    partnerWithdrawable,
   };
 }
 

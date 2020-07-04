@@ -58,7 +58,7 @@ const emptyChannelEnd: ChannelEnd = {
   withdraw: Zero as UInt<32>,
   locks: [],
   balanceProof: BalanceProofZero,
-  withdrawRequests: [],
+  pendingWithdraws: [],
   nextNonce: One as UInt<8>,
 };
 
@@ -103,15 +103,15 @@ function channelUpdateOnchainBalanceStateReducer(
   if (channel?.state !== ChannelState.open || channel.id !== action.payload.id) return state;
 
   const end = action.payload.participant === channel.partner.address ? 'partner' : 'own';
-  const [prop, total, withdrawRequests] = channelWithdrawn.is(action)
+  const [prop, total, pendingWithdraws] = channelWithdrawn.is(action)
     ? [
         'withdraw' as const,
         action.payload.totalWithdraw,
-        channel[end].withdrawRequests.filter((req) =>
+        channel[end].pendingWithdraws.filter((req) =>
           req.total_withdraw.gt(action.payload.totalWithdraw),
         ), // on-chain withdraw clears <= WithdrawRequests, including the confirmed one
       ]
-    : ['deposit' as const, action.payload.totalDeposit, channel[end].withdrawRequests];
+    : ['deposit' as const, action.payload.totalDeposit, channel[end].pendingWithdraws];
 
   if (total.lte(channel[end][prop])) return state; // ignore if past event
 
@@ -120,7 +120,7 @@ function channelUpdateOnchainBalanceStateReducer(
     [end]: {
       ...channel[end],
       [prop]: total,
-      withdrawRequests,
+      pendingWithdraws,
     },
   };
   return { ...state, channels: { ...state.channels, [key]: channel } };
