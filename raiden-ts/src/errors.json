@@ -81,6 +81,10 @@
   "UDC_PLAN_WITHDRAW_GT_ZERO" : "The planned withdraw amount has to be greater than zero.",
   "UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE" : "The planned withdraw amount exceeds the total amount available for withdrawing.",
   "UDC_WITHDRAW_NO_BALANCE" : "There is no balances left to withdraw from UDC.",
-  "UDC_WITHDRAW_FAILED" : "An error occurred while withdrawing from the UDC."
+  "UDC_WITHDRAW_FAILED" : "An error occurred while withdrawing from the UDC.",
+
+  "WITHDRAW_TRANSACTION_FAILED": "Withdraw transaction has failed.",
+  "WITHDRAW_EXPIRES_SOON": "Withdraw request expires soon and can't be sent anymore.",
+  "WITHDRAW_EXPIRED": "Withdraw request expired."
 }
 
