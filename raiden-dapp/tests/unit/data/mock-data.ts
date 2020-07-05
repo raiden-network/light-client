@@ -24,7 +24,7 @@ export class TestData {
     symbol: 'TTT',
   };
 
-  static openChannel: RaidenChannel = {
+  static openChannel = {
     id: 278,
     openBlock: 10582255,
     partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' as Address,
@@ -36,9 +36,9 @@ export class TestData {
     ownDeposit: new BigNumber(10 ** 8),
     balance: Zero,
     capacity: new BigNumber(10 ** 8),
-  };
+  } as RaidenChannel;
 
-  static settlingChannel: RaidenChannel = {
+  static settlingChannel = {
     id: 279,
     openBlock: 10585255,
     partner: '0x82641569b2062B545431cF6D7F0A418582865ba7' as Address,
@@ -50,9 +50,9 @@ export class TestData {
     ownDeposit: new BigNumber(10 ** 8),
     balance: Zero,
     capacity: new BigNumber(10 ** 8),
-  };
+  } as RaidenChannel;
 
-  static settlableChannel: RaidenChannel = {
+  static settlableChannel = {
     id: 280,
     openBlock: 10585255,
     partner: '0x504300C525CbE91Adb3FE0944Fe1f56f5162C75C' as Address,
@@ -64,9 +64,9 @@ export class TestData {
     ownDeposit: new BigNumber(10 ** 8),
     balance: Zero,
     capacity: new BigNumber(10 ** 8),
-  };
+  } as RaidenChannel;
 
-  static closedChannel: RaidenChannel = {
+  static closedChannel = {
     id: 281,
     openBlock: 10585255,
     partner: '0x2046F7341f15D0211ca1EBeFb19d029c4Bc4c4e7' as Address,
@@ -78,7 +78,7 @@ export class TestData {
     ownDeposit: new BigNumber(10 ** 8),
     balance: Zero,
     capacity: new BigNumber(10 ** 8),
-  };
+  } as RaidenChannel;
 
   static mockChannelArray = [
     TestData.openChannel,
