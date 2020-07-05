@@ -691,9 +691,14 @@ const udcAddress = makeAddress();
  *
  * @param wallet - Use this wallet instead of generating a random one
  * @param start - Automatically starts the client if set too true (default)
+ * @param initialState - Initial state
  * @returns Mocked Raiden Epics params
  */
-export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedRaiden> {
+export async function makeRaiden(
+  wallet?: Wallet,
+  start = true,
+  initialState?: RaidenState,
+): Promise<MockedRaiden> {
   const network: Network = { name: 'testnet', chainId: 1337 };
   const { JsonRpcProvider } = jest.requireActual('ethers/providers');
   const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
@@ -787,6 +792,7 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
       ]);
       tokenNetworkContract.functions.openChannel.mockResolvedValue(makeTransaction());
       tokenNetworkContract.functions.setTotalDeposit.mockResolvedValue(makeTransaction());
+      tokenNetworkContract.functions.setTotalWithdraw.mockResolvedValue(makeTransaction());
       tokenNetworkContract.functions.closeChannel.mockResolvedValue(makeTransaction());
       tokenNetworkContract.functions.updateNonClosingBalanceProof.mockResolvedValue(
         makeTransaction(),
@@ -914,10 +920,11 @@ export async function makeRaiden(wallet?: Wallet, start = true): Promise<MockedR
     monitoringServiceContract,
   };
 
-  const initialState = makeInitialState(
-    { network, address, contractsInfo },
-    { blockNumber: provider.blockNumber },
-  );
+  if (!initialState)
+    initialState = makeInitialState(
+      { network, address, contractsInfo },
+      { blockNumber: provider.blockNumber },
+    );
 
   const epicMiddleware = createEpicMiddleware<
     RaidenAction,
