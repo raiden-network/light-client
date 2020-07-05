@@ -14,6 +14,7 @@
 - [#1848] Fix a Metamask error by retry on deposit
 
 ### Added
+- [#249] Add withdraw functionality
 - [#1374] Monitors MonitoringService contract and emit event when MS acts
 - [#1421] Adds support for withdrawing tokens from the UDC
 - [#1642] Check token's allowance before deposit and skip approve
@@ -31,6 +32,7 @@
 - [#1822] Refactor and optimize TokenNetwork events monitoring: one filter per Tokennetwork
 - [#1832] Make Provider events fetching more reliable with Infura
 
+[#249]: https://github.com/raiden-network/light-client/issues/249
 [#837]: https://github.com/raiden-network/light-client/issues/837
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
 [#1421]: https://github.com/raiden-network/light-client/issues/1421
