@@ -13,5 +13,6 @@ export function transformSdkTransferToApiPayment(transfer: RaidenTransfer): ApiP
     identifier: transfer.paymentId.toString(),
     secret: '', // FIXME: must be first exposed by SDK (#1708)
     secret_hash: transfer.secrethash,
+    log_time: transfer.changedAt.toISOString(),
   };
 }

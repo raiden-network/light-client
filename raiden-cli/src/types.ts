@@ -46,4 +46,5 @@ export interface ApiPayment {
   identifier: string;
   secret: string;
   secret_hash: string;
+  log_time: string;
 }
