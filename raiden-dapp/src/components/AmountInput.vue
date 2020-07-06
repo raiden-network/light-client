@@ -10,6 +10,7 @@
       :placeholder="placeholder"
       :error-messages="!hideErrorLabel ? errorMessages : []"
       autocomplete="off"
+      :rules="isAmountValid"
       @input="onInput($event)"
       @paste="onPaste($event)"
     >
@@ -65,9 +66,19 @@ export default class AmountInput extends Vue {
     (this.$refs.input as any).validate();
   }
 
+  @Watch('errorMessages', { immediate: true })
+  updateError() {
+    this.inputError(this.errorMessages[0]);
+  }
+
   @Emit()
   inputError(errorMessage: string) {
     return errorMessage;
+  }
+
+  get isAmountValid() {
+    const isAmountValid = this.amount !== '' && this.errorMessages.length === 0;
+    return [() => isAmountValid || ''];
   }
 
   mounted() {
@@ -82,7 +93,6 @@ export default class AmountInput extends Vue {
     }
 
     this.$emit('input', value);
-    this.inputError(this.errorMessages[0]);
   }
 
   onPaste(event: ClipboardEvent) {
@@ -106,9 +116,6 @@ export default class AmountInput extends Vue {
     this.errorMessages.pop();
 
     switch (false) {
-      case this.noEmptyValue(value):
-        this.errorMessages.push(this.$t('amount-input.error.empty') as string);
-        break;
       case this.noValidInput(value):
         this.errorMessages.push(
           this.$t('amount-input.error.invalid') as string
@@ -137,10 +144,6 @@ export default class AmountInput extends Vue {
           this.amount = value;
         }
     }
-  }
-
-  noEmptyValue(value: string): boolean {
-    return !!value;
   }
 
   noValidInput(value: string): boolean {
