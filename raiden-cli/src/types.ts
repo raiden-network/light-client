@@ -43,7 +43,7 @@ export interface ApiPayment {
   target_address: string;
   token_address: string;
   amount: string;
-  identifier: number;
+  identifier: string;
   secret: string;
   secret_hash: string;
 }
