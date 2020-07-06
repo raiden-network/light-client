@@ -83,6 +83,7 @@ export default class AmountInput extends Vue {
 
   mounted() {
     this.updateIfValid(this.value);
+    this.errorMessages.pop();
   }
 
   onInput(value: string) {

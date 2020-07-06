@@ -115,6 +115,11 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   })
   block!: Array<string>;
 
+  @Watch('errorMessages', { immediate: true })
+  updateError() {
+    this.inputError(this.errorMessages[0]);
+  }
+
   @Emit()
   inputError(errorMessage: string) {
     return errorMessage;
@@ -136,6 +141,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     // as the input being invalid. Since the :rules prop does not support
     // async rules we have to workaround with a reactive prop
     const isAddressValid =
+      this.address !== '' &&
       !this.busy &&
       !this.typing &&
       this.errorMessages.length === 0 &&
@@ -243,7 +249,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           if (!value) {
             if (this.touched) {
               return of<ValidationResult>({
-                error: this.$t('address-input.error.empty') as string,
+                error: '',
                 value: ''
               });
             }
@@ -269,7 +275,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
         if (error) {
           this.errorMessages.push(error);
-          this.inputError(this.errorMessages[0]);
         } else {
           this.address = value;
         }
