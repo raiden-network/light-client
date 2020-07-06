@@ -89,8 +89,12 @@ function retryAsync$<T>(
   stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
 ): Observable<T> {
   return defer(func).pipe(
-    retryWhen((err$) =>
-      err$.pipe(mergeMap((err, i) => (stopPredicate(err, i) ? throwError(err) : timer(interval)))),
+    retryWhen((error$) =>
+      error$.pipe(
+        mergeMap((error, count) =>
+          stopPredicate(error, count) ? throwError(error) : timer(interval),
+        ),
+      ),
     ),
   );
 }
@@ -617,7 +621,8 @@ const makeDeposit$ = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function stopRetryIfRejected(err: any, count: number) {
     // 4001 is Metamask's code for rejected/denied signature prompt
-    return count >= 10 || err?.code === 4001;
+    const metamaskRejectedErrorCode = 4001;
+    return count >= 10 || err?.code === metamaskRejectedErrorCode;
   }
 
   return defer(() => tokenContract.functions.allowance(sender, tokenNetworkContract.address)).pipe(

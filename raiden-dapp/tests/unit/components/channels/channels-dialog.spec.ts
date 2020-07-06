@@ -108,7 +108,6 @@ describe('ChannelDialogs.vue', () => {
       expect(messageEvent).toBeTruthy();
       const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.deposit.failure');
-      expect(wrapper.emitted('dismiss')).toBeUndefined();
     });
   });
 
