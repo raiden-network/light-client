@@ -762,13 +762,6 @@ describe('Raiden', () => {
       ).rejects.toThrowError(/Invalid path parameter./i);
     });
 
-    test('target not available', async () => {
-      expect.assertions(1);
-      await expect(raiden.transfer(token, partner, 21)).rejects.toThrowError(
-        ErrorCodes.PFS_TARGET_OFFLINE,
-      );
-    });
-
     describe('partner online', () => {
       // partner's client instance
       let raiden1: Raiden;

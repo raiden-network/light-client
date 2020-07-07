@@ -39,13 +39,14 @@ import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils
 import { ChannelState, Channel } from '../channels/state';
 import { assertTx, channelAmounts, groupChannel$ } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
-import { isActionOf } from '../utils/actions';
+import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { getEventsStream } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { pluckDistinct } from '../utils/rx';
 import { Capabilities } from '../constants';
 import { getContractWithSigner } from '../helpers';
+import { matrixPresence } from '../transport/actions';
 
 import {
   iouClear,
@@ -172,16 +173,37 @@ export const pathFindServiceEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<pathFind.success | pathFind.failure | iouPersist | iouClear> => {
+): Observable<
+  matrixPresence.request | pathFind.success | pathFind.failure | iouPersist | iouClear
+> => {
   return action$.pipe(
     filter(isActionOf(pathFind.request)),
     concatMap((action) =>
       deps.latest$.pipe(
         first(),
-        mergeMap((latest) => getRoute$(action, deps, latest)),
-        withLatestFrom(deps.latest$),
-        mergeMap(([route, latest]) => validateRoute$(action, deps, route, latest)),
-        catchError((err) => of(pathFind.failure(err, action.meta))),
+        mergeMap((latest) => {
+          const { target } = action.meta;
+          let presenceRequest: Observable<matrixPresence.request>;
+          let latestWithTargetInPresences: Observable<Latest>;
+
+          if (target in latest.presences) {
+            presenceRequest = EMPTY;
+            latestWithTargetInPresences = of(latest);
+          } else {
+            presenceRequest = of(matrixPresence.request(undefined, { address: target }));
+            latestWithTargetInPresences = waitForMatrixPresenceResponse$(action$, deps, target);
+          }
+
+          return merge(
+            latestWithTargetInPresences.pipe(
+              mergeMap((latest) => getRoute$(action, deps, latest)),
+              withLatestFrom(deps.latest$),
+              mergeMap(([route, latest]) => validateRoute$(action, deps, route, latest)),
+              catchError((err) => of(pathFind.failure(err, action.meta))),
+            ),
+            presenceRequest,
+          );
+        }),
       ),
     ),
   );
@@ -728,6 +750,26 @@ export const msMonitorNewBPEpic = (
   );
 };
 
+function waitForMatrixPresenceResponse$(
+  action$: Observable<RaidenAction>,
+  deps: RaidenEpicDeps,
+  target: Address,
+): Observable<Latest> {
+  return action$.pipe(
+    filter(
+      isResponseOf<typeof matrixPresence>(matrixPresence, { address: target }),
+    ),
+    take(1),
+    mergeMap((matrixPresenceResponse) => {
+      if (matrixPresence.success.is(matrixPresenceResponse)) {
+        return deps.latest$.pipe(first(({ presences }) => target in presences));
+      } else {
+        throw matrixPresenceResponse.payload;
+      }
+    }),
+  );
+}
+
 function getRoute$(
   action: pathFind.request,
   deps: RaidenEpicDeps,
@@ -735,9 +777,12 @@ function getRoute$(
 ): Observable<{ paths?: Paths; iou: Signed<IOU> | undefined; error?: PathError }> {
   validateRouteTargetAndEventuallyThrow(action, latest);
 
+  const { tokenNetwork, target, value } = action.meta;
+  const { state, presences } = latest;
+
   if (action.payload.paths) {
     return of({ paths: action.payload.paths, iou: undefined });
-  } else if (directTransferIsPossible(action, latest)) {
+  } else if (channelCanRoute(state, presences, tokenNetwork, target, target, value) === true) {
     return of({
       paths: [{ path: [deps.address, action.meta.target], fee: Zero as Int<32> }],
       iou: undefined,
@@ -802,7 +847,7 @@ function validateRouteTargetAndEventuallyThrow(action: pathFind.request, latest:
   if (!Object.values(state.tokens).includes(tokenNetwork))
     throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, { tokenNetwork });
 
-  if (!(target in presences) || !presences[target].payload.available)
+  if (!presences[target].payload.available)
     throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, { target });
 
   if (presences[target].payload.caps?.[Capabilities.NO_RECEIVE])
@@ -825,15 +870,7 @@ function getRouteFromPfs$(
   return getPsfInfo$(action.payload.pfs, latest.config.pfs, deps).pipe(
     mergeMap((pfs) => getIouForPfs(pfs, tokenNetwork, deps)),
     mergeMap(({ pfs, iou }) =>
-      requestPfs$(
-        pfs,
-        iou,
-        tokenNetwork,
-        deps.address,
-        target,
-        UInt(32).encode(value),
-        latest.config.httpTimeout,
-      ),
+      requestPfs$(pfs, iou, tokenNetwork, deps.address, target, value, latest.config.httpTimeout),
     ),
     map(({ pfsResponse, responseText, iou }) =>
       parsePfsResponse(pfsResponse, responseText, iou, latest.config.pfsSafetyMargin),
@@ -860,7 +897,19 @@ function filterPaths(
 
       if (invalidatedRecipients.has(recipient)) continue;
       if (filteredPaths.length === 0) {
-        shouldSelectPath = directTransferIsPossible(action, latest, recipient);
+        const { tokenNetwork, target, value } = action.meta;
+        const { state, presences } = latest;
+        const channelCanRoutePossible = channelCanRoute(
+          state,
+          presences,
+          tokenNetwork,
+          recipient,
+          target,
+          value,
+        );
+        shouldSelectPath = channelCanRoutePossible === true;
+        reasonToNotSelect =
+          typeof channelCanRoutePossible === 'string' ? channelCanRoutePossible : '';
       } else if (recipient !== filteredPaths[0].path[0]) {
         reasonToNotSelect = 'path: already selected another recipient';
       } else if (fee.gt(filteredPaths[0].fee)) {
@@ -918,13 +967,13 @@ function requestPfs$(
   tokenNetwork: Address,
   address: Address,
   target: Address,
-  value: string,
+  value: UInt<32>,
   httpTimeout: number,
 ): Observable<{ pfsResponse: Response; responseText: string; iou: Signed<IOU> | undefined }> {
   const body = losslessStringify({
     from: address,
     to: target,
-    value: value,
+    value: UInt(32).encode(value),
     max_paths: 10,
     iou: iou
       ? {
@@ -942,8 +991,7 @@ function requestPfs$(
     body,
   }).pipe(
     timeout(httpTimeout),
-    map((pfsResponse) => ({ pfsResponse, iou })),
-    mergeMap(async ({ pfsResponse, iou }) => ({
+    mergeMap(async (pfsResponse) => ({
       pfsResponse,
       responseText: await pfsResponse.text(),
       iou,
@@ -971,18 +1019,6 @@ function parsePfsResponse(
     });
     return { paths, iou };
   }
-}
-
-function directTransferIsPossible(
-  action: pathFind.request,
-  latest: Latest,
-  recipient?: Address,
-): boolean {
-  const { tokenNetwork, target, value } = action.meta;
-  const { state, presences } = latest;
-  return (
-    channelCanRoute(state, presences, tokenNetwork, recipient ?? target, target, value) === true
-  );
 }
 
 function shouldPersistIou(route: Route): boolean {

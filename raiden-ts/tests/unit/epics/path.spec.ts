@@ -206,6 +206,19 @@ describe('PFS: pathFindServiceEpic', () => {
     );
   });
 
+  test('success request missing matrix presence of target', async () => {
+    expect.assertions(1);
+
+    const value = bigNumberify(100) as UInt<32>;
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+    action$.next(pathFind.request({}, { tokenNetwork, target, value }));
+    setTimeout(() => action$.complete(), 50);
+
+    await expect(promise).resolves.toMatchObject([
+      matrixPresence.request(undefined, { address: target }),
+    ]);
+  });
+
   test('success provided route', async () => {
     expect.assertions(1);
 
