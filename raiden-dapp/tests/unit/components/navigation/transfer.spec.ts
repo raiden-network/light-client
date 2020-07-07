@@ -50,7 +50,7 @@ describe('Transfer.vue', () => {
     const options = {
       vuetify,
       store,
-      stubs: ['router-link', 'v-dialog'],
+      stubs: ['router-link', 'v-dialog', 'v-menu'],
       mocks: {
         $router: router,
         $route: TestData.mockRoute({
@@ -179,11 +179,10 @@ describe('Transfer.vue', () => {
   });
 
   test('navigates to the "ChannelList" when the user presses the channel button', async () => {
-    // click on channels button
+    wrapper.find('button').trigger('click');
+    await wrapper.vm.$nextTick();
     wrapper
-      .find('.transfer__actions')
-      .findAll('.action-button__button')
-      .at(0)
+      .find('.transfer__menus__items__channels-deposit--channels')
       .trigger('click');
 
     expect(router.push).toHaveBeenCalledTimes(1);
@@ -195,11 +194,9 @@ describe('Transfer.vue', () => {
   });
 
   test('show the "TokenOverlay" when the user presses the token networks dropdown', async () => {
-    // click on channels button
     wrapper
-      .find('.transfer__actions')
-      .findAll('.action-button__button')
-      .at(1)
+      .findAll('.v-icon')
+      .at(0)
       .trigger('click');
 
     await flushPromises();
