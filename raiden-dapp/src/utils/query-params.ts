@@ -1,7 +1,7 @@
 import AddressUtils from '@/utils/address-utils';
 
 export function getAmount(queryParam: any): string {
-  let amount = '0.00';
+  let amount = '';
 
   if (queryParam && typeof queryParam === 'string') {
     if (/^\d*[.]?\d*$/.test(queryParam)) {

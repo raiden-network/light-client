@@ -96,7 +96,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   @Prop({ required: false, default: false, type: Boolean })
   hideErrorLabel!: boolean;
-  @Prop({})
+  @Prop()
   disabled!: boolean;
   @Prop({ required: true })
   value!: string;
@@ -115,14 +115,14 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   })
   block!: Array<string>;
 
-  @Watch('errorMessages', { immediate: true })
-  updateError() {
-    this.inputError(this.errorMessages[0]);
-  }
-
   @Emit()
   inputError(errorMessage: string) {
     return errorMessage;
+  }
+
+  @Watch('errorMessages', { immediate: true })
+  updateError() {
+    this.inputError(this.errorMessages[0]);
   }
 
   address: string = '';

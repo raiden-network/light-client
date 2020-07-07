@@ -10,7 +10,7 @@
       :placeholder="placeholder"
       :error-messages="!hideErrorLabel ? errorMessages : []"
       autocomplete="off"
-      :rules="isAmountValid"
+      :rules="amountValidationRules"
       @input="onInput($event)"
       @paste="onPaste($event)"
     >
@@ -52,13 +52,16 @@ export default class AmountInput extends Vue {
   errorMessages: string[] = [];
   numericRegEx = /^\d*[.]?\d*$/;
 
+  @Watch('amount')
+  testFunction(value: string) {
+    console.log(`amount ${value}`);
+  }
+
   @Watch('value', { immediate: true })
   onChange(value: string | undefined) {
-    if (value === undefined) {
-      return;
+    if (value) {
+      this.updateIfValid(value);
     }
-
-    this.updateIfValid(value);
   }
 
   @Watch('token')
@@ -76,14 +79,9 @@ export default class AmountInput extends Vue {
     return errorMessage;
   }
 
-  get isAmountValid() {
-    const isAmountValid = this.amount !== '' && this.errorMessages.length === 0;
-    return [() => isAmountValid || ''];
-  }
-
-  mounted() {
-    this.updateIfValid(this.value);
-    this.errorMessages.pop();
+  get amountValidationRules() {
+    const isAmountValid = this.amount && this.errorMessages.length === 0;
+    return [() => isAmountValid];
   }
 
   onInput(value: string) {
@@ -114,47 +112,49 @@ export default class AmountInput extends Vue {
   }
 
   updateIfValid(value: string) {
-    this.errorMessages.pop();
+    this.errorMessages = [];
 
-    switch (false) {
-      case this.noValidInput(value):
-        this.errorMessages.push(
-          this.$t('amount-input.error.invalid') as string
-        );
-        break;
-      case this.noDecimalOverflow(value):
-        this.errorMessages.push(
-          this.$t('amount-input.error.too-many-decimals', {
-            decimals: this.token!.decimals
-          }) as string
-        );
-        break;
-      case this.parsedAmount(value):
-        this.errorMessages.push(this.$t('amount-input.error.zero') as string);
-        break;
-      case this.hasEnoughBalance(value, this.max):
-        this.errorMessages.push(
-          this.$t('amount-input.error.not-enough-funds', {
-            funds: BalanceUtils.toUnits(this.max, this.token!.decimals ?? 18),
-            symbol: this.token!.symbol
-          }) as string
-        );
-        break;
-      default:
-        if (value !== this.amount && !Number.isNaN(Number(value))) {
-          this.amount = value;
-        }
+    if (this.noValidInput(value)) {
+      this.errorMessages.push(this.$t('amount-input.error.invalid') as string);
+      return;
+    }
+
+    if (this.decimalOverflow(value)) {
+      this.errorMessages.push(
+        this.$t('amount-input.error.too-many-decimals', {
+          decimals: this.token!.decimals
+        }) as string
+      );
+      return;
+    }
+
+    if (!this.parsedAmount(value)) {
+      this.errorMessages.push(this.$t('amount-input.error.zero') as string);
+      return;
+    }
+
+    if (!this.hasEnoughBalance(value, this.max)) {
+      this.errorMessages.push(
+        this.$t('amount-input.error.not-enough-funds', {
+          funds: BalanceUtils.toUnits(this.max, this.token!.decimals ?? 18),
+          symbol: this.token!.symbol
+        }) as string
+      );
+      return;
+    }
+
+    if (value !== this.amount && !Number.isNaN(Number(value))) {
+      this.amount = value;
     }
   }
 
   noValidInput(value: string): boolean {
-    return !Number.isNaN(Number(value));
+    return Number.isNaN(Number(value));
   }
 
-  noDecimalOverflow(value: string): boolean {
+  decimalOverflow(value: string): boolean {
     const validDecimalsCount =
-      value &&
-      !BalanceUtils.decimalsOverflow(value, this.token!.decimals ?? 18);
+      value && BalanceUtils.decimalsOverflow(value, this.token!.decimals ?? 18);
 
     return !this.limit || validDecimalsCount;
   }
