@@ -232,7 +232,7 @@ export namespace withdraw {
 export const withdrawMessage = createAsyncAction(
   WithdrawId,
   'withdraw/message/request',
-  'withdraw/message/confirmation',
+  'withdraw/message/success',
   'withdraw/message/failure',
   t.type({ message: Signed(WithdrawRequest) }),
   t.type({ message: Signed(WithdrawConfirmation) }),
@@ -264,9 +264,5 @@ export namespace withdrawExpire {
   export interface failure extends ActionType<typeof withdrawExpire.failure> {}
 }
 
-export const withdrawExpireProcessed = createAction(
-  'withdraw/expire/processed',
-  t.type({ message: Signed(Processed) }),
-  WithdrawId,
-);
-export interface withdrawExpireProcessed extends ActionType<typeof withdrawExpireProcessed> {}
+export const withdrawCompleted = createAction('withdraw/completed', t.undefined, WithdrawId);
+export interface withdrawCompleted extends ActionType<typeof withdrawCompleted> {}

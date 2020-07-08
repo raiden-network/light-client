@@ -21,7 +21,7 @@ import {
   transferSecretRegister,
   withdrawMessage,
   withdrawExpire,
-  withdrawExpireProcessed,
+  withdrawCompleted,
 } from './actions';
 
 const END = { [Direction.SENT]: 'own', [Direction.RECEIVED]: 'partner' } as const;
@@ -230,42 +230,46 @@ function withdrawReducer(
 ): RaidenState {
   const message = action.payload.message;
   const key = channelKey(action.meta);
-  // if it's a confirmation, it goes on requestee's side, else, on requester's
-  const end =
+  let channel = state.channels[key];
+
+  // messages always update sender's nonce, i.e. requestee's for confirmations, else requester's
+  const senderEnd =
     (action.meta.direction === Direction.RECEIVED) !== withdrawMessage.success.is(action)
       ? 'partner'
       : 'own';
-  let channel = state.channels[key];
   // nonce must be next, otherwise already processed message, skip
-  if (channel?.state !== ChannelState.open || !message.nonce.eq(channel[end].nextNonce))
+  if (channel?.state !== ChannelState.open || !message.nonce.eq(channel[senderEnd].nextNonce))
     return state;
-
-  let pendingWithdraws = channel[end].pendingWithdraws;
-  // append requests and expires to channel end state's pendingWithdraws array,
-  // to be cleared by expires's Processed or by channel/withdraw event
-  if (!withdrawMessage.success.is(action))
-    pendingWithdraws = [...channel[end].pendingWithdraws, action.payload.message];
-
-  // confirmations and expirations don't mutate pending requests array, only nextNonce;
-  // expiration is handled and pending request cleared on expiration block confirmation
   channel = {
     ...channel,
-    [end]: {
-      ...channel[end],
-      pendingWithdraws,
-      nextNonce: channel[end].nextNonce.add(1) as UInt<8>, // no BP, but increment nextNonce
+    [senderEnd]: {
+      ...channel[senderEnd],
+      nextNonce: channel[senderEnd].nextNonce.add(1) as UInt<8>, // no BP, but increment nextNonce
     },
   };
+
+  // all messages are stored in 'pendingWithdraws' array on requester's/withdrawer's side
+  const withdrawerEnd = action.meta.direction === Direction.RECEIVED ? 'partner' : 'own';
+  const pendingWithdraws = [...channel[withdrawerEnd].pendingWithdraws, action.payload.message];
+  // senderEnd == withdrawerEnd for request & expiration, and the other for confirmation
+  channel = {
+    ...channel,
+    [withdrawerEnd]: {
+      ...channel[withdrawerEnd],
+      pendingWithdraws,
+    },
+  };
+
   return { ...state, channels: { ...state.channels, [key]: channel } };
 }
 
-function withdrawExpiredReducer(state: RaidenState, action: withdrawExpireProcessed): RaidenState {
+function withdrawCompletedReducer(state: RaidenState, action: withdrawCompleted): RaidenState {
   const key = channelKey(action.meta);
-  const end = action.meta.direction === Direction.RECEIVED ? 'partner' : 'own';
   let channel = state.channels[key];
   if (channel?.state !== ChannelState.open) return state;
 
-  // filters out both WithdrawRequest & WithdrawExpired messages matching meta
+  const end = action.meta.direction === Direction.RECEIVED ? 'partner' : 'own';
+  // filters out all withdraw messages matching meta
   const pendingWithdraws = channel[end].pendingWithdraws.filter(
     (req) =>
       !req.expiration.eq(action.meta.expiration) ||
@@ -301,5 +305,5 @@ const transfersReducer: Reducer<RaidenState, RaidenAction> = createReducer(initi
     [withdrawMessage.request, withdrawMessage.success, withdrawExpire.success],
     withdrawReducer,
   )
-  .handle(withdrawExpireProcessed, withdrawExpiredReducer);
+  .handle(withdrawCompleted, withdrawCompletedReducer);
 export default transfersReducer;

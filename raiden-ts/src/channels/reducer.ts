@@ -109,7 +109,7 @@ function channelUpdateOnchainBalanceStateReducer(
         action.payload.totalWithdraw,
         channel[end].pendingWithdraws.filter((req) =>
           req.total_withdraw.gt(action.payload.totalWithdraw),
-        ), // on-chain withdraw clears <= WithdrawRequests, including the confirmed one
+        ), // on-chain withdraw clears <= withdraw messages, including the confirmed one
       ]
     : ['deposit' as const, action.payload.totalDeposit, channel[end].pendingWithdraws];
 

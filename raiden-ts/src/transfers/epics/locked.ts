@@ -43,7 +43,7 @@ import { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { LruCache } from '../../utils/lru';
 import { pluckDistinct } from '../../utils/rx';
-import { Hash, Signed, UInt, Int } from '../../utils/types';
+import { Hash, Signed, UInt, Int, Address } from '../../utils/types';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Capabilities } from '../../constants';
 import {
@@ -59,10 +59,11 @@ import {
   withdraw,
   withdrawMessage,
   withdrawExpire,
-  withdrawExpireProcessed,
+  withdrawCompleted,
 } from '../actions';
 import { getLocksroot, makeMessageId, getSecrethash } from '../utils';
 import { Direction } from '../state';
+import { matchWithdraw } from './utils';
 
 // calculate locks array for channel end without lock with given secrethash
 function withoutLock(end: ChannelEnd, secrethash: Hash) {
@@ -74,6 +75,21 @@ function withoutLock(end: ChannelEnd, secrethash: Hash) {
 // calculate locked amount for a given locks array
 function totalLocked(locks: readonly Lock[]) {
   return locks.reduce((acc, { amount }) => acc.add(amount), Zero) as UInt<32>;
+}
+
+// gets and asserts channel is open and optionally matches chain_id and channel_identifier
+function getOpenChannel(
+  state: RaidenState,
+  key: { tokenNetwork: Address; partner: Address },
+  matches?: { chain_id: UInt<32>; channel_identifier: UInt<32> },
+) {
+  const channel = state.channels[channelKey(key)];
+  assert(channel?.state === ChannelState.open, 'channel not open');
+  if (matches) {
+    assert(matches.chain_id.eq(state.chainId), 'chainId mismatch');
+    assert(matches.channel_identifier.eq(channel.id), 'channelId mismatch');
+  }
+  return channel;
 }
 
 /**
@@ -110,11 +126,8 @@ function makeAndSignTransfer$(
   const fee = action.payload.paths[0].fee;
   const partner = action.payload.paths[0].path[0];
 
-  const channel =
-    state.channels[channelKey({ tokenNetwork: action.payload.tokenNetwork, partner })];
-  // check below shouldn't fail because of route validation in pathFindServiceEpic
-  // used here mostly for type narrowing on channel union
-  assert(channel?.state === ChannelState.open, 'not open');
+  const tokenNetwork = action.payload.tokenNetwork;
+  const channel = getOpenChannel(state, { tokenNetwork, partner });
   assert(
     !action.payload.expiration || action.payload.expiration >= state.blockNumber + revealTimeout,
     'expiration too soon',
@@ -216,11 +229,9 @@ function makeAndSignUnlock$(
   const secrethash = action.meta.secrethash;
   assert(secrethash in state.sent, 'unknown transfer');
   const locked = state.sent[secrethash].transfer[1];
+  const tokenNetwork = locked.token_network_address;
   const partner = state.sent[secrethash].partner;
-  const channel =
-    state.channels[channelKey({ tokenNetwork: locked.token_network_address, partner })];
-  // shouldn't happen
-  assert(channel?.state === ChannelState.open, 'channel not open');
+  const channel = getOpenChannel(state, { tokenNetwork, partner });
 
   let signed$: Observable<Signed<Unlock>>;
   if (state.sent[secrethash].unlock) {
@@ -317,11 +328,9 @@ function makeAndSignLockExpired$(
   const secrethash = action.meta.secrethash;
   assert(secrethash in state.sent, 'unknown transfer');
   const locked = state.sent[secrethash].transfer[1];
+  const tokenNetwork = locked.token_network_address;
   const partner = state.sent[secrethash].partner;
-  const channel =
-    state.channels[channelKey({ tokenNetwork: locked.token_network_address, partner })];
-
-  assert(channel?.state === ChannelState.open, 'channel not open');
+  const channel = getOpenChannel(state, { tokenNetwork, partner });
 
   let signed$: Observable<Signed<LockExpired>>;
   if (state.sent[secrethash].lockExpired) {
@@ -383,7 +392,7 @@ function sendTransferExpired(
 function receiveTransferSigned(
   state$: Observable<RaidenState>,
   action: messageReceivedTyped<Signed<LockedTransfer>>,
-  { address, log, network, signer, config$ }: RaidenEpicDeps,
+  { address, log, signer, config$ }: RaidenEpicDeps,
 ): Observable<
   | transferSigned
   | transfer.failure
@@ -415,10 +424,7 @@ function receiveTransferSigned(
       // full balance proof validation
       const tokenNetwork = transfer.token_network_address;
       const partner = action.meta.address;
-      const channel = state.channels[channelKey({ tokenNetwork, partner })];
-      assert(channel?.state === ChannelState.open, 'channel not open');
-      assert(transfer.chain_id.eq(network.chainId), 'chainId mismatch');
-      assert(transfer.channel_identifier.eq(channel.id), 'channelId mismatch');
+      const channel = getOpenChannel(state, { tokenNetwork, partner }, transfer);
       assert(transfer.nonce.eq(channel.partner.nextNonce), 'nonce mismatch');
 
       const locks = [...channel.partner.locks, transfer.lock];
@@ -500,7 +506,7 @@ function receiveTransferSigned(
 function receiveTransferUnlocked(
   state$: Observable<RaidenState>,
   action: messageReceivedTyped<Signed<Unlock>>,
-  { log, network, signer }: RaidenEpicDeps,
+  { log, signer }: RaidenEpicDeps,
 ) {
   const secrethash = getSecrethash(action.payload.message.secret);
   const meta = { secrethash, direction: Direction.RECEIVED };
@@ -531,10 +537,7 @@ function receiveTransferUnlocked(
 
       // unlock validation
       const tokenNetwork = unlock.token_network_address;
-      const channel = state.channels[channelKey({ tokenNetwork, partner })];
-      assert(channel?.state === ChannelState.open, 'channel not open');
-      assert(unlock.chain_id.eq(network.chainId), 'chainId mismatch');
-      assert(unlock.channel_identifier.eq(channel.id), 'channelId mismatch');
+      const channel = getOpenChannel(state, { tokenNetwork, partner }, unlock);
       assert(unlock.nonce.eq(channel.partner.nextNonce), 'nonce mismatch');
 
       const amount = locked.lock.amount;
@@ -575,7 +578,7 @@ function receiveTransferUnlocked(
 function receiveTransferExpired(
   state$: Observable<RaidenState>,
   action: messageReceivedTyped<Signed<LockExpired>>,
-  { log, network, signer, config$ }: RaidenEpicDeps,
+  { log, signer, config$ }: RaidenEpicDeps,
 ) {
   const secrethash = action.payload.message.secrethash;
   const meta = { secrethash, direction: Direction.RECEIVED };
@@ -612,10 +615,7 @@ function receiveTransferExpired(
       assert(expired.token_network_address === locked.token_network_address, 'wrong tokenNetwork');
 
       const tokenNetwork = expired.token_network_address;
-      const channel = state.channels[channelKey({ tokenNetwork, partner })];
-      assert(channel?.state === ChannelState.open, 'channel not open');
-      assert(expired.chain_id.eq(network.chainId), 'chainId mismatch');
-      assert(expired.channel_identifier.eq(channel.id), 'channelId mismatch');
+      const channel = getOpenChannel(state, { tokenNetwork, partner }, expired);
       assert(expired.nonce.eq(channel.partner.nextNonce), 'nonce mismatch');
 
       const locks = withoutLock(channel.partner, secrethash);
@@ -663,38 +663,38 @@ function receiveTransferExpired(
  * @param deps.signer - Signer instance
  * @param deps.network - Current Network
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of withdrawMessage.request|withdraw.failure actions
  */
 function sendWithdrawRequest(
   state$: Observable<RaidenState>,
   action: withdraw.request,
-  { log, address, signer, network, config$ }: RaidenEpicDeps,
+  { log, address, signer, network, config$, latest$ }: RaidenEpicDeps,
 ): Observable<withdrawMessage.request | withdraw.failure> {
   if (action.meta.direction !== Direction.SENT) return EMPTY;
-  return combineLatest([state$, config$]).pipe(
+  return combineLatest([state$, config$, latest$]).pipe(
     first(),
-    mergeMap(([state, { revealTimeout }]) => {
-      const channel = state.channels[channelKey(action.meta)];
-      assert(channel?.state === ChannelState.open, 'channel not open');
+    mergeMap(([state, { revealTimeout }, { presences }]) => {
+      const channel = getOpenChannel(state, action.meta);
       if (
-        channel.own.pendingWithdraws.some(
-          (req) =>
-            req.total_withdraw.eq(action.meta.totalWithdraw) &&
-            req.expiration.eq(action.meta.expiration),
-        )
+        channel.own.pendingWithdraws.some(matchWithdraw(MessageType.WITHDRAW_REQUEST, action.meta))
       )
-        return EMPTY; // already requested, skip but don't fail
+        return EMPTY; // already requested, skip without failing
+      assert(
+        presences[action.meta.partner]?.payload?.available,
+        ErrorCodes.CNL_WITHDRAW_PARTNER_OFFLINE,
+      );
       assert(
         action.meta.expiration >= state.blockNumber + revealTimeout,
-        'expired or expires too soon',
+        ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
       );
       assert(
         action.meta.totalWithdraw.gt(channel.own.withdraw),
-        'withdraw lower than previous totalWithdraw',
+        ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_LOW,
       );
       assert(
         action.meta.totalWithdraw.lte(channelAmounts(channel).ownTotalWithdrawable),
-        'not enough capacity',
+        ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_HIGH,
       );
       const request: WithdrawRequest = {
         type: MessageType.WITHDRAW_REQUEST,
@@ -732,7 +732,7 @@ function receiveWithdrawConfirmation(
   const confirmation = action.payload.message;
   const tokenNetwork = confirmation.token_network_address;
   const partner = action.meta.address;
-  const meta = {
+  const withdrawMeta = {
     direction: Direction.SENT, // received confirmation is for sent withdraw request
     tokenNetwork,
     partner,
@@ -742,17 +742,13 @@ function receiveWithdrawConfirmation(
   return state$.pipe(
     first(),
     map((state) => {
-      const channel = state.channels[channelKey({ tokenNetwork, partner })];
-      assert(channel?.state === ChannelState.open, 'channel not open');
-
+      getOpenChannel(state, { tokenNetwork, partner }, confirmation);
       assert(confirmation.participant === address, 'participant mismatch');
-      assert(confirmation.chain_id.eq(state.chainId), 'chainId mismatch');
-      assert(confirmation.channel_identifier.eq(channel.id), 'channelId mismatch');
 
-      // don't validate req here, to always update nonce, but do on tx send
-      return withdrawMessage.success({ message: confirmation }, meta);
+      // don't validate request presence here, to always update nonce, but do on tx send
+      return withdrawMessage.success({ message: confirmation }, withdrawMeta);
     }),
-    catchError((err) => of(withdrawMessage.failure(err, meta))),
+    catchError((err) => of(withdrawMessage.failure(err, withdrawMeta))),
   );
 }
 
@@ -777,27 +773,20 @@ function sendWithdrawExpired(
   return combineLatest([state$, config$]).pipe(
     first(),
     mergeMap(([state, { confirmationBlocks }]) => {
-      const channel = state.channels[channelKey(action.meta)];
-      assert(channel?.state === ChannelState.open, 'channel not open');
+      const channel = getOpenChannel(state, action.meta);
 
       assert(
         !channel.own.pendingWithdraws.some(
-          (exp) =>
-            exp.type === MessageType.WITHDRAW_EXPIRED &&
-            exp.total_withdraw.eq(action.meta.totalWithdraw) &&
-            exp.expiration.eq(action.meta.expiration),
+          matchWithdraw(MessageType.WITHDRAW_EXPIRED, action.meta),
         ),
         'already expired',
       );
 
       const req = channel.own.pendingWithdraws.find(
-        (req) =>
-          req.type === MessageType.WITHDRAW_REQUEST &&
-          req.total_withdraw.eq(action.meta.totalWithdraw) &&
-          req.expiration.eq(action.meta.expiration),
+        matchWithdraw(MessageType.WITHDRAW_REQUEST, action.meta),
       );
       assert(req, 'no matching WithdrawRequest found, maybe already confirmed');
-      assert(state.blockNumber > action.meta.expiration + confirmationBlocks, 'not yet expired');
+      assert(state.blockNumber >= action.meta.expiration + confirmationBlocks, 'not yet expired');
 
       const expired: WithdrawExpired = {
         type: MessageType.WITHDRAW_EXPIRED,
@@ -813,7 +802,7 @@ function sendWithdrawExpired(
       return from(signMessage(signer, expired, { log })).pipe(
         mergeMap(function* (message) {
           yield withdrawExpire.success({ message }, action.meta);
-          yield withdraw.failure(new RaidenError(ErrorCodes.WITHDRAW_EXPIRED), action.meta);
+          yield withdraw.failure(new RaidenError(ErrorCodes.CNL_WITHDRAW_EXPIRED), action.meta);
         }),
       );
     }),
@@ -837,21 +826,19 @@ function sendWithdrawExpired(
  * @param signer - RaidenEpicDeps members
  * @param signer.signer - Signer instance
  * @param signer.log - Logger instance
- * @param cache - A Map to store and reuse previously Signed<WithdrawConfirmation>
  * @returns Observable of transferExpire.success|transferExpire.failure actions
  */
 function receiveWithdrawRequest(
   state$: Observable<RaidenState>,
   action: messageReceivedTyped<Signed<WithdrawRequest>>,
   { signer, log }: RaidenEpicDeps,
-  cache: LruCache<string, Signed<WithdrawConfirmation>>,
 ): Observable<
   withdrawMessage.request | withdrawMessage.success | withdrawMessage.failure | messageSend.request
 > {
   const request = action.payload.message;
   const tokenNetwork = request.token_network_address;
   const partner = request.participant;
-  const meta = {
+  const withdrawMeta = {
     direction: Direction.RECEIVED,
     tokenNetwork,
     partner,
@@ -863,72 +850,55 @@ function receiveWithdrawRequest(
     first(),
     mergeMap((state) => {
       assert(request.participant === action.meta.address, 'participant mismatch');
-      const channel = state.channels[channelKey({ tokenNetwork, partner })];
+      const channel = getOpenChannel(state, { tokenNetwork, partner }, request);
 
-      assert(channel?.state === ChannelState.open, 'channel not open');
-      assert(request.chain_id.eq(state.chainId), 'chainId mismatch');
-      assert(request.channel_identifier.eq(channel.id), 'channelId mismatch');
-
-      let confirmation$: Observable<Signed<WithdrawConfirmation>> = EMPTY;
-      const cacheKey = `${channelUniqueKey(channel)}+${request.message_identifier.toString()}`;
-      const cached = cache.get(cacheKey);
-      // no need to deep match, if partner causes a message_identifier conflict, at most they'd get a
-      // cached message they already got in the past, due to channelUniqueKey in cache key
-      if (cached) {
-        confirmation$ = of(cached);
+      let confirmation$: Observable<Signed<WithdrawConfirmation>>;
+      const persistedConfirmation = channel.partner.pendingWithdraws.find(
+        matchWithdraw(MessageType.WITHDRAW_CONFIRMATION, request),
+      );
+      if (persistedConfirmation) {
+        confirmation$ = of(persistedConfirmation);
       } else {
-        // assert nonce and totalWithdraw only if not cached
         assert(request.nonce.eq(channel.partner.nextNonce), 'nonce mismatch');
         assert(
-          // as it's a total, we don't need to care for pending withdraws
           request.total_withdraw.lte(channelAmounts(channel).partnerTotalWithdrawable),
           'invalid total_withdraw',
         );
 
-        if (state.blockNumber < meta.expiration) {
-          // expired request isn't fatal, we still accept the request state change, but don't sign
-          // WithdrawConfirmation and wait for it to expire
-          const confirmation: WithdrawConfirmation = {
-            type: MessageType.WITHDRAW_CONFIRMATION,
-            message_identifier: request.message_identifier,
-            chain_id: request.chain_id,
-            token_network_address: request.token_network_address,
-            channel_identifier: request.channel_identifier,
-            participant: request.participant,
-            total_withdraw: request.total_withdraw,
-            nonce: channel.own.nextNonce,
-            expiration: request.expiration,
-          };
-          confirmation$ = from(signMessage(signer, confirmation, { log })).pipe(
-            tap((signed) => cache.put(cacheKey, signed)),
-          );
-        }
+        // don't mind expiration, and always reply with confirmation
+        // expired confirmations are useless on-chain, but confirms message
+        const confirmation: WithdrawConfirmation = {
+          type: MessageType.WITHDRAW_CONFIRMATION,
+          message_identifier: request.message_identifier,
+          chain_id: request.chain_id,
+          token_network_address: request.token_network_address,
+          channel_identifier: request.channel_identifier,
+          participant: request.participant,
+          total_withdraw: request.total_withdraw,
+          nonce: channel.own.nextNonce,
+          expiration: request.expiration,
+        };
+        confirmation$ = from(signMessage(signer, confirmation, { log }));
       }
 
-      return merge(
-        // first, emit 'WithdrawRequest', to increase partner's nonce in state
-        of(withdrawMessage.request({ message: request }, meta)),
-        // empty/undefined confirmation$ or signing errors are non-fatal, we should still accept
-        // WithdrawRequest state change (which increases partner's nonce) and wait for WithdrawExpired
-        confirmation$.pipe(
-          mergeMap(function* (message) {
-            assert(request.expiration.gt(state.blockNumber), 'request expired while signing');
-            // emit our composed 'WithdrawConfirmation' to increase our nonce in state
-            yield withdrawMessage.success({ message }, meta);
-            // send once per received request; confirmation signature is cached above
-            yield messageSend.request(
-              { message },
-              {
-                address: partner,
-                msgId: action.payload.message.message_identifier.toString(),
-              },
-            );
-          }),
-          // TODO: test confirmation$ rejection still gets withdrawMessage.request through
-        ),
+      return confirmation$.pipe(
+        mergeMap(function* (message) {
+          // first, emit 'WithdrawRequest', to increase partner's nonce in state
+          yield withdrawMessage.request({ message: request }, withdrawMeta);
+          // emit our composed 'WithdrawConfirmation' to increase our nonce in state
+          yield withdrawMessage.success({ message }, withdrawMeta);
+          // send once per received request; confirmation signature is cached above
+          yield messageSend.request(
+            { message },
+            {
+              address: partner,
+              msgId: action.payload.message.message_identifier.toString(),
+            },
+          );
+        }),
       );
     }),
-    catchError((err) => of(withdrawMessage.failure(err, meta))),
+    catchError((err) => of(withdrawMessage.failure(err, withdrawMeta))),
   );
 }
 
@@ -955,12 +925,12 @@ function receiveWithdrawExpired(
   { signer, log, config$ }: RaidenEpicDeps,
   cache: LruCache<string, Signed<Processed>>,
 ): Observable<
-  withdrawExpire.success | withdrawExpire.failure | withdrawExpireProcessed | messageSend.request
+  withdrawExpire.success | withdrawExpire.failure | withdrawCompleted | messageSend.request
 > {
   const expired = action.payload.message;
   const tokenNetwork = expired.token_network_address;
   const partner = expired.participant;
-  const meta = {
+  const withdrawMeta = {
     direction: Direction.RECEIVED,
     tokenNetwork,
     partner,
@@ -971,12 +941,8 @@ function receiveWithdrawExpired(
   return combineLatest([state$, config$]).pipe(
     first(),
     mergeMap(([state, { confirmationBlocks }]) => {
-      assert(expired.participant === action.meta.address, 'participant mismatch');
-      const channel = state.channels[channelKey({ tokenNetwork, partner })];
-
-      assert(channel?.state === ChannelState.open, 'channel not open');
-      assert(expired.chain_id.eq(state.chainId), 'chainId mismatch');
-      assert(expired.channel_identifier.eq(channel.id), 'channelId mismatch');
+      assert(partner === action.meta.address, 'participant mismatch');
+      const channel = getOpenChannel(state, { tokenNetwork, partner }, expired);
 
       let processed$: Observable<Signed<Processed>>;
       const cacheKey = `${channelUniqueKey(channel)}+${expired.message_identifier.toString()}`;
@@ -985,17 +951,8 @@ function receiveWithdrawExpired(
       else {
         assert(expired.nonce.eq(channel.partner.nextNonce), 'nonce mismatch');
         assert(
-          state.blockNumber >= meta.expiration + confirmationBlocks,
-          'expire block not confirmed',
-        );
-        assert(
-          channel.partner.pendingWithdraws.some(
-            (req) =>
-              req.type === MessageType.WITHDRAW_REQUEST &&
-              req.total_withdraw.eq(meta.totalWithdraw) &&
-              req.expiration.eq(meta.expiration),
-          ),
-          'no matching WithdrawRequest found',
+          state.blockNumber >= withdrawMeta.expiration + confirmationBlocks,
+          'expire block not confirmed yet',
         );
         const processed: Processed = {
           type: MessageType.PROCESSED,
@@ -1009,9 +966,9 @@ function receiveWithdrawExpired(
       return processed$.pipe(
         mergeMap(function* (processed) {
           // as we've received and validated this message, emit failure to increment nextNonce
-          yield withdrawExpire.success({ message: expired }, meta);
-          // emits withdrawExpireProcessed to clear request from partner's pendingWithdraws array
-          yield withdrawExpireProcessed({ message: processed }, meta);
+          yield withdrawExpire.success({ message: expired }, withdrawMeta);
+          // emits withdrawCompleted to clear messages from partner's pendingWithdraws array
+          yield withdrawCompleted(undefined, withdrawMeta);
           yield messageSend.request(
             { message: processed },
             { address: partner, msgId: processed.message_identifier.toString() },
@@ -1019,7 +976,7 @@ function receiveWithdrawExpired(
         }),
       );
     }),
-    catchError((err) => of(withdrawExpire.failure(err, meta))),
+    catchError((err) => of(withdrawExpire.failure(err, withdrawMeta))),
   );
 }
 
@@ -1039,7 +996,6 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ) => {
-  const withdrawConfirmationCache = new LruCache<string, Signed<WithdrawConfirmation>>(32);
   const processedCache = new LruCache<string, Signed<Processed>>(32);
   const state$ = deps.latest$.pipe(pluckDistinct('state')); // replayed(1)' state$
   return merge(
@@ -1114,7 +1070,6 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
                 state$,
                 action as messageReceivedTyped<Signed<WithdrawRequest>>,
                 deps,
-                withdrawConfirmationCache,
               );
               break;
             case MessageType.WITHDRAW_CONFIRMATION:

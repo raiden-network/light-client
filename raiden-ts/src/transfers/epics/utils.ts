@@ -1,10 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { merge, Observable, of, MonoTypeOperatorFunction } from 'rxjs';
-import { filter, ignoreElements, take, repeatWhen, delay, takeUntil } from 'rxjs/operators';
+import { merge, Observable, of } from 'rxjs';
+import { filter, ignoreElements, take } from 'rxjs/operators';
 
 import { messageSend } from '../../messages/actions';
 import { isResponseOf } from '../../utils/actions';
+import { repeatUntil } from '../../utils/rx';
 import { RaidenAction } from '../../actions';
+import {
+  MessageType,
+  WithdrawRequest,
+  WithdrawConfirmation,
+  WithdrawExpired,
+} from '../../messages';
+import { UInt } from '../../utils/types';
 
 /**
  * Dispatches an actions and waits until a condition is satisfied.
@@ -34,29 +42,6 @@ export function dispatchAndWait$<A extends RaidenAction>(
 }
 
 /**
- * Operator to repeat-subscribe an input observable until a notifier emits
- *
- * @param notifier - Notifier observable
- * @param delayMs - Delay between retries
- * @returns Monotype operator
- */
-export function repeatUntil<T>(
-  notifier: Observable<any>,
-  delayMs = 30e3,
-): MonoTypeOperatorFunction<T> {
-  // Resubscribe/retry every 30s after messageSend succeeds
-  // Notice first (or any) messageSend.request can wait for a long time before succeeding, as it
-  // waits for address's user in transport to be online and joined room before actually
-  // sending the message. That's why repeatWhen emits/resubscribe only some time after
-  // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-  return (input$) =>
-    input$.pipe(
-      repeatWhen((completed$) => completed$.pipe(delay(delayMs))),
-      takeUntil(notifier),
-    );
-}
-
-/**
  * Retry sending a message until some condition is met
  *
  * @param send - messageSend.request to be sent
@@ -74,4 +59,34 @@ export function retrySendUntil$(
   return dispatchAndWait$(action$, send, isResponseOf(messageSend, send.meta)).pipe(
     repeatUntil(notifier, delayMs),
   );
+}
+
+/**
+ * Creates a type-guard function which verifies 'msg' is of given type between withdraw messages
+ * and that total_withdraw and expiration matches given 'data'.
+ * May be used to find matching messages in [[ChannelEnd]]'s 'pendingWithdraws' array
+ *
+ * @param type - Literal type tag to filter
+ * @param data - Optional data to match, either in 'meta' or another 'message' format
+ * @returns Typeguard function to check for matching withdraw protocol messages
+ */
+export function matchWithdraw<
+  T extends
+    | MessageType.WITHDRAW_REQUEST
+    | MessageType.WITHDRAW_CONFIRMATION
+    | MessageType.WITHDRAW_EXPIRED,
+  M extends WithdrawRequest | WithdrawConfirmation | WithdrawExpired
+>(
+  type: T,
+  data?:
+    | { total_withdraw: UInt<32>; expiration: UInt<32> }
+    | { totalWithdraw: UInt<32>; expiration: number },
+) {
+  return (msg: M): msg is Extract<M, { type: T }> =>
+    msg.type === type &&
+    (!data ||
+      (msg.expiration.eq(data.expiration) &&
+        msg.total_withdraw.eq(
+          'totalWithdraw' in data ? data.totalWithdraw : data.total_withdraw,
+        )));
 }

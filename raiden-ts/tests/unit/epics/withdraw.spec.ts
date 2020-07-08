@@ -28,6 +28,7 @@ import { makeMessageId } from 'raiden-ts/transfers/utils';
 import { channelAmounts } from 'raiden-ts/channels/utils';
 import { Zero } from 'ethers/constants';
 import { Direction } from 'raiden-ts/transfers/state';
+import { ErrorCodes } from 'raiden-ts/utils/error';
 
 describe('withdraw receive request', () => {
   const direction = Direction.RECEIVED;
@@ -130,56 +131,6 @@ describe('withdraw receive request', () => {
     // request isn't accepted
     expect(raiden.output).not.toContainEqual(
       withdrawMessage.request(expect.anything(), expect.anything()),
-    );
-  });
-
-  test('accept expired but dont confirm', async () => {
-    expect.assertions(2);
-
-    const [raiden, partner] = await makeRaidens(2);
-
-    await ensureChannelIsDeposited([raiden, partner], amount);
-    await ensureChannelIsDeposited([partner, raiden], deposit);
-    await ensureTransferUnlocked([raiden, partner], amount);
-
-    const request: WithdrawRequest = {
-      type: MessageType.WITHDRAW_REQUEST,
-      message_identifier: makeMessageId(),
-      chain_id: bigNumberify(raiden.deps.network.chainId) as UInt<32>,
-      token_network_address: tokenNetwork,
-      channel_identifier: bigNumberify(id) as UInt<32>,
-      participant: partner.address,
-      // withdrawable amount is partner.deposit + own.g
-      total_withdraw: deposit.add(amount) as UInt<32>,
-      nonce: getChannel(partner, raiden).own.nextNonce,
-      expiration: bigNumberify(raiden.store.getState().blockNumber + 20) as UInt<32>,
-    };
-    const message = await signMessage(partner.deps.signer, request);
-
-    // expire request
-    await waitBlock(request.expiration.toNumber() + 10);
-
-    raiden.store.dispatch(
-      messageReceived({ text: '', message, ts: Date.now() }, { address: partner.address }),
-    );
-    await waitBlock();
-
-    // request is accepted
-    expect(raiden.output).toContainEqual(
-      withdrawMessage.request(
-        { message },
-        {
-          direction,
-          tokenNetwork,
-          partner: partner.address,
-          totalWithdraw: request.total_withdraw,
-          expiration: request.expiration.toNumber(),
-        },
-      ),
-    );
-    // but no confirmation is signed since it's expired
-    expect(raiden.output).not.toContainEqual(
-      withdrawMessage.success(expect.anything(), expect.anything()),
     );
   });
 });
@@ -352,7 +303,7 @@ describe('withdraw send request', () => {
     );
     expect(raiden.output).toContainEqual(
       withdraw.failure(
-        expect.objectContaining({ message: expect.stringContaining('not enough') }),
+        expect.objectContaining({ message: ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_HIGH }),
         meta,
       ),
     );
@@ -432,7 +383,7 @@ describe('withdraw send request', () => {
 });
 
 test('withdraw expire', async () => {
-  expect.assertions(10);
+  expect.assertions(9);
   let raiden = await makeRaiden();
   const partner = await makeRaiden();
 
@@ -465,16 +416,6 @@ test('withdraw expire', async () => {
   // receive the request on partner, to persist it in state
   partner.store.dispatch(
     messageReceived({ text: '', ts: 1, message: request }, { address: raiden.address }),
-  );
-
-  // advance current block to revealTimeout before expiration, already too soon
-  await waitBlock(expiration - raiden.config.revealTimeout + 1);
-
-  expect(raiden.output).toContainEqual(
-    withdraw.failure(
-      expect.objectContaining({ message: expect.stringContaining('request expires soon') }),
-      meta,
-    ),
   );
 
   // advance current block to right after expiration, still unconfirmed

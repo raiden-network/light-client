@@ -2,7 +2,7 @@ import * as t from 'io-ts';
 import { BigNumber } from 'ethers/utils';
 
 import { UInt, Address, Signed, Int } from '../utils/types';
-import { WithdrawRequest, WithdrawExpired } from '../messages';
+import { WithdrawRequest, WithdrawExpired, WithdrawConfirmation } from '../messages';
 import { Lock, BalanceProof } from './types';
 
 export enum ChannelState {
@@ -24,7 +24,9 @@ const _ChannelEnd = t.readonly(
     withdraw: UInt(32),
     locks: t.readonlyArray(Lock),
     balanceProof: Signed(BalanceProof),
-    pendingWithdraws: t.readonlyArray(t.union([Signed(WithdrawRequest), Signed(WithdrawExpired)])),
+    pendingWithdraws: t.readonlyArray(
+      t.union([Signed(WithdrawRequest), Signed(WithdrawConfirmation), Signed(WithdrawExpired)]),
+    ),
     nextNonce: UInt(8), // usually balanceProof.nonce+1, but withdraw messages also increment it
   }),
 );
@@ -114,6 +116,26 @@ export interface ChannelBalances {
  * Public exposed channels interface (Raiden.channels$)
  *
  * This should be only used as a public view of the internal channel state
+ * It contains some details about channel's current state, and some balances.
+ * Most relevant are:
+ * - state: one of 'open', 'closing', 'closed', 'settleable' or 'settling'
+ * - id: channel identifier
+ * - token: ERC20 token contract address
+ * - tokenNetwork: TokenNetwork contract address
+ * - settleTimeout: number of blocks after close when channel becomes settleable
+ * - openBlock: block number in which channel was opened
+ * - closeBlock: block in which channel got closed
+ * - partner: partner's address
+ * - balance: how much was sent (negative) plus received on this channel from partner
+ * - capacity: how much still can be transferred through this channel; increases with deposit
+ * - Balances [for each property, prefixed with either 'own' or 'partner']:
+ *   - Deposit: on-chain totalDeposit
+ *   - Withdraw: on-chain totalWithdraw
+ *   - Unlocked: how much was received and unlocked on this channel's end
+ *   - Locked: how much is still locked off-chain on this channel's end
+ *   - Balance: received minus sent off-chain
+ *   - Capacity: channel end's liquidity
+ *   - Withdrawable: amount which can still be withdrawn
  */
 export interface RaidenChannel extends ChannelBalances {
   state: ChannelState;

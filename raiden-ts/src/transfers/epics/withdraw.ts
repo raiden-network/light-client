@@ -11,7 +11,6 @@ import {
   tap,
   take,
   mapTo,
-  takeUntil,
   share,
 } from 'rxjs/operators';
 
@@ -21,17 +20,66 @@ import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { ChannelState } from '../../channels';
-import { isResponseOf } from '../../utils/actions';
-import { assert, ErrorCodes, RaidenError } from '../../utils/error';
+import { isActionOf } from '../../utils/actions';
+import { assert, ErrorCodes } from '../../utils/error';
 import { Signed } from '../../utils/types';
 import { LruCache } from '../../utils/lru';
 import { Processed, MessageType, signMessage, isMessageReceivedOfType } from '../../messages';
 import { messageSend } from '../../messages/actions';
 import { newBlock } from '../../channels/actions';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
-import { withdrawExpire, withdrawMessage, withdraw, withdrawExpireProcessed } from '../actions';
+import { withdrawExpire, withdrawMessage, withdraw, withdrawCompleted } from '../actions';
 import { Direction } from '../state';
-import { retrySendUntil$ } from './utils';
+import { retrySendUntil$, matchWithdraw } from './utils';
+
+/**
+ * Emits withdraw action once for each own non-confirmed message at startup
+ *
+ * @param state$ - Observable of RaidenStates
+ * @returns Observable of withdrawMessage.request|withdrawExpire.success actions
+ */
+export const initWithdrawMessagesEpic = (
+  {}: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+): Observable<withdrawMessage.request | withdrawExpire.success> =>
+  state$.pipe(
+    first(),
+    mergeMap(function* (state) {
+      for (const channel of Object.values(state.channels)) {
+        if (channel.state !== ChannelState.open) continue;
+        for (const message of channel.own.pendingWithdraws) {
+          if (
+            message.type === MessageType.WITHDRAW_REQUEST &&
+            !channel.own.pendingWithdraws.some(
+              matchWithdraw(MessageType.WITHDRAW_CONFIRMATION, message), // ignore if confirmed
+            )
+          )
+            yield withdrawMessage.request(
+              { message },
+              {
+                direction: Direction.SENT,
+                tokenNetwork: channel.tokenNetwork,
+                partner: channel.partner.address,
+                totalWithdraw: message.total_withdraw,
+                expiration: message.expiration.toNumber(),
+              },
+            );
+          else if (message.type === MessageType.WITHDRAW_EXPIRED)
+            yield withdrawExpire.success(
+              { message },
+              {
+                direction: Direction.SENT,
+                tokenNetwork: channel.tokenNetwork,
+                partner: channel.partner.address,
+                totalWithdraw: message.total_withdraw,
+                expiration: message.expiration.toNumber(),
+              },
+            );
+          // WithdrawConfirmations are sent only as response of requests
+        }
+      }
+    }),
+  );
 
 /**
  * Retry sending 'WithdrawRequest' messages to partner until WithdrawConfirmation is received
@@ -44,7 +92,7 @@ import { retrySendUntil$ } from './utils';
  */
 export const withdrawSendRequestMessageEpic = (
   action$: Observable<RaidenAction>,
-  {}: Observable<RaidenState>,
+  state$: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
 ): Observable<messageSend.request> =>
   action$.pipe(
@@ -57,14 +105,21 @@ export const withdrawSendRequestMessageEpic = (
         { message },
         { address: action.meta.partner, msgId: message.message_identifier.toString() },
       );
-      // emits to stop retry when respective WithdrawConfirmation is received or the whole withdraw
-      // fails, which happens e.g. when it expires soon
-      const notifier = action$.pipe(
-        filter(
-          (a) =>
-            isResponseOf(withdrawMessage, action.meta, a) ||
-            isResponseOf(withdraw, action.meta, a),
-        ),
+      // emits to stop retry loop when channel isn't open anymore, a confirmation came or request
+      // got cleared from state (e.g. by effective withdraw tx)
+      const notifier = state$.pipe(
+        filter((state) => {
+          const channel = state.channels[channelKey(action.meta)];
+          return (
+            channel?.state !== ChannelState.open ||
+            channel.own.pendingWithdraws.some(
+              matchWithdraw(MessageType.WITHDRAW_CONFIRMATION, action.meta),
+            ) ||
+            !channel.own.pendingWithdraws.some(
+              matchWithdraw(MessageType.WITHDRAW_REQUEST, action.meta),
+            )
+          );
+        }),
       );
       // emit request once immediatelly, then wait until success, then retry every 30s
       return retrySendUntil$(send, action$, notifier, httpTimeout);
@@ -72,42 +127,7 @@ export const withdrawSendRequestMessageEpic = (
   );
 
 /**
- * Emits withdraw.failure if we get 'revealTimeout' blocks close to expiration
- *
- * Before this threshold we're still confident we can make a withdraw tx go through, and therefore
- * give up if we get too close.
- *
- * @param action$ - Observable of withdrawRequest.request actions
- * @param state$ - Observable of RaidenStates
- * @param deps - Epics dependencies
- * @param deps.config$ - Config observable
- * @returns Observable of withdraw.failure actions
- */
-export const withdrawExpiresSoonEpic = (
-  action$: Observable<RaidenAction>,
-  {}: Observable<RaidenState>,
-  { config$ }: RaidenEpicDeps,
-): Observable<withdraw.failure> =>
-  action$.pipe(
-    filter(withdrawMessage.request.is),
-    filter((action) => action.meta.direction === Direction.SENT),
-    withLatestFrom(config$),
-    mergeMap(([action, { revealTimeout }]) =>
-      action$.pipe(
-        filter(newBlock.is),
-        filter(({ payload }) => action.meta.expiration < payload.blockNumber + revealTimeout),
-        take(1),
-        mapTo(withdraw.failure(new RaidenError(ErrorCodes.WITHDRAW_EXPIRES_SOON), action.meta)),
-        // if withdrawMessage.success (WithdrawConfirmation) go through, don't fail
-        takeUntil(
-          action$.pipe(filter(isResponseOf<typeof withdrawMessage>(withdrawMessage, action.meta))),
-        ),
-      ),
-    ),
-  );
-
-/**
- * Upon WithdrawConfirmation, send the on-chain withdraw request
+ * Upon valid [[WithdrawConfirmation]], send the on-chain withdraw transaction
  *
  * @param action$ - Observable of newBlock actions
  * @param state$ - Observable of RaidenStates
@@ -137,16 +157,13 @@ export const withdrawSendTxEpic = (
           // this is our confidence threshold when we can get a tx inside timeout
           assert(
             action.meta.expiration >= state.blockNumber + revealTimeout,
-            ErrorCodes.WITHDRAW_EXPIRES_SOON,
+            ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
           );
           const channel = state.channels[channelKey(action.meta)];
           assert(channel?.state === ChannelState.open, 'channel not open');
           assert(action.meta.totalWithdraw.gt(channel.own.withdraw), 'withdraw already performed');
           const req = channel.own.pendingWithdraws.find(
-            (req) =>
-              req.type === MessageType.WITHDRAW_REQUEST &&
-              req.total_withdraw.eq(action.payload.message.total_withdraw) &&
-              req.expiration.eq(action.payload.message.expiration),
+            matchWithdraw(MessageType.WITHDRAW_REQUEST, action.payload.message),
           );
           assert(req, 'no matching WithdrawRequest found');
           const { tokenNetwork } = action.meta;
@@ -168,7 +185,7 @@ export const withdrawSendTxEpic = (
             action.payload.message.signature,
           );
         }),
-        assertTx('setTotalWithdraw', ErrorCodes.WITHDRAW_TRANSACTION_FAILED, { log }),
+        assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, { log }),
         map((receipt) =>
           withdraw.success(
             {
@@ -185,27 +202,31 @@ export const withdrawSendTxEpic = (
   );
 
 /**
- * Upon WithdrawConfirmation, send partner the respective Processed message
+ * Upon receiving withdraw request or confirmation, send partner the respective Processed message
  *
- * SDK-based clients (with caps.noDelivery set) don't need it, so skip
+ * SDK-based clients (with caps.noDelivery set) don't need it, so skip. They, instead, confirm
+ * the request with the confirmation, and re-sends confirmation on request retries
  *
- * @param action$ - Observable of newBlock actions
+ * @param action$ - Observable of withdrawMessage.request|withdrawMessage.success actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
  * @param deps.signer - Signer instance
  * @param deps.log - Logger instance
  * @param deps.latest$ - Latest observable
- * @returns Observable of withdrawExpired actions
+ * @returns Observable of messageSend.request actions
  */
-export const withdrawConfirmationProcessedEpic = (
+export const withdrawMessageProcessedEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { signer, log, latest$ }: RaidenEpicDeps,
 ): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Processed>>(32);
   return action$.pipe(
-    filter(withdrawMessage.success.is),
-    filter((action) => action.meta.direction === Direction.SENT),
+    filter(isActionOf([withdrawMessage.request, withdrawMessage.success])),
+    filter(
+      (action) =>
+        (action.meta.direction === Direction.RECEIVED) !== withdrawMessage.success.is(action),
+    ),
     concatMap((action) =>
       latest$.pipe(
         first(),
@@ -216,22 +237,21 @@ export const withdrawConfirmationProcessedEpic = (
             !presences[action.meta.partner].payload.caps?.[Capabilities.NO_DELIVERY],
         ),
         mergeMap(() => {
-          const confirmation = action.payload.message;
+          const message = action.payload.message;
           let processed$: Observable<Signed<Processed>>;
-          const cacheKey = confirmation.message_identifier.toString();
+          const cacheKey = message.message_identifier.toString();
           const cached = cache.get(cacheKey);
           if (cached) processed$ = of(cached);
           else {
             const processed: Processed = {
               type: MessageType.PROCESSED,
-              message_identifier: confirmation.message_identifier,
+              message_identifier: message.message_identifier,
             };
             processed$ = from(signMessage(signer, processed, { log })).pipe(
               tap((signed) => cache.put(cacheKey, signed)),
             );
           }
 
-          // don't validate req here, to always update nonce, but do on tx send
           return processed$.pipe(
             map((processed) =>
               messageSend.request(
@@ -243,8 +263,7 @@ export const withdrawConfirmationProcessedEpic = (
         }),
         catchError(
           (err) => (
-            log.info('Signing Processed message for WithdrawConfirmation failed, ignoring', err),
-            EMPTY
+            log.info('Signing Processed message for Withdraw message failed, ignoring', err), EMPTY
           ),
         ),
       ),
@@ -273,18 +292,12 @@ export const autoWithdrawExpireEpic = (
     mergeMap(function* ([blockNumber, state, { confirmationBlocks }]) {
       for (const channel of Object.values(state.channels)) {
         if (channel.state !== ChannelState.open) continue;
-        for (const req of channel.own.pendingWithdraws) {
-          if (req.type !== MessageType.WITHDRAW_REQUEST) continue;
+        const requestMessages = channel.own.pendingWithdraws.filter(
+          matchWithdraw(MessageType.WITHDRAW_REQUEST),
+        );
+        for (const req of requestMessages) {
           if (req.expiration.add(confirmationBlocks).gt(blockNumber)) continue;
-          // if there's already an WithdrawExpired in 'pendingWithdraws' array, don't request again
-          if (
-            channel.own.pendingWithdraws.some(
-              (exp) =>
-                exp.type === MessageType.WITHDRAW_EXPIRED &&
-                exp.total_withdraw.eq(req.total_withdraw) &&
-                exp.expiration.eq(req.expiration),
-            )
-          )
+          if (channel.own.pendingWithdraws.some(matchWithdraw(MessageType.WITHDRAW_EXPIRED, req)))
             continue;
           yield withdrawExpire.request(undefined, {
             direction: Direction.SENT,
@@ -299,7 +312,7 @@ export const autoWithdrawExpireEpic = (
   );
 
 /**
- * Retry sending own WithdrawExpired messages until Processed
+ * Retry sending own WithdrawExpired messages until Processed, completes withdraw then
  *
  * @param action$ - Observable of withdrawExpire.success actions
  * @param state$ - Observable of RaidenStates
@@ -311,7 +324,7 @@ export const withdrawSendExpireMessageEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<messageSend.request | withdrawExpireProcessed> =>
+): Observable<messageSend.request | withdrawCompleted> =>
   action$.pipe(
     filter(withdrawExpire.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
@@ -330,42 +343,11 @@ export const withdrawSendExpireMessageEpic = (
             a.meta.address === action.meta.partner &&
             a.payload.message.message_identifier.eq(message.message_identifier),
         ),
-        map((a) => withdrawExpireProcessed(a.payload, action.meta)),
+        mapTo(withdrawCompleted(undefined, action.meta)),
         take(1),
         share(),
       );
-      // besides using notifier to stop retry, also merge the withdrawExpireProcessed output
+      // besides using notifier to stop retry, also merge the withdrawCompleted output action
       return merge(retrySendUntil$(send, action$, notifier, httpTimeout), notifier);
-    }),
-  );
-
-/**
- * Emits withdrawExpire.success once for each own non-confirmed WithdrawExpired message at startup
- *
- * @param state$ - Observable of RaidenStates
- * @returns Observable of withdrawExpire.success actions
- */
-export const initWithdrawExpiredEpic = (
-  {}: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-): Observable<withdrawExpire.success> =>
-  state$.pipe(
-    first(),
-    mergeMap(function* (state) {
-      for (const channel of Object.values(state.channels)) {
-        for (const exp of channel.own.pendingWithdraws) {
-          if (exp.type !== MessageType.WITHDRAW_EXPIRED) continue;
-          yield withdrawExpire.success(
-            { message: exp },
-            {
-              direction: Direction.SENT,
-              tokenNetwork: channel.tokenNetwork,
-              partner: channel.partner.address,
-              totalWithdraw: exp.total_withdraw,
-              expiration: exp.expiration.toNumber(),
-            },
-          );
-        }
-      }
     }),
   );
