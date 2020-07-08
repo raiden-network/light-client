@@ -1293,6 +1293,22 @@ export class Raiden {
     return promise;
   }
 
+  /**
+   * Requests to withdraw from channel
+   *
+   * The requested amount defaults to the maximum withdrawable amount, which is exposed in
+   * [[channels$]] observable as the [[RaidenChannel.ownWithdrawable]] member.
+   * This involves requesting partner a signature which confirms they agree that we have the right
+   * for this amount of tokens, then a transaction is sent on-chain to withdraw tokens to the
+   * effective account.
+   * If this process fails, the amount remains locked until it can be expired later (defaults to
+   * 2 * config.revealTimeout blocks).
+   *
+   * @param token - Token address on currently configured token network registry
+   * @param partner - Partner address
+   * @param amount - Amount of tokens (in wei) to withdraw, must be between 1 and ownWithdrawable
+   * @returns Promise to the hash of the mined withdraw transaction
+   */
   public async withdrawChannel(
     token: string,
     partner: string,
@@ -1309,10 +1325,14 @@ export class Raiden {
       this.log.error,
     );
     const { ownWithdrawable, ownWithdraw } = channelAmounts(channel);
+    const requestedAmount = decode(
+      UInt(32),
+      amount ?? ownWithdrawable, // if not provided, defaults to whole withdrawable amount
+      ErrorCodes.DTA_INVALID_AMOUNT,
+      this.log.info,
+    );
     // if it's too big, it'll fail on withdraw request handling epic
-    const totalWithdraw = ownWithdraw.add(
-      decode(UInt(32), amount ?? ownWithdrawable, ErrorCodes.DTA_INVALID_AMOUNT, this.log.info),
-    ) as UInt<32>;
+    const totalWithdraw = ownWithdraw.add(requestedAmount) as UInt<32>;
     const expiration = this.state.blockNumber + 2 * this.config.revealTimeout;
 
     const meta = {
