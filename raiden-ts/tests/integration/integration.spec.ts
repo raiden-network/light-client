@@ -10,7 +10,7 @@ import { filter } from 'rxjs/operators';
 import { Signer, Wallet } from 'ethers';
 import { RaidenPaths } from 'raiden-ts/services/types';
 
-jest.setTimeout(80000);
+jest.setTimeout(120000);
 
 const ethBalance = '100000000000000000000000';
 const tttBalance = '1000000000000000000000';
@@ -73,13 +73,12 @@ describe('integration', () => {
   });
 
   afterAll((done) => {
-    raiden.stop();
     raiden.events$.pipe(filter((value) => value.type === 'raiden/shutdown')).subscribe(done);
+    raiden.stop();
   });
 
   test('account is funded', async () => {
-    const balance = await raiden.getBalance(raiden.address);
-    expect(balance.eq(bigNumberify(ethBalance))).toBe(true);
+    await expect(raiden.getBalance(raiden.address)).resolves.toEqual(bigNumberify(ethBalance));
   });
 
   describe('mediated transfer', () => {
