@@ -2,16 +2,16 @@ import { getAddress, getAmount } from '@/utils/query-params';
 
 describe('query params', () => {
   describe('amount', () => {
-    test('invalid param returns 0.00', () => {
-      expect(getAmount('3u4jhfeslkjdhf')).toBe('0.00');
+    test('invalid param returns empty string', () => {
+      expect(getAmount('3u4jhfeslkjdhf')).toBe('');
     });
 
     test('valid number returns the value', () => {
       expect(getAmount('1.2')).toBe('1.2');
     });
 
-    test('undefined returns 0.00', () => {
-      expect(getAmount(undefined)).toBe('0.00');
+    test('undefined returns empty string', () => {
+      expect(getAmount(undefined)).toBe('');
     });
   });
 

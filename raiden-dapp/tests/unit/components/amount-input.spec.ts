@@ -24,6 +24,11 @@ describe('AmountInput.vue', () => {
       },
       mocks: {
         $t: (msg: string) => msg
+      },
+      listeners: {
+        input: ($event: string) => {
+          wrapper.setProps({ value: $event });
+        }
       }
     });
   }
@@ -40,18 +45,6 @@ describe('AmountInput.vue', () => {
       expect(messages.exists()).toBe(false);
     });
 
-    test('show an error message when the input is empty', async () => {
-      mockInput(wrapper, '');
-      await wrapper.vm.$nextTick();
-      await flushPromises();
-      const inputEvent = wrapper.emitted('input');
-      expect(inputEvent).toBeTruthy();
-      expect(inputEvent?.shift()).toEqual(['']);
-      const messages = wrapper.find('.v-messages__message');
-      expect(messages.exists()).toBe(true);
-      expect(messages.text()).toEqual('amount-input.error.empty');
-    });
-
     test('show no error if the input is valid', async () => {
       mockInput(wrapper, '1.2');
       await wrapper.vm.$nextTick();
@@ -64,8 +57,9 @@ describe('AmountInput.vue', () => {
   });
 
   describe('limited', () => {
-    beforeEach(() => {
-      wrapper = createWrapper({ limit: true, value: '' });
+    beforeEach(async () => {
+      wrapper = createWrapper({ limit: true, value: '0.00' });
+      await wrapper.vm.$nextTick();
     });
 
     test('show an error if the amount is smaller than the limit', async () => {
