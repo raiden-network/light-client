@@ -4,33 +4,41 @@
 
 ### Added
 
+- [#1791] Introduces configuration for token network monitoring.
 - [#1374] Adds notifications when a monitoring service submits a proof.
 - [#1421] Dialog to withdraw from the user deposit.
 - [#168] Notification panel
 
 ### Fixed
 
+- [#1788] Bug where button is displayed and modal not closing on UDC withdrawal
 - [#1781] Transparent dialog overlay for Firefox
 - [#1783] Minor visual alignments
 - [#1579] Removes minting references when detected network is mainnet.
-- [#1756] Fix non-informative error message on SDK's wrapped errors
 - [#1773] Fix performance issues of progress indicators
+- [#1756] Fix non-informative error message on SDK's wrapped errors
+- [#1805] Fix unintended automatic stop of Raiden Service by web-browser
+- [#1876] Show error message on Channels screen if an exception occurs
 
 ### Changed
 
 - [#1610] Adds alderaan compatibility.
 - [#1540] Adds title to channels list to clarify that only channels for the selected token display.
 
+[#1788]: https://github.com/raiden-network/light-client/issues/1788
+[#1791]: https://github.com/raiden-network/light-client/issues/1791
 [#1781]: https://github.com/raiden-network/light-client/issues/1781
 [#1783]: https://github.com/raiden-network/light-client/issues/1783
 [#1756]: https://github.com/raiden-network/light-client/issues/1756
+[#1773]: https://github.com/raiden-network/light-client/issues/1773
 [#1610]: https://github.com/raiden-network/light-client/issues/1610
 [#1540]: https://github.com/raiden-network/light-client/issues/1540
 [#1579]: https://github.com/raiden-network/light-client/issues/1579
 [#1421]: https://github.com/raiden-network/light-client/issues/1421
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
 [#168]: https://github.com/raiden-network/light-client/issues/168
-[#1773]: https://github.com/raiden-network/light-client/issues/1773
+[#1805]: https://github.com/raiden-network/light-client/issues/1805
+[#1876]: https://github.com/raiden-network/light-client/pull/1876
 
 ## [0.9.0] - 2020-05-28
 

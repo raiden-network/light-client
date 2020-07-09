@@ -19,8 +19,8 @@ describe('SelectTokenRoute.vue', () => {
       stubs: ['home', 'select-token'],
       mocks: {
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

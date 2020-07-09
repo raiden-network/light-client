@@ -7,29 +7,20 @@ templates:
     branches:
       ignore: /.*/
 
-var_1: &docker_image circleci/node:12-browsers
-var_2: &sdk_cache_key raiden-ts-{{ .Branch }}-{{ checksum "package-lock.json" }}
-var_3: &dapp_cache_key raiden-dapp-{{ .Branch }}-{{ checksum "package-lock.json" }}
-var_4: &sdk_working_dir ~/src/raiden-ts
-var_5: &dapp_working_dir ~/src/raiden-dapp
-var_6: &cli_cache_key raiden-cli-{{ .Branch }}-{{ checksum "package-lock.json" }}
-var_7: &cli_working_dir ~/src/raiden-cli
+var_1: &docker_image raidennetwork/lightclient-node-pnpm:latest
+var_2: &cache_key raiden-{{ .Branch }}-{{ checksum "pnpm-lock.yaml" }}
+var_3: &working_dir ~/src
+var_4: &dapp_working_dir ~/src/raiden-dapp
 
-anchor_1: &sdk_package_lock_key
-  key: *sdk_cache_key
+anchor_1: &package_lock_key
+  key: *cache_key
 
 anchor_2: &attach_options
   at: ~/src/
 
-anchor_3: &dapp_package_lock_key
-  key: *dapp_cache_key
-
-anchor_4: &cli_package_lock_key
-  key: *cli_cache_key
-
 executors:
   base-executor:
-    working_directory: ~/src
+    working_directory: *working_dir
     docker:
       - image: *docker_image
 
@@ -41,7 +32,7 @@ executors:
 jobs:
   checkout:
     executor: base-executor
-    working_directory: ~/src
+    working_directory: *working_dir
     steps:
       - checkout
       - run: git submodule sync
@@ -72,84 +63,37 @@ jobs:
           name: Check CLI Licenses
           command: cd ~/src/raiden-cli && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
 
-  install_sdk:
+  install:
     executor: base-executor
-    working_directory: *sdk_working_dir
+    working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
-      - restore_cache: *sdk_package_lock_key
-      - run: npm ci
+      - restore_cache: *package_lock_key
+      - run: pnpm install --prefer-frozen-lockfile
       - save_cache:
-          <<: *sdk_package_lock_key
+          <<: *package_lock_key
           paths:
-            - ~/.npm
+            - ~/.pnpm-store
       - persist_to_workspace:
           root: ~/src
           paths:
             - ./*
 
-  install_dapp:
+  lint:
     executor: base-executor
-    working_directory: *dapp_working_dir
+    working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
-      - restore_cache: *dapp_package_lock_key
-      - run: npm ci
-      - save_cache:
-          <<: *dapp_package_lock_key
-          paths:
-            - ~/.cache/Cypress
-            - ~/.npm
-      - persist_to_workspace:
-          root: ~/src
-          paths:
-            - ./*
+      - run: pnpm run lint -r
 
-  install_cli:
+  test_sdk_unit:
     executor: base-executor
-    working_directory: *cli_working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - restore_cache: *cli_package_lock_key
-      - run: npm ci
-      - save_cache:
-          <<: *cli_package_lock_key
-          paths:
-            - ~/.npm
-      - persist_to_workspace:
-          root: ~/src
-          paths:
-            - ./*
-
-  lint_sdk:
-    executor: base-executor
-    working_directory: *sdk_working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - run: npm run lint
-
-  lint_dapp:
-    executor: base-executor
-    working_directory: *dapp_working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - run: npm run lint:check
-
-  lint_cli:
-    executor: base-executor
-    working_directory: *cli_working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - run: npm run lint
-
-  test_sdk:
-    executor: base-executor
-    working_directory: *sdk_working_dir
+    working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: npm run test -- --ci --runInBand --reporters=default --reporters=jest-junit
+          command: pnpm run test:unit --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -158,16 +102,34 @@ jobs:
           path: reports/junit
       - run:
           name: "Upload coverage"
-          command: cd .. && bash <(curl -s https://codecov.io/bash) -F sdk -C $CIRCLE_SHA1
+          command: bash <(curl -s https://codecov.io/bash) -F sdk_unit -F sdk -C $CIRCLE_SHA1
+
+  test_sdk_e2e:
+    executor: base-executor
+    working_directory: *working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Run unit tests
+          command: pnpm run test:e2e --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
+      - store_test_results:
+          path: reports/junit
+      - store_artifacts:
+          path: reports/junit
+      - run:
+          name: "Upload coverage"
+          command: bash <(curl -s https://codecov.io/bash) -F sdk_e2e -F sdk -C $CIRCLE_SHA1
 
   test_dapp:
     executor: base-executor
-    working_directory: *dapp_working_dir
+    working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: npm run test:unit -- --ci --runInBand --reporters=default --reporters=jest-junit
+          command: pnpm run test:unit --filter raiden-dapp -- --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -176,26 +138,27 @@ jobs:
           path: reports/junit
       - run:
           name: "Upload coverage"
-          command: cd .. && bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
+          command: bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
 
   build_dapp:
     executor: base-executor
-    working_directory: *dapp_working_dir
+    working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Build dapp
           command: >
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              npm run build -- --mode ghpages;
+              pnpm run build --filter raiden-dapp -- --mode ghpages;
             else
-              npm run build -- --mode development;
+              pnpm run build --filter raiden-dapp -- --mode development;
             fi
       - run:
           name: Compress dapp
-          command: tar -czvf dapp.tar.gz dist
+          command: cd raiden-dapp && tar -czvf dapp.tar.gz dist
       - store_artifacts:
-          path: dapp.tar.gz
+          path: raiden-dapp/dapp.tar.gz
+          destination: dapp.tar.gz
       - persist_to_workspace:
           root: ~/src
           paths:
@@ -203,17 +166,17 @@ jobs:
 
   build_cli:
     executor: base-executor
-    working_directory: *cli_working_dir
+    working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
-      - run: npm run build
+      - run: pnpm run build --filter raiden-cli
 
   generate_documentation:
     executor: base-executor
-    working_directory: *sdk_working_dir
+    working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
-      - run: cd ../docs && ./generate_documentation.sh
+      - run: cd docs && ./generate_documentation.sh
       - persist_to_workspace:
           root: ~/src/
           paths:
@@ -231,7 +194,7 @@ jobs:
 
   publish_artifact:
     executor: base-executor
-    working_directory: *sdk_working_dir
+    working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -239,19 +202,19 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
       - run:
           name: Publish on npm
-          command: npm publish
+          command: pnpm publish --filter raiden-ts
 
   integration_tests:
     executor: integration-executor
-    working_directory: *sdk_working_dir
+    working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Restore dependencies
-          command: npm ci
+          command: pnpm install --prefer-frozen-lockfile && pnpm run build --filter raiden-ts
       - run:
           name: Run integration tests
-          command: source /etc/profile.d/smartcontracts.sh && npm run test:integration -- --ci --runInBand --reporters=default --reporters=jest-junit
+          command: source /etc/profile.d/smartcontracts.sh && pnpm run test:integration --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -260,46 +223,35 @@ jobs:
           path: reports/junit
       - run:
           name: "Upload coverage"
-          command: cd .. && bash <(curl -s https://codecov.io/bash) -F sdk_integration -C $CIRCLE_SHA1
+          command: bash <(curl -s https://codecov.io/bash) -F sdk_integration -C $CIRCLE_SHA1
 
 workflows:
   version: 2
   default_workflow:
     jobs:
       - checkout
-      - install_sdk:
+      - install:
           requires:
             - checkout
-      - install_dapp:
-          requires:
-            - install_sdk
-      - install_cli:
-          requires:
-            - install_dapp
       - check_licenses:
           requires:
-            - install_sdk
-            - install_dapp
-            - install_cli
-      - lint_sdk:
+            - install
+      - lint:
           requires:
-            - install_sdk
-      - lint_dapp:
-          requires:
-            - install_dapp
-      - lint_cli:
-          requires:
-            - install_cli
+            - install
       - build_dapp:
           requires:
-            - install_dapp
+            - install
           context: "Raiden-LC-Deploy"
       - build_cli:
           requires:
-            - install_cli
-      - test_sdk:
+            - install
+      - test_sdk_e2e:
           requires:
-            - install_sdk
+            - install
+      - test_sdk_unit:
+          requires:
+            - install
       - test_dapp:
           requires:
             - build_dapp
@@ -317,19 +269,14 @@ workflows:
       - checkout:
           filters:
             <<: *filter-version-regex
-      - install_sdk:
+      - install:
           requires:
             - checkout
           filters:
             <<: *filter-version-regex
-      - install_dapp:
-          requires:
-            - install_sdk
-          filters:
-            <<: *filter-version-regex
       - build_dapp:
           requires:
-            - install_dapp
+            - install
           filters:
             <<: *filter-version-regex
       - generate_documentation:

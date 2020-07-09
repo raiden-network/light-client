@@ -38,7 +38,7 @@ function serializeError(e: Error): string {
 function filterMessage(message: any[]) {
   if (message[0] === '%c prev state') return;
   if (message[0] === '—— log end ——') return;
-  message = message.map(e =>
+  message = message.map((e) =>
     e instanceof Error
       ? serializeError(e)
       : e?.payload instanceof Error // error action
@@ -75,7 +75,7 @@ export async function setupLogStore(
       const logsStore = db.createObjectStore(collectionName);
       logsStore.createIndex('by-logger', 'logger');
       logsStore.createIndex('by-level', 'level');
-    }
+    },
   });
 
   for (const log of [logging, ...additionalLoggers.map(logging.getLogger)]) {
@@ -95,7 +95,7 @@ export async function setupLogStore(
           {
             logger: loggerName,
             level: methodName,
-            message: filtered
+            message: filtered,
           },
           Date.now()
         ).catch(() =>
@@ -104,7 +104,7 @@ export async function setupLogStore(
             {
               logger: loggerName,
               level: methodName,
-              message: message.map(serialize)
+              message: message.map(serialize),
             },
             Date.now()
           )
@@ -121,7 +121,7 @@ export async function getLogsFromStore(): Promise<[number, string]> {
   while (cursor) {
     const { logger, level, message } = cursor.value;
     const line = message
-      .map(m => (typeof m === 'string' ? m : JSON.stringify(m)))
+      .map((m) => (typeof m === 'string' ? m : JSON.stringify(m)))
       .join(' ');
     lastTime = +cursor.key;
     const time = new Date(cursor.key).toISOString();

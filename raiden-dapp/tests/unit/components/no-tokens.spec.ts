@@ -29,8 +29,8 @@ describe('NoTokens.vue', () => {
       store,
       mocks: {
         $router: router,
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 
@@ -53,7 +53,7 @@ describe('NoTokens.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.SELECT_TOKEN
+        name: RouteNames.SELECT_TOKEN,
       })
     );
   });
@@ -62,22 +62,22 @@ describe('NoTokens.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(0);
 
     store.commit('updateTokens', {
-      [TestData.token.address]: TestData.token
+      [TestData.token.address]: TestData.token,
     } as Tokens);
     store.commit('updateChannels', {
       [TestData.token.address]: {
         [TestData.openChannel.partner]: {
           ...TestData.openChannel,
-          token: TestData.token.address
-        } as RaidenChannel
-      }
+          token: TestData.token.address,
+        } as RaidenChannel,
+      },
     } as RaidenChannels);
     await wrapper.vm.$nextTick();
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.TRANSFER
+        name: RouteNames.TRANSFER,
       })
     );
   });

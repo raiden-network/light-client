@@ -15,8 +15,8 @@ import AccountContent from '@/components/account/AccountContent.vue';
 @Component({
   components: {
     AccountContent,
-    HeaderIdenticon
-  }
+    HeaderIdenticon,
+  },
 })
 export default class AccountRoot extends Vue {}
 </script>

@@ -25,6 +25,13 @@
   "CNL_UPDATE_NONCLOSING_BP_FAILED": "updateNonClosingBalanceProof transaction failed.",
   "CNL_ONCHAIN_UNLOCK_FAILED": "on-chain unlock transaction failed.",
 
+  "CNL_WITHDRAW_TRANSACTION_FAILED": "Withdraw transaction has failed.",
+  "CNL_WITHDRAW_PARTNER_OFFLINE": "Channel partner isn't online.",
+  "CNL_WITHDRAW_EXPIRES_SOON": "Withdraw request expired or expires too soon.",
+  "CNL_WITHDRAW_EXPIRED": "Withdraw request expired.",
+  "CNL_WITHDRAW_AMOUNT_TOO_LOW": "Withdraw request contains an amount smaller than already withdrawn.",
+  "CNL_WITHDRAW_AMOUNT_TOO_HIGH": "Withdraw request contains an amount bigger than channel's liquidity.",
+
   "XFER_EXPIRED": "Transfer expired.",
   "XFER_CHANNEL_CLOSED_PREMATURELY": "Channel was closed before secret got reveiled or transfer unlocked.",
   "XFER_REFUNDED": "Transfer has been refunded.",

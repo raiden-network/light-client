@@ -19,8 +19,8 @@ describe('OpenChannelRoute.vue', () => {
       stubs: ['home', 'open-channel'],
       mocks: {
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

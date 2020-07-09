@@ -32,7 +32,7 @@
                 {{
                   $t('select-token.tokens.token.token-information', {
                     symbol: item.symbol,
-                    name: item.name
+                    name: item.name,
                   })
                 }}
               </v-list-item-title>
@@ -70,7 +70,7 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
 
 @Component({
   components: { ListHeader, AddressDisplay, AmountDisplay },
-  computed: mapGetters(['allTokens'])
+  computed: mapGetters(['allTokens']),
 })
 export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
   allTokens!: Token[];

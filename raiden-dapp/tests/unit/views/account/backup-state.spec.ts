@@ -19,9 +19,9 @@ describe('BackupState.vue', () => {
       vuetify,
       stubs: ['v-dialog'],
       mocks: {
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
       },
-      store
+      store,
     });
   });
 

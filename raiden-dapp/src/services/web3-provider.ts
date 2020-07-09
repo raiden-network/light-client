@@ -1,13 +1,13 @@
 export class Web3Provider {
-  static async provider(config?: { INFURA_ENDPOINT: string }) {
+  static async provider(rpcEndpoint?: string) {
     const ethereum = window.ethereum;
     let provider = null;
 
-    if (config) {
-      if (!config.INFURA_ENDPOINT.startsWith('http')) {
-        provider = `https://${config.INFURA_ENDPOINT}`;
+    if (rpcEndpoint) {
+      if (!rpcEndpoint.startsWith('http')) {
+        provider = `https://${rpcEndpoint}`;
       } else {
-        provider = config.INFURA_ENDPOINT;
+        provider = rpcEndpoint;
       }
     } else if (typeof ethereum !== 'undefined') {
       await ethereum.enable();

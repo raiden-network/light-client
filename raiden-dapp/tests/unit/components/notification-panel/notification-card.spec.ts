@@ -18,7 +18,7 @@ describe('NotificationCard.vue', () => {
     wrapper = mount(NotificationCard, {
       vuetify,
       store,
-      propsData: { notification: TestData.notifications }
+      propsData: { notification: TestData.notifications },
     });
   });
 

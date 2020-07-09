@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "build": "tsc",
-    "build:bundle": "webpack --progress"
+    "build:bundle": "webpack --progress",
+    "preinstall": "npx only-allow pnpm"
   },
   "repository": {
     "type": "git",
@@ -24,16 +25,18 @@
     "@types/node": "14.0.14",
     "@types/node-localstorage": "1.3.0",
     "@types/yargs": "15.0.5",
-    "@typescript-eslint/eslint-plugin": "3.4.0",
-    "@typescript-eslint/parser": "3.4.0",
-    "eslint": "7.3.1",
+    "@typescript-eslint/eslint-plugin": "3.5.0",
+    "@typescript-eslint/parser": "3.5.0",
+    "eslint": "7.4.0",
     "eslint-config-prettier": "6.11.0",
-    "eslint-plugin-import": "2.21.2",
+    "eslint-plugin-import": "2.22.0",
     "eslint-plugin-prettier": "3.1.4",
     "native-ext-loader": "2.3.0",
+    "node-pre-gyp": "0.15.0",
     "prettier": "2.0.5",
+    "symbol-observable": "1.2.0",
     "ts-loader": "7.0.5",
-    "typescript": "3.9.5",
+    "typescript": "3.9.6",
     "webpack": "4.43.0",
     "webpack-cli": "3.3.12"
   },
@@ -42,15 +45,15 @@
     "@types/morgan": "1.9.1",
     "ethers": "4.0.47",
     "express": "4.17.1",
-    "http-errors": "1.7.3",
-    "inquirer": "7.2.0",
+    "http-errors": "1.8.0",
+    "inquirer": "7.3.0",
     "loglevel": "1.6.8",
     "morgan": "1.10.0",
     "node-localstorage": "2.1.6",
-    "raiden-ts": "file:../raiden-ts",
-    "rxjs": "6.5.5",
+    "raiden-ts": "*",
+    "rxjs": "6.6.0",
     "wrtc": "0.4.5",
-    "yargs": "15.3.1"
+    "yargs": "15.4.0"
   },
   "eslintConfig": {
     "parser": "@typescript-eslint/parser",

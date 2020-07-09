@@ -9,6 +9,7 @@ import {
   waitBlock,
   providersEmit,
   makeLog,
+  sleep,
 } from './mocks';
 
 import { Subject } from 'rxjs';
@@ -35,10 +36,11 @@ import { getLatest$ } from 'raiden-ts/epics';
 import { channelKey } from 'raiden-ts/channels/utils';
 import { tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState, Channel } from 'raiden-ts/channels';
-import { Direction } from 'raiden-ts/transfers/state';
+import { Direction, TransferState } from 'raiden-ts/transfers/state';
 import { transfer, transferUnlock } from 'raiden-ts/transfers/actions';
 import { messageReceived } from 'raiden-ts/messages/actions';
 import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
+import { assert } from 'raiden-ts/utils';
 
 /**
  * Composes several constants used across epics
@@ -153,7 +155,7 @@ export const confirmationBlocks = 5;
 export const id = 17; // channelId
 export const isFirstParticipant = true;
 export const openBlock = 121;
-export const closeBlock = openBlock + 10;
+export const closeBlock = openBlock + revealTimeout;
 export const settleBlock = closeBlock + settleTimeout + 1;
 export const txHash = makeHash();
 export const deposit = bigNumberify(1000) as UInt<32>;
@@ -228,7 +230,7 @@ export async function ensureChannelIsOpen([raiden, partner]: [
   if (getChannel(raiden, partner)) return;
 
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
-  providersEmit(
+  await providersEmit(
     getChannelEventsFilter(tokenNetworkContract),
     makeLog({
       transactionHash: makeHash(),
@@ -243,7 +245,10 @@ export async function ensureChannelIsOpen([raiden, partner]: [
     }),
   );
   await waitBlock(openBlock);
+  await sleep(raiden.deps.provider.pollingInterval);
   await waitBlock(openBlock + confirmationBlocks + 1); // confirmation
+  assert(getChannel(raiden, partner), 'Raiden channel not open');
+  assert(getChannel(partner, raiden), 'Partner channel not open');
 }
 
 /**
@@ -265,7 +270,7 @@ export async function ensureChannelIsDeposited(
   const participant = raiden.address;
 
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
-  providersEmit(
+  await providersEmit(
     getChannelEventsFilter(tokenNetworkContract),
     makeLog({
       transactionHash: txHash,
@@ -274,11 +279,13 @@ export async function ensureChannelIsDeposited(
       data: defaultAbiCoder.encode(['uint256'], [totalDeposit]),
     }),
   );
+  await waitBlock(txBlock);
   while (
     getChannel(raiden, partner).own.deposit.lt(totalDeposit) ||
     getChannel(partner, raiden).partner.deposit.lt(totalDeposit)
   ) {
     await waitBlock();
+    await sleep(raiden.deps.provider.pollingInterval);
   }
 }
 
@@ -293,10 +300,11 @@ export async function ensureChannelIsClosed([raiden, partner]: [
   MockedRaiden,
   MockedRaiden,
 ]): Promise<void> {
+  const closedStates = [ChannelState.closed, ChannelState.settleable, ChannelState.settling];
   await ensureChannelIsOpen([raiden, partner]);
-  if (getChannel(raiden, partner).state === ChannelState.closed) return;
+  if (closedStates.includes(getChannel(raiden, partner).state)) return;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
-  providersEmit(
+  await providersEmit(
     getChannelEventsFilter(tokenNetworkContract),
     makeLog({
       transactionHash: makeHash(),
@@ -306,7 +314,10 @@ export async function ensureChannelIsClosed([raiden, partner]: [
     }),
   );
   await waitBlock(closeBlock);
+  await sleep(raiden.deps.provider.pollingInterval);
   await waitBlock(closeBlock + confirmationBlocks + 1); // confirmation
+  assert(closedStates.includes(getChannel(raiden, partner)?.state), 'Raiden channel not closed');
+  assert(closedStates.includes(getChannel(partner, raiden)?.state), 'Partner channel not closed');
 }
 
 /**
@@ -323,7 +334,7 @@ export async function ensureChannelIsSettled([raiden, partner]: [
   await ensureChannelIsClosed([raiden, partner]);
   if (!getChannel(raiden, partner)) return;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
-  providersEmit(
+  await providersEmit(
     getChannelEventsFilter(tokenNetworkContract),
     makeLog({
       transactionHash: makeHash(),
@@ -336,7 +347,10 @@ export async function ensureChannelIsSettled([raiden, partner]: [
     }),
   );
   await waitBlock(settleBlock);
+  await sleep(raiden.deps.provider.pollingInterval);
   await waitBlock(settleBlock + confirmationBlocks + 1); // confirmation
+  assert(!getChannel(raiden, partner), 'Raiden channel not settled');
+  assert(!getChannel(partner, raiden), 'Partner channel not settled');
 }
 
 /**
@@ -346,13 +360,15 @@ export async function ensureChannelIsSettled([raiden, partner]: [
  * @param clients.0 - Transfer sender node
  * @param clients.1 - Transfer receiver node
  * @param value - Amount to transfer
+ * @returns Promise to sent TransferState
  */
 export async function ensureTransferPending(
   [raiden, partner]: [MockedRaiden, MockedRaiden],
   value = amount,
-): Promise<void> {
+): Promise<TransferState> {
   await ensureChannelIsDeposited([raiden, partner], value); // from partner to raiden
-  if (secrethash in partner.store.getState().received) return;
+  if (secrethash in partner.store.getState().received)
+    return raiden.store.getState().sent[secrethash];
 
   const paymentId = makePaymentId();
   const sentPromise = raiden.deps.latest$
@@ -386,6 +402,7 @@ export async function ensureTransferPending(
     ),
   );
   await receivedPromise;
+  return sent;
 }
 
 /**
@@ -395,13 +412,15 @@ export async function ensureTransferPending(
  * @param clients.0 - Transfer sender node
  * @param clients.1 - Transfer receiver node
  * @param value - Value to transfer
+ * @returns Promise to sent TransferState
  */
 export async function ensureTransferUnlocked(
   [raiden, partner]: [MockedRaiden, MockedRaiden],
   value = amount,
-): Promise<void> {
+): Promise<TransferState> {
   await ensureTransferPending([raiden, partner], value); // from partner to raiden
-  if (partner.store.getState().received[secrethash]?.unlock) return;
+  if (partner.store.getState().received[secrethash]?.unlock)
+    return partner.store.getState().received[secrethash];
 
   const sentPromise = raiden.deps.latest$
     .pipe(
@@ -424,4 +443,5 @@ export async function ensureTransferUnlocked(
     ),
   );
   await receivedPromise;
+  return sent;
 }

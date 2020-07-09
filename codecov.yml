@@ -20,7 +20,10 @@ coverage:
         target: 85%
         threshold: 1.00%
       sdk:
-        flags: sdk
+        flags:
+          - sdk_unit
+          - sdk_integration
+          - sdk_e2e
         target: 85%
         threshold: 1.00%
 
@@ -28,6 +31,12 @@ flags:
   dapp:
     paths:
       - raiden-dapp/
+  sdk_unit:
+    paths:
+      - raiden-ts/
+  sdk_e2e:
+    paths:
+      - raiden-ts/
   sdk:
     paths:
       - raiden-ts/

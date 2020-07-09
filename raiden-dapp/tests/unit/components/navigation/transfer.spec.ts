@@ -38,7 +38,7 @@ describe('Transfer.vue', () => {
     balance: One,
     decimals: 18,
     symbol: 'TTT',
-    name: 'Test Token'
+    name: 'Test Token',
   };
 
   function createWrapper(
@@ -54,12 +54,12 @@ describe('Transfer.vue', () => {
       mocks: {
         $router: router,
         $route: TestData.mockRoute({
-          token: '0xtoken'
+          token: '0xtoken',
         }),
         $raiden: raiden,
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     };
     return mount(Transfer, options);
   }
@@ -78,12 +78,12 @@ describe('Transfer.vue', () => {
     raiden.findRoutes = jest.fn().mockResolvedValue([
       {
         path: ['0xaddr'],
-        fee: new BigNumber(1 ** 8)
-      }
+        fee: new BigNumber(1 ** 8),
+      },
     ]);
 
     router.currentRoute = TestData.mockRoute({
-      token: '0xtoken'
+      token: '0xtoken',
     });
 
     store.commit('updateChannels', {
@@ -100,15 +100,15 @@ describe('Transfer.vue', () => {
           tokenNetwork: '0xtokennetwork' as any,
           closeBlock: undefined,
           openBlock: 12346,
-          id: 1
-        }
-      }
+          id: 1,
+        },
+      },
     });
     store.commit('updateTokens', { '0xtoken': token });
     store.commit('account', '0x1234567890');
 
     store.commit('updatePresence', {
-      ['0x32bBc8ba52FB6F61C24809FdeDA1baa5E55e55EA']: true
+      ['0x32bBc8ba52FB6F61C24809FdeDA1baa5E55e55EA']: true,
     });
 
     wrapper = createWrapper(router, raiden);
@@ -131,7 +131,7 @@ describe('Transfer.vue', () => {
     mockInput(amountInput, '0.01');
     await wrapper.vm.$nextTick();
     wrapper.setData({
-      valid: true
+      valid: true,
     });
     await wrapper.vm.$nextTick();
 
@@ -145,7 +145,7 @@ describe('Transfer.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.TRANSFER_STEPS
+        name: RouteNames.TRANSFER_STEPS,
       })
     );
   });
@@ -188,7 +188,7 @@ describe('Transfer.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.CHANNELS
+        name: RouteNames.CHANNELS,
       })
     );
   });

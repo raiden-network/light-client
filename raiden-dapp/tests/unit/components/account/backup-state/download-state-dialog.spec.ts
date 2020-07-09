@@ -16,11 +16,11 @@ describe('DownloadStateDialog.vue', () => {
       vuetify,
       stubs: ['v-dialog'],
       mocks: {
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
       },
       propsData: {
-        visible: true
-      }
+        visible: true,
+      },
     });
   });
 

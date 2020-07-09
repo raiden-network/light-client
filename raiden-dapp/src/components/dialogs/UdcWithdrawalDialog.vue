@@ -46,14 +46,14 @@
             {{
               $t('udc-deposit-dialog.available', {
                 balance: accountBalance,
-                currency: $t('app-header.currency')
+                currency: $t('app-header.currency'),
               })
             }}
           </v-row>
         </v-col>
       </v-row>
     </v-card-text>
-    <v-card-actions v-if="!error">
+    <v-card-actions v-if="!error && !isDone">
       <action-button
         :enabled="isValid"
         :text="$t('general.buttons.confirm')"
@@ -87,11 +87,11 @@ import Spinner from '@/components/icons/Spinner.vue';
     ErrorMessage,
     RaidenDialog,
     ActionButton,
-    Spinner
+    Spinner,
   },
   computed: {
-    ...mapGetters(['udcToken'])
-  }
+    ...mapGetters(['udcToken']),
+  },
 })
 export default class UdcWithdrawalDialog extends Vue {
   amount: string = '0';
@@ -112,6 +112,7 @@ export default class UdcWithdrawalDialog extends Vue {
     this.isDone = true;
     setTimeout(() => {
       this.isDone = false;
+      this.cancel();
     }, 5000);
   }
 

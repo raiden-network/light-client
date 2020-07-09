@@ -1,4 +1,12 @@
-import { makeLog, makeRaidens, makeHash, waitBlock, makeTransaction, makeAddress } from '../mocks';
+import {
+  makeLog,
+  makeRaidens,
+  makeHash,
+  waitBlock,
+  makeTransaction,
+  makeAddress,
+  providersEmit,
+} from '../mocks';
 import {
   token,
   tokenNetwork,
@@ -223,10 +231,9 @@ describe('channelEventsEpic', () => {
 
     await ensureChannelIsOpen([raiden, partner]);
     await waitBlock(openBlock + 2);
-    raiden.deps.provider.emit(
+    await providersEmit(
       getChannelEventsFilter(tokenNetworkContract),
       makeLog({
-        blockNumber: openBlock + 2,
         filter: tokenNetworkContract.filters.ChannelNewDeposit(id, partner.address, null),
         data: depositEncoded, // non-indexed total_deposit = 1023 goes in data
       }),
@@ -240,7 +247,7 @@ describe('channelEventsEpic', () => {
           participant: partner.address,
           totalDeposit: deposit,
           txHash: expect.any(String),
-          txBlock: openBlock + 2,
+          txBlock: expect.any(Number),
           confirmed: undefined,
         },
         { tokenNetwork, partner: partner.address },
@@ -319,7 +326,7 @@ describe('channelEventsEpic', () => {
   });
 
   test('new$ ChannelSettled event', async () => {
-    expect.assertions(7);
+    expect.assertions(5);
     const settleDataEncoded = defaultAbiCoder.encode(
       ['uint256', 'bytes32', 'uint256', 'bytes32'],
       [Zero, HashZero, Zero, HashZero],
@@ -332,13 +339,9 @@ describe('channelEventsEpic', () => {
     raiden.store.dispatch(channelMonitored({ id }, { tokenNetwork, partner: partner.address }));
     await waitBlock(settleBlock);
 
-    const filter = getChannelEventsFilter(tokenNetworkContract);
-    expect(raiden.deps.provider.on).toHaveBeenCalledWith(filter, expect.any(Function));
-    expect(raiden.deps.provider.listenerCount(filter)).toBe(1);
-
     const settleHash = makeHash();
-    raiden.deps.provider.emit(
-      filter,
+    await providersEmit(
+      getChannelEventsFilter(tokenNetworkContract),
       makeLog({
         blockNumber: settleBlock,
         transactionHash: settleHash,
@@ -408,7 +411,9 @@ describe('channelDepositEpic', () => {
       channelDeposit.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
     );
     expect(tokenContract.functions.approve).toHaveBeenCalledTimes(1);
-    expect(tokenContract.functions.approve).toHaveBeenCalledWith(tokenNetwork, deposit);
+    expect(tokenContract.functions.approve).toHaveBeenCalledWith(tokenNetwork, deposit, {
+      nonce: undefined,
+    });
   });
 
   test('setTotalDeposit tx fails', async () => {
@@ -632,7 +637,7 @@ describe('channelSettleEpic', () => {
     );
   });
 
-  test('success', async () => {
+  test('success!', async () => {
     expect.assertions(6);
 
     const [raiden, partner] = await makeRaidens(2);

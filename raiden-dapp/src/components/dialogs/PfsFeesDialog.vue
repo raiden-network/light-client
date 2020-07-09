@@ -31,7 +31,7 @@ import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 
 @Component({
-  components: { RaidenDialog, Spinner }
+  components: { RaidenDialog, Spinner },
 })
 export default class PfsFeesDialog extends Vue {
   @Prop({ required: true, type: Boolean })

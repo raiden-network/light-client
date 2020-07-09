@@ -1,22 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { EMPTY, MonoTypeOperatorFunction, Observable } from 'rxjs';
-import {
-  delay,
-  filter,
-  mergeMap,
-  repeatWhen,
-  takeUntil,
-  withLatestFrom,
-  switchMap,
-  first,
-} from 'rxjs/operators';
+import { EMPTY, Observable } from 'rxjs';
+import { filter, mergeMap, withLatestFrom, switchMap, first } from 'rxjs/operators';
 
 import { RaidenAction } from '../../actions';
 import { RaidenConfig } from '../../config';
 import { messageSend } from '../../messages/actions';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
-import { isActionOf, isResponseOf } from '../../utils/actions';
+import { isActionOf } from '../../utils/actions';
 import { pluckDistinct } from '../../utils/rx';
 import {
   transferExpire,
@@ -26,31 +17,7 @@ import {
   transferSecretReveal,
 } from '../actions';
 import { Direction } from '../state';
-import { dispatchAndWait$ } from './utils';
-
-function repeatUntil<T>(notifier: Observable<any>, delayMs = 30e3): MonoTypeOperatorFunction<T> {
-  // Resubscribe/retry every 30s after messageSend succeeds
-  // Notice first (or any) messageSend.request can wait for a long time before succeeding, as it
-  // waits for address's user in transport to be online and joined room before actually
-  // sending the message. That's why repeatWhen emits/resubscribe only some time after
-  // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-  return (input$) =>
-    input$.pipe(
-      repeatWhen((completed$) => completed$.pipe(delay(delayMs))),
-      takeUntil(notifier),
-    );
-}
-
-function retrySendUntil$(
-  send: messageSend.request,
-  action$: Observable<RaidenAction>,
-  notifier: Observable<any>,
-  delayMs = 30e3,
-): Observable<messageSend.request> {
-  return dispatchAndWait$(action$, send, isResponseOf(messageSend, send.meta)).pipe(
-    repeatUntil(notifier, delayMs),
-  );
-}
+import { retrySendUntil$ } from './utils';
 
 /**
  * Handles a transferSigned action and retry messageSend.request until transfer is gone (completed

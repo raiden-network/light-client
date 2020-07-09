@@ -38,8 +38,8 @@ import NavigationMixin from '../../../mixins/navigation-mixin';
 @Component({
   components: {
     RaidenDialog,
-    ActionButton
-  }
+    ActionButton,
+  },
 })
 export default class DownloadStateDialog extends Mixins(NavigationMixin) {
   @Prop({ required: true, type: Boolean, default: false })

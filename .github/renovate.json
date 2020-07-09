@@ -3,6 +3,15 @@
     "config:base"
   ],
   "commitMessagePrefix": "dependencies:",
+  "packageRules": [
+    {
+      "packagePatterns": [
+        "*"
+      ],
+      "groupName": "all dependencies",
+      "groupSlug": "all"
+    }
+  ],
   "labels": ["dependencies"],
   "lockFileMaintenance": { "enabled": true },
   "schedule": ["after 8am on thursday"],

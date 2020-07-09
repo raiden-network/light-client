@@ -13,5 +13,5 @@ export enum RouteNames {
   ACCOUNT_SETTINGS = 'account-settings',
   ACCOUNT_WITHDRAWAL = 'account-withdrawal',
   ACCOUNT_UDC = 'account-udc',
-  NOTIFICATIONS = 'notifications'
+  NOTIFICATIONS = 'notifications',
 }

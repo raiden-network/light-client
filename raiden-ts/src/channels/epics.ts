@@ -38,7 +38,7 @@ import isEmpty from 'lodash/isEmpty';
 import { BigNumber, concat, defaultAbiCoder } from 'ethers/utils';
 import { Event } from 'ethers/contract';
 import { Zero } from 'ethers/constants';
-import { Filter, Log } from 'ethers/providers';
+import { Filter, Log, JsonRpcProvider } from 'ethers/providers';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
@@ -78,13 +78,23 @@ import { assertTx, channelKey, groupChannel$, channelUniqueKey } from './utils';
  *
  * @param func - An async function (e.g. a Promise factory, like a defer callback)
  * @param interval - Interval to retry in case of rejection
- * @param retries - Max number of times to retry
+ * @param stopPredicate - Stops retrying and throws if this function returns a truty value;
+ *      Receives error and retry count; Default: stops after 10 retries
  * @returns Observable version of async function, with retries
  */
-function retryAsync$<T>(func: () => Promise<T>, interval = 1e3, retries = 10): Observable<T> {
+function retryAsync$<T>(
+  func: () => Promise<T>,
+  interval = 1e3,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
+): Observable<T> {
   return defer(func).pipe(
-    retryWhen((err$) =>
-      err$.pipe(mergeMap((err, i) => (i < retries ? timer(interval) : throwError(err)))),
+    retryWhen((error$) =>
+      error$.pipe(
+        mergeMap((error, count) =>
+          stopPredicate(error, count) ? throwError(error) : timer(interval),
+        ),
+      ),
     ),
   );
 }
@@ -468,7 +478,7 @@ function fetchPastChannelEvents$(
 }
 
 function fetchNewChannelEvents$([token, tokenNetwork]: [Address, Address], deps: RaidenEpicDeps) {
-  const { provider, getTokenNetworkContract } = deps;
+  const { provider, getTokenNetworkContract, config$ } = deps;
   const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
 
   // this mapping is needed to handle channel events emitted before open is confirmed/stored
@@ -478,7 +488,11 @@ function fetchNewChannelEvents$([token, tokenNetwork]: [Address, Address], deps:
     topics: [Object.values(getChannelEventsTopics(tokenNetworkContract))],
   };
 
-  return fromEthersEvent<Log>(provider, channelFilter).pipe(
+  return config$.pipe(
+    first(),
+    mergeMap(({ confirmationBlocks }) =>
+      fromEthersEvent<Log>(provider, channelFilter, undefined, confirmationBlocks),
+    ),
     map(logToContractEvent<ChannelEvents>(tokenNetworkContract)),
     filter(isntNil),
     mapChannelEventsToAction([token, tokenNetwork], deps),
@@ -595,21 +609,34 @@ export const channelMonitoredEpic = (
   );
 
 const makeDeposit$ = (
-  tokenContract: HumanStandardToken,
-  tokenNetworkContract: TokenNetwork,
-  sender: Address,
-  address: Address,
-  partner: Address,
+  [tokenContract, tokenNetworkContract]: [HumanStandardToken, TokenNetwork],
+  [sender, address, partner]: [Address, Address, Address],
   deposit: UInt<32> | undefined,
   channelId$: Observable<number>,
   { log }: Pick<RaidenEpicDeps, 'log'>,
+  approveNonce?: number,
 ): Observable<channelDeposit.failure> => {
   if (!deposit?.gt(Zero)) return EMPTY;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function stopRetryIfRejected(err: any, count: number) {
+    // 4001 is Metamask's code for rejected/denied signature prompt
+    const metamaskRejectedErrorCode = 4001;
+    return count >= 10 || err?.code === metamaskRejectedErrorCode;
+  }
+
   return defer(() => tokenContract.functions.allowance(sender, tokenNetworkContract.address)).pipe(
     mergeMap((allowance) =>
       allowance.gte(deposit)
         ? of(true)
-        : from(tokenContract.functions.approve(tokenNetworkContract.address, deposit)).pipe(
+        : retryAsync$(
+            () =>
+              tokenContract.functions.approve(tokenNetworkContract.address, deposit, {
+                nonce: approveNonce,
+              }),
+            (tokenContract.provider as JsonRpcProvider).pollingInterval,
+            stopRetryIfRejected,
+          ).pipe(
             // if needed, send approveTx and wait/assert it before proceeding
             assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
           ),
@@ -624,11 +651,16 @@ const makeDeposit$ = (
     ),
     mergeMap(([id, totalDeposit]) =>
       // send setTotalDeposit transaction
-      tokenNetworkContract.functions.setTotalDeposit(
-        id,
-        address,
-        totalDeposit.add(deposit),
-        partner,
+      retryAsync$(
+        () =>
+          tokenNetworkContract.functions.setTotalDeposit(
+            id,
+            address,
+            totalDeposit.add(deposit),
+            partner,
+          ),
+        (tokenNetworkContract.provider as JsonRpcProvider).pollingInterval,
+        stopRetryIfRejected,
       ),
     ),
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log }),
@@ -727,14 +759,12 @@ export const channelOpenEpic = (
                 // errors on makeDeposit$ are handled independently and don't fail open request
                 // but the channelDeposit.failure action may be fired
                 makeDeposit$(
-                  tokenContract,
-                  tokenNetworkContract,
-                  onchainAddress,
-                  address,
-                  partner,
+                  [tokenContract, tokenNetworkContract],
+                  [onchainAddress, address, partner],
                   action.payload.deposit,
                   channelId$,
                   { log },
+                  tx.nonce + 1,
                 ),
               ),
             ),
@@ -800,11 +830,8 @@ export const channelDepositEpic = (
       );
 
       return makeDeposit$(
-        tokenContract,
-        tokenNetworkContract,
-        onchainAddress,
-        address,
-        partner,
+        [tokenContract, tokenNetworkContract],
+        [onchainAddress, address, partner],
         action.payload.deposit,
         of(channel.id),
         { log },

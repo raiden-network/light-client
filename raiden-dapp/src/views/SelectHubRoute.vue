@@ -10,7 +10,7 @@ import SelectHub from '../components/navigation/SelectHub.vue';
 import LazyRoute from '@/views/LazyRoute.vue';
 
 @Component({
-  components: { LazyRoute, SelectHub }
+  components: { LazyRoute, SelectHub },
 })
 export default class SelectHubRoute extends Vue {}
 </script>

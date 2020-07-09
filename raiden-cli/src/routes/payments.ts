@@ -21,16 +21,17 @@ function isConflictError(error: RaidenError): boolean {
   ].includes(error.message);
 }
 
-async function getPaymentsForTokenAndTarget(this: Cli, request: Request, response: Response) {
+async function getPaymentsForTokenAndEnd(this: Cli, request: Request, response: Response) {
   const allTransfers = await this.raiden.transfers$
     .pipe(takeUntil(timer(0)), toArray())
     .toPromise();
   const filteredTransfers = allTransfers.filter(
     (transfer) =>
       transfer.token === request.params.tokenAddress &&
-      transfer.target === request.params.targetAddress,
+      (transfer.target === request.params.endAddress ||
+        transfer.initiator === request.params.endAddress),
   );
-  const payments = filteredTransfers.map((transfer) => transformSdkTransferToApiPayment(transfer));
+  const payments = filteredTransfers.map(transformSdkTransferToApiPayment);
   response.json(payments);
 }
 
@@ -63,11 +64,12 @@ async function doTransfer(this: Cli, request: Request, response: Response, next:
 export function makePaymentsRouter(this: Cli): Router {
   const router = Router();
 
+  // end is either initiator (for received transfers) or target (for sent)
   router.get(
-    '/:tokenAddress/:targetAddress',
+    '/:tokenAddress/:endAddress',
     validateAddressParameter.bind('tokenAddress'),
-    validateAddressParameter.bind('targetAddress'),
-    getPaymentsForTokenAndTarget.bind(this),
+    validateAddressParameter.bind('endAddress'),
+    getPaymentsForTokenAndEnd.bind(this),
   );
 
   router.post(

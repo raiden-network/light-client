@@ -54,10 +54,10 @@ Go to the `raiden-ts` directory to start bump the package version.
 cd raiden-ts
 ```
 
-Then run `npm version` to bump the version for both `package.json` and `package-lock.json`. Let's assume that we prepare for a new release containing a couple of minor bug fixes. You have to run the following command: 
+Then run `pnpm version` to bump the version for`package.json`. Let's assume that we prepare for a new release containing a couple of minor bug fixes. You have to run the following command: 
 
 ```bash
-npm version patch
+pnpm version patch
 ```
 
 Assuming `raiden-ts` was at version `0.22.0`, the command will update the package files' version tag to `0.22.1`. 
@@ -67,7 +67,6 @@ Then you need to create a new commit with the message `0.22.0->0.22.1`. After th
 
 ```bash
 git add package.json
-git add package-lock.json
 git commit -m '0.22.0->0.22.1'
 ```
 
@@ -106,7 +105,7 @@ git pull upstream master
 If you never published an update before you, need to login to `npm` with the cli utility.
 
 ```bash
-npm login
+pnpm login
 ```  
 
 You should follow the prompts displayed by the command. The command should create an `.npmrc` file in your home directory. This file contains your `authToken`. 
@@ -115,7 +114,7 @@ You should follow the prompts displayed by the command. The command should creat
 To publish you just need to run:
 
 ```bash
-npm run publish
+pnpm run publish --filter raiden-ts
 ```
 
 The command will take care of the building and publishing of the package to `npm`.

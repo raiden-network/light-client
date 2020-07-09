@@ -70,13 +70,13 @@ export default class FindRoutes extends Vue {
       {
         text: this.$t('find-routes.hops') as string,
         align: 'left',
-        value: 'hops'
+        value: 'hops',
       },
       {
         text: this.$t('find-routes.price') as string,
         align: 'right',
-        value: 'fee'
-      }
+        value: 'fee',
+      },
     ];
 
     const [route] = this.routes;

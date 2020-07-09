@@ -24,7 +24,7 @@ export type Direction = typeof Direction[keyof typeof Direction];
  * This struct holds the relevant messages exchanged in a transfer
  * The transfer state is defined by the exchanged messages
  */
-export const TransferState = t.readonly(
+const _TransferState = t.readonly(
   t.intersection([
     t.type({
       /** -> outgoing locked transfer */
@@ -91,13 +91,15 @@ export const TransferState = t.readonly(
     }),
   ]),
 );
-export type TransferState = t.TypeOf<typeof TransferState>;
+export interface TransferState extends t.TypeOf<typeof _TransferState> {}
+export interface TransferStateC extends t.Type<TransferState, t.OutputOf<typeof _TransferState>> {}
+export const TransferState: TransferStateC = _TransferState;
 
 /**
  * Mapping of outgoing transfers, indexed by the secrethash
  */
 export const TransfersState = t.readonly(t.record(t.string /* secrethash: Hash */, TransferState));
-export type TransfersState = t.TypeOf<typeof TransfersState>;
+export interface TransfersState extends t.TypeOf<typeof TransfersState> {}
 
 export enum RaidenTransferStatus {
   pending = 'PENDING', // transfer was just sent

@@ -28,7 +28,7 @@ import {
   transferRefunded,
   transferUnlockProcessed,
   transferExpireProcessed,
-  withdrawReceive,
+  withdrawMessage,
   transferSecretRequest,
   transferSecretRegister,
 } from 'raiden-ts/transfers/actions';
@@ -1219,7 +1219,7 @@ describe('raidenReducer', () => {
     });
 
     // withdraw request is under transfer just to use its pending transfer setup/vars
-    test('withdrawReceive.success', () => {
+    test('withdrawMessage.success', () => {
       let confirmation: Signed<WithdrawConfirmation> = {
         type: MessageType.WITHDRAW_CONFIRMATION,
         message_identifier: makeMessageId(),
@@ -1237,9 +1237,10 @@ describe('raidenReducer', () => {
       // no previous balanceProof, next nonce = 1 should work
       const newState = raidenReducer(
         state,
-        withdrawReceive.success(
+        withdrawMessage.success(
           { message: confirmation },
           {
+            direction: Direction.RECEIVED,
             tokenNetwork,
             partner,
             totalWithdraw: confirmation.total_withdraw,
@@ -1273,9 +1274,10 @@ describe('raidenReducer', () => {
       // forgot to update nonce, reducer must be noop
       let newState2 = raidenReducer(
         newState1,
-        withdrawReceive.success(
+        withdrawMessage.success(
           { message: confirmation },
           {
+            direction: Direction.RECEIVED,
             tokenNetwork,
             partner,
             totalWithdraw: confirmation.total_withdraw,
@@ -1293,9 +1295,10 @@ describe('raidenReducer', () => {
 
       newState2 = raidenReducer(
         newState1,
-        withdrawReceive.success(
+        withdrawMessage.success(
           { message: confirmation },
           {
+            direction: Direction.RECEIVED,
             tokenNetwork,
             partner,
             totalWithdraw: confirmation.total_withdraw,

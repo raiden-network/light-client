@@ -131,11 +131,11 @@ import Spinner from '@/components/icons/Spinner.vue';
     RaidenDialog,
     AddressDisplay,
     AmountDisplay,
-    Spinner
+    Spinner,
   },
   computed: {
-    ...mapState(['tokens', 'raidenAccountBalance'])
-  }
+    ...mapState(['tokens', 'raidenAccountBalance']),
+  },
 })
 export default class Withdrawal extends Mixins(BlockieMixin) {
   tokens!: Tokens;
@@ -158,7 +158,9 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
       this.withdrawing = true;
       const { address, balance } = this.withdraw;
       await this.$raiden.transferOnChainTokens(address, balance);
-      this.balances = this.balances.filter(token => token.address !== address);
+      this.balances = this.balances.filter(
+        (token) => token.address !== address
+      );
       this.withdraw = null;
     } catch (e) {
     } finally {

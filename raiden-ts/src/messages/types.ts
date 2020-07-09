@@ -30,16 +30,18 @@ export enum MessageType {
 const RetrieableMessage = t.readonly(t.type({ message_identifier: UInt(8) }));
 
 // Acknowledges to the sender that a RetrieableMessage was received
-export const Delivered = t.readonly(
+const _Delivered = t.readonly(
   t.type({
     type: t.literal(MessageType.DELIVERED),
     delivered_message_identifier: UInt(8),
   }),
 );
-export interface Delivered extends t.TypeOf<typeof Delivered> {}
+export interface Delivered extends t.TypeOf<typeof _Delivered> {}
+export interface DeliveredC extends t.Type<Delivered, t.OutputOf<typeof _Delivered>> {}
+export const Delivered: DeliveredC = _Delivered;
 
 // Confirms some message that required state validation was successfuly processed
-export const Processed = t.readonly(
+const _Processed = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.PROCESSED),
@@ -47,10 +49,12 @@ export const Processed = t.readonly(
     RetrieableMessage,
   ]),
 );
-export interface Processed extends t.TypeOf<typeof Processed> {}
+export interface Processed extends t.TypeOf<typeof _Processed> {}
+export interface ProcessedC extends t.Type<Processed, t.OutputOf<typeof _Processed>> {}
+export const Processed: ProcessedC = _Processed;
 
 // Requests the initiator to reveal the secret for a LockedTransfer targeted to us
-export const SecretRequest = t.readonly(
+const _SecretRequest = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.SECRET_REQUEST),
@@ -62,10 +66,12 @@ export const SecretRequest = t.readonly(
     RetrieableMessage,
   ]),
 );
-export interface SecretRequest extends t.TypeOf<typeof SecretRequest> {}
+export interface SecretRequest extends t.TypeOf<typeof _SecretRequest> {}
+export interface SecretRequestC extends t.Type<SecretRequest, t.OutputOf<typeof _SecretRequest>> {}
+export const SecretRequest: SecretRequestC = _SecretRequest;
 
 // Reveal to the target or the previous hop a secret we just learned off-chain
-export const SecretReveal = t.readonly(
+const _SecretReveal = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.SECRET_REVEAL),
@@ -74,10 +80,12 @@ export const SecretReveal = t.readonly(
     RetrieableMessage,
   ]),
 );
-export interface SecretReveal extends t.TypeOf<typeof SecretReveal> {}
+export interface SecretReveal extends t.TypeOf<typeof _SecretReveal> {}
+export interface SecretRevealC extends t.Type<SecretReveal, t.OutputOf<typeof _SecretReveal>> {}
+export const SecretReveal: SecretRevealC = _SecretReveal;
 
 // Mixin for messages containing a balance proof
-export const EnvelopeMessage = t.readonly(
+const EnvelopeMessage = t.readonly(
   t.intersection([
     t.type({
       chain_id: UInt(32),
@@ -92,19 +100,23 @@ export const EnvelopeMessage = t.readonly(
   ]),
 );
 
-export const RouteMetadata = t.readonly(
+const _RouteMetadata = t.readonly(
   t.type({
     route: t.readonlyArray(Address),
   }),
 );
-export interface RouteMetadata extends t.TypeOf<typeof RouteMetadata> {}
+export interface RouteMetadata extends t.TypeOf<typeof _RouteMetadata> {}
+export interface RouteMetadataC extends t.Type<RouteMetadata, t.OutputOf<typeof _RouteMetadata>> {}
+export const RouteMetadata: RouteMetadataC = _RouteMetadata;
 
-export const Metadata = t.readonly(
+const _Metadata = t.readonly(
   t.type({
     routes: t.readonlyArray(RouteMetadata),
   }),
 );
-export interface Metadata extends t.TypeOf<typeof Metadata> {}
+export interface Metadata extends t.TypeOf<typeof _Metadata> {}
+export interface MetadataC extends t.Type<Metadata, t.OutputOf<typeof _Metadata>> {}
+export const Metadata: MetadataC = _Metadata;
 
 // base for locked and refund transfer, they differentiate only on the type tag
 const LockedTransferBase = t.readonly(
@@ -123,7 +135,7 @@ const LockedTransferBase = t.readonly(
 );
 
 // a mediated transfer containing a locked amount
-export const LockedTransfer = t.readonly(
+const _LockedTransfer = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.LOCKED_TRANSFER),
@@ -131,11 +143,14 @@ export const LockedTransfer = t.readonly(
     LockedTransferBase,
   ]),
 );
-export interface LockedTransfer extends t.TypeOf<typeof LockedTransfer> {}
+export interface LockedTransfer extends t.TypeOf<typeof _LockedTransfer> {}
+export interface LockedTransferC
+  extends t.Type<LockedTransfer, t.OutputOf<typeof _LockedTransfer>> {}
+export const LockedTransfer: LockedTransferC = _LockedTransfer;
 
 // if a mediated transfer didn't succeed, mediator can refund the amount with the same secrethash
 // so the previous hop can retry it with another neighbor
-export const RefundTransfer = t.readonly(
+const _RefundTransfer = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.REFUND_TRANSFER),
@@ -143,11 +158,14 @@ export const RefundTransfer = t.readonly(
     LockedTransferBase,
   ]),
 );
-export interface RefundTransfer extends t.TypeOf<typeof RefundTransfer> {}
+export interface RefundTransfer extends t.TypeOf<typeof _RefundTransfer> {}
+export interface RefundTransferC
+  extends t.Type<RefundTransfer, t.OutputOf<typeof _RefundTransfer>> {}
+export const RefundTransfer: RefundTransferC = _RefundTransfer;
 
 // when the secret is revealed, unlock sends a new balance proof without the lock and increasing
 // the total transfered to finish the offchain transfer
-export const Unlock = t.readonly(
+const _Unlock = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.UNLOCK),
@@ -157,10 +175,12 @@ export const Unlock = t.readonly(
     EnvelopeMessage,
   ]),
 );
-export interface Unlock extends t.TypeOf<typeof Unlock> {}
+export interface Unlock extends t.TypeOf<typeof _Unlock> {}
+export interface UnlockC extends t.Type<Unlock, t.OutputOf<typeof _Unlock>> {}
+export const Unlock: UnlockC = _Unlock;
 
 // after mediated transfer fails and the lock expire, clean it from the locks tree
-export const LockExpired = t.readonly(
+const _LockExpired = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.LOCK_EXPIRED),
@@ -170,9 +190,11 @@ export const LockExpired = t.readonly(
     EnvelopeMessage,
   ]),
 );
-export interface LockExpired extends t.TypeOf<typeof LockExpired> {}
+export interface LockExpired extends t.TypeOf<typeof _LockExpired> {}
+export interface LockExpiredC extends t.Type<LockExpired, t.OutputOf<typeof _LockExpired>> {}
+export const LockExpired: LockExpiredC = _LockExpired;
 
-export const WithdrawBase = t.readonly(
+const WithdrawBase = t.readonly(
   t.type({
     chain_id: UInt(32),
     token_network_address: Address,
@@ -184,7 +206,7 @@ export const WithdrawBase = t.readonly(
   }),
 );
 
-export const WithdrawRequest = t.readonly(
+const _WithdrawRequest = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.WITHDRAW_REQUEST),
@@ -193,9 +215,12 @@ export const WithdrawRequest = t.readonly(
     RetrieableMessage,
   ]),
 );
-export interface WithdrawRequest extends t.TypeOf<typeof WithdrawRequest> {}
+export interface WithdrawRequest extends t.TypeOf<typeof _WithdrawRequest> {}
+export interface WithdrawRequestC
+  extends t.Type<WithdrawRequest, t.OutputOf<typeof _WithdrawRequest>> {}
+export const WithdrawRequest: WithdrawRequestC = _WithdrawRequest;
 
-export const WithdrawConfirmation = t.readonly(
+const _WithdrawConfirmation = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.WITHDRAW_CONFIRMATION),
@@ -204,9 +229,12 @@ export const WithdrawConfirmation = t.readonly(
     RetrieableMessage,
   ]),
 );
-export interface WithdrawConfirmation extends t.TypeOf<typeof WithdrawConfirmation> {}
+export interface WithdrawConfirmation extends t.TypeOf<typeof _WithdrawConfirmation> {}
+export interface WithdrawConfirmationC
+  extends t.Type<WithdrawConfirmation, t.OutputOf<typeof _WithdrawConfirmation>> {}
+export const WithdrawConfirmation: WithdrawConfirmationC = _WithdrawConfirmation;
 
-export const WithdrawExpired = t.readonly(
+const _WithdrawExpired = t.readonly(
   t.intersection([
     t.type({
       type: t.literal(MessageType.WITHDRAW_EXPIRED),
@@ -215,9 +243,12 @@ export const WithdrawExpired = t.readonly(
     RetrieableMessage,
   ]),
 );
-export interface WithdrawExpired extends t.TypeOf<typeof WithdrawExpired> {}
+export interface WithdrawExpired extends t.TypeOf<typeof _WithdrawExpired> {}
+export interface WithdrawExpiredC
+  extends t.Type<WithdrawExpired, t.OutputOf<typeof _WithdrawExpired>> {}
+export const WithdrawExpired: WithdrawExpiredC = _WithdrawExpired;
 
-export const PFSCapacityUpdate = t.readonly(
+const _PFSCapacityUpdate = t.readonly(
   t.type({
     type: t.literal(MessageType.PFS_CAPACITY_UPDATE),
     canonical_identifier: t.readonly(
@@ -236,9 +267,12 @@ export const PFSCapacityUpdate = t.readonly(
     reveal_timeout: UInt(32),
   }),
 );
-export interface PFSCapacityUpdate extends t.TypeOf<typeof PFSCapacityUpdate> {}
+export interface PFSCapacityUpdate extends t.TypeOf<typeof _PFSCapacityUpdate> {}
+export interface PFSCapacityUpdateC
+  extends t.Type<PFSCapacityUpdate, t.OutputOf<typeof _PFSCapacityUpdate>> {}
+export const PFSCapacityUpdate: PFSCapacityUpdateC = _PFSCapacityUpdate;
 
-export const PFSFeeUpdate = t.readonly(
+const _PFSFeeUpdate = t.readonly(
   t.type({
     type: t.literal(MessageType.PFS_FEE_UPDATE),
     canonical_identifier: t.readonly(
@@ -259,9 +293,11 @@ export const PFSFeeUpdate = t.readonly(
     }),
   }),
 );
-export interface PFSFeeUpdate extends t.TypeOf<typeof PFSFeeUpdate> {}
+export interface PFSFeeUpdate extends t.TypeOf<typeof _PFSFeeUpdate> {}
+export interface PFSFeeUpdateC extends t.Type<PFSFeeUpdate, t.OutputOf<typeof _PFSFeeUpdate>> {}
+export const PFSFeeUpdate: PFSFeeUpdateC = _PFSFeeUpdate;
 
-export const MonitorRequest = t.readonly(
+const _MonitorRequest = t.readonly(
   t.type({
     type: t.literal(MessageType.MONITOR_REQUEST),
     balance_proof: t.type({
@@ -279,9 +315,12 @@ export const MonitorRequest = t.readonly(
     reward_amount: UInt(32),
   }),
 );
-export interface MonitorRequest extends t.TypeOf<typeof MonitorRequest> {}
+export interface MonitorRequest extends t.TypeOf<typeof _MonitorRequest> {}
+export interface MonitorRequestC
+  extends t.Type<MonitorRequest, t.OutputOf<typeof _MonitorRequest>> {}
+export const MonitorRequest: MonitorRequestC = _MonitorRequest;
 
-export const Message = t.union([
+const messages = [
   Delivered,
   Processed,
   SecretRequest,
@@ -296,21 +335,10 @@ export const Message = t.union([
   PFSCapacityUpdate,
   PFSFeeUpdate,
   MonitorRequest,
-]);
+] as const;
+
 // prefer an explicit union to have the union of the interfaces, instead of the union of t.TypeOf's
-export type Message =
-  | Delivered
-  | Processed
-  | SecretRequest
-  | SecretReveal
-  | LockedTransfer
-  | RefundTransfer
-  | Unlock
-  | LockExpired
-  | WithdrawRequest
-  | WithdrawConfirmation
-  | WithdrawExpired
-  | PFSCapacityUpdate
-  | PFSFeeUpdate
-  | MonitorRequest;
+export type Message = t.TypeOf<typeof messages[number]>;
+export interface MessageC extends t.Type<Message, t.OutputOf<typeof messages[number]>> {}
+export const Message: MessageC = t.union([...messages]);
 export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;

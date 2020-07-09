@@ -14,7 +14,7 @@ import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
 import { parseEther } from 'ethers/utils';
 
 Vue.use(Vuetify);
-describe('UdcWithdrawalDialog.vue', function() {
+describe('UdcWithdrawalDialog.vue', function () {
   let wrapper: Wrapper<UdcWithdrawalDialog>;
   let $raiden: Mocked<RaidenService>;
 
@@ -23,7 +23,7 @@ describe('UdcWithdrawalDialog.vue', function() {
     name: 'ServiceToken',
     symbol: 'SVT',
     decimals: 18,
-    balance: One
+    balance: One,
   };
   function createWrapper() {
     const vuetify = new Vuetify();
@@ -35,13 +35,13 @@ describe('UdcWithdrawalDialog.vue', function() {
         visible: true,
         accountBalance: '0.23',
         token,
-        capacity: parseEther('10')
+        capacity: parseEther('10'),
       },
       mocks: {
         $identicon: $identicon(),
         $t: (msg: string) => msg,
-        $raiden
-      }
+        $raiden,
+      },
     });
   }
 
@@ -75,5 +75,24 @@ describe('UdcWithdrawalDialog.vue', function() {
   test('valid if amount is bigger equal to capacity', async () => {
     wrapper.setData({ amount: '10' });
     expect((wrapper.vm as any).isValid).toBe(true);
+  });
+
+  describe('with timers', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('emits cancel after done', async () => {
+      jest.useFakeTimers();
+      wrapper.setData({ amount: '10' });
+      await (wrapper.vm as any).planWithdraw();
+      jest.advanceTimersByTime(5000);
+      expect(wrapper.emitted('cancel')).toBeTruthy();
+      jest.useRealTimers();
+    });
   });
 });

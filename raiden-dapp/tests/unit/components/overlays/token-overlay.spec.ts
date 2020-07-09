@@ -32,15 +32,15 @@ describe('TokenOverlay.vue', () => {
       mocks: {
         $router: router,
         $route: TestData.mockRoute({
-          token: '0xtoken'
+          token: '0xtoken',
         }),
         $identicon: $identicon(),
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
       },
       stubs: ['router-link'],
       propsData: {
-        show: true
-      }
+        show: true,
+      },
     });
   });
 
@@ -55,15 +55,15 @@ describe('TokenOverlay.vue', () => {
   describe('with tokens loaded', () => {
     beforeEach(() => {
       store.commit('updateTokens', {
-        [TestData.token.address]: TestData.token
+        [TestData.token.address]: TestData.token,
       } as Tokens);
       store.commit('updateChannels', {
         [TestData.token.address]: {
           [TestData.openChannel.partner]: {
             ...TestData.openChannel,
-            token: TestData.token.address
-          } as RaidenChannel
-        }
+            token: TestData.token.address,
+          } as RaidenChannel,
+        },
       } as RaidenChannels);
     });
 
@@ -93,7 +93,7 @@ describe('TokenOverlay.vue', () => {
       wrapper.find('.v-list-item').trigger('click');
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.SELECT_TOKEN
+          name: RouteNames.SELECT_TOKEN,
         })
       );
     });
@@ -105,8 +105,8 @@ describe('TokenOverlay.vue', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           params: {
-            token: '0xnewtoken'
-          }
+            token: '0xnewtoken',
+          },
         })
       );
     });
@@ -115,15 +115,15 @@ describe('TokenOverlay.vue', () => {
   describe('with token placeholder', () => {
     beforeEach(() => {
       store.commit('updateTokens', {
-        [TestData.token.address]: { address: TestData.token.address }
+        [TestData.token.address]: { address: TestData.token.address },
       } as Tokens);
       store.commit('updateChannels', {
         [TestData.token.address]: {
           [TestData.openChannel.partner]: {
             ...TestData.openChannel,
-            token: TestData.token.address
-          } as RaidenChannel
-        }
+            token: TestData.token.address,
+          } as RaidenChannel,
+        },
       } as RaidenChannels);
     });
   });

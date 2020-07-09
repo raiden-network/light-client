@@ -140,15 +140,13 @@ in favor of unit tests whenever possible.
 For the sdk you have to run the following:
 
 ```bash
-$ cd raiden-ts
-$ npm run test
+$ pnpm run test --filter raiden-ts
 ```
 
 For the dApp:
 
 ```bash
-$ cd raiden-dapp
-$ npm run test:unit
+$ pnpm run test:unit --filter raiden-dapp
 ```
 
 Tests are split in unit tests, and integration tests. The first are faster to execute while

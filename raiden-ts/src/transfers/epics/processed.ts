@@ -4,7 +4,7 @@ import findKey from 'lodash/findKey';
 
 import { RaidenAction } from '../../actions';
 import { messageSend } from '../../messages/actions';
-import { MessageType, Processed, RefundTransfer, WithdrawExpired } from '../../messages/types';
+import { MessageType, Processed, RefundTransfer } from '../../messages/types';
 import {
   getBalanceProofFromEnvelopeMessage,
   signMessage,
@@ -175,7 +175,7 @@ export const transferReceivedReplyProcessedEpic = (
 ): Observable<messageSend.request> => {
   const cache = new LruCache<string, Signed<Processed>>(32);
   return action$.pipe(
-    filter(isMessageReceivedOfType([Signed(RefundTransfer), Signed(WithdrawExpired)])),
+    filter(isMessageReceivedOfType(Signed(RefundTransfer))),
     concatMap((action) => {
       const message = action.payload.message;
       // defer causes the cache check to be performed at subscription time

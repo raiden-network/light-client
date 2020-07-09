@@ -35,7 +35,7 @@ import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 
 @Component({
-  components: { RaidenDialog }
+  components: { RaidenDialog },
 })
 export default class ReceivingDisabledDialog extends Vue {
   @Prop({ required: true, type: Boolean })

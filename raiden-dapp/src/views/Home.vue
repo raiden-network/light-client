@@ -55,6 +55,7 @@
       <connect-dialog
         :connecting="connecting"
         :visible="connectDialog"
+        :has-provider="hasProvider"
         @connect="connect"
         @close="connectDialog = false"
       />
@@ -71,18 +72,20 @@ import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
 import NoTokens from '@/components/NoTokens.vue';
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
 import { Settings } from '@/types';
+import { Web3Provider } from '@/services/web3-provider';
+import { ConfigProvider } from '@/services/config-provider';
 
 @Component({
   computed: {
     ...mapState(['loading', 'accessDenied', 'stateBackup', 'settings']),
-    ...mapGetters(['isConnected'])
+    ...mapGetters(['isConnected']),
   },
   components: {
     ActionButton,
     ConnectDialog,
     NoTokens,
-    NoAccessMessage
-  }
+    NoAccessMessage,
+  },
 })
 export default class Home extends Vue {
   isConnected!: boolean;
@@ -92,6 +95,16 @@ export default class Home extends Vue {
   accessDenied!: DeniedReason;
   stateBackup!: string;
   settings!: Settings;
+  hasProvider: boolean = false;
+
+  async created() {
+    if (Web3Provider.injectedWeb3Available()) {
+      this.hasProvider = true;
+      return;
+    }
+    const configuration = await ConfigProvider.configuration();
+    this.hasProvider = !!configuration.rpc_endpoint;
+  }
 
   get inaccessible() {
     return (

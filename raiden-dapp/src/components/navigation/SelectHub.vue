@@ -16,7 +16,7 @@
         <span
           class="udc-balance__amount"
           :class="{
-            'low-balance': !hasEnoughServiceTokens
+            'low-balance': !hasEnoughServiceTokens,
           }"
         >
           <amount-display
@@ -51,7 +51,7 @@
                   ? 'select-hub.service-token-tooltip-main'
                   : 'select-hub.service-token-tooltip',
                 {
-                  token: serviceToken
+                  token: serviceToken,
                 }
               )
             }}
@@ -72,7 +72,7 @@
         >
           {{
             $t('select-hub.service-token-balance-too-low', {
-              token: serviceToken
+              token: serviceToken,
             })
           }}
         </span>
@@ -126,16 +126,16 @@ import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
     AddressInput,
     ActionButton,
     UdcDepositDialog,
-    AmountDisplay
+    AmountDisplay,
   },
   computed: {
     ...mapState(['defaultAccount', 'channels', 'network']),
     ...mapGetters({
       getToken: 'token',
       mainnet: 'mainnet',
-      udcToken: 'udcToken'
-    })
-  }
+      udcToken: 'udcToken',
+    }),
+  },
 })
 export default class SelectHub extends Mixins(NavigationMixin) {
   defaultAccount!: string;
@@ -194,6 +194,8 @@ export default class SelectHub extends Mixins(NavigationMixin) {
     if (typeof this.token.decimals !== 'number') {
       this.navigateToHome();
     }
+
+    await this.$raiden.monitorToken(address);
 
     // On goerli, we can suggest our hub if the user is not connected yet
     if (!this.isConnectedToHub && this.network.name === 'goerli') {

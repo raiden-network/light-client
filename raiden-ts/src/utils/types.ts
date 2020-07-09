@@ -66,7 +66,8 @@ export function isntNil<T>(value: T): value is NonNullable<T> {
  * Output is string, so we can JSON-serialize with 'number's types bigger than JS VM limits
  * of ±2^53, as Raiden python client stdlib json encode longs as string.
  */
-export const BigNumberC = new t.Type<BigNumber, string>(
+export interface BigNumberC extends t.Type<BigNumber, string> {}
+export const BigNumberC: BigNumberC = new t.Type<BigNumber, string>(
   'BigNumber',
   BigNumber.isBigNumber,
   (u, c) => {
@@ -90,6 +91,11 @@ export interface SizedB<S extends number> {
 export interface HexStringB<S extends number> extends SizedB<S> {
   readonly HexString: unique symbol;
 }
+// string brand: informs/requires a string which is hex-encoded, 0x-prefixed and of size bytes
+export type HexString<S extends number = number> = string & t.Brand<HexStringB<S>>;
+// codec type for the HexString brand
+export interface HexStringC<S extends number>
+  extends t.RefinementType<typeof t.string, HexString<S>, string> {}
 
 /**
  * Helper function to create codecs to validate an arbitrary or variable-sized hex bytestring
@@ -98,24 +104,26 @@ export interface HexStringB<S extends number> extends SizedB<S> {
  * @param size - Required number of bytes. Pass undefined or zero to have a variable-sized type
  * @returns branded codec for hex-encoded bytestrings
  */
-export const HexString: <S extends number = number>(
-  size?: S,
-) => t.BrandC<t.StringC, HexStringB<S>> = memoize(function <S extends number = number>(size?: S) {
+export const HexString: <S extends number = number>(size?: S) => HexStringC<S> = memoize(function <
+  S extends number = number
+>(size?: S) {
   return t.brand(
     t.string,
-    (n): n is string & t.Brand<HexStringB<S>> =>
+    (n): n is HexString<S> =>
       typeof n === 'string' && (size ? hexDataLength(n) === size : isHexString(n)),
     'HexString',
   );
 });
 
-// string brand: non size-constrained hex-string codec and its type
-export type HexString<S extends number = number> = string & t.Brand<HexStringB<S>>;
-
 // brand interface for branded signed integers, inherits SizedB brand
 export interface IntB<S extends number> extends SizedB<S> {
   readonly Int: unique symbol;
 }
+// Int brand: informs/requires a BigNumber which fits in given size of bytes
+export type Int<S extends number = number> = BigNumber & t.Brand<IntB<S>>;
+// codec type for the Int brand
+export interface IntC<S extends number>
+  extends t.RefinementType<BigNumberC, Int<S>, t.OutputOf<BigNumberC>> {}
 
 /**
  * Helper function to create codecs to validate an arbitrary or variable-sized BigNumbers
@@ -124,26 +132,27 @@ export interface IntB<S extends number> extends SizedB<S> {
  * @param size - Required number of bytes. Pass undefined to have a variable-sized type
  * @returns branded codec for hex-encoded bytestrings
  */
-export const Int: <S extends number = number>(
-  size?: S,
-) => t.BrandC<typeof BigNumberC, IntB<S>> = memoize(function <S extends number = number>(
-  size?: S,
-) {
+export const Int: <S extends number = number>(size?: S) => IntC<S> = memoize(function <
+  S extends number = number
+>(size?: S) {
   const min = size ? Zero.sub(Two.pow(size * 8 - 1)) : undefined,
     max = size ? Two.pow(size * 8 - 1) : undefined;
   return t.brand(
     BigNumberC,
-    (n): n is BigNumber & t.Brand<IntB<S>> =>
-      BigNumberC.is(n) && (!min || !max || (n.gte(min) && n.lt(max))),
+    (n): n is Int<S> => BigNumberC.is(n) && (!min || !max || (n.gte(min) && n.lt(max))),
     'Int',
   );
 });
-export type Int<S extends number = number> = BigNumber & t.Brand<IntB<S>>;
 
 // brand interface for branded unsigned integers, inherits SizedB brand
 export interface UIntB<S extends number> extends SizedB<S> {
   readonly UInt: unique symbol;
 }
+// UInt brand: informs/requires a positive BigNumber which fits in given size of bytes
+export type UInt<S extends number = number> = BigNumber & t.Brand<UIntB<S>>;
+// codec type for the UInt brand
+export interface UIntC<S extends number = number>
+  extends t.RefinementType<BigNumberC, UInt<S>, t.OutputOf<BigNumberC>> {}
 
 /**
  * Helper function to create codecs to validate an arbitrary or variable-sized BigNumbers
@@ -152,39 +161,35 @@ export interface UIntB<S extends number> extends SizedB<S> {
  * @param size - Required number of bytes. Pass undefined to have a variable-sized type
  * @returns branded codec for hex-encoded bytestrings
  */
-export const UInt: <S extends number = number>(
-  size?: S,
-) => t.BrandC<typeof BigNumberC, UIntB<S>> = memoize(function <S extends number = number>(
-  size?: S,
-) {
+export const UInt: <S extends number = number>(size?: S) => UIntC<S> = memoize(function <
+  S extends number = number
+>(size?: S) {
   const min = size ? Zero : undefined,
     max = size ? Two.pow(size * 8) : undefined;
   return t.brand(
     BigNumberC,
-    (n): n is BigNumber & t.Brand<UIntB<S>> =>
-      BigNumberC.is(n) && (!min || !max || (n.gte(min) && n.lt(max))),
+    (n): n is UInt<S> => BigNumberC.is(n) && (!min || !max || (n.gte(min) && n.lt(max))),
     'UInt',
   );
 });
-export type UInt<S extends number = number> = BigNumber & t.Brand<UIntB<S>>;
 
 // specific types
 
 // strig brand: ECDSA signature as an hex-string
 export const Signature = HexString(65);
-export type Signature = string & t.Brand<HexStringB<65>>;
+export type Signature = HexString<65>;
 
 // string brand: 256-bit hash, usually keccak256 or sha256
 export const Hash = HexString(32);
-export type Hash = string & t.Brand<HexStringB<32>>;
+export type Hash = HexString<32>;
 
 // string brand: a secret bytearray, 32 bytes
 export const Secret = HexString(32);
-export type Secret = string & t.Brand<HexStringB<32>>;
+export type Secret = HexString<32>;
 
 // string brand: ECDSA private key, 32 bytes
 export const PrivateKey = HexString(32);
-export type PrivateKey = string & t.Brand<HexStringB<32>>;
+export type PrivateKey = HexString<32>;
 
 // checksummed address brand interface
 export interface AddressB {
@@ -193,7 +198,8 @@ export interface AddressB {
 
 // string brand: checksummed address, 20 bytes
 export type Address = string & t.Brand<HexStringB<20>> & t.Brand<AddressB>;
-export const Address = new t.Type<Address, string>(
+export interface AddressC extends t.Type<Address, string> {}
+export const Address: AddressC = new t.Type<Address, string>(
   'Address',
   (u: unknown): u is Address => {
     try {
@@ -242,21 +248,14 @@ export function timed<T>(v: T): Timed<T> {
 // generic type codec for messages that must be signed
 // use it like: Codec = Signed(Message)
 // The t.TypeOf<typeof codec> will be Signed<Message>, defined later
+export type Signed<M> = M & { readonly signature: Signature };
+export interface SignedC<C extends t.Mixed>
+  extends t.Type<Signed<t.TypeOf<C>>, Signed<t.OutputOf<C>>> {}
 export const Signed: <C extends t.Mixed>(
   codec: C,
-) => t.IntersectionC<
-  [
-    C,
-    t.ReadonlyC<
-      t.TypeC<{
-        signature: typeof Signature;
-      }>
-    >,
-  ]
-> = memoize(<C extends t.Mixed>(codec: C) =>
+) => SignedC<C> = memoize(<C extends t.Mixed>(codec: C) =>
   t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),
 );
-export type Signed<M> = M & { signature: Signature };
 
 export interface Newable {
   new (...args: any[]): any;
