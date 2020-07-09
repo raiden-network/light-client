@@ -22,9 +22,11 @@
 
 ### Changed
 
+- [#1460] New transfer screen
 - [#1610] Adds alderaan compatibility.
 - [#1540] Adds title to channels list to clarify that only channels for the selected token display.
 
+[#1460]: https://github.com/raiden-network/light-client/issues/1460
 [#1788]: https://github.com/raiden-network/light-client/issues/1788
 [#1791]: https://github.com/raiden-network/light-client/issues/1791
 [#1781]: https://github.com/raiden-network/light-client/issues/1781
