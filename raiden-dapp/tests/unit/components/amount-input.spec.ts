@@ -23,13 +23,13 @@ describe('AmountInput.vue', () => {
         ...params
       },
       mocks: {
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
       },
       listeners: {
         input: ($event: string) => {
           wrapper.setProps({ value: $event });
-        }
-      }
+        },
+      },
     });
   }
 

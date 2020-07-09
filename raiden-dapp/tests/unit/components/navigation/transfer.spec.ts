@@ -194,10 +194,7 @@ describe('Transfer.vue', () => {
   });
 
   test('show the "TokenOverlay" when the user presses the token networks dropdown', async () => {
-    wrapper
-      .findAll('.v-icon')
-      .at(0)
-      .trigger('click');
+    wrapper.findAll('.v-icon').at(0).trigger('click');
 
     await flushPromises();
     jest.advanceTimersByTime(2000);

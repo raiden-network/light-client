@@ -251,7 +251,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
             if (this.touched) {
               return of<ValidationResult>({
                 error: '',
-                value: ''
+                value: '',
               });
             }
 
