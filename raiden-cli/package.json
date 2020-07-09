@@ -35,7 +35,7 @@
     "node-pre-gyp": "0.15.0",
     "prettier": "2.0.5",
     "symbol-observable": "1.2.0",
-    "ts-loader": "7.0.5",
+    "ts-loader": "8.0.0",
     "typescript": "3.9.6",
     "webpack": "4.43.0",
     "webpack-cli": "3.3.12"
@@ -43,7 +43,7 @@
   "dependencies": {
     "@types/http-errors": "1.6.3",
     "@types/morgan": "1.9.1",
-    "ethers": "4.0.47",
+    "ethers": "5.0.5",
     "express": "4.17.1",
     "http-errors": "1.8.0",
     "inquirer": "7.3.0",
