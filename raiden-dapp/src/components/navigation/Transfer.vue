@@ -21,7 +21,7 @@
               <v-row justify="center">
                 <span
                   class="transfer__menus__items__channels-deposit--deposit"
-                  @click="depositing = true"
+                  @click="showDepositDialog = true"
                 >
                   {{ $t('transfer.deposit-button') }}
                 </span>
@@ -63,9 +63,9 @@
         :loading="loading"
         :done="done"
         :token="token"
-        :visible="depositing"
+        :visible="showDepositDialog"
         identifier="0"
-        @cancel="depositing = false"
+        @cancel="showDepositDialog = false"
         @depositTokens="deposit($event)"
       />
     </div>
@@ -185,7 +185,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   valid: boolean = false;
   loading: boolean = false;
   done: boolean = false;
-  depositing: boolean = false;
+  showDepositDialog: boolean = false;
 
   error: Error | RaidenError | null = null;
   addressError: string = '';
@@ -262,14 +262,14 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
     } catch (e) {
       this.error = e;
       this.loading = false;
-      this.depositing = false;
+      this.showDepositDialog = false;
     }
   }
 
   private dismissProgress() {
     setTimeout(() => {
       this.done = false;
-      this.depositing = false;
+      this.showDepositDialog = false;
     }, 2000);
   }
 }
@@ -311,9 +311,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
         margin: 0 auto;
         border-bottom: solid 1px $color-white;
         width: 130px;
-      }
 
-      &__token-select {
         &span {
           cursor: pointer;
         }
