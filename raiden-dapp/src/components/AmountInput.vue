@@ -79,7 +79,7 @@ export default class AmountInput extends Vue {
       })
   ];
 
-  get errorMessages(): string[] {
+  get errorMessages(): any[] {
     return this.rules
       .map(rule => rule(this.value))
       .filter(res => {
