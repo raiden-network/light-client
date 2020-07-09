@@ -32,16 +32,16 @@ describe('ChannelList.vue', () => {
         token: {
           address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
           decimals: 10,
-          balance: parseUnits('2', 10)
+          balance: parseUnits('2', 10),
         } as Token,
         channels: TestData.mockChannelArray,
-        expanded
+        expanded,
       },
       stubs: ['raiden-dialog'],
       mocks: {
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 
@@ -95,7 +95,7 @@ describe('ChannelList.vue', () => {
       const [firstExpansionArg] = expandEvent?.shift();
       expect(firstExpansionArg).toMatchObject({
         channel: TestData.openChannel,
-        expanded: true
+        expanded: true,
       });
 
       wrapper.find('#close-0').trigger('click');
@@ -116,7 +116,7 @@ describe('ChannelList.vue', () => {
       const [firstExpansionArg] = expandEvent?.shift();
       expect(firstExpansionArg).toMatchObject({
         channel: TestData.openChannel,
-        expanded: true
+        expanded: true,
       });
       wrapper.find('#deposit-0').trigger('click');
       await wrapper.vm.$nextTick();
@@ -135,7 +135,7 @@ describe('ChannelList.vue', () => {
       const [firstExpansionArg] = expandEvent?.shift();
       expect(firstExpansionArg).toMatchObject({
         channel: TestData.settlableChannel,
-        expanded: true
+        expanded: true,
       });
       wrapper.find('#settle-2').trigger('click');
       await wrapper.vm.$nextTick();

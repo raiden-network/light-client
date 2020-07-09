@@ -23,23 +23,23 @@ describe('SelectToken.vue', () => {
       vuetify,
       store: new Store({
         getters: {
-          allTokens: jest.fn().mockReturnValue([TestData.token])
+          allTokens: jest.fn().mockReturnValue([TestData.token]),
         },
         state: {
-          tokens: { [TestData.token.address]: TestData.token }
-        }
+          tokens: { [TestData.token.address]: TestData.token },
+        },
       }),
       mocks: {
         $route: TestData.mockRoute({
-          token: '0xtoken'
+          token: '0xtoken',
         }),
         $identicon: $identicon(),
         $raiden: {
           getToken: jest.fn().mockResolvedValue(TestData.token),
-          fetchTokenList: jest.fn().mockResolvedValue(null)
+          fetchTokenList: jest.fn().mockResolvedValue(null),
         },
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

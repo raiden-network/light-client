@@ -5,10 +5,11 @@ import { ContractTransaction, ContractReceipt } from 'ethers/contract';
 
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
-import { UInt, Address, Hash } from '../utils/types';
+import { UInt, Address, Hash, Int } from '../utils/types';
 import { RaidenError } from '../utils/error';
 import { distinctRecordValues } from '../utils/rx';
-import { Channel, ChannelState } from './state';
+import { MessageType } from '../messages/types';
+import { Channel, ChannelState, ChannelBalances } from './state';
 import { ChannelKey, ChannelUniqueKey } from './types';
 
 /**
@@ -54,53 +55,35 @@ function bnMax<T extends UInt>(...args: T[]): T {
  * @returns An object holding own&partner's deposit, withdraw, transferred, locked, balance and
  *          capacity.
  */
-export function channelAmounts(channel: Channel) {
-  const Zero32 = Zero as UInt<32>;
+export function channelAmounts(channel: Channel): ChannelBalances {
   if (channel.state !== ChannelState.open)
     return {
-      ownDeposit: Zero32,
-      ownWithdraw: Zero32,
-      ownTransferred: Zero32,
-      ownLocked: Zero32,
-      ownBalance: Zero32,
-      ownCapacity: Zero32,
-      ownOnchainUnlocked: Zero32,
-      ownUnlocked: Zero32, // total of off & onchain unlocked
-      partnerDeposit: Zero32,
-      partnerWithdraw: Zero32,
-      partnerTransferred: Zero32,
-      partnerLocked: Zero32,
-      partnerBalance: Zero32,
-      partnerCapacity: Zero32,
-      partnerOnchainUnlocked: Zero32,
-      partnerUnlocked: Zero32, // total of off & onchain unlocked
+      ownDeposit: Zero as UInt<32>,
+      ownWithdraw: Zero as UInt<32>,
+      ownTransferred: Zero as UInt<32>,
+      ownLocked: Zero as UInt<32>,
+      ownBalance: Zero as Int<32>,
+      ownCapacity: Zero as UInt<32>,
+      ownOnchainUnlocked: Zero as UInt<32>,
+      ownUnlocked: Zero as UInt<32>, // total of off & onchain unlocked
+      ownTotalWithdrawable: Zero as UInt<32>,
+      ownWithdrawable: Zero as UInt<32>,
+      partnerDeposit: Zero as UInt<32>,
+      partnerWithdraw: Zero as UInt<32>,
+      partnerTransferred: Zero as UInt<32>,
+      partnerLocked: Zero as UInt<32>,
+      partnerBalance: Zero as Int<32>,
+      partnerCapacity: Zero as UInt<32>,
+      partnerOnchainUnlocked: Zero as UInt<32>,
+      partnerUnlocked: Zero as UInt<32>, // total of off & onchain unlocked
+      partnerTotalWithdrawable: Zero as UInt<32>,
+      partnerWithdrawable: Zero as UInt<32>,
     };
 
   const ownWithdraw = channel.own.withdraw,
     partnerWithdraw = channel.partner.withdraw,
     ownTransferred = channel.own.balanceProof.transferredAmount,
     partnerTransferred = channel.partner.balanceProof.transferredAmount,
-    ownLocked = channel.own.balanceProof.lockedAmount,
-    partnerLocked = channel.partner.balanceProof.lockedAmount,
-    ownBalance = partnerTransferred.sub(ownTransferred) as UInt<32>,
-    partnerBalance = ownTransferred.sub(partnerTransferred) as UInt<32>, // == -ownBalance
-    ownPendingWithdraw = bnMax(
-      // get maximum between actual and pending withdraws (as it's a total)
-      ownWithdraw,
-      ...channel.own.withdrawRequests.map((req) => req.total_withdraw),
-    ),
-    partnerPendingWithdraw = bnMax(
-      partnerWithdraw,
-      ...channel.partner.withdrawRequests.map((req) => req.total_withdraw),
-    ),
-    ownCapacity = channel.own.deposit
-      .sub(ownPendingWithdraw) // pending withdraws reduce capacity
-      .sub(ownLocked)
-      .add(ownBalance) as UInt<32>,
-    partnerCapacity = channel.partner.deposit
-      .sub(partnerPendingWithdraw)
-      .sub(partnerLocked)
-      .add(partnerBalance) as UInt<32>,
     ownOnchainUnlocked = channel.own.locks
       .filter((lock) => lock.registered)
       .reduce((acc, lock) => acc.add(lock.amount), Zero) as UInt<32>,
@@ -108,7 +91,40 @@ export function channelAmounts(channel: Channel) {
       .filter((lock) => lock.registered)
       .reduce((acc, lock) => acc.add(lock.amount), Zero) as UInt<32>,
     ownUnlocked = ownTransferred.add(ownOnchainUnlocked) as UInt<32>,
-    partnerUnlocked = partnerTransferred.add(partnerOnchainUnlocked) as UInt<32>;
+    partnerUnlocked = partnerTransferred.add(partnerOnchainUnlocked) as UInt<32>,
+    ownLocked = channel.own.balanceProof.lockedAmount.sub(ownOnchainUnlocked) as UInt<32>,
+    partnerLocked = channel.partner.balanceProof.lockedAmount.sub(partnerOnchainUnlocked) as UInt<
+      32
+    >,
+    ownBalance = partnerUnlocked.sub(ownUnlocked) as Int<32>,
+    partnerBalance = ownUnlocked.sub(partnerUnlocked) as Int<32>, // == -ownBalance
+    _ownPendingWithdraw = bnMax(
+      // get maximum between actual and pending withdraws (as it's a total)
+      ownWithdraw,
+      ...channel.own.pendingWithdraws
+        .filter((req) => req.type === MessageType.WITHDRAW_REQUEST)
+        .map((req) => req.total_withdraw),
+    ),
+    _partnerPendingWithdraw = bnMax(
+      partnerWithdraw,
+      ...channel.partner.pendingWithdraws
+        .filter((req) => req.type === MessageType.WITHDRAW_REQUEST)
+        .map((req) => req.total_withdraw),
+    ),
+    ownCapacity = channel.own.deposit
+      .sub(_ownPendingWithdraw) // pending withdraws reduce capacity
+      .sub(ownLocked)
+      .add(ownBalance) as UInt<32>,
+    partnerCapacity = channel.partner.deposit
+      .sub(_partnerPendingWithdraw)
+      .sub(partnerLocked)
+      .add(partnerBalance) as UInt<32>,
+    ownTotalWithdrawable = channel.own.deposit.add(ownBalance).sub(ownLocked) as UInt<32>,
+    ownWithdrawable = ownTotalWithdrawable.sub(ownWithdraw) as UInt<32>,
+    partnerTotalWithdrawable = channel.partner.deposit
+      .add(partnerBalance)
+      .sub(partnerLocked) as UInt<32>,
+    partnerWithdrawable = partnerTotalWithdrawable.sub(partnerWithdraw) as UInt<32>;
 
   return {
     ownDeposit: channel.own.deposit,
@@ -127,6 +143,10 @@ export function channelAmounts(channel: Channel) {
     partnerCapacity,
     partnerOnchainUnlocked,
     partnerUnlocked,
+    ownTotalWithdrawable,
+    ownWithdrawable,
+    partnerTotalWithdrawable,
+    partnerWithdrawable,
   };
 }
 

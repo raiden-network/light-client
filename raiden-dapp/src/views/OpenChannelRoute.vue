@@ -10,7 +10,7 @@ import OpenChannel from '../components/navigation/OpenChannel.vue';
 import LazyRoute from '@/views/LazyRoute.vue';
 
 @Component({
-  components: { LazyRoute, OpenChannel }
+  components: { LazyRoute, OpenChannel },
 })
 export default class OpenChannelRoute extends Vue {}
 </script>

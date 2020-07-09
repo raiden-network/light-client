@@ -20,8 +20,8 @@ describe('WithdrawalRoute.vue', () => {
       stubs: ['withdrawal'],
       mocks: {
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 

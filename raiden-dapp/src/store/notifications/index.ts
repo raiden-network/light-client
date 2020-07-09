@@ -11,5 +11,5 @@ export const notifications: Module<NotificationsState, RootState> = {
   mutations,
   actions,
   state,
-  getters
+  getters,
 };

@@ -1,0 +1,16 @@
+{
+  "address": "0x1111111111111111111111111111111111111111",
+  "version": 5,
+  "chainId": 1338,
+  "registry": "0x0000000000000000000000000000000000000070",
+  "blockNumber": 123,
+  "config": {},
+  "channels": {},
+  "oldChannels": {},
+  "tokens": {},
+  "transport": {},
+  "sent": {},
+  "received": {},
+  "iou": {},
+  "pendingTxs": []
+}

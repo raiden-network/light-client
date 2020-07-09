@@ -1,4 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import {
+  raidenEpicDeps,
+  makeLog,
+  makeRaidens,
+  providersEmit,
+  makeHash,
+  waitBlock,
+  makeRaiden,
+} from '../mocks';
+import {
+  epicFixtures,
+  ensureTransferPending,
+  secrethash,
+  secret,
+  txHash,
+  getChannel,
+} from '../fixtures';
+
 import { bigNumberify, BigNumber, keccak256, hexlify, randomBytes } from 'ethers/utils';
 import { Zero, HashZero, One } from 'ethers/constants';
 import { of, EMPTY, timer, merge } from 'rxjs';
@@ -64,7 +82,6 @@ import {
   transferRetryMessageEpic,
   transferReceivedReplyProcessedEpic,
   transferRefundedEpic,
-  monitorSecretRegistryEpic,
   transferSuccessOnSecretRegisteredEpic,
 } from 'raiden-ts/transfers/epics';
 import { matrixPresence } from 'raiden-ts/transport/actions';
@@ -72,9 +89,6 @@ import { UInt, Address, Hash, Signed, isntNil } from 'raiden-ts/utils/types';
 import { ActionType } from 'raiden-ts/utils/actions';
 import { makeMessageId, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { Direction } from 'raiden-ts/transfers/state';
-
-import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps, makeLog } from '../mocks';
 
 describe('send transfers', () => {
   let depsMock: ReturnType<typeof raidenEpicDeps>;
@@ -1027,60 +1041,6 @@ describe('send transfers', () => {
       });
     });
 
-    test('monitorSecretRegistryEpic', async () => {
-      expect.assertions(3);
-
-      const secrets: transferSecretRegister.success[] = [];
-
-      monitorSecretRegistryEpic(
-        EMPTY,
-        depsMock.latest$.pipe(pluck('state')),
-        depsMock,
-      ).subscribe((a) => secrets.push(a));
-
-      // ignore unknown secrethash
-      depsMock.provider.emit(
-        '*',
-        makeLog({
-          blockNumber: 127,
-          transactionHash: txHash,
-          filter: depsMock.secretRegistryContract.filters.SecretRevealed(txHash, null),
-          data: HashZero, // non-indexed secret
-        }),
-      );
-      expect(secrets).toHaveLength(0);
-
-      // ignore register after lock expiration block
-      depsMock.provider.emit(
-        '*',
-        makeLog({
-          blockNumber: signedTransfer.lock.expiration.toNumber() + 1,
-          transactionHash: txHash,
-          filter: depsMock.secretRegistryContract.filters.SecretRevealed(secrethash, null),
-          data: secret, // non-indexed secret
-        }),
-      );
-      expect(secrets).toHaveLength(0);
-
-      const txBlock = signedTransfer.lock.expiration.toNumber() - 1;
-      // valid secrethash,emit
-      depsMock.provider.emit(
-        '*',
-        makeLog({
-          blockNumber: txBlock,
-          transactionHash: txHash,
-          filter: depsMock.secretRegistryContract.filters.SecretRevealed(secrethash, null),
-          data: secret, // non-indexed secret
-        }),
-      );
-      expect(secrets).toEqual([
-        transferSecretRegister.success(
-          { secret, txHash, txBlock, confirmed: undefined },
-          { secrethash, direction },
-        ),
-      ]);
-    });
-
     test('transferSuccessOnSecretRegisteredEpic', async () => {
       const txBlock = 127;
 
@@ -1878,5 +1838,96 @@ describe('send transfers', () => {
         await expect(promise2).resolves.toBeUndefined();
       });
     });
+  });
+});
+
+describe('monitorSecretRegistryEpic', () => {
+  test('unknown secret', async () => {
+    expect.assertions(1);
+
+    const raiden = await makeRaiden();
+    const { secretRegistryContract } = raiden.deps;
+
+    // an emitted secret which isn't of interest is ignored
+    const unknownSecret = makeSecret();
+    const txBlock = raiden.deps.provider.blockNumber;
+    await providersEmit(
+      {},
+      makeLog({
+        blockNumber: txBlock,
+        transactionHash: makeHash(),
+        filter: secretRegistryContract.filters.SecretRevealed(getSecrethash(unknownSecret), null),
+        data: unknownSecret, // non-indexed secret
+      }),
+    );
+    await waitBlock();
+    expect(raiden.output).not.toContainEqual(
+      transferSecretRegister.success(expect.anything(), expect.anything()),
+    );
+  });
+
+  test('ignore expired registered block', async () => {
+    expect.assertions(1);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const { secretRegistryContract } = raiden.deps;
+
+    const sent = await ensureTransferPending([raiden, partner]);
+    await waitBlock(sent.transfer[1].lock.expiration.add(1).toNumber());
+
+    const txBlock = raiden.deps.provider.blockNumber;
+    await providersEmit(
+      {},
+      makeLog({
+        blockNumber: txBlock,
+        transactionHash: makeHash(),
+        filter: secretRegistryContract.filters.SecretRevealed(secrethash, null),
+        data: secret, // non-indexed secret
+      }),
+    );
+    await waitBlock();
+    expect(raiden.output).not.toContainEqual(
+      transferSecretRegister.success(expect.anything(), expect.anything()),
+    );
+  });
+
+  test('success: valid register emitted', async () => {
+    expect.assertions(3);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const { secretRegistryContract } = raiden.deps;
+
+    await ensureTransferPending([raiden, partner]);
+
+    const txBlock = raiden.deps.provider.blockNumber;
+    // an emitted secret which isn't of interest is ignored
+    await providersEmit(
+      {},
+      makeLog({
+        blockNumber: txBlock,
+        transactionHash: txHash,
+        filter: secretRegistryContract.filters.SecretRevealed(secrethash, null),
+        data: secret, // non-indexed secret
+      }),
+    );
+    await waitBlock();
+    await waitBlock(raiden.deps.provider.blockNumber + raiden.config.confirmationBlocks + 1);
+
+    expect(raiden.output).toContainEqual(
+      transferSecretRegister.success(
+        { secret, txHash, txBlock, confirmed: undefined },
+        { direction: Direction.SENT, secrethash },
+      ),
+    );
+    expect(raiden.store.getState().sent[secrethash].secret).toEqual([
+      expect.any(Number),
+      { value: secret, registerBlock: txBlock },
+    ]);
+    expect(getChannel(raiden, partner).own.locks).toContainEqual(
+      expect.objectContaining({
+        secrethash,
+        registered: true,
+      }),
+    );
   });
 });

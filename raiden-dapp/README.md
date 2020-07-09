@@ -10,37 +10,37 @@ You can access an alpha testnet version of the Raiden dApp at https://lightclien
 
 ## Project setup
 ```
-npm install
+pnpm install
 ```
 
 ### Compiles and hot-reloads for development
 ```
-npm run serve
+pnpm run serve
 ```
 
 ### Compiles and minifies for production
 ```
-npm run build
+pnpm run build
 ```
 
 ### Run your tests
 ```
-npm run test
+pnpm run test
 ```
 
 ### Lints and fixes files
 ```
-npm run lint
+pnpm run lint
 ```
 
 ### Run your end-to-end tests
 ```
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ### Run your unit tests
 ```
-npm run test:unit
+pnpm run test:unit
 ```
 
 ### Customize configuration

@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
   root: true,
   env: {
-    node: true
+    node: true,
   },
   plugins: ['vuetify'],
   extends: [
@@ -14,7 +14,7 @@ module.exports = {
     'plugin:vue-i18n/recommended',
     'plugin:import/errors',
     'plugin:import/warnings',
-    'plugin:import/typescript'
+    'plugin:import/typescript',
   ],
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',
@@ -27,16 +27,16 @@ module.exports = {
       {
         ignoreWhenEmpty: true,
         ignores: ['pre', 'textarea'],
-        allowEmptyLines: false
-      }
+        allowEmptyLines: false,
+      },
     ],
     'vue/v-bind-style': ['error', 'shorthand'],
     'vue/v-on-style': ['error', 'shorthand'],
     'vue-i18n/no-raw-text': [
       process.env.NODE_ENV === 'production' ? 'error' : 'warn',
       {
-        ignoreNodes: ['v-icon']
-      }
+        ignoreNodes: ['v-icon'],
+      },
     ],
     '@typescript-eslint/no-unused-vars': [
       'error',
@@ -44,45 +44,45 @@ module.exports = {
         vars: 'all',
         args: 'after-used',
         ignoreRestSiblings: false,
-        argsIgnorePattern: '^_'
-      }
+        argsIgnorePattern: '^_',
+      },
     ],
     'vue/v-slot-style': [
       'error',
       {
         atComponent: 'shorthand',
         default: 'shorthand',
-        named: 'shorthand'
-      }
+        named: 'shorthand',
+      },
     ],
     'vue-i18n/no-unused-keys': [
       'error',
       {
         src: './src',
-        extensions: ['.ts', '.vue']
-      }
+        extensions: ['.ts', '.vue'],
+      },
     ],
     'vue/component-name-in-template-casing': [
       'error',
       'kebab-case',
       {
         registeredComponentsOnly: false,
-        ignores: []
-      }
-    ]
+        ignores: [],
+      },
+    ],
   },
   parserOptions: {
-    parser: '@typescript-eslint/parser'
+    parser: '@typescript-eslint/parser',
   },
   settings: {
     'vue-i18n': {
-      localeDir: './src/locales/*.json'
+      localeDir: './src/locales/*.json',
     },
     'import/resolver': {
       alias: {
         map: [['@', path.resolve('src')]],
-        extensions: ['.vue', '.ts', '.d.ts']
-      }
-    }
-  }
+        extensions: ['.vue', '.ts', '.d.ts'],
+      },
+    },
+  },
 };

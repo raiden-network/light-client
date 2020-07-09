@@ -73,8 +73,8 @@ import { Transfers } from '@/types';
   components: { RaidenDialog, Spinner },
   computed: {
     ...mapState(['transfers']),
-    ...mapGetters(['transfer'])
-  }
+    ...mapGetters(['transfer']),
+  },
 })
 export default class TransferProgressDialog extends Vue {
   @Prop({ required: true })

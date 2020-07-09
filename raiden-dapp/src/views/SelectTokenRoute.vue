@@ -10,7 +10,7 @@ import SelectToken from '../components/navigation/SelectToken.vue';
 import LazyRoute from '@/views/LazyRoute.vue';
 
 @Component({
-  components: { LazyRoute, SelectToken }
+  components: { LazyRoute, SelectToken },
 })
 export default class SelectTokenRoute extends Vue {}
 </script>

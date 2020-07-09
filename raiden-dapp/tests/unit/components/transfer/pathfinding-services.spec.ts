@@ -17,7 +17,7 @@ describe('PathfindingService.vue', () => {
 
   const $raiden = {
     fetchTokenData: jest.fn().mockResolvedValueOnce(undefined),
-    fetchServices: jest.fn()
+    fetchServices: jest.fn(),
   };
 
   const raidenPFS: RaidenPFS = {
@@ -25,7 +25,7 @@ describe('PathfindingService.vue', () => {
     price: bigNumberify(100),
     rtt: 62,
     token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-    url: 'https://pfs-goerli-with-fee.services-test.raiden.network'
+    url: 'https://pfs-goerli-with-fee.services-test.raiden.network',
   };
 
   const raidenPFS2: RaidenPFS = {
@@ -33,7 +33,7 @@ describe('PathfindingService.vue', () => {
     price: bigNumberify(100),
     rtt: 171,
     token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-    url: 'https://pfs-goerli.services-test.raiden.network'
+    url: 'https://pfs-goerli.services-test.raiden.network',
   };
 
   function createWrapper() {
@@ -43,8 +43,8 @@ describe('PathfindingService.vue', () => {
       vuetify,
       mocks: {
         $t: (msg: string) => msg,
-        $raiden
-      }
+        $raiden,
+      },
     });
   }
 
@@ -55,8 +55,8 @@ describe('PathfindingService.vue', () => {
         name: 'ServiceToken',
         symbol: 'SVT',
         decimals: 18,
-        balance: Zero
-      } as Token
+        balance: Zero,
+      } as Token,
     } as Tokens);
   });
 
@@ -73,10 +73,7 @@ describe('PathfindingService.vue', () => {
     expect(wrapper.find('.spinner').exists()).toBe(false);
     expect(wrapper.find('.pathfinding-services__table').isVisible()).toBe(true);
 
-    wrapper
-      .findAll('.pathfinding-services tbody tr')
-      .at(1)
-      .trigger('click');
+    wrapper.findAll('.pathfinding-services tbody tr').at(1).trigger('click');
     await wrapper.vm.$nextTick();
     const selectEvent = wrapper.emitted('select');
     expect(selectEvent).toBeTruthy();
@@ -90,7 +87,7 @@ describe('PathfindingService.vue', () => {
     await flushPromises();
     expect(wrapper.vm.$data.error).toBeDefined();
     expect(wrapper.vm.$data.error).toMatchObject({
-      message: 'there was an error'
+      message: 'there was an error',
     });
   });
 });

@@ -17,8 +17,8 @@ describe('Settings.vue', () => {
       vuetify,
       store,
       mocks: {
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
 
     await wrapper.vm.$nextTick();

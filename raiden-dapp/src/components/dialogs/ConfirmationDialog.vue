@@ -29,8 +29,8 @@ import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 @Component({
   components: {
     RaidenDialog,
-    ActionButton
-  }
+    ActionButton,
+  },
 })
 export default class ConfirmationDialog extends Vue {
   @Prop({ required: true, type: Boolean, default: false })

@@ -71,12 +71,12 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
 
 @Component({
   components: {
-    AddressDisplay
+    AddressDisplay,
   },
   computed: {
     ...mapState(['loading', 'defaultAccount']),
-    ...mapGetters(['balance', 'isConnected'])
-  }
+    ...mapGetters(['balance', 'isConnected']),
+  },
 })
 export default class AccountContent extends Mixins(NavigationMixin) {
   menuItems: {}[] = [];
@@ -97,7 +97,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         ) as string,
         route: () => {
           this.navigateToBackupState();
-        }
+        },
       },
       {
         icon: 'bug.svg',
@@ -109,8 +109,8 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         ) as string,
         route: () => {
           this.downloadLogs();
-        }
-      }
+        },
+      },
     ];
 
     if (this.isConnected) {
@@ -121,7 +121,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         subtitle: this.$t('account-content.menu-items.udc.subtitle') as string,
         route: () => {
           this.navigateToUDC();
-        }
+        },
       });
 
       const mainAccount = await this.$raiden.getMainAccount();
@@ -138,7 +138,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
           ) as string,
           route: () => {
             this.navigateToRaidenAccountTransfer();
-          }
+          },
         };
 
         const withdrawal = {
@@ -151,7 +151,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
           ) as string,
           route: () => {
             this.navigateToWithdrawal();
-          }
+          },
         };
         this.menuItems.unshift(withdrawal);
         this.menuItems.unshift(raidenAccount);
@@ -171,7 +171,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         ) as string,
         route: () => {
           this.navigateToSettings();
-        }
+        },
       });
     }
   }

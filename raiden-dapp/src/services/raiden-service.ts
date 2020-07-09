@@ -5,7 +5,7 @@ import {
   Raiden,
   RaidenError,
   RaidenPaths,
-  RaidenPFS
+  RaidenPFS,
 } from 'raiden-ts';
 import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
@@ -15,7 +15,7 @@ import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
 import { BigNumber, BigNumberish, parseEther } from 'ethers/utils';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
-import { ConfigProvider } from './config-provider';
+import { ConfigProvider, Configuration } from '@/services/config-provider';
 import { Zero } from 'ethers/constants';
 import i18n from '@/i18n';
 import { Notification } from '@/store/notifications/types';
@@ -24,6 +24,7 @@ export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
   private _userDepositTokenAddress: string = '';
+  private _configuration?: Configuration;
 
   private static async createRaiden(
     provider: any,
@@ -38,13 +39,13 @@ export default class RaidenService {
         account,
         {
           storage: window.localStorage,
-          state: stateBackup
+          state: stateBackup,
         },
         contracts,
         {
           pfsSafetyMargin: 1.1,
           pfs: process.env.VUE_APP_PFS,
-          matrixServer: process.env.VUE_APP_TRANSPORT
+          matrixServer: process.env.VUE_APP_TRANSPORT,
         },
         subkey
       );
@@ -104,17 +105,9 @@ export default class RaidenService {
 
   async connect(stateBackup?: string, subkey?: true) {
     try {
-      const raidenPackageConfigUrl = process.env.VUE_APP_RAIDEN_PACKAGE;
-      let config;
-      let provider;
       let raiden;
-
-      if (raidenPackageConfigUrl) {
-        config = await ConfigProvider.fetch(raidenPackageConfigUrl);
-        provider = await Web3Provider.provider(config);
-      } else {
-        provider = await Web3Provider.provider();
-      }
+      const configuration = await ConfigProvider.configuration();
+      const provider = await Web3Provider.provider(configuration.rpc_endpoint);
 
       if (!provider) {
         this.store.commit('noProvider');
@@ -133,12 +126,13 @@ export default class RaidenService {
 
         raiden = await RaidenService.createRaiden(
           provider,
-          config?.PRIVATE_KEY,
+          configuration?.private_key,
           stateBackup,
           subkey
         );
 
         this._raiden = raiden;
+        this._configuration = configuration;
 
         const account = await this.getAccount();
         this.store.commit('account', account);
@@ -150,10 +144,12 @@ export default class RaidenService {
           this._userDepositTokenAddress
         );
 
+        await this.monitorPreSetTokens();
+
         // update connected tokens data on each newBlock
         raiden.events$
           .pipe(
-            filter(value => value.type === 'block/new'),
+            filter((value) => value.type === 'block/new'),
             exhaustMap(() =>
               this.fetchTokenData(
                 this.store.getters.tokens.map((m: TokenModel) => m.address)
@@ -163,24 +159,24 @@ export default class RaidenService {
           .subscribe();
 
         raiden.events$
-          .pipe(filter(value => value.type === 'raiden/shutdown'))
+          .pipe(filter((value) => value.type === 'raiden/shutdown'))
           .subscribe(() => this.store.commit('reset'));
 
-        raiden.config$.subscribe(config =>
+        raiden.config$.subscribe((config) =>
           this.store.commit('updateConfig', config)
         );
 
-        raiden.events$.subscribe(async value => {
+        raiden.events$.subscribe(async (value) => {
           if (value.type === 'token/monitored') {
             this.store.commit('updateTokens', {
-              [value.payload.token]: { address: value.payload.token }
+              [value.payload.token]: { address: value.payload.token },
             });
           }
 
           // Update presences on matrix presence updates
           else if (value.type === 'matrix/presence/success') {
             this.store.commit('updatePresence', {
-              [value.meta.address]: value.payload.available
+              [value.meta.address]: value.payload.available,
             });
           } else if (value.type === 'ms/balanceProof/sent') {
             if (!value.payload.confirmed) {
@@ -209,18 +205,23 @@ export default class RaidenService {
           }
         });
 
-        raiden.channels$.subscribe(value => {
+        raiden.channels$.subscribe((value) => {
           this.store.commit('updateChannels', value);
         });
 
         // Subscribe to our pending transfers
-        raiden.transfers$.subscribe(transfer => {
+        raiden.transfers$.subscribe((transfer) => {
           this.store.commit('updateTransfers', transfer);
         });
 
         this.store.commit('network', raiden.network);
 
-        window.addEventListener('beforeunload', () => this.raiden.stop());
+        /* istanbul ignore next */
+        window.addEventListener('beforeunload', (event) => {
+          event.preventDefault();
+          return ''; // Some engines like Chrome expect this.
+        });
+
         raiden.start();
         this.store.commit('balance', await this.getBalance());
         if (subkey) {
@@ -250,6 +251,19 @@ export default class RaidenService {
     this.store.commit('loadComplete');
   }
 
+  private async monitorPreSetTokens() {
+    const { chainId } = this.raiden.network;
+    if (!this._configuration?.per_network?.[chainId]) {
+      return;
+    }
+
+    const networkConfiguration = this._configuration.per_network[chainId];
+
+    for (const token of networkConfiguration.monitored) {
+      await this.raiden.monitorToken(token);
+    }
+  }
+
   private async notifyWithdrawalFailure(
     code: any,
     plannedAmount: BigNumber,
@@ -259,7 +273,7 @@ export default class RaidenService {
       [
         'UDC_PLAN_WITHDRAW_GT_ZERO',
         'UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE',
-        'UDC_PLAN_WITHDRAW_FAILED'
+        'UDC_PLAN_WITHDRAW_FAILED',
       ].indexOf(code) >= 0
     ) {
       return;
@@ -272,7 +286,7 @@ export default class RaidenService {
       typeof code === 'string'
         ? i18n.t(`notifications.withdrawal.failure.descriptions.${code}`, {
             amount,
-            symbol: token.symbol
+            symbol: token.symbol,
           })
         : undefined;
 
@@ -281,12 +295,12 @@ export default class RaidenService {
       : i18n.t('notifications.withdrawal.failure.description', {
           amount,
           symbol: token.symbol,
-          message: message
+          message: message,
         });
 
     await this.store.dispatch('notifications/notify', {
       title: i18n.t('notifications.withdrawal.failure.title'),
-      description
+      description,
     } as Notification);
   }
 
@@ -304,8 +318,8 @@ export default class RaidenService {
       description: i18n.t('notifications.withdrawal.success.description', {
         amount,
         withdrawn,
-        symbol: token.symbol
-      })
+        symbol: token.symbol,
+      }),
     } as Notification);
   }
 
@@ -325,8 +339,8 @@ export default class RaidenService {
         monitoringService,
         partner,
         reward: amount,
-        txHash
-      })
+        txHash,
+      }),
     } as Notification);
   }
 
@@ -353,14 +367,14 @@ export default class RaidenService {
     try {
       const [balance, { decimals, symbol, name }] = await Promise.all([
         raiden.getTokenBalance(tokenAddress),
-        raiden.getTokenInfo(tokenAddress)
+        raiden.getTokenInfo(tokenAddress),
       ]);
       return {
         name: name,
         symbol: symbol,
         balance: balance,
         decimals: decimals,
-        address: tokenAddress
+        address: tokenAddress,
       };
     } catch (e) {
       return null;
@@ -377,7 +391,7 @@ export default class RaidenService {
       if (progress) {
         progress({
           current,
-          total
+          total,
         });
       }
     };
@@ -385,7 +399,7 @@ export default class RaidenService {
     const raiden = this.raiden;
     progressUpdater(1, 3);
 
-    await raiden.openChannel(token, partner, { deposit: amount }, e =>
+    await raiden.openChannel(token, partner, { deposit: amount }, (e) =>
       e.type === EventTypes.OPENED ? progressUpdater(2, 3) : ''
     );
   }
@@ -405,7 +419,7 @@ export default class RaidenService {
   async fetchTokenData(tokens: string[]): Promise<void> {
     if (!tokens.length) return;
     const fetchToken = async (address: string): Promise<void> =>
-      this.getToken(address).then(token => {
+      this.getToken(address).then((token) => {
         if (!token) return;
         this.store.commit('updateTokens', { [token.address]: token });
       });
@@ -422,7 +436,7 @@ export default class RaidenService {
   ) {
     const key = await this.raiden.transfer(token, target, amount, {
       paymentId,
-      paths
+      paths,
     });
 
     // Wait for transaction to be completed
@@ -437,7 +451,7 @@ export default class RaidenService {
   ): Promise<RaidenPaths> {
     await this.raiden.getAvailability(target);
     return await this.raiden.findRoutes(token, target, amount, {
-      pfs: raidenPFS
+      pfs: raidenPFS,
     });
   }
 
@@ -524,7 +538,7 @@ export default class RaidenService {
       return;
     }
     await this.raiden.transferOnchainTokens(address, mainAddress, amount, {
-      subkey: true
+      subkey: true,
     });
   }
 
@@ -536,18 +550,18 @@ export default class RaidenService {
     const allTokens = await raiden.getTokenList();
     const balances: Tokens = {};
     const fetchTokenBalance = async (address: string): Promise<void> =>
-      raiden.getTokenBalance(address, raiden.address).then(balance => {
+      raiden.getTokenBalance(address, raiden.address).then((balance) => {
         if (balance.gt(Zero)) {
           balances[address] = {
             address,
-            balance
+            balance,
           };
         }
       });
 
     await asyncPool(6, allTokens, fetchTokenBalance);
     const tokens: Tokens = {};
-    Object.keys(balances).forEach(address => {
+    Object.keys(balances).forEach((address) => {
       const cached = this.store.state.tokens[address];
       if (cached) {
         tokens[address] = { ...cached, ...balances[address] };
@@ -556,7 +570,7 @@ export default class RaidenService {
     });
 
     const fetchTokenInfo = async (address: string): Promise<void> =>
-      raiden.getTokenInfo(address).then(token => {
+      raiden.getTokenInfo(address).then((token) => {
         tokens[address] = { ...token, ...balances[address] };
       });
 
@@ -566,6 +580,10 @@ export default class RaidenService {
     }
 
     return Object.values(tokens);
+  }
+
+  async monitorToken(address: string) {
+    await this.raiden.monitorToken(address);
   }
 }
 

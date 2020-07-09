@@ -37,16 +37,16 @@ describe('AddressInput', () => {
         value,
         hideErrorLabel,
         exclude: excluded ? [excluded] : undefined,
-        block: blocked ? [blocked] : undefined
+        block: blocked ? [blocked] : undefined,
       },
       mocks: {
         $raiden: {
           ensResolve,
-          getAvailability
+          getAvailability,
         },
         $identicon: $identicon(),
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   }
 
@@ -54,7 +54,7 @@ describe('AddressInput', () => {
     ensResolve = jest.fn().mockResolvedValue(onlineTarget);
     getAvailability = jest.fn().mockResolvedValue(true);
     store.commit('updatePresence', {
-      [onlineTarget]: true
+      [onlineTarget]: true,
     });
   });
 

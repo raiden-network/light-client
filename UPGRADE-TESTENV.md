@@ -31,10 +31,9 @@ const contracts_version = "0.36.2";
 Next, verify that the build still works:
 
 ```sh
-$ cd light-client/raiden-ts
-$ npm run clean
-$ npm ci
-$ npm run build
+$ cd light-client
+$ pnpm run clean --filter raiden-ts
+$ pnpm install
 ```
 
 ## Upgrade Docker image tags

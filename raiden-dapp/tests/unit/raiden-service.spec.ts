@@ -1,11 +1,14 @@
+import { ConfigProvider, Configuration } from '@/services/config-provider';
+
 jest.mock('vuex');
 jest.mock('raiden-ts');
 jest.mock('@/i18n', () => ({
   __esModule: true,
   default: {
-    t: jest.fn(args => args.toString())
-  }
+    t: jest.fn((args) => args.toString()),
+  },
 }));
+jest.mock('@/services/config-provider');
 
 import { DeniedReason, Token, TokenModel } from '@/model/types';
 import RaidenService from '@/services/raiden-service';
@@ -14,7 +17,7 @@ import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
 import { Address, Hash, Raiden, RaidenTransfer } from 'raiden-ts';
-import { BigNumber, bigNumberify, parseEther } from 'ethers/utils';
+import { BigNumber, bigNumberify, Network, parseEther } from 'ethers/utils';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
 import { AddressZero, One, Zero } from 'ethers/constants';
@@ -32,7 +35,7 @@ describe('RaidenService', () => {
   let factory: jest.Mock;
   const mockProvider = {
     send: jest.fn(),
-    sendAsync: jest.fn()
+    sendAsync: jest.fn(),
   };
   const path = [{ path: ['0xmediator'], fee: new BigNumber(1 ** 10) }];
 
@@ -47,21 +50,38 @@ describe('RaidenService', () => {
     mock.getAvailability.mockResolvedValue({
       userId: '123',
       available: true,
-      ts: 0
+      ts: 0,
     });
 
-    const raidenMock = mock as any;
-    raidenMock.address = '123';
+    mock.monitorToken.mockResolvedValue('0xaddr' as Address);
+
+    const raidenMock: {
+      -readonly [P in keyof Raiden]: Raiden[P];
+    } = mock;
+    raidenMock.address = '123' as Address;
     raidenMock.channels$ = EMPTY;
     raidenMock.events$ = EMPTY;
     raidenMock.config$ = EMPTY;
     // Emit a dummy transfer event every time raiden is mocked
-    raidenMock.transfers$ = of({}).pipe(delay(1000));
+    raidenMock.transfers$ = of({} as RaidenTransfer).pipe(delay(1000));
+    raidenMock.network = {
+      name: 'Test',
+      chainId: 1337,
+    } as Network;
   };
 
-  async function setupSDK(stateBackup?: string, subkey?: true) {
+  async function setupSDK({
+    config,
+    stateBackup,
+    subkey,
+  }: {
+    stateBackup?: string;
+    subkey?: true;
+    config?: Configuration;
+  } = {}) {
     providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(raiden);
+    (ConfigProvider as any).configuration.mockResolvedValue(config ?? {});
     await raidenService.connect(stateBackup, subkey);
     await flushPromises();
   }
@@ -94,7 +114,10 @@ describe('RaidenService', () => {
       .mockResolvedValueOnce(bigNumberify('1000000000000000000'))
       .mockResolvedValueOnce(bigNumberify('100000000000000000'));
 
-    await setupSDK('', true);
+    await setupSDK({
+      stateBackup: '',
+      subkey: true,
+    });
     expect(store.commit).toBeCalledWith('balance', '1.0');
     expect(store.commit).toBeCalledWith('raidenAccountBalance', '0.1');
   });
@@ -163,7 +186,7 @@ describe('RaidenService', () => {
         decimals: 18,
         name: 'Test Token 1',
         symbol: 'TT1',
-        totalSupply: bigNumberify(1221)
+        totalSupply: bigNumberify(1221),
       });
 
       await raidenService.fetchTokenData(['0xtoken']);
@@ -175,8 +198,8 @@ describe('RaidenService', () => {
             address: '0xtoken',
             balance,
             name: 'Test Token 1',
-            symbol: 'TT1'
-          } as Token
+            symbol: 'TT1',
+          } as Token,
         } as Tokens)
       );
       expect(raiden.getTokenBalance).toHaveBeenCalledTimes(1);
@@ -326,7 +349,7 @@ describe('RaidenService', () => {
           One,
           {
             paths: path,
-            paymentId
+            paymentId,
           }
         );
       });
@@ -345,7 +368,7 @@ describe('RaidenService', () => {
           One,
           {
             paths: path,
-            paymentId
+            paymentId,
           }
         );
       });
@@ -418,7 +441,7 @@ describe('RaidenService', () => {
         expect(isAvailable).toBe(false);
         expect(raiden.getAvailability).toHaveBeenCalledTimes(1);
         expect(store.commit).toBeCalledWith('updatePresence', {
-          ['0xtarget']: false
+          ['0xtarget']: false,
         });
       });
 
@@ -426,7 +449,7 @@ describe('RaidenService', () => {
         const dummyTransfer = {
           initiator: '123',
           key: 'sent:0x1',
-          completed: false
+          completed: false,
         };
         (raiden as any).transfers$ = new BehaviorSubject(dummyTransfer);
         providerMock.mockResolvedValue(mockProvider);
@@ -438,7 +461,7 @@ describe('RaidenService', () => {
         expect(store.commit).toHaveBeenCalledWith(
           'updateTransfers',
           expect.objectContaining({
-            ...dummyTransfer
+            ...dummyTransfer,
           } as RaidenTransfer)
         );
       });
@@ -466,7 +489,7 @@ describe('RaidenService', () => {
           name: address,
           symbol: address.toLocaleUpperCase(),
           decimals: 18,
-          balance: Zero
+          balance: Zero,
         });
 
         beforeEach(() => {
@@ -484,12 +507,12 @@ describe('RaidenService', () => {
           const tokens = [
             {
               ...createToken('0x1'),
-              balance: One
+              balance: One,
             },
             {
               ...createToken('0x2'),
-              balance: One
-            }
+              balance: One,
+            },
           ];
 
           beforeEach(() => {
@@ -503,7 +526,7 @@ describe('RaidenService', () => {
 
           test('load from chain if no token info is cached', async () => {
             (store.state as any) = {
-              tokens: {}
+              tokens: {},
             };
 
             await expect(
@@ -516,9 +539,9 @@ describe('RaidenService', () => {
             (store.state as any) = {
               tokens: {
                 '0x1': {
-                  ...createToken('0x1')
-                }
-              }
+                  ...createToken('0x1'),
+                },
+              },
             };
 
             await expect(
@@ -540,7 +563,7 @@ describe('RaidenService', () => {
       balance: Zero,
       decimals: 18,
       name: address,
-      symbol: address.replace('0x', '').toLocaleUpperCase()
+      symbol: address.replace('0x', '').toLocaleUpperCase(),
     });
 
     const tokens: Tokens = {};
@@ -565,15 +588,15 @@ describe('RaidenService', () => {
         mockStore.state = {
           tokens: {
             [mockToken1]: {
-              address: mockToken1
+              address: mockToken1,
             },
             [mockToken2]: {
-              address: mockToken2
-            }
-          }
+              address: mockToken2,
+            },
+          },
         };
         mockStore.getters = {
-          tokens: [{ address: mockToken1 } as TokenModel]
+          tokens: [{ address: mockToken1 } as TokenModel],
         };
       });
 
@@ -587,7 +610,7 @@ describe('RaidenService', () => {
         await raidenService.fetchTokenData(['0xtoken1']);
 
         expect(store.commit).toHaveBeenLastCalledWith('updateTokens', {
-          [mockToken1]: tokens[mockToken1]
+          [mockToken1]: tokens[mockToken1],
         });
         expect(store.commit).toHaveBeenCalledWith('loadComplete');
       });
@@ -601,7 +624,7 @@ describe('RaidenService', () => {
           address: mockToken1 as Address,
           decimals: 18,
           name: 'Token 1',
-          symbol: 'TKN1'
+          symbol: 'TKN1',
         };
         raiden.getTokenBalance = jest.fn().mockResolvedValue(One);
         raiden.getTokenList = jest
@@ -621,8 +644,8 @@ describe('RaidenService', () => {
           expect.objectContaining({
             [mockToken1]: {
               ...testToken,
-              balance: One
-            }
+              balance: One,
+            },
           })
         );
       });
@@ -636,7 +659,7 @@ describe('RaidenService', () => {
       raiden.getTokenInfo = jest.fn().mockResolvedValue({
         decimals: 0,
         symbol: 'MKT',
-        name: 'Mock Token'
+        name: 'Mock Token',
       });
 
       await setupSDK();
@@ -653,7 +676,7 @@ describe('RaidenService', () => {
         'updateTokens',
         expect.objectContaining({
           [mockToken1]: { address: mockToken1 },
-          [mockToken2]: { address: mockToken2 }
+          [mockToken2]: { address: mockToken2 },
         })
       );
       expect(store.commit).toHaveBeenCalledWith(
@@ -664,8 +687,8 @@ describe('RaidenService', () => {
             balance: bigNumberify(100),
             decimals: 0,
             symbol: 'MKT',
-            name: 'Mock Token'
-          }
+            name: 'Mock Token',
+          },
         })
       );
     });
@@ -676,10 +699,10 @@ describe('RaidenService', () => {
 
     const mockStore = store as any;
     mockStore.getters = {
-      tokens: []
+      tokens: [],
     };
     mockStore.state = {
-      tokens: {}
+      tokens: {},
     };
 
     const subject = new BehaviorSubject({});
@@ -721,7 +744,7 @@ describe('RaidenService', () => {
   test('notify that monitor balance proof was send', async () => {
     expect.assertions(1);
     (store.getters as any) = {
-      udcToken: {}
+      udcToken: {},
     };
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
@@ -733,16 +756,16 @@ describe('RaidenService', () => {
         partner: '0x1001',
         reward: parseEther('5'),
         txHash: '0x0001',
-        confirmed: true
+        confirmed: true,
       },
-      meta: {}
+      meta: {},
     });
 
     await flushPromises();
 
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       description: 'notifications.ms-balance-proof.description',
-      title: 'notifications.ms-balance-proof.title'
+      title: 'notifications.ms-balance-proof.title',
     });
   });
 
@@ -752,22 +775,22 @@ describe('RaidenService', () => {
     (raiden as any).events$ = subject;
     await setupSDK();
     (store.getters as any) = {
-      udcToken: {}
+      udcToken: {},
     };
     subject.next({
       type: 'udc/withdrawn',
       payload: {
         withdrawal: parseEther('5'),
-        confirmed: true
+        confirmed: true,
       },
       meta: {
-        amount: parseEther('5')
-      }
+        amount: parseEther('5'),
+      },
     });
 
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       description: 'notifications.withdrawal.success.description',
-      title: 'notifications.withdrawal.success.title'
+      title: 'notifications.withdrawal.success.title',
     });
   });
 
@@ -777,16 +800,16 @@ describe('RaidenService', () => {
     (raiden as any).events$ = subject;
     await setupSDK();
     (store.getters as any) = {
-      udcToken: {}
+      udcToken: {},
     };
     subject.next({
       type: 'udc/withdraw/failure',
       payload: {
-        code: 'UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE'
+        code: 'UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE',
       },
       meta: {
-        amount: parseEther('5')
-      }
+        amount: parseEther('5'),
+      },
     });
 
     expect(store.dispatch).toHaveBeenCalledTimes(0);
@@ -798,22 +821,22 @@ describe('RaidenService', () => {
     (raiden as any).events$ = subject;
     await setupSDK();
     (store.getters as any) = {
-      udcToken: {}
+      udcToken: {},
     };
     subject.next({
       type: 'udc/withdraw/failure',
       payload: {
         code: -3200,
-        message: 'gas'
+        message: 'gas',
       },
       meta: {
-        amount: parseEther('5')
-      }
+        amount: parseEther('5'),
+      },
     });
 
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       description: 'notifications.withdrawal.failure.description',
-      title: 'notifications.withdrawal.failure.title'
+      title: 'notifications.withdrawal.failure.title',
     });
   });
 
@@ -826,15 +849,15 @@ describe('RaidenService', () => {
     subject.next({
       type: 'token/monitored',
       payload: {
-        token: '0x1234'
+        token: '0x1234',
       },
       meta: {
-        amount: parseEther('5')
-      }
+        amount: parseEther('5'),
+      },
     });
 
     expect(store.commit).toHaveBeenCalledWith('updateTokens', {
-      '0x1234': { address: '0x1234' }
+      '0x1234': { address: '0x1234' },
     });
   });
 
@@ -847,15 +870,28 @@ describe('RaidenService', () => {
     subject.next({
       type: 'matrix/presence/success',
       payload: {
-        available: true
+        available: true,
       },
       meta: {
-        address: '0x1234'
-      }
+        address: '0x1234',
+      },
     });
 
     expect(store.commit).toHaveBeenCalledWith('updatePresence', {
-      '0x1234': true
+      '0x1234': true,
     });
+  });
+
+  test('pre-set tokens are monitored', async () => {
+    expect.assertions(1);
+    const config: Configuration = {
+      per_network: {
+        '1337': {
+          monitored: ['0xtoken'],
+        },
+      },
+    };
+    await setupSDK({ config });
+    expect(raiden.monitorToken).toHaveBeenCalledWith('0xtoken');
   });
 });

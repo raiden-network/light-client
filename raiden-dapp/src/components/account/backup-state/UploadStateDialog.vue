@@ -25,7 +25,7 @@
           <v-icon
             class="upload-state__dropzone__icon--inactive-dropzone"
             :class="{
-              'upload-state__dropzone__icon--active-dropzone': activeDropzone
+              'upload-state__dropzone__icon--active-dropzone': activeDropzone,
             }"
             size="90px"
           >
@@ -70,8 +70,8 @@ import Spinner from '@/components/icons/Spinner.vue';
   components: {
     RaidenDialog,
     ActionButton,
-    Spinner
-  }
+    Spinner,
+  },
 })
 export default class UploadStateDialog extends Vue {
   dragCount: number = 0;
@@ -137,7 +137,7 @@ export default class UploadStateDialog extends Vue {
 
     let reader = new FileReader();
     /* istanbul ignore next */
-    reader.onload = e => {
+    reader.onload = (e) => {
       const target = e.target;
       if (!e.target) {
         return;

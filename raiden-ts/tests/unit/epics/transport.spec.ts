@@ -757,7 +757,11 @@ describe('transport epic', () => {
 
         const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
 
-        matrix.emit('Room', { roomId });
+        matrix.emit('Room', {
+          roomId,
+          getCanonicalAlias: jest.fn(),
+          getAliases: jest.fn(() => []),
+        });
 
         advance(1e3);
 
@@ -782,23 +786,13 @@ describe('transport epic', () => {
           state$ = of(state),
           roomAlias = `#raiden_${depsMock.network.name}_discovery:${matrixServer}`;
 
-        matrix.getRoom.mockReturnValueOnce({
-          roomId,
-          name: undefined,
-          getMember: jest.fn(),
-          getJoinedMembers: jest.fn(() => []),
-          getCanonicalAlias: jest.fn(() => null),
-          getAliases: jest.fn(() => [roomAlias]),
-          currentState: {
-            roomId,
-            setStateEvents: jest.fn(),
-            members: {},
-          } as any,
-        } as any);
-
         const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
 
-        matrix.emit('Room', { roomId });
+        matrix.emit('Room', {
+          roomId,
+          getCanonicalAlias: jest.fn(),
+          getAliases: jest.fn(() => [roomAlias]),
+        });
 
         advance(1e3);
 
@@ -824,7 +818,11 @@ describe('transport epic', () => {
 
         const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
 
-        matrix.emit('Room', { roomId });
+        matrix.emit('Room', {
+          roomId,
+          getCanonicalAlias: jest.fn(),
+          getAliases: jest.fn(() => []),
+        });
 
         advance(1e3);
 

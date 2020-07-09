@@ -6,7 +6,7 @@
     x="0px"
     y="0px"
     viewBox="0 0 512 512"
-    style="enable-background:new 0 0 512 512;"
+    style="enable-background: new 0 0 512 512;"
     xml:space="preserve"
   >
     <g>
@@ -49,7 +49,7 @@
 
 <script lang="ts">
 export default {
-  name: 'QrCode'
+  name: 'QrCode',
 };
 </script>
 

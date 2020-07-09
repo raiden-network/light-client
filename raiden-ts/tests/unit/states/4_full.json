@@ -1,6 +1,6 @@
 {
   "address": "0x11111111111111111111111111aaaaaaaaaaaaaa",
-  "version": 3,
+  "version": 4,
   "chainId": 1338,
   "registry": "0x0000000000000000000000000000000000000070",
   "blockNumber": 123,

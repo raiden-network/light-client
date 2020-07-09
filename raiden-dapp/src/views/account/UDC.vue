@@ -37,21 +37,21 @@
           <span v-if="step === 'mint'">
             {{
               $t('udc-deposit-dialog.progress.mint', {
-                currency: serviceToken
+                currency: serviceToken,
               })
             }}
           </span>
           <span v-else-if="step === 'approve'">
             {{
               $t('udc-deposit-dialog.progress.approve', {
-                currency: serviceToken
+                currency: serviceToken,
               })
             }}
           </span>
           <span v-else-if="step === 'deposit'">
             {{
               $t('udc-deposit-dialog.progress.deposit', {
-                currency: serviceToken
+                currency: serviceToken,
               })
             }}
           </span>
@@ -64,7 +64,7 @@
           {{
             $t('udc-deposit-dialog.available', {
               balance: accountBalance,
-              currency: $t('app-header.currency')
+              currency: $t('app-header.currency'),
             })
           }}
         </p>
@@ -94,7 +94,7 @@
       <v-col cols="10">
         <p
           :class="{
-            'udc__low-balance': !hasEnoughServiceTokens
+            'udc__low-balance': !hasEnoughServiceTokens,
           }"
         >
           {{ $t('udc.balance') }}
@@ -117,12 +117,12 @@
         <p
           v-if="!hasEnoughServiceTokens"
           :class="{
-            'udc__low-balance': !hasEnoughServiceTokens
+            'udc__low-balance': !hasEnoughServiceTokens,
           }"
         >
           {{
             $t('udc.balance-too-low', {
-              symbol: serviceToken
+              symbol: serviceToken,
             })
           }}
         </p>
@@ -160,12 +160,12 @@ import Spinner from '@/components/icons/Spinner.vue';
     UdcWithdrawalDialog,
     AmountDisplay,
     ErrorMessage,
-    Spinner
+    Spinner,
   },
   computed: {
     ...mapState(['accountBalance']),
-    ...mapGetters(['mainnet', 'udcToken'])
-  }
+    ...mapGetters(['mainnet', 'udcToken']),
+  },
 })
 export default class UDC extends Vue {
   amount: string = '10';

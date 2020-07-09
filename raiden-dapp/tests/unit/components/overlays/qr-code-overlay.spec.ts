@@ -15,12 +15,12 @@ describe('QrCodeOverlay.vue', () => {
     wrapper = mount(QrCodeOverlay, {
       vuetify,
       mocks: {
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
       },
       stubs: ['qrcode-stream'],
       propsData: {
-        visible: true
-      }
+        visible: true,
+      },
     });
   });
 

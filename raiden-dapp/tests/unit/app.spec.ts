@@ -36,8 +36,8 @@ describe('App.vue', () => {
       mocks: {
         $router: router,
         $raiden: $raiden,
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     });
   });
 
@@ -57,13 +57,13 @@ describe('App.vue', () => {
     expect.assertions(2);
 
     store.commit('updateConfig', {
-      caps: { [Capabilities.NO_RECEIVE]: false }
+      caps: { [Capabilities.NO_RECEIVE]: false },
     });
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.$data.showReceivingDisabled).toBe(false);
 
     store.commit('updateConfig', {
-      caps: { [Capabilities.NO_RECEIVE]: true }
+      caps: { [Capabilities.NO_RECEIVE]: true },
     });
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.$data.showReceivingDisabled).toBe(true);

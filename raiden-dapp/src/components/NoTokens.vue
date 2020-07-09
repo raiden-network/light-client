@@ -21,8 +21,8 @@ import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({
   computed: {
-    ...mapGetters(['tokens'])
-  }
+    ...mapGetters(['tokens']),
+  },
 })
 export default class NoTokens extends Mixins(NavigationMixin) {
   tokens!: TokenModel[];

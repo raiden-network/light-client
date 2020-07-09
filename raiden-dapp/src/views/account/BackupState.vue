@@ -17,7 +17,7 @@
               <div
                 class="backup-state__buttons__download-state__icon"
                 :class="{
-                  'backup-state__buttons__download-state__icon disabled-icon': !isConnected
+                  'backup-state__buttons__download-state__icon disabled-icon': !isConnected,
                 }"
               >
                 <v-img :src="require('@/assets/state_download.png')"></v-img>
@@ -42,7 +42,7 @@
               <div
                 class="backup-state__buttons__upload-state__icon"
                 :class="{
-                  'backup-state__buttons__upload-state__icon disabled-icon': isConnected
+                  'backup-state__buttons__upload-state__icon disabled-icon': isConnected,
                 }"
               >
                 <v-img :src="require('@/assets/state_upload.png')"></v-img>
@@ -78,9 +78,9 @@ import UploadStateDialog from '@/components/account/backup-state/UploadStateDial
 @Component({
   components: {
     DownloadStateDialog,
-    UploadStateDialog
+    UploadStateDialog,
   },
-  computed: { ...mapGetters(['isConnected']) }
+  computed: { ...mapGetters(['isConnected']) },
 })
 export default class BackupState extends Vue {
   isConnected!: boolean;

@@ -157,6 +157,10 @@ EXPOSE 8545 8546 8547 30303 30303/udp 5001 5002 9001 6000 80 9101 9092 9093
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Install pnpm for nightlies
+RUN curl -sL https://unpkg.com/@pnpm/self-installer | node
+RUN pnpm config set store-dir ~/.pnpm-store
+
 # In order to preserve the entrypoint for CicleCI https://circleci.com/docs/2.0/custom-images/#adding-an-entrypoint
 LABEL com.circleci.preserve-entrypoint=true
 

@@ -16,7 +16,7 @@ describe('RaidenAccount.vue', () => {
     transferToRaidenAccount: jest.fn(),
     transferToMainAccount: jest.fn(),
     getMainAccount: jest.fn().mockResolvedValue('0x1'),
-    getAccount: jest.fn().mockResolvedValue('0x2')
+    getAccount: jest.fn().mockResolvedValue('0x2'),
   };
   beforeEach(async () => {
     vuetify = new Vuetify();
@@ -26,9 +26,9 @@ describe('RaidenAccount.vue', () => {
       stubs: ['v-dialog'],
       mocks: {
         $t: (msg: string) => msg,
-        $raiden
+        $raiden,
       },
-      store
+      store,
     });
 
     store.commit('balance', '3.0');

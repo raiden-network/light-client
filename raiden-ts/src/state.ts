@@ -23,7 +23,7 @@ import { RaidenError, ErrorCodes } from './utils/error';
 export { CURRENT_STATE_VERSION } from './migration';
 
 // types
-export const RaidenState = t.readonly(
+const _RaidenState = t.readonly(
   t.type({
     address: Address,
     version: t.literal(CURRENT_STATE_VERSION),
@@ -55,7 +55,9 @@ export const RaidenState = t.readonly(
 
 // the interface trick below forces TSC to use the imported type instead of inlining
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface RaidenState extends t.TypeOf<typeof RaidenState> {}
+export interface RaidenState extends t.TypeOf<typeof _RaidenState> {}
+export interface RaidenStateC extends t.Type<RaidenState, t.OutputOf<typeof _RaidenState>> {}
+export const RaidenState: RaidenStateC = _RaidenState;
 
 // helpers, utils & constants
 

@@ -20,9 +20,10 @@ import {
 import { Paths } from '../services/types';
 import { Direction } from './state';
 
+const DirectionC = t.keyof(invert(Direction) as Record<Direction, string>);
 const TransferId = t.type({
   secrethash: Hash,
-  direction: t.keyof(invert(Direction) as Record<Direction, string>),
+  direction: DirectionC,
 });
 
 /**
@@ -195,32 +196,73 @@ export interface transferRefunded extends ActionType<typeof transferRefunded> {}
 // Withdraw actions
 
 const WithdrawId = t.type({
+  direction: DirectionC,
   tokenNetwork: Address,
   partner: Address,
   totalWithdraw: UInt(32),
   expiration: t.number,
 });
 
-/** A WithdrawRequest was received from partner */
-export const withdrawReceive = createAsyncAction(
+/**
+ * Start a withdraw
+ * - request: request to start a withdraw
+ * - success: withdraw finished on-chain
+ * - failure: something went wrong generating or processing a request
+ */
+export const withdraw = createAsyncAction(
   WithdrawId,
-  'withdraw/receive/request',
-  'withdraw/receive/success',
-  'withdraw/receive/failure',
-  t.type({ message: Signed(WithdrawRequest) }),
-  t.type({ message: Signed(WithdrawConfirmation) }),
-  t.type({ message: Signed(WithdrawExpired) }),
+  'withdraw/request',
+  'withdraw/success',
+  'withdraw/failure',
+  t.undefined,
+  t.type({ txHash: Hash, txBlock: t.number, confirmed: t.union([t.undefined, t.boolean]) }),
 );
-
-export namespace withdrawReceive {
-  export interface request extends ActionType<typeof withdrawReceive.request> {}
-  export interface success extends ActionType<typeof withdrawReceive.success> {}
-  export interface failure extends ActionType<typeof withdrawReceive.failure> {}
+export namespace withdraw {
+  export interface request extends ActionType<typeof withdraw.request> {}
+  export interface success extends ActionType<typeof withdraw.success> {}
+  export interface failure extends ActionType<typeof withdraw.failure> {}
 }
 
-export const withdrawExpired = createAction(
-  'withdraw/expired',
-  t.type({ participant: Address }), // participant is the withdraw 'requester', as on messages
+/**
+ * Withdraw messages going through:
+ * - request: WithdrawRequest sent or received
+ * - success: WithdrawConfirmation sent or received
+ * - failure: something went wrong processing WithdrawRequest or WithdrawConfirmation messages
+ */
+export const withdrawMessage = createAsyncAction(
   WithdrawId,
+  'withdraw/message/request',
+  'withdraw/message/success',
+  'withdraw/message/failure',
+  t.type({ message: Signed(WithdrawRequest) }),
+  t.type({ message: Signed(WithdrawConfirmation) }),
 );
-export interface withdrawExpired extends ActionType<typeof withdrawExpired> {}
+export namespace withdrawMessage {
+  export interface request extends ActionType<typeof withdrawMessage.request> {}
+  export interface success extends ActionType<typeof withdrawMessage.success> {}
+  export interface failure extends ActionType<typeof withdrawMessage.failure> {}
+}
+
+/**
+ * Expires a withdraw
+ * - request: request to expire a past request
+ * - success: WithdrawExpired sent or received
+ * - failure: something went wrong generating or processing a request
+ */
+export const withdrawExpire = createAsyncAction(
+  WithdrawId,
+  'withdraw/expire/request',
+  'withdraw/expire/success',
+  'withdraw/expire/failure',
+  t.undefined,
+  t.type({ message: Signed(WithdrawExpired) }),
+  // ,
+);
+export namespace withdrawExpire {
+  export interface request extends ActionType<typeof withdrawExpire.request> {}
+  export interface success extends ActionType<typeof withdrawExpire.success> {}
+  export interface failure extends ActionType<typeof withdrawExpire.failure> {}
+}
+
+export const withdrawCompleted = createAction('withdraw/completed', t.undefined, WithdrawId);
+export interface withdrawCompleted extends ActionType<typeof withdrawCompleted> {}

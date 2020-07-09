@@ -76,13 +76,13 @@ import { RaidenError } from 'raiden-ts';
     ActionButton,
     AmountInput,
     AddressDisplay,
-    OpenChannelDialog
+    OpenChannelDialog,
   },
   computed: {
     ...mapGetters({
-      getToken: 'token'
-    })
-  }
+      getToken: 'token',
+    }),
+  },
 })
 export default class OpenChannel extends Mixins(NavigationMixin) {
   partner: string = '';
@@ -127,13 +127,13 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 
     if (depositAmount.eq(Zero)) {
       this.steps = [
-        (this.$t('open-channel.steps.open') as any) as StepDescription
+        (this.$t('open-channel.steps.open') as any) as StepDescription,
       ];
     } else {
       this.steps = [
         (this.$t('open-channel.steps.open') as any) as StepDescription,
         (this.$t('open-channel.steps.transfer') as any) as StepDescription,
-        (this.$t('open-channel.steps.deposit') as any) as StepDescription
+        (this.$t('open-channel.steps.deposit') as any) as StepDescription,
       ];
     }
 
@@ -144,7 +144,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
         address,
         this.partner,
         depositAmount,
-        progress => (this.current = progress.current - 1)
+        (progress) => (this.current = progress.current - 1)
       );
 
       this.done = true;
@@ -177,6 +177,8 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
     if (typeof this.token.decimals !== 'number') {
       this.navigateToHome();
     }
+
+    await this.$raiden.monitorToken(address);
 
     if (this.token.decimals === 0 && this.deposit.indexOf('.') > -1) {
       this.deposit = this.deposit.split('.')[0];

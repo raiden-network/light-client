@@ -12,9 +12,9 @@ import { mapGetters } from 'vuex';
 
 @Component({
   computed: {
-    ...mapGetters(['isConnected'])
+    ...mapGetters(['isConnected']),
   },
-  components: { Home }
+  components: { Home },
 })
 export default class LazyRoute extends Vue {
   isConnected!: boolean;

@@ -10,7 +10,7 @@ import Channels from '@/components/navigation/Channels.vue';
 import LazyRoute from '@/views/LazyRoute.vue';
 
 @Component({
-  components: { LazyRoute, Channels }
+  components: { LazyRoute, Channels },
 })
 export default class ChannelsRoute extends Vue {}
 </script>

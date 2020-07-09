@@ -91,22 +91,22 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
 
 const {
   mapState: mapNotificationsState,
-  mapMutations
+  mapMutations,
 } = createNamespacedHelpers('notifications');
 
 @Component({
   components: {
     HeaderIdenticon,
-    AddressDisplay
+    AddressDisplay,
   },
   computed: {
     ...mapState(['loading', 'defaultAccount']),
     ...mapNotificationsState(['newNotifications']),
-    ...mapGetters(['network', 'isConnected'])
+    ...mapGetters(['network', 'isConnected']),
   },
   methods: {
-    ...mapMutations(['notificationsViewed'])
-  }
+    ...mapMutations(['notificationsViewed']),
+  },
 })
 export default class AppHeader extends Mixins(NavigationMixin) {
   isConnected!: boolean;
@@ -123,7 +123,7 @@ export default class AppHeader extends Mixins(NavigationMixin) {
   get canGoBack(): boolean {
     const routesWithoutBackBtn: string[] = [
       RouteNames.HOME,
-      RouteNames.TRANSFER
+      RouteNames.TRANSFER,
     ];
     return (
       this.isConnected && !routesWithoutBackBtn.includes(this.$route.name!)

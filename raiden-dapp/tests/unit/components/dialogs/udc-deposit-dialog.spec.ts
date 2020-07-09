@@ -17,7 +17,7 @@ describe('UdcDepositDialog.vue', () => {
   const $raiden = {
     userDepositTokenAddress: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
     mint: jest.fn(),
-    depositToUDC: jest.fn()
+    depositToUDC: jest.fn(),
   };
 
   const token = {
@@ -25,7 +25,7 @@ describe('UdcDepositDialog.vue', () => {
     name: 'Test Token',
     symbol: 'TTT',
     decimals: 18,
-    balance: Zero
+    balance: Zero,
   } as Token;
 
   function createWrapper(): Wrapper<UdcDepositDialog> {
@@ -36,11 +36,11 @@ describe('UdcDepositDialog.vue', () => {
       stubs: ['v-dialog'],
       mocks: {
         $t: (msg: string) => msg,
-        $raiden
+        $raiden,
       },
       propsData: {
-        visible: true
-      }
+        visible: true,
+      },
     });
   }
 
@@ -50,7 +50,7 @@ describe('UdcDepositDialog.vue', () => {
       '0x3a989D97388a39A0B5796306C615d10B7416bE77'
     );
     store.commit('updateTokens', {
-      '0x3a989D97388a39A0B5796306C615d10B7416bE77': token
+      '0x3a989D97388a39A0B5796306C615d10B7416bE77': token,
     });
     wrapper = createWrapper();
     jest.resetAllMocks();
@@ -83,8 +83,8 @@ describe('UdcDepositDialog.vue', () => {
     store.commit('updateTokens', {
       '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
         ...token,
-        balance: bigNumberify('10000000000000000000')
-      }
+        balance: bigNumberify('10000000000000000000'),
+      },
     });
 
     wrapper.find('.udc-deposit-dialog__action button').trigger('click');

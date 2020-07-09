@@ -24,10 +24,10 @@ describe('AppHeader.vue', () => {
         $route: {
           name,
           meta: {
-            title: 'title'
-          }
-        }
-      }
+            title: 'title',
+          },
+        },
+      },
     });
   }
 

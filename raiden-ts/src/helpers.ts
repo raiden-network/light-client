@@ -174,12 +174,7 @@ export const initTransfers$ = (state$: Observable<RaidenState>): Observable<Raid
  */
 export const mapRaidenChannels = (channels: RaidenState['channels']): RaidenChannels =>
   Object.values(channels).reduce((acc, channel) => {
-    const {
-      ownDeposit,
-      partnerDeposit,
-      ownBalance: balance,
-      ownCapacity: capacity,
-    } = channelAmounts(channel);
+    const amounts = channelAmounts(channel);
     const raidenChannel: RaidenChannel = {
       state: channel.state,
       id: channel.id,
@@ -189,10 +184,9 @@ export const mapRaidenChannels = (channels: RaidenState['channels']): RaidenChan
       openBlock: channel.openBlock,
       closeBlock: 'closeBlock' in channel ? channel.closeBlock : undefined,
       partner: channel.partner.address,
-      ownDeposit,
-      partnerDeposit,
-      balance,
-      capacity,
+      balance: amounts.ownBalance,
+      capacity: amounts.ownCapacity,
+      ...amounts,
     };
     return {
       ...acc,

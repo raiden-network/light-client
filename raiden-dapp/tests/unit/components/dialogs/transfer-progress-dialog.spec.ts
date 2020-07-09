@@ -13,12 +13,12 @@ describe('TransferProgressDialog.vue', () => {
   const transferPending = {
     key: 'sent:0x1',
     paymentId: '0x1',
-    status: 'PENDING'
+    status: 'PENDING',
   };
   const transferRequested = {
     key: 'sent:0x1',
     paymentId: '0x1',
-    status: 'REQUESTED'
+    status: 'REQUESTED',
   };
 
   beforeEach(() => {
@@ -29,14 +29,14 @@ describe('TransferProgressDialog.vue', () => {
       store,
       stubs: ['v-dialog'],
       mocks: {
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
       },
       propsData: {
         visible: true,
         inProgress: true,
         error: false,
-        identifier: transferPending.paymentId
-      }
+        identifier: transferPending.paymentId,
+      },
     });
   });
 

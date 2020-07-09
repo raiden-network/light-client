@@ -1,6 +1,6 @@
 const plugins = [
   '@babel/plugin-proposal-nullish-coalescing-operator',
-  '@babel/plugin-proposal-optional-chaining'
+  '@babel/plugin-proposal-optional-chaining',
 ];
 
 if (process.env.E2E) {
@@ -9,5 +9,5 @@ if (process.env.E2E) {
 
 module.exports = {
   presets: [['@vue/cli-plugin-babel/preset', { useBuiltIns: 'entry' }]],
-  plugins: plugins
+  plugins: plugins,
 };

@@ -37,7 +37,7 @@ import Spinner from '@/components/icons/Spinner.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({
-  components: { ActionButton, RaidenDialog, ErrorMessage, Spinner }
+  components: { ActionButton, RaidenDialog, ErrorMessage, Spinner },
 })
 export default class MintDialog extends Vue {
   @Prop({ required: true })
