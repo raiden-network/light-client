@@ -367,8 +367,9 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
         &--input {
           width: 100%;
+          padding-bottom: 10px;
           @include respond-to(handhelds) {
-            padding: 0;
+            padding: 0 0 10px 0;
           }
         }
       }
@@ -406,9 +407,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
         &--amount-input {
           flex: 0 0 300px;
+          padding-bottom: 20px;
           @include respond-to(handhelds) {
             flex: none;
-            padding: 0;
+            padding: 0 0 20px 0;
           }
         }
 
@@ -417,7 +419,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
             .col-10 {
               display: flex;
               justify-content: flex-end;
-              padding-bottom: 8px;
+              padding-bottom: 6px;
               @include respond-to(handhelds) {
                 flex: 1;
                 max-width: 100%;

@@ -4,8 +4,9 @@
       id="address-input"
       ref="address"
       v-model="address"
-      :error-messages="!hideErrorLabel ? errorMessages : []"
+      :error-messages="errorMessages"
       :rules="isAddressValid"
+      :hide-details="hideErrorLabel"
       :class="{
         'address-input--invalid': !valid && touched,
         'address-input--untouched': !touched
