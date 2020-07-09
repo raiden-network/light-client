@@ -8,17 +8,21 @@
       "packagePatterns": [
         "*"
       ],
-      "groupName": "all dependencies",
-      "groupSlug": "all"
+      "updateTypes": ["minor", "patch"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch",
+      "schedule": ["after 8am on thursday"],
+      "lockFileMaintenance": { "enabled": true }
+    },
+    {
+      "updateTypes": ["major"],
+      "masterIssueApproval": true
     }
   ],
+  "masterIssue": true,
   "labels": ["dependencies"],
-  "lockFileMaintenance": { "enabled": true },
-  "schedule": ["after 8am on thursday"],
-  "prConcurrentLimit": 15,
-  "prHourlyLimit": 5,
   "reviewers": ["team:raiden-network/light-client"],
   "reviewersSampleSize": 1,
-  "rangeStrategy": "pin",
+  "rangeStrategy": "bump",
   "timezone": "Europe/Berlin"
 }
