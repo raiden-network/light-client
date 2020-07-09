@@ -313,8 +313,10 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
         width: 130px;
       }
 
-      &__token-select span {
-        cursor: pointer;
+      &__token-select {
+        &span {
+          cursor: pointer;
+        }
       }
 
       &__channels-deposit {
