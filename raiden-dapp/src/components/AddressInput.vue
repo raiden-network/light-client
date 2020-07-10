@@ -142,7 +142,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     // as the input being invalid. Since the :rules prop does not support
     // async rules we have to workaround with a reactive prop
     const isAddressValid =
-      this.address !== '' &&
+      this.address.trim() !== '' &&
       !this.busy &&
       !this.typing &&
       this.errorMessages.length === 0 &&
