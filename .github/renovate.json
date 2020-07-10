@@ -8,7 +8,7 @@
       "packagePatterns": [
         "*"
       ],
-      "updateTypes": ["minor", "patch"],
+      "updateTypes": ["minor", "patch", "pin", "digest", "lockFileMaintenance", "rollback", "bump"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch",
       "schedule": ["after 8am on thursday"],
