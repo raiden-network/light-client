@@ -242,9 +242,8 @@ $header-vertical-margin-mobile: 2rem;
     font-weight: 500;
     font-size: 14px;
     line-height: 21px;
-    text-align: cente
+    text-align: cente  r;
   }
-  
   &__label {
     color: $secondary-color;
     font-size: 13px;
