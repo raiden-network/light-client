@@ -449,7 +449,6 @@ export default class RaidenService {
     amount: BigNumber,
     raidenPFS?: RaidenPFS
   ): Promise<RaidenPaths> {
-    await this.raiden.getAvailability(target);
     return await this.raiden.findRoutes(token, target, amount, {
       pfs: raidenPFS,
     });

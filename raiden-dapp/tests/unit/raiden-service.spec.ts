@@ -394,15 +394,6 @@ describe('RaidenService', () => {
     });
 
     describe('findRoutes', () => {
-      test('rejects when it cannot find routes: no availability', async () => {
-        const raidenError = new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE);
-        raiden.getAvailability = jest.fn().mockRejectedValue(raidenError);
-
-        await expect(
-          raidenService.findRoutes(AddressZero, AddressZero, One)
-        ).rejects.toEqual(raidenError);
-      });
-
       test('rejects when it cannot find routes: no routes', async () => {
         const error = new Error('no path');
         raiden.getAvailability = jest.fn().mockResolvedValue(AddressZero);

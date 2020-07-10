@@ -21,6 +21,7 @@
 - [#1701] Allow parameter decoding to throw and log customized errors
 - [#1701] Add and extend error codes for user parameter validation for open channel
 - [#1711] Add and extend error codes for user parameter validation for transfer
+- [#1835] The presence knowledge for a payment routes target is secured automatically
 
 ### Changed
 - [#837] Changes the action tags from camel to path format. This change affects the event types exposed through the public API.
@@ -55,6 +56,7 @@
 [#1822]: https://github.com/raiden-network/light-client/pull/1822
 [#1830]: https://github.com/raiden-network/light-client/issues/1830
 [#1832]: https://github.com/raiden-network/light-client/pull/1832
+[#1835]: https://github.com/raiden-network/light-client/pull/1835
 [#1848]: https://github.com/raiden-network/light-client/issues/1848
 
 ## [0.9.0] - 2020-05-28

@@ -777,7 +777,7 @@ export class Raiden {
    * transfer. Any following transfer state change will be notified through this observable.
    *
    * @param token - Token address on currently configured token network registry
-   * @param target - Target address (must be getAvailability before)
+   * @param target - Target address
    * @param value - Amount to try to transfer
    * @param options - Optional parameters for transfer:
    * @param options.paymentId - payment identifier, a random one will be generated if missing</li>
@@ -931,7 +931,7 @@ export class Raiden {
    * Else, if no route can be found, promise is rejected with respective error.
    *
    * @param token - Token address on currently configured token network registry
-   * @param target - Target address (must be getAvailability before)
+   * @param target - Target address
    * @param value - Minimum capacity required on routes
    * @param options - Optional parameters
    * @param options.pfs - Use this PFS instead of configured or automatically choosen ones
@@ -963,7 +963,7 @@ export class Raiden {
    * single-element array of Paths
    *
    * @param token - Token address on currently configured token network registry
-   * @param target - Target address (must be getAvailability before)
+   * @param target - Target address
    * @param value - Minimum capacity required on route
    * @returns Promise to a [Raiden]Paths array containing the single, direct route, or undefined
    */

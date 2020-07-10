@@ -206,6 +206,84 @@ describe('PFS: pathFindServiceEpic', () => {
     );
   });
 
+  test('fail on failing matrix presence request', async () => {
+    expect.assertions(1);
+
+    const value = bigNumberify(100) as UInt<32>;
+    const matrixError = new Error('Unspecific matrix error for testing purpose');
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+
+    [
+      pathFind.request({}, { tokenNetwork, target: partner, value }),
+      matrixPresence.failure(matrixError, { address: partner }),
+    ].forEach((a) => action$.next(a));
+    setTimeout(() => action$.complete(), 10);
+
+    await expect(promise).resolves.toMatchObject([
+      matrixPresence.request(undefined, { address: partner }),
+      pathFind.failure(matrixError, {
+        tokenNetwork,
+        target: partner,
+        value,
+      }),
+    ]);
+  });
+
+  test('fail on successful matrix presence request but target unavailable', async () => {
+    expect.assertions(1);
+
+    const value = bigNumberify(100) as UInt<32>;
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+
+    [
+      pathFind.request({}, { tokenNetwork, target: partner, value }),
+      matrixPresence.success(
+        { userId: partnerUserId, available: false, ts: Date.now() },
+        { address: partner },
+      ),
+    ].forEach((a) => action$.next(a));
+    setTimeout(() => action$.complete(), 10);
+
+    await expect(promise).resolves.toMatchObject([
+      matrixPresence.request(undefined, { address: partner }),
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_TARGET_OFFLINE,
+          details: { target: partner },
+        }),
+        {
+          tokenNetwork,
+          target: partner,
+          value,
+        },
+      ),
+    ]);
+  });
+
+  test('success on successful matrix presence request and target available', async () => {
+    expect.assertions(1);
+
+    const value = bigNumberify(100) as UInt<32>;
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+
+    [
+      pathFind.request({}, { tokenNetwork, target: partner, value }),
+      matrixPresence.success(
+        { userId: partnerUserId, available: true, ts: Date.now() },
+        { address: partner },
+      ),
+    ].forEach((a) => action$.next(a));
+    setTimeout(() => action$.complete(), 10);
+
+    await expect(promise).resolves.toMatchObject([
+      matrixPresence.request(undefined, { address: partner }),
+      pathFind.success(
+        { paths: [{ path: [partner], fee: Zero as Int<32> }] },
+        { tokenNetwork, target: partner, value },
+      ),
+    ]);
+  });
+
   test('success provided route', async () => {
     expect.assertions(1);
 
