@@ -26,7 +26,8 @@ describe('AddressInput', () => {
   function createWrapper(
     value: string = '',
     excluded?: string,
-    blocked?: string
+    blocked?: string,
+    hideErrorLabel: boolean = false
   ) {
     vuetify = new Vuetify();
     return mount(AddressInput, {
@@ -34,6 +35,7 @@ describe('AddressInput', () => {
       store,
       propsData: {
         value,
+        hideErrorLabel,
         exclude: excluded ? [excluded] : undefined,
         block: blocked ? [blocked] : undefined,
       },
@@ -74,25 +76,6 @@ describe('AddressInput', () => {
     expect(busy).toHaveBeenCalledTimes(4);
   });
 
-  test('show an empty address message when the input is empty', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
-    mockInput(wrapper, '0x21b');
-    jest.advanceTimersByTime(1000);
-    await wrapper.vm.$nextTick();
-    mockInput(wrapper);
-    jest.advanceTimersByTime(1000);
-    await wrapper.vm.$nextTick();
-
-    const inputEvent = wrapper.emitted('input');
-    expect(inputEvent).toBeDefined();
-    expect(inputEvent?.shift()).toEqual(['0x21b']);
-    expect(inputEvent?.shift()).toEqual(['']);
-
-    const messages = wrapper.find('.v-messages__message');
-    expect(messages.exists()).toBe(true);
-    expect(messages.text()).toBe('address-input.error.empty');
-  });
-
   test('show an error message when the input has an invalid address', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, '0x21b');
@@ -115,6 +98,28 @@ describe('AddressInput', () => {
     expect(messages.text()).toBe('address-input.error.no-checksum');
   });
 
+  test('emits an input error when the input has an invalid address', async () => {
+    wrapper = createWrapper('', excludeAddress, blockAddress);
+    (wrapper.vm as any).inputError = jest.fn();
+
+    mockInput(wrapper, '0x21b');
+    jest.advanceTimersByTime(1000);
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).inputError).toHaveBeenCalledTimes(1);
+  });
+
+  test('emits an input error when the input address is not in checksum format', async () => {
+    wrapper = createWrapper('', excludeAddress, blockAddress);
+    (wrapper.vm as any).inputError = jest.fn();
+
+    mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
+    jest.advanceTimersByTime(1000);
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).inputError).toHaveBeenCalledTimes(1);
+  });
+
   test('fire an input event when the input address is valid', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
     mockInput(wrapper, onlineTarget);
@@ -126,9 +131,19 @@ describe('AddressInput', () => {
     expect(inputEvent).toContainEqual([onlineTarget]);
   });
 
+  test('can hide error label', async () => {
+    wrapper = createWrapper('', excludeAddress, blockAddress, true);
+    mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
+
+    jest.advanceTimersByTime(1000);
+    await wrapper.vm.$nextTick();
+    const messages = wrapper.find('.v-messages__message');
+
+    expect(messages.exists()).toBe(false);
+  });
+
   test('render a blockie when the input address is valid', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
-    wrapper.setProps({ value: onlineTarget });
+    wrapper = createWrapper(onlineTarget, excludeAddress, blockAddress);
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
   });
@@ -262,10 +277,7 @@ describe('AddressInput', () => {
     });
 
     test('update the address on a valid value', async () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.$data.address).toBe('');
-      wrapper.setProps({ value: onlineTarget });
-      await wrapper.vm.$nextTick();
+      wrapper = createWrapper(onlineTarget);
       expect(wrapper.vm.$data.address).toBe(onlineTarget);
     });
 

@@ -6,6 +6,7 @@
       v-model="address"
       :error-messages="errorMessages"
       :rules="isAddressValid"
+      :hide-details="hideErrorLabel"
       :class="{
         'address-input--invalid': !valid && touched,
         'address-input--untouched': !touched,
@@ -94,7 +95,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   private valueChange = new BehaviorSubject<string | undefined>('');
   private subscription?: Subscription;
 
-  @Prop({})
+  @Prop({ required: false, default: false, type: Boolean })
+  hideErrorLabel!: boolean;
+  @Prop()
   disabled!: boolean;
   @Prop({ required: true })
   value!: string;
@@ -113,6 +116,16 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   })
   block!: Array<string>;
 
+  @Emit()
+  inputError(errorMessage: string) {
+    return errorMessage;
+  }
+
+  @Watch('errorMessages', { immediate: true })
+  updateError() {
+    this.inputError(this.errorMessages[0]);
+  }
+
   address: string = '';
 
   typing: boolean = false;
@@ -129,6 +142,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     // as the input being invalid. Since the :rules prop does not support
     // async rules we have to workaround with a reactive prop
     const isAddressValid =
+      this.address.trim() !== '' &&
       !this.busy &&
       !this.typing &&
       this.errorMessages.length === 0 &&
@@ -236,7 +250,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           if (!value) {
             if (this.touched) {
               return of<ValidationResult>({
-                error: this.$t('address-input.error.empty') as string,
+                error: '',
                 value: '',
               });
             }

@@ -304,7 +304,8 @@
     }
   },
   "transfer": {
-    "transfer-title": "Make Transfer",
+    "change-token-title": "Change Token",
+    "transfer-title": "Transfer",
     "deposit-button": "Deposit",
     "channel-button": "Channels",
     "capacity-label": "Capacity",
