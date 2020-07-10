@@ -242,7 +242,7 @@ $header-vertical-margin-mobile: 2rem;
     font-weight: 500;
     font-size: 14px;
     line-height: 21px;
-    text-align: cente  r;
+    text-align: center;
   }
   &__label {
     color: $secondary-color;
