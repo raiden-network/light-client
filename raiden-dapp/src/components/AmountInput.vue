@@ -178,6 +178,7 @@ $header-vertical-margin-mobile: 2rem;
     padding-bottom: 30px;
     border: 0;
   }
+
   ::v-deep {
     .v-input {
       width: 100%;
@@ -200,6 +201,7 @@ $header-vertical-margin-mobile: 2rem;
         }
       }
     }
+
     input {
       font-family: $main-font;
       font-size: 16px;
@@ -209,6 +211,7 @@ $header-vertical-margin-mobile: 2rem;
         outline: 0;
       }
     }
+
     .v-messages {
       border: 1px solid transparent;
       font-family: $main-font;
@@ -225,20 +228,23 @@ $header-vertical-margin-mobile: 2rem;
           padding-left: 10px;
         }
       }
+
       &__message {
         color: $secondary-text-color;
         line-height: 1.1;
       }
     }
   }
+
   &__token-symbol {
     font-family: $main-font;
     color: $text-color;
     font-weight: 500;
     font-size: 14px;
     line-height: 21px;
-    text-align: center;
+    text-align: cente
   }
+  
   &__label {
     color: $secondary-color;
     font-size: 13px;
