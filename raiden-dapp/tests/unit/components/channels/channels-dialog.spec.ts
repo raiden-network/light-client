@@ -111,6 +111,32 @@ describe('ChannelDialogs.vue', () => {
     });
   });
 
+  describe('withdrawing', () => {
+    beforeEach(() => {
+      wrapper.setProps({
+        channel: TestData.openChannel,
+      });
+    });
+
+    test('success', async () => {
+      await (wrapper.vm as any).withdraw(One);
+      const messageEvent = wrapper.emitted('message');
+      expect(messageEvent).toBeTruthy();
+      const [firstMessageArg] = messageEvent?.shift();
+      expect(firstMessageArg).toEqual('channel-list.messages.withdraw.success');
+      expect(wrapper.emitted('dismiss')).toHaveLength(1);
+    });
+
+    test('fail', async () => {
+      $raiden.withdraw.mockRejectedValueOnce(new Error('failed'));
+      await (wrapper.vm as any).withdraw(One);
+      const messageEvent = wrapper.emitted('message');
+      expect(messageEvent).toBeTruthy();
+      const [firstMessageArg] = messageEvent?.shift();
+      expect(firstMessageArg).toEqual('channel-list.messages.withdraw.failure');
+    });
+  });
+
   describe('closing', () => {
     beforeEach(() => {
       wrapper.setProps({
@@ -134,7 +160,11 @@ describe('ChannelDialogs.vue', () => {
       expect(messageEvent).toBeTruthy();
       const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.close.failure');
-      expect(wrapper.emitted('dismiss')).toHaveLength(1);
+      // error dialog is shown instead of dismissing
+      expect(wrapper.find('.error-message').isVisible()).toBeTruthy();
+      expect(wrapper.find('.error-message__label + p').text()).toMatch(
+        'failed'
+      );
     });
   });
 
@@ -161,7 +191,12 @@ describe('ChannelDialogs.vue', () => {
       expect(messageEvent).toBeTruthy();
       const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.settle.failure');
-      expect(wrapper.emitted('dismiss')).toHaveLength(1);
+
+      // error dialog is shown instead of dismissing
+      expect(wrapper.find('.error-message').isVisible()).toBeTruthy();
+      expect(wrapper.find('.error-message__label + p').text()).toMatch(
+        'failed'
+      );
     });
   });
 });

@@ -309,6 +309,37 @@ describe('RaidenService', () => {
       );
     });
 
+    test('resolves when withdraw is successful', async () => {
+      expect.assertions(2);
+      raiden.withdrawChannel.mockResolvedValue('0xtxhash' as Hash);
+
+      const withdrawAmount = new BigNumber(6000);
+      await raidenService.withdraw('0xtoken', '0xpartner', withdrawAmount);
+      expect(raiden.withdrawChannel).toHaveBeenCalledTimes(1);
+      expect(raiden.withdrawChannel).toHaveBeenCalledWith(
+        '0xtoken',
+        '0xpartner',
+        withdrawAmount
+      );
+    });
+
+    test('throw when withdraw fails', async () => {
+      expect.assertions(3);
+      const error = new RaidenError(ErrorCodes.RDN_WITHDRAW_TRANSACTION_FAILED);
+      raiden.withdrawChannel.mockRejectedValue(error);
+
+      const withdrawAmount = new BigNumber(6000);
+      await expect(
+        raidenService.withdraw('0xtoken', '0xpartner', withdrawAmount)
+      ).rejects.toThrowError(RaidenError);
+      expect(raiden.withdrawChannel).toHaveBeenCalledTimes(1);
+      expect(raiden.withdrawChannel).toHaveBeenCalledWith(
+        '0xtoken',
+        '0xpartner',
+        withdrawAmount
+      );
+    });
+
     describe('settleChannel', () => {
       test('resolves when settle is successful', async () => {
         raiden.settleChannel = jest.fn().mockResolvedValue('txhash' as Hash);
@@ -607,7 +638,7 @@ describe('RaidenService', () => {
       });
 
       test('checks for the connected token balances when it receives a new block event', async () => {
-        expect.assertions(1);
+        expect.assertions(2);
 
         providerMock.mockResolvedValue(mockProvider);
         const subject = new BehaviorSubject({});
@@ -627,7 +658,7 @@ describe('RaidenService', () => {
         await raidenService.connect();
         await flushPromises();
         store.commit.mockReset();
-        subject.next({ type: 'block/new' });
+        subject.next({ type: 'block/new', payload: { blockNumber: 123 } });
         await flushPromises();
 
         expect(store.commit).toBeCalledWith(
@@ -639,6 +670,7 @@ describe('RaidenService', () => {
             },
           })
         );
+        expect(store.commit).toBeCalledWith('updateBlock', 123);
       });
     });
 
@@ -658,7 +690,6 @@ describe('RaidenService', () => {
       store.commit.mockReset();
       await raidenService.fetchTokenList();
       await flushPromises();
-      expect(store.commit).toBeCalledTimes(4);
       expect(store.commit).toHaveBeenCalledWith(
         'updateTokenAddresses',
         expect.arrayContaining([mockToken1, mockToken2])

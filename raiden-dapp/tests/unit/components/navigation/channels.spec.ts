@@ -105,45 +105,9 @@ describe('Channels.vue', () => {
     );
   });
 
-  test('collapse a channel when a new channel is expanded', async () => {
-    wrapper = createWrapper();
-    wrapper.find('#channel-278').trigger('click');
-    await wrapper.vm.$nextTick();
-
-    expect(wrapper.vm.$data['expanded']).toMatchObject({
-      '278': true,
-    });
-
-    wrapper.find('#channel-279').trigger('click');
-    await wrapper.vm.$nextTick();
-
-    expect(wrapper.vm.$data['expanded']).toMatchObject({
-      '279': false,
-    });
-  });
-
-  test('collapsing a channel after expanding', async () => {
-    wrapper = createWrapper();
-    wrapper.find('#channel-278').trigger('click');
-    await wrapper.vm.$nextTick();
-
-    expect(wrapper.vm.$data['expanded']).toMatchObject({
-      '278': true,
-    });
-
-    wrapper.find('#channel-278').trigger('click');
-    await wrapper.vm.$nextTick();
-
-    expect(wrapper.vm.$data['expanded']).toMatchObject({
-      '278': false,
-    });
-  });
-
   test('clicking on deposit changes action', async () => {
     wrapper = createWrapper();
-    wrapper.find('#channel-278').trigger('click');
-    await wrapper.vm.$nextTick();
-    wrapper.find('#deposit-0').trigger('click');
+    wrapper.find('#deposit-278').trigger('click');
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.$data['action']).toBe('deposit');
   });
