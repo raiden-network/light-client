@@ -342,4 +342,9 @@ describe('store', () => {
     store.commit('updateConfig', { caps: {} });
     expect(store.getters.canReceive).toBe(true);
   });
+
+  test('newBlock updates blockNumber', () => {
+    store.commit('updateBlock', 1337);
+    expect(store.state.blockNumber).toBe(1337);
+  });
 });
