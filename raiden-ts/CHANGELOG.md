@@ -12,6 +12,7 @@
 - [#1787] Fix TokenNetwork monitoring losing events
 - [#1830] Fix a nonce race when openining + depositing concurrently
 - [#1848] Fix a Metamask error by retry on deposit
+- [#1882] Fix paymentId gets ignored when being falsie (e.g. `0`)
 
 ### Added
 - [#249] Add withdraw functionality
@@ -56,6 +57,7 @@
 [#1830]: https://github.com/raiden-network/light-client/issues/1830
 [#1832]: https://github.com/raiden-network/light-client/pull/1832
 [#1848]: https://github.com/raiden-network/light-client/issues/1848
+[#1882]: https://github.com/raiden-network/light-client/issues/1882
 
 ## [0.9.0] - 2020-05-28
 ### Added

@@ -809,9 +809,10 @@ export class Raiden {
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
 
     const decodedValue = decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.info);
-    const paymentId = options.paymentId
-      ? decode(UInt(8), options.paymentId, ErrorCodes.DTA_INVALID_PAYMENT_ID, this.log.info)
-      : makePaymentId();
+    const paymentId =
+      options.paymentId !== undefined
+        ? decode(UInt(8), options.paymentId, ErrorCodes.DTA_INVALID_PAYMENT_ID, this.log.info)
+        : makePaymentId();
     const paths = !options.paths
       ? undefined
       : decode(Paths, options.paths, ErrorCodes.DTA_INVALID_PATH, this.log.info);
