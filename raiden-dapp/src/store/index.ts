@@ -35,6 +35,7 @@ Vue.use(Vuex);
 
 const _defaultState: RootState = {
   loading: true,
+  blockNumber: 0,
   defaultAccount: '',
   accountBalance: '0.0',
   raidenAccountBalance: '',
@@ -89,6 +90,9 @@ const store: StoreOptions<RootState> = {
     },
     loadComplete(state: RootState) {
       state.loading = false;
+    },
+    updateBlock(state: RootState, block: number) {
+      state.blockNumber = block;
     },
     balance(state: RootState, balance: string) {
       state.accountBalance = balance;

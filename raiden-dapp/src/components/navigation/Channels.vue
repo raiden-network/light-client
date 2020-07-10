@@ -30,9 +30,9 @@
         v-if="open.length > 0"
         :token="token"
         :channels="open"
-        :expanded="expanded"
+        :selected-channel="selectedChannel"
+        :busy="busy"
         @action="onAction"
-        @expand="channelSelected($event)"
       ></channel-list>
       <list-header
         v-if="closed.length > 0"
@@ -43,9 +43,9 @@
         v-if="closed.length > 0"
         :token="token"
         :channels="closed"
-        :expanded="expanded"
+        :selected-channel="selectedChannel"
+        :busy="busy"
         @action="onAction"
-        @expand="channelSelected($event)"
       ></channel-list>
       <list-header
         v-if="settleable.length > 0"
@@ -56,9 +56,9 @@
         v-if="settleable.length > 0"
         :token="token"
         :channels="settleable"
-        :expanded="expanded"
+        :selected-channel="selectedChannel"
+        :busy="busy"
         @action="onAction"
-        @expand="channelSelected($event)"
       ></channel-list>
     </div>
     <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
@@ -68,33 +68,34 @@
       </v-btn>
     </v-snackbar>
     <channel-dialogs
-      v-if="!!selectedChannel && !!action"
+      v-if="selectedChannel && action"
       :action="action"
       :channel="selectedChannel"
-      @dismiss="action = null"
+      @dismiss="
+        action = null;
+        selectedChannel = null;
+      "
       @message="showMessage($event)"
-      @error="error = $event"
+      @busy="busy = $event"
     ></channel-dialogs>
-    <error-dialog :error="error" @dismiss="error = null" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { ChannelState, RaidenChannel, RaidenError } from 'raiden-ts';
+import { ChannelState, RaidenChannel } from 'raiden-ts';
 import ListHeader from '@/components/ListHeader.vue';
 import { Token } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import ChannelList from '@/components/channels/ChannelList.vue';
 import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
-import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { ChannelAction } from '@/types';
 import Filters from '@/filters';
 
 @Component({
-  components: { ChannelDialogs, ListHeader, ChannelList, ErrorDialog },
+  components: { ChannelDialogs, ListHeader, ChannelList },
   computed: {
     ...mapGetters(['channels']),
   },
@@ -103,34 +104,15 @@ export default class Channels extends Mixins(NavigationMixin) {
   message: string = '';
   snackbar: boolean = false;
   channels!: (address: string) => RaidenChannel[];
-  action: ChannelAction | null = null;
-  error: Error | RaidenError | null = null;
 
   selectedChannel: RaidenChannel | null = null;
-  expanded: { [id: number]: boolean } = {};
+  action: ChannelAction | null = null;
+  busy: boolean = false;
+
   truncate = Filters.truncate;
 
-  channelSelected(payload: { channel: RaidenChannel; expanded: boolean }) {
-    const { expanded, channel } = payload;
-    if (expanded) {
-      this.selectedChannel = channel;
-      this.expanded = { [channel.id]: true };
-    } else {
-      this.selectedChannel = null;
-      const updates = { ...this.expanded };
-      for (const key in updates) {
-        updates[key] = false;
-      }
-      this.expanded = updates;
-    }
-  }
-
-  onAction(action: ChannelAction) {
-    const channel = this.selectedChannel;
-    /* istanbul ignore if */
-    if (!channel) {
-      return;
-    }
+  onAction([action, channel]: [ChannelAction, RaidenChannel]) {
+    this.selectedChannel = channel;
     this.action = action;
   }
 
@@ -175,7 +157,6 @@ export default class Channels extends Mixins(NavigationMixin) {
     }
   }
 
-  /* istanbul ignore next */
   showMessage(message: string) {
     this.message = message;
     this.snackbar = true;

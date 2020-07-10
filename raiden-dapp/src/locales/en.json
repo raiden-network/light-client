@@ -161,6 +161,7 @@
   },
   "channel-actions": {
     "deposit": "Deposit",
+    "withdraw": "Withdraw",
     "close": "Close",
     "settle": "Settle"
   },
@@ -170,6 +171,24 @@
     },
     "input": {
       "label": "Amount"
+    }
+  },
+  "channel-withdraw": {
+    "buttons": {
+      "confirm": "Withdraw"
+    },
+    "input": {
+      "label": "Amount"
+    },
+    "dialog": {
+      "label": "Withdraw",
+      "title": "Withdrawing Tokens",
+      "description": "Sign the transaction in MetaMask and close this dialogue to continue using the dApp."
+    },
+    "done": {
+      "label": "Done",
+      "title": "Withdraw Successful",
+      "description": "Your tokens have been successfully withdrawn."
     }
   },
   "find-routes": {
@@ -213,7 +232,7 @@
   "channel-list": {
     "channel": {
       "blockie_alt": "Partner address blockie",
-      "state": "Deposit {deposit} | State: {state}",
+      "state": "Capacity: {value} | State: {state}",
       "close_dialog": {
         "title": "Close Channel",
         "description": "Are you sure you want to close this channel? This action cannot be undone."
@@ -231,6 +250,10 @@
       "deposit": {
         "success": "Deposit was successful",
         "failure": "Deposit failed"
+      },
+      "withdraw": {
+        "success": "Withdraw was successful",
+        "failure": "Withdraw failed"
       },
       "settle": {
         "success": "Channel settle was successful",

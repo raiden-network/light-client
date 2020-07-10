@@ -148,6 +148,12 @@ export default class RaidenService {
 
         // update connected tokens data on each newBlock
         raiden.events$
+          .pipe(filter((value) => value.type === 'block/new'))
+          .subscribe((event) =>
+            this.store.commit('updateBlock', event.payload.blockNumber)
+          );
+
+        raiden.events$
           .pipe(
             filter((value) => value.type === 'block/new'),
             exhaustMap(() =>
@@ -410,6 +416,10 @@ export default class RaidenService {
 
   async deposit(token: string, partner: string, amount: BigNumber) {
     await this.raiden.depositChannel(token, partner, amount);
+  }
+
+  async withdraw(token: string, partner: string, amount: BigNumber) {
+    await this.raiden.withdrawChannel(token, partner, amount);
   }
 
   async settleChannel(token: string, partner: string) {
