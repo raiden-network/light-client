@@ -7,6 +7,7 @@
 - [#1791] Introduces configuration for token network monitoring.
 - [#1374] Adds notifications when a monitoring service submits a proof.
 - [#1421] Dialog to withdraw from the user deposit.
+- [#249] Withdraw from channel functionality
 - [#168] Notification panel
 
 ### Fixed
@@ -38,6 +39,7 @@
 [#1579]: https://github.com/raiden-network/light-client/issues/1579
 [#1421]: https://github.com/raiden-network/light-client/issues/1421
 [#1374]: https://github.com/raiden-network/light-client/issues/1374
+[#249]: https://github.com/raiden-network/light-client/issues/249
 [#168]: https://github.com/raiden-network/light-client/issues/168
 [#1805]: https://github.com/raiden-network/light-client/issues/1805
 [#1876]: https://github.com/raiden-network/light-client/pull/1876
