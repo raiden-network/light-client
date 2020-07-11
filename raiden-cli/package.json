@@ -53,7 +53,7 @@
     "raiden-ts": "*",
     "rxjs": "6.6.0",
     "wrtc": "0.4.5",
-    "yargs": "15.4.0"
+    "yargs": "15.4.1"
   },
   "eslintConfig": {
     "parser": "@typescript-eslint/parser",
