@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Fixed
+
+### Added
+
+### Changed
+
+## [0.10.0] - 2020-07-13
+
 ### Added
 
 - [#1791] Introduces configuration for token network monitoring.

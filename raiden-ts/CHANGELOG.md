@@ -1,6 +1,16 @@
 # Changelog
 
 ## [Unreleased]
+
+### Fixed
+
+### Added
+
+### Changed
+
+
+## [0.10.0] - 2020-07-13
+
 ### Fixed
 - [#1514] Fix handling of expired LockedTransfer and WithdrawRequest
 - [#1607] Fix settling when one side closes/updates with outdated BalanceProof
