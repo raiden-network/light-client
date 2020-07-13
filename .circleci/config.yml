@@ -202,7 +202,7 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
       - run:
           name: Publish on npm
-          command: pnpm publish --filter raiden-ts
+          command: pnpm publish --no-git-checks --filter raiden-ts
 
   integration_tests:
     executor: integration-executor
