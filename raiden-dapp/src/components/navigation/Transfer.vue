@@ -311,6 +311,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
         margin: 0 auto;
         border-bottom: solid 1px $color-white;
         width: 130px;
+        cursor: pointer;
 
         &span {
           cursor: pointer;
