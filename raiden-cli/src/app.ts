@@ -1,4 +1,4 @@
-import express, { Express, Request, Response, NextFunction, Errback } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import createError from 'http-errors';
 import logger from 'morgan';
 import { Cli } from './types';
@@ -10,13 +10,12 @@ function notFoundHandler(_request: Request, _response: Response, next: NextFunct
 
 function internalErrorHandler(
   this: Cli,
-  error: Errback,
+  error: Error,
   _request: Request,
   _response: Response,
   next: NextFunction,
 ) {
-  this.log.error(error);
-  next(createError(500, 'Internal Raiden node error'));
+  next(createError(500, error.message));
 }
 
 export function makeApp(this: Cli): Express {
