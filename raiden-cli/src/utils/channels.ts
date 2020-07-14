@@ -1,5 +1,5 @@
-import { RaidenChannel, RaidenChannels } from 'raiden-ts';
-import { ApiChannel } from '../types';
+import { RaidenChannel, RaidenChannels, ChannelState } from 'raiden-ts';
+import { ApiChannel, ApiChannelState } from '../types';
 
 export function flattenChannelDictionary(channelDict: RaidenChannels): RaidenChannel[] {
   // To flatten structure {token: {partner: [channel..], partner:...}, token...}
@@ -7,6 +7,25 @@ export function flattenChannelDictionary(channelDict: RaidenChannels): RaidenCha
     (allChannels, tokenPartners) => allChannels.concat(Object.values(tokenPartners)),
     [] as RaidenChannel[],
   );
+}
+
+function transformSdkChannelStateToApi(state: ChannelState): ApiChannelState {
+  let apiState;
+  switch (state) {
+    case ChannelState.open:
+    case ChannelState.closing:
+      apiState = ApiChannelState.opened;
+      break;
+    case ChannelState.closed:
+    case ChannelState.settleable:
+    case ChannelState.settling:
+      apiState = ApiChannelState.closed;
+      break;
+    case ChannelState.settled:
+      apiState = ApiChannelState.settled;
+      break;
+  }
+  return apiState;
 }
 
 export function transformSdkChannelFormatToApi(channel: RaidenChannel): ApiChannel {
@@ -17,7 +36,7 @@ export function transformSdkChannelFormatToApi(channel: RaidenChannel): ApiChann
     token_address: channel.token,
     balance: channel.balance.toString(),
     total_deposit: channel.ownDeposit.toString(),
-    state: channel.state,
+    state: transformSdkChannelStateToApi(channel.state),
     settle_timeout: channel.settleTimeout,
     reveal_timeout: 0, // FIXME: Not defined here. Python client handles reveal timeout differently,
   };
