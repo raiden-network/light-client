@@ -3,7 +3,6 @@ import VuexPersistence from 'vuex-persist';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState, Settings, Tokens, Transfers } from '@/types';
 import {
-  Capabilities,
   ChannelState,
   getNetworkName,
   RaidenChannel,
@@ -240,9 +239,6 @@ const store: StoreOptions<RootState> = {
       return state.raidenAccountBalance
         ? state.raidenAccountBalance
         : state.accountBalance;
-    },
-    canReceive: (state: RootState): boolean => {
-      return !state.config.caps?.[Capabilities.NO_RECEIVE];
     },
     udcToken: (state: RootState): Token => {
       return state.tokens[state.userDepositTokenAddress];

@@ -24,21 +24,14 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Watch } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { Component, Mixins } from 'vue-property-decorator';
 import NavigationMixin from './mixins/navigation-mixin';
 import AppHeader from '@/components/AppHeader.vue';
 import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
-import { NotificationPayload } from '@/store/notifications/types';
 import NotificationArea from '@/components/notification-panel/NotificationArea.vue';
-import { NotificationImportance } from '@/store/notifications/notification-importance';
-import { NotificationContext } from '@/store/notifications/notification-context';
 
 @Component({
-  computed: {
-    ...mapGetters(['canReceive']),
-  },
   components: {
     AppHeader,
     OfflineSnackbar,
@@ -47,23 +40,8 @@ import { NotificationContext } from '@/store/notifications/notification-context'
   },
 })
 export default class App extends Mixins(NavigationMixin) {
-  canReceive!: boolean;
-
   destroyed() {
     this.$raiden.disconnect();
-  }
-
-  @Watch('canReceive')
-  onCanReceiveChanged(canReceive: boolean | undefined) {
-    if (canReceive !== false) {
-      return;
-    }
-    this.$store.dispatch('notifications/notify', {
-      title: this.$t('receiving-disabled-dialog.title'),
-      description: this.$t('receiving-disabled-dialog.body'),
-      importance: NotificationImportance.HIGH,
-      context: NotificationContext.WARNING,
-    } as NotificationPayload);
   }
 }
 </script>

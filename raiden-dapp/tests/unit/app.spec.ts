@@ -1,5 +1,3 @@
-import flushPromises from 'flush-promises';
-
 jest.mock('vue-router');
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
@@ -12,7 +10,6 @@ import store from '@/store/index';
 import Vuetify from 'vuetify';
 import RaidenService from '@/services/raiden-service';
 import App from '@/App.vue';
-import { Capabilities } from 'raiden-ts';
 
 Vue.use(VueRouter);
 Vue.use(Vuex);
@@ -53,29 +50,5 @@ describe('App.vue', () => {
     wrapper.vm.$destroy();
 
     expect($raiden.disconnect).toHaveBeenCalledTimes(1);
-  });
-
-  test("show ReceivingDiabled dialog if can't receive", async () => {
-    expect.assertions(2);
-
-    store.commit('updateConfig', {
-      caps: { [Capabilities.NO_RECEIVE]: false },
-    });
-    await flushPromises();
-    // @ts-ignore
-    expect(store.state.notifications.notifications).toHaveLength(0);
-
-    store.commit('updateConfig', {
-      caps: { [Capabilities.NO_RECEIVE]: true },
-    });
-    await wrapper.vm.$nextTick();
-    // @ts-ignore
-    expect(store.state.notifications.notifications[0]).toMatchObject(
-      expect.objectContaining({
-        context: 'warning',
-        description: 'receiving-disabled-dialog.body',
-        title: 'receiving-disabled-dialog.title',
-      })
-    );
   });
 });

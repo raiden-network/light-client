@@ -1,4 +1,5 @@
 import {
+  Capabilities,
   ChangeEvent,
   ErrorCodes,
   EventTypes,
@@ -170,9 +171,12 @@ export default class RaidenService {
           .pipe(filter((value) => value.type === 'raiden/shutdown'))
           .subscribe(() => this.store.commit('reset'));
 
-        raiden.config$.subscribe((config) =>
-          this.store.commit('updateConfig', config)
-        );
+        raiden.config$.subscribe(async (config) => {
+          this.store.commit('updateConfig', config);
+          if (config.caps?.[Capabilities.NO_RECEIVE]) {
+            await this.notifyNoReceive();
+          }
+        });
 
         raiden.events$.subscribe(async (value) => {
           if (value.type === 'token/monitored') {
@@ -257,6 +261,16 @@ export default class RaidenService {
     }
 
     this.store.commit('loadComplete');
+  }
+
+  private async notifyNoReceive() {
+    await this.store.dispatch('notifications/notify', {
+      title: i18n.t('receiving-disabled-dialog.title'),
+      description: i18n.t('receiving-disabled-dialog.body'),
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.WARNING,
+      duration: -1,
+    } as NotificationPayload);
   }
 
   private async monitorPreSetTokens() {
