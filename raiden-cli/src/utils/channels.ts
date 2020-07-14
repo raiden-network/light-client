@@ -36,8 +36,9 @@ export function transformSdkChannelFormatToApi(channel: RaidenChannel): ApiChann
     token_address: channel.token,
     balance: channel.balance.toString(),
     total_deposit: channel.ownDeposit.toString(),
+    total_withdraw: channel.ownWithdraw.toString(),
     state: transformSdkChannelStateToApi(channel.state),
     settle_timeout: channel.settleTimeout,
-    reveal_timeout: 0, // FIXME: Not defined here. Python client handles reveal timeout differently,
+    reveal_timeout: 50, // FIXME: Not defined here. Python client handles reveal timeout differently,
   };
 }
