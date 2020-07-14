@@ -19,6 +19,12 @@ export interface Cli {
   server?: Server;
 }
 
+export enum ApiChannelState {
+  opened = 'opened',
+  closed = 'closed',
+  settled = 'settled',
+}
+
 // Data structures as exchanged over the API
 export interface ApiChannel {
   channel_identifier: number;
@@ -27,7 +33,7 @@ export interface ApiChannel {
   token_address: string;
   balance: string;
   total_deposit: string;
-  state: string;
+  state: ApiChannelState;
   settle_timeout: number;
   reveal_timeout: number;
 }
