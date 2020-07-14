@@ -670,7 +670,7 @@ export class Raiden {
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
     assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
-    const deposit = decode(UInt(32), amount);
+    const deposit = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
     const meta = { tokenNetwork, partner };
     const promise = asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
       ({ txHash }) => txHash,
