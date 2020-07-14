@@ -9,23 +9,6 @@ export function flattenChannelDictionary(channelDict: RaidenChannels): RaidenCha
   );
 }
 
-export function filterChannels(
-  channels: RaidenChannel[],
-  tokenAddress?: string,
-  partnerAddress?: string,
-): RaidenChannel[] {
-  let filteredChannels = channels;
-
-  if (tokenAddress) {
-    filteredChannels = filteredChannels.filter((channel) => channel.token === tokenAddress);
-  }
-  if (partnerAddress) {
-    filteredChannels = filteredChannels.filter((channel) => channel.token === partnerAddress);
-  }
-
-  return filteredChannels;
-}
-
 export function transformSdkChannelFormatToApi(channel: RaidenChannel): ApiChannel {
   return {
     channel_identifier: channel.id,
