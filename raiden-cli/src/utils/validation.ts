@@ -18,6 +18,16 @@ export function validateAddressParameter(
   }
 }
 
+export function validateOptionalAddressParameter(
+  this: string,
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) {
+  if (!request.params[this]) next();
+  else validateAddressParameter.call(this, request, response, next);
+}
+
 export function isInvalidParameterError(error: RaidenError): boolean {
   return [
     ErrorCodes.DTA_NEGATIVE_NUMBER,

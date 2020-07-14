@@ -1,9 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ErrorCodes, RaidenError, RaidenTransfer } from 'raiden-ts';
 import { timer } from 'rxjs';
-import { toArray, takeUntil, first } from 'rxjs/operators';
+import { toArray, takeUntil, first, filter, map } from 'rxjs/operators';
 import { Cli } from '../types';
-import { validateAddressParameter, isInvalidParameterError } from '../utils/validation';
+import {
+  validateAddressParameter,
+  isInvalidParameterError,
+  validateOptionalAddressParameter,
+} from '../utils/validation';
 import { transformSdkTransferToApiPayment } from '../utils/payments';
 
 function isConflictError(error: RaidenError): boolean {
@@ -21,18 +25,21 @@ function isConflictError(error: RaidenError): boolean {
   ].includes(error.message);
 }
 
-async function getPaymentsForTokenAndEnd(this: Cli, request: Request, response: Response) {
-  const allTransfers = await this.raiden.transfers$
-    .pipe(takeUntil(timer(0)), toArray())
-    .toPromise();
-  const filteredTransfers = allTransfers.filter(
-    (transfer) =>
-      transfer.token === request.params.tokenAddress &&
-      (transfer.target === request.params.endAddress ||
-        transfer.initiator === request.params.endAddress),
-  );
-  const payments = filteredTransfers.map(transformSdkTransferToApiPayment);
-  response.json(payments);
+function getPayments(this: Cli, request: Request, response: Response) {
+  this.raiden.transfers$
+    .pipe(
+      filter((t) => !request.params.tokenAddress || request.params.tokenAddress === t.token),
+      filter(
+        (t) =>
+          !request.params.endAddress ||
+          request.params.endAddress === t.target ||
+          request.params.endAddress === t.initiator,
+      ),
+      takeUntil(timer(0)),
+      map(transformSdkTransferToApiPayment),
+      toArray(),
+    )
+    .subscribe((payments) => response.json(payments));
 }
 
 async function doTransfer(this: Cli, request: Request, response: Response, next: NextFunction) {
@@ -66,10 +73,10 @@ export function makePaymentsRouter(this: Cli): Router {
 
   // end is either initiator (for received transfers) or target (for sent)
   router.get(
-    '/:tokenAddress/:endAddress',
-    validateAddressParameter.bind('tokenAddress'),
-    validateAddressParameter.bind('endAddress'),
-    getPaymentsForTokenAndEnd.bind(this),
+    '/:tokenAddress?/:endAddress?',
+    validateOptionalAddressParameter.bind('tokenAddress'),
+    validateOptionalAddressParameter.bind('endAddress'),
+    getPayments.bind(this),
   );
 
   router.post(
