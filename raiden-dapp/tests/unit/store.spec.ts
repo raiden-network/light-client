@@ -4,7 +4,6 @@ import { DeniedReason, emptyTokenModel, Token } from '@/model/types';
 import { Tokens } from '@/types';
 import { Zero } from 'ethers/constants';
 import { BigNumber, bigNumberify } from 'ethers/utils';
-import { Capabilities } from 'raiden-ts';
 
 describe('store', () => {
   const testTokens = (token: string, name?: string, symbol?: string) => {
@@ -333,14 +332,6 @@ describe('store', () => {
   test('isConnected should be false if loading', () => {
     store.commit('account', '0x0000000000000000000000000000000000020001');
     expect(store.getters.isConnected).toBe(false);
-  });
-
-  test('canReceive should reflect config.caps', () => {
-    store.commit('updateConfig', { caps: { [Capabilities.NO_RECEIVE]: true } });
-    expect(store.getters.canReceive).toBe(false);
-    // no 'noReceive' canReceive
-    store.commit('updateConfig', { caps: {} });
-    expect(store.getters.canReceive).toBe(true);
   });
 
   test('newBlock updates blockNumber', () => {

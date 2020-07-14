@@ -176,8 +176,8 @@ export class TestData {
     description: 'The monitoring service has submitted a balance proof.',
     display: false,
     duration: 5000,
-    importance: NotificationImportance.LOW,
-    context: NotificationContext.NONE,
+    importance: NotificationImportance.HIGH,
+    context: NotificationContext.INFO,
     received: new Date('June 5, 1986'),
   };
 }
