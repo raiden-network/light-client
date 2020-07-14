@@ -30,15 +30,15 @@ function transformSdkChannelStateToApi(state: ChannelState): ApiChannelState {
 
 export function transformSdkChannelFormatToApi(channel: RaidenChannel): ApiChannel {
   return {
-    channel_identifier: channel.id,
+    channel_identifier: channel.id.toString(),
     token_network_address: channel.tokenNetwork,
     partner_address: channel.partner,
     token_address: channel.token,
-    balance: channel.balance.toString(),
+    balance: channel.capacity.toString(),
     total_deposit: channel.ownDeposit.toString(),
     total_withdraw: channel.ownWithdraw.toString(),
     state: transformSdkChannelStateToApi(channel.state),
-    settle_timeout: channel.settleTimeout,
-    reveal_timeout: 50, // FIXME: Not defined here. Python client handles reveal timeout differently,
+    settle_timeout: channel.settleTimeout.toString(),
+    reveal_timeout: '50', // FIXME: Not defined here. Python client handles reveal timeout differently,
   };
 }
