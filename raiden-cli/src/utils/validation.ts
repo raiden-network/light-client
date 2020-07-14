@@ -53,5 +53,5 @@ export function isInvalidParameterError(error: RaidenError): boolean {
  * insufficient tokens funds for depositing.
  */
 export function isTransactionWouldFailError(error: Error): boolean {
-  return /gas required exceeds allowance .* or always failing transaction/.test(error.message);
+  return /always failing transaction/.test(error.message);
 }
