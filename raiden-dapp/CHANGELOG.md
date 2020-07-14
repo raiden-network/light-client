@@ -5,8 +5,11 @@
 ### Fixed
 
 ### Added
+- [#1786] Introduces snackbar display for notifications
 
 ### Changed
+
+[#1786]: https://github.com/raiden-network/light-client/issues/1786
 
 ## [0.10.0] - 2020-07-13
 
