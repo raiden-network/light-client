@@ -51,6 +51,7 @@ import { channelUniqueKey } from 'raiden-ts/channels/utils';
 import { ChannelState } from 'raiden-ts/channels';
 import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from 'raiden-ts/messages';
 import { getLocksroot } from 'raiden-ts/transfers/utils';
+import { ErrorCodes } from 'raiden-ts/utils/error';
 
 test('channelSettleableEpic', async () => {
   expect.assertions(3);
@@ -389,6 +390,28 @@ describe('channelDepositEpic', () => {
 
     expect(raiden.output).toContainEqual(
       channelDeposit.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
+    );
+  });
+
+  test('fails if not enough balance', async () => {
+    expect.assertions(1);
+
+    const [raiden, partner] = await makeRaidens(2);
+    await ensureChannelIsOpen([raiden, partner]);
+
+    const tokenContract = raiden.deps.getTokenContract(token);
+    tokenContract.functions.balanceOf.mockResolvedValue(deposit.sub(1));
+
+    raiden.store.dispatch(
+      channelDeposit.request({ deposit }, { tokenNetwork, partner: partner.address }),
+    );
+    await waitBlock();
+
+    expect(raiden.output).toContainEqual(
+      channelDeposit.failure(
+        expect.objectContaining({ message: ErrorCodes.RDN_INSUFFICIENT_BALANCE }),
+        { tokenNetwork, partner: partner.address },
+      ),
     );
   });
 
