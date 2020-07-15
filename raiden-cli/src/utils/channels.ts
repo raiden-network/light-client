@@ -9,7 +9,7 @@ export function flattenChannelDictionary(channelDict: RaidenChannels): RaidenCha
   );
 }
 
-function transformSdkChannelStateToApi(state: ChannelState): ApiChannelState {
+function transformChannelStateForApi(state: ChannelState): ApiChannelState {
   let apiState;
   switch (state) {
     case ChannelState.open:
@@ -28,7 +28,7 @@ function transformSdkChannelStateToApi(state: ChannelState): ApiChannelState {
   return apiState;
 }
 
-export function transformSdkChannelFormatToApi(channel: RaidenChannel): ApiChannel {
+export function transformChannelFormatForApi(channel: RaidenChannel): ApiChannel {
   return {
     channel_identifier: channel.id.toString(),
     token_network_address: channel.tokenNetwork,
@@ -37,7 +37,7 @@ export function transformSdkChannelFormatToApi(channel: RaidenChannel): ApiChann
     balance: channel.capacity.toString(),
     total_deposit: channel.ownDeposit.toString(),
     total_withdraw: channel.ownWithdraw.toString(),
-    state: transformSdkChannelStateToApi(channel.state),
+    state: transformChannelStateForApi(channel.state),
     settle_timeout: channel.settleTimeout.toString(),
     reveal_timeout: '50', // FIXME: Not defined here. Python client handles reveal timeout differently,
   };
