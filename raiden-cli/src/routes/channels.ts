@@ -1,13 +1,14 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { first, pluck } from 'rxjs/operators';
-import { ErrorCodes, isntNil, ChannelState } from 'raiden-ts';
+import { ErrorCodes, isntNil, ChannelState, RaidenChannel } from 'raiden-ts';
 import { Cli, ApiChannelState } from '../types';
 import {
   isInvalidParameterError,
   isTransactionWouldFailError,
   validateOptionalAddressParameter,
+  validateAddressParameter,
 } from '../utils/validation';
-import { flattenChannelDictionary, transformSdkChannelFormatToApi } from '../utils/channels';
+import { flattenChannelDictionary, transformChannelFormatForApi } from '../utils/channels';
 
 function isConflictError(error: Error): boolean {
   return (
@@ -20,8 +21,7 @@ function isInsuficientFundsError(error: { message: string; code?: string | numbe
   return (
     error.code === 'INSUFFICIENT_FUNDS' ||
     [
-      ErrorCodes.DTA_INVALID_AMOUNT,
-      ErrorCodes.DTA_INVALID_DEPOSIT,
+      ErrorCodes.RDN_INSUFFICIENT_BALANCE,
       ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_LOW,
       ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_HIGH,
     ].includes(error.message)
@@ -35,7 +35,7 @@ async function getChannels(this: Cli, request: Request, response: Response) {
   if (token && partner) {
     const channel = channelsDict[token]?.[partner];
     if (channel) {
-      response.json(transformSdkChannelFormatToApi(channel));
+      response.json(transformChannelFormatForApi(channel));
     } else {
       response.status(404).send('The channel does not exist');
     }
@@ -43,7 +43,7 @@ async function getChannels(this: Cli, request: Request, response: Response) {
     let channelsList = flattenChannelDictionary(channelsDict);
     if (token) channelsList = channelsList.filter((channel) => channel.token === token);
     if (partner) channelsList = channelsList.filter((channel) => channel.token === partner);
-    response.json(channelsList.map(transformSdkChannelFormatToApi));
+    response.json(channelsList.map(transformChannelFormatForApi));
   }
 }
 
@@ -60,7 +60,7 @@ async function openChannel(this: Cli, request: Request, response: Response, next
     const channel = await this.raiden.channels$
       .pipe(pluck(token, partner), first(isntNil))
       .toPromise();
-    response.status(201).json(transformSdkChannelFormatToApi(channel));
+    response.status(201).json(transformChannelFormatForApi(channel));
   } catch (error) {
     if (isInvalidParameterError(error)) {
       response.status(400).send(error.message);
@@ -74,25 +74,76 @@ async function openChannel(this: Cli, request: Request, response: Response, next
   }
 }
 
-const allowedUpdateKeys = new Set(['state', 'total_deposit', 'total_withdraw']);
+const allowedUpdateKeys = ['state', 'total_deposit', 'total_withdraw'];
+const allowedUpdateStates = [ApiChannelState.closed, ApiChannelState.settled];
 function validateChannelUpdateBody(request: Request, response: Response, next: NextFunction) {
-  const intersec = Object.keys(request.body).filter((k) => allowedUpdateKeys.has(k));
+  const intersec = Object.keys(request.body).filter((k) => allowedUpdateKeys.includes(k));
   if (intersec.length < 1)
-    return response
-      .status(400)
-      .send('one of "state" | "total_deposit" | "total_withdraw" operations required');
+    return response.status(400).send(`one of [${allowedUpdateKeys}] operations required`);
   else if (intersec.length > 1)
-    return response
-      .status(409)
-      .send('more than one of "state" | "total_deposit" | "total_withdraw" requested');
-  if (
-    request.body.state &&
-    ![ApiChannelState.closed, ApiChannelState.settled].includes(request.body.state)
-  )
+    return response.status(409).send(`more than one of [${allowedUpdateKeys}] requested`);
+  if (request.body.state && !allowedUpdateStates.includes(request.body.state))
     return response
       .status(400)
-      .send('invalid "state" requested: must be one of "closed" | "settled"');
+      .send(`invalid "state" requested: must be one of [${allowedUpdateStates}]`);
   return next();
+}
+
+async function updateChannelState(
+  this: Cli,
+  channel: RaidenChannel,
+  newState: ApiChannelState.closed | ApiChannelState.settled,
+): Promise<RaidenChannel> {
+  if (newState === ApiChannelState.closed) {
+    await this.raiden.closeChannel(channel.token, channel.partner);
+    const closedStates = [ChannelState.closed, ChannelState.settleable, ChannelState.settling];
+    channel = await this.raiden.channels$
+      .pipe(
+        pluck(channel.token, channel.partner),
+        first((channel) => closedStates.includes(channel.state)),
+      )
+      .toPromise();
+  } else if (newState === ApiChannelState.settled) {
+    const promise = this.raiden.settleChannel(channel.token, channel.partner);
+    const newChannel = await this.raiden.channels$
+      .pipe(pluck(channel.token, channel.partner), first())
+      .toPromise();
+    await promise;
+    if (newChannel) channel = newChannel; // channel may have been cleared
+  }
+  return channel;
+}
+
+async function updateChannelDeposit(
+  this: Cli,
+  channel: RaidenChannel,
+  totalDeposit: string,
+): Promise<RaidenChannel> {
+  // amount = new deposit - previous deposit == (previous deposit - new deposit) * -1
+  const depositAmount = channel.ownDeposit.sub(totalDeposit).mul(-1);
+  await this.raiden.depositChannel(channel.token, channel.partner, depositAmount);
+  return await this.raiden.channels$
+    .pipe(
+      pluck(channel.token, channel.partner),
+      first((channel) => channel.ownDeposit.gte(totalDeposit)),
+    )
+    .toPromise();
+}
+
+async function updateChannelWithdraw(
+  this: Cli,
+  channel: RaidenChannel,
+  totalWithdraw: string,
+): Promise<RaidenChannel> {
+  // amount = new withdraw - previous withdraw == (previous withdraw - new withdraw) * -1
+  const withdrawAmount = channel.ownWithdraw.sub(totalWithdraw).mul(-1);
+  await this.raiden.withdrawChannel(channel.token, channel.partner, withdrawAmount);
+  return await this.raiden.channels$
+    .pipe(
+      pluck(channel.token, channel.partner),
+      first((channel) => channel.ownWithdraw.gte(totalWithdraw)),
+    )
+    .toPromise();
 }
 
 async function updateChannel(this: Cli, request: Request, response: Response, next: NextFunction) {
@@ -102,49 +153,13 @@ async function updateChannel(this: Cli, request: Request, response: Response, ne
     let channel = await this.raiden.channels$.pipe(first(), pluck(token, partner)).toPromise();
     if (!channel) return response.status(404).send('channel not found');
     if (request.body.state) {
-      if (request.body.state === ApiChannelState.closed) {
-        await this.raiden.closeChannel(token, partner);
-        channel = await this.raiden.channels$
-          .pipe(
-            pluck(token, partner),
-            first((channel) =>
-              [ChannelState.closed, ChannelState.settleable, ChannelState.settling].includes(
-                channel.state,
-              ),
-            ),
-          )
-          .toPromise();
-      } else if (request.body.state === ApiChannelState.settled) {
-        const promise = this.raiden.settleChannel(token, partner);
-        channel = await this.raiden.channels$.pipe(pluck(token, partner), first()).toPromise();
-        await promise;
-      }
+      channel = await updateChannelState.call(this, channel, request.body.state);
     } else if (request.body.total_deposit) {
-      await this.raiden.depositChannel(
-        token,
-        partner,
-        channel.ownDeposit.sub(request.body.total_deposit).mul(-1),
-      );
-      channel = await this.raiden.channels$
-        .pipe(
-          pluck(token, partner),
-          first((channel) => channel.ownDeposit.gte(request.body.total_deposit)),
-        )
-        .toPromise();
+      channel = await updateChannelDeposit.call(this, channel, request.body.total_deposit);
     } else if (request.body.total_withdraw) {
-      await this.raiden.withdrawChannel(
-        token,
-        partner,
-        channel.ownWithdraw.sub(request.body.total_withdraw).mul(-1),
-      );
-      channel = await this.raiden.channels$
-        .pipe(
-          pluck(token, partner),
-          first((channel) => channel.ownWithdraw.gte(request.body.total_withdraw)),
-        )
-        .toPromise();
+      channel = await updateChannelWithdraw.call(this, channel, request.body.total_withdraw);
     }
-    response.status(200).json(transformSdkChannelFormatToApi(channel));
+    response.status(200).json(transformChannelFormatForApi(channel));
   } catch (error) {
     if (isInvalidParameterError(error)) {
       response.status(400).send(error.message);
@@ -172,8 +187,8 @@ export function makeChannelsRouter(this: Cli): Router {
 
   router.patch(
     '/:tokenAddress/:partnerAddress',
-    validateOptionalAddressParameter.bind('tokenAddress'),
-    validateOptionalAddressParameter.bind('partnerAddress'),
+    validateAddressParameter.bind('tokenAddress'),
+    validateAddressParameter.bind('partnerAddress'),
     validateChannelUpdateBody,
     updateChannel.bind(this),
   );
