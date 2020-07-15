@@ -1187,7 +1187,9 @@ describe('Raiden', () => {
 
     test('should return transaction if minted successfully', async () => {
       expect.assertions(1);
-      await expect(raiden.mint(token, 50)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+      await expect(raiden.mint(token, 50, { to: raiden.address })).resolves.toMatch(
+        /^0x[0-9a-fA-F]{64}$/,
+      );
     });
   });
 
