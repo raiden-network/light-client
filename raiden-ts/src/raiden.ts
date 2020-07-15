@@ -1286,7 +1286,9 @@ export class Raiden {
   }
 
   public async planUdcWithdraw(value: BigNumberish): Promise<Hash> {
-    const meta = { amount: bigNumberify(value) as UInt<32> };
+    const meta = {
+      amount: decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error),
+    };
     const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
       ({ txHash }) => txHash!,
     );
