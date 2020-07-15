@@ -37,5 +37,10 @@ export function makeApiV1Router(this: Cli): Router {
     });
   });
 
+  router.post('/shutdown', (_request: Request, response: Response) => {
+    this.raiden.stop();
+    response.json({ status: 'shutdown' });
+  });
+
   return router;
 }

@@ -71,12 +71,14 @@ function createLocalStorage(name: string): LocalStorage {
   return localStorage;
 }
 
-function shutdown(this: Cli): void {
+function shutdownServer(this: Cli): void {
   if (this.server?.listening) {
     this.log.info('Closing server...');
     this.server.close();
   }
+}
 
+function shutdownRaiden(this: Cli): void {
   if (this.raiden.started) {
     this.log.info('Stopping raiden...');
     this.raiden.stop();
@@ -86,8 +88,10 @@ function shutdown(this: Cli): void {
 }
 
 function registerShutdownHooks(this: Cli): void {
-  process.on('SIGINT', shutdown.bind(this));
-  process.on('SIGTERM', shutdown.bind(this));
+  // raiden shutdown triggers server shutdown
+  this.raiden.state$.subscribe(undefined, shutdownServer.bind(this), shutdownServer.bind(this));
+  process.on('SIGINT', shutdownRaiden.bind(this));
+  process.on('SIGTERM', shutdownRaiden.bind(this));
 }
 
 async function main() {
