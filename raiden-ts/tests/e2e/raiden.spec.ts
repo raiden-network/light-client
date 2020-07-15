@@ -1337,7 +1337,7 @@ describe('Raiden', () => {
     await expect(sub.openChannel(token, partner, { subkey: true })).resolves.toMatch(/^0x/);
     // first deposit fails, as subkey has only 200 tokens settled from previous channel
     await expect(sub.depositChannel(token, partner, 300, { subkey: true })).rejects.toThrow(
-      'revert',
+      ErrorCodes.RDN_INSUFFICIENT_BALANCE,
     );
     await expect(sub.depositChannel(token, partner, 80, { subkey: true })).resolves.toMatch(/^0x/);
 

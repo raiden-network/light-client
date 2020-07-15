@@ -1,16 +1,16 @@
 # Changelog
 
 ## [Unreleased]
-
 ### Fixed
 
 ### Added
 
 ### Changed
+- [#1905] Fail early if not enough tokens to deposit
 
+[#1905]: https://github.com/raiden-network/light-client/issues/1905
 
 ## [0.10.0] - 2020-07-13
-
 ### Fixed
 - [#1514] Fix handling of expired LockedTransfer and WithdrawRequest
 - [#1607] Fix settling when one side closes/updates with outdated BalanceProof

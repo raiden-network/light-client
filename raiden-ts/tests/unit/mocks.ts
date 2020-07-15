@@ -813,6 +813,7 @@ export async function makeRaiden(
       }
       tokenContract.functions.approve.mockResolvedValue(makeTransaction());
       tokenContract.functions.allowance.mockResolvedValue(Zero);
+      tokenContract.functions.balanceOf.mockResolvedValue(parseEther('1000'));
       return tokenContract;
     },
   );

@@ -618,29 +618,36 @@ const makeDeposit$ = (
 ): Observable<channelDeposit.failure> => {
   if (!deposit?.gt(Zero)) return EMPTY;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function stopRetryIfRejected(err: any, count: number) {
+  function stopRetryIfRejected(err: { message: string; code?: string | number }, count: number) {
     // 4001 is Metamask's code for rejected/denied signature prompt
     const metamaskRejectedErrorCode = 4001;
     return count >= 10 || err?.code === metamaskRejectedErrorCode;
   }
 
-  return defer(() => tokenContract.functions.allowance(sender, tokenNetworkContract.address)).pipe(
-    mergeMap((allowance) =>
-      allowance.gte(deposit)
-        ? of(true)
-        : retryAsync$(
-            () =>
-              tokenContract.functions.approve(tokenNetworkContract.address, deposit, {
-                nonce: approveNonce,
-              }),
-            (tokenContract.provider as JsonRpcProvider).pollingInterval,
-            stopRetryIfRejected,
-          ).pipe(
-            // if needed, send approveTx and wait/assert it before proceeding
-            assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
-          ),
-    ),
+  return defer(() =>
+    Promise.all([
+      tokenContract.functions.balanceOf(sender),
+      tokenContract.functions.allowance(sender, tokenNetworkContract.address),
+    ]),
+  ).pipe(
+    mergeMap(([balance, allowance]) => {
+      assert(balance.gte(deposit), [
+        ErrorCodes.RDN_INSUFFICIENT_BALANCE,
+        { current: balance.toString(), required: deposit.toString() },
+      ]);
+      if (allowance.gte(deposit)) return of(true);
+      return retryAsync$(
+        () =>
+          tokenContract.functions.approve(tokenNetworkContract.address, deposit, {
+            nonce: approveNonce,
+          }),
+        (tokenContract.provider as JsonRpcProvider).pollingInterval,
+        stopRetryIfRejected,
+      ).pipe(
+        // if needed, send approveTx and wait/assert it before proceeding
+        assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
+      );
+    }),
     mergeMapTo(channelId$),
     take(1),
     mergeMap((id) =>
