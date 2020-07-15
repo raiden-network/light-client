@@ -19,15 +19,24 @@ export function makeApiV1Router(this: Cli): Router {
   router.use('/testing', makeTestingRouter.call(this));
 
   router.get('/version', (_request: Request, response: Response) => {
+    response.json({ version: Raiden.version });
+  });
+
+  router.get('/contracts', (_request: Request, response: Response) => {
+    const contracts = this.raiden.contractsInfo;
     response.json({
-      version: Raiden.version,
+      contracts_version: Raiden.contractVersion,
+      token_network_registry_address: contracts.TokenNetworkRegistry.address,
+      secret_registry_address: contracts.SecretRegistry.address,
+      service_registry_address: contracts.ServiceRegistry.address,
+      user_deposit_address: contracts.UserDeposit.address,
+      monitoring_service_address: contracts.MonitoringService.address,
+      one_to_n_address: '',
     });
   });
 
   router.get('/address', (_request: Request, response: Response) => {
-    response.json({
-      our_address: this.raiden.address,
-    });
+    response.json({ our_address: this.raiden.address });
   });
 
   router.get('/status', (_request: Request, response: Response) => {
