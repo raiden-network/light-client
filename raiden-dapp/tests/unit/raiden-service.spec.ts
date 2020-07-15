@@ -924,4 +924,108 @@ describe('RaidenService', () => {
     await setupSDK({ config });
     expect(raiden.monitorToken).toHaveBeenCalledWith('0xtoken');
   });
+
+  test('ignore successful channel settle is not confirmed yet', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.getters as any) = {
+      udcToken: {},
+    };
+    subject.next({
+      type: 'channel/settle/success',
+      payload: {
+        id: 0,
+        txHash: '0xTxHash',
+        txBlock: '0TxBlock',
+        confirmed: false,
+      },
+      meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
+    });
+
+    expect(store.dispatch).not.toHaveBeenCalledWith('notifications/notify', {
+      title: 'notifications.settlement.success.title',
+      description: 'notifications.settlement.success.description',
+      context: NotificationContext.INFO,
+      importance: NotificationImportance.HIGH,
+    });
+  });
+
+  test('notify that channel settle was successful', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.getters as any) = {
+      udcToken: {},
+    };
+    subject.next({
+      type: 'channel/settle/success',
+      payload: {
+        id: 0,
+        txHash: '0xTxHash',
+        txBlock: '0TxBlock',
+        confirmed: true,
+      },
+      meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
+    });
+
+    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
+      title: 'notifications.settlement.success.title',
+      description: 'notifications.settlement.success.description',
+      context: NotificationContext.INFO,
+      importance: NotificationImportance.HIGH,
+    });
+  });
+
+  test('notification for successful channel settle includes withdraw hint when subkey', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK({ subkey: true });
+    (store.getters as any) = {
+      udcToken: {},
+    };
+    subject.next({
+      type: 'channel/settle/success',
+      payload: {
+        id: 0,
+        txHash: '0xTxHash',
+        txBlock: '0TxBlock',
+        confirmed: true,
+      },
+      meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
+    });
+
+    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
+      title: 'notifications.settlement.success.title',
+      description:
+        'notifications.settlement.success.description notifications.settlement.success.withdrawal_hint',
+      context: NotificationContext.INFO,
+      importance: NotificationImportance.HIGH,
+    });
+  });
+
+  test('notify that channel settle was failure', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.getters as any) = {
+      udcToken: {},
+    };
+    subject.next({
+      type: 'channel/settle/failure',
+      payload: { message: 'error message' },
+      meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
+    });
+
+    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
+      title: 'notifications.settlement.failure.title',
+      description: 'notifications.settlement.failure.description',
+      context: NotificationContext.ERROR,
+      importance: NotificationImportance.HIGH,
+    });
+  });
 });
