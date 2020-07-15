@@ -59,6 +59,8 @@ export const RaidenEvents = [
   RaidenActions.udcWithdrawn,
   RaidenActions.udcWithdraw.failure,
   RaidenActions.msBalanceProofSent,
+  RaidenActions.channelSettle.success,
+  RaidenActions.channelSettle.failure,
 ];
 /* Tagged union of RaidenEvents actions */
 export type RaidenEvent = ActionType<typeof RaidenEvents>;
