@@ -5,12 +5,14 @@
 
 ### Added
 - [#1910] Add option to `mint` tokens for any address
+- [#1913] Added `contractsInfo` getter holding current contracts info
 
 ### Changed
 - [#1905] Fail early if not enough tokens to deposit
 
 [#1905]: https://github.com/raiden-network/light-client/issues/1905
 [#1910]: https://github.com/raiden-network/light-client/pull/1910
+[#1913]: https://github.com/raiden-network/light-client/pull/1913
 
 ## [0.10.0] - 2020-07-13
 ### Fixed
@@ -227,8 +229,8 @@
 - Update message packing and signature to confront with Alderaan format.
 - Optimize past event scanning.
 - Make transfer parameters consistent with openChannel.
-- Update previous transfer initialization to monitor pending transfers. 
-- Update the transfer mechanism to accept transfers that are reduced up to 10% due to fees. 
+- Update previous transfer initialization to monitor pending transfers.
+- Update the transfer mechanism to accept transfers that are reduced up to 10% due to fees.
 - Increase time before leaving unknown rooms.
 - Reduce the minimum settle timeout to 20.
 - Remove fee field from LockedTransfer to comply with raiden-py.
@@ -255,7 +257,7 @@
 - Add monitoring for transfers based on secret hash.
 
 ### Changed
-- Change transfer api return secret hash. 
+- Change transfer api return secret hash.
 
 ## [0.1] - 2019-08-21
 ### Added

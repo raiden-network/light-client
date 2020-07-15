@@ -487,6 +487,15 @@ export class Raiden {
   }
 
   /**
+   * Returns the Smart Contracts addresses and deployment blocks
+   *
+   * @returns Smart Contracts info
+   */
+  get contractsInfo(): ContractsInfo {
+    return this.deps.contractsInfo;
+  }
+
+  /**
    * Update Raiden Config with a partial (shallow) object
    *
    * @param config - Partial object containing keys and values to update in config

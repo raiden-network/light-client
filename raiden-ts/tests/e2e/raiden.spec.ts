@@ -264,6 +264,21 @@ describe('Raiden', () => {
     expect(raiden.network).toEqual(await provider.getNetwork());
   });
 
+  test('contractVersion', async () => {
+    expect.assertions(1);
+    expect(Raiden.contractVersion).toMatch(/.+/);
+  });
+
+  test('contractsInfo', async () => {
+    expect.assertions(1);
+    expect(raiden.contractsInfo).toMatchObject({
+      TokenNetworkRegistry: {
+        address: expect.stringMatching(/0x[0-9a-f]{40}/i),
+        block_number: expect.any(Number),
+      },
+    });
+  });
+
   test('getBlockNumber', async () => {
     expect.assertions(1);
     await expect(raiden.getBlockNumber()).resolves.toBeGreaterThanOrEqual(
