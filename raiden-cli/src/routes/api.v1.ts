@@ -32,8 +32,12 @@ export function makeApiV1Router(this: Cli): Router {
 
   router.get('/status', (_request: Request, response: Response) => {
     response.json({
-      status: this.raiden.started ? 'ready' : 'unknown', // TODO: handle 'syncing' status phase
-      blocks_to_syn: 'unknown', // TODO: Related to the 'syncing' status
+      status: this.raiden.started
+        ? 'ready'
+        : this.raiden.started === undefined // not yet started
+        ? 'syncing'
+        : 'unavailable',
+      blocks_to_sync: '0', // LC don't sync block-by-block, it syncs immediately once started
     });
   });
 
