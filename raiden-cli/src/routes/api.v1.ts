@@ -16,7 +16,7 @@ export function makeApiV1Router(this: Cli): Router {
   router.use('/pending_transfers', makePendingTransfersRouter.call(this));
   router.use('/connections', makeConnectionsRouter.call(this));
   router.use('/payments', makePaymentsRouter.call(this));
-  router.use('/testing', makeTestingRouter.call(this));
+  router.use('/_testing', makeTestingRouter.call(this));
 
   router.get('/version', (_request: Request, response: Response) => {
     response.json({ version: Raiden.version });
