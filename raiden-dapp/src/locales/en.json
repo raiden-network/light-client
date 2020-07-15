@@ -36,7 +36,18 @@
         }
       }
     },
-    "clear": "Clear"
+    "clear": "Clear",
+    "settlement": {
+      "success": {
+        "title": "Channel Settlement",
+        "description": "The channel with {partner} for the token network {tokenNetwork} has become settled ({txHash}).",
+        "withdrawal_hint": "Go to the acounts Withdrawal screen to transfer the tokens to your main account."
+      },
+      "failure": {
+        "title": "Channel Settlement",
+        "description": "The attempt to settle the channel with {partner} for the token network {tokenNetwork} failed: {message}"
+      }
+    }
   },
   "general": {
     "buttons": {

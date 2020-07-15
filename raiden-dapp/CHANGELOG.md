@@ -5,11 +5,14 @@
 ### Fixed
 
 ### Added
+
 - [#1786] Introduces snackbar display for notifications
+- [#1824] Listen to channel settle events and push notifications for them
 
 ### Changed
 
 [#1786]: https://github.com/raiden-network/light-client/issues/1786
+[#1824]: https://github.com/raiden-network/light-client/issues/1824
 
 ## [0.10.0] - 2020-07-13
 
