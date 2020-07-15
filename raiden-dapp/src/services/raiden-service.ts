@@ -28,6 +28,7 @@ export default class RaidenService {
   private store: Store<RootState>;
   private _userDepositTokenAddress: string = '';
   private _configuration?: Configuration;
+  private _subkey?: true;
 
   private static async createRaiden(
     provider: any,
@@ -136,6 +137,7 @@ export default class RaidenService {
 
         this._raiden = raiden;
         this._configuration = configuration;
+        this._subkey = subkey;
 
         const account = await this.getAccount();
         this.store.commit('account', account);
@@ -212,6 +214,20 @@ export default class RaidenService {
             await this.notifyWithdrawalFailure(
               value.payload?.code,
               value.meta.amount,
+              value.payload.message
+            );
+          } else if (value.type === 'channel/settle/success') {
+            if (value.payload.confirmed) {
+              await this.notifyChannelSettleSuccess(
+                value.meta.partner,
+                value.meta.tokenNetwork,
+                value.payload.txHash
+              );
+            }
+          } else if (value.type === 'channel/settle/failure') {
+            await this.notifyChannelSettleFailure(
+              value.meta.partner,
+              value.meta.tokenNetwork,
               value.payload.message
             );
           }
@@ -369,6 +385,46 @@ export default class RaidenService {
         txHash,
       }),
       context: NotificationContext.INFO,
+      importance: NotificationImportance.HIGH,
+    } as NotificationPayload);
+  }
+
+  private async notifyChannelSettleSuccess(
+    partner: string,
+    tokenNetwork: string,
+    txHash: string
+  ) {
+    let description = i18n.t('notifications.settlement.success.description', {
+      partner,
+      tokenNetwork,
+      txHash,
+    });
+
+    if (this._subkey) {
+      description +=
+        ' ' + i18n.t('notifications.settlement.success.withdrawal_hint');
+    }
+    await this.store.dispatch('notifications/notify', {
+      title: i18n.t('notifications.settlement.success.title'),
+      description,
+      context: NotificationContext.INFO,
+      importance: NotificationImportance.HIGH,
+    } as NotificationPayload);
+  }
+
+  private async notifyChannelSettleFailure(
+    partner: string,
+    tokenNetwork: string,
+    message: string
+  ) {
+    await this.store.dispatch('notifications/notify', {
+      title: i18n.t('notifications.settlement.failure.title'),
+      description: i18n.t('notifications.settlement.failure.description', {
+        partner,
+        tokenNetwork,
+        message,
+      }),
+      context: NotificationContext.ERROR,
       importance: NotificationImportance.HIGH,
     } as NotificationPayload);
   }
