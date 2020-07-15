@@ -21,14 +21,12 @@ async function getTokenPartners(this: Cli, request: Request, response: Response)
   const token: string = request.params.tokenAddress;
   const channelsDict = await this.raiden.channels$.pipe(first()).toPromise();
   const baseUrl = request.baseUrl.replace(/\/\w+$/, '');
-  if (!(token in channelsDict)) response.status(404).send('Unknown token or no partner');
-  else
-    response.json(
-      Object.values(channelsDict[token]).map((channel) => ({
-        partner_address: channel.partner,
-        channel: `${baseUrl}/channels/${token}/${channel.partner}`,
-      })),
-    );
+  response.json(
+    Object.values(channelsDict[token] ?? {}).map((channel) => ({
+      partner_address: channel.partner,
+      channel: `${baseUrl}/channels/${token}/${channel.partner}`,
+    })),
+  );
 }
 
 export function makeTokensRouter(this: Cli): Router {
