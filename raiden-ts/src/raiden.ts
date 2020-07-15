@@ -1018,7 +1018,7 @@ export class Raiden {
    * Throws an error, if
    * <ol>
    *  <li>Executed on main net</li>
-   *  <li>`token` is not a valid address</li>
+   *  <li>`token` or `options.to` is not a valid address</li>
    *  <li>Token could not be minted</li>
    * </ol>
    *
@@ -1029,12 +1029,13 @@ export class Raiden {
    *    Notice the beneficiary here is always the account that sends the transaction, as this is
    *    expectedly also the account that will pay for e.g. future deposits.
    *    Set this to true if one wants to force sending the transaction with the subkey
+   * @param options.to - Beneficiary, defaults to mainAddress or address
    * @returns transaction
    */
   public async mint(
     token: string,
     amount: BigNumberish,
-    { subkey }: { subkey?: boolean } = {},
+    { subkey, to }: { subkey?: boolean; to?: string } = {},
   ): Promise<Hash> {
     // Check whether address is valid
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
@@ -1043,14 +1044,22 @@ export class Raiden {
     // Check whether we are on a test network
     assert(this.deps.network.chainId !== 1, ErrorCodes.RDN_MINT_MAINNET, this.log.info);
 
-    const { signer } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
+    const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     // Mint token
     const customTokenContract = CustomTokenFactory.connect(token, signer);
 
+    const beneficiary = to ?? address;
+    assert(
+      Address.is(beneficiary),
+      [ErrorCodes.DTA_INVALID_ADDRESS, { beneficiary }],
+      this.log.info,
+    );
+
+    const value = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_AMOUNT);
     const receipt = await callAndWaitMined(
       customTokenContract,
-      'mint',
-      [decode(UInt(32), amount)],
+      'mintFor',
+      [value, beneficiary],
       ErrorCodes.RDN_MINT_FAILED,
       { log: this.log },
     );

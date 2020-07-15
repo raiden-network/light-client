@@ -4,11 +4,13 @@
 ### Fixed
 
 ### Added
+- [#1910] Add option to `mint` tokens for any address
 
 ### Changed
 - [#1905] Fail early if not enough tokens to deposit
 
 [#1905]: https://github.com/raiden-network/light-client/issues/1905
+[#1910]: https://github.com/raiden-network/light-client/pull/1910
 
 ## [0.10.0] - 2020-07-13
 ### Fixed
