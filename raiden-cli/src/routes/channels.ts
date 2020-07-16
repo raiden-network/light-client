@@ -1,10 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { first, pluck } from 'rxjs/operators';
-import { ErrorCodes, isntNil, ChannelState, RaidenChannel, RaidenChannels } from 'raiden-ts';
+import { isntNil, ChannelState, RaidenChannel, RaidenChannels } from 'raiden-ts';
 import { Cli } from '../types';
 import {
   isInvalidParameterError,
-  isTransactionWouldFailError,
+  isConflictError,
+  isInsuficientFundsError,
   validateOptionalAddressParameter,
   validateAddressParameter,
 } from '../utils/validation';
@@ -27,24 +28,6 @@ export interface ApiChannel {
   state: ApiChannelState;
   settle_timeout: string;
   reveal_timeout: string;
-}
-
-function isConflictError(error: Error): boolean {
-  return (
-    [ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, ErrorCodes.CNL_INVALID_STATE].includes(error.message) ||
-    isTransactionWouldFailError(error)
-  );
-}
-
-function isInsuficientFundsError(error: { message: string; code?: string | number }): boolean {
-  return (
-    error.code === 'INSUFFICIENT_FUNDS' ||
-    [
-      ErrorCodes.RDN_INSUFFICIENT_BALANCE,
-      ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_LOW,
-      ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_HIGH,
-    ].includes(error.message)
-  );
 }
 
 function flattenChannelDictionary(channelDict: RaidenChannels): RaidenChannel[] {
@@ -125,7 +108,7 @@ async function openChannel(this: Cli, request: Request, response: Response, next
   } catch (error) {
     if (isInvalidParameterError(error)) {
       response.status(400).send(error.message);
-    } else if (isInvalidParameterError(error)) {
+    } else if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
     } else if (isConflictError(error)) {
       response.status(409).send(error.message);

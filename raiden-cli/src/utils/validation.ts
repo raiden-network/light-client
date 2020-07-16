@@ -55,3 +55,24 @@ export function isInvalidParameterError(error: RaidenError): boolean {
 export function isTransactionWouldFailError(error: Error): boolean {
   return /always failing transaction/.test(error.message);
 }
+
+export function isConflictError(error: Error): boolean {
+  return (
+    [ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, ErrorCodes.CNL_INVALID_STATE].includes(error.message) ||
+    isTransactionWouldFailError(error)
+  );
+}
+
+export function isInsuficientFundsError(error: {
+  message: string;
+  code?: string | number;
+}): boolean {
+  return (
+    error.code === 'INSUFFICIENT_FUNDS' ||
+    [
+      ErrorCodes.RDN_INSUFFICIENT_BALANCE,
+      ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_LOW,
+      ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_HIGH,
+    ].includes(error.message)
+  );
+}
