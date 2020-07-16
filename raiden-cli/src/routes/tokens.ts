@@ -4,14 +4,21 @@ import { first } from 'rxjs/operators';
 import { Cli } from '../types';
 import { validateAddressParameter } from '../utils/validation';
 
+export interface ApiTokenPartner {
+  partner_address: string;
+  channel: string;
+}
+
 async function getAllTokens(this: Cli, _request: Request, response: Response) {
-  response.json(await this.raiden.getTokenList());
+  const tokensList = await this.raiden.getTokenList();
+  response.json(tokensList);
 }
 
 async function getTokenNetwork(this: Cli, request: Request, response: Response) {
   // Attention: this also enables monitoring token
   try {
-    response.json(await this.raiden.monitorToken(request.params.tokenAddress));
+    const tokenNetwork = await this.raiden.monitorToken(request.params.tokenAddress);
+    response.json(tokenNetwork);
   } catch (error) {
     response.status(404).send(error.message);
   }
@@ -22,10 +29,12 @@ async function getTokenPartners(this: Cli, request: Request, response: Response)
   const channelsDict = await this.raiden.channels$.pipe(first()).toPromise();
   const baseUrl = request.baseUrl.replace(/\/\w+$/, '');
   response.json(
-    Object.values(channelsDict[token] ?? {}).map((channel) => ({
-      partner_address: channel.partner,
-      channel: `${baseUrl}/channels/${token}/${channel.partner}`,
-    })),
+    Object.values(channelsDict[token] ?? {}).map(
+      (channel): ApiTokenPartner => ({
+        partner_address: channel.partner,
+        channel: `${baseUrl}/channels/${token}/${channel.partner}`,
+      }),
+    ),
   );
 }
 
