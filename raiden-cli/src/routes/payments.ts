@@ -8,7 +8,39 @@ import {
   isInvalidParameterError,
   validateOptionalAddressParameter,
 } from '../utils/validation';
-import { transformSdkTransferToApiPayment } from '../utils/payments';
+
+export enum ApiPaymentEvent {
+  sent = 'EventPaymentSentSuccess',
+  received = 'EventPaymentReceivedSuccess',
+}
+
+export interface ApiPayment {
+  event: ApiPaymentEvent;
+  initiator_address: string;
+  target_address: string;
+  token_address: string;
+  amount: string;
+  identifier: string;
+  secret: string;
+  secret_hash: string;
+  log_time: string;
+}
+
+function transformSdkTransferToApiPayment(transfer: RaidenTransfer): ApiPayment {
+  // TODO: The payment object representation of the API spec is not clear
+  // enough. We need to clarify this and agree on a single representation.
+  return {
+    event: ApiPaymentEvent[transfer.direction],
+    initiator_address: transfer.initiator,
+    target_address: transfer.target,
+    token_address: transfer.token,
+    amount: transfer.value.toString(),
+    identifier: transfer.paymentId.toString(),
+    secret: transfer.secret ?? '',
+    secret_hash: transfer.secrethash,
+    log_time: transfer.changedAt.toISOString(),
+  };
+}
 
 function isConflictError(error: RaidenError): boolean {
   return [
