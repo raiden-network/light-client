@@ -6,19 +6,34 @@ import { RaidenTransfer, isntNil } from 'raiden-ts';
 import { Cli } from '../types';
 import { validateOptionalAddressParameter } from '../utils/validation';
 
-enum ApiRole {
+export enum ApiTransferRole {
   initiator = 'initiator',
   mediator = 'mediator',
   target = 'target,',
 }
 
-function transformSdkToApiPendingTransfer(this: Cli, transfer: RaidenTransfer) {
-  let role: ApiRole;
+export interface ApiTransfer {
+  channel_identifier: string;
+  initiator: string;
+  locked_amount: string;
+  payment_identifier: string;
+  role: ApiTransferRole;
+  target: string;
+  token_address: string;
+  token_network_address: string;
+  transferred_amount: string;
+}
+
+function transformSdkToApiPendingTransfer(
+  this: Cli,
+  transfer: RaidenTransfer,
+): ApiTransfer | undefined {
+  let role: ApiTransferRole;
   if (transfer.direction === 'sent' && transfer.initiator === this.raiden.address)
-    role = ApiRole.initiator;
+    role = ApiTransferRole.initiator;
   else if (transfer.direction === 'received' && transfer.target === this.raiden.address)
-    role = ApiRole.target;
-  else if (transfer.direction === 'sent') role = ApiRole.mediator;
+    role = ApiTransferRole.target;
+  else if (transfer.direction === 'sent') role = ApiTransferRole.mediator;
   else return; // filter out duplicated 'received' side of mediated transfers
   return {
     channel_identifier: transfer.channelId.toString(),
