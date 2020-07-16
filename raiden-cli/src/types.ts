@@ -19,26 +19,6 @@ export interface Cli {
   server?: Server;
 }
 
-export enum ApiChannelState {
-  opened = 'opened',
-  closed = 'closed',
-  settled = 'settled',
-}
-
-// Data structures as exchanged over the API
-export interface ApiChannel {
-  channel_identifier: string;
-  token_network_address: string;
-  partner_address: string;
-  token_address: string;
-  balance: string;
-  total_deposit: string;
-  total_withdraw: string;
-  state: ApiChannelState;
-  settle_timeout: string;
-  reveal_timeout: string;
-}
-
 export enum ApiPaymentEvents {
   sent = 'EventPaymentSentSuccess',
   received = 'EventPaymentReceivedSuccess',

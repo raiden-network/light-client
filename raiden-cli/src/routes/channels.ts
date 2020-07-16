@@ -1,14 +1,33 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { first, pluck } from 'rxjs/operators';
-import { ErrorCodes, isntNil, ChannelState, RaidenChannel } from 'raiden-ts';
-import { Cli, ApiChannelState } from '../types';
+import { ErrorCodes, isntNil, ChannelState, RaidenChannel, RaidenChannels } from 'raiden-ts';
+import { Cli } from '../types';
 import {
   isInvalidParameterError,
   isTransactionWouldFailError,
   validateOptionalAddressParameter,
   validateAddressParameter,
 } from '../utils/validation';
-import { flattenChannelDictionary, transformChannelFormatForApi } from '../utils/channels';
+
+export enum ApiChannelState {
+  opened = 'opened',
+  closed = 'closed',
+  settled = 'settled',
+}
+
+// Data structures as exchanged over the API
+export interface ApiChannel {
+  channel_identifier: string;
+  token_network_address: string;
+  partner_address: string;
+  token_address: string;
+  balance: string;
+  total_deposit: string;
+  total_withdraw: string;
+  state: ApiChannelState;
+  settle_timeout: string;
+  reveal_timeout: string;
+}
 
 function isConflictError(error: Error): boolean {
   return (
@@ -26,6 +45,48 @@ function isInsuficientFundsError(error: { message: string; code?: string | numbe
       ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_HIGH,
     ].includes(error.message)
   );
+}
+
+function flattenChannelDictionary(channelDict: RaidenChannels): RaidenChannel[] {
+  // To flatten structure {token: {partner: [channel..], partner:...}, token...}
+  return Object.values(channelDict).reduce(
+    (allChannels, tokenPartners) => allChannels.concat(Object.values(tokenPartners)),
+    [] as RaidenChannel[],
+  );
+}
+
+function transformChannelStateForApi(state: ChannelState): ApiChannelState {
+  let apiState;
+  switch (state) {
+    case ChannelState.open:
+    case ChannelState.closing:
+      apiState = ApiChannelState.opened;
+      break;
+    case ChannelState.closed:
+    case ChannelState.settleable:
+    case ChannelState.settling:
+      apiState = ApiChannelState.closed;
+      break;
+    case ChannelState.settled:
+      apiState = ApiChannelState.settled;
+      break;
+  }
+  return apiState;
+}
+
+function transformChannelFormatForApi(channel: RaidenChannel): ApiChannel {
+  return {
+    channel_identifier: channel.id.toString(),
+    token_network_address: channel.tokenNetwork,
+    partner_address: channel.partner,
+    token_address: channel.token,
+    balance: channel.capacity.toString(),
+    total_deposit: channel.ownDeposit.toString(),
+    total_withdraw: channel.ownWithdraw.toString(),
+    state: transformChannelStateForApi(channel.state),
+    settle_timeout: channel.settleTimeout.toString(),
+    reveal_timeout: '50', // FIXME: Not defined here. Python client handles reveal timeout differently,
+  };
 }
 
 async function getChannels(this: Cli, request: Request, response: Response) {
