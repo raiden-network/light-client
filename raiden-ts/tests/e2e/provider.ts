@@ -17,8 +17,9 @@ import { ServiceRegistry } from 'raiden-ts/contracts/ServiceRegistry';
 import { TokenNetworkRegistryFactory } from 'raiden-ts/contracts/TokenNetworkRegistryFactory';
 import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
 import { SecretRegistry } from 'raiden-ts/contracts/SecretRegistry';
-import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
 import { MonitoringService } from 'raiden-ts/contracts/MonitoringService';
+import { OneToN } from 'raiden-ts/contracts/OneToN';
+import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
 
 export class TestProvider extends Web3Provider {
   public constructor(web3?: AsyncSendable, opts?: GanacheServerOptions) {
@@ -160,6 +161,23 @@ export class TestProvider extends Web3Provider {
     await monitoringServiceContract.deployed();
     const monitoringServiceDeployBlock = monitoringServiceContract.deployTransaction.blockNumber;
 
+    const oneToNContract = (await new ContractFactory(
+      Contracts.contracts.OneToN.abi,
+      Contracts.contracts.OneToN.bin,
+      signer,
+    ).deploy(
+      userDepositContract.address,
+      this.network.chainId,
+      serviceRegistryContract.address,
+    )) as OneToN;
+    await oneToNContract.deployed();
+    const oneToNDeployBlock = oneToNContract.deployTransaction.blockNumber;
+
+    await userDepositContract.functions.init(
+      monitoringServiceContract.address,
+      oneToNContract.address,
+    );
+
     return {
       TokenNetworkRegistry: {
         address: registryContract.address as Address,
@@ -180,6 +198,10 @@ export class TestProvider extends Web3Provider {
       MonitoringService: {
         address: monitoringServiceContract.address as Address,
         block_number: monitoringServiceDeployBlock!,
+      },
+      OneToN: {
+        address: oneToNContract.address as Address,
+        block_number: oneToNDeployBlock!,
       },
     };
   }
