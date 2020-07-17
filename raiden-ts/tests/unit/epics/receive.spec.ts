@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { raidenEpicDeps, makeSignature, makeLog } from '../mocks';
+import { epicFixtures } from '../fixtures';
+
 import { bigNumberify, BigNumber } from 'ethers/utils';
 import { Zero, One, HashZero } from 'ethers/constants';
 import { of, EMPTY } from 'rxjs';
@@ -52,9 +55,6 @@ import {
   getLocksroot,
 } from 'raiden-ts/transfers/utils';
 import { Direction } from 'raiden-ts/transfers/state';
-
-import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps, makeSignature, makeLog } from '../mocks';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
 
 describe('receive transfers', () => {

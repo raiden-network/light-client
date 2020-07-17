@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { raidenEpicDeps } from '../mocks';
+import { epicFixtures } from '../fixtures';
+
 import { bigNumberify } from 'ethers/utils';
 import { Zero, One } from 'ethers/constants';
 import { of } from 'rxjs';
@@ -24,9 +27,6 @@ import {
   getLocksroot,
 } from 'raiden-ts/transfers/utils';
 import { Direction } from 'raiden-ts/transfers/state';
-
-import { epicFixtures } from '../fixtures';
-import { raidenEpicDeps } from '../mocks';
 
 describe('mediate transfers', () => {
   let depsMock: ReturnType<typeof raidenEpicDeps>;

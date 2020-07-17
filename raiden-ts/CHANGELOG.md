@@ -4,6 +4,7 @@
 ### Fixed
 
 ### Added
+- [#703] Add option to fetch all contracts addresses from UserDeposit address alone
 - [#1910] Add option to `mint` tokens for any address
 - [#1913] Added `contractsInfo` getter holding current contracts info
 - [#1824] Expose channel settle actions as events
@@ -11,6 +12,7 @@
 ### Changed
 - [#1905] Fail early if not enough tokens to deposit
 
+[#703]: https://github.com/raiden-network/light-client/issues/703
 [#1905]: https://github.com/raiden-network/light-client/issues/1905
 [#1910]: https://github.com/raiden-network/light-client/pull/1910
 [#1913]: https://github.com/raiden-network/light-client/pull/1913
