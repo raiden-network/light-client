@@ -30,6 +30,7 @@ export interface ContractsInfo {
   UserDeposit: Info;
   SecretRegistry: Info;
   MonitoringService: Info;
+  OneToN: Info;
 }
 
 export interface Latest {

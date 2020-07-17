@@ -153,6 +153,7 @@ export const initialState = makeInitialState({
     UserDeposit: { address: AddressZero as Address, block_number: 0 },
     SecretRegistry: { address: AddressZero as Address, block_number: 0 },
     MonitoringService: { address: AddressZero as Address, block_number: 0 },
+    OneToN: { address: AddressZero as Address, block_number: 0 },
   },
 });
 
