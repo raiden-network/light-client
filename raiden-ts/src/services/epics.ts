@@ -27,9 +27,7 @@ import { fromFetch } from 'rxjs/fetch';
 import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, toUtf8Bytes, verifyMessage, concat } from 'ethers/utils';
 import { Two, Zero, MaxUint256, WeiPerEther } from 'ethers/constants';
-import memoize from 'lodash/memoize';
 
-import { UserDeposit } from '../contracts/UserDeposit';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps, Latest } from '../types';
@@ -61,11 +59,6 @@ import {
 import { channelCanRoute, pfsInfo, pfsListInfo, packIOU, signIOU } from './utils';
 import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
 
-const oneToNAddress = memoize(
-  async (userDepositContract: UserDeposit) =>
-    userDepositContract.functions.one_to_n_address() as Promise<Address>,
-);
-
 /**
  * Codec for PFS API returned error
  *
@@ -94,7 +87,7 @@ function makeTimestamp(time?: Date): string {
 function fetchLastIou$(
   pfs: PFS,
   tokenNetwork: Address,
-  { address, signer, network, userDepositContract, latest$, config$ }: RaidenEpicDeps,
+  { address, signer, network, contractsInfo, latest$, config$ }: RaidenEpicDeps,
 ): Observable<IOU> {
   return defer(() => {
     const timestamp = makeTimestamp(),
@@ -121,7 +114,7 @@ function fetchLastIou$(
           receiver: pfs.address,
           chain_id: bigNumberify(network.chainId) as UInt<32>,
           amount: Zero as UInt<32>,
-          one_to_n_address: await oneToNAddress(userDepositContract),
+          one_to_n_address: contractsInfo.OneToN.address,
           expiration_block: bigNumberify(blockNumber).add(2 * 10 ** 5) as UInt<32>,
         }; // return empty/zeroed IOU
       }

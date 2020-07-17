@@ -27,6 +27,9 @@ import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
 import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
+import { UserDepositFactory } from './contracts/UserDepositFactory';
+import { MonitoringServiceFactory } from './contracts/MonitoringServiceFactory';
+import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
 
 /**
  * Returns contract information depending on the passed [[Network]]. Currently, only
@@ -341,3 +344,51 @@ export const isValidUrl = (url: string): boolean => {
       : /^(?:(http|https):\/\/)?([^\s\/$.?#&"']+\.)*[^\s\/$?#&"']+(?:(\d+))*$/;
   return regex.test(url);
 };
+
+/**
+ * Construct entire ContractsInfo using UserDeposit contract address as entrypoint
+ *
+ * @param provider - Ethers provider to use to fetch contracts data
+ * @param userDeposit - UserDeposit contract address as entrypoint
+ * @returns contracts info, with blockNumber as block of first registered tokenNetwork
+ */
+export async function fetchContractsInfo(
+  provider: JsonRpcProvider,
+  userDeposit: Address,
+): Promise<ContractsInfo> {
+  const userDepositContract = UserDepositFactory.connect(userDeposit, provider);
+
+  const oneToN = (await userDepositContract.one_to_n_address()) as Address;
+  const monitoringService = (await userDepositContract.msc_address()) as Address;
+  const monitoringServiceContract = MonitoringServiceFactory.connect(monitoringService, provider);
+
+  const tokenNetworkRegistry = (await monitoringServiceContract.token_network_registry()) as Address;
+  const tokenNetworkRegistryContract = TokenNetworkRegistryFactory.connect(
+    tokenNetworkRegistry,
+    provider,
+  );
+
+  const secretRegistry = (await tokenNetworkRegistryContract.secret_registry_address()) as Address;
+  const serviceRegistry = (await monitoringServiceContract.service_registry()) as Address;
+
+  const logs = await provider.getLogs({
+    ...tokenNetworkRegistryContract.filters.TokenNetworkCreated(null, null),
+    fromBlock: 1,
+    toBlock: 'latest',
+  });
+  let firstBlock = 0;
+  for (const { blockNumber } of logs) {
+    if (blockNumber) {
+      firstBlock = firstBlock ? Math.min(firstBlock, blockNumber) : blockNumber;
+    }
+  }
+
+  return {
+    TokenNetworkRegistry: { address: tokenNetworkRegistry, block_number: firstBlock },
+    ServiceRegistry: { address: serviceRegistry, block_number: firstBlock },
+    UserDeposit: { address: userDeposit, block_number: firstBlock },
+    SecretRegistry: { address: secretRegistry, block_number: firstBlock },
+    MonitoringService: { address: monitoringService, block_number: firstBlock },
+    OneToN: { address: oneToN, block_number: firstBlock },
+  };
+}

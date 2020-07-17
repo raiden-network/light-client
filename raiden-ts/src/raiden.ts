@@ -75,6 +75,7 @@ import {
   getContractWithSigner,
   waitConfirmation,
   callAndWaitMined,
+  fetchContractsInfo,
 } from './helpers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
@@ -305,7 +306,7 @@ export class Raiden {
    * @param storageOrState - Storage/localStorage-like object from where to load and store current
    *     state, initial RaidenState-like object, or a { storage; state? } object containing both.
    *     If a storage isn't provided, user must listen state$ changes on ensure it's persisted.
-   * @param contracts - Contracts deployment info
+   * @param contractsOrUserDepositAddress - Contracts deployment info, or UserDeposit address
    * @param config - Raiden configuration
    * @param subkey - Whether to use a derived subkey or not
    * @returns Promise to Raiden SDK client instance
@@ -319,7 +320,7 @@ export class Raiden {
       | RaidenState
       | { storage: Storage; state?: RaidenState | unknown }
       | unknown,
-    contracts?: ContractsInfo,
+    contractsOrUserDepositAddress?: ContractsInfo | string,
     config?: PartialRaidenConfig,
     subkey?: true,
   ): Promise<InstanceType<R>> {
@@ -338,8 +339,16 @@ export class Raiden {
     const network = await provider.getNetwork();
 
     // if no ContractsInfo, try to populate from defaults
-    if (!contracts) {
+    let contracts;
+    if (!contractsOrUserDepositAddress) {
       contracts = getContracts(network);
+    } else if (typeof contractsOrUserDepositAddress === 'string') {
+      // if an Address is provided, use it as UserDeposit contract address entrypoint and fetch
+      // all contracts from there
+      assert(Address.is(contractsOrUserDepositAddress), ErrorCodes.DTA_INVALID_ADDRESS);
+      contracts = await fetchContractsInfo(provider, contractsOrUserDepositAddress);
+    } else {
+      contracts = contractsOrUserDepositAddress;
     }
 
     const { signer, address, main } = await getSigner(account, provider, subkey);
