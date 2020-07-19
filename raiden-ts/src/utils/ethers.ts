@@ -4,7 +4,17 @@ import { JsonRpcProvider, Listener, EventType, Filter, Log } from 'ethers/provid
 import { Network } from 'ethers/utils';
 import { getNetwork as parseNetwork } from 'ethers/utils/networks';
 import { Observable, fromEventPattern, merge, from, of, EMPTY, combineLatest, defer } from 'rxjs';
-import { filter, first, map, mergeMap, share, toArray, debounceTime, tap } from 'rxjs/operators';
+import {
+  filter,
+  first,
+  map,
+  mergeMap,
+  share,
+  toArray,
+  debounceTime,
+  catchError,
+  exhaustMap,
+} from 'rxjs/operators';
 import sortBy from 'lodash/sortBy';
 
 import { isntNil } from './types';
@@ -43,29 +53,44 @@ export function fromEthersEvent<T>(
       resultSelector,
     ) as Observable<T>;
 
-  let first = 0;
-  let latestEventBlock = 0;
+  const blockQueue: number[] = []; // sorted 'fromBlock' queue, at most of [range] size
   return defer(() => {
-    // 'first' starts with subscription-time's private value set with provider.resetEventsBlock
-    first = (target as any)._lastBlockNumber || target.blockNumber || Number.POSITIVE_INFINITY;
+    // 'resetEventsBlock' is private, set at [[Raiden]] constructor, so we need 'any'
+    const resetBlock: number = (target as any)._lastBlockNumber;
+    const firstBlock = resetBlock && resetBlock > 0 ? resetBlock : target.blockNumber ?? 1;
+    blockQueue.push(firstBlock); // starts 'blockQueue' with subscription-time's resetEventsBlock
+
     return fromEthersEvent<number>(target, 'block');
   }).pipe(
     debounceTime(Math.ceil(target.pollingInterval / 10)), // debounce bursts of blocks
-    mergeMap(async (blockNumber, cnt) =>
-      target.getLogs({
-        ...event,
-        // on first [range] calls, getLogs since [first], unless an event was found on a previous
-        // call, on which case use block after [latestEventBlock];
-        // after [range] calls, ignore 'first' to get only since [-range] blocks
-        fromBlock: Math.max(
-          Math.min(blockNumber - range, cnt < range ? first : Number.POSITIVE_INFINITY),
-          latestEventBlock + 1,
-        ),
-        toBlock: 'latest',
-      }),
+    // exhaustMap will skip new events if it's still busy with a previous getLogs call,
+    // but next [fromBlock] in queue always includes range for any skipped block
+    exhaustMap((blockNumber) =>
+      defer(() =>
+        target.getLogs({ ...event, fromBlock: blockQueue[0], toBlock: blockNumber }),
+      ).pipe(
+        mergeMap((logs) => {
+          // if queue is full, pop_front 'fromBlock' which was just queried
+          if (blockQueue.length >= range) blockQueue.shift();
+          // push_back next block iff getLogs didn't throw, queue is never empty
+          blockQueue.push(blockNumber + 1);
+
+          // if a log came, clear queued smaller blocks than it and push_front block after
+          const afterLogBlock =
+            Math.max(0, ...logs.map((log) => log.blockNumber).filter(isntNil)) + 1;
+          if (blockQueue[0] <= afterLogBlock)
+            blockQueue.splice(
+              0, // from queue's front
+              blockQueue.filter((block) => block <= afterLogBlock).length, // clear older blocks
+              afterLogBlock, // push_front block after newest log's blockNumber
+            );
+
+          return from(logs); // unwind logs
+        }),
+        // `getLogs` errors skip [blockQueue] update, so previous fromBlock is retried later
+        catchError(() => EMPTY),
+      ),
     ),
-    mergeMap((logs) => from(logs)), // unwind
-    tap((log) => (latestEventBlock = Math.max(latestEventBlock, log.blockNumber!))),
   );
 }
 
