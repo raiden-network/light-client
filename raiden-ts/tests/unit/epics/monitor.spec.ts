@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { raidenEpicDeps, makeLog, makeAddress, makeHash, makeRaidens, waitBlock } from '../mocks';
+import {
+  raidenEpicDeps,
+  makeLog,
+  makeAddress,
+  makeHash,
+  makeRaidens,
+  waitBlock,
+  providersEmit,
+} from '../mocks';
 import { epicFixtures, tokenNetwork, ensureChannelIsOpen, id } from '../fixtures';
 
 import { bigNumberify, BigNumberish, defaultAbiCoder } from 'ethers/utils';
@@ -336,21 +344,12 @@ test('msMonitorNewBPEpic', async () => {
   const monitoringService = makeAddress();
   const nonce = Two as UInt<8>;
   const txHash = makeHash();
-  const txBlock = 68;
 
   // emit a NewBalanceProofReceived event
-  raiden.deps.provider.emit(
-    monitoringServiceContract.filters.NewBalanceProofReceived(
-      null,
-      null,
-      null,
-      null,
-      null,
-      raiden.address,
-    ),
+  await providersEmit(
+    {},
     makeLog({
       transactionHash: txHash,
-      blockNumber: txBlock,
       filter: monitoringServiceContract.filters.NewBalanceProofReceived(
         null,
         null,
@@ -365,8 +364,8 @@ test('msMonitorNewBPEpic', async () => {
       ),
     }),
   );
-
   await waitBlock();
+
   expect(raiden.output).toContainEqual(
     msBalanceProofSent({
       tokenNetwork,
@@ -376,8 +375,8 @@ test('msMonitorNewBPEpic', async () => {
       nonce,
       monitoringService,
       txHash,
-      txBlock,
-      confirmed: true,
+      txBlock: expect.any(Number),
+      confirmed: undefined,
     }),
   );
 });

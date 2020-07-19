@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Fixed
+- [#1923] Fix `fromEthersEvent` ranges fetching in case of temporary connectivity loss
 
 ### Added
 - [#1910] Add option to `mint` tokens for any address
@@ -15,6 +16,7 @@
 [#1910]: https://github.com/raiden-network/light-client/pull/1910
 [#1913]: https://github.com/raiden-network/light-client/pull/1913
 [#1824]: https://github.com/raiden-network/light-client/issues/1824
+[#1923]: https://github.com/raiden-network/light-client/issues/1923
 
 ## [0.10.0] - 2020-07-13
 ### Fixed
