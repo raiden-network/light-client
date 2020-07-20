@@ -179,7 +179,11 @@ export default class AccountContent extends Mixins(NavigationMixin) {
   /* istanbul ignore next */
   async downloadLogs() {
     const [lastTime, content] = await getLogsFromStore();
-    const filename = `raiden_${new Date(lastTime).toISOString()}.log`;
+    let account = '';
+    try {
+      account = `${await this.$raiden.getAccount()}_`;
+    } catch (err) {}
+    const filename = `raiden_${account}${new Date(lastTime).toISOString()}.log`;
     const file = new File([content], filename, { type: 'text/plain' });
     const url = URL.createObjectURL(file);
     const el = document.createElement('a');
