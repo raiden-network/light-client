@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import logging from 'loglevel';
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
@@ -22,7 +23,6 @@ interface RaidenDB extends DBSchema {
 
 let db: IDBPDatabase<RaidenDB>;
 
-/* istanbul ignore next */
 function serializeError(e: Error): string {
   // special handling of Errors, since firefox doesn't like to structure-clone it
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1556604
@@ -36,7 +36,6 @@ function serializeError(e: Error): string {
   }
 }
 
-/* istanbul ignore next */
 function filterMessage(message: any[]) {
   if (message[0] === '%c prev state') return;
   if (message[0]?.startsWith?.('action %c')) return;
@@ -58,7 +57,6 @@ function filterMessage(message: any[]) {
   return message;
 }
 
-/* istanbul ignore next */
 function serialize(e: any): string {
   if (typeof e === 'string') return e;
   try {
@@ -89,7 +87,6 @@ async function setDbForLogger(loggerName: string) {
   await setupDb(loggerName);
 }
 
-/* istanbul ignore next */
 export async function setupLogStore(
   additionalLoggers: string[] = ['matrix']
 ): Promise<void> {
@@ -135,6 +132,16 @@ export async function setupLogStore(
   }
 }
 
+const redactions: readonly [RegExp, string][] = [
+  [/("?access_?token"?\s*[=:]\s*)("?)\w+("?)/gi, '$1$2<redacted>$3'],
+  [/("?secret"?\s*[=:]\s*)\[[^\]]+\]/gi, '$1["<redacted>"]'],
+  [/("?secret"?\s*[=:]\s*)("?)\w+("?)/gi, '$1$2<redacted>$3'],
+];
+function redactLogs(text: string): string {
+  for (const [re, repl] of redactions) text = text.replace(re, repl);
+  return text;
+}
+
 export async function getLogsFromStore(): Promise<[number, string]> {
   let content = '';
   let cursor = await db.transaction(storeName).store.openCursor();
@@ -159,5 +166,6 @@ export async function getLogsFromStore(): Promise<[number, string]> {
     content += `${time}${blockStr}${loggerStr} [${level}] \t=> ${line}\n`;
     cursor = await cursor.continue();
   }
+  content = redactLogs(content);
   return [lastTime, content];
 }
