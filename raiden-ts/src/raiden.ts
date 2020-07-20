@@ -345,7 +345,10 @@ export class Raiden {
     } else if (typeof contractsOrUserDepositAddress === 'string') {
       // if an Address is provided, use it as UserDeposit contract address entrypoint and fetch
       // all contracts from there
-      assert(Address.is(contractsOrUserDepositAddress), ErrorCodes.DTA_INVALID_ADDRESS);
+      assert(Address.is(contractsOrUserDepositAddress), [
+        ErrorCodes.DTA_INVALID_ADDRESS,
+        { contractsOrUserDepositAddress },
+      ]);
       contracts = await fetchContractsInfo(provider, contractsOrUserDepositAddress);
     } else {
       contracts = contractsOrUserDepositAddress;

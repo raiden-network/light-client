@@ -358,7 +358,6 @@ export async function fetchContractsInfo(
 ): Promise<ContractsInfo> {
   const userDepositContract = UserDepositFactory.connect(userDeposit, provider);
 
-  const oneToN = (await userDepositContract.one_to_n_address()) as Address;
   const monitoringService = (await userDepositContract.msc_address()) as Address;
   const monitoringServiceContract = MonitoringServiceFactory.connect(monitoringService, provider);
 
@@ -376,12 +375,10 @@ export async function fetchContractsInfo(
     fromBlock: 1,
     toBlock: 'latest',
   });
-  let firstBlock = 0;
-  for (const { blockNumber } of logs) {
-    if (blockNumber) {
-      firstBlock = firstBlock ? Math.min(firstBlock, blockNumber) : blockNumber;
-    }
-  }
+  const logBlocks = logs.map((log) => log.blockNumber).filter(isntNil);
+  const firstBlock = logBlocks.length ? Math.min(...logBlocks) : 0;
+
+  const oneToN = (await userDepositContract.one_to_n_address()) as Address;
 
   return {
     TokenNetworkRegistry: { address: tokenNetworkRegistry, block_number: firstBlock },
