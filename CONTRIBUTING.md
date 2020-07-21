@@ -10,7 +10,7 @@ and what the requirements for a pull request are to be opened against Raiden Lig
 - [Creating an issue](#creating-an-issue)
   - [Request features](#request-features)
   - [Report bugs](#report-bugs)
-- [Creating a rull request](#creating-a-pull-request)
+- [Creating a pull request](#creating-a-pull-request)
   - [Installation](#installation)
   - [Code style](#code-style)
     - [Observables](#observables)
