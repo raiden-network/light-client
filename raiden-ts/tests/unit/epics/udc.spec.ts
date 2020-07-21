@@ -35,6 +35,12 @@ describe('udcWithdraw', () => {
       0: amount,
       1: withdrawBlock,
     });
+    raiden.deps.userDepositContract.functions.withdraw_plans.mockResolvedValueOnce({
+      amount: Zero,
+      withdraw_block: Zero,
+      0: Zero,
+      1: Zero,
+    });
     const planTx = makeTransaction(1);
     raiden.deps.userDepositContract.functions.planWithdraw.mockResolvedValue(planTx);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -46,6 +52,7 @@ describe('udcWithdraw', () => {
     raiden.store.dispatch(udcWithdraw.request(undefined, { amount: amount as UInt<32> }));
 
     await waitBlock(raiden.deps.provider.blockNumber + confirmationBlocks);
+    await waitBlock();
     expect(raiden.output).toContainEqual(
       udcWithdraw.success(
         {
