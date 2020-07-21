@@ -1,133 +1,52 @@
 <template>
-  <div>
-    <v-row class="udc__description" justify="center" no-gutters>
-      <p>
-        {{ $t('udc.description') }}
-      </p>
+  <div class="udc">
+    <v-row class="udc__description" no-gutters>
+      {{ $t('udc.description') }}
     </v-row>
-    <v-row justify="center">
-      <v-col cols="10">
-        <h3 class="udc__sub-head">
-          {{ $t(mainnet ? 'udc.deposit' : 'udc.mint-deposit') }}
-        </h3>
-      </v-col>
-    </v-row>
-    <v-row v-if="!loading && !error" justify="center" no-gutters>
-      <v-col cols="6">
-        <v-text-field
-          v-model="amount"
-          autofocus
-          type="text"
-          :suffix="serviceToken"
-          class="udc__mint-deposit--amount"
-        />
-      </v-col>
-    </v-row>
-    <v-row v-else-if="error" justify="center">
-      <v-col cols="10">
-        <error-message :error="error" />
-      </v-col>
-    </v-row>
-    <v-row v-else class="udc__progress" justify="center">
-      <v-col cols="10">
-        <v-row>
-          <spinner />
-        </v-row>
-        <v-row no-gutters align="center" justify="center">
-          <span v-if="step === 'mint'">
-            {{
-              $t('udc-deposit-dialog.progress.mint', {
-                currency: serviceToken,
-              })
-            }}
-          </span>
-          <span v-else-if="step === 'approve'">
-            {{
-              $t('udc-deposit-dialog.progress.approve', {
-                currency: serviceToken,
-              })
-            }}
-          </span>
-          <span v-else-if="step === 'deposit'">
-            {{
-              $t('udc-deposit-dialog.progress.deposit', {
-                currency: serviceToken,
-              })
-            }}
-          </span>
-        </v-row>
-      </v-col>
-    </v-row>
-    <v-row v-if="!loading && !error" justify="center">
-      <v-col cols="10" class="text-center">
-        <p>
-          {{
-            $t('udc-deposit-dialog.available', {
-              balance: accountBalance,
-              currency: $t('app-header.currency'),
-            })
-          }}
-        </p>
-      </v-col>
-    </v-row>
-    <v-row v-if="!loading && !error" justify="center">
-      <action-button
-        arrow
-        :enabled="valid && !loading"
-        :text="
-          $t(
-            mainnet
-              ? 'udc-deposit-dialog.button-main'
-              : 'udc-deposit-dialog.button'
-          )
-        "
-        class="udc__action"
-        @click="udcDeposit()"
+    <v-row class="udc__balance" no-gutters justify="center">
+      {{ $t('udc.balance') }}
+      <amount-display
+        class="udc__balance__amount"
+        inline
+        :amount="udcCapacity"
+        :token="udcToken"
       />
     </v-row>
-    <v-row justify="center">
+    <v-row class="udc__actions" no-gutters justify="center">
+      <v-btn text class="udc__actions__button" @click="showUdcDeposit = true">
+        <v-img
+          width="70px"
+          height="65px"
+          :src="require('../../assets/deposit.svg')"
+        />
+        <span class="udc__actions__button--title">
+          {{ $t('udc.deposit') }}
+        </span>
+      </v-btn>
+      <v-btn text class="udc__actions__button" @click="withdrawFromUdc = true">
+        <v-img
+          width="70px"
+          height="65px"
+          :src="require('../../assets/withdrawal.svg')"
+        />
+        <span class="udc__actions__button--title">
+          {{ $t('udc.withdrawal') }}
+        </span>
+      </v-btn>
+    </v-row>
+    <v-row no-gutters justify="center">
       <v-col cols="10">
         <hr />
       </v-col>
     </v-row>
-    <v-row justify="center">
-      <v-col cols="10">
-        <p
-          :class="{
-            'udc__low-balance': !hasEnoughServiceTokens,
-          }"
-        >
-          {{ $t('udc.balance') }}
-          <amount-display inline :amount="udcCapacity" :token="udcToken" />
-          <v-btn
-            v-if="hasEnoughServiceTokens"
-            class="udc__withdrawal-button"
-            height="20px"
-            width="22px"
-            icon
-            @click="withdrawFromUdc = true"
-          >
-            <v-img
-              height="20px"
-              width="20px"
-              :src="require('@/assets/withdrawal.svg')"
-            ></v-img>
-          </v-btn>
-        </p>
-        <p
-          v-if="!hasEnoughServiceTokens"
-          :class="{
-            'udc__low-balance': !hasEnoughServiceTokens,
-          }"
-        >
-          {{
-            $t('udc.balance-too-low', {
-              symbol: serviceToken,
-            })
-          }}
-        </p>
-      </v-col>
+    <v-row v-if="!hasEnoughServiceTokens" class="udc__low-balance" no-gutters>
+      {{ $t('udc.balance-too-low', { symbol: serviceToken }) }}
     </v-row>
+    <udc-deposit-dialog
+      :visible="showUdcDeposit"
+      @cancel="showUdcDeposit = false"
+      @done="mintDone()"
+    />
     <udc-withdrawal-dialog
       :visible="withdrawFromUdc"
       :account-balance="accountBalance"
@@ -141,11 +60,9 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenError } from 'raiden-ts';
 import { Zero } from 'ethers/constants';
 
 import { Token } from '@/model/types';
-import { BalanceUtils } from '@/utils/balance-utils';
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
@@ -169,13 +86,11 @@ import Spinner from '@/components/icons/Spinner.vue';
 })
 export default class UDC extends Vue {
   amount: string = '10';
-  loading: boolean = false;
-  error: Error | RaidenError | null = null;
-  step: 'mint' | 'approve' | 'deposit' | '' = '';
   udcCapacity = Zero;
   hasEnoughServiceTokens = false;
   mainnet!: boolean;
   udcToken!: Token;
+  showUdcDeposit = false;
   withdrawFromUdc: boolean = false;
 
   get serviceToken(): string {
@@ -190,39 +105,17 @@ export default class UDC extends Vue {
     return /^[1-9]\d*$/.test(this.amount);
   }
 
-  async udcDeposit() {
-    this.error = null;
-    this.loading = true;
-
-    const token: Token = this.udcToken;
-    const depositAmount = BalanceUtils.parse(this.amount, token.decimals!);
-
-    try {
-      if (!this.mainnet && depositAmount.gt(token.balance!)) {
-        this.step = 'mint';
-        await this.$raiden.mint(token.address, depositAmount);
-      }
-
-      this.step = 'approve';
-      await this.$raiden.depositToUDC(depositAmount, () => {
-        this.step = 'deposit';
-      });
-      await this.updateUDCCapacity();
-      this.$emit('done');
-    } catch (e) {
-      this.error = e;
-    }
-
-    this.step = '';
-    this.loading = false;
-  }
-
   private async updateUDCCapacity() {
     const { monitoringReward } = this.$raiden;
     this.udcCapacity = await this.$raiden.getUDCCapacity();
     this.hasEnoughServiceTokens = !!(
       monitoringReward && this.udcCapacity.gte(monitoringReward)
     );
+  }
+
+  async mintDone() {
+    this.showUdcDeposit = false;
+    await this.updateUDCCapacity();
   }
 }
 </script>
@@ -231,79 +124,52 @@ export default class UDC extends Vue {
 @import '@/scss/colors';
 
 hr {
-  border: 0.5px solid #707070;
-  margin-top: 5px;
+  border: solid 1px $secondary-text-color;
+  margin-top: 50px;
 }
 
 .udc {
   &__description {
-    margin-top: 30px;
-    padding: 0 20px 0 20px;
+    margin: 30px 60px 0 60px;
     text-align: center;
   }
 
-  &__sub-head {
-    font-size: 20px;
-    text-align: center;
-  }
+  &__balance {
+    font-size: 24px;
+    margin-top: 80px;
 
-  &__low-balance {
-    color: $error-color;
-  }
-
-  &__progress {
-    margin-top: 20px;
-    span {
-      margin-top: 22px;
+    &__amount {
+      padding: 1px 0 0 10px;
     }
   }
 
-  &__mint-deposit {
-    &--amount {
-      font-size: 24px;
-      font-weight: bold;
-      color: $color-white;
+  &__actions {
+    margin-top: 30px;
 
-      ::v-deep {
-        input {
-          text-align: center;
-          max-width: 40px;
-          max-height: none;
-        }
+    &__button {
+      margin: 0 5px 0 5px;
+      height: 85px !important;
 
-        .v-input {
-          &__slot {
-            &::before {
-              border: none !important;
-            }
+      &--title {
+        font-size: 18px;
+        max-width: 0;
+        overflow: hidden;
+        padding-left: 15px;
+        transition: max-width 0.5s;
+      }
 
-            &::after {
-              border: none !important;
-            }
-          }
-        }
-
-        .v-text-field {
-          &__details {
-            display: none;
-          }
-
-          &__slot {
-            justify-content: center;
-          }
-
-          &__suffix {
-            padding-left: 8px;
-            color: white;
-            padding-right: 18px;
-          }
+      &:hover {
+        span {
+          max-width: 145px;
         }
       }
     }
   }
 
-  &__withdrawal-button {
-    margin-left: 20px;
+  &__low-balance {
+    color: $error-color;
+    font-size: 14px;
+    margin: 20px 52px 0 52px;
   }
 }
 </style>

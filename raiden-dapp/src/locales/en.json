@@ -107,7 +107,7 @@
     "description": "Your UDC (User Deposit Contract) contains utility tokens for your current account. The tokens are used to pay for services such as pathfinding and monitoring.",
     "deposit": "Deposit",
     "mint-deposit": "Mint and deposit",
-    "balance": "UDC Balance:",
+    "balance": "Your current UDC balance is:",
     "withdrawal": "Withdrawal",
     "asterisk": "*",
     "withdrawal-footnote": "Actual withdrawal amount might vary",

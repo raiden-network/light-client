@@ -79,20 +79,20 @@ describe('UDC.vue', () => {
     expect(text).not.toContain('udc.balance-too-low');
   });
 
-  test('mints and deposits to UDC', async () => {
-    wrapper.find('.udc__action button').trigger('click');
-    expect(wrapper.vm.$data.loading).toBe(true);
+  test('clicking deposit enables deposit dialog', async () => {
+    expect(wrapper.vm.$data.showUdcDeposit).toBe(false);
 
+    const depositButton = wrapper.findAll('button').at(0);
+    depositButton.trigger('click');
     await wrapper.vm.$nextTick();
-    await flushPromises();
 
-    expect(wrapper.vm.$data.loading).toBe(false);
+    expect(wrapper.vm.$data.showUdcDeposit).toBe(true);
   });
 
   test('clicking withdrawal button enables withdrawal dialog', async () => {
     expect(wrapper.vm.$data.withdrawFromUdc).toBe(false);
 
-    const withdrawalButton = wrapper.find('.udc__withdrawal-button');
+    const withdrawalButton = wrapper.findAll('button').at(1);
     withdrawalButton.trigger('click');
     await wrapper.vm.$nextTick();
 

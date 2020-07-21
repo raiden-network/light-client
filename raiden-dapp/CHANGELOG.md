@@ -11,6 +11,9 @@
 
 ### Changed
 
+- [#1768] Updated UDC screen
+
+[#1768]: https://github.com/raiden-network/light-client/issues/1768
 [#1786]: https://github.com/raiden-network/light-client/issues/1786
 [#1824]: https://github.com/raiden-network/light-client/issues/1824
 
