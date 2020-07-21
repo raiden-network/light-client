@@ -557,7 +557,7 @@ export const monitorRequestEpic = (
 
 export const udcWithdrawRequestEpic = (
   action$: Observable<RaidenAction>,
-  {}: Observable<RaidenState>,
+  state$: Observable<RaidenState>,
   { userDepositContract, address, log, signer }: RaidenEpicDeps,
 ): Observable<udcWithdraw.success | udcWithdraw.failure> =>
   action$.pipe(
@@ -590,7 +590,10 @@ export const udcWithdrawRequestEpic = (
       }).pipe(
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log }),
         mergeMap(({ transactionHash: txHash, blockNumber: txBlock }) =>
-          from(userDepositContract.functions.withdraw_plans(address)).pipe(
+          state$.pipe(
+            pluckDistinct('blockNumber'),
+            exhaustMap(() => userDepositContract.functions.withdraw_plans(address)),
+            first(({ amount }) => amount.gte(action.meta.amount)),
             map(({ amount, withdraw_block }) =>
               udcWithdraw.success(
                 {
