@@ -63,7 +63,7 @@ A technical deep dive into the SDK architecture, technologies, tips and details 
 
 ## Getting Started
 
-Go to the [full documentation including this readme and the documentation of the SDK classes, enums and interfaces.](https://lightclient.raiden.network/docs/installing/) to learn how to install and use the Light Client SDK.
+Go to the [full documentation including this readme and the documentation of the SDK classes, enums and interfaces.](https://lightclient.raiden.network/docs/installing-sdk/) to learn how to install and use the Light Client SDK.
 
 ## Contributing
 
