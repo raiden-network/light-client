@@ -459,9 +459,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     jest.spyOn(userDepositContract.functions, func as keyof UserDeposit['functions']);
   }
 
-  userDepositContract.functions.one_to_n_address.mockResolvedValue(
-    '0x0A0000000000000000000000000000000000000a',
-  );
+  userDepositContract.functions.one_to_n_address.mockResolvedValue(oneToNAddress);
   userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
@@ -508,6 +506,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       },
       MonitoringService: {
         address: monitoringServiceContract.address as Address,
+        block_number: 102,
+      },
+      OneToN: {
+        address: oneToNAddress,
         block_number: 102,
       },
     },
@@ -881,6 +883,10 @@ export async function makeRaiden(
     },
     MonitoringService: {
       address: monitoringServiceContract.address as Address,
+      block_number: 102,
+    },
+    OneToN: {
+      address: oneToNAddress,
       block_number: 102,
     },
   };

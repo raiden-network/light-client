@@ -156,7 +156,7 @@ describe('Raiden', () => {
   });
 
   test('create from other params and RaidenState', async () => {
-    expect.assertions(13);
+    expect.assertions(14);
 
     const raiden0State = await raiden.state$.pipe(first()).toPromise();
     raiden.stop();
@@ -222,6 +222,7 @@ describe('Raiden', () => {
                 UserDeposit: { address: partner as Address, block_number: 2 },
                 SecretRegistry: { address: partner as Address, block_number: 3 },
                 MonitoringService: { address: partner as Address, block_number: 3 },
+                OneToN: { address: partner as Address, block_number: 3 },
               },
               address: accounts[1] as Address,
             },
@@ -232,15 +233,42 @@ describe('Raiden', () => {
       ),
     ).rejects.toThrow(/Mismatch between network or registry address and loaded state/i);
 
-    // success when using address of account on provider and initial state
+    // success when using address of account on provider and initial state,
+    // and pass UserDeposit address to fetch contracts info from
     const raiden1 = await Raiden.create(
       provider,
       accounts[1],
       makeInitialState({ network, contractsInfo, address: accounts[1] as Address }, { config }),
-      contractsInfo,
+      contractsInfo.UserDeposit.address,
       config,
     );
     expect(raiden1).toBeInstanceOf(Raiden);
+    expect(raiden1.contractsInfo).toMatchObject({
+      TokenNetworkRegistry: {
+        address: contractsInfo.TokenNetworkRegistry.address,
+        block_number: expect.any(Number),
+      },
+      ServiceRegistry: {
+        address: contractsInfo.ServiceRegistry.address,
+        block_number: expect.any(Number),
+      },
+      UserDeposit: {
+        address: contractsInfo.UserDeposit.address,
+        block_number: expect.any(Number),
+      },
+      SecretRegistry: {
+        address: contractsInfo.SecretRegistry.address,
+        block_number: expect.any(Number),
+      },
+      MonitoringService: {
+        address: contractsInfo.MonitoringService.address,
+        block_number: expect.any(Number),
+      },
+      OneToN: {
+        address: contractsInfo.OneToN.address,
+        block_number: expect.any(Number),
+      },
+    });
 
     // test Raiden.started, not yet started
     expect(raiden1.started).toBeUndefined();
