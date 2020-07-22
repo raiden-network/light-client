@@ -1,14 +1,17 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/index.ts',
+  entry: {
+    main: './src/index.ts',
+    raiden: './src/raiden.ts',
+  },
   target: 'node',
   mode: 'production',
   // devtool: 'inline-source-map',
   devtool: 'cheap-source-map',
   output: {
     path: path.resolve(__dirname, 'build'),
-    filename: 'bundle.js',
+    filename: '[name].bundle.js',
   },
   stats: {
     // Ignore warnings due to yarg's dynamic module loading

@@ -5,6 +5,7 @@ importers:
     dependencies:
       '@types/http-errors': 1.8.0
       '@types/morgan': 1.9.1
+      cors: 2.8.5
       ethers: 4.0.47
       express: 4.17.1
       http-errors: 1.8.0
@@ -46,6 +47,7 @@ importers:
       '@types/yargs': ^15.0.5
       '@typescript-eslint/eslint-plugin': ^3.7.0
       '@typescript-eslint/parser': ^3.7.0
+      cors: ^2.8.5
       eslint: ^7.5.0
       eslint-config-prettier: ^6.11.0
       eslint-plugin-import: ^2.22.0
@@ -2370,7 +2372,7 @@ packages:
       jest-resolve: 26.1.0_jest-resolve@26.1.0
       jest-resolve-dependencies: 26.1.0
       jest-runner: 26.1.0_canvas@2.6.1
-      jest-runtime: 26.1.0_canvas@2.6.1
+      jest-runtime: 26.1.0
       jest-snapshot: 26.1.0
       jest-util: 26.1.0
       jest-validate: 26.1.0
@@ -7372,7 +7374,6 @@ packages:
     dependencies:
       object-assign: 4.1.1
       vary: 1.1.2
-    dev: true
     engines:
       node: '>= 0.10'
     resolution:
@@ -12292,7 +12293,7 @@ packages:
       jest-environment-jsdom: 26.1.0_canvas@2.6.1
       jest-environment-node: 26.1.0
       jest-get-type: 26.0.0
-      jest-jasmine2: 26.1.0_canvas@2.6.1
+      jest-jasmine2: 26.1.0
       jest-regex-util: 26.0.0
       jest-resolve: 26.1.0_jest-resolve@26.1.0
       jest-util: 26.1.0
@@ -12567,32 +12568,6 @@ packages:
       canvas: '*'
     resolution:
       integrity: sha512-1IPtoDKOAG+MeBrKvvuxxGPJb35MTTRSDglNdWWCndCB3TIVzbLThRBkwH9P081vXLgiJHZY8Bz3yzFS803xqQ==
-  /jest-jasmine2/26.1.0_canvas@2.6.1:
-    dependencies:
-      '@babel/traverse': 7.10.5
-      '@jest/environment': 26.1.0
-      '@jest/source-map': 26.1.0
-      '@jest/test-result': 26.1.0
-      '@jest/types': 26.1.0
-      chalk: 4.1.0
-      co: 4.6.0
-      expect: 26.1.0
-      is-generator-fn: 2.1.0
-      jest-each: 26.1.0
-      jest-matcher-utils: 26.1.0
-      jest-message-util: 26.1.0
-      jest-runtime: 26.1.0_canvas@2.6.1
-      jest-snapshot: 26.1.0
-      jest-util: 26.1.0
-      pretty-format: 26.1.0
-      throat: 5.0.0
-    dev: true
-    engines:
-      node: '>= 10.14.2'
-    peerDependencies:
-      canvas: '*'
-    resolution:
-      integrity: sha512-1IPtoDKOAG+MeBrKvvuxxGPJb35MTTRSDglNdWWCndCB3TIVzbLThRBkwH9P081vXLgiJHZY8Bz3yzFS803xqQ==
   /jest-junit/11.0.1:
     dependencies:
       mkdirp: 1.0.4
@@ -12856,7 +12831,7 @@ packages:
       jest-config: 26.1.0_canvas@2.6.1
       jest-docblock: 26.0.0
       jest-haste-map: 26.1.0
-      jest-jasmine2: 26.1.0_canvas@2.6.1
+      jest-jasmine2: 26.1.0
       jest-leak-detector: 26.1.0
       jest-message-util: 26.1.0
       jest-resolve: 26.1.0_jest-resolve@26.1.0
@@ -15280,7 +15255,6 @@ packages:
     resolution:
       integrity: sha512-fexhUFFPTGV8ybAtSIGbV6gOkSv8UtRbDBnAyLQw4QPKkgNlsH2ByPGtMUqdWkos6YCRmAqViwgZrJc/mRDzZQ==
   /object-assign/4.1.1:
-    dev: true
     engines:
       node: '>=0.10.0'
     resolution:
@@ -19510,7 +19484,7 @@ packages:
       bs-logger: 0.2.6
       buffer-from: 1.1.1
       fast-json-stable-stringify: 2.1.0
-      jest: 26.1.0_canvas@2.6.1
+      jest: 26.1.0
       jest-util: 26.1.0
       json5: 2.1.3
       lodash.memoize: 4.1.2
