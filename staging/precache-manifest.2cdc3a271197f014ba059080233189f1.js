@@ -12,7 +12,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/config.json.example"
   },
   {
-    "revision": "50f1551792269b152b37",
+    "revision": "11342cd587ec1007a7bf",
     "url": "/staging/css/app.eb0b879b.css"
   },
   {
@@ -316,12 +316,12 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/img/withdrawal.c80c3337.svg"
   },
   {
-    "revision": "adebde892fb54b7b10d053e8054d7d41",
+    "revision": "734d411f26aa6f5f796fec26355463d4",
     "url": "/staging/index.html"
   },
   {
-    "revision": "50f1551792269b152b37",
-    "url": "/staging/js/app.d0959582.js"
+    "revision": "11342cd587ec1007a7bf",
+    "url": "/staging/js/app.a3d512e5.js"
   },
   {
     "revision": "bfee43e91bcf52a26a64",
