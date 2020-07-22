@@ -43,6 +43,7 @@
   "dependencies": {
     "@types/http-errors": "^1.8.0",
     "@types/morgan": "^1.9.1",
+    "cors": "^2.8.5",
     "ethers": "^4.0.47",
     "express": "^4.17.1",
     "http-errors": "^1.8.0",

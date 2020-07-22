@@ -1,4 +1,5 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import createError from 'http-errors';
 import logger from 'morgan';
 import { Cli } from './types';
@@ -18,9 +19,10 @@ function internalErrorHandler(
   next(createError(500, error.message));
 }
 
-export function makeApp(this: Cli): Express {
+export function makeApp(this: Cli, corsOrigin?: string): Express {
   const app = express();
   app.use(express.json());
+  if (corsOrigin) app.use(cors({ origin: corsOrigin }));
   app.use(
     logger(
       ':remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
