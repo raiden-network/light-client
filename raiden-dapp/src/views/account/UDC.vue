@@ -101,10 +101,6 @@ export default class UDC extends Vue {
     await this.updateUDCCapacity();
   }
 
-  get valid(): boolean {
-    return /^[1-9]\d*$/.test(this.amount);
-  }
-
   private async updateUDCCapacity() {
     const { monitoringReward } = this.$raiden;
     this.udcCapacity = await this.$raiden.getUDCCapacity();
