@@ -13,6 +13,7 @@ import {
   exhaustMap,
   takeUntil,
   ignoreElements,
+  switchMap,
 } from 'rxjs/operators';
 
 import { newBlock } from '../../channels/actions';
@@ -25,9 +26,9 @@ import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { RaidenError, ErrorCodes } from '../../utils/error';
-import { getEventsStream } from '../../utils/ethers';
+import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
 import { pluckDistinct } from '../../utils/rx';
-import { Hash, Secret, Signed, UInt } from '../../utils/types';
+import { Hash, Secret, Signed, UInt, isntNil } from '../../utils/types';
 import {
   transfer,
   transferSecret,
@@ -286,18 +287,29 @@ export const transferRequestUnlockEpic = (
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
+ * @param deps.provider - Provider instance
  * @param deps.secretRegistryContract - SecretRegistry contract instance
+ * @param deps.config$ - Config observable
  * @returns Observable of transferSecretRegister.success actions
  */
 export const monitorSecretRegistryEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { secretRegistryContract }: RaidenEpicDeps,
+  { provider, secretRegistryContract, config$ }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.success> =>
-  getEventsStream<[Hash, Secret, Event]>(secretRegistryContract, [
-    secretRegistryContract.filters.SecretRevealed(null, null),
-  ]).pipe(
-    withLatestFrom(state$),
+  config$.pipe(
+    pluckDistinct('confirmationBlocks'),
+    switchMap((confirmationBlocks) =>
+      fromEthersEvent(
+        provider,
+        secretRegistryContract.filters.SecretRevealed(null, null),
+        undefined,
+        confirmationBlocks,
+      ),
+    ),
+    map(logToContractEvent<[Hash, Secret, Event]>(secretRegistryContract)),
+    filter(isntNil),
+    withLatestFrom(state$, config$),
     filter(
       ([[secrethash, , { blockNumber }], { sent, received }]) =>
         // emits only if lock didn't expire yet
@@ -305,35 +317,32 @@ export const monitorSecretRegistryEpic = (
         (secrethash in received &&
           received[secrethash].transfer[1].lock.expiration.gte(blockNumber!)),
     ),
-    mergeMap(function* ([[secrethash, secret, event], { sent, received }]) {
+    mergeMap(function* ([
+      [secrethash, secret, event],
+      { blockNumber, sent, received },
+      { confirmationBlocks },
+    ]) {
+      const directions: Direction[] = [];
       if (
         secrethash in sent &&
         sent[secrethash].transfer[1].lock.expiration.gte(event.blockNumber!)
-      ) {
-        yield transferSecretRegister.success(
-          {
-            secret,
-            txHash: event.transactionHash! as Hash,
-            txBlock: event.blockNumber!,
-            confirmed: undefined,
-          },
-          { secrethash, direction: Direction.SENT },
-        );
-      }
+      )
+        directions.push(Direction.SENT);
       if (
         secrethash in received &&
         received[secrethash].transfer[1].lock.expiration.gte(event.blockNumber!)
-      ) {
+      )
+        directions.push(Direction.RECEIVED);
+      for (const direction of directions)
         yield transferSecretRegister.success(
           {
             secret,
             txHash: event.transactionHash! as Hash,
             txBlock: event.blockNumber!,
-            confirmed: undefined,
+            confirmed: event.blockNumber! + confirmationBlocks <= blockNumber,
           },
-          { secrethash, direction: Direction.RECEIVED },
+          { secrethash, direction },
         );
-      }
     }),
   );
 

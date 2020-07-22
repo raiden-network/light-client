@@ -1,24 +1,15 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { makeLog, makeRaiden, waitBlock, makeAddress, providersEmit, sleep } from './mocks';
-import { token, tokenNetwork } from './fixtures';
 
 import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { isError } from 'util';
-import { of } from 'rxjs';
 import { first } from 'rxjs/operators';
 
-import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils';
 import { LosslessNumber } from 'lossless-json';
 
-import {
-  fromEthersEvent,
-  getEventsStream,
-  patchSignSend,
-  getNetworkName,
-} from 'raiden-ts/utils/ethers';
+import { fromEthersEvent, patchSignSend, getNetworkName } from 'raiden-ts/utils/ethers';
 import {
   Address,
   BigNumberC,
@@ -52,112 +43,6 @@ test('fromEthersEvent', async () => {
   expect(blockNumber).toBe(1337);
   expect(onSpy).toHaveBeenCalledTimes(1);
   expect(removeListenerSpy).toHaveBeenCalledTimes(1);
-});
-
-describe('getEventsStream', () => {
-  type TokenNetworkCreatedEvent = [string, string, Event];
-
-  test('newEvents$ only', async () => {
-    expect.assertions(4);
-    const raiden = await makeRaiden();
-    const { registryContract } = raiden.deps;
-    const filter = registryContract.filters.TokenNetworkCreated(null, null);
-
-    const output: TokenNetworkCreatedEvent[] = [];
-    const sub = getEventsStream<TokenNetworkCreatedEvent>(registryContract, [
-      filter,
-    ]).subscribe((e) => output.push(e));
-
-    const log = makeLog({
-      filter: registryContract.filters.TokenNetworkCreated(token, tokenNetwork),
-    });
-    await providersEmit(filter, log);
-
-    await waitBlock();
-    await sleep(raiden.deps.provider.pollingInterval);
-
-    expect(output).toHaveLength(1);
-    const event = output[0];
-    expect(event[0]).toBe(token);
-    expect(event[1]).toBe(tokenNetwork);
-    expect(event[2]).toMatchObject({
-      address: registryContract.address,
-      blockNumber: expect.any(Number),
-      args: { '0': token, '1': tokenNetwork, length: 2 },
-    });
-
-    sub.unsubscribe();
-  });
-
-  test('pastEvents$ and newEvents$', async () => {
-    expect.assertions(10);
-    const raiden = await makeRaiden();
-    const { provider, registryContract } = raiden.deps;
-    const filter = registryContract.filters.TokenNetworkCreated(null, null);
-
-    const pastToken = makeAddress();
-    const pastTokenNetwork = makeAddress();
-
-    const pastLog = makeLog({
-      blockNumber: 999,
-      filter: registryContract.filters.TokenNetworkCreated(pastToken, pastTokenNetwork),
-    });
-
-    // ensure getEventsStream will need to wait for next block
-    provider.resetEventsBlock(20);
-    await providersEmit(filter, pastLog);
-
-    const output: TokenNetworkCreatedEvent[] = [];
-    const sub = getEventsStream<TokenNetworkCreatedEvent>(
-      registryContract,
-      [filter],
-      of(1),
-    ).subscribe((e) => output.push(e));
-
-    await waitBlock();
-    await waitBlock(1336);
-    await sleep(raiden.deps.provider.pollingInterval);
-
-    const log = makeLog({
-      blockNumber: 1337,
-      filter: registryContract.filters.TokenNetworkCreated(token, tokenNetwork),
-    });
-    await providersEmit(filter, log);
-
-    await waitBlock();
-    await sleep(raiden.deps.provider.pollingInterval);
-
-    expect(output).toHaveLength(2);
-
-    expect(output[1][0]).toBe(token);
-    expect(output[1][1]).toBe(tokenNetwork);
-    expect(output[1][2]).toMatchObject({
-      address: registryContract.address,
-      blockNumber: 1337,
-      args: { '0': token, '1': tokenNetwork, length: 2 },
-    });
-
-    expect(output[0][0]).toBe(pastToken);
-    expect(output[0][1]).toBe(pastTokenNetwork);
-
-    const pastEvent = output[0][2];
-    expect(pastEvent).toMatchObject({
-      address: registryContract.address,
-      blockNumber: 999,
-      args: { '0': pastToken, '1': pastTokenNetwork, length: 2 },
-    });
-    pastEvent.removeListener();
-
-    pastEvent.getBlock();
-    pastEvent.getTransaction();
-    pastEvent.getTransactionReceipt();
-
-    expect(provider.getBlock).toHaveBeenCalledWith(pastLog.blockHash);
-    expect(provider.getTransaction).toHaveBeenCalledWith(pastLog.transactionHash);
-    expect(provider.getTransactionReceipt).toHaveBeenCalledWith(pastLog.transactionHash);
-
-    sub.unsubscribe();
-  });
 });
 
 test('patchSignSend', async () => {

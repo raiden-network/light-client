@@ -39,7 +39,7 @@ import { assertTx, channelAmounts, groupChannel$ } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
-import { getEventsStream } from '../utils/ethers';
+import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { pluckDistinct } from '../utils/rx';
 import { Capabilities } from '../constants';
@@ -337,6 +337,7 @@ export const pfsFeeUpdateEpic = (
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps object
+ * @param deps.provider - Provider instance
  * @param deps.serviceRegistryContract - ServiceRegistry contract instance
  * @param deps.contractsInfo - Contracts info mapping
  * @param deps.config$ - Config observable
@@ -345,22 +346,31 @@ export const pfsFeeUpdateEpic = (
 export const pfsServiceRegistryMonitorEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
+  { provider, serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
 ): Observable<pfsListUpdated> =>
-  config$.pipe(
+  combineLatest([
     // monitors config.pfs, and only monitors contract if it's empty
-    pluckDistinct('pfs'),
-    switchMap((pfs) =>
+    config$.pipe(pluckDistinct('pfs')),
+    config$.pipe(pluckDistinct('confirmationBlocks')),
+  ]).pipe(
+    switchMap(([pfs, confirmationBlocks]) =>
       pfs !== '' && pfs !== undefined
         ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
           EMPTY
-        : // type of elements emitted by getEventsStream (past and new events coming from contract):
-          // [service, valid_till, deposit_amount, deposit_contract, Event]
-          getEventsStream<[Address, BigNumber, UInt<32>, Address, Event]>(
-            serviceRegistryContract,
-            [serviceRegistryContract.filters.RegisteredService(null, null, null, null)],
-            of(contractsInfo.ServiceRegistry.block_number), // at boot, always fetch from deploy block
+        : fromEthersEvent(
+            provider,
+            serviceRegistryContract.filters.RegisteredService(null, null, null, null),
+            undefined,
+            confirmationBlocks,
+            contractsInfo.ServiceRegistry.block_number,
           ).pipe(
+            map(
+              // [service, valid_till, deposit_amount, deposit_contract, Event]
+              logToContractEvent<[Address, BigNumber, UInt<32>, Address, Event]>(
+                serviceRegistryContract,
+              ),
+            ),
+            filter(isntNil),
             groupBy(([service]) => service),
             mergeMap((grouped$) =>
               grouped$.pipe(
@@ -664,14 +674,17 @@ export const udcWithdrawPlannedEpic = (
       }).pipe(
         assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log }),
         concatMap(({ transactionHash, blockNumber }) =>
-          defer(() => contract.functions.balances(address)).pipe(
+          state$.pipe(
+            pluckDistinct('blockNumber'),
+            exhaustMap(() => contract.functions.balances(address)),
+            first((newBalance) => newBalance.lt(balance)),
             map((newBalance) =>
               udcWithdrawn(
                 {
                   withdrawal: balance.sub(newBalance) as UInt<32>,
                   txHash: transactionHash,
                   txBlock: blockNumber,
-                  confirmed: undefined,
+                  confirmed: undefined, // let confirmationEpic confirm this, values only FYI
                 },
                 action.meta,
               ),
@@ -698,30 +711,40 @@ export const udcWithdrawPlannedEpic = (
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
+ * @param deps.provider - Provider instance
  * @param deps.monitoringServiceContract - MonitoringService contract instance
  * @param deps.address - Our address
+ * @param deps.config$ - Config observable
  * @returns Observable of msBalanceProofSent actions
  */
 export const msMonitorNewBPEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { monitoringServiceContract, address }: RaidenEpicDeps,
-): Observable<msBalanceProofSent> => {
-  // NewBalanceProofReceived event: [tokenNetwork, channelId, reward, nonce, monitoringService, ourAddress]
-  return getEventsStream<[Address, UInt<32>, UInt<32>, UInt<8>, Address, Address, Event]>(
-    monitoringServiceContract,
-    [
-      monitoringServiceContract.filters.NewBalanceProofReceived(
-        null,
-        null,
-        null,
-        null,
-        null,
-        address,
+  { provider, monitoringServiceContract, address, config$ }: RaidenEpicDeps,
+): Observable<msBalanceProofSent> => // NewBalanceProofReceived event: [tokenNetwork, channelId, reward, nonce, monitoringService, ourAddress]
+  config$.pipe(
+    pluckDistinct('confirmationBlocks'),
+    switchMap((confirmationBlocks) =>
+      fromEthersEvent(
+        provider,
+        monitoringServiceContract.filters.NewBalanceProofReceived(
+          null,
+          null,
+          null,
+          null,
+          null,
+          address,
+        ),
+        undefined,
+        confirmationBlocks,
       ),
-    ],
-    // no fromBlock, since we want to always track since 'resetEventsBlock'
-  ).pipe(
+    ),
+    map(
+      logToContractEvent<[Address, UInt<32>, UInt<32>, UInt<8>, Address, Address, Event]>(
+        monitoringServiceContract,
+      ),
+    ),
+    filter(isntNil),
     // should never fail, as per filter
     filter(([, , , , , raidenAddress]) => raidenAddress === address),
     withLatestFrom(state$),
@@ -744,7 +767,6 @@ export const msMonitorNewBPEpic = (
     }),
     filter(isntNil),
   );
-};
 
 function waitForMatrixPresenceResponse$(
   action$: Observable<RaidenAction>,

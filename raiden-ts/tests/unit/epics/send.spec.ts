@@ -1910,12 +1910,12 @@ describe('monitorSecretRegistryEpic', () => {
         data: secret, // non-indexed secret
       }),
     );
-    await waitBlock();
-    await waitBlock(raiden.deps.provider.blockNumber + raiden.config.confirmationBlocks + 1);
+    await waitBlock(txBlock);
+    await waitBlock(txBlock + raiden.config.confirmationBlocks + 1);
 
     expect(raiden.output).toContainEqual(
       transferSecretRegister.success(
-        { secret, txHash, txBlock, confirmed: undefined },
+        { secret, txHash, txBlock, confirmed: true },
         { direction: Direction.SENT, secrethash },
       ),
     );

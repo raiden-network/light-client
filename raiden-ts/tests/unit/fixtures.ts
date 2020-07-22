@@ -9,7 +9,6 @@ import {
   waitBlock,
   providersEmit,
   makeLog,
-  sleep,
 } from './mocks';
 
 import { Subject } from 'rxjs';
@@ -245,7 +244,6 @@ export async function ensureChannelIsOpen([raiden, partner]: [
     }),
   );
   await waitBlock(openBlock);
-  await sleep(raiden.deps.provider.pollingInterval);
   await waitBlock(openBlock + confirmationBlocks + 1); // confirmation
   assert(getChannel(raiden, partner), 'Raiden channel not open');
   assert(getChannel(partner, raiden), 'Partner channel not open');
@@ -285,7 +283,6 @@ export async function ensureChannelIsDeposited(
     getChannel(partner, raiden).partner.deposit.lt(totalDeposit)
   ) {
     await waitBlock();
-    await sleep(raiden.deps.provider.pollingInterval);
   }
 }
 
@@ -314,7 +311,6 @@ export async function ensureChannelIsClosed([raiden, partner]: [
     }),
   );
   await waitBlock(closeBlock);
-  await sleep(raiden.deps.provider.pollingInterval);
   await waitBlock(closeBlock + confirmationBlocks + 1); // confirmation
   assert(closedStates.includes(getChannel(raiden, partner)?.state), 'Raiden channel not closed');
   assert(closedStates.includes(getChannel(partner, raiden)?.state), 'Partner channel not closed');
@@ -347,7 +343,6 @@ export async function ensureChannelIsSettled([raiden, partner]: [
     }),
   );
   await waitBlock(settleBlock);
-  await sleep(raiden.deps.provider.pollingInterval);
   await waitBlock(settleBlock + confirmationBlocks + 1); // confirmation
   assert(!getChannel(raiden, partner), 'Raiden channel not settled');
   assert(!getChannel(partner, raiden), 'Partner channel not settled');
