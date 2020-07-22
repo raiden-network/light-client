@@ -34,19 +34,23 @@ const tokens = createReducer(initialState.tokens).handle(
     state[token] === tokenNetwork ? state : { ...state, [token]: tokenNetwork },
 );
 
+function removeAction(pendingTxs: readonly ConfirmableAction[], action: ConfirmableAction) {
+  return pendingTxs.filter(
+    (a) => a.type !== action.type || action.payload.txHash !== a.payload.txHash,
+  );
+}
+
 const pendingTxs: Reducer<RaidenState['pendingTxs'], RaidenAction> = (
   state = initialState.pendingTxs,
   action: RaidenAction,
 ): RaidenState['pendingTxs'] => {
   // filter out non-ConfirmableActions's
   if (!ConfirmableAction.is(action)) return state;
-  // if confirmed==undefined, add action to state
-  else if (action.payload.confirmed === undefined) return [...state, action];
+  // if confirmed==undefined, deduplicate and add action to state
+  else if (action.payload.confirmed === undefined) return [...removeAction(state, action), action];
   // else (either confirmed or removed), remove from state
   else {
-    const newState = state.filter(
-      (a) => a.type !== action.type || action.payload.txHash !== a.payload.txHash,
-    );
+    const newState = removeAction(state, action);
     if (newState.length !== state.length) return newState;
     return state;
   }

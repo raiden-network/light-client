@@ -687,6 +687,7 @@ const serviceRegistryAddress = makeAddress();
 const svtAddress = makeAddress();
 const oneToNAddress = makeAddress();
 const udcAddress = makeAddress();
+const pollingInterval = 10;
 
 /**
  * Create a mock of a Raiden client for epics
@@ -704,7 +705,7 @@ export async function makeRaiden(
   const network: Network = { name: 'testnet', chainId: 1337 };
   const { JsonRpcProvider } = jest.requireActual('ethers/providers');
   const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
-  provider.pollingInterval = 10;
+  provider.pollingInterval = pollingInterval;
   const signer = (wallet ?? makeWallet()).connect(provider);
   const address = signer.address as Address;
   const log = logging.getLogger(`raiden:${address}`);
@@ -1013,7 +1014,7 @@ export async function makeRaidens(length: number, start = true): Promise<MockedR
  * @param ms - milliseconds to wait
  * @returns Promise to void
  */
-export async function sleep(ms = 10): Promise<void> {
+export async function sleep(ms = pollingInterval): Promise<void> {
   return new Promise((resolve) => setTimeout(() => process.nextTick(resolve), ms));
 }
 
@@ -1029,6 +1030,7 @@ export async function providersEmit(eventName: EventType, ...args: any[]): Promi
     mockedClients.map((r) => new Promise((resolve) => r.deps.provider.once(eventName, resolve))),
   );
   mockedClients.forEach((r) => r.deps.provider.emit(eventName, ...args));
+  await sleep(); // fromEthersEvent needs to debounce emits
   await promise;
 }
 

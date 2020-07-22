@@ -191,6 +191,7 @@ export const withdrawSendTxEpic = (
             {
               txHash: receipt.transactionHash,
               txBlock: receipt.blockNumber,
+              // no sensitive value in payload, let confirmationEpic confirm it
               confirmed: undefined,
             },
             action.meta,

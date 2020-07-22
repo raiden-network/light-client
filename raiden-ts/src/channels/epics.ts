@@ -30,6 +30,8 @@ import {
   first,
   delayWhen,
   finalize,
+  concatMap,
+  takeUntil,
 } from 'rxjs/operators';
 import findKey from 'lodash/findKey';
 import sortBy from 'lodash/sortBy';
@@ -477,7 +479,11 @@ function fetchPastChannelEvents$(
   );
 }
 
-function fetchNewChannelEvents$([token, tokenNetwork]: [Address, Address], deps: RaidenEpicDeps) {
+function fetchNewChannelEvents$(
+  fromBlock: number,
+  [token, tokenNetwork]: [Address, Address],
+  deps: RaidenEpicDeps,
+) {
   const { provider, getTokenNetworkContract, config$ } = deps;
   const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
 
@@ -491,7 +497,7 @@ function fetchNewChannelEvents$([token, tokenNetwork]: [Address, Address], deps:
   return config$.pipe(
     first(),
     mergeMap(({ confirmationBlocks }) =>
-      fromEthersEvent<Log>(provider, channelFilter, undefined, confirmationBlocks),
+      fromEthersEvent<Log>(provider, channelFilter, undefined, confirmationBlocks, fromBlock),
     ),
     map(logToContractEvent<ChannelEvents>(tokenNetworkContract)),
     filter(isntNil),
@@ -572,7 +578,7 @@ export const channelEventsEpic = (
                   [token as Address, tokenNetwork],
                   deps,
                 ).pipe(finalize(() => (pastDone$.next(true), pastDone$.complete()))),
-                fetchNewChannelEvents$([token as Address, tokenNetwork], deps).pipe(
+                fetchNewChannelEvents$(toBlock + 1, [token as Address, tokenNetwork], deps).pipe(
                   delayWhen(() => pastDone$), // holds new events until pastEvents fetching ends
                 ),
               ),
@@ -742,43 +748,39 @@ export const channelOpenEpic = (
       const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
       const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
 
-      return action$.pipe(
-        filter(channelOpen.success.is),
-        filter((a) => a.meta.tokenNetwork === tokenNetwork && a.meta.partner === partner),
-        pluck('payload', 'id'),
-        // channelId$ will "cache" matching channelOpen.success id, if needed, even unconfirmed
-        publishReplay(1, undefined, (channelId$) =>
-          // send openChannel transaction; errors here also unsubscribe from deposit
-          defer(() =>
-            tokenNetworkContract.functions.openChannel(
-              address,
-              partner,
-              action.payload.settleTimeout ?? settleTimeout,
+      // send openChannel transaction; errors here also unsubscribe from deposit
+      return defer(() =>
+        tokenNetworkContract.functions.openChannel(
+          address,
+          partner,
+          action.payload.settleTimeout ?? settleTimeout,
+        ),
+      ).pipe(
+        mergeMap((tx) =>
+          // openTx wait in parallel with approve + setTotalDeposit
+          merge(
+            of(tx).pipe(
+              assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log }),
+              ignoreElements(),
             ),
-          ).pipe(
-            mergeMap((tx) =>
-              // openTx wait in parallel with approve + setTotalDeposit
-              merge(
-                of(tx).pipe(
-                  assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log }),
-                  ignoreElements(),
-                ),
-                // errors on makeDeposit$ are handled independently and don't fail open request
-                // but the channelDeposit.failure action may be fired
-                makeDeposit$(
-                  [tokenContract, tokenNetworkContract],
-                  [onchainAddress, address, partner],
-                  action.payload.deposit,
-                  channelId$,
-                  { log },
-                  tx.nonce + 1,
-                ),
+            // errors on makeDeposit$ are handled independently and don't fail open request
+            // but the channelDeposit.failure action may be fired
+            makeDeposit$(
+              [tokenContract, tokenNetworkContract],
+              [onchainAddress, address, partner],
+              action.payload.deposit,
+              // channelId$ only emits once openChannel is confirmed and persisted
+              state$.pipe(
+                pluck('channels', channelKey({ tokenNetwork, partner }), 'id'),
+                filter(isntNil),
               ),
+              { log },
+              tx.nonce + 1,
             ),
-            // ignore success so it's picked by channelEventsEpic
-            catchError((error) => of(channelOpen.failure(error, action.meta))),
           ),
         ),
+        // ignore success so it's picked by channelEventsEpic
+        catchError((error) => of(channelOpen.failure(error, action.meta))),
       );
     }),
   );
@@ -1271,17 +1273,26 @@ function checkPendingAction(
 /**
  * Process new blocks and re-emit confirmed or removed actions
  *
+ * Events can also be confirmed by `fromEthersEvent + map(logToContractEvent)` combination.
+ * Notice that this epic does not know how to parse a tx log to update an action which payload was
+ * composed of values which can change upon reorgs. It only checks if given txHash is still present
+ * on the blockchain. `fromEthersEvent` can usually emit unconfirmed events multiple times to
+ * update/replace the pendingTxs action if needed, and also should emit the confirmed action with
+ * proper values; therefore, one should only relay on this epic to confirm an action if there's
+ * nothing critical depending on values in it's payload which can change upon reorgs.
+ *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
  * @param deps.config$ - Config observable
  * @param deps.provider - Eth provider
+ * @param deps.latest$ - Latest observable
  * @returns Observable of confirmed or removed actions
  */
 export const confirmationEpic = (
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { config$, provider }: RaidenEpicDeps,
+  { config$, provider, latest$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
   combineLatest(
     state$.pipe(pluckDistinct('blockNumber')),
@@ -1291,11 +1302,24 @@ export const confirmationEpic = (
     filter(([, pendingTxs]) => pendingTxs.length > 0),
     // exhaust will ignore blocks while concat$ is busy
     exhaustMap(([blockNumber, pendingTxs, confirmationBlocks]) =>
-      concat$(
-        ...pendingTxs
-          // only txs/confirmable actions which are more than confirmationBlocks in the past
-          .filter((a) => a.payload.txBlock + confirmationBlocks <= blockNumber)
-          .map((action) => checkPendingAction(action, provider, blockNumber, confirmationBlocks)),
+      from(pendingTxs).pipe(
+        // only txs/confirmable actions which are more than confirmationBlocks in the past
+        filter((a) => a.payload.txBlock + confirmationBlocks < blockNumber),
+        concatMap((action) =>
+          checkPendingAction(action, provider, blockNumber, confirmationBlocks).pipe(
+            // unsubscribe if it gets cleared from 'pendingTxs' while checking, to avoid duplicate
+            takeUntil(
+              latest$.pipe(
+                filter(
+                  ({ state }) =>
+                    !state.pendingTxs.some(
+                      (a) => a.type === action.type && a.payload.txHash === action.payload.txHash,
+                    ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     ),
   );
