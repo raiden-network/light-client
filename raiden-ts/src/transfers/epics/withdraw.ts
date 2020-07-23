@@ -1,4 +1,4 @@
-import { Observable, of, from, EMPTY, merge } from 'rxjs';
+import { Observable, of, from, EMPTY, merge, defer } from 'rxjs';
 import {
   filter,
   map,
@@ -15,7 +15,7 @@ import {
 } from 'rxjs/operators';
 
 import { Capabilities } from '../../constants';
-import { channelKey, assertTx } from '../../channels/utils';
+import { channelKey, assertTx, retryTx } from '../../channels/utils';
 import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
@@ -135,6 +135,7 @@ export const withdrawSendRequestMessageEpic = (
  * @param deps.address - Our address
  * @param deps.signer - Signer instance
  * @param deps.main - Main signer and address (if present)
+ * @param deps.provider - Provider instance
  * @param deps.log - Logger instance
  * @param deps.getTokenNetworkContract - TokenNetwork contract getter
  * @param deps.latest$ - Latest observable
@@ -143,7 +144,7 @@ export const withdrawSendRequestMessageEpic = (
 export const withdrawSendTxEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { address, signer, main, log, getTokenNetworkContract, latest$ }: RaidenEpicDeps,
+  { address, signer, main, provider, log, getTokenNetworkContract, latest$ }: RaidenEpicDeps,
 ): Observable<withdraw.success | withdraw.failure> =>
   action$.pipe(
     filter(withdrawMessage.success.is),
@@ -176,17 +177,21 @@ export const withdrawSendTxEpic = (
             onchainSigner,
           );
 
-          return tokenNetworkContract.functions.setTotalWithdraw(
-            channel.id,
-            address,
-            action.meta.totalWithdraw,
-            action.meta.expiration,
-            req.signature,
-            action.payload.message.signature,
+          return defer(() =>
+            tokenNetworkContract.functions.setTotalWithdraw(
+              channel.id,
+              address,
+              action.meta.totalWithdraw,
+              action.meta.expiration,
+              req.signature,
+              action.payload.message.signature,
+            ),
+          ).pipe(
+            assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, { log }),
+            retryTx(provider.pollingInterval, undefined, undefined, { log }),
           );
         }),
-        assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, { log }),
-        map((receipt) =>
+        map(([, receipt]) =>
           withdraw.success(
             {
               txHash: receipt.transactionHash,
