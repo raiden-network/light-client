@@ -74,28 +74,43 @@ describe('UDC.vue', () => {
     expect(text).toContain('0.0');
   });
 
-  test('dont show hint if balance is sufficient', async () => {
+  test('do not show hint if balance is sufficient', async () => {
     const text = wrapper.text();
     expect(text).not.toContain('udc.balance-too-low');
   });
 
-  test('mints and deposits to UDC', async () => {
-    wrapper.find('.udc__action button').trigger('click');
-    expect(wrapper.vm.$data.loading).toBe(true);
+  test('clicking deposit enables deposit dialog', async () => {
+    expect(wrapper.vm.$data.showUdcDeposit).toBe(false);
 
+    const depositButton = wrapper.findAll('button').at(0);
+    depositButton.trigger('click');
     await wrapper.vm.$nextTick();
-    await flushPromises();
 
-    expect(wrapper.vm.$data.loading).toBe(false);
+    expect(wrapper.vm.$data.showUdcDeposit).toBe(true);
   });
 
   test('clicking withdrawal button enables withdrawal dialog', async () => {
     expect(wrapper.vm.$data.withdrawFromUdc).toBe(false);
 
-    const withdrawalButton = wrapper.find('.udc__withdrawal-button');
+    const withdrawalButton = wrapper.findAll('button').at(1);
     withdrawalButton.trigger('click');
     await wrapper.vm.$nextTick();
 
     expect(wrapper.vm.$data.withdrawFromUdc).toBe(true);
+  });
+
+  test('mintDone method closes the deposit dialog', async () => {
+    jest.spyOn(wrapper.vm as any, 'mintDone');
+
+    const depositButton = wrapper.findAll('button').at(0);
+    depositButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.$data.showUdcDeposit).toBe(true);
+
+    (wrapper.vm as any).mintDone();
+
+    expect((wrapper.vm as any).mintDone).toHaveBeenCalled();
+    expect(wrapper.vm.$data.showUdcDeposit).toBe(false);
   });
 });
