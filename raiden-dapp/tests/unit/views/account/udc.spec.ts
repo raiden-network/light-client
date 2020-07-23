@@ -74,7 +74,7 @@ describe('UDC.vue', () => {
     expect(text).toContain('0.0');
   });
 
-  test('dont show hint if balance is sufficient', async () => {
+  test('do not show hint if balance is sufficient', async () => {
     const text = wrapper.text();
     expect(text).not.toContain('udc.balance-too-low');
   });
@@ -97,5 +97,20 @@ describe('UDC.vue', () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.vm.$data.withdrawFromUdc).toBe(true);
+  });
+
+  test('mintDone method closes the deposit dialog', async () => {
+    jest.spyOn(wrapper.vm as any, 'mintDone');
+
+    const depositButton = wrapper.findAll('button').at(0);
+    depositButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.$data.showUdcDeposit).toBe(true);
+
+    (wrapper.vm as any).mintDone();
+
+    expect((wrapper.vm as any).mintDone).toHaveBeenCalled();
+    expect(wrapper.vm.$data.showUdcDeposit).toBe(false);
   });
 });
