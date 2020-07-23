@@ -15,8 +15,8 @@
     <v-row class="udc__actions" no-gutters justify="center">
       <v-btn text class="udc__actions__button" @click="showUdcDeposit = true">
         <v-img
-          width="70px"
-          height="65px"
+          width="60px"
+          height="55px"
           :src="require('../../assets/deposit.svg')"
         />
         <span class="udc__actions__button--title">
@@ -25,8 +25,8 @@
       </v-btn>
       <v-btn text class="udc__actions__button" @click="withdrawFromUdc = true">
         <v-img
-          width="70px"
-          height="65px"
+          width="60px"
+          height="55px"
           :src="require('../../assets/withdrawal.svg')"
         />
         <span class="udc__actions__button--title">
@@ -143,8 +143,7 @@ hr {
     margin-top: 30px;
 
     &__button {
-      margin: 0 5px 0 5px;
-      height: 85px !important;
+      height: 75px !important;
 
       &--title {
         font-size: 18px;
