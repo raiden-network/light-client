@@ -1,7 +1,15 @@
-import { OperatorFunction, Observable, ReplaySubject } from 'rxjs';
-import { tap, mergeMap, map, pluck, filter, groupBy, takeUntil } from 'rxjs/operators';
+import {
+  OperatorFunction,
+  Observable,
+  ReplaySubject,
+  throwError,
+  timer,
+  MonoTypeOperatorFunction,
+} from 'rxjs';
+import { tap, mergeMap, map, pluck, filter, groupBy, takeUntil, retryWhen } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { ContractTransaction, ContractReceipt } from 'ethers/contract';
+import logging from 'loglevel';
 
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
@@ -165,19 +173,13 @@ export function assertTx(
   { log }: Pick<RaidenEpicDeps, 'log'>,
 ): OperatorFunction<
   ContractTransaction,
-  ContractReceipt & { transactionHash: Hash; blockNumber: number }
+  [ContractTransaction, ContractReceipt & { transactionHash: Hash; blockNumber: number }]
 > {
-  /**
-   * Operator to check for tx
-   *
-   * @param tx - pending contract tx
-   * @returns Observable of txHash
-   */
-  return (tx) =>
-    tx.pipe(
+  return (tx$) =>
+    tx$.pipe(
       tap((tx) => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
-      mergeMap((tx) => tx.wait()),
-      map((receipt) => {
+      mergeMap(async (tx) => [tx, await tx.wait()] as const),
+      map(([tx, receipt]) => {
         if (!receipt.status || !receipt.transactionHash || !receipt.blockNumber)
           throw new RaidenError(error, {
             status: receipt.status ?? null,
@@ -185,8 +187,54 @@ export function assertTx(
             blockNumber: receipt.blockNumber ?? null,
           });
         log.debug(`${method} tx "${receipt.transactionHash}" successfuly mined!`);
-        return receipt as ContractReceipt & { transactionHash: Hash; blockNumber: number };
+        return [tx, receipt] as [
+          ContractTransaction,
+          ContractReceipt & { transactionHash: Hash; blockNumber: number },
+        ];
       }),
+    );
+}
+
+export const txNonceErrors: readonly string[] = [
+  'replacement fee too low',
+  'gas price supplied is too low',
+  'nonce is too low',
+  'nonce has already been used',
+  'already known',
+];
+export const txFailErrors: readonly string[] = ['always failing transaction'];
+
+/**
+ * Re-subscribe/retry a transaction observable if a recoverable error is emitted
+ *
+ * For this to work, the input$ transaction observable must be re-subscribable:
+ * e.g. a promise wrapped in a `defer` callback.
+ *
+ * @param interval - interval between retries
+ * @param count - Maximum number of retries
+ * @param errors - Retry if error.message includes some string in this array (recoverable errors)
+ * @param options - Options object
+ * @param options.log - Logger instance
+ * @returns Monotype operator to re-subscribe to input observable
+ */
+export function retryTx<T>(
+  interval = 1000,
+  count = 10,
+  errors: readonly string[] = txNonceErrors,
+  { log }: { log: logging.Logger } = { log: logging },
+): MonoTypeOperatorFunction<T> {
+  return (input$) =>
+    input$.pipe(
+      retryWhen((err$) =>
+        err$.pipe(
+          mergeMap((err, i) => {
+            log.debug(`__retryTx ${i + 1}/${count} every ${interval}, error: `, err);
+            if (i < count && errors.some((error) => err.message?.includes?.(error)))
+              return timer(interval);
+            return throwError(err);
+          }),
+        ),
+      ),
     );
 }
 
