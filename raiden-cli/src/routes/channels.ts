@@ -199,9 +199,17 @@ async function updateChannel(this: Cli, request: Request, response: Response, ne
     if (request.body.state) {
       channel = await updateChannelState.call(this, channel, request.body.state);
     } else if (request.body.total_deposit) {
-      channel = await updateChannelDeposit.call(this, channel, request.body.total_deposit);
+      channel = await updateChannelDeposit.call(
+        this,
+        channel,
+        request.body.total_deposit.toString(),
+      );
     } else if (request.body.total_withdraw) {
-      channel = await updateChannelWithdraw.call(this, channel, request.body.total_withdraw);
+      channel = await updateChannelWithdraw.call(
+        this,
+        channel,
+        request.body.total_withdraw.toString(),
+      );
     }
     response.status(200).json(transformChannelFormatForApi(channel));
   } catch (error) {
@@ -210,7 +218,7 @@ async function updateChannel(this: Cli, request: Request, response: Response, ne
     } else if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
     } else if (isConflictError(error)) {
-      response.status(409).send(error.message);
+      response.status(409).json({ message: error.message });
     } else {
       next(error);
     }
