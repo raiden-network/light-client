@@ -96,7 +96,7 @@ async function doTransfer(this: Cli, request: Request, response: Response, next:
       response.status(402).send(error.message);
     } else if (isConflictError(error)) {
       const pfsErrorDetail = error.details?.errors ? ` (${error.details.errors})` : '';
-      response.status(409).send(error.message + pfsErrorDetail);
+      response.status(409).json({ message: error.message, details: pfsErrorDetail });
     } else {
       next(error);
     }
