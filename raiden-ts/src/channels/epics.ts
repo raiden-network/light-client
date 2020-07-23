@@ -69,7 +69,15 @@ import {
   channelSettleable,
   channelWithdrawn,
 } from './actions';
-import { assertTx, channelKey, groupChannel$, channelUniqueKey } from './utils';
+import {
+  assertTx,
+  channelKey,
+  groupChannel$,
+  channelUniqueKey,
+  retryTx,
+  txNonceErrors,
+  txFailErrors,
+} from './utils';
 
 /**
  * Receives an async function and returns an observable which will retry it every interval until it
@@ -620,15 +628,9 @@ const makeDeposit$ = (
   deposit: UInt<32> | undefined,
   channelId$: Observable<number>,
   { log }: Pick<RaidenEpicDeps, 'log'>,
-  approveNonce?: number,
 ): Observable<channelDeposit.failure> => {
   if (!deposit?.gt(Zero)) return EMPTY;
-
-  function stopRetryIfRejected(err: { message: string; code?: string | number }, count: number) {
-    // 4001 is Metamask's code for rejected/denied signature prompt
-    const metamaskRejectedErrorCode = 4001;
-    return count >= 10 || err?.code === metamaskRejectedErrorCode;
-  }
+  const pollingInterval = (tokenNetworkContract.provider as JsonRpcProvider).pollingInterval;
 
   return defer(() =>
     Promise.all([
@@ -642,17 +644,11 @@ const makeDeposit$ = (
         { current: balance.toString(), required: deposit.toString() },
       ]);
       if (allowance.gte(deposit)) return of(true);
-      return retryAsync$(
-        () =>
-          tokenContract.functions.approve(tokenNetworkContract.address, deposit, {
-            nonce: approveNonce,
-          }),
-        (tokenContract.provider as JsonRpcProvider).pollingInterval,
-        stopRetryIfRejected,
-      ).pipe(
-        // if needed, send approveTx and wait/assert it before proceeding
-        assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
-      );
+      // if needed, send approveTx and wait/assert it before proceeding; 'deposit' could be enough,
+      // but we send 'prevAllowance + deposit' in case there's a pending deposit
+      return defer(() =>
+        tokenContract.functions.approve(tokenNetworkContract.address, allowance.add(deposit)),
+      ).pipe(assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }));
     }),
     mergeMapTo(channelId$),
     take(1),
@@ -664,19 +660,17 @@ const makeDeposit$ = (
     ),
     mergeMap(([id, totalDeposit]) =>
       // send setTotalDeposit transaction
-      retryAsync$(
-        () =>
-          tokenNetworkContract.functions.setTotalDeposit(
-            id,
-            address,
-            totalDeposit.add(deposit),
-            partner,
-          ),
-        (tokenNetworkContract.provider as JsonRpcProvider).pollingInterval,
-        stopRetryIfRejected,
+      tokenNetworkContract.functions.setTotalDeposit(
+        id,
+        address,
+        totalDeposit.add(deposit),
+        partner,
       ),
     ),
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log }),
+    // retry from Promise.all's defer; also retry txFail errors, since estimateGas can lag behind
+    // just-opened channel or just-approved allowance
+    retryTx(pollingInterval, undefined, txNonceErrors.concat(txFailErrors), { log }),
     // ignore success so it's picked by channelEventsEpic
     ignoreElements(),
     catchError((error) =>
@@ -704,6 +698,7 @@ const makeDeposit$ = (
  * @param deps.signer - Signer instance
  * @param deps.address - Our address
  * @param deps.main - Main signer/address
+ * @param deps.provider - Provider instance
  * @param deps.getTokenContract - Token contract instance getter
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
@@ -717,6 +712,7 @@ export const channelOpenEpic = (
     signer,
     address,
     main,
+    provider,
     getTokenContract,
     getTokenNetworkContract,
     config$,
@@ -748,37 +744,35 @@ export const channelOpenEpic = (
       const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
       const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
 
-      // send openChannel transaction; errors here also unsubscribe from deposit
-      return defer(() =>
-        tokenNetworkContract.functions.openChannel(
-          address,
-          partner,
-          action.payload.settleTimeout ?? settleTimeout,
+      return merge(
+        // send openChannel transaction; errors here also unsubscribe from deposit
+        defer(() =>
+          tokenNetworkContract.functions.openChannel(
+            address,
+            partner,
+            action.payload.settleTimeout ?? settleTimeout,
+          ),
+        ).pipe(
+          // openTx to be called in parallel with 'approve'
+          assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log }),
+          retryTx(provider.pollingInterval, undefined, undefined, { log }),
+          ignoreElements(),
+        ),
+        // errors on makeDeposit$ are handled independently and don't fail open request
+        // but the channelDeposit.failure action may be fired
+        // run in parallel with openTx so `approve` can be mined simultaneously
+        makeDeposit$(
+          [tokenContract, tokenNetworkContract],
+          [onchainAddress, address, partner],
+          action.payload.deposit,
+          // channelId$ only emits once openChannel is confirmed and persisted
+          state$.pipe(
+            pluck('channels', channelKey({ tokenNetwork, partner }), 'id'),
+            filter(isntNil),
+          ),
+          { log },
         ),
       ).pipe(
-        mergeMap((tx) =>
-          // openTx wait in parallel with approve + setTotalDeposit
-          merge(
-            of(tx).pipe(
-              assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log }),
-              ignoreElements(),
-            ),
-            // errors on makeDeposit$ are handled independently and don't fail open request
-            // but the channelDeposit.failure action may be fired
-            makeDeposit$(
-              [tokenContract, tokenNetworkContract],
-              [onchainAddress, address, partner],
-              action.payload.deposit,
-              // channelId$ only emits once openChannel is confirmed and persisted
-              state$.pipe(
-                pluck('channels', channelKey({ tokenNetwork, partner }), 'id'),
-                filter(isntNil),
-              ),
-              { log },
-              tx.nonce + 1,
-            ),
-          ),
-        ),
         // ignore success so it's picked by channelEventsEpic
         catchError((error) => of(channelOpen.failure(error, action.meta))),
       );
@@ -862,6 +856,7 @@ export const channelDepositEpic = (
  * @param deps.signer - Signer instance
  * @param deps.address - Our address
  * @param deps.main - Main signer/address
+ * @param deps.provider - Provider instance
  * @param deps.network - Current network
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
@@ -870,7 +865,16 @@ export const channelDepositEpic = (
 export const channelCloseEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, signer, address, main, network, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  {
+    log,
+    signer,
+    address,
+    main,
+    provider,
+    network,
+    getTokenNetworkContract,
+    config$,
+  }: RaidenEpicDeps,
 ): Observable<channelClose.failure> =>
   action$.pipe(
     filter(isActionOf(channelClose.request)),
@@ -914,18 +918,22 @@ export const channelCloseEpic = (
       // sign counter balance proof, then send closeChannel transaction with our signature
       return from(signer.signMessage(closingMessage) as Promise<Signature>).pipe(
         mergeMap((closingSignature) =>
-          tokenNetworkContract.functions.closeChannel(
-            channel.id,
-            partner,
-            address,
-            balanceHash,
-            nonce,
-            additionalHash,
-            nonClosingSignature,
-            closingSignature,
+          defer(() =>
+            tokenNetworkContract.functions.closeChannel(
+              channel.id,
+              partner,
+              address,
+              balanceHash,
+              nonce,
+              additionalHash,
+              nonClosingSignature,
+              closingSignature,
+            ),
+          ).pipe(
+            assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log }),
+            retryTx(provider.pollingInterval, undefined, undefined, { log }),
           ),
         ),
-        assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log }),
         // if succeeded, return a empty/completed observable
         // actual ChannelClosedAction will be detected and handled by channelEventsEpic
         // if any error happened on tx call/pipeline, catchError will then emit the
@@ -948,6 +956,7 @@ export const channelCloseEpic = (
  * @param deps.signer - Signer instance
  * @param deps.address - Our address
  * @param deps.main - Main signer/address
+ * @param deps.provider - Provider instance
  * @param deps.network - Current network
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
@@ -956,7 +965,16 @@ export const channelCloseEpic = (
 export const channelUpdateEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, signer, address, main, network, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  {
+    log,
+    signer,
+    address,
+    main,
+    provider,
+    network,
+    getTokenNetworkContract,
+    config$,
+  }: RaidenEpicDeps,
 ): Observable<channelSettle.failure> =>
   action$.pipe(
     filter(isActionOf(channelClose.success)),
@@ -1004,20 +1022,24 @@ export const channelUpdateEpic = (
       // send updateNonClosingBalanceProof transaction
       return from(signer.signMessage(nonClosingMessage) as Promise<Signature>).pipe(
         mergeMap((nonClosingSignature) =>
-          tokenNetworkContract.functions.updateNonClosingBalanceProof(
-            channel.id,
-            partner,
-            address,
-            balanceHash,
-            nonce,
-            additionalHash,
-            closingSignature,
-            nonClosingSignature,
+          defer(() =>
+            tokenNetworkContract.functions.updateNonClosingBalanceProof(
+              channel.id,
+              partner,
+              address,
+              balanceHash,
+              nonce,
+              additionalHash,
+              closingSignature,
+              nonClosingSignature,
+            ),
+          ).pipe(
+            assertTx('updateNonClosingBalanceProof', ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED, {
+              log,
+            }),
+            retryTx(provider.pollingInterval, undefined, undefined, { log }),
           ),
         ),
-        assertTx('updateNonClosingBalanceProof', ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED, {
-          log,
-        }),
         // if succeeded, return a empty/completed observable
         ignoreElements(),
         catchError((error) => {
@@ -1042,6 +1064,7 @@ export const channelUpdateEpic = (
  * @param deps.signer - Signer instance
  * @param deps.address - Our address
  * @param deps.main - Main signer/address
+ * @param deps.provider - Provider instance
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
  * @returns Observable of channelSettle.failure actions
@@ -1049,7 +1072,7 @@ export const channelUpdateEpic = (
 export const channelSettleEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, signer, address, main, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  { log, signer, address, main, provider, getTokenNetworkContract, config$ }: RaidenEpicDeps,
 ): Observable<channelSettle.failure> =>
   action$.pipe(
     filter(isActionOf(channelSettle.request)),
@@ -1120,19 +1143,23 @@ export const channelSettleEpic = (
             [part1, part2] = [part2, part1]; // swap
 
           // send settleChannel transaction
-          return tokenNetworkContract.functions.settleChannel(
-            channel.id,
-            part1[0],
-            part1[1].transferredAmount,
-            part1[1].lockedAmount,
-            part1[1].locksroot,
-            part2[0],
-            part2[1].transferredAmount,
-            part2[1].lockedAmount,
-            part2[1].locksroot,
+          return defer(() =>
+            tokenNetworkContract.functions.settleChannel(
+              channel.id,
+              part1[0],
+              part1[1].transferredAmount,
+              part1[1].lockedAmount,
+              part1[1].locksroot,
+              part2[0],
+              part2[1].transferredAmount,
+              part2[1].lockedAmount,
+              part2[1].locksroot,
+            ),
+          ).pipe(
+            assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log }),
+            retryTx(provider.pollingInterval, undefined, undefined, { log }),
           );
         }),
-        assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log }),
         // if succeeded, return a empty/completed observable
         // actual ChannelSettledAction will be detected and handled by channelEventsEpic
         // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
@@ -1189,6 +1216,7 @@ export const channelSettleableEpic = (
  * @param deps.signer - Signer instance
  * @param deps.address - Our address
  * @param deps.main - Main signer/address
+ * @param deps.provider - Provider instance
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
  * @returns Empty observable
@@ -1196,7 +1224,7 @@ export const channelSettleableEpic = (
 export const channelUnlockEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, signer, address, main, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  { log, signer, address, main, provider, getTokenNetworkContract, config$ }: RaidenEpicDeps,
 ): Observable<channelSettle.failure> =>
   action$.pipe(
     filter(isActionOf(channelSettle.success)),
@@ -1223,10 +1251,11 @@ export const channelUnlockEpic = (
       );
 
       // send unlock transaction
-      return from(
+      return defer(() =>
         tokenNetworkContract.functions.unlock(action.payload.id, address, partner, locks),
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log }),
+        retryTx(provider.pollingInterval, undefined, undefined, { log }),
         ignoreElements(),
         catchError((error) => {
           log.error('Error unlocking pending locks on-chain, ignoring', error);

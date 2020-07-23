@@ -35,7 +35,7 @@ import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
-import { assertTx, channelAmounts, groupChannel$ } from '../channels/utils';
+import { assertTx, channelAmounts, groupChannel$, retryTx } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
@@ -565,10 +565,23 @@ export const monitorRequestEpic = (
     ),
   );
 
+/**
+ * Handle a UDC withdraw request and send plan transaction
+ *
+ * @param action$ - Observable of udcWithdraw.request actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.userDepositContract - UDC contract instance
+ * @param deps.address - Our address
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.provider - Provider instance
+ * @returns Observable of udcWithdraw.success|udcWithdraw.failure actions
+ */
 export const udcWithdrawRequestEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { userDepositContract, address, log, signer }: RaidenEpicDeps,
+  { userDepositContract, address, log, signer, provider }: RaidenEpicDeps,
 ): Observable<udcWithdraw.success | udcWithdraw.failure> =>
   action$.pipe(
     filter(udcWithdraw.request.is),
@@ -599,7 +612,8 @@ export const udcWithdrawRequestEpic = (
         return contract.functions.planWithdraw(amount);
       }).pipe(
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log }),
-        mergeMap(({ transactionHash: txHash, blockNumber: txBlock }) =>
+        retryTx(provider.pollingInterval, undefined, undefined, { log }),
+        mergeMap(([, { transactionHash: txHash, blockNumber: txBlock }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),
             exhaustMap(() => userDepositContract.functions.withdraw_plans(address)),
@@ -625,6 +639,16 @@ export const udcWithdrawRequestEpic = (
     }),
   );
 
+/**
+ * At startup, check if there was a previous plan and re-emit udcWithdraw.success action
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.userDepositContract - UDC contract instance
+ * @param deps.address - Our address
+ * @returns Observable of udcWithdraw.success actions
+ */
 export const udcCheckWithdrawPlannedEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
@@ -641,10 +665,23 @@ export const udcCheckWithdrawPlannedEpic = (
   );
 };
 
+/**
+ * When a plan is detected (done on this session or previous), wait until timeout and withdraw
+ *
+ * @param action$ - Observable of udcWithdraw.success actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.log - Logger instance
+ * @param deps.userDepositContract - UDC contract instance
+ * @param deps.address - Our address
+ * @param deps.signer - Signer instance
+ * @param deps.provider - Provider instance
+ * @returns Observable of udcWithdrawn|udcWithdraw.failure actions
+ */
 export const udcWithdrawPlannedEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, userDepositContract, address, signer }: RaidenEpicDeps,
+  { log, userDepositContract, address, signer, provider }: RaidenEpicDeps,
 ): Observable<udcWithdrawn | udcWithdraw.failure> => {
   return action$.pipe(
     filter(udcWithdraw.success.is),
@@ -673,7 +710,8 @@ export const udcWithdrawPlannedEpic = (
         return contract.functions.withdraw(action.meta.amount);
       }).pipe(
         assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log }),
-        concatMap(({ transactionHash, blockNumber }) =>
+        retryTx(provider.pollingInterval, undefined, undefined, { log }),
+        concatMap(([, { transactionHash, blockNumber }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),
             exhaustMap(() => contract.functions.balances(address)),

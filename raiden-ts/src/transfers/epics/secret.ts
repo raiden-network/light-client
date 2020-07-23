@@ -1,5 +1,5 @@
 import { Event } from 'ethers/contract';
-import { EMPTY, from, Observable, of } from 'rxjs';
+import { EMPTY, from, Observable, of, defer } from 'rxjs';
 import {
   concatMap,
   filter,
@@ -17,7 +17,7 @@ import {
 } from 'rxjs/operators';
 
 import { newBlock } from '../../channels/actions';
-import { assertTx } from '../../channels/utils';
+import { assertTx, retryTx } from '../../channels/utils';
 import { RaidenAction } from '../../actions';
 import { messageSend } from '../../messages/actions';
 import { MessageType, SecretRequest, SecretReveal } from '../../messages/types';
@@ -435,6 +435,7 @@ export const transferAutoRegisterEpic = (
  * @param deps.signer - Signer instance
  * @param deps.address - Our address
  * @param deps.main - Main signer/address
+ * @param deps.provider - Provider instance
  * @param deps.secretRegistryContract - SecretRegistry contract instance
  * @param deps.config$ - Config observable
  * @returns Observable of transferSecretRegister.failure actions
@@ -442,7 +443,7 @@ export const transferAutoRegisterEpic = (
 export const transferSecretRegisterEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, signer, address, main, secretRegistryContract, config$ }: RaidenEpicDeps,
+  { log, signer, address, main, provider, secretRegistryContract, config$ }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.failure> =>
   action$.pipe(
     filter(transferSecretRegister.request.is),
@@ -454,8 +455,9 @@ export const transferSecretRegisterEpic = (
       );
       const contract = getContractWithSigner(secretRegistryContract, onchainSigner);
 
-      return from(contract.functions.registerSecret(action.payload.secret)).pipe(
+      return defer(() => contract.functions.registerSecret(action.payload.secret)).pipe(
         assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log }),
+        retryTx(provider.pollingInterval, undefined, undefined, { log }),
         // transferSecretRegister.success handled by monitorSecretRegistryEpic
         ignoreElements(),
         catchError((err) => of(transferSecretRegister.failure(err, action.meta))),
