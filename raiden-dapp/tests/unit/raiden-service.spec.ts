@@ -3,7 +3,7 @@ import { ConfigProvider, Configuration } from '@/services/config-provider';
 jest.mock('vuex');
 jest.mock('raiden-ts');
 jest.mock('@/i18n', () => ({
-  __esModule: true,
+  __esModule: true as const,
   default: {
     t: jest.fn((args) => args.toString()),
   },
