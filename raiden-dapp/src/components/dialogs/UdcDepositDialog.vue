@@ -67,7 +67,7 @@
 
 <script lang="ts">
 import { Component, Vue, Emit, Prop } from 'vue-property-decorator';
-import { mapGetters, mapState } from 'vuex';
+import { mapGetters } from 'vuex';
 import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
@@ -86,7 +86,6 @@ import { RaidenError } from 'raiden-ts';
     AmountInput,
   },
   computed: {
-    ...mapState(['accountBalance']),
     ...mapGetters(['mainnet', 'udcToken']),
   },
 })
