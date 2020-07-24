@@ -897,17 +897,29 @@ function validateRoute$(
 }
 
 function validateRouteTargetAndEventuallyThrow(action: pathFind.request, latest: Latest): void {
-  const { tokenNetwork, target } = action.meta;
+  const { tokenNetwork, target, value } = action.meta;
   const { state, presences } = latest;
 
-  if (!Object.values(state.tokens).includes(tokenNetwork))
-    throw new RaidenError(ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK, { tokenNetwork });
+  assert(Object.values(state.tokens).includes(tokenNetwork), [
+    ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK,
+    { tokenNetwork },
+  ]);
 
-  if (!presences[target].payload.available)
-    throw new RaidenError(ErrorCodes.PFS_TARGET_OFFLINE, { target });
+  assert(presences[target].payload.available, [ErrorCodes.PFS_TARGET_OFFLINE, { target }]);
 
-  if (presences[target].payload.caps?.[Capabilities.NO_RECEIVE])
-    throw new RaidenError(ErrorCodes.PFS_TARGET_NO_RECEIVE, { target });
+  assert(!presences[target].payload.caps?.[Capabilities.NO_RECEIVE], [
+    ErrorCodes.PFS_TARGET_NO_RECEIVE,
+    { target },
+  ]);
+
+  assert(
+    Object.values(state.channels).some(
+      (channel) =>
+        channelCanRoute(state, presences, tokenNetwork, channel.partner.address, target, value) ===
+        true,
+    ),
+    ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
+  );
 }
 
 function pfsIsDisabled(action: pathFind.request, latest: Latest): boolean {
