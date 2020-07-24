@@ -201,11 +201,12 @@ export const txNonceErrors: readonly string[] = [
   'nonce is too low',
   'nonce has already been used',
   'already known',
+  'Transaction with the same hash was already imported',
 ];
 export const txFailErrors: readonly string[] = ['always failing transaction'];
 
 /**
- * Re-subscribe/retry a transaction observable if a recoverable error is emitted
+ * RxJS pipeable operator to re-subscribe/retry a transaction observable on recoverable errors
  *
  * For this to work, the input$ transaction observable must be re-subscribable:
  * e.g. a promise wrapped in a `defer` callback.
