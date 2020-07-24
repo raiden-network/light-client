@@ -10,10 +10,12 @@
 - [#1824] Listen to channel settle events and push notifications for them
 
 ### Changed
+- [#1769] Updated UDC deposit dialog for testnet
 - [#1768] Updated UDC screen
 - [#1265] Reduce logs size by hiding superfluous actions entries
 - [#1875] Redact sensitive information (transport's accessToken, transfer's secrets) from logs
 
+[#1769]: https://github.com/raiden-network/light-client/issues/1769
 [#1768]: https://github.com/raiden-network/light-client/issues/1768
 [#1265]: https://github.com/raiden-network/light-client/issues/1265
 [#1786]: https://github.com/raiden-network/light-client/issues/1786
