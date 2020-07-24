@@ -327,6 +327,7 @@
     "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
   },
   "udc-deposit-dialog": {
+    "title": "Deposit to UDC",
     "button": "Mint and deposit",
     "button-main": "Deposit",
     "available": "Available {currency} to pay for on-chain transaction: {balance} {currency}",
