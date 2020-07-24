@@ -32,8 +32,8 @@ import {
   finalize,
   concatMap,
   takeUntil,
+  groupBy,
 } from 'rxjs/operators';
-import findKey from 'lodash/findKey';
 import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
 
@@ -622,16 +622,90 @@ export const channelMonitoredEpic = (
     ),
   );
 
-const makeDeposit$ = (
+/**
+ * A channelOpen action requested by user
+ * Needs to be called on a previously monitored tokenNetwork. Calls TokenNetwork.openChannel
+ * with given parameters. If tx goes through successfuly, stop as channelOpen.success action
+ * will instead be detected and fired by channelEventsEpic. If anything detectable goes wrong,
+ * fires a channelOpen.failure action instead
+ *
+ * @param action$ - Observable of channelOpen actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer instance
+ * @param deps.address - Our address
+ * @param deps.main - Main signer/address
+ * @param deps.provider - Provider instance
+ * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
+ * @param deps.config$ - Config observable
+ * @returns Observable of channelOpen.failure actions
+ */
+export const channelOpenEpic = (
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { log, signer, address, main, provider, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+): Observable<channelOpen.failure> =>
+  action$.pipe(
+    filter(isActionOf(channelOpen.request)),
+    withLatestFrom(state$, config$),
+    mergeMap(([action, state, { settleTimeout, subkey: configSubkey }]) => {
+      const { tokenNetwork, partner } = action.meta;
+      const channelState = state.channels[channelKey(action.meta)]?.state;
+      // fails if channel already exist
+      if (channelState)
+        return of(
+          channelOpen.failure(
+            new RaidenError(ErrorCodes.CNL_INVALID_STATE, { state: channelState }),
+            action.meta,
+          ),
+        );
+      const { signer: onchainSigner } = chooseOnchainAccount(
+        { signer, address, main },
+        action.payload.subkey ?? configSubkey,
+      );
+      const tokenNetworkContract = getContractWithSigner(
+        getTokenNetworkContract(tokenNetwork),
+        onchainSigner,
+      );
+
+      return defer(() =>
+        tokenNetworkContract.functions.openChannel(
+          address,
+          partner,
+          action.payload.settleTimeout ?? settleTimeout,
+        ),
+      ).pipe(
+        assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log }),
+        // also retry txFailErrors: if it's caused by partner having opened, takeUntil will see
+        retryTx(provider.pollingInterval, undefined, txNonceErrors.concat(txFailErrors), { log }),
+        // if channel gets opened while retrying (e.g. by partner), give up to avoid erroring
+        takeUntil(
+          action$.pipe(
+            filter(channelOpen.success.is),
+            filter(
+              (action_) =>
+                action_.meta.tokenNetwork === tokenNetwork && action_.meta.partner === partner,
+            ),
+          ),
+        ),
+        // ignore success so it's picked by channelEventsEpic
+        ignoreElements(),
+        catchError((error) => of(channelOpen.failure(error, action.meta))),
+      );
+    }),
+  );
+
+function makeDeposit$(
   [tokenContract, tokenNetworkContract]: [HumanStandardToken, TokenNetwork],
   [sender, address, partner]: [Address, Address, Address],
   deposit: UInt<32> | undefined,
   channelId$: Observable<number>,
   { log }: Pick<RaidenEpicDeps, 'log'>,
-): Observable<channelDeposit.failure> => {
+): Observable<channelDeposit.failure> {
   if (!deposit?.gt(Zero)) return EMPTY;
-  const pollingInterval = (tokenNetworkContract.provider as JsonRpcProvider).pollingInterval;
 
+  // retryTx from here
   return defer(() =>
     Promise.all([
       tokenContract.functions.balanceOf(sender),
@@ -668,9 +742,14 @@ const makeDeposit$ = (
       ),
     ),
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log }),
-    // retry from Promise.all's defer; also retry txFail errors, since estimateGas can lag behind
-    // just-opened channel or just-approved allowance
-    retryTx(pollingInterval, undefined, txNonceErrors.concat(txFailErrors), { log }),
+    // retry also txFail errors, since estimateGas can lag behind just-opened channel or
+    // just-approved allowance
+    retryTx(
+      (tokenNetworkContract.provider as JsonRpcProvider).pollingInterval,
+      undefined,
+      txNonceErrors.concat(txFailErrors),
+      { log },
+    ),
     // ignore success so it's picked by channelEventsEpic
     ignoreElements(),
     catchError((error) =>
@@ -682,111 +761,16 @@ const makeDeposit$ = (
       ),
     ),
   );
-};
+}
 
 /**
- * A channelOpen action requested by user
- * Needs to be called on a previously monitored tokenNetwork. Calls TokenNetwork.openChannel
- * with given parameters. If tx goes through successfuly, stop as ChannelOpened success action
- * will instead be detected and fired by channelEventsEpic. If anything detectable goes wrong,
- * fires a ChannnelOpenActionFailed instead
- *
- * @param action$ - Observable of channelOpen actions
- * @param state$ - Observable of RaidenStates
- * @param deps - RaidenEpicDeps members
- * @param deps.log - Logger instance
- * @param deps.signer - Signer instance
- * @param deps.address - Our address
- * @param deps.main - Main signer/address
- * @param deps.provider - Provider instance
- * @param deps.getTokenContract - Token contract instance getter
- * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
- * @param deps.config$ - Config observable
- * @returns Observable of channelOpen.failure actions
- */
-export const channelOpenEpic = (
-  action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-  {
-    log,
-    signer,
-    address,
-    main,
-    provider,
-    getTokenContract,
-    getTokenNetworkContract,
-    config$,
-  }: RaidenEpicDeps,
-): Observable<channelOpen.failure | channelDeposit.failure> =>
-  action$.pipe(
-    filter(isActionOf(channelOpen.request)),
-    withLatestFrom(state$, config$),
-    mergeMap(([action, state, { settleTimeout, subkey: configSubkey }]) => {
-      const { tokenNetwork, partner } = action.meta;
-      const channelState = state.channels[channelKey(action.meta)]?.state;
-      // fails if channel already exist
-      if (channelState)
-        return of(
-          channelOpen.failure(
-            new RaidenError(ErrorCodes.CNL_INVALID_STATE, { state: channelState }),
-            action.meta,
-          ),
-        );
-      const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
-        { signer, address, main },
-        action.payload.subkey ?? configSubkey,
-      );
-      const tokenNetworkContract = getContractWithSigner(
-        getTokenNetworkContract(tokenNetwork),
-        onchainSigner,
-      );
-      // if also requested deposit
-      const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
-      const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
-
-      return merge(
-        // send openChannel transaction; errors here also unsubscribe from deposit
-        defer(() =>
-          tokenNetworkContract.functions.openChannel(
-            address,
-            partner,
-            action.payload.settleTimeout ?? settleTimeout,
-          ),
-        ).pipe(
-          // openTx to be called in parallel with 'approve'
-          assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log }),
-          retryTx(provider.pollingInterval, undefined, undefined, { log }),
-          ignoreElements(),
-        ),
-        // errors on makeDeposit$ are handled independently and don't fail open request
-        // but the channelDeposit.failure action may be fired
-        // run in parallel with openTx so `approve` can be mined simultaneously
-        makeDeposit$(
-          [tokenContract, tokenNetworkContract],
-          [onchainAddress, address, partner],
-          action.payload.deposit,
-          // channelId$ only emits once openChannel is confirmed and persisted
-          state$.pipe(
-            pluck('channels', channelKey({ tokenNetwork, partner }), 'id'),
-            filter(isntNil),
-          ),
-          { log },
-        ),
-      ).pipe(
-        // ignore success so it's picked by channelEventsEpic
-        catchError((error) => of(channelOpen.failure(error, action.meta))),
-      );
-    }),
-  );
-
-/**
- * A ChannelDeposit action requested by user
+ * A channelDeposit action requested by user, or a channelOpen request with a deposit
  * Needs to be called on a previously monitored channel. Calls Token.approve for TokenNetwork
  * and then set respective setTotalDeposit. If all tx go through successfuly, stop as
  * ChannelDeposited success action will instead be detected and reacted by channelEventsEpic.
  * If anything detectable goes wrong, fires a ChannelDepositActionFailed instead
  *
- * @param action$ - Observable of channelDeposit.request actions
+ * @param action$ - Observable of channelDeposit.request|channelOpen.request actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
  * @param deps.log - Logger instance
@@ -796,11 +780,12 @@ export const channelOpenEpic = (
  * @param deps.getTokenContract - Token contract instance getter
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of channelDeposit.failure actions
  */
 export const channelDepositEpic = (
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {}: Observable<RaidenState>,
   {
     log,
     signer,
@@ -809,37 +794,79 @@ export const channelDepositEpic = (
     getTokenContract,
     getTokenNetworkContract,
     config$,
+    latest$,
   }: RaidenEpicDeps,
 ): Observable<channelDeposit.failure> =>
   action$.pipe(
-    filter(isActionOf(channelDeposit.request)),
-    withLatestFrom(state$, config$),
-    mergeMap(([action, state, { subkey: configSubkey }]) => {
-      const { tokenNetwork, partner } = action.meta;
-      const key = channelKey(action.meta);
-      const channel = state.channels[key];
-      if (channel?.state !== ChannelState.open) {
-        const error = new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND, action.meta);
-        return of(channelDeposit.failure(error, action.meta));
-      }
-      const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
-        { signer, address, main },
-        action.payload.subkey ?? configSubkey,
-      );
-      const tokenContract = getContractWithSigner(getTokenContract(channel.token), onchainSigner);
-      const tokenNetworkContract = getContractWithSigner(
-        getTokenNetworkContract(tokenNetwork),
-        onchainSigner,
-      );
+    filter(isActionOf([channelDeposit.request, channelOpen.request])),
+    // ignore channelOpen.request if no deposit is requested on it
+    filter((action) => !channelOpen.request.is(action) || !!action.payload.deposit?.gt?.(0)),
+    groupBy((action) => action.meta.tokenNetwork), // serialize per tokenNetwork
+    mergeMap((grouped$) =>
+      grouped$.pipe(
+        mergeMap((action) => {
+          const error = new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND, action.meta);
+          const notOpenAction = channelDeposit.failure(error, action.meta);
+          // this 'merge' re-emits the requests as soon as the channel is detected as 'open';
+          // emits deposit failure if channel isn't open or open request fails
+          return merge(
+            latest$.pipe(
+              pluck('state', 'channels', channelKey(action.meta)),
+              // if it's a open request, wait confirmed channel, otherwise pass to validate now
+              filter((channel) => (channelOpen.request.is(action) ? isntNil(channel) : true)),
+              map((channel) => {
+                if (channel?.state !== ChannelState.open) return notOpenAction;
+                return action; // re-emit deposit/open action when channel is open
+              }),
+            ),
+            action$.pipe(
+              filter(channelOpen.failure.is),
+              filter(
+                (failure) =>
+                  failure.meta.tokenNetwork === action.meta.tokenNetwork &&
+                  failure.meta.partner === action.meta.partner,
+              ),
+              mapTo(notOpenAction),
+            ),
+          ).pipe(take(1)); // for each request, take only first re-emited request or failure
+        }),
+        // concatMap to deposit on channels serially per tokenNetwork, in the order they're
+        // detected as 'open' and confirmed
+        concatMap((action) =>
+          combineLatest([latest$, config$]).pipe(
+            first(),
+            mergeMap(([{ state }, { subkey: configSubkey }]) => {
+              // if channelDeposit.failure, it means channel was not 'open', passthrough failure
+              if (channelDeposit.failure.is(action)) return of(action);
 
-      return makeDeposit$(
-        [tokenContract, tokenNetworkContract],
-        [onchainAddress, address, partner],
-        action.payload.deposit,
-        of(channel.id),
-        { log },
-      );
-    }),
+              const { tokenNetwork, partner } = action.meta;
+              // channel is guaranteed to be present and 'open', by mergeMap above
+              const channel = state.channels[channelKey(action.meta)];
+              const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
+                { signer, address, main },
+                action.payload.subkey ?? configSubkey,
+              );
+              const tokenContract = getContractWithSigner(
+                getTokenContract(channel.token),
+                onchainSigner,
+              );
+              const tokenNetworkContract = getContractWithSigner(
+                getTokenNetworkContract(tokenNetwork),
+                onchainSigner,
+              );
+
+              return makeDeposit$(
+                [tokenContract, tokenNetworkContract],
+                [onchainAddress, address, partner],
+                action.payload.deposit!,
+                of(channel.id),
+                { log },
+              );
+            }),
+          ),
+        ),
+      ),
+    ),
   );
 
 /**
