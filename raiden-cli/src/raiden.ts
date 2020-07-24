@@ -4,7 +4,7 @@ import inquirer from 'inquirer';
 import yargs from 'yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
-import { Raiden, Address, RaidenConfig } from 'raiden-ts';
+import { Raiden, Address, RaidenConfig, assert } from 'raiden-ts';
 import { Cli } from './types';
 import { makeCli } from './cli';
 import { setupLoglevel } from './utils/logging';
@@ -22,13 +22,13 @@ function parseArguments() {
       configFile: {
         type: 'string',
         desc: 'JSON file path containing config object',
-        coerce: path.resolve,
+        normalize: true,
       },
       keystorePath: {
         type: 'string',
         default: './',
         desc: 'Path for ethereum keystore directory',
-        coerce: path.resolve,
+        normalize: true,
       },
       address: {
         type: 'string',
@@ -39,7 +39,7 @@ function parseArguments() {
       passwordFile: {
         type: 'string',
         desc: 'Path for text file containing password for keystore file',
-        coerce: path.resolve,
+        normalize: true,
       },
       userDepositContractAddress: {
         type: 'string',
@@ -116,22 +116,13 @@ async function getWallet(
   let password;
   if (!passwordFile) password = await askUserForPassword();
   else password = (await fs.readFile(passwordFile, 'utf-8')).split('\n').shift()!;
-  let jsonStr;
   for (const filename of await fs.readdir(keystoreDir)) {
-    if (!(filename.startsWith('UTC-') || filename.endsWith('.json'))) continue;
     try {
-      jsonStr = await fs.readFile(path.join(keystoreDir, filename), 'utf-8');
-      const jsonContent = JSON.parse(jsonStr);
-      const jsonAddr = jsonContent?.['address'];
-      if (!jsonAddr || !address.toLowerCase().endsWith(jsonAddr.toLowerCase())) throw '';
-      break;
-    } catch (e) {
-      jsonStr = undefined;
-      continue;
-    }
+      const json = await fs.readFile(path.join(keystoreDir, filename), 'utf-8');
+      return await Wallet.fromEncryptedJson(json, password);
+    } catch (e) {}
   }
-  if (!jsonStr) throw new Error(`Could not find keystore file for "${address}"`);
-  return await Wallet.fromEncryptedJson(jsonStr, password);
+  throw new Error(`Could not find keystore file for "${address}"`);
 }
 
 function createLocalStorage(name: string): LocalStorage {
@@ -170,12 +161,9 @@ function registerShutdownHooks(this: Cli): void {
   process.on('SIGTERM', shutdownRaiden.bind(this));
 }
 
-async function main() {
-  setupLoglevel();
-  const argv = parseArguments();
-  const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
-  const localStorage = createLocalStorage(argv.datadir);
-
+async function createRaidenConfig(
+  argv: ReturnType<typeof parseArguments>,
+): Promise<Partial<RaidenConfig>> {
   let config: Partial<RaidenConfig> = DEFAULT_RAIDEN_CONFIG;
   if (argv.configFile)
     config = { ...config, ...JSON.parse(await fs.readFile(argv.configFile, 'utf-8')) };
@@ -189,6 +177,24 @@ async function main() {
   else if (argv.pathfindingServiceAddress !== 'auto')
     config = { ...config, pfs: argv.pathfindingServiceAddress };
   if (!argv.enableMonitoring) config = { ...config, monitoringReward: null };
+  return config;
+}
+
+const endpointRe = /^(?:\w+:\/\/)?([^\/]*):(\d+)$/;
+function parseEndpoint(url: string): readonly [string, number] {
+  const match = url.match(endpointRe);
+  assert(match, 'Invalid endpoint');
+  const [, host, port] = match;
+  return [host || '127.0.0.1', +port];
+}
+
+async function main() {
+  setupLoglevel();
+  const argv = parseArguments();
+  const localStorage = createLocalStorage(argv.datadir);
+  const endpoint = parseEndpoint(argv.apiAddress);
+  const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
+  const config = await createRaidenConfig(argv);
 
   const raiden = await Raiden.create(
     argv.ethRpcEndpoint,
@@ -197,12 +203,7 @@ async function main() {
     argv.userDepositContractAddress,
     config,
   );
-  const cli = makeCli(
-    raiden,
-    argv.rpc ? argv.apiAddress : undefined,
-    undefined,
-    argv.rpccorsdomain,
-  );
+  const cli = makeCli(raiden, endpoint, undefined, argv.rpccorsdomain);
   registerShutdownHooks.call(cli);
   cli.raiden.start();
 }
