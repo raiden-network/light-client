@@ -432,7 +432,7 @@ export class Raiden {
   public stop(): void {
     // start still can't be called again, but turns this.started to false
     // this.epicMiddleware is set to null by latest$'s complete callback
-    this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
+    if (this.started) this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
   }
 
   /**
