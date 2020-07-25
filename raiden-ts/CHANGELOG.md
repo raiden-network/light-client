@@ -13,6 +13,7 @@
 
 ### Changed
 - [#1905] Fail early if not enough tokens to deposit
+- [#1958] Transfers can fail before requesting PFS if there's no viable channel
 
 [#703]: https://github.com/raiden-network/light-client/issues/703
 [#1824]: https://github.com/raiden-network/light-client/issues/1824
@@ -21,6 +22,7 @@
 [#1913]: https://github.com/raiden-network/light-client/pull/1913
 [#1923]: https://github.com/raiden-network/light-client/issues/1923
 [#1952]: https://github.com/raiden-network/light-client/issues/1952
+[#1958]: https://github.com/raiden-network/light-client/issues/1958
 
 ## [0.10.0] - 2020-07-13
 ### Fixed
