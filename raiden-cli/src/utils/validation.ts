@@ -36,9 +36,7 @@ export function isInvalidParameterError(error: RaidenError): boolean {
     ErrorCodes.DTA_UNENCODABLE_DATA,
     ErrorCodes.DTA_NON_POSITIVE_NUMBER,
     ErrorCodes.DTA_INVALID_ADDRESS,
-    ErrorCodes.DTA_INVALID_DEPOSIT,
     ErrorCodes.DTA_INVALID_TIMEOUT,
-    ErrorCodes.DTA_INVALID_AMOUNT,
     ErrorCodes.DTA_INVALID_PAYMENT_ID,
     ErrorCodes.DTA_INVALID_PATH,
     ErrorCodes.DTA_INVALID_PFS,
@@ -58,8 +56,13 @@ export function isTransactionWouldFailError(error: Error): boolean {
 
 export function isConflictError(error: Error): boolean {
   return (
-    [ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, ErrorCodes.CNL_INVALID_STATE].includes(error.message) ||
-    isTransactionWouldFailError(error)
+    [
+      ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK,
+      ErrorCodes.CNL_INVALID_STATE,
+      ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND,
+      ErrorCodes.DTA_INVALID_DEPOSIT,
+      ErrorCodes.DTA_INVALID_AMOUNT,
+    ].includes(error.message) || isTransactionWouldFailError(error)
   );
 }
 
