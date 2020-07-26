@@ -17,7 +17,7 @@ import { UInt, Address, Hash, Int } from '../utils/types';
 import { RaidenError } from '../utils/error';
 import { distinctRecordValues } from '../utils/rx';
 import { MessageType } from '../messages/types';
-import { Channel, ChannelState, ChannelBalances } from './state';
+import { Channel, ChannelBalances } from './state';
 import { ChannelKey, ChannelUniqueKey } from './types';
 
 /**
@@ -64,30 +64,6 @@ function bnMax<T extends UInt>(...args: T[]): T {
  *          capacity.
  */
 export function channelAmounts(channel: Channel): ChannelBalances {
-  if (channel.state !== ChannelState.open)
-    return {
-      ownDeposit: Zero as UInt<32>,
-      ownWithdraw: Zero as UInt<32>,
-      ownTransferred: Zero as UInt<32>,
-      ownLocked: Zero as UInt<32>,
-      ownBalance: Zero as Int<32>,
-      ownCapacity: Zero as UInt<32>,
-      ownOnchainUnlocked: Zero as UInt<32>,
-      ownUnlocked: Zero as UInt<32>, // total of off & onchain unlocked
-      ownTotalWithdrawable: Zero as UInt<32>,
-      ownWithdrawable: Zero as UInt<32>,
-      partnerDeposit: Zero as UInt<32>,
-      partnerWithdraw: Zero as UInt<32>,
-      partnerTransferred: Zero as UInt<32>,
-      partnerLocked: Zero as UInt<32>,
-      partnerBalance: Zero as Int<32>,
-      partnerCapacity: Zero as UInt<32>,
-      partnerOnchainUnlocked: Zero as UInt<32>,
-      partnerUnlocked: Zero as UInt<32>, // total of off & onchain unlocked
-      partnerTotalWithdrawable: Zero as UInt<32>,
-      partnerWithdrawable: Zero as UInt<32>,
-    };
-
   const ownWithdraw = channel.own.withdraw,
     partnerWithdraw = channel.partner.withdraw,
     ownTransferred = channel.own.balanceProof.transferredAmount,
