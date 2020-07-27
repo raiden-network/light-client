@@ -868,6 +868,14 @@ describe('Raiden', () => {
         expect(transfers[key].status).toBe(RaidenTransferStatus.pending);
       });
 
+      test('fail: invalid lockTimeout', async () => {
+        expect.assertions(2);
+
+        await expect(raiden.transfer(token, partner, 23, { lockTimeout: 1 })).rejects.toThrowError(
+          'expiration',
+        );
+      });
+
       test('success: auto pfs route', async () => {
         expect.assertions(7);
 

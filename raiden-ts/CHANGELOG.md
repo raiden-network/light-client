@@ -7,6 +7,7 @@
 
 ### Added
 - [#703] Add option to fetch all contracts addresses from UserDeposit address alone
+- [#1710] Add option specify transfer's lock timeout
 - [#1910] Add option to `mint` tokens for any address
 - [#1913] Added `contractsInfo` getter holding current contracts info
 - [#1824] Expose channel settle actions as events
@@ -16,6 +17,7 @@
 - [#1958] Transfers can fail before requesting PFS if there's no viable channel
 
 [#703]: https://github.com/raiden-network/light-client/issues/703
+[#1710]: https://github.com/raiden-network/light-client/issues/1710
 [#1824]: https://github.com/raiden-network/light-client/issues/1824
 [#1905]: https://github.com/raiden-network/light-client/issues/1905
 [#1910]: https://github.com/raiden-network/light-client/pull/1910
