@@ -705,7 +705,6 @@ export async function makeRaiden(
   const network: Network = { name: 'testnet', chainId: 1337 };
   const { JsonRpcProvider } = jest.requireActual('ethers/providers');
   const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
-  provider.pollingInterval = pollingInterval;
   const signer = (wallet ?? makeWallet()).connect(provider);
   const address = signer.address as Address;
   const log = logging.getLogger(`raiden:${address}`);
@@ -903,6 +902,8 @@ export async function makeRaiden(
       settleTimeout: 60,
       revealTimeout: 50,
       confirmationBlocks: 5,
+      logger: 'debug',
+      pollingInterval,
     },
   );
   const latest$ = new ReplaySubject<Latest>(1);
