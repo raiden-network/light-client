@@ -810,6 +810,7 @@ export class Raiden {
    *     Is ignored if paths were already provided. If neither are set and config.pfs is not
    *     disabled (null), use it if set or if undefined (auto mode), fetches the best
    *     PFS from ServiceRegistry and automatically fetch routes from it.</li>
+   * @param options.lockTimeout - Specify a lock timeout for transfer; default is 2 * revealTimeout
    * @returns A promise to transfer's unique key (id) when it's accepted
    */
   public async transfer(
@@ -822,6 +823,7 @@ export class Raiden {
       secrethash?: string;
       paths?: RaidenPaths;
       pfs?: RaidenPFS;
+      lockTimeout?: number;
     } = {},
   ): Promise<string> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
@@ -840,6 +842,9 @@ export class Raiden {
     const pfs = !options.pfs
       ? undefined
       : decode(PFS, options.pfs, ErrorCodes.DTA_INVALID_PFS, this.log.info);
+    const expiration = !options.lockTimeout
+      ? undefined
+      : this.state.blockNumber + options.lockTimeout;
 
     assert(
       options.secret === undefined || Secret.is(options.secret),
@@ -909,6 +914,7 @@ export class Raiden {
                     paths,
                     paymentId,
                     secret,
+                    expiration,
                   },
                   { secrethash, direction: Direction.SENT },
                 ),
