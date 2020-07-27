@@ -77,12 +77,11 @@ function getPayments(this: Cli, request: Request, response: Response) {
 
 async function doTransfer(this: Cli, request: Request, response: Response, next: NextFunction) {
   try {
-    // TODO: We ignore the provided `lock_timeout` until #1710 provides a better solution
     const transferKey = await this.raiden.transfer(
       request.params.tokenAddress,
       request.params.targetAddress,
       request.body.amount,
-      { paymentId: request.body.identifier },
+      { paymentId: request.body.identifier, lockTimeout: request.body.lock_timeout },
     );
     await this.raiden.waitTransfer(transferKey);
     const newTransfer = await this.raiden.transfers$
