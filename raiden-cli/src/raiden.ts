@@ -46,6 +46,11 @@ function parseArguments() {
         desc: "Address of UserDeposit contract to use as contract's entrypoint",
         check: Address.is,
       },
+      blockchainQueryInterval: {
+        type: 'number',
+        default: 5,
+        desc: 'Time interval after which to check for new blocks (in seconds)',
+      },
       defaultRevealTimeout: {
         type: 'number',
         default: 50,
@@ -169,6 +174,7 @@ async function createRaidenConfig(
     config = { ...config, ...JSON.parse(await fs.readFile(argv.configFile, 'utf-8')) };
   config = {
     ...config,
+    pollingInterval: Math.floor(argv.blockchainQueryInterval * 1000),
     revealTimeout: argv.defaultRevealTimeout,
     settleTimeout: argv.defaultSettleTimeout,
   };
