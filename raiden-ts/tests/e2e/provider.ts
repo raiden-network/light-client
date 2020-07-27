@@ -35,7 +35,6 @@ export class TestProvider extends Web3Provider {
           ...opts,
         }),
     );
-    this.pollingInterval = 10;
   }
 
   public snapshot(): Promise<number> {

@@ -24,7 +24,8 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - httpTimeout - Used in http fetch requests
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
- * - monitoringRoom - MS global room to auto-join and send RequestMonitoring messages, use null to disable
+ * - monitoringRoom - MS global room to auto-join and send RequestMonitoring messages;
+ *      use null to disable
  * - pfs - Path Finding Service URL or Address. Set to null to disable, or empty string to enable
  *         automatic fetching from ServiceRegistry.
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10%
@@ -37,6 +38,8 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - caps - Own transport capabilities overrides. Set to null to disable all, including defaults
  * - fallbackIceServers - STUN servers to be used as a fallback for WebRTC
  * - rateToSvt - Exchange rate between tokens and SVT, in wei: e.g. rate[TKN]=2e18 => 1TKN = 2SVT
+ * - pollingInterval - Interval at which to poll ETH provider for new blocks/events (milliseconds)
+ *      Honored only at start time
  * - matrixServer? - Specify a matrix server to use.
  * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly
  *             set in on-chain method calls. false (default) = use main key; true = use subkey
@@ -67,6 +70,7 @@ export const RaidenConfig = t.readonly(
       caps: t.union([t.null, Caps]),
       fallbackIceServers: t.array(RTCIceServer),
       rateToSvt: t.record(t.string, UInt(32)),
+      pollingInterval: t.number,
     }),
     t.partial({
       matrixServer: t.string,
@@ -116,6 +120,7 @@ export function makeDefaultConfig(
     },
     fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     rateToSvt: {},
+    pollingInterval: 5000,
     ...overwrites,
   };
 }

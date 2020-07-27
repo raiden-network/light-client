@@ -255,10 +255,6 @@ export class Raiden {
     this.config$ = this.deps.config$;
     this.config$.subscribe((config) => (this.config = config));
 
-    this.config$
-      .pipe(pluckDistinct('logger'))
-      .subscribe((logger) => this.log.setLevel(logger || 'silent', false));
-
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
       RaidenAction,
@@ -274,7 +270,7 @@ export class Raiden {
       applyMiddleware(loggerMiddleware, this.epicMiddleware),
     );
 
-    // populate deps.latest$, to ensure config & logger subscriptions are setup before start
+    // populate deps.latest$, to ensure config, logger && pollingInterval are setup before start
     getLatest$(
       of(raidenConfigUpdate({})),
       of(this.store.getState()),
