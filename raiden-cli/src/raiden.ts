@@ -5,10 +5,12 @@ import yargs from 'yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
 import { Raiden, Address, RaidenConfig, assert } from 'raiden-ts';
+
+import DISCLAIMER from './disclaimer.json';
+import DEFAULT_RAIDEN_CONFIG from './config.json';
 import { Cli } from './types';
 import { makeCli } from './cli';
 import { setupLoglevel } from './utils/logging';
-import DEFAULT_RAIDEN_CONFIG from './config.json';
 
 function parseArguments() {
   return yargs
@@ -45,6 +47,10 @@ function parseArguments() {
         type: 'string',
         desc: "Address of UserDeposit contract to use as contract's entrypoint",
         check: Address.is,
+      },
+      acceptDisclaimer: {
+        type: 'boolean',
+        desc: 'Bypass the experimental software disclaimer prompt',
       },
       blockchainQueryInterval: {
         type: 'number',
@@ -111,9 +117,9 @@ function parseArguments() {
     .help().argv;
 }
 
-async function askUserForPassword(): Promise<string> {
+async function askUserForPassword(address: string): Promise<string> {
   const userInput = await inquirer.prompt<{ password: string }>([
-    { type: 'password', name: 'password', message: 'Private Key Password:', mask: '*' },
+    { type: 'password', name: 'password', message: `[${address}] Password:`, mask: '*' },
   ]);
   return userInput.password;
 }
@@ -124,7 +130,7 @@ async function getWallet(
   passwordFile?: string,
 ): Promise<Wallet> {
   let password;
-  if (!passwordFile) password = await askUserForPassword();
+  if (!passwordFile) password = await askUserForPassword(address);
   else password = (await fs.readFile(passwordFile, 'utf-8')).split('\n').shift()!;
   for (const filename of await fs.readdir(keystoreDir)) {
     try {
@@ -134,7 +140,7 @@ async function getWallet(
       return wallet;
     } catch (e) {}
   }
-  throw new Error(`Could not find keystore file for "${address}"`);
+  throw new Error(`Could not find keystore file for "${address}" and provided password`);
 }
 
 function createLocalStorage(name: string): LocalStorage {
@@ -201,8 +207,27 @@ function parseEndpoint(url: string): readonly [string, number] {
   return [host || '127.0.0.1', +port];
 }
 
+async function checkDisclaimer(disclaimer?: boolean): Promise<void> {
+  console.info(DISCLAIMER);
+  if (disclaimer === undefined) {
+    ({ disclaimer } = await inquirer.prompt<{ disclaimer: boolean }>([
+      {
+        type: 'confirm',
+        name: 'disclaimer',
+        message:
+          'Have you read, understood and hereby accept the above disclaimer and privacy warning?',
+        default: false,
+      },
+    ]));
+  } else if (disclaimer) {
+    console.info('Disclaimer accepted by command line parameter.');
+  }
+  assert(disclaimer, 'Disclaimer not accepted!');
+}
+
 async function main() {
   const argv = parseArguments();
+  await checkDisclaimer(argv.acceptDisclaimer);
   const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
   setupLoglevel(argv.logFile);
   const localStorage = createLocalStorage(argv.datadir);
