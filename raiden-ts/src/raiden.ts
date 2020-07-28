@@ -842,6 +842,7 @@ export class Raiden {
     const pfs = !options.pfs
       ? undefined
       : decode(PFS, options.pfs, ErrorCodes.DTA_INVALID_PFS, this.log.info);
+    // if undefined, default expiration is calculated at locked's [[makeAndSignTransfer$]]
     const expiration = !options.lockTimeout
       ? undefined
       : this.state.blockNumber + options.lockTimeout;

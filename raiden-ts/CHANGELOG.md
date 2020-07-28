@@ -7,7 +7,7 @@
 
 ### Added
 - [#703] Add option to fetch all contracts addresses from UserDeposit address alone
-- [#1710] Add option specify transfer's lock timeout
+- [#1710] Add option to specify a transfer's lock timeout
 - [#1910] Add option to `mint` tokens for any address
 - [#1913] Added `contractsInfo` getter holding current contracts info
 - [#1824] Expose channel settle actions as events
