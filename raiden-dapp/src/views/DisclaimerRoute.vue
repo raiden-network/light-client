@@ -5,11 +5,19 @@
         <div class="disclaimer__content">
           {{ $t('disclaimer.content') }}
         </div>
+        <v-checkbox
+          v-model="checkedAccept"
+          :label="$t('disclaimer.accept-checkbox')"
+        />
+        <v-checkbox
+          v-model="checkedHide"
+          :label="$t('disclaimer.hide-checkbox')"
+        />
       </v-col>
     </v-row>
     <action-button
       :text="$t('disclaimer.accept-button')"
-      :enabled="true"
+      :enabled="checkedAccept"
       sticky
       @click="accept"
     />
@@ -25,6 +33,9 @@ import NavigationMixin from '@/mixins/navigation-mixin';
   components: { ActionButton },
 })
 export default class Disclaimer extends Mixins(NavigationMixin) {
+  checkedAccept = false;
+  checkedHide = false;
+
   accept() {
     this.navigateToHome();
   }
