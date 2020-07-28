@@ -124,7 +124,9 @@ async function getWallet(
   for (const filename of await fs.readdir(keystoreDir)) {
     try {
       const json = await fs.readFile(path.join(keystoreDir, filename), 'utf-8');
-      return await Wallet.fromEncryptedJson(json, password);
+      const wallet = await Wallet.fromEncryptedJson(json, password);
+      assert(wallet.address === address);
+      return wallet;
     } catch (e) {}
   }
   throw new Error(`Could not find keystore file for "${address}"`);
