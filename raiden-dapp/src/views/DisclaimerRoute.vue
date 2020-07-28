@@ -37,6 +37,7 @@ export default class Disclaimer extends Mixins(NavigationMixin) {
   checkedHide = false;
 
   accept() {
+    this.$store.commit('acceptDisclaimer');
     this.navigateToHome();
   }
 }

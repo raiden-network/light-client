@@ -26,6 +26,7 @@ export interface RootState {
   settings: Settings;
   config: Partial<RaidenConfig>;
   userDepositTokenAddress: string;
+  disclaimerAccepted: boolean;
 }
 
 declare global {

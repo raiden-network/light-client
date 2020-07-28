@@ -168,4 +168,17 @@ const router = new Router({
   ],
 });
 
+router.beforeEach((to, _from, next) => {
+  next((vm) => {
+    if (
+      to.name !== RouteNames.DISCLAIMER &&
+      !vm.$store.state.disclaimerAccepted
+    ) {
+      return { name: RouteNames.DISCLAIMER };
+    } else {
+      return;
+    }
+  });
+});
+
 export default router;

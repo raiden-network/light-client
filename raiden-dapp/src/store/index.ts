@@ -53,6 +53,7 @@ const _defaultState: RootState = {
   },
   config: {},
   userDepositTokenAddress: '',
+  disclaimerAccepted: false,
 };
 
 export function defaultState(): RootState {
@@ -139,6 +140,9 @@ const store: StoreOptions<RootState> = {
     },
     userDepositTokenAddress(state: RootState, address: string) {
       state.userDepositTokenAddress = address;
+    },
+    acceptDisclaimer(state: RootState) {
+      state.disclaimerAccepted = true;
     },
   },
   actions: {},
