@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 
+import DisclaimerRoute from '../views/DisclaimerRoute.vue';
 import Home from '../views/Home.vue';
 import { RouteNames } from '@/router/route-names';
 
@@ -13,15 +14,23 @@ const router = new Router({
   routes: [
     {
       path: '/',
+      name: RouteNames.DISCLAIMER,
+      meta: {
+        title: 'Disclaimer',
+      },
+      component: DisclaimerRoute,
+    },
+    {
+      path: '*',
+      redirect: '/',
+    },
+    {
+      path: '/home',
       name: RouteNames.HOME,
       meta: {
         title: 'Raiden dApp',
       },
       component: Home,
-    },
-    {
-      path: '*',
-      redirect: '/',
     },
     {
       path: '/transfer/:token',
