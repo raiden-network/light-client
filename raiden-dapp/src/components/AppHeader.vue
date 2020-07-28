@@ -20,12 +20,7 @@
           </div>
           <v-col>
             <div class="app-header__top__content__title">
-              <span v-if="isConnected">
-                {{ $route.meta.title }}
-              </span>
-              <span v-else>
-                {{ $t('home.title') }}
-              </span>
+              {{ $route.meta.title }}
             </div>
             <div
               v-if="!loading && defaultAccount"
