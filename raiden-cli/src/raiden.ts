@@ -66,6 +66,11 @@ function parseArguments() {
         default: 'http://127.0.0.1:8545',
         desc: 'Ethereum JSON RPC node endpoint to use for blockchain interaction',
       },
+      logFile: {
+        type: 'string',
+        desc: 'Output all logs to this file instead of stdout/stderr',
+        normalize: true,
+      },
       matrixServer: {
         type: 'string',
         default: 'auto',
@@ -197,11 +202,11 @@ function parseEndpoint(url: string): readonly [string, number] {
 }
 
 async function main() {
-  setupLoglevel();
   const argv = parseArguments();
+  const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
+  setupLoglevel(argv.logFile);
   const localStorage = createLocalStorage(argv.datadir);
   const endpoint = parseEndpoint(argv.apiAddress);
-  const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
   const config = await createRaidenConfig(argv);
 
   const raiden = await Raiden.create(
