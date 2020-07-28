@@ -674,12 +674,8 @@ export default class RaidenService {
     await this.raiden.monitorToken(address);
   }
 
-  async mainAccountUtilityTokenBalance(
-    utilityTokenAddress: string
-  ): Promise<string> {
-    return await (
-      await this.raiden.getTokenBalance(utilityTokenAddress)
-    ).toString();
+  async getTokenBalance(tokenAddress: string): Promise<string> {
+    return await (await this.raiden.getTokenBalance(tokenAddress)).toString();
   }
 }
 

@@ -7,7 +7,7 @@
       <div v-if="mainnet" class="udc-deposit-dialog__balance">
         {{
           $t('udc-deposit-dialog.available-rdn', {
-            utilityTokenBalance: utilityTokenAmount,
+            utilityTokenBalance: mainAccountUtilityTokenAmount,
           })
         }}
       </div>
@@ -15,7 +15,7 @@
     <v-card-text>
       <v-row v-if="!loading && !error" justify="center" no-gutters>
         <amount-input
-          v-model="utilityTokenAmount"
+          v-model="defaultUtilityTokenAmount"
           :token="udcToken"
           :placeholder="$t('transfer.amount-placeholder')"
         />
@@ -111,7 +111,8 @@ export default class UdcDepositDialog extends Vue {
   mainnet!: boolean;
   uniswapURL: string = '';
   udcToken!: Token;
-  utilityTokenAmount: string = '';
+  defaultUtilityTokenAmount: string = '';
+  mainAccountUtilityTokenAmount: string = '';
   step: 'mint' | 'approve' | 'deposit' | '' = '';
   loading: boolean = false;
   error: Error | RaidenError | null = null;
@@ -125,25 +126,27 @@ export default class UdcDepositDialog extends Vue {
   }
 
   get valid(): boolean {
-    return /^[1-9]\d*$/.test(this.utilityTokenAmount);
+    return /^[1-9]\d*$/.test(this.defaultUtilityTokenAmount);
   }
 
   async mounted() {
     if (this.mainnet) {
       const mainAccountAddress =
-        (await this.$raiden.getMainAccount()) ??
-        (await this.$raiden.getAccount());
+        this.$raiden.getMainAccount() ?? this.$raiden.getAccount();
 
       this.uniswapURL = this.$t('udc-deposit-dialog.uniswap-url', {
         rdnToken: this.udcToken.address,
         mainAccountAddress: mainAccountAddress,
       }) as string;
 
-      this.utilityTokenAmount = await this.$raiden.mainAccountUtilityTokenBalance(
+      const utilityTokenAmount = await this.$raiden.getTokenBalance(
         this.udcToken.address
       );
+
+      this.defaultUtilityTokenAmount = utilityTokenAmount;
+      this.mainAccountUtilityTokenAmount = utilityTokenAmount;
     } else {
-      this.utilityTokenAmount = '10';
+      this.defaultUtilityTokenAmount = '10';
     }
   }
 
@@ -152,7 +155,7 @@ export default class UdcDepositDialog extends Vue {
     this.loading = true;
     const token = this.udcToken;
     const depositAmount = BalanceUtils.parse(
-      this.utilityTokenAmount,
+      this.defaultUtilityTokenAmount,
       token.decimals!
     );
 
