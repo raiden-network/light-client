@@ -4,6 +4,7 @@ import inquirer from 'inquirer';
 import yargs from 'yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
+import { getAddress } from 'ethers/utils';
 import { Raiden, Address, RaidenConfig, assert } from 'raiden-ts';
 
 import DISCLAIMER from './disclaimer.json';
@@ -34,7 +35,6 @@ function parseArguments() {
       },
       address: {
         type: 'string',
-        demandOption: true,
         desc: 'Address of private key to use',
         check: Address.is,
       },
@@ -117,30 +117,47 @@ function parseArguments() {
     .help().argv;
 }
 
-async function askUserForPassword(address: string): Promise<string> {
-  const userInput = await inquirer.prompt<{ password: string }>([
-    { type: 'password', name: 'password', message: `[${address}] Password:`, mask: '*' },
-  ]);
-  return userInput.password;
+async function listAccounts(keystoreDir: string) {
+  const keys: { [addr: string]: string[] } = {};
+  for (const filename of await fs.readdir(keystoreDir)) {
+    try {
+      const json = await fs.readFile(path.join(keystoreDir, filename), 'utf-8');
+      const address = getAddress(JSON.parse(json)['address']);
+      if (!(address in keys)) keys[address] = [];
+      keys[address].push(json);
+    } catch (e) {}
+  }
+  return keys;
 }
 
 async function getWallet(
   keystoreDir: string,
-  address: string,
+  address?: string,
   passwordFile?: string,
 ): Promise<Wallet> {
+  const keys = await listAccounts(keystoreDir);
+  if (!Object.keys(keys).length)
+    throw new Error(`No account found on keystore directory "${keystoreDir}"`);
+  else if (!address)
+    ({ address } = await inquirer.prompt<{ address: string }>([
+      { type: 'list', name: 'address', message: 'Account:', choices: Object.keys(keys) },
+    ]));
+  else if (!(address in keys)) throw new Error(`Could not find keystore file for "${address}"`);
+
   let password;
-  if (!passwordFile) password = await askUserForPassword(address);
-  else password = (await fs.readFile(passwordFile, 'utf-8')).split('\n').shift()!;
-  for (const filename of await fs.readdir(keystoreDir)) {
+  if (passwordFile) password = (await fs.readFile(passwordFile, 'utf-8')).split('\n').shift()!;
+  else
+    ({ password } = await inquirer.prompt<{ password: string }>([
+      { type: 'password', name: 'password', message: `[${address}] Password:`, mask: '*' },
+    ]));
+
+  for (const json of keys[address]) {
     try {
-      const json = await fs.readFile(path.join(keystoreDir, filename), 'utf-8');
-      const wallet = await Wallet.fromEncryptedJson(json, password);
-      assert(wallet.address === address);
-      return wallet;
+      return await Wallet.fromEncryptedJson(json, password);
     } catch (e) {}
   }
-  throw new Error(`Could not find keystore file for "${address}" and provided password`);
+
+  throw new Error(`Could not decrypt keystore for "${address}" with provided password`);
 }
 
 function createLocalStorage(name: string): LocalStorage {
