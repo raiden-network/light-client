@@ -60,7 +60,7 @@
               />
             </v-btn>
           </span>
-          <span class="app-header__account-wrapper">
+          <span v-if="isNotDisclaimerRoute" class="app-header__account-wrapper">
             <header-identicon @click.native="navigateToAccoount()" />
           </span>
         </div>
@@ -123,6 +123,10 @@ export default class AppHeader extends Mixins(NavigationMixin) {
     return (
       this.isConnected && !routesWithoutBackBtn.includes(this.$route.name!)
     );
+  }
+
+  get isNotDisclaimerRoute(): boolean {
+    return this.$route.name! !== RouteNames.DISCLAIMER;
   }
 }
 </script>
