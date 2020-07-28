@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Raiden } from 'raiden-ts';
+import { Raiden, RaidenConfig } from 'raiden-ts';
 import { Cli } from '../types';
 import { makeChannelsRouter } from './channels';
 import { makeConnectionsRouter } from './connections';
@@ -53,6 +53,16 @@ export function makeApiV1Router(this: Cli): Router {
   router.post('/shutdown', (_request: Request, response: Response) => {
     this.raiden.stop();
     response.json({ status: 'shutdown' });
+  });
+
+  // config endpoints aren't on Raiden spec, but are useful for CLI & SDK management
+  router.get('/config', (_request: Request, response: Response) => {
+    response.json(RaidenConfig.encode(this.raiden.config));
+  });
+
+  router.patch('/config', (request: Request, response: Response) => {
+    this.raiden.updateConfig(request.body);
+    response.json(RaidenConfig.encode(this.raiden.config));
   });
 
   return router;
