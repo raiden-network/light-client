@@ -673,6 +673,14 @@ export default class RaidenService {
   async monitorToken(address: string) {
     await this.raiden.monitorToken(address);
   }
+
+  async mainAccountUtilityTokenBalance(
+    utilityTokenAddress: string
+  ): Promise<string> {
+    return await (
+      await this.raiden.getTokenBalance(utilityTokenAddress)
+    ).toString();
+  }
 }
 
 export class EnsResolveFailed extends Error {}
