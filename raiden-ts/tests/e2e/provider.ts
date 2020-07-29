@@ -26,7 +26,7 @@ export class TestProvider extends Web3Provider {
     super(
       web3 ??
         ganache.provider({
-          total_accounts: 3,
+          total_accounts: 5,
           default_balance_ether: 5,
           seed: 'testrpc_provider',
           network_id: 1338,
@@ -35,7 +35,6 @@ export class TestProvider extends Web3Provider {
           ...opts,
         }),
     );
-    this.pollingInterval = 10;
   }
 
   public snapshot(): Promise<number> {

@@ -1,6 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { first, pluck } from 'rxjs/operators';
-import { isntNil, ChannelState, RaidenChannel, RaidenChannels } from 'raiden-ts';
+import {
+  isntNil,
+  ChannelState,
+  RaidenChannel,
+  RaidenChannels,
+  RaidenError,
+  ErrorCodes,
+} from 'raiden-ts';
 import { Cli } from '../types';
 import {
   isInvalidParameterError,
@@ -111,7 +118,7 @@ async function openChannel(this: Cli, request: Request, response: Response, next
     } else if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
     } else if (isConflictError(error)) {
-      response.status(409).send(error.message);
+      response.status(409).send({ message: error.message });
     } else {
       next(error);
     }
@@ -195,13 +202,21 @@ async function updateChannel(this: Cli, request: Request, response: Response, ne
   const partner: string = request.params.partnerAddress;
   try {
     let channel = await this.raiden.channels$.pipe(first(), pluck(token, partner)).toPromise();
-    if (!channel) return response.status(404).send('channel not found');
+    if (!channel) throw new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND); // one of conflict errors
     if (request.body.state) {
       channel = await updateChannelState.call(this, channel, request.body.state);
     } else if (request.body.total_deposit) {
-      channel = await updateChannelDeposit.call(this, channel, request.body.total_deposit);
+      channel = await updateChannelDeposit.call(
+        this,
+        channel,
+        request.body.total_deposit.toString(),
+      );
     } else if (request.body.total_withdraw) {
-      channel = await updateChannelWithdraw.call(this, channel, request.body.total_withdraw);
+      channel = await updateChannelWithdraw.call(
+        this,
+        channel,
+        request.body.total_withdraw.toString(),
+      );
     }
     response.status(200).json(transformChannelFormatForApi(channel));
   } catch (error) {
@@ -210,7 +225,7 @@ async function updateChannel(this: Cli, request: Request, response: Response, ne
     } else if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
     } else if (isConflictError(error)) {
-      response.status(409).send(error.message);
+      response.status(409).json({ message: error.message });
     } else {
       next(error);
     }

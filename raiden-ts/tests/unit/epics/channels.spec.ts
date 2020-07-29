@@ -6,6 +6,7 @@ import {
   makeTransaction,
   makeAddress,
   providersEmit,
+  sleep,
 } from '../mocks';
 import {
   token,
@@ -434,9 +435,7 @@ describe('channelDepositEpic', () => {
       channelDeposit.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
     );
     expect(tokenContract.functions.approve).toHaveBeenCalledTimes(1);
-    expect(tokenContract.functions.approve).toHaveBeenCalledWith(tokenNetwork, deposit, {
-      nonce: undefined,
-    });
+    expect(tokenContract.functions.approve).toHaveBeenCalledWith(tokenNetwork, deposit);
   });
 
   test('setTotalDeposit tx fails', async () => {
@@ -476,6 +475,12 @@ describe('channelDepositEpic', () => {
 
     const approveTx = makeTransaction();
     tokenContract.functions.approve.mockResolvedValue(approveTx);
+    // first approve tx fail with nonce error, replacement fee error should be retried
+    const approveFailTx: typeof approveTx = {
+      ...makeTransaction(),
+      wait: jest.fn().mockRejectedValue(new Error('replacement fee too low')),
+    };
+    tokenContract.functions.approve.mockResolvedValueOnce(approveFailTx);
 
     const setTotalDepositTx = makeTransaction();
     tokenNetworkContract.functions.setTotalDeposit.mockResolvedValue(setTotalDepositTx);
@@ -493,13 +498,15 @@ describe('channelDepositEpic', () => {
       channelDeposit.request({ deposit }, { tokenNetwork, partner: partner.address }),
     );
     await waitBlock();
+    // give some time for the `approve` retry
+    await sleep(raiden.deps.provider.pollingInterval * 2);
 
     // result is undefined on success as the respective channelDeposit.success is emitted by the
     // channelMonitoredEpic, which monitors the blockchain for ChannelNewDeposit events
     expect(raiden.output).not.toContainEqual(
       channelDeposit.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
     );
-    expect(tokenContract.functions.approve).toHaveBeenCalledTimes(1);
+    expect(tokenContract.functions.approve).toHaveBeenCalledTimes(2);
     expect(approveTx.wait).toHaveBeenCalledTimes(1);
     expect(tokenNetworkContract.functions.setTotalDeposit).toHaveBeenCalledTimes(1);
     expect(tokenNetworkContract.functions.setTotalDeposit).toHaveBeenCalledWith(

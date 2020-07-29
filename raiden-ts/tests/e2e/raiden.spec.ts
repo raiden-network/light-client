@@ -61,7 +61,9 @@ describe('Raiden', () => {
     settleTimeout: 20,
     revealTimeout: 5,
     confirmationBlocks: 2,
+    pollingInterval: 10,
   };
+  const raidens: Raiden[] = [];
 
   let httpBackend: MockMatrixRequestFn;
   const matrixServer = 'matrix.raiden.test';
@@ -89,17 +91,12 @@ describe('Raiden', () => {
       .subscribe((a) =>
         provider.mineUntil(a.payload.txBlock + raiden.config.confirmationBlocks + 1),
       );
+    raidens.push(raiden);
     return raiden;
   }
 
-  const fetch = jest.fn(async () => ({
-    ok: true,
-    status: 200,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    json: jest.fn(async () => ({} as any)),
-    text: jest.fn(async () => `- ${matrixServer}`),
-  }));
-  Object.assign(global, { fetch });
+  const fetch = jest.fn();
+  Object.assign(globalThis, { fetch });
 
   beforeAll(async () => {
     jest.setTimeout(60e3);
@@ -142,6 +139,14 @@ describe('Raiden', () => {
     await provider.getBlockNumber();
     storage = new MockStorage();
 
+    fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      json: jest.fn(async () => ({} as any)),
+      text: jest.fn(async () => `- ${matrixServer}`),
+    });
+
     // setup matrix mock http backend
     httpBackend = new MockMatrixRequestFn(matrixServer);
     request(httpBackend.requestFn.bind(httpBackend));
@@ -151,12 +156,14 @@ describe('Raiden', () => {
   });
 
   afterEach(() => {
-    raiden.stop();
+    let _raiden;
+    while ((_raiden = raidens.pop())) _raiden.stop();
     httpBackend.stop();
+    fetch.mockRestore();
   });
 
   test('create from other params and RaidenState', async () => {
-    expect.assertions(14);
+    expect.assertions(15);
 
     const raiden0State = await raiden.state$.pipe(first()).toPromise();
     raiden.stop();
@@ -235,6 +242,7 @@ describe('Raiden', () => {
 
     // success when using address of account on provider and initial state,
     // and pass UserDeposit address to fetch contracts info from
+    provider.pollingInterval = config.pollingInterval! * 3;
     const raiden1 = await Raiden.create(
       provider,
       accounts[1],
@@ -269,6 +277,8 @@ describe('Raiden', () => {
         block_number: expect.any(Number),
       },
     });
+    // ensure Raiden.constructor set pollingInterval in the end as per 'config', before 'start'
+    expect(provider.pollingInterval).toBe(config.pollingInterval);
 
     // test Raiden.started, not yet started
     expect(raiden1.started).toBeUndefined();
@@ -457,10 +467,6 @@ describe('Raiden', () => {
       await raiden.depositChannel(token, partner, 200);
       raiden1 = await createRaiden(partner, undefined);
       raiden1.start();
-    });
-
-    afterEach(() => {
-      raiden1.stop();
     });
 
     test('partner instance fetches events fired before instantiation', async () => {
@@ -709,8 +715,6 @@ describe('Raiden', () => {
           }),
         ),
       );
-
-      raiden1.stop();
     });
   });
 
@@ -736,8 +740,6 @@ describe('Raiden', () => {
         available: true,
         ts: expect.any(Number),
       });
-
-      raiden1.stop();
     });
   });
 
@@ -837,11 +839,21 @@ describe('Raiden', () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      afterEach(() => raiden1.stop());
-
       test('fail: direct channel without enough capacity, pfs disabled', async () => {
-        expect.assertions(2);
+        expect.assertions(3);
         raiden.updateConfig({ pfs: null });
+
+        // there's some channel with enough capacity, but not the one returned by PFS
+        const partner3 = accounts[3];
+        await raiden.openChannel(token, partner3, { deposit: 300 });
+        const raiden3 = await createRaiden(
+          partner3,
+          makeInitialState({ network, contractsInfo, address: partner3 as Address }, { config }),
+        );
+        raiden3.start();
+        await raiden3.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
+        await expect(raiden.getAvailability(partner3)).resolves.toBeDefined();
+
         await expect(raiden.transfer(token, partner, 201)).rejects.toThrowError(
           ErrorCodes.PFS_DISABLED,
         );
@@ -858,6 +870,14 @@ describe('Raiden', () => {
 
         expect(key in transfers).toBe(true);
         expect(transfers[key].status).toBe(RaidenTransferStatus.pending);
+      });
+
+      test('fail: invalid lockTimeout', async () => {
+        expect.assertions(2);
+
+        await expect(raiden.transfer(token, partner, 23, { lockTimeout: 1 })).rejects.toThrowError(
+          'expiration',
+        );
       });
 
       test('success: auto pfs route', async () => {
@@ -935,8 +955,6 @@ describe('Raiden', () => {
           expect.stringMatching(new RegExp(`^${pfsUrl}/.*/${tokenNetwork}/paths$`)),
           expect.objectContaining({ method: 'POST' }),
         );
-
-        raiden2.stop();
       });
     });
   });
@@ -1035,11 +1053,6 @@ describe('Raiden', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       raiden.updateConfig({ pfs: pfsUrl });
-    });
-
-    afterEach(() => {
-      raiden1.stop();
-      raiden2.stop();
     });
 
     test('success with config.pfs', async () => {
@@ -1155,7 +1168,18 @@ describe('Raiden', () => {
     });
 
     test('fail: filtered no capacity routes', async () => {
-      expect.assertions(3);
+      expect.assertions(4);
+
+      // there's some channel with enough capacity, but not the one returned by PFS
+      const partner3 = accounts[3];
+      await raiden.openChannel(token, partner3, { deposit: 300 });
+      const raiden3 = await createRaiden(
+        partner3,
+        makeInitialState({ network, contractsInfo, address: partner3 as Address }, { config }),
+      );
+      raiden3.start();
+      await raiden3.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
+      await expect(raiden.getAvailability(partner3)).resolves.toBeDefined();
 
       fetch.mockResolvedValueOnce({
         ok: true,
@@ -1225,7 +1249,6 @@ describe('Raiden', () => {
       await expect(
         raiden.mint('0x3a989D97388a39A0B5796306C615d10B7416bE77', 50),
       ).rejects.toThrowError('Minting is only allowed on test networks.');
-      raiden.stop();
     });
 
     test('should return transaction if minted successfully', async () => {
@@ -1415,7 +1438,5 @@ describe('Raiden', () => {
     expect((await sub.getTokenBalance(token, sub.mainAddress)).eq(mainTokenBalance)).toBe(true);
     // subkey is emptied of ETH
     expect((await sub.getBalance()).isZero()).toBe(true);
-
-    sub.stop();
   });
 });

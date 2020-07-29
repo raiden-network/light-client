@@ -104,7 +104,7 @@ async function main() {
     ...DEFAULT_RAIDEN_CONFIG,
     ...argv.config,
   });
-  const cli = await makeCli(raiden, argv.port);
+  const cli = makeCli(raiden, ['127.0.0.1', argv.port]);
   registerShutdownHooks.call(cli);
   cli.raiden.start();
 }

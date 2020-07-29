@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import fs from 'fs';
 import logging, { LoggingMethod } from 'loglevel';
 
-export function setupLoglevel(): void {
+export function setupLoglevel(output?: string): void {
   const originalFactory = logging.methodFactory;
 
   logging.methodFactory = (
@@ -19,5 +21,10 @@ export function setupLoglevel(): void {
     logging.setLevel('INFO');
   } else {
     logging.setLevel('DEBUG');
+  }
+
+  if (output) {
+    const logfile = fs.createWriteStream(output, { flags: 'a' });
+    process.stdout.write = process.stderr.write = logfile.write.bind(logfile) as any;
   }
 }

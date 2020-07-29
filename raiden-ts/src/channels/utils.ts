@@ -1,7 +1,15 @@
-import { OperatorFunction, Observable, ReplaySubject } from 'rxjs';
-import { tap, mergeMap, map, pluck, filter, groupBy, takeUntil } from 'rxjs/operators';
+import {
+  OperatorFunction,
+  Observable,
+  ReplaySubject,
+  throwError,
+  timer,
+  MonoTypeOperatorFunction,
+} from 'rxjs';
+import { tap, mergeMap, map, pluck, filter, groupBy, takeUntil, retryWhen } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { ContractTransaction, ContractReceipt } from 'ethers/contract';
+import logging from 'loglevel';
 
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
@@ -9,7 +17,7 @@ import { UInt, Address, Hash, Int } from '../utils/types';
 import { RaidenError } from '../utils/error';
 import { distinctRecordValues } from '../utils/rx';
 import { MessageType } from '../messages/types';
-import { Channel, ChannelState, ChannelBalances } from './state';
+import { Channel, ChannelBalances } from './state';
 import { ChannelKey, ChannelUniqueKey } from './types';
 
 /**
@@ -56,30 +64,6 @@ function bnMax<T extends UInt>(...args: T[]): T {
  *          capacity.
  */
 export function channelAmounts(channel: Channel): ChannelBalances {
-  if (channel.state !== ChannelState.open)
-    return {
-      ownDeposit: Zero as UInt<32>,
-      ownWithdraw: Zero as UInt<32>,
-      ownTransferred: Zero as UInt<32>,
-      ownLocked: Zero as UInt<32>,
-      ownBalance: Zero as Int<32>,
-      ownCapacity: Zero as UInt<32>,
-      ownOnchainUnlocked: Zero as UInt<32>,
-      ownUnlocked: Zero as UInt<32>, // total of off & onchain unlocked
-      ownTotalWithdrawable: Zero as UInt<32>,
-      ownWithdrawable: Zero as UInt<32>,
-      partnerDeposit: Zero as UInt<32>,
-      partnerWithdraw: Zero as UInt<32>,
-      partnerTransferred: Zero as UInt<32>,
-      partnerLocked: Zero as UInt<32>,
-      partnerBalance: Zero as Int<32>,
-      partnerCapacity: Zero as UInt<32>,
-      partnerOnchainUnlocked: Zero as UInt<32>,
-      partnerUnlocked: Zero as UInt<32>, // total of off & onchain unlocked
-      partnerTotalWithdrawable: Zero as UInt<32>,
-      partnerWithdrawable: Zero as UInt<32>,
-    };
-
   const ownWithdraw = channel.own.withdraw,
     partnerWithdraw = channel.partner.withdraw,
     ownTransferred = channel.own.balanceProof.transferredAmount,
@@ -165,19 +149,13 @@ export function assertTx(
   { log }: Pick<RaidenEpicDeps, 'log'>,
 ): OperatorFunction<
   ContractTransaction,
-  ContractReceipt & { transactionHash: Hash; blockNumber: number }
+  [ContractTransaction, ContractReceipt & { transactionHash: Hash; blockNumber: number }]
 > {
-  /**
-   * Operator to check for tx
-   *
-   * @param tx - pending contract tx
-   * @returns Observable of txHash
-   */
-  return (tx) =>
-    tx.pipe(
+  return (tx$) =>
+    tx$.pipe(
       tap((tx) => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
-      mergeMap((tx) => tx.wait()),
-      map((receipt) => {
+      mergeMap(async (tx) => [tx, await tx.wait()] as const),
+      map(([tx, receipt]) => {
         if (!receipt.status || !receipt.transactionHash || !receipt.blockNumber)
           throw new RaidenError(error, {
             status: receipt.status ?? null,
@@ -185,8 +163,55 @@ export function assertTx(
             blockNumber: receipt.blockNumber ?? null,
           });
         log.debug(`${method} tx "${receipt.transactionHash}" successfuly mined!`);
-        return receipt as ContractReceipt & { transactionHash: Hash; blockNumber: number };
+        return [tx, receipt] as [
+          ContractTransaction,
+          ContractReceipt & { transactionHash: Hash; blockNumber: number },
+        ];
       }),
+    );
+}
+
+export const txNonceErrors: readonly string[] = [
+  'replacement fee too low',
+  'gas price supplied is too low',
+  'nonce is too low',
+  'nonce has already been used',
+  'already known',
+  'Transaction with the same hash was already imported',
+];
+export const txFailErrors: readonly string[] = ['always failing transaction'];
+
+/**
+ * RxJS pipeable operator to re-subscribe/retry a transaction observable on recoverable errors
+ *
+ * For this to work, the input$ transaction observable must be re-subscribable:
+ * e.g. a promise wrapped in a `defer` callback.
+ *
+ * @param interval - interval between retries
+ * @param count - Maximum number of retries
+ * @param errors - Retry if error.message includes some string in this array (recoverable errors)
+ * @param options - Options object
+ * @param options.log - Logger instance
+ * @returns Monotype operator to re-subscribe to input observable
+ */
+export function retryTx<T>(
+  interval = 1000,
+  count = 10,
+  errors: readonly string[] = txNonceErrors,
+  { log }: { log: logging.Logger } = { log: logging },
+): MonoTypeOperatorFunction<T> {
+  return (input$) =>
+    input$.pipe(
+      retryWhen((err$) =>
+        err$.pipe(
+          mergeMap((err, i) => {
+            log.debug(`__retryTx ${i + 1}/${count} every ${interval}, error: `, err);
+            if (i < count && errors.some((error) => err.message?.includes?.(error)))
+              return timer(interval);
+            return throwError(err);
+          }),
+        ),
+      ),
     );
 }
 

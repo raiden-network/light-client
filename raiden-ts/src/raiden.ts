@@ -255,10 +255,6 @@ export class Raiden {
     this.config$ = this.deps.config$;
     this.config$.subscribe((config) => (this.config = config));
 
-    this.config$
-      .pipe(pluckDistinct('logger'))
-      .subscribe((logger) => this.log.setLevel(logger || 'silent', false));
-
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
       RaidenAction,
@@ -274,7 +270,7 @@ export class Raiden {
       applyMiddleware(loggerMiddleware, this.epicMiddleware),
     );
 
-    // populate deps.latest$, to ensure config & logger subscriptions are setup before start
+    // populate deps.latest$, to ensure config, logger && pollingInterval are setup before start
     getLatest$(
       of(raidenConfigUpdate({})),
       of(this.store.getState()),
@@ -406,6 +402,14 @@ export class Raiden {
    */
   public start(): void {
     assert(this.epicMiddleware, ErrorCodes.RDN_ALREADY_STARTED, this.log.info);
+    this.log.info('Starting Raiden Light-Client', {
+      prevBlockNumber: this.state.blockNumber,
+      address: this.address,
+      TokenNetworkRegistry: this.deps.contractsInfo.TokenNetworkRegistry.address,
+      network: this.deps.network,
+      'raiden-ts': Raiden.version,
+      'raiden-contracts': Raiden.contractVersion,
+    });
     // on complete, sets epicMiddleware to null, so this.started === false
     this.deps.latest$.subscribe(undefined, undefined, () => (this.epicMiddleware = null));
     this.epicMiddleware.run(raidenRootEpic);
@@ -432,7 +436,7 @@ export class Raiden {
   public stop(): void {
     // start still can't be called again, but turns this.started to false
     // this.epicMiddleware is set to null by latest$'s complete callback
-    this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
+    if (this.started) this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
   }
 
   /**
@@ -810,6 +814,7 @@ export class Raiden {
    *     Is ignored if paths were already provided. If neither are set and config.pfs is not
    *     disabled (null), use it if set or if undefined (auto mode), fetches the best
    *     PFS from ServiceRegistry and automatically fetch routes from it.</li>
+   * @param options.lockTimeout - Specify a lock timeout for transfer; default is 2 * revealTimeout
    * @returns A promise to transfer's unique key (id) when it's accepted
    */
   public async transfer(
@@ -822,6 +827,7 @@ export class Raiden {
       secrethash?: string;
       paths?: RaidenPaths;
       pfs?: RaidenPFS;
+      lockTimeout?: number;
     } = {},
   ): Promise<string> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
@@ -840,6 +846,10 @@ export class Raiden {
     const pfs = !options.pfs
       ? undefined
       : decode(PFS, options.pfs, ErrorCodes.DTA_INVALID_PFS, this.log.info);
+    // if undefined, default expiration is calculated at locked's [[makeAndSignTransfer$]]
+    const expiration = !options.lockTimeout
+      ? undefined
+      : this.state.blockNumber + options.lockTimeout;
 
     assert(
       options.secret === undefined || Secret.is(options.secret),
@@ -909,6 +919,7 @@ export class Raiden {
                     paths,
                     paymentId,
                     secret,
+                    expiration,
                   },
                   { secrethash, direction: Direction.SENT },
                 ),

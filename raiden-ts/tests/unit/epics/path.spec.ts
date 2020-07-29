@@ -59,16 +59,8 @@ describe('PFS: pathFindServiceEpic', () => {
 
   const openBlock = 121;
 
-  const fetch = jest.fn(async () => ({
-    ok: true,
-    status: 200,
-    json: jest.fn(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async () => null as any,
-    ),
-    text: jest.fn(async () => losslessStringify(null)),
-  }));
-  Object.assign(global, { fetch });
+  const fetch = jest.fn();
+  Object.assign(globalThis, { fetch });
 
   beforeEach(() => {
     depsMock = raidenEpicDeps();
@@ -124,7 +116,7 @@ describe('PFS: pathFindServiceEpic', () => {
     ].forEach((a) => action$.next(a));
 
     const result = { result: [{ path: [partner, target], estimated_fee: 1234 }] };
-    fetch.mockImplementation(async () => ({
+    fetch.mockResolvedValue({
       ok: true,
       status: 200,
       json: jest.fn(
@@ -132,11 +124,12 @@ describe('PFS: pathFindServiceEpic', () => {
         async () => result,
       ),
       text: jest.fn(async () => losslessStringify(result)),
-    }));
+    });
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    fetch.mockRestore();
     action$.complete();
     state$.complete();
     depsMock.latest$.complete();
@@ -918,22 +911,6 @@ describe('PFS: pathFindServiceEpic', () => {
       ),
     );
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
-    });
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 404,
-      json: jest.fn(async () => {
-        /* error */
-      }),
-      text: jest.fn(async () => losslessStringify({})),
-    });
-
     const result = { result: [{ path: [partner, target], estimated_fee: 1 }] };
     fetch.mockResolvedValueOnce({
       ok: true,
@@ -958,11 +935,10 @@ describe('PFS: pathFindServiceEpic', () => {
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
-      pathFind.failure(expect.objectContaining({ message: ErrorCodes.PFS_NO_ROUTES_FOUND }), {
-        tokenNetwork,
-        target,
-        value,
-      }),
+      pathFind.failure(
+        { message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES },
+        { tokenNetwork, target, value },
+      ),
     );
   });
 
@@ -989,11 +965,10 @@ describe('PFS: pathFindServiceEpic', () => {
     setTimeout(() => action$.complete(), 10);
 
     await expect(promise).resolves.toMatchObject(
-      pathFind.failure(expect.objectContaining({ message: ErrorCodes.PFS_NO_ROUTES_FOUND }), {
-        tokenNetwork,
-        target,
-        value,
-      }),
+      pathFind.failure(
+        { message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES },
+        { tokenNetwork, target, value },
+      ),
     );
   });
 

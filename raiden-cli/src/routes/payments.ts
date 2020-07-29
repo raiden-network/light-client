@@ -77,12 +77,11 @@ function getPayments(this: Cli, request: Request, response: Response) {
 
 async function doTransfer(this: Cli, request: Request, response: Response, next: NextFunction) {
   try {
-    // TODO: We ignore the provided `lock_timeout` until #1710 provides a better solution
     const transferKey = await this.raiden.transfer(
       request.params.tokenAddress,
       request.params.targetAddress,
       request.body.amount,
-      { paymentId: request.body.identifier },
+      { paymentId: request.body.identifier, lockTimeout: request.body.lock_timeout },
     );
     await this.raiden.waitTransfer(transferKey);
     const newTransfer = await this.raiden.transfers$
@@ -96,7 +95,7 @@ async function doTransfer(this: Cli, request: Request, response: Response, next:
       response.status(402).send(error.message);
     } else if (isConflictError(error)) {
       const pfsErrorDetail = error.details?.errors ? ` (${error.details.errors})` : '';
-      response.status(409).send(error.message + pfsErrorDetail);
+      response.status(409).json({ message: error.message, details: pfsErrorDetail });
     } else {
       next(error);
     }

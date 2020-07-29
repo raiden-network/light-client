@@ -73,7 +73,10 @@ export const channelDeposit = createAsyncAction(
   'channel/deposit/request',
   'channel/deposit/success',
   'channel/deposit/failure',
-  t.intersection([t.type({ deposit: UInt(32) }), t.partial({ subkey: t.boolean })]),
+  t.intersection([
+    t.type({ deposit: UInt(32) }),
+    t.partial({ subkey: t.boolean, waitOpen: t.literal(true) }),
+  ]),
   t.type({
     id: t.number,
     participant: Address,
