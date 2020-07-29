@@ -402,6 +402,14 @@ export class Raiden {
    */
   public start(): void {
     assert(this.epicMiddleware, ErrorCodes.RDN_ALREADY_STARTED, this.log.info);
+    this.log.info('Starting Raiden Light-Client', {
+      prevBlockNumber: this.state.blockNumber,
+      address: this.address,
+      TokenNetworkRegistry: this.deps.contractsInfo.TokenNetworkRegistry.address,
+      network: this.deps.network,
+      'raiden-ts': Raiden.version,
+      'raiden-contracts': Raiden.contractVersion,
+    });
     // on complete, sets epicMiddleware to null, so this.started === false
     this.deps.latest$.subscribe(undefined, undefined, () => (this.epicMiddleware = null));
     this.epicMiddleware.run(raidenRootEpic);
