@@ -43,7 +43,7 @@ import { RaidenAction } from '../../actions';
 import { RaidenConfig } from '../../config';
 import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
-import { pluckDistinct } from '../../utils/rx';
+import { pluckDistinct, retryAsync$ } from '../../utils/rx';
 import { matrixSetup } from '../actions';
 import { RaidenMatrixSetup } from '../state';
 import { Caps } from '../types';
@@ -222,76 +222,100 @@ function fetchSortedMatrixServers$(matrixServerLookup: string, httpTimeout: numb
  * @param deps - RaidenEpicDeps-like/partial object
  * @param deps.address - Our address (to compose matrix user)
  * @param deps.signer - Signer to be used to sign password and displayName
+ * @param deps.config$ - Config observable
  * @param caps - Transport capabilities to set in user's avatar_url
  * @returns Observable of one { matrix, server, setup } object
  */
 function setupMatrixClient$(
   server: string,
   setup: RaidenMatrixSetup | undefined,
-  { address, signer }: Pick<RaidenEpicDeps, 'address' | 'signer'>,
+  { address, signer, config$ }: Pick<RaidenEpicDeps, 'address' | 'signer' | 'config$'>,
   caps: Caps | null,
 ) {
   const serverName = getServerName(server);
   if (!serverName) throw new RaidenError(ErrorCodes.TRNS_NO_SERVERNAME, { server });
 
-  return defer(() => {
-    if (setup) {
-      // if matrixSetup was already issued before, and credentials are already in state
-      const matrix = createClient({
-        baseUrl: server,
-        userId: setup.userId,
-        accessToken: setup.accessToken,
-        deviceId: setup.deviceId,
-      });
-      return of({ matrix, server, setup });
-    } else {
-      const matrix = createClient({ baseUrl: server });
-      const userName = address.toLowerCase(),
-        userId = `@${userName}:${serverName}`;
+  return config$.pipe(
+    first(),
+    mergeMap(({ pollingInterval }) => {
+      if (setup) {
+        // if matrixSetup was already issued before, and credentials are already in state
+        const matrix = createClient({
+          baseUrl: server,
+          userId: setup.userId,
+          accessToken: setup.accessToken,
+          deviceId: setup.deviceId,
+        });
+        return of({ matrix, server, setup });
+      } else {
+        const matrix = createClient({ baseUrl: server });
+        const userName = address.toLowerCase(),
+          userId = `@${userName}:${serverName}`;
 
-      // create password as signature of serverName, then try login or register
-      return from(signer.signMessage(serverName)).pipe(
-        mergeMap((password) =>
-          from(
-            matrix.login('m.login.password', { user: userName, password, device_id: DEVICE_ID }),
-          ).pipe(catchError(() => matrix.register(userName, password))),
-        ),
-        mergeMap(({ access_token, device_id }) => {
-          // matrix.register implementation doesn't set returned credentials
-          // which would require an unnecessary additional login request if we didn't
-          // set it here, and login doesn't set deviceId, so we set all credential
-          // parameters again here after successful login or register
-          matrix.deviceId = device_id;
-          matrix._http.opts.accessToken = access_token;
-          matrix.credentials = { userId };
+        // create password as signature of serverName, then try login or register
+        return from(signer.signMessage(serverName)).pipe(
+          mergeMap((password) =>
+            retryAsync$(
+              () =>
+                matrix.login('m.login.password', {
+                  user: userName,
+                  password,
+                  device_id: DEVICE_ID,
+                }),
+              pollingInterval,
+              (err) => err?.httpStatus !== 429, // retry only if rate-limit error
+            ).pipe(
+              catchError((err) =>
+                matrix.register(userName, password).catch(() => {
+                  throw err; // if register fails, throw first error as it's more informative
+                }),
+              ),
+            ),
+          ),
+          mergeMap(({ access_token, device_id }) => {
+            // matrix.register implementation doesn't set returned credentials
+            // which would require an unnecessary additional login request if we didn't
+            // set it here, and login doesn't set deviceId, so we set all credential
+            // parameters again here after successful login or register
+            matrix.deviceId = device_id;
+            matrix._http.opts.accessToken = access_token;
+            matrix.credentials = { userId };
 
-          // displayName must be signature of full userId for our messages to be accepted
-          return from(signer.signMessage(userId)).pipe(
-            map((signedUserId) => ({
-              matrix,
-              server,
-              setup: {
-                userId,
-                accessToken: access_token,
-                deviceId: device_id,
-                displayName: signedUserId,
-              } as RaidenMatrixSetup,
-            })),
-          );
-        }),
-      );
-    }
-  }).pipe(
-    // the APIs below are authenticated, and therefore also act as validator
-    mergeMap(({ matrix, server, setup }) =>
-      // set these properties before starting sync
-      merge(
-        from(matrix.setDisplayName(setup.displayName)),
-        from(matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : '')),
-      ).pipe(
-        mapTo({ matrix, server, setup }), // return triplet again
-      ),
-    ),
+            // displayName must be signature of full userId for our messages to be accepted
+            return from(signer.signMessage(userId)).pipe(
+              map((signedUserId) => ({
+                matrix,
+                server,
+                setup: {
+                  userId,
+                  accessToken: access_token,
+                  deviceId: device_id,
+                  displayName: signedUserId,
+                } as RaidenMatrixSetup,
+              })),
+            );
+          }),
+          // the APIs below are authenticated, and therefore also act as validator
+          mergeMap(({ matrix, server, setup }) =>
+            // set these properties before starting sync
+            merge(
+              retryAsync$(
+                () => matrix.setDisplayName(setup.displayName),
+                pollingInterval,
+                (err) => err?.httpStatus !== 429,
+              ),
+              retryAsync$(
+                () => matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
+                pollingInterval,
+                (err) => err?.httpStatus !== 429,
+              ),
+            ).pipe(
+              mapTo({ matrix, server, setup }), // return triplet again
+            ),
+          ),
+        );
+      }
+    }),
   );
 }
 
@@ -347,7 +371,7 @@ export const initMatrixEpic = (
         catchError(andSuppress), // servers$ may error, so store lastError
         concatMap(({ server, setup }) =>
           // serially, try setting up client and validate its credential
-          setupMatrixClient$(server, setup, { address, signer }, caps).pipe(
+          setupMatrixClient$(server, setup, { address, signer, config$ }, caps).pipe(
             // store and suppress any 'setupMatrixClient$' error
             catchError(andSuppress),
           ),

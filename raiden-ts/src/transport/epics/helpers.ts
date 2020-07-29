@@ -156,10 +156,10 @@ export function waitMemberAndSend$(
           // up to RETRY_COUNT times; if it continues to error, throws down
           err$.pipe(
             withLatestFrom(config$),
-            mergeMap(([err, { httpTimeout }], i) => {
+            mergeMap(([err, { pollingInterval }], i) => {
               if (i < RETRY_COUNT - 1) {
                 log.warn(`messageSend error, retrying ${i + 1}/${RETRY_COUNT}`, err);
-                return timer(httpTimeout / RETRY_COUNT);
+                return timer(pollingInterval);
                 // give up
               } else return throwError(err);
             }),
