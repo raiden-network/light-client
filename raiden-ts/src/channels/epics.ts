@@ -8,7 +8,6 @@ import {
   defer,
   concat as concat$,
   combineLatest,
-  timer,
   throwError,
   AsyncSubject,
 } from 'rxjs';
@@ -25,7 +24,6 @@ import {
   publishReplay,
   ignoreElements,
   skip,
-  retryWhen,
   mergeMapTo,
   first,
   delayWhen,
@@ -50,7 +48,7 @@ import { ShutdownReason } from '../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature, isntNil, HexString } from '../utils/types';
 import { isActionOf } from '../utils/actions';
-import { pluckDistinct, distinctRecordValues } from '../utils/rx';
+import { pluckDistinct, distinctRecordValues, retryAsync$ } from '../utils/rx';
 import { fromEthersEvent, getNetwork, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
@@ -79,36 +77,6 @@ import {
   txNonceErrors,
   txFailErrors,
 } from './utils';
-
-/**
- * Receives an async function and returns an observable which will retry it every interval until it
- * resolves, or throw if it can't succeed after 10 retries.
- * It is needed e.g. on provider methods which perform RPC requests directly, as they can fail
- * temporarily due to network errors, so they need to be retried for a while.
- * JsonRpcProvider._doPoll also catches, suppresses & retry
- *
- * @param func - An async function (e.g. a Promise factory, like a defer callback)
- * @param interval - Interval to retry in case of rejection
- * @param stopPredicate - Stops retrying and throws if this function returns a truty value;
- *      Receives error and retry count; Default: stops after 10 retries
- * @returns Observable version of async function, with retries
- */
-function retryAsync$<T>(
-  func: () => Promise<T>,
-  interval = 1e3,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
-): Observable<T> {
-  return defer(func).pipe(
-    retryWhen((error$) =>
-      error$.pipe(
-        mergeMap((error, count) =>
-          stopPredicate(error, count) ? throwError(error) : timer(interval),
-        ),
-      ),
-    ),
-  );
-}
 
 /**
  * Fetch current blockNumber, register for new block events and emit newBlock actions
