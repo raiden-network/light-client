@@ -2,8 +2,13 @@
   <v-container fluid class="disclaimer">
     <v-row no-gutters>
       <v-col cols="10" offset="1">
-        <div class="disclaimer__content">
-          {{ $t('disclaimer.content') }}
+        <div class="disclaimer__paragraphs">
+          <p
+            v-for="(paragraph, index) in $t('disclaimer.paragraphs')"
+            :key="index"
+          >
+            {{ paragraph }}
+          </p>
         </div>
         <v-checkbox
           v-model="checkedAccept"
@@ -46,7 +51,7 @@ export default class Disclaimer extends Vue {
     }
   }
 
-  accept() {
+  accept(): void {
     this.$store.commit('acceptDisclaimer');
     this.$router.push(this.navigationTarget);
   }
@@ -55,7 +60,7 @@ export default class Disclaimer extends Vue {
 
 <style lang="scss" scoped>
 .disclaimer {
-  &__content {
+  &__paragraphs {
     text-align: justify;
   }
 }
