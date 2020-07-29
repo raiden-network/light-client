@@ -6,7 +6,7 @@
       " Also be aware, that data on individual Raiden token transfers will be made available via the Matrix protocol to the recipient, intermediating nodes of a specific transfer as well as to the Matrix server operators, see Raiden Transport Specification."
     ],
     "accept-checkbox": "I agree to the Privacy Policy, Disclaimer and Imprint",
-    "hide-checkbox": "Don't display this message on start up",
+    "persist-checkbox": "Don't display this message on start up",
     "accept-button": "Accept"
   },
   "home": {

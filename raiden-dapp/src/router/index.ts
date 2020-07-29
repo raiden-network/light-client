@@ -170,13 +170,21 @@ const router = new Router({
 });
 
 router.beforeEach((to, _from, next) => {
-  if (to.name !== RouteNames.DISCLAIMER && !store.state.disclaimerAccepted) {
+  const routeToDisclaimer = to.name === RouteNames.DISCLAIMER;
+
+  if (store.state.disclaimerAccepted) {
+    if (routeToDisclaimer) {
+      next({ name: RouteNames.HOME });
+    } else {
+      next();
+    }
+  } else if (!routeToDisclaimer) {
     next({
       name: RouteNames.DISCLAIMER,
       query: { redirectTo: to.fullPath },
     });
   } else {
-    next();
+    next(); // Avoid infinite loop of disclaimer redirects
   }
 });
 

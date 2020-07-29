@@ -15,8 +15,8 @@
           :label="$t('disclaimer.accept-checkbox')"
         />
         <v-checkbox
-          v-model="checkedHide"
-          :label="$t('disclaimer.hide-checkbox')"
+          v-model="checkedPersist"
+          :label="$t('disclaimer.persist-checkbox')"
         />
       </v-col>
     </v-row>
@@ -39,7 +39,7 @@ import { RouteNames } from '@/router/route-names';
 })
 export default class Disclaimer extends Vue {
   checkedAccept = false;
-  checkedHide = false;
+  checkedPersist = false;
 
   get navigationTarget() {
     const redirectTo = this.$route.query.redirectTo;
@@ -52,7 +52,7 @@ export default class Disclaimer extends Vue {
   }
 
   accept(): void {
-    this.$store.commit('acceptDisclaimer');
+    this.$store.commit('acceptDisclaimer', this.checkedPersist);
     this.$router.push(this.navigationTarget);
   }
 }
