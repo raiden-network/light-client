@@ -33,6 +33,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import ActionButton from '@/components/ActionButton.vue';
 import { RouteNames } from '@/router/route-names';
+import { Location } from 'vue-router';
 
 @Component({
   components: { ActionButton },
@@ -41,8 +42,8 @@ export default class Disclaimer extends Vue {
   checkedAccept = false;
   checkedPersist = false;
 
-  get navigationTarget() {
-    const redirectTo = this.$route.query.redirectTo;
+  get navigationTarget(): Location {
+    const redirectTo = this.$route.query.redirectTo as string;
 
     if (redirectTo) {
       return { path: redirectTo };
