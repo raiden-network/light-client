@@ -276,16 +276,10 @@ function mapChannelEventsToAction(
       withLatestFrom(latest$),
       map(([args, { state, config }]) => {
         const id = args[0].toNumber();
+        // if it's undefined, this channel is unknown/not with us, and should be filtered out
         const channel = Object.values(state.channels).find(
           (c) => c.tokenNetwork === tokenNetwork && c.id === id,
         );
-        // partner will be defined whenever id refers to a past fetched, confirmed and persisted
-        // event/channel or an open event seen on this session and still confirming;
-        // if it's undefined, this channel is unknown/not with us, and should be filtered out
-        const partner =
-          channel?.partner?.address ||
-          state.pendingTxs.filter(channelOpen.success.is).find((a) => a.payload.id === id)?.meta
-            .partner;
 
         const event = args[args.length - 1] as Event;
         const topic = event.topics?.[0];
@@ -319,39 +313,37 @@ function mapChannelEventsToAction(
           case depositTopic: {
             const [, participant, totalDeposit] = args as ChannelNewDepositEvent;
             if (
-              partner &&
-              (channel?.id !== id ||
-                totalDeposit.gt(
-                  channel[participant === channel.partner.address ? 'partner' : 'own'].deposit,
-                ))
+              channel?.id === id &&
+              totalDeposit.gt(
+                channel[participant === channel.partner.address ? 'partner' : 'own'].deposit,
+              )
             )
               action = channelDeposit.success(
                 { id, participant, totalDeposit, txHash, txBlock, confirmed },
-                { tokenNetwork, partner },
+                { tokenNetwork, partner: channel.partner.address },
               );
             break;
           }
           case withdrawTopic: {
             const [, participant, totalWithdraw] = args as ChannelWithdrawEvent;
             if (
-              partner &&
-              (channel?.id !== id ||
-                totalWithdraw.gt(
-                  channel[participant === channel.partner.address ? 'partner' : 'own'].withdraw,
-                ))
+              channel?.id === id &&
+              totalWithdraw.gt(
+                channel[participant === channel.partner.address ? 'partner' : 'own'].withdraw,
+              )
             )
               action = channelWithdrawn(
                 { id, participant, totalWithdraw, txHash, txBlock, confirmed },
-                { tokenNetwork, partner },
+                { tokenNetwork, partner: channel.partner.address },
               );
             break;
           }
           case closedTopic: {
-            if (partner && (channel?.id !== id || !('closeBlock' in channel))) {
+            if (channel?.id === id && !('closeBlock' in channel)) {
               const [, participant] = args as ChannelClosedEvent;
               action = channelClose.success(
                 { id, participant, txHash, txBlock, confirmed },
-                { tokenNetwork, partner },
+                { tokenNetwork, partner: channel.partner.address },
               );
             }
             break;
@@ -621,14 +613,8 @@ export const channelOpenEpic = (
     mergeMap(([action, state, { settleTimeout, subkey: configSubkey }]) => {
       const { tokenNetwork, partner } = action.meta;
       const channelState = state.channels[channelKey(action.meta)]?.state;
-      const isPending = state.pendingTxs.some(
-        (a) =>
-          channelOpen.success.is(a) &&
-          a.meta.tokenNetwork === tokenNetwork &&
-          a.meta.partner == partner,
-      );
       // fails if channel already exist
-      if (channelState || isPending)
+      if (channelState)
         return of(
           channelOpen.failure(
             new RaidenError(ErrorCodes.CNL_INVALID_STATE, { state: channelState }),
@@ -1289,7 +1275,11 @@ function checkPendingAction(
     provider.pollingInterval,
   ).pipe(
     map((receipt) => {
-      if (receipt?.confirmations !== undefined && receipt.confirmations >= confirmationBlocks) {
+      if (
+        receipt?.confirmations !== undefined &&
+        receipt.confirmations >= confirmationBlocks &&
+        receipt.status // reorgs can make txs fail
+      ) {
         return {
           ...action,
           // beyond setting confirmed, also re-set blockNumber,

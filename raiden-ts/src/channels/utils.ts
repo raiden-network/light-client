@@ -179,7 +179,11 @@ export const txNonceErrors: readonly string[] = [
   'already known',
   'Transaction with the same hash was already imported',
 ];
-export const txFailErrors: readonly string[] = ['always failing transaction'];
+export const txFailErrors: readonly string[] = [
+  'always failing transaction',
+  'execution failed due to an exception',
+  'transaction failed',
+];
 
 /**
  * RxJS pipeable operator to re-subscribe/retry a transaction observable on recoverable errors
