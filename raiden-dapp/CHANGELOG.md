@@ -10,11 +10,13 @@
 - [#1824] Listen to channel settle events and push notifications for them
 
 ### Changed
+- [#1931] dApp always uses hash mode on router
 - [#1769] Updated UDC deposit dialog for testnet
 - [#1768] Updated UDC screen
 - [#1265] Reduce logs size by hiding superfluous actions entries
 - [#1875] Redact sensitive information (transport's accessToken, transfer's secrets) from logs
 
+[#1931]: https://github.com/raiden-network/light-client/issues/1931
 [#1769]: https://github.com/raiden-network/light-client/issues/1769
 [#1768]: https://github.com/raiden-network/light-client/issues/1768
 [#1265]: https://github.com/raiden-network/light-client/issues/1265
