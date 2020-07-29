@@ -3,6 +3,7 @@ import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
 import store from '@/store';
 import { $identicon } from '../utils/mocks';
+import { connectAccount } from '../utils/store-utils';
 import TransferStepsRoute from '@/views/TransferStepsRoute.vue';
 
 Vue.use(Vuetify);
@@ -29,8 +30,7 @@ describe('TransferStepsRoute.vue', () => {
   });
 
   test('connected displays actual route', async () => {
-    store.commit('account', '0x0000000000000000000000000000000000020001');
-    store.commit('loadComplete', true);
+    connectAccount();
     await wrapper.vm.$nextTick();
     expect(wrapper.find('home-stub').exists()).toBe(false);
     expect(wrapper.find('transfer-steps-stub').exists()).toBe(true);

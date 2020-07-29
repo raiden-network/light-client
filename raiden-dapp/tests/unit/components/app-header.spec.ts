@@ -6,6 +6,7 @@ import { $identicon } from '../utils/mocks';
 import AppHeader from '@/components/AppHeader.vue';
 import { RouteNames } from '@/router/route-names';
 import { TestData } from '../data/mock-data';
+import { connectAccount } from '../utils/store-utils';
 
 Vue.use(Vuetify);
 
@@ -37,8 +38,7 @@ describe('AppHeader.vue', () => {
   });
 
   test('you can go back if connected', () => {
-    store.commit('account', '0x0000000000000000000000000000000000020001');
-    store.commit('loadComplete', true);
+    connectAccount();
     wrapper = createWrapper(RouteNames.CHANNELS);
     expect((wrapper.vm as any).canGoBack).toBe(true);
   });
