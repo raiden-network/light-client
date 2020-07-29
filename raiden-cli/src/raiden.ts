@@ -50,7 +50,8 @@ function parseArguments() {
       },
       acceptDisclaimer: {
         type: 'boolean',
-        desc: 'Bypass the experimental software disclaimer prompt',
+        desc:
+          'By setting this parameter you confirm that you have read, understood and accepted the disclaimer and privacy warning.',
       },
       blockchainQueryInterval: {
         type: 'number',
@@ -114,14 +115,17 @@ function parseArguments() {
       },
     })
     .env('RAIDEN')
-    .help().argv;
+    .help()
+    .alias('h', 'help')
+    .version()
+    .alias('V', 'version').argv;
 }
 
-async function listAccounts(keystoreDir: string) {
+async function getKeystoreAccounts(keystorePath: string): Promise<{ [addr: string]: string[] }> {
   const keys: { [addr: string]: string[] } = {};
-  for (const filename of await fs.readdir(keystoreDir)) {
+  for (const filename of await fs.readdir(keystorePath)) {
     try {
-      const json = await fs.readFile(path.join(keystoreDir, filename), 'utf-8');
+      const json = await fs.readFile(path.join(keystorePath, filename), 'utf-8');
       const address = getAddress(JSON.parse(json)['address']);
       if (!(address in keys)) keys[address] = [];
       keys[address].push(json);
@@ -135,7 +139,7 @@ async function getWallet(
   address?: string,
   passwordFile?: string,
 ): Promise<Wallet> {
-  const keys = await listAccounts(keystoreDir);
+  const keys = await getKeystoreAccounts(keystoreDir);
   if (!Object.keys(keys).length)
     throw new Error(`No account found on keystore directory "${keystoreDir}"`);
   else if (!address)
@@ -224,22 +228,22 @@ function parseEndpoint(url: string): readonly [string, number] {
   return [host || '127.0.0.1', +port];
 }
 
-async function checkDisclaimer(disclaimer?: boolean): Promise<void> {
+async function checkDisclaimer(accepted?: boolean): Promise<void> {
   console.info(DISCLAIMER);
-  if (disclaimer === undefined) {
-    ({ disclaimer } = await inquirer.prompt<{ disclaimer: boolean }>([
+  if (accepted === undefined) {
+    ({ accepted } = await inquirer.prompt<{ accepted: boolean }>([
       {
         type: 'confirm',
-        name: 'disclaimer',
+        name: 'accepted',
         message:
           'Have you read, understood and hereby accept the above disclaimer and privacy warning?',
         default: false,
       },
     ]));
-  } else if (disclaimer) {
+  } else if (accepted) {
     console.info('Disclaimer accepted by command line parameter.');
   }
-  assert(disclaimer, 'Disclaimer not accepted!');
+  assert(accepted, 'Disclaimer not accepted!');
 }
 
 async function main() {
