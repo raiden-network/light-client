@@ -674,7 +674,7 @@ export default class RaidenService {
     await this.raiden.monitorToken(address);
   }
 
-  async getTokenBalance(tokenAddress: string): Promise<String> {
+  async getTokenBalance(tokenAddress: string): Promise<string> {
     const tokenBalance = await this.raiden.getTokenBalance(tokenAddress);
     return tokenBalance.toString();
   }
