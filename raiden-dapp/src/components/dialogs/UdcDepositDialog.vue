@@ -4,9 +4,10 @@
       <div>
         {{ $t('udc-deposit-dialog.title') }}
       </div>
-      <div v-if="mainnet" class="udc-deposit-dialog__balance">
+      <div class="udc-deposit-dialog__balance">
         {{
-          $t('udc-deposit-dialog.available-rdn', {
+          $t('udc-deposit-dialog.available-utility-token', {
+            utilityTokenSymbol: udcToken.symbol,
             utilityTokenBalance: mainAccountUtilityTokenAmount,
           })
         }}
@@ -130,24 +131,24 @@ export default class UdcDepositDialog extends Vue {
   }
 
   async mounted() {
-    if (this.mainnet) {
-      const mainAccountAddress =
-        this.$raiden.getMainAccount() ?? this.$raiden.getAccount();
+    const mainAccountAddress =
+      (await this.$raiden.getMainAccount()) ??
+      (await this.$raiden.getAccount());
 
-      this.uniswapURL = this.$t('udc-deposit-dialog.uniswap-url', {
-        rdnToken: this.udcToken.address,
-        mainAccountAddress: mainAccountAddress,
-      }) as string;
+    this.uniswapURL = this.$t('udc-deposit-dialog.uniswap-url', {
+      rdnToken: this.udcToken.address,
+      mainAccountAddress: mainAccountAddress,
+    }) as string;
 
-      const utilityTokenAmount = await this.$raiden.getTokenBalance(
-        this.udcToken.address
-      );
+    const utilityTokenAmount = await this.$raiden.getTokenBalance(
+      this.udcToken.address
+    );
 
-      this.defaultUtilityTokenAmount = utilityTokenAmount;
-      this.mainAccountUtilityTokenAmount = utilityTokenAmount;
-    } else {
-      this.defaultUtilityTokenAmount = '10';
-    }
+    this.mainAccountUtilityTokenAmount = utilityTokenAmount;
+
+    this.mainnet
+      ? (this.defaultUtilityTokenAmount = utilityTokenAmount)
+      : (this.defaultUtilityTokenAmount = '10');
   }
 
   async udcDeposit() {
