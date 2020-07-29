@@ -214,6 +214,18 @@ describe('RaidenService', () => {
       expect(await raidenService.getAccount()).toBe('123');
     });
 
+    test('returns token balance as string', async () => {
+      const balance = new BigNumber('1000000000000000000');
+      raiden.getTokenBalance = jest.fn().mockResolvedValue(balance);
+      const tokenBalance = await raidenService.getTokenBalance('0xtoken');
+
+      expect(raiden.getTokenBalance).toHaveBeenCalledTimes(1);
+      expect(raiden.getTokenBalance).toHaveBeenCalledWith('0xtoken');
+      expect(tokenBalance).toEqual(
+        expect.stringContaining('1000000000000000000')
+      );
+    });
+
     test('resolves when channel open and deposit are successful', async () => {
       // @ts-ignore
       raiden.openChannel = jest.fn(async ({}, {}, {}, callback?: Function) => {
