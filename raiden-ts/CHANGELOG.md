@@ -4,6 +4,8 @@
 ### Fixed
 - [#1923] Fix `fromEthersEvent` ranges fetching in case of temporary connectivity loss
 - [#1952] Fix nonce conflict issues with concurrent transactions
+- [#1997] Fix matrix rate-limiting logins when many nodes are started in parallel
+- [#1998] Fix events reverted due to a reorg still getting confirmed
 
 ### Added
 - [#703] Add option to fetch all contracts addresses from UserDeposit address alone
@@ -25,6 +27,8 @@
 [#1923]: https://github.com/raiden-network/light-client/issues/1923
 [#1952]: https://github.com/raiden-network/light-client/issues/1952
 [#1958]: https://github.com/raiden-network/light-client/issues/1958
+[#1997]: https://github.com/raiden-network/light-client/issues/1997
+[#1998]: https://github.com/raiden-network/light-client/issues/1998
 
 ## [0.10.0] - 2020-07-13
 ### Fixed
