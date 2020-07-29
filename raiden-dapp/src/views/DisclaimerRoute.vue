@@ -59,9 +59,14 @@ export default class Disclaimer extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '../scss/scroll';
+
 .disclaimer {
   &__paragraphs {
     text-align: justify;
+    max-height: 70%;
+    overflow-y: auto;
+    @extend .themed-scrollbar;
   }
 }
 </style>
