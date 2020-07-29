@@ -25,20 +25,30 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import ActionButton from '@/components/ActionButton.vue';
-import NavigationMixin from '@/mixins/navigation-mixin';
+import { RouteNames } from '@/router/route-names';
 
 @Component({
   components: { ActionButton },
 })
-export default class Disclaimer extends Mixins(NavigationMixin) {
+export default class Disclaimer extends Vue {
   checkedAccept = false;
   checkedHide = false;
 
+  get navigationTarget() {
+    const redirectTo = this.$route.query.redirectTo;
+
+    if (redirectTo) {
+      return { path: redirectTo };
+    } else {
+      return { name: RouteNames.HOME };
+    }
+  }
+
   accept() {
     this.$store.commit('acceptDisclaimer');
-    this.navigateToHome();
+    this.$router.push(this.navigationTarget);
   }
 }
 </script>

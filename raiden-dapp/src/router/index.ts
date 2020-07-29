@@ -4,6 +4,7 @@ import Router from 'vue-router';
 import DisclaimerRoute from '../views/DisclaimerRoute.vue';
 import Home from '../views/Home.vue';
 import { RouteNames } from '@/router/route-names';
+import store from '../store';
 
 Vue.use(Router);
 
@@ -169,16 +170,14 @@ const router = new Router({
 });
 
 router.beforeEach((to, _from, next) => {
-  next((vm) => {
-    if (
-      to.name !== RouteNames.DISCLAIMER &&
-      !vm.$store.state.disclaimerAccepted
-    ) {
-      return { name: RouteNames.DISCLAIMER };
-    } else {
-      return;
-    }
-  });
+  if (to.name !== RouteNames.DISCLAIMER && !store.state.disclaimerAccepted) {
+    next({
+      name: RouteNames.DISCLAIMER,
+      query: { redirectTo: to.fullPath },
+    });
+  } else {
+    next();
+  }
 });
 
 export default router;
