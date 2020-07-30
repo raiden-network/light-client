@@ -1519,7 +1519,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
         data: expiringSoonEncoded,
       }),
     );
-    await waitBlock();
+    await waitBlock(raiden.deps.provider.blockNumber + raiden.config.confirmationBlocks + 1);
 
     await expect(
       raiden.deps.latest$

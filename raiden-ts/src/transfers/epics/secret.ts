@@ -313,9 +313,10 @@ export const monitorSecretRegistryEpic = (
     filter(
       ([[secrethash, , { blockNumber }], { sent, received }]) =>
         // emits only if lock didn't expire yet
-        (secrethash in sent && sent[secrethash].transfer[1].lock.expiration.gte(blockNumber!)) ||
-        (secrethash in received &&
-          received[secrethash].transfer[1].lock.expiration.gte(blockNumber!)),
+        !!blockNumber &&
+        ((secrethash in sent && sent[secrethash].transfer[1].lock.expiration.gte(blockNumber)) ||
+          (secrethash in received &&
+            received[secrethash].transfer[1].lock.expiration.gte(blockNumber))),
     ),
     mergeMap(function* ([
       [secrethash, secret, event],
@@ -339,7 +340,7 @@ export const monitorSecretRegistryEpic = (
             secret,
             txHash: event.transactionHash! as Hash,
             txBlock: event.blockNumber!,
-            confirmed: event.blockNumber! + confirmationBlocks <= blockNumber,
+            confirmed: event.blockNumber! + confirmationBlocks <= blockNumber ? true : undefined,
           },
           { secrethash, direction },
         );

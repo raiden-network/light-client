@@ -218,7 +218,7 @@ describe('channelEventsEpic', () => {
         // ensure already confirmed channel also got into scanned channelIds set
         expect.arrayContaining([id - 1, id].map((i) => defaultAbiCoder.encode(['uint256'], [i]))),
       ],
-      fromBlock: openBlock - 4,
+      fromBlock: openBlock - 5,
       toBlock: expect.any(Number),
     });
   });
@@ -334,11 +334,9 @@ describe('channelEventsEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
-
     await ensureChannelIsClosed([raiden, partner]);
-    raiden.store.dispatch(channelMonitored({ id }, { tokenNetwork, partner: partner.address }));
-    await waitBlock(settleBlock);
 
+    await waitBlock(settleBlock);
     const settleHash = makeHash();
     await providersEmit(
       getChannelEventsFilter(tokenNetworkContract),
@@ -350,6 +348,7 @@ describe('channelEventsEpic', () => {
       }),
     );
     await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
 
     expect(raiden.output).toContainEqual(
       channelSettle.success(
