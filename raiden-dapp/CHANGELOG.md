@@ -10,7 +10,9 @@
 - [#1824] Listen to channel settle events and push notifications for them
 
 ### Changed
+
 - [#2001] Pending transfers removed from identicon
+- [#1770] Updated UDC deposit dialog for mainnet
 - [#1931] dApp always uses hash mode on router
 - [#1769] Updated UDC deposit dialog for testnet
 - [#1768] Updated UDC screen
@@ -18,6 +20,7 @@
 - [#1875] Redact sensitive information (transport's accessToken, transfer's secrets) from logs
 
 [#2001]: https://github.com/raiden-network/light-client/issues/2001
+[#1770]: https://github.com/raiden-network/light-client/issues/1770
 [#1931]: https://github.com/raiden-network/light-client/issues/1931
 [#1769]: https://github.com/raiden-network/light-client/issues/1769
 [#1768]: https://github.com/raiden-network/light-client/issues/1768

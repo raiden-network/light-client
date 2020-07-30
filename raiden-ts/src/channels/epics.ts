@@ -8,7 +8,6 @@ import {
   defer,
   concat as concat$,
   combineLatest,
-  timer,
   throwError,
   AsyncSubject,
 } from 'rxjs';
@@ -25,7 +24,6 @@ import {
   publishReplay,
   ignoreElements,
   skip,
-  retryWhen,
   mergeMapTo,
   first,
   delayWhen,
@@ -50,7 +48,7 @@ import { ShutdownReason } from '../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature, isntNil, HexString } from '../utils/types';
 import { isActionOf } from '../utils/actions';
-import { pluckDistinct, distinctRecordValues } from '../utils/rx';
+import { pluckDistinct, distinctRecordValues, retryAsync$ } from '../utils/rx';
 import { fromEthersEvent, getNetwork, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
@@ -79,36 +77,6 @@ import {
   txNonceErrors,
   txFailErrors,
 } from './utils';
-
-/**
- * Receives an async function and returns an observable which will retry it every interval until it
- * resolves, or throw if it can't succeed after 10 retries.
- * It is needed e.g. on provider methods which perform RPC requests directly, as they can fail
- * temporarily due to network errors, so they need to be retried for a while.
- * JsonRpcProvider._doPoll also catches, suppresses & retry
- *
- * @param func - An async function (e.g. a Promise factory, like a defer callback)
- * @param interval - Interval to retry in case of rejection
- * @param stopPredicate - Stops retrying and throws if this function returns a truty value;
- *      Receives error and retry count; Default: stops after 10 retries
- * @returns Observable version of async function, with retries
- */
-function retryAsync$<T>(
-  func: () => Promise<T>,
-  interval = 1e3,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
-): Observable<T> {
-  return defer(func).pipe(
-    retryWhen((error$) =>
-      error$.pipe(
-        mergeMap((error, count) =>
-          stopPredicate(error, count) ? throwError(error) : timer(interval),
-        ),
-      ),
-    ),
-  );
-}
 
 /**
  * Fetch current blockNumber, register for new block events and emit newBlock actions
@@ -308,16 +276,10 @@ function mapChannelEventsToAction(
       withLatestFrom(latest$),
       map(([args, { state, config }]) => {
         const id = args[0].toNumber();
+        // if it's undefined, this channel is unknown/not with us, and should be filtered out
         const channel = Object.values(state.channels).find(
           (c) => c.tokenNetwork === tokenNetwork && c.id === id,
         );
-        // partner will be defined whenever id refers to a past fetched, confirmed and persisted
-        // event/channel or an open event seen on this session and still confirming;
-        // if it's undefined, this channel is unknown/not with us, and should be filtered out
-        const partner =
-          channel?.partner?.address ||
-          state.pendingTxs.filter(channelOpen.success.is).find((a) => a.payload.id === id)?.meta
-            .partner;
 
         const event = args[args.length - 1] as Event;
         const topic = event.topics?.[0];
@@ -351,39 +313,37 @@ function mapChannelEventsToAction(
           case depositTopic: {
             const [, participant, totalDeposit] = args as ChannelNewDepositEvent;
             if (
-              partner &&
-              (channel?.id !== id ||
-                totalDeposit.gt(
-                  channel[participant === channel.partner.address ? 'partner' : 'own'].deposit,
-                ))
+              channel?.id === id &&
+              totalDeposit.gt(
+                channel[participant === channel.partner.address ? 'partner' : 'own'].deposit,
+              )
             )
               action = channelDeposit.success(
                 { id, participant, totalDeposit, txHash, txBlock, confirmed },
-                { tokenNetwork, partner },
+                { tokenNetwork, partner: channel.partner.address },
               );
             break;
           }
           case withdrawTopic: {
             const [, participant, totalWithdraw] = args as ChannelWithdrawEvent;
             if (
-              partner &&
-              (channel?.id !== id ||
-                totalWithdraw.gt(
-                  channel[participant === channel.partner.address ? 'partner' : 'own'].withdraw,
-                ))
+              channel?.id === id &&
+              totalWithdraw.gt(
+                channel[participant === channel.partner.address ? 'partner' : 'own'].withdraw,
+              )
             )
               action = channelWithdrawn(
                 { id, participant, totalWithdraw, txHash, txBlock, confirmed },
-                { tokenNetwork, partner },
+                { tokenNetwork, partner: channel.partner.address },
               );
             break;
           }
           case closedTopic: {
-            if (partner && (channel?.id !== id || !('closeBlock' in channel))) {
+            if (channel?.id === id && !('closeBlock' in channel)) {
               const [, participant] = args as ChannelClosedEvent;
               action = channelClose.success(
                 { id, participant, txHash, txBlock, confirmed },
-                { tokenNetwork, partner },
+                { tokenNetwork, partner: channel.partner.address },
               );
             }
             break;
@@ -653,14 +613,8 @@ export const channelOpenEpic = (
     mergeMap(([action, state, { settleTimeout, subkey: configSubkey }]) => {
       const { tokenNetwork, partner } = action.meta;
       const channelState = state.channels[channelKey(action.meta)]?.state;
-      const isPending = state.pendingTxs.some(
-        (a) =>
-          channelOpen.success.is(a) &&
-          a.meta.tokenNetwork === tokenNetwork &&
-          a.meta.partner == partner,
-      );
       // fails if channel already exist
-      if (channelState || isPending)
+      if (channelState)
         return of(
           channelOpen.failure(
             new RaidenError(ErrorCodes.CNL_INVALID_STATE, { state: channelState }),
@@ -1321,7 +1275,11 @@ function checkPendingAction(
     provider.pollingInterval,
   ).pipe(
     map((receipt) => {
-      if (receipt?.confirmations !== undefined && receipt.confirmations >= confirmationBlocks) {
+      if (
+        receipt?.confirmations !== undefined &&
+        receipt.confirmations >= confirmationBlocks &&
+        receipt.status // reorgs can make txs fail
+      ) {
         return {
           ...action,
           // beyond setting confirmed, also re-set blockNumber,

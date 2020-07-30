@@ -522,6 +522,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
         pfs: 'pfs.raiden.test',
         httpTimeout: 300,
         confirmationBlocks: 2,
+        pollingInterval: 10,
       },
     ),
     config = { ...defaultConfig, ...state.config };
@@ -731,7 +732,8 @@ export async function makeRaiden(
   jest
     .spyOn(provider, 'getTransactionReceipt')
     .mockImplementation(
-      async (txHash: string) => ({ txHash, confirmations: 6, blockNumber: undefined } as any),
+      async (txHash: string) =>
+        ({ status: 1, txHash, confirmations: 6, blockNumber: undefined } as any),
     );
   // use provider.resetEventsBlock used to set current block number for provider
   jest

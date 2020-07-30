@@ -4,9 +4,10 @@ import {
   makeHash,
   waitBlock,
   makeTransaction,
-  makeAddress,
   providersEmit,
   sleep,
+  makeAddress,
+  makeRaiden,
 } from '../mocks';
 import {
   token,
@@ -150,7 +151,8 @@ describe('channelEventsEpic', () => {
     expect.assertions(2);
     const settleTimeoutEncoded = defaultAbiCoder.encode(['uint256'], [settleTimeout]);
 
-    const [raiden, partner] = await makeRaidens(2, false);
+    const partner = makeAddress();
+    const raiden = await makeRaiden(undefined, false);
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
 
     // put a previous channel in state, to trigger logs to be fetched since it
@@ -169,31 +171,27 @@ describe('channelEventsEpic', () => {
       ),
     );
     await raiden.start();
-    await partner.start();
+    await waitBlock(openBlock);
 
-    raiden.deps.provider.getLogs.mockResolvedValueOnce([
+    await providersEmit(
+      {},
       makeLog({
         blockNumber: openBlock,
-        filter: tokenNetworkContract.filters.ChannelOpened(
-          id,
-          raiden.address,
-          partner.address,
-          null,
-        ),
+        filter: tokenNetworkContract.filters.ChannelOpened(id, raiden.address, partner, null),
         data: settleTimeoutEncoded, // non-indexed settleTimeout goes in data
       }),
-    ]);
+    );
     // getLogs for our address as 2nd participant returns no event
-    raiden.deps.provider.getLogs.mockResolvedValueOnce([]);
-    raiden.deps.provider.getLogs.mockResolvedValue([
+    await providersEmit(
+      {},
       makeLog({
         blockNumber: openBlock + 1,
         filter: tokenNetworkContract.filters.ChannelNewDeposit(id, raiden.address, null),
         data: depositEncoded, // non-indexed total_deposit = 1023 goes in data
       }),
-    ]);
+    );
+    await waitBlock(openBlock + confirmationBlocks + 3);
     await ensureTokenIsMonitored(raiden);
-    await ensureTokenIsMonitored(partner);
     await waitBlock();
 
     expect(raiden.output).toContainEqual(
@@ -204,9 +202,9 @@ describe('channelEventsEpic', () => {
           totalDeposit: deposit,
           txHash: expect.any(String),
           txBlock: openBlock + 1,
-          confirmed: undefined,
+          confirmed: true,
         },
-        { tokenNetwork, partner: partner.address },
+        { tokenNetwork, partner },
       ),
     );
     // expect getLogs to have been limited fromBlock since last known event
@@ -476,10 +474,9 @@ describe('channelDepositEpic', () => {
     const approveTx = makeTransaction();
     tokenContract.functions.approve.mockResolvedValue(approveTx);
     // first approve tx fail with nonce error, replacement fee error should be retried
-    const approveFailTx: typeof approveTx = {
-      ...makeTransaction(),
+    const approveFailTx: typeof approveTx = makeTransaction(undefined, {
       wait: jest.fn().mockRejectedValue(new Error('replacement fee too low')),
-    };
+    });
     tokenContract.functions.approve.mockResolvedValueOnce(approveFailTx);
 
     const setTotalDepositTx = makeTransaction();

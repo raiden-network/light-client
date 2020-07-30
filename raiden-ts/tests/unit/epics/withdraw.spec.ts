@@ -231,7 +231,7 @@ describe('withdraw send request', () => {
         {
           txHash: withdrawTx.hash as Hash,
           txBlock: expect.any(Number),
-          confirmed: true,
+          confirmed: undefined,
         },
         meta,
       ),
