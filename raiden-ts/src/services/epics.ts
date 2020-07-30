@@ -567,9 +567,9 @@ function makeMonitoringRequest$({
   config$,
 }: RaidenEpicDeps) {
   return ([, channel]: [Channel, Channel]) => {
-    const { partnerUnlocked, ownDeposit } = channelAmounts(channel);
+    const { partnerUnlocked } = channelAmounts(channel);
     // give up early if nothing to lose
-    if (partnerUnlocked.isZero() || ownDeposit.isZero()) return EMPTY;
+    if (partnerUnlocked.isZero()) return EMPTY;
 
     return combineLatest([latest$, config$]).pipe(
       // combineLatest + filter ensures it'll pass if anything here changes
