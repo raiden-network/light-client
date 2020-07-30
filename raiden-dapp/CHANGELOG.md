@@ -8,6 +8,7 @@
 
 - [#1786] Introduces snackbar display for notifications
 - [#1824] Listen to channel settle events and push notifications for them
+- [#2002] Add support to VUE_APP_MATRIX_LIST_URL transpile-time env var
 
 ### Changed
 - [#1931] dApp always uses hash mode on router
@@ -23,6 +24,7 @@
 [#1786]: https://github.com/raiden-network/light-client/issues/1786
 [#1824]: https://github.com/raiden-network/light-client/issues/1824
 [#1875]: https://github.com/raiden-network/light-client/issues/1875
+[#2002]: https://github.com/raiden-network/light-client/issues/2002
 
 ## [0.10.0] - 2020-07-13
 

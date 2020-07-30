@@ -49,7 +49,8 @@ export default class RaidenService {
         {
           pfsSafetyMargin: 1.1,
           pfs: process.env.VUE_APP_PFS,
-          matrixServer: process.env.VUE_APP_TRANSPORT,
+          matrixServer: process.env.VUE_APP_MATRIX_SERVER,
+          matrixServerLookup: process.env.VUE_APP_MATRIX_LIST_URL,
         },
         subkey
       );
