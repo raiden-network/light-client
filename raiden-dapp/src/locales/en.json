@@ -168,8 +168,7 @@
     "copied": "Copied!"
   },
   "app-header": {
-    "currency": "ETH",
-    "pending-transfers": "no pending transfers | 1 pending transfer | {amount} pending transfers"
+    "currency": "ETH"
   },
   "channel-actions": {
     "deposit": "Deposit",
