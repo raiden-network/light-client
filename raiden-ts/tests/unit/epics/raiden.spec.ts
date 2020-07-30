@@ -12,6 +12,7 @@ import {
 } from '../fixtures';
 
 import { defaultAbiCoder } from 'ethers/utils/abi-coder';
+import { first, pluck } from 'rxjs/operators';
 
 import { raidenShutdown } from 'raiden-ts/actions';
 import {
@@ -22,7 +23,7 @@ import {
 } from 'raiden-ts/channels/actions';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { RaidenError, ErrorCodes } from 'raiden-ts/utils/error';
-import { first, pluck } from 'rxjs/operators';
+import { last } from 'raiden-ts/utils/types';
 
 const partner = makeAddress();
 
@@ -134,7 +135,7 @@ describe('raiden init epics', () => {
     await raiden.deps.latest$.toPromise(); // raidenShutdown completes subjects
 
     expect(raiden.started).toBe(false);
-    expect(raiden.output[raiden.output.length - 1]).toEqual(
+    expect(last(raiden.output)).toEqual(
       raidenShutdown({ reason: ShutdownReason.ACCOUNT_CHANGED }),
     );
   });
@@ -149,7 +150,7 @@ describe('raiden init epics', () => {
     await raiden.deps.latest$.toPromise(); // raidenShutdown completes subjects
 
     expect(raiden.started).toBe(false);
-    expect(raiden.output[raiden.output.length - 1]).toEqual(
+    expect(last(raiden.output)).toEqual(
       raidenShutdown({ reason: ShutdownReason.NETWORK_CHANGED }),
     );
   });
@@ -165,7 +166,7 @@ describe('raiden init epics', () => {
     await raiden.deps.latest$.toPromise(); // raidenShutdown completes subjects
 
     expect(raiden.started).toBe(false);
-    expect(raiden.output[raiden.output.length - 1]).toEqual(raidenShutdown({ reason: error }));
+    expect(last(raiden.output)).toEqual(raidenShutdown({ reason: error }));
   });
 });
 

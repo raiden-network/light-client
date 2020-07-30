@@ -10,7 +10,7 @@ import { ContractFactory } from 'ethers/contract';
 import { parseUnits, ParamType } from 'ethers/utils';
 
 import { ContractsInfo } from 'raiden-ts/types';
-import { Address } from 'raiden-ts/utils/types';
+import { Address, last } from 'raiden-ts/utils/types';
 import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
 import { CustomToken } from 'raiden-ts/contracts/CustomToken';
 import { ServiceRegistry } from 'raiden-ts/contracts/ServiceRegistry';
@@ -78,7 +78,7 @@ export class TestProvider extends Web3Provider {
 
   public async deployRegistry(): Promise<ContractsInfo> {
     const accounts = await this.listAccounts();
-    const address = accounts[accounts.length - 1],
+    const address = last(accounts)!,
       signer = this.getSigner(address);
 
     const secretRegistryContract = (await new ContractFactory(
@@ -212,7 +212,7 @@ export class TestProvider extends Web3Provider {
     tokenNetwork: string;
   }> {
     const accounts = await this.listAccounts();
-    const signer = this.getSigner(accounts[accounts.length - 1]);
+    const signer = this.getSigner(last(accounts)!);
 
     const registryContract = TokenNetworkRegistryFactory.connect(
       info.TokenNetworkRegistry.address,
