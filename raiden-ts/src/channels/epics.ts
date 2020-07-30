@@ -46,7 +46,7 @@ import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
 import { RaidenState } from '../state';
 import { ShutdownReason } from '../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
-import { Address, Hash, UInt, Signature, isntNil, HexString } from '../utils/types';
+import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { pluckDistinct, distinctRecordValues, retryAsync$ } from '../utils/rx';
 import { fromEthersEvent, getNetwork, logToContractEvent } from '../utils/ethers';
@@ -281,7 +281,7 @@ function mapChannelEventsToAction(
           (c) => c.tokenNetwork === tokenNetwork && c.id === id,
         );
 
-        const event = args[args.length - 1] as Event;
+        const event = last(args);
         const topic = event.topics?.[0];
         const txHash = event.transactionHash! as Hash;
         const txBlock = event.blockNumber!;
@@ -442,8 +442,8 @@ function fetchPastChannelEvents$(
           const allEvents = [...openEvents, ...otherEvents];
           return from(
             sortBy(allEvents, [
-              (args) => (args.pop() as Event)?.blockNumber,
-              (args) => (args.pop() as Event)?.transactionIndex,
+              (args) => last(args).blockNumber,
+              (args) => last(args).transactionIndex,
             ]),
           );
         }),
