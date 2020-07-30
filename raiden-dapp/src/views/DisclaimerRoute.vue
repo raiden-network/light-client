@@ -12,10 +12,12 @@
         </div>
         <v-checkbox
           v-model="checkedAccept"
+          class="disclaimer__accept-checkbox"
           :label="$t('disclaimer.accept-checkbox')"
         />
         <v-checkbox
           v-model="checkedPersist"
+          class="disclaimer__persist-checkbox"
           :label="$t('disclaimer.persist-checkbox')"
         />
       </v-col>
