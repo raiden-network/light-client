@@ -440,7 +440,12 @@ function fetchPastChannelEvents$(
             )
             .filter(isntNil);
           const allEvents = [...openEvents, ...otherEvents];
-          return from(sortBy(allEvents, (args) => (args[args.length - 1] as Event).blockNumber));
+          return from(
+            sortBy(allEvents, [
+              (args) => (args.pop() as Event)?.blockNumber,
+              (args) => (args.pop() as Event)?.transactionIndex,
+            ]),
+          );
         }),
       );
     }),
