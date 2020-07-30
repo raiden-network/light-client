@@ -513,22 +513,21 @@ export const channelEventsEpic = (
         withLatestFrom(state$),
         mergeMap(([[token, tokenNetwork], state]) => {
           // fromBlock is latest on-chain event seen for this contract, or registry deployment block +1
-          const fromBlock =
-            Object.values(state.channels)
-              .concat(Object.values(state.oldChannels))
-              .filter((channel) => channel.tokenNetwork === tokenNetwork)
-              .reduce(
-                (acc, channel) =>
-                  Math.max(
-                    acc,
-                    'settleBlock' in channel
-                      ? channel.settleBlock
-                      : 'closeBlock' in channel
-                      ? channel.closeBlock
-                      : channel.openBlock,
-                  ),
-                deps.contractsInfo.TokenNetworkRegistry.block_number,
-              ) + 1;
+          const fromBlock = Object.values(state.channels)
+            .concat(Object.values(state.oldChannels))
+            .filter((channel) => channel.tokenNetwork === tokenNetwork)
+            .reduce(
+              (acc, channel) =>
+                Math.max(
+                  acc,
+                  'settleBlock' in channel
+                    ? channel.settleBlock
+                    : 'closeBlock' in channel
+                    ? channel.closeBlock
+                    : channel.openBlock,
+                ),
+              deps.contractsInfo.TokenNetworkRegistry.block_number,
+            );
 
           // notifies when past events fetching completes
           const pastDone$ = new AsyncSubject<true>();

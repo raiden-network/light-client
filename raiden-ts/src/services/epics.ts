@@ -341,12 +341,13 @@ export const pfsFeeUpdateEpic = (
  * @param deps.serviceRegistryContract - ServiceRegistry contract instance
  * @param deps.contractsInfo - Contracts info mapping
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of pfsListUpdated actions
  */
 export const pfsServiceRegistryMonitorEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { provider, serviceRegistryContract, contractsInfo, config$ }: RaidenEpicDeps,
+  { provider, serviceRegistryContract, contractsInfo, config$, latest$ }: RaidenEpicDeps,
 ): Observable<pfsListUpdated> =>
   combineLatest([
     // monitors config.pfs, and only monitors contract if it's empty
@@ -363,43 +364,53 @@ export const pfsServiceRegistryMonitorEpic = (
             undefined,
             confirmationBlocks,
             contractsInfo.ServiceRegistry.block_number,
-          ).pipe(
-            map(
-              // [service, valid_till, deposit_amount, deposit_contract, Event]
-              logToContractEvent<[Address, BigNumber, UInt<32>, Address, Event]>(
-                serviceRegistryContract,
+          )
+            .pipe(
+              withLatestFrom(latest$),
+              // filter only confirmed logs
+              filter(
+                ([{ blockNumber }, { state }]) =>
+                  !!blockNumber && blockNumber + confirmationBlocks <= state.blockNumber,
               ),
-            ),
-            filter(isntNil),
-            groupBy(([service]) => service),
-            mergeMap((grouped$) =>
-              grouped$.pipe(
-                // switchMap ensures new events for each server (grouped$) picks latest event
-                switchMap(([service, valid_till]) => {
-                  const now = Date.now(),
-                    validTill = valid_till.mul(1000); // milliseconds valid_till
-                  if (validTill.lt(now)) return EMPTY; // this event already expired
-                  // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
-                  const end$ = validTill.sub(now).lt(Two.pow(31))
-                    ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
-                    : EMPTY;
-                  return merge(of({ service, valid: true }), end$);
-                }),
+              pluck(0),
+              map(
+                // [service, valid_till, deposit_amount, deposit_contract, Event]
+                logToContractEvent<[Address, BigNumber, UInt<32>, Address, Event]>(
+                  serviceRegistryContract,
+                ),
               ),
+              filter(isntNil),
+            )
+            .pipe(
+              groupBy(([service]) => service),
+              mergeMap((grouped$) =>
+                grouped$.pipe(
+                  // switchMap ensures new events for each server (grouped$) picks latest event
+                  switchMap(([service, valid_till]) => {
+                    const now = Date.now(),
+                      validTill = valid_till.mul(1000); // milliseconds valid_till
+                    if (validTill.lt(now)) return EMPTY; // this event already expired
+                    // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
+                    const end$ = validTill.sub(now).lt(Two.pow(31))
+                      ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
+                      : EMPTY;
+                    return merge(of({ service, valid: true }), end$);
+                  }),
+                ),
+              ),
+              scan(
+                (acc, { service, valid }) =>
+                  !valid && acc.includes(service)
+                    ? acc.filter((s) => s !== service)
+                    : valid && !acc.includes(service)
+                    ? [...acc, service]
+                    : acc,
+                [] as readonly Address[],
+              ),
+              distinctUntilChanged(),
+              debounceTime(1e3), // debounce burst of updates on initial fetch
+              map((pfsList) => pfsListUpdated({ pfsList })),
             ),
-            scan(
-              (acc, { service, valid }) =>
-                !valid && acc.includes(service)
-                  ? acc.filter((s) => s !== service)
-                  : valid && !acc.includes(service)
-                  ? [...acc, service]
-                  : acc,
-              [] as readonly Address[],
-            ),
-            distinctUntilChanged(),
-            debounceTime(1e3), // debounce burst of updates on initial fetch
-            map((pfsList) => pfsListUpdated({ pfsList })),
-          ),
     ),
   );
 
@@ -785,24 +796,31 @@ export const msMonitorNewBPEpic = (
     filter(isntNil),
     // should never fail, as per filter
     filter(([, , , , , raidenAddress]) => raidenAddress === address),
-    withLatestFrom(state$),
-    map(([[tokenNetwork, id, reward, nonce, monitoringService, , event], state]) => {
-      const channel = Object.values(state.channels)
-        .concat(Object.values(state.oldChannels))
-        .find((c) => c.tokenNetwork === tokenNetwork && id.eq(c.id));
-      if (!channel) return;
-      return msBalanceProofSent({
-        tokenNetwork,
-        partner: channel.partner.address,
-        id: channel.id,
-        reward,
-        nonce,
-        monitoringService,
-        txHash: event.transactionHash as Hash,
-        txBlock: event.blockNumber!,
-        confirmed: undefined,
-      });
-    }),
+    withLatestFrom(state$, config$),
+    map(
+      ([
+        [tokenNetwork, id, reward, nonce, monitoringService, , event],
+        state,
+        { confirmationBlocks },
+      ]) => {
+        const channel = Object.values(state.channels)
+          .concat(Object.values(state.oldChannels))
+          .find((c) => c.tokenNetwork === tokenNetwork && id.eq(c.id));
+        const txBlock = event.blockNumber;
+        if (!channel || !txBlock) return;
+        return msBalanceProofSent({
+          tokenNetwork,
+          partner: channel.partner.address,
+          id: channel.id,
+          reward,
+          nonce,
+          monitoringService,
+          txHash: event.transactionHash as Hash,
+          txBlock,
+          confirmed: txBlock + confirmationBlocks <= state.blockNumber ? true : undefined,
+        });
+      },
+    ),
     filter(isntNil),
   );
 
