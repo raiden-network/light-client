@@ -18,6 +18,9 @@ describe('UdcDepositDialog.vue', () => {
     userDepositTokenAddress: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
     mint: jest.fn(),
     depositToUDC: jest.fn(),
+    getMainAccount: jest.fn(),
+    getAccount: jest.fn(),
+    getTokenBalance: jest.fn(),
   };
 
   const token = {
@@ -44,53 +47,81 @@ describe('UdcDepositDialog.vue', () => {
     });
   }
 
-  beforeEach(() => {
-    store.commit(
-      'userDepositTokenAddress',
-      '0x3a989D97388a39A0B5796306C615d10B7416bE77'
-    );
-    store.commit('updateTokens', {
-      '0x3a989D97388a39A0B5796306C615d10B7416bE77': token,
-    });
-    wrapper = createWrapper();
-    jest.resetAllMocks();
-  });
-
-  test('emit a done event when the mint and deposit is successful', async () => {
-    expect.assertions(3);
-    $raiden.depositToUDC.mockImplementation(async (_, call: () => void) => {
-      call();
-    });
-    wrapper.find('.udc-deposit-dialog__action button').trigger('click');
-    await flushPromises();
-    expect($raiden.mint).toHaveBeenCalledTimes(1);
-    expect($raiden.depositToUDC).toHaveBeenCalledTimes(1);
-    expect(wrapper.emitted()['done']).toHaveLength(1);
-  });
-
-  test('show an error message when the minting fails', async () => {
-    expect.assertions(3);
-    $raiden.mint.mockRejectedValueOnce(new Error('error'));
-    wrapper.find('.udc-deposit-dialog__action button').trigger('click');
-    await flushPromises();
-    expect($raiden.mint).toHaveBeenCalledTimes(1);
-    expect($raiden.depositToUDC).toHaveBeenCalledTimes(0);
-    expect(wrapper.vm.$data.error).toMatchObject({ message: 'error' });
-  });
-
-  test('do not mint when the user has already enough tokens', async () => {
-    expect.assertions(3);
-    store.commit('updateTokens', {
-      '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
-        ...token,
-        balance: bigNumberify('10000000000000000000'),
-      },
+  describe('depositing on testnet', () => {
+    beforeEach(() => {
+      store.commit(
+        'userDepositTokenAddress',
+        '0x3a989D97388a39A0B5796306C615d10B7416bE77'
+      );
+      store.commit('updateTokens', {
+        '0x3a989D97388a39A0B5796306C615d10B7416bE77': token,
+      });
+      wrapper = createWrapper();
+      jest.resetAllMocks();
     });
 
-    wrapper.find('.udc-deposit-dialog__action button').trigger('click');
-    await flushPromises();
-    expect($raiden.mint).toHaveBeenCalledTimes(0);
-    expect($raiden.depositToUDC).toHaveBeenCalledTimes(1);
-    expect(wrapper.emitted()['done']).toHaveLength(1);
+    test('emit a done event when the mint and deposit is successful', async () => {
+      expect.assertions(3);
+      $raiden.depositToUDC.mockImplementation(async (_, call: () => void) => {
+        call();
+      });
+      wrapper.find('.udc-deposit-dialog__action button').trigger('click');
+      await flushPromises();
+      expect($raiden.mint).toHaveBeenCalledTimes(1);
+      expect($raiden.depositToUDC).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted()['done']).toHaveLength(1);
+    });
+
+    test('show an error message when the minting fails', async () => {
+      expect.assertions(3);
+      $raiden.mint.mockRejectedValueOnce(new Error('error'));
+      wrapper.find('.udc-deposit-dialog__action button').trigger('click');
+      await flushPromises();
+      expect($raiden.mint).toHaveBeenCalledTimes(1);
+      expect($raiden.depositToUDC).toHaveBeenCalledTimes(0);
+      expect(wrapper.vm.$data.error).toMatchObject({ message: 'error' });
+    });
+
+    test('do not mint when the user has already enough tokens', async () => {
+      expect.assertions(3);
+      store.commit('updateTokens', {
+        '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
+          ...token,
+          balance: bigNumberify('10000000000000000000'),
+        },
+      });
+
+      wrapper.find('.udc-deposit-dialog__action button').trigger('click');
+      await flushPromises();
+      expect($raiden.mint).toHaveBeenCalledTimes(0);
+      expect($raiden.depositToUDC).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted()['done']).toHaveLength(1);
+    });
+  });
+
+  describe('depositing on mainnet', () => {
+    beforeEach(() => {
+      store.commit(
+        'userDepositTokenAddress',
+        '0x3a989D97388a39A0B5796306C615d10B7416bE77'
+      );
+      store.commit('updateTokens', {
+        '0x3a989D97388a39A0B5796306C615d10B7416bE77': token,
+      });
+      store.commit('network', { name: 'mainnet', chainId: 1 });
+
+      wrapper = createWrapper();
+      jest.resetAllMocks();
+    });
+
+    test('mainnet is used', () => {
+      expect((wrapper.vm as any).mainnet).toBe(true);
+    });
+
+    test('displays uniswap URL', () => {
+      expect(wrapper.vm.$data.uniswapURL).toBe(
+        'udc-deposit-dialog.uniswap-url'
+      );
+    });
   });
 });

@@ -673,6 +673,11 @@ export default class RaidenService {
   async monitorToken(address: string) {
     await this.raiden.monitorToken(address);
   }
+
+  async getTokenBalance(tokenAddress: string): Promise<string> {
+    const tokenBalance = await this.raiden.getTokenBalance(tokenAddress);
+    return tokenBalance.toString();
+  }
 }
 
 export class EnsResolveFailed extends Error {}
