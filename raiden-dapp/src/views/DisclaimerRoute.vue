@@ -2,7 +2,7 @@
   <v-container fluid class="disclaimer">
     <v-row no-gutters>
       <v-col cols="10" offset="1">
-        <div class="disclaimer__paragraphs">
+        <div class="disclaimer__paragraphs font-weight-light">
           <p
             v-for="(paragraph, index) in $t('disclaimer.paragraphs')"
             :key="index"
@@ -14,11 +14,15 @@
           v-model="checkedAccept"
           class="disclaimer__accept-checkbox"
           :label="$t('disclaimer.accept-checkbox')"
+          dense
+          hide-details
         />
         <v-checkbox
           v-model="checkedPersist"
           class="disclaimer__persist-checkbox"
           :label="$t('disclaimer.persist-checkbox')"
+          dense
+          hide-details
         />
       </v-col>
     </v-row>
@@ -70,6 +74,7 @@ export default class Disclaimer extends Vue {
     max-height: 70%;
     overflow-y: auto;
     @extend .themed-scrollbar;
+    margin-bottom: 50px;
   }
 }
 </style>
