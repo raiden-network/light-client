@@ -312,3 +312,13 @@ export type Last<T extends any[]> = T extends [any, any, any, any, any, any, any
 export function last<T extends any[]>(arr: T): Last<T> {
   return arr[arr.length - 1];
 }
+
+/**
+ * Math.max for BigNumbers
+ *
+ * @param args - Parameters to compare, must have at least one element
+ * @returns Maxium of parameters as per BigNumber's lt comparison
+ */
+export function bnMax<T extends BigNumber>(...args: [T, ...T[]]): T {
+  return args.reduce((a, b) => (a.lt(b) ? b : a));
+}

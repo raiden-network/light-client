@@ -13,7 +13,7 @@ import logging from 'loglevel';
 
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
-import { UInt, Address, Hash, Int } from '../utils/types';
+import { UInt, Address, Hash, Int, bnMax } from '../utils/types';
 import { RaidenError } from '../utils/error';
 import { distinctRecordValues } from '../utils/rx';
 import { MessageType } from '../messages/types';
@@ -49,11 +49,6 @@ export function channelUniqueKey<
   )
 >(channel: C): ChannelUniqueKey {
   return `${channel.id}#${channelKey(channel)}`;
-}
-
-// get the biggest UInt BigNumber from an array, or Zero if empty
-function bnMax<T extends UInt>(...args: T[]): T {
-  return args.reduce((a, b) => (b.gt(a) ? b : a), Zero as T);
 }
 
 /**
