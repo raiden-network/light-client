@@ -31,27 +31,40 @@ import { Two, Zero, MaxUint256, WeiPerEther } from 'ethers/constants';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps, Latest } from '../types';
+import { RaidenConfig } from '../config';
 import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
-import { assertTx, channelAmounts, groupChannel$, retryTx } from '../channels/utils';
-import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
+import { channelAmounts, groupChannel$, assertTx, retryTx } from '../channels/utils';
+import {
+  Address,
+  decode,
+  Int,
+  Signature,
+  Signed,
+  UInt,
+  isntNil,
+  Hash,
+  bnMax,
+} from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { pluckDistinct } from '../utils/rx';
 import { Capabilities } from '../constants';
-import { getContractWithSigner } from '../helpers';
+import { getContractWithSigner, chooseOnchainAccount } from '../helpers';
 import { matrixPresence } from '../transport/actions';
+import { UserDeposit } from '../contracts/UserDeposit';
+import { HumanStandardToken } from '../contracts/HumanStandardToken';
 
 import {
   iouClear,
   pathFind,
   iouPersist,
   pfsListUpdated,
-  udcDeposited,
+  udcDeposit,
   udcWithdraw,
   udcWithdrawn,
   msBalanceProofSent,
@@ -429,15 +442,133 @@ export const monitorUdcBalanceEpic = (
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, latest$, userDepositContract }: RaidenEpicDeps,
-): Observable<udcDeposited> =>
+): Observable<udcDeposit.success> =>
   latest$.pipe(
     pluckDistinct('state', 'blockNumber'),
     // it's seems ugly to call on each block, but UserDepositContract doesn't expose deposits as
     // events, and ethers actually do that to monitor token balances, so it's equivalent
     exhaustMap(() => userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>),
-    distinctUntilChanged((x, y) => y.eq(x)),
-    map(udcDeposited),
+    withLatestFrom(latest$),
+    filter(([balance, { udcBalance }]) => !udcBalance.eq(balance)),
+    map(([balance]) => udcDeposit.success(undefined, { totalDeposit: balance })),
   );
+
+function makeUdcDeposit$(
+  [tokenContract, userDepositContract]: [HumanStandardToken, UserDeposit],
+  [sender, address]: [Address, Address],
+  [deposit, totalDeposit]: [UInt<32>, UInt<32>],
+  { pollingInterval, minimumAllowance }: RaidenConfig,
+  { log }: Pick<RaidenEpicDeps, 'log'>,
+) {
+  return defer(() =>
+    Promise.all([
+      tokenContract.functions.balanceOf(sender),
+      tokenContract.functions.allowance(sender, userDepositContract.address),
+      userDepositContract.functions.effectiveBalance(address),
+    ]),
+  ).pipe(
+    mergeMap(([balance, allowance, deposited]) => {
+      assert(deposited.add(deposit).eq(totalDeposit), [
+        ErrorCodes.UDC_DEPOSIT_OUTDATED,
+        { requested: totalDeposit.toString(), current: deposited.toString() },
+      ]);
+      assert(balance.gte(deposit), [
+        ErrorCodes.RDN_INSUFFICIENT_BALANCE,
+        { current: balance.toString(), required: deposit.toString() },
+      ]);
+
+      if (allowance.gte(deposit)) return of(true); // if allowance already enough
+
+      // secure ERC20 tokens require changing allowance only from or to Zero
+      // see https://github.com/raiden-network/light-client/issues/2010
+      let resetAllowance$: Observable<true> = of(true);
+      if (!allowance.isZero())
+        resetAllowance$ = defer(() =>
+          tokenContract.functions.approve(userDepositContract.address, 0),
+        ).pipe(
+          assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log }),
+          mapTo(true),
+        );
+
+      // if needed, send approveTx and wait/assert it before proceeding; 'deposit' could be enough,
+      // but we send 'prevAllowance + deposit' in case there's a pending deposit
+      // default minimumAllowance=MaxUint256 allows to approve once and for all
+      return resetAllowance$.pipe(
+        mergeMap(() =>
+          tokenContract.functions.approve(
+            userDepositContract.address,
+            bnMax(minimumAllowance, deposit),
+          ),
+        ),
+        assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log }),
+      );
+    }),
+    // send setTotalDeposit transaction
+    mergeMap(() => userDepositContract.functions.deposit(address, totalDeposit)),
+    assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log }),
+    // retry also txFail errors, since estimateGas can lag behind just-opened channel or
+    // just-approved allowance
+    retryTx(pollingInterval, undefined, undefined, { log }),
+  );
+}
+
+/**
+ * Handles a udcDeposit.request and deposit SVT/RDN to UDC
+ *
+ * @param action$ - Observable of udcDeposit.request actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.userDepositContract - UserDeposit contract instance
+ * @param deps.getTokenContract - Factory for Token contracts
+ * @param deps.address - Our address
+ * @param deps.log - Logger instance
+ * @param deps.signer - Signer
+ * @param deps.main - Main Signer/Address
+ * @param deps.config$ - Config observable
+ * @returns - Observable of udcDeposit.failure|udcDeposit.success actions
+ */
+export const udcDepositEpic = (
+  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { userDepositContract, getTokenContract, address, log, signer, main, config$ }: RaidenEpicDeps,
+): Observable<udcDeposit.failure | udcDeposit.success> => {
+  const svtToken = userDepositContract.functions.token() as Promise<Address>;
+  return action$.pipe(
+    filter(udcDeposit.request.is),
+    concatMap((action) =>
+      defer(() => svtToken).pipe(
+        withLatestFrom(config$),
+        mergeMap(([token, config]) => {
+          const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
+            { signer, address, main },
+            action.payload.subkey ?? config.subkey,
+          );
+          const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
+          const udcContract = getContractWithSigner(userDepositContract, onchainSigner);
+
+          return makeUdcDeposit$(
+            [tokenContract, udcContract],
+            [onchainAddress, address],
+            [action.payload.deposit, action.meta.totalDeposit],
+            config,
+            { log },
+          );
+        }),
+        map(([, receipt]) =>
+          udcDeposit.success(
+            {
+              txHash: receipt.transactionHash,
+              txBlock: receipt.blockNumber,
+              confirmed: undefined, // let confirmationEpic confirm this action
+            },
+            action.meta,
+          ),
+        ),
+        catchError((error) => of(udcDeposit.failure(error, action.meta))),
+      ),
+    ),
+  );
+};
 
 /**
  * Makes a *Map callback which returns an observable of actions to send RequestMonitoring messages

@@ -2,7 +2,7 @@ import './polyfills';
 import { Signer } from 'ethers/abstract-signer';
 import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
 import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
-import { Zero, AddressZero, MaxUint256, HashZero } from 'ethers/constants';
+import { Zero, AddressZero, MaxUint256 } from 'ethers/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { applyMiddleware, createStore, Store } from 'redux';
@@ -59,10 +59,10 @@ import {
   transferKey,
   transferKeyToMeta,
 } from './transfers/utils';
-import { pathFind, udcWithdraw } from './services/actions';
+import { pathFind, udcWithdraw, udcDeposit } from './services/actions';
 import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
 import { pfsListInfo } from './services/utils';
-import { Address, Secret, Storage, Hash, UInt, decode, isntNil } from './utils/types';
+import { Address, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
 import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
@@ -1107,7 +1107,12 @@ export class Raiden {
    * @returns Promise to UDC remaining capacity
    */
   public async getUDCCapacity(): Promise<BigNumber> {
-    const balance = await this.deps.latest$.pipe(pluck('udcBalance'), first(isntNil)).toPromise();
+    const balance = await this.deps.latest$
+      .pipe(
+        pluck('udcBalance'),
+        first((balance) => !!balance && balance.lt(MaxUint256)),
+      )
+      .toPromise();
     const blockNumber = this.state.blockNumber;
     const owedAmount = Object.values(this.state.iou)
       .reduce(
@@ -1139,100 +1144,37 @@ export class Raiden {
    * @param options - tx options
    * @param options.subkey - By default, if using subkey, main account is used to send transactions
    *    Set this to true if one wants to force sending the transaction with the subkey
-   * @param options.allowance - Value to approve on service token. Allows further deposits without
-   *    needing to approve again. Defaults to exact amount.
    * @returns transaction hash
    */
   public async depositToUDC(
     amount: BigNumberish,
     onChange?: OnChange<EventTypes, { txHash: string }>,
-    { subkey, allowance }: { subkey?: boolean; allowance?: BigNumberish } = {},
+    { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
     assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
-    const deposit = bigNumberify(amount);
+    const deposit = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
     assert(deposit.gt(Zero), ErrorCodes.DTA_NON_POSITIVE_NUMBER, this.log.info);
+    const balance = await this.deps.latest$
+      .pipe(
+        pluck('udcBalance'),
+        first((balance) => !!balance && balance.lt(MaxUint256)),
+      )
+      .toPromise();
+    const meta = { totalDeposit: balance.add(deposit) as UInt<32> };
 
-    const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
+    const mined = asyncActionToPromise(udcDeposit, meta, this.action$).then((res) => res?.txHash);
+    this.store.dispatch(udcDeposit.request({ deposit, subkey }, meta));
 
-    const userDepositContract = getContractWithSigner(this.deps.userDepositContract, signer);
-    const tokenContract = getContractWithSigner(
-      this.deps.getTokenContract(await this.userDepositTokenAddress()),
-      signer,
+    let txHash = await mined;
+    onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: txHash! } });
+
+    const confirmed = asyncActionToPromise(udcDeposit, meta, this.action$, true).then(
+      (res) => res!.txHash,
     );
-    const tokenBalance = await tokenContract.functions.balanceOf(address);
-
-    assert(
-      tokenBalance.gte(amount),
-      [
-        ErrorCodes.RDN_INSUFFICIENT_BALANCE,
-        {
-          token: tokenContract.address,
-          account: address,
-          balance: tokenBalance.toString(),
-          required: bigNumberify(amount).toString(),
-        },
-      ],
-      this.log.info,
-    );
-    assert(
-      !allowance || bigNumberify(allowance).gte(amount),
-      [
-        ErrorCodes.RDN_INSUFFICIENT_ALLOWANCE,
-        {
-          allowance: bigNumberify(tokenBalance).toString(),
-          required: bigNumberify(amount).toString(),
-        },
-      ],
-      this.log.info,
-    );
-
-    const tokenAllowance = await tokenContract.functions.allowance(
-      address,
-      userDepositContract.address,
-    );
-    let approveTxHash = HashZero as Hash;
-    if (tokenAllowance.lt(deposit))
-      approveTxHash = (
-        await callAndWaitMined(
-          tokenContract,
-          'approve',
-          [userDepositContract.address, allowance ?? deposit],
-          ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
-          { log: this.log },
-        )
-      ).transactionHash as Hash;
-
-    onChange?.({ type: EventTypes.APPROVED, payload: { txHash: approveTxHash } });
-
-    const udcTotalDeposit = await userDepositContract.functions.total_deposit(this.address);
-
-    const depositReceipt = await callAndWaitMined(
-      userDepositContract,
-      'deposit',
-      [this.address, udcTotalDeposit.add(deposit)],
-      ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED,
-      { log: this.log },
-    );
-
-    onChange?.({
-      type: EventTypes.DEPOSITED,
-      payload: {
-        txHash: depositReceipt.transactionHash as Hash,
-      },
-    });
-
-    await waitConfirmation(depositReceipt, this.deps);
-    this.log.debug(`deposit tx "${depositReceipt.transactionHash}" confirmed`);
-
-    onChange?.({
-      type: EventTypes.CONFIRMED,
-      payload: {
-        txHash: depositReceipt.transactionHash as Hash,
-      },
-    });
-
-    return depositReceipt.transactionHash as Hash;
+    txHash = await confirmed;
+    onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash } });
+    return txHash;
   }
 
   /**
