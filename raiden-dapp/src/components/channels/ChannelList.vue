@@ -39,7 +39,11 @@
               :disabled="channel.state !== 'open' || busy"
               @click="action(['deposit', channel])"
             >
-              <v-img max-width="25px" :src="require('@/assets/deposit.svg')" />
+              <v-img
+                width="27"
+                height="25px"
+                :src="require('@/assets/deposit.svg')"
+              />
               <span class="action-title">
                 {{ $t('channel-actions.deposit') }}
               </span>
@@ -52,7 +56,8 @@
               @click="action(['withdraw', channel])"
             >
               <v-img
-                max-width="25px"
+                width="27px"
+                height="25px"
                 :src="require('@/assets/withdrawal.svg')"
               />
               <span class="action-title">
