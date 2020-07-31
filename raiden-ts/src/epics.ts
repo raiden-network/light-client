@@ -24,7 +24,7 @@ import { Capabilities } from './constants';
 import { pluckDistinct } from './utils/rx';
 import { getPresences$ } from './transport/utils';
 import { rtcChannel } from './transport/actions';
-import { pfsListUpdated, udcDeposited } from './services/actions';
+import { pfsListUpdated, udcDeposit } from './services/actions';
 import { Address, UInt } from './utils/types';
 import { isActionOf } from './utils/actions';
 
@@ -79,8 +79,8 @@ export function getLatest$(
   { defaultConfig, log, provider }: Pick<RaidenEpicDeps, 'defaultConfig' | 'log' | 'provider'>,
 ): Observable<Latest> {
   const udcBalance$ = action$.pipe(
-    filter(udcDeposited.is),
-    pluck('payload'),
+    filter(udcDeposit.success.is),
+    pluck('meta', 'totalDeposit'),
     // starts with max, to prevent receiving starting as disabled before actual balance is fetched
     startWith(MaxUint256 as UInt<32>),
   );

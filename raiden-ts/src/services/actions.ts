@@ -24,7 +24,6 @@ export const pathFind = createAsyncAction(
   t.partial({ paths: Paths, pfs: t.union([PFS, t.null]) }),
   t.type({ paths: Paths }),
 );
-
 export namespace pathFind {
   export interface request extends ActionType<typeof pathFind.request> {}
   export interface success extends ActionType<typeof pathFind.success> {}
@@ -43,8 +42,22 @@ export interface iouPersist extends ActionType<typeof iouPersist> {}
 export const iouClear = createAction('iou/clear', undefined, ServiceId);
 export interface iouClear extends ActionType<typeof iouClear> {}
 
-export const udcDeposited = createAction('udc/deposited', UInt(32));
-export interface udcDeposited extends ActionType<typeof udcDeposited> {}
+export const udcDeposit = createAsyncAction(
+  t.type({ totalDeposit: UInt(32) }),
+  'udc/deposit/request',
+  'udc/deposit/success',
+  'udc/deposit/failure',
+  t.intersection([t.type({ deposit: UInt(32) }), t.partial({ subkey: t.boolean })]),
+  t.union([
+    t.undefined,
+    t.type({ txHash: Hash, txBlock: t.number, confirmed: t.union([t.undefined, t.boolean]) }),
+  ]),
+);
+export namespace udcDeposit {
+  export interface request extends ActionType<typeof udcDeposit.request> {}
+  export interface success extends ActionType<typeof udcDeposit.success> {}
+  export interface failure extends ActionType<typeof udcDeposit.failure> {}
+}
 
 const UdcWithdrawId = t.type({
   amount: UInt(32),
