@@ -44,6 +44,7 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - minimumAllowance - Minimum value to call `approve` on tokens; default to MaxUint256, so
  *      approving tokens should be needed only once, trusting TokenNetwork's & UDC contracts;
  *      Set to Zero to fallback to approving the strictly needed deposit amounts
+ * - autoSettle - Whether to channelSettle.request settleable channels automatically
  * - matrixServer? - Specify a matrix server to use.
  * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly
  *             set in on-chain method calls. false (default) = use main key; true = use subkey
@@ -76,6 +77,7 @@ export const RaidenConfig = t.readonly(
       rateToSvt: t.record(t.string, UInt(32)),
       pollingInterval: t.number,
       minimumAllowance: UInt(32),
+      autoSettle: t.boolean,
     }),
     t.partial({
       matrixServer: t.string,
@@ -127,6 +129,7 @@ export function makeDefaultConfig(
     rateToSvt: {},
     pollingInterval: 5000,
     minimumAllowance: MaxUint256 as UInt<32>,
+    autoSettle: false,
     ...overwrites,
   };
 }
