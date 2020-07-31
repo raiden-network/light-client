@@ -142,8 +142,8 @@ export function waitMemberAndSend$(
     }),
     take(1), // use first room/user which meets all requirements/filters above
     mergeMap((via) =>
-      defer(
-        () =>
+      defer<Promise<void>>(
+        async () =>
           typeof via === 'string'
             ? matrix.sendEvent(via, type, content, '') // via room
             : via.send(content.body), // via RTC channel
