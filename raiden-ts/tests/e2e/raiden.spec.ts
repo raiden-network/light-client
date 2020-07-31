@@ -1,6 +1,6 @@
 import { timer } from 'rxjs';
 import { first, filter, takeUntil, take, toArray } from 'rxjs/operators';
-import { Zero, MaxUint256 } from 'ethers/constants';
+import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
 
 import { TestProvider } from './provider';
@@ -67,6 +67,10 @@ describe('Raiden', () => {
 
   let httpBackend: MockMatrixRequestFn;
   const matrixServer = 'matrix.raiden.test';
+
+  async function flushPromises() {
+    return new Promise(setImmediate);
+  }
 
   async function createRaiden(
     account: number | string,
@@ -155,11 +159,12 @@ describe('Raiden', () => {
     raiden.start();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     let _raiden;
     while ((_raiden = raidens.pop())) _raiden.stop();
     httpBackend.stop();
     fetch.mockRestore();
+    await flushPromises();
   });
 
   test('create from other params and RaidenState', async () => {
@@ -366,9 +371,8 @@ describe('Raiden', () => {
 
   describe('getUDCCapacity', () => {
     test('no balance', async () => {
-      expect.assertions(3);
+      expect.assertions(2);
       // initial high, to avoid it interferring with caps[Capabilities.NO_RECEIVE]
-      await expect(raiden.getUDCCapacity()).resolves.toEqual(MaxUint256);
       await expect(raiden.userDepositTokenAddress()).resolves.toMatch(/^0x/);
       // should be updated soonish
       await expect(raiden.getUDCCapacity()).resolves.toEqual(Zero);
@@ -1238,6 +1242,7 @@ describe('Raiden', () => {
 
     test('should throw exception on main net', async () => {
       expect.assertions(1);
+      raiden.stop();
       raiden = await Raiden.create(
         new TestProvider(undefined, { network_id: 1 }),
         0,
@@ -1245,7 +1250,7 @@ describe('Raiden', () => {
         contractsInfo,
         config,
       );
-      raiden.start();
+      raidens.push(raiden);
       await expect(
         raiden.mint('0x3a989D97388a39A0B5796306C615d10B7416bE77', 50),
       ).rejects.toThrowError('Minting is only allowed on test networks.');
@@ -1265,7 +1270,7 @@ describe('Raiden', () => {
       await expect(raiden.depositToUDC(0)).rejects.toThrow('positive');
     });
 
-    test('deposit without a token balance', async () => {
+    test('try to deposit without enough balance', async () => {
       expect.assertions(1);
       await expect(raiden.depositToUDC(100)).rejects.toThrow('Insufficient balance');
     });

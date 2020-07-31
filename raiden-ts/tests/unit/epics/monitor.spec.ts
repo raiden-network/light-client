@@ -7,22 +7,25 @@ import {
   makeRaidens,
   waitBlock,
   providersEmit,
+  makeTransaction,
+  sleep,
+  makeRaiden,
 } from '../mocks';
 import { epicFixtures, tokenNetwork, ensureChannelIsOpen, id } from '../fixtures';
 
 import { bigNumberify, BigNumberish, defaultAbiCoder } from 'ethers/utils';
-import { Zero, WeiPerEther, Two } from 'ethers/constants';
+import { Zero, WeiPerEther, Two, MaxUint256 } from 'ethers/constants';
 import { of } from 'rxjs';
-import { first, toArray, pluck } from 'rxjs/operators';
+import { first, pluck } from 'rxjs/operators';
 
 import { Capabilities } from 'raiden-ts/constants';
 import { raidenConfigUpdate } from 'raiden-ts/actions';
 import { MessageType, LockedTransfer } from 'raiden-ts/messages/types';
 import { signMessage, createBalanceHash } from 'raiden-ts/messages/utils';
-import { tokenMonitored, channelOpen, channelDeposit, newBlock } from 'raiden-ts/channels/actions';
+import { tokenMonitored, channelOpen, channelDeposit } from 'raiden-ts/channels/actions';
 import { messageReceived, messageGlobalSend } from 'raiden-ts/messages/actions';
 import { transferGenerateAndSignEnvelopeMessageEpic } from 'raiden-ts/transfers/epics';
-import { UInt, decode } from 'raiden-ts/utils/types';
+import { UInt, decode, Hash } from 'raiden-ts/utils/types';
 import {
   makeMessageId,
   makeSecret,
@@ -30,31 +33,37 @@ import {
   makePaymentId,
   getLocksroot,
 } from 'raiden-ts/transfers/utils';
-import { monitorRequestEpic, monitorUdcBalanceEpic } from 'raiden-ts/services/epics';
-import { udcDeposited, msBalanceProofSent } from 'raiden-ts/services/actions';
+import { monitorRequestEpic } from 'raiden-ts/services/epics';
+import { udcDeposit, msBalanceProofSent } from 'raiden-ts/services/actions';
 import { transferProcessed, transferSecretRegister } from 'raiden-ts/transfers/actions';
 import { channelKey } from 'raiden-ts/channels/utils';
 import { Direction } from 'raiden-ts/transfers/state';
+import { ErrorCodes } from 'raiden-ts/utils/error';
 
 test('monitorUdcBalanceEpic', async () => {
-  expect.assertions(2);
+  expect.assertions(5);
 
-  const depsMock = raidenEpicDeps();
-  const { action$, state$ } = epicFixtures(depsMock);
-  const deposit = bigNumberify(23) as UInt<32>;
+  const raiden = await makeRaiden(undefined, false);
+  const { userDepositContract } = raiden.deps;
+  userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
 
-  depsMock.userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
+  await raiden.start();
+  expect(raiden.output).toContainEqual(
+    udcDeposit.success(undefined, { totalDeposit: Zero as UInt<32> }),
+  );
+  await expect(
+    raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise(),
+  ).resolves.toEqual(Zero);
 
-  const promise = monitorUdcBalanceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+  const balance = bigNumberify(23) as UInt<32>;
+  userDepositContract.functions.effectiveBalance.mockResolvedValue(balance);
+  await waitBlock();
 
-  setTimeout(() => {
-    depsMock.userDepositContract.functions.effectiveBalance.mockResolvedValueOnce(deposit);
-    action$.next(newBlock({ blockNumber: 2 }));
-  }, 10);
-  setTimeout(() => action$.complete(), 50);
-
-  await expect(promise).resolves.toEqual([udcDeposited(Zero as UInt<32>), udcDeposited(deposit)]);
-  expect(depsMock.userDepositContract.functions.effectiveBalance).toHaveBeenCalledTimes(2);
+  expect(raiden.output).toContainEqual(udcDeposit.success(undefined, { totalDeposit: balance }));
+  await expect(
+    raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise(),
+  ).resolves.toEqual(balance);
+  expect(userDepositContract.functions.effectiveBalance).toHaveBeenCalledTimes(2);
 });
 
 describe('monitorRequestEpic', () => {
@@ -211,7 +220,9 @@ describe('monitorRequestEpic', () => {
     const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
-    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+    action$.next(
+      udcDeposit.success(undefined, { totalDeposit: monitoringReward.mul(2) as UInt<32> }),
+    );
     const channelState = await receiveTransfer(20);
     const partnerBP = channelState.partner.balanceProof;
     setTimeout(() => action$.complete(), 100);
@@ -251,7 +262,9 @@ describe('monitorRequestEpic', () => {
     action$.next(raidenConfigUpdate({ rateToSvt: {} }));
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
-    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+    action$.next(
+      udcDeposit.success(undefined, { totalDeposit: monitoringReward.mul(2) as UInt<32> }),
+    );
     await receiveTransfer(20);
     setTimeout(() => action$.complete(), 50);
 
@@ -262,7 +275,9 @@ describe('monitorRequestEpic', () => {
     expect.assertions(1);
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
-    action$.next(udcDeposited(monitoringReward.sub(1) as UInt<32>));
+    action$.next(
+      udcDeposit.success(undefined, { totalDeposit: monitoringReward.sub(1) as UInt<32> }),
+    );
 
     await receiveTransfer(10);
     setTimeout(() => action$.complete(), 50);
@@ -275,7 +290,9 @@ describe('monitorRequestEpic', () => {
     action$.next(raidenConfigUpdate({ monitoringReward: null }));
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
-    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+    action$.next(
+      udcDeposit.success(undefined, { totalDeposit: monitoringReward.mul(2) as UInt<32> }),
+    );
 
     await receiveTransfer(10);
     setTimeout(() => action$.complete(), 50);
@@ -287,7 +304,9 @@ describe('monitorRequestEpic', () => {
     expect.assertions(2);
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
-    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+    action$.next(
+      udcDeposit.success(undefined, { totalDeposit: monitoringReward.mul(2) as UInt<32> }),
+    );
 
     // fails only after transfer's signatures
     const originalSign = depsMock.signer.signMessage;
@@ -311,7 +330,9 @@ describe('monitorRequestEpic', () => {
     expect.assertions(1);
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
-    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+    action$.next(
+      udcDeposit.success(undefined, { totalDeposit: monitoringReward.mul(2) as UInt<32> }),
+    );
 
     // transfer <= monitoringReward isn't worth to be monitored
     await receiveTransfer(monitoringReward.toNumber());
@@ -324,7 +345,9 @@ describe('monitorRequestEpic', () => {
     expect.assertions(1);
 
     const promise = monitorRequestEpic(action$, state$, depsMock).toPromise();
-    action$.next(udcDeposited(monitoringReward.mul(2) as UInt<32>));
+    action$.next(
+      udcDeposit.success(undefined, { totalDeposit: monitoringReward.mul(2) as UInt<32> }),
+    );
 
     // transfer <= monitoringReward isn't worth to be monitored
     await receiveTransfer(20, false);
@@ -379,4 +402,158 @@ test('msMonitorNewBPEpic', async () => {
       confirmed: undefined,
     }),
   );
+});
+
+describe('udcDepositEpic', () => {
+  const deposit = bigNumberify(10) as UInt<32>;
+
+  test('fails if not enough balance', async () => {
+    expect.assertions(1);
+
+    const raiden = await makeRaiden(undefined, false);
+    const { userDepositContract } = raiden.deps;
+    userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
+
+    const tokenContract = raiden.deps.getTokenContract(
+      await raiden.deps.userDepositContract.functions.token(),
+    );
+    tokenContract.functions.balanceOf.mockResolvedValue(deposit.sub(1));
+
+    await raiden.start();
+    raiden.store.dispatch(udcDeposit.request({ deposit }, { totalDeposit: deposit }));
+    await waitBlock();
+
+    expect(raiden.output).toContainEqual(
+      udcDeposit.failure(
+        expect.objectContaining({ message: ErrorCodes.RDN_INSUFFICIENT_BALANCE }),
+        { totalDeposit: deposit },
+      ),
+    );
+  });
+
+  test('approve tx fails with resetAllowance needed', async () => {
+    expect.assertions(4);
+
+    const raiden = await makeRaiden(undefined, false);
+    const { userDepositContract } = raiden.deps;
+    userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
+
+    const tokenContract = raiden.deps.getTokenContract(
+      await raiden.deps.userDepositContract.functions.token(),
+    );
+    // not enough allowance, but not zero, need to reset
+    tokenContract.functions.allowance.mockResolvedValue(deposit.sub(1));
+
+    tokenContract.functions.approve.mockResolvedValue(
+      makeTransaction(0, { to: tokenContract.address }),
+    );
+    // resetAllowance$ succeeds, but then actual approve fails
+    tokenContract.functions.approve.mockResolvedValueOnce(
+      makeTransaction(undefined, { to: tokenContract.address }),
+    );
+
+    await raiden.start();
+    raiden.store.dispatch(udcDeposit.request({ deposit }, { totalDeposit: deposit }));
+    await waitBlock();
+
+    expect(raiden.output).toContainEqual(
+      udcDeposit.failure(
+        expect.objectContaining({ message: ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED }),
+        { totalDeposit: deposit },
+      ),
+    );
+    expect(tokenContract.functions.approve).toHaveBeenCalledTimes(2);
+    expect(tokenContract.functions.approve).toHaveBeenCalledWith(userDepositContract.address, 0);
+    expect(tokenContract.functions.approve).toHaveBeenCalledWith(
+      userDepositContract.address,
+      raiden.config.minimumAllowance,
+    );
+  });
+
+  test('deposit tx fails', async () => {
+    expect.assertions(1);
+
+    const raiden = await makeRaiden(undefined, false);
+    const { userDepositContract } = raiden.deps;
+    userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
+
+    const tokenContract = raiden.deps.getTokenContract(
+      await raiden.deps.userDepositContract.functions.token(),
+    );
+
+    const approveTx = makeTransaction(undefined, { to: tokenContract.address });
+    tokenContract.functions.approve.mockResolvedValue(approveTx);
+
+    const depositTx = makeTransaction(0, { to: userDepositContract.address });
+    userDepositContract.functions.deposit.mockResolvedValue(depositTx);
+
+    await raiden.start();
+    raiden.store.dispatch(udcDeposit.request({ deposit }, { totalDeposit: deposit }));
+    await waitBlock();
+
+    expect(raiden.output).toContainEqual(
+      udcDeposit.failure(
+        expect.objectContaining({ message: ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED }),
+        { totalDeposit: deposit },
+      ),
+    );
+  });
+
+  test('success', async () => {
+    expect.assertions(8);
+
+    const prevDeposit = bigNumberify(330) as UInt<32>;
+    const balance = prevDeposit.add(deposit) as UInt<32>;
+    const raiden = await makeRaiden(undefined, false);
+    const { userDepositContract } = raiden.deps;
+    userDepositContract.functions.effectiveBalance.mockResolvedValue(prevDeposit);
+
+    const tokenContract = raiden.deps.getTokenContract(
+      await raiden.deps.userDepositContract.functions.token(),
+    );
+    // allowance first isn't enough but not zero, resetAllowance needed
+    tokenContract.functions.allowance.mockResolvedValue(deposit.sub(1));
+
+    const approveTx = makeTransaction(undefined, { to: tokenContract.address });
+    tokenContract.functions.approve.mockResolvedValue(approveTx);
+    // first approve tx fail with nonce error, replacement fee error should be retried
+    const approveFailTx: typeof approveTx = makeTransaction(undefined, {
+      to: tokenContract.address,
+      wait: jest.fn().mockRejectedValue(new Error('replacement fee too low')),
+    });
+    tokenContract.functions.approve.mockResolvedValueOnce(approveFailTx);
+
+    const depositTx = makeTransaction(undefined, { to: userDepositContract.address });
+    userDepositContract.functions.deposit.mockResolvedValue(depositTx);
+
+    await raiden.start();
+    raiden.store.dispatch(udcDeposit.request({ deposit }, { totalDeposit: balance }));
+    await waitBlock();
+    // give some time for the `approve` retry
+    await sleep(raiden.deps.provider.pollingInterval * 2);
+
+    // result is undefined on success as the respective udcDeposit.success is emitted by the
+    // channelMonitoredEpic, which monitors the blockchain for ChannelNewDeposit events
+    expect(raiden.output).not.toContainEqual(
+      udcDeposit.failure(expect.any(Error), expect.anything()),
+    );
+    expect(raiden.output).toContainEqual(
+      udcDeposit.success(
+        { txHash: depositTx.hash! as Hash, txBlock: expect.any(Number), confirmed: true },
+        { totalDeposit: balance },
+      ),
+    );
+    expect(tokenContract.functions.approve).toHaveBeenCalledTimes(3);
+    expect(approveTx.wait).toHaveBeenCalledTimes(2);
+    expect(tokenContract.functions.approve).toHaveBeenCalledWith(
+      userDepositContract.address,
+      MaxUint256,
+    );
+    expect(userDepositContract.functions.deposit).toHaveBeenCalledTimes(1);
+    expect(userDepositContract.functions.deposit).toHaveBeenCalledWith(
+      raiden.address,
+      deposit.add(prevDeposit),
+    );
+    expect(depositTx.wait).toHaveBeenCalledTimes(1);
+  });
 });
