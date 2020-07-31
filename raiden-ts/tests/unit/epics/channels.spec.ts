@@ -413,15 +413,19 @@ describe('channelDepositEpic', () => {
     );
   });
 
-  test('approve tx fails', async () => {
-    expect.assertions(3);
+  test('approve tx fails with resetAllowance needed', async () => {
+    expect.assertions(4);
 
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsOpen([raiden, partner]);
 
     const tokenContract = raiden.deps.getTokenContract(token);
-    const approveTx = makeTransaction(0);
-    tokenContract.functions.approve.mockResolvedValue(approveTx);
+    // not enough allowance, but not zero, need to reset
+    tokenContract.functions.allowance.mockResolvedValue(deposit.sub(1));
+
+    tokenContract.functions.approve.mockResolvedValue(makeTransaction(0));
+    // resetAllowance$ succeeds, but then actual approve fails
+    tokenContract.functions.approve.mockResolvedValueOnce(makeTransaction());
 
     raiden.store.dispatch(
       channelDeposit.request({ deposit }, { tokenNetwork, partner: partner.address }),
@@ -431,8 +435,12 @@ describe('channelDepositEpic', () => {
     expect(raiden.output).toContainEqual(
       channelDeposit.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
     );
-    expect(tokenContract.functions.approve).toHaveBeenCalledTimes(1);
-    expect(tokenContract.functions.approve).toHaveBeenCalledWith(tokenNetwork, deposit);
+    expect(tokenContract.functions.approve).toHaveBeenCalledTimes(2);
+    expect(tokenContract.functions.approve).toHaveBeenCalledWith(tokenNetwork, 0);
+    expect(tokenContract.functions.approve).toHaveBeenCalledWith(
+      tokenNetwork,
+      raiden.config.minimumAllowance,
+    );
   });
 
   test('setTotalDeposit tx fails', async () => {

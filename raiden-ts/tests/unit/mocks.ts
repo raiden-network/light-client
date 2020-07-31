@@ -462,6 +462,9 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   userDepositContract.functions.one_to_n_address.mockResolvedValue(oneToNAddress);
   userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
+  userDepositContract.functions.deposit.mockResolvedValue(
+    makeTransaction(undefined, { to: userDepositContract.address }),
+  );
   userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.withdraw_plans.mockResolvedValue({
     amount: Zero,
@@ -717,9 +720,9 @@ export async function makeRaiden(
   jest.spyOn(provider, 'listenerCount');
   jest.spyOn(provider, 'getNetwork').mockImplementation(async () => provider.network);
   jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
-  jest.spyOn(provider, 'send').mockImplementation(async (method) => {
+  jest.spyOn(provider, 'send').mockImplementation(async (method, params?: any[]) => {
     if (method === 'net_version') return network.chainId;
-    throw new Error(`provider.send called: "${method}"`);
+    throw new Error(`provider.send called: "${method}" => ${JSON.stringify(params)}`);
   });
   jest
     .spyOn(provider, 'getCode')
@@ -773,7 +776,13 @@ export async function makeRaiden(
     signer,
   ) as MockedContract<TokenNetworkRegistry>;
   for (const func in registryContract.functions) {
-    jest.spyOn(registryContract.functions, func as keyof TokenNetworkRegistry['functions']);
+    jest
+      .spyOn(registryContract.functions, func as keyof TokenNetworkRegistry['functions'])
+      .mockImplementation(async (...params: any[]) => {
+        throw new Error(
+          `TokenNetworkRegistry: tried to call "${func}" with params ${JSON.stringify(params)}`,
+        );
+      });
   }
   registryContract.functions.token_to_token_networks.mockImplementation(async () => makeAddress());
 
@@ -783,7 +792,15 @@ export async function makeRaiden(
         TokenNetwork
       >;
       for (const func in tokenNetworkContract.functions) {
-        jest.spyOn(tokenNetworkContract.functions, func as keyof TokenNetwork['functions']);
+        jest
+          .spyOn(tokenNetworkContract.functions, func as keyof TokenNetwork['functions'])
+          .mockImplementation(async (...params: any[]) => {
+            throw new Error(
+              `TokenNetwork[${address}]: tried to call "${func}" with params ${JSON.stringify(
+                params,
+              )}`,
+            );
+          });
       }
       tokenNetworkContract.functions.getChannelParticipantInfo.mockResolvedValue([
         Zero,
@@ -794,15 +811,27 @@ export async function makeRaiden(
         HashZero,
         Zero,
       ]);
-      tokenNetworkContract.functions.openChannel.mockResolvedValue(makeTransaction());
-      tokenNetworkContract.functions.setTotalDeposit.mockResolvedValue(makeTransaction());
-      tokenNetworkContract.functions.setTotalWithdraw.mockResolvedValue(makeTransaction());
-      tokenNetworkContract.functions.closeChannel.mockResolvedValue(makeTransaction());
-      tokenNetworkContract.functions.updateNonClosingBalanceProof.mockResolvedValue(
-        makeTransaction(),
+      tokenNetworkContract.functions.openChannel.mockResolvedValue(
+        makeTransaction(undefined, { to: address }),
       );
-      tokenNetworkContract.functions.settleChannel.mockResolvedValue(makeTransaction());
-      tokenNetworkContract.functions.unlock.mockResolvedValue(makeTransaction());
+      tokenNetworkContract.functions.setTotalDeposit.mockResolvedValue(
+        makeTransaction(undefined, { to: address }),
+      );
+      tokenNetworkContract.functions.setTotalWithdraw.mockResolvedValue(
+        makeTransaction(undefined, { to: address }),
+      );
+      tokenNetworkContract.functions.closeChannel.mockResolvedValue(
+        makeTransaction(undefined, { to: address }),
+      );
+      tokenNetworkContract.functions.updateNonClosingBalanceProof.mockResolvedValue(
+        makeTransaction(undefined, { to: address }),
+      );
+      tokenNetworkContract.functions.settleChannel.mockResolvedValue(
+        makeTransaction(undefined, { to: address }),
+      );
+      tokenNetworkContract.functions.unlock.mockResolvedValue(
+        makeTransaction(undefined, { to: address }),
+      );
       return tokenNetworkContract;
     },
   );
@@ -813,9 +842,17 @@ export async function makeRaiden(
         HumanStandardToken
       >;
       for (const func in tokenContract.functions) {
-        jest.spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions']);
+        jest
+          .spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions'])
+          .mockImplementation(async (...params: any[]) => {
+            throw new Error(
+              `Token[${address}]: tried to call "${func}" with params ${JSON.stringify(params)}`,
+            );
+          });
       }
-      tokenContract.functions.approve.mockResolvedValue(makeTransaction());
+      tokenContract.functions.approve.mockResolvedValue(
+        makeTransaction(undefined, { to: address }),
+      );
       tokenContract.functions.allowance.mockResolvedValue(Zero);
       tokenContract.functions.balanceOf.mockResolvedValue(parseEther('1000'));
       return tokenContract;
@@ -827,7 +864,13 @@ export async function makeRaiden(
     signer,
   ) as MockedContract<ServiceRegistry>;
   for (const func in serviceRegistryContract.functions) {
-    jest.spyOn(serviceRegistryContract.functions, func as keyof ServiceRegistry['functions']);
+    jest
+      .spyOn(serviceRegistryContract.functions, func as keyof ServiceRegistry['functions'])
+      .mockImplementation(async (...params: any[]) => {
+        throw new Error(
+          `ServiceRegistry: tried to call "${func}" with params ${JSON.stringify(params)}`,
+        );
+      });
   }
   serviceRegistryContract.functions.token.mockResolvedValue(svtAddress);
   serviceRegistryContract.functions.urls.mockImplementation(async () => 'https://pfs.raiden.test');
@@ -836,8 +879,15 @@ export async function makeRaiden(
     UserDeposit
   >;
   for (const func in userDepositContract.functions) {
-    jest.spyOn(userDepositContract.functions, func as keyof UserDeposit['functions']);
+    jest
+      .spyOn(userDepositContract.functions, func as keyof UserDeposit['functions'])
+      .mockImplementation(async (...params: any[]) => {
+        throw new Error(
+          `UserDeposit: tried to call "${func}" with params ${JSON.stringify(params)}`,
+        );
+      });
   }
+  userDepositContract.functions.token.mockResolvedValue(svtAddress);
   userDepositContract.functions.one_to_n_address.mockResolvedValue(oneToNAddress);
   userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
   userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
@@ -854,7 +904,13 @@ export async function makeRaiden(
   >;
 
   for (const func in secretRegistryContract.functions) {
-    jest.spyOn(secretRegistryContract.functions, func as keyof SecretRegistry['functions']);
+    jest
+      .spyOn(secretRegistryContract.functions, func as keyof SecretRegistry['functions'])
+      .mockImplementation(async (...params: any[]) => {
+        throw new Error(
+          `SecretRegistry: tried to call "${func}" with params ${JSON.stringify(params)}`,
+        );
+      });
   }
 
   const monitoringServiceContract = MonitoringServiceFactory.connect(
@@ -863,7 +919,13 @@ export async function makeRaiden(
   ) as MockedContract<MonitoringService>;
 
   for (const func in monitoringServiceContract.functions) {
-    jest.spyOn(monitoringServiceContract.functions, func as keyof MonitoringService['functions']);
+    jest
+      .spyOn(monitoringServiceContract.functions, func as keyof MonitoringService['functions'])
+      .mockImplementation(async (...params: any[]) => {
+        throw new Error(
+          `MonitoringService: tried to call "${func}" with params ${JSON.stringify(params)}`,
+        );
+      });
   }
 
   const contractsInfo: ContractsInfo = {
