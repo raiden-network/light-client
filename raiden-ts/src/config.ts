@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import { Network, parseEther } from 'ethers/utils';
+import { MaxUint256 } from 'ethers/constants';
 
 import { Capabilities } from './constants';
 import { Address, UInt } from './utils/types';
@@ -40,6 +41,9 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - rateToSvt - Exchange rate between tokens and SVT, in wei: e.g. rate[TKN]=2e18 => 1TKN = 2SVT
  * - pollingInterval - Interval at which to poll ETH provider for new blocks/events (milliseconds)
  *      Honored only at start time
+ * - minimumAllowance - Minimum value to call `approve` on tokens; default to MaxUint256, so
+ *      approving tokens should be needed only once, trusting TokenNetwork's & UDC contracts;
+ *      Set to Zero to fallback to approving the strictly needed deposit amounts
  * - matrixServer? - Specify a matrix server to use.
  * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly
  *             set in on-chain method calls. false (default) = use main key; true = use subkey
@@ -71,6 +75,7 @@ export const RaidenConfig = t.readonly(
       fallbackIceServers: t.array(RTCIceServer),
       rateToSvt: t.record(t.string, UInt(32)),
       pollingInterval: t.number,
+      minimumAllowance: UInt(32),
     }),
     t.partial({
       matrixServer: t.string,
@@ -121,6 +126,7 @@ export function makeDefaultConfig(
     fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     rateToSvt: {},
     pollingInterval: 5000,
+    minimumAllowance: MaxUint256 as UInt<32>,
     ...overwrites,
   };
 }
