@@ -11,6 +11,7 @@
           v-model="deposit"
           :token="token"
           :max="token.balance"
+          :placeholder="$t('transfer.amount-placeholder')"
           limit
         ></amount-input>
       </v-col>
