@@ -23,7 +23,6 @@ import {
   pluck,
   publishReplay,
   ignoreElements,
-  skip,
   mergeMapTo,
   first,
   delayWhen,
@@ -31,6 +30,7 @@ import {
   concatMap,
   takeUntil,
   groupBy,
+  repeatWhen,
 } from 'rxjs/operators';
 import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
@@ -56,7 +56,7 @@ import { createBalanceHash, MessageTypeId } from '../messages/utils';
 import { TokenNetwork } from '../contracts/TokenNetwork';
 import { HumanStandardToken } from '../contracts/HumanStandardToken';
 import { findBalanceProofMatchingBalanceHash } from '../transfers/utils';
-import { ChannelState } from './state';
+import { ChannelState, Channel } from './state';
 import {
   newBlock,
   tokenMonitored,
@@ -977,13 +977,13 @@ export const channelUpdateEpic = (
     getTokenNetworkContract,
     config$,
   }: RaidenEpicDeps,
-): Observable<channelSettle.failure> =>
+): Observable<never> =>
   action$.pipe(
     filter(isActionOf(channelClose.success)),
     filter((action) => !!action.payload.confirmed),
-    // wait 2 newBlock actions go through after channelClose confirmation, to ensure any pending
+    // wait a newBlock go through after channelClose confirmation, to ensure any pending
     // channelSettle could have been processed
-    mergeMap((action) => action$.pipe(filter(newBlock.is), skip(1), take(1), mapTo(action))),
+    delayWhen(() => action$.pipe(filter(newBlock.is))),
     withLatestFrom(state$, config$),
     filter(([action, state]) => {
       const channel = state.channels[channelKey(action.meta)];
@@ -1050,6 +1050,74 @@ export const channelUpdateEpic = (
         }),
       );
     }),
+  );
+
+/**
+ * If config.autoSettle is true, calls channelSettle.request on settleable channels
+ * The event is emitted between [confirmationBlocks, 2 * confirmationBlocks] after channel becomes
+ * settleable, to give time for confirmation and for partner to settle.
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps members
+ * @param deps.config$ - Config observable
+ * @returns Observable of channelSettle.request actions
+ */
+export const channelAutoSettleEpic = (
+  {}: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { config$ }: RaidenEpicDeps,
+): Observable<channelSettle.request> =>
+  state$.pipe(
+    groupChannel$,
+    mergeMap((grouped$) =>
+      grouped$.pipe(
+        filter(
+          (channel): channel is Channel & { state: ChannelState.settleable } =>
+            channel.state === ChannelState.settleable,
+        ),
+        take(1),
+        withLatestFrom(config$),
+        // wait [confirmationBlocks, 2 * confirmationBlocks] before proceeding
+        delayWhen(([channel, { confirmationBlocks }]) => {
+          const settleBlock =
+            channel.closeBlock +
+            channel.settleTimeout +
+            Math.round(confirmationBlocks * (1.0 + Math.random()));
+          return state$.pipe(
+            pluck('blockNumber'),
+            filter((blockNumber) => settleBlock <= blockNumber),
+            take(1),
+          );
+        }),
+        withLatestFrom(state$),
+        // filter channel isn't yet being settled by us or partner (state=settling)
+        filter(
+          ([[channel], state]) =>
+            state.channels[channelKey(channel)]?.state === ChannelState.settleable,
+        ),
+        map(([[channel]]) =>
+          channelSettle.request(undefined, {
+            tokenNetwork: channel.tokenNetwork,
+            partner: channel.partner.address,
+          }),
+        ),
+      ),
+    ),
+    // complete when autoSettle becomes false
+    takeUntil(
+      config$.pipe(
+        pluck('autoSettle'),
+        filter((autoSettle) => !autoSettle),
+      ),
+    ),
+    // re-subscribe when autoSettle becomes true
+    repeatWhen(() =>
+      config$.pipe(
+        pluck('autoSettle'),
+        filter((autoSettle) => autoSettle),
+      ),
+    ),
   );
 
 /**
