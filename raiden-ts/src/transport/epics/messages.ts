@@ -11,7 +11,6 @@ import {
   switchMap,
   take,
   takeUntil,
-  mapTo,
   tap,
 } from 'rxjs/operators';
 import find from 'lodash/find';
@@ -81,7 +80,7 @@ export const matrixMessageSendEpic = (
             { log, latest$, config$ },
             true, // alowRtc
           ).pipe(
-            mapTo(messageSend.success(undefined, action.meta)),
+            map((via) => messageSend.success({ via }, action.meta)),
             catchError((err) => {
               log.error('messageSend error', err, action.meta);
               return of(messageSend.failure(err, action.meta));
