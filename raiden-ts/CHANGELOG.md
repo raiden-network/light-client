@@ -6,6 +6,7 @@
 - [#1952] Fix nonce conflict issues with concurrent transactions
 - [#1997] Fix matrix rate-limiting logins when many nodes are started in parallel
 - [#1998] Fix events reverted due to a reorg still getting confirmed
+- [#2010] Fix multiple approve on secure ERC20 tokens, like RDN
 
 ### Added
 - [#703] Add option to fetch all contracts addresses from UserDeposit address alone
@@ -17,6 +18,7 @@
 ### Changed
 - [#1905] Fail early if not enough tokens to deposit
 - [#1958] Transfers can fail before requesting PFS if there's no viable channel
+- [#2010] Token.approve defaults to MaxUint256, so only one approval is needed per token; set config.minimumAllowance to Zero to fallback to strict deposit values
 - [#2019] Use exponential back-off strategy for protocol messages retries
 
 [#703]: https://github.com/raiden-network/light-client/issues/703
@@ -30,6 +32,7 @@
 [#1958]: https://github.com/raiden-network/light-client/issues/1958
 [#1997]: https://github.com/raiden-network/light-client/issues/1997
 [#1998]: https://github.com/raiden-network/light-client/issues/1998
+[#2010]: https://github.com/raiden-network/light-client/issues/2010
 [#2019]: https://github.com/raiden-network/light-client/issues/2019
 
 ## [0.10.0] - 2020-07-13
