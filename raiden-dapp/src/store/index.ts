@@ -53,6 +53,8 @@ const _defaultState: RootState = {
   },
   config: {},
   userDepositTokenAddress: '',
+  disclaimerAccepted: false,
+  persistDisclaimerAcceptance: false,
 };
 
 export function defaultState(): RootState {
@@ -69,10 +71,19 @@ const hasNonZeroBalance = (a: Token, b: Token) =>
   (!(a.balance as BigNumber).isZero() || !(b.balance as BigNumber).isZero());
 
 const settingsLocalStorage = new VuexPersistence<RootState>({
-  storage: window.localStorage,
   reducer: (state) => ({ settings: state.settings }),
   filter: (mutation) => mutation.type == 'updateSettings',
   key: 'raiden_dapp_settings',
+});
+
+const disclaimerAcceptedLocalStorage = new VuexPersistence<RootState>({
+  reducer: (state) => ({
+    disclaimerAccepted: state.persistDisclaimerAcceptance
+      ? state.disclaimerAccepted
+      : false,
+  }),
+  filter: (mutation) => mutation.type === 'acceptDisclaimer',
+  key: 'raiden_dapp_disclaimer_accepted',
 });
 
 const store: StoreOptions<RootState> = {
@@ -121,9 +132,9 @@ const store: StoreOptions<RootState> = {
     },
     reset(state: RootState) {
       // Preserve settings when resetting state
-      const { settings } = state;
+      const { settings, disclaimerAccepted } = state;
 
-      Object.assign(state, { ...defaultState(), settings });
+      Object.assign(state, { ...defaultState(), settings, disclaimerAccepted });
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {
       state.transfers = { ...state.transfers, [transfer.key]: transfer };
@@ -139,6 +150,10 @@ const store: StoreOptions<RootState> = {
     },
     userDepositTokenAddress(state: RootState, address: string) {
       state.userDepositTokenAddress = address;
+    },
+    acceptDisclaimer(state: RootState, persistDecision: boolean) {
+      state.disclaimerAccepted = true;
+      state.persistDisclaimerAcceptance = persistDecision;
     },
   },
   actions: {},
@@ -244,7 +259,7 @@ const store: StoreOptions<RootState> = {
       return state.tokens[state.userDepositTokenAddress];
     },
   },
-  plugins: [settingsLocalStorage.plugin],
+  plugins: [settingsLocalStorage.plugin, disclaimerAcceptedLocalStorage.plugin],
   modules: {
     notifications,
   },

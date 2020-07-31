@@ -20,24 +20,16 @@
           </div>
           <v-col>
             <div class="app-header__top__content__title">
-              <span v-if="isConnected">
-                {{ $route.meta.title }}
-              </span>
-              <span v-else>
-                {{ $t('home.title') }}
-              </span>
+              {{ $route.meta.title }}
             </div>
             <div
-              v-if="!loading && defaultAccount"
+              v-if="!showTitleOnly"
               class="app-header__top__content__network"
             >
               {{ network }}
             </div>
           </v-col>
-          <span
-            v-if="!loading && defaultAccount"
-            class="app-header__notifications-wrapper"
-          >
+          <span v-if="!showTitleOnly" class="app-header__notifications-wrapper">
             <v-btn
               icon
               height="30px"
@@ -65,14 +57,14 @@
               />
             </v-btn>
           </span>
-          <span class="app-header__account-wrapper">
+          <span v-if="!isDisclaimerRoute" class="app-header__account-wrapper">
             <header-identicon @click.native="navigateToAccoount()" />
           </span>
         </div>
       </v-col>
     </v-row>
     <v-row class="app-header__bottom" align="center" no-gutters>
-      <v-col v-if="!loading && defaultAccount" cols="12">
+      <v-col v-if="!showTitleOnly" cols="12">
         <div class="app-header__bottom__address text-left">
           <address-display :address="defaultAccount" />
         </div>
@@ -100,7 +92,7 @@ const {
     AddressDisplay,
   },
   computed: {
-    ...mapState(['loading', 'defaultAccount']),
+    ...mapState(['defaultAccount']),
     ...mapNotificationsState(['newNotifications']),
     ...mapGetters(['network', 'isConnected']),
   },
@@ -120,14 +112,24 @@ export default class AppHeader extends Mixins(NavigationMixin) {
     this.navigateToNotifications();
   }
 
+  get isDisclaimerRoute(): boolean {
+    return this.$route.name! === RouteNames.DISCLAIMER;
+  }
+
   get canGoBack(): boolean {
     const routesWithoutBackBtn: string[] = [
       RouteNames.HOME,
       RouteNames.TRANSFER,
     ];
     return (
-      this.isConnected && !routesWithoutBackBtn.includes(this.$route.name!)
+      this.isConnected &&
+      !this.isDisclaimerRoute &&
+      !routesWithoutBackBtn.includes(this.$route.name!)
     );
+  }
+
+  get showTitleOnly(): boolean {
+    return this.isDisclaimerRoute || !this.isConnected;
   }
 }
 </script>

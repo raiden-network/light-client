@@ -338,4 +338,12 @@ describe('store', () => {
     store.commit('updateBlock', 1337);
     expect(store.state.blockNumber).toBe(1337);
   });
+
+  test('acceptDisclaimer mutates changes disclaimer related state', () => {
+    [true, false].forEach((persistDecistion) => {
+      store.commit('acceptDisclaimer', persistDecistion);
+      expect(store.state.disclaimerAccepted).toBe(true);
+      expect(store.state.persistDisclaimerAcceptance).toBe(persistDecistion);
+    });
+  });
 });

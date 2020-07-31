@@ -4,6 +4,7 @@ import { mount, Wrapper } from '@vue/test-utils';
 import store from '@/store';
 import { $identicon } from '../utils/mocks';
 import SelectTokenRoute from '@/views/SelectTokenRoute.vue';
+import { connectAccount } from '../utils/store-utils';
 
 Vue.use(Vuetify);
 
@@ -29,8 +30,7 @@ describe('SelectTokenRoute.vue', () => {
   });
 
   test('connected displays actual route', async () => {
-    store.commit('account', '0x0000000000000000000000000000000000020001');
-    store.commit('loadComplete', true);
+    connectAccount();
     await wrapper.vm.$nextTick();
     expect(wrapper.find('home-stub').exists()).toBe(false);
     expect(wrapper.find('select-token-stub').exists()).toBe(true);
