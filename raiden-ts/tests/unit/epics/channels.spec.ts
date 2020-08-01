@@ -54,6 +54,7 @@ import { ChannelState } from 'raiden-ts/channels';
 import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from 'raiden-ts/messages';
 import { getLocksroot } from 'raiden-ts/transfers/utils';
 import { ErrorCodes } from 'raiden-ts/utils/error';
+import { raidenConfigUpdate } from 'raiden-ts/actions';
 
 test('channelSettleableEpic', async () => {
   expect.assertions(3);
@@ -918,4 +919,22 @@ describe('channelUnlockEpic', () => {
       expect.any(Uint8Array),
     );
   });
+});
+
+test('channelAutoSettleEpic', async () => {
+  expect.assertions(2);
+
+  const [raiden, partner] = await makeRaidens(2);
+
+  // enable autoSettle
+  raiden.store.dispatch(raidenConfigUpdate({ autoSettle: true }));
+
+  await ensureChannelIsClosed([raiden, partner]);
+  await waitBlock(settleBlock + 1);
+  await waitBlock(settleBlock + 2 * confirmationBlocks + 1);
+
+  expect(raiden.output).toContainEqual(
+    channelSettle.request(undefined, { tokenNetwork, partner: partner.address }),
+  );
+  expect(getChannel(raiden, partner)?.state).toBe(ChannelState.settling);
 });
