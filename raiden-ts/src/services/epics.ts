@@ -32,6 +32,9 @@ import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps, Latest } from '../types';
 import { RaidenConfig } from '../config';
+import { Capabilities } from '../constants';
+import { getContractWithSigner, chooseOnchainAccount } from '../helpers';
+import { Presences } from '../transport/types';
 import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
@@ -49,8 +52,6 @@ import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { pluckDistinct } from '../utils/rx';
-import { Capabilities } from '../constants';
-import { getContractWithSigner, chooseOnchainAccount } from '../helpers';
 import { matrixPresence } from '../transport/actions';
 import { UserDeposit } from '../contracts/UserDeposit';
 import { HumanStandardToken } from '../contracts/HumanStandardToken';
@@ -115,8 +116,8 @@ function fetchLastIou$(
         },
       ).pipe(timeout(httpTimeout)),
     ),
-    withLatestFrom(latest$.pipe(pluck('state', 'blockNumber'))),
-    mergeMap(async ([response, blockNumber]) => {
+    withLatestFrom(latest$.pipe(pluck('state', 'blockNumber')), config$),
+    mergeMap(async ([response, blockNumber, { pfsIouTimeout }]) => {
       if (response.status === 404) {
         return {
           sender: address,
@@ -124,8 +125,8 @@ function fetchLastIou$(
           chain_id: bigNumberify(network.chainId) as UInt<32>,
           amount: Zero as UInt<32>,
           one_to_n_address: contractsInfo.OneToN.address,
-          expiration_block: bigNumberify(blockNumber).add(2 * 10 ** 5) as UInt<32>,
-        }; // return empty/zeroed IOU
+          expiration_block: bigNumberify(blockNumber).add(pfsIouTimeout) as UInt<32>,
+        }; // return empty/zeroed IOU, but with valid new expiration_block
       }
       const text = await response.text();
       if (!response.ok)
@@ -135,6 +136,7 @@ function fetchLastIou$(
         });
 
       const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
+      // accept last IOU only if it was signed by us
       const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
       if (signer !== address)
         throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, {
@@ -157,7 +159,8 @@ function prepareNextIOU$(
       const cachedIOU = state.iou[tokenNetwork]?.[pfs.address];
       return cachedIOU ? of(cachedIOU) : fetchLastIou$(pfs, tokenNetwork, deps);
     }),
-    // increment lastIou by pfs.price
+    // increment lastIou by pfs.price; don't touch expiration_block, PFS doesn't like it getting
+    // updated and will give an error asking to update previous IOU instead of creating a new one
     map((iou) => ({ ...iou, amount: iou.amount.add(pfs.price) as UInt<32> })),
     mergeMap((iou) => signIOU(deps.signer, iou)),
   );
@@ -951,12 +954,11 @@ function waitForMatrixPresenceResponse$(
 function getRoute$(
   action: pathFind.request,
   deps: RaidenEpicDeps,
-  latest: Latest,
+  { state, presences, config }: Latest,
 ): Observable<{ paths?: Paths; iou: Signed<IOU> | undefined; error?: PathError }> {
-  validateRouteTargetAndEventuallyThrow(action, latest);
+  validateRouteTargetAndEventuallyThrow(action, state, presences);
 
   const { tokenNetwork, target, value } = action.meta;
-  const { state, presences } = latest;
 
   if (action.payload.paths) {
     return of({ paths: action.payload.paths, iou: undefined });
@@ -965,10 +967,10 @@ function getRoute$(
       paths: [{ path: [deps.address, action.meta.target], fee: Zero as Int<32> }],
       iou: undefined,
     });
-  } else if (pfsIsDisabled(action, latest)) {
+  } else if (pfsIsDisabled(action, config)) {
     throw new RaidenError(ErrorCodes.PFS_DISABLED);
   } else {
-    return getRouteFromPfs$(action, deps, latest);
+    return getRouteFromPfs$(action, deps);
   }
 }
 
@@ -1018,9 +1020,12 @@ function validateRoute$(
   );
 }
 
-function validateRouteTargetAndEventuallyThrow(action: pathFind.request, latest: Latest): void {
+function validateRouteTargetAndEventuallyThrow(
+  action: pathFind.request,
+  state: RaidenState,
+  presences: Presences,
+): void {
   const { tokenNetwork, target, value } = action.meta;
-  const { state, presences } = latest;
 
   assert(Object.values(state.tokens).includes(tokenNetwork), [
     ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK,
@@ -1044,37 +1049,37 @@ function validateRouteTargetAndEventuallyThrow(action: pathFind.request, latest:
   );
 }
 
-function pfsIsDisabled(action: pathFind.request, latest: Latest): boolean {
+function pfsIsDisabled(action: pathFind.request, { pfs }: RaidenConfig): boolean {
   const disabledByAction = action.payload.pfs === null;
-  const disabledByConfig = !action.payload.pfs && latest.config.pfs === null;
+  const disabledByConfig = !action.payload.pfs && pfs === null;
   return disabledByAction || disabledByConfig;
 }
 
-function getRouteFromPfs$(
-  action: pathFind.request,
-  deps: RaidenEpicDeps,
-  latest: Latest,
-): Observable<Route> {
+function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Observable<Route> {
   const { tokenNetwork, target, value } = action.meta;
 
-  return getPsfInfo$(action.payload.pfs, latest.config.pfs, deps).pipe(
-    mergeMap((pfs) => getIouForPfs(pfs, tokenNetwork, deps)),
-    mergeMap(({ pfs, iou }) =>
-      requestPfs$(pfs, iou, tokenNetwork, deps.address, target, value, latest.config.httpTimeout),
-    ),
-    map(({ pfsResponse, responseText, iou }) =>
-      parsePfsResponse(pfsResponse, responseText, iou, latest.config.pfsSafetyMargin),
+  return deps.config$.pipe(
+    first(),
+    mergeMap((config) =>
+      getPsfInfo$(action.payload.pfs, config.pfs, deps).pipe(
+        mergeMap((pfs) => getIouForPfs(pfs, tokenNetwork, deps)),
+        mergeMap(({ pfs, iou }) =>
+          requestPfs$(pfs, iou, tokenNetwork, deps.address, target, value, config),
+        ),
+        map(({ pfsResponse, responseText, iou }) =>
+          parsePfsResponse(pfsResponse, responseText, iou, config),
+        ),
+      ),
     ),
   );
 }
 
 function filterPaths(
   action: pathFind.request,
-  deps: RaidenEpicDeps,
-  latest: Latest,
+  { address, log }: RaidenEpicDeps,
+  { state, presences }: Latest,
   paths: Paths | undefined,
 ): Paths {
-  const { address, log } = deps;
   const filteredPaths: Paths = [];
   const invalidatedRecipients = new Set<Address>();
 
@@ -1088,7 +1093,6 @@ function filterPaths(
       if (invalidatedRecipients.has(recipient)) continue;
       if (filteredPaths.length === 0) {
         const { tokenNetwork, target, value } = action.meta;
-        const { state, presences } = latest;
         const channelCanRoutePossible = channelCanRoute(
           state,
           presences,
@@ -1158,13 +1162,13 @@ function requestPfs$(
   address: Address,
   target: Address,
   value: UInt<32>,
-  httpTimeout: number,
+  { httpTimeout, pfsMaxPaths }: Pick<RaidenConfig, 'httpTimeout' | 'pfsMaxPaths'>,
 ): Observable<{ pfsResponse: Response; responseText: string; iou: Signed<IOU> | undefined }> {
   const body = losslessStringify({
     from: address,
     to: target,
     value: UInt(32).encode(value),
-    max_paths: 10,
+    max_paths: pfsMaxPaths,
     iou: iou
       ? {
           ...iou,
@@ -1193,7 +1197,7 @@ function parsePfsResponse(
   pfsResponse: Response,
   responseText: string,
   iou: Signed<IOU> | undefined,
-  pfsSafetyMargin: number,
+  { pfsSafetyMargin, pfsMaxPaths }: RaidenConfig,
 ): Route {
   // any decode error here will throw early and end up in catchError
   const data = losslessParse(responseText);
@@ -1202,7 +1206,8 @@ function parsePfsResponse(
     const error = decode(PathError, data);
     return { iou, error };
   } else {
-    const results = decode(PathResults, data).result;
+    // decode results and cap also client-side for pfsMaxPaths
+    const results = decode(PathResults, data).result.filter((_, idx) => idx < pfsMaxPaths);
     const paths = results.map(({ path, estimated_fee }) => {
       const fee = estimated_fee.mul(Math.round(pfsSafetyMargin * 1e6)).div(1e6) as Int<32>;
       return { path, fee } as const;

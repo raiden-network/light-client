@@ -14,7 +14,7 @@ import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
 import { channelAmounts, channelKey } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
-import { RaidenError, ErrorCodes } from '../utils/error';
+import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { MessageTypeId } from '../messages/utils';
 import { Capabilities } from '../constants';
 import { isValidUrl } from '../helpers';
@@ -94,7 +94,7 @@ export function pfsInfo(
     : of(pfsAddrOrUrl);
   return url$.pipe(
     withLatestFrom(config$),
-    mergeMap(([url, { httpTimeout }]) => {
+    mergeMap(([url, { httpTimeout, pfsMaxFee }]) => {
       if (!url) throw new RaidenError(ErrorCodes.PFS_EMPTY_URL);
       else if (!isValidUrl(url)) throw new RaidenError(ErrorCodes.PFS_INVALID_URL, { url });
       // default to https for domain-only urls
@@ -110,13 +110,19 @@ export function pfsInfo(
               await serviceRegistryToken(serviceRegistryContract),
             ] as const,
         ),
-        map(([info, token]) => ({
-          address: info.payment_address,
-          url,
-          rtt: Date.now() - start,
-          price: info.price_info,
-          token,
-        })),
+        map(([info, token]) => {
+          assert(info.price_info.lte(pfsMaxFee), [
+            ErrorCodes.PFS_TOO_EXPENSIVE,
+            { price: info.price_info.toString() },
+          ]);
+          return {
+            address: info.payment_address,
+            url,
+            rtt: Date.now() - start,
+            price: info.price_info,
+            token,
+          };
+        }),
       );
     }),
   );
