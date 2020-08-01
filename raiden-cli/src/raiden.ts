@@ -5,7 +5,7 @@ import yargs from 'yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
 import { getAddress } from 'ethers/utils';
-import { Raiden, Address, RaidenConfig, assert } from 'raiden-ts';
+import { Raiden, Address, RaidenConfig, assert, UInt } from 'raiden-ts';
 
 import DISCLAIMER from './disclaimer.json';
 import DEFAULT_RAIDEN_CONFIG from './config.json';
@@ -15,7 +15,7 @@ import { setupLoglevel } from './utils/logging';
 
 function parseArguments() {
   return yargs
-    .usage('Usage: $0')
+    .usage('Usage: $0 [options]')
     .options({
       datadir: {
         type: 'string',
@@ -98,6 +98,8 @@ function parseArguments() {
         default: '127.0.0.1:5001',
         desc: 'host:port to bind to and listen for API requests',
       },
+    })
+    .options({
       routingMode: {
         choices: ['pfs', 'local', 'private'] as const,
         default: 'pfs',
@@ -108,10 +110,26 @@ function parseArguments() {
         default: 'auto',
         desc: 'Force a given PFS to be used; "auto" selects cheapest registered on-chain',
       },
+      pathfindingMaxPaths: {
+        type: 'number',
+        default: 3,
+        desc: 'Set maximum number of paths to be requested from the path finding service.',
+      },
+      pathfindingMaxFee: {
+        type: 'string',
+        // cast to fool TypeScript on type of argv.pathfindingMaxFee, decoded by Raiden.create
+        default: ('50000000000000000' as unknown) as UInt<32>,
+        desc: 'Set max fee per request paid to the path finding service.',
+      },
+      pathfindingIouTimeout: {
+        type: 'number',
+        default: 200000,
+        desc: 'Number of blocks before a new IOU to the path finding service expires.',
+      },
       enableMonitoring: {
         type: 'boolean',
-        default: true,
-        desc: "By default, enables monitoring if there's a UDC deposit",
+        default: false,
+        desc: "Enables monitoring if there's a UDC deposit",
       },
     })
     .env('RAIDEN')
@@ -204,19 +222,28 @@ async function createRaidenConfig(
   argv: ReturnType<typeof parseArguments>,
 ): Promise<Partial<RaidenConfig>> {
   let config: Partial<RaidenConfig> = DEFAULT_RAIDEN_CONFIG;
+
   if (argv.configFile)
     config = { ...config, ...JSON.parse(await fs.readFile(argv.configFile, 'utf-8')) };
+
   config = {
     ...config,
     pollingInterval: Math.floor(argv.blockchainQueryInterval * 1000),
     revealTimeout: argv.defaultRevealTimeout,
     settleTimeout: argv.defaultSettleTimeout,
+    pfsMaxPaths: argv.pathfindingMaxPaths,
+    pfsMaxFee: argv.pathfindingMaxFee,
+    pfsIouTimeout: argv.pathfindingIouTimeout,
   };
+
   if (argv.matrixServer !== 'auto') config = { ...config, matrixServer: argv.matrixServer };
+
   if (argv.routingMode !== 'pfs') config = { ...config, pfs: null };
   else if (argv.pathfindingServiceAddress !== 'auto')
     config = { ...config, pfs: argv.pathfindingServiceAddress };
+
   if (!argv.enableMonitoring) config = { ...config, monitoringReward: null };
+
   return config;
 }
 
