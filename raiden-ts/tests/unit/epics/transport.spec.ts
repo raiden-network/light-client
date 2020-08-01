@@ -946,7 +946,7 @@ describe('transport epic', () => {
       setTimeout(() => action$.complete(), 100);
 
       await expect(promise).resolves.toMatchObject(
-        messageSend.success(undefined, {
+        messageSend.success(expect.anything(), {
           address: partner,
           msgId: signed.message_identifier.toString(),
         }),
