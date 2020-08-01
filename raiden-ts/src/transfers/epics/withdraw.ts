@@ -30,7 +30,7 @@ import { newBlock } from '../../channels/actions';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { withdrawExpire, withdrawMessage, withdraw, withdrawCompleted } from '../actions';
 import { Direction } from '../state';
-import { retrySendUntil$, matchWithdraw } from './utils';
+import { retrySendUntil$, matchWithdraw, exponentialBackoff } from './utils';
 
 /**
  * Emits withdraw action once for each own non-confirmed message at startup
@@ -99,7 +99,7 @@ export const withdrawSendRequestMessageEpic = (
     filter(withdrawMessage.request.is),
     filter((action) => action.meta.direction === Direction.SENT),
     withLatestFrom(config$),
-    mergeMap(([action, { httpTimeout }]) => {
+    mergeMap(([action, { pollingInterval, httpTimeout }]) => {
       const message = action.payload.message;
       const send = messageSend.request(
         { message },
@@ -122,7 +122,12 @@ export const withdrawSendRequestMessageEpic = (
         }),
       );
       // emit request once immediatelly, then wait until success, then retry every 30s
-      return retrySendUntil$(send, action$, notifier, httpTimeout);
+      return retrySendUntil$(
+        send,
+        action$,
+        notifier,
+        exponentialBackoff(pollingInterval, httpTimeout * 2),
+      );
     }),
   );
 
@@ -335,7 +340,7 @@ export const withdrawSendExpireMessageEpic = (
     filter(withdrawExpire.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
     withLatestFrom(config$),
-    mergeMap(([action, { httpTimeout }]) => {
+    mergeMap(([action, { pollingInterval, httpTimeout }]) => {
       const message = action.payload.message;
       const send = messageSend.request(
         { message },
@@ -354,6 +359,14 @@ export const withdrawSendExpireMessageEpic = (
         share(),
       );
       // besides using notifier to stop retry, also merge the withdrawCompleted output action
-      return merge(retrySendUntil$(send, action$, notifier, httpTimeout), notifier);
+      return merge(
+        retrySendUntil$(
+          send,
+          action$,
+          notifier,
+          exponentialBackoff(pollingInterval, httpTimeout * 2),
+        ),
+        notifier,
+      );
     }),
   );
