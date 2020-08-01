@@ -61,6 +61,9 @@ export const RaidenConfig = t.readonly(
       monitoringRoom: t.union([t.string, t.null]),
       pfs: t.union([Address, t.string, t.null]),
       pfsSafetyMargin: t.number,
+      pfsMaxPaths: t.number,
+      pfsMaxFee: UInt(32),
+      pfsIouTimeout: t.number,
       matrixExcessRooms: t.number,
       confirmationBlocks: t.number,
       monitoringReward: t.union([t.null, UInt(32)]),
@@ -116,6 +119,9 @@ export function makeDefaultConfig(
     pfs: '', // empty string = auto mode
     matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0,
+    pfsMaxPaths: 3,
+    pfsMaxFee: parseEther('0.05') as UInt<32>,
+    pfsIouTimeout: 200000,
     confirmationBlocks: 5,
     // SVT also uses 18 decimals, like Ether, so parseEther works
     monitoringReward: parseEther('5') as UInt<32>,
