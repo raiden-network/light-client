@@ -15,6 +15,7 @@
 - [#1910] Add option to `mint` tokens for any address
 - [#1913] Added `contractsInfo` getter holding current contracts info
 - [#1824] Expose channel settle actions as events
+- [#2022] Add 'pfsMaxFee', 'pfsMaxPaths' and 'pfsIouTimeout' config options
 
 ### Changed
 - [#1905] Fail early if not enough tokens to deposit
@@ -36,6 +37,7 @@
 [#1998]: https://github.com/raiden-network/light-client/issues/1998
 [#2010]: https://github.com/raiden-network/light-client/issues/2010
 [#2019]: https://github.com/raiden-network/light-client/issues/2019
+[#2022]: https://github.com/raiden-network/light-client/pull/2022
 
 ## [0.10.0] - 2020-07-13
 ### Fixed

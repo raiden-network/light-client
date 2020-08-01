@@ -31,6 +31,9 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *         automatic fetching from ServiceRegistry.
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10%
  *                     safety margin.
+ * - pfsMaxPaths - Limit number of paths requested from PFS for a route.
+ * - pfsMaxFee - Maximum fee we're willing to pay a PFS for a route (in SVT/RDN wei)
+ * - pfsIouTimeout - Number of blocks to timeout an IOU to a PFS.
  * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
  *                       Leave LRU beyond this threshold.
  * - confirmationBlocks - How many blocks to wait before considering a transaction as confirmed
@@ -118,10 +121,10 @@ export function makeDefaultConfig(
     monitoringRoom: `raiden_${getNetworkName(network)}_monitoring`,
     pfs: '', // empty string = auto mode
     matrixExcessRooms: 3,
-    pfsSafetyMargin: 1.0,
+    pfsSafetyMargin: 1.0, // multiplier
     pfsMaxPaths: 3,
-    pfsMaxFee: parseEther('0.05') as UInt<32>,
-    pfsIouTimeout: 200000,
+    pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
+    pfsIouTimeout: 200000, // in blocks
     confirmationBlocks: 5,
     // SVT also uses 18 decimals, like Ether, so parseEther works
     monitoringReward: parseEther('5') as UInt<32>,
