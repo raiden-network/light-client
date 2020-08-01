@@ -4,6 +4,8 @@
   "pfsSafetyMargin": 1.1,
   "caps": {
     "noDelivery": true,
+    "noReceive": false,
+    "noMediate": false,
     "webRTC": true
   },
   "autoSettle": true
