@@ -9,6 +9,7 @@
 - [#2010] Fix multiple approve on secure ERC20 tokens, like RDN
 
 ### Added
+- [#237] Add autoSettle config (off by default) to allow auto-settling settleable channels
 - [#703] Add option to fetch all contracts addresses from UserDeposit address alone
 - [#1710] Add option to specify a transfer's lock timeout
 - [#1910] Add option to `mint` tokens for any address
@@ -21,6 +22,7 @@
 - [#2010] Token.approve defaults to MaxUint256, so only one approval is needed per token; set config.minimumAllowance to Zero to fallback to strict deposit values
 - [#2019] Use exponential back-off strategy for protocol messages retries
 
+[#237]: https://github.com/raiden-network/light-client/issues/237
 [#703]: https://github.com/raiden-network/light-client/issues/703
 [#1710]: https://github.com/raiden-network/light-client/issues/1710
 [#1824]: https://github.com/raiden-network/light-client/issues/1824
