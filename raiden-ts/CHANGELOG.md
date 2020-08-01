@@ -17,6 +17,7 @@
 ### Changed
 - [#1905] Fail early if not enough tokens to deposit
 - [#1958] Transfers can fail before requesting PFS if there's no viable channel
+- [#2019] Use exponential back-off strategy for protocol messages retries
 
 [#703]: https://github.com/raiden-network/light-client/issues/703
 [#1710]: https://github.com/raiden-network/light-client/issues/1710
@@ -29,6 +30,7 @@
 [#1958]: https://github.com/raiden-network/light-client/issues/1958
 [#1997]: https://github.com/raiden-network/light-client/issues/1997
 [#1998]: https://github.com/raiden-network/light-client/issues/1998
+[#2019]: https://github.com/raiden-network/light-client/issues/2019
 
 ## [0.10.0] - 2020-07-13
 ### Fixed
