@@ -17,7 +17,7 @@ import {
   transferSecretReveal,
 } from '../actions';
 import { Direction } from '../state';
-import { retrySendUntil$ } from './utils';
+import { retrySendUntil$, exponentialBackoff } from './utils';
 
 /**
  * Handles a transferSigned action and retry messageSend.request until transfer is gone (completed
@@ -40,7 +40,7 @@ const signedRetryMessage$ = (
   if (action.meta.direction !== Direction.SENT) return EMPTY;
   return config$.pipe(
     first(),
-    switchMap(({ httpTimeout }) => {
+    switchMap(({ pollingInterval, httpTimeout }) => {
       const secrethash = action.meta.secrethash;
       const signed = action.payload.message;
       const send = messageSend.request(
@@ -60,7 +60,12 @@ const signedRetryMessage$ = (
         ),
       );
       // emit request once immediatelly, then wait until success, then retry every 30s
-      return retrySendUntil$(send, action$, notifier, httpTimeout);
+      return retrySendUntil$(
+        send,
+        action$,
+        notifier,
+        exponentialBackoff(pollingInterval, httpTimeout * 2),
+      );
     }),
   );
 };
@@ -86,7 +91,7 @@ const unlockedRetryMessage$ = (
   return state$.pipe(
     first(),
     withLatestFrom(config$),
-    switchMap(([state, { httpTimeout }]) => {
+    switchMap(([state, { pollingInterval, httpTimeout }]) => {
       const secrethash = action.meta.secrethash;
       const unlock = action.payload.message;
       const locked = state.sent[secrethash].transfer[1];
@@ -101,7 +106,12 @@ const unlockedRetryMessage$ = (
       );
       // emit request once immediatelly, then wait until respective success,
       // then repeats until confirmed
-      return retrySendUntil$(send, action$, notifier, httpTimeout);
+      return retrySendUntil$(
+        send,
+        action$,
+        notifier,
+        exponentialBackoff(pollingInterval, httpTimeout * 2),
+      );
     }),
   );
 };
@@ -128,7 +138,7 @@ const expiredRetryMessages$ = (
   return state$.pipe(
     first(),
     withLatestFrom(config$),
-    switchMap(([state, { httpTimeout }]) => {
+    switchMap(([state, { pollingInterval, httpTimeout }]) => {
       const secrethash = action.meta.secrethash;
       const lockExpired = action.payload.message;
       const send = messageSend.request(
@@ -144,7 +154,12 @@ const expiredRetryMessages$ = (
       );
       // emit request once immediatelly, then wait until respective success,
       // then retries until confirmed
-      return retrySendUntil$(send, action$, notifier, httpTimeout);
+      return retrySendUntil$(
+        send,
+        action$,
+        notifier,
+        exponentialBackoff(pollingInterval, httpTimeout * 2),
+      );
     }),
   );
 };
@@ -159,7 +174,7 @@ const secretRequestRetryMessage$ = (
   return state$.pipe(
     first(),
     withLatestFrom(config$),
-    switchMap(([state, { httpTimeout }]) => {
+    switchMap(([state, { pollingInterval, httpTimeout }]) => {
       const secrethash = action.meta.secrethash;
       const request = action.payload.message;
       const send = messageSend.request(
@@ -181,7 +196,12 @@ const secretRequestRetryMessage$ = (
       );
       // emit request once immediatelly, then wait until respective success,
       // then retries until confirmed
-      return retrySendUntil$(send, action$, notifier, httpTimeout);
+      return retrySendUntil$(
+        send,
+        action$,
+        notifier,
+        exponentialBackoff(pollingInterval, httpTimeout * 2),
+      );
     }),
   );
 };
@@ -196,7 +216,7 @@ const secretRevealRetryMessage$ = (
   return state$.pipe(
     first(),
     withLatestFrom(config$),
-    switchMap(([state, { httpTimeout }]) => {
+    switchMap(([state, { pollingInterval, httpTimeout }]) => {
       const secrethash = action.meta.secrethash;
       const reveal = action.payload.message;
       const send = messageSend.request(
@@ -217,7 +237,12 @@ const secretRevealRetryMessage$ = (
       );
       // emit request once immediatelly, then wait until respective success,
       // then retries until confirmed
-      return retrySendUntil$(send, action$, notifier, httpTimeout);
+      return retrySendUntil$(
+        send,
+        action$,
+        notifier,
+        exponentialBackoff(pollingInterval, httpTimeout * 2),
+      );
     }),
   );
 };

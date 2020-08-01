@@ -14,9 +14,11 @@ import {
   scan,
   filter,
   repeatWhen,
-  delay,
   takeUntil,
   retryWhen,
+  takeWhile,
+  map,
+  switchMap,
 } from 'rxjs/operators';
 import { isntNil } from './types';
 
@@ -66,23 +68,32 @@ export function distinctRecordValues<R>(
 /**
  * Operator to repeat-subscribe an input observable until a notifier emits
  *
- * @param notifier - Notifier observable
- * @param delayMs - Delay between retries
- * @returns Monotype operator
+ * @param notifier - Notifier observable to stop repeating
+ * @param delayMs - Delay between retries; in milliseconds, or an Iterator of delays
+ * @returns Monotype operator function
  */
 export function repeatUntil<T>(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  notifier: Observable<any>,
-  delayMs = 30e3,
+  notifier: Observable<unknown>,
+  delayMs: number | Iterator<number> = 30e3,
 ): MonoTypeOperatorFunction<T> {
-  // Resubscribe/retry every 30s after messageSend succeeds
+  // Resubscribe/retry every 30s or yielded ms after messageSend succeeds
   // Notice first (or any) messageSend.request can wait for a long time before succeeding, as it
   // waits for address's user in transport to be online and joined room before actually
   // sending the message. That's why repeatWhen emits/resubscribe only some time after
   // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
   return (input$) =>
     input$.pipe(
-      repeatWhen((completed$) => completed$.pipe(delay(delayMs))),
+      repeatWhen((completed$) =>
+        completed$.pipe(
+          map(() => {
+            if (typeof delayMs === 'number') return delayMs;
+            const next = delayMs.next();
+            return !next.done ? next.value : -1;
+          }),
+          takeWhile((value) => value >= 0), // stop repeatWhen when done
+          switchMap((value) => timer(value)),
+        ),
+      ),
       takeUntil(notifier),
     );
 }

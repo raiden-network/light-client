@@ -15,6 +15,21 @@ import {
 import { UInt } from '../../utils/types';
 
 /**
+ * Exponential back-off infinite generator
+ *
+ * @param start - First yielded value
+ * @param max - Ceiling of values, won't increase above this number
+ * @param multiplier - Multiply yielded value by this factor on each iteration
+ */
+export function* exponentialBackoff(start = 1e3, max = 60e3, multiplier = 1.4) {
+  let delay = start;
+  while (true) {
+    yield delay;
+    delay = Math.min(max, Math.ceil(delay * multiplier));
+  }
+}
+
+/**
  * Dispatches an actions and waits until a condition is satisfied.
  *
  * @param action$ - Observable of actions that will be monitored
@@ -47,14 +62,14 @@ export function dispatchAndWait$<A extends RaidenAction>(
  * @param send - messageSend.request to be sent
  * @param action$ - RaidenActions observable
  * @param notifier - Stops retrying when this notifier emits
- * @param delayMs - Delay between retries
+ * @param delayMs - Delay between retries, or Iterator yielding delays
  * @returns Observable which retry messageSend.request until notifier emits
  */
 export function retrySendUntil$(
   send: messageSend.request,
   action$: Observable<RaidenAction>,
   notifier: Observable<any>,
-  delayMs = 30e3,
+  delayMs: number | Iterator<number> = 30e3,
 ): Observable<messageSend.request> {
   return dispatchAndWait$(action$, send, isResponseOf(messageSend, send.meta)).pipe(
     repeatUntil(notifier, delayMs),
