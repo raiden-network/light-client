@@ -46,7 +46,7 @@ import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
 import { RaidenState } from '../state';
 import { ShutdownReason } from '../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
-import { Address, Hash, UInt, Signature, isntNil, HexString, last, bnMax } from '../utils/types';
+import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { pluckDistinct, distinctRecordValues, retryAsync$ } from '../utils/rx';
 import { fromEthersEvent, getNetwork, logToContractEvent } from '../utils/ethers';
@@ -76,6 +76,7 @@ import {
   retryTx,
   txNonceErrors,
   txFailErrors,
+  approveIfNeeded$,
 } from './utils';
 
 /**
@@ -689,43 +690,20 @@ function makeDeposit$(
   // retryTx from here
   return defer(() =>
     Promise.all([
-      tokenContract.functions.balanceOf(sender),
-      tokenContract.functions.allowance(sender, tokenNetworkContract.address),
+      tokenContract.functions.balanceOf(sender) as Promise<UInt<32>>,
+      tokenContract.functions.allowance(sender, tokenNetworkContract.address) as Promise<UInt<32>>,
     ]),
   ).pipe(
     withLatestFrom(config$),
-    mergeMap(([[balance, allowance], { minimumAllowance }]) => {
-      assert(balance.gte(deposit), [
-        ErrorCodes.RDN_INSUFFICIENT_BALANCE,
-        { current: balance.toString(), required: deposit.toString() },
-      ]);
-
-      if (allowance.gte(deposit)) return of(true); // if allowance already enough
-
-      // secure ERC20 tokens require changing allowance only from or to Zero
-      // see https://github.com/raiden-network/light-client/issues/2010
-      let resetAllowance$: Observable<true> = of(true);
-      if (!allowance.isZero())
-        resetAllowance$ = defer(() =>
-          tokenContract.functions.approve(tokenNetworkContract.address, 0),
-        ).pipe(
-          assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
-          mapTo(true),
-        );
-
-      // if needed, send approveTx and wait/assert it before proceeding; 'deposit' could be enough,
-      // but we send 'prevAllowance + deposit' in case there's a pending deposit
-      // default minimumAllowance=MaxUint256 allows to approve once and for all
-      return resetAllowance$.pipe(
-        mergeMap(() =>
-          tokenContract.functions.approve(
-            tokenNetworkContract.address,
-            bnMax(minimumAllowance, deposit),
-          ),
-        ),
-        assertTx('approve', ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED, { log }),
-      );
-    }),
+    mergeMap(([[balance, allowance], { minimumAllowance }]) =>
+      approveIfNeeded$(
+        [balance, allowance, deposit],
+        tokenContract,
+        tokenNetworkContract.address as Address,
+        ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED,
+        { log, minimumAllowance },
+      ),
+    ),
     mergeMapTo(channelId$),
     take(1),
     mergeMap((id) =>

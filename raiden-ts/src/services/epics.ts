@@ -36,18 +36,14 @@ import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
-import { channelAmounts, groupChannel$, assertTx, retryTx } from '../channels/utils';
 import {
-  Address,
-  decode,
-  Int,
-  Signature,
-  Signed,
-  UInt,
-  isntNil,
-  Hash,
-  bnMax,
-} from '../utils/types';
+  channelAmounts,
+  groupChannel$,
+  assertTx,
+  retryTx,
+  approveIfNeeded$,
+} from '../channels/utils';
+import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, losslessParse, losslessStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
@@ -462,8 +458,8 @@ function makeUdcDeposit$(
 ) {
   return defer(() =>
     Promise.all([
-      tokenContract.functions.balanceOf(sender),
-      tokenContract.functions.allowance(sender, userDepositContract.address),
+      tokenContract.functions.balanceOf(sender) as Promise<UInt<32>>,
+      tokenContract.functions.allowance(sender, userDepositContract.address) as Promise<UInt<32>>,
       userDepositContract.functions.effectiveBalance(address),
     ]),
   ).pipe(
@@ -472,35 +468,12 @@ function makeUdcDeposit$(
         ErrorCodes.UDC_DEPOSIT_OUTDATED,
         { requested: totalDeposit.toString(), current: deposited.toString() },
       ]);
-      assert(balance.gte(deposit), [
-        ErrorCodes.RDN_INSUFFICIENT_BALANCE,
-        { current: balance.toString(), required: deposit.toString() },
-      ]);
-
-      if (allowance.gte(deposit)) return of(true); // if allowance already enough
-
-      // secure ERC20 tokens require changing allowance only from or to Zero
-      // see https://github.com/raiden-network/light-client/issues/2010
-      let resetAllowance$: Observable<true> = of(true);
-      if (!allowance.isZero())
-        resetAllowance$ = defer(() =>
-          tokenContract.functions.approve(userDepositContract.address, 0),
-        ).pipe(
-          assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log }),
-          mapTo(true),
-        );
-
-      // if needed, send approveTx and wait/assert it before proceeding; 'deposit' could be enough,
-      // but we send 'prevAllowance + deposit' in case there's a pending deposit
-      // default minimumAllowance=MaxUint256 allows to approve once and for all
-      return resetAllowance$.pipe(
-        mergeMap(() =>
-          tokenContract.functions.approve(
-            userDepositContract.address,
-            bnMax(minimumAllowance, deposit),
-          ),
-        ),
-        assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log }),
+      return approveIfNeeded$(
+        [balance, allowance, deposit],
+        tokenContract,
+        userDepositContract.address as Address,
+        ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
+        { log, minimumAllowance },
       );
     }),
     // send setTotalDeposit transaction
@@ -532,11 +505,11 @@ export const udcDepositEpic = (
   {}: Observable<RaidenState>,
   { userDepositContract, getTokenContract, address, log, signer, main, config$ }: RaidenEpicDeps,
 ): Observable<udcDeposit.failure | udcDeposit.success> => {
-  const svtToken = userDepositContract.functions.token() as Promise<Address>;
+  const serviceToken = userDepositContract.functions.token() as Promise<Address>;
   return action$.pipe(
     filter(udcDeposit.request.is),
     concatMap((action) =>
-      defer(() => svtToken).pipe(
+      defer(() => serviceToken).pipe(
         withLatestFrom(config$),
         mergeMap(([token, config]) => {
           const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(

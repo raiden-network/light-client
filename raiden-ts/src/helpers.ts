@@ -3,19 +3,20 @@ import { Wallet } from 'ethers/wallet';
 import { Contract, ContractReceipt, ContractTransaction } from 'ethers/contract';
 import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
 import { JsonRpcProvider } from 'ethers/providers';
+import { MaxUint256 } from 'ethers/constants';
 import { Observable, defer } from 'rxjs';
 import { filter, map, pluck, withLatestFrom, first, exhaustMap, mergeMap } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { RaidenState } from './state';
-import { ContractsInfo, RaidenEpicDeps } from './types';
+import { ContractsInfo, RaidenEpicDeps, Latest } from './types';
 import { assert } from './utils';
 import { raidenTransfer } from './transfers/utils';
 import { RaidenTransfer } from './transfers/state';
 import { channelAmounts } from './channels/utils';
 import { RaidenChannels, RaidenChannel } from './channels/state';
 import { pluckDistinct, distinctRecordValues } from './utils/rx';
-import { Address, PrivateKey, isntNil, Hash } from './utils/types';
+import { Address, PrivateKey, isntNil, Hash, UInt } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
@@ -388,4 +389,19 @@ export async function fetchContractsInfo(
     MonitoringService: { address: monitoringService, block_number: firstBlock },
     OneToN: { address: oneToN, block_number: firstBlock },
   };
+}
+
+/**
+ * Resolves to our current UDC balance, as seen from [[monitorUdcBalanceEpic]]
+ *
+ * @param latest$ - Latest observable
+ * @returns Promise to our current UDC balance
+ */
+export async function getUdcBalance(latest$: Observable<Latest>): Promise<UInt<32>> {
+  return latest$
+    .pipe(
+      pluck('udcBalance'),
+      first((balance) => !!balance && balance.lt(MaxUint256)),
+    )
+    .toPromise();
 }

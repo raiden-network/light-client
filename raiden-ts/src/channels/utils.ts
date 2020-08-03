@@ -5,16 +5,29 @@ import {
   throwError,
   timer,
   MonoTypeOperatorFunction,
+  of,
+  defer,
 } from 'rxjs';
-import { tap, mergeMap, map, pluck, filter, groupBy, takeUntil, retryWhen } from 'rxjs/operators';
+import {
+  tap,
+  mergeMap,
+  map,
+  pluck,
+  filter,
+  groupBy,
+  takeUntil,
+  retryWhen,
+  mapTo,
+} from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { ContractTransaction, ContractReceipt } from 'ethers/contract';
-import logging from 'loglevel';
+import logging, { Logger } from 'loglevel';
 
+import { HumanStandardToken } from '../contracts/HumanStandardToken';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { UInt, Address, Hash, Int, bnMax } from '../utils/types';
-import { RaidenError } from '../utils/error';
+import { RaidenError, assert, ErrorCodes } from '../utils/error';
 import { distinctRecordValues } from '../utils/rx';
 import { MessageType } from '../messages/types';
 import { Channel, ChannelBalances } from './state';
@@ -245,3 +258,56 @@ export function groupChannel$(state$: Observable<RaidenState>) {
     }),
   );
 }
+
+/* eslint-disable jsdoc/valid-types */
+/**
+ * Approves spender to transfer up to 'deposit' from our tokens; skips if already allowed
+ *
+ * @param amounts - Tuple of amounts
+ * @param amounts.0 - Our current token balance
+ * @param amounts.1 - Spender's current allowance
+ * @param amounts.2 - The new desired allowance for spender
+ * @param tokenContract - Token contract instance
+ * @param spender - Spender address
+ * @param approveError - ErrorCode of approve transaction errors
+ * @param opts - Options object
+ * @param opts.log - Logger instance for asserTx
+ * @param opts.minimumAllowance - Minimum allowance to approve
+ * @returns Cold observable to perform approve transactions
+ */
+export function approveIfNeeded$(
+  [balance, allowance, deposit]: [UInt<32>, UInt<32>, UInt<32>],
+  tokenContract: HumanStandardToken,
+  spender: Address,
+  approveError: string = ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
+  { log, minimumAllowance }: { log: Logger; minimumAllowance: UInt<32> } = {
+    log: logging,
+    minimumAllowance: Zero as UInt<32>,
+  },
+): Observable<true | ContractReceipt> {
+  assert(balance.gte(deposit), [
+    ErrorCodes.RDN_INSUFFICIENT_BALANCE,
+    { current: balance.toString(), required: deposit.toString() },
+  ]);
+
+  if (allowance.gte(deposit)) return of(true); // if allowance already enough
+
+  // secure ERC20 tokens require changing allowance only from or to Zero
+  // see https://github.com/raiden-network/light-client/issues/2010
+  let resetAllowance$: Observable<true> = of(true);
+  if (!allowance.isZero())
+    resetAllowance$ = defer(() => tokenContract.functions.approve(spender, 0)).pipe(
+      assertTx('approve', approveError, { log }),
+      mapTo(true),
+    );
+
+  // if needed, send approveTx and wait/assert it before proceeding; 'deposit' could be enough,
+  // but we send 'prevAllowance + deposit' in case there's a pending deposit
+  // default minimumAllowance=MaxUint256 allows to approve once and for all
+  return resetAllowance$.pipe(
+    mergeMap(() => tokenContract.functions.approve(spender, bnMax(minimumAllowance, deposit))),
+    assertTx('approve', approveError, { log }),
+    pluck(1),
+  );
+}
+/* eslint-enable jsdoc/valid-types */
