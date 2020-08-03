@@ -466,7 +466,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
     &__items {
       margin-bottom: 15px;
       padding-left: 8px;
-      padding-right: 8px;
+      padding-right: 9px;
       scrollbar-width: none;
       overflow-y: scroll;
       &::-webkit-scrollbar {
