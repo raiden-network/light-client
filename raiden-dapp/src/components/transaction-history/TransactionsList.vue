@@ -1,8 +1,5 @@
 <template>
   <v-container class="transaction-history" fluid>
-    <v-row class="transaction-history__title" no-gutters>
-      {{ $t('transfer-history.title') }}
-    </v-row>
     <v-list class="transaction-history__list" color="transparent">
       <div
         v-for="(transfer, index) in orderedTransfers"
@@ -50,15 +47,11 @@ export default class TransactionLists extends Vue {
 @import '../../scss/colors';
 
 .transaction-history {
-  &__title {
-    color: $secondary-text-color;
-    font-weight: bold;
-  }
-
   &__list {
     > div {
       &:first-of-type {
         border: none;
+        padding-top: 0px;
       }
     }
 

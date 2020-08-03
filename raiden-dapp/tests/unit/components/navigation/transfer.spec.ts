@@ -183,7 +183,7 @@ describe('Transfer.vue', () => {
     wrapper.find('button').trigger('click');
     await wrapper.vm.$nextTick();
     wrapper
-      .find('.transfer__menus__items__channels-deposit--channels')
+      .find('.transfer__menus__items__channels-deposit__menu--channels')
       .trigger('click');
 
     expect(router.push).toHaveBeenCalledTimes(1);

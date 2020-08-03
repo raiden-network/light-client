@@ -13,6 +13,7 @@
 
 ### Changed
 
+- [#1925] Transfer screen style alignments
 - [#2001] Pending transfers removed from identicon
 - [#1770] Updated UDC deposit dialog for mainnet
 - [#1931] dApp always uses hash mode on router
@@ -21,6 +22,7 @@
 - [#1265] Reduce logs size by hiding superfluous actions entries
 - [#1875] Redact sensitive information (transport's accessToken, transfer's secrets) from logs
 
+[#1925]: https://github.com/raiden-network/light-client/issues/1925
 [#2001]: https://github.com/raiden-network/light-client/issues/2001
 [#1770]: https://github.com/raiden-network/light-client/issues/1770
 [#1931]: https://github.com/raiden-network/light-client/issues/1931
