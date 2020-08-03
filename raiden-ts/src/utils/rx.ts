@@ -69,7 +69,7 @@ export function distinctRecordValues<R>(
  * Operator to repeat-subscribe an input observable until a notifier emits
  *
  * @param notifier - Notifier observable to stop repeating
- * @param delayMs - Delay between retries; in milliseconds, or an Iterator of delays
+ * @param delayMs - Delay between retries or an Iterator of delays; in milliseconds
  * @returns Monotype operator function
  */
 export function repeatUntil<T>(
