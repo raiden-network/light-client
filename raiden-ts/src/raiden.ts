@@ -12,7 +12,7 @@ import { createLogger } from 'redux-logger';
 import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import { first, filter, map, mergeMap, skip, pluck } from 'rxjs/operators';
+import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
@@ -76,6 +76,7 @@ import {
   waitConfirmation,
   callAndWaitMined,
   fetchContractsInfo,
+  getUdcBalance,
 } from './helpers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
@@ -1107,12 +1108,7 @@ export class Raiden {
    * @returns Promise to UDC remaining capacity
    */
   public async getUDCCapacity(): Promise<BigNumber> {
-    const balance = await this.deps.latest$
-      .pipe(
-        pluck('udcBalance'),
-        first((balance) => !!balance && balance.lt(MaxUint256)),
-      )
-      .toPromise();
+    const balance = await getUdcBalance(this.deps.latest$);
     const blockNumber = this.state.blockNumber;
     const owedAmount = Object.values(this.state.iou)
       .reduce(
@@ -1155,12 +1151,7 @@ export class Raiden {
 
     const deposit = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
     assert(deposit.gt(Zero), ErrorCodes.DTA_NON_POSITIVE_NUMBER, this.log.info);
-    const balance = await this.deps.latest$
-      .pipe(
-        pluck('udcBalance'),
-        first((balance) => !!balance && balance.lt(MaxUint256)),
-      )
-      .toPromise();
+    const balance = await getUdcBalance(this.deps.latest$);
     const meta = { totalDeposit: balance.add(deposit) as UInt<32> };
 
     const mined = asyncActionToPromise(udcDeposit, meta, this.action$).then((res) => res?.txHash);
