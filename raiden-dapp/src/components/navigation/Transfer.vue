@@ -461,6 +461,7 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
     &__title {
       margin: 16px 20px 0 20px;
+      flex: none;
     }
 
     &__items {
