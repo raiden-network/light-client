@@ -416,7 +416,7 @@ export class Raiden {
     const observerComplete = {
       complete: () => (this.epicMiddleware = null),
     };
-    this.deps.latest$.subscribe(observer_complete);
+    this.deps.latest$.subscribe(observerComplete);
 
     this.epicMiddleware.run(raidenRootEpic);
     // prevent start from being called again, turns this.started to true
