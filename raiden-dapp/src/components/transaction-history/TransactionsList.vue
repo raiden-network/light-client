@@ -19,8 +19,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
+import { RaidenTransfer } from 'raiden-ts';
+import { Token } from '@/model/types';
 import { Transfers } from '../../types';
 import Transaction from '@/components/transaction-history/Transaction.vue';
 
@@ -33,10 +35,25 @@ import Transaction from '@/components/transaction-history/Transaction.vue';
   },
 })
 export default class TransactionLists extends Vue {
+  @Prop()
+  token: Token | undefined;
+
   transfers!: Transfers;
 
-  get orderedTransfers() {
-    return Object.values(this.transfers).sort(
+  get filteredTransfersForToken(): RaidenTransfer[] {
+    const transferList = Object.values(this.transfers);
+
+    if (this.token !== undefined) {
+      return transferList.filter(
+        (transfer) => transfer.token === this.token!.address
+      );
+    } else {
+      return transferList;
+    }
+  }
+
+  get orderedTransfers(): RaidenTransfer[] {
+    return this.filteredTransfersForToken.sort(
       (a: any, b: any) => b.changedAt - a.changedAt
     );
   }
