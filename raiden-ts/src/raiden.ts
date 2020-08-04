@@ -413,7 +413,7 @@ export class Raiden {
     });
 
     // Set `epicMiddleware` to `null`, this indicates the instance is not running.
-    const observer_complete = {
+    const observerComplete = {
       complete: () => (this.epicMiddleware = null),
     };
     this.deps.latest$.subscribe(observer_complete);
