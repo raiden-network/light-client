@@ -135,7 +135,7 @@
         {{ $t('transfer.transfer-history-title') }}
       </v-row>
       <v-row no-gutters class="transfer__transactions-list__items">
-        <transactions-list />
+        <transactions-list :token="token" />
       </v-row>
     </div>
   </v-container>
