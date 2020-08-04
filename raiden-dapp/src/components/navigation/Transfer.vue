@@ -2,33 +2,40 @@
   <v-container fluid class="transfer">
     <div class="transfer__menus">
       <v-row no-gutters class="transfer__menus__items">
-        <v-col cols="11">
-          <div class="transfer__menus__items__token-select">
+        <div class="transfer__menus__items__token-select">
+          <div class="transfer__menus__items__token-select__button">
             <span @click="showTokenNetworks = true">
               {{ $t('transfer.change-token-title') }}
               <v-icon>mdi-chevron-down</v-icon>
             </span>
+            <div
+              class="transfer__menus__items__token-select__button__border"
+            ></div>
           </div>
-        </v-col>
-        <v-col cols="1">
+        </div>
+        <div class="transfer__menus__items__channels-deposit">
           <v-menu transition="scale-transition">
             <template #activator="{ on }">
-              <v-btn icon v-on="on">
-                <v-icon large>mdi-dots-vertical</v-icon>
+              <v-btn
+                class="transfer__menus__items__channels-deposit__button"
+                icon
+                v-on="on"
+              >
+                <v-icon>mdi-dots-vertical</v-icon>
               </v-btn>
             </template>
-            <div class="transfer__menus__items__channels-deposit">
-              <v-row justify="center">
+            <div class="transfer__menus__items__channels-deposit__menu">
+              <v-row no-gutters justify="center">
                 <span
-                  class="transfer__menus__items__channels-deposit--deposit"
+                  class="transfer__menus__items__channels-deposit__menu--deposit"
                   @click="showDepositDialog = true"
                 >
                   {{ $t('transfer.deposit-button') }}
                 </span>
               </v-row>
-              <v-row justify="center">
+              <v-row no-gutters justify="center">
                 <span
-                  class="transfer__menus__items__channels-deposit--channels"
+                  class="transfer__menus__items__channels-deposit__menu--channels"
                   @click="navigateToChannels(token.address)"
                 >
                   {{ $t('transfer.channel-button') }}
@@ -36,24 +43,16 @@
               </v-row>
             </div>
           </v-menu>
-        </v-col>
+        </div>
       </v-row>
-      <v-row class="transfer__selected-token" no-gutters justify="center">
-        <v-row no-gutters justify="center">
+      <v-row class="transfer__select-token" no-gutters justify="center">
+        <span>
           <amount-display
-            class="transfer__selected-token__amount"
             exact-amount
             :amount="capacity"
             :token="token"
-          />
-        </v-row>
-        <v-row
-          no-gutters
-          class="transfer__selected-token__symbol"
-          justify="center"
-        >
-          {{ token.name | truncate(22) }}
-        </v-row>
+          ></amount-display>
+        </span>
       </v-row>
       <token-overlay
         :show="showTokenNetworks"
@@ -131,7 +130,14 @@
       </v-form>
     </div>
     <error-dialog :error="error" @dismiss="error = null" />
-    <transactions-list class="transfer__transactions-list" />
+    <div class="transfer__transactions-list">
+      <v-row class="transfer__transactions-list__title" no-gutters>
+        {{ $t('transfer.transfer-history-title') }}
+      </v-row>
+      <v-row no-gutters class="transfer__transactions-list__items">
+        <transactions-list />
+      </v-row>
+    </div>
   </v-container>
 </template>
 
@@ -282,17 +288,11 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
 .transfer {
   height: 100%;
-  scrollbar-width: none;
-  overflow-y: scroll;
-  width: 100%;
-  &::-webkit-scrollbar {
-    display: none;
-  }
 
   &__menus {
-    background-color: $transfer-screen-color;
+    background-color: $transfer-screen-bg-color;
     border-radius: 15px;
-    height: 175px;
+    height: 160px;
     margin: 0 auto;
     width: 511px;
     @include respond-to(handhelds) {
@@ -301,61 +301,71 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
 
     &__items {
       padding-top: 18px;
-      margin-left: 36px;
+      margin-left: 46px;
 
       &__token-select {
         display: flex;
+        flex: 1;
+        padding-top: 4px;
         justify-content: center;
-        align-items: flex-end;
-        height: 85%;
-        margin: 0 auto;
-        border-bottom: solid 1px $color-white;
-        width: 130px;
-        cursor: pointer;
 
-        &span {
-          cursor: pointer;
+        &__button {
+          display: flex;
+          flex-direction: column;
+
+          > span {
+            cursor: pointer;
+            text-align: center;
+            width: 150px;
+          }
+
+          &__border {
+            border-top: solid 1px $color-white;
+            margin-left: 7px;
+            width: 129px;
+          }
         }
       }
 
       &__channels-deposit {
-        background-color: $notification-card-background;
-        border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-        height: 80px;
-        justify-content: center;
-        width: 145px;
+        &__button {
+          margin-right: 10px;
+        }
 
-        &--deposit,
-        &--channels {
-          align-items: center;
+        &__menu {
+          background-color: $transfer-screen-bg-color;
+          border-radius: 8px;
           display: flex;
-          cursor: pointer;
+          flex-direction: column;
+          height: 80px;
+          width: 145px;
+
+          &--deposit,
+          &--channels {
+            align-items: center;
+            cursor: pointer;
+            display: flex;
+          }
         }
       }
     }
   }
 
-  &__selected-token {
-    flex-direction: column;
-    margin-top: 12px;
+  &__select-token {
+    margin-top: 10px;
 
-    &__amount {
-      font-size: 36px;
-    }
-
-    &__symbol {
-      font-size: 18px;
-      padding-top: 10px;
+    > span {
+      font-size: 50px;
+      font-weight: 300;
     }
   }
 
   &__form-container {
     margin-top: 27px;
+    margin-bottom: 27px;
 
     &__form {
-      background-color: $transfer-screen-color;
+      background-color: $transfer-screen-bg-color;
       border-radius: 15px;
       margin: 0 auto;
       width: 511px;
@@ -380,11 +390,6 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
         padding-top: 16px;
         @include respond-to(handhelds) {
           flex-direction: column;
-        }
-
-        &--title {
-          color: $secondary-text-color;
-          font-weight: bold;
         }
 
         &--error {
@@ -442,12 +447,32 @@ export default class Transfer extends Mixins(BlockieMixin, NavigationMixin) {
   }
 
   &__transactions-list {
-    padding-right: 46px;
-    padding-left: 40px;
-    margin-top: 24px;
+    background-color: $transfer-screen-bg-color;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    height: 282px;
+    margin: 0 auto;
+    width: 511px;
     @include respond-to(handhelds) {
-      padding-right: 0;
-      padding-left: 0;
+      height: 185px;
+      width: 100%;
+    }
+
+    &__title {
+      margin: 16px 20px 0 20px;
+      flex: none;
+    }
+
+    &__items {
+      margin-bottom: 15px;
+      padding-left: 8px;
+      padding-right: 9px;
+      scrollbar-width: none;
+      overflow-y: scroll;
+      &::-webkit-scrollbar {
+        display: none;
+      }
     }
   }
 }

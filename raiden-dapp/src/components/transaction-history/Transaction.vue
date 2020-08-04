@@ -4,14 +4,14 @@
       <v-col class="transaction__item__icon" cols="1">
         <v-img
           v-if="transfer.direction === 'sent'"
-          height="45px"
-          width="45px"
+          height="38px"
+          width="38px"
           :src="require('@/assets/sent_transfer.svg')"
         />
         <v-img
           v-else
-          height="45px"
-          width="45px"
+          height="38px"
+          width="38px"
           :src="require('@/assets/received_transfer.svg')"
         />
       </v-col>
@@ -112,6 +112,10 @@ export default class Transaction extends Vue {
   height: 74px;
 
   &__item {
+    &__icon {
+      margin-top: 2px;
+    }
+
     &__details-left {
       margin-left: 20px;
 

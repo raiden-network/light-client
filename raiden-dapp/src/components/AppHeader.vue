@@ -63,13 +63,6 @@
         </div>
       </v-col>
     </v-row>
-    <v-row class="app-header__bottom" align="center" no-gutters>
-      <v-col v-if="!showTitleOnly" cols="12">
-        <div class="app-header__bottom__address text-left">
-          <address-display :address="defaultAccount" />
-        </div>
-      </v-col>
-    </v-row>
   </div>
 </template>
 
@@ -178,19 +171,6 @@ export default class AppHeader extends Mixins(NavigationMixin) {
         font-weight: 500;
         text-align: center;
       }
-    }
-  }
-
-  &__bottom {
-    background-color: $card-background;
-    height: 40px;
-
-    &__address {
-      align-items: center;
-      background-color: $error-tooltip-background;
-      display: flex;
-      height: 40px;
-      padding: 0 20px 0 20px;
     }
   }
 

@@ -79,7 +79,7 @@ export default class App extends Mixins(NavigationMixin) {
 }
 
 .v-main {
-  height: calc(100% - 120px);
+  height: calc(100% - 80px);
   margin-bottom: auto;
 }
 
