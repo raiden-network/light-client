@@ -36,6 +36,7 @@
         <template #activator="{ on }">
           <div v-on="isConnected ? on : null">
             <v-list-item
+              :disabled="isConnected"
               class="backup-state__buttons__upload-state"
               @click="uploadState = true"
             >
