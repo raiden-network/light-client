@@ -95,7 +95,7 @@ const RaidenActionsMap = reduce(
  * Pure codec which decodes/validates actions which can be confirmed on-chain
  *
  * Note that this isn't a complete ActionCreator, but it helps identify and narrow actions which
- * matches this schema. Also important is that this codec isn't `t.exact`, and therefore it wil
+ * matches this schema. Also important is that this codec isn't `t.exact`, and therefore it will
  * validate objects with additional properties (like meta and payload properties), as long as it
  * matches the required schema below.
  * Use [[ConfirmableAction]] to ensure it both complies with and decodes/validates also to the

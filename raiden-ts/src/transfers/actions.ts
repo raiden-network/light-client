@@ -159,7 +159,7 @@ export interface transferUnlockProcessed extends ActionType<typeof transferUnloc
  * A request to expire a given transfer
  *
  * A transfer expiration request may fail for any reason
- * e.g. user rejected sign promopt. It should eventually get prompted again, on a future newBlock
+ * e.g. user rejected sign prompt. It should eventually get prompted again, on a future newBlock
  * action which sees this transfer should be expired but sent.lockExpired didn't get set yet.
  */
 export const transferExpire = createAsyncAction(
