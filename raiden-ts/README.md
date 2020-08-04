@@ -17,12 +17,41 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 > **INFO:** The Light Client SDK is **work in progress**, doesn't work for token transfers yet and currently can only be used on the Ethereum **Testnets**.
 
 ## Table of Contents
+
 - [Table of Contents](#table-of-contents)
 - [About The Project](#about-the-project)
   - [Architecture diagram](#architecture-diagram)
 - [Getting Started](#getting-started)
 - [Contributing](#contributing)
 - [License](#license)
+
+> **Disclaimer:**
+>
+> This is a Beta version of experimental open source software released as a test
+> version under an MIT license and may contain errors and/or bugs. No guarantee or
+> representation whatsoever is made regarding its suitability (or its use) for any
+> purpose or regarding its compliance with any applicable laws and regulations.
+> Use of the software is at your own risk and discretion and by using the software
+> you warrant and represent that you have read this disclaimer, understand its
+> contents, assume all risk related thereto and hereby release, waive, discharge
+> and covenant not to hold liable Brainbot Labs Establishment or any of its
+> officers, employees or affiliates from and for any direct or indirect damage
+> resulting from the software or the use thereof. Such to the extent as
+> permissible by applicable laws and regulations.
+>
+> Privacy warning: Please be aware, that by using the Raiden Client, among others
+> your Ethereum address, channels, channel deposits, settlements and the Ethereum
+> address of your channel counterparty will be stored on the Ethereum chain, i.e.
+> on servers of Ethereum node operators and ergo are to a certain extent publicly
+> available. The same might also be stored on systems of parties running Raiden
+> nodes connected to the same token network. Data present in the Ethereum chain is
+> very unlikely to be able to be changed, removed or deleted from the public
+> arena.
+>
+> Also be aware, that data on individual Raiden token transfers will be made
+> available via the Matrix protocol to the recipient, intermediating nodes of
+> a specific transfer as well as to the Matrix server operators, see Raiden
+> Transport Specification.
 
 ## About The Project
 
@@ -57,7 +86,6 @@ External off-chain communication with the Raiden Network is provided by a dedica
                      |  ethereum   |
                      +-------------+
 ```
-
 
 A technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions can be found in the [SDK Development](https://github.com/raiden-network/light-client/blob/master/raiden-ts/SDK-Development.md) document. Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
