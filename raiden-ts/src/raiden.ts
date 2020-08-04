@@ -411,8 +411,13 @@ export class Raiden {
       'raiden-ts': Raiden.version,
       'raiden-contracts': Raiden.contractVersion,
     });
-    // on complete, sets epicMiddleware to null, so this.started === false
-    this.deps.latest$.subscribe(undefined, undefined, () => (this.epicMiddleware = null));
+
+    // Set `epicMiddleware` to `null`, this indicates the instance is not running.
+    const observerComplete = {
+      complete: () => (this.epicMiddleware = null),
+    };
+    this.deps.latest$.subscribe(observerComplete);
+
     this.epicMiddleware.run(raidenRootEpic);
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
