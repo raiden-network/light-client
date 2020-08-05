@@ -1,99 +1,88 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { BigNumber } from 'ethers/utils';
 import Transaction from '@/components/transaction-history/Transaction.vue';
-import store from '@/store';
-import { Zero } from 'ethers/constants';
+import { RaidenTransfer } from 'raiden-ts';
+import { generateToken, generateTransfer } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 
 describe('Transaction.vue', () => {
-  let wrapper: Wrapper<Transaction>;
-  let vuetify: typeof Vuetify;
+  const vuetify = new Vuetify();
+  const token = generateToken();
 
   const createWrapper = (
-    transferDirection: string,
-    successStatus: boolean | undefined
-  ) => {
-    vuetify = new Vuetify();
+    transferProp?: RaidenTransfer
+  ): Wrapper<Transaction> => {
+    if (transferProp === undefined) {
+      transferProp = generateTransfer({ success: true }, token);
+    }
+
     return mount(Transaction, {
-      store,
       vuetify,
       mocks: {
         $t: (msg: string) => msg,
+        $store: {
+          state: { tokens: { [token.address]: token } },
+        },
       },
       propsData: {
-        transfer: {
-          amount: new BigNumber(10 ** 8),
-          changedAt: new Date('June 5, 1986 23:59:59'),
-          direction: transferDirection,
-          partner: '0x123',
-          initiator: '0x123',
-          target: '0x456',
-          success: successStatus,
-          token: '0xtoken',
-        },
+        transfer: transferProp,
       },
     });
   };
-
-  beforeEach(() => {
-    store.commit('updateTokens', {
-      '0xtoken': {
-        address: '0xtoken',
-        decimals: 18,
-        name: 'TestToken',
-        symbol: 'TTT',
-        balance: Zero,
-      },
-    });
-  });
-
   test('transactions are prefixed with "sent to" for sent transfers', () => {
-    wrapper = createWrapper('sent', true);
+    const wrapper = createWrapper();
     const transactionHistoryDirection = wrapper.find(
       '.transaction__item__details-left'
     );
+
     expect(transactionHistoryDirection.text()).toContain(
       'transfer-history.sent-title'
     );
   });
 
   test('transactions are prefixed with "Received from" for received transfers', () => {
-    wrapper = createWrapper('received', true);
+    const receivedTransfer = generateTransfer({ direction: 'received' }, token);
+    const wrapper = createWrapper(receivedTransfer);
     const transactionHistoryDirection = wrapper.find(
       '.transaction__item__details-left'
     );
+
     expect(transactionHistoryDirection.text()).toContain(
       'transfer-history.received-title'
     );
   });
 
   test('transaction item displays a "CONFIRMED" chip for successful transfers', () => {
-    wrapper = createWrapper('sent', true);
+    const wrapper = createWrapper();
     const confirmedTransferChip = wrapper.find('.v-chip__content');
+
     expect(confirmedTransferChip.text()).toBe(
       'transfer-history.successful-transfer'
     );
   });
 
   test('transaction item displays a "FAILED" chip for failed transfers', () => {
-    wrapper = createWrapper('sent', false);
+    const failedTransfer = generateTransfer({ success: false }, token);
+    const wrapper = createWrapper(failedTransfer);
     const failedTransferChip = wrapper.find('.v-chip__content');
+
     expect(failedTransferChip.text()).toBe('transfer-history.failed-transfer');
   });
 
   test('transaction item displays a "PENDING" chip for pending transfers', () => {
-    wrapper = createWrapper('sent', undefined);
+    const pendingTransfer = generateTransfer({ success: undefined }, token);
+    const wrapper = createWrapper(pendingTransfer);
     const pendingTransferChip = wrapper.find('.v-chip__content');
+
     expect(pendingTransferChip.text()).toBe(
       'transfer-history.pending-transfer'
     );
   });
 
   test('transaction item display correctly formatted date', () => {
-    wrapper = createWrapper('sent', true);
+    const wrapper = createWrapper();
     const transactionTimeStamp = wrapper.find(
       '.transaction__item__details-left__time-stamp'
     );
