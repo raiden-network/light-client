@@ -83,7 +83,8 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { Tokens, Transfers } from '@/types';
+import { RaidenTransfer } from 'raiden-ts';
+import { Tokens } from '@/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import { mapState } from 'vuex';
@@ -99,7 +100,7 @@ import { mapState } from 'vuex';
 })
 export default class Transaction extends Vue {
   @Prop({ required: true })
-  transfer!: Transfers;
+  transfer!: RaidenTransfer;
   tokens!: Tokens;
 }
 </script>
