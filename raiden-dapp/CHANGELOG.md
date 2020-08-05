@@ -23,6 +23,7 @@
 - [#1768] Updated UDC screen
 - [#1265] Reduce logs size by hiding superfluous actions entries
 - [#1875] Redact sensitive information (transport's accessToken, transfer's secrets) from logs
+- [#2033] Transfer history gets filtered for the selected token
 
 [#1925]: https://github.com/raiden-network/light-client/issues/1925
 [#2001]: https://github.com/raiden-network/light-client/issues/2001
@@ -36,6 +37,7 @@
 [#1875]: https://github.com/raiden-network/light-client/issues/1875
 [#2002]: https://github.com/raiden-network/light-client/issues/2002
 [#1658]: https://github.com/raiden-network/light-client/issues/1658
+[#2033]: https://github.com/raiden-network/light-client/issues/2033
 
 ## [0.10.0] - 2020-07-13
 
