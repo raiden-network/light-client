@@ -135,7 +135,7 @@
         {{ $t('transfer.transfer-history-title') }}
       </v-row>
       <v-row no-gutters class="transfer__transactions-list__items">
-        <transactions-list :token="token" />
+        <transaction-list :token="token" />
       </v-row>
     </div>
   </v-container>
@@ -152,7 +152,7 @@ import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import TransactionsList from '@/components/transaction-history/TransactionsList.vue';
+import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import { BigNumber } from 'ethers/utils';
 import { mapGetters, mapState } from 'vuex';
@@ -174,7 +174,7 @@ import BlockieMixin from '@/mixins/blockie-mixin';
     ErrorDialog,
     TokenOverlay,
     AmountDisplay,
-    TransactionsList,
+    TransactionList,
   },
   computed: {
     ...mapState(['defaultAccount']),
