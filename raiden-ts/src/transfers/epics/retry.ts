@@ -286,3 +286,5 @@ export const transferRetryMessageEpic = (
     ),
   );
 };
+
+export const RetryEpics = [transferRetryMessageEpic];

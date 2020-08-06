@@ -202,3 +202,11 @@ export const transferReceivedReplyProcessedEpic = (
     }),
   );
 };
+
+export const ProcessedEpics = [
+  transferProcessedReceivedEpic,
+  transferProcessedSendEpic,
+  transferUnlockProcessedReceivedEpic,
+  transferExpireProcessedEpic,
+  transferReceivedReplyProcessedEpic,
+];

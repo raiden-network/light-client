@@ -1426,3 +1426,20 @@ export const confirmationEpic = (
       ),
     ),
   );
+
+export const ChannelsEpics = [
+  initNewBlockEpic,
+  initTokensRegistryEpic,
+  initMonitorProviderEpic,
+  channelEventsEpic,
+  channelMonitoredEpic,
+  channelOpenEpic,
+  channelDepositEpic,
+  channelCloseEpic,
+  channelUpdateEpic,
+  channelAutoSettleEpic,
+  channelSettleEpic,
+  channelSettleableEpic,
+  channelUnlockEpic,
+  confirmationEpic,
+];

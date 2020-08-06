@@ -127,3 +127,5 @@ export const initQueuePendingReceivedEpic = (
       );
     }),
   );
+
+export const InitEpics = [initQueuePendingEnvelopeMessagesEpic, initQueuePendingReceivedEpic];

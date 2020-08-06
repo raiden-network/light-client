@@ -72,3 +72,5 @@ export const transferChannelClosedEpic = (
       ),
     ),
   );
+
+export const CloseEpics = [transferChannelClosedEpic];

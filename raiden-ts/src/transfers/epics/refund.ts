@@ -60,3 +60,5 @@ export const transferRefundedEpic = (
       yield transfer.failure(new RaidenError(ErrorCodes.XFER_REFUNDED), meta);
     }),
   );
+
+export const RefundEpics = [transferRefundedEpic];

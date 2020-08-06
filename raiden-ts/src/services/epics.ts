@@ -1232,3 +1232,17 @@ function getCleanPath(path: readonly Address[], address: Address): readonly Addr
 function isNoRouteFoundError(error: PathError | undefined): boolean {
   return error?.error_code === 2201;
 }
+
+export const ServicesEpics = [
+  pathFindServiceEpic,
+  pfsCapacityUpdateEpic,
+  pfsFeeUpdateEpic,
+  pfsServiceRegistryMonitorEpic,
+  monitorUdcBalanceEpic,
+  udcDepositEpic,
+  monitorRequestEpic,
+  udcWithdrawRequestEpic,
+  udcCheckWithdrawPlannedEpic,
+  udcWithdrawPlannedEpic,
+  msMonitorNewBPEpic,
+];

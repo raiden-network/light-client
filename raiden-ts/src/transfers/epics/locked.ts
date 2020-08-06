@@ -1094,3 +1094,5 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
     }),
   );
 };
+
+export const LockedEpics = [transferGenerateAndSignEnvelopeMessageEpic];

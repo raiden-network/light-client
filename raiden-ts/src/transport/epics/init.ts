@@ -431,3 +431,5 @@ export const matrixShutdownEpic = (
     ),
     ignoreElements(), // dont re-emit action$, but keep it subscribed so finalize works
   );
+
+export const InitEpics = [initMatrixEpic, matrixShutdownEpic];

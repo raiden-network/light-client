@@ -28,10 +28,10 @@ import { pfsListUpdated, udcDeposit } from './services/actions';
 import { Address, UInt } from './utils/types';
 import { isActionOf } from './utils/actions';
 
-import * as ChannelsEpics from './channels/epics';
-import * as TransportEpics from './transport/epics';
-import * as TransfersEpics from './transfers/epics';
-import * as ServicesEpics from './services/epics';
+import { ChannelsEpics } from './channels/epics';
+import { TransportEpics } from './transport/epics';
+import { TransfersEpics } from './transfers/epics';
+import { ServicesEpics } from './services/epics';
 
 // calculate dynamic config, based on default, user and udcBalance (for receiving caps)
 function getConfig$(
@@ -136,12 +136,7 @@ export function getLatest$(
   );
 }
 
-const RaidenEpics = {
-  ...ChannelsEpics,
-  ...TransportEpics,
-  ...TransfersEpics,
-  ...ServicesEpics,
-};
+const RaidenEpics = [...ChannelsEpics, ...TransportEpics, ...TransfersEpics, ...ServicesEpics];
 
 export const raidenRootEpic = (
   action$: Observable<RaidenAction>,
@@ -162,7 +157,7 @@ export const raidenRootEpic = (
     () => getLatest$(limitedAction$, limitedState$, deps).subscribe(deps.latest$),
     () =>
       // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
-      from(Object.values(RaidenEpics)).pipe(
+      from(RaidenEpics).pipe(
         mergeMap((epic) => epic(limitedAction$, limitedState$, deps)),
         catchError((err) => {
           deps.log.error('Fatal error:', err);

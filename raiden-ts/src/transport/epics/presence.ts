@@ -287,3 +287,10 @@ export const matrixUpdateCapsEpic = (
     ),
     ignoreElements(),
   );
+
+export const PresenceEpics = [
+  matrixMonitorPresenceEpic,
+  matrixPresenceUpdateEpic,
+  matrixMonitorChannelPresenceEpic,
+  matrixUpdateCapsEpic,
+];

@@ -63,3 +63,5 @@ export const transferMediateEpic = (
       ),
     ),
   );
+
+export const MediateEpics = [transferMediateEpic];

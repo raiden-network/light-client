@@ -370,3 +370,12 @@ export const withdrawSendExpireMessageEpic = (
       );
     }),
   );
+
+export const WithdrawEpics = [
+  initWithdrawMessagesEpic,
+  withdrawSendRequestMessageEpic,
+  withdrawSendTxEpic,
+  withdrawMessageProcessedEpic,
+  autoWithdrawExpireEpic,
+  withdrawSendExpireMessageEpic,
+];

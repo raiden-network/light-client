@@ -276,3 +276,10 @@ export const deliveredEpic = (
     }),
   );
 };
+
+export const MessagesEpics = [
+  matrixMessageSendEpic,
+  matrixMessageGlobalSendEpic,
+  matrixMessageReceivedEpic,
+  deliveredEpic,
+];

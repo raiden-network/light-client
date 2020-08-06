@@ -443,3 +443,5 @@ export const rtcConnectEpic = (
     groupBy((action) => action.meta.address),
     mergeMap((grouped$) => handlePresenceChange$(action$, grouped$, deps)),
   );
+
+export const WebRTCEpics = [rtcConnectEpic];

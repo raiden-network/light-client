@@ -88,3 +88,5 @@ export const transferAutoExpireEpic = (
       autoExpire$(action$, state, config, blockNumber),
     ),
   );
+
+export const ExpireEpics = [transferAutoExpireEpic];

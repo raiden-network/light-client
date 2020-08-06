@@ -465,3 +465,14 @@ export const transferSecretRegisterEpic = (
       );
     }),
   );
+
+export const SecretEpics = [
+  transferSecretRequestedEpic,
+  transferSecretRevealEpic,
+  transferSecretRevealedEpic,
+  transferRequestUnlockEpic,
+  monitorSecretRegistryEpic,
+  transferSuccessOnSecretRegisteredEpic,
+  transferAutoRegisterEpic,
+  transferSecretRegisterEpic,
+];

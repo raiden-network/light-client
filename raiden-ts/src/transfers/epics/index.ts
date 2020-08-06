@@ -1,10 +1,23 @@
-export * from './close';
-export * from './expire';
-export * from './locked';
-export * from './init';
-export * from './mediate';
-export * from './processed';
-export * from './refund';
-export * from './retry';
-export * from './secret';
-export * from './withdraw';
+import { CloseEpics } from './close';
+import { ExpireEpics } from './expire';
+import { LockedEpics } from './locked';
+import { InitEpics } from './init';
+import { MediateEpics } from './mediate';
+import { ProcessedEpics } from './processed';
+import { RefundEpics } from './refund';
+import { RetryEpics } from './retry';
+import { SecretEpics } from './secret';
+import { WithdrawEpics } from './withdraw';
+
+export const TransfersEpics = [
+  ...CloseEpics,
+  ...ExpireEpics,
+  ...LockedEpics,
+  ...InitEpics,
+  ...MediateEpics,
+  ...ProcessedEpics,
+  ...RefundEpics,
+  ...RetryEpics,
+  ...SecretEpics,
+  ...WithdrawEpics,
+];

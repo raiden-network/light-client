@@ -507,3 +507,14 @@ export const matrixMessageReceivedUpdateRoomEpic = (
     }),
     map(([action]) => matrixRoom({ roomId: action.payload.roomId! }, action.meta)),
   );
+
+export const RoomsEpics = [
+  matrixCreateRoomEpic,
+  matrixInviteEpic,
+  matrixHandleInvitesEpic,
+  matrixLeaveExcessRoomsEpic,
+  matrixLeaveUnknownRoomsEpic,
+  matrixCleanLeftRoomsEpic,
+  matrixCleanMissingRoomsEpic,
+  matrixMessageReceivedUpdateRoomEpic,
+];
