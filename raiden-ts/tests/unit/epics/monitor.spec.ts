@@ -11,7 +11,16 @@ import {
   sleep,
   makeRaiden,
 } from '../mocks';
-import { epicFixtures, tokenNetwork, ensureChannelIsOpen, id } from '../fixtures';
+import {
+  epicFixtures,
+  tokenNetwork,
+  token,
+  ensureChannelIsOpen,
+  ensureChannelIsDeposited,
+  ensureTransferUnlocked,
+  getChannel,
+  id,
+} from '../fixtures';
 
 import { bigNumberify, BigNumberish, defaultAbiCoder } from 'ethers/utils';
 import { Zero, WeiPerEther, Two, MaxUint256 } from 'ethers/constants';
@@ -354,6 +363,61 @@ describe('monitorRequestEpic', () => {
     setTimeout(() => action$.complete(), 50);
 
     await expect(promise).resolves.toBeUndefined();
+  });
+});
+
+describe('monitorRequestEpic1', () => {
+  test('success: receiving a transfer triggers monitoring', async () => {
+    expect.assertions(1);
+    const [raiden, partner] = await makeRaidens(2);
+    const monitoringReward = bigNumberify(5) as UInt<32>;
+    const deposit = bigNumberify(500) as UInt<32>;
+    const amount = bigNumberify(20) as UInt<32>;
+
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        httpTimeout: 30,
+        monitoringReward,
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          [Capabilities.NO_MEDIATE]: true,
+          // 'noReceive' should be auto-disabled by 'getCaps$'
+        },
+        // rate=WeiPerEther == 1:1 to SVT
+        rateToSvt: { [token]: WeiPerEther as UInt<32> },
+      }),
+    );
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await ensureChannelIsDeposited([partner, raiden], deposit);
+    await ensureTransferUnlocked([raiden, partner], amount);
+
+    await waitBlock(2);
+    const partnerBP = getChannel(raiden, partner).partner.balanceProof;
+
+    expect(raiden.output).toContainEqual(
+      messageGlobalSend(
+        {
+          message: expect.objectContaining({
+            type: MessageType.MONITOR_REQUEST,
+            /* balance_proof: {
+              chain_id: partnerBP.chainId,
+              token_network_address: tokenNetwork,
+              channel_identifier: partnerBP.channelId,
+              nonce: partnerBP.nonce,
+              balance_hash: createBalanceHash(partnerBP),
+              additional_hash: partnerBP.additionalHash,
+              signature: partnerBP.signature,
+            },
+            non_closing_participant: raiden.address,
+            non_closing_signature: expect.any(String),
+            monitoring_service_contract_address: expect.any(String),
+            reward_amount: monitoringReward,
+            signature: expect.any(String), */
+          }),
+        },
+        { roomName: expect.stringMatching(/_monitoring$/) },
+      ),
+    );
   });
 });
 
