@@ -83,7 +83,12 @@ export const transferAutoExpireEpic = (
   action$.pipe(
     filter(isActionOf(newBlock)),
     withLatestFrom(state$, config$),
-    // exhaustMap ignores new blocks while previous request batch is still pending
+    // With interactive signing sending a lock expired message requires user
+    // intervention. In that case it is possible for a new block to arrive
+    // while waiting for the user permission, without the `exhaustMap` below
+    // multiple signing requests would be emited *for the same lock*.
+    // `exhaustMap` prevents that from happening, by blocking new signing
+    // requests until the existing ones have been concluded.
     exhaustMap(([{ payload: { blockNumber } }, state, config]) =>
       autoExpire$(action$, state, config, blockNumber),
     ),
