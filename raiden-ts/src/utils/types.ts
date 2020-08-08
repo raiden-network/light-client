@@ -71,10 +71,9 @@ export const BigNumberC: BigNumberC = new t.Type<BigNumber, string>(
   'BigNumber',
   BigNumber.isBigNumber,
   (u, c) => {
-    if (BigNumber.isBigNumber(u)) return t.success(u);
     try {
-      // decode by trying to bigNumberify string representation of anything
-      return t.success(bigNumberify(((u as any)?._hex ?? (u as any)).toString()));
+      // bigNumberify is able to decode number, strings and JSON.parse'd {_hex:<str>} objects
+      return t.success(bigNumberify(u as any));
     } catch (err) {
       return t.failure(u, c);
     }
@@ -197,29 +196,28 @@ export interface AddressB {
 }
 
 // string brand: checksummed address, 20 bytes
-export type Address = string & t.Brand<HexStringB<20>> & t.Brand<AddressB>;
-export interface AddressC extends t.Type<Address, string> {}
-export const Address: AddressC = new t.Type<Address, string>(
+export type Address = HexString<20> & t.Brand<AddressB>;
+export interface AddressC extends t.RefinementType<HexStringC<20>, Address, string> {}
+function isAddress(u: unknown): u is Address {
+  try {
+    return getAddress(u as string) === u;
+  } catch (e) {
+    return false;
+  }
+}
+export const Address: AddressC = new t.RefinementType<HexStringC<20>, Address, string>(
   'Address',
-  (u: unknown): u is Address => {
-    try {
-      return HexString(20).is(u) && getAddress(u) === u;
-    } catch (e) {
-      return false;
-    }
-  },
+  isAddress,
   (u, c) => {
-    if (!HexString(20).is(u)) return t.failure(u, c);
-    let addr;
     try {
-      addr = getAddress(u);
+      return t.success(getAddress(u as string) as Address);
     } catch (e) {
       return t.failure(u, c);
     }
-    if (!addr) return t.failure(u, c);
-    return t.success(addr as Address);
   },
   t.identity,
+  HexString(20),
+  isAddress,
 );
 
 /**

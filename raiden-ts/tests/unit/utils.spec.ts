@@ -132,8 +132,6 @@ describe('types', () => {
     const address = '0x000000000000000000000000000000000004000A',
       address2 = '0x00000000000000000000000000000000000300Aa';
 
-    const hexCodec = HexString(20);
-    const hexPred = jest.spyOn(hexCodec, 'is');
     const addrPred = jest.spyOn(Address, 'is');
 
     expect(Address.is(address)).toBe(true);
@@ -149,7 +147,6 @@ describe('types', () => {
     expect(address2decoded).not.toEqual(address2.toLowerCase());
 
     expect(addrPred).toHaveBeenCalledTimes(4);
-    expect(hexPred).toHaveBeenCalledTimes(5); // 'parent' codec was also checked, +1 for decode
 
     // narrow address to Address below
     if (!Address.is(address)) throw new Error('not an address');
