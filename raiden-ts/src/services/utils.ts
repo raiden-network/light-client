@@ -9,7 +9,7 @@ import { Signer } from 'ethers/abstract-signer';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { Address, UInt, decode, Signed, Signature } from '../utils/types';
-import { losslessParse, encode } from '../utils/data';
+import { jsonParse, encode } from '../utils/data';
 import { Presences } from '../transport/types';
 import { ChannelState } from '../channels/state';
 import { channelAmounts, channelKey } from '../channels/utils';
@@ -106,7 +106,7 @@ export function pfsInfo(
         mergeMap(
           async (res) =>
             [
-              decode(PathInfo, losslessParse(await res.text())),
+              decode(PathInfo, jsonParse(await res.text())),
               await serviceRegistryToken(serviceRegistryContract),
             ] as const,
         ),

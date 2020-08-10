@@ -30,7 +30,7 @@ import { pathFindServiceEpic, pfsFeeUpdateEpic } from 'raiden-ts/services/epics'
 import { pathFind, pfsListUpdated, iouPersist, iouClear } from 'raiden-ts/services/actions';
 import { messageGlobalSend } from 'raiden-ts/messages/actions';
 import { MessageType } from 'raiden-ts/messages/types';
-import { losslessStringify } from 'raiden-ts/utils/data';
+import { jsonStringify } from 'raiden-ts/utils/data';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { ErrorCodes } from 'raiden-ts/utils/error';
 import { RaidenState } from 'raiden-ts/state';
@@ -123,7 +123,7 @@ describe('PFS: pathFindServiceEpic', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async () => result,
       ),
-      text: jest.fn(async () => losslessStringify(result)),
+      text: jest.fn(async () => jsonStringify(result)),
     });
   });
 
@@ -346,7 +346,7 @@ describe('PFS: pathFindServiceEpic', () => {
       json: jest.fn(async () => {
         /* error */
       }),
-      text: jest.fn(async () => losslessStringify({})),
+      text: jest.fn(async () => jsonStringify({})),
     });
 
     const pfsSafetyMargin = await depsMock.config$
@@ -406,7 +406,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     fetch.mockResolvedValueOnce({
@@ -415,7 +415,7 @@ describe('PFS: pathFindServiceEpic', () => {
       json: jest.fn(async () => {
         /* error */
       }),
-      text: jest.fn(async () => losslessStringify({})),
+      text: jest.fn(async () => jsonStringify({})),
     });
 
     let pfsSafetyMargin!: number;
@@ -479,7 +479,7 @@ describe('PFS: pathFindServiceEpic', () => {
                 ok: true,
                 status: 200,
                 json: jest.fn(async () => pfsInfoResponse1),
-                text: jest.fn(async () => losslessStringify(pfsInfoResponse1)),
+                text: jest.fn(async () => jsonStringify(pfsInfoResponse1)),
               }),
             23, // higher rtt for this PFS
           ),
@@ -492,7 +492,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse2),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse2)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse2)),
     });
 
     const pfsInfoResponse3 = { ...pfsInfoResponse, payment_address: pfsAddress3, price_info: 10 };
@@ -500,7 +500,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse3),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse3)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse3)),
     });
 
     // pfsAddress succeeds main response
@@ -508,7 +508,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     fetch.mockResolvedValueOnce({
@@ -517,7 +517,7 @@ describe('PFS: pathFindServiceEpic', () => {
       json: jest.fn(async () => {
         /* error */
       }),
-      text: jest.fn(async () => losslessStringify({})),
+      text: jest.fn(async () => jsonStringify({})),
     });
 
     let pfsSafetyMargin!: number;
@@ -628,7 +628,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     fetch.mockResolvedValueOnce({
@@ -637,7 +637,7 @@ describe('PFS: pathFindServiceEpic', () => {
       json: jest.fn(async () => {
         /* error */
       }),
-      text: jest.fn(async () => losslessStringify({})),
+      text: jest.fn(async () => jsonStringify({})),
     });
 
     fetch.mockResolvedValueOnce({
@@ -682,7 +682,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     // expected 'result', not 'paths'
@@ -691,7 +691,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => paths),
-      text: jest.fn(async () => losslessStringify(paths)),
+      text: jest.fn(async () => jsonStringify(paths)),
     });
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
@@ -731,7 +731,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => freePfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(freePfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(freePfsInfoResponse)),
     });
 
     const result = {
@@ -745,7 +745,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => result),
-      text: jest.fn(async () => losslessStringify(result)),
+      text: jest.fn(async () => jsonStringify(result)),
     });
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
@@ -787,7 +787,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     const result = {
@@ -801,7 +801,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => result),
-      text: jest.fn(async () => losslessStringify(result)),
+      text: jest.fn(async () => jsonStringify(result)),
     });
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
@@ -844,7 +844,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     fetch.mockResolvedValueOnce({
@@ -853,7 +853,7 @@ describe('PFS: pathFindServiceEpic', () => {
       json: jest.fn(async () => {
         /* error */
       }),
-      text: jest.fn(async () => losslessStringify({})),
+      text: jest.fn(async () => jsonStringify({})),
     });
 
     const result = {
@@ -874,7 +874,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => result),
-      text: jest.fn(async () => losslessStringify(result)),
+      text: jest.fn(async () => jsonStringify(result)),
     });
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
@@ -916,7 +916,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => result),
-      text: jest.fn(async () => losslessStringify(result)),
+      text: jest.fn(async () => jsonStringify(result)),
     });
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
@@ -981,7 +981,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     const lastIOUResult = {
@@ -997,7 +997,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => lastIOUResult),
-      text: jest.fn(async () => losslessStringify(lastIOUResult)),
+      text: jest.fn(async () => jsonStringify(lastIOUResult)),
     });
 
     const errorResult = {
@@ -1009,7 +1009,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: false,
       status: 404,
       json: jest.fn(async () => errorResult),
-      text: jest.fn(async () => losslessStringify(errorResult)),
+      text: jest.fn(async () => jsonStringify(errorResult)),
     });
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
@@ -1054,7 +1054,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     fetch.mockResolvedValueOnce({
@@ -1063,7 +1063,7 @@ describe('PFS: pathFindServiceEpic', () => {
       json: jest.fn(async () => {
         /* error */
       }),
-      text: jest.fn(async () => losslessStringify({})),
+      text: jest.fn(async () => jsonStringify({})),
     });
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
@@ -1101,7 +1101,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     const lastIOUResult = {
@@ -1118,7 +1118,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => lastIOUResult),
-      text: jest.fn(async () => losslessStringify(lastIOUResult)),
+      text: jest.fn(async () => jsonStringify(lastIOUResult)),
     });
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
@@ -1159,7 +1159,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
     const lastIOUResult = {
@@ -1175,7 +1175,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: true,
       status: 200,
       json: jest.fn(async () => lastIOUResult),
-      text: jest.fn(async () => losslessStringify(lastIOUResult)),
+      text: jest.fn(async () => jsonStringify(lastIOUResult)),
     });
 
     const result = {
@@ -1188,7 +1188,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ok: false,
       status: 400,
       json: jest.fn(async () => result),
-      text: jest.fn(async () => losslessStringify(result)),
+      text: jest.fn(async () => jsonStringify(result)),
     });
 
     const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();

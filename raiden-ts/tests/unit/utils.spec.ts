@@ -7,7 +7,6 @@ import { isError } from 'util';
 import { first } from 'rxjs/operators';
 
 import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils';
-import { LosslessNumber } from 'lossless-json';
 
 import { fromEthersEvent, patchSignSend, getNetworkName } from 'raiden-ts/utils/ethers';
 import {
@@ -22,7 +21,7 @@ import {
 } from 'raiden-ts/utils/types';
 import { RaidenError, ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
 import { LruCache } from 'raiden-ts/utils/lru';
-import { encode, losslessParse, losslessStringify } from 'raiden-ts/utils/data';
+import { encode } from 'raiden-ts/utils/data';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { Lock } from 'raiden-ts/channels';
 import { LocksrootZero } from 'raiden-ts/constants';
@@ -235,17 +234,6 @@ describe('data', () => {
     expect(() => encode(null, 2)).toThrowError(
       'Passed data is not a HEX string nor integer array',
     );
-  });
-
-  test('losslessParse', () => {
-    const parsed = losslessParse('{"big":18446744073709551616,"small":65535 }');
-    expect(parsed.big).toEqual(bigNumberify('18446744073709551616'));
-    expect(parsed.small).toBe(65535);
-  });
-
-  test('losslessStringify', () => {
-    const stringified = losslessStringify({ n: new LosslessNumber('18446744073709551616') });
-    expect(stringified).toBe('{"n":18446744073709551616}');
   });
 });
 

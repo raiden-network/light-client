@@ -48,7 +48,7 @@ import {
 } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
-import { encode, losslessParse, losslessStringify } from '../utils/data';
+import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { pluckDistinct } from '../utils/rx';
@@ -135,7 +135,7 @@ function fetchLastIou$(
           responseText: text,
         });
 
-      const { last_iou: lastIou } = decode(LastIOUResults, losslessParse(text));
+      const { last_iou: lastIou } = decode(LastIOUResults, jsonParse(text));
       // accept last IOU only if it was signed by us
       const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
       if (signer !== address)
@@ -1164,7 +1164,7 @@ function requestPfs$(
   value: UInt<32>,
   { httpTimeout, pfsMaxPaths }: Pick<RaidenConfig, 'httpTimeout' | 'pfsMaxPaths'>,
 ): Observable<{ pfsResponse: Response; responseText: string; iou: Signed<IOU> | undefined }> {
-  const body = losslessStringify({
+  const body = jsonStringify({
     from: address,
     to: target,
     value: UInt(32).encode(value),
@@ -1200,7 +1200,7 @@ function parsePfsResponse(
   { pfsSafetyMargin, pfsMaxPaths }: RaidenConfig,
 ): Route {
   // any decode error here will throw early and end up in catchError
-  const data = losslessParse(responseText);
+  const data = jsonParse(responseText);
 
   if (!pfsResponse.ok) {
     const error = decode(PathError, data);

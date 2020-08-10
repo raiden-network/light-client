@@ -9,7 +9,7 @@ import logging from 'loglevel';
 import { LocksrootZero } from '../constants';
 import { assert } from '../utils';
 import { Address, Hash, HexString, Signature, Signed, decode } from '../utils/types';
-import { encode, losslessParse, losslessStringify } from '../utils/data';
+import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { BalanceProof } from '../channels/types';
 import { EnvelopeMessage, Message, MessageType, Metadata } from './types';
 import { messageReceived } from './actions';
@@ -313,25 +313,25 @@ export function getBalanceProofFromEnvelopeMessage(
 
 /**
  * Encode a Message as a JSON string
- * Uses lossless-json to encode BigNumbers as JSON 'string' type, as Raiden
+ * Uses io-ts codec to encode BigNumbers as JSON 'string' type, as Raiden
  *
  * @param message - Message object to be serialized
  * @returns JSON string
  */
 export function encodeJsonMessage(message: Message | Signed<Message>): string {
-  if ('signature' in message) return losslessStringify(Signed(Message).encode(message));
-  return losslessStringify(Message.encode(message));
+  if ('signature' in message) return jsonStringify(Signed(Message).encode(message));
+  return jsonStringify(Message.encode(message));
 }
 
 /**
- * Try to decode text as a Message, using lossless-json to decode BigNumbers
+ * Try to decode text as a Message, using io-ts codec to decode BigNumbers
  * Throws if can't decode, or message is invalid regarding any of the encoded constraints
  *
  * @param text - JSON string to try to decode
  * @returns Message object
  */
 export function decodeJsonMessage(text: string): Message | Signed<Message> {
-  const parsed = losslessParse(text);
+  const parsed = jsonParse(text);
   assert(
     parsed &&
       typeof parsed === 'object' &&
