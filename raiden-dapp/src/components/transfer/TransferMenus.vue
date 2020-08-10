@@ -116,6 +116,7 @@ export default class TransferMenus extends Mixins(NavigationMixin) {
       );
       this.done = true;
       this.loading = false;
+      this.dismissProgress();
     } catch (err) {
       this.error = err;
       this.loading = false;
