@@ -1,14 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "ES2019",
     "module": "commonjs",
     "outDir": "./build",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "strict": true,
     "sourceMap": true,
     "allowJs": true,
-    "lib": ["es2015", "es2016", "es2017", "dom"],
+    "lib": ["ES2019", "dom"],
     "baseUrl": ".",
     "paths": {
       "matrix-js-sdk": ["node_modules/raiden-ts/node_modules/@types/matrix-js-sdk/index.d.ts"],
