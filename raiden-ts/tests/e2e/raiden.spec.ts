@@ -35,7 +35,7 @@ import { PartialRaidenConfig } from 'raiden-ts/config';
 import { RaidenTransfer, RaidenTransferStatus } from 'raiden-ts/transfers/state';
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
-import { losslessStringify } from 'raiden-ts/utils/data';
+import { jsonStringify } from 'raiden-ts/utils/data';
 import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
 import { ErrorCodes } from 'raiden-ts/utils/error';
 import { channelKey } from 'raiden-ts/channels/utils';
@@ -914,7 +914,7 @@ describe('Raiden', () => {
           ok: true,
           status: 200,
           json: jest.fn(async () => pfsInfoResponse),
-          text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+          text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
         });
 
         fetch.mockResolvedValueOnce({
@@ -923,7 +923,7 @@ describe('Raiden', () => {
           json: jest.fn(async () => {
             /* error */
           }),
-          text: jest.fn(async () => losslessStringify({})),
+          text: jest.fn(async () => jsonStringify({})),
         });
 
         const result = {
@@ -938,7 +938,7 @@ describe('Raiden', () => {
           ok: true,
           status: 200,
           json: jest.fn(async () => result),
-          text: jest.fn(async () => losslessStringify(result)),
+          text: jest.fn(async () => jsonStringify(result)),
         });
 
         const transfers: { [k: string]: RaidenTransfer } = {};
@@ -979,7 +979,7 @@ describe('Raiden', () => {
         ok: true,
         status: 200,
         json: jest.fn(async () => pfsInfoResponse),
-        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+        text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
 
       raiden.updateConfig({ pfs: pfsUrl }); // pfs set
@@ -1002,7 +1002,7 @@ describe('Raiden', () => {
         ok: true,
         status: 200,
         json: jest.fn(async () => pfsInfoResponse),
-        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+        text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
 
       raiden.updateConfig({ pfs: '' });
@@ -1066,7 +1066,7 @@ describe('Raiden', () => {
         ok: true,
         status: 200,
         json: jest.fn(async () => pfsInfoResponse),
-        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+        text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
 
       fetch.mockResolvedValueOnce({
@@ -1075,7 +1075,7 @@ describe('Raiden', () => {
         json: jest.fn(async () => {
           /* error */
         }),
-        text: jest.fn(async () => losslessStringify({})),
+        text: jest.fn(async () => jsonStringify({})),
       });
 
       const result = {
@@ -1090,7 +1090,7 @@ describe('Raiden', () => {
         ok: true,
         status: 200,
         json: jest.fn(async () => result),
-        text: jest.fn(async () => losslessStringify(result)),
+        text: jest.fn(async () => jsonStringify(result)),
       });
 
       await expect(raiden.findRoutes(token, target, 23)).resolves.toEqual([
@@ -1110,7 +1110,7 @@ describe('Raiden', () => {
         ok: true,
         status: 200,
         json: jest.fn(async () => pfsInfoResponse),
-        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+        text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
 
       // config.pfs in auto mode
@@ -1133,7 +1133,7 @@ describe('Raiden', () => {
         json: jest.fn(async () => {
           /* error */
         }),
-        text: jest.fn(async () => losslessStringify({})),
+        text: jest.fn(async () => jsonStringify({})),
       });
 
       const result = {
@@ -1148,7 +1148,7 @@ describe('Raiden', () => {
         ok: true,
         status: 200,
         json: jest.fn(async () => result),
-        text: jest.fn(async () => losslessStringify(result)),
+        text: jest.fn(async () => jsonStringify(result)),
       });
 
       await expect(raiden.findRoutes(token, target, 23, { pfs: pfss[0] })).resolves.toEqual([
@@ -1189,7 +1189,7 @@ describe('Raiden', () => {
         ok: true,
         status: 200,
         json: jest.fn(async () => pfsInfoResponse),
-        text: jest.fn(async () => losslessStringify(pfsInfoResponse)),
+        text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
 
       fetch.mockResolvedValueOnce({
@@ -1198,7 +1198,7 @@ describe('Raiden', () => {
         json: jest.fn(async () => {
           /* error */
         }),
-        text: jest.fn(async () => losslessStringify({})),
+        text: jest.fn(async () => jsonStringify({})),
       });
 
       const result = {
@@ -1213,7 +1213,7 @@ describe('Raiden', () => {
         ok: true,
         status: 200,
         json: jest.fn(async () => result),
-        text: jest.fn(async () => losslessStringify(result)),
+        text: jest.fn(async () => jsonStringify(result)),
       });
 
       await expect(raiden.findRoutes(token, target, 201)).rejects.toThrowError(

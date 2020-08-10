@@ -62,7 +62,7 @@ export function isntNil<T>(value: T): value is NonNullable<T> {
 /**
  * Codec of ethers.utils.BigNumber objects
  *
- * Input can be anything bigNumberify-able: number, string, LosslessNumber or BigNumber
+ * Input can be anything bigNumberify-able: number, string or jsonStringified BigNumber object
  * Output is string, so we can JSON-serialize with 'number's types bigger than JS VM limits
  * of ±2^53, as Raiden python client stdlib json encode longs as string.
  */

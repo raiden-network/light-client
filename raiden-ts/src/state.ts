@@ -9,7 +9,7 @@ import { PartialRaidenConfig, makeDefaultConfig, RaidenConfig } from './config';
 import { ContractsInfo } from './types';
 import { ConfirmableAction } from './actions';
 import migrateState, { CURRENT_STATE_VERSION } from './migration';
-import { losslessParse, losslessStringify } from './utils/data';
+import { jsonParse, jsonStringify } from './utils/data';
 import { Address, Signed, Storage, decode } from './utils/types';
 import { ChannelKey } from './channels/types';
 import { Channel } from './channels/state';
@@ -63,22 +63,17 @@ export const RaidenState: RaidenStateC = _RaidenState;
 
 /**
  * Encode RaidenState to a JSON string
- * For Raiden client compliance, this JSON encodes BigNumbers as 'number' (using lossless-json lib)
- * which is valid json though not very common as common JS implementations lose precision when
- * decoding through JSON.parse. This is solved in SDK by both encoding and decoding BigNumbers
- * using lossless-json, without going through the intermediary JS-number form.
  *
  * @param state - RaidenState object
  * @returns JSON encoded string
  */
 export function encodeRaidenState(state: RaidenState): string {
-  return losslessStringify(RaidenState.encode(state), undefined, 2);
+  return jsonStringify(RaidenState.encode(state), undefined, 2);
 }
 
 /**
  * Try to migrate & decode data as RaidenState.
- * If handled a string, will parse it with lossless-json, to preserve BigNumbers encoded as JSON
- * 'number'. The data may be migrated from previous versions, then validated as current RaidenState
+ * The data may be migrated from previous versions, then validated as current RaidenState
  *
  * @param data - string | any which may be decoded as RaidenState
  * @param deps - Options
@@ -89,7 +84,7 @@ export function decodeRaidenState(
   data: unknown,
   { log }: { log: logging.Logger } = { log: logging },
 ): RaidenState {
-  if (typeof data === 'string') data = losslessParse(data);
+  if (typeof data === 'string') data = jsonParse(data);
   const state = migrateState(data, CURRENT_STATE_VERSION, { log });
   // validates and returns as current state
   try {
