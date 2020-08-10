@@ -4,11 +4,10 @@
   "description": "Raiden Light Client Typescript/Javascript SDK",
   "main": "dist:cjs/index.js",
   "module": "dist/index.js",
-  "esnext": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "start": "pnpm run versions && pnpm run contracts && tsc -p src/tsconfig.cjs.json -w",
-    "build": "pnpm run versions && pnpm run contracts && tsc -p src/tsconfig.json && tsc -p src/tsconfig.cjs.json && pnpm run contracts:post",
+    "start": "pnpm run versions && pnpm run contracts && tsc -w",
+    "build": "pnpm run versions && pnpm run contracts && tsc && tsc -p ./tsconfig.cjs.json && pnpm run contracts:post",
     "test": "pnpm run lint && NODE_ENV=development jest --coverage=true --testPathIgnorePatterns tests/integration",
     "test:integration": "NODE_ENV=development jest --runInBand --ci --coverage=true --testPathIgnorePatterns tests/unit tests/e2e",
     "test:unit": "NODE_ENV=development jest --runInBand --ci --coverage=true --testPathIgnorePatterns tests/integration tests/e2e",
@@ -102,7 +101,8 @@
     "ethers": "^4.0.47"
   },
   "files": [
-    "/dist*"
+    "/dist",
+    "/dist:cjs"
   ],
   "eslintConfig": {
     "parser": "@typescript-eslint/parser",
@@ -162,7 +162,8 @@
   "eslintIgnore": [
     "raiden-contracts/*",
     "scripts/*",
-    "dist*/*",
+    "dist/*",
+    "dist:cjs/*",
     "src/contracts/*"
   ],
   "prettier": {
