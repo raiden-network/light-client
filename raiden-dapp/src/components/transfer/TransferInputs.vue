@@ -128,6 +128,7 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '../../scss/colors';
+@import '../../scss/mixins';
 
 .transfer__inputs {
   background-color: $transfer-screen-bg-color;
@@ -159,6 +160,9 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
     &__address {
       margin: 0 20px 0 20px;
       width: 100%;
+      @include respond-to(handhelds) {
+        padding: 0px;
+      }
 
       ::v-deep {
         .v-input {
@@ -170,22 +174,38 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
     &__amount {
       margin-left: 20px;
       width: 300px;
+      @include respond-to(handhelds) {
+        margin-right: 20px;
+        width: 100%;
+        padding: 0px;
+      }
     }
 
     &__button {
       padding-bottom: 30px;
+      @include respond-to(handhelds) {
+        margin: 0 20px 20px 20px;
+        padding: 0;
+        width: 100%;
+      }
 
       ::v-deep {
         .col-10 {
           display: flex;
           justify-content: flex-end;
           padding-top: 16px;
+          @include respond-to(handhelds) {
+            min-width: 100%;
+          }
         }
 
         .v-btn {
           border-radius: 8px;
           min-height: 49px;
           max-width: 150px;
+          @include respond-to(handhelds) {
+            min-width: 100%;
+          }
         }
       }
     }

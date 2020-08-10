@@ -60,12 +60,18 @@ export default class Transfer extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '../../scss/mixins';
+
 .transfer {
   &__menus,
   &__inputs,
   &__list {
     margin: 0 auto;
     width: 550px;
+
+    @include respond-to(handhelds) {
+      width: 100%;
+    }
   }
 
   &__inputs,

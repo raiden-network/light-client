@@ -67,11 +67,12 @@ export default class TransactionLists extends Vue {
 
 <style scoped lang="scss">
 @import '../../scss/colors';
+@import '../../scss/mixins';
 
 .transaction-history {
   background-color: $transfer-screen-bg-color;
   border-radius: 15px;
-  height: 300px;
+  height: 100%;
   padding-bottom: 10px;
 
   &__heading {
@@ -81,11 +82,14 @@ export default class TransactionLists extends Vue {
   }
 
   &__transactions {
-    height: calc(100% - 50px);
+    height: calc(300px - 50px);
     overflow-y: scroll;
     scrollbar-width: none;
     &::-webkit-scrollbar {
       display: none;
+    }
+    @include respond-to(handhelds) {
+      height: calc(260px - 50px);
     }
 
     &__list {

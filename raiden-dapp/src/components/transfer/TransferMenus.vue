@@ -135,12 +135,16 @@ export default class TransferMenus extends Mixins(NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '../../scss/colors';
+@import '../../scss/mixins';
 
 .transfer-menus {
   background-color: $transfer-screen-bg-color;
   border-radius: 15px;
   height: 160px;
   padding-top: 18px;
+  @include respond-to(handhelds) {
+    height: 135px;
+  }
 
   &__token-select {
     height: 25px;
@@ -186,6 +190,9 @@ export default class TransferMenus extends Mixins(NavigationMixin) {
     height: 100px;
     text-align: center;
     width: 100%;
+    @include respond-to(handhelds) {
+      font-size: 35px;
+    }
   }
 }
 </style>
