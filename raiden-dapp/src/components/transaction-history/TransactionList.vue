@@ -1,21 +1,26 @@
 <template>
-  <v-container class="transaction-history" fluid>
-    <v-list class="transaction-history__list" color="transparent">
-      <div
-        v-for="(transfer, index) in orderedTransfers"
-        :key="index"
-        class="transaction-history__list__item"
-      >
-        <v-lazy
-          transition="fade-transition"
-          :options="{ threshold: 0.7 }"
-          min-height="74"
+  <div class="transaction-history">
+    <v-row no-gutters class="transaction-history__heading">
+      {{ $t('transfer-history.title') }}
+    </v-row>
+    <v-row class="transaction-history__transactions" no-gutters>
+      <v-list class="transaction-history__transactions__list">
+        <div
+          v-for="(transfer, index) in orderedTransfers"
+          :key="index"
+          class="transaction-history__transactions__list__item"
         >
-          <transaction :transfer="transfer" />
-        </v-lazy>
-      </div>
-    </v-list>
-  </v-container>
+          <v-lazy
+            transition="fade-transition"
+            :options="{ threshold: 0.7 }"
+            min-height="74"
+          >
+            <transaction :transfer="transfer" />
+          </v-lazy>
+        </div>
+      </v-list>
+    </v-row>
+  </div>
 </template>
 
 <script lang="ts">
@@ -64,17 +69,40 @@ export default class TransactionLists extends Vue {
 @import '../../scss/colors';
 
 .transaction-history {
-  &__list {
-    > div {
-      &:first-of-type {
-        border: none;
-        padding-top: 0px;
-      }
+  background-color: $transfer-screen-bg-color;
+  border-radius: 15px;
+  height: 300px;
+  padding-bottom: 10px;
+
+  &__heading {
+    font-size: 18px;
+    height: 50px;
+    padding: 16px 0 0 22px;
+  }
+
+  &__transactions {
+    height: calc(100% - 50px);
+    overflow-y: scroll;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
     }
 
-    &__item {
-      border-top: solid 1px $input-background;
-      padding-top: 22px;
+    &__list {
+      margin: 0 23px 0 23px;
+      width: 100%;
+
+      > div {
+        &:first-of-type {
+          border: none;
+          padding-top: 0px;
+        }
+      }
+
+      &__item {
+        border-top: solid 1px $input-background;
+        padding-top: 22px;
+      }
     }
   }
 }
