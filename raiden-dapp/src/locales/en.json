@@ -351,7 +351,6 @@
     }
   },
   "transfer": {
-    "transfer-title": "Transfer",
     "transfer-history-title": "History",
     "capacity-label": "Capacity",
     "recipient-label": "Recipient",
@@ -366,7 +365,10 @@
       "change-token-title": "Change Token",
       "deposit-button": "Deposit",
       "channel-button": "Channels",
-      "no-channels": "No Channels"
+      "no-channels": "No open channels"
+    },
+    "transfer-inputs": {
+      "title": "Transfer"
     },
     "steps": {
       "request-route": {
