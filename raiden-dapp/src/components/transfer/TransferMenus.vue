@@ -1,61 +1,64 @@
 <template>
-  <v-row no-gutters class="transfer-menus">
-    <div class="transfer-menus__token-select">
-      <span @click="showTokenNetworks = true">
-        {{ $t('transfer.transfer-menus.change-token-title') }}
-        <v-icon>mdi-chevron-down</v-icon>
+  <div>
+    <v-row no-gutters class="transfer-menus">
+      <div class="transfer-menus__token-select">
+        <span @click="showTokenNetworks = true">
+          {{ $t('transfer.transfer-menus.change-token-title') }}
+          <v-icon>mdi-chevron-down</v-icon>
+        </span>
+      </div>
+      <div class="transfer-menus__deposit-channels">
+        <v-menu transition="scale-transition">
+          <template #activator="{ on }">
+            <v-btn
+              icon
+              class="transfer-menus__deposit-channels--button"
+              v-on="on"
+            >
+              <v-icon>mdi-dots-vertical</v-icon>
+            </v-btn>
+          </template>
+          <div class="transfer-menus__deposit-channels__menu">
+            <v-btn
+              text
+              :disabled="noChannels"
+              class="transfer-menus__deposit-channels__menu--deposit"
+              @click="showDepositDialog = true"
+            >
+              {{ $t('transfer.transfer-menus.deposit-button') }}
+            </v-btn>
+            <v-btn
+              text
+              class="transfer-menus__deposit-channels__menu--channels"
+              @click="navigateToChannels(token.address)"
+            >
+              {{ $t('transfer.transfer-menus.channel-button') }}
+            </v-btn>
+          </div>
+        </v-menu>
+      </div>
+      <span v-if="noChannels">
+        {{ $t('transfer.transfer-menus.no-channels') }}
       </span>
-    </div>
-    <div class="transfer-menus__deposit-channels">
-      <v-menu transition="scale-transition">
-        <template #activator="{ on }">
-          <v-btn
-            icon
-            class="transfer-menus__deposit-channels--button"
-            v-on="on"
-          >
-            <v-icon>mdi-dots-vertical</v-icon>
-          </v-btn>
-        </template>
-        <div class="transfer-menus__deposit-channels__menu">
-          <v-btn
-            text
-            :disabled="noChannels"
-            class="transfer-menus__deposit-channels__menu--deposit"
-            @click="showDepositDialog = true"
-          >
-            {{ $t('transfer.transfer-menus.deposit-button') }}
-          </v-btn>
-          <v-btn
-            text
-            class="transfer-menus__deposit-channels__menu--channels"
-            @click="navigateToChannels(token.address)"
-          >
-            {{ $t('transfer.transfer-menus.channel-button') }}
-          </v-btn>
-        </div>
-      </v-menu>
-    </div>
-    <span v-if="noChannels">
-      {{ $t('transfer.transfer-menus.no-channels') }}
-    </span>
-    <span v-else>
-      <amount-display exact-amount :amount="capacity" :token="token" />
-    </span>
-    <token-overlay
-      :show="showTokenNetworks"
-      @cancel="showTokenNetworks = false"
-    />
-    <channel-deposit-dialog
-      :loading="loading"
-      :done="done"
-      :token="token"
-      :visible="showDepositDialog"
-      identifier="0"
-      @depositTokens="deposit($event)"
-      @cancel="showDepositDialog = false"
-    />
-  </v-row>
+      <span v-else>
+        <amount-display exact-amount :amount="capacity" :token="token" />
+      </span>
+      <token-overlay
+        :show="showTokenNetworks"
+        @cancel="showTokenNetworks = false"
+      />
+      <channel-deposit-dialog
+        :loading="loading"
+        :done="done"
+        :token="token"
+        :visible="showDepositDialog"
+        identifier="0"
+        @depositTokens="deposit($event)"
+        @cancel="showDepositDialog = false"
+      />
+    </v-row>
+    <error-dialog :error="error" @dismiss="error = null" />
+  </div>
 </template>
 
 <script lang="ts">
@@ -65,6 +68,7 @@ import NavigationMixin from '../../mixins/navigation-mixin';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
+import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { RaidenChannel, RaidenError } from 'raiden-ts';
 import { Token } from '@/model/types';
 import { BigNumber } from 'ethers/utils';
@@ -75,6 +79,7 @@ import { Zero } from 'ethers/constants';
     AmountDisplay,
     TokenOverlay,
     ChannelDepositDialog,
+    ErrorDialog,
   },
   computed: {
     ...mapGetters(['channelWithBiggestCapacity']),
@@ -86,7 +91,6 @@ export default class TransferMenus extends Mixins(NavigationMixin) {
   loading: boolean = false;
   done: boolean = false;
   error: Error | RaidenError | null = null;
-  noCapacity: BigNumber = Zero;
 
   channelWithBiggestCapacity!: (
     tokenAddress: string
@@ -98,7 +102,7 @@ export default class TransferMenus extends Mixins(NavigationMixin) {
   capacity!: BigNumber;
 
   get noChannels(): boolean {
-    return this.capacity === this.noCapacity;
+    return this.capacity === Zero;
   }
 
   async deposit(amount: BigNumber) {
