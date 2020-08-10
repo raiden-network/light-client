@@ -351,7 +351,6 @@
     }
   },
   "transfer": {
-    "transfer-history-title": "History",
     "capacity-label": "Capacity",
     "recipient-label": "Recipient",
     "amount-label": "Amount",
@@ -439,6 +438,7 @@
     }
   },
   "transfer-history": {
+    "title": "History",
     "sent-title": "Sent to",
     "sent-symbol": "-",
     "received-title": "Received from",
