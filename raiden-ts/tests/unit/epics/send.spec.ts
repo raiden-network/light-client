@@ -761,7 +761,7 @@ describe('send transfers', () => {
         // expect unlock to be set
         await expect(
           depsMock.latest$
-            .pipe(pluck('state', 'sent', secrethash, 'unlock', '1'), first(isntNil))
+            .pipe(pluck('state', 'sent', secrethash, 'unlock'), first(isntNil))
             .toPromise(),
         ).resolves.toMatchObject({
           type: MessageType.UNLOCK,
@@ -1391,7 +1391,7 @@ describe('send transfers', () => {
 
         // expect reveal to be persisted on state
         const reveal = (await depsMock.latest$
-          .pipe(pluck('state', 'sent', secrethash, 'secretReveal', '1'), first(isntNil))
+          .pipe(pluck('state', 'sent', secrethash, 'secretReveal'), first(isntNil))
           .toPromise()) as Signed<SecretReveal>;
         expect(reveal).toMatchObject({
           type: MessageType.SECRET_REVEAL,
@@ -1489,7 +1489,7 @@ describe('send transfers', () => {
         // expect unlock to be set
         await expect(
           depsMock.latest$
-            .pipe(pluck('state', 'sent', secrethash, 'unlock', '1'), first(isntNil))
+            .pipe(pluck('state', 'sent', secrethash, 'unlock'), first(isntNil))
             .toPromise(),
         ).resolves.toMatchObject({
           type: MessageType.UNLOCK,
@@ -1873,7 +1873,7 @@ describe('monitorSecretRegistryEpic', () => {
     const { secretRegistryContract } = raiden.deps;
 
     const sent = await ensureTransferPending([raiden, partner]);
-    await waitBlock(sent.transfer[1].lock.expiration.add(1).toNumber());
+    await waitBlock(sent.transfer.lock.expiration.add(1).toNumber());
 
     const txBlock = raiden.deps.provider.blockNumber;
     await providersEmit(
@@ -1919,10 +1919,11 @@ describe('monitorSecretRegistryEpic', () => {
         { direction: Direction.SENT, secrethash },
       ),
     );
-    expect(raiden.store.getState().sent[secrethash].secret).toEqual([
-      expect.any(Number),
-      { value: secret, registerBlock: txBlock },
-    ]);
+    expect(raiden.store.getState().sent[secrethash].secret).toEqual({
+      value: secret,
+      registerBlock: txBlock,
+      ts: expect.any(Number),
+    });
     expect(getChannel(raiden, partner).own.locks).toContainEqual(
       expect.objectContaining({
         secrethash,

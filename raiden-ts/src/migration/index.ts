@@ -7,9 +7,10 @@ import m2 from './2';
 import m3 from './3';
 import m4 from './4';
 import m5 from './5';
+import m6 from './6';
 
 // import above and populate this array with new migrator functions, index is version
-const migrations = [m0, m1, m2, m3, m4, m5];
+const migrations = [m0, m1, m2, m3, m4, m5, m6];
 export const CURRENT_STATE_VERSION = migrations.length - 1;
 
 /**

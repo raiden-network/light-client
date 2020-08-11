@@ -46,7 +46,7 @@ import {
   initQueuePendingReceivedEpic,
 } from 'raiden-ts/transfers/epics';
 import { matrixPresence } from 'raiden-ts/transport/actions';
-import { UInt, Int, Signed } from 'raiden-ts/utils/types';
+import { UInt, Int, Signed, untime } from 'raiden-ts/utils/types';
 import {
   makeMessageId,
   makeSecret,
@@ -571,7 +571,7 @@ describe('receive transfers', () => {
       await expect(
         depsMock.latest$.pipe(pluck('state'), first()).toPromise(),
       ).resolves.not.toMatchObject({
-        received: { [secrethash]: { secret: [expect.any(Number), { value: secret }] } },
+        received: { [secrethash]: { secret: { value: secret, ts: expect.any(Number) } } },
       });
 
       await expect(
@@ -587,7 +587,7 @@ describe('receive transfers', () => {
       await expect(
         depsMock.latest$.pipe(pluck('state'), first()).toPromise(),
       ).resolves.toMatchObject({
-        received: { [secrethash]: { secret: [expect.any(Number), { value: secret }] } },
+        received: { [secrethash]: { secret: { value: secret, ts: expect.any(Number) } } },
       });
     });
 
@@ -636,7 +636,7 @@ describe('receive transfers', () => {
       ).resolves.toMatchObject({
         received: {
           [secrethash]: {
-            secretReveal: [expect.any(Number), { type: MessageType.SECRET_REVEAL }],
+            secretReveal: { type: MessageType.SECRET_REVEAL, ts: expect.any(Number) },
           },
         },
       });
@@ -814,13 +814,13 @@ describe('receive transfers', () => {
 
       // receiving enabled, unknown secret
       const transf = await state$
-        .pipe(pluck('received', secrethash, 'transfer', '1'), first())
+        .pipe(pluck('received', secrethash, 'transfer'), first())
         .toPromise();
       await expect(
         initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
         transferSigned(
-          { message: transf, fee: Zero as Int<32>, partner },
+          { message: untime(transf), fee: Zero as Int<32>, partner },
           { secrethash, direction },
         ),
         matrixPresence.request(undefined, { address: partner }),
@@ -838,7 +838,7 @@ describe('receive transfers', () => {
       );
       expect(output).toEqual([
         transferSigned(
-          { message: transf, fee: Zero as Int<32>, partner },
+          { message: untime(transf), fee: Zero as Int<32>, partner },
           { secrethash, direction },
         ),
       ]);
@@ -846,7 +846,7 @@ describe('receive transfers', () => {
       action$.next(raidenConfigUpdate({ caps: { [Capabilities.NO_RECEIVE]: false } }));
       expect(output).toEqual([
         transferSigned(
-          { message: transf, fee: Zero as Int<32>, partner },
+          { message: untime(transf), fee: Zero as Int<32>, partner },
           { secrethash, direction },
         ),
         matrixPresence.request(undefined, { address: partner }),
@@ -864,7 +864,7 @@ describe('receive transfers', () => {
         initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
         transferSigned(
-          { message: transf, fee: Zero as Int<32>, partner },
+          { message: untime(transf), fee: Zero as Int<32>, partner },
           { secrethash, direction },
         ),
         transferSecret({ secret }, { secrethash, direction }),
@@ -882,7 +882,7 @@ describe('receive transfers', () => {
         initQueuePendingReceivedEpic(EMPTY, state$, depsMock).pipe(toArray()).toPromise(),
       ).resolves.toEqual([
         transferSigned(
-          { message: transf, fee: Zero as Int<32>, partner },
+          { message: untime(transf), fee: Zero as Int<32>, partner },
           { secrethash, direction },
         ),
         transferSecretReveal({ message: reveal }, { secrethash, direction }),
