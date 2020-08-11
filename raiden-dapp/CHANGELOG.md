@@ -5,6 +5,7 @@
 ## [0.11.0] - 2020-08-04
 
 ### Fixed
+- [#2031] "No open channels" displayed instead of 0 balance on transfer screen
 
 ### Added
 
@@ -25,6 +26,7 @@
 - [#1875] Redact sensitive information (transport's accessToken, transfer's secrets) from logs
 - [#2033] Transfer history gets filtered for the selected token
 
+[#2031]: https://github.com/raiden-network/light-client/issues/2031
 [#1925]: https://github.com/raiden-network/light-client/issues/1925
 [#2001]: https://github.com/raiden-network/light-client/issues/2001
 [#1770]: https://github.com/raiden-network/light-client/issues/1770
