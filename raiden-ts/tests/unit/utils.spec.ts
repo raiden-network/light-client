@@ -163,13 +163,13 @@ describe('types', () => {
   });
 
   test('Timed', () => {
-    const TimedAddress = Timed(Address);
+    const TimedAddress = Timed(t.type({ address: Address }));
     type TimedAddress = t.TypeOf<typeof TimedAddress>;
 
     const address = '0x000000000000000000000000000000000004000A' as Address,
-      data: TimedAddress = timed(address);
+      data: TimedAddress = timed({ address });
     expect(TimedAddress.is(data)).toBe(true);
-    expect(TimedAddress.is(['invalid number', address])).toBe(false);
+    expect(TimedAddress.is({ address, ts: 'invalid number' })).toBe(false);
   });
 
   test('ErrorCodec', () => {

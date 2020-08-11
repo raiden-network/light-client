@@ -729,7 +729,7 @@ describe('channelSettleEpic', () => {
     await ensureChannelIsClosed([partner, raiden]); // partner closes channel
 
     // LockedTransfer message we sent, not one before latest BP
-    const locked = partner.store.getState().received[secrethash].transfer[1];
+    const locked = partner.store.getState().received[secrethash].transfer;
     // ensure our latest own BP is the unlocked one, the one after Locked
     expect(getChannel(raiden, partner).own.balanceProof.nonce).toEqual(locked.nonce.add(1));
 
@@ -798,7 +798,7 @@ describe('channelSettleEpic', () => {
     await ensureChannelIsClosed([partner, raiden]); // partner closes channel
 
     // LockedTransfer message we received, not one before latest BP
-    const locked = raiden.store.getState().received[secrethash].transfer[1];
+    const locked = raiden.store.getState().received[secrethash].transfer;
     // ensure our latest partner BP is the unlocked one, the one after Locked
     expect(getChannel(raiden, partner).partner.balanceProof.nonce).toEqual(locked.nonce.add(1));
 

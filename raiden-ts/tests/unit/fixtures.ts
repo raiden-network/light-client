@@ -18,7 +18,7 @@ import { AddressZero, Zero, HashZero } from 'ethers/constants';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Filter } from 'ethers/providers';
 
-import { Address, Hash, Int, UInt } from 'raiden-ts/utils/types';
+import { Address, Hash, Int, UInt, untime } from 'raiden-ts/utils/types';
 import { Processed, MessageType } from 'raiden-ts/messages/types';
 import {
   makeMessageId,
@@ -392,7 +392,7 @@ export async function ensureTransferPending(
     .toPromise();
   partner.store.dispatch(
     messageReceived(
-      { text: '', message: sent.transfer[1], ts: Date.now() },
+      { text: '', message: untime(sent.transfer), ts: Date.now() },
       { address: raiden.address },
     ),
   );
@@ -433,7 +433,7 @@ export async function ensureTransferUnlocked(
     .toPromise();
   partner.store.dispatch(
     messageReceived(
-      { text: '', message: sent.unlock![1], ts: Date.now() },
+      { text: '', message: untime(sent.unlock!), ts: Date.now() },
       { address: raiden.address },
     ),
   );
