@@ -105,6 +105,7 @@ export default class TransferMenus extends Mixins(NavigationMixin) {
     return this.capacity === Zero;
   }
 
+  /* istanbul ignore next */
   async deposit(amount: BigNumber) {
     this.loading = true;
 
@@ -124,6 +125,7 @@ export default class TransferMenus extends Mixins(NavigationMixin) {
     }
   }
 
+  /* istanbul ignore next */
   private dismissProgress() {
     setTimeout(() => {
       this.done = false;
