@@ -36,9 +36,9 @@ function autoExpire$(
         !sent.unlock &&
         !sent.lockExpired &&
         !sent.channelClosed &&
-        sent.transfer[1].lock.expiration.add(confirmationBlocks).lte(blockNumber) &&
+        sent.transfer.lock.expiration.add(confirmationBlocks).lte(blockNumber) &&
         // don't expire if secret got registered before lock expired
-        !sent.secret?.[1]?.registerBlock,
+        !sent.secret?.registerBlock,
     ),
     mergeMap(([secrethash, sent]) => {
       const meta = { secrethash, direction: Direction.SENT };
@@ -53,7 +53,7 @@ function autoExpire$(
         of(
           transfer.failure(
             new RaidenError(ErrorCodes.XFER_EXPIRED, {
-              block: sent.transfer[1].lock.expiration.toString(),
+              block: sent.transfer.lock.expiration.toString(),
             }),
             meta,
           ),

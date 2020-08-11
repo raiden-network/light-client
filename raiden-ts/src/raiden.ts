@@ -953,13 +953,13 @@ export class Raiden {
     const transf = raidenTransfer(this.state[direction][secrethash]);
     // already completed/past transfer
     if (transf.completed) {
-      if (transf.success) return this.state[direction][secrethash].secretRequest?.[1]?.amount;
+      if (transf.success) return this.state[direction][secrethash].secretRequest?.amount;
       else throw new RaidenError(ErrorCodes.XFER_ALREADY_COMPLETED, { status: transf.status });
     }
 
     // throws/rejects if a failure occurs
     await asyncActionToPromise(transfer, { secrethash, direction }, this.action$);
-    return this.state[direction][secrethash].secretRequest?.[1]?.amount;
+    return this.state[direction][secrethash].secretRequest?.amount;
   }
 
   /**

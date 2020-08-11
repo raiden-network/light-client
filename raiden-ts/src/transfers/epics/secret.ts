@@ -67,7 +67,7 @@ export const transferSecretRequestedEpic = (
       // proceed only if we know the secret and the SENT transfer
       if (!(message.secrethash in state.sent)) return;
 
-      const locked = state.sent[message.secrethash].transfer[1];
+      const locked = state.sent[message.secrethash].transfer;
       // we do only some basic verification here, as most of it is done upon SecretReveal,
       // to persist the request in most cases in TransferState.secretRequest
       if (
@@ -111,7 +111,7 @@ const secretReveal$ = (
     return EMPTY;
   }
 
-  const locked = state.sent[secrethash].transfer[1];
+  const locked = state.sent[secrethash].transfer;
   const target = locked.target;
   const fee = state.sent[secrethash].fee;
   const value = locked.lock.amount.sub(fee) as UInt<32>;
@@ -134,12 +134,12 @@ const secretReveal$ = (
 
   let reveal$: Observable<Signed<SecretReveal>>;
   if (state.sent[action.meta.secrethash].secretReveal)
-    reveal$ = of(state.sent[action.meta.secrethash].secretReveal![1]);
+    reveal$ = of(state.sent[action.meta.secrethash].secretReveal!);
   else {
     const message: SecretReveal = {
       type: MessageType.SECRET_REVEAL,
       message_identifier: makeMessageId(),
-      secret: state.sent[action.meta.secrethash].secret![1].value,
+      secret: state.sent[action.meta.secrethash].secret!.value,
     };
     reveal$ = from(signMessage(signer, message, { log }));
   }
@@ -314,9 +314,9 @@ export const monitorSecretRegistryEpic = (
       ([[secrethash, , { blockNumber }], { sent, received }]) =>
         // emits only if lock didn't expire yet
         !!blockNumber &&
-        ((secrethash in sent && sent[secrethash].transfer[1].lock.expiration.gte(blockNumber)) ||
+        ((secrethash in sent && sent[secrethash].transfer.lock.expiration.gte(blockNumber)) ||
           (secrethash in received &&
-            received[secrethash].transfer[1].lock.expiration.gte(blockNumber))),
+            received[secrethash].transfer.lock.expiration.gte(blockNumber))),
     ),
     mergeMap(function* ([
       [secrethash, secret, event],
@@ -324,14 +324,11 @@ export const monitorSecretRegistryEpic = (
       { confirmationBlocks },
     ]) {
       const directions: Direction[] = [];
-      if (
-        secrethash in sent &&
-        sent[secrethash].transfer[1].lock.expiration.gte(event.blockNumber!)
-      )
+      if (secrethash in sent && sent[secrethash].transfer.lock.expiration.gte(event.blockNumber!))
         directions.push(Direction.SENT);
       if (
         secrethash in received &&
-        received[secrethash].transfer[1].lock.expiration.gte(event.blockNumber!)
+        received[secrethash].transfer.lock.expiration.gte(event.blockNumber!)
       )
         directions.push(Direction.RECEIVED);
       for (const direction of directions)
@@ -391,17 +388,15 @@ export const transferAutoRegisterEpic = (
           ([action, received, { revealTimeout, caps }]) =>
             !caps?.[Capabilities.NO_RECEIVE] && // ignore if receiving is disabled
             !!received.secret && // register only if we know the secret
-            received.transfer[1].lock.expiration
-              .sub(revealTimeout)
-              .lt(action.payload.blockNumber) && // and after <revealTimeout left to expiration
-            !received.secret?.[1]?.registerBlock && // and not yet registered nor unlocked
+            received.transfer.lock.expiration.sub(revealTimeout).lt(action.payload.blockNumber) && // and after <revealTimeout left to expiration
+            !received.secret?.registerBlock && // and not yet registered nor unlocked
             !received.unlock,
         ),
         exhaustMap(([, received]) => {
           const meta = { secrethash, direction: Direction.RECEIVED };
           return dispatchAndWait$(
             action$,
-            transferSecretRegister.request({ secret: received.secret![1].value }, meta),
+            transferSecretRegister.request({ secret: received.secret!.value }, meta),
             isConfirmationResponseOf(transferSecretRegister, meta),
           );
         }),
@@ -411,12 +406,12 @@ export const transferAutoRegisterEpic = (
             filter((state) => {
               const blockNumber = state.blockNumber;
               const received = state.received[secrethash];
-              const expiration = received.transfer[1].lock.expiration;
+              const expiration = received.transfer.lock.expiration;
               return !!(
                 expiration.lt(blockNumber) || // give up if lock already expired
                 received.unlock ||
                 // stop if secret got registered or unlocked
-                received.secret?.[1]?.registerBlock
+                received.secret?.registerBlock
               );
               // even if channelClosed, while inside lock expiration, continue to try to register
             }),

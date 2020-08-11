@@ -76,8 +76,7 @@ export function makeMessageId(): UInt<8> {
  */
 export function transferDirection(state: TransferState | { direction: Direction }): Direction {
   if ('direction' in state) return state.direction;
-  const transfer = state.transfer[1];
-  return transfer.recipient === state.partner ? Direction.SENT : Direction.RECEIVED;
+  return state.transfer.recipient === state.partner ? Direction.SENT : Direction.RECEIVED;
 }
 
 /**
@@ -90,7 +89,7 @@ export function transferKey(
   state: TransferState | { secrethash: Hash; direction: Direction },
 ): string {
   if ('direction' in state) return `${state.direction}:${state.secrethash}`;
-  return `${transferDirection(state)}:${state.transfer[1].lock.secrethash}`;
+  return `${transferDirection(state)}:${state.transfer.lock.secrethash}`;
 }
 
 const _keyRe = new RegExp(`^(${Object.values(Direction).join('|')}):0x[a-z0-9]{64}$`, 'i');
@@ -118,7 +117,7 @@ const statusesMap: { [K in RaidenTransferStatus]: (t: TransferState) => number |
   [RaidenTransferStatus.unlocking]: getTimeIfPresent<TransferState>('unlock'),
   [RaidenTransferStatus.registered]: (sent: TransferState) =>
     // only set status as registered if there's a valid registerBlock
-    sent.secret?.[1]?.registerBlock ? sent.secret[0] : undefined,
+    sent.secret?.registerBlock ? sent.secret.ts : undefined,
   [RaidenTransferStatus.revealed]: getTimeIfPresent<TransferState>('secretReveal'),
   [RaidenTransferStatus.requested]: getTimeIfPresent<TransferState>('secretRequest'),
   [RaidenTransferStatus.closed]: getTimeIfPresent<TransferState>('channelClosed'),
@@ -134,7 +133,7 @@ const statusesMap: { [K in RaidenTransferStatus]: (t: TransferState) => number |
  * @returns Public raiden sent transfer info object
  */
 export function raidenTransfer(state: TransferState): RaidenTransfer {
-  const startedAt = new Date(state.transfer[0]);
+  const startedAt = new Date(state.transfer.ts);
   let changedAt = startedAt;
   let status = RaidenTransferStatus.pending;
   // order matters! from top to bottom priority, first match breaks loop
@@ -146,12 +145,12 @@ export function raidenTransfer(state: TransferState): RaidenTransfer {
       break;
     }
   }
-  const transfer = state.transfer[1];
+  const transfer = state.transfer;
   const direction = transferDirection(state);
   const value = transfer.lock.amount.sub(state.fee);
-  const invalidSecretRequest = state.secretRequest && state.secretRequest[1].amount.lt(value);
+  const invalidSecretRequest = state.secretRequest && state.secretRequest.amount.lt(value);
   const success =
-    state.secretReveal || state.unlock || state.secret?.[1]?.registerBlock
+    state.secretReveal || state.unlock || state.secret?.registerBlock
       ? true
       : invalidSecretRequest || state.refund || state.lockExpired || state.channelClosed
       ? false
@@ -159,7 +158,7 @@ export function raidenTransfer(state: TransferState): RaidenTransfer {
   const completed = !!(
     state.unlockProcessed ||
     state.lockExpiredProcessed ||
-    state.secret?.[1]?.registerBlock ||
+    state.secret?.registerBlock ||
     state.channelClosed
   );
   return {
@@ -184,7 +183,7 @@ export function raidenTransfer(state: TransferState): RaidenTransfer {
     changedAt,
     success,
     completed,
-    secret: state.secret?.[1]?.value,
+    secret: state.secret?.value,
   };
 }
 
@@ -206,12 +205,9 @@ export function findBalanceProofMatchingBalanceHash(
   if (balanceHash === HashZero) return BalanceProofZero;
   // later transfers have higher chance of being the right one, iterate in reverse order
   for (const transfer of Object.values(transfers).reverse()) {
-    if (
-      transfer.transfer[1].token_network_address === tokenNetwork &&
-      transfer.partner === partner
-    ) {
+    if (transfer.transfer.token_network_address === tokenNetwork && transfer.partner === partner) {
       // EnvelopeMessages: messages bearing a BalanceProof
-      const bp = [transfer.transfer[1], transfer.unlock?.[1], transfer.lockExpired?.[1]]
+      const bp = [transfer.transfer, transfer.unlock, transfer.lockExpired]
         .filter(isntNil)
         .map(getBalanceProofFromEnvelopeMessage)
         .find((bp) => createBalanceHash(bp) === balanceHash);

@@ -43,8 +43,8 @@ export const transferProcessedReceivedEpic = (
       let secrethash: Hash | undefined = undefined;
       for (const [key, sent] of Object.entries(state.sent)) {
         if (
-          sent.transfer[1].message_identifier.eq(message.message_identifier) &&
-          sent.transfer[1].recipient === action.meta.address
+          sent.transfer.message_identifier.eq(message.message_identifier) &&
+          sent.transfer.recipient === action.meta.address
         ) {
           secrethash = key as Hash;
           break;
@@ -104,15 +104,13 @@ export const transferUnlockProcessedReceivedEpic = (
         state.sent,
         (sent) =>
           sent.unlock &&
-          sent.unlock[1].message_identifier.eq(message.message_identifier) &&
+          sent.unlock.message_identifier.eq(message.message_identifier) &&
           sent.partner === action.meta.address,
       ) as Hash | undefined;
       if (!secrethash) return;
       const meta = { secrethash, direction: Direction.SENT };
       yield transfer.success(
-        {
-          balanceProof: getBalanceProofFromEnvelopeMessage(state.sent[secrethash].unlock![1]),
-        },
+        { balanceProof: getBalanceProofFromEnvelopeMessage(state.sent[secrethash].unlock!) },
         meta,
       );
       yield transferUnlockProcessed({ message }, meta);
@@ -141,7 +139,7 @@ export const transferExpireProcessedEpic = (
         state.sent,
         (sent) =>
           sent.lockExpired &&
-          sent.lockExpired[1].message_identifier.eq(message.message_identifier) &&
+          sent.lockExpired.message_identifier.eq(message.message_identifier) &&
           sent.partner === action.meta.address,
       ) as Hash | undefined;
       if (!secrethash) return;

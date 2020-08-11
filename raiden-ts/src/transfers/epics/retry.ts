@@ -94,7 +94,7 @@ const unlockedRetryMessage$ = (
     switchMap(([state, { pollingInterval, httpTimeout }]) => {
       const secrethash = action.meta.secrethash;
       const unlock = action.payload.message;
-      const locked = state.sent[secrethash].transfer[1];
+      const locked = state.sent[secrethash].transfer;
       const send = messageSend.request(
         { message: unlock },
         { address: locked.recipient, msgId: unlock.message_identifier.toString() },
@@ -144,7 +144,7 @@ const expiredRetryMessages$ = (
       const send = messageSend.request(
         { message: lockExpired },
         {
-          address: state.sent[secrethash].transfer[1].recipient,
+          address: state.sent[secrethash].transfer.recipient,
           msgId: lockExpired.message_identifier.toString(),
         },
       );
@@ -180,7 +180,7 @@ const secretRequestRetryMessage$ = (
       const send = messageSend.request(
         { message: request },
         {
-          address: state.received[secrethash].transfer[1].initiator,
+          address: state.received[secrethash].transfer.initiator,
           msgId: request.message_identifier.toString(),
         },
       );
@@ -232,7 +232,7 @@ const secretRevealRetryMessage$ = (
         // we don't test for lockExpired, as we know the secret and must not accept LockExpired
         filter(
           (received) =>
-            !!(received.unlock || received.secret?.[1]?.registerBlock || received.channelClosed),
+            !!(received.unlock || received.secret?.registerBlock || received.channelClosed),
         ),
       );
       // emit request once immediatelly, then wait until respective success,

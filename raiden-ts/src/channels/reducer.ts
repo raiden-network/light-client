@@ -211,9 +211,9 @@ function channelLockRegisteredReducer(
   // now that secret is stored in transfer, if it's a confirmed on-chain registration,
   // also update channel's lock to reflect it
   if (!action.payload.confirmed || !(secrethash in state[action.meta.direction])) return state;
-  const transf = state[action.meta.direction][secrethash].transfer[1];
+  const locked = state[action.meta.direction][secrethash].transfer;
   const key = channelKey({
-    tokenNetwork: transf.token_network_address,
+    tokenNetwork: locked.token_network_address,
     partner: state[action.meta.direction][secrethash].partner,
   });
   if (!(key in state.channels)) return state;
