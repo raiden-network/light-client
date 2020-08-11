@@ -114,7 +114,5 @@ describe('TransferMenus.vue', () => {
         name: RouteNames.CHANNELS,
       })
     );
-
-    console.log(wrapper.html());
   });
 });
