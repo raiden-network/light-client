@@ -1,3 +1,4 @@
+import pick from 'lodash/fp/pick';
 import { channelKey } from '../channels/utils';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
@@ -36,11 +37,11 @@ function transferSecretReducer(
   const registerBlock =
     transferSecretRegister.success.is(action) && action.payload.confirmed
       ? action.payload.txBlock
-      : state[action.meta.direction][secrethash]?.secret?.[1]?.registerBlock ?? 0;
+      : state[action.meta.direction][secrethash]?.secret?.registerBlock ?? 0;
   // don't overwrite registerBlock if secret already stored with it
   if (
     secrethash in state[action.meta.direction] &&
-    state[action.meta.direction][secrethash].secret?.[1]?.registerBlock !== registerBlock
+    state[action.meta.direction][secrethash].secret?.registerBlock !== registerBlock
   )
     state = {
       ...state,
@@ -194,20 +195,23 @@ function channelCloseSuccessReducer(
 ): RaidenState {
   let sent = state.sent;
   for (const [secrethash, v] of Object.entries(sent)) {
-    const locked = v.transfer[1];
+    const locked = v.transfer;
     if (
       !locked.channel_identifier.eq(action.payload.id) ||
       locked.recipient !== action.meta.partner ||
       locked.token_network_address !== action.meta.tokenNetwork
     )
       continue;
-    sent = { ...sent, [secrethash]: { ...v, channelClosed: timed(action.payload.txHash) } };
+    sent = {
+      ...sent,
+      [secrethash]: { ...v, channelClosed: timed(pick(['txHash', 'txBlock'], action.payload)) },
+    };
   }
   if (sent !== state.sent) state = { ...state, sent };
 
   let received = state.received;
   for (const [secrethash, v] of Object.entries(received)) {
-    const locked = v.transfer[1];
+    const locked = v.transfer;
     if (
       !locked.channel_identifier.eq(action.payload.id) ||
       locked.recipient !== action.meta.partner ||
@@ -216,7 +220,7 @@ function channelCloseSuccessReducer(
       continue;
     received = {
       ...received,
-      [secrethash]: { ...v, channelClosed: timed(action.payload.txHash) },
+      [secrethash]: { ...v, channelClosed: timed(pick(['txHash', 'txBlock'], action.payload)) },
     };
   }
   if (received !== state.received) state = { ...state, received };

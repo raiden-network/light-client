@@ -320,7 +320,7 @@ export interface MonitorRequestC
   extends t.Type<MonitorRequest, t.OutputOf<typeof _MonitorRequest>> {}
 export const MonitorRequest: MonitorRequestC = _MonitorRequest;
 
-const messages = [
+const _messages = [
   Delivered,
   Processed,
   SecretRequest,
@@ -336,9 +336,10 @@ const messages = [
   PFSFeeUpdate,
   MonitorRequest,
 ] as const;
+const messages = _messages as Mutable<typeof _messages>;
 
 // prefer an explicit union to have the union of the interfaces, instead of the union of t.TypeOf's
 export type Message = t.TypeOf<typeof messages[number]>;
-export interface MessageC extends t.Type<Message, t.OutputOf<typeof messages[number]>> {}
-export const Message: MessageC = t.union([...messages]);
+export interface MessageC extends t.UnionC<typeof messages> {}
+export const Message: MessageC = t.union(messages);
 export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;

@@ -6,7 +6,7 @@ import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { matrixPresence } from '../../transport/actions';
-import { Hash } from '../../utils/types';
+import { Hash, untime } from '../../utils/types';
 import {
   transferExpire,
   transferSigned,
@@ -38,26 +38,29 @@ export const initQueuePendingEnvelopeMessagesEpic = (
         if (
           sent.unlockProcessed ||
           sent.lockExpiredProcessed ||
-          sent.secret?.[1]?.registerBlock ||
+          sent.secret?.registerBlock ||
           sent.channelClosed
         )
           continue;
         const meta = { secrethash, direction: Direction.SENT };
         // on init, request monitor presence of any pending transfer target
-        yield matrixPresence.request(undefined, { address: sent.transfer[1].target });
+        yield matrixPresence.request(undefined, { address: sent.transfer.target });
         // Processed not received yet for LockedTransfer
         if (!sent.transferProcessed)
           yield transferSigned(
-            { message: sent.transfer[1], fee: sent.fee, partner: sent.partner },
+            { message: untime(sent.transfer), fee: sent.fee, partner: sent.partner },
             meta,
           );
         // already unlocked, but Processed not received yet for Unlock
         if (sent.unlock)
-          yield transferUnlock.success({ message: sent.unlock[1], partner: sent.partner }, meta);
+          yield transferUnlock.success(
+            { message: untime(sent.unlock), partner: sent.partner },
+            meta,
+          );
         // lock expired, but Processed not received yet for LockExpired
         if (sent.lockExpired)
           yield transferExpire.success(
-            { message: sent.lockExpired[1], partner: sent.partner },
+            { message: untime(sent.lockExpired), partner: sent.partner },
             meta,
           );
       }
@@ -87,7 +90,7 @@ export const initQueuePendingReceivedEpic = (
       ([, received]) =>
         !received.unlock &&
         !received.lockExpired &&
-        !received.secret?.[1]?.registerBlock &&
+        !received.secret?.registerBlock &&
         !received.channelClosed,
     ),
     mergeMap(([secrethash, received]) => {
@@ -97,17 +100,17 @@ export const initQueuePendingReceivedEpic = (
         // on init, request monitor presence of any pending transfer initiator
         of(
           transferSigned(
-            { message: received.transfer[1], fee: received.fee, partner: received.partner },
+            { message: untime(received.transfer), fee: received.fee, partner: received.partner },
             meta,
           ),
         ),
         // already revealed to us, but user didn't sign SecretReveal yet
         received.secret && !received.secretReveal
-          ? of(transferSecret({ secret: received.secret[1].value }, meta))
+          ? of(transferSecret({ secret: received.secret.value }, meta))
           : EMPTY,
         // already revealed to sender, but they didn't Unlock yet
         received.secretReveal
-          ? of(transferSecretReveal({ message: received.secretReveal[1] }, meta))
+          ? of(transferSecretReveal({ message: untime(received.secretReveal) }, meta))
           : EMPTY,
         // secret not yet known; request *when* receiving is enabled (may be later)
         // secretRequest should always be defined as we sign it when receiving transfer
@@ -118,8 +121,8 @@ export const initQueuePendingReceivedEpic = (
               take(1),
               mergeMapTo(
                 of(
-                  matrixPresence.request(undefined, { address: received.transfer[1].initiator }),
-                  transferSecretRequest({ message: received.secretRequest[1] }, meta),
+                  matrixPresence.request(undefined, { address: received.transfer.initiator }),
+                  transferSecretRequest({ message: untime(received.secretRequest) }, meta),
                 ),
               ),
             )

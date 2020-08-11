@@ -41,7 +41,7 @@ export const transferRefundedEpic = (
       const secrethash = message.lock.secrethash;
       if (!(secrethash in state.sent)) return;
       const sent = state.sent[secrethash];
-      const locked = sent.transfer[1];
+      const locked = sent.transfer;
       if (
         message.initiator !== locked.recipient ||
         !message.payment_identifier.eq(locked.payment_identifier) ||

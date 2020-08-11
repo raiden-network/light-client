@@ -34,15 +34,10 @@ export const transferChannelClosedEpic = (
     mergeMap(([action, state]) =>
       from(Object.entries(state.sent) as Array<[Hash, typeof state.sent[string]]>).pipe(
         filter(
-          ([
-            ,
-            {
-              transfer: [, transf],
-            },
-          ]) =>
-            transf.token_network_address === action.meta.tokenNetwork &&
-            transf.recipient === action.meta.partner &&
-            transf.initiator === address,
+          ([, { transfer }]) =>
+            transfer.token_network_address === action.meta.tokenNetwork &&
+            transfer.recipient === action.meta.partner &&
+            transfer.initiator === address,
         ),
         map(([secrethash, sent]) => {
           // as we can't know for sure if recipient/partner received the secret or unlock,
@@ -51,19 +46,19 @@ export const transferChannelClosedEpic = (
           if (
             sent.lockExpired ||
             sent.unlockProcessed ||
-            sent.secret?.[1]?.registerBlock ||
+            sent.secret?.registerBlock ||
             (sent.secretRequest && !sent.secretReveal)
           )
             // success/failure already emitted
             return;
-          else if (!sent.secret?.[1]?.registerBlock && !sent.secretReveal && !sent.unlock)
+          else if (!sent.secret?.registerBlock && !sent.secretReveal && !sent.unlock)
             return transfer.failure(
               new RaidenError(ErrorCodes.XFER_CHANNEL_CLOSED_PREMATURELY),
               meta,
             );
           else if (sent.unlock)
             return transfer.success(
-              { balanceProof: getBalanceProofFromEnvelopeMessage(sent.unlock[1]) },
+              { balanceProof: getBalanceProofFromEnvelopeMessage(sent.unlock) },
               meta,
             );
           else return transfer.success({}, meta);

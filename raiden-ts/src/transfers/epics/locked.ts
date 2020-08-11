@@ -228,7 +228,7 @@ function makeAndSignUnlock$(
 ): Observable<transferUnlock.success> {
   const secrethash = action.meta.secrethash;
   assert(secrethash in state.sent, 'unknown transfer');
-  const locked = state.sent[secrethash].transfer[1];
+  const locked = state.sent[secrethash].transfer;
   const tokenNetwork = locked.token_network_address;
   const partner = state.sent[secrethash].partner;
   const channel = getOpenChannel(state, { tokenNetwork, partner });
@@ -236,13 +236,13 @@ function makeAndSignUnlock$(
   let signed$: Observable<Signed<Unlock>>;
   if (state.sent[secrethash].unlock) {
     // unlock already signed, use cached
-    signed$ = of(state.sent[secrethash].unlock![1]);
+    signed$ = of(state.sent[secrethash].unlock!);
   } else {
     assert(state.sent[secrethash].secret, 'unknown secret');
     // don't forget to check after signature too, may have expired by then
     // allow unlocking past expiration if secret registered on-chain
     assert(
-      state.sent[secrethash].secret![1].registerBlock > 0 ||
+      state.sent[secrethash].secret!.registerBlock > 0 ||
         locked.lock.expiration.gt(state.blockNumber),
       'lock expired',
     );
@@ -260,7 +260,7 @@ function makeAndSignUnlock$(
       locked_amount: channel.own.balanceProof.lockedAmount.sub(locked.lock.amount) as UInt<32>,
       locksroot: getLocksroot(withoutLock(channel.own, secrethash)),
       payment_identifier: locked.payment_identifier,
-      secret: state.sent[action.meta.secrethash].secret![1].value,
+      secret: state.sent[action.meta.secrethash].secret!.value,
     };
     signed$ = from(signMessage(signer, message, { log }));
   }
@@ -269,7 +269,7 @@ function makeAndSignUnlock$(
     withLatestFrom(state$),
     map(([signed, state]) => {
       assert(
-        state.sent[secrethash].secret![1].registerBlock > 0 ||
+        state.sent[secrethash].secret!.registerBlock > 0 ||
           locked.lock.expiration.gt(state.blockNumber),
         'lock expired',
       );
@@ -327,7 +327,7 @@ function makeAndSignLockExpired$(
 ): Observable<transferExpire.success> {
   const secrethash = action.meta.secrethash;
   assert(secrethash in state.sent, 'unknown transfer');
-  const locked = state.sent[secrethash].transfer[1];
+  const locked = state.sent[secrethash].transfer;
   const tokenNetwork = locked.token_network_address;
   const partner = state.sent[secrethash].partner;
   const channel = getOpenChannel(state, { tokenNetwork, partner });
@@ -335,7 +335,7 @@ function makeAndSignLockExpired$(
   let signed$: Observable<Signed<LockExpired>>;
   if (state.sent[secrethash].lockExpired) {
     // lockExpired already signed, use cached
-    signed$ = of(state.sent[secrethash].lockExpired![1]);
+    signed$ = of(state.sent[secrethash].lockExpired!);
   } else {
     assert(locked.lock.expiration.lt(state.blockNumber), 'lock not yet expired');
     assert(!state.sent[secrethash].unlock, 'transfer already unlocked');
@@ -412,11 +412,11 @@ function receiveTransferSigned(
         // if transfer matches the stored one, re-send Processed once
         if (
           state.received[secrethash].partner === action.meta.address &&
-          state.received[secrethash].transfer[1].message_identifier.eq(msgId)
+          state.received[secrethash].transfer.message_identifier.eq(msgId)
         ) {
           // transferProcessed again will trigger messageSend.request
           return of(
-            transferProcessed({ message: state.received[secrethash].transferProcessed![1] }, meta),
+            transferProcessed({ message: state.received[secrethash].transferProcessed! }, meta),
           );
         } else return EMPTY;
       }
@@ -526,13 +526,13 @@ function receiveTransferUnlocked(
         // if message matches the stored one, re-send Processed once
         if (
           received.unlockProcessed &&
-          received.unlockProcessed[1].message_identifier.eq(unlock.message_identifier)
+          received.unlockProcessed.message_identifier.eq(unlock.message_identifier)
         ) {
           // transferProcessed again will trigger messageSend.request
-          return of(transferUnlockProcessed({ message: received.unlockProcessed[1] }, meta));
+          return of(transferUnlockProcessed({ message: received.unlockProcessed }, meta));
         } else return EMPTY;
       }
-      const locked = received.transfer[1];
+      const locked = received.transfer;
       assert(unlock.token_network_address === locked.token_network_address, 'wrong tokenNetwork');
 
       // unlock validation
@@ -598,20 +598,20 @@ function receiveTransferExpired(
         // if message matches the stored one, re-send Processed once
         if (
           received.lockExpiredProcessed &&
-          received.lockExpiredProcessed[1].message_identifier.eq(expired.message_identifier)
+          received.lockExpiredProcessed.message_identifier.eq(expired.message_identifier)
         ) {
           // transferProcessed again will trigger messageSend.request
-          return of(transferExpireProcessed({ message: received.lockExpiredProcessed[1] }, meta));
+          return of(transferExpireProcessed({ message: received.lockExpiredProcessed }, meta));
         } else return EMPTY;
       }
-      const locked = received.transfer[1];
+      const locked = received.transfer;
 
       // lockExpired validation
       assert(
         locked.lock.expiration.add(confirmationBlocks).lte(state.blockNumber),
         'expiration block not confirmed yet',
       );
-      assert(!received.secret?.[1]?.registerBlock, 'secret registered onchain');
+      assert(!received.secret?.registerBlock, 'secret registered onchain');
       assert(expired.token_network_address === locked.token_network_address, 'wrong tokenNetwork');
 
       const tokenNetwork = expired.token_network_address;

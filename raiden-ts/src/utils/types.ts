@@ -221,26 +221,42 @@ export const Address: AddressC = new t.RefinementType<HexStringC<20>, Address, s
 );
 
 /**
- * Helper function to create codecs to validate [timestamp, value] tuples
+ * Helper type to extend a given type T to contain a timestamp ts member
+ */
+export type Timed<T> = T & { readonly ts: number };
+export interface TimedC<T extends t.Mixed>
+  extends t.IntersectionC<[T, t.ReadonlyC<t.TypeC<{ ts: t.NumberC }>>]> {}
+/**
+ * Helper function to create codecs to validate derived types containing a timestamp ts
  *
- * @param codec - Codec to compose with a timestamp in a tuple
- * @returns Codec of a tuple of timestamp and codec type
+ * @param codec - Codec to compose with a ts timestamp property
+ * @returns Codec validating such subtype
  */
 export const Timed: <T extends t.Mixed>(
   codec: T,
-) => t.TupleC<[t.NumberC, T]> = memoize(<T extends t.Mixed>(codec: T) =>
-  t.tuple([t.number, codec]),
+) => TimedC<T> = memoize(<T extends t.Mixed>(codec: T) =>
+  t.intersection([codec, t.readonly(t.type({ ts: t.number }))]),
 );
-export type Timed<T> = [number, T];
 
 /**
- * Given a value of type T, returns a Timed<T> tuple with current time as first value
+ * Given a value of type T, returns a Timed<T> with current time as 'ts' member
  *
  * @param v - Value to return with time
- * @returns Tuple of call timestamp as first elemtn and value passed as parameter as second
+ * @returns copy of v added of a ts numeric timestamp
  */
 export function timed<T>(v: T): Timed<T> {
-  return [Date.now(), v];
+  return { ...v, ts: Date.now() };
+}
+
+/**
+ * Remove ts timestamp field (from timed) from object passed as parameter (immutably)
+ *
+ * @param v - Timed object
+ * @returns return a copy of v without ts property
+ */
+export function untime<T extends { readonly ts: number }>(v: T): Omit<T, 'ts'> {
+  const { ts: _, ...withoutTs } = v;
+  return withoutTs;
 }
 
 // generic type codec for messages that must be signed
@@ -248,7 +264,7 @@ export function timed<T>(v: T): Timed<T> {
 // The t.TypeOf<typeof codec> will be Signed<Message>, defined later
 export type Signed<M> = M & { readonly signature: Signature };
 export interface SignedC<C extends t.Mixed>
-  extends t.Type<Signed<t.TypeOf<C>>, Signed<t.OutputOf<C>>> {}
+  extends t.IntersectionC<[C, t.ReadonlyC<t.TypeC<{ signature: typeof Signature }>>]> {}
 export const Signed: <C extends t.Mixed>(
   codec: C,
 ) => SignedC<C> = memoize(<C extends t.Mixed>(codec: C) =>
