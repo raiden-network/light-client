@@ -2,112 +2,154 @@
 
 ## About
 
-This integration image acts as a base to ran integration tests for the Light Client in a fully controlled, 
-contained environment.
+This integration image acts as a base to ran integration tests for the Light
+Client in a fully controlled, contained environment.
 
 The environment contains:
-- Geth running a private chain using the Clique PoA engine.
-- [Raiden Contracts](https://github.com/raiden-network/raiden-contracts) pre deployed
-- Matrix Synapse
-- Pathfinding Service ([raiden-services](https://github.com/raiden-network/raiden-services))
-- A `CustomToken` deployed with a `Token Network` deployed
-- Two [Raiden](https://github.com/raiden-network/raiden) nodes with a pre funded open channel
 
-## Using the image
+- Geth as Ethereum node running a private chain using the Clique PoA engine
+- [Raiden Contracts](https://github.com/raiden-network/raiden-contracts) pre-deployed to the chain
+- Synapse as Matrix server
+- Path-finding service ([raiden-services](https://github.com/raiden-network/raiden-services))
+- A `CustomToken`, `Token Network` contract deployed to the chain
+- Two [Raiden](https://github.com/raiden-network/raiden) nodes with a pre-funded open channel
 
-### Building
+## Build
 
-To build the docker image you need to run:
-
-```bash
-docker build -t lightclient-integration .
-```  
-  
-### Running
-
-To start the container you can run:
-
-```bash
-docker run --name lc-integration -d \
-  -p 127.0.0.1:80:80 \
-  -p 127.0.0.1:6000:6000 \
-  -p 127.0.0.1:5001:5001 \
-  -p 127.0.0.1:5002:5002 \
-  -p 127.0.0.1:8545:8545 lightclient-integration
+```sh
+docker build --tag lightclient-integration .
 ```
 
-### Services
+## Run
 
-After starting the container you can access the following services:
+```sh
+docker run --detach \
+  --name lc-integration \
+  --publish 127.0.0.1:8545:8545 \
+  --publish 127.0.0.1:80:80 \
+  --publish 127.0.0.1:6000:6000 \
+  --publish 127.0.0.1:5001:5001 \
+  --publish 127.0.0.1:5002:5002 \
+  lightclient-integration
+```
 
-- RPC is running at `8545`
-- Synapse is running at port `80`
-- PFS is running at port `6000`
-- Raiden node 1 is running at `5001`
-- Raiden node 2 is running at `5002`
+## Access
 
-### Running the tests
+After starting the container as described above, the services are accessible at
+the following port on `localhost`:
 
-It is suggested to run the tests using the `run-integration.sh`. The script starts a temporary container,
-runs the tests and then stops and deletes the container. This makes sure that tests are always run in 
-a clean environment.
+- RPC endpoint of the Geth Etherum node: `8545`
+- Synapse Matrix server: `80`
+- Path-finding service: `6000`
+- First Raiden node: `5001`
+- Second Raiden node: `5002`
 
-#### Getting service logs
-To access the logs of all the underlying services you can run `run-integration.sh DEBUG`. This
-will copy the logs from the integration container to the `logs` folder.
+## Tests
 
-## Updating the image
-Unless there are some major changes in some of the dependencies or the different part updating the environment should
-be as simple as updating the following arguments in the `Dockerfile`.
+It is suggested to run the tests using the `./run-integration.sh`. The script
+starts a Docker container and runs the tests. At the end it stops and deletes the
+container again. This makes sure that tests are always run in a clean environment.
+
+Please be aware that the script expects that the built image got tagged with the
+name `lightclient-integration`.
+
+To access the logs of all the underlying services you can run
+`run-integration.sh DEBUG`. This will copy the logs from the integration
+container to the `./logs` folder.
+
+## Upgrade
+
+The image build gets controlled by a couple of version argument in the
+`Dockerfile`. Unless there are some breaking changes of the dependencies it is
+enough to simply update these version arguments.
 
 ```dockerfile
-ARG CONTRACTS_VERSION="0.36.2"
+ARG RAIDEN_VERSION="v1.1.1"
+ARG CONTRACTS_PACKAGE_VERSION="v.37.1"
+ARG CONTRACTS_VERSION="0.37.0"
 ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
-ARG RAIDEN_VERSION="ea7025739b460f940c26616ca1fccdb739b218ed"
-ARG SYNAPSE_VERSION=1.10.0
+ARG SYNAPSE_VERSION="1.10.0"
+ARG GETH_VERSION="1.9.11"
 ```
+
+**Note:**
+Try to stick with version tags you find at `GitHub` when possible. Use commit
+hash values only when there is no tag for the exact version you need. After all
+are tags basically just references to commit hashes on their own. But their
+advantage is that they have a name that is more handy to work with and better to
+read or communicate.
 
 ### Raiden
-Starting with Raiden, you need to visit the Raiden [repository](https://github.com/raiden-network/raiden/) and
-locate the version of Raiden you want to use for the integration tests. This can be a tagged version or a specific commit.
 
-You need to locate the the git commit hash and update the `RAIDEN_VERSION` argument:
+You need to visit the `raiden`
+[repository](https://github.com/raiden-network/raiden/) and locate the version
+of Raiden you want to use for the integration tests. You then need to fix this
+version in the `Dockerfile`:
 
 ```dockerfile
-ARG RAIDEN_VERSION="ea7025739b460f940c26616ca1fccdb739b218ed"
+ARG RAIDEN_VERSION="v1.1.1"
 ```
 
 ### Contracts
-Raiden will have a pinned version of `raiden-contracts`. You can locate the version of the contracts by looking into the
-[requirements.txt](https://github.com/raiden-network/raiden/blob/ea7025739b460f940c26616ca1fccdb739b218ed/requirements/requirements.txt#L75)
-for the commit you are interested. The requirements entry will look like this:
- 
+
+Raiden will have a pinned version of the `raiden-contracts` package. You can
+locate the version of them by looking into the
+[requirements.txt](https://github.com/raiden-network/raiden/blob/develop/requirements/requirements.txt)
+file (switch to the tag/commit you have chosen above for `raiden`). The
+relevant requirements entry will look like this:
+
 ```requirements.txt
-raiden-contracts==v0.37.0-beta  # via -r requirements.in
+raiden-contracts==0.37.1  # via -r requirements.in
 ```
 
-You have to update the `CONTRACTS_VERSION` argument with the contract's version required by Raiden:  
+You then have to update the `Dockerfile` with this version:
 
 ```dockerfile
-ARG CONTRACTS_VERSION="0.37.0-beta"
+ARG CONTRACTS_PACKAGE_VERSION="0.37.1"
+```
+
+Furthermore you have to figure out which contracts version relates to the
+selected package. Note that there is a difference between the `raiden-contracts`
+Python package and the actual Raiden contracts. They have their own version
+number which is always lower or equal the version of the package.
+
+You can figure out the correct version by inspecting the
+[constants.py](https://github.com/raiden-network/raiden-contracts/blob/master/raiden_contracts/constants.py)
+file of the `raiden-contracts` package (switch to the tag according to the
+version you have chosen for the `raiden-contracts` package). Watch-out for the
+`CONTRACTS_VERSION` constant variable. Then update the `Dockerfile` with the
+related value:
+
+```dockerfile
+ARG CONTRACTS_VERSION="0.37.0"
 ```
 
 ### Services
-The next step would be updating the service. To locate a compatible version of Raiden Services you can go to the [requirements.txt](https://github.com/raiden-network/raiden-services/blob/100fecf0d8c21ee68d8afbea912b67167ec7aad3/requirements.txt#L2)
-file and locate the a version or commit that is compatible.
 
-You can find a release or a commit that is compatible with the contract version located above using GitHub's [blame](https://github.com/raiden-network/raiden-services/blame/100fecf0d8c21ee68d8afbea912b67167ec7aad3/requirements.txt#L2) interface.
-As soon as you locate the commit you are interested you need to update the `SERVICES_VERSION` argument.
+The next step is to update the services. To find a compatible version of
+the `raiden-services` you can inspect the according
+[requirements.txt](https://github.com/raiden-network/raiden-services/blob/master/requirements.txt)
+file and search for a version of this file that is using the same `raiden`
+version as we do. Copy the version tag or commit of the `raiden-services` and
+put it's value into the `Dockerfile`:
 
 ```dockerfile
-ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
+ARG SERVICES_VERSION="645e106d406b6fc3e11441c8e85c76d3aff300d3"
 ```
 
-### Transport
-The transport configuration is based on the [Raiden Service Bundle](https://github.com/raiden-network/raiden-service-bundle/) `RSB`.
+Note that on old versions of the `raiden-services` there was a direct dependency
+to the `raiden-contracts` package. This has been replaced with a dependency to
+the `raiden` package itself, indirectly referencing to the `raiden-contracts`
+this package is using.
 
-The configuration has been slightly modified over the original RSB configuration to fit the purposes of the integration image. 
-When merging changes from upstream please evaluate if these changes are required or not. 
+### Transport
+
+The transport configuration is based on the [Raiden Service
+Bundle](https://github.com/raiden-network/raiden-service-bundle/) (`RSB`).
+
+The configuration has been slightly modified over the original `RSB`
+configuration to fit the purposes of the integration image. When merging changes
+from upstream please evaluate if these changes are required or not.
 
 - `setup/room_ensurer.py` is based on [room_ensurer.py](https://github.com/raiden-network/raiden-service-bundle/blob/master/build/room_ensurer/room_ensurer.py)
 - `synapse/auth/admin_user_auth_provider.py` is based on [admin_user_auth_provider.py](https://github.com/raiden-network/raiden-service-bundle/blob/master/build/synapse/admin_user_auth_provider.py)
@@ -116,11 +158,11 @@ When merging changes from upstream please evaluate if these changes are required
 - `synapse/exec/render_config_template.py` is based on [render_config_template.py](https://github.com/raiden-network/raiden-service-bundle/blob/master/build/synapse/render_config_template.py)
 - `synapse/synapse.template.yaml` is based on [synapse.template.yaml](https://github.com/raiden-network/raiden-service-bundle/blob/master/config/synapse/synapse.template.yaml)
 
-You can find the Synapse version used in the RSB [here](https://github.com/raiden-network/raiden-service-bundle/blob/e368e925003cac8d09c1d9007cf80c90f6ad73c3/BUILD_VERSIONS#L2).
-To update the synapse version used in the integration you need to locate the following argument in the `Dockerfile`: 
+You can find the Synapse version used in the `RSB` by inspecting the
+[BUILD_VERSIONS](https://github.com/raiden-network/raiden-service-bundle/blob/master/BUILD_VERSIONS)
+file. Watch-out for the `SYNAPSE_VERSION` constant variable. Then update the
+`Dockerfile` with the related value:
 
 ```dockerfile
-ARG SYNAPSE_VERSION=1.10.0
+ARG SYNAPSE_VERSION=1.10.1
 ```
-
-Then you need to change the value accordingly.
