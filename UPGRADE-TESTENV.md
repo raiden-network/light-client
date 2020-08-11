@@ -1,42 +1,36 @@
 # How to upgrade the test environment
 
-## Upgrading the SDK
+## SDK
 
 ### Prerequisites
 
-- Commit hash of the [Raiden Contracts](https://github.com/raiden-network/raiden-contracts/) repo
-- Version number of the Raiden Contracts
+- Version number of the `raiden-contracts` (e.g. `0.37.1`)
+- Git tag name related to the chosen version at the `raiden-contracts` [repository](https://github.com/raiden-network/raiden-contracts/) (e.g. `v0.37.1`)
 
-### Upgrade the smart contracts
-
-```sh
-$ cd light-client/raiden-ts/raiden-contracts
-$ git checkout $COMMIT_HASH
-```
-
-### Upgrade smart contract version number
+### Raiden Contracts Submodule
 
 ```sh
-$ vim light-client/raiden-ts/scripts/versions.js
+$ cd ./raiden-ts/raiden-contracts
+$ git checkout v0.37.1
 ```
 
-and change
+### Version Generation Script
+
+Edit the file `./raiden-ts/scripts/versions.js` and change the following line
+according to the chosen version number (not the tag name).
 
 ```javascript
-const contracts_version = "0.36.2";
+const contracts_version = "0.37.1";
 ```
 
-### Verify
-
-Next, verify that the build still works:
+### Verify Build
 
 ```sh
-$ cd light-client
 $ pnpm run clean --filter raiden-ts
 $ pnpm install
 ```
 
-## Upgrade Docker image tags
+## Docker Images
 
 ### Prerequisites
 
@@ -49,42 +43,33 @@ Next, tag the image:
 $ docker tag 373170d05c6c raidennetwork/raiden:demoenv001
 ```
 
-## Upgrade Matrix & PFS server
+## Matrix & Raiden Services
 
-Every [Raiden](https://github.com/raiden-network/raiden) release comes hand-in-hand with a [Raiden Service Bundle](https://github.com/raiden-network/raiden-service-bundle) release, and upgrades of `demoenv001` are usually handled by the RSB team.
+Every Raiden release comes hand-in-hand with a [Raiden Service
+Bundle](https://github.com/raiden-network/raiden-service-bundle) (`RSB`). The
+configured setup for the Light Client uses per default the `demo001.env`
+environment. The related service URLs are:
 
-In order to upgrade:
-
-- https://transport.demo001.env.raiden.network, and
+- https://transport.demo001.env.raiden.network
 - https://pfs.demo001.env.raiden.network
 
-a new Raiden Service Bundle needs to be set up according to the [Readme](https://github.com/raiden-network/raiden-service-bundle).
+The environments needs to be updated according to the
+[documentation](https://github.com/raiden-network/raiden-service-bundle) of the
+selected `RSB` release.
 
-## Upgrade the Raiden Hub
+## Raiden Hub
 
-### Prerequisites
+Checkout the
+[documentation](https://brainbot-hubraidennetwork.readthedocs-hosted.com/en/latest/)
+for the `hub.raiden.network` resource. The resource it's
+[repository](https://github.com/raiden-network/hub.raiden.network) includes
+all relevant configuration files to build a new image.
 
-- Access to https://tower.raiden.network
+If the resource has been updated successfully, check if the hub is online and
+attempt to open a channel to it. Finally try to do a transfer with the hub.
 
-After you have logged into Tower:
+## Integration Tests (Optional)
 
-1. Click on **Templates**
-2. Locate **Deploy hub.raiden.network**
-3. Click on the rocket
-4. (Optional) Change **Purge Data** to no if you want to keep the data in MongoDB
-5. Click on **Next** and start a new deployment
-
-You can click on **Jobs** on the left side to see when the deployment is done.
-
-### Verify
-
-Visit https://hub.raiden.network and check whether:
-
-- Status is **online**
-- You can open a channel and transfer to the Hub
-
-## (Optional) Upgrade the Light Client Integration Tests
-
-The Light client uses a Docker image to run nightly integration tests based on the `Alderaan` tag.
-
-To update and publish a new test image you can follow the steps in the integration image [readme](https://github.com/raiden-network/light-client/tree/master/integration#updating-the-image).
+The Light client uses a Docker image to run nightly integration tests. To
+upgrade this image, checkout the according
+[documentation](./integration/README.md).
