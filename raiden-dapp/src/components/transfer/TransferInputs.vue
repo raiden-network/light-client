@@ -1,18 +1,18 @@
 <template>
-  <v-row no-gutters class="transfer__inputs">
+  <v-row no-gutters class="transfer-inputs">
     <v-form
       ref="transfer"
       v-model="valid"
-      class="transfer__inputs__form"
+      class="transfer-inputs__form"
       autocomplete="off"
       novalidate
       @submit.prevent="navigateToTransferSteps(target, amount)"
     >
-      <v-row no-gutters class="transfer__inputs__form__heading">
-        <span class="transfer__inputs__form__heading--title">
+      <v-row no-gutters class="transfer-inputs__form__heading">
+        <span class="transfer-inputs__form__heading--title">
           {{ $t('transfer.transfer-inputs.title') }}
         </span>
-        <div class="transfer__inputs__form__heading__errors">
+        <div class="transfer-inputs__form__heading__errors">
           <span>
             {{ addressError }}
           </span>
@@ -24,7 +24,7 @@
       <v-row no-gutters>
         <address-input
           v-model="target"
-          class="transfer__inputs__form__address"
+          class="transfer-inputs__form__address"
           :exclude="[token.address, defaultAccount]"
           hide-error-label
           :block="blockedHubs"
@@ -34,7 +34,7 @@
       <v-row no-gutters>
         <amount-input
           v-model="amount"
-          class="transfer__inputs__form__amount"
+          class="transfer-inputs__form__amount"
           limit
           hide-error-label
           :token="token"
@@ -43,7 +43,7 @@
           @input-error="amountError = $event"
         />
         <action-button
-          class="transfer__inputs__form__button"
+          class="transfer-inputs__form__button"
           :enabled="valid"
           :text="$t('general.buttons.continue')"
         />
@@ -130,7 +130,7 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
 @import '../../scss/colors';
 @import '../../scss/mixins';
 
-.transfer__inputs {
+.transfer-inputs {
   background-color: $transfer-screen-bg-color;
   border-radius: 15px;
 
