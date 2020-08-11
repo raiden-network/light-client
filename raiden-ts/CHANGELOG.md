@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- [#2049] Target ES2019 (NodeJS 12+) on SDK builds
 
 ## [0.11.0] - 2020-08-04
 ### Fixed
@@ -40,6 +42,7 @@
 [#2010]: https://github.com/raiden-network/light-client/issues/2010
 [#2019]: https://github.com/raiden-network/light-client/issues/2019
 [#2022]: https://github.com/raiden-network/light-client/pull/2022
+[#2049]: https://github.com/raiden-network/light-client/issues/2049
 
 ## [0.10.0] - 2020-07-13
 ### Fixed
