@@ -15,9 +15,12 @@ import {
   epicFixtures,
   tokenNetwork,
   token,
+  deposit,
+  amount,
   ensureChannelIsOpen,
   ensureChannelIsDeposited,
   ensureTransferUnlocked,
+  ensureTransferPending,
   getChannel,
   id,
 } from '../fixtures';
@@ -28,13 +31,13 @@ import { of } from 'rxjs';
 import { first, pluck } from 'rxjs/operators';
 
 import { Capabilities } from 'raiden-ts/constants';
-import { raidenConfigUpdate } from 'raiden-ts/actions';
+import { raidenConfigUpdate, raidenShutdown } from 'raiden-ts/actions';
 import { MessageType, LockedTransfer } from 'raiden-ts/messages/types';
 import { signMessage, createBalanceHash } from 'raiden-ts/messages/utils';
 import { tokenMonitored, channelOpen, channelDeposit } from 'raiden-ts/channels/actions';
 import { messageReceived, messageGlobalSend } from 'raiden-ts/messages/actions';
 import { transferGenerateAndSignEnvelopeMessageEpic } from 'raiden-ts/transfers/epics';
-import { UInt, decode, Hash } from 'raiden-ts/utils/types';
+import { UInt, decode, Hash, last } from 'raiden-ts/utils/types';
 import {
   makeMessageId,
   makeSecret,
@@ -47,7 +50,7 @@ import { udcDeposit, msBalanceProofSent } from 'raiden-ts/services/actions';
 import { transferProcessed, transferSecretRegister } from 'raiden-ts/transfers/actions';
 import { channelKey } from 'raiden-ts/channels/utils';
 import { Direction } from 'raiden-ts/transfers/state';
-import { ErrorCodes } from 'raiden-ts/utils/error';
+import { RaidenError, ErrorCodes } from 'raiden-ts/utils/error';
 
 test('monitorUdcBalanceEpic', async () => {
   expect.assertions(5);
@@ -366,13 +369,11 @@ describe('monitorRequestEpic', () => {
   });
 });
 
-describe('monitorRequestEpic1', () => {
+describe('monitorRequestEpic', () => {
   test('success: receiving a transfer triggers monitoring', async () => {
     expect.assertions(1);
     const [raiden, partner] = await makeRaidens(2);
     const monitoringReward = bigNumberify(5) as UInt<32>;
-    const deposit = bigNumberify(500) as UInt<32>;
-    const amount = bigNumberify(20) as UInt<32>;
 
     raiden.store.dispatch(
       raidenConfigUpdate({
@@ -389,7 +390,7 @@ describe('monitorRequestEpic1', () => {
     );
     await ensureChannelIsDeposited([raiden, partner], deposit);
     await ensureChannelIsDeposited([partner, raiden], deposit);
-    await ensureTransferUnlocked([raiden, partner], amount);
+    await ensureTransferUnlocked([partner, raiden], amount);
 
     await waitBlock(2);
     const partnerBP = getChannel(raiden, partner).partner.balanceProof;
@@ -397,9 +398,9 @@ describe('monitorRequestEpic1', () => {
     expect(raiden.output).toContainEqual(
       messageGlobalSend(
         {
-          message: expect.objectContaining({
+          message: {
             type: MessageType.MONITOR_REQUEST,
-            /* balance_proof: {
+            balance_proof: {
               chain_id: partnerBP.chainId,
               token_network_address: tokenNetwork,
               channel_identifier: partnerBP.channelId,
@@ -412,10 +413,223 @@ describe('monitorRequestEpic1', () => {
             non_closing_signature: expect.any(String),
             monitoring_service_contract_address: expect.any(String),
             reward_amount: monitoringReward,
-            signature: expect.any(String), */
-          }),
+            signature: expect.any(String),
+          },
         },
         { roomName: expect.stringMatching(/_monitoring$/) },
+      ),
+    );
+  });
+
+  test('success: token without known rateToSvt gets monitored', async () => {
+    expect.assertions(2);
+
+    const [raiden, partner] = await makeRaidens(2);
+    raiden.store.dispatch(raidenConfigUpdate({ rateToSvt: {} }));
+    expect(
+      (await raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise()).gte(
+        raiden.config.monitoringReward!,
+      ),
+    ).toBe(true);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await ensureChannelIsDeposited([partner, raiden], deposit);
+    await ensureTransferUnlocked([partner, raiden], amount);
+    await waitBlock();
+
+    const partnerBP = getChannel(raiden, partner).partner.balanceProof;
+
+    expect(raiden.output).toContainEqual(
+      messageGlobalSend(
+        {
+          message: {
+            type: MessageType.MONITOR_REQUEST,
+            balance_proof: {
+              chain_id: partnerBP.chainId,
+              token_network_address: tokenNetwork,
+              channel_identifier: partnerBP.channelId,
+              nonce: partnerBP.nonce,
+              balance_hash: createBalanceHash(partnerBP),
+              additional_hash: partnerBP.additionalHash,
+              signature: partnerBP.signature,
+            },
+            non_closing_participant: raiden.address,
+            non_closing_signature: expect.any(String),
+            monitoring_service_contract_address: expect.any(String),
+            reward_amount: raiden.config.monitoringReward!,
+            signature: expect.any(String),
+          },
+        },
+        { roomName: expect.stringMatching(/_monitoring$/) },
+      ),
+    );
+  });
+
+  test('ignore: not enough udcBalance', async () => {
+    expect.assertions(2);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const { userDepositContract } = raiden.deps;
+    const monitoringReward = bigNumberify(5) as UInt<32>;
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        httpTimeout: 30,
+        monitoringReward,
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          [Capabilities.NO_MEDIATE]: true,
+          // 'noReceive' should be auto-disabled by 'getCaps$'
+        },
+        // rate=WeiPerEther == 1:1 to SVT
+        rateToSvt: { [token]: WeiPerEther as UInt<32> },
+      }),
+    );
+
+    userDepositContract.functions.effectiveBalance.mockResolvedValue(monitoringReward.sub(1));
+    await waitBlock();
+
+    expect(raiden.output).toContainEqual(
+      udcDeposit.success(undefined, { totalDeposit: monitoringReward.sub(1) as UInt<32> }),
+    );
+
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await ensureChannelIsDeposited([partner, raiden], deposit);
+    await ensureTransferUnlocked([partner, raiden], amount);
+    await waitBlock();
+
+    expect(raiden.output).not.toContainEqual(
+      messageGlobalSend(
+        { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
+        expect.anything(),
+      ),
+    );
+  });
+
+  test('ignore: config.monitoringReward unset', async () => {
+    expect.assertions(1);
+    const [raiden, partner] = await makeRaidens(2);
+    raiden.store.dispatch(raidenConfigUpdate({ monitoringReward: null }));
+
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await ensureChannelIsDeposited([partner, raiden], deposit);
+    await ensureTransferUnlocked([partner, raiden], amount);
+    await waitBlock();
+
+    expect(raiden.output).not.toContainEqual(
+      messageGlobalSend(
+        { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
+        expect.anything(),
+      ),
+    );
+  });
+
+  test('ignore: signing rejected not fatal', async () => {
+    expect.assertions(3);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const monitoringReward = bigNumberify(5) as UInt<32>;
+    const error = new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        httpTimeout: 30,
+        monitoringReward,
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          [Capabilities.NO_MEDIATE]: true,
+          // 'noReceive' should be auto-disabled by 'getCaps$'
+        },
+        // rate=WeiPerEther == 1:1 to SVT
+        rateToSvt: { [token]: WeiPerEther as UInt<32> },
+      }),
+    );
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await ensureChannelIsDeposited([partner, raiden], deposit);
+    await ensureTransferPending([partner, raiden], amount);
+    // fails only after transfer's signatures
+    const originalSign = raiden.deps.signer.signMessage;
+    const signerSpy = jest
+      .spyOn(raiden.deps.signer, 'signMessage')
+      .mockImplementation(async (message) => {
+        if (signerSpy.mock.calls.length > 1) throw new Error('Signature rejected');
+        return originalSign.call(raiden.deps.signer, message);
+      });
+
+    await ensureTransferUnlocked([partner, raiden], amount);
+    await waitBlock();
+
+    expect(raiden.output).not.toContainEqual(
+      messageGlobalSend(
+        { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
+        expect.anything(),
+      ),
+    );
+    expect(last(raiden.output)).not.toEqual(raidenShutdown({ reason: error }));
+    /* We expect 4 times because in the ensureTransferUnlocked after the transfer/success action
+     we have MonitorRequest, SecretReveal, PFSCapacityUpdate which fail*/
+    expect(signerSpy).toHaveBeenCalledTimes(4);
+  });
+
+  test('ignore: non economically viable channels', async () => {
+    expect.assertions(1);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const monitoringReward = bigNumberify(5) as UInt<32>;
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        httpTimeout: 30,
+        monitoringReward,
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          [Capabilities.NO_MEDIATE]: true,
+          // 'noReceive' should be auto-disabled by 'getCaps$'
+        },
+        // rate=WeiPerEther == 1:1 to SVT
+        rateToSvt: { [token]: WeiPerEther as UInt<32> },
+      }),
+    );
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await ensureChannelIsDeposited([partner, raiden], deposit);
+
+    // transfer <= monitoringReward isn't worth to be monitored
+    await ensureTransferUnlocked([partner, raiden], monitoringReward.sub(1) as UInt<32>);
+    await waitBlock();
+
+    expect(raiden.output).not.toContainEqual(
+      messageGlobalSend(
+        { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
+        expect.anything(),
+      ),
+    );
+  });
+
+  test('ignore: non unlocked amount', async () => {
+    expect.assertions(1);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const monitoringReward = bigNumberify(5) as UInt<32>;
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        httpTimeout: 30,
+        monitoringReward,
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          [Capabilities.NO_MEDIATE]: true,
+          // 'noReceive' should be auto-disabled by 'getCaps$'
+        },
+        // rate=WeiPerEther == 1:1 to SVT
+        rateToSvt: { [token]: WeiPerEther as UInt<32> },
+      }),
+    );
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await ensureChannelIsDeposited([partner, raiden], deposit);
+
+    // transfer <= monitoringReward isn't worth to be monitored
+    await ensureTransferPending([partner, raiden], amount);
+    await waitBlock();
+
+    expect(raiden.output).not.toContainEqual(
+      messageGlobalSend(
+        { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
+        expect.anything(),
       ),
     );
   });
