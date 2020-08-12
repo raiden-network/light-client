@@ -1,4 +1,5 @@
 import pick from 'lodash/fp/pick';
+import { assert } from '../utils/error';
 import { channelKey } from '../channels/utils';
 import { RaidenState, initialState } from '../state';
 import { RaidenAction } from '../actions';
@@ -33,27 +34,37 @@ function transferSecretReducer(
   action: transferSecret | transferSecretRegister.success,
 ): RaidenState {
   const secrethash = action.meta.secrethash;
-  // store when seeing unconfirmed, but registerBlock only after confirmation
+
+  const transferState = state[action.meta.direction][secrethash];
+  if (!transferState) return state;
+
+  // - Preserve the timestamp of the secret registration.
+  // - Preserve block number if a secret reveal message is received *after* the
+  //   secret is registered.
+  const previousRegisterBlock = transferState.secret?.registerBlock;
+  if (previousRegisterBlock) {
+    if (transferSecretRegister.success.is(action)) {
+      assert(action.payload.txBlock == previousRegisterBlock);
+    }
+
+    return state;
+  }
+
   const registerBlock =
     transferSecretRegister.success.is(action) && action.payload.confirmed
       ? action.payload.txBlock
-      : state[action.meta.direction][secrethash]?.secret?.registerBlock ?? 0;
-  // don't overwrite registerBlock if secret already stored with it
-  if (
-    secrethash in state[action.meta.direction] &&
-    state[action.meta.direction][secrethash].secret?.registerBlock !== registerBlock
-  )
-    state = {
-      ...state,
-      [action.meta.direction]: {
-        ...state[action.meta.direction],
-        [secrethash]: {
-          ...state[action.meta.direction][secrethash],
-          secret: timed({ value: action.payload.secret, registerBlock }),
-        },
+      : 0;
+
+  return {
+    ...state,
+    [action.meta.direction]: {
+      ...state[action.meta.direction],
+      [secrethash]: {
+        ...transferState,
+        secret: timed({ value: action.payload.secret, registerBlock }),
       },
-    };
-  return state;
+    },
+  };
 }
 
 function transferEnvelopeReducer(
