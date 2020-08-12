@@ -5,10 +5,25 @@ import { filter, map, withLatestFrom } from 'rxjs/operators';
 import { Capabilities } from '../../constants';
 import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
+import { RaidenConfig } from '../../config';
 import { RaidenEpicDeps } from '../../types';
-import { Int } from '../../utils/types';
+import { Address, Int } from '../../utils/types';
 import { transfer, transferSigned } from '../actions';
-import { Direction } from '../state';
+import { Direction, TransfersState } from '../state';
+
+function shouldMediate(
+  action: transferSigned,
+  address: Address,
+  { sent }: TransfersState,
+  { caps }: RaidenConfig,
+): boolean {
+  const is_mediation_enabled = !caps?.[Capabilities.NO_MEDIATE];
+  const is_secrethash_used = action.meta.secrethash in sent;
+  const is_target =
+    action.meta.direction === Direction.RECEIVED && action.payload.message.target !== address;
+
+  return is_mediation_enabled && !is_secrethash_used && !is_target;
+}
 
 /**
  * When receiving a transfer not targeting us, create an outgoing transfer to target
@@ -33,17 +48,8 @@ export const transferMediateEpic = (
 ) =>
   action$.pipe(
     filter(transferSigned.is),
-    // filter for received transfers not to us
-    filter(
-      (action) =>
-        action.meta.direction === Direction.RECEIVED && action.payload.message.target !== address,
-    ),
     withLatestFrom(state$, config$),
-    // filter when mediating is enabled and outgoing transfer isn't set
-    filter(
-      ([action, { sent }, { caps }]) =>
-        !caps?.[Capabilities.NO_MEDIATE] && !(action.meta.secrethash in sent),
-    ),
+    filter(([action, { sent }, config]) => shouldMediate(action, address, sent, config)),
     map(([{ payload: { message: transf }, meta: { secrethash } }]) =>
       // request an outbound transfer to target
       transfer.request(
