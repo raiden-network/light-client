@@ -10,8 +10,39 @@ import { isActionOf, isResponseOf } from '../../utils/actions';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Hash } from '../../utils/types';
 import { transfer, transferExpire } from '../actions';
-import { Direction } from '../state';
+import { Direction, TransferState } from '../state';
 import { dispatchAndWait$ } from './utils';
+
+/**
+ * Predicate to check if a transfer has expired.
+ *
+ * For a transfer to expire it has to satisfy these conditions:
+ *
+ * - It must *not* have been unlocked.
+ * - It must *not* have been expired before.
+ * - The corresponding secret must not have been registered on-chain before the
+ *   lock's expiration.
+ * - The channel must *not* be closed.
+ *
+ * @param transfer - TransferState to be checked
+ * @param confirmationBlocks - Confirmation blocks config param
+ * @param blockNumber - The current block number
+ * @returns boolean if the transfer has expired
+ */
+function isTransferExpired(
+  transfer: TransferState,
+  confirmationBlocks: number,
+  blockNumber: number,
+): boolean {
+  return (
+    !transfer.unlock &&
+    !transfer.lockExpired &&
+    !transfer.channelClosed &&
+    transfer.transfer.lock.expiration.add(confirmationBlocks).lte(blockNumber) &&
+    // don't expire if secret got registered before lock expired
+    !transfer.secret?.registerBlock
+  );
+}
 
 /**
  * Contains the core logic of {@link transferAutoExpireEpic}.
@@ -31,15 +62,7 @@ function autoExpire$(
 ): Observable<transferExpire.request | transfer.failure> {
   // we can send LockExpired only for SENT transfers
   return from(Object.entries(state.sent) as Array<[Hash, typeof state.sent[string]]>).pipe(
-    filter(
-      ([, sent]) =>
-        !sent.unlock &&
-        !sent.lockExpired &&
-        !sent.channelClosed &&
-        sent.transfer.lock.expiration.add(confirmationBlocks).lte(blockNumber) &&
-        // don't expire if secret got registered before lock expired
-        !sent.secret?.registerBlock,
-    ),
+    filter(([, sent]) => isTransferExpired(sent, confirmationBlocks, blockNumber)),
     mergeMap(([secrethash, sent]) => {
       const meta = { secrethash, direction: Direction.SENT };
       // this observable acts like a Promise: emits request once, completes on success/failure
