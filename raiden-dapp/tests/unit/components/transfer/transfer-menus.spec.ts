@@ -6,22 +6,24 @@ import store from '@/store';
 import VueRouter from 'vue-router';
 import { RouteNames } from '@/router/route-names';
 import Vuetify from 'vuetify';
-import TransferMenus from '@/components/transfer/TransferMenus.vue';
+import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
+import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
+import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import { BigNumber } from 'ethers/utils';
 import { One, Zero } from 'ethers/constants';
 import { generateToken } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 
-describe('TransferMenus.vue', () => {
+describe('TransferHeaders.vue', () => {
   const vuetify = new Vuetify();
   let router: Mocked<VueRouter>;
   const token = generateToken();
 
-  const createWrapper = (capacity: BigNumber): Wrapper<TransferMenus> => {
+  const createWrapper = (capacity: BigNumber): Wrapper<TransferHeaders> => {
     router = new VueRouter() as Mocked<VueRouter>;
 
-    return mount(TransferMenus, {
+    return mount(TransferHeaders, {
       vuetify,
       store,
       stubs: ['v-menu', 'v-dialog'],
@@ -48,7 +50,7 @@ describe('TransferMenus.vue', () => {
   test('disables deposit button if channel capacity is zero', () => {
     const wrapper = createWrapper(Zero);
     const depositButton = wrapper.find(
-      '.transfer-menus__deposit-channels__menu--deposit'
+      '.transfer-menus__dot-menu__menu__deposit'
     );
 
     expect(depositButton.attributes()['disabled']).toBe('disabled');
@@ -64,7 +66,7 @@ describe('TransferMenus.vue', () => {
   test('deposit button is enabled if channel has capacity', () => {
     const wrapper = createWrapper(One);
     const depositButton = wrapper.find(
-      '.transfer-menus__deposit-channels__menu--deposit'
+      '.transfer-menus__dot-menu__menu__deposit'
     );
 
     expect(depositButton.attributes()).not.toMatchObject(
@@ -75,25 +77,30 @@ describe('TransferMenus.vue', () => {
   test('deposit button opens deposit dialog', async () => {
     const wrapper = createWrapper(One);
     const depositButton = wrapper.find(
-      '.transfer-menus__deposit-channels__menu--deposit'
+      '.transfer-menus__dot-menu__menu__deposit'
     );
 
     depositButton.trigger('click');
     await wrapper.vm.$nextTick();
 
-    const channelDepositDialog = wrapper.find('.channel-deposit');
+    const channelDepositDialog = wrapper
+      .findComponent(ChannelDepositDialog)
+      .find('.channel-deposit');
 
     expect(channelDepositDialog.exists()).toBe(true);
   });
 
   test('clicking change token button displays token overlay', async () => {
     const wrapper = createWrapper(One);
+
     const tokenSelectButton = wrapper.findAll('span').at(0);
 
     tokenSelectButton.trigger('click');
     await wrapper.vm.$nextTick();
 
-    const tokenOverlay = wrapper.find('.v-overlay--active');
+    const tokenOverlay = wrapper
+      .findComponent(TokenOverlay)
+      .find('.v-overlay--active');
     expect(tokenOverlay.exists()).toBe(true);
   });
 
@@ -102,7 +109,7 @@ describe('TransferMenus.vue', () => {
 
     const wrapper = createWrapper(One);
     const channelsButton = wrapper.find(
-      '.transfer-menus__deposit-channels__menu--channels'
+      '.transfer-menus__dot-menu__menu__channels'
     );
 
     channelsButton.trigger('click');

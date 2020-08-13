@@ -1,6 +1,6 @@
 <template>
   <v-container class="transfer">
-    <transfer-menus
+    <transfer-headers
       class="transfer__menus"
       :token="token"
       :capacity="capacity"
@@ -17,7 +17,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import TransferMenus from '@/components/transfer/TransferMenus.vue';
+import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import { RaidenChannel } from 'raiden-ts';
@@ -27,7 +27,7 @@ import { Token } from '@/model/types';
 
 @Component({
   components: {
-    TransferMenus,
+    TransferHeaders,
     TransferInputs,
     TransactionList,
   },
