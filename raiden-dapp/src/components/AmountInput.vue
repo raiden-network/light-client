@@ -2,7 +2,6 @@
   <fieldset class="amount-input">
     <div class="amount-input__label">{{ label }}</div>
     <v-text-field
-      id="amount"
       ref="input"
       :class="{ invalid: !valid }"
       :disabled="disabled"
