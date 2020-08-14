@@ -351,11 +351,6 @@
     }
   },
   "transfer": {
-    "change-token-title": "Change Token",
-    "transfer-title": "Transfer",
-    "transfer-history-title": "History",
-    "deposit-button": "Deposit",
-    "channel-button": "Channels",
     "capacity-label": "Capacity",
     "recipient-label": "Recipient",
     "amount-label": "Amount",
@@ -364,6 +359,15 @@
       "button": "Dismiss",
       "title": "Token transfer unsuccessful",
       "deposit-title": "Deposit failed, please try again."
+    },
+    "transfer-menus": {
+      "change-token-title": "Change Token",
+      "deposit-button": "Deposit",
+      "channel-button": "Channels",
+      "no-channels": "No open channels"
+    },
+    "transfer-inputs": {
+      "title": "Transfer"
     },
     "steps": {
       "request-route": {
@@ -434,6 +438,7 @@
     }
   },
   "transfer-history": {
+    "title": "History",
     "sent-title": "Sent to",
     "sent-symbol": "-",
     "received-title": "Received from",
