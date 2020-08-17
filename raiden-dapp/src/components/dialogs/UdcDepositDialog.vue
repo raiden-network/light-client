@@ -8,7 +8,7 @@
         {{
           $t('udc-deposit-dialog.available-utility-token', {
             utilityTokenSymbol: udcToken.symbol,
-            utilityTokenBalance: mainAccountUtilityTokenAmount,
+            utilityTokenBalance: utilityTokenBalance,
           })
         }}
       </div>
@@ -95,6 +95,8 @@ import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import { RaidenError } from 'raiden-ts';
+import Filters from '@/filters';
+import { BigNumber } from 'ethers/utils';
 
 @Component({
   components: {
@@ -113,10 +115,10 @@ export default class UdcDepositDialog extends Vue {
   uniswapURL: string = '';
   udcToken!: Token;
   defaultUtilityTokenAmount: string = '';
-  mainAccountUtilityTokenAmount: string = '';
   step: 'mint' | 'approve' | 'deposit' | '' = '';
   loading: boolean = false;
   error: Error | RaidenError | null = null;
+  displayFormat = Filters.displayFormat;
 
   @Prop({ required: true, type: Boolean })
   visible!: boolean;
@@ -124,6 +126,13 @@ export default class UdcDepositDialog extends Vue {
   @Emit()
   cancel() {
     this.error = null;
+  }
+
+  get utilityTokenBalance(): string {
+    return this.displayFormat(
+      this.udcToken.balance as BigNumber,
+      this.udcToken.decimals
+    );
   }
 
   get valid(): boolean {
@@ -140,14 +149,8 @@ export default class UdcDepositDialog extends Vue {
       mainAccountAddress: mainAccountAddress,
     }) as string;
 
-    const utilityTokenAmount = await this.$raiden.getTokenBalance(
-      this.udcToken.address
-    );
-
-    this.mainAccountUtilityTokenAmount = utilityTokenAmount;
-
     this.mainnet
-      ? (this.defaultUtilityTokenAmount = utilityTokenAmount)
+      ? (this.defaultUtilityTokenAmount = this.utilityTokenBalance)
       : (this.defaultUtilityTokenAmount = '10');
   }
 
