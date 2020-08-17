@@ -22,6 +22,7 @@ import i18n from '@/i18n';
 import { NotificationPayload } from '@/store/notifications/types';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
+import uniq from 'lodash/uniq';
 
 export default class RaidenService {
   private _raiden?: Raiden;
@@ -144,7 +145,6 @@ export default class RaidenService {
         this.store.commit('account', account);
 
         this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
-        await this.fetchTokenData([this._userDepositTokenAddress]);
         this.store.commit(
           'userDepositTokenAddress',
           this._userDepositTokenAddress
@@ -164,7 +164,11 @@ export default class RaidenService {
             filter((value) => value.type === 'block/new'),
             exhaustMap(() =>
               this.fetchTokenData(
-                this.store.getters.tokens.map((m: TokenModel) => m.address)
+                uniq(
+                  this.store.getters.tokens
+                    .map((m: TokenModel) => m.address)
+                    .concat(this._userDepositTokenAddress)
+                )
               )
             )
           )
