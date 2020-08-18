@@ -1,6 +1,6 @@
 {
   "name": "light-client",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Raiden Light Client monorepo",
   "author": "brainbot labs est.",
   "private": true,
