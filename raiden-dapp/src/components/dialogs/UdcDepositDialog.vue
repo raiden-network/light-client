@@ -118,7 +118,6 @@ export default class UdcDepositDialog extends Vue {
   step: 'mint' | 'approve' | 'deposit' | '' = '';
   loading: boolean = false;
   error: Error | RaidenError | null = null;
-  displayFormat = Filters.displayFormat;
 
   @Prop({ required: true, type: Boolean })
   visible!: boolean;
@@ -129,7 +128,7 @@ export default class UdcDepositDialog extends Vue {
   }
 
   get utilityTokenBalance(): string {
-    return this.displayFormat(
+    return Filters.displayFormat(
       this.udcToken.balance as BigNumber,
       this.udcToken.decimals
     );
