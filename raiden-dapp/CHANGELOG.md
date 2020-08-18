@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Fixed
+- [#2047] Conversion and token amount display in UDC deposit dialog
+
+### Added
+
+### Changed
+
+[#2047]: https://github.com/raiden-network/light-client/issues/2047
+
 ## [0.11.0] - 2020-08-04
 
 ### Fixed
