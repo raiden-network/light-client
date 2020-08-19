@@ -1,69 +1,68 @@
 <template>
-  <div class="app-header">
-    <v-row class="app-header__top" justify="center" align="center" no-gutters>
-      <v-col cols="12">
-        <div class="app-header__top__content">
-          <div class="app-header__top__content__back">
-            <v-btn
-              v-if="canGoBack"
-              height="40px"
-              width="40px"
-              text
-              icon
-              @click="onBackClicked()"
-            >
-              <v-img
-                :src="require('@/assets/back_arrow.svg')"
-                max-width="34px"
-              />
-            </v-btn>
-          </div>
-          <v-col>
-            <div class="app-header__top__content__title">
-              {{ $route.meta.title }}
-            </div>
-            <div
-              v-if="!showTitleOnly"
-              class="app-header__top__content__network"
-            >
-              {{ network }}
-            </div>
-          </v-col>
-          <span v-if="!showTitleOnly" class="app-header__notifications-wrapper">
-            <v-btn
-              icon
+  <v-row class="app-header" no-gutters>
+    <v-col class="app-header__nav-details" cols="8">
+      <v-btn
+        v-if="canGoBack"
+        class="app-header__nav-details__back-button"
+        text
+        @click="onBackClicked()"
+      >
+        <v-icon>mdi-chevron-left </v-icon>
+        {{ $t('app-header.back-button') }}
+      </v-btn>
+      <div class="app-header__nav-details__divider"></div>
+      <div class="app-header__nav-details__route">
+        <span class="app-header__nav-details__route__title">
+          {{ $route.meta.title }}
+        </span>
+        <span
+          v-if="!showTitleOnly"
+          class="app-header__nav-details__route__network"
+        >
+          {{ network }}
+        </span>
+      </div>
+    </v-col>
+    <v-col cols="4" class="app-header__overlay-routes">
+      <span
+        v-if="!showTitleOnly"
+        class="app-header__overlay-routes__notifications"
+      >
+        <v-btn
+          icon
+          height="30px"
+          width="25px"
+          @click.native="notificationPanel()"
+        >
+          <v-badge
+            v-if="newNotifications"
+            color="notification"
+            overlap
+            bordered
+            dot
+          >
+            <v-img
               height="30px"
               width="25px"
-              @click.native="notificationPanel()"
-            >
-              <v-badge
-                v-if="newNotifications"
-                color="notification"
-                overlap
-                bordered
-                dot
-              >
-                <v-img
-                  height="30px"
-                  width="25px"
-                  :src="require('@/assets/notifications.svg')"
-                />
-              </v-badge>
-              <v-img
-                v-else
-                height="30px"
-                width="25px"
-                :src="require('@/assets/notifications.svg')"
-              />
-            </v-btn>
-          </span>
-          <span v-if="!isDisclaimerRoute" class="app-header__account-wrapper">
-            <header-identicon @click.native="navigateToAccoount()" />
-          </span>
-        </div>
-      </v-col>
-    </v-row>
-  </div>
+              :src="require('@/assets/notifications.svg')"
+            />
+          </v-badge>
+          <v-img
+            v-else
+            height="30px"
+            width="25px"
+            :src="require('@/assets/notifications.svg')"
+          />
+        </v-btn>
+      </span>
+      <span
+        v-if="!isDisclaimerRoute"
+        class="app-header__overlay-routes__account"
+      >
+        <header-identicon @click.native="navigateToAccoount()" />
+      </span>
+    </v-col>
+  </v-row>
 </template>
 
 <script lang="ts">
@@ -130,57 +129,58 @@ export default class AppHeader extends Mixins(NavigationMixin) {
 <style lang="scss" scoped>
 @import '../scss/mixins';
 @import '../scss/colors';
-@import '../scss/fonts';
 
 .app-header {
-  &__top {
-    background-color: $card-background;
-    border-radius: 10px 10px 0 0;
-    height: 80px;
-    @include respond-to(handhelds) {
-      width: 100%;
-      border-radius: 0;
+  height: 80px;
+  padding: 0 36px 0 36px;
+  @include respond-to(handhelds) {
+    padding: 0 12px 0 12px;
+  }
+
+  &__nav-details {
+    align-items: center;
+    display: flex;
+
+    &__back-button {
+      background-color: $input-background;
+      margin-right: 10px;
     }
 
-    &__content {
-      align-items: center;
-      display: flex;
-      justify-content: center;
-      margin: 0 20px 0 40px;
+    &__divider {
+      background-color: $primary-color;
+      border-radius: 6px;
+      height: 42px;
+      width: 6px;
+    }
 
-      &__back {
-        align-items: center;
-        display: flex;
-        flex-direction: column;
-        height: 36px;
-        justify-content: center;
-        width: 36px;
-      }
+    &__route {
+      display: flex;
+      flex-direction: column;
+      margin: 0 0 5px 10px;
 
       &__title {
-        color: $color-white;
-        font-family: $main-font;
+        flex: none;
         font-size: 24px;
-        line-height: 28px;
-        text-align: center;
+        height: 28px;
       }
 
       &__network {
         color: $secondary-text-color;
+        flex: none;
         font-size: 12px;
-        font-weight: 500;
-        text-align: center;
       }
     }
   }
 
-  &__notifications-wrapper {
-    margin-right: 20px;
-    cursor: pointer;
-  }
+  &__overlay-routes {
+    align-items: center;
+    display: flex;
+    justify-content: flex-end;
 
-  &__account-wrapper {
-    cursor: pointer;
+    &__account {
+      cursor: pointer;
+      margin-left: 25px;
+    }
   }
 }
 </style>

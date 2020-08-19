@@ -177,6 +177,7 @@
     "copied": "Copied!"
   },
   "app-header": {
+    "back-button": "Back",
     "currency": "ETH"
   },
   "channel-actions": {
