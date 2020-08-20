@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- [#2094] Fix TransferState's timestamps missing
+
+[#2094]: https://github.com/raiden-network/light-client/issues/2094
 
 ## [0.11.1] - 2020-08-18
 ### Changed
