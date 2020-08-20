@@ -105,25 +105,20 @@ export function transferKeyToMeta(key: string): { secrethash: Hash; direction: D
   return { direction: direction as Direction, secrethash: secrethash as Hash };
 }
 
-function getTimeIfPresent<T>(k: keyof T): (o: T) => number | undefined {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (o: T) => (o[k] ? (o[k] as any)[0] : undefined);
-}
-
 const statusesMap: { [K in RaidenTransferStatus]: (t: TransferState) => number | undefined } = {
-  [RaidenTransferStatus.expired]: getTimeIfPresent<TransferState>('lockExpiredProcessed'),
-  [RaidenTransferStatus.unlocked]: getTimeIfPresent<TransferState>('unlockProcessed'),
-  [RaidenTransferStatus.expiring]: getTimeIfPresent<TransferState>('lockExpired'),
-  [RaidenTransferStatus.unlocking]: getTimeIfPresent<TransferState>('unlock'),
+  [RaidenTransferStatus.expired]: (t) => t.lockExpiredProcessed?.ts,
+  [RaidenTransferStatus.unlocked]: (t) => t.unlockProcessed?.ts,
+  [RaidenTransferStatus.expiring]: (t) => t.lockExpired?.ts,
+  [RaidenTransferStatus.unlocking]: (t) => t.unlock?.ts,
   [RaidenTransferStatus.registered]: (sent: TransferState) =>
     // only set status as registered if there's a valid registerBlock
     sent.secret?.registerBlock ? sent.secret.ts : undefined,
-  [RaidenTransferStatus.revealed]: getTimeIfPresent<TransferState>('secretReveal'),
-  [RaidenTransferStatus.requested]: getTimeIfPresent<TransferState>('secretRequest'),
-  [RaidenTransferStatus.closed]: getTimeIfPresent<TransferState>('channelClosed'),
-  [RaidenTransferStatus.refunded]: getTimeIfPresent<TransferState>('refund'),
-  [RaidenTransferStatus.received]: getTimeIfPresent<TransferState>('transferProcessed'),
-  [RaidenTransferStatus.pending]: getTimeIfPresent<TransferState>('transfer'),
+  [RaidenTransferStatus.revealed]: (t) => t.secretReveal?.ts,
+  [RaidenTransferStatus.requested]: (t) => t.secretRequest?.ts,
+  [RaidenTransferStatus.closed]: (t) => t.channelClosed?.ts,
+  [RaidenTransferStatus.refunded]: (t) => t.refund?.ts,
+  [RaidenTransferStatus.received]: (t) => t.transferProcessed?.ts,
+  [RaidenTransferStatus.pending]: (t) => t.transfer.ts,
 };
 
 /**
