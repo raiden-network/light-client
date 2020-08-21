@@ -220,14 +220,14 @@ export async function ensureTokenIsMonitored(raiden: MockedRaiden): Promise<void
  * @param clients.0 - Own raiden
  * @param clients.1 - Partner raiden to open channel with
  */
-export async function ensureChannelIsOpen([raiden, partner]: [
-  MockedRaiden,
-  MockedRaiden,
-]): Promise<void> {
+export async function ensureChannelIsOpen(
+  [raiden, partner]: [MockedRaiden, MockedRaiden],
+  { channelId = id } = {},
+): Promise<void> {
   await ensureTokenIsMonitored(raiden);
   await ensureTokenIsMonitored(partner);
   if (getChannel(raiden, partner)) return;
-
+  const openBlock = raiden.deps.provider.blockNumber + 1;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   await providersEmit(
     getChannelEventsFilter(tokenNetworkContract),
@@ -235,7 +235,7 @@ export async function ensureChannelIsOpen([raiden, partner]: [
       transactionHash: makeHash(),
       blockNumber: openBlock,
       filter: tokenNetworkContract.filters.ChannelOpened(
-        id,
+        channelId,
         raiden.address,
         partner.address,
         null,
@@ -245,6 +245,7 @@ export async function ensureChannelIsOpen([raiden, partner]: [
   );
   await waitBlock(openBlock);
   await waitBlock(openBlock + confirmationBlocks + 1); // confirmation
+
   assert(getChannel(raiden, partner), 'Raiden channel not open');
   assert(getChannel(partner, raiden), 'Partner channel not open');
 }
@@ -266,7 +267,7 @@ export async function ensureChannelIsDeposited(
   const txHash = makeHash();
   const txBlock = raiden.store.getState().blockNumber + 1;
   const participant = raiden.address;
-
+  const id = getChannel(raiden, partner).id;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   await providersEmit(
     getChannelEventsFilter(tokenNetworkContract),
@@ -300,6 +301,7 @@ export async function ensureChannelIsClosed([raiden, partner]: [
   const closedStates = [ChannelState.closed, ChannelState.settleable, ChannelState.settling];
   await ensureChannelIsOpen([raiden, partner]);
   if (closedStates.includes(getChannel(raiden, partner).state)) return;
+  const id = getChannel(raiden, partner).id;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   await providersEmit(
     getChannelEventsFilter(tokenNetworkContract),
@@ -329,6 +331,7 @@ export async function ensureChannelIsSettled([raiden, partner]: [
 ]): Promise<void> {
   await ensureChannelIsClosed([raiden, partner]);
   if (!getChannel(raiden, partner)) return;
+  const id = getChannel(raiden, partner).id;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   await providersEmit(
     getChannelEventsFilter(tokenNetworkContract),

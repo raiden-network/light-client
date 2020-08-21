@@ -6,8 +6,21 @@ import {
   providersEmit,
   makeAddress,
   waitBlock,
+  sleep,
+  MockedRaiden,
 } from '../mocks';
-import { epicFixtures, ensureChannelIsOpen, ensureChannelIsDeposited, deposit } from '../fixtures';
+import {
+  token,
+  tokenNetwork,
+  amount,
+  openBlock,
+  epicFixtures,
+  ensureChannelIsOpen,
+  ensureChannelIsDeposited,
+  deposit,
+  ensureTransferUnlocked,
+  ensureTransferPending,
+} from '../fixtures';
 
 import { Observable } from 'rxjs';
 import { first, toArray, pluck } from 'rxjs/operators';
@@ -36,6 +49,7 @@ import { ErrorCodes } from 'raiden-ts/utils/error';
 import { RaidenState } from 'raiden-ts/state';
 import { Capabilities } from 'raiden-ts/constants';
 import { signIOU } from 'raiden-ts/services/utils';
+import { getLatest$ } from 'raiden-ts/epics';
 
 describe('PFS: pathFindServiceEpic', () => {
   let depsMock: ReturnType<typeof raidenEpicDeps>,
@@ -1255,6 +1269,179 @@ describe('PFS: pathFindServiceEpic', () => {
         value,
       }),
     );
+  });
+});
+
+describe('PFS: pathFindServiceEpic1', () => {
+  const fetch = jest.fn();
+  Object.assign(globalThis, { fetch });
+  let raiden: MockedRaiden, partner: MockedRaiden, target: MockedRaiden;
+  beforeEach(async () => {
+    [raiden, partner, target] = await makeRaidens(3);
+    const result = { result: [{ path: [partner.address, target.address], estimated_fee: 1234 }] };
+    fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: jest.fn(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async () => result,
+      ),
+      text: jest.fn(async () => jsonStringify(result)),
+    });
+
+    raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 30 }));
+  });
+
+  test('fail unknown tokenNetwork', async () => {
+    expect.assertions(3);
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    expect(raiden.output).toContainEqual(
+      matrixPresence.success(
+        expect.objectContaining({
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: expect.anything(),
+        }),
+        { address: partner.address },
+      ),
+    );
+    expect(partner.output).toContainEqual(
+      matrixPresence.success(
+        expect.objectContaining({
+          userId: `@${raiden.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: expect.anything(),
+        }),
+        { address: raiden.address },
+      ),
+    );
+
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    // await ensureTransferUnlocked([raiden, target], amount);
+    let targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: token, // purposely put the wrong tokenNetworkAddress
+      target: targetAddress,
+      value: amount,
+    };
+    // Emitting the pathFind.request action to check pathFindServiceEpic runs
+    // and gives error for incorrect tokenNetwork contract address
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK,
+          details: { tokenNetwork: token },
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail target not available', async () => {
+    expect.assertions(2);
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    let partnerState = partner.store.getState() as RaidenState;
+    expect(raiden.output).toContainEqual(
+      matrixPresence.success(
+        expect.objectContaining({
+          userId: partnerState?.transport?.setup?.userId,
+          available: true,
+          ts: expect.anything(),
+        }),
+        { address: partner.address },
+      ),
+    );
+
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    await waitBlock();
+    let targetState = target.store.getState() as RaidenState;
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: targetState?.transport?.setup?.userId as string,
+          available: false,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+
+    await waitBlock();
+    let tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+    // Emitting the pathFind.request action to check pathFindServiceEpic runs
+    // and gets the earlier matrix presence error for target
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_TARGET_OFFLINE,
+          details: { target: targetAddress },
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail on failing matrix presence request', async () => {
+    // expect.assertions(2);
+
+    const matrixError = new Error('Unspecific matrix error for testing purpose');
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    let tokenNetworkAddress = tokenNetwork as Address;
+    const partnerAddress = partner.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: partnerAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(matrixPresence.failure(matrixError, { address: partnerAddress }));
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+    console.log('All node adddresses');
+    console.log(`${raiden.address} ${partner.address} ${target.address}`);
+    expect(raiden.output).toContainEqual(
+      matrixPresence.request(undefined, { address: partnerAddress }),
+    );
+    expect(raiden.output).toContainEqual(pathFind.failure(matrixError, pathFindMeta));
+
+    /*
+    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+    [
+      pathFind.request({}, { tokenNetwork, target: partner, value }),
+      matrixPresence.failure(matrixError, { address: partner }),
+    ].forEach((a) => action$.next(a));
+    setTimeout(() => action$.complete(), 10);
+
+    await expect(promise).resolves.toMatchObject([
+      matrixPresence.request(undefined, { address: partner }),
+      pathFind.failure(matrixError, {
+        tokenNetwork,
+        target: partner,
+        value,
+      }),
+    ]); */
   });
 });
 
