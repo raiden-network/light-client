@@ -1,7 +1,7 @@
 <template>
   <raiden-dialog class="no-channels-dialog" :visible="visible" hide-close>
     <v-card-title>{{ $t('transfer.no-channels-dialog.title') }}</v-card-title>
-    <v-card-action>
+    <div>
       <v-img
         class="no-channels-dialog__warning"
         :src="require('@/assets/warning.svg')"
@@ -13,7 +13,7 @@
         enabled
         @click="navigateToTokenSelect()"
       />
-    </v-card-action>
+    </div>
   </raiden-dialog>
 </template>
 
