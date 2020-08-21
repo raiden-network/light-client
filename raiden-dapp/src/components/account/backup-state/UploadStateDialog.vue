@@ -162,7 +162,7 @@ export default class UploadStateDialog extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../../../scss/colors';
+@import '@/scss/colors';
 
 .upload-state {
   &__error {

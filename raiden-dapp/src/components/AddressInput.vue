@@ -362,9 +362,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/mixins';
-@import '../scss/colors';
-@import '../scss/fonts';
+@import '@/scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/fonts';
 
 .address-input {
   display: flex;

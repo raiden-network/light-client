@@ -141,7 +141,7 @@ export default class Home extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/mixins';
+@import '@/scss/mixins';
 
 .home {
   height: 100%;

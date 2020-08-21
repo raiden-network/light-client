@@ -203,8 +203,8 @@ export default class RaidenAccount extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../../scss/mixins';
-@import '../../scss/colors';
+@import '@/scss/mixins';
+@import '@/scss/colors';
 
 .raiden-account {
   width: 100%;

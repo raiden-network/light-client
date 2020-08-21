@@ -58,8 +58,8 @@ export default class ActionButton extends Vue {
 }
 </script>
 <style lang="scss" scoped>
-@import '../scss/colors';
-@import '../scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/mixins';
 
 ::v-deep {
   .v-btn {

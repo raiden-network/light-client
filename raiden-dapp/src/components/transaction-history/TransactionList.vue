@@ -66,8 +66,8 @@ export default class TransactionLists extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../../scss/colors';
-@import '../../scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/mixins';
 
 .transaction-history {
   background-color: $transfer-screen-bg-color;

@@ -63,7 +63,7 @@ export default class Transfer extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../../scss/mixins';
+@import '@/scss/mixins';
 
 .transfer {
   &__menus,

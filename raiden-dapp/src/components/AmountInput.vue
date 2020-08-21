@@ -161,9 +161,9 @@ export default class AmountInput extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/mixins';
-@import '../scss/colors';
-@import '../scss/fonts';
+@import '@/scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/fonts';
 $header-vertical-margin: 5rem;
 $header-vertical-margin-mobile: 2rem;
 .amount-input {

@@ -196,7 +196,7 @@ export default class OpenChannel extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
-@import '../../scss/fonts';
+@import '@/scss/fonts';
 
 .open-channel {
   height: 100%;

@@ -107,7 +107,7 @@ export default class Transaction extends Vue {
 
 <style scoped lang="scss">
 @import '../../main';
-@import '../../scss/colors';
+@import '@/scss/colors';
 
 .transaction {
   height: 74px;

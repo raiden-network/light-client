@@ -201,8 +201,8 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
-@import '../../scss/mixins';
-@import '../../scss/colors';
+@import '@/scss/mixins';
+@import '@/scss/colors';
 
 .account-content {
   margin: 0 64px 0 64px;

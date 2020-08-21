@@ -82,9 +82,9 @@ export default class SelectToken extends Mixins(BlockieMixin, NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../../scss/scroll';
-@import '../../scss/colors';
-@import '../../scss/fonts';
+@import '@/scss/scroll';
+@import '@/scss/colors';
+@import '@/scss/fonts';
 
 .select-token {
   height: 100%;

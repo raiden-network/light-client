@@ -18,7 +18,7 @@ export default class ListHeader extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../scss/fonts';
+@import '@/scss/fonts';
 
 .list-header {
   &__header {
