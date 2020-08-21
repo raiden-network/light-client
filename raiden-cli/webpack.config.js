@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   entry: {
-    raiden: './src/raiden.ts',
+    main: './src/index.ts',
   },
   target: 'node',
   mode: 'production',
