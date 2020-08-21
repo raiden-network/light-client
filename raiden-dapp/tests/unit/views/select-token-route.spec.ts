@@ -1,12 +1,17 @@
-import Vue from 'vue';
-import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
-import store from '@/store';
-import { $identicon } from '../utils/mocks';
+import Vuex, { Store } from 'vuex';
+import { TestData } from '../data/mock-data';
 import SelectTokenRoute from '@/views/SelectTokenRoute.vue';
-import { connectAccount } from '../utils/store-utils';
+import Vuetify from 'vuetify';
+import VueVirtualScroller from 'vue-virtual-scroller';
+import { $identicon } from '../utils/mocks';
+import Vue from 'vue';
 
+Vue.use(Vuex);
 Vue.use(Vuetify);
+Vue.use(VueVirtualScroller);
+Vue.filter('displayFormat', (v: string) => v);
+Vue.filter('truncate', (v: string) => v);
 
 describe('SelectTokenRoute.vue', () => {
   let wrapper: Wrapper<SelectTokenRoute>;
@@ -16,23 +21,29 @@ describe('SelectTokenRoute.vue', () => {
     vuetify = new Vuetify();
     wrapper = mount(SelectTokenRoute, {
       vuetify,
-      store,
-      stubs: ['home', 'select-token'],
+      store: new Store({
+        getters: {
+          allTokens: jest.fn().mockReturnValue([TestData.token]),
+        },
+        state: {
+          tokens: { [TestData.token.address]: TestData.token },
+        },
+      }),
       mocks: {
+        $route: TestData.mockRoute({
+          token: '0xtoken',
+        }),
         $identicon: $identicon(),
+        $raiden: {
+          getToken: jest.fn().mockResolvedValue(TestData.token),
+          fetchTokenList: jest.fn().mockResolvedValue(null),
+        },
         $t: (msg: string) => msg,
       },
     });
   });
 
-  test('disconnected displays home', async () => {
-    expect(wrapper.find('home-stub').exists()).toBe(true);
-  });
-
-  test('connected displays actual route', async () => {
-    connectAccount();
-    await wrapper.vm.$nextTick();
-    expect(wrapper.find('home-stub').exists()).toBe(false);
-    expect(wrapper.find('select-token-stub').exists()).toBe(true);
+  test('renders', () => {
+    expect(wrapper.findAll('.select-token__tokens__token').length).toEqual(1);
   });
 });

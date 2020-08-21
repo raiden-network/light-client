@@ -1,38 +1,49 @@
-import Vue from 'vue';
-import Vuetify from 'vuetify';
+jest.mock('vue-router');
+import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
+import Vue from 'vue';
 import store from '@/store';
-import { $identicon } from '../utils/mocks';
-import { connectAccount } from '../utils/store-utils';
+import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
 import TransferRoute from '@/views/TransferRoute.vue';
+import { TestData } from '../data/mock-data';
+import { One } from 'ethers/constants';
+import { Token } from '@/model/types';
 
 Vue.use(Vuetify);
 
 describe('TransferRoute.vue', () => {
-  let wrapper: Wrapper<TransferRoute>;
-  let vuetify: typeof Vuetify;
+  const vuetify = new Vuetify();
+  const router = new VueRouter() as Mocked<VueRouter>;
+  const token: Token = TestData.token;
+  const openChannel = TestData.openChannel;
 
-  beforeEach(() => {
-    vuetify = new Vuetify();
-    wrapper = mount(TransferRoute, {
-      vuetify,
-      store,
-      stubs: ['home', 'transfer'],
-      mocks: {
-        $identicon: $identicon(),
-        $t: (msg: string) => msg,
-      },
-    });
+  openChannel.capacity = One;
+
+  store.commit('updateTokens', { '0xtoken': token });
+  store.commit('updateChannels', {
+    '0xtoken': { '0xaddr': openChannel },
   });
 
-  test('disconnected displays home', async () => {
-    expect(wrapper.find('home-stub').exists()).toBe(true);
+  router.push = jest.fn().mockImplementation(() => Promise.resolve());
+
+  const wrapper: Wrapper<TransferRoute> = mount(TransferRoute, {
+    vuetify,
+    store,
+    mocks: {
+      $router: router,
+      $route: TestData.mockRoute({
+        token: '0xtoken',
+      }),
+      $t: (msg: string) => msg,
+    },
   });
 
-  test('connected displays actual route', async () => {
-    connectAccount();
-    await wrapper.vm.$nextTick();
-    expect(wrapper.find('home-stub').exists()).toBe(false);
-    expect(wrapper.find('transfer-stub').exists()).toBe(true);
+  test('component can get token', () => {
+    expect((wrapper.vm as any).token).toEqual(token);
+  });
+
+  test('component can get channel capacity', () => {
+    expect((wrapper.vm as any).capacity).toEqual(One);
   });
 });
