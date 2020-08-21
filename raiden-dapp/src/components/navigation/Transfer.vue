@@ -11,6 +11,7 @@
       :capacity="capacity"
     />
     <transaction-list class="transfer__list" :token="token" />
+    <no-channels-dialog :visible="!openChannels" />
   </v-container>
 </template>
 
@@ -20,6 +21,7 @@ import { mapGetters } from 'vuex';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
+import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
@@ -30,9 +32,10 @@ import { Token } from '@/model/types';
     TransferHeaders,
     TransferInputs,
     TransactionList,
+    NoChannelsDialog,
   },
   computed: {
-    ...mapGetters(['channelWithBiggestCapacity']),
+    ...mapGetters(['channelWithBiggestCapacity', 'openChannels']),
   },
 })
 export default class Transfer extends Vue {

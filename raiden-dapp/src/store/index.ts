@@ -201,6 +201,9 @@ const store: StoreOptions<RootState> = {
       }
       return channels;
     },
+    openChannels: (state: RootState) => {
+      return Object.keys(state.channels).length > 0;
+    },
     token: (state: RootState) => (tokenAddress: string) => {
       if (tokenAddress in state.tokens) {
         return state.tokens[tokenAddress];
