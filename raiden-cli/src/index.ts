@@ -4,65 +4,182 @@ import inquirer from 'inquirer';
 import yargs from 'yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
-import { Raiden } from 'raiden-ts';
-import { CliArguments, Cli } from './types';
+import { getAddress } from 'ethers/utils';
+import { Raiden, Address, RaidenConfig, assert, UInt } from 'raiden-ts';
+
+import DISCLAIMER from './disclaimer.json';
+import DEFAULT_RAIDEN_CONFIG from './config.json';
+import { Cli } from './types';
 import { makeCli } from './cli';
 import { setupLoglevel } from './utils/logging';
-import DEFAULT_RAIDEN_CONFIG from './config.json';
 
-function parseArguments(): CliArguments {
+function parseArguments() {
   return yargs
-    .usage('Usage: $0 -k <private_json_path> -e <node_url> --port <port>')
+    .usage('Usage: $0 [options]')
     .options({
-      privateKey: {
-        type: 'string',
-        demandOption: true,
-        alias: 'k',
-        desc: 'JSON Private Key file path',
-        coerce: path.resolve,
-      },
-      password: {
-        type: 'string',
-        desc:
-          'JSON Private Key password. Better passed through "RAIDEN_PASSWORD" env var. Prompted if not provided',
-      },
-      ethNode: {
-        alias: 'e',
-        type: 'string',
-        default: 'http://parity.goerli.ethnodes.brainbot.com:8545',
-        desc: 'ETH JSON-RPC URL',
-      },
-      store: {
-        alias: 's',
+      datadir: {
         type: 'string',
         default: './storage',
         desc: 'Dir path where to store state',
       },
-      config: {
-        alias: 'c',
-        coerce: JSON.parse,
-        desc: 'JSON to overwrite default/curretn config',
+      configFile: {
+        type: 'string',
+        desc: 'JSON file path containing config object',
+        normalize: true,
       },
-      port: {
+      keystorePath: {
+        type: 'string',
+        default: './',
+        desc: 'Path for ethereum keystore directory',
+        normalize: true,
+      },
+      address: {
+        type: 'string',
+        desc: 'Address of private key to use',
+        check: Address.is,
+      },
+      passwordFile: {
+        type: 'string',
+        desc: 'Path for text file containing password for keystore file',
+        normalize: true,
+      },
+      userDepositContractAddress: {
+        type: 'string',
+        desc: "Address of UserDeposit contract to use as contract's entrypoint",
+        check: Address.is,
+      },
+      acceptDisclaimer: {
+        type: 'boolean',
+        desc:
+          'By setting this parameter you confirm that you have read, understood and accepted the disclaimer and privacy warning.',
+      },
+      blockchainQueryInterval: {
         type: 'number',
-        default: 5001,
-        desc: 'Serve HTTP API on given port',
+        default: 5,
+        desc: 'Time interval after which to check for new blocks (in seconds)',
+      },
+      defaultRevealTimeout: {
+        type: 'number',
+        default: 50,
+        desc: 'Default transfer reveal timeout',
+      },
+      defaultSettleTimeout: {
+        type: 'number',
+        default: 500,
+        desc: 'Default channel settle timeout',
+      },
+      ethRpcEndpoint: {
+        type: 'string',
+        default: 'http://127.0.0.1:8545',
+        desc: 'Ethereum JSON RPC node endpoint to use for blockchain interaction',
+      },
+      logFile: {
+        type: 'string',
+        desc: 'Output all logs to this file instead of stdout/stderr',
+        normalize: true,
+      },
+      matrixServer: {
+        type: 'string',
+        default: 'auto',
+        desc: 'URL of Matrix Transport server',
+      },
+      rpc: {
+        type: 'boolean',
+        default: true,
+        desc: 'Start with or without the RPC server',
+      },
+      rpccorsdomain: {
+        type: 'string',
+        default: 'http://localhost:*/*',
+        desc: 'Comma separated list of domains to accept cross origin requests.',
+      },
+      apiAddress: {
+        type: 'string',
+        default: '127.0.0.1:5001',
+        desc: 'host:port to bind to and listen for API requests',
+      },
+    })
+    .options({
+      routingMode: {
+        choices: ['pfs', 'local', 'private'] as const,
+        default: 'pfs',
+        desc: 'Anything else than "pfs" disables mediated transfers',
+      },
+      pathfindingServiceAddress: {
+        type: 'string',
+        default: 'auto',
+        desc: 'Force a given PFS to be used; "auto" selects cheapest registered on-chain',
+      },
+      pathfindingMaxPaths: {
+        type: 'number',
+        default: 3,
+        desc: 'Set maximum number of paths to be requested from the path finding service.',
+      },
+      pathfindingMaxFee: {
+        type: 'string',
+        // cast to fool TypeScript on type of argv.pathfindingMaxFee, decoded by Raiden.create
+        default: ('50000000000000000' as unknown) as UInt<32>,
+        desc: 'Set max fee per request paid to the path finding service.',
+      },
+      pathfindingIouTimeout: {
+        type: 'number',
+        default: 200000,
+        desc: 'Number of blocks before a new IOU to the path finding service expires.',
+      },
+      enableMonitoring: {
+        type: 'boolean',
+        default: false,
+        desc: "Enables monitoring if there's a UDC deposit",
       },
     })
     .env('RAIDEN')
-    .help().argv;
+    .help()
+    .alias('h', 'help')
+    .version()
+    .alias('V', 'version').argv;
 }
 
-async function askUserForPassword(): Promise<string> {
-  const userInput = await inquirer.prompt<{ password: string }>([
-    { type: 'password', name: 'password', message: 'Private Key Password:', mask: '*' },
-  ]);
-  return userInput.password;
+async function getKeystoreAccounts(keystorePath: string): Promise<{ [addr: string]: string[] }> {
+  const keys: { [addr: string]: string[] } = {};
+  for (const filename of await fs.readdir(keystorePath)) {
+    try {
+      const json = await fs.readFile(path.join(keystorePath, filename), 'utf-8');
+      const address = getAddress(JSON.parse(json)['address']);
+      if (!(address in keys)) keys[address] = [];
+      keys[address].push(json);
+    } catch (e) {}
+  }
+  return keys;
 }
 
-async function getWallet(privateKeyPath: string, password: string): Promise<Wallet> {
-  const encryptedKey = await fs.readFile(privateKeyPath, 'utf-8');
-  return await Wallet.fromEncryptedJson(encryptedKey, password);
+async function getWallet(
+  keystoreDir: string,
+  address?: string,
+  passwordFile?: string,
+): Promise<Wallet> {
+  const keys = await getKeystoreAccounts(keystoreDir);
+  if (!Object.keys(keys).length)
+    throw new Error(`No account found on keystore directory "${keystoreDir}"`);
+  else if (!address)
+    ({ address } = await inquirer.prompt<{ address: string }>([
+      { type: 'list', name: 'address', message: 'Account:', choices: Object.keys(keys) },
+    ]));
+  else if (!(address in keys)) throw new Error(`Could not find keystore file for "${address}"`);
+
+  let password;
+  if (passwordFile) password = (await fs.readFile(passwordFile, 'utf-8')).split('\n').shift()!;
+  else
+    ({ password } = await inquirer.prompt<{ password: string }>([
+      { type: 'password', name: 'password', message: `[${address}] Password:`, mask: '*' },
+    ]));
+
+  for (const json of keys[address]) {
+    try {
+      return await Wallet.fromEncryptedJson(json, password);
+    } catch (e) {}
+  }
+
+  throw new Error(`Could not decrypt keystore for "${address}" with provided password`);
 }
 
 function createLocalStorage(name: string): LocalStorage {
@@ -78,10 +195,17 @@ function shutdownServer(this: Cli): void {
   }
 }
 
+function unrefTimeout(timeout: number | NodeJS.Timeout) {
+  if (typeof timeout === 'number') return;
+  timeout.unref();
+}
+
 function shutdownRaiden(this: Cli): void {
   if (this.raiden.started) {
     this.log.info('Stopping raiden...');
     this.raiden.stop();
+    // force-exit at most 5s after stopping raiden
+    unrefTimeout(setTimeout(() => process.exit(0), 5000));
   } else {
     process.exit(1);
   }
@@ -94,17 +218,78 @@ function registerShutdownHooks(this: Cli): void {
   process.on('SIGTERM', shutdownRaiden.bind(this));
 }
 
+async function createRaidenConfig(
+  argv: ReturnType<typeof parseArguments>,
+): Promise<Partial<RaidenConfig>> {
+  let config: Partial<RaidenConfig> = DEFAULT_RAIDEN_CONFIG;
+
+  if (argv.configFile)
+    config = { ...config, ...JSON.parse(await fs.readFile(argv.configFile, 'utf-8')) };
+
+  config = {
+    ...config,
+    pollingInterval: Math.floor(argv.blockchainQueryInterval * 1000),
+    revealTimeout: argv.defaultRevealTimeout,
+    settleTimeout: argv.defaultSettleTimeout,
+    pfsMaxPaths: argv.pathfindingMaxPaths,
+    pfsMaxFee: argv.pathfindingMaxFee,
+    pfsIouTimeout: argv.pathfindingIouTimeout,
+  };
+
+  if (argv.matrixServer !== 'auto') config = { ...config, matrixServer: argv.matrixServer };
+
+  if (argv.routingMode !== 'pfs') config = { ...config, pfs: null };
+  else if (argv.pathfindingServiceAddress !== 'auto')
+    config = { ...config, pfs: argv.pathfindingServiceAddress };
+
+  if (!argv.enableMonitoring) config = { ...config, monitoringReward: null };
+
+  return config;
+}
+
+const endpointRe = /^(?:\w+:\/\/)?([^\/]*):(\d+)$/;
+function parseEndpoint(url: string): readonly [string, number] {
+  const match = url.match(endpointRe);
+  assert(match, 'Invalid endpoint');
+  const [, host, port] = match;
+  return [host || '127.0.0.1', +port];
+}
+
+async function checkDisclaimer(accepted?: boolean): Promise<void> {
+  console.info(DISCLAIMER);
+  if (accepted === undefined) {
+    ({ accepted } = await inquirer.prompt<{ accepted: boolean }>([
+      {
+        type: 'confirm',
+        name: 'accepted',
+        message:
+          'Have you read, understood and hereby accept the above disclaimer and privacy warning?',
+        default: false,
+      },
+    ]));
+  } else if (accepted) {
+    console.info('Disclaimer accepted by command line parameter.');
+  }
+  assert(accepted, 'Disclaimer not accepted!');
+}
+
 async function main() {
-  setupLoglevel();
   const argv = parseArguments();
-  const password = argv.password ?? (await askUserForPassword());
-  const wallet = await getWallet(argv.privateKey, password);
-  const localStorage = createLocalStorage(argv.store);
-  const raiden = await Raiden.create(argv.ethNode, wallet.privateKey, localStorage, undefined, {
-    ...DEFAULT_RAIDEN_CONFIG,
-    ...argv.config,
-  });
-  const cli = makeCli(raiden, ['127.0.0.1', argv.port]);
+  await checkDisclaimer(argv.acceptDisclaimer);
+  const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
+  setupLoglevel(argv.logFile);
+  const localStorage = createLocalStorage(argv.datadir);
+  const endpoint = parseEndpoint(argv.apiAddress);
+  const config = await createRaidenConfig(argv);
+
+  const raiden = await Raiden.create(
+    argv.ethRpcEndpoint,
+    wallet.privateKey,
+    localStorage,
+    argv.userDepositContractAddress,
+    config,
+  );
+  const cli = makeCli(raiden, endpoint, undefined, argv.rpccorsdomain);
   registerShutdownHooks.call(cli);
   cli.raiden.start();
 }
