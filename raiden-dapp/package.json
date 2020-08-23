@@ -40,7 +40,7 @@
     "vuex-persist": "^2.2.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.11.1",
+    "@babel/core": "^7.11.4",
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.10.4",
     "@babel/plugin-proposal-optional-chaining": "^7.11.0",
     "@cypress/code-coverage": "^3.8.1",
@@ -48,7 +48,7 @@
     "@kazupon/vue-i18n-loader": "^0.5.0",
     "@mdi/font": "^5.5.55",
     "@namics/stylelint-bem": "^6.3.1",
-    "@testing-library/jest-dom": "^5.11.3",
+    "@testing-library/jest-dom": "^5.11.4",
     "@types/jest": "^26.0.10",
     "@types/lodash": "^4.14.159",
     "@types/tiny-async-pool": "^1.0.0",
@@ -83,7 +83,7 @@
     "eslint-plugin-vue-i18n": "^0.3.0",
     "eslint-plugin-vuetify": "^1.0.0-beta.7",
     "flush-promises": "^1.0.2",
-    "jest": "^26.4.1",
+    "jest": "^26.4.2",
     "jest-junit": "^11.1.0",
     "material-design-icons-iconfont": "^5.0.1",
     "nyc": "^15.1.0",

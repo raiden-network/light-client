@@ -63,7 +63,7 @@
     "eslint-plugin-jsdoc": "^30.2.4",
     "eslint-plugin-prettier": "^3.1.4",
     "ganache-cli": "^6.10.1",
-    "jest": "^26.4.1",
+    "jest": "^26.4.2",
     "jest-junit": "^11.1.0",
     "memdown": "^5.1.0",
     "node-localstorage": "^2.1.6",
@@ -78,7 +78,7 @@
     "typedoc": "^0.18.0",
     "typedoc-plugin-markdown": "^2.4.1",
     "typescript": "^3.9.7",
-    "vuepress": "^1.5.3"
+    "vuepress": "^1.5.4"
   },
   "dependencies": {
     "abort-controller": "^3.0.0",
