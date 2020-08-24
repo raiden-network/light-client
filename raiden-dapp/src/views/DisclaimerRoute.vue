@@ -1,7 +1,7 @@
 <template>
-  <v-container fluid class="disclaimer">
-    <v-row no-gutters>
-      <v-col cols="10" offset="1">
+  <v-container fluid>
+    <v-row no-gutters class="disclaimer">
+      <div>
         <div class="disclaimer__paragraphs font-weight-light">
           <p
             v-for="(paragraph, index) in $t('disclaimer.paragraphs')"
@@ -24,7 +24,7 @@
           dense
           hide-details
         />
-      </v-col>
+      </div>
     </v-row>
     <action-button
       :text="$t('disclaimer.accept-button')"
@@ -66,15 +66,28 @@ export default class Disclaimer extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '../scss/colors';
 @import '../scss/scroll';
 
 .disclaimer {
+  border-top: solid 1px $primary-color;
+  padding: 30px 30px 0 30px;
+
   &__paragraphs {
-    text-align: justify;
-    max-height: 70%;
+    font-size: 15px;
     overflow-y: auto;
+    text-align: justify;
     @extend .themed-scrollbar;
-    margin-bottom: 50px;
+  }
+
+  &__accept-checkbox,
+  &__persist-checkbox {
+    ::v-deep {
+      .v-label {
+        font-size: 14px;
+        padding-bottom: 2px;
+      }
+    }
   }
 }
 </style>
