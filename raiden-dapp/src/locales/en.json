@@ -369,6 +369,10 @@
     "transfer-inputs": {
       "title": "Transfer"
     },
+    "no-channels-dialog": {
+      "title": "No connected tokens and open channels",
+      "button": "Connect new token"
+    },
     "steps": {
       "request-route": {
         "title": "Request Route",

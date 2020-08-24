@@ -6,9 +6,13 @@
 ### Fixed
 - [#2047] Conversion and token amount display in UDC deposit dialog
 
+### Added
+- [#2039] Dialog with redirect button if all channels are settled
+
 ### Changed
 - [#1951] Update to be compatible with Raiden Python client `v1.1.1`
 
+[#2039]: https://github.com/raiden-network/light-client/issues/2039
 [#2047]: https://github.com/raiden-network/light-client/issues/2047
 [#1951]: https://github.com/raiden-network/light-client/issues/1951
 
