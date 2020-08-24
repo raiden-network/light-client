@@ -135,7 +135,17 @@ export default class UdcDepositDialog extends Vue {
   }
 
   get valid(): boolean {
-    return /^[1-9]\d*$/.test(this.defaultUtilityTokenAmount);
+    const utilityTokenAmount = Number(this.defaultUtilityTokenAmount);
+    const utilityTokenBalance = Number(this.utilityTokenBalance);
+    const amountRegEx = /^\d+\.?\d*$/;
+
+    if (!this.mainnet) return amountRegEx.test(this.defaultUtilityTokenAmount);
+
+    return (
+      utilityTokenAmount <= utilityTokenBalance &&
+      utilityTokenAmount > 0 &&
+      amountRegEx.test(this.defaultUtilityTokenAmount)
+    );
   }
 
   async mounted() {
