@@ -4,6 +4,7 @@
       id="address-input"
       ref="address"
       v-model="address"
+      :disabled="disabled"
       :error-messages="errorMessages"
       :rules="isAddressValid"
       :hide-details="hideErrorLabel"

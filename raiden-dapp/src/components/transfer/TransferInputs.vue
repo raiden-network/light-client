@@ -25,6 +25,7 @@
         <address-input
           v-model="target"
           class="transfer-inputs__form__address"
+          :disabled="noChannels"
           :exclude="[token.address, defaultAccount]"
           hide-error-label
           :block="blockedHubs"
@@ -37,6 +38,7 @@
           class="transfer-inputs__form__amount"
           limit
           hide-error-label
+          :disabled="noChannels"
           :token="token"
           :max="capacity"
           :placeholder="$t('transfer.amount-placeholder')"
@@ -64,6 +66,7 @@ import AddressUtils from '@/utils/address-utils';
 import { RaidenChannel, ChannelState } from 'raiden-ts';
 import { BigNumber } from 'ethers/utils';
 import { Token } from '@/model/types';
+import { Zero } from 'ethers/constants';
 
 @Component({
   components: {
@@ -116,6 +119,10 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
     if (this.token.decimals === 0 && this.amount.indexOf('.') > -1) {
       this.amount = this.amount.split('.')[0];
     }
+  }
+
+  get noChannels(): boolean {
+    return this.capacity === Zero;
   }
 
   get blockedHubs(): string[] {
