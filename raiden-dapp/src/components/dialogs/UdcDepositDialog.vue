@@ -149,7 +149,7 @@ export default class UdcDepositDialog extends Vue {
 
     if (this.mainnet) {
       return (
-        utilityTokenAmount.lte(this.udcToken.balance) &&
+        utilityTokenAmount.lte(this.udcToken.balance as BigNumber) &&
         utilityTokenAmount.gt(Zero)
       );
     } else {
