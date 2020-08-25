@@ -106,7 +106,10 @@ describe('UdcDepositDialog.vue', () => {
         '0x3a989D97388a39A0B5796306C615d10B7416bE77'
       );
       store.commit('updateTokens', {
-        '0x3a989D97388a39A0B5796306C615d10B7416bE77': token,
+        '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
+          ...token,
+          balance: bigNumberify('10000000000000000000'),
+        },
       });
       store.commit('network', { name: 'mainnet', chainId: 1 });
 
@@ -122,6 +125,27 @@ describe('UdcDepositDialog.vue', () => {
       expect(wrapper.vm.$data.uniswapURL).toBe(
         'udc-deposit-dialog.uniswap-url'
       );
+    });
+
+    test('amount validates to true if inputted amount is lower or equal to available amount', async () => {
+      const inputField = wrapper.find('input');
+      inputField.setValue('5.55');
+      await wrapper.vm.$nextTick();
+
+      expect((wrapper.vm as any).valid).toBe(true);
+
+      inputField.setValue('10');
+      await wrapper.vm.$nextTick();
+
+      expect((wrapper.vm as any).valid).toBe(true);
+    });
+
+    test('amount validates to false if inputted amount is higher than available amount', async () => {
+      const inputField = wrapper.find('input');
+      inputField.setValue('50');
+      await wrapper.vm.$nextTick();
+
+      expect((wrapper.vm as any).valid).toBe(false);
     });
   });
 });
