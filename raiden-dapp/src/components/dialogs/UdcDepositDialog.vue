@@ -96,7 +96,8 @@ import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import { RaidenError } from 'raiden-ts';
 import Filters from '@/filters';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, parseUnits } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 @Component({
   components: {
@@ -135,16 +136,26 @@ export default class UdcDepositDialog extends Vue {
   }
 
   get valid(): boolean {
-    const utilityTokenAmount = Number(this.defaultUtilityTokenAmount);
-    const utilityTokenBalance = Number(this.utilityTokenBalance);
-    const amountRegEx = /^\d+\.?\d*$/;
+    let utilityTokenAmount: BigNumber;
 
-    if (!this.mainnet) return amountRegEx.test(this.defaultUtilityTokenAmount);
+    try {
+      utilityTokenAmount = parseUnits(
+        this.defaultUtilityTokenAmount,
+        this.udcToken.decimals
+      );
+    } catch (err) {
+      utilityTokenAmount = Zero;
+    }
+
+    if (!this.mainnet) return utilityTokenAmount.gt(Zero);
+
+    const utilityTokenBalance = parseUnits(
+      this.utilityTokenBalance,
+      this.udcToken.decimals
+    );
 
     return (
-      utilityTokenAmount <= utilityTokenBalance &&
-      utilityTokenAmount > 0 &&
-      amountRegEx.test(this.defaultUtilityTokenAmount)
+      utilityTokenAmount.lte(utilityTokenBalance) && utilityTokenAmount.gt(Zero)
     );
   }
 
