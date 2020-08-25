@@ -144,19 +144,17 @@ export default class UdcDepositDialog extends Vue {
         this.udcToken.decimals
       );
     } catch (err) {
-      utilityTokenAmount = Zero;
+      return false;
     }
 
-    if (!this.mainnet) return utilityTokenAmount.gt(Zero);
-
-    const utilityTokenBalance = parseUnits(
-      this.utilityTokenBalance,
-      this.udcToken.decimals
-    );
-
-    return (
-      utilityTokenAmount.lte(utilityTokenBalance) && utilityTokenAmount.gt(Zero)
-    );
+    if (this.mainnet) {
+      return (
+        utilityTokenAmount.lte(this.udcToken.balance) &&
+        utilityTokenAmount.gt(Zero)
+      );
+    } else {
+      return utilityTokenAmount.gt(Zero);
+    }
   }
 
   async mounted() {
