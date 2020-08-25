@@ -8,8 +8,11 @@ import {
   waitBlock,
   sleep,
   MockedRaiden,
+  makePfsInfoResponse,
+  makeIou,
 } from '../mocks';
 import {
+  id,
   token,
   tokenNetwork,
   amount,
@@ -18,15 +21,18 @@ import {
   ensureChannelIsOpen,
   ensureChannelIsDeposited,
   deposit,
+  pfsAddress,
+  pfsTokenAddress,
+  fee,
   ensureTransferUnlocked,
   ensureTransferPending,
+  ensureChannelIsClosed,
 } from '../fixtures';
 
 import { Observable } from 'rxjs';
 import { first, toArray, pluck } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
-
 import { UInt, Int, Address, Signature, isntNil } from 'raiden-ts/utils/types';
 import {
   newBlock,
@@ -36,7 +42,7 @@ import {
   channelClose,
   channelMonitored,
 } from 'raiden-ts/channels/actions';
-import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
+import { raidenConfigUpdate, raidenShutdown, RaidenAction } from 'raiden-ts/actions';
 import { matrixPresence } from 'raiden-ts/transport/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
 import { pathFindServiceEpic, pfsFeeUpdateEpic } from 'raiden-ts/services/epics';
@@ -1292,6 +1298,15 @@ describe('PFS: pathFindServiceEpic1', () => {
     raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 30 }));
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+    fetch.mockRestore();
+    [raiden, partner, target].forEach((node) => {
+      node.deps.latest$.complete();
+      node.stop();
+    });
+  });
+
   test('fail unknown tokenNetwork', async () => {
     expect.assertions(3);
 
@@ -1409,7 +1424,11 @@ describe('PFS: pathFindServiceEpic1', () => {
     await waitBlock(openBlock - 1);
     await ensureChannelIsDeposited([raiden, partner], deposit);
     await waitBlock();
-    let tokenNetworkAddress = tokenNetwork as Address;
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    await waitBlock();
+
+    const tokenNetworkAddress = tokenNetwork as Address;
     const partnerAddress = partner.address as Address;
     const pathFindMeta = {
       tokenNetwork: tokenNetworkAddress,
@@ -1419,8 +1438,9 @@ describe('PFS: pathFindServiceEpic1', () => {
 
     raiden.store.dispatch(matrixPresence.failure(matrixError, { address: partnerAddress }));
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
-    console.log('All node adddresses');
-    console.log(`${raiden.address} ${partner.address} ${target.address}`);
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       matrixPresence.request(undefined, { address: partnerAddress }),
     );
@@ -1442,6 +1462,1502 @@ describe('PFS: pathFindServiceEpic1', () => {
         value,
       }),
     ]); */
+  });
+
+  test('fail on successful matrix presence request but target unavailable', async () => {
+    // expect.assertions(1);
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const partnerAddress = partner.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: partnerAddress,
+      value: amount,
+    };
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: false,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      matrixPresence.request(undefined, { address: partnerAddress }),
+    );
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_TARGET_OFFLINE,
+          details: { target: partnerAddress },
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('success on successful matrix presence request and target available', async () => {
+    expect.assertions(2);
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const partnerAddress = partner.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: partnerAddress,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      matrixPresence.request(undefined, { address: partnerAddress }),
+    );
+    expect(raiden.output).toContainEqual(
+      pathFind.success(
+        { paths: [{ path: [partnerAddress], fee: Zero as Int<32> }] },
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('success provided route', async () => {
+    expect.assertions(1);
+    const fee = bigNumberify(3) as Int<32>;
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(
+      pathFind.request(
+        { paths: [{ path: [raiden.address, partner.address, target.address], fee }] },
+        pathFindMeta,
+      ),
+    );
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.success(
+        { paths: [{ path: [partner.address, target.address], fee }] },
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('success direct route', async () => {
+    expect.assertions(1);
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const partnerAddress = partner.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: partnerAddress,
+      value: amount,
+    };
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    // self should be taken out of route
+    expect(raiden.output).toContainEqual(
+      pathFind.success(
+        { paths: [{ path: [partner.address], fee: Zero as Int<32> }] },
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('success request pfs from action', async () => {
+    // original test(old pattern) fails ;)
+    expect.assertions(1);
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {
+        /* error */
+      }),
+      text: jest.fn(async () => jsonStringify({})),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    const pfsSafetyMargin = await raiden.deps.config$
+      .pipe(pluck('pfsSafetyMargin'), first(isntNil))
+      .toPromise();
+    const pfsUrl = await raiden.deps.config$.pipe(pluck('pfs'), first(isntNil)).toPromise();
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(
+      pathFind.request(
+        {
+          pfs: {
+            address: pfsAddress,
+            url: pfsUrl,
+            rtt: 3,
+            price: One as UInt<32>,
+            token: pfsTokenAddress,
+          },
+        },
+        pathFindMeta,
+      ),
+    );
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.success(
+        {
+          paths: [
+            {
+              path: [partner.address, target.address],
+              fee: bigNumberify(1234)
+                .mul(pfsSafetyMargin * 1e6)
+                .div(1e6) as Int<32>,
+            },
+          ],
+        },
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('success request pfs from config', async () => {
+    // original test(old pattern) fails ;)
+    expect.assertions(1);
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {
+        /* error */
+      }),
+      text: jest.fn(async () => jsonStringify({})),
+    });
+
+    let pfsSafetyMargin!: number;
+    raiden.deps.config$
+      .pipe(first())
+      .subscribe((config) => (pfsSafetyMargin = config.pfsSafetyMargin));
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.success(
+        {
+          paths: [
+            {
+              path: [partner.address, target.address],
+              fee: bigNumberify(1234)
+                .mul(pfsSafetyMargin * 1e6)
+                .div(1e6) as Int<32>,
+            },
+          ],
+        },
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('success request pfs from pfsList', async () => {
+    // expect.assertions(4);
+
+    const pfsAddress1 = '0x0800000000000000000000000000000000000091' as Address,
+      pfsAddress2 = '0x0800000000000000000000000000000000000092' as Address,
+      pfsAddress3 = '0x0800000000000000000000000000000000000093' as Address;
+
+    // put config.pfs into auto mode
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
+
+    // pfsAddress1 will be accepted with default https:// schema
+    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce('domain.only.url');
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    const pfsInfoResponse1 = { ...pfsInfoResponse, payment_address: pfsAddress1 };
+    fetch.mockImplementationOnce(
+      async () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                ok: true,
+                status: 200,
+                json: jest.fn(async () => pfsInfoResponse1),
+                text: jest.fn(async () => jsonStringify(pfsInfoResponse1)),
+              }),
+            23, // higher rtt for this PFS
+          ),
+        ),
+    );
+
+    // 2 & 3, test sorting by price info
+    const pfsInfoResponse2 = { ...pfsInfoResponse, payment_address: pfsAddress2, price_info: 5 };
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse2),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse2)),
+    });
+
+    const pfsInfoResponse3 = { ...pfsInfoResponse, payment_address: pfsAddress3, price_info: 10 };
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse3),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse3)),
+    });
+
+    // pfsAddress succeeds main response
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {
+        /* error */
+      }),
+      text: jest.fn(async () => jsonStringify({})),
+    });
+
+    let pfsSafetyMargin!: number;
+    raiden.deps.config$
+      .pipe(first())
+      .subscribe((config) => (pfsSafetyMargin = config.pfsSafetyMargin));
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      pfsListUpdated({
+        pfsList: [pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress],
+      }),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    const iou = makeIou(raiden, pfsAddress);
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      iouPersist(
+        {
+          iou: expect.objectContaining({
+            amount: bigNumberify(2),
+          }),
+        },
+        { tokenNetwork, serviceAddress: iou.receiver },
+      ),
+    );
+    expect(raiden.output).toContainEqual(
+      pathFind.success(
+        {
+          paths: [
+            {
+              path: [partner.address, target.address],
+              fee: bigNumberify(1234)
+                .mul(pfsSafetyMargin * 1e6)
+                .div(1e6) as Int<32>,
+            },
+          ],
+        },
+        pathFindMeta,
+      ),
+    );
+    expect(fetch).toHaveBeenCalledTimes(4 + 1 + 1);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/^https:\/\/domain.only.url\/.*\/info/),
+      expect.anything(),
+    );
+    expect(fetch).toHaveBeenLastCalledWith(
+      expect.stringMatching(/^https:\/\/.*\/paths$/),
+      expect.anything(),
+    );
+  });
+
+  test('fail request pfs from pfsList, empty', async () => {
+    expect.assertions(1);
+    // put config.pfs into auto mode
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
+
+    // invalid url
+    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce('""');
+    // empty url
+    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce('');
+    // invalid schema
+    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce(
+      'http://not.https.url',
+    );
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      pfsListUpdated({
+        pfsList: [pfsAddress, pfsAddress, pfsAddress],
+      }),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_INVALID_INFO,
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail pfs request error', async () => {
+    // Original test(old pattern) does not pass
+    expect.assertions(1);
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {
+        /* error */
+      }),
+      text: jest.fn(async () => jsonStringify({})),
+    });
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      json: jest.fn(async () => ({ error_code: 1337, errors: 'No route' })),
+      text: jest.fn(async () => '{ "error_code": 1337, "errors": "No route" }'),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_ERROR_RESPONSE,
+          details: { errorCode: 1337, errors: 'No route' },
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail pfs return success but invalid response format', async () => {
+    // Original test(old version) fails
+    expect.assertions(1);
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+
+    // expected 'result', not 'paths'
+    const paths = { result: [{ path: [partner, target], estimated_fee: 0 }] };
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => paths),
+      text: jest.fn(async () => jsonStringify(paths)),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: expect.stringContaining('Converting circular structure to JSON'),
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('success with free pfs and valid route', async () => {
+    // Original test(old version) fails
+    expect.assertions(1);
+
+    // const value = bigNumberify(100) as UInt<32>;
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    const freePfsInfoResponse = { ...pfsInfoResponse, price_info: 0 };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => freePfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(freePfsInfoResponse)),
+    });
+
+    const result = {
+      result: [
+        // valid route
+        { path: [partner.address, target.address], estimated_fee: 1 },
+      ],
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => result),
+      text: jest.fn(async () => jsonStringify(result)),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+
+    expect(raiden.output).toContainEqual(
+      pathFind.success(
+        { paths: [{ path: [partner.address, target.address], fee: bigNumberify(1) as Int<32> }] },
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('success with cached iou and valid route', async () => {
+    // Original test(old version) fails
+    expect.assertions(2);
+
+    const iou = makeIou(raiden, pfsAddress);
+    raiden.store.dispatch(
+      iouPersist(
+        { iou: await signIOU(raiden.deps.signer, iou) },
+        { tokenNetwork, serviceAddress: iou.receiver },
+      ),
+    );
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+
+    const result = {
+      result: [
+        // valid route
+        { path: [partner.address, target.address], estimated_fee: 1 },
+      ],
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => result),
+      text: jest.fn(async () => jsonStringify(result)),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      iouPersist(
+        {
+          iou: expect.objectContaining({
+            amount: bigNumberify(102),
+          }),
+        },
+        { tokenNetwork, serviceAddress: iou.receiver },
+      ),
+    );
+    expect(raiden.output).toContainEqual(
+      pathFind.success(
+        { paths: [{ path: [partner.address, target.address], fee: bigNumberify(1) as Int<32> }] },
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('success from config but filter out invalid pfs result routes', async () => {
+    // Original test(old version) fails
+    expect.assertions(1);
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 404,
+      json: jest.fn(async () => {
+        /* error */
+      }),
+      text: jest.fn(async () => jsonStringify({})),
+    });
+
+    const result = {
+      result: [
+        // token isn't a valid channel, should be removed from output
+        { path: [token, target.address], estimated_fee: 0 },
+        // another route going through token, also should be removed
+        { path: [token, partner.address, target.address], estimated_fee: 0 },
+        // valid route
+        { path: [partner.address, target.address], estimated_fee: 1 },
+        // another "valid" route through partner, filtered out because different fee
+        { path: [partner.address, token, target.address], estimated_fee: 2 },
+        // another invalid route, but we already selected partner first
+        { path: [tokenNetwork, target.address], estimated_fee: 3 },
+      ],
+    };
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => result),
+      text: jest.fn(async () => jsonStringify(result)),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.success(
+        { paths: [{ path: [partner.address, target.address], fee: bigNumberify(1) as Int<32> }] },
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail channel not open', async () => {
+    expect.assertions(1);
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    await waitBlock();
+    await ensureChannelIsClosed([raiden, partner]);
+    await waitBlock();
+
+    const result = { result: [{ path: [partner.address, target.address], estimated_fee: 1 }] };
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => result),
+      text: jest.fn(async () => jsonStringify(result)),
+    });
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
+          details: { condition: false },
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail provided route but not enough capacity', async () => {
+    expect.assertions(1);
+
+    // set an exorbitantly high amount for transfer
+    const amount = bigNumberify(80000000) as UInt<32>;
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    await waitBlock();
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(
+      pathFind.request(
+        { paths: [{ path: [raiden.address, partner.address, target.address], fee }] },
+        pathFindMeta,
+      ),
+    );
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
+          details: { condition: false },
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail no route between nodes', async () => {
+    // Original test(old pattern) failing
+    expect.assertions(2);
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+    const iou = makeIou(raiden, pfsAddress);
+    const lastIOUResult = {
+      last_iou: {
+        ...(await signIOU(raiden.deps.signer, iou)),
+        chain_id: UInt(32).encode(iou.chain_id),
+        amount: UInt(32).encode(iou.amount),
+        expiration_block: UInt(32).encode(iou.expiration_block),
+      },
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => lastIOUResult),
+      text: jest.fn(async () => jsonStringify(lastIOUResult)),
+    });
+
+    const errorResult = {
+      errors: 'No route between nodes found.',
+      error_code: 2201,
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      json: jest.fn(async () => errorResult),
+      text: jest.fn(async () => jsonStringify(errorResult)),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    await waitBlock();
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      iouPersist(
+        {
+          iou: expect.objectContaining({
+            amount: bigNumberify(102),
+          }),
+        },
+        { tokenNetwork, serviceAddress: iou.receiver },
+      ),
+    );
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail last iou server error', async () => {
+    // Original test(old pattern) failed
+    expect.assertions(1);
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: jest.fn(async () => {
+        /* error */
+      }),
+      text: jest.fn(async () => jsonStringify({})),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    await waitBlock();
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED,
+          details: { responseStatus: 500, responseText: '{}' },
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail last iou invalid signature', async () => {
+    // Original test(old pattern) failing
+    expect.assertions(1);
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+    const iou = makeIou(raiden, pfsAddress);
+    const lastIOUResult = {
+      last_iou: {
+        ...iou,
+        chain_id: UInt(32).encode(iou.chain_id),
+        amount: UInt(32).encode(iou.amount),
+        expiration_block: UInt(32).encode(iou.expiration_block),
+        signature: '0x87ea2a9c6834513dcabfca011c4422eb02a824b8bbbfc8f555d6a6dd2ebbbe953e1a47ad27b9715d8c8cf2da833f7b7d6c8f9bdb997591b7234999901f042caf1f' as Signature,
+      },
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => lastIOUResult),
+      text: jest.fn(async () => jsonStringify(lastIOUResult)),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    await waitBlock();
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH,
+          details: expect.objectContaining({
+            signer: expect.any(String),
+            address: raiden.address,
+          }),
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail iou already claimed', async () => {
+    // Original test(old pattern) failing
+    expect.assertions(2);
+
+    const pfsInfoResponse = makePfsInfoResponse(raiden, pfsAddress);
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+
+    const iou = makeIou(raiden, pfsAddress);
+    const lastIOUResult = {
+      last_iou: {
+        ...(await signIOU(raiden.deps.signer, iou)),
+        chain_id: UInt(32).encode(iou.chain_id),
+        amount: UInt(32).encode(iou.amount),
+        expiration_block: UInt(32).encode(iou.expiration_block),
+      },
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => lastIOUResult),
+      text: jest.fn(async () => jsonStringify(lastIOUResult)),
+    });
+
+    const result = {
+      errors:
+        'The IOU is already claimed. Please start new session with different `expiration_block`.',
+      error_code: 2105,
+    };
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: jest.fn(async () => result),
+      text: jest.fn(async () => jsonStringify(result)),
+    });
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    await waitBlock();
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
+    );
+
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({
+          message: ErrorCodes.PFS_ERROR_RESPONSE,
+          details: {
+            errors:
+              'The IOU is already claimed. Please start new session with different `expiration_block`.',
+            errorCode: 2105,
+          },
+        }),
+        pathFindMeta,
+      ),
+    );
+  });
+
+  test('fail pfs disabled', async () => {
+    expect.assertions(2);
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await waitBlock();
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+    await waitBlock();
+    // disable pfs
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: null }));
+
+    await waitBlock();
+    await expect(
+      raiden.deps.latest$.pipe(pluckDistinct('config', 'pfs'), first()).toPromise(),
+    ).resolves.toBeNull();
+
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const targetAddress = target.address as Address;
+    const pathFindMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      target: targetAddress,
+      value: amount,
+    };
+
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${partner.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: partner.address },
+      ),
+    );
+    raiden.store.dispatch(
+      matrixPresence.success(
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: true,
+          ts: Date.now(),
+        },
+        { address: target.address },
+      ),
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({ message: ErrorCodes.PFS_DISABLED }),
+        pathFindMeta,
+      ),
+    );
   });
 });
 
@@ -1632,6 +3148,159 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     }, 10);
 
     await expect(promise).resolves.toBeUndefined();
+  });
+});
+
+describe('PFS: pfsFeeUpdateEpic1', () => {
+  test('success: send PFSFeeUpdate to global pfsRoom on channelMonitored', async () => {
+    expect.assertions(1);
+    const [raiden, partner] = await makeRaidens(2);
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          // disable NO_RECEIVE & NO_MEDIATE
+        },
+      }),
+    );
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsOpen([raiden, partner]);
+    await waitBlock();
+
+    expect(raiden.output).toContainEqual(
+      messageGlobalSend(
+        {
+          message: expect.objectContaining({
+            type: MessageType.PFS_FEE_UPDATE,
+            signature: expect.any(String),
+          }),
+        },
+        { roomName: expect.stringContaining('path_finding') },
+      ),
+    );
+  });
+
+  test("signature fail isn't fatal", async () => {
+    // expect.assertions(2);
+    const [raiden, partner] = await makeRaidens(2);
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          // disable NO_RECEIVE & NO_MEDIATE
+        },
+      }),
+    );
+    const signerSpy = jest.spyOn(raiden.deps.signer, 'signMessage');
+    signerSpy.mockRejectedValueOnce(new Error('Signature rejected'));
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsOpen([raiden, partner]);
+
+    await waitBlock();
+    expect(signerSpy).toHaveBeenCalledTimes(1);
+    expect(raiden.output).not.toContainEqual(raidenShutdown(expect.anything()));
+    expect(raiden.output).not.toContainEqual(
+      messageGlobalSend(
+        {
+          message: expect.objectContaining({
+            type: MessageType.PFS_FEE_UPDATE,
+            signature: expect.any(String),
+          }),
+        },
+        expect.anything(),
+      ),
+    );
+    signerSpy.mockRestore();
+  });
+
+  test('skip: channel is not open', async () => {
+    // expect.assertions(1);
+    const [raiden, partner] = await makeRaidens(2);
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          // disable NO_RECEIVE & NO_MEDIATE
+        },
+      }),
+    );
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsOpen([raiden, partner]);
+    await waitBlock();
+    const channelId = id;
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const partnerAddress = partner.address as Address;
+    const channelMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      partner: partnerAddress,
+    };
+    const index = raiden.output.length;
+    // put channel in 'closing' state
+    raiden.store.dispatch(channelClose.request(undefined, channelMeta));
+    // raiden.store.dispatch(channelMonitored({ id: channelId }, channelMeta));
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    // We expect on the slice because there is already one PFS_FEE_UPDATE message
+    // due to opening of the channel earlier
+    expect(raiden.output.slice(index)).not.toContainEqual(
+      messageGlobalSend(
+        {
+          message: expect.objectContaining({
+            type: MessageType.PFS_FEE_UPDATE,
+            signature: expect.any(String),
+          }),
+        },
+        expect.anything(),
+      ),
+    );
+  });
+
+  test('skip: NO_MEDIATE', async () => {
+    // expect.assertions(1);
+    const [raiden, partner] = await makeRaidens(2);
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          // disable NO_RECEIVE & NO_MEDIATE
+        },
+      }),
+    );
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsOpen([raiden, partner]);
+    await waitBlock();
+    const channelId = id;
+    const tokenNetworkAddress = tokenNetwork as Address;
+    const partnerAddress = partner.address as Address;
+    const channelMeta = {
+      tokenNetwork: tokenNetworkAddress,
+      partner: partnerAddress,
+    };
+    const index = raiden.output.length;
+    // put channel in 'closing' state
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          [Capabilities.NO_MEDIATE]: true,
+        },
+      }),
+    );
+    // raiden.store.dispatch(channelMonitored({ id: channelId }, channelMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output.slice(index)).not.toContainEqual(
+      messageGlobalSend(
+        {
+          message: expect.objectContaining({
+            type: MessageType.PFS_FEE_UPDATE,
+            signature: expect.any(String),
+          }),
+        },
+        expect.anything(),
+      ),
+    );
   });
 });
 

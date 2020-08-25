@@ -162,6 +162,9 @@ export const matrixServer = 'matrix.raiden.test';
 export const secret = makeSecret();
 export const secrethash = getSecrethash(secret);
 export const amount = bigNumberify(10) as UInt<32>;
+export const pfsAddress = makeAddress();
+export const pfsTokenAddress = makeAddress();
+export const fee = bigNumberify(3) as Int<32>;
 
 /**
  * Get channel state with partner for tokenNetwork

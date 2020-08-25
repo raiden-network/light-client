@@ -46,6 +46,7 @@ import { MonitoringServiceFactory } from 'raiden-ts/contracts/MonitoringServiceF
 import { MonitoringService } from 'raiden-ts/contracts/MonitoringService';
 
 import { RaidenEpicDeps, ContractsInfo, Latest } from 'raiden-ts/types';
+import { IOU } from 'raiden-ts/services/types';
 import { makeInitialState, RaidenState } from 'raiden-ts/state';
 import { assert } from 'raiden-ts/utils';
 import { Address, Signature, UInt, Hash } from 'raiden-ts/utils/types';
@@ -177,6 +178,40 @@ export function makeTransaction(
   };
 }
 
+/**
+ * @param raiden - Instance of MockedRaiden
+ * @param pfsAddress - Ethereum Address of the pfs
+ * @returns Mocked PFSResponse message
+ */
+export function makePfsInfoResponse(raiden: MockedRaiden, pfsAddress: Address) {
+  return {
+    message: 'pfs message',
+    network_info: {
+      chain_id: raiden.deps.network.chainId,
+      token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+    },
+    operator: 'pfs operator',
+    payment_address: pfsAddress,
+    price_info: 2,
+    version: '0.4.1',
+  };
+}
+
+/**
+ * @param raiden - Instance of MockedRaiden
+ * @param pfsAddress - Ethereum Address of the pfs
+ * @returns Mocked IOU type Object
+ */
+export function makeIou(raiden: MockedRaiden, pfsAddress: Address) {
+  return {
+    sender: raiden.address,
+    receiver: pfsAddress,
+    one_to_n_address: '0x0A0000000000000000000000000000000000000a' as Address,
+    chain_id: bigNumberify(raiden.deps.network.chainId) as UInt<32>,
+    expiration_block: bigNumberify(3232341) as UInt<32>,
+    amount: bigNumberify(100) as UInt<32>,
+  } as IOU;
+}
 /**
  * Returns a mocked MatrixClient
  *
