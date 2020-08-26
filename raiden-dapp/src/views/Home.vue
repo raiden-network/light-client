@@ -124,12 +124,14 @@ export default class Home extends Vue {
 
     this.connectDialog = false;
     this.connecting = true;
+    const stateBackup = this.stateBackup;
+
     this.$store.commit('reset');
     // Have to reset this explicitly, for some reason
     this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
 
     await this.$raiden.connect(
-      this.stateBackup,
+      stateBackup,
       useRaidenAccount ? true : undefined
     );
     this.connecting = false;
