@@ -131,10 +131,15 @@ const store: StoreOptions<RootState> = {
       state.network = network;
     },
     reset(state: RootState) {
-      // Preserve settings when resetting state
-      const { settings, disclaimerAccepted } = state;
+      // Preserve settings and backup when resetting state
+      const { settings, disclaimerAccepted, stateBackup } = state;
 
-      Object.assign(state, { ...defaultState(), settings, disclaimerAccepted });
+      Object.assign(state, {
+        ...defaultState(),
+        settings,
+        disclaimerAccepted,
+        stateBackup,
+      });
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {
       state.transfers = { ...state.transfers, [transfer.key]: transfer };

@@ -264,6 +264,7 @@ export default class RaidenService {
         }
       }
     } catch (e) {
+      console.error('Init error', e);
       let deniedReason: DeniedReason;
       if (e.message && e.message.indexOf('No deploy info provided') > -1) {
         deniedReason = DeniedReason.UNSUPPORTED_NETWORK;
@@ -627,8 +628,9 @@ export default class RaidenService {
 
   /* istanbul ignore next */
   async getState() {
-    this._raiden?.stop();
-    return await this._raiden?.state$.toPromise();
+    this._raiden!.stop();
+    await this._raiden!.state$.toPromise();
+    return this._raiden!.dumpDatabase();
   }
 
   /* istanbul ignore next */
