@@ -1,6 +1,5 @@
 export class Web3Provider {
   static async provider(rpcEndpoint?: string) {
-    const ethereum = window.ethereum;
     let provider = null;
 
     if (rpcEndpoint) {
@@ -9,17 +8,17 @@ export class Web3Provider {
       } else {
         provider = rpcEndpoint;
       }
-    } else if (typeof ethereum !== 'undefined') {
-      await ethereum.enable();
-      provider = ethereum;
+    } else if (typeof window.ethereum !== 'undefined') {
+      window.ethereum.autoRefreshOnNetworkChange = false;
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      provider = window.ethereum;
     } else if (window.web3) {
       provider = window.web3.currentProvider;
     }
 
     /* istanbul ignore next */
     if (provider && provider.isMetaMask) {
-      provider.autoRefreshOnNetworkChange = false;
-      provider.on('networkChanged', () =>
+      provider.on('chainChanged', () =>
         window.location.replace(window.location.origin)
       );
     }
