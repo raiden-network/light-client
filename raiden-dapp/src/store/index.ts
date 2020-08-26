@@ -242,15 +242,9 @@ const store: StoreOptions<RootState> = {
           return pendingTransfers;
         }, {}),
     transfer: (state: RootState) => (paymentId: BigNumber) => {
-      const key = Object.keys(state.transfers).find(
-        (key) => state.transfers[key].paymentId === paymentId
+      return Object.values(state.transfers).find((transfer) =>
+        transfer.paymentId.eq(paymentId)
       );
-
-      if (key) {
-        return state.transfers[key];
-      }
-
-      return undefined;
     },
     isConnected: (state: RootState): boolean => {
       return (
