@@ -8,20 +8,10 @@
         <span class="notification-card__content__details__title">
           {{ notification.title }}
         </span>
-        <div class="notification-card__content__details__description">
-          <p v-for="(word, index) in splitDescription" :key="index">
-            <template v-if="isAddress(word)">
-              <address-display
-                class="notification-card__content__details__description__address"
-                :address="word"
-              />
-            </template>
-            <template v-else>
-              {{ word }}
-            </template>
-          </p>
-        </div>
-        <span class="notification-card__content__details__date">
+        <notification-description-display
+          :description="notification.description"
+        />
+        <span class="notification-card__content__details__received">
           {{ notification.received | formatDate }}
         </span>
       </div>
@@ -36,32 +26,23 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { NotificationPayload } from '@/store/notifications/types';
 import { createNamespacedHelpers } from 'vuex';
-import AddressDisplay from '@/components/AddressDisplay.vue';
+import NotificationDescriptionDisplay from '@/components/notification-panel/NotificationDescriptionDisplay.vue';
 
 const { mapMutations } = createNamespacedHelpers('notifications');
 
 @Component({
   components: {
-    AddressDisplay,
+    NotificationDescriptionDisplay,
   },
   methods: {
     ...mapMutations(['notificationDelete']),
   },
 })
 export default class NotificationCard extends Vue {
-  splitDescription: string[] = [];
   notificationDelete!: (id: number) => void;
 
   @Prop({ required: true })
   notification!: NotificationPayload;
-
-  isAddress(address: string): boolean {
-    return /^0x.+/.test(address);
-  }
-
-  mounted() {
-    this.splitDescription = this.notification.description.split(/\s+/);
-  }
 }
 </script>
 
@@ -93,24 +74,7 @@ export default class NotificationCard extends Vue {
         color: $primary-color;
       }
 
-      &__description {
-        color: $secondary-text-color;
-        display: flex;
-        font-size: 14px;
-
-        > p {
-          padding-right: 4px;
-          margin: 0;
-        }
-
-        &__address {
-          color: $secondary-text-color;
-          font-size: 14px;
-          padding-top: 1px;
-        }
-      }
-
-      &__date {
+      &__received {
         color: $secondary-text-color;
         font-size: 12px;
       }
