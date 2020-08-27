@@ -223,18 +223,10 @@ export default class RaidenService {
             );
           } else if (value.type === 'channel/settle/success') {
             if (value.payload.confirmed) {
-              await this.notifyChannelSettleSuccess(
-                value.meta.partner,
-                value.meta.tokenNetwork,
-                value.payload.txHash
-              );
+              await this.notifyChannelSettleSuccess(value.meta.partner);
             }
           } else if (value.type === 'channel/settle/failure') {
-            await this.notifyChannelSettleFailure(
-              value.meta.partner,
-              value.meta.tokenNetwork,
-              value.payload.message
-            );
+            await this.notifyChannelSettleFailure(value.meta.partner);
           }
         });
 
@@ -394,41 +386,27 @@ export default class RaidenService {
     } as NotificationPayload);
   }
 
-  private async notifyChannelSettleSuccess(
-    partner: string,
-    tokenNetwork: string,
-    txHash: string
-  ) {
-    let description = i18n.t('notifications.settlement.success.description', {
+  private async notifyChannelSettleSuccess(partner: string) {
+    const description = i18n.t('notifications.settlement.success.description', {
       partner,
-      tokenNetwork,
-      txHash,
     });
 
-    if (this._subkey) {
-      description +=
-        ' ' + i18n.t('notifications.settlement.success.withdrawal_hint');
-    }
     await this.store.dispatch('notifications/notify', {
       title: i18n.t('notifications.settlement.success.title'),
       description,
+      icon: i18n.t('notifications.settlement.icon'),
       context: NotificationContext.INFO,
       importance: NotificationImportance.HIGH,
     } as NotificationPayload);
   }
 
-  private async notifyChannelSettleFailure(
-    partner: string,
-    tokenNetwork: string,
-    message: string
-  ) {
+  private async notifyChannelSettleFailure(partner: string) {
     await this.store.dispatch('notifications/notify', {
       title: i18n.t('notifications.settlement.failure.title'),
       description: i18n.t('notifications.settlement.failure.description', {
         partner,
-        tokenNetwork,
-        message,
       }),
+      icon: i18n.t('notifications.settlement.icon'),
       context: NotificationContext.ERROR,
       importance: NotificationImportance.HIGH,
     } as NotificationPayload);
