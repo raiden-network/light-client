@@ -49,14 +49,13 @@ export default class NotificationDescriptionDisplay extends Vue {
   font-size: 14px;
 
   > p {
-    padding-right: 4px;
     margin: 0;
   }
 
   &__address {
     color: $secondary-text-color;
     font-size: 14px;
-    padding-top: 1px;
+    padding: 1px 4px 0 4px;
   }
 }
 </style>
