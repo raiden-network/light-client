@@ -394,8 +394,7 @@ export default class RaidenService {
     await this.store.dispatch('notifications/notify', {
       title: i18n.t('notifications.settlement.success.title'),
       description,
-      icon: i18n.t('notifications.settlement.icon'),
-      context: NotificationContext.INFO,
+      context: NotificationContext.SETTLE,
       importance: NotificationImportance.HIGH,
     } as NotificationPayload);
   }
@@ -406,8 +405,7 @@ export default class RaidenService {
       description: i18n.t('notifications.settlement.failure.description', {
         partner,
       }),
-      icon: i18n.t('notifications.settlement.icon'),
-      context: NotificationContext.ERROR,
+      context: NotificationContext.SETTLE,
       importance: NotificationImportance.HIGH,
     } as NotificationPayload);
   }
