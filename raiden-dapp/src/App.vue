@@ -2,7 +2,9 @@
   <v-app dark>
     <div id="application-wrapper">
       <router-view name="modal" />
-      <router-view name="notifications" />
+      <transition name="slide">
+        <router-view name="notifications" />
+      </transition>
       <div id="application-content">
         <app-header />
         <v-main>
@@ -49,6 +51,23 @@ export default class App extends Mixins(NavigationMixin) {
 <style lang="scss" scoped>
 @import 'scss/mixins';
 @import 'scss/colors';
+
+.slide-enter-active {
+  animation: slide-in 0.5s;
+}
+.slide-leave-active {
+  animation: slide-in 0.5s reverse;
+}
+@keyframes slide-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(100%, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
 
 .v-application {
   background: $background-gradient !important;
