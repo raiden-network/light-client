@@ -16,7 +16,7 @@
         </span>
       </div>
       <v-btn x-small icon @click="notificationDelete(notification.id)">
-        <img :src="require('@/assets/trash.svg')" />
+        <img :src="require('@/assets/notification_trash.svg')" />
       </v-btn>
     </v-row>
   </v-card>
