@@ -1,14 +1,14 @@
 <template>
   <div class="notification-description">
-    <p v-for="(word, index) in splitDescription" :key="index">
-      <template v-if="isAddress(word)">
+    <p v-for="(phrase, index) in splitDescription" :key="index">
+      <template v-if="isAddress(phrase)">
         <address-display
           class="notification-description__address"
-          :address="word"
+          :address="phrase"
         />
       </template>
       <template v-else>
-        {{ word }}
+        {{ phrase }}
       </template>
     </p>
   </div>
@@ -24,17 +24,18 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
   },
 })
 export default class NotificationDescriptionDisplay extends Vue {
+  regex = /(0x.{40})/g;
   splitDescription: string[] = [];
 
   @Prop({ required: true })
   description!: string;
 
   isAddress(address: string): boolean {
-    return /^0x.+/.test(address);
+    return this.regex.test(address);
   }
 
   mounted() {
-    this.splitDescription = this.description.split(/\s+/);
+    this.splitDescription = this.description.split(this.regex);
   }
 }
 </script>
