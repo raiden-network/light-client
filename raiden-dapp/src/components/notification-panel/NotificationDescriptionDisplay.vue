@@ -24,18 +24,18 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
   },
 })
 export default class NotificationDescriptionDisplay extends Vue {
-  regex = /(0x.{40})/g;
+  addressRegEx = /(0x.[a-fA-F0-9]{1,40})/g;
   splitDescription: string[] = [];
 
   @Prop({ required: true })
   description!: string;
 
   isAddress(address: string): boolean {
-    return this.regex.test(address);
+    return this.addressRegEx.test(address);
   }
 
   mounted() {
-    this.splitDescription = this.description.split(this.regex);
+    this.splitDescription = this.description.split(this.addressRegEx);
   }
 }
 </script>
