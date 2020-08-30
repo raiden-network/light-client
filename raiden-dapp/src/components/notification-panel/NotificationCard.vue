@@ -9,6 +9,7 @@
           {{ notification.title }}
         </span>
         <notification-description-display
+          class="notification-card__content__details__description"
           :description="notification.description"
         />
         <span class="notification-card__content__details__received">

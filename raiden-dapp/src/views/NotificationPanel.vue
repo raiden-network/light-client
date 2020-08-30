@@ -30,7 +30,7 @@
               <v-lazy
                 transition="fade-transition"
                 :options="{ threshold: 0.7 }"
-                min-height="200"
+                min-height="88"
               >
                 <notification-card
                   :notification="notification"
@@ -87,7 +87,7 @@ export default class NotificationPanel extends Mixins(NavigationMixin) {
 }
 
 .notification-panel-content {
-  background-color: $card-background;
+  background-color: $notification-panel-bg;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
