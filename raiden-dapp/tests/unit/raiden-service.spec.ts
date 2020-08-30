@@ -986,35 +986,7 @@ describe('RaidenService', () => {
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       title: 'notifications.settlement.success.title',
       description: 'notifications.settlement.success.description',
-      context: NotificationContext.INFO,
-      importance: NotificationImportance.HIGH,
-    });
-  });
-
-  test('notification for successful channel settle includes withdraw hint when subkey', async () => {
-    expect.assertions(1);
-    const subject = new BehaviorSubject({});
-    (raiden as any).events$ = subject;
-    await setupSDK({ subkey: true });
-    (store.getters as any) = {
-      udcToken: {},
-    };
-    subject.next({
-      type: 'channel/settle/success',
-      payload: {
-        id: 0,
-        txHash: '0xTxHash',
-        txBlock: '0TxBlock',
-        confirmed: true,
-      },
-      meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
-    });
-
-    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
-      title: 'notifications.settlement.success.title',
-      description:
-        'notifications.settlement.success.description notifications.settlement.success.withdrawal_hint',
-      context: NotificationContext.INFO,
+      context: NotificationContext.SETTLE,
       importance: NotificationImportance.HIGH,
     });
   });
@@ -1036,7 +1008,7 @@ describe('RaidenService', () => {
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       title: 'notifications.settlement.failure.title',
       description: 'notifications.settlement.failure.description',
-      context: NotificationContext.ERROR,
+      context: NotificationContext.SETTLE,
       importance: NotificationImportance.HIGH,
     });
   });
