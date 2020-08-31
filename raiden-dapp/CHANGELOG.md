@@ -7,7 +7,9 @@
 ### Added
 
 ### Changes
+- [#1929] Design adjustments to settlement notifications and notification panel 
 
+[#1929]: https://github.com/raiden-network/light-client/issues/1929
 [#2098]: https://github.com/raiden-network/light-client/issues/2098
 
 ## [0.11.1] - 2020-08-18
