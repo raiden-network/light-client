@@ -71,19 +71,17 @@ describe('AppHeader.vue', () => {
   test('show title only if on disclaimer route', () => {
     connectAccount();
     wrapper = createWrapper(RouteNames.DISCLAIMER);
-    const title = wrapper.find('.app-header__top__content__title');
+    const title = wrapper.find('.app-header__title__route');
     const networkLabel = wrapper.find('.app-header__top__content__network');
     const notificationsBadge = wrapper.find(
       '.app-header__notifications-wrapper'
     );
-    const identicon = wrapper.find('.app-header__account-wrapper');
-    const addressBar = wrapper.find('.app-header__bottom__address');
+    const identicon = wrapper.find('.app-header__icons__identicon');
 
     expect((wrapper.vm as any).canGoBack).toBe(false);
     expect(title.exists()).toBe(true);
     expect(networkLabel.exists()).toBe(false);
     expect(notificationsBadge.exists()).toBe(false);
     expect(identicon.exists()).toBe(false);
-    expect(addressBar.exists()).toBe(false);
   });
 });
