@@ -15,7 +15,7 @@
             })
           }}
         </div>
-        <div>
+        <div class="token-information__address">
           <address-display :address="token.address" />
         </div>
       </v-col>
@@ -90,9 +90,10 @@ export default class TokenInformation extends Vue {
 </script>
 <style scoped lang="scss">
 @import '../scss/fonts';
+@import '../scss/mixins';
 
 .token-information {
-  max-height: 55px;
+  height: auto;
   margin-top: 25px;
 
   &__label {
@@ -113,6 +114,16 @@ export default class TokenInformation extends Vue {
     overflow-x: visible;
     text-overflow: ellipsis;
     line-height: 28px;
+    @include respond-to(handhelds) {
+      margin-left: 20px;
+      width: 100%;
+    }
+  }
+
+  &__address {
+    @include respond-to(handhelds) {
+      margin-left: 20px;
+    }
   }
 
   &__balance {

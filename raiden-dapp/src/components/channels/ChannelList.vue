@@ -163,6 +163,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
       box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
       height: 105px;
       padding-left: 32px;
+      @include respond-to(handhelds) {
+        padding-left: 10px;
+      }
 
       &__partner-address {
         font-size: 16px;
@@ -173,6 +176,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
         color: #696969 !important;
         font-size: 16px;
         line-height: 20px;
+        @include respond-to(handhelds) {
+          font-size: 14px;
+        }
       }
 
       &__lifecycle {
@@ -196,6 +202,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   &__button {
     width: 85px;
     border-radius: 29px;
+    @include respond-to(handhelds) {
+      width: 25px;
+    }
 
     &__secondary {
       &:not([disabled]) {
@@ -210,6 +219,10 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   &.channel-action-inline {
     flex: 1 1;
+    @include respond-to(handhelds) {
+      display: flex;
+      flex-direction: column;
+    }
 
     .channel-action-button {
       margin: 0 4px;
@@ -227,6 +240,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
           transition: max-width 0.5s, padding 0.45s;
           overflow: hidden;
           padding-left: 0px;
+          @include respond-to(handhelds) {
+            display: none;
+          }
         }
       }
 
