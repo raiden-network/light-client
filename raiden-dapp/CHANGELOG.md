@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Fixed
 - [#2098] Input fields disabled on transfer screen when no channels are open
+- [#1838] Fixes Disclaimer mobile layout
 
 ### Added
 
@@ -11,6 +12,7 @@
 
 [#1929]: https://github.com/raiden-network/light-client/issues/1929
 [#2098]: https://github.com/raiden-network/light-client/issues/2098
+[#1838]: https://github.com/raiden-network/light-client/issues/1838
 
 ## [0.11.1] - 2020-08-18
 ### Fixed

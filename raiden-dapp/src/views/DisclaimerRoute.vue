@@ -68,16 +68,23 @@ export default class Disclaimer extends Vue {
 <style lang="scss" scoped>
 @import '../scss/colors';
 @import '../scss/scroll';
+@import '../scss/mixins';
 
 .disclaimer {
   border-top: solid 1px $primary-color;
   padding: 30px 30px 0 30px;
+  @include respond-to(handhelds) {
+    padding-top: 10px;
+  }
 
   &__paragraphs {
     font-size: 15px;
     overflow-y: auto;
     text-align: justify;
     @extend .themed-scrollbar;
+    @include respond-to(handhelds) {
+      height: 60vh;
+    }
   }
 
   &__accept-checkbox,
