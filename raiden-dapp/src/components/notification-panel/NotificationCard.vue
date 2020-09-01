@@ -1,39 +1,24 @@
 <template>
-  <v-card class="notification-card">
+  <v-card class="notification-card" flat>
     <v-row class="notification-card__content" no-gutters>
-      <v-col cols="3">
-        <v-avatar
-          class="notification-card__content__icon"
-          tile
-          size="80"
-          color="grey"
+      <v-avatar class="notification-card__content__icon" size="44" rounded>
+        <img :src="require(`@/assets/${notification.icon}.svg`)" />
+      </v-avatar>
+      <div class="notification-card__content__details">
+        <span class="notification-card__content__details__title">
+          {{ notification.title }}
+        </span>
+        <notification-description-display
+          class="notification-card__content__details__description"
+          :description="notification.description"
         />
-      </v-col>
-      <v-col class="notification-card__content__details">
-        <div class="notification-card__content__details__header">
-          <div
-            class="notification-card__content__details__header--title text--primary title"
-          >
-            {{ notification.title }}
-          </div>
-          <v-btn
-            icon
-            x-small
-            class="notification-card__dismiss"
-            @click="notificationDelete(notification.id)"
-          >
-            <v-icon icon>mdi-close</v-icon>
-          </v-btn>
-        </div>
-        <div
-          class="notification-card__content__details__description text--secondary"
-        >
-          <span>{{ notification.description }}</span>
-        </div>
-        <span class="notification-card__content__details--received">
+        <span class="notification-card__content__details__received">
           {{ notification.received | formatDate }}
         </span>
-      </v-col>
+      </div>
+      <v-btn x-small icon @click="notificationDelete(notification.id)">
+        <img :src="require('@/assets/notification_trash.svg')" />
+      </v-btn>
     </v-row>
   </v-card>
 </template>
@@ -42,19 +27,23 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { NotificationPayload } from '@/store/notifications/types';
 import { createNamespacedHelpers } from 'vuex';
+import NotificationDescriptionDisplay from '@/components/notification-panel/NotificationDescriptionDisplay.vue';
 
 const { mapMutations } = createNamespacedHelpers('notifications');
 
 @Component({
+  components: {
+    NotificationDescriptionDisplay,
+  },
   methods: {
     ...mapMutations(['notificationDelete']),
   },
 })
 export default class NotificationCard extends Vue {
+  notificationDelete!: (id: number) => void;
+
   @Prop({ required: true })
   notification!: NotificationPayload;
-
-  notificationDelete!: (id: number) => void;
 }
 </script>
 
@@ -63,54 +52,33 @@ export default class NotificationCard extends Vue {
 @import '@/scss/scroll';
 
 .notification-card {
-  background-color: $notification-card-background;
-  border-radius: 20px !important;
-  height: 200px;
-
-  &__dismiss {
-    padding-left: 14px;
-  }
+  background-color: $notification-card-bg;
+  border-radius: 16px !important;
+  height: 88px;
 
   &__content {
     height: 100%;
-    padding: 30px 30px 0 30px;
+    padding: 16px;
+
+    &__icon {
+      background-color: $notification-icon-bg;
+      padding: 4px;
+    }
 
     &__details {
       display: flex;
+      flex: 1;
       flex-direction: column;
-      max-width: 350px;
+      margin-left: 16px;
 
-      &__header {
-        display: flex;
-
-        &--title {
-          overflow-x: hidden;
-          text-overflow: ellipsis;
-          display: flex;
-          flex: 1;
-        }
+      &__title {
+        color: $primary-color;
       }
 
-      &__description {
-        margin-top: 10px;
-        max-height: 100px;
-        overflow-y: scroll;
-        padding-bottom: 10px;
-        @extend .themed-scrollbar;
-      }
-
-      &--received {
+      &__received {
         color: $secondary-text-color;
-        display: flex;
-        align-items: flex-end;
-        flex: 1;
-        padding-bottom: 30px;
         font-size: 12px;
       }
-    }
-
-    &__icon {
-      margin-top: 5px;
     }
   }
 }

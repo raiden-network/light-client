@@ -172,12 +172,13 @@ export class TestData {
 
   static notifications: NotificationPayload = {
     id: 1,
-    title: 'BALANCE PROOF SUBMITTED',
-    description: 'The monitoring service has submitted a balance proof.',
+    title: 'Channel Settlement',
+    description: 'Channel with 0x09123456789 was settled.',
+    icon: 'notification_settle',
     display: false,
     duration: 5000,
     importance: NotificationImportance.HIGH,
-    context: NotificationContext.INFO,
+    context: NotificationContext.NONE,
     received: new Date('June 5, 1986'),
   };
 }

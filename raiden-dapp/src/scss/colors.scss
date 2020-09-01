@@ -13,7 +13,7 @@ $transfer-screen-bg-color: #1e1e1e;
 $error-tooltip-background: #1e1e21;
 $input-background: rgba(255, 255, 255, 0.1);
 $card-background: #0f0e10;
-$notification-card-background: #232323;
+// $notification-card-background: #232323;
 $secondary-button-color: #323232;
 $secondary-button-color-disabled: rgba($secondary-button-color, 0.3);
 
@@ -27,3 +27,8 @@ $background-gradient: linear-gradient(90deg, #313030 0%, #000000 100%);
 // Color vars
 $color-white: #ffffff;
 $color-gray: #d8d8d8;
+
+// Notification panel
+$notification-panel-bg: #1e2528;
+$notification-card-bg: #2e3237;
+$notification-icon-bg: #34393e;

@@ -47,14 +47,14 @@
     },
     "clear": "Clear",
     "settlement": {
+      "icon": "notification_settle",
       "success": {
         "title": "Channel Settlement",
-        "description": "The channel with {partner} for the token network {tokenNetwork} has become settled ({txHash}).",
-        "withdrawal_hint": "Go to the acounts Withdrawal screen to transfer the tokens to your main account."
+        "description": "Channel with {partner} was settled."
       },
       "failure": {
         "title": "Channel Settlement",
-        "description": "The attempt to settle the channel with {partner} for the token network {tokenNetwork} failed: {message}"
+        "description": "Channel settlement with {partner} failed."
       }
     }
   },
@@ -661,8 +661,5 @@
       "title": "Use Raiden Account",
       "description": "By default the dApp uses a generated Raiden account to sign messages. Disable the Raiden account to use your Web3 provider account. All messages will then have to be signed manually."
     }
-  },
-  "notification-area": {
-    "dismiss": "Dismiss"
   }
 }

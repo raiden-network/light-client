@@ -83,6 +83,7 @@ export default class AddressDisplay extends Vue {
     line-height: 19px;
     display: flex;
     align-items: center;
+    width: fit-content;
   }
 
   &__tooltip {
