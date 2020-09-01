@@ -986,7 +986,8 @@ describe('RaidenService', () => {
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       title: 'notifications.settlement.success.title',
       description: 'notifications.settlement.success.description',
-      context: NotificationContext.SETTLE,
+      icon: 'notifications.settlement.icon',
+      context: NotificationContext.NONE,
       importance: NotificationImportance.HIGH,
     });
   });
@@ -1008,7 +1009,8 @@ describe('RaidenService', () => {
     expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
       title: 'notifications.settlement.failure.title',
       description: 'notifications.settlement.failure.description',
-      context: NotificationContext.SETTLE,
+      icon: 'notifications.settlement.icon',
+      context: NotificationContext.NONE,
       importance: NotificationImportance.HIGH,
     });
   });

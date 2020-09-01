@@ -47,6 +47,7 @@
     },
     "clear": "Clear",
     "settlement": {
+      "icon": "notification_settle",
       "success": {
         "title": "Channel Settlement",
         "description": "Channel with {partner} was settled."

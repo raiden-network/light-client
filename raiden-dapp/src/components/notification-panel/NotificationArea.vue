@@ -37,6 +37,7 @@ const emptyNotification: NotificationPayload = {
   id: -1,
   title: '',
   description: '',
+  icon: '',
   display: false,
   duration: 5000,
   importance: NotificationImportance.LOW,

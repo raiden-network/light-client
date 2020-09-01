@@ -2,7 +2,7 @@
   <v-card class="notification-card" flat>
     <v-row class="notification-card__content" no-gutters>
       <v-avatar class="notification-card__content__icon" size="44" rounded>
-        <img :src="require(`@/assets/${notification.context}.svg`)" />
+        <img :src="require(`@/assets/${notification.icon}.svg`)" />
       </v-avatar>
       <div class="notification-card__content__details">
         <span class="notification-card__content__details__title">

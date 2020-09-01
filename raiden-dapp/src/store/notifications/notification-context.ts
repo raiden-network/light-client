@@ -3,5 +3,4 @@ export enum NotificationContext {
   INFO = 'info',
   WARNING = 'warning',
   ERROR = 'error',
-  SETTLE = 'notification_settle',
 }

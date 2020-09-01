@@ -5,6 +5,7 @@ export interface NotificationPayload {
   readonly id: number;
   readonly title: string;
   readonly description: string;
+  readonly icon?: string;
   readonly display: boolean;
   readonly importance: NotificationImportance;
   readonly context: NotificationContext;
