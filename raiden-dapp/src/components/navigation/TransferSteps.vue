@@ -526,6 +526,7 @@ export default class TransferSteps extends Mixins(
 <style lang="scss" scoped>
 @import '../../scss/colors';
 @import '../../scss/fonts';
+@import '../../scss/mixins';
 
 .transfer-steps {
   background: transparent !important;
@@ -548,6 +549,9 @@ export default class TransferSteps extends Mixins(
       .v-stepper {
         &__label {
           display: block !important;
+          @include respond-to(handhelds) {
+            font-size: 12px;
+          }
         }
 
         &__step {
