@@ -14,15 +14,15 @@ import { Direction, TransfersState } from '../state';
 function shouldMediate(
   action: transferSigned,
   address: Address,
-  { sent }: TransfersState,
+  sent: TransfersState,
   { caps }: RaidenConfig,
 ): boolean {
-  const is_mediation_enabled = !caps?.[Capabilities.NO_MEDIATE];
-  const is_secrethash_used = action.meta.secrethash in sent;
-  const is_target =
+  const isMediationEnabled = !caps?.[Capabilities.NO_MEDIATE];
+  const isSecrethashUsed = action.meta.secrethash in sent;
+  const isntTarget =
     action.meta.direction === Direction.RECEIVED && action.payload.message.target !== address;
 
-  return is_mediation_enabled && !is_secrethash_used && !is_target;
+  return isMediationEnabled && !isSecrethashUsed && isntTarget;
 }
 
 /**
