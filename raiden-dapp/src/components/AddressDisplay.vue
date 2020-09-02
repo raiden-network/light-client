@@ -1,6 +1,6 @@
 <template>
   <div class="address__container">
-    <v-tooltip bottom close-delay="1400">
+    <v-tooltip bottom>
       <template #activator="{ on }">
         <p class="address__label" v-on="on" @click="copy">
           {{ addressOutput }}
