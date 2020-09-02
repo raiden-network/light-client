@@ -6,8 +6,9 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "start": "pnpm run versions && pnpm run contracts && tsc -w",
-    "build": "pnpm run versions && pnpm run contracts && tsc && tsc -p ./tsconfig.cjs.json && pnpm run contracts:post",
+    "prepare": "pnpm run versions && pnpm run contracts",
+    "start": "pnpm run prepare && tsc -w",
+    "build": "pnpm run prepare && tsc && tsc -p ./tsconfig.cjs.json && pnpm run contracts:post",
     "test": "pnpm run lint && NODE_ENV=development jest --coverage=true --testPathIgnorePatterns tests/integration",
     "test:integration": "NODE_ENV=development jest --runInBand --ci --coverage=true --testPathIgnorePatterns tests/unit tests/e2e",
     "test:unit": "NODE_ENV=development jest --runInBand --ci --coverage=true --testPathIgnorePatterns tests/integration tests/e2e",
@@ -22,7 +23,7 @@
     "docs:generate": "typedoc --ignoreCompilerErrors --mode file --theme markdown --platform vuepress --out ./docs ./src",
     "docs:build": "vuepress build docs",
     "docs:dev": "vuepress dev docs",
-    "prepare": "pnpm run clean && pnpm run build"
+    "prepack": "pnpm run clean && pnpm run build"
   },
   "repository": {
     "type": "git",
@@ -59,7 +60,7 @@
     "eslint": "^7.7.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-jsdoc": "^30.3.0",
+    "eslint-plugin-jsdoc": "^30.3.1",
     "eslint-plugin-prettier": "^3.1.4",
     "ganache-cli": "^6.10.1",
     "jest": "^26.4.2",

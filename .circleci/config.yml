@@ -140,6 +140,17 @@ jobs:
           name: "Upload coverage"
           command: bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
 
+  build_sdk:
+    executor: base-executor
+    working_directory: *working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run: pnpm run build --filter raiden-ts
+      - persist_to_workspace:
+          root: ~/src
+          paths:
+            - ./*
+
   build_dapp:
     executor: base-executor
     working_directory: *working_dir
@@ -236,22 +247,25 @@ workflows:
       - check_licenses:
           requires:
             - install
+      - build_sdk:
+          requires:
+            - install
       - lint:
           requires:
-            - install
+            - build_sdk
       - build_dapp:
           requires:
-            - install
+            - build_sdk
           context: "Raiden-LC-Deploy"
       - build_cli:
           requires:
-            - install
+            - build_sdk
       - test_sdk_e2e:
           requires:
-            - install
+            - build_sdk
       - test_sdk_unit:
           requires:
-            - install
+            - build_sdk
       - test_dapp:
           requires:
             - build_dapp
@@ -274,9 +288,14 @@ workflows:
             - checkout
           filters:
             <<: *filter-version-regex
-      - build_dapp:
+      - build_sdk:
           requires:
             - install
+          filters:
+            <<: *filter-version-regex
+      - build_dapp:
+          requires:
+            - build_sdk
           filters:
             <<: *filter-version-regex
       - generate_documentation:
