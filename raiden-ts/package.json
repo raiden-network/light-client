@@ -69,7 +69,7 @@
     "prettier": "^2.1.1",
     "rimraf": "^3.0.2",
     "rxjs-marbles": "^6.0.1",
-    "symbol-observable": "^1.2.0",
+    "symbol-observable": "^2.0.0",
     "tiny-async-pool": "^1.1.0",
     "ts-jest": "^26.3.0",
     "typechain": "^2.0.0",

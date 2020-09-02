@@ -34,7 +34,7 @@
     "native-ext-loader": "^2.3.0",
     "node-pre-gyp": "^0.15.0",
     "prettier": "^2.1.1",
-    "symbol-observable": "^1.2.0",
+    "symbol-observable": "^2.0.0",
     "ts-loader": "^8.0.3",
     "typescript": "^3.9.7",
     "webpack": "^4.44.1",
