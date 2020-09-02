@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Fixed
+- [#2026] Removed delay time on tooltips
 - [#2098] Input fields disabled on transfer screen when no channels are open
 - [#1838] Fixes Disclaimer mobile layout
 
@@ -10,6 +11,7 @@
 ### Changes
 - [#1929] Design adjustments to settlement notifications and notification panel 
 
+[#2026]: https://github.com/raiden-network/light-client/issues/2026
 [#1929]: https://github.com/raiden-network/light-client/issues/1929
 [#2098]: https://github.com/raiden-network/light-client/issues/2098
 [#1838]: https://github.com/raiden-network/light-client/issues/1838
