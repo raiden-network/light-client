@@ -3,7 +3,6 @@
 import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
-import { isError } from 'util';
 import { first } from 'rxjs/operators';
 
 import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils';
@@ -278,7 +277,7 @@ describe('RaidenError', () => {
       throw new RaidenError(ErrorCodes.PFS_DISABLED);
     } catch (err) {
       expect(err).toBeInstanceOf(RaidenError);
-      expect(isError(err)).toBeTruthy();
+      expect(err instanceof Error).toBeTruthy();
       expect(err.name).toEqual('RaidenError');
     }
   });

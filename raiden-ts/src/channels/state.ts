@@ -29,6 +29,7 @@ const _ChannelEnd = t.readonly(
     ),
     nextNonce: UInt(8), // usually balanceProof.nonce+1, but withdraw messages also increment it
   }),
+  'ChannelEnd',
 );
 export interface ChannelEnd extends t.TypeOf<typeof _ChannelEnd> {}
 export interface ChannelEndC extends t.Type<ChannelEnd, t.OutputOf<typeof _ChannelEnd>> {}
@@ -47,6 +48,7 @@ export const Channel = t.intersection([
       own: ChannelEnd,
       partner: ChannelEnd,
     }),
+    'Channel',
   ),
   t.union([
     /* union of types with literals intersection allows narrowing other props presence. e.g.:
@@ -59,6 +61,7 @@ export const Channel = t.intersection([
       t.type({
         state: t.union([t.literal(ChannelState.open), t.literal(ChannelState.closing)]),
       }),
+      'state[open|closing]',
     ),
     t.intersection([
       t.readonly(
@@ -66,6 +69,7 @@ export const Channel = t.intersection([
           closeBlock: t.number,
           closeParticipant: Address,
         }),
+        'ChannelClosed',
       ),
       t.union([
         t.readonly(
@@ -76,12 +80,11 @@ export const Channel = t.intersection([
               t.literal(ChannelState.settling),
             ]),
           }),
+          'state[closed|settleable|settling]',
         ),
         t.readonly(
-          t.type({
-            state: t.literal(ChannelState.settled),
-            settleBlock: t.number,
-          }),
+          t.type({ state: t.literal(ChannelState.settled), settleBlock: t.number }),
+          'state[settled]',
         ),
       ]),
     ]),

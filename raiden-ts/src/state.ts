@@ -51,6 +51,7 @@ const _RaidenState = t.readonly(
     ),
     pendingTxs: t.readonlyArray(ConfirmableAction),
   }),
+  'RaidenState',
 );
 
 // the interface trick below forces TSC to use the imported type instead of inlining
