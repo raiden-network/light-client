@@ -140,6 +140,7 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
 .transfer-inputs {
   background-color: $transfer-screen-bg-color;
   border-radius: 15px;
+  padding: 20px;
 
   &__form {
     width: 100%;
@@ -147,7 +148,6 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
     &__heading {
       display: flex;
       height: 40px;
-      margin: 16px 23px 0 23px;
 
       &--title {
         flex: none;
@@ -165,7 +165,6 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
     }
 
     &__address {
-      margin: 0 20px 0 20px;
       width: 100%;
       @include respond-to(handhelds) {
         padding: 0px;
@@ -179,10 +178,8 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
     }
 
     &__amount {
-      margin-left: 20px;
-      width: 300px;
+      width: 70%;
       @include respond-to(handhelds) {
-        margin-right: 20px;
         width: 100%;
         padding: 0px;
       }
@@ -190,8 +187,8 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
 
     &__button {
       padding-bottom: 30px;
+
       @include respond-to(handhelds) {
-        margin: 0 20px 20px 20px;
         padding: 0;
         width: 100%;
       }
@@ -199,7 +196,6 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
       ::v-deep {
         .col-10 {
           display: flex;
-          justify-content: flex-end;
           padding-top: 16px;
           @include respond-to(handhelds) {
             min-width: 100%;
@@ -209,7 +205,7 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
         .v-btn {
           border-radius: 8px;
           min-height: 49px;
-          max-width: 150px;
+          max-width: 140px;
           @include respond-to(handhelds) {
             min-width: 100%;
           }
