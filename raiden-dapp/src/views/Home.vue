@@ -1,65 +1,62 @@
 <template>
   <v-container fluid class="home">
-    <no-tokens v-if="!inaccessible && isConnected" />
-    <div v-else>
-      <v-row no-gutters>
-        <v-col cols="12">
-          <div class="home__logo-container">
-            <v-img
-              :src="require('../assets/logo.svg')"
-              aspect-ratio="1"
-              class="home__logo-container__logo"
-              contain
-            />
-          </div>
-        </v-col>
-      </v-row>
-      <v-row no-gutters>
-        <v-col cols="12">
-          <div class="home__app-welcome text-center">
-            {{ $t('home.welcome') }}
-          </div>
-        </v-col>
-      </v-row>
-      <v-row no-gutters>
-        <v-col cols="12">
-          <div class="home__disclaimer text-center font-weight-light">
-            {{ $t('home.disclaimer') }}
-          </div>
-          <i18n
-            path="home.getting-started.description"
-            tag="div"
-            class="home__getting-started text-center font-weight-light"
-          >
-            <a
-              href="https://github.com/raiden-network/light-client#getting-started"
-              target="_blank"
-            >
-              {{ $t('home.getting-started.link-name') }}
-            </a>
-          </i18n>
-          <no-access-message
-            v-if="accessDenied"
-            :reason="accessDenied"
-            class="home__no-access"
+    <v-row no-gutters>
+      <v-col cols="12">
+        <div class="home__logo-container">
+          <v-img
+            :src="require('../assets/logo.svg')"
+            aspect-ratio="1"
+            class="home__logo-container__logo"
+            contain
           />
-        </v-col>
-      </v-row>
-      <action-button
-        :text="$t('home.connect-button')"
-        :loading="connecting"
-        :enabled="!connecting"
-        sticky
-        @click="connect"
-      />
-      <connect-dialog
-        :connecting="connecting"
-        :visible="connectDialog"
-        :has-provider="hasProvider"
-        @connect="connect"
-        @close="connectDialog = false"
-      />
-    </div>
+        </div>
+      </v-col>
+    </v-row>
+    <v-row no-gutters>
+      <v-col cols="12">
+        <div class="home__app-welcome text-center">
+          {{ $t('home.welcome') }}
+        </div>
+      </v-col>
+    </v-row>
+    <v-row no-gutters>
+      <v-col cols="12">
+        <div class="home__disclaimer text-center font-weight-light">
+          {{ $t('home.disclaimer') }}
+        </div>
+        <i18n
+          path="home.getting-started.description"
+          tag="div"
+          class="home__getting-started text-center font-weight-light"
+        >
+          <a
+            href="https://github.com/raiden-network/light-client#getting-started"
+            target="_blank"
+          >
+            {{ $t('home.getting-started.link-name') }}
+          </a>
+        </i18n>
+        <no-access-message
+          v-if="accessDenied"
+          :reason="accessDenied"
+          class="home__no-access"
+        />
+      </v-col>
+    </v-row>
+    <action-button
+      :text="$t('home.connect-button')"
+      :loading="connecting"
+      :enabled="!connecting"
+      sticky
+      @click="connect"
+    />
+    <connect-dialog
+      :connecting="connecting"
+      :visible="connectDialog"
+      :has-provider="hasProvider"
+      @connect="connect"
+      @close="connectDialog = false"
+    />
   </v-container>
 </template>
 
@@ -68,10 +65,9 @@ import { Component, Vue } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
 import { Location } from 'vue-router';
 import { RouteNames } from '@/router/route-names';
-import { DeniedReason } from '@/model/types';
+import { DeniedReason, TokenModel } from '@/model/types';
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
-import NoTokens from '@/components/NoTokens.vue';
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
 import { Settings } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
@@ -80,17 +76,17 @@ import { ConfigProvider } from '@/services/config-provider';
 @Component({
   computed: {
     ...mapState(['loading', 'accessDenied', 'stateBackup', 'settings']),
-    ...mapGetters(['isConnected']),
+    ...mapGetters(['isConnected', 'tokens']),
   },
   components: {
     ActionButton,
     ConnectDialog,
-    NoTokens,
     NoAccessMessage,
   },
 })
 export default class Home extends Vue {
   isConnected!: boolean;
+  tokens!: TokenModel[];
   connectDialog: boolean = false;
   connecting: boolean = false;
   loading!: boolean;
@@ -106,14 +102,6 @@ export default class Home extends Vue {
     }
     const configuration = await ConfigProvider.configuration();
     this.hasProvider = !!configuration.rpc_endpoint;
-  }
-
-  get inaccessible() {
-    return (
-      this.connecting ||
-      this.loading ||
-      this.accessDenied !== DeniedReason.UNDEFINED
-    );
   }
 
   get navigationTarget(): Location {

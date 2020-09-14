@@ -1,17 +1,20 @@
 <template>
   <v-container class="transfer">
-    <transfer-headers
-      class="transfer__menus"
-      :token="token"
-      :capacity="capacity"
-    />
-    <transfer-inputs
-      class="transfer__inputs"
-      :token="token"
-      :capacity="capacity"
-    />
-    <transaction-list class="transfer__list" :token="token" />
-    <no-channels-dialog :visible="!openChannels" />
+    <no-tokens v-if="noTokens" />
+    <template v-else>
+      <transfer-headers
+        class="transfer__menus"
+        :token="token"
+        :capacity="capacity"
+      />
+      <transfer-inputs
+        class="transfer__inputs"
+        :token="token"
+        :capacity="capacity"
+      />
+      <transaction-list class="transfer__list" :token="token" />
+      <no-channels-dialog :visible="!openChannels" />
+    </template>
   </v-container>
 </template>
 
@@ -21,27 +24,34 @@ import { mapGetters } from 'vuex';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
+import NoTokens from '@/components/NoTokens.vue';
 import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
-import { Token } from '@/model/types';
+import { Token, TokenModel } from '@/model/types';
 
 @Component({
   components: {
+    NoTokens,
     TransferHeaders,
     TransferInputs,
     TransactionList,
     NoChannelsDialog,
   },
   computed: {
-    ...mapGetters(['channelWithBiggestCapacity', 'openChannels']),
+    ...mapGetters(['tokens', 'channelWithBiggestCapacity', 'openChannels']),
   },
 })
-export default class Transfer extends Vue {
+export default class TransferRoute extends Vue {
+  tokens!: TokenModel[];
   channelWithBiggestCapacity!: (
     tokenAddress: string
   ) => RaidenChannel | undefined;
+
+  get noTokens(): boolean {
+    return this.tokens.length === 0;
+  }
 
   get token(): Token {
     const { token: address } = this.$route.params;
