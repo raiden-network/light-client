@@ -168,21 +168,31 @@ export function globalNavigationGuard(
   _from: Route,
   next: NavigationGuardNext
 ) {
-  const routeToDisclaimer = to.name === RouteNames.DISCLAIMER;
+  const routingToDisclaimer = to.name === RouteNames.DISCLAIMER;
+  const routingToHome = to.name === RouteNames.HOME;
 
-  if (store.state.disclaimerAccepted) {
-    if (routeToDisclaimer) {
-      next({ name: RouteNames.HOME });
+  if (!store.state.disclaimerAccepted) {
+    if (!routingToDisclaimer) {
+      next({
+        name: RouteNames.DISCLAIMER,
+        query: { redirectTo: to.fullPath },
+      });
     } else {
       next();
     }
-  } else if (!routeToDisclaimer) {
-    next({
-      name: RouteNames.DISCLAIMER,
-      query: { redirectTo: to.fullPath },
-    });
+  } else if (!store.getters.isConnected) {
+    if (!routingToHome) {
+      next({
+        name: RouteNames.HOME,
+        query: { redirectTo: to.fullPath },
+      });
+    } else {
+      next();
+    }
+  } else if (routingToDisclaimer || routingToHome) {
+    next({ name: RouteNames.TRANSFER });
   } else {
-    next(); // Avoid infinite loop of disclaimer redirects
+    next();
   }
 }
 

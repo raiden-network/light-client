@@ -66,6 +66,8 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
+import { Location } from 'vue-router';
+import { RouteNames } from '@/router/route-names';
 import { DeniedReason } from '@/model/types';
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
@@ -114,6 +116,16 @@ export default class Home extends Vue {
     );
   }
 
+  get navigationTarget(): Location {
+    const redirectTo = this.$route.query.redirectTo as string;
+
+    if (redirectTo) {
+      return { path: redirectTo };
+    } else {
+      return { name: RouteNames.TRANSFER };
+    }
+  }
+
   async connect() {
     // On first time connect, show the connect dialog
     let { useRaidenAccount, isFirstTimeConnect } = this.settings;
@@ -135,6 +147,7 @@ export default class Home extends Vue {
     this.connecting = false;
     if (!this.accessDenied) {
       this.connectDialog = false;
+      this.$router.push(this.navigationTarget);
     }
   }
 }
