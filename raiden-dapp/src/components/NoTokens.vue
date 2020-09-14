@@ -1,15 +1,12 @@
 <template>
-  <v-container v-if="!tokens.length" fluid class="new-token fill-height">
-    <v-row align="center" justify="center" no-gutters>
-      <v-col class="new-token__button" cols="12">
-        <v-btn fab color="primary" @click="navigateToTokenSelect()">
-          <v-icon large>mdi-plus</v-icon>
-        </v-btn>
-      </v-col>
-      <v-col class="new-token__header" cols="12">
-        {{ $t('tokens.connect-new') }}
-      </v-col>
-    </v-row>
+  <v-container
+    v-if="!tokens.length"
+    class="fill-height flex-column justify-center"
+  >
+    <v-btn fab color="primary" @click="navigateToTokenSelect()">
+      <v-icon large>mdi-plus</v-icon>
+    </v-btn>
+    <span class="pt-4">{{ $t('tokens.connect-new') }}</span>
   </v-container>
 </template>
 
@@ -35,16 +32,3 @@ export default class NoTokens extends Mixins(NavigationMixin) {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.new-token {
-  &__button,
-  &__header {
-    text-align: center;
-  }
-
-  &__header {
-    padding: 15px 0 35px 0;
-  }
-}
-</style>
