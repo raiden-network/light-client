@@ -190,10 +190,8 @@ export default class RaidenService {
             this.store.commit('updateTokens', {
               [value.payload.token]: { address: value.payload.token },
             });
-          }
-
-          // Update presences on matrix presence updates
-          else if (value.type === 'matrix/presence/success') {
+          } else if (value.type === 'matrix/presence/success') {
+            // Update presences on matrix presence updates
             this.store.commit('updatePresence', {
               [value.meta.address]: value.payload.available,
             });
@@ -227,6 +225,11 @@ export default class RaidenService {
             }
           } else if (value.type === 'channel/settle/failure') {
             await this.notifyChannelSettleFailure(value.meta.partner);
+          } else if (value.type === 'channel/open/success') {
+            await this.notifyChannelOpenSuccess(
+              value.payload.txBlock,
+              value.meta.partner
+            );
           }
         });
 
@@ -411,6 +414,8 @@ export default class RaidenService {
       importance: NotificationImportance.HIGH,
     } as NotificationPayload);
   }
+
+  private async notifyChannelOpenSuccess(txBlock: number, partner: string) {}
 
   disconnect() {
     this.raiden.stop();
