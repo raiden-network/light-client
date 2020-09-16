@@ -8,28 +8,22 @@ import { NotificationContext } from '@/store/notifications/notification-context'
 
 export const actions: ActionTree<NotificationsState, RootState> = {
   notify: (
-    { commit, getters: { nextNotificationId } },
+    { commit, state, getters: { nextNotificationId } },
     notification: NotificationPayload
   ) => {
+    const notificationsWithSameTxHash = Object.values(
+      state.notifications
+    ).filter(({ txHash }) => txHash && txHash === notification.txHash);
+    const id = notificationsWithSameTxHash[0]?.id ?? nextNotificationId;
+
     const payload: NotificationPayload = {
       ...notification,
-      id: nextNotificationId,
+      id,
       received: new Date(),
       display: true,
       context: notification.context ?? NotificationContext.NONE,
       duration: notification.duration ?? 5000,
     };
-    commit('notificationAdd', payload);
-  },
-  notificationShown({ commit, state }, notificationId: number) {
-    const index = state.notifications.findIndex(
-      (notification) => notification.id === notificationId
-    );
-    if (index < 0) {
-      return;
-    }
-    const notifications = [...state.notifications];
-    notifications[index] = { ...state.notifications[index], display: false };
-    commit('notifications', notifications);
+    commit('notificationAddOrReplace', payload);
   },
 };

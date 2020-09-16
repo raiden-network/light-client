@@ -6,25 +6,20 @@ import { MutationTree } from 'vuex';
 
 export const mutations: MutationTree<NotificationsState> = {
   notificationDelete(state: NotificationsState, id: number) {
-    state.notifications = state.notifications.filter(
-      (notification) => notification.id !== id
-    );
+    delete state.notifications[id];
   },
   notificationsViewed(state: NotificationsState) {
     state.newNotifications = false;
   },
-  notificationAdd(
+  notificationAddOrReplace(
     state: NotificationsState,
     notification: NotificationPayload
   ) {
-    state.notifications.push(notification);
+    state.notifications[notification.id] = notification;
     state.newNotifications = true;
   },
-  notifications(
-    state: NotificationsState,
-    notifications: NotificationPayload[]
-  ) {
-    state.notifications = notifications;
+  setNotificationShown(state: NotificationsState, id: number) {
+    state.notifications[id].display = false;
   },
   clear(state: NotificationsState) {
     state.notifications = [];
