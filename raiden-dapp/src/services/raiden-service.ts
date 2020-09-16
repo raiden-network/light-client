@@ -228,6 +228,8 @@ export default class RaidenService {
           } else if (value.type === 'channel/open/success') {
             await this.notifyChannelOpenSuccess(
               value.payload.txBlock,
+              value.payload.txHash,
+              value.payload.confirmed,
               value.meta.partner
             );
           }
@@ -415,7 +417,31 @@ export default class RaidenService {
     } as NotificationPayload);
   }
 
-  private async notifyChannelOpenSuccess(txBlock: number, partner: string) {}
+  private async notifyChannelOpenSuccess(
+    txBlock: number,
+    txHash: string,
+    txConfirmed: boolean | undefined,
+    partner: string
+  ) {
+    const txConfirmationBlock = txBlock + this.raiden.config.confirmationBlocks;
+    const description = i18n.t(
+      'notifications.channel-open.success.description',
+      {
+        partner,
+      }
+    );
+
+    await this.store.dispatch('notifications/notify', {
+      title: i18n.t('notifications.channel-open.success.title'),
+      description,
+      icon: i18n.t('notifications.channel-open.icon'),
+      context: NotificationContext.NONE,
+      importance: NotificationImportance.HIGH,
+      txConfirmationBlock,
+      txHash,
+      txConfirmed,
+    } as NotificationPayload);
+  }
 
   disconnect() {
     this.raiden.stop();
