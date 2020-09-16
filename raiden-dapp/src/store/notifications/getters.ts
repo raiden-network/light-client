@@ -11,11 +11,10 @@ export const getters: GetterTree<NotificationsState, RootState> = {
     return Object.values(state.notifications).sort((a, b) => a.id - b.id);
   },
   nextNotificationId: ({ notifications }: NotificationsState): number => {
-    return (
-      Math.max(
-        ...Object.values(notifications).map((notification) => notification.id)
-      ) + 1
+    const id = Object.values(notifications).map(
+      (notification) => notification.id
     );
+    return Math.max(...id, 0) + 1;
   },
   notificationQueue: (state: NotificationsState): NotificationPayload[] => {
     return Object.values(state.notifications).filter(
