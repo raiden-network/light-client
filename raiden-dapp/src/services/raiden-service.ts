@@ -338,7 +338,7 @@ export default class RaidenService {
           message: message,
         });
 
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.withdrawal.failure.title'),
       description,
       context: NotificationContext.ERROR,
@@ -355,7 +355,7 @@ export default class RaidenService {
     const amount = BalanceUtils.toUnits(plannedAmount, decimals);
     const withdrawn = BalanceUtils.toUnits(withdrawal, decimals);
 
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.withdrawal.success.title'),
       description: i18n.t('notifications.withdrawal.success.description', {
         amount,
@@ -377,7 +377,7 @@ export default class RaidenService {
     const decimals = token.decimals ?? 18;
     const amount = BalanceUtils.toUnits(reward, decimals);
 
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.ms-balance-proof.title'),
       description: i18n.t('notifications.ms-balance-proof.description', {
         monitoringService,
@@ -396,7 +396,7 @@ export default class RaidenService {
       partner,
     });
 
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.settlement.success.title'),
       description,
       icon: i18n.t('notifications.settlement.icon'),
@@ -406,7 +406,7 @@ export default class RaidenService {
   }
 
   private async notifyChannelSettleFailure(partner: string) {
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.settlement.failure.title'),
       description: i18n.t('notifications.settlement.failure.description', {
         partner,
@@ -431,7 +431,7 @@ export default class RaidenService {
       }
     );
 
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.channel-open.success.title'),
       description,
       icon: i18n.t('notifications.channel-open.icon'),

@@ -1,4 +1,3 @@
-import { actions } from './actions';
 import { mutations } from './mutations';
 import { getters } from './getters';
 import state from './state';
@@ -9,7 +8,6 @@ import { Module } from 'vuex';
 export const notifications: Module<NotificationsState, RootState> = {
   namespaced: true,
   mutations,
-  actions,
   state,
   getters,
 };

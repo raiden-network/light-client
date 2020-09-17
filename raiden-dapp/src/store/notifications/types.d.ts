@@ -16,7 +16,9 @@ export interface NotificationPayload {
   display: boolean;
 }
 
+export type NotificationDictionary = { [key: number]: NotificationPayload };
+
 export interface NotificationsState {
-  notifications: { [key: number]: NotificationPayload };
+  notifications: NotificationDictionary;
   newNotifications: boolean;
 }
