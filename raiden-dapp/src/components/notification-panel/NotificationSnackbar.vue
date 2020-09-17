@@ -6,7 +6,7 @@
     rounded
     max-width="550px"
     color="primary"
-    @input="notificationShown(notification.id)"
+    @input="setNotificationShown(notification.id)"
   >
     <v-row no-gutters class="notification-area">
       <v-col cols="2">
@@ -19,7 +19,7 @@
       </v-col>
     </v-row>
     <template #action="{ attrs }">
-      <v-btn icon left v-bind="attrs" @click="dismiss(notification.id)">
+      <v-btn icon left v-bind="attrs" @click="dismiss()">
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </template>
@@ -28,7 +28,7 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { mapActions, mapGetters } from 'vuex';
+import { mapGetters, mapMutations } from 'vuex';
 import { NotificationPayload } from '@/store/notifications/types';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { NotificationContext } from '@/store/notifications/notification-context';
@@ -50,13 +50,13 @@ const emptyNotification: NotificationPayload = {
     ...mapGetters('notifications', ['notificationQueue']),
   },
   methods: {
-    ...mapActions('notifications', ['notificationShown']),
+    ...mapMutations('notifications', ['setNotificationShown']),
   },
 })
-export default class NotificationArea extends Vue {
+export default class NotificationSnackbar extends Vue {
   notification: NotificationPayload = emptyNotification;
   notificationQueue!: NotificationPayload[];
-  notificationShown!: (notificationId: number) => void;
+  setNotificationShown!: (notificationId: number) => void;
 
   @Watch('notificationQueue', { deep: true })
   onQueueChange() {
@@ -73,8 +73,8 @@ export default class NotificationArea extends Vue {
     this.notification = emptyNotification;
   }
 
-  dismiss(notificationId: number) {
-    this.notificationShown(notificationId);
+  dismiss() {
+    this.setNotificationShown(this.notification.id);
     this.notification = { ...this.notification, display: false };
   }
 }

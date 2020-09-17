@@ -26,11 +26,11 @@
           class="notification-panel-content__notifications__notification-wrapper"
         >
           <v-list color="transparent">
-            <div v-for="(notification, index) in notifications" :key="index">
+            <div v-for="notification of notifications" :key="notification.id">
               <v-lazy
                 transition="fade-transition"
                 :options="{ threshold: 0.7 }"
-                min-height="88"
+                min-height="110"
               >
                 <notification-card
                   :notification="notification"
@@ -64,7 +64,7 @@ import { NotificationPayload } from '@/store/notifications/types';
   },
 })
 export default class NotificationPanel extends Mixins(NavigationMixin) {
-  notifications!: NotificationPayload[];
+  notifications!: { [key: number]: NotificationPayload };
   clear!: () => void;
 }
 </script>
