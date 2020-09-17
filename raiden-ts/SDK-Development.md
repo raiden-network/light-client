@@ -1,8 +1,8 @@
 <h2 align="center">
   <br/>
-  <a href='https://raiden.network/'><img 
-      width='400px' 
-      alt='' 
+  <a href='https://raiden.network/'><img
+      width='400px'
+      alt=''
       src="https://user-images.githubusercontent.com/35398162/54018436-ee3f6300-4188-11e9-9b4e-0666c44cda53.png" /></a>
   <br/>
   Raiden Light Client SDK Development
@@ -13,7 +13,7 @@
   Architecture **description**, code style and patterns, tips & tricks, caveats, typing and pits to avoid!
 </h4>
 
-The Raiden Light Client SDK requires a Web3 provide like [MetaMask](https://metamask.io), [Parity](https://www.parity.io) or [Geth](https://geth.ethereum.org) and is built on the following concepts and libraries:
+The Raiden Light Client SDK requires a Web3 provider like [MetaMask](https://metamask.io), [Parity](https://www.parity.io) or [Geth](https://geth.ethereum.org) and is built on the following concepts and libraries:
 * Functional programming
 * [Redux](https://redux.js.org) architecture
 * Strictly typed data models aided by [io-ts](https://github.com/gcanti/io-ts)
@@ -45,7 +45,7 @@ Below is a detailed explanation of the SDK architecture as well as things to kee
 ## Architecture
 In this section we will dive into the the internal machinery of the SDK and outline how RxJS, Redux and Epics work together. The architecture is divided in a:
 
-[Vertical Stack](#vertical-stack)  
+[Vertical Stack](#vertical-stack)
 [Horizontal (Folder Structure)](#horizontal-folder-structure)
 
 ### Vertical (Stack)

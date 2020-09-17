@@ -78,6 +78,17 @@ $ git clone --recurse-submodules https://github.com/raiden-network/light-client.
 $ cd light-client
 ```
 
+Afterwards install `pnpm` if you haven't already:
+
+```bash
+$ npm i -g pnpm
+```
+
+Finally, you can install the required dependencies:
+```bash
+$ pnpm install
+```
+
 ### Code style
 
 The code style is enforced by [ESLint](https://eslint.org), which means that in most cases you don't need to do anything other than running:
