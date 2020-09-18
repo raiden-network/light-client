@@ -66,12 +66,17 @@ describe('NotificationCard.vue', () => {
   });
 
   test('clicking "trash"-icon calls method for deleting notification', async () => {
-    await store.dispatch('notifications/notify', TestData.notifications);
+    await store.commit(
+      'notifications/notificationAddOrReplace',
+      TestData.notifications
+    );
     const deleteNotificationButton = wrapper.find('button');
     deleteNotificationButton.trigger('click');
     await wrapper.vm.$nextTick();
 
     // @ts-ignore
-    expect(store.state.notifications.notifications).toHaveLength(0);
+    expect(Object.keys(store.state.notifications.notifications)).toHaveLength(
+      0
+    );
   });
 });

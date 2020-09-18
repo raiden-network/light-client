@@ -799,12 +799,15 @@ describe('RaidenService', () => {
 
     await flushPromises();
 
-    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
-      description: 'notifications.ms-balance-proof.description',
-      title: 'notifications.ms-balance-proof.title',
-      importance: NotificationImportance.HIGH,
-      context: NotificationContext.INFO,
-    });
+    expect(store.commit).toHaveBeenCalledWith(
+      'notifications/notificationAddOrReplace',
+      {
+        description: 'notifications.ms-balance-proof.description',
+        title: 'notifications.ms-balance-proof.title',
+        importance: NotificationImportance.HIGH,
+        context: NotificationContext.INFO,
+      }
+    );
   });
 
   test('notify that withdraw was successful', async () => {
@@ -826,12 +829,15 @@ describe('RaidenService', () => {
       },
     });
 
-    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
-      description: 'notifications.withdrawal.success.description',
-      title: 'notifications.withdrawal.success.title',
-      importance: NotificationImportance.HIGH,
-      context: NotificationContext.INFO,
-    });
+    expect(store.commit).toHaveBeenCalledWith(
+      'notifications/notificationAddOrReplace',
+      {
+        description: 'notifications.withdrawal.success.description',
+        title: 'notifications.withdrawal.success.title',
+        importance: NotificationImportance.HIGH,
+        context: NotificationContext.INFO,
+      }
+    );
   });
 
   test('do not notify that withdraw failed if validation error', async () => {
@@ -874,12 +880,15 @@ describe('RaidenService', () => {
       },
     });
 
-    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
-      description: 'notifications.withdrawal.failure.description',
-      title: 'notifications.withdrawal.failure.title',
-      importance: NotificationImportance.HIGH,
-      context: NotificationContext.ERROR,
-    });
+    expect(store.commit).toHaveBeenCalledWith(
+      'notifications/notificationAddOrReplace',
+      {
+        description: 'notifications.withdrawal.failure.description',
+        title: 'notifications.withdrawal.failure.title',
+        importance: NotificationImportance.HIGH,
+        context: NotificationContext.ERROR,
+      }
+    );
   });
 
   test('token monitored', async () => {
@@ -956,12 +965,15 @@ describe('RaidenService', () => {
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
     });
 
-    expect(store.dispatch).not.toHaveBeenCalledWith('notifications/notify', {
-      title: 'notifications.settlement.success.title',
-      description: 'notifications.settlement.success.description',
-      context: NotificationContext.INFO,
-      importance: NotificationImportance.HIGH,
-    });
+    expect(store.commit).not.toHaveBeenCalledWith(
+      'notifications/notificationAddOrReplace',
+      {
+        title: 'notifications.settlement.success.title',
+        description: 'notifications.settlement.success.description',
+        context: NotificationContext.INFO,
+        importance: NotificationImportance.HIGH,
+      }
+    );
   });
 
   test('notify that channel settle was successful', async () => {
@@ -983,13 +995,16 @@ describe('RaidenService', () => {
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
     });
 
-    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
-      title: 'notifications.settlement.success.title',
-      description: 'notifications.settlement.success.description',
-      icon: 'notifications.settlement.icon',
-      context: NotificationContext.NONE,
-      importance: NotificationImportance.HIGH,
-    });
+    expect(store.commit).toHaveBeenCalledWith(
+      'notifications/notificationAddOrReplace',
+      {
+        title: 'notifications.settlement.success.title',
+        description: 'notifications.settlement.success.description',
+        icon: 'notifications.settlement.icon',
+        context: NotificationContext.NONE,
+        importance: NotificationImportance.HIGH,
+      }
+    );
   });
 
   test('notify that channel settle was failure', async () => {
@@ -1006,12 +1021,49 @@ describe('RaidenService', () => {
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
     });
 
-    expect(store.dispatch).toHaveBeenCalledWith('notifications/notify', {
-      title: 'notifications.settlement.failure.title',
-      description: 'notifications.settlement.failure.description',
-      icon: 'notifications.settlement.icon',
-      context: NotificationContext.NONE,
-      importance: NotificationImportance.HIGH,
-    });
+    expect(store.commit).toHaveBeenCalledWith(
+      'notifications/notificationAddOrReplace',
+      {
+        title: 'notifications.settlement.failure.title',
+        description: 'notifications.settlement.failure.description',
+        icon: 'notifications.settlement.icon',
+        context: NotificationContext.NONE,
+        importance: NotificationImportance.HIGH,
+      }
+    );
   });
+
+  // test('notify that channel open was successful', async () => {
+  //   expect.assertions(1);
+  //   const subject = new BehaviorSubject({});
+  //   (raiden as any).event$ = subject;
+  //   await setupSDK();
+  //   (store.getters as any) = {
+  //     udcToken: {},
+  //   };
+  //   subject.next({
+  //     type: 'channel/open/success',
+  //     payload: {
+  //       id: 0,
+  //       txHash: '0xTxHash',
+  //       txBlock: '0TxBlock',
+  //       confirmed: true,
+  //     },
+  //     meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
+  //   });
+
+  //   expect(store.commit).toHaveBeenCalledWith(
+  //     'notifications/notificationAddOrReplace',
+  //     {
+  //       title: 'notifications.channel-open.success.title',
+  //       description: 'notifications.channel-open.success.description',
+  //       icon: 'notifications.channel-open.icon',
+  //       context: NotificationContext.NONE,
+  //       importance: NotificationImportance.HIGH,
+  //       txConfirmationBlock: '0TxBlock',
+  //       txHash: '0xTxHash',
+  //       txConfirmed: true,
+  //     }
+  //   );
+  // });
 });
