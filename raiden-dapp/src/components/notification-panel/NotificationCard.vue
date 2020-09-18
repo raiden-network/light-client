@@ -60,10 +60,14 @@ export default class NotificationCard extends Vue {
   notification!: NotificationPayload;
 
   get blockCountInProgress(): boolean {
-    return (
-      !this.notification.txConfirmed &&
-      this.notification.txConfirmationBlock > this.blockNumber
-    );
+    if (this.notification.txConfirmationBlock) {
+      return (
+        !this.notification.txConfirmed &&
+        this.notification.txConfirmationBlock > this.blockNumber
+      );
+    } else {
+      return false;
+    }
   }
 }
 </script>
