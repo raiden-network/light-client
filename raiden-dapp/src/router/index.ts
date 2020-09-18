@@ -4,7 +4,7 @@ import { routes } from './routes';
 import {
   globalNavigationGuard,
   redirectIfDisclaimerIsNotAccepted,
-  redirectIfNotConnected
+  redirectIfNotConnected,
 } from './guards';
 
 Vue.use(Router);
@@ -17,7 +17,7 @@ const router = new Router({
 
 router.beforeEach(
   globalNavigationGuard.bind({
-    children: [redirectIfDisclaimerIsNotAccepted, redirectIfNotConnected]
+    children: [redirectIfDisclaimerIsNotAccepted, redirectIfNotConnected],
   })
 );
 
