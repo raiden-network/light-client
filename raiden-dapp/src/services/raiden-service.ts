@@ -232,6 +232,8 @@ export default class RaidenService {
               value.payload.confirmed,
               value.meta.partner
             );
+          } else if (value.type === 'channel/open/failed') {
+            await this.notifyChannelOpenFailed(value.payload.message);
           }
         });
 
@@ -441,6 +443,16 @@ export default class RaidenService {
       txHash,
       txConfirmed,
     } as NotificationPayload);
+  }
+
+  private async notifyChannelOpenFailed(message: string) {
+    await this.store.commit('notifications/notificationAddOrReplace', {
+      title: i18n.t('notifications.channel-open.failure.title'),
+      description: message,
+      icon: i18n.t('notifications.channel-open.icon'),
+      context: NotificationContext.NONE,
+      importance: NotificationImportance.HIGH,
+    });
   }
 
   disconnect() {

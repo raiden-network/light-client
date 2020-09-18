@@ -62,6 +62,7 @@ export const RaidenEvents = [
   RaidenActions.channelSettle.success,
   RaidenActions.channelSettle.failure,
   RaidenActions.channelOpen.success,
+  RaidenActions.channelOpen.failure,
 ];
 /* Tagged union of RaidenEvents actions */
 export type RaidenEvent = ActionType<typeof RaidenEvents>;
