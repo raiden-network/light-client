@@ -1,14 +1,13 @@
-import { Route, Location, NavigationGuardNext } from 'vue-router';
+import { Route, RawLocation, NavigationGuardNext } from 'vue-router';
 
 export type GuardArguments = [Route, Route, NavigationGuardNext];
 
 /**
  * The navigation guards next function do also accept `void`. But since `void`
  * can't be returned by a sub-function of the global navigation guard, `null` is
- * used a representation for it. Note that we do not allow to use `false` and
- * `string` here. Also vue-router supports it, we do not.
+ * used a representation for it.
  */
-export type NavigationGuardNextArgument = Location | null;
+export type NavigationGuardNextArgument = RawLocation | false | null;
 
 /**
  * A called by the global navigation guard, that can affect the navigation

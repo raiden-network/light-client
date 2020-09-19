@@ -7,9 +7,6 @@ export function globalNavigationGuard(
   _from: Route,
   next: NavigationGuardNext
 ) {
-  const routingToRoot = to.fullPath === '/';
-  const query = routingToRoot ? {} : { redirectTo: to.fullPath };
-
   for (const guardChild of this.children) {
     const redirectLocation = guardChild(to);
 
@@ -17,7 +14,7 @@ export function globalNavigationGuard(
       next();
       return;
     } else if (redirectLocation !== undefined) {
-      next({ ...redirectLocation, query });
+      next(redirectLocation);
       return;
     }
   }

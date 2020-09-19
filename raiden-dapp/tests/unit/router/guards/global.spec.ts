@@ -10,11 +10,6 @@ const anyRoute = {
   matched: [],
 } as Route;
 
-const otherRoute = {
-  ...anyRoute,
-  fullPath: '/other-path'
-} as Route;
-
 const next: NavigationGuardNext = jest.fn();
 const staticGuardArguments: GuardArguments = [anyRoute, anyRoute, next];
 const emptyChildGuard = (_to: Route) => undefined;
@@ -53,7 +48,7 @@ describe('globalNavigationGuard()', () => {
       { children: [firstChildGuard] },
       staticGuardArguments
     );
-    expect(next).toHaveBeenCalledWith({ name: 'first-route', query: {} });
+    expect(next).toHaveBeenCalledWith({ name: 'first-route' });
   });
 
   test('ignore second child guard if first returns location', async () => {
@@ -61,7 +56,7 @@ describe('globalNavigationGuard()', () => {
       { children: [firstChildGuard, secondChildGuard] },
       staticGuardArguments
     );
-    expect(next).toHaveBeenCalledWith({ name: 'first-route', query: {} });
+    expect(next).toHaveBeenCalledWith({ name: 'first-route' });
   });
 
   test('redirect to second child guards location if first returns nothing', async () => {
@@ -69,18 +64,6 @@ describe('globalNavigationGuard()', () => {
       { children: [emptyChildGuard, secondChildGuard] },
       staticGuardArguments
     );
-    expect(next).toHaveBeenCalledWith({ name: 'second-route', query: {} });
-  });
-
-  test('attaches redirect query parameter when child guard causes redirect', async () => {
-    const guardArguments: GuardArguments = [otherRoute, anyRoute, next];
-    globalNavigationGuard.apply(
-      { children: [firstChildGuard] },
-      guardArguments
-    );
-    expect(next).toHaveBeenCalledWith({
-      name: 'first-route',
-      query: { redirectTo: '/other-path' }
-    });
+    expect(next).toHaveBeenCalledWith({ name: 'second-route' });
   });
 });

@@ -10,7 +10,7 @@ export function redirectIfDisclaimerIsNotAccepted(
   const routingToDisclaimer = to.name === RouteNames.DISCLAIMER;
 
   if (!disclaimerAccepted && !routingToDisclaimer)
-    return { name: RouteNames.DISCLAIMER };
+    return { name: RouteNames.DISCLAIMER, query: { redirectTo: to.fullPath } };
 
   if (!disclaimerAccepted && routingToDisclaimer) return null;
 

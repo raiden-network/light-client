@@ -18,9 +18,19 @@ describe('redirectIfNotConnected()', () => {
     expect(store.getters.isConnected).toBe(false);
 
     Object.values(routesWithoutHome).forEach((route) => {
-      expect(redirectIfNotConnected(route)).toEqual({
-        name: RouteNames.HOME
-      });
+      expect(redirectIfNotConnected(route)).toEqual(
+        expect.objectContaining({ name: RouteNames.HOME })
+      );
+    });
+  });
+
+  test('add redirect query parameter to original target when redirecting to home route', () => {
+    expect(store.state.disclaimerAccepted).toBe(false);
+
+    Object.values(routesWithoutHome).forEach((route) => {
+      expect(redirectIfNotConnected(route)).toEqual(
+        expect.objectContaining({ query: { redirectTo: route.fullPath } })
+      );
     });
   });
 

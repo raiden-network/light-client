@@ -17,9 +17,19 @@ describe('redirectIfDisclaimerIsNotAccepted()', () => {
     expect(store.state.disclaimerAccepted).toBe(false);
 
     Object.values(routesWithoutDisclaimer).forEach((route) => {
-      expect(redirectIfDisclaimerIsNotAccepted(route)).toEqual({
-        name: RouteNames.DISCLAIMER
-      });
+      expect(redirectIfDisclaimerIsNotAccepted(route)).toEqual(
+        expect.objectContaining({ name: RouteNames.DISCLAIMER })
+      );
+    });
+  });
+
+  test('add redirect query parameter to original target when redirecting to disclaimer route', () => {
+    expect(store.state.disclaimerAccepted).toBe(false);
+
+    Object.values(routesWithoutDisclaimer).forEach((route) => {
+      expect(redirectIfDisclaimerIsNotAccepted(route)).toEqual(
+        expect.objectContaining({ query: { redirectTo: route.fullPath } })
+      );
     });
   });
 
@@ -44,4 +54,16 @@ describe('redirectIfDisclaimerIsNotAccepted()', () => {
       expect(redirectIfDisclaimerIsNotAccepted(route)).toBeUndefined();
     });
   });
+
+  // test('define redirect query when  causes redirect', async () => {
+  //   const guardArguments: GuardArguments = [otherRoute, anyRoute, next];
+  //   globalNavigationGuard.apply(
+  //     { children: [firstChildGuard] },
+  //     guardArguments
+  //   );
+  //   expect(next).toHaveBeenCalledWith({
+  //     name: 'first-route',
+  //     query: { redirectTo: '/other-path' }
+  //   });
+  // });
 });

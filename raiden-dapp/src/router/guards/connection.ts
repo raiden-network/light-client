@@ -10,7 +10,7 @@ export function redirectIfNotConnected(
   const routingToHome = to.name === RouteNames.HOME;
 
   if (!isConnected && !routingToHome)
-    return { name: RouteNames.HOME };
+    return { name: RouteNames.HOME, query: { redirectTo: to.fullPath } };
 
   if (!isConnected && routingToHome) return null;
 
