@@ -81,7 +81,6 @@ export const routes: RouteConfig[] = [
   },
   {
     path: '/account',
-    name: RouteNames.ACCOUNT,
     beforeEnter: beforeRouteToAccount,
     children: [
       {

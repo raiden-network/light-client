@@ -1,10 +1,12 @@
 import { Route } from 'vue-router';
 import { routes as routeConfigs } from '@/router/routes';
 
-export function transformRouteConfigsToRoutes(): { [key: string]: Route } {
+export function transformRouteConfigsToRoutes(
+  routeList = routeConfigs
+): { [key: string]: Route } {
   const routes: { [key: string]: Route } = {};
 
-  routeConfigs.forEach((routeConfig) => {
+  routeList.forEach((routeConfig) => {
     if (routeConfig.name) {
       const route = {
         ...routeConfig,
@@ -15,6 +17,17 @@ export function transformRouteConfigsToRoutes(): { [key: string]: Route } {
         matched: [],
       };
       routes[routeConfig.name] = route;
+    }
+
+    if (routeConfig.children) {
+      const childRoutes = transformRouteConfigsToRoutes(routeConfig.children);
+
+      Object.values(childRoutes).forEach((childRoute) => {
+        routes[childRoute.name!] = {
+          ...childRoute,
+          path: `${routeConfig.path}/${childRoute.path}`,
+        };
+      });
     }
   });
 
