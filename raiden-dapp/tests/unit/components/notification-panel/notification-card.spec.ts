@@ -57,6 +57,17 @@ describe('NotificationCard.vue', () => {
     );
   });
 
+  test('displays block count progress if supported by notification ', () => {
+    const notificationBlockCount = wrapper.find(
+      '.notification-card__content__details__block-count'
+    );
+
+    expect(notificationBlockCount.text()).toContain('123');
+    expect(notificationBlockCount.text()).toContain(
+      'notifications.block-count-progress'
+    );
+  });
+
   test('displays correctly formatted date', () => {
     const notificationReceived = wrapper.find(
       '.notification-card__content__details__received'
