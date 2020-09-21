@@ -425,7 +425,15 @@ export default class RaidenService {
     txConfirmed: boolean | undefined,
     partner: string
   ) {
-    const txConfirmationBlock = txBlock + this.raiden.config.confirmationBlocks;
+    let txConfirmationBlock;
+
+    if (this.store.state?.config?.confirmationBlocks !== undefined) {
+      txConfirmationBlock =
+        txBlock + this.store.state.config.confirmationBlocks;
+    } else {
+      txConfirmationBlock = 0;
+    }
+
     const description = i18n.t(
       'notifications.channel-open.success.description',
       {

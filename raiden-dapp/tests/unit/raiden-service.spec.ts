@@ -1033,37 +1033,63 @@ describe('RaidenService', () => {
     );
   });
 
-  // test('notify that channel open was successful', async () => {
-  //   expect.assertions(1);
-  //   const subject = new BehaviorSubject({});
-  //   (raiden as any).event$ = subject;
-  //   await setupSDK();
-  //   (store.getters as any) = {
-  //     udcToken: {},
-  //   };
-  //   subject.next({
-  //     type: 'channel/open/success',
-  //     payload: {
-  //       id: 0,
-  //       txHash: '0xTxHash',
-  //       txBlock: '0TxBlock',
-  //       confirmed: true,
-  //     },
-  //     meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
-  //   });
+  test('notify that channel open failed', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.getters as any) = {
+      udcToken: {},
+    };
+    subject.next({
+      type: 'channel/open/failed',
+      payload: { message: 'error message' },
+      meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
+    });
 
-  //   expect(store.commit).toHaveBeenCalledWith(
-  //     'notifications/notificationAddOrReplace',
-  //     {
-  //       title: 'notifications.channel-open.success.title',
-  //       description: 'notifications.channel-open.success.description',
-  //       icon: 'notifications.channel-open.icon',
-  //       context: NotificationContext.NONE,
-  //       importance: NotificationImportance.HIGH,
-  //       txConfirmationBlock: '0TxBlock',
-  //       txHash: '0xTxHash',
-  //       txConfirmed: true,
-  //     }
-  //   );
-  // });
+    expect(store.commit).toHaveBeenCalledWith(
+      'notifications/notificationAddOrReplace',
+      {
+        title: 'notifications.channel-open.failure.title',
+        description: 'error message',
+        icon: 'notifications.channel-open.icon',
+        context: NotificationContext.NONE,
+        importance: NotificationImportance.HIGH,
+      }
+    );
+  });
+
+  test('notify that channel open success', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.getters as any) = {
+      udcToken: {},
+    };
+    subject.next({
+      type: 'channel/open/success',
+      payload: {
+        id: 0,
+        txHash: '0xTxHash',
+        txBlock: '0TxBlock',
+        confirmed: true,
+      },
+      meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
+    });
+
+    expect(store.commit).toHaveBeenCalledWith(
+      'notifications/notificationAddOrReplace',
+      {
+        title: 'notifications.channel-open.success.title',
+        description: 'notifications.channel-open.success.description',
+        icon: 'notifications.channel-open.icon',
+        context: NotificationContext.NONE,
+        importance: NotificationImportance.HIGH,
+        txConfirmationBlock: 0,
+        txHash: '0xTxHash',
+        txConfirmed: true,
+      }
+    );
+  });
 });
