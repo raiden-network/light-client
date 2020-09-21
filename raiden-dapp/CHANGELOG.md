@@ -7,10 +7,12 @@
 - [#1838] Fixes Disclaimer mobile layout
 
 ### Added
+- [#1941] Notification for opening channels
 
 ### Changes
 - [#1929] Design adjustments to settlement notifications and notification panel 
 
+[#1941]: https://github.com/raiden-network/light-client/issues/1941
 [#2026]: https://github.com/raiden-network/light-client/issues/2026
 [#1929]: https://github.com/raiden-network/light-client/issues/1929
 [#2098]: https://github.com/raiden-network/light-client/issues/2098
