@@ -12,6 +12,18 @@
           class="notification-card__content__details__description"
           :description="notification.description"
         />
+        <div
+          v-if="notification.txConfirmationBlock"
+          class="notification-card__content__details__block-count"
+        >
+          <span v-if="blockCountInProgress">
+            {{ $t('notifications.block-count-progress') }}
+            {{ notification.txConfirmationBlock - blockNumber }}
+          </span>
+          <span v-else>
+            {{ $t('notifications.channel-open.success.block-count-success') }}
+          </span>
+        </div>
         <span class="notification-card__content__details__received">
           {{ notification.received | formatDate }}
         </span>
@@ -26,7 +38,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { NotificationPayload } from '@/store/notifications/types';
-import { createNamespacedHelpers } from 'vuex';
+import { createNamespacedHelpers, mapState } from 'vuex';
 import NotificationDescriptionDisplay from '@/components/notification-panel/NotificationDescriptionDisplay.vue';
 
 const { mapMutations } = createNamespacedHelpers('notifications');
@@ -35,15 +47,28 @@ const { mapMutations } = createNamespacedHelpers('notifications');
   components: {
     NotificationDescriptionDisplay,
   },
+  computed: mapState(['blockNumber']),
   methods: {
     ...mapMutations(['notificationDelete']),
   },
 })
 export default class NotificationCard extends Vue {
   notificationDelete!: (id: number) => void;
+  blockNumber!: number;
 
   @Prop({ required: true })
   notification!: NotificationPayload;
+
+  get blockCountInProgress(): boolean {
+    if (this.notification.txConfirmationBlock) {
+      return (
+        !this.notification.txConfirmed &&
+        this.notification.txConfirmationBlock > this.blockNumber
+      );
+    } else {
+      return false;
+    }
+  }
 }
 </script>
 
@@ -54,7 +79,7 @@ export default class NotificationCard extends Vue {
 .notification-card {
   background-color: $notification-card-bg;
   border-radius: 16px !important;
-  height: 88px;
+  height: 110px;
 
   &__content {
     height: 100%;
@@ -75,7 +100,8 @@ export default class NotificationCard extends Vue {
         color: $primary-color;
       }
 
-      &__received {
+      &__received,
+      &__block-count {
         color: $secondary-text-color;
         font-size: 12px;
       }

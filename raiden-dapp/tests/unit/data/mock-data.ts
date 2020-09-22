@@ -180,5 +180,8 @@ export class TestData {
     importance: NotificationImportance.HIGH,
     context: NotificationContext.NONE,
     received: new Date('June 5, 1986'),
+    txConfirmationBlock: 123,
+    txHash: '0xTxHash',
+    txConfirmed: undefined,
   };
 }

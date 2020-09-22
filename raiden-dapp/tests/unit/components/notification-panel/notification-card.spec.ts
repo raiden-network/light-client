@@ -57,6 +57,17 @@ describe('NotificationCard.vue', () => {
     );
   });
 
+  test('displays block count progress if supported by notification ', () => {
+    const notificationBlockCount = wrapper.find(
+      '.notification-card__content__details__block-count'
+    );
+
+    expect(notificationBlockCount.text()).toContain('123');
+    expect(notificationBlockCount.text()).toContain(
+      'notifications.block-count-progress'
+    );
+  });
+
   test('displays correctly formatted date', () => {
     const notificationReceived = wrapper.find(
       '.notification-card__content__details__received'
@@ -66,12 +77,17 @@ describe('NotificationCard.vue', () => {
   });
 
   test('clicking "trash"-icon calls method for deleting notification', async () => {
-    await store.dispatch('notifications/notify', TestData.notifications);
+    await store.commit(
+      'notifications/notificationAddOrReplace',
+      TestData.notifications
+    );
     const deleteNotificationButton = wrapper.find('button');
     deleteNotificationButton.trigger('click');
     await wrapper.vm.$nextTick();
 
     // @ts-ignore
-    expect(store.state.notifications.notifications).toHaveLength(0);
+    expect(Object.keys(store.state.notifications.notifications)).toHaveLength(
+      0
+    );
   });
 });

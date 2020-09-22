@@ -3,19 +3,19 @@ import Vue from 'vue';
 import store from '@/store';
 import Vuetify from 'vuetify';
 import Filters from '@/filters';
-import NotificationArea from '@/components/notification-panel/NotificationArea.vue';
+import NotificationSnackbar from '@/components/notification-panel/NotificationSnackbar.vue';
 import { TestData } from '../../data/mock-data';
 
 Vue.use(Vuetify);
 Vue.filter('formatDate', Filters.formatDate);
 
-describe('NotificationArea.vue', () => {
-  let wrapper: Wrapper<NotificationArea>;
+describe('NotificationSnackbar.vue', () => {
+  let wrapper: Wrapper<NotificationSnackbar>;
   let vuetify: typeof Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();
-    wrapper = mount(NotificationArea, {
+    wrapper = mount(NotificationSnackbar, {
       vuetify,
       store,
       mocks: {
@@ -27,7 +27,10 @@ describe('NotificationArea.vue', () => {
 
   test('displays notifications', async () => {
     expect.assertions(1);
-    await store.dispatch('notifications/notify', TestData.notifications);
+    await store.commit(
+      'notifications/notificationAddOrReplace',
+      TestData.notifications
+    );
     await wrapper.vm.$nextTick();
     expect(wrapper.find('.notification-area__title').text()).toMatch(
       'Channel Settlement'
@@ -36,11 +39,19 @@ describe('NotificationArea.vue', () => {
 
   test('dismisses notification on button click', async () => {
     expect.assertions(1);
-    await store.dispatch('notifications/notify', TestData.notifications);
+    const notificationId = TestData.notifications.id;
+
+    await store.commit(
+      'notifications/notificationAddOrReplace',
+      TestData.notifications
+    );
     await wrapper.vm.$nextTick();
     wrapper.find('button').trigger('click');
     await wrapper.vm.$nextTick();
-    // @ts-ignore
-    expect(store.state.notifications.notifications[0].display).toBeFalsy();
+
+    expect(
+      // @ts-ignore
+      store.state.notifications.notifications[notificationId].display
+    ).toBeFalsy();
   });
 });

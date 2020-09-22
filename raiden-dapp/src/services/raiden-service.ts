@@ -190,10 +190,8 @@ export default class RaidenService {
             this.store.commit('updateTokens', {
               [value.payload.token]: { address: value.payload.token },
             });
-          }
-
-          // Update presences on matrix presence updates
-          else if (value.type === 'matrix/presence/success') {
+          } else if (value.type === 'matrix/presence/success') {
+            // Update presences on matrix presence updates
             this.store.commit('updatePresence', {
               [value.meta.address]: value.payload.available,
             });
@@ -227,6 +225,15 @@ export default class RaidenService {
             }
           } else if (value.type === 'channel/settle/failure') {
             await this.notifyChannelSettleFailure(value.meta.partner);
+          } else if (value.type === 'channel/open/success') {
+            await this.notifyChannelOpenSuccess(
+              value.payload.txBlock,
+              value.payload.txHash,
+              value.payload.confirmed,
+              value.meta.partner
+            );
+          } else if (value.type === 'channel/open/failed') {
+            await this.notifyChannelOpenFailed(value.payload.message);
           }
         });
 
@@ -333,7 +340,7 @@ export default class RaidenService {
           message: message,
         });
 
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.withdrawal.failure.title'),
       description,
       context: NotificationContext.ERROR,
@@ -350,7 +357,7 @@ export default class RaidenService {
     const amount = BalanceUtils.toUnits(plannedAmount, decimals);
     const withdrawn = BalanceUtils.toUnits(withdrawal, decimals);
 
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.withdrawal.success.title'),
       description: i18n.t('notifications.withdrawal.success.description', {
         amount,
@@ -372,7 +379,7 @@ export default class RaidenService {
     const decimals = token.decimals ?? 18;
     const amount = BalanceUtils.toUnits(reward, decimals);
 
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.ms-balance-proof.title'),
       description: i18n.t('notifications.ms-balance-proof.description', {
         monitoringService,
@@ -391,7 +398,7 @@ export default class RaidenService {
       partner,
     });
 
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.settlement.success.title'),
       description,
       icon: i18n.t('notifications.settlement.icon'),
@@ -401,7 +408,7 @@ export default class RaidenService {
   }
 
   private async notifyChannelSettleFailure(partner: string) {
-    await this.store.dispatch('notifications/notify', {
+    await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.settlement.failure.title'),
       description: i18n.t('notifications.settlement.failure.description', {
         partner,
@@ -410,6 +417,50 @@ export default class RaidenService {
       context: NotificationContext.NONE,
       importance: NotificationImportance.HIGH,
     } as NotificationPayload);
+  }
+
+  private async notifyChannelOpenSuccess(
+    txBlock: number,
+    txHash: string,
+    txConfirmed: boolean | undefined,
+    partner: string
+  ) {
+    let txConfirmationBlock;
+
+    if (this.store.state?.config?.confirmationBlocks !== undefined) {
+      txConfirmationBlock =
+        txBlock + this.store.state.config.confirmationBlocks;
+    } else {
+      txConfirmationBlock = 0;
+    }
+
+    const description = i18n.t(
+      'notifications.channel-open.success.description',
+      {
+        partner,
+      }
+    );
+
+    await this.store.commit('notifications/notificationAddOrReplace', {
+      title: i18n.t('notifications.channel-open.success.title'),
+      description,
+      icon: i18n.t('notifications.channel-open.icon'),
+      context: NotificationContext.NONE,
+      importance: NotificationImportance.HIGH,
+      txConfirmationBlock,
+      txHash,
+      txConfirmed,
+    } as NotificationPayload);
+  }
+
+  private async notifyChannelOpenFailed(message: string) {
+    await this.store.commit('notifications/notificationAddOrReplace', {
+      title: i18n.t('notifications.channel-open.failure.title'),
+      description: message,
+      icon: i18n.t('notifications.channel-open.icon'),
+      context: NotificationContext.NONE,
+      importance: NotificationImportance.HIGH,
+    });
   }
 
   disconnect() {

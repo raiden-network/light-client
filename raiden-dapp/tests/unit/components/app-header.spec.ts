@@ -49,7 +49,10 @@ describe('AppHeader.vue', () => {
 
     expect(newNotificationsBadge.exists()).toBe(false);
 
-    await store.dispatch('notifications/notify', TestData.notifications);
+    await store.commit(
+      'notifications/notificationAddOrReplace',
+      TestData.notifications
+    );
 
     await wrapper.vm.$nextTick();
     newNotificationsBadge = wrapper.find('.v-badge__badge');

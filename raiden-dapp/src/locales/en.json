@@ -46,6 +46,7 @@
       }
     },
     "clear": "Clear",
+    "block-count-progress": "Blocks remaining: ",
     "settlement": {
       "icon": "notification_settle",
       "success": {
@@ -55,6 +56,17 @@
       "failure": {
         "title": "Channel Settlement",
         "description": "Channel settlement with {partner} failed."
+      }
+    },
+    "channel-open": {
+      "icon": "notification_channels",
+      "success": {
+        "title": "Channel Open",
+        "description": "Open channel with {partner}.",
+        "block-count-success": "Channel successfully opened"
+      },
+      "failure": {
+        "title": "Channel Open Failure"
       }
     }
   },
