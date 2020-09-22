@@ -4,7 +4,7 @@ import { beforeRouteToAccount } from '@/router/guards/account';
 import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 
 const {
-  [RouteNames.ACCOUNT]: accountRoute,
+  [RouteNames.ACCOUNT_ROOT]: accountRoute,
   ...routesWithoutAccount
 } = transformRouteConfigsToRoutes();
 
