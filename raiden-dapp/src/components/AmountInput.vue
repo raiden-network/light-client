@@ -186,16 +186,16 @@ $header-vertical-margin-mobile: 2rem;
         background-color: $input-background !important;
         padding: 8px 16px;
         max-height: 49px;
-        border: 1.5px solid transparent;
+        border: none;
         &::before,
         &::after {
-          border-width: 0 0 0 0;
+          border: none;
         }
       }
       &--is-focused {
         .v-input {
           &__slot {
-            border: 1.5px solid $primary-color;
+            border: none;
           }
         }
       }
