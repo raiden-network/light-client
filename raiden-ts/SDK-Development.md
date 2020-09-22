@@ -10,7 +10,7 @@
 </h2>
 
 <h4 align="center">
-  Architecture **description**, code style and patterns, tips & tricks, caveats, typing and pits to avoid!
+  Architecture description, code style and patterns, tips & tricks, caveats, typing and pits to avoid!
 </h4>
 
 The Raiden Light Client SDK requires a Web3 provider like [MetaMask](https://metamask.io), [Parity](https://www.parity.io) or [Geth](https://geth.ethereum.org) and is built on the following concepts and libraries:
@@ -43,10 +43,7 @@ Below is a detailed explanation of the SDK architecture as well as things to kee
   - [With tests](#with-tests)
 
 ## Architecture
-In this section we will dive into the the internal machinery of the SDK and outline how RxJS, Redux and Epics work together. The architecture is divided in a:
-
-[Vertical Stack](#vertical-stack)
-[Horizontal (Folder Structure)](#horizontal-folder-structure)
+In this section we will dive into the the internal machinery of the SDK and outline how RxJS, Redux and Epics work together.
 
 ### Vertical (Stack)
 Instead of using classes as in object-oriented programming the SDK is written in a functional way and uses functions and type schemas like interfaces to separate logic and data.
@@ -104,7 +101,7 @@ A visual representation of the inner architecture:
 
 
 ### Horizontal (Folder Structure)
-The project is structures in a domain-driven logic, each folder under `src` represents a semantic domain and should depend on the things inside of it as much as possible. Especially for _actions_*_, _reducers_, _epics_, _state_ and specific *functions*.
+The project is structured in a domain-driven logic, each folder under `src` represents a semantic domain and should depend on the things inside of it as much as possible. Especially for _actions_*_, _reducers_, _epics_, _state_ and specific *functions*.
 
 * [`abi`](https://github.com/raiden-network/light-client/tree/master/raiden/src/abi) and [`deployment`](https://github.com/raiden-network/light-client/tree/master/raiden/src/deployment) are data directories and don't contain any logic.
   * `abi` is the output of the [TypeChain](https://github.com/ethereum-ts/TypeChain) contracts interfaces used for type safety.
@@ -141,7 +138,7 @@ We can use it to have validate strong guarantees about unsafe data, can define o
 
 ### Branded types
 
-TypeScript branded types (aka. poor man's nominal typing) helps developers provide hints/refinements about specific types which can be compared to full inheritance systems in OOP paradigms. It consists basically of making a branded type TB as the intersection of base type A with some brand B, which makes the branded type more specific. So, `type TB = number & { brand }` is equivalent in OO of making an inherited/child class `TB` extending `number`. You can still pass `TB` where `number` is expected (and it's a child of number), but you can't pass a simple `number` where `TB` is expected unless you type-cast it.
+TypeScript branded types (aka. poor man's nominal typing) helps developers provide hints/refinements about specific types which can be compared to full inheritance systems in OOP paradigms. It consists basically of making a branded type `TB` as the intersection of base type `A` with some brand `B`, which makes the branded type more specific. So, `type TB = number & { brand }` is equivalent in OO of making an inherited/child class `TB` extending `number`. You can still pass `TB` where `number` is expected (and it's a child of number), but you can't pass a simple `number` where `TB` is expected unless you type-cast it.
 
 On TypeScript, all this normally happens only at compile-time (the brand usually is just an interface with a `unique symbol`), having no impact at runtime, when the variable would effectivelly be a simple `number`. `io-ts` allows us to have codecs which also validates if a parent type matches the expectations to be considered a branded/child type, allowing us to also have specific type safety beyond just validating some data is a `string` or not.
 
@@ -178,7 +175,7 @@ We follow the [Flux Standard Action (`FSA`)](https://github.com/redux-utilities/
 
 The `typesafe-actions` help a lot with that by allowing us to define a new action in a single place: defining an `action-creator` object. For FSA schema, we use [`createStandardAction`](https://github.com/piotrwitek/typesafe-actions#2-fsa-compliant-actions) helper. It'll create an object in the module's action submodule, and this action-creator both acts directly as action factory, and contain all metadata needed for the actions: `getType(action)` gives the `string literal` used as `type` tag for the action (allowing to easily narrow type on `switch (action.type)` statements), `ActionType<typeof action>` is used to get the interface/type/schema for the action, and `ActionType<typeof Actions>` also allows to use `import * as Actions` mappings to get a tagged union of all exported actions in a module.
 
-`FSA` actions may contain data in both `payload` and `meta` properties. As FSA convention dictates that on `error=true` case payload should be the `Error` which happened, the rule of thumb is to use `meta` for any data which may be needed to filter the error action going through (e.g. `{ tokenNetwork, partner }` on channel actions). It's also recommended to be consistent on `meta` on request/success/error`-related actions. All other data should go on `payload` as usual.
+`FSA` actions may contain data in both `payload` and `meta` properties. As FSA convention dictates that on `error=true` case payload should be the `Error` which happened, the rule of thumb is to use `meta` for any data which may be needed to filter the error action going through (e.g. `{ tokenNetwork, partner }` on channel actions). It's also recommended to be consistent on `meta` on request/success/error-related actions. All other data should go on `payload` as usual.
 
 ## Reducers
 
@@ -202,7 +199,7 @@ Epics can choose to act on any action or state change, or even dependencies, but
 - If an epic acts directly (like a map) on `action$`, take care to filter early on the specific action you listen to and output a different action, or else your action output will feedback on your epic and cause an infinite loop. Same if you depend on a `state$` change and your output action causes the same state change that just went through.
 - A common epic pattern: `=> action$.pipe(filter(isActionOf(action)), withLatestFrom(state$), map((action, state) => ...))`
 - Never subscribe inside an epic if not strictly necessary; maps and pipes help into getting a proper _action pipeline_ where a single subscription is used for all epics, making the system more deterministic, declarative and performant.
-- Careful if you use `withLatestFrom` with `action$` or `state$` inside a `mergeMap`, `concatMap`, `exhaustMap`, etc, as the inner (returned) observable is created only when the outer value flows through and the callback of these operators is called. `withLatestFrom` only starts "seeing" values of the input$ after it's created **and** subscribed, and will discard any source value while the input$ didn't fire at least once, meaning it can be a silent source of bugs when used inside these mapping operators. e.g. of problematic logic:
+- Careful if you use `withLatestFrom` with `action$` or `state$` inside a `mergeMap`, `concatMap`, `exhaustMap`, etc, as the inner (returned) observable is created only when the outer value flows through and the callback of these operators is called. `withLatestFrom` only starts "seeing" values of the `input$` after it's created **and** subscribed, and will discard any source value while the `input$` didn't fire at least once, meaning it can be a silent source of bugs when used inside these mapping operators. e.g. of problematic logic:
 ```
 action.pipe(
   filter(...),
@@ -214,7 +211,7 @@ action.pipe(
   ),
 );
 ```
-- In the case above, one can use `multicast` + `ReplaySubject(1)` to create an outer subject which sees and cache latest state, and use safely as much *Map levels down as needed. Another approach (in some cases) is to return the inner observable from the mergeMap as soon as possible to the outer pipeline, and then on the **outer** pipeline use withLatestMap and any subsequent mappings.
+- In the case above, one can use `multicast` + `ReplaySubject(1)` to create an outer subject which sees and cache latest state, and use safely as much `*Map` levels down as needed. Another approach (in some cases) is to return the inner observable from the `mergeMap` as soon as possible to the outer pipeline, and then on the **outer** pipeline use `withLatestMap` and any subsequent mappings.
 - In the spirit of tips above, you should ALWAYS know when your (specially inner) observables are **created**, **subscribed** and **unsubscribed**.
   * On the outer/top level observable (the one returned by the epic), the creation and subscription is performed at the moment the SDK is instantiated, and unsubscription happens if the observable completes, errors or at SDK stop/shutdown.
   * `mergeMap` creates the inner observable when the a value goes through, and subscribes to it immediatelly. completing the inner observable won't complete the outer, but unhandled errors do error the outer observable.
