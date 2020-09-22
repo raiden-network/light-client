@@ -63,8 +63,10 @@
 <script lang="ts">
 import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import { mapState } from 'vuex';
 import ActionButton from '@/components/ActionButton.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import { Settings } from '@/types';
 
 @Component({
   components: {
@@ -72,12 +74,16 @@ import Spinner from '@/components/icons/Spinner.vue';
     ActionButton,
     Spinner,
   },
+  computed: {
+    ...mapState(['settings']),
+  },
 })
 export default class UploadStateDialog extends Vue {
   dragCount: number = 0;
   activeDropzone: boolean = false;
   dropzoneErrorMessage: boolean = false;
   uploadingStateProgress: boolean = false;
+  settings!: Settings;
 
   @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
@@ -110,7 +116,7 @@ export default class UploadStateDialog extends Vue {
     }
 
     const uploadedFile = e.dataTransfer?.files;
-    this.uploadState(uploadedFile!);
+    this.uploadStateAndConnect(uploadedFile!);
   }
 
   onFileSelect(e: Event) {
@@ -119,7 +125,7 @@ export default class UploadStateDialog extends Vue {
     }
 
     const uploadedFile = (e.target as HTMLInputElement).files;
-    this.uploadState(uploadedFile!);
+    this.uploadStateAndConnect(uploadedFile!);
   }
 
   dropzoneError() {
@@ -130,7 +136,9 @@ export default class UploadStateDialog extends Vue {
     }, 2000);
   }
 
-  uploadState(uploadedFile: FileList) {
+  uploadStateAndConnect(uploadedFile: FileList) {
+    let { useRaidenAccount } = this.settings;
+
     if (uploadedFile.length > 1) {
       this.dropzoneError();
     }
@@ -148,9 +156,14 @@ export default class UploadStateDialog extends Vue {
         const retrievedState = target!.result;
         JSON.parse(String(retrievedState));
         this.$store.commit('backupState', retrievedState);
-        setTimeout(() => {
+        setTimeout(async () => {
           this.uploadingStateProgress = false;
           this.cancel();
+
+          await this.$raiden.connect(
+            retrievedState,
+            useRaidenAccount ? true : undefined
+          );
         }, 1000);
       } catch (err) {
         this.dropzoneError();

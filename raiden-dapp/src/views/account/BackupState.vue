@@ -124,7 +124,7 @@ export default class BackupState extends Vue {
       }
 
       &__title {
-        font-size: 22px;
+        font-size: 20px;
         line-height: 30px;
         padding-left: 20px;
         text-align: center;
