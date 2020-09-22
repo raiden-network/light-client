@@ -53,21 +53,24 @@ export default class TransferRoute extends Vue {
     return this.tokens.length === 0;
   }
 
-  get token(): Token {
-    const { token: address } = this.$route.params;
-    return this.$store.getters.token(address) || ({ address } as Token);
+  get token(): Token | undefined {
+    if (this.noTokens) {
+      return undefined;
+    } else {
+      const address = this.$route.params.tokens ?? this.tokens[0].address;
+      return this.$store.getters.token(address) || ({ address } as Token);
+    }
   }
 
   get capacity(): BigNumber {
-    const channelWithBiggestCapacity = this.channelWithBiggestCapacity(
-      this.token.address
-    );
-
-    if (channelWithBiggestCapacity) {
-      return channelWithBiggestCapacity.capacity;
+    if (this.token) {
+      const channelWithBiggestCapacity = this.channelWithBiggestCapacity(
+        this.token.address
+      );
+      return channelWithBiggestCapacity?.capacity ?? Zero;
+    } else {
+      return Zero;
     }
-
-    return Zero;
   }
 }
 </script>

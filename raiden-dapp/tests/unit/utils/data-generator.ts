@@ -1,11 +1,17 @@
 import times from 'lodash/times';
 import { BigNumber } from 'ethers/utils';
 import { Zero } from 'ethers/constants';
-import { RaidenTransfer, Address } from 'raiden-ts';
+import {
+  RaidenTransfer,
+  Address,
+  RaidenChannel,
+  ChannelState,
+} from 'raiden-ts';
 import { Token } from '@/model/types';
 
 const HEXADECIMAL_CHARACTERS = '0123456789abcdefABCDEF';
 const ALPHABET_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz';
+const NUMBER_CHARACTERS = '0123456789';
 
 function getRandomString(
   charSet: string,
@@ -27,6 +33,10 @@ function getRandomEthereumAddress(): string {
 
 function getRandomTransactionKey(): string {
   return getRandomString(ALPHABET_CHARACTERS, 10);
+}
+
+function getRandomNumericId(): number {
+  return +getRandomString(NUMBER_CHARACTERS, 5);
 }
 
 export function generateToken(partialToken: Partial<Token> = {}): Token {
@@ -65,4 +75,25 @@ export function generateTransfer(
     success: undefined,
     ...partialTransfer,
   } as RaidenTransfer;
+}
+
+export function generateChannel(
+  partialChannel: Partial<RaidenChannel>,
+  token?: Token
+): RaidenChannel {
+  return {
+    id: getRandomNumericId(),
+    openBlock: 1000,
+    partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' as Address,
+    partnerDeposit: new BigNumber(10 ** 8),
+    settleTimeout: 500,
+    state: ChannelState.open,
+    token: token ? (token.address as Address) : getRandomEthereumAddress(),
+    tokenNetwork: getRandomEthereumAddress(),
+    ownDeposit: new BigNumber(10 ** 8),
+    balance: Zero,
+    capacity: new BigNumber(10 ** 8),
+    ownWithdrawable: new BigNumber(10 ** 8),
+    ...partialChannel,
+  } as RaidenChannel;
 }
