@@ -65,7 +65,7 @@ export default class ErrorMessage extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/colors';
+@import '@/scss/colors';
 
 .error-message {
   width: 100%;

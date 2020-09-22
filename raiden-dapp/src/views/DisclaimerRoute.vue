@@ -66,9 +66,9 @@ export default class Disclaimer extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/colors';
-@import '../scss/scroll';
-@import '../scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/scroll';
+@import '@/scss/mixins';
 
 .disclaimer {
   border-top: solid 1px $primary-color;

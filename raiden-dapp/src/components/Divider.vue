@@ -10,7 +10,7 @@ import { Component, Vue } from 'vue-property-decorator';
 export default class Divider extends Vue {}
 </script>
 <style lang="scss" scoped>
-@import '../scss/colors';
+@import '@/scss/colors';
 
 .divider {
   display: flex;

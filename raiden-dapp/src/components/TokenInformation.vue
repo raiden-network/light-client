@@ -89,8 +89,8 @@ export default class TokenInformation extends Vue {
 }
 </script>
 <style scoped lang="scss">
-@import '../scss/fonts';
-@import '../scss/mixins';
+@import '@/scss/fonts';
+@import '@/scss/mixins';
 
 .token-information {
   height: auto;

@@ -135,8 +135,8 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../../scss/colors';
-@import '../../scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/mixins';
 
 .transfer-menus {
   background-color: $transfer-screen-bg-color;

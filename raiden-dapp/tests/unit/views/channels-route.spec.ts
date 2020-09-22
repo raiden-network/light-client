@@ -1,38 +1,114 @@
-import Vue from 'vue';
+jest.mock('vue-router');
+
+import flushPromises from 'flush-promises';
+import { mount, shallowMount, Wrapper } from '@vue/test-utils';
+import ChannelsRoute from '@/views/ChannelsRoute.vue';
+import Vuex from 'vuex';
+import { TestData } from '../data/mock-data';
 import Vuetify from 'vuetify';
-import { mount, Wrapper } from '@vue/test-utils';
+import Filters from '@/filters';
+import Vue from 'vue';
 import store from '@/store';
 import { $identicon } from '../utils/mocks';
-import { connectAccount } from '../utils/store-utils';
-import ChannelsRoute from '@/views/ChannelsRoute.vue';
+import RaidenService from '@/services/raiden-service';
+import Mocked = jest.Mocked;
+import { RouteNames } from '@/router/route-names';
+import VueRouter from 'vue-router';
+
+jest.mock('@/i18n', () => jest.fn());
 
 Vue.use(Vuetify);
+Vue.use(Vuex);
+Vue.filter('displayFormat', Filters.displayFormat);
 
 describe('ChannelsRoute.vue', () => {
+  let $raiden: Mocked<RaidenService>;
+  let $router: Mocked<VueRouter>;
   let wrapper: Wrapper<ChannelsRoute>;
   let vuetify: typeof Vuetify;
 
-  beforeEach(() => {
+  store.commit('updateChannels', TestData.mockChannels);
+  store.commit('updateTokens', TestData.mockTokens);
+
+  function createWrapper(
+    token: string = '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+    shallow: boolean = false
+  ) {
     vuetify = new Vuetify();
-    wrapper = mount(ChannelsRoute, {
+
+    const options = {
       vuetify,
       store,
-      stubs: ['home', 'channels'],
+      stubs: ['v-dialog'],
       mocks: {
+        $router,
+        $route: TestData.mockRoute({
+          token,
+        }),
+        $raiden,
         $identicon: $identicon(),
         $t: (msg: string) => msg,
       },
-    });
+    };
+
+    if (shallow) {
+      return shallowMount(ChannelsRoute, options);
+    }
+    return mount(ChannelsRoute, options);
+  }
+
+  beforeEach(() => {
+    $router = new VueRouter() as Mocked<VueRouter>;
+    $router.push = jest.fn().mockResolvedValue(undefined);
+
+    $raiden = new RaidenService(store) as Mocked<RaidenService>;
+    $raiden.fetchTokenData = jest.fn().mockResolvedValue(undefined);
+    $raiden.connect = jest.fn().mockResolvedValue(undefined);
+
+    vuetify = new Vuetify();
   });
 
-  test('disconnected displays home', async () => {
-    expect(wrapper.find('home-stub').exists()).toBe(true);
+  afterEach(() => {
+    $router.push.mockReset();
   });
 
-  test('connected displays actual route', async () => {
-    connectAccount();
+  test('render the test data', () => {
+    wrapper = createWrapper();
+    expect(wrapper.findAll('.channel-list__channels__channel').length).toEqual(
+      2
+    );
+  });
+
+  test('navigate to home when the address is not in checksum format', async () => {
+    wrapper = createWrapper('0xd0a1e359811322d97991e03f863a0c30c2cf029c', true);
     await wrapper.vm.$nextTick();
-    expect(wrapper.find('home-stub').exists()).toBe(false);
-    expect(wrapper.find('channels-stub').exists()).toBe(true);
+    await flushPromises();
+
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.HOME,
+      })
+    );
+  });
+
+  test('navigate to home when the token cannot be found', async () => {
+    wrapper = createWrapper('0x111157460c0F41EfD9107239B7864c062aA8B978', true);
+    await wrapper.vm.$nextTick();
+    await flushPromises();
+
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.HOME,
+      })
+    );
+  });
+
+  test('clicking on deposit changes action', async () => {
+    wrapper = createWrapper();
+    wrapper.find('#deposit-278').trigger('click');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.$data['action']).toBe('deposit');
   });
 });

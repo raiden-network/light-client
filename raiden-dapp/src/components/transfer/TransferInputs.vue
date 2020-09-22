@@ -134,8 +134,8 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../../scss/colors';
-@import '../../scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/mixins';
 
 .transfer-inputs {
   background-color: $transfer-screen-bg-color;

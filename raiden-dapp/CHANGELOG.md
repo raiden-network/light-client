@@ -5,6 +5,7 @@
 - [#2026] Removed delay time on tooltips
 - [#2098] Input fields disabled on transfer screen when no channels are open
 - [#1838] Fixes Disclaimer mobile layout
+- [#2096] Fixes buggy wallet connection procedure
 
 ### Added
 - [#1941] Notification for opening channels
@@ -17,6 +18,7 @@
 [#1929]: https://github.com/raiden-network/light-client/issues/1929
 [#2098]: https://github.com/raiden-network/light-client/issues/2098
 [#1838]: https://github.com/raiden-network/light-client/issues/1838
+[#2096]: https://github.com/raiden-network/light-client/issues/1838
 
 ## [0.11.1] - 2020-08-18
 ### Fixed

@@ -29,7 +29,7 @@ export default class HeaderIdenticon extends Mixins(BlockieMixin) {
 
 <style scoped lang="scss">
 @import '../main';
-@import '../scss/colors';
+@import '@/scss/colors';
 
 .header-identicon {
   &__blockie {

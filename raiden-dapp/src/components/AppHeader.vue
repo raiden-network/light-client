@@ -118,9 +118,9 @@ export default class AppHeader extends Mixins(NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/mixins';
-@import '../scss/colors';
-@import '../scss/fonts';
+@import '@/scss/mixins';
+@import '@/scss/colors';
+@import '@/scss/fonts';
 
 .app-header {
   align-items: center;

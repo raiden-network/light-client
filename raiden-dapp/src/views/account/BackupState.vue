@@ -91,7 +91,7 @@ export default class BackupState extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../../scss/colors';
+@import '@/scss/colors';
 
 .backup-state {
   &__description {

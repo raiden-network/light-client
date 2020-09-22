@@ -72,8 +72,8 @@ export default class AddressDisplay extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '../scss/colors';
-@import '../scss/fonts';
+@import '@/scss/colors';
+@import '@/scss/fonts';
 
 .address {
   &__container {
