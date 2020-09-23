@@ -508,7 +508,6 @@ export default class TransferSteps extends Mixins(
       this.transferDone = true;
       this.dismissProgress();
     } catch (e) {
-      console.error('Transfer error', e);
       this.error = e;
     }
   }
