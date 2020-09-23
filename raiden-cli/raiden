@@ -1,3 +1,6 @@
 #!/bin/bash
 
-exec node "$(dirname "$0")/build/index.js"
+RAIDEN="$( dirname $0 )/build/index.js"
+[ ! -e "$RAIDEN" ] && RAIDEN="$( dirname $0 )/build/raiden.bundle.js"
+
+exec node "$RAIDEN" "$@"

@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ErrorCodes, RaidenError, RaidenTransfer } from 'raiden-ts';
 import { timer } from 'rxjs';
-import { toArray, takeUntil, first, filter, map } from 'rxjs/operators';
+import { toArray, takeUntil, filter, map } from 'rxjs/operators';
 import { Cli } from '../types';
 import {
   validateAddressParameter,
@@ -80,14 +80,11 @@ async function doTransfer(this: Cli, request: Request, response: Response, next:
     const transferKey = await this.raiden.transfer(
       request.params.tokenAddress,
       request.params.targetAddress,
-      request.body.amount,
-      { paymentId: request.body.identifier, lockTimeout: request.body.lock_timeout },
+      request.body.amount.toString(),
+      { paymentId: request.body.identifier.toString(), lockTimeout: request.body.lock_timeout },
     );
-    await this.raiden.waitTransfer(transferKey);
-    const newTransfer = await this.raiden.transfers$
-      .pipe(first(({ key }: RaidenTransfer) => key === transferKey))
-      .toPromise();
-    response.send(transformSdkTransferToApiPayment(newTransfer));
+    const transfer = await this.raiden.waitTransfer(transferKey);
+    response.send(transformSdkTransferToApiPayment(transfer));
   } catch (error) {
     if (isInvalidParameterError(error)) {
       response.status(400).send(error.message);
