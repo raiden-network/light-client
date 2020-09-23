@@ -277,9 +277,31 @@ export function mockRTC() {
 // array of cleanup functions registered on current test
 const mockedCleanups: (() => void)[] = [];
 
+export const fetch = jest.fn<
+  Promise<{
+    ok: boolean;
+    status: number;
+    json: jest.MockedFunction<() => Promise<any>>;
+    text: jest.MockedFunction<() => Promise<string>>;
+  }>,
+  [string?]
+>();
+Object.assign(globalThis, { fetch });
+
+beforeEach(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  fetch.mockImplementation(async (_url?: string) => ({
+    ok: true,
+    status: 200,
+    json: jest.fn(async () => undefined),
+    text: jest.fn(async () => ''),
+  }));
+});
+
 afterEach(() => {
   let clean;
   while ((clean = mockedCleanups.pop())) clean();
+  fetch.mockRestore();
 });
 
 // spyOn .on, .removeListener & .emit methods and replace with a synchronous simplified logic
@@ -1028,11 +1050,10 @@ export async function makeRaiden(
     start: async () => {
       if (raiden.started !== undefined) return;
       raiden.started = true;
-      raiden.deps.config$.subscribe(
-        (config) => (raiden.config = config),
-        undefined,
-        () => (raiden.started = false),
-      );
+      raiden.deps.config$.subscribe({
+        next: (config) => (raiden.config = config),
+        complete: () => (raiden.started = false),
+      });
       epicMiddleware.run(raidenRootEpic);
       await raiden.deps.latest$
         .pipe(

@@ -4,163 +4,163 @@ import {
   makeRaidens,
   makeRaiden,
   providersEmit,
-  makeAddress,
   waitBlock,
+  sleep,
+  MockedRaiden,
+  makeAddress,
+  fetch,
 } from '../mocks';
-import { epicFixtures, ensureChannelIsOpen, ensureChannelIsDeposited, deposit } from '../fixtures';
+import {
+  token,
+  tokenNetwork,
+  amount,
+  openBlock,
+  epicFixtures,
+  ensureChannelIsOpen,
+  ensureChannelIsDeposited,
+  deposit,
+  fee,
+  ensureChannelIsClosed,
+  getChannel,
+} from '../fixtures';
 
-import { Observable } from 'rxjs';
-import { first, toArray, pluck } from 'rxjs/operators';
+import { first, pluck } from 'rxjs/operators';
 import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
 import { Zero, AddressZero, One } from 'ethers/constants';
-
-import { UInt, Int, Address, Signature, isntNil } from 'raiden-ts/utils/types';
-import {
-  newBlock,
-  tokenMonitored,
-  channelOpen,
-  channelDeposit,
-  channelClose,
-  channelMonitored,
-} from 'raiden-ts/channels/actions';
-import { raidenConfigUpdate, RaidenAction } from 'raiden-ts/actions';
+import { UInt, Int, Address, Signature, Signed } from 'raiden-ts/utils/types';
+import { raidenConfigUpdate, raidenShutdown } from 'raiden-ts/actions';
 import { matrixPresence } from 'raiden-ts/transport/actions';
 import { raidenReducer } from 'raiden-ts/reducer';
-import { pathFindServiceEpic, pfsFeeUpdateEpic } from 'raiden-ts/services/epics';
 import { pathFind, pfsListUpdated, iouPersist, iouClear } from 'raiden-ts/services/actions';
 import { messageGlobalSend } from 'raiden-ts/messages/actions';
 import { MessageType } from 'raiden-ts/messages/types';
 import { jsonStringify } from 'raiden-ts/utils/data';
-import { pluckDistinct } from 'raiden-ts/utils/rx';
 import { ErrorCodes } from 'raiden-ts/utils/error';
-import { RaidenState } from 'raiden-ts/state';
 import { Capabilities } from 'raiden-ts/constants';
 import { signIOU } from 'raiden-ts/services/utils';
+import { IOU } from 'raiden-ts/services/types';
+
+const pfsAddress = makeAddress();
 
 describe('PFS: pathFindServiceEpic', () => {
-  let depsMock: ReturnType<typeof raidenEpicDeps>,
-    token: ReturnType<typeof epicFixtures>['token'],
-    tokenNetwork: ReturnType<typeof epicFixtures>['tokenNetwork'],
-    channelId: ReturnType<typeof epicFixtures>['channelId'],
-    partner: ReturnType<typeof epicFixtures>['partner'],
-    target: ReturnType<typeof epicFixtures>['target'],
-    settleTimeout: ReturnType<typeof epicFixtures>['settleTimeout'],
-    isFirstParticipant: ReturnType<typeof epicFixtures>['isFirstParticipant'],
-    txHash: ReturnType<typeof epicFixtures>['txHash'],
-    partnerUserId: ReturnType<typeof epicFixtures>['partnerUserId'],
-    targetUserId: ReturnType<typeof epicFixtures>['targetUserId'],
-    fee: ReturnType<typeof epicFixtures>['fee'],
-    pfsAddress: ReturnType<typeof epicFixtures>['pfsAddress'],
-    pfsTokenAddress: ReturnType<typeof epicFixtures>['pfsTokenAddress'],
-    pfsInfoResponse: ReturnType<typeof epicFixtures>['pfsInfoResponse'],
-    iou: ReturnType<typeof epicFixtures>['iou'],
-    action$: ReturnType<typeof epicFixtures>['action$'],
-    state$: ReturnType<typeof epicFixtures>['state$'];
+  let raiden: MockedRaiden, partner: MockedRaiden, target: MockedRaiden;
+  const pfsSafetyMargin = 2;
 
-  const openBlock = 121;
+  const mockedPfsInfoResponse: typeof fetch = jest.fn();
+  const mockedIouResponse: typeof fetch = jest.fn();
+  const mockedPfsResponse: typeof fetch = jest.fn();
 
-  const fetch = jest.fn();
-  Object.assign(globalThis, { fetch });
+  function makePfsInfoResponse() {
+    return {
+      message: 'pfs message',
+      network_info: {
+        chain_id: raiden.deps.network.chainId,
+        token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+      },
+      operator: 'pfs operator',
+      payment_address: pfsAddress,
+      price_info: 2,
+      version: '0.4.1',
+    };
+  }
 
-  beforeEach(() => {
-    depsMock = raidenEpicDeps();
-    ({
-      token,
-      tokenNetwork,
-      channelId,
-      partner,
-      target,
-      settleTimeout,
-      isFirstParticipant,
-      txHash,
-      partnerUserId,
-      targetUserId,
-      fee,
-      pfsAddress,
-      pfsTokenAddress,
-      pfsInfoResponse,
-      iou,
-      action$,
-      state$,
-    } = epicFixtures(depsMock));
+  /**
+   * @param raiden - Instance of MockedRaiden
+   * @returns Mocked IOU type Object
+   */
+  function makeIou(raiden: MockedRaiden): IOU {
+    return {
+      sender: raiden.address,
+      receiver: pfsAddress,
+      one_to_n_address: '0x0A0000000000000000000000000000000000000a' as Address,
+      chain_id: bigNumberify(raiden.deps.network.chainId) as UInt<32>,
+      expiration_block: bigNumberify(3232341) as UInt<32>,
+      amount: bigNumberify(100) as UInt<32>,
+    };
+  }
 
-    // state$ contains a channel opened & deposited with partner
-    [
-      raidenConfigUpdate({ httpTimeout: 30 }),
-      tokenMonitored({ token, tokenNetwork, fromBlock: 1 }),
-      // a couple of channels with unrelated partners, with larger deposits
-      channelOpen.success(
-        {
-          id: channelId,
-          settleTimeout,
-          isFirstParticipant,
-          token,
-          txHash,
-          txBlock: openBlock,
-          confirmed: true,
-        },
-        { tokenNetwork, partner },
-      ),
-      channelDeposit.success(
-        {
-          id: channelId,
-          participant: depsMock.address,
-          totalDeposit: bigNumberify(50000000) as UInt<32>,
-          txHash,
-          txBlock: openBlock + 1,
-          confirmed: true,
-        },
-        { tokenNetwork, partner },
-      ),
-      newBlock({ blockNumber: 126 }),
-    ].forEach((a) => action$.next(a));
+  beforeEach(async () => {
+    [raiden, partner, target] = await makeRaidens(3);
 
-    const result = { result: [{ path: [partner, target], estimated_fee: 1234 }] };
-    fetch.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: jest.fn(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        async () => result,
-      ),
-      text: jest.fn(async () => jsonStringify(result)),
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
+
+    mockedPfsInfoResponse.mockImplementation(async () => {
+      const pfsInfoResponse = makePfsInfoResponse();
+      return {
+        status: 200,
+        ok: true,
+        json: jest.fn(async () => pfsInfoResponse),
+        text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+      };
     });
+
+    mockedIouResponse.mockImplementation(async () => {
+      const result = { error: 'Not found' };
+      return {
+        status: 404,
+        ok: false,
+        json: jest.fn(async () => result),
+        text: jest.fn(async () => jsonStringify(result)),
+      };
+    });
+
+    mockedPfsResponse.mockImplementation(async () => {
+      const result = {
+        result: [{ path: [partner.address, target.address], estimated_fee: fee.toNumber() }],
+      };
+      return {
+        status: 200,
+        ok: true,
+        json: jest.fn(async () => result),
+        text: jest.fn(async () => jsonStringify(result)),
+      };
+    });
+
+    fetch.mockImplementation(async (url) => {
+      if (url?.includes?.('/iou')) {
+        return mockedIouResponse();
+      } else if (url?.includes?.('/info')) {
+        return mockedPfsInfoResponse();
+      } else {
+        return mockedPfsResponse();
+      }
+    });
+
+    raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 30, pfsSafetyMargin }));
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-    fetch.mockRestore();
-    action$.complete();
-    state$.complete();
-    depsMock.latest$.complete();
+    mockedPfsInfoResponse.mockRestore();
+    mockedIouResponse.mockRestore();
+    mockedPfsResponse.mockRestore();
   });
 
   test('fail unknown tokenNetwork', async () => {
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
+    // await ensureTransferUnlocked([raiden, target], amount);
+    const pathFindMeta = {
+      tokenNetwork: token, // purposely put the wrong tokenNetwork
+      target: target.address,
+      value: amount,
+    };
+    // Emitting the pathFind.request action to check pathFindServiceEpic runs
+    // and gives error for incorrect tokenNetwork contract address
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork: token, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject(
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_UNKNOWN_TOKEN_NETWORK,
           details: { tokenNetwork: token },
         }),
-        { tokenNetwork: token, target, value },
+        pathFindMeta,
       ),
     );
   });
@@ -168,142 +168,157 @@ describe('PFS: pathFindServiceEpic', () => {
   test('fail target not available', async () => {
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-    [
+    raiden.store.dispatch(
       matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
+        {
+          userId: target.store.getState().transport.setup!.userId,
+          available: false,
+          ts: Date.now(),
+        },
+        { address: target.address },
       ),
-      matrixPresence.success(
-        { userId: targetUserId, available: false, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
+    );
 
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    // Emitting the pathFind.request action to check pathFindServiceEpic runs
+    // and gets the earlier matrix presence error for target
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_TARGET_OFFLINE,
-          details: { target },
+          details: { target: target.address },
         }),
-        {
-          tokenNetwork,
-          target,
-          value,
-        },
+        pathFindMeta,
       ),
     );
   });
 
   test('fail on failing matrix presence request', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
-    const value = bigNumberify(100) as UInt<32>;
+    const matrix = await raiden.deps.matrix$.toPromise();
     const matrixError = new Error('Unspecific matrix error for testing purpose');
-    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+    (matrix.searchUserDirectory as jest.MockedFunction<
+      typeof matrix.searchUserDirectory
+    >).mockRejectedValue(matrixError);
 
-    [
-      pathFind.request({}, { tokenNetwork, target: partner, value }),
-      matrixPresence.failure(matrixError, { address: partner }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
 
-    await expect(promise).resolves.toMatchObject([
-      matrixPresence.request(undefined, { address: partner }),
-      pathFind.failure(matrixError, {
-        tokenNetwork,
-        target: partner,
-        value,
-      }),
-    ]);
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
+
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      matrixPresence.request(undefined, { address: target.address }),
+    );
+    expect(raiden.output).toContainEqual(pathFind.failure(matrixError, pathFindMeta));
   });
 
   test('fail on successful matrix presence request but target unavailable', async () => {
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
-    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
-
-    [
-      pathFind.request({}, { tokenNetwork, target: partner, value }),
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(
       matrixPresence.success(
-        { userId: partnerUserId, available: false, ts: Date.now() },
-        { address: partner },
+        {
+          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
+          available: false,
+          ts: Date.now(),
+        },
+        { address: target.address },
       ),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await expect(promise).resolves.toMatchObject([
-      matrixPresence.request(undefined, { address: partner }),
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_TARGET_OFFLINE,
-          details: { target: partner },
+          details: { target: target.address },
         }),
-        {
-          tokenNetwork,
-          target: partner,
-          value,
-        },
+        pathFindMeta,
       ),
-    ]);
+    );
   });
 
   test('success on successful matrix presence request and target available', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
-    const value = bigNumberify(100) as UInt<32>;
-    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    [
-      pathFind.request({}, { tokenNetwork, target: partner, value }),
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject([
-      matrixPresence.request(undefined, { address: partner }),
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      matrixPresence.request(undefined, { address: target.address }),
+    );
+    expect(raiden.output).toContainEqual(
       pathFind.success(
-        { paths: [{ path: [partner], fee: Zero as Int<32> }] },
-        { tokenNetwork, target: partner, value },
+        {
+          paths: [
+            { path: [partner.address, target.address], fee: fee.mul(pfsSafetyMargin) as Int<32> },
+          ],
+        },
+        pathFindMeta,
       ),
-    ]);
+    );
   });
 
   test('success provided route', async () => {
     expect.assertions(1);
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-
-    const value = bigNumberify(100) as UInt<32>;
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
+    const fee = bigNumberify(3) as Int<32>;
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(
       pathFind.request(
-        { paths: [{ path: [depsMock.address, partner, target], fee }] },
-        { tokenNetwork, target, value },
+        {
+          paths: [
+            {
+              path: [raiden.address, partner.address, target.address],
+              fee: fee.mul(pfsSafetyMargin) as Int<32>,
+            },
+          ],
+        },
+        pathFindMeta,
       ),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
+    );
 
-    // self should be taken out of route
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.success(
-        { paths: [{ path: [partner, target], fee }] },
-        { tokenNetwork, target, value },
+        {
+          paths: [
+            { path: [partner.address, target.address], fee: fee.mul(pfsSafetyMargin) as Int<32> },
+          ],
+        },
+        pathFindMeta,
       ),
     );
   });
@@ -311,60 +326,36 @@ describe('PFS: pathFindServiceEpic', () => {
   test('success direct route', async () => {
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
+    const pathFindMeta = {
+      tokenNetwork,
+      target: partner.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target: partner, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
     // self should be taken out of route
-    await expect(promise).resolves.toMatchObject(
+    expect(raiden.output).toContainEqual(
       pathFind.success(
-        { paths: [{ path: [partner], fee: Zero as Int<32> }] },
-        { tokenNetwork, target: partner, value },
+        { paths: [{ path: [partner.address], fee: Zero as Int<32> }] },
+        pathFindMeta,
       ),
     );
   });
 
   test('success request pfs from action', async () => {
+    // original test(old pattern) fails ;)
     expect.assertions(1);
-    const value = bigNumberify(100) as UInt<32>;
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 404,
-      json: jest.fn(async () => {
-        /* error */
-      }),
-      text: jest.fn(async () => jsonStringify({})),
-    });
+    const pfsUrl = raiden.config.pfs!;
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
 
-    const pfsSafetyMargin = await depsMock.config$
-      .pipe(pluck('pfsSafetyMargin'), first(isntNil))
-      .toPromise();
-    const pfsUrl = await depsMock.config$.pipe(pluck('pfs'), first(isntNil)).toPromise();
-
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
+    raiden.store.dispatch(
       pathFind.request(
         {
           pfs: {
@@ -372,105 +363,76 @@ describe('PFS: pathFindServiceEpic', () => {
             url: pfsUrl,
             rtt: 3,
             price: One as UInt<32>,
-            token: pfsTokenAddress,
+            token: (await raiden.deps.serviceRegistryContract.functions.token()) as Address,
           },
         },
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
+    );
 
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.success(
         {
           paths: [
             {
-              path: [partner, target],
-              fee: bigNumberify(1234)
-                .mul(pfsSafetyMargin * 1e6)
-                .div(1e6) as Int<32>,
+              path: [partner.address, target.address],
+              fee: fee.mul(pfsSafetyMargin) as Int<32>,
             },
           ],
         },
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
     );
   });
 
   test('success request pfs from config', async () => {
+    // original test(old pattern) fails ;)
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
-    });
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 404,
-      json: jest.fn(async () => {
-        /* error */
-      }),
-      text: jest.fn(async () => jsonStringify({})),
-    });
-
-    let pfsSafetyMargin!: number;
-    depsMock.config$
-      .pipe(first())
-      .subscribe((config) => (pfsSafetyMargin = config.pfsSafetyMargin));
-
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.success(
         {
           paths: [
             {
-              path: [partner, target],
-              fee: bigNumberify(1234)
-                .mul(pfsSafetyMargin * 1e6)
-                .div(1e6) as Int<32>,
+              path: [partner.address, target.address],
+              fee: fee.mul(pfsSafetyMargin) as Int<32>,
             },
           ],
         },
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
     );
   });
 
   test('success request pfs from pfsList', async () => {
-    expect.assertions(4);
+    // expect.assertions(4);
 
-    const value = bigNumberify(100) as UInt<32>,
-      pfsAddress1 = '0x0800000000000000000000000000000000000091' as Address,
+    const pfsAddress1 = '0x0800000000000000000000000000000000000091' as Address,
       pfsAddress2 = '0x0800000000000000000000000000000000000092' as Address,
       pfsAddress3 = '0x0800000000000000000000000000000000000093' as Address;
 
     // put config.pfs into auto mode
-    action$.next(raidenConfigUpdate({ pfs: '' }));
+    const pfsSafetyMargin = 2;
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
 
     // pfsAddress1 will be accepted with default https:// schema
-    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('domain.only.url');
+    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce('domain.only.url');
+
+    const pfsInfoResponse = makePfsInfoResponse();
 
     const pfsInfoResponse1 = { ...pfsInfoResponse, payment_address: pfsAddress1 };
-    fetch.mockImplementationOnce(
+    mockedPfsInfoResponse.mockImplementationOnce(
       async () =>
         new Promise((resolve) =>
           setTimeout(
@@ -488,7 +450,7 @@ describe('PFS: pathFindServiceEpic', () => {
 
     // 2 & 3, test sorting by price info
     const pfsInfoResponse2 = { ...pfsInfoResponse, payment_address: pfsAddress2, price_info: 5 };
-    fetch.mockResolvedValueOnce({
+    mockedPfsInfoResponse.mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse2),
@@ -496,7 +458,7 @@ describe('PFS: pathFindServiceEpic', () => {
     });
 
     const pfsInfoResponse3 = { ...pfsInfoResponse, payment_address: pfsAddress3, price_info: 10 };
-    fetch.mockResolvedValueOnce({
+    mockedPfsInfoResponse.mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse3),
@@ -504,46 +466,31 @@ describe('PFS: pathFindServiceEpic', () => {
     });
 
     // pfsAddress succeeds main response
-    fetch.mockResolvedValueOnce({
+    mockedPfsInfoResponse.mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: jest.fn(async () => pfsInfoResponse),
       text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
     });
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 404,
-      json: jest.fn(async () => {
-        /* error */
-      }),
-      text: jest.fn(async () => jsonStringify({})),
-    });
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
 
-    let pfsSafetyMargin!: number;
-    depsMock.config$
-      .pipe(first())
-      .subscribe((config) => (pfsSafetyMargin = config.pfsSafetyMargin));
-
-    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
-
-    [
+    raiden.store.dispatch(
       pfsListUpdated({
         pfsList: [pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress],
       }),
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 50);
+    );
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await expect(promise).resolves.toMatchObject([
+    const iou = makeIou(raiden);
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+
+    expect(raiden.output).toContainEqual(
       iouPersist(
         {
           iou: expect.objectContaining({
@@ -552,21 +499,21 @@ describe('PFS: pathFindServiceEpic', () => {
         },
         { tokenNetwork, serviceAddress: iou.receiver },
       ),
+    );
+    expect(raiden.output).toContainEqual(
       pathFind.success(
         {
           paths: [
             {
-              path: [partner, target],
-              fee: bigNumberify(1234)
-                .mul(pfsSafetyMargin * 1e6)
-                .div(1e6) as Int<32>,
+              path: [partner.address, target.address],
+              fee: fee.mul(pfsSafetyMargin) as Int<32>,
             },
           ],
         },
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
-    ]);
-    expect(fetch).toHaveBeenCalledTimes(4 + 1 + 1); // 1,2,3,0 addresses, + last iou + paths for chosen one
+    );
+    expect(fetch).toHaveBeenCalledTimes(4 + 1 + 1);
     expect(fetch).toHaveBeenCalledWith(
       expect.stringMatching(/^https:\/\/domain.only.url\/.*\/info/),
       expect.anything(),
@@ -579,322 +526,224 @@ describe('PFS: pathFindServiceEpic', () => {
 
   test('fail request pfs from pfsList, empty', async () => {
     expect.assertions(1);
-    // put config.pfs into auto mode
-    action$.next(raidenConfigUpdate({ pfs: '' }));
 
-    const value = bigNumberify(100) as UInt<32>;
+    // put config.pfs into auto mode
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
 
     // invalid url
-    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('""');
+    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce('""');
     // empty url
-    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('');
-    // invalid schema
-    depsMock.serviceRegistryContract.functions.urls.mockResolvedValueOnce('http://not.https.url');
+    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce('');
+    // invalid schema (on development mode, both http & https are accepted)
+    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce(
+      'ftp://not.https.url',
+    );
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
+    raiden.store.dispatch(pfsListUpdated({ pfsList: [pfsAddress, pfsAddress, pfsAddress] }));
+    await waitBlock();
 
-    [
-      pfsListUpdated({
-        pfsList: [pfsAddress, pfsAddress, pfsAddress],
-      }),
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_INVALID_INFO,
         }),
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
     );
   });
 
   test('fail pfs request error', async () => {
+    // Original test(old pattern) does not pass
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
-    });
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 404,
-      json: jest.fn(async () => {
-        /* error */
-      }),
-      text: jest.fn(async () => jsonStringify({})),
-    });
-
-    fetch.mockResolvedValueOnce({
+    const error = { error_code: 1337, errors: 'No route' };
+    mockedPfsResponse.mockResolvedValue({
       ok: false,
       status: 404,
-      json: jest.fn(async () => ({ error_code: 1337, errors: 'No route' })),
-      text: jest.fn(async () => '{ "error_code": 1337, "errors": "No route" }'),
+      json: jest.fn(async () => error),
+      text: jest.fn(async () => jsonStringify(error)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_ERROR_RESPONSE,
-          details: { errorCode: 1337, errors: 'No route' },
+          details: { errorCode: error.error_code, errors: 'No route' },
         }),
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
     );
   });
 
   test('fail pfs return success but invalid response format', async () => {
+    // Original test(old version) fails
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
-    });
-
     // expected 'result', not 'paths'
-    const paths = { paths: [{ path: [partner, target], estimated_fee: 0 }] };
-    fetch.mockResolvedValueOnce({
+    const paths = { paths: [{ path: [partner.address, target.address], estimated_fee: 0 }] };
+    mockedPfsResponse.mockResolvedValue({
       ok: true,
       status: 200,
       json: jest.fn(async () => paths),
       text: jest.fn(async () => jsonStringify(paths)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
-        expect.objectContaining({ message: expect.stringContaining('Invalid value') }),
-        {
-          tokenNetwork,
-          target,
-          value,
-        },
+        expect.objectContaining({
+          message: expect.stringContaining('Invalid value'),
+        }),
+        pathFindMeta,
       ),
     );
   });
 
   test('success with free pfs and valid route', async () => {
+    // Original test(old version) fails
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    const freePfsInfoResponse = { ...pfsInfoResponse, price_info: 0 };
-
-    fetch.mockResolvedValueOnce({
+    const freePfsInfoResponse = { ...makePfsInfoResponse(), price_info: 0 };
+    mockedPfsInfoResponse.mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: jest.fn(async () => freePfsInfoResponse),
       text: jest.fn(async () => jsonStringify(freePfsInfoResponse)),
     });
 
-    const result = {
-      result: [
-        // valid route
-        { path: [partner, target], estimated_fee: 1 },
-      ],
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
     };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => result),
-      text: jest.fn(async () => jsonStringify(result)),
-    });
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject(
+    expect(raiden.output).toContainEqual(
       pathFind.success(
-        { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] },
-        { tokenNetwork, target, value },
+        {
+          paths: [
+            { path: [partner.address, target.address], fee: fee.mul(pfsSafetyMargin) as Int<32> },
+          ],
+        },
+        pathFindMeta,
       ),
     );
   });
 
   test('success with cached iou and valid route', async () => {
-    expect.assertions(1);
+    // Original test(old version) fails
+    expect.assertions(2);
 
-    action$.next(
+    const iou = makeIou(raiden);
+    raiden.store.dispatch(
       iouPersist(
-        { iou: await signIOU(depsMock.signer, iou) },
+        { iou: await signIOU(raiden.deps.signer, iou) },
         { tokenNetwork, serviceAddress: iou.receiver },
       ),
     );
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
-    });
-
-    const result = {
-      result: [
-        // valid route
-        { path: [partner, target], estimated_fee: 1 },
-      ],
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
     };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => result),
-      text: jest.fn(async () => jsonStringify(result)),
-    });
-
-    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
-
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject([
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       iouPersist(
         {
           iou: expect.objectContaining({
-            amount: bigNumberify(102),
+            amount: iou.amount.add(2),
           }),
         },
         { tokenNetwork, serviceAddress: iou.receiver },
       ),
+    );
+    expect(raiden.output).toContainEqual(
       pathFind.success(
-        { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] },
-        { tokenNetwork, target, value },
+        {
+          paths: [
+            { path: [partner.address, target.address], fee: fee.mul(pfsSafetyMargin) as Int<32> },
+          ],
+        },
+        pathFindMeta,
       ),
-    ]);
+    );
   });
 
   test('success from config but filter out invalid pfs result routes', async () => {
+    // Original test(old version) fails
     expect.assertions(1);
-
-    const value = bigNumberify(100) as UInt<32>;
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
-    });
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 404,
-      json: jest.fn(async () => {
-        /* error */
-      }),
-      text: jest.fn(async () => jsonStringify({})),
-    });
 
     const result = {
       result: [
         // token isn't a valid channel, should be removed from output
-        { path: [token, target], estimated_fee: 0 },
+        { path: [token, target.address], estimated_fee: 0 },
         // another route going through token, also should be removed
-        { path: [token, partner, target], estimated_fee: 0 },
+        { path: [token, partner.address, target.address], estimated_fee: 0 },
         // valid route
-        { path: [partner, target], estimated_fee: 1 },
+        { path: [partner.address, target.address], estimated_fee: 1 },
         // another "valid" route through partner, filtered out because different fee
-        { path: [partner, token, target], estimated_fee: 2 },
+        { path: [partner.address, token, target.address], estimated_fee: 5 },
         // another invalid route, but we already selected partner first
-        { path: [tokenNetwork, target], estimated_fee: 3 },
+        { path: [tokenNetwork, target.address], estimated_fee: 10 },
       ],
     };
-    fetch.mockResolvedValueOnce({
+    mockedPfsResponse.mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: jest.fn(async () => result),
       text: jest.fn(async () => jsonStringify(result)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.success(
-        { paths: [{ path: [partner, target], fee: bigNumberify(1) as Int<32> }] },
-        { tokenNetwork, target, value },
+        {
+          paths: [
+            { path: [partner.address, target.address], fee: One.mul(pfsSafetyMargin) as Int<32> },
+          ],
+        },
+        pathFindMeta,
       ),
     );
   });
@@ -902,42 +751,23 @@ describe('PFS: pathFindServiceEpic', () => {
   test('fail channel not open', async () => {
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
+    await ensureChannelIsClosed([raiden, partner]);
 
-    action$.next(
-      channelClose.success(
-        { id: channelId, participant: partner, txHash, txBlock: 126, confirmed: true },
-        { tokenNetwork, partner },
-      ),
-    );
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    const result = { result: [{ path: [partner, target], estimated_fee: 1 }] };
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => result),
-      text: jest.fn(async () => jsonStringify(result)),
-    });
-
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
-        { message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES },
-        { tokenNetwork, target, value },
+        expect.objectContaining({
+          message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
+        }),
+        pathFindMeta,
       ),
     );
   });
@@ -945,55 +775,40 @@ describe('PFS: pathFindServiceEpic', () => {
   test('fail provided route but not enough capacity', async () => {
     expect.assertions(1);
 
-    const value = bigNumberify(80000000) as UInt<32>;
+    // set an exorbitantly high amount for transfer
+    const amount = bigNumberify(80000000) as UInt<32>;
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(
       pathFind.request(
-        { paths: [{ path: [depsMock.address, partner, target], fee }] },
-        { tokenNetwork, target, value },
+        { paths: [{ path: [raiden.address, partner.address, target.address], fee }] },
+        pathFindMeta,
       ),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
+    );
 
-    await expect(promise).resolves.toMatchObject(
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
-        { message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES },
-        { tokenNetwork, target, value },
+        expect.objectContaining({
+          message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
+        }),
+        pathFindMeta,
       ),
     );
   });
 
   test('fail no route between nodes', async () => {
-    expect.assertions(1);
+    // Original test(old pattern) failing
+    expect.assertions(2);
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
-    });
-
-    const lastIOUResult = {
-      last_iou: {
-        ...(await signIOU(depsMock.signer, iou)),
-        chain_id: UInt(32).encode(iou.chain_id),
-        amount: UInt(32).encode(iou.amount),
-        expiration_block: UInt(32).encode(iou.expiration_block),
-      },
-    };
-
-    fetch.mockResolvedValueOnce({
+    const iou = makeIou(raiden);
+    const lastIOUResult = { last_iou: Signed(IOU).encode(await signIOU(raiden.deps.signer, iou)) };
+    mockedIouResponse.mockResolvedValue({
       ok: true,
       status: 200,
       json: jest.fn(async () => lastIOUResult),
@@ -1004,30 +819,23 @@ describe('PFS: pathFindServiceEpic', () => {
       errors: 'No route between nodes found.',
       error_code: 2201,
     };
-
-    fetch.mockResolvedValueOnce({
+    mockedPfsResponse.mockResolvedValueOnce({
       ok: false,
       status: 404,
       json: jest.fn(async () => errorResult),
       text: jest.fn(async () => jsonStringify(errorResult)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject([
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       iouPersist(
         {
           iou: expect.objectContaining({
@@ -1036,142 +844,100 @@ describe('PFS: pathFindServiceEpic', () => {
         },
         { tokenNetwork, serviceAddress: iou.receiver },
       ),
+    );
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
         }),
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
-    ]);
+    );
   });
 
   test('fail last iou server error', async () => {
+    // Original test(old pattern) failed
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
-    });
-
-    fetch.mockResolvedValueOnce({
+    mockedIouResponse.mockResolvedValue({
       ok: false,
       status: 500,
       json: jest.fn(async () => {
         /* error */
       }),
-      text: jest.fn(async () => jsonStringify({})),
+      text: jest.fn(async () => '{}'),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject([
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED,
           details: { responseStatus: 500, responseText: '{}' },
         }),
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
-    ]);
+    );
   });
 
   test('fail last iou invalid signature', async () => {
+    // Original test(old pattern) failing
     expect.assertions(1);
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
-    });
-
+    const iou = makeIou(raiden);
     const lastIOUResult = {
-      last_iou: {
+      last_iou: Signed(IOU).encode({
         ...iou,
-        chain_id: UInt(32).encode(iou.chain_id),
-        amount: UInt(32).encode(iou.amount),
-        expiration_block: UInt(32).encode(iou.expiration_block),
-        signature: '0x87ea2a9c6834513dcabfca011c4422eb02a824b8bbbfc8f555d6a6dd2ebbbe953e1a47ad27b9715d8c8cf2da833f7b7d6c8f9bdb997591b7234999901f042caf1f' as Signature,
-      },
+        signature: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Signature,
+      }),
     };
-
-    fetch.mockResolvedValueOnce({
+    mockedIouResponse.mockResolvedValue({
       ok: true,
       status: 200,
       json: jest.fn(async () => lastIOUResult),
       text: jest.fn(async () => jsonStringify(lastIOUResult)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject([
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH,
           details: expect.objectContaining({
             signer: expect.any(String),
-            address: depsMock.address,
+            address: raiden.address,
           }),
         }),
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
-    ]);
+    );
   });
 
   test('fail iou already claimed', async () => {
-    expect.assertions(1);
+    // Original test(old pattern) failing
+    expect.assertions(2);
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
-    });
-
+    const iou = makeIou(raiden);
     const lastIOUResult = {
-      last_iou: {
-        ...(await signIOU(depsMock.signer, iou)),
-        chain_id: UInt(32).encode(iou.chain_id),
-        amount: UInt(32).encode(iou.amount),
-        expiration_block: UInt(32).encode(iou.expiration_block),
-      },
+      last_iou: Signed(IOU).encode(await signIOU(raiden.deps.signer, iou)),
     };
-
-    fetch.mockResolvedValueOnce({
+    mockedIouResponse.mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: jest.fn(async () => lastIOUResult),
@@ -1183,77 +949,58 @@ describe('PFS: pathFindServiceEpic', () => {
         'The IOU is already claimed. Please start new session with different `expiration_block`.',
       error_code: 2105,
     };
-
-    fetch.mockResolvedValueOnce({
+    mockedPfsResponse.mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: jest.fn(async () => result),
       text: jest.fn(async () => jsonStringify(result)),
     });
 
-    const promise = pathFindServiceEpic(action$, state$, depsMock).pipe(toArray()).toPromise();
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
-      ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject([
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
       iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
+    );
+
+    expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
           message: ErrorCodes.PFS_ERROR_RESPONSE,
-          details: {
-            errors:
-              'The IOU is already claimed. Please start new session with different `expiration_block`.',
-            errorCode: 2105,
-          },
+          details: { errors: result.errors, errorCode: result.error_code },
         }),
-        { tokenNetwork, target, value },
+        pathFindMeta,
       ),
-    ]);
+    );
   });
 
   test('fail pfs disabled', async () => {
     expect.assertions(2);
 
     // disable pfs
-    action$.next(raidenConfigUpdate({ pfs: null }));
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: null }));
+    expect(raiden.config.pfs).toBeNull();
 
-    await expect(
-      depsMock.latest$.pipe(pluckDistinct('config', 'pfs'), first()).toPromise(),
-    ).resolves.toBeNull();
+    const pathFindMeta = {
+      tokenNetwork,
+      target: target.address,
+      value: amount,
+    };
+    raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    const value = bigNumberify(100) as UInt<32>;
-
-    const promise = pathFindServiceEpic(action$, state$, depsMock).toPromise();
-    [
-      matrixPresence.success(
-        { userId: partnerUserId, available: true, ts: Date.now() },
-        { address: partner },
+    await waitBlock();
+    await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).toContainEqual(
+      pathFind.failure(
+        expect.objectContaining({ message: ErrorCodes.PFS_DISABLED }),
+        pathFindMeta,
       ),
-      matrixPresence.success(
-        { userId: targetUserId, available: true, ts: Date.now() },
-        { address: target },
-      ),
-      pathFind.request({}, { tokenNetwork, target, value }),
-    ].forEach((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toMatchObject(
-      pathFind.failure(expect.objectContaining({ message: ErrorCodes.PFS_DISABLED }), {
-        tokenNetwork,
-        target,
-        value,
-      }),
     );
   });
 });
@@ -1314,78 +1061,35 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
 });
 
 describe('PFS: pfsFeeUpdateEpic', () => {
-  let depsMock: ReturnType<typeof raidenEpicDeps>,
-    action$: ReturnType<typeof epicFixtures>['action$'],
-    tokenNetwork: ReturnType<typeof epicFixtures>['tokenNetwork'],
-    token: ReturnType<typeof epicFixtures>['token'],
-    channelId: ReturnType<typeof epicFixtures>['channelId'],
-    partner: ReturnType<typeof epicFixtures>['partner'],
-    settleTimeout: ReturnType<typeof epicFixtures>['settleTimeout'],
-    isFirstParticipant: ReturnType<typeof epicFixtures>['isFirstParticipant'],
-    txHash: ReturnType<typeof epicFixtures>['txHash'],
-    state$: Observable<RaidenState>,
-    action: RaidenAction;
-
-  beforeEach(() => {
-    depsMock = raidenEpicDeps();
-    ({
-      action$,
-      tokenNetwork,
-      token,
-      channelId,
-      partner,
-      settleTimeout,
-      isFirstParticipant,
-      txHash,
-    } = epicFixtures(depsMock));
-    state$ = depsMock.latest$.pipe(pluck('state'));
-    action = channelMonitored({ id: channelId }, { tokenNetwork, partner });
-
-    [
+  test('success: send PFSFeeUpdate to global pfsRoom on channelMonitored', async () => {
+    expect.assertions(1);
+    const [raiden, partner] = await makeRaidens(2);
+    raiden.store.dispatch(
       raidenConfigUpdate({
         caps: {
           [Capabilities.NO_DELIVERY]: true,
           // disable NO_RECEIVE & NO_MEDIATE
         },
       }),
-      tokenMonitored({ token, tokenNetwork }),
-      channelOpen.success(
-        {
-          id: channelId,
-          settleTimeout,
-          isFirstParticipant,
-          token,
-          txHash,
-          txBlock: 121,
-          confirmed: true,
-        },
-        { tokenNetwork, partner },
-      ),
-    ].forEach((a) => action$.next(a));
-  });
+    );
+    await ensureChannelIsOpen([raiden, partner]);
+    const channel = getChannel(raiden, partner);
 
-  afterAll(() => {
-    jest.clearAllMocks();
-    action$.complete();
-    depsMock.latest$.complete();
-  });
-
-  test('success: send PFSFeeUpdate to global pfsRoom on channelMonitored', async () => {
-    expect.assertions(1);
-
-    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
-    setTimeout(() => {
-      action$.next(action);
-      action$.complete();
-    }, 10);
-
-    await expect(promise).resolves.toEqual(
+    expect(raiden.output).toContainEqual(
       messageGlobalSend(
         {
-          message: expect.objectContaining({
+          message: {
             type: MessageType.PFS_FEE_UPDATE,
+            canonical_identifier: {
+              chain_identifier: bigNumberify(raiden.deps.network.chainId) as UInt<32>,
+              token_network_address: tokenNetwork,
+              channel_identifier: bigNumberify(channel.id) as UInt<32>,
+            },
+            updating_participant: raiden.address,
+            timestamp: expect.any(String),
+            fee_schedule: expect.objectContaining({ cap_fees: true }),
             signature: expect.any(String),
-          }),
+          },
         },
         { roomName: expect.stringContaining('path_finding') },
       ),
@@ -1393,43 +1097,37 @@ describe('PFS: pfsFeeUpdateEpic', () => {
   });
 
   test("signature fail isn't fatal", async () => {
-    expect.assertions(2);
-
-    const signerSpy = jest.spyOn(depsMock.signer, 'signMessage');
+    // expect.assertions(2);
+    const [raiden, partner] = await makeRaidens(2);
+    raiden.store.dispatch(
+      raidenConfigUpdate({
+        caps: {
+          [Capabilities.NO_DELIVERY]: true,
+          // disable NO_RECEIVE & NO_MEDIATE
+        },
+      }),
+    );
+    const signerSpy = jest.spyOn(raiden.deps.signer, 'signMessage');
     signerSpy.mockRejectedValueOnce(new Error('Signature rejected'));
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsOpen([raiden, partner]);
 
-    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
-    setTimeout(() => {
-      action$.next(action);
-      action$.complete();
-    }, 10);
-
-    await expect(promise).resolves.toBeUndefined();
-
+    await waitBlock();
     expect(signerSpy).toHaveBeenCalledTimes(1);
+    expect(raiden.output).not.toContainEqual(raidenShutdown(expect.anything()));
+    expect(raiden.output).not.toContainEqual(
+      messageGlobalSend(
+        { message: expect.objectContaining({ type: MessageType.PFS_FEE_UPDATE }) },
+        expect.anything(),
+      ),
+    );
     signerSpy.mockRestore();
   });
 
-  test('skip: channel is not open', async () => {
-    expect.assertions(1);
-
-    // put channel in 'closing' state
-    action$.next(channelClose.request(undefined, { tokenNetwork, partner }));
-
-    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
-    setTimeout(() => {
-      action$.next(action);
-      action$.complete();
-    }, 10);
-
-    await expect(promise).resolves.toBeUndefined();
-  });
-
   test('skip: NO_MEDIATE', async () => {
-    expect.assertions(1);
-
-    // put channel in 'closing' state
-    action$.next(
+    // expect.assertions(1);
+    const [raiden, partner] = await makeRaidens(2);
+    raiden.store.dispatch(
       raidenConfigUpdate({
         caps: {
           [Capabilities.NO_DELIVERY]: true,
@@ -1437,20 +1135,18 @@ describe('PFS: pfsFeeUpdateEpic', () => {
         },
       }),
     );
-
-    const promise = pfsFeeUpdateEpic(action$, state$, depsMock).toPromise();
-    setTimeout(() => {
-      action$.next(action);
-      action$.complete();
-    }, 10);
-
-    await expect(promise).resolves.toBeUndefined();
+    await ensureChannelIsClosed([raiden, partner]);
+    await waitBlock();
+    expect(raiden.output).not.toContainEqual(
+      messageGlobalSend(
+        { message: expect.objectContaining({ type: MessageType.PFS_FEE_UPDATE }) },
+        expect.anything(),
+      ),
+    );
   });
 });
 
 describe('PFS: pfsServiceRegistryMonitorEpic', () => {
-  const pfsAddress = makeAddress();
-
   test('success', async () => {
     expect.assertions(1);
 
