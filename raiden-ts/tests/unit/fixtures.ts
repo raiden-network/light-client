@@ -162,8 +162,6 @@ export const matrixServer = 'matrix.raiden.test';
 export const secret = makeSecret();
 export const secrethash = getSecrethash(secret);
 export const amount = bigNumberify(10) as UInt<32>;
-export const pfsAddress = makeAddress();
-export const pfsTokenAddress = makeAddress();
 export const fee = bigNumberify(3) as Int<32>;
 
 /**
@@ -222,6 +220,8 @@ export async function ensureTokenIsMonitored(raiden: MockedRaiden): Promise<void
  * @param clients - Clients tuple
  * @param clients.0 - Own raiden
  * @param clients.1 - Partner raiden to open channel with
+ * @param opts - Options
+ * @param opts.channelId - Channel id of new channel
  */
 export async function ensureChannelIsOpen(
   [raiden, partner]: [MockedRaiden, MockedRaiden],
