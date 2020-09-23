@@ -322,8 +322,8 @@ describe('store', () => {
 
   test('return transfer with specific identifier ', () => {
     [
-      { key: 'sent:0x1', paymentId: '0x1' },
-      { key: 'sent:0x2', paymentId: '0x2' },
+      { key: 'sent:0x1', paymentId: bigNumberify('0x1') },
+      { key: 'sent:0x2', paymentId: bigNumberify('0x2') },
     ].forEach((transfer) => store.commit('updateTransfers', transfer));
     const transfer = store.getters.transfer('0x1');
     expect(transfer.key).toEqual('sent:0x1');

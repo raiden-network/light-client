@@ -1,8 +1,8 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-
 import store from '@/store';
+import { bigNumberify } from 'ethers/utils';
 import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
 
 Vue.use(Vuetify);
@@ -12,12 +12,12 @@ describe('TransferProgressDialog.vue', () => {
   let vuetify: typeof Vuetify;
   const transferPending = {
     key: 'sent:0x1',
-    paymentId: '0x1',
+    paymentId: bigNumberify('0x1'),
     status: 'PENDING',
   };
   const transferRequested = {
     key: 'sent:0x1',
-    paymentId: '0x1',
+    paymentId: bigNumberify('0x1'),
     status: 'REQUESTED',
   };
 
