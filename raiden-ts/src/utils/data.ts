@@ -9,6 +9,7 @@ import {
   hexDataLength,
   isHexString,
 } from 'ethers/utils/bytes';
+import JSONbig from 'json-bigint';
 
 import { BigNumberC, HexString } from './types';
 import { RaidenError, ErrorCodes } from './error';
@@ -48,5 +49,7 @@ export function encode<S extends number = number>(
   return hex;
 }
 
-export const jsonParse = JSON.parse;
-export const jsonStringify = JSON.stringify;
+// storeAsString requires BigNumbers to be decoded by io-ts
+const JSONbigStr = JSONbig({ storeAsString: true });
+export const jsonParse = JSONbigStr.parse;
+export const jsonStringify = JSONbigStr.stringify;
