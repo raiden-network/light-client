@@ -1,10 +1,13 @@
 jest.useFakeTimers();
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
+import Vuex from 'vuex';
+import store from '@/store/index';
 import Vuetify from 'vuetify';
 import UploadStateDialog from '@/components/account/backup-state/UploadStateDialog.vue';
 
 Vue.use(Vuetify);
+Vue.use(Vuex);
 
 describe('UploadStateDialog.vue', () => {
   let wrapper: Wrapper<UploadStateDialog>;
@@ -19,6 +22,7 @@ describe('UploadStateDialog.vue', () => {
 
     wrapper = mount(UploadStateDialog, {
       vuetify,
+      store,
       stubs: ['v-dialog'],
       mocks: {
         $t: (msg: string) => msg,
@@ -64,9 +68,9 @@ describe('UploadStateDialog.vue', () => {
 
   test('calls methods for uploading state on file select', async () => {
     // @ts-ignore
-    wrapper.vm.uploadState = jest.fn();
+    wrapper.vm.uploadStateAndConnect = jest.fn();
     // @ts-ignore
-    expect(wrapper.vm.uploadState).not.toBeCalled();
+    expect(wrapper.vm.uploadStateAndConnect).not.toBeCalled();
 
     const stateInput = wrapper.find('input');
     // @ts-ignore
@@ -75,7 +79,7 @@ describe('UploadStateDialog.vue', () => {
     await wrapper.vm.$nextTick();
 
     // @ts-ignore
-    expect(wrapper.vm.uploadState).toBeCalled();
+    expect(wrapper.vm.uploadStateAndConnect).toBeCalled();
   });
 
   test('method for dropzone error displays and hides dropzone error message', async () => {
@@ -96,7 +100,7 @@ describe('UploadStateDialog.vue', () => {
       length: 2,
     };
     // @ts-ignore
-    wrapper.vm.uploadState(fileList);
+    wrapper.vm.uploadStateAndConnect(fileList);
 
     expect(wrapper.vm.$data.dropzoneErrorMessage).toBe(true);
   });
@@ -109,7 +113,7 @@ describe('UploadStateDialog.vue', () => {
       length: 1,
     };
     // @ts-ignore
-    wrapper.vm.uploadState(fileList);
+    wrapper.vm.uploadStateAndConnect(fileList);
 
     expect(wrapper.vm.$data.dropzoneErrorMessage).toBe(false);
   });

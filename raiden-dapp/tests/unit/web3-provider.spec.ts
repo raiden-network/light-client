@@ -13,7 +13,7 @@ describe('web3Provider', () => {
 
   test('throw an exception when the user denies access to the provider', async () => {
     window.ethereum = {
-      enable: jest.fn().mockRejectedValue('denied'),
+      request: jest.fn().mockRejectedValue('denied'),
     };
 
     try {
@@ -26,7 +26,7 @@ describe('web3Provider', () => {
 
   test('return the provider when the user allows the connection to the provider', async () => {
     window.ethereum = {
-      enable: jest.fn().mockResolvedValue(true),
+      request: jest.fn().mockResolvedValue(true),
     };
 
     const status = await Web3Provider.provider();
