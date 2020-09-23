@@ -39,6 +39,7 @@ export const Channel = t.intersection([
   // readonly needs to be applied to the individual types to allow tagged union narrowing
   t.readonly(
     t.type({
+      _id: t.string,
       id: t.number,
       token: Address,
       tokenNetwork: Address,

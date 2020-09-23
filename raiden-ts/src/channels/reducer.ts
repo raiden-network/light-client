@@ -1,6 +1,6 @@
 import { Zero, AddressZero, One } from 'ethers/constants';
 
-import { UInt, Address } from '../utils/types';
+import { UInt, Address, Hash } from '../utils/types';
 import { Reducer, createReducer } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
 import { RaidenState, initialState } from '../state';
@@ -19,7 +19,7 @@ import {
 } from './actions';
 import { Channel, ChannelState, ChannelEnd } from './state';
 import { channelKey, channelUniqueKey } from './utils';
-import { BalanceProofZero } from './types';
+import { BalanceProofZero, Lock } from './types';
 
 // state.blockNumber specific reducer, handles only newBlock action
 const blockNumber = createReducer(initialState.blockNumber).handle(
@@ -77,8 +77,9 @@ function channelOpenSuccessReducer(state: RaidenState, action: channelOpen.succe
   )
     return state;
   const channel: Channel = {
-    state: ChannelState.open,
+    _id: channelUniqueKey({ ...action.meta, id: action.payload.id }),
     id: action.payload.id,
+    state: ChannelState.open,
     token: action.payload.token,
     tokenNetwork: action.meta.tokenNetwork,
     settleTimeout: action.payload.settleTimeout,
@@ -202,43 +203,58 @@ function channelSettleSuccessReducer(
   return state;
 }
 
+/* Immutably mark locks as registed; returns reference to previous array if nothing changes */
+function markLocksAsRegistered(
+  locks: readonly Lock[],
+  secrethash: Hash,
+  registeredBlock: number,
+): readonly Lock[] {
+  let changed = false;
+  const newLocks = locks.map((lock) => {
+    if (lock.secrethash !== secrethash || lock.registered || lock.expiration.lte(registeredBlock))
+      return lock;
+    changed = true;
+    return { ...lock, registered: true as const };
+  });
+  if (changed) return newLocks;
+  return locks;
+}
+
 function channelLockRegisteredReducer(
   state: RaidenState,
   action: transferSecretRegister.success,
 ): RaidenState {
-  const secrethash = action.meta.secrethash;
-
   // now that secret is stored in transfer, if it's a confirmed on-chain registration,
   // also update channel's lock to reflect it
-  if (!action.payload.confirmed || !(secrethash in state[action.meta.direction])) return state;
-  const locked = state[action.meta.direction][secrethash].transfer;
-  const key = channelKey({
-    tokenNetwork: locked.token_network_address,
-    partner: state[action.meta.direction][secrethash].partner,
-  });
-  if (!(key in state.channels)) return state;
+  if (!action.payload.confirmed) return state;
 
   const end = action.meta.direction === Direction.SENT ? 'own' : 'partner';
-  const locks = state.channels[key][end].locks;
-  if (!locks.some((lock) => lock.secrethash === secrethash && !lock.registered)) return state;
-
-  return {
-    ...state,
-    channels: {
-      ...state.channels,
-      [key]: {
-        ...state.channels[key],
-        [end]: {
-          ...state.channels[key][end],
-          locks: locks.map((lock) =>
-            lock.secrethash === secrethash && !lock.registered
-              ? { ...lock, registered: true } // mark lock as registered
-              : lock,
-          ),
+  // iterate over channels and update any matching lock
+  const keys = [...Object.keys(state.channels)];
+  for (const key of keys) {
+    const channel = state.channels[key];
+    const newLocks = markLocksAsRegistered(
+      channel[end].locks,
+      action.meta.secrethash,
+      action.payload.txBlock,
+    );
+    if (newLocks === channel[end].locks) continue;
+    // only update state if locks changed
+    state = {
+      ...state,
+      channels: {
+        ...state.channels,
+        [key]: {
+          ...channel,
+          [end]: {
+            ...channel[end],
+            locks: newLocks,
+          },
         },
       },
-    },
-  };
+    };
+  }
+  return state;
 }
 
 // handles actions which reducers need RaidenState
