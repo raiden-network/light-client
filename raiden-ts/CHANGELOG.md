@@ -4,6 +4,10 @@
 ### Fixed
 - [#2094] Fix TransferState's timestamps missing
 
+### Added
+- [#2044] Introduce PouchDB (IndexedDB/leveldown) as new persistent state storage backend
+
+[#2044]: https://github.com/raiden-network/light-client/issues/2044
 [#2094]: https://github.com/raiden-network/light-client/issues/2094
 
 ## [0.11.1] - 2020-08-18
