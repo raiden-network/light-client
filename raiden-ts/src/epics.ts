@@ -1,4 +1,4 @@
-import { Observable, from, of, combineLatest, using } from 'rxjs';
+import { Observable, from, of, combineLatest, using, throwError } from 'rxjs';
 import {
   catchError,
   filter,
@@ -28,6 +28,7 @@ import { pfsListUpdated, udcDeposit } from './services/actions';
 import { Address, UInt } from './utils/types';
 import { isActionOf } from './utils/actions';
 
+import * as DatabaseEpics from './db/epics';
 import * as ChannelsEpics from './channels/epics';
 import * as TransportEpics from './transport/epics';
 import * as TransfersEpics from './transfers/epics';
@@ -137,6 +138,7 @@ export function getLatest$(
 }
 
 const RaidenEpics = {
+  ...DatabaseEpics,
   ...ChannelsEpics,
   ...TransportEpics,
   ...TransfersEpics,
@@ -163,11 +165,15 @@ export const raidenRootEpic = (
     () =>
       // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
       from(Object.values(RaidenEpics)).pipe(
-        mergeMap((epic) => epic(limitedAction$, limitedState$, deps)),
-        catchError((err) => {
-          deps.log.error('Fatal error:', err);
-          return of(raidenShutdown({ reason: err }));
-        }),
+        mergeMap((epic) =>
+          epic(limitedAction$, limitedState$, deps).pipe(
+            catchError((err) => {
+              deps.log.error('Epic error', epic, err);
+              return throwError(err);
+            }),
+          ),
+        ),
+        catchError((err) => of(raidenShutdown({ reason: err }))),
         takeUntil(shutdownNotification),
       ),
   );

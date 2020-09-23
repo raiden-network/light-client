@@ -18,6 +18,7 @@ import { RaidenState } from './state';
 import { Address, UInt } from './utils/types';
 import { RaidenConfig } from './config';
 import { Presences } from './transport/types';
+import { RaidenDatabase } from './db/types';
 
 interface Info {
   address: Address;
@@ -62,6 +63,7 @@ export interface RaidenEpicDeps {
   secretRegistryContract: SecretRegistry;
   monitoringServiceContract: MonitoringService;
   main?: { signer: Signer; address: Address };
+  db: RaidenDatabase;
 }
 
 export interface ChangeEvent<T extends string, P> {

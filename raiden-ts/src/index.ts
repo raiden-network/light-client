@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 export { Raiden } from './raiden';
-export { RaidenState, encodeRaidenState } from './state';
+export { RaidenState } from './state';
 export { RaidenEvent, RaidenAction } from './actions';
 export { RaidenTransfer, RaidenTransferStatus } from './transfers/state';
 export { ChannelState, RaidenChannel, RaidenChannels } from './channels/state';
