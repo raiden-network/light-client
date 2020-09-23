@@ -15,7 +15,6 @@ export enum MessageType {
   SECRET_REQUEST = 'SecretRequest',
   SECRET_REVEAL = 'RevealSecret',
   LOCKED_TRANSFER = 'LockedTransfer',
-  REFUND_TRANSFER = 'RefundTransfer',
   UNLOCK = 'Unlock',
   LOCK_EXPIRED = 'LockExpired',
   WITHDRAW_REQUEST = 'WithdrawRequest',
@@ -118,7 +117,7 @@ export interface Metadata extends t.TypeOf<typeof _Metadata> {}
 export interface MetadataC extends t.Type<Metadata, t.OutputOf<typeof _Metadata>> {}
 export const Metadata: MetadataC = _Metadata;
 
-// base for locked and refund transfer, they differentiate only on the type tag
+// base for locked transfers, they differentiate only on the type tag
 const LockedTransferBase = t.readonly(
   t.intersection([
     t.type({
@@ -147,21 +146,6 @@ export interface LockedTransfer extends t.TypeOf<typeof _LockedTransfer> {}
 export interface LockedTransferC
   extends t.Type<LockedTransfer, t.OutputOf<typeof _LockedTransfer>> {}
 export const LockedTransfer: LockedTransferC = _LockedTransfer;
-
-// if a mediated transfer didn't succeed, mediator can refund the amount with the same secrethash
-// so the previous hop can retry it with another neighbor
-const _RefundTransfer = t.readonly(
-  t.intersection([
-    t.type({
-      type: t.literal(MessageType.REFUND_TRANSFER),
-    }),
-    LockedTransferBase,
-  ]),
-);
-export interface RefundTransfer extends t.TypeOf<typeof _RefundTransfer> {}
-export interface RefundTransferC
-  extends t.Type<RefundTransfer, t.OutputOf<typeof _RefundTransfer>> {}
-export const RefundTransfer: RefundTransferC = _RefundTransfer;
 
 // when the secret is revealed, unlock sends a new balance proof without the lock and increasing
 // the total transfered to finish the offchain transfer
@@ -326,7 +310,6 @@ const _messages = [
   SecretRequest,
   SecretReveal,
   LockedTransfer,
-  RefundTransfer,
   Unlock,
   LockExpired,
   WithdrawRequest,
@@ -342,4 +325,4 @@ const messages = _messages as Mutable<typeof _messages>;
 export type Message = t.TypeOf<typeof messages[number]>;
 export interface MessageC extends t.UnionC<typeof messages> {}
 export const Message: MessageC = t.union(messages);
-export type EnvelopeMessage = LockedTransfer | RefundTransfer | Unlock | LockExpired;
+export type EnvelopeMessage = LockedTransfer | Unlock | LockExpired;

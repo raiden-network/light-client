@@ -20,7 +20,6 @@ const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.SECRET_REQUEST]: 3,
   [MessageType.SECRET_REVEAL]: 11,
   [MessageType.LOCKED_TRANSFER]: 7,
-  [MessageType.REFUND_TRANSFER]: 8,
   [MessageType.UNLOCK]: 4,
   [MessageType.LOCK_EXPIRED]: 13,
   [MessageType.WITHDRAW_REQUEST]: 15,
@@ -84,7 +83,6 @@ export function createBalanceHash({
 export function createMessageHash(message: EnvelopeMessage): Hash {
   switch (message.type) {
     case MessageType.LOCKED_TRANSFER:
-    case MessageType.REFUND_TRANSFER:
       // hash of packed representation of the whole message
       let packed = concat([
         encode(CMDIDs[message.type], 1),
@@ -152,7 +150,6 @@ export function packMessage(message: Message) {
         ]),
       ) as HexString<12>;
     case MessageType.LOCKED_TRANSFER:
-    case MessageType.REFUND_TRANSFER:
     case MessageType.UNLOCK:
     case MessageType.LOCK_EXPIRED: {
       const additionalHash = createMessageHash(message),
