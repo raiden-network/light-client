@@ -30,7 +30,6 @@ import {
   concatMap,
   takeUntil,
   groupBy,
-  repeatWhen,
 } from 'rxjs/operators';
 import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
@@ -48,14 +47,15 @@ import { ShutdownReason } from '../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
 import { isActionOf } from '../utils/actions';
-import { pluckDistinct, distinctRecordValues, retryAsync$ } from '../utils/rx';
+import { pluckDistinct, distinctRecordValues, retryAsync$, takeIf } from '../utils/rx';
 import { fromEthersEvent, getNetwork, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
-import { RaidenError, ErrorCodes, assert } from '../utils/error';
+import { RaidenError, ErrorCodes } from '../utils/error';
 import { createBalanceHash, MessageTypeId } from '../messages/utils';
 import { TokenNetwork } from '../contracts/TokenNetwork';
 import { HumanStandardToken } from '../contracts/HumanStandardToken';
-import { findBalanceProofMatchingBalanceHash } from '../transfers/utils';
+import { findBalanceProofMatchingBalanceHash$ } from '../transfers/utils';
+import { Direction } from '../transfers/state';
 import { ChannelState, Channel } from './state';
 import {
   newBlock,
@@ -1104,20 +1104,7 @@ export const channelAutoSettleEpic = (
         ),
       ),
     ),
-    // complete when autoSettle becomes false
-    takeUntil(
-      config$.pipe(
-        pluck('autoSettle'),
-        filter((autoSettle) => !autoSettle),
-      ),
-    ),
-    // re-subscribe when autoSettle becomes true
-    repeatWhen(() =>
-      config$.pipe(
-        pluck('autoSettle'),
-        filter((autoSettle) => autoSettle),
-      ),
-    ),
+    takeIf(config$.pipe(pluck('autoSettle'))),
   );
 
 /**
@@ -1137,12 +1124,13 @@ export const channelAutoSettleEpic = (
  * @param deps.provider - Provider instance
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
+ * @param deps.db - Database instance
  * @returns Observable of channelSettle.failure actions
  */
 export const channelSettleEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, signer, address, main, provider, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  { log, signer, address, main, provider, getTokenNetworkContract, config$, db }: RaidenEpicDeps,
 ): Observable<channelSettle.failure> =>
   action$.pipe(
     filter(isActionOf(channelSettle.request)),
@@ -1174,60 +1162,88 @@ export const channelSettleEpic = (
         ]),
       ).pipe(
         mergeMap(([{ 3: ownBH }, { 3: partnerBH }]) => {
-          let ownBP = channel.own.balanceProof;
-          if (ownBH !== createBalanceHash(ownBP)) {
+          let ownBP$;
+          if (ownBH === createBalanceHash(channel.own.balanceProof)) {
+            ownBP$ = of(channel.own.balanceProof);
+          } else {
             // partner closed/updated the channel with a non-latest BP from us
             // they would lose our later transfers, but to settle we must search transfer history
-            const bp = findBalanceProofMatchingBalanceHash(state.sent, ownBH as Hash, action.meta);
-            assert(bp, [
-              ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH,
-              { address, ownBalanceHash: ownBH },
-            ]);
-            ownBP = bp;
-          }
-
-          let partnerBP = channel.partner.balanceProof;
-          if (partnerBH !== createBalanceHash(partnerBP)) {
-            // shouldn't happen: if we closed, we must have done so with partner's latest BP
-            const bp = findBalanceProofMatchingBalanceHash(
-              state.received,
-              partnerBH as Hash,
-              action.meta,
+            ownBP$ = findBalanceProofMatchingBalanceHash$(
+              db,
+              channel,
+              Direction.SENT,
+              ownBH as Hash,
+            ).pipe(
+              catchError(() =>
+                throwError(
+                  new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH, {
+                    address,
+                    ownBalanceHash: ownBH,
+                  }),
+                ),
+              ),
             );
-            assert(bp, [
-              ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH,
-              { partner, partnerBalanceHash: partnerBH },
-            ]);
-            partnerBP = bp;
           }
 
-          let part1 = [address, ownBP] as const;
-          let part2 = [partner, partnerBP] as const;
-
-          // part1 total amounts must be <= part2 total amounts on settleChannel call
-          if (
-            part2[1].transferredAmount
-              .add(part2[1].lockedAmount)
-              .lt(part1[1].transferredAmount.add(part1[1].lockedAmount))
-          )
-            [part1, part2] = [part2, part1]; // swap
+          let partnerBP$;
+          if (partnerBH === createBalanceHash(channel.partner.balanceProof)) {
+            partnerBP$ = of(channel.partner.balanceProof);
+          } else {
+            // shouldn't happen, since it's expected we were the closing part
+            partnerBP$ = findBalanceProofMatchingBalanceHash$(
+              db,
+              channel,
+              Direction.RECEIVED,
+              partnerBH as Hash,
+            ).pipe(
+              catchError(() =>
+                throwError(
+                  new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH, {
+                    address,
+                    partnerBalanceHash: partnerBH,
+                  }),
+                ),
+              ),
+            );
+          }
 
           // send settleChannel transaction
-          return defer(() =>
-            tokenNetworkContract.functions.settleChannel(
-              channel.id,
-              part1[0],
-              part1[1].transferredAmount,
-              part1[1].lockedAmount,
-              part1[1].locksroot,
-              part2[0],
-              part2[1].transferredAmount,
-              part2[1].lockedAmount,
-              part2[1].locksroot,
+          return combineLatest([ownBP$, partnerBP$]).pipe(
+            map(([ownBP, partnerBP]) => {
+              // part1 total amounts must be <= part2 total amounts on settleChannel call
+              if (
+                partnerBP.transferredAmount
+                  .add(partnerBP.lockedAmount)
+                  .lt(ownBP.transferredAmount.add(ownBP.lockedAmount))
+              )
+                return [
+                  [partner, partnerBP],
+                  [address, ownBP],
+                ] as const;
+              else
+                return [
+                  [address, ownBP],
+                  [partner, partnerBP],
+                ] as const;
+            }),
+            mergeMap(([part1, part2]) =>
+              defer(() =>
+                tokenNetworkContract.functions.settleChannel(
+                  channel.id,
+                  part1[0],
+                  part1[1].transferredAmount,
+                  part1[1].lockedAmount,
+                  part1[1].locksroot,
+                  part2[0],
+                  part2[1].transferredAmount,
+                  part2[1].lockedAmount,
+                  part2[1].locksroot,
+                ),
+              ).pipe(
+                assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log }),
+                retryTx(provider.pollingInterval, undefined, undefined, { log }),
+              ),
             ),
-          ).pipe(
-            assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log }),
-            retryTx(provider.pollingInterval, undefined, undefined, { log }),
           );
         }),
         // if succeeded, return a empty/completed observable
@@ -1397,11 +1413,11 @@ export const confirmationEpic = (
   state$: Observable<RaidenState>,
   { config$, provider, latest$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> =>
-  combineLatest(
+  combineLatest([
     state$.pipe(pluckDistinct('blockNumber')),
     state$.pipe(pluck('pendingTxs')),
     config$.pipe(pluckDistinct('confirmationBlocks')),
-  ).pipe(
+  ]).pipe(
     filter(([, pendingTxs]) => pendingTxs.length > 0),
     // exhaust will ignore blocks while concat$ is busy
     exhaustMap(([blockNumber, pendingTxs, confirmationBlocks]) =>
