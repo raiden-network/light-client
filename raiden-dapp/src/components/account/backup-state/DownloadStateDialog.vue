@@ -47,27 +47,43 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
 
   @Emit()
   cancel() {}
-
   /* istanbul ignore next */
   async getAndDownloadState() {
+    const filename = `raiden_lc_state_${new Date().toISOString()}.json`;
+    const stateFileURL = await this.getStateFileURL(filename);
+    const downloadLink = this.createDownloadLink(filename, stateFileURL);
+
+    downloadLink.click();
+    this.revokeDownloadURL(stateFileURL, downloadLink);
     this.navigateToHome();
+  }
+
+  /* istanbul ignore next */
+  async getStateFileURL(filename: string): Promise<string> {
     const state = await this.$raiden.getState();
     const stateJSON = JSON.stringify(state);
-    const filename = `raiden_lc_state_${new Date().toISOString()}.json`;
     const file = new File([stateJSON], filename, { type: 'application/json' });
-    const url = URL.createObjectURL(file);
-    const el = document.createElement('a');
+    return URL.createObjectURL(file);
+  }
 
-    el.href = url;
-    el.download = filename;
-    el.style.display = 'none';
-    document.body.appendChild(el);
-    el.click();
+  /* istanbul ignore next */
+  createDownloadLink(filename: string, url: string): HTMLAnchorElement {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.style.display = 'none';
+    return document.body.appendChild(anchor);
+  }
 
+  /* istanbul ignore next */
+  revokeDownloadURL(
+    stateFileURL: string,
+    downloadLink: HTMLAnchorElement
+  ): void {
     setTimeout(() => {
-      URL.revokeObjectURL(url);
-      document.body.removeChild(el);
-    }, 0);
+      URL.revokeObjectURL(stateFileURL);
+      document.body.removeChild(downloadLink);
+    }, 1);
   }
 }
 </script>
