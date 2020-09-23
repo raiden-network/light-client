@@ -628,12 +628,7 @@ export default class RaidenService {
   /* istanbul ignore next */
   async getState() {
     this._raiden!.stop();
-<<<<<<< HEAD
     return await this._raiden!.state$.toPromise();
-=======
-    await this._raiden!.state$.toPromise();
-    return this._raiden!.dumpDatabase();
->>>>>>> d22f1c62b57c2e0992329694e2565ec087c77bff
   }
 
   /* istanbul ignore next */
