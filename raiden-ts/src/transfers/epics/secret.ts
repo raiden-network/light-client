@@ -1,5 +1,5 @@
 import { Event } from 'ethers/contract';
-import { EMPTY, from, Observable, of, defer } from 'rxjs';
+import { EMPTY, from, Observable, of, defer, identity } from 'rxjs';
 import {
   concatMap,
   filter,
@@ -8,15 +8,15 @@ import {
   mergeMap,
   withLatestFrom,
   catchError,
-  distinct,
+  groupBy,
   pluck,
   exhaustMap,
-  takeUntil,
   ignoreElements,
   switchMap,
+  takeUntil,
+  endWith,
 } from 'rxjs/operators';
 
-import { newBlock } from '../../channels/actions';
 import { assertTx, retryTx } from '../../channels/utils';
 import { RaidenAction } from '../../actions';
 import { messageSend } from '../../messages/actions';
@@ -25,10 +25,10 @@ import { signMessage, isMessageReceivedOfType } from '../../messages/utils';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
-import { RaidenError, ErrorCodes } from '../../utils/error';
+import { RaidenError, ErrorCodes, assert } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
-import { pluckDistinct } from '../../utils/rx';
-import { Hash, Secret, Signed, UInt, isntNil } from '../../utils/types';
+import { pluckDistinct, takeIf } from '../../utils/rx';
+import { Hash, Secret, Signed, UInt, isntNil, untime } from '../../utils/types';
 import {
   transfer,
   transferSecret,
@@ -37,7 +37,7 @@ import {
   transferSecretReveal,
   transferUnlock,
 } from '../actions';
-import { getSecrethash, makeMessageId } from '../utils';
+import { getSecrethash, makeMessageId, transferKey } from '../utils';
 import { Direction } from '../state';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { Capabilities } from '../../constants';
@@ -65,9 +65,10 @@ export const transferSecretRequestedEpic = (
     mergeMap(function* ([action, state]) {
       const message = action.payload.message;
       // proceed only if we know the secret and the SENT transfer
-      if (!(message.secrethash in state.sent)) return;
+      const key = transferKey({ secrethash: message.secrethash, direction: Direction.SENT });
+      if (!(key in state.transfers)) return;
 
-      const locked = state.sent[message.secrethash].transfer;
+      const locked = state.transfers[key].transfer;
       // we do only some basic verification here, as most of it is done upon SecretReveal,
       // to persist the request in most cases in TransferState.secretRequest
       if (
@@ -82,74 +83,73 @@ export const transferSecretRequestedEpic = (
         { message },
         { secrethash: message.secrethash, direction: Direction.SENT },
       );
-      // we don't check if transfer was refunded. If partner refunded the transfer but still
-      // forwarded the payment, they would be in risk of losing their money, not us
     }),
   );
 
 /**
  * Contains the core logic of {@link transferSecretRevealEpic}.
  *
- * @param state - Contains the current state of the app
  * @param action - The {@link transferSecretRequest} action that
  * @param deps - Epics dependencies
  * @param deps.signer - Signer instance
  * @param deps.log - Logger instance
+ * @param deps.latest$ - Latest observable
  * @returns Observable of {@link transfer.failure}, {@link transferSecretReveal} or
  * {@link messageSend.request} actions
  */
 const secretReveal$ = (
-  state: RaidenState,
   action: transferSecretRequest,
-  { signer, log }: Pick<RaidenEpicDeps, 'signer' | 'log'>,
+  { signer, log, latest$ }: Pick<RaidenEpicDeps, 'signer' | 'log' | 'latest$'>,
 ): Observable<transfer.failure | transferSecretReveal | messageSend.request> => {
   const request = action.payload.message;
-  const secrethash = action.meta.secrethash;
-  if (!state.sent[secrethash]?.secret) {
-    // shouldn't happen, as we're the initiator (for now), and always know the secret
-    log.warn('SecretRequest for unknown secret', request, secrethash);
-    return EMPTY;
-  }
+  return latest$.pipe(
+    first(),
+    mergeMap(({ state }) => {
+      const transferState = state.transfers[transferKey(action.meta)];
+      // shouldn't happen, as we're the initiator (for now), and always know the secret
+      assert(transferState.secret, 'SecretRequest for unknown secret');
 
-  const locked = state.sent[secrethash].transfer;
-  const target = locked.target;
-  const fee = state.sent[secrethash].fee;
-  const value = locked.lock.amount.sub(fee) as UInt<32>;
+      const locked = transferState.transfer;
+      const target = locked.target;
+      const fee = transferState.fee;
+      const value = locked.lock.amount.sub(fee) as UInt<32>;
 
-  if (
-    !request.expiration.lte(locked.lock.expiration) ||
-    !request.expiration.gt(state.blockNumber)
-  ) {
-    log.error('SecretRequest for expired transfer', request, locked);
-    return EMPTY;
-  } else if (request.amount.lt(value)) {
-    log.error('SecretRequest for amount too small!', request, locked);
-    return of(
-      transfer.failure(new RaidenError(ErrorCodes.XFER_INVALID_SECRETREQUEST), action.meta),
-    );
-  } else if (!request.amount.eq(value)) {
-    // accept request
-    log.info('Accepted SecretRequest for amount different than sent', request, locked);
-  }
+      assert(
+        request.expiration.lte(locked.lock.expiration) && request.expiration.gt(state.blockNumber),
+        'SecretRequest for expired transfer',
+      );
+      assert(request.amount.gte(value), 'SecretRequest for amount too small!');
 
-  let reveal$: Observable<Signed<SecretReveal>>;
-  if (state.sent[action.meta.secrethash].secretReveal)
-    reveal$ = of(state.sent[action.meta.secrethash].secretReveal!);
-  else {
-    const message: SecretReveal = {
-      type: MessageType.SECRET_REVEAL,
-      message_identifier: makeMessageId(),
-      secret: state.sent[action.meta.secrethash].secret!.value,
-    };
-    reveal$ = from(signMessage(signer, message, { log }));
-  }
+      if (!request.amount.eq(value)) {
+        // accept request
+        log.info('Accepted SecretRequest for amount different than sent', request, locked);
+      }
 
-  return reveal$.pipe(
-    mergeMap(function* (message) {
-      yield transferSecretReveal({ message }, action.meta);
-      yield messageSend.request(
-        { message },
-        { address: target, msgId: message.message_identifier.toString() },
+      let reveal$: Observable<Signed<SecretReveal>>;
+      if (transferState.secretReveal) reveal$ = of(transferState.secretReveal);
+      else {
+        const message: SecretReveal = {
+          type: MessageType.SECRET_REVEAL,
+          message_identifier: makeMessageId(),
+          secret: transferState.secret,
+        };
+        reveal$ = from(signMessage(signer, message, { log }));
+      }
+
+      return reveal$.pipe(
+        mergeMap(function* (message) {
+          yield transferSecretReveal({ message }, action.meta);
+          yield messageSend.request(
+            { message },
+            { address: target, msgId: message.message_identifier.toString() },
+          );
+        }),
+      );
+    }),
+    catchError((err) => {
+      log.error('Invalid SecretRequest', err);
+      return of(
+        transfer.failure(new RaidenError(ErrorCodes.XFER_INVALID_SECRETREQUEST), action.meta),
       );
     }),
   );
@@ -175,17 +175,12 @@ const secretReveal$ = (
 export const transferSecretRevealEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, signer, latest$ }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<transfer.failure | transferSecretReveal | messageSend.request> =>
   action$.pipe(
     filter(isActionOf(transferSecretRequest)),
     filter((action) => action.meta.direction === Direction.SENT),
-    concatMap((action) =>
-      latest$.pipe(pluckDistinct('state')).pipe(
-        first(),
-        mergeMap((state) => secretReveal$(state, action, { log, signer })),
-      ),
-    ),
+    concatMap((action) => secretReveal$(action, deps)),
   );
 
 /**
@@ -206,22 +201,21 @@ export const transferSecretRevealedEpic = (
     filter(isMessageReceivedOfType(SecretReveal)),
     withLatestFrom(state$),
     mergeMap(function* ([action, state]) {
+      const secrethash = getSecrethash(action.payload.message.secret);
+      const results = Object.values(Direction)
+        .map((direction) => state.transfers[transferKey({ secrethash, direction })])
+        .filter(isntNil);
       const message = action.payload.message;
-      const secrethash = getSecrethash(message.secret);
-
-      if (secrethash in state.sent) {
+      for (const sent of results.filter((doc) => doc.direction === Direction.SENT)) {
         const meta = { secrethash, direction: Direction.SENT };
-        // if secrethash matches, we're good for persisting
+        // if secrethash matches, we're good for persisting, don't care for sender/signature
         yield transferSecret({ secret: message.secret }, meta);
 
-        // but are stricter for unlocking to next hop
+        // but are stricter for unlocking to next hop only
         if (
-          action.meta.address === state.sent[secrethash].partner &&
-          // don't unlock if channel closed
-          !state.sent[secrethash].channelClosed &&
-          // don't unlock again if already unlocked, retry handled by transferRetryMessageEpic
-          // in the future, we may avoid retry until Processed, and [re]send once per SecretReveal
-          !state.sent[secrethash].unlock
+          action.meta.address === sent.partner &&
+          // don't unlock if channel closed: balanceProofs already registered on-chain
+          !sent.channelClosed
           // accepts secretReveal/unlock request even if registered on-chain
         ) {
           // request unlock to be composed, signed & sent to partner
@@ -230,7 +224,7 @@ export const transferSecretRevealedEpic = (
       }
 
       // we're mediator or target, and received reveal from next hop or initiator, respectively
-      if (secrethash in state.received) {
+      for (const _received of results.filter((doc) => doc.direction === Direction.RECEIVED)) {
         // if secrethash matches, we're good for persisting, which also triggers Reveal back
         yield transferSecret(
           { secret: message.secret },
@@ -259,18 +253,24 @@ export const transferRequestUnlockEpic = (
   action$.pipe(
     filter(isActionOf([transferSecret, transferSecretRegister.success])),
     filter((action) => action.meta.direction === Direction.RECEIVED),
+    filter((action) => transferSecret.is(action) || !!action.payload.confirmed),
     concatMap((action) =>
       latest$.pipe(
         pluckDistinct('state'),
         first(),
-        filter(({ received }) => !received[action.meta.secrethash]?.secretReveal),
-        mergeMap(() => {
-          const message: SecretReveal = {
-            type: MessageType.SECRET_REVEAL,
-            message_identifier: makeMessageId(),
-            secret: action.payload.secret,
-          };
-          return signMessage(signer, message, { log });
+        filter(({ transfers }) => transferKey(action.meta) in transfers),
+        mergeMap(({ transfers }) => {
+          const cached = transfers[transferKey(action.meta)]?.secretReveal;
+          if (cached) {
+            return of(untime(cached));
+          } else {
+            const message: SecretReveal = {
+              type: MessageType.SECRET_REVEAL,
+              message_identifier: makeMessageId(),
+              secret: action.payload.secret,
+            };
+            return signMessage(signer, message, { log });
+          }
         }),
         map((message) => transferSecretReveal({ message }, action.meta)),
         catchError((err) => {
@@ -310,37 +310,28 @@ export const monitorSecretRegistryEpic = (
     map(logToContractEvent<[Hash, Secret, Event]>(secretRegistryContract)),
     filter(isntNil),
     withLatestFrom(state$, config$),
-    filter(
-      ([[secrethash, , { blockNumber }], { sent, received }]) =>
-        // emits only if lock didn't expire yet
-        !!blockNumber &&
-        ((secrethash in sent && sent[secrethash].transfer.lock.expiration.gte(blockNumber)) ||
-          (secrethash in received &&
-            received[secrethash].transfer.lock.expiration.gte(blockNumber))),
-    ),
     mergeMap(function* ([
       [secrethash, secret, event],
-      { blockNumber, sent, received },
+      { transfers, blockNumber },
       { confirmationBlocks },
     ]) {
-      const directions: Direction[] = [];
-      if (secrethash in sent && sent[secrethash].transfer.lock.expiration.gte(event.blockNumber!))
-        directions.push(Direction.SENT);
-      if (
-        secrethash in received &&
-        received[secrethash].transfer.lock.expiration.gte(event.blockNumber!)
-      )
-        directions.push(Direction.RECEIVED);
-      for (const direction of directions)
+      // find sent|received transfers matching secrethash and secret registered before expiration
+      for (const direction of Object.values(Direction)) {
+        const key = transferKey({ secrethash, direction });
+        if (!(key in transfers)) continue;
         yield transferSecretRegister.success(
           {
             secret,
             txHash: event.transactionHash! as Hash,
             txBlock: event.blockNumber!,
-            confirmed: event.blockNumber! + confirmationBlocks <= blockNumber ? true : undefined,
+            confirmed:
+              event.blockNumber! + confirmationBlocks <= blockNumber
+                ? event.blockNumber! < transfers[key].expiration // false is like event got reorged/removed
+                : undefined,
           },
           { secrethash, direction },
         );
+      }
     }),
   );
 
@@ -377,48 +368,57 @@ export const transferAutoRegisterEpic = (
   { config$, latest$ }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.request> =>
   state$.pipe(
-    pluckDistinct(Direction.RECEIVED),
-    mergeMap((received) => from(Object.keys(received) as Hash[])),
-    distinct(),
-    mergeMap((secrethash) =>
-      action$.pipe(
-        filter(newBlock.is),
-        withLatestFrom(latest$.pipe(pluck('state', Direction.RECEIVED, secrethash)), config$),
-        filter(
-          ([action, received, { revealTimeout, caps }]) =>
-            !caps?.[Capabilities.NO_RECEIVE] && // ignore if receiving is disabled
-            !!received.secret && // register only if we know the secret
-            received.transfer.lock.expiration.sub(revealTimeout).lt(action.payload.blockNumber) && // and after <revealTimeout left to expiration
-            !received.secret?.registerBlock && // and not yet registered nor unlocked
-            !received.unlock,
-        ),
-        exhaustMap(([, received]) => {
-          const meta = { secrethash, direction: Direction.RECEIVED };
-          return dispatchAndWait$(
-            action$,
-            transferSecretRegister.request({ secret: received.secret!.value }, meta),
-            isConfirmationResponseOf(transferSecretRegister, meta),
-          );
-        }),
-        takeUntil(
-          latest$.pipe(
-            pluckDistinct('state'),
-            filter((state) => {
-              const blockNumber = state.blockNumber;
-              const received = state.received[secrethash];
-              const expiration = received.transfer.lock.expiration;
-              return !!(
-                expiration.lt(blockNumber) || // give up if lock already expired
-                received.unlock ||
-                // stop if secret got registered or unlocked
-                received.secret?.registerBlock
-              );
-              // even if channelClosed, while inside lock expiration, continue to try to register
-            }),
-          ),
+    withLatestFrom(config$),
+    mergeMap(([{ blockNumber, transfers }, { revealTimeout }]) =>
+      from(
+        Object.values(transfers).filter(
+          (r) =>
+            r.direction === Direction.RECEIVED &&
+            !r.unlock && // not unlocked
+            !r.expired && // not expired
+            !!r.secret && // secret exist and isn't registered yet
+            !r.secretRegistered &&
+            // transfers which are inside the danger zone (revealTimeout before expiration)
+            r.expiration > blockNumber &&
+            r.expiration <= blockNumber + revealTimeout,
         ),
       ),
     ),
+    // emit each result every block
+    // group results by transferKey, so we don't overlap requests for the same transfer
+    groupBy(
+      (transferState) => transferState._id,
+      identity, // elementSelector
+      // durationSelector: should emit when we want to dispose of the grouped$ subject
+      (grouped$) =>
+        latest$.pipe(
+          pluck('state'),
+          filter(
+            ({ blockNumber, transfers }) =>
+              !!(
+                transfers[grouped$.key].expiration < blockNumber ||
+                transfers[grouped$.key].unlock ||
+                transfers[grouped$.key].secretRegistered
+              ),
+          ),
+        ),
+    ),
+    mergeMap((grouped$) =>
+      grouped$.pipe(
+        exhaustMap((transferState) => {
+          const meta = { secrethash: transferState.secrethash, direction: Direction.RECEIVED };
+          // "hold" this (per transfer) exhaustMap until getting a response for the request
+          return dispatchAndWait$(
+            action$,
+            transferSecretRegister.request({ secret: transferState.secret! }, meta),
+            isConfirmationResponseOf(transferSecretRegister, meta),
+          );
+        }),
+        // if grouped$ completes (e.g. because of durationSelector), give up on dispatchAndWait$
+        takeUntil(grouped$.pipe(ignoreElements(), endWith(1))),
+      ),
+    ),
+    takeIf(config$.pipe(pluck('caps', Capabilities.NO_RECEIVE)), true),
   );
 
 /**

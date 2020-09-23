@@ -307,7 +307,7 @@ export const autoWithdrawExpireEpic = (
           matchWithdraw(MessageType.WITHDRAW_REQUEST),
         );
         for (const req of requestMessages) {
-          if (req.expiration.add(confirmationBlocks).gt(blockNumber)) continue;
+          if (req.expiration.add(confirmationBlocks * 2).gte(blockNumber)) continue;
           if (channel.own.pendingWithdraws.some(matchWithdraw(MessageType.WITHDRAW_EXPIRED, req)))
             continue;
           yield withdrawExpire.request(undefined, {
