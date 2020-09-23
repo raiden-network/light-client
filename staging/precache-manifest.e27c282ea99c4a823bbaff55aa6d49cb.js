@@ -12,8 +12,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/config.json.example"
   },
   {
-    "revision": "3ed3ea59b10f2206282e",
-    "url": "/staging/css/app.0d37ce50.css"
+    "revision": "24db9ba88275db7e0749",
+    "url": "/staging/css/app.5b835b41.css"
   },
   {
     "revision": "1210839e621c13d59c5d",
@@ -52,6 +52,10 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/css/chunk-642efb7b.7bcf6af2.css"
   },
   {
+    "revision": "32edc84920178fa12b80",
+    "url": "/staging/css/chunk-64543f43.3e1f23dd.css"
+  },
+  {
     "revision": "b142066e10ce1fbb9608",
     "url": "/staging/css/chunk-6c88deda.ca535ea5.css"
   },
@@ -74,10 +78,6 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "c783c191d948777cadca",
     "url": "/staging/css/chunk-8fbe1a9c.2f2d8b85.css"
-  },
-  {
-    "revision": "c3e7ebedc5ac22507a8a",
-    "url": "/staging/css/chunk-a748b0f6.896da7ae.css"
   },
   {
     "revision": "2c012fff1dcb7f9d5623",
@@ -336,12 +336,12 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/img/withdrawal.c80c3337.svg"
   },
   {
-    "revision": "09aff5c500958c4abe399c6d033438b7",
+    "revision": "c9bba6bb22133da4b59894c233427bde",
     "url": "/staging/index.html"
   },
   {
-    "revision": "3ed3ea59b10f2206282e",
-    "url": "/staging/js/app.fc66e423.js"
+    "revision": "24db9ba88275db7e0749",
+    "url": "/staging/js/app.9598fc41.js"
   },
   {
     "revision": "1210839e621c13d59c5d",
@@ -380,6 +380,10 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/js/chunk-642efb7b.32d9a246.js"
   },
   {
+    "revision": "32edc84920178fa12b80",
+    "url": "/staging/js/chunk-64543f43.aeeafb0a.js"
+  },
+  {
     "revision": "b142066e10ce1fbb9608",
     "url": "/staging/js/chunk-6c88deda.7f48b858.js"
   },
@@ -402,10 +406,6 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "c783c191d948777cadca",
     "url": "/staging/js/chunk-8fbe1a9c.c0b3bfc1.js"
-  },
-  {
-    "revision": "c3e7ebedc5ac22507a8a",
-    "url": "/staging/js/chunk-a748b0f6.11a8b733.js"
   },
   {
     "revision": "2c012fff1dcb7f9d5623",
