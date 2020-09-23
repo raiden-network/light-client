@@ -12,7 +12,7 @@ import { createLogger } from 'redux-logger';
 import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import { first, filter, map, mergeMap, skip } from 'rxjs/operators';
+import { first, filter, map, mergeMap, skip, pluck } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
@@ -27,10 +27,10 @@ import { MonitoringServiceFactory } from './contracts/MonitoringServiceFactory';
 import versions from './versions.json';
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps, Latest } from './types';
 import { ShutdownReason } from './constants';
-import { RaidenState, getState } from './state';
-import { RaidenConfig, PartialRaidenConfig } from './config';
+import { RaidenState } from './state';
+import { RaidenConfig, PartialRaidenConfig, makeDefaultConfig } from './config';
 import { RaidenChannels, ChannelState } from './channels/state';
-import { RaidenTransfer, Direction } from './transfers/state';
+import { RaidenTransfer, Direction, TransferState } from './transfers/state';
 import { raidenReducer } from './reducer';
 import { raidenRootEpic, getLatest$ } from './epics';
 import {
@@ -77,8 +77,12 @@ import {
   callAndWaitMined,
   fetchContractsInfo,
   getUdcBalance,
+  getState,
 } from './helpers';
 import { RaidenError, ErrorCodes } from './utils/error';
+import { RaidenDatabase } from './db/types';
+import { dumpDatabaseToArray } from './db/utils';
+import { createPersisterMiddleware } from './persister';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -90,8 +94,7 @@ export class Raiden {
    */
   public readonly action$: Observable<RaidenAction>;
   /**
-   * state$ is exposed only so user can listen to state changes and persist them somewhere else,
-   * in case they didn't use the Storage overload for the storageOrState argument of `create`.
+   * state$ is exposed only so user can listen to state changes and persist them somewhere else.
    * Format/content of the emitted objects are subject to changes and not part of the public API
    */
   public readonly state$: Observable<RaidenState>;
@@ -163,13 +166,21 @@ export class Raiden {
     network: Network,
     signer: Signer,
     contractsInfo: ContractsInfo,
-    state: RaidenState,
-    defaultConfig: RaidenConfig,
+    {
+      db,
+      state,
+      config,
+    }: { state: RaidenState; db: RaidenDatabase; config?: PartialRaidenConfig },
     main?: { address: Address; signer: Signer },
   ) {
-    this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     const address = state.address;
+    this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     this.log = logging.getLogger(`raiden:${address}`);
+
+    const defaultConfig = makeDefaultConfig(
+      { network },
+      config && decode(PartialRaidenConfig, config),
+    );
 
     // use next from latest known blockNumber as start block when polling
     provider.resetEventsBlock(state.blockNumber + 1);
@@ -181,7 +192,7 @@ export class Raiden {
     // pipe action, skipping cached
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
     this.channels$ = this.state$.pipe(pluckDistinct('channels'), map(mapRaidenChannels));
-    this.transfers$ = initTransfers$(this.state$);
+    this.transfers$ = initTransfers$(this.state$, db);
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
 
     this.getTokenInfo = memoize(async function (this: Raiden, token: string) {
@@ -236,6 +247,7 @@ export class Raiden {
         main?.signer ?? signer,
       ),
       main,
+      db,
     };
 
     this.userDepositTokenAddress = memoize(
@@ -246,7 +258,7 @@ export class Raiden {
       predicate: () => this.log.getLevel() <= logging.levels.INFO,
       logger: this.log,
       level: {
-        prevState: 'debug',
+        prevState: false,
         action: 'info',
         error: 'error',
         nextState: 'debug',
@@ -263,12 +275,13 @@ export class Raiden {
       RaidenState,
       RaidenEpicDeps
     >({ dependencies: this.deps });
+    const persisterMiddleware = createPersisterMiddleware(db);
 
     this.store = createStore(
       raidenReducer,
       // workaround for redux's PreloadedState issues with branded values
       state as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-      applyMiddleware(loggerMiddleware, this.epicMiddleware),
+      applyMiddleware(loggerMiddleware, this.epicMiddleware, persisterMiddleware),
     );
 
     // populate deps.latest$, to ensure config, logger && pollingInterval are setup before start
@@ -300,10 +313,16 @@ export class Raiden {
    *       <li>number index of a remote account loaded in provider
    *            (e.g. 0 for Metamask's loaded account)</li>
    *     </ul>
-   * @param storageOrState - Storage/localStorage-like object from where to load and store current
-   *     state, initial RaidenState-like object, or a { storage; state? } object containing both.
-   *     If a storage isn't provided, user must listen state$ changes on ensure it's persisted.
-   * @param contractsOrUserDepositAddress - Contracts deployment info, or UserDeposit address
+   * @param storage - Storage/localStorage-like object from where to load and store current
+   * state, initial RaidenState-like object, or a { storage; state? } object containing both.
+   * If a storage isn't provided, user must listen state$ changes on ensure it's persisted.
+   * @param storage.state - State uploaded by user; should be decodable by RaidenState;
+   *    it is auto-migrated
+   * @param storage.storage - Legacy localStorage; will load states from there if matching
+   * @param storage.adapter - PouchDB adapter; default to 'indexeddb' on browsers and 'leveldb' on
+   *    node. If you provide a custom one, ensure you call PouchDB.plugin on it.
+   * @param storage.prefix - Database name prefix; use to set a directory to store leveldown db;
+   * @param contractsOrUDCAddress - Contracts deployment info, or UserDeposit contract address
    * @param config - Raiden configuration
    * @param subkey - Whether to use a derived subkey or not
    * @returns Promise to Raiden SDK client instance
@@ -312,12 +331,9 @@ export class Raiden {
     this: R,
     connection: JsonRpcProvider | AsyncSendable | string,
     account: Signer | string | number,
-    storageOrState?:
-      | Storage
-      | RaidenState
-      | { storage: Storage; state?: RaidenState | unknown }
-      | unknown,
-    contractsOrUserDepositAddress?: ContractsInfo | string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    storage?: { state?: any; storage?: Storage; adapter?: any; prefix?: string },
+    contractsOrUDCAddress?: ContractsInfo | string,
     config?: PartialRaidenConfig,
     subkey?: true,
   ): Promise<InstanceType<R>> {
@@ -336,30 +352,27 @@ export class Raiden {
     const network = await provider.getNetwork();
 
     // if no ContractsInfo, try to populate from defaults
-    let contracts;
-    if (!contractsOrUserDepositAddress) {
-      contracts = getContracts(network);
-    } else if (typeof contractsOrUserDepositAddress === 'string') {
+    let contractsInfo;
+    if (!contractsOrUDCAddress) {
+      contractsInfo = getContracts(network);
+    } else if (typeof contractsOrUDCAddress === 'string') {
       // if an Address is provided, use it as UserDeposit contract address entrypoint and fetch
       // all contracts from there
-      assert(Address.is(contractsOrUserDepositAddress), [
+      assert(Address.is(contractsOrUDCAddress), [
         ErrorCodes.DTA_INVALID_ADDRESS,
-        { contractsOrUserDepositAddress },
+        { contractsOrUserDepositAddress: contractsOrUDCAddress },
       ]);
-      contracts = await fetchContractsInfo(provider, contractsOrUserDepositAddress);
+      contractsInfo = await fetchContractsInfo(provider, contractsOrUDCAddress);
     } else {
-      contracts = contractsOrUserDepositAddress;
+      contractsInfo = contractsOrUDCAddress;
     }
 
     const { signer, address, main } = await getSigner(account, provider, subkey);
 
-    // Build initial state or parse from storage
-    const { state, onState, onStateComplete, defaultConfig } = await getState(
-      network,
-      contracts,
-      address,
-      storageOrState,
-      config && decode(PartialRaidenConfig, config),
+    // Build initial state or parse from database
+    const { state, db } = await getState(
+      { network, contractsInfo, address, log: logging.getLogger(`raiden:${address}`) },
+      storage,
     );
 
     assert(address === state.address, [
@@ -371,29 +384,26 @@ export class Raiden {
     ]);
     assert(
       network.chainId === state.chainId &&
-        contracts.TokenNetworkRegistry.address === state.registry,
+        contractsInfo.TokenNetworkRegistry.address === state.registry,
       [
         ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
         {
           network: network.chainId,
-          contracts: contracts.TokenNetworkRegistry.address,
+          contracts: contractsInfo.TokenNetworkRegistry.address,
           stateNetwork: state.chainId,
           stateRegistry: state.registry,
         },
       ],
     );
 
-    const raiden = new this(
+    return new this(
       provider,
       network,
       signer,
-      contracts,
-      state,
-      defaultConfig,
+      contractsInfo,
+      { db, state, config },
       main,
     ) as InstanceType<R>;
-    if (onState) raiden.state$.subscribe(onState, onStateComplete, onStateComplete);
-    return raiden;
   }
 
   /**
@@ -524,6 +534,17 @@ export class Raiden {
    */
   public updateConfig(config: PartialRaidenConfig) {
     this.store.dispatch(raidenConfigUpdate(decode(PartialRaidenConfig, config)));
+  }
+
+  /**
+   * Dumps database content for backup
+   *
+   * @returns JSON object or array containing database content
+   */
+  public async dumpDatabase() {
+    // only wait for db to be closed if it was started
+    if (this.started !== undefined) await this.deps.db.busy$.toPromise();
+    return dumpDatabaseToArray(this.deps.db);
   }
 
   /**
@@ -940,26 +961,47 @@ export class Raiden {
 
   /**
    * Waits for the transfer identified by a secrethash to fail or complete
+   * The returned promise will resolve with the final transfer state, or reject if anything fails
    *
-   * The returned promise will resolve with the final amount received by the target
-   *
-   * @param transferKey - Transfer identifier
-   * @returns Amount received by target, as informed by them on SecretRequest
+   * @param transferKey - Transfer identifier as returned by [[transfer]]
+   * @returns Promise to final RaidenTransfer
    */
-  public async waitTransfer(transferKey: string): Promise<BigNumber | undefined> {
+  public async waitTransfer(transferKey: string): Promise<RaidenTransfer> {
     const { direction, secrethash } = transferKeyToMeta(transferKey);
-    assert(secrethash in this.state[direction], ErrorCodes.RDN_UNKNOWN_TRANSFER, this.log.info);
+    let transferState = this.state.transfers[transferKey];
+    if (!transferState)
+      try {
+        transferState = decode(TransferState, await this.deps.db.get(transferKey));
+      } catch (e) {}
+    assert(transferState, ErrorCodes.RDN_UNKNOWN_TRANSFER, this.log.info);
 
-    const transf = raidenTransfer(this.state[direction][secrethash]);
+    const raidenTransf = raidenTransfer(transferState);
     // already completed/past transfer
-    if (transf.completed) {
-      if (transf.success) return this.state[direction][secrethash].secretRequest?.amount;
-      else throw new RaidenError(ErrorCodes.XFER_ALREADY_COMPLETED, { status: transf.status });
+    if (raidenTransf.completed) {
+      if (raidenTransf.success) return raidenTransf;
+      else
+        throw new RaidenError(ErrorCodes.XFER_ALREADY_COMPLETED, { status: raidenTransf.status });
     }
 
     // throws/rejects if a failure occurs
     await asyncActionToPromise(transfer, { secrethash, direction }, this.action$);
-    return this.state[direction][secrethash].secretRequest?.amount;
+    const finalState = await this.state$
+      .pipe(
+        pluck('transfers', transferKey),
+        first((transferState) => !!transferState.unlockProcessed),
+      )
+      .toPromise();
+    this.log.info('Transfer successful', {
+      key: transferKey,
+      partner: finalState.partner,
+      initiator: finalState.transfer.initiator,
+      target: finalState.transfer.target,
+      fee: finalState.fee.toString(),
+      lockAmount: finalState.transfer.lock.amount.toString(),
+      targetReceived: finalState.secretRequest?.amount?.toString?.(),
+      transferTime: finalState.unlockProcessed!.ts - finalState.transfer.ts,
+    });
+    return raidenTransfer(finalState);
   }
 
   /**

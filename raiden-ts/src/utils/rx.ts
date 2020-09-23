@@ -127,3 +127,30 @@ export function retryAsync$<T>(
     ),
   );
 }
+
+/**
+ * RxJS operator to keep subscribed to input$ if condition is truty (or falsy, if negated),
+ * unsubscribe if it becomes falsy, and re-subscribes if it becomes truty again (input$ must be
+ * re-subscribable).
+ *
+ * @param cond$ - Condition observable
+ * @param negate - Whether to negate condition
+ *      (i.e. keep subscribed while falsy, unsubscribe when truty)
+ * @returns monotype operator to unsubscribe and re-subscribe to source/input based on confition
+ */
+export function takeIf<T>(
+  cond$: Observable<unknown>,
+  negate = false,
+): MonoTypeOperatorFunction<T> {
+  const distinctCond$ = cond$.pipe(
+    map((cond) => (negate ? !cond : !!cond)),
+    distinctUntilChanged(),
+  );
+  return (input$) =>
+    input$.pipe(
+      // unsubscribe input$ when cond becomes falsy
+      takeUntil(distinctCond$.pipe(filter((cond): cond is false => !cond))),
+      // re-subscribe input$ when cond becomes truty
+      repeatWhen(() => distinctCond$.pipe(filter((cond): cond is true => cond))),
+    );
+}

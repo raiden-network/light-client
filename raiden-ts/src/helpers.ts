@@ -4,19 +4,19 @@ import { Contract, ContractReceipt, ContractTransaction } from 'ethers/contract'
 import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
 import { JsonRpcProvider } from 'ethers/providers';
 import { MaxUint256 } from 'ethers/constants';
-import { Observable, defer } from 'rxjs';
-import { filter, map, pluck, withLatestFrom, first, exhaustMap, mergeMap } from 'rxjs/operators';
+import { Observable, defer, merge } from 'rxjs';
+import { filter, map, pluck, withLatestFrom, first, exhaustMap } from 'rxjs/operators';
 import logging from 'loglevel';
 
-import { RaidenState } from './state';
+import { RaidenState, makeInitialState } from './state';
 import { ContractsInfo, RaidenEpicDeps, Latest } from './types';
 import { assert } from './utils';
 import { raidenTransfer } from './transfers/utils';
-import { RaidenTransfer } from './transfers/state';
+import { RaidenTransfer, TransferState, Direction } from './transfers/state';
 import { channelAmounts } from './channels/utils';
 import { RaidenChannels, RaidenChannel } from './channels/state';
-import { pluckDistinct, distinctRecordValues } from './utils/rx';
-import { Address, PrivateKey, isntNil, Hash, UInt } from './utils/types';
+import { distinctRecordValues, pluckDistinct } from './utils/rx';
+import { Address, PrivateKey, isntNil, Hash, UInt, decode, Storage } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
@@ -31,6 +31,22 @@ import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json
 import { UserDepositFactory } from './contracts/UserDepositFactory';
 import { MonitoringServiceFactory } from './contracts/MonitoringServiceFactory';
 import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
+import {
+  RaidenDatabase,
+  RaidenDatabaseMeta,
+  RaidenDatabaseOptions,
+  TransferStateish,
+} from './db/types';
+import {
+  getRaidenState,
+  changes$,
+  putRaidenState,
+  migrateDatabase,
+  replaceDatabase,
+  legacyStateMigration,
+  getDatabaseConstructorFromOptions,
+} from './db/utils';
+import { jsonParse } from './utils/data';
 
 /**
  * Returns contract information depending on the passed [[Network]]. Currently, only
@@ -154,21 +170,29 @@ export const getSigner = async (
 
 /**
  * Initializes the [[transfers$]] observable
+ * TODO: properly paginate this, in case of too much transfers in history to stream
  *
- * @param state$ - Observable of the current RaidenState
+ * @param state$ - Observable of RaidenStates
+ * @param db - Database instance
  * @returns observable of sent and completed Raiden transfers
  */
-export const initTransfers$ = (state$: Observable<RaidenState>): Observable<RaidenTransfer> =>
-  state$.pipe(
-    mergeMap(function* ({ sent, received }) {
-      yield sent;
-      yield received;
-    }),
-    distinctRecordValues(),
-    pluck(1), // pluck values
-    // from here, we get TransferState objects which changed from previous state (all on first)
-    map(raidenTransfer),
-  );
+export function initTransfers$(
+  state$: Observable<RaidenState>,
+  db: RaidenDatabase,
+): Observable<RaidenTransfer> {
+  return merge(
+    changes$<TransferStateish>(db, {
+      since: 0,
+      include_docs: true,
+      selector: { direction: { $in: Object.values(Direction) } },
+    }).pipe(
+      pluck('doc'),
+      filter(isntNil),
+      map((doc) => decode(TransferState, doc)),
+    ),
+    state$.pipe(pluckDistinct('transfers'), distinctRecordValues(), pluck(1)),
+  ).pipe(map(raidenTransfer));
+}
 
 /**
  * Transforms the redux channel state to [[RaidenChannels]]
@@ -404,4 +428,108 @@ export async function getUdcBalance(latest$: Observable<Latest>): Promise<UInt<3
       first((balance) => !!balance && balance.lt(MaxUint256)),
     )
     .toPromise();
+}
+
+function validateDump(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dump: { _id: string; value: any }[],
+  {
+    address,
+    network,
+    contractsInfo,
+  }: Pick<RaidenEpicDeps, 'address' | 'network' | 'contractsInfo'>,
+) {
+  const meta = (dump[0] as unknown) as RaidenDatabaseMeta;
+  assert(meta?._id === '_meta', ErrorCodes.RDN_STATE_MIGRATION);
+  assert(meta.address === address, ErrorCodes.RDN_STATE_ADDRESS_MISMATCH);
+  assert(
+    meta.registry === contractsInfo.TokenNetworkRegistry.address,
+    ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
+  );
+  assert(meta.network === network.chainId, ErrorCodes.RDN_STATE_NETWORK_MISMATCH);
+
+  assert(
+    dump.find((l) => l._id === 'state.address')?.value === address,
+    ErrorCodes.RDN_STATE_ADDRESS_MISMATCH,
+  );
+  assert(
+    dump.find((l) => l._id === 'state.chainId')?.value === network.chainId,
+    ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
+  );
+  assert(
+    dump.find((l) => l._id === 'state.registry')?.value ===
+      contractsInfo.TokenNetworkRegistry.address,
+    ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
+  );
+}
+
+/**
+ * Loads state from `storageOrState`. Returns the initial [[RaidenState]] if
+ * `storageOrState` does not exist.
+ *
+ * @param deps - Partial epics dependencies-like object
+ * @param deps.address - current address of the signer
+ * @param deps.network - current network
+ * @param deps.contractsInfo - current contracts
+ * @param deps.log - Logger instance
+ * @param storage - either [[Storage]] or [[RaidenState]] or
+ * { storage: [[Storage]]; state?: [[RaidenState]] }
+ * @param storage.state - Uploaded state: replaces database state; must be newer than database
+ * @param storage.storage - Like above, but load from localStorage
+ * @param storage.adapter - RxDB adapter: usually 'indexeddb' or [leveldown] module object
+ * @param storage.prefix - RxDB prefix: may be a dir path with trailing slash (for leveldown)
+ * @returns database and RaidenDoc object
+ */
+export async function getState(
+  {
+    address,
+    network,
+    contractsInfo,
+    log,
+  }: Pick<RaidenEpicDeps, 'address' | 'network' | 'contractsInfo' | 'log'>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  storage: { state?: any; storage?: Storage } & RaidenDatabaseOptions = {},
+): Promise<{ db: RaidenDatabase; state: RaidenState }> {
+  const dbName = [
+    'raiden',
+    getNetworkName(network),
+    contractsInfo.TokenNetworkRegistry.address,
+    address,
+  ].join('_');
+
+  let db;
+  let fromLocalStorage = false;
+  let { state: dump } = storage;
+  const { storage: localStorage, state: _, ...pouchOpts } = storage;
+  if (!dump) {
+    dump = await localStorage?.getItem?.(dbName);
+    if (dump) fromLocalStorage = true;
+  }
+
+  // PouchDB configs are passed as custom database constructor using PouchDB.defaults
+  const dbCtor = await getDatabaseConstructorFromOptions({ log, ...pouchOpts });
+
+  if (dump) {
+    if (typeof dump === 'string') dump = jsonParse(dump);
+    if (!Array.isArray(dump)) dump = Array.from(legacyStateMigration(dump));
+
+    // perform some early simple validation on dump before persisting it in database
+    validateDump(dump, { address, network, contractsInfo });
+
+    db = await replaceDatabase.call(dbCtor, dump, dbName);
+    // only if succeeds:
+    if (fromLocalStorage) storage?.storage!.removeItem(dbName);
+  } else {
+    db = await migrateDatabase.call(dbCtor, dbName);
+  }
+
+  let state = await getRaidenState(db);
+  if (!state) {
+    state = makeInitialState({ network, address, contractsInfo: contractsInfo });
+    await putRaidenState(db, state);
+  } else {
+    state = decode(RaidenState, state);
+  }
+
+  return { db, state };
 }
