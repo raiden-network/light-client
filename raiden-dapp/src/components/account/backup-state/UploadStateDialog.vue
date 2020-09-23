@@ -153,8 +153,7 @@ export default class UploadStateDialog extends Vue {
 
       try {
         this.uploadingStateProgress = true;
-        const retrievedState = target!.result;
-        JSON.parse(String(retrievedState));
+        const retrievedState = JSON.parse(String(target!.result));
         this.$store.commit('backupState', retrievedState);
         setTimeout(async () => {
           this.uploadingStateProgress = false;
