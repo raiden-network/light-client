@@ -9,20 +9,14 @@ import { RaidenConfig } from '../../config';
 import { RaidenEpicDeps } from '../../types';
 import { Address, Int } from '../../utils/types';
 import { transfer, transferSigned } from '../actions';
-import { Direction, TransfersState } from '../state';
+import { Direction } from '../state';
 
-function shouldMediate(
-  action: transferSigned,
-  address: Address,
-  sent: TransfersState,
-  { caps }: RaidenConfig,
-): boolean {
+function shouldMediate(action: transferSigned, address: Address, { caps }: RaidenConfig): boolean {
   const isMediationEnabled = !caps?.[Capabilities.NO_MEDIATE];
-  const isSecrethashUsed = action.meta.secrethash in sent;
   const isntTarget =
     action.meta.direction === Direction.RECEIVED && action.payload.message.target !== address;
 
-  return isMediationEnabled && !isSecrethashUsed && isntTarget;
+  return isMediationEnabled && isntTarget;
 }
 
 /**
@@ -43,15 +37,15 @@ function shouldMediate(
  */
 export const transferMediateEpic = (
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {}: Observable<RaidenState>,
   { address, config$ }: RaidenEpicDeps,
 ) =>
   action$.pipe(
     filter(transferSigned.is),
-    withLatestFrom(state$, config$),
-    filter(([action, { sent }, config]) => shouldMediate(action, address, sent, config)),
+    withLatestFrom(config$),
+    filter(([action, config]) => shouldMediate(action, address, config)),
     map(([{ payload: { message: transf }, meta: { secrethash } }]) =>
-      // request an outbound transfer to target
+      // request an outbound transfer to target; will fail if already sent
       transfer.request(
         {
           tokenNetwork: transf.token_network_address,
