@@ -1,13 +1,11 @@
-import { RaidenState } from 'raiden-ts/state';
-import { assert } from 'raiden-ts/utils';
-import { Storage } from 'raiden-ts/utils/types';
-import { Raiden } from 'raiden-ts/raiden';
 import { OpenMode, promises as fs } from 'fs';
-import { ContractsInfo } from 'raiden-ts/types';
 import { bigNumberify } from 'ethers/utils';
-import { MockStorage } from '../e2e/mocks';
 import { filter } from 'rxjs/operators';
 import { Signer, Wallet } from 'ethers';
+
+import { assert } from 'raiden-ts/utils';
+import { Raiden } from 'raiden-ts/raiden';
+import { ContractsInfo } from 'raiden-ts/types';
 import { RaidenPaths } from 'raiden-ts/services/types';
 
 jest.setTimeout(120000);
@@ -19,10 +17,7 @@ const signer = new Wallet('0x012345678901234567890123456789012345678901234567890
 const partner1 = '0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec';
 const partner2 = '0xCBC49ec22c93DB69c78348C90cd03A323267db86';
 
-async function createRaiden(
-  account: number | string | Signer,
-  stateOrStorage?: RaidenState | Storage,
-): Promise<Raiden> {
+async function createRaiden(account: number | string | Signer): Promise<Raiden> {
   const deploymentInfoFile = process.env.DEPLOYMENT_INFO;
   const deploymentServiceInfoFile = process.env.DEPLOYMENT_SERVICES_INFO;
 
@@ -44,13 +39,19 @@ async function createRaiden(
     ...servicesDeploy.contracts,
   } as unknown) as ContractsInfo;
 
-  return await Raiden.create('http://localhost:8545', account, stateOrStorage, contractsInfo, {
-    pfs: 'http://localhost:6000',
-    matrixServer: 'http://localhost',
-    revealTimeout: 10,
-    settleTimeout: 50,
-    confirmationBlocks: 1,
-  });
+  return await Raiden.create(
+    'http://localhost:8545',
+    account,
+    { adapter: 'memory' },
+    contractsInfo,
+    {
+      pfs: 'http://localhost:6000',
+      matrixServer: 'http://localhost',
+      revealTimeout: 10,
+      settleTimeout: 50,
+      confirmationBlocks: 1,
+    },
+  );
 }
 
 const wait = async (timeInMs: number): Promise<void> =>
@@ -64,11 +65,9 @@ function getToken(): string {
 
 describe('integration', () => {
   let raiden: Raiden;
-  let storage: jest.Mocked<Storage>;
 
   beforeAll(async () => {
-    storage = new MockStorage();
-    raiden = await createRaiden(signer, storage);
+    raiden = await createRaiden(signer);
     raiden.start();
   });
 

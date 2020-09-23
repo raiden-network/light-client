@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { timer } from 'rxjs';
 import { first, filter, takeUntil, take, toArray } from 'rxjs/operators';
 import { Zero } from 'ethers/constants';
 import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
+import logging from 'loglevel';
+logging.setDefaultLevel(logging.levels.DEBUG);
 
 import { TestProvider } from './provider';
-import { MockStorage, MockMatrixRequestFn } from './mocks';
+import { MockMatrixRequestFn } from './mocks';
 
 // mock waitConfirmation Raiden helper to also trigger provider.mine
 jest.mock('raiden-ts/helpers', () => {
@@ -48,7 +51,6 @@ describe('Raiden', () => {
     contractsInfo: ContractsInfo,
     snapId: number | undefined,
     raiden: Raiden,
-    storage: jest.Mocked<Storage>,
     token: string,
     tokenNetwork: string,
     partner: string,
@@ -72,9 +74,15 @@ describe('Raiden', () => {
     return new Promise(setImmediate);
   }
 
+  function getStorageOpts() {
+    // prefix is needed in order to isolate state storage per test
+    return { adapter: 'memory', prefix: expect.getState().currentTestName + '/' };
+  }
+
   async function createRaiden(
     account: number | string,
-    stateOrStorage?: RaidenState | Storage,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    storage?: { state?: any; storage?: Storage; adapter?: any; prefix?: string },
     subkey?: true,
   ): Promise<Raiden> {
     const raiden = await Raiden.create(
@@ -82,7 +90,7 @@ describe('Raiden', () => {
       // but with same underlying ganache instance
       new TestProvider(provider._web3Provider),
       account,
-      stateOrStorage,
+      { ...getStorageOpts(), ...storage },
       contractsInfo,
       config,
       subkey,
@@ -141,7 +149,6 @@ describe('Raiden', () => {
     if (snapId !== undefined) await provider.revert(snapId);
     snapId = await provider.snapshot();
     await provider.getBlockNumber();
-    storage = new MockStorage();
 
     fetch.mockResolvedValue({
       ok: true,
@@ -155,7 +162,7 @@ describe('Raiden', () => {
     httpBackend = new MockMatrixRequestFn(matrixServer);
     request(httpBackend.requestFn.bind(httpBackend));
 
-    raiden = await createRaiden(0, storage);
+    raiden = await createRaiden(0);
     raiden.start();
   });
 
@@ -178,7 +185,10 @@ describe('Raiden', () => {
       Raiden.create(
         provider,
         0,
-        { storage, state: { ...raiden0State, blockNumber: raiden0State.blockNumber - 2 } },
+        {
+          state: { ...raiden0State, blockNumber: raiden0State.blockNumber - 2 },
+          ...getStorageOpts(),
+        },
         contractsInfo,
         config,
       ),
@@ -188,24 +198,27 @@ describe('Raiden', () => {
       Raiden.create(
         provider,
         0,
-        { storage, state: { ...raiden0State, blockNumber: raiden0State.blockNumber + 2 } },
+        {
+          state: { ...raiden0State, blockNumber: raiden0State.blockNumber + 2 },
+          ...getStorageOpts(),
+        },
         contractsInfo,
         config,
       ),
     ).resolves.toBeInstanceOf(Raiden);
 
     await expect(
-      Raiden.create(provider, 0, { storage }, contractsInfo, config),
+      Raiden.create(provider, 0, getStorageOpts(), contractsInfo, config),
     ).resolves.toBeInstanceOf(Raiden);
 
     // token address not found as an account in provider
-    await expect(Raiden.create(provider, token, storage, contractsInfo, config)).rejects.toThrow(
-      ErrorCodes.RDN_ACCOUNT_NOT_FOUND,
-    );
+    await expect(
+      Raiden.create(provider, token, getStorageOpts(), contractsInfo, config),
+    ).rejects.toThrow(ErrorCodes.RDN_ACCOUNT_NOT_FOUND);
 
     // neither account index, address nor private key
     await expect(
-      Raiden.create(provider, '0x1234', storage, contractsInfo, config),
+      Raiden.create(provider, '0x1234', getStorageOpts(), contractsInfo, config),
     ).rejects.toThrow(ErrorCodes.RDN_STRING_ACCOUNT_INVALID);
 
     // from hex-encoded private key, initial unknown state (decodable) but invalid address inside
@@ -213,37 +226,43 @@ describe('Raiden', () => {
       Raiden.create(
         provider,
         '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        JSON.stringify(
-          makeInitialState({ network, contractsInfo, address: token as Address }, { config }),
-        ),
+        {
+          state: JSON.stringify(
+            makeInitialState({ network, contractsInfo, address: token as Address }, { config }),
+          ),
+          ...getStorageOpts(),
+        },
         contractsInfo,
       ),
-    ).rejects.toThrow(/Mismatch between provided account and loaded state/i);
+    ).rejects.toThrow(ErrorCodes.RDN_STATE_ADDRESS_MISMATCH);
 
     await expect(
       Raiden.create(
         provider,
         1,
-        JSON.stringify(
-          makeInitialState(
-            {
-              network,
-              contractsInfo: {
-                TokenNetworkRegistry: { address: token as Address, block_number: 0 },
-                ServiceRegistry: { address: partner as Address, block_number: 1 },
-                UserDeposit: { address: partner as Address, block_number: 2 },
-                SecretRegistry: { address: partner as Address, block_number: 3 },
-                MonitoringService: { address: partner as Address, block_number: 3 },
-                OneToN: { address: partner as Address, block_number: 3 },
+        {
+          state: JSON.stringify(
+            makeInitialState(
+              {
+                network,
+                contractsInfo: {
+                  TokenNetworkRegistry: { address: token as Address, block_number: 0 },
+                  ServiceRegistry: { address: partner as Address, block_number: 1 },
+                  UserDeposit: { address: partner as Address, block_number: 2 },
+                  SecretRegistry: { address: partner as Address, block_number: 3 },
+                  MonitoringService: { address: partner as Address, block_number: 3 },
+                  OneToN: { address: partner as Address, block_number: 3 },
+                },
+                address: accounts[1] as Address,
               },
-              address: accounts[1] as Address,
-            },
-            { config },
+              { config },
+            ),
           ),
-        ),
+          ...getStorageOpts(),
+        },
         contractsInfo,
       ),
-    ).rejects.toThrow(/Mismatch between network or registry address and loaded state/i);
+    ).rejects.toThrow(ErrorCodes.RDN_STATE_NETWORK_MISMATCH);
 
     // success when using address of account on provider and initial state,
     // and pass UserDeposit address to fetch contracts info from
@@ -251,7 +270,13 @@ describe('Raiden', () => {
     const raiden1 = await Raiden.create(
       provider,
       accounts[1],
-      makeInitialState({ network, contractsInfo, address: accounts[1] as Address }, { config }),
+      {
+        state: makeInitialState(
+          { network, contractsInfo, address: accounts[1] as Address },
+          { config },
+        ),
+        ...getStorageOpts(),
+      },
       contractsInfo.UserDeposit.address,
       config,
     );
@@ -293,7 +318,14 @@ describe('Raiden', () => {
     expect(raiden1.started).toBe(false);
 
     // success when creating using subkey
-    const raiden2 = await Raiden.create(provider, 0, storage, contractsInfo, config, true);
+    const raiden2 = await Raiden.create(
+      provider,
+      0,
+      getStorageOpts(),
+      contractsInfo,
+      config,
+      true,
+    );
     expect(raiden2).toBeInstanceOf(Raiden);
     expect(raiden2.mainAddress).toBe(accounts[0]);
   });
@@ -531,7 +563,7 @@ describe('Raiden', () => {
       ).blockNumber!;
 
       raidenState = undefined;
-      raiden = await createRaiden(0, storage);
+      raiden = await createRaiden(0);
       raiden.state$.subscribe((state) => (raidenState = state));
       raiden.start();
 
@@ -729,10 +761,12 @@ describe('Raiden', () => {
       await expect(raiden.getAvailability(partner)).rejects.toThrow(ErrorCodes.TRNS_NO_VALID_USER);
 
       // success when using address of account on provider and initial state
-      const raiden1 = await createRaiden(
-        accounts[2],
-        makeInitialState({ network, contractsInfo, address: accounts[2] as Address }, { config }),
-      );
+      const raiden1 = await createRaiden(accounts[2], {
+        state: makeInitialState(
+          { network, contractsInfo, address: accounts[2] as Address },
+          { config },
+        ),
+      });
       expect(raiden1).toBeInstanceOf(Raiden);
       raiden1.start();
 
@@ -816,10 +850,12 @@ describe('Raiden', () => {
       let raiden1: Raiden;
 
       beforeEach(async () => {
-        raiden1 = await createRaiden(
-          partner,
-          makeInitialState({ network, contractsInfo, address: partner as Address }, { config }),
-        );
+        raiden1 = await createRaiden(partner, {
+          state: makeInitialState(
+            { network, contractsInfo, address: partner as Address },
+            { config },
+          ),
+        });
         raiden1.start();
 
         // await raiden1 client matrix initialization
@@ -850,10 +886,7 @@ describe('Raiden', () => {
         // there's some channel with enough capacity, but not the one returned by PFS
         const partner3 = accounts[3];
         await raiden.openChannel(token, partner3, { deposit: 300 });
-        const raiden3 = await createRaiden(
-          partner3,
-          makeInitialState({ network, contractsInfo, address: partner3 as Address }, { config }),
-        );
+        const raiden3 = await createRaiden(partner3);
         raiden3.start();
         await raiden3.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
         await expect(raiden.getAvailability(partner3)).resolves.toBeDefined();
@@ -888,10 +921,7 @@ describe('Raiden', () => {
         expect.assertions(7);
 
         const target = accounts[2],
-          raiden2 = await createRaiden(
-            target,
-            makeInitialState({ network, contractsInfo, address: target as Address }, { config }),
-          ),
+          raiden2 = await createRaiden(target),
           matrix2Promise = raiden2.action$
             .pipe(filter(isActionOf(matrixSetup)), first())
             .toPromise();
@@ -1027,14 +1057,8 @@ describe('Raiden', () => {
       await raiden.openChannel(token, partner);
       await raiden.depositChannel(token, partner, 200);
 
-      raiden1 = await createRaiden(
-        partner,
-        makeInitialState({ network, contractsInfo, address: partner as Address }, { config }),
-      );
-      raiden2 = await createRaiden(
-        target,
-        makeInitialState({ network, contractsInfo, address: target as Address }, { config }),
-      );
+      raiden1 = await createRaiden(partner);
+      raiden2 = await createRaiden(target);
       raiden1.start();
       raiden2.start();
 
@@ -1177,10 +1201,7 @@ describe('Raiden', () => {
       // there's some channel with enough capacity, but not the one returned by PFS
       const partner3 = accounts[3];
       await raiden.openChannel(token, partner3, { deposit: 300 });
-      const raiden3 = await createRaiden(
-        partner3,
-        makeInitialState({ network, contractsInfo, address: partner3 as Address }, { config }),
-      );
+      const raiden3 = await createRaiden(partner3);
       raiden3.start();
       await raiden3.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
       await expect(raiden.getAvailability(partner3)).resolves.toBeDefined();
@@ -1246,7 +1267,7 @@ describe('Raiden', () => {
       raiden = await Raiden.create(
         new TestProvider(undefined, { network_id: 1 }),
         0,
-        storage,
+        getStorageOpts(),
         contractsInfo,
         config,
       );
@@ -1316,7 +1337,7 @@ describe('Raiden', () => {
       // stop and restart node
       raiden.stop();
       await provider.mine(confirmationBlocks);
-      raiden = await createRaiden(0, storage);
+      raiden = await createRaiden(0);
       raiden.start();
 
       const result = raiden.action$.pipe(filter(udcWithdrawn.is), take(2), toArray()).toPromise();
@@ -1350,7 +1371,7 @@ describe('Raiden', () => {
 
   test('subkey', async () => {
     expect.assertions(30);
-    const sub = await createRaiden(0, storage, true);
+    const sub = await createRaiden(0, undefined, true);
 
     const subStarted = sub.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
     sub.start();
