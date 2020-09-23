@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare module 'ganache-cli' {
+  import 'jest-extended';
   import { Http2Server } from 'http2';
   import { AsyncSendable } from 'ethers/providers';
 
@@ -40,3 +41,5 @@ declare module 'ganache-cli' {
   const ganache: Ganache;
   export default ganache;
 }
+
+declare module 'pouchdb-debug';

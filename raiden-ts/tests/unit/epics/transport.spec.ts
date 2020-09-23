@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { raidenEpicDeps, makeSignature, mockRTC } from '../mocks';
+import { raidenEpicDeps, makeSignature, mockRTC, sleep } from '../mocks';
 import { epicFixtures } from '../fixtures';
 
 import { createClient } from 'matrix-js-sdk';
 import { of, timer, EMPTY, Observable } from 'rxjs';
 import { first, tap, takeUntil, toArray } from 'rxjs/operators';
-import { fakeSchedulers } from 'rxjs-marbles/jest';
 import { verifyMessage, BigNumber } from 'ethers/utils';
 
 import { RaidenAction, raidenConfigUpdate } from 'raiden-ts/actions';
@@ -743,100 +742,87 @@ describe('transport epic', () => {
   });
 
   describe('matrixLeaveUnknownRoomsEpic', () => {
-    beforeAll(() => jest.useFakeTimers());
-    afterAll(() => jest.useRealTimers());
+    test('leave unknown rooms', async () => {
+      expect.assertions(3);
 
-    test(
-      'leave unknown rooms',
-      fakeSchedulers((advance) => {
-        expect.assertions(3);
+      const roomId = `!unknownRoomId:${matrixServer}`,
+        state$ = of(state);
 
-        action$.next(raidenConfigUpdate({ httpTimeout: 30e3 }));
-        const roomId = `!unknownRoomId:${matrixServer}`,
-          state$ = of(state);
+      const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
 
-        const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
+      matrix.emit('Room', {
+        roomId,
+        getCanonicalAlias: jest.fn(),
+        getAliases: jest.fn(() => []),
+      });
 
-        matrix.emit('Room', {
-          roomId,
-          getCanonicalAlias: jest.fn(),
-          getAliases: jest.fn(() => []),
-        });
+      await sleep();
 
-        advance(1e3);
+      // we should wait a little before leaving rooms
+      expect(matrix.leave).not.toHaveBeenCalled();
 
-        // we should wait a little before leaving rooms
-        expect(matrix.leave).not.toHaveBeenCalled();
+      await sleep(500);
 
-        advance(200e3);
+      expect(matrix.leave).toHaveBeenCalledTimes(1);
+      expect(matrix.leave).toHaveBeenCalledWith(roomId);
 
-        expect(matrix.leave).toHaveBeenCalledTimes(1);
-        expect(matrix.leave).toHaveBeenCalledWith(roomId);
+      sub.unsubscribe();
+    });
 
-        sub.unsubscribe();
-      }),
-    );
+    test('do not leave global room', async () => {
+      expect.assertions(2);
 
-    test(
-      'do not leave global room',
-      fakeSchedulers((advance) => {
-        expect.assertions(2);
+      const roomId = `!discoveryRoomId:${matrixServer}`,
+        state$ = of(state),
+        roomAlias = `#raiden_${depsMock.network.name}_discovery:${matrixServer}`;
 
-        const roomId = `!discoveryRoomId:${matrixServer}`,
-          state$ = of(state),
-          roomAlias = `#raiden_${depsMock.network.name}_discovery:${matrixServer}`;
+      const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
 
-        const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
+      matrix.emit('Room', {
+        roomId,
+        getCanonicalAlias: jest.fn(),
+        getAliases: jest.fn(() => [roomAlias]),
+      });
 
-        matrix.emit('Room', {
-          roomId,
-          getCanonicalAlias: jest.fn(),
-          getAliases: jest.fn(() => [roomAlias]),
-        });
+      await sleep();
 
-        advance(1e3);
+      // we should wait a little before leaving rooms
+      expect(matrix.leave).not.toHaveBeenCalled();
 
-        // we should wait a little before leaving rooms
-        expect(matrix.leave).not.toHaveBeenCalled();
+      await sleep(500);
 
-        advance(200e3);
+      // even after some time, discovery room isn't left
+      expect(matrix.leave).not.toHaveBeenCalled();
 
-        // even after some time, discovery room isn't left
-        expect(matrix.leave).not.toHaveBeenCalled();
+      sub.unsubscribe();
+    });
 
-        sub.unsubscribe();
-      }),
-    );
+    test('do not leave peers rooms', async () => {
+      expect.assertions(2);
 
-    test(
-      'do not leave peers rooms',
-      fakeSchedulers((advance) => {
-        expect.assertions(2);
+      const roomId = partnerRoomId,
+        state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
 
-        const roomId = partnerRoomId,
-          state$ = of(raidenReducer(state, matrixRoom({ roomId }, { address: partner })));
+      const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
 
-        const sub = matrixLeaveUnknownRoomsEpic(EMPTY, state$, depsMock).subscribe();
+      matrix.emit('Room', {
+        roomId,
+        getCanonicalAlias: jest.fn(),
+        getAliases: jest.fn(() => []),
+      });
 
-        matrix.emit('Room', {
-          roomId,
-          getCanonicalAlias: jest.fn(),
-          getAliases: jest.fn(() => []),
-        });
+      await sleep();
 
-        advance(1e3);
+      // we should wait a little before leaving rooms
+      expect(matrix.leave).not.toHaveBeenCalled();
 
-        // we should wait a little before leaving rooms
-        expect(matrix.leave).not.toHaveBeenCalled();
+      await sleep(500);
 
-        advance(200e3);
+      // even after some time, partner's room isn't left
+      expect(matrix.leave).not.toHaveBeenCalled();
 
-        // even after some time, partner's room isn't left
-        expect(matrix.leave).not.toHaveBeenCalled();
-
-        sub.unsubscribe();
-      }),
-    );
+      sub.unsubscribe();
+    });
   });
 
   describe('matrixCleanLeftRoomsEpic', () => {

@@ -69,6 +69,7 @@
     "eslint-plugin-prettier": "^3.1.4",
     "ganache-cli": "^6.10.2",
     "jest": "^26.4.2",
+    "jest-extended": "^0.11.5",
     "jest-junit": "^11.1.0",
     "memdown": "^5.1.0",
     "node-pre-gyp": "^0.15.0",
@@ -76,7 +77,6 @@
     "pouchdb-debug": "^7.2.1",
     "prettier": "^2.1.2",
     "rimraf": "^3.0.2",
-    "rxjs-marbles": "^6.0.1",
     "symbol-observable": "^2.0.1",
     "tiny-async-pool": "^1.1.0",
     "ts-jest": "^26.4.0",
@@ -195,6 +195,9 @@
     ],
     "setupFiles": [
       "<rootDir>/tests/setup.ts"
+    ],
+    "setupFilesAfterEnv": [
+      "jest-extended"
     ],
     "verbose": true,
     "collectCoverageFrom": [

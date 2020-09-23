@@ -1,0 +1,536 @@
+[
+    {
+        "_id": "_meta",
+        "version": 0,
+        "network": 5,
+        "registry": "0x5a5CF4A63022F61F1506D1A2398490c2e8dfbb98",
+        "address": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
+        "blockNumber": 3386946
+    },
+    {
+        "id": 5384,
+        "state": "open",
+        "token": "0x59105441977ecD9d805A4f5b060E34676F50F806",
+        "tokenNetwork": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+        "settleTimeout": 500,
+        "isFirstParticipant": true,
+        "openBlock": 3332275,
+        "own": {
+            "address": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
+            "deposit": {
+                "_hex": "0xde0b6b3a76400000"
+            },
+            "withdraw": {
+                "_hex": "0x00"
+            },
+            "locks": [],
+            "balanceProof": {
+                "chainId": {
+                    "_hex": "0x05"
+                },
+                "tokenNetworkAddress": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+                "channelId": {
+                    "_hex": "0x1508"
+                },
+                "nonce": {
+                    "_hex": "0x02"
+                },
+                "transferredAmount": {
+                    "_hex": "0x02c68af0bb140000"
+                },
+                "lockedAmount": {
+                    "_hex": "0x00"
+                },
+                "locksroot": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+                "additionalHash": "0xda669b66f7d1aea91431082552395ba366580df323099e90d62487a5b0f3e851",
+                "signature": "0xd919c14a0ebf4a1119dd4481a8cf4411a6436f408cf7b5f51c1c3728319f56434b69c655d2d6e07d3ef5c9303eba4f02fa5b3923ecd21cb739819862edfb0d8e1c"
+            },
+            "pendingWithdraws": [],
+            "nextNonce": {
+                "_hex": "0x03"
+            }
+        },
+        "partner": {
+            "address": "0xb0d5EeAeB7b084a2ba92C24b79f4f2D079A3062b",
+            "deposit": {
+                "_hex": "0x015af1d78b58c40000"
+            },
+            "withdraw": {
+                "_hex": "0x00"
+            },
+            "locks": [],
+            "balanceProof": {
+                "chainId": {
+                    "_hex": "0x00"
+                },
+                "tokenNetworkAddress": "0x0000000000000000000000000000000000000000",
+                "channelId": {
+                    "_hex": "0x00"
+                },
+                "nonce": {
+                    "_hex": "0x00"
+                },
+                "transferredAmount": {
+                    "_hex": "0x00"
+                },
+                "lockedAmount": {
+                    "_hex": "0x00"
+                },
+                "locksroot": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+                "additionalHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "signature": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "pendingWithdraws": [],
+            "nextNonce": {
+                "_hex": "0x01"
+            }
+        },
+        "_id": "channels.0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3@0xb0d5EeAeB7b084a2ba92C24b79f4f2D079A3062b#000005384"
+    },
+    {
+        "id": 5361,
+        "state": "open",
+        "token": "0x59105441977ecD9d805A4f5b060E34676F50F806",
+        "tokenNetwork": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+        "settleTimeout": 500,
+        "isFirstParticipant": true,
+        "openBlock": 3242997,
+        "own": {
+            "address": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
+            "deposit": {
+                "_hex": "0x01158e460913d00000"
+            },
+            "withdraw": {
+                "_hex": "0x00"
+            },
+            "locks": [],
+            "balanceProof": {
+                "chainId": {
+                    "_hex": "0x05"
+                },
+                "tokenNetworkAddress": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+                "channelId": {
+                    "_hex": "0x14f1"
+                },
+                "nonce": {
+                    "_hex": "0x02"
+                },
+                "transferredAmount": {
+                    "_hex": "0x02ea11e32ad50000"
+                },
+                "lockedAmount": {
+                    "_hex": "0x00"
+                },
+                "locksroot": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+                "additionalHash": "0xdb2d8073e826d133c777aed48714d8e22243970f0ebc441c348b9b12877b38d4",
+                "signature": "0xdcde0ab9cfb50a926ce214a0787d0c16415312cbe3d8bc420a4d7b263f255e872949c5e2d26338a245d3790bcada085a0795575cec7a279dafb415ddafa933da1b"
+            },
+            "pendingWithdraws": [],
+            "nextNonce": {
+                "_hex": "0x03"
+            }
+        },
+        "partner": {
+            "address": "0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA",
+            "deposit": {
+                "_hex": "0x022b1c8c1227a00000"
+            },
+            "withdraw": {
+                "_hex": "0x00"
+            },
+            "locks": [],
+            "balanceProof": {
+                "chainId": {
+                    "_hex": "0x05"
+                },
+                "tokenNetworkAddress": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+                "channelId": {
+                    "_hex": "0x14f1"
+                },
+                "nonce": {
+                    "_hex": "0x06"
+                },
+                "transferredAmount": {
+                    "_hex": "0x0853a0d2313c0000"
+                },
+                "lockedAmount": {
+                    "_hex": "0x00"
+                },
+                "locksroot": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+                "additionalHash": "0xe130be10d7f9ebbbf130c1d7aabdf6732b875daf5d95a2f08933b9a85a1edc6c",
+                "signature": "0xe62c3e80e12f115dcd8b4aaf374836c49cebc762c94b1164f2ca197b7836695613c4b1d702f4e2b98fb615a6e96b2b4fb858088c8abcefcb87ce2f2931148fa61c"
+            },
+            "pendingWithdraws": [],
+            "nextNonce": {
+                "_hex": "0x07"
+            }
+        },
+        "_id": "channels.0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3@0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA#000005361"
+    },
+    {
+        "channel": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3@0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA#000005361",
+        "secrethash": "0xcba277c0878f4c391518c43043ef123a9d3dec388684fedbe1c3670573407b99",
+        "direction": "received",
+        "expiration": 3361215,
+        "cleared": 0,
+        "transfer": {
+            "type": "LockedTransfer",
+            "message_identifier": {
+                "_hex": "0x017468b1585d"
+            },
+            "chain_id": {
+                "_hex": "0x05"
+            },
+            "token_network_address": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+            "channel_identifier": {
+                "_hex": "0x14f1"
+            },
+            "nonce": {
+                "_hex": "0x03"
+            },
+            "transferred_amount": {
+                "_hex": "0x016345785d8a0000"
+            },
+            "locked_amount": {
+                "_hex": "0x02c68af0bb140000"
+            },
+            "locksroot": "0x2c3afd9768347f3455e70885c66aa9f16889893ba6dd24255e486aca65217583",
+            "payment_identifier": {
+                "_hex": "0x017468b150ee"
+            },
+            "token": "0x59105441977ecD9d805A4f5b060E34676F50F806",
+            "recipient": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
+            "lock": {
+                "amount": {
+                    "_hex": "0x02c68af0bb140000"
+                },
+                "expiration": {
+                    "_hex": "0x3349bf"
+                },
+                "secrethash": "0xcba277c0878f4c391518c43043ef123a9d3dec388684fedbe1c3670573407b99"
+            },
+            "target": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
+            "initiator": "0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA",
+            "metadata": {
+                "routes": [
+                    {
+                        "route": [
+                            "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3"
+                        ]
+                    }
+                ]
+            },
+            "signature": "0x1ab9fad25f34081714419c8412a4a46bd1ed0a60b195585bc118f3dace1d36824f0d2249d86efea0a2396c3b62f980cd62033d55631ad5a0c51b28586dfab4f01c",
+            "ts": 1599484287301
+        },
+        "partner": "0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA",
+        "fee": {
+            "_hex": "0x00"
+        },
+        "transferProcessed": {
+            "type": "Processed",
+            "message_identifier": {
+                "_hex": "0x017468b1585d"
+            },
+            "signature": "0x2969ea91cc8af556d127620c0ad54789fd32e8829832e16c2484808869c7c06720bf5e05ed0a4740bd2ea87dada2191234b39d019170085e3d474a44e53f1efd1b",
+            "ts": 1599484287322
+        },
+        "secretRequest": {
+            "type": "SecretRequest",
+            "payment_identifier": {
+                "_hex": "0x017468b150ee"
+            },
+            "secrethash": "0xcba277c0878f4c391518c43043ef123a9d3dec388684fedbe1c3670573407b99",
+            "amount": {
+                "_hex": "0x02c68af0bb140000"
+            },
+            "expiration": {
+                "_hex": "0x3349bf"
+            },
+            "message_identifier": {
+                "_hex": "0x017468b15923"
+            },
+            "signature": "0xee8d96fb37874ff15b2d7e42173bb0485344d39770ea59a05ab9a1d1d4030e1d1f43d4a665148086ed1805e47853e636915df9771933979bf84992e45680f5091b",
+            "ts": 1599484287356
+        },
+        "secret": "0x57f6bfdb6c58c77fa78d3551de39c3b025f94b488b1750421a4c77adf61ed4b0",
+        "secretReveal": {
+            "type": "RevealSecret",
+            "message_identifier": {
+                "_hex": "0x017468b15a9e"
+            },
+            "secret": "0x57f6bfdb6c58c77fa78d3551de39c3b025f94b488b1750421a4c77adf61ed4b0",
+            "signature": "0xa1e8462c9ddfbf9599f7aa9a7bb5fa3c31049d7b3a879857978b053b3a82a5e76889154711e73191e2118df60805c8deb86525e8edad6ca4ff829c4f76b794621c",
+            "ts": 1599484287688
+        },
+        "unlock": {
+            "type": "Unlock",
+            "message_identifier": {
+                "_hex": "0x017468b15b4a"
+            },
+            "chain_id": {
+                "_hex": "0x05"
+            },
+            "token_network_address": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+            "channel_identifier": {
+                "_hex": "0x14f1"
+            },
+            "nonce": {
+                "_hex": "0x04"
+            },
+            "transferred_amount": {
+                "_hex": "0x0429d069189e0000"
+            },
+            "locked_amount": {
+                "_hex": "0x00"
+            },
+            "locksroot": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+            "payment_identifier": {
+                "_hex": "0x017468b150ee"
+            },
+            "secret": "0x57f6bfdb6c58c77fa78d3551de39c3b025f94b488b1750421a4c77adf61ed4b0",
+            "signature": "0x8bd6f235098317ad0b2eab093f0466433b526c5b937e15e388e81d802a59739c57b75b7e6ba2b7b2cb447ef703b9f96f53548246ebcee3dd0690d55e1bcb24a71c",
+            "ts": 1599484287931
+        },
+        "unlockProcessed": {
+            "type": "Processed",
+            "message_identifier": {
+                "_hex": "0x017468b15b4a"
+            },
+            "signature": "0x87d299db8597f4b3726ece0d0ecb7503810ae3dfc3023c0c8a765074660e7c8d3460539b78cad602cefdf4c5f091bb68ca5d615c6dae78090e6af51a84f63dde1b",
+            "ts": 1599484287980
+        },
+        "_id": "received:0xcba277c0878f4c391518c43043ef123a9d3dec388684fedbe1c3670573407b99"
+    },
+    {
+        "channel": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3@0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA#000005361",
+        "secrethash": "0xd3460e3ae468c6cb7e533c691b9a855bea5400bebc7c26bcaa028b0ecc1666a1",
+        "direction": "sent",
+        "expiration": 3361220,
+        "cleared": 0,
+        "transfer": {
+            "type": "LockedTransfer",
+            "message_identifier": {
+                "_hex": "0x017468b290d2"
+            },
+            "chain_id": {
+                "_hex": "0x05"
+            },
+            "token_network_address": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+            "channel_identifier": {
+                "_hex": "0x14f1"
+            },
+            "nonce": {
+                "_hex": "0x01"
+            },
+            "transferred_amount": {
+                "_hex": "0x00"
+            },
+            "locked_amount": {
+                "_hex": "0x02ea11e32ad50000"
+            },
+            "locksroot": "0x8adbe80a5f9dd13883bcc36c105f07252f1d41c7ef3c00bdd3d8b4fd1bbb0633",
+            "payment_identifier": {
+                "_hex": "0x017468b28ba6"
+            },
+            "token": "0x59105441977ecD9d805A4f5b060E34676F50F806",
+            "recipient": "0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA",
+            "lock": {
+                "amount": {
+                    "_hex": "0x02ea11e32ad50000"
+                },
+                "expiration": {
+                    "_hex": "0x3349c4"
+                },
+                "secrethash": "0xd3460e3ae468c6cb7e533c691b9a855bea5400bebc7c26bcaa028b0ecc1666a1"
+            },
+            "target": "0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA",
+            "initiator": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
+            "metadata": {
+                "routes": [
+                    {
+                        "route": [
+                            "0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA"
+                        ]
+                    }
+                ]
+            },
+            "signature": "0x27719b4cda7a33f1938fc7169547d1f726f86d11c505ae55c282b0f9cbbc61f62c6ffba877e73bbec32fd7eed3c4c377bf4659edcea0882c4eba7e140ef7a1761b",
+            "ts": 1599484367115
+        },
+        "partner": "0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA",
+        "fee": {
+            "_hex": "0x00"
+        },
+        "secret": "0x5c63f4e35c4e51d26c0d242734551a8800121c9dc806cc1e1f242109f2ae99d1",
+        "transferProcessed": {
+            "type": "Processed",
+            "message_identifier": {
+                "_hex": "0x017468b290d2"
+            },
+            "signature": "0x7c8690fadd510552111f30de97e5bdfd683895a34a272d7f14b5ff7e75edcc725065da7115b21cb4cf074f7d24dd0699913cf87b3dde30a0a5e3251636b022a21b",
+            "ts": 1599484367252
+        },
+        "secretRequest": {
+            "type": "SecretRequest",
+            "payment_identifier": {
+                "_hex": "0x017468b28ba6"
+            },
+            "secrethash": "0xd3460e3ae468c6cb7e533c691b9a855bea5400bebc7c26bcaa028b0ecc1666a1",
+            "amount": {
+                "_hex": "0x02ea11e32ad50000"
+            },
+            "expiration": {
+                "_hex": "0x3349c4"
+            },
+            "message_identifier": {
+                "_hex": "0x017468b29152"
+            },
+            "signature": "0x9093ff935afed205afa86d650c1aaef521791b268e595cd4aff90d521704e2415504f8c180d8b2b8176af19fd80da357597b5243e93f9674b8dfb4729ac5bf7b1c",
+            "ts": 1599484367408
+        },
+        "secretReveal": {
+            "type": "RevealSecret",
+            "message_identifier": {
+                "_hex": "0x017468b29244"
+            },
+            "secret": "0x5c63f4e35c4e51d26c0d242734551a8800121c9dc806cc1e1f242109f2ae99d1",
+            "signature": "0x529c0bcbc79dcd82ffe694c250fdfe45db7d828372f3f4e143d391769f94ea88264585eb495261cb77b1695e4693e0a6be9059149d9077dc8d726eebb3fdf8451c",
+            "ts": 1599484367447
+        },
+        "unlock": {
+            "type": "Unlock",
+            "message_identifier": {
+                "_hex": "0x017468b2932d"
+            },
+            "chain_id": {
+                "_hex": "0x05"
+            },
+            "token_network_address": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+            "channel_identifier": {
+                "_hex": "0x14f1"
+            },
+            "nonce": {
+                "_hex": "0x02"
+            },
+            "transferred_amount": {
+                "_hex": "0x02ea11e32ad50000"
+            },
+            "locked_amount": {
+                "_hex": "0x00"
+            },
+            "locksroot": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+            "payment_identifier": {
+                "_hex": "0x017468b28ba6"
+            },
+            "secret": "0x5c63f4e35c4e51d26c0d242734551a8800121c9dc806cc1e1f242109f2ae99d1",
+            "signature": "0xdcde0ab9cfb50a926ce214a0787d0c16415312cbe3d8bc420a4d7b263f255e872949c5e2d26338a245d3790bcada085a0795575cec7a279dafb415ddafa933da1b",
+            "ts": 1599484367676
+        },
+        "unlockProcessed": {
+            "type": "Processed",
+            "message_identifier": {
+                "_hex": "0x017468b2932d"
+            },
+            "signature": "0x75c9cd9429a4a9ee528c9a8c42e6a112d96665d65daf4a6fe18d334abbc875c84ba8f2d553778aad4c9453c8955dbe5f862cf638fc52b3cf3b5ca81ade1aa4861b",
+            "ts": 1599484367950
+        },
+        "_id": "sent:0xd3460e3ae468c6cb7e533c691b9a855bea5400bebc7c26bcaa028b0ecc1666a1"
+    },
+    {
+        "value": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
+        "_id": "state.address"
+    },
+    {
+        "value": 3386946,
+        "_id": "state.blockNumber"
+    },
+    {
+        "value": 5,
+        "_id": "state.chainId"
+    },
+    {
+        "value": {},
+        "_id": "state.config"
+    },
+    {
+        "value": {
+            "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3": {
+                "0x956b18Fb47F9626DDbA869feb3e91bF94224E767": {
+                    "signature": "0xed99aff58e3b86853b6e7c14205689d2abbb8f89511dd5292bdc675942b656a779f0a24aec8ca72d1331d1cd8f5d786d2273f05969267699767ead65eaaf68b41b",
+                    "one_to_n_address": "0xA514Da2418576CeC4070C82996f30532dDa99706",
+                    "expiration_block": {
+                        "_hex": "0x35498a"
+                    },
+                    "amount": {
+                        "_hex": "0x02bc"
+                    },
+                    "receiver": "0x956b18Fb47F9626DDbA869feb3e91bF94224E767",
+                    "sender": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
+                    "chain_id": {
+                        "_hex": "0x05"
+                    }
+                }
+            }
+        },
+        "_id": "state.iou"
+    },
+    {
+        "value": [
+            {
+                "type": "channel/deposit/success",
+                "payload": {
+                    "id": 5384,
+                    "participant": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
+                    "totalDeposit": {
+                        "_hex": "0xebec21ee1da40000"
+                    },
+                    "txHash": "0xcd179356ae3370ca337b455f44cff9b5e702344e55284f7c2340fcabce67bdb3",
+                    "txBlock": 3386944
+                },
+                "meta": {
+                    "tokenNetwork": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+                    "partner": "0xb0d5EeAeB7b084a2ba92C24b79f4f2D079A3062b"
+                }
+            }
+        ],
+        "_id": "state.pendingTxs"
+    },
+    {
+        "value": "0x5a5CF4A63022F61F1506D1A2398490c2e8dfbb98",
+        "_id": "state.registry"
+    },
+    {
+        "value": {
+            "0x59105441977ecD9d805A4f5b060E34676F50F806": "0x3EA2a1fED7FdEf300DA19E97092Ce8FdF8bf66A3",
+            "0xC563388e2e2fdD422166eD5E76971D11eD37A466": "0x812650FB6Acdf9dD47E631cBB5518B32FFD4D129"
+        },
+        "_id": "state.tokens"
+    },
+    {
+        "value": {
+            "server": "https://transport.demo001.env.raiden.network",
+            "setup": {
+                "userId": "@0x805cbe7481389d5dc1ca3cad4f66369bc21cb4e3:transport.demo001.env.raiden.network",
+                "accessToken": "access_token_123",
+                "deviceId": "RAIDEN",
+                "displayName": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "rooms": {
+                "0xf911638bA26dd068a7E4a4fA308D6BF1B3556bBA": [
+                    "!room00000000000001:transport.demo001.env.raiden.network",
+                    "!room00000000000002:transport.demo001.env.raiden.network"
+                ],
+                "0xb0d5EeAeB7b084a2ba92C24b79f4f2D079A3062b": [
+                    "!room00000000000003:transport.demo001.env.raiden.network",
+                    "!room00000000000004:transport.demo001.env.raiden.network"
+                ],
+                "0x48a25Cd810ada615E85975535E67A8125da8d993": [
+                    "!room00000000000005:transport.demo001.env.raiden.network",
+                    "!room00000000000006:transport.demo001.env.raiden.network"
+                ]
+            }
+        },
+        "_id": "state.transport"
+    }
+]

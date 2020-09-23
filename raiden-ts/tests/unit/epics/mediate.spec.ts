@@ -1,170 +1,81 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { raidenEpicDeps } from '../mocks';
-import { epicFixtures } from '../fixtures';
+import { makeRaidens, sleep } from '../mocks';
+import {
+  ensureChannelIsDeposited,
+  ensureChannelIsOpen,
+  secret,
+  secrethash,
+  amount,
+  tokenNetwork,
+  getOrWaitTransfer,
+  ensurePresence,
+} from '../fixtures';
 
-import { bigNumberify } from 'ethers/utils';
-import { Zero, One } from 'ethers/constants';
-import { of } from 'rxjs';
+import { Zero } from 'ethers/constants';
 import { first } from 'rxjs/operators';
 
 import { Capabilities } from 'raiden-ts/constants';
 import { raidenConfigUpdate } from 'raiden-ts/actions';
-import { MessageType, LockedTransfer } from 'raiden-ts/messages/types';
-import { signMessage } from 'raiden-ts/messages/utils';
-import { tokenMonitored, channelOpen, channelDeposit } from 'raiden-ts/channels/actions';
-import { messageReceived } from 'raiden-ts/messages/actions';
-import { transfer } from 'raiden-ts/transfers/actions';
-import {
-  transferGenerateAndSignEnvelopeMessageEpic,
-  transferMediateEpic,
-} from 'raiden-ts/transfers/epics';
-import { UInt, Int, Signed } from 'raiden-ts/utils/types';
-import {
-  makeMessageId,
-  makeSecret,
-  getSecrethash,
-  makePaymentId,
-  getLocksroot,
-} from 'raiden-ts/transfers/utils';
+import { MessageType } from 'raiden-ts/messages/types';
+import { transfer, transferSigned } from 'raiden-ts/transfers/actions';
+import { Int } from 'raiden-ts/utils/types';
+import { makePaymentId } from 'raiden-ts/transfers/utils';
 import { Direction } from 'raiden-ts/transfers/state';
 
 describe('mediate transfers', () => {
-  let depsMock: ReturnType<typeof raidenEpicDeps>;
-  let token: ReturnType<typeof epicFixtures>['token'],
-    tokenNetwork: ReturnType<typeof epicFixtures>['tokenNetwork'],
-    channelId: ReturnType<typeof epicFixtures>['channelId'],
-    partner: ReturnType<typeof epicFixtures>['partner'],
-    settleTimeout: ReturnType<typeof epicFixtures>['settleTimeout'],
-    isFirstParticipant: ReturnType<typeof epicFixtures>['isFirstParticipant'],
-    txHash: ReturnType<typeof epicFixtures>['txHash'],
-    partnerSigner: ReturnType<typeof epicFixtures>['partnerSigner'],
-    action$: ReturnType<typeof epicFixtures>['action$'],
-    state$: ReturnType<typeof epicFixtures>['state$'];
+  test('success', async () => {
+    expect.assertions(3);
 
-  const secret = makeSecret();
-  const secrethash = getSecrethash(secret);
-  const amount = bigNumberify(10) as UInt<32>;
-  let expiration: UInt<32>;
-  let transf: Signed<LockedTransfer>;
+    const [raiden, partner, target] = await makeRaidens(3);
+    await ensureChannelIsDeposited([raiden, partner]);
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target]);
+    await ensurePresence([raiden, target]);
 
-  beforeEach(async () => {
-    depsMock = raidenEpicDeps();
-    ({
-      token,
-      tokenNetwork,
-      channelId,
-      partner,
-      settleTimeout,
-      isFirstParticipant,
-      txHash,
-      partnerSigner,
-      action$,
-      state$,
-    } = epicFixtures(depsMock));
-
-    [
-      raidenConfigUpdate({
-        caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          // disable NO_RECEIVE & NO_MEDIATE
-        },
-      }),
-      tokenMonitored({ token, tokenNetwork }),
-      channelOpen.success(
-        {
-          id: channelId,
-          settleTimeout,
-          isFirstParticipant,
-          token,
-          txHash,
-          txBlock: 121,
-          confirmed: true,
-        },
-        { tokenNetwork, partner },
-      ),
-      channelDeposit.success(
-        {
-          id: channelId,
-          participant: depsMock.address,
-          totalDeposit: bigNumberify(500) as UInt<32>,
-          txHash,
-          txBlock: 122,
-          confirmed: true,
-        },
-        { tokenNetwork, partner },
-      ),
-      channelDeposit.success(
-        {
-          id: channelId,
-          participant: partner,
-          totalDeposit: bigNumberify(500) as UInt<32>,
-          txHash,
-          txBlock: 122,
-          confirmed: true,
-        },
-        { tokenNetwork, partner },
-      ),
-    ].forEach((a) => action$.next(a));
-
-    const { state, config } = await depsMock.latest$.pipe(first()).toPromise();
-
-    expiration = bigNumberify(state.blockNumber + config.revealTimeout * 2) as UInt<32>;
-    const lock = {
-      secrethash,
-      amount,
-      expiration,
-    };
-    const unsigned: LockedTransfer = {
-      type: MessageType.LOCKED_TRANSFER,
-      payment_identifier: makePaymentId(),
-      message_identifier: makeMessageId(),
-      chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
-      token,
-      token_network_address: tokenNetwork,
-      recipient: depsMock.address,
-      target: partner, // lol
-      initiator: partner,
-      channel_identifier: bigNumberify(channelId) as UInt<32>,
-      metadata: { routes: [{ route: [depsMock.address, partner] }] },
-      lock,
-      locksroot: getLocksroot([lock]),
-      nonce: One as UInt<8>,
-      transferred_amount: Zero as UInt<32>,
-      locked_amount: lock.amount,
-    };
-    transf = await signMessage(partnerSigner, unsigned, depsMock);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-    action$.complete();
-    state$.complete();
-    depsMock.latest$.complete();
-  });
-
-  test('success: receiving a transfer not for us forwards it to target', async () => {
-    expect.assertions(1);
-
-    const promise = transferMediateEpic(action$, state$, depsMock).toPromise();
-
-    // receive transf
-    transferGenerateAndSignEnvelopeMessageEpic(
-      of(messageReceived({ text: '', message: transf, ts: Date.now() }, { address: partner })),
-      state$,
-      depsMock,
-    ).subscribe((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toEqual(
+    const promise = target.action$.pipe(first(transfer.success.is)).toPromise();
+    raiden.store.dispatch(
       transfer.request(
         {
           tokenNetwork,
-          target: partner,
+          target: target.address,
+          value: amount,
+          paymentId: makePaymentId(),
+          paths: [{ path: [partner.address, target.address], fee: Zero as Int<32> }],
+          secret,
+        },
+        { secrethash, direction: Direction.SENT },
+      ),
+    );
+    await expect(promise).resolves.toEqual(
+      transfer.success(expect.anything(), { secrethash, direction: Direction.RECEIVED }),
+    );
+    const transf = (await getOrWaitTransfer(raiden, { secrethash, direction: Direction.SENT }))
+      .transfer;
+
+    expect(partner.output).toContainEqual(
+      transferSigned(
+        {
+          message: expect.objectContaining({
+            type: MessageType.LOCKED_TRANSFER,
+            initiator: raiden.address,
+            target: target.address,
+            payment_identifier: transf.payment_identifier,
+          }),
+          fee: Zero as Int<32>,
+          partner: raiden.address,
+        },
+        { secrethash, direction: Direction.RECEIVED },
+      ),
+    );
+    expect(partner.output).toContainEqual(
+      transfer.request(
+        {
+          tokenNetwork,
+          target: target.address,
           value: amount,
           paymentId: transf.payment_identifier,
-          paths: [{ path: [partner], fee: Zero as Int<32> }],
-          expiration: expiration.toNumber(),
-          initiator: partner,
+          paths: [{ path: [target.address], fee: Zero as Int<32> }],
+          expiration: transf.lock.expiration.toNumber(),
+          initiator: raiden.address,
         },
         { secrethash, direction: Direction.SENT },
       ),
@@ -172,27 +83,57 @@ describe('mediate transfers', () => {
   });
 
   test('skip if NO_MEDIATE', async () => {
-    expect.assertions(1);
-    action$.next(
+    expect.assertions(3);
+
+    const [raiden, partner, target] = await makeRaidens(3);
+    partner.store.dispatch(
       raidenConfigUpdate({
         caps: {
           [Capabilities.NO_DELIVERY]: true,
           [Capabilities.NO_MEDIATE]: true,
-          // disable NO_RECEIVE
         },
       }),
     );
+    await ensureChannelIsDeposited([raiden, partner]);
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target]);
+    await ensurePresence([raiden, target]);
 
-    const promise = transferMediateEpic(action$, state$, depsMock).toPromise();
-
-    // receive transf
-    transferGenerateAndSignEnvelopeMessageEpic(
-      of(messageReceived({ text: '', message: transf, ts: Date.now() }, { address: partner })),
-      state$,
-      depsMock,
-    ).subscribe((a) => action$.next(a));
-    setTimeout(() => action$.complete(), 10);
-
-    await expect(promise).resolves.toBeUndefined();
+    raiden.store.dispatch(
+      transfer.request(
+        {
+          tokenNetwork,
+          target: target.address,
+          value: amount,
+          paymentId: makePaymentId(),
+          paths: [{ path: [partner.address, target.address], fee: Zero as Int<32> }],
+          secret,
+        },
+        { secrethash, direction: Direction.SENT },
+      ),
+    );
+    await sleep(raiden.config.httpTimeout);
+    expect(target.output).not.toContainEqual(
+      transferSigned(expect.anything(), { secrethash, direction: Direction.RECEIVED }),
+    );
+    // mediated transfer received
+    expect(partner.output).toContainEqual(
+      transferSigned(
+        {
+          message: expect.objectContaining({
+            type: MessageType.LOCKED_TRANSFER,
+            initiator: raiden.address,
+            target: target.address,
+          }),
+          fee: Zero as Int<32>,
+          partner: raiden.address,
+        },
+        { secrethash, direction: Direction.RECEIVED },
+      ),
+    );
+    // but not forwarded
+    expect(partner.output).not.toContainEqual(
+      transfer.request(expect.anything(), { secrethash, direction: Direction.SENT }),
+    );
   });
 });

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { makeRaidens, waitBlock, MockedRaiden, makeTransaction, makeRaiden } from '../mocks';
+import { makeRaidens, waitBlock, MockedRaiden, makeTransaction, sleep } from '../mocks';
 import {
   ensureChannelIsDeposited,
   tokenNetwork,
@@ -12,23 +12,19 @@ import {
 } from '../fixtures';
 
 import { bigNumberify } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
-import {
-  MessageType,
-  WithdrawRequest,
-  WithdrawConfirmation,
-  Processed,
-  WithdrawExpired,
-} from 'raiden-ts/messages/types';
+import { MessageType, WithdrawRequest, WithdrawConfirmation } from 'raiden-ts/messages/types';
 import { signMessage } from 'raiden-ts/messages/utils';
 import { messageSend, messageReceived } from 'raiden-ts/messages/actions';
 import { withdraw, withdrawMessage, withdrawExpire } from 'raiden-ts/transfers/actions';
-import { UInt, Hash, Signed } from 'raiden-ts/utils/types';
+import { UInt, Hash } from 'raiden-ts/utils/types';
 import { makeMessageId } from 'raiden-ts/transfers/utils';
 import { channelAmounts } from 'raiden-ts/channels/utils';
-import { Zero } from 'ethers/constants';
 import { Direction } from 'raiden-ts/transfers/state';
 import { ErrorCodes } from 'raiden-ts/utils/error';
+import { raidenConfigUpdate } from 'raiden-ts/actions';
+import { Capabilities } from 'raiden-ts/constants';
 
 describe('withdraw receive request', () => {
   const direction = Direction.RECEIVED;
@@ -164,6 +160,9 @@ describe('withdraw send request', () => {
     expect.assertions(9);
 
     const [raiden, partner] = await makeRaidens(2);
+    // disable NoDelivery so we can test Processed sending
+    raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.NO_DELIVERY]: false } }));
+    partner.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.NO_DELIVERY]: false } }));
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
 
     await ensureChannelIsDeposited([raiden, partner], deposit);
@@ -202,6 +201,7 @@ describe('withdraw send request', () => {
     // receive confirmation
     const partnerNextNonce = getChannel(raiden, partner).partner.nextNonce;
     const confirmation = await receiveWithdrawConfirmation(raiden, partner);
+    await sleep(raiden.config.httpTimeout);
 
     expect(getChannel(raiden, partner).partner.nextNonce).toEqual(partnerNextNonce.add(1));
     expect(raiden.output).toContainEqual(withdrawMessage.success({ message: confirmation }, meta));
@@ -213,6 +213,8 @@ describe('withdraw send request', () => {
       request.signature,
       confirmation.signature,
     );
+    // this only works because Capabilities.NO_DELIVERY is disabled
+    // LC-to-LC confirms with WithdrawConfirmation instead
     expect(raiden.output).toContainEqual(
       messageSend.request(
         {
@@ -221,7 +223,7 @@ describe('withdraw send request', () => {
             message_identifier: confirmation.message_identifier,
           }),
         },
-        { address: partner.address, msgId: expect.any(String) },
+        { address: partner.address, msgId: confirmation.message_identifier.toString() },
       ),
     );
     // partner's capacity is zero, since they withdrew all we had transferred to them
@@ -383,9 +385,13 @@ describe('withdraw send request', () => {
 });
 
 test('withdraw expire', async () => {
-  expect.assertions(9);
-  let raiden = await makeRaiden();
-  const partner = await makeRaiden();
+  expect.assertions(8);
+  const [raiden, partner] = await makeRaidens(2);
+
+  // prevent withdraw tx from succeeding
+  raiden.deps
+    .getTokenNetworkContract(tokenNetwork)
+    .functions.setTotalWithdraw.mockRejectedValue(new Error('withdraw tx failed'));
 
   await ensureChannelIsDeposited([raiden, partner], deposit);
   await ensureChannelIsDeposited([partner, raiden], amount);
@@ -393,29 +399,30 @@ test('withdraw expire', async () => {
 
   const totalWithdraw = deposit.add(amount) as UInt<32>;
   const expiration = raiden.deps.provider.blockNumber + 2 * raiden.config.revealTimeout;
-  const meta = {
+  const sentMeta = {
     direction: Direction.SENT,
     tokenNetwork,
     partner: partner.address,
     totalWithdraw,
     expiration,
   };
+  const receivedMeta = {
+    direction: Direction.RECEIVED,
+    tokenNetwork,
+    partner: raiden.address,
+    totalWithdraw,
+    expiration,
+  };
 
   // perform withdraw request
-  raiden.store.dispatch(withdraw.request(undefined, meta));
+  raiden.store.dispatch(withdraw.request(undefined, sentMeta));
   await waitBlock();
 
-  // request is accepted, but not confirmed
-  expect(raiden.output).toContainEqual(
+  expect(partner.output).toContainEqual(
     withdrawMessage.request(
       { message: expect.objectContaining({ type: MessageType.WITHDRAW_REQUEST }) },
-      meta,
+      receivedMeta,
     ),
-  );
-  const request = raiden.output.find(withdrawMessage.request.is)!.payload.message;
-  // receive the request on partner, to persist it in state
-  partner.store.dispatch(
-    messageReceived({ text: '', ts: 1, message: request }, { address: raiden.address }),
   );
 
   // advance current block to right after expiration, still unconfirmed
@@ -430,14 +437,9 @@ test('withdraw expire', async () => {
   });
 
   // confirm expiration block, request expire
-  await waitBlock(expiration + raiden.config.confirmationBlocks + 1);
-  expect(raiden.output).toContainEqual(withdrawExpire.request(undefined, meta));
-  expect(raiden.output).toContainEqual(
-    withdrawExpire.success({ message: expectedExpireMessage }, meta),
-  );
-  const expired = getChannel(raiden, partner).own.pendingWithdraws.find(
-    Signed(WithdrawExpired).is,
-  )!;
+  await waitBlock(expiration + 2 * raiden.config.confirmationBlocks + 1);
+  expect(raiden.output).toContainEqual(withdrawExpire.request(undefined, sentMeta));
+  const expired = raiden.output.find(withdrawExpire.success.is)!.payload.message;
   expect(expired).toEqual(expectedExpireMessage);
   expect(raiden.output).toContainEqual(
     messageSend.request(
@@ -446,37 +448,21 @@ test('withdraw expire', async () => {
     ),
   );
   await waitBlock();
+  await sleep(raiden.config.httpTimeout);
 
-  // restart raiden node
-  raiden.stop();
-  raiden = await makeRaiden(raiden.deps.signer, true, raiden.store.getState());
-  await waitBlock();
-
-  expect(raiden.output).toContainEqual(withdrawExpire.success({ message: expired }, meta));
-  partner.store.dispatch(
-    messageReceived({ text: '', ts: 1, message: expired }, { address: raiden.address }),
-  );
-  await waitBlock();
   expect(partner.output).toContainEqual(
-    messageSend.request(
-      {
+    withdrawExpire.success({ message: expired }, receivedMeta),
+  );
+  expect(raiden.output).toContainEqual(
+    messageReceived(
+      expect.objectContaining({
         message: expect.objectContaining({
           type: MessageType.PROCESSED,
           message_identifier: expired.message_identifier,
         }),
-      },
-      expect.objectContaining({ address: raiden.address }),
+      }),
+      expect.objectContaining({ address: partner.address }),
     ),
-  );
-  const processed = partner.output
-    .filter(messageSend.request.is)
-    .map((o) => o.payload.message)
-    .filter(Signed(Processed).is)
-    .find((m) => m.message_identifier.eq(expired.message_identifier))!;
-
-  // confirm expire, clear pending withdraw request and expired messages
-  raiden.store.dispatch(
-    messageReceived({ text: '', ts: 1, message: processed }, { address: partner.address }),
   );
   expect(getChannel(raiden, partner).own.pendingWithdraws).toEqual([]);
 });

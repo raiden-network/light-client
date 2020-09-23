@@ -9,6 +9,8 @@ import {
   makeTransaction,
   sleep,
   makeRaiden,
+  mockedSignMessage,
+  originalSignMessage,
 } from '../mocks';
 import {
   tokenNetwork,
@@ -237,14 +239,12 @@ describe('monitorRequestEpic', () => {
     await ensureChannelIsDeposited([raiden, partner], deposit);
     await ensureChannelIsDeposited([partner, raiden], deposit);
     await ensureTransferPending([partner, raiden], amount);
-    // fails only after transfer's signatures
-    const originalSign = raiden.deps.signer.signMessage;
-    const signerSpy = jest
-      .spyOn(raiden.deps.signer, 'signMessage')
-      .mockImplementation(async (message) => {
-        if (signerSpy.mock.calls.length > 1) throw new Error('Signature rejected');
-        return originalSign.call(raiden.deps.signer, message);
-      });
+
+    // fails on RequestMonitoring message
+    mockedSignMessage.mockImplementation(async (signer, message, opts) => {
+      if (message.type === MessageType.MONITOR_REQUEST) throw new Error('Signature rejected');
+      return originalSignMessage(signer, message, opts);
+    });
 
     await ensureTransferUnlocked([partner, raiden], amount);
     await waitBlock();
@@ -256,9 +256,13 @@ describe('monitorRequestEpic', () => {
       ),
     );
     expect(raiden.output).not.toContainEqual(raidenShutdown(expect.anything()));
-    /* We expect 4 times because in the ensureTransferUnlocked after the transfer/success action
+    /* We expect 4 times because in the ensureTransferUnlocked after the transfer/success  action
      we have MonitorRequest, SecretReveal, PFSCapacityUpdate which fail*/
-    expect(signerSpy).toHaveBeenCalledTimes(4);
+    expect(mockedSignMessage).toHaveBeenCalledWith(
+      raiden.deps.signer,
+      expect.objectContaining({ type: MessageType.MONITOR_REQUEST }),
+      expect.anything(),
+    );
   });
 
   test('ignore: non economically viable channels', async () => {
