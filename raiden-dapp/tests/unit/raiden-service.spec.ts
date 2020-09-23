@@ -382,7 +382,7 @@ describe('RaidenService', () => {
     });
     describe('transfer', () => {
       test('resolves when a transfer succeeds', async () => {
-        raiden.waitTransfer.mockResolvedValue(One);
+        raiden.waitTransfer.mockResolvedValue(null as any);
 
         await expect(
           raidenService.transfer('0xtoken', '0xpartner', One, path, paymentId)
