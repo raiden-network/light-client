@@ -213,7 +213,10 @@ function shutdownRaiden(this: Cli): void {
 
 function registerShutdownHooks(this: Cli): void {
   // raiden shutdown triggers server shutdown
-  this.raiden.state$.subscribe(undefined, shutdownServer.bind(this), shutdownServer.bind(this));
+  this.raiden.state$.subscribe({
+    error: shutdownServer.bind(this),
+    complete: shutdownServer.bind(this),
+  });
   process.on('SIGINT', shutdownRaiden.bind(this));
   process.on('SIGTERM', shutdownRaiden.bind(this));
 }
@@ -278,14 +281,14 @@ async function main() {
   await checkDisclaimer(argv.acceptDisclaimer);
   const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
   setupLoglevel(argv.logFile);
-  const localStorage = createLocalStorage(argv.datadir);
+  const storage = createLocalStorage(argv.datadir);
   const endpoint = parseEndpoint(argv.apiAddress);
   const config = await createRaidenConfig(argv);
 
   const raiden = await Raiden.create(
     argv.ethRpcEndpoint,
     wallet.privateKey,
-    localStorage,
+    { storage, prefix: argv.datadir.endsWith('/') ? argv.datadir : argv.datadir + '/' },
     argv.userDepositContractAddress,
     config,
   );
