@@ -8,7 +8,9 @@ import { NotificationImportance } from '@/store/notifications/notification-impor
 
 export const getters: GetterTree<NotificationsState, RootState> = {
   notifications: (state: NotificationsState): NotificationPayload[] => {
-    return Object.values(state.notifications).sort((a, b) => a.id - b.id);
+    return Object.values(state.notifications)
+      .sort((a, b) => a.id - b.id)
+      .reverse();
   },
   nextNotificationId: ({ notifications }: NotificationsState): number => {
     const id = Object.values(notifications).map(
