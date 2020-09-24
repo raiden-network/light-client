@@ -76,11 +76,11 @@ export function getRoom$(matrix: MatrixClient, roomIdOrAlias: string): Observabl
  * @param allowRtc - False to force Room message, or true to allow webRTC channel, if available
  * @returns Observable of a string containing the roomAlias or channel label
  */
-export function waitMemberAndSend$(
+export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
   address: Address,
   matrix: MatrixClient,
   type: EventType,
-  content: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  content: C,
   { log, latest$, config$ }: Pick<RaidenEpicDeps, 'log' | 'latest$' | 'config$'>,
   allowRtc = false,
 ): Observable<string> {
@@ -122,11 +122,8 @@ export function waitMemberAndSend$(
               // if it already joined room, return its membership
               if (member && member.membership === 'join') return of(member);
               // else, wait for the user to join/accept invite
-              return fromEvent<RoomMember>(
-                matrix,
-                'RoomMember.membership',
-                ({}: MatrixEvent, member: RoomMember) => member,
-              ).pipe(
+              return fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
+                pluck(1),
                 filter(
                   (member) =>
                     member.roomId === room.roomId &&
