@@ -1,31 +1,29 @@
 <template>
   <v-container fluid>
-    <v-row no-gutters class="disclaimer">
-      <div>
-        <div class="disclaimer__paragraphs font-weight-light">
-          <p
-            v-for="(paragraph, index) in $t('disclaimer.paragraphs')"
-            :key="index"
-          >
-            {{ paragraph }}
-          </p>
-        </div>
-        <v-checkbox
-          v-model="checkedAccept"
-          class="disclaimer__accept-checkbox"
-          :label="$t('disclaimer.accept-checkbox')"
-          dense
-          hide-details
-        />
-        <v-checkbox
-          v-model="checkedPersist"
-          class="disclaimer__persist-checkbox"
-          :label="$t('disclaimer.persist-checkbox')"
-          dense
-          hide-details
-        />
+    <div class="disclaimer">
+      <div class="disclaimer__paragraphs font-weight-light">
+        <p
+          v-for="(paragraph, index) in $t('disclaimer.paragraphs')"
+          :key="index"
+        >
+          {{ paragraph }}
+        </p>
       </div>
-    </v-row>
+      <v-checkbox
+        v-model="checkedAccept"
+        class="disclaimer__accept-checkbox"
+        :label="$t('disclaimer.accept-checkbox')"
+        dense
+        hide-details
+      />
+      <v-checkbox
+        v-model="checkedPersist"
+        class="disclaimer__persist-checkbox"
+        :label="$t('disclaimer.persist-checkbox')"
+        dense
+        hide-details
+      />
+    </div>
     <action-button
       :text="$t('disclaimer.accept-button')"
       :enabled="checkedAccept"
@@ -72,7 +70,11 @@ export default class Disclaimer extends Vue {
 
 .disclaimer {
   border-top: solid 1px $primary-color;
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 45px);
   padding: 30px 30px 0 30px;
+  width: 100%;
   @include respond-to(handhelds) {
     padding-top: 10px;
   }
@@ -82,9 +84,6 @@ export default class Disclaimer extends Vue {
     overflow-y: auto;
     text-align: justify;
     @extend .themed-scrollbar;
-    @include respond-to(handhelds) {
-      height: 60vh;
-    }
   }
 
   &__accept-checkbox,
