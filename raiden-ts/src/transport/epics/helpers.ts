@@ -1,4 +1,4 @@
-import { Observable, of, EMPTY, fromEvent, timer, throwError, defer } from 'rxjs';
+import { Observable, of, EMPTY, fromEvent, timer, throwError, defer, merge } from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
@@ -62,6 +62,57 @@ export function getRoom$(matrix: MatrixClient, roomIdOrAlias: string): Observabl
   return fromEvent<Room>(matrix, 'Room').pipe(filter(roomMatch(roomIdOrAlias)), take(1));
 }
 
+function waitMember$(
+  matrix: MatrixClient,
+  address: Address,
+  { latest$ }: Pick<RaidenEpicDeps, 'latest$'>,
+) {
+  return latest$.pipe(
+    map(({ state }) => state.transport.rooms?.[address]?.[0]),
+    // wait for a room to exist (created or invited) for address
+    filter(isntNil),
+    distinctUntilChanged(),
+    // this switchMap unsubscribes from previous "wait" if first room for address changes
+    switchMap((roomId) =>
+      // get/wait room object for roomId
+      // may wait for the room state to be populated (happens after createRoom resolves)
+      getRoom$(matrix, roomId).pipe(
+        mergeMap((room) =>
+          // wait for address to be monitored & online (after getting Room for address)
+          // latest$ ensures it happens immediatelly if all conditions are satisfied
+          latest$.pipe(
+            pluck('presences', address),
+            map((presence) =>
+              presence?.payload?.available ? presence.payload.userId : undefined,
+            ),
+            distinctUntilChanged(),
+            map((userId) => ({ room, userId })),
+          ),
+        ),
+        // when user is online, get room member for partner's userId
+        // this switchMap unsubscribes from previous wait if userId changes or go offline
+        switchMap(({ room, userId }) => {
+          if (!userId) return EMPTY; // user not monitored or not available
+          const member = room.getMember(userId);
+          // if it already joined room, return its membership
+          if (member && member.membership === 'join') return of(member);
+          // else, wait for the user to join/accept invite
+          return fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
+            pluck(1),
+            filter(
+              (member) =>
+                member.roomId === room.roomId &&
+                member.userId === userId &&
+                member.membership === 'join',
+            ),
+          );
+        }),
+        pluck('roomId'),
+      ),
+    ),
+  );
+}
+
 /**
  * Waits for address to have joined a room with us (or webRTC channel) and sends a message
  *
@@ -85,58 +136,20 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
   allowRtc = false,
 ): Observable<string> {
   const RETRY_COUNT = 3; // is this relevant enough to become a constant/setting?
-  return latest$.pipe(
-    filter(({ presences }) => address in presences),
-    take(1),
-    mergeMap(({ rtc }) => {
-      // if available & open, use channel
-      if (allowRtc && rtc?.[address]?.readyState === 'open') return of(rtc[address]);
-      // else, wait for member to join in the first room, and return roomId
-      return latest$.pipe(
-        map(({ state }) => state.transport.rooms?.[address]?.[0]),
-        // wait for a room to exist (created or invited) for address
-        filter(isntNil),
-        distinctUntilChanged(),
-        // this switchMap unsubscribes from previous "wait" if first room for address changes
-        switchMap((roomId) =>
-          // get/wait room object for roomId
-          // may wait for the room state to be populated (happens after createRoom resolves)
-          getRoom$(matrix, roomId).pipe(
-            mergeMap((room) =>
-              // wait for address to be monitored & online (after getting Room for address)
-              // latest$ ensures it happens immediatelly if all conditions are satisfied
-              latest$.pipe(
-                pluck('presences', address),
-                map((presence) =>
-                  presence?.payload?.available ? presence.payload.userId : undefined,
-                ),
-                distinctUntilChanged(),
-                map((userId) => ({ room, userId })),
-              ),
-            ),
-            // when user is online, get room member for partner's userId
-            // this switchMap unsubscribes from previous wait if userId changes or go offline
-            switchMap(({ room, userId }) => {
-              if (!userId) return EMPTY; // user not monitored or not available
-              const member = room.getMember(userId);
-              // if it already joined room, return its membership
-              if (member && member.membership === 'join') return of(member);
-              // else, wait for the user to join/accept invite
-              return fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
-                pluck(1),
-                filter(
-                  (member) =>
-                    member.roomId === room.roomId &&
-                    member.userId === userId &&
-                    member.membership === 'join',
-                ),
-              );
-            }),
-            pluck('roomId'),
-          ),
-        ),
-      );
-    }),
+  return merge(
+    // if available & open, use channel
+    latest$.pipe(
+      filter(
+        ({ presences, rtc }) =>
+          allowRtc &&
+          address in presences &&
+          presences[address].payload.available &&
+          rtc[address]?.readyState === 'open',
+      ),
+      pluck('rtc', address),
+    ),
+    waitMember$(matrix, address, { latest$ }),
+  ).pipe(
     take(1), // use first room/user which meets all requirements/filters above
     mergeMap((via) =>
       defer<Promise<void>>(
@@ -145,11 +158,11 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
             ? matrix.sendEvent(via, type, content, '') // via room
             : via.send(content.body), // via RTC channel
       ).pipe(
-        // this returned value is just for notification, and shouldn't be relayed on
+        // this returned value is just for notification, and shouldn't be relayed on;
         // all functionality is provided as side effects of the subscription
         mapTo(typeof via === 'string' ? via : via.label),
         retryWhen((err$) =>
-          // if sendEvent throws, omit & retry after httpTimeout / N,
+          // if sendEvent throws, omit & retry after pollingInterval
           // up to RETRY_COUNT times; if it continues to error, throws down
           err$.pipe(
             withLatestFrom(config$),
