@@ -1,49 +1,48 @@
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuex, { Store } from 'vuex';
-import { TestData } from '../data/mock-data';
-import SelectTokenRoute from '@/views/SelectTokenRoute.vue';
-import Vuetify from 'vuetify';
-import VueVirtualScroller from 'vue-virtual-scroller';
-import { $identicon } from '../utils/mocks';
 import Vue from 'vue';
+import { shallowMount, Wrapper } from '@vue/test-utils';
+import Vuetify from 'vuetify';
+import Vuex, { Store } from 'vuex';
+import { generateToken } from '../utils/data-generator';
+import SelectTokenRoute from '@/views/SelectTokenRoute.vue';
+import TokenList from '@/components/tokens/TokenList.vue';
 
-Vue.use(Vuex);
 Vue.use(Vuetify);
-Vue.use(VueVirtualScroller);
-Vue.filter('displayFormat', (v: string) => v);
-Vue.filter('truncate', (v: string) => v);
+Vue.use(Vuex);
+
+const token = generateToken();
 
 describe('SelectTokenRoute.vue', () => {
   let wrapper: Wrapper<SelectTokenRoute>;
-  let vuetify: typeof Vuetify;
 
   beforeEach(() => {
-    vuetify = new Vuetify();
-    wrapper = mount(SelectTokenRoute, {
+    const vuetify = new Vuetify();
+    wrapper = shallowMount(SelectTokenRoute, {
       vuetify,
       store: new Store({
         getters: {
-          allTokens: jest.fn().mockReturnValue([TestData.token]),
-        },
-        state: {
-          tokens: { [TestData.token.address]: TestData.token },
+          allTokens: () => [token],
         },
       }),
       mocks: {
-        $route: TestData.mockRoute({
-          token: '0xtoken',
-        }),
-        $identicon: $identicon(),
-        $raiden: {
-          getToken: jest.fn().mockResolvedValue(TestData.token),
-          fetchTokenList: jest.fn().mockResolvedValue(null),
-        },
         $t: (msg: string) => msg,
+        $raiden: {
+          fetchTokenList: async () => null,
+        },
       },
     });
+
+    (wrapper.vm as any).navigateToSelectHub = jest.fn();
   });
 
-  test('renders', () => {
-    expect(wrapper.findAll('.select-token__tokens__token').length).toEqual(1);
+  test('shows token list', () => {
+    const tokenList = wrapper.findComponent(TokenList);
+    expect(tokenList.exists()).toBe(true);
+  });
+
+  test('navigates to the select hub route with address of given token', () => {
+    (wrapper.vm as any).selectToken(token);
+    expect((wrapper.vm as any).navigateToSelectHub).toHaveBeenCalledWith(
+      token.address
+    );
   });
 });

@@ -1,6 +1,6 @@
 <template>
-  <v-overlay :value="show" absolute opacity="1.0" class="token-network-overlay">
-    <v-container v-if="show" class="token-network__container">
+  <v-overlay absolute opacity="1.0" class="token-network-overlay">
+    <v-container class="token-network__container">
       <v-row no-gutters justify="end">
         <v-btn icon class="token-network-overlay__close-button" @click="cancel">
           <v-icon>mdi-close</v-icon>
@@ -30,110 +30,43 @@
         </v-col>
       </v-row>
 
-      <v-row>
-        <v-col cols="2" class="hidden-sm-and-down" align-self="center"></v-col>
-        <v-col
-          cols="10"
-          align-self="center"
-          class="token-network-overlay__header"
-        >
-          {{ $t('tokens.connected.header') }}
-        </v-col>
-      </v-row>
-
-      <v-row class="token-list">
-        <v-col cols="12">
-          <v-list
-            v-for="(token, i) in tokens"
-            :key="i"
-            class="token-list__item-list"
-          >
-            <v-list-item
-              :key="token.address"
-              @click="handleTokenClick(token.address)"
-            >
-              <v-col cols="2">
-                <v-list-item-avatar>
-                  <img
-                    :src="$blockie(token.address)"
-                    :src-lazy="require('@/assets/generic.svg')"
-                    :alt="$t('select-token.tokens.token.blockie-alt')"
-                  />
-                </v-list-item-avatar>
-              </v-col>
-              <v-col>
-                <v-list-item-content>
-                  <v-list-item-title class="token-list__token-title">
-                    {{
-                      $t('select-token.tokens.token.token-information', {
-                        symbol: token.symbol,
-                        name: token.name,
-                      })
-                    }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle class="token-list__token-address">
-                    <address-display :address="token.address" />
-                  </v-list-item-subtitle>
-                </v-list-item-content>
-              </v-col>
-              <v-col>
-                <v-row justify="end">
-                  <v-list-item-action-text>
-                    <amount-display
-                      class="token-list__token-balance"
-                      exact-amount
-                      :amount="getTokenDetails(token).balance"
-                      :token="getTokenDetails(token)"
-                    />
-                  </v-list-item-action-text>
-                </v-row>
-              </v-col>
-            </v-list-item>
-          </v-list>
-        </v-col>
-      </v-row>
+      <token-list
+        :header="$t('tokens.connected.header')"
+        :tokens="tokens"
+        @select="handleTokenClick"
+        class="mt-8"
+      />
     </v-container>
   </v-overlay>
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Prop, Emit } from 'vue-property-decorator';
+import { Component, Mixins, Emit } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 
 import BlockieMixin from '@/mixins/blockie-mixin';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { TokenModel, Token } from '@/model/types';
-import AddressDisplay from '@/components/AddressDisplay.vue';
-import AmountDisplay from '@/components/AmountDisplay.vue';
+import TokenList from '@/components/tokens/TokenList.vue';
 
 @Component({
-  components: { AddressDisplay, AmountDisplay },
-  computed: {
-    ...mapGetters(['tokens', 'allTokens']),
-  },
+  components: { TokenList },
+  computed: { ...mapGetters(['tokens']) },
 })
 export default class TokenOverlay extends Mixins(
   BlockieMixin,
   NavigationMixin
 ) {
-  @Prop({ required: true, type: Boolean })
-  show!: boolean;
-
-  allTokens!: Token[];
   tokens!: TokenModel[];
 
-  handleTokenClick(tokenAddress: string) {
+  handleTokenClick(selectToken: Token): void {
     const { token } = this.$route.params;
 
-    if (token !== tokenAddress) {
-      this.navigateToSelectTransferTarget(tokenAddress);
+    if (token !== selectToken.address) {
+      this.navigateToSelectTransferTarget(selectToken.address);
     }
 
     this.cancel();
-  }
-
-  getTokenDetails(token: TokenModel) {
-    return this.$store.getters.token(token.address);
   }
 
   @Emit()
