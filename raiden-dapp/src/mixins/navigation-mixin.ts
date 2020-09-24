@@ -61,10 +61,10 @@ export default class NavigationMixin extends Vue {
     });
   }
 
-  navigateToTransferSteps(target: string, amount: string) {
+  navigateToTransferSteps(token: string, target: string, amount: string) {
     this.$router.push({
       name: RouteNames.TRANSFER_STEPS,
-      params: { target },
+      params: { token, target },
       query: { amount },
     });
   }

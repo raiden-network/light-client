@@ -94,13 +94,14 @@ describe('NavigationMixin', () => {
   });
 
   test('navigate to transfer steps', () => {
-    wrapper.vm.navigateToTransferSteps('0xtarget', '100');
+    wrapper.vm.navigateToTransferSteps('0xtoken', '0xtarget', '100');
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.TRANSFER_STEPS,
         params: {
+          token: '0xtoken',
           target: '0xtarget',
         },
         query: {
