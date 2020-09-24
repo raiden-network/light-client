@@ -107,37 +107,39 @@ async function getMatrixIceServers(matrix: MatrixClient): Promise<RTCIceServer[]
   return servers;
 }
 
-// creates a filter function which filters valid MatrixEvents
-function filterMatrixVoipEvents<T extends 'offer' | 'answer' | 'candidates' | 'hangup'>(
+type ExtMatrixEvent = MatrixEvent & {
+  getType: () => string;
+  getContent: () => { msgtype: string; body: string };
+};
+
+// returns a stream of filtered, valid MatrixEvents
+function matrixVoipEvents$<T extends 'offer' | 'answer' | 'candidates' | 'hangup'>(
+  matrix: MatrixClient,
   type: T,
   sender: string,
 ) {
-  type ExtMatrixEvent = MatrixEvent & {
-    getType: () => string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getContent: () => { msgtype: string; body: string };
-  };
   const codecTypes = {
     offer: RtcOffer,
     answer: RtcAnswer,
     candidates: RtcCandidates,
     hangup: RtcHangup,
   } as const;
-  return (input$: Observable<MatrixEvent>) =>
-    input$.pipe(
-      filter(
-        (event): event is ExtMatrixEvent =>
-          event.getType() === 'm.room.message' &&
-          event.getSender() === sender &&
-          (event as ExtMatrixEvent).getContent().msgtype === 'm.notice',
-      ),
-      mergeMap((event) => {
-        try {
-          return of(decode(codecTypes[type], jsonParse(event.getContent().body)));
-        } catch (e) {}
-        return EMPTY;
-      }),
-    );
+
+  return fromEvent<[MatrixEvent]>(matrix, 'Room.timeline').pipe(
+    pluck(0),
+    filter(
+      (event): event is ExtMatrixEvent =>
+        event.getType() === 'm.room.message' &&
+        event.getSender() === sender &&
+        (event as ExtMatrixEvent).getContent()?.msgtype === 'm.notice',
+    ),
+    mergeMap((event) => {
+      try {
+        return of(decode(codecTypes[type], jsonParse(event.getContent()?.body)));
+      } catch (e) {}
+      return EMPTY;
+    }),
+  );
 }
 
 // setup candidates$ handlers
@@ -173,8 +175,7 @@ function handleCandidates$(
       }),
     ),
     // when receiving candidates from peer, add it locally
-    fromEvent<MatrixEvent>(matrix, 'event').pipe(
-      filterMatrixVoipEvents('candidates', peerId),
+    matrixVoipEvents$(matrix, 'candidates', peerId).pipe(
       tap((e) => log.debug('RTC: received candidates', callId, e.candidates)),
       mergeMap((event) => from((event.candidates ?? []) as RTCIceCandidateInit[])),
       mergeMap((candidate) =>
@@ -220,9 +221,7 @@ function setupCallerDataChannel$(
             };
             return merge(
               // wait for answer
-              fromEvent<MatrixEvent>(matrix, 'event').pipe(
-                filterMatrixVoipEvents('answer', peerId),
-              ),
+              matrixVoipEvents$(matrix, 'answer', peerId),
               // send invite with offer
               waitMemberAndSend$(
                 peerAddress,
@@ -239,6 +238,10 @@ function setupCallerDataChannel$(
           take(1),
           tap(() => log.info('RTC: got answer', callId)),
           map((event) => {
+            if (event.call_id !== callId)
+              log.warn(
+                `RTC: callId mismatch, continuing: we="${callId}", them="${event.call_id}"`,
+              );
             connection.setRemoteDescription(event);
             start$.next(null);
             start$.complete();
@@ -261,14 +264,15 @@ function setupCalleeDataChannel$(
 ): Observable<RTCDataChannel> {
   const { callId, peerId, peerAddress } = info;
   const { log, latest$, config$ } = deps;
-  return fromEvent<MatrixEvent>(matrix, 'event').pipe(
-    filterMatrixVoipEvents('offer', peerId),
+  return matrixVoipEvents$(matrix, 'offer', peerId).pipe(
     tap(() => log.info('RTC: got invite', callId)),
     mergeMap((event) =>
       from(getMatrixIceServers(matrix)).pipe(map((serv) => [event, serv] as const)),
     ),
     withLatestFrom(config$),
     mergeMap(([[event, matrixTurnServers], { fallbackIceServers }]) => {
+      if (event.call_id !== callId)
+        log.warn(`RTC: callId mismatch, continuing: we="${callId}", them="${event.call_id}"`);
       // create connection only upon invite/offer
       const connection = new RTCPeerConnection({
         iceServers: [...matrixTurnServers, ...fallbackIceServers],
@@ -440,8 +444,7 @@ function handlePresenceChange$(
         return merge(
           dataChannel$,
           // throws nad restart if peer hangs up
-          fromEvent<MatrixEvent>(matrix, 'event').pipe(
-            filterMatrixVoipEvents('hangup', info.peerId),
+          matrixVoipEvents$(matrix, 'hangup', info.peerId).pipe(
             // no need for specific error since this is just logged and ignored in listenDataChannel$
             mergeMapTo(throwError(new Error('RTC: peer hung up'))),
           ),
