@@ -96,14 +96,21 @@ export default class NotificationCard extends Vue {
       flex-direction: column;
       margin-left: 16px;
 
+      &__block-count,
+      &__received {
+        font-size: 12px;
+      }
+
       &__title {
         color: $primary-color;
       }
 
-      &__received,
       &__block-count {
+        color: $color-white;
+      }
+
+      &__received {
         color: $secondary-text-color;
-        font-size: 12px;
       }
     }
   }

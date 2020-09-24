@@ -44,7 +44,7 @@ export default class NotificationDescriptionDisplay extends Vue {
 @import '@/scss/colors';
 
 .notification-description {
-  color: $secondary-text-color;
+  color: $color-white;
   display: flex;
   font-size: 14px;
 
@@ -53,7 +53,7 @@ export default class NotificationDescriptionDisplay extends Vue {
   }
 
   &__address {
-    color: $secondary-text-color;
+    color: $color-white;
     font-size: 14px;
     padding: 1px 4px 0 4px;
   }
