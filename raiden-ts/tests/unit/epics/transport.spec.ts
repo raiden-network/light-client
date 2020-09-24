@@ -1730,7 +1730,7 @@ describe('transport epic', () => {
   });
 });
 
-describe('transport epic@12345', () => {
+describe('transport epic', () => {
   const matrixServer = 'matrix.raiden.test'; // define later in fixture constant
   const partnerRoomId = `!partnerRoomId:${matrixServer}`;
   const processed: Processed = {
@@ -1787,7 +1787,7 @@ describe('transport epic@12345', () => {
       expect(fetch).not.toHaveBeenCalled();
     });
 
-    test('matrix fetch servers list123', async () => {
+    test('matrix fetch servers list', async () => {
       expect.assertions(2);
 
       jest.setTimeout(30000);
@@ -1817,7 +1817,7 @@ describe('transport epic@12345', () => {
       expect(fetch).toHaveBeenCalledTimes(2); // list + rtt
     });
 
-    test('matrix throws if can not fetch servers list123', async () => {
+    test('matrix throws if can not fetch servers list', async () => {
       // test fails because initMatrixEpic does not validate correctness of server
       // TODO: Also somehow check that the epic throws error
       // Could not fetch server list
@@ -1840,7 +1840,7 @@ describe('transport epic@12345', () => {
       expect(fetch).toHaveBeenCalledTimes(1);
     });
 
-    test('matrix throws if can not contact any server from list123', async () => {
+    test('matrix throws if can not contact any server from list', async () => {
       // TODO: check if the initMatrixEpic throws ErrorCodes.TRNS_NO_MATRIX_SERVERS
       expect.assertions(1);
       jest.setTimeout(30000);
@@ -2114,7 +2114,7 @@ describe('transport epic@12345', () => {
     });
   });
 
-  test('matrixUpdateCapsEpic123', async () => {
+  test('matrixUpdateCapsEpic', async () => {
     // Please check this test thoroughly whether we are testing the right things
     expect.assertions(6);
 
@@ -2364,93 +2364,80 @@ describe('transport epic@12345', () => {
     });
   });
 
-  describe('matrixLeaveUnknownRoomsEpic123', () => {
-    beforeAll(() => jest.useFakeTimers());
-    afterAll(() => jest.useRealTimers());
+  describe('matrixLeaveUnknownRoomsEpic', () => {
+    test('leave unknown rooms', async () => {
+      expect.assertions(3);
 
-    test(
-      'leave unknown rooms',
-      fakeSchedulers(async (advance) => {
-        expect.assertions(3);
+      const [raiden] = await makeRaidens(1);
+      const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+      const roomId = `!unknownRoomId:${matrixServer}`;
 
-        const [raiden] = await makeRaidens(1);
-        const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-        raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 30e3 }));
-        const roomId = `!unknownRoomId:${matrixServer}`;
+      matrix.emit('Room', {
+        roomId,
+        getCanonicalAlias: jest.fn(),
+        getAliases: jest.fn(() => []),
+      });
 
-        matrix.emit('Room', {
-          roomId,
-          getCanonicalAlias: jest.fn(),
-          getAliases: jest.fn(() => []),
-        });
+      await sleep();
 
-        advance(1e3);
+      // we should wait a little before leaving rooms
+      expect(matrix.leave).not.toHaveBeenCalled();
 
-        // we should wait a little before leaving rooms
-        expect(matrix.leave).not.toHaveBeenCalled();
+      await sleep(500);
 
-        advance(200e3);
+      expect(matrix.leave).toHaveBeenCalledTimes(1);
+      expect(matrix.leave).toHaveBeenCalledWith(roomId);
+    });
 
-        expect(matrix.leave).toHaveBeenCalledTimes(1);
-        expect(matrix.leave).toHaveBeenCalledWith(roomId);
-      }),
-    );
+    test('do not leave global room', async () => {
+      expect.assertions(2);
 
-    test(
-      'do not leave global room',
-      fakeSchedulers(async (advance) => {
-        expect.assertions(2);
+      const roomId = `!discoveryRoomId:${matrixServer}`;
+      const [raiden] = await makeRaidens(1);
+      const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+      const roomAlias = `#raiden_${raiden.deps.network.name}_discovery:${matrixServer}`;
 
-        const roomId = `!discoveryRoomId:${matrixServer}`;
-        const [raiden] = await makeRaidens(1);
-        const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-        const roomAlias = `#raiden_${raiden.deps.network.name}_discovery:${matrixServer}`;
+      matrix.emit('Room', {
+        roomId,
+        getCanonicalAlias: jest.fn(),
+        getAliases: jest.fn(() => [roomAlias]),
+      });
 
-        matrix.emit('Room', {
-          roomId,
-          getCanonicalAlias: jest.fn(),
-          getAliases: jest.fn(() => [roomAlias]),
-        });
+      await sleep();
 
-        advance(1e3);
+      // we should wait a little before leaving rooms
+      expect(matrix.leave).not.toHaveBeenCalled();
 
-        // we should wait a little before leaving rooms
-        expect(matrix.leave).not.toHaveBeenCalled();
+      await sleep(500);
 
-        advance(200e3);
+      // even after some time, discovery room isn't left
+      expect(matrix.leave).not.toHaveBeenCalled();
+    });
 
-        // even after some time, discovery room isn't left
-        expect(matrix.leave).not.toHaveBeenCalled();
-      }),
-    );
+    test('do not leave peers rooms', async () => {
+      expect.assertions(2);
 
-    test(
-      'do not leave peers rooms123',
-      fakeSchedulers(async (advance) => {
-        expect.assertions(2);
+      const roomId = partnerRoomId;
+      const [raiden, partner] = await makeRaidens(2);
+      const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+      raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
 
-        const roomId = partnerRoomId;
-        const [raiden, partner] = await makeRaidens(2);
-        const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-        raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
+      matrix.emit('Room', {
+        roomId,
+        getCanonicalAlias: jest.fn(),
+        getAliases: jest.fn(() => []),
+      });
 
-        matrix.emit('Room', {
-          roomId,
-          getCanonicalAlias: jest.fn(),
-          getAliases: jest.fn(() => []),
-        });
+      await sleep();
 
-        advance(1e3);
+      // we should wait a little before leaving rooms
+      expect(matrix.leave).not.toHaveBeenCalled();
 
-        // we should wait a little before leaving rooms
-        expect(matrix.leave).not.toHaveBeenCalled();
+      await sleep(500);
 
-        advance(200e3);
-
-        // even after some time, partner's room isn't left
-        expect(matrix.leave).not.toHaveBeenCalled();
-      }),
-    );
+      // even after some time, partner's room isn't left
+      expect(matrix.leave).not.toHaveBeenCalled();
+    });
   });
 
   describe('matrixCleanLeftRoomsEpic', () => {
@@ -2515,7 +2502,7 @@ describe('transport epic@12345', () => {
     });
   });
 
-  describe('matrixMessageSendEpic123', () => {
+  describe('matrixMessageSendEpic', () => {
     test('send: all needed parts in place, errors once but retries successfully', async () => {
       expect.assertions(3);
 
@@ -2570,7 +2557,7 @@ describe('transport epic@12345', () => {
         ),
       );
 
-      await sleep(2 * raiden.config.pollingInterval);
+      await sleep(4 * raiden.config.pollingInterval);
       expect(raiden.output).toContainEqual(
         messageSend.success(expect.anything(), {
           address: partner.address,
@@ -2586,7 +2573,7 @@ describe('transport epic@12345', () => {
       );
     });
 
-    test('send: Room appears late, user joins later123', async () => {
+    test('send: Room appears late, user joins later', async () => {
       expect.assertions(3);
 
       const roomId = partnerRoomId,
@@ -2600,6 +2587,7 @@ describe('transport epic@12345', () => {
 
       matrix.getRoom.mockReturnValueOnce(null);
 
+      expect(matrix.sendEvent).not.toHaveBeenCalled();
       raiden.store.dispatch(
         matrixPresence.success(
           { userId: partnerMatrix.getUserId()!, available: true, ts: Date.now() },
@@ -2609,9 +2597,6 @@ describe('transport epic@12345', () => {
       raiden.store.dispatch(
         messageSend.request({ message }, { address: partner.address, msgId: message }),
       );
-
-      await sleep(2 * raiden.config.pollingInterval);
-      expect(matrix.sendEvent).not.toHaveBeenCalled();
 
       // a wild Room appears
       matrix.emit('Room', {
@@ -2656,7 +2641,7 @@ describe('transport epic@12345', () => {
       const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
 
       raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
-
+      await sleep(2 * raiden.config.pollingInterval);
       matrix.getRoom.mockReturnValueOnce({
         roomId,
         name: roomId,
@@ -2694,30 +2679,7 @@ describe('transport epic@12345', () => {
         messageSend.request({ message }, { address: partner.address, msgId: message }),
       );
 
-      await sleep(2 * raiden.config.pollingInterval);
-      // a wild Room appears
-      matrix.emit('Room', {
-        roomId,
-        name: roomId,
-        getMember: jest.fn(),
-        getJoinedMembers: jest.fn(),
-        getCanonicalAlias: jest.fn(() => roomId),
-        getAliases: jest.fn(() => []),
-      });
-
-      // user joins later
-      matrix.emit(
-        'RoomMember.membership',
-        {},
-        {
-          roomId,
-          userId: partnerMatrix.getUserId(),
-          name: partnerMatrix.getUserId(),
-          membership: 'join',
-        },
-      );
-
-      await sleep(4 * raiden.config.pollingInterval);
+      await sleep(6 * raiden.config.pollingInterval);
       expect(raiden.output).toContainEqual(
         messageSend.failure(expect.objectContaining({ message: 'Failed 3' }), {
           address: partner.address,
@@ -2734,8 +2696,8 @@ describe('transport epic@12345', () => {
     });
   });
 
-  describe('matrixMessageReceivedEpic123', () => {
-    test('receive: success on late presence and late room123', async () => {
+  describe('matrixMessageReceivedEpic', () => {
+    test('receive: success on late presence and late room', async () => {
       expect.assertions(1);
       // Gets a log.warn(`Could not decode message: ${line}: ${err}`);
       // at Object.parseMessage (src/transport/epics/helpers.ts:203:9)
@@ -2782,7 +2744,7 @@ describe('transport epic@12345', () => {
       );
     });
 
-    test('receive: decode signed message123', async () => {
+    test('receive: decode signed message', async () => {
       expect.assertions(1);
 
       const roomId = partnerRoomId;
@@ -2833,7 +2795,7 @@ describe('transport epic@12345', () => {
       );
     });
 
-    test("receive: messages from wrong sender aren't decoded123", async () => {
+    test("receive: messages from wrong sender aren't decoded", async () => {
       expect.assertions(1);
 
       const roomId = partnerRoomId;
@@ -3095,7 +3057,7 @@ describe('transport epic@12345', () => {
     );
   });
 
-  describe('rtcConnectEpic123', () => {
+  describe('rtcConnectEpic', () => {
     let raiden: MockedRaiden, partner: MockedRaiden;
     let matrix: jest.Mocked<MatrixClient>, partnerMatrix: jest.Mocked<MatrixClient>;
     const createPartnerPresence = (available: boolean, webRtcCapable: boolean) =>
@@ -3176,7 +3138,7 @@ describe('transport epic@12345', () => {
       expect(raiden.output).toContainEqual(rtcChannel(undefined, { address: partner.address }));
     });
 
-    test('success callee, receive message & channel error123', async () => {
+    test('success callee, receive message & channel error', async () => {
       expect.assertions(2);
 
       const msg = '{"type":"Delivered","delivered_message_identifier":"123456"}';
@@ -3254,7 +3216,7 @@ describe('transport epic@12345', () => {
       );
     });
 
-    test('success caller & candidates123', async () => {
+    test('success caller & candidates', async () => {
       expect.assertions(4);
 
       matrix.sendEvent.mockImplementation(async ({}, type: string, content: any) => {
@@ -3293,7 +3255,6 @@ describe('transport epic@12345', () => {
       });
       rtcConnection.addIceCandidate.mockRejectedValueOnce(new Error('addIceCandidate failed'));
 
-      await sleep(8 * raiden.config.pollingInterval);
       raiden.store.dispatch(matrixRoom({ roomId: partnerRoomId }, { address: partner.address }));
       raiden.store.dispatch(
         matrixPresence.success(
@@ -3307,7 +3268,7 @@ describe('transport epic@12345', () => {
         ),
       );
 
-      await sleep(8 * raiden.config.pollingInterval);
+      await sleep(50 * raiden.config.pollingInterval);
       expect(raiden.output).toEqual(
         expect.arrayContaining([
           rtcChannel(rtcDataChannel, { address: partner.address }),
