@@ -1,130 +1,94 @@
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuex from 'vuex';
 import Vue from 'vue';
+import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
-
-import { RouteNames } from '@/router/route-names';
-import { TestData } from '../../data/mock-data';
-import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
+import Vuex, { Store } from 'vuex';
 import { $identicon } from '../../utils/mocks';
-import store from '@/store';
-import { Tokens } from '@/types';
-import { RaidenChannel, RaidenChannels } from 'raiden-ts';
-import VueRouter from 'vue-router';
-import Mocked = jest.Mocked;
+import { generateToken } from '../../utils/data-generator';
+import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
+import TokenList from '@/components/tokens/TokenList.vue';
+import TokenListItem from '@/components/tokens/TokenListItem.vue';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
 
+const token = generateToken();
+
+function createWrapper(
+  tokenAddressParameter = '0xToken'
+): Wrapper<TokenOverlay> {
+  const vuetify = new Vuetify();
+  const store = new Store({
+    getters: {
+      token: () => (_tokenAddress: string) => null,
+      tokens: () => [token],
+    },
+  });
+
+  const mocks = {
+    $identicon: $identicon(),
+    $t: (msg: string) => msg,
+    $route: { params: { token: tokenAddressParameter } },
+  };
+
+  const wrapper = mount(TokenOverlay, {
+    vuetify,
+    store,
+    mocks,
+  });
+
+  (wrapper.vm as any).navigateToTokenSelect = jest.fn();
+  (wrapper.vm as any).navigateToSelectTransferTarget = jest.fn();
+  return wrapper;
+}
+
 describe('TokenOverlay.vue', () => {
-  let wrapper: Wrapper<TokenOverlay>;
-  let vuetify: typeof Vuetify;
-  let router: VueRouter;
-
-  beforeEach(() => {
-    vuetify = new Vuetify();
-    router = new VueRouter() as Mocked<VueRouter>;
-    router.push = jest.fn().mockReturnValue(null);
-
-    wrapper = mount(TokenOverlay, {
-      vuetify,
-      store,
-      mocks: {
-        $router: router,
-        $route: TestData.mockRoute({
-          token: '0xtoken',
-        }),
-        $identicon: $identicon(),
-        $t: (msg: string) => msg,
-      },
-      stubs: ['router-link'],
-      propsData: {
-        show: true,
-      },
-    });
+  test('shows token list', () => {
+    const wrapper = createWrapper();
+    const tokenList = wrapper.findComponent(TokenList);
+    expect(tokenList.exists()).toBe(true);
   });
 
-  test('render', () => {
-    expect(wrapper.find('.v-overlay--active').exists()).toBe(true);
+  test('emit a cancel event when pressing the close button', async () => {
+    const wrapper = createWrapper();
+    const closeButton = wrapper.find('.token-overlay__close-button');
+
+    closeButton.trigger('click');
+
+    const cancelEvents = wrapper.emitted().cancel ?? [];
+    expect(cancelEvents.length).toBe(1);
   });
 
-  afterEach(() => {
-    store.commit('reset');
+  test('navigates to the token select route when clicking on connect new', () => {
+    const wrapper = createWrapper();
+    const connectNew = wrapper.find('.token-overlay__connect-new');
+
+    connectNew.trigger('click');
+
+    expect((wrapper.vm as any).navigateToTokenSelect).toHaveBeenCalledTimes(1);
+    expect((wrapper.vm as any).navigateToTokenSelect).toHaveBeenCalledWith();
   });
 
-  describe('with tokens loaded', () => {
-    beforeEach(() => {
-      store.commit('updateTokens', {
-        [TestData.token.address]: TestData.token,
-      } as Tokens);
-      store.commit('updateChannels', {
-        [TestData.token.address]: {
-          [TestData.openChannel.partner]: {
-            ...TestData.openChannel,
-            token: TestData.token.address,
-          } as RaidenChannel,
-        },
-      } as RaidenChannels);
-    });
+  test('navigates to transfer route with changede token when token got selected', () => {
+    const wrapper = createWrapper();
+    const tokenListItem = wrapper.findComponent(TokenListItem);
 
-    test('emit a cancel event when the user presses the close button', () => {
-      wrapper.find('.token-network-overlay__close-button').trigger('click');
-      expect(wrapper.emitted('cancel')).toBeTruthy();
-    });
+    tokenListItem.element.click();
 
-    test('hide the overlay when the show property changes', async () => {
-      expect(wrapper.find('.v-overlay--active').exists()).toBe(true);
-      wrapper.setProps({ show: false });
-      await wrapper.vm.$nextTick();
-      expect(wrapper.find('.v-overlay--active').exists()).toBe(false);
-    });
-
-    test('show the "connect new token list" item', () => {
-      const connectNewToken = wrapper.find('#connect-new .v-list-item');
-      expect(connectNewToken.exists()).toBe(true);
-    });
-
-    test('emit a cancel event when token is selected', () => {
-      wrapper.find('.v-list-item__content').trigger('click');
-      expect(wrapper.emitted('cancel')).toBeTruthy();
-    });
-
-    test('should navigate to select token', async () => {
-      wrapper.find('.v-list-item').trigger('click');
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.SELECT_TOKEN,
-        })
-      );
-    });
-
-    test('should navigate back to Transfer view with new token selected', async () => {
-      await (wrapper.vm as any).handleTokenClick('0xnewtoken');
-
-      expect(wrapper.emitted('cancel')).toBeTruthy();
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          params: {
-            token: '0xnewtoken',
-          },
-        })
-      );
-    });
+    expect(
+      (wrapper.vm as any).navigateToSelectTransferTarget
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      (wrapper.vm as any).navigateToSelectTransferTarget
+    ).toHaveBeenCalledWith(token.address);
   });
 
-  describe('with token placeholder', () => {
-    beforeEach(() => {
-      store.commit('updateTokens', {
-        [TestData.token.address]: { address: TestData.token.address },
-      } as Tokens);
-      store.commit('updateChannels', {
-        [TestData.token.address]: {
-          [TestData.openChannel.partner]: {
-            ...TestData.openChannel,
-            token: TestData.token.address,
-          } as RaidenChannel,
-        },
-      } as RaidenChannels);
-    });
+  test('emit a cancel event when selecting already active token again', () => {
+    const wrapper = createWrapper(token.address);
+    const tokenListItem = wrapper.findComponent(TokenListItem);
+
+    tokenListItem.element.click();
+
+    const cancelEvents = wrapper.emitted().cancel ?? [];
+    expect(cancelEvents.length).toBe(1);
   });
 });

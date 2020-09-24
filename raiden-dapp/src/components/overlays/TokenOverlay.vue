@@ -1,42 +1,36 @@
 <template>
-  <v-overlay absolute opacity="1.0" class="token-network-overlay">
-    <v-container class="token-network__container">
-      <v-row no-gutters justify="end">
-        <v-btn icon class="token-network-overlay__close-button" @click="cancel">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-row>
+  <v-overlay absolute opacity="1.0" class="token-overlay">
+    <div class="d-flex justify-end">
+      <v-btn class="ma-4 token-overlay__close-button" icon @click="cancel">
+        <v-icon>mdi-close</v-icon>
+      </v-btn>
+    </div>
 
-      <v-row id="connect-new">
-        <v-col cols="12">
-          <v-list class="connect-new__item-list">
-            <v-list-item @click="navigateToTokenSelect()">
-              <v-col cols="2">
-                <v-list-item-avatar>
-                  <v-btn class="mx-2" fab dark small color="primary">
-                    <v-icon dark large>mdi-plus</v-icon>
-                  </v-btn>
-                </v-list-item-avatar>
-              </v-col>
-              <v-col
-                cols="10"
-                align-self="center"
-                class="connect-new__connect-new-token"
-              >
-                {{ $t('tokens.connect-new') }}
-              </v-col>
-            </v-list-item>
-          </v-list>
+    <v-list class="transparent">
+      <v-list-item
+        class="token-overlay__connect-new"
+        @click="navigateToTokenSelect()"
+      >
+        <v-col cols="2">
+          <v-list-item-avatar>
+            <v-btn class="mx-2" fab dark small color="primary">
+              <v-icon dark large>mdi-plus</v-icon>
+            </v-btn>
+          </v-list-item-avatar>
         </v-col>
-      </v-row>
+        <v-col cols="10" align-self="center" class="font-weight-bold">
+          {{ $t('tokens.connect-new') }}
+        </v-col>
+      </v-list-item>
+    </v-list>
 
+    <div class="token-overlay__connected-tokens mt-8">
       <token-list
         :header="$t('tokens.connected.header')"
         :tokens="tokens"
         @select="handleTokenClick"
-        class="mt-8"
       />
-    </v-container>
+    </div>
   </v-overlay>
 </template>
 
@@ -75,15 +69,7 @@ export default class TokenOverlay extends Mixins(
 </script>
 
 <style lang="scss" scoped>
-@import '@/scss/colors';
-@import '@/scss/scroll';
-@import '@/scss/fonts';
-@import '@/scss/mixins';
-
-.token-network-overlay {
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-
+.token-overlay {
   ::v-deep {
     .v-overlay {
       &__scrim {
@@ -95,104 +81,16 @@ export default class TokenOverlay extends Mixins(
       }
 
       &__content {
-        position: absolute;
-        top: 0;
-        right: 0;
+        display: flex;
+        flex-direction: column;
         width: 100%;
         height: 100%;
       }
     }
-
-    .v-list-item {
-      padding: 0 0 0 48px;
-
-      @include respond-to(handhelds) {
-        padding: 0;
-      }
-    }
   }
 
-  .token-network {
-    &__container {
-      padding: 0 !important;
-      height: 100%;
-    }
-  }
-
-  &__close-button {
-    margin: 15px;
-  }
-
-  .token-list {
-    height: calc(100% - 230px);
-
-    &__item-list {
-      overflow-y: auto;
-      @extend .themed-scrollbar;
-
-      background-color: transparent !important;
-      padding-bottom: 0;
-      padding-top: 0;
-
-      ::v-deep {
-        .col-10 {
-          padding-left: 11px;
-        }
-      }
-    }
-
-    &__token-title {
-      font-weight: bold;
-      line-height: 20px;
-      font-size: 16px;
-    }
-
-    &__token-balance {
-      color: $color-white;
-      font-family: $main-font;
-      font-size: 16px;
-      font-weight: bold;
-      line-height: 20px;
-      height: 100%;
-      padding-right: 20px;
-    }
-
-    &__token-address {
-      color: #696969 !important;
-      line-height: 20px;
-      font-size: 16px;
-    }
-  }
-
-  .connect-new {
-    &__item-list {
-      height: 100%;
-      background-color: transparent !important;
-      padding-bottom: 0;
-      padding-top: 0;
-
-      ::v-deep {
-        .col-10 {
-          padding-left: 11px;
-        }
-      }
-    }
-
-    &__connect-new-token {
-      font-weight: bold;
-      line-height: 20px;
-      font-size: 16px;
-    }
-  }
-
-  &__header {
-    font-weight: bold;
-    line-height: 20px;
-    font-size: 16px;
-
-    color: $primary-color;
-    text-transform: uppercase;
-    padding-left: 58px;
+  &__connected-tokens {
+    overflow-y: hidden;
   }
 }
 </style>
