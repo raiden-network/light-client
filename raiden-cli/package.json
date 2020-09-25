@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "build": "tsc",
-    "build:bundle": "webpack --progress",
+    "build:bundle": "TS_NODE_PROJECT=./ignored ncc build -C ./src/index.ts -o ./bundle",
     "preinstall": "npx only-allow pnpm"
   },
   "repository": {
@@ -27,6 +27,7 @@
     "@types/yargs": "^15.0.7",
     "@typescript-eslint/eslint-plugin": "^4.2.0",
     "@typescript-eslint/parser": "^4.2.0",
+    "@vercel/ncc": "^0.24.1",
     "eslint": "^7.9.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-import": "^2.22.0",
@@ -54,7 +55,7 @@
     "raiden-ts": "*",
     "rxjs": "^6.6.3",
     "wrtc": "^0.4.6",
-    "yargs": "^16.0.3"
+    "yargs": "^15.4.1"
   },
   "eslintConfig": {
     "parser": "@typescript-eslint/parser",
