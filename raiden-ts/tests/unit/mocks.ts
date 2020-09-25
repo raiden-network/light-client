@@ -281,8 +281,8 @@ export function mockRTC() {
 
   const rtcConnection = (Object.assign(new EventEmitter(), {
     createDataChannel: jest.fn(() => rtcDataChannel),
-    createOffer: jest.fn(async () => ({})),
-    createAnswer: jest.fn(async () => ({})),
+    createOffer: jest.fn(async () => ({ type: 'offer', sdp: 'offerSdp' })),
+    createAnswer: jest.fn(async () => ({ type: 'answer', sdp: 'answerSdp' })),
     setLocalDescription: jest.fn(async () => {
       /* local */
     }),
