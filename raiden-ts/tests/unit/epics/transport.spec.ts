@@ -47,6 +47,7 @@ import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
 import { ErrorCodes } from 'raiden-ts/utils/error';
 import { Signed, Address } from 'raiden-ts/utils/types';
 import { Capabilities } from 'raiden-ts/constants';
+import { jsonParse, jsonStringify } from 'raiden-ts/utils/data';
 
 describe('transport epic', () => {
   let depsMock: ReturnType<typeof raidenEpicDeps>,
@@ -1524,16 +1525,23 @@ describe('transport epic', () => {
       const msg = '{"type":"Delivered","delivered_message_identifier":"123456"}';
 
       setTimeout(() => {
-        matrix.emit('event', {
-          getType: () => 'm.call.invite',
-          getSender: () => partnerUserId,
-          getContent: () => ({
-            call_id: `${partner}|${depsMock.address}`.toLowerCase(),
-            offer: 'offer',
-            lifetime: 86.4e6,
-          }),
-          getAge: () => 1,
-        });
+        matrix.emit(
+          'Room.timeline',
+          {
+            getType: () => 'm.room.message',
+            getSender: () => partnerUserId,
+            getContent: () => ({
+              msgtype: 'm.notice',
+              body: jsonStringify({
+                type: 'offer',
+                call_id: `${partner}|${depsMock.address}`,
+                sdp: 'offerSdp',
+              }),
+            }),
+            getAge: () => 1,
+          },
+          null,
+        );
       }, 5);
       setTimeout(() => {
         rtcConnection.emit('datachannel', { channel: rtcDataChannel });
@@ -1589,8 +1597,11 @@ describe('transport epic', () => {
 
       expect(matrix.sendEvent).toHaveBeenCalledWith(
         partnerRoomId,
-        'm.call.answer',
-        expect.objectContaining({ call_id: expect.any(String), answer: expect.anything() }),
+        'm.room.message',
+        expect.objectContaining({
+          msgtype: 'm.notice',
+          body: expect.stringMatching(/"type":\s*"answer"/),
+        }),
         expect.anything(),
       );
     });
@@ -1607,33 +1618,49 @@ describe('transport epic', () => {
         .toPromise();
 
       matrix.sendEvent.mockImplementation(async ({}, type: string, content: any) => {
-        if (type !== 'm.call.invite') return;
+        if (type !== 'm.room.message' || content?.msgtype !== 'm.notice') return;
+        const body = jsonParse(content.body);
         setTimeout(() => {
-          matrix.emit('event', {
-            getType: () => 'm.call.candidates',
-            getSender: () => partnerUserId,
-            getContent: () => ({
-              call_id: content.call_id,
-              candidates: ['partnerCandidateFail', 'partnerCandidate'],
-            }),
-            getAge: () => 1,
-          });
+          matrix.emit(
+            'Room.timeline',
+            {
+              getType: () => 'm.room.message',
+              getSender: () => partnerUserId,
+              getContent: () => ({
+                msgtype: 'm.notice',
+                body: jsonStringify({
+                  type: 'candidates',
+                  call_id: body.call_id,
+                  candidates: ['partnerCandidateFail', 'partnerCandidate'],
+                }),
+              }),
+              getAge: () => 1,
+            },
+            null,
+          );
           // emit 'icecandidate' to be sent to partner
           rtcConnection.emit('icecandidate', { candidate: 'myCandidate' });
           rtcConnection.emit('icecandidate', { candidate: null });
         }, 10);
 
         setTimeout(() => {
-          matrix.emit('event', {
-            getType: () => 'm.call.answer',
-            getSender: () => partnerUserId,
-            getContent: () => ({
-              call_id: content.call_id,
-              answer: 'answer',
-              lifetime: 86.4e6,
-            }),
-            getAge: () => 1,
-          });
+          matrix.emit(
+            'Room.timeline',
+            {
+              getType: () => 'm.room.message',
+              getSender: () => partnerUserId,
+              getContent: () => ({
+                msgtype: 'm.notice',
+                body: jsonStringify({
+                  type: 'answer',
+                  call_id: body.call_id,
+                  sdp: 'answerSdp',
+                }),
+              }),
+              getAge: () => 1,
+            },
+            null,
+          );
           Object.assign(rtcDataChannel, { readyState: 'open' });
           rtcDataChannel.emit('open', true);
         }, 40);
@@ -1665,8 +1692,11 @@ describe('transport epic', () => {
 
       expect(matrix.sendEvent).toHaveBeenCalledWith(
         partnerRoomId,
-        'm.call.invite',
-        expect.objectContaining({ call_id: expect.any(String), offer: expect.anything() }),
+        'm.room.message',
+        expect.objectContaining({
+          msgtype: 'm.notice',
+          body: expect.stringMatching(/"type":\s*"offer"/),
+        }),
         expect.anything(),
       );
 
@@ -1674,8 +1704,11 @@ describe('transport epic', () => {
       expect(rtcConnection.addIceCandidate).toHaveBeenCalledWith('partnerCandidate');
       expect(matrix.sendEvent).toHaveBeenCalledWith(
         partnerRoomId,
-        'm.call.candidates',
-        expect.objectContaining({ call_id: expect.any(String), candidates: ['myCandidate'] }),
+        'm.room.message',
+        expect.objectContaining({
+          msgtype: 'm.notice',
+          body: expect.stringMatching(/"type":\s*"candidates"/),
+        }),
         expect.anything(),
       );
     });

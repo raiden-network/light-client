@@ -7,8 +7,12 @@
 ### Added
 - [#2044] Introduce PouchDB (IndexedDB/leveldown) as new persistent state storage backend
 
+### Changed
+- [#2158] Adapt WebRTC to new protocol compatible with python client
+
 [#2044]: https://github.com/raiden-network/light-client/issues/2044
 [#2094]: https://github.com/raiden-network/light-client/issues/2094
+[#2158]: https://github.com/raiden-network/light-client/issues/2158
 
 ## [0.11.1] - 2020-08-18
 ### Changed
