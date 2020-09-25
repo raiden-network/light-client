@@ -1,4 +1,4 @@
-import { Observable, of, EMPTY, fromEvent, timer, defer, from } from 'rxjs';
+import { Observable, of, EMPTY, fromEvent, timer, defer, from, merge } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -13,9 +13,8 @@ import {
   takeUntil,
   tap,
 } from 'rxjs/operators';
-import find from 'lodash/find';
 
-import { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
+import { MatrixEvent, Room } from 'matrix-js-sdk';
 
 import { Capabilities } from '../../constants';
 import { Signed } from '../../utils/types';
@@ -170,10 +169,13 @@ export const matrixMessageReceivedEpic = (
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix timeline events
     switchMap((matrix) =>
-      fromEvent<{ event: MatrixEvent; room: Room; matrix: MatrixClient }>(
-        matrix,
-        'Room.timeline',
-        (event, room) => ({ matrix, event, room }),
+      merge(
+        fromEvent<[MatrixEvent, Room]>(matrix, 'Room.timeline').pipe(
+          map(([event, room]) => ({ matrix, event, room })),
+        ),
+        fromEvent<MatrixEvent>(matrix, 'toDeviceEvent').pipe(
+          map((event) => ({ matrix, event, room: undefined })),
+        ),
       ),
     ),
     withLatestFrom(config$),
@@ -183,27 +185,32 @@ export const matrixMessageReceivedEpic = (
         event.getType() === 'm.room.message' &&
         event.event?.content?.msgtype === 'm.text' &&
         event.getSender() !== matrix.getUserId() &&
-        !globalRoomNames(config).some((g) =>
-          // generate an alias for global room of given name, and check if room matches
-          roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
-        ),
+        ((room &&
+          !globalRoomNames(config).some((g) =>
+            // generate an alias for global room of given name, and check if room matches
+            roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
+          )) ||
+          (!room && !!config.caps?.[Capabilities.TO_DEVICE])), // toDevice message
     ),
     mergeMap(([{ event, room }, { httpTimeout }]) =>
       latest$.pipe(
         filter(({ presences, state }) => {
-          const presence = find(presences, ['payload.userId', event.getSender()]);
+          const presence = Object.values(presences).find(
+            (presence) => presence.payload.userId === event.getSender(),
+          );
           if (!presence) return false;
           const rooms = state.transport.rooms?.[presence.meta.address] ?? [];
-          if (!rooms.includes(room.roomId)) return false;
-          return true;
+          return !room || rooms.includes(room.roomId);
         }),
         take(1),
         // take up to an arbitrary timeout to presence status for the sender
         // AND the room in which this message was sent to be in sender's address room queue
         takeUntil(timer(httpTimeout)),
         mergeMap(function* ({ presences }) {
-          const presence = find(presences, ['payload.userId', event.getSender()])!;
-          for (const line of (event.event.content.body || '').split('\n')) {
+          const presence = Object.values(presences).find(
+            (presence) => presence.payload.userId === event.getSender(),
+          )!;
+          for (const line of (event.getContent().body ?? '').split('\n')) {
             const message = parseMessage(line, presence.meta.address, { log });
             yield messageReceived(
               {
@@ -211,7 +218,7 @@ export const matrixMessageReceivedEpic = (
                 message,
                 ts: event.event.origin_server_ts ?? Date.now(),
                 userId: presence.payload.userId,
-                roomId: room.roomId,
+                ...(room ? { roomId: room.roomId } : {}),
               },
               presence.meta,
             );

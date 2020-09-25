@@ -135,8 +135,10 @@ function matrixWebrtcEvents$<T extends RtcEventType>(
   type: T,
   sender: string,
 ) {
-  return fromEvent<[MatrixEvent]>(matrix, 'Room.timeline').pipe(
-    pluck(0),
+  return merge(
+    fromEvent<[MatrixEvent]>(matrix, 'Room.timeline').pipe(pluck(0)),
+    fromEvent<MatrixEvent>(matrix, 'toDeviceEvent'),
+  ).pipe(
     filter(
       (event): event is ExtMatrixEvent =>
         event.getType() === 'm.room.message' &&

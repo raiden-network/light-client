@@ -14,6 +14,7 @@ import {
 import curry from 'lodash/curry';
 import { Room, MatrixClient, EventType, RoomMember, MatrixEvent } from 'matrix-js-sdk';
 
+import { Capabilities } from '../../constants';
 import { RaidenConfig } from '../../config';
 import { RaidenEpicDeps } from '../../types';
 import { isntNil, Address, Signed } from '../../utils/types';
@@ -148,15 +149,29 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
       ),
       pluck('rtc', address),
     ),
+    // if available and Capabilities.TO_DEVICE enabled on both ends, use ToDevice messages
+    latest$.pipe(
+      pluck('presences', address),
+      withLatestFrom(config$),
+      filter(
+        ([presence, { caps }]) =>
+          !!caps?.[Capabilities.TO_DEVICE] &&
+          !!presence?.payload?.available &&
+          !!presence.payload.caps?.[Capabilities.TO_DEVICE],
+      ),
+      pluck('0', 'payload', 'userId'),
+    ),
     waitMember$(matrix, address, { latest$ }),
   ).pipe(
     take(1), // use first room/user which meets all requirements/filters above
     mergeMap((via) =>
-      defer<Promise<void>>(
+      defer<Promise<unknown>>(
         async () =>
-          typeof via === 'string'
-            ? matrix.sendEvent(via, type, content, '') // via room
-            : via.send(content.body), // via RTC channel
+          typeof via !== 'string'
+            ? via.send(content.body) // via RTC channel
+            : via.startsWith('@')
+            ? matrix.sendToDevice(type, { [via]: { '*': content } }) // via toDevice message
+            : matrix.sendEvent(via, type, content, ''), // via room
       ).pipe(
         // this returned value is just for notification, and shouldn't be relayed on;
         // all functionality is provided as side effects of the subscription

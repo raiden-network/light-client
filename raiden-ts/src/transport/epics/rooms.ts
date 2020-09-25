@@ -19,11 +19,12 @@ import {
   exhaustMap,
   distinct,
   delayWhen,
+  pluck,
 } from 'rxjs/operators';
-import find from 'lodash/find';
 
 import { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
 
+import { Capabilities } from '../../constants';
 import { Address, isntNil } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
 import { RaidenEpicDeps } from '../../types';
@@ -82,11 +83,8 @@ function inviteLoop$(
         repeatWhen((completed$) => completed$.pipe(delay(httpTimeout))),
         takeUntil(
           // stop repeat+defer loop above when user joins
-          fromEvent<RoomMember>(
-            matrix,
-            'RoomMember.membership',
-            ({}: MatrixEvent, member: RoomMember) => member,
-          ).pipe(
+          fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
+            pluck(1),
             filter(
               (member) =>
                 member.roomId === roomId &&
@@ -164,6 +162,12 @@ export const matrixCreateRoomEpic = (
             // wait for user to be monitored
             filter(({ presences }) => address in presences),
             take(1),
+            // skip room creation/invite if both partner and us have ToDevice capability set
+            filter(
+              ({ presences, config }) =>
+                !config.caps?.[Capabilities.TO_DEVICE] ||
+                !presences[address].payload.caps?.[Capabilities.TO_DEVICE],
+            ),
             // if there's already a room in state for address, skip
             filter(({ state }) => !state.transport.rooms?.[address]?.[0]),
             // else, create a room, invite known user and persist roomId in state
@@ -223,11 +227,8 @@ export const matrixInviteEpic = (
                     !roomId
                       ? EMPTY
                       : // re-trigger invite loop if user leaves
-                        fromEvent<RoomMember>(
-                          matrix,
-                          'RoomMember.membership',
-                          ({}: MatrixEvent, member: RoomMember) => member,
-                        ).pipe(
+                        fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
+                          pluck(1),
                           filter(
                             (member) =>
                               member.roomId === roomId &&
@@ -273,10 +274,8 @@ export const matrixHandleInvitesEpic = (
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix invite events
     switchMap((matrix) =>
-      fromEvent<{ event: MatrixEvent; member: RoomMember; matrix: MatrixClient }>(
-        matrix,
-        'RoomMember.membership',
-        (event, member) => ({ event, member, matrix }),
+      fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
+        map(([event, member]) => ({ event, member, matrix })),
       ),
     ),
     filter(
@@ -289,7 +288,7 @@ export const matrixHandleInvitesEpic = (
       const sender = event.getSender(),
         senderPresence$ = latest$.pipe(
           pluckDistinct('presences'),
-          map((presences) => find(presences, (p) => p.payload.userId === sender)),
+          map((presences) => Object.values(presences).find((p) => p.payload.userId === sender)),
           filter(isntNil),
           take(1),
           // Don't wait more than some arbitrary time for this sender presence update to show
@@ -417,10 +416,8 @@ export const matrixCleanLeftRoomsEpic = (
   matrix$.pipe(
     // when matrix finishes initialization, register to matrix invite events
     switchMap((matrix) =>
-      fromEvent<{ room: Room; membership: string; matrix: MatrixClient }>(
-        matrix,
-        'Room.myMembership',
-        (room, membership) => ({ room, membership, matrix }),
+      fromEvent<[Room, string]>(matrix, 'Room.myMembership').pipe(
+        map(([room, membership]) => ({ room, membership, matrix })),
       ),
     ),
     // filter for leave events to us

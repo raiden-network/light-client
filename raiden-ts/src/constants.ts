@@ -18,4 +18,5 @@ export enum Capabilities {
   NO_MEDIATE = 'noMediate', // can't mediate transfers; mediating requires receiving
   NO_DELIVERY = 'noDelivery', // don't need Delivery messages
   WEBRTC = 'webRTC', // use WebRTC channels for p2p messaging
+  TO_DEVICE = 'toDevice', // use ToDevice messages instead of rooms
 }
