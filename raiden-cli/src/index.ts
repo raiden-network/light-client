@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import inquirer from 'inquirer';
-import yargs from 'yargs';
+import yargs from 'yargs/yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet } from 'ethers';
 import { getAddress } from 'ethers/utils';
@@ -14,7 +14,8 @@ import { makeCli } from './cli';
 import { setupLoglevel } from './utils/logging';
 
 function parseArguments() {
-  return yargs
+  const argv = yargs(process.argv.slice(2));
+  return argv
     .usage('Usage: $0 [options]')
     .options({
       datadir: {
