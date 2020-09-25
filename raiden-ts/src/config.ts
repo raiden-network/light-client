@@ -135,6 +135,7 @@ export function makeDefaultConfig(
       [Capabilities.NO_DELIVERY]: true,
       [Capabilities.NO_MEDIATE]: true,
       [Capabilities.WEBRTC]: true,
+      [Capabilities.TO_DEVICE]: true,
     },
     fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     rateToSvt: {},
