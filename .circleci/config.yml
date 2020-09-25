@@ -180,7 +180,18 @@ jobs:
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
-      - run: pnpm run build --filter raiden-cli
+      - run:
+          name: Build CLI
+          command: pnpm run build --filter raiden-cli && pnpm run build:bundle --filter raiden-cli
+      - run:
+          name: Compress CLI bundle
+          command: >
+            cd raiden-cli ;
+            cp -av ./raiden bundle/ ;
+            tar -czvf raiden-cli.tar.gz bundle --transform='s/^bundle/raiden-cli/'
+      - store_artifacts:
+          path: raiden-cli/raiden-cli.tar.gz
+          destination: raiden-cli.tar.gz
 
   generate_documentation:
     executor: base-executor
