@@ -1,5 +1,4 @@
 import {
-  raidenEpicDeps,
   makeLog,
   makeRaidens,
   makeRaiden,
@@ -7,15 +6,14 @@ import {
   waitBlock,
   sleep,
   MockedRaiden,
-  makeAddress,
   fetch,
+  makeAddress,
 } from '../mocks';
 import {
   token,
   tokenNetwork,
   amount,
   openBlock,
-  epicFixtures,
   ensureChannelIsOpen,
   ensureChannelIsDeposited,
   deposit,
@@ -42,6 +40,21 @@ import { IOU } from 'raiden-ts/services/types';
 
 const pfsAddress = makeAddress();
 
+/**
+ * @param raiden - Instance of MockedRaiden
+ * @returns Mocked IOU type Object
+ */
+function makeIou(raiden: MockedRaiden): IOU {
+  return {
+    sender: raiden.address,
+    receiver: pfsAddress,
+    one_to_n_address: '0x0A0000000000000000000000000000000000000a' as Address,
+    chain_id: bigNumberify(raiden.deps.network.chainId) as UInt<32>,
+    expiration_block: bigNumberify(3232341) as UInt<32>,
+    amount: bigNumberify(100) as UInt<32>,
+  };
+}
+
 describe('PFS: pathFindServiceEpic', () => {
   let raiden: MockedRaiden, partner: MockedRaiden, target: MockedRaiden;
   const pfsSafetyMargin = 2;
@@ -61,21 +74,6 @@ describe('PFS: pathFindServiceEpic', () => {
       payment_address: pfsAddress,
       price_info: 2,
       version: '0.4.1',
-    };
-  }
-
-  /**
-   * @param raiden - Instance of MockedRaiden
-   * @returns Mocked IOU type Object
-   */
-  function makeIou(raiden: MockedRaiden): IOU {
-    return {
-      sender: raiden.address,
-      receiver: pfsAddress,
-      one_to_n_address: '0x0A0000000000000000000000000000000000000a' as Address,
-      chain_id: bigNumberify(raiden.deps.network.chainId) as UInt<32>,
-      expiration_block: bigNumberify(3232341) as UInt<32>,
-      amount: bigNumberify(100) as UInt<32>,
     };
   }
 
@@ -1258,13 +1256,12 @@ describe('PFS: reducer', () => {
   test('persist and clear', async () => {
     expect.assertions(2);
 
-    const depsMock = raidenEpicDeps();
-    const { iou, state, tokenNetwork } = epicFixtures(depsMock);
-
+    const raiden = await makeRaiden(undefined);
+    const iou = makeIou(raiden);
     const newState = raidenReducer(
-      state,
+      raiden.store.getState(),
       iouPersist(
-        { iou: await signIOU(depsMock.signer, iou) },
+        { iou: await signIOU(raiden.deps.signer, iou) },
         { tokenNetwork, serviceAddress: iou.receiver },
       ),
     );
