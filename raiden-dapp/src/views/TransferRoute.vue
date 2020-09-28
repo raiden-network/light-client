@@ -57,7 +57,8 @@ export default class TransferRoute extends Vue {
     if (this.noTokens) {
       return undefined;
     } else {
-      const address = this.$route.params.token ?? this.tokens[0].address;
+      const { token } = this.$route.params;
+      const address = token ? token : this.tokens[0].address;
       return this.$store.getters.token(address) || ({ address } as Token);
     }
   }
