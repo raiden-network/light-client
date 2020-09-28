@@ -6,7 +6,13 @@ import {
 } from '@/store/notifications/types';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 
-export const getters: GetterTree<NotificationsState, RootState> = {
+type Getters = {
+  notifications(state: NotificationsState): NotificationPayload[];
+  nextNotificationId({ notifications }: NotificationsState): number;
+  notificationQueue(state: NotificationsState): NotificationPayload[];
+};
+
+export const getters: GetterTree<NotificationsState, RootState> & Getters = {
   notifications: (state: NotificationsState): NotificationPayload[] => {
     return Object.values(state.notifications).sort((a, b) => b.id - a.id);
   },
