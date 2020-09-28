@@ -19,7 +19,7 @@ describe('notifications store mutations', () => {
 
   test('can delete notification', () => {
     const state = createNotificationState();
-    const id = TestData.notifications.id;
+    const id = notification.id;
 
     mutations.notificationDelete(state, id);
     expect(state.notifications).toMatchObject({});
@@ -27,6 +27,7 @@ describe('notifications store mutations', () => {
 
   test('can set notifications to viewed', () => {
     const state = createNotificationState(true);
+    expect(state.newNotifications).toBe(true);
 
     mutations.notificationsViewed(state);
     expect(state.newNotifications).toBe(false);

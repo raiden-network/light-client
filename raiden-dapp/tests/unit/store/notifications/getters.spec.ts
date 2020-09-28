@@ -15,15 +15,22 @@ describe('notifications store getters', () => {
 
   test('can get all notifications sorted by newest first', () => {
     const allNotifications = getters.notifications(notificationState);
+    const notificationIds = allNotifications.map(
+      (notification) => notification.id
+    );
 
-    expect(allNotifications[0]).toMatchObject({ id: 29 });
-    expect(allNotifications[1]).toMatchObject({ id: 22 });
-    expect(allNotifications[2]).toMatchObject({ id: 10 });
+    expect(notificationIds).toEqual(expect.arrayContaining([29, 22, 10]));
   });
 
   test('next notification id increments current highest id', () => {
-    const newNotificationId = getters.nextNotificationId(notificationState);
+    const currentHighestId = Math.max(
+      ...Object.values(notificationState.notifications).map(
+        (notification) => notification.id
+      )
+    );
+    expect(currentHighestId).toBe(29);
 
+    const newNotificationId = getters.nextNotificationId(notificationState);
     expect(newNotificationId).toBe(30);
   });
 });
