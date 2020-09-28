@@ -140,6 +140,7 @@ export default class UploadStateDialog extends Mixins(NavigationMixin) {
   async connectAndRedirect(retrievedState: string) {
     let { useRaidenAccount } = this.settings;
 
+    /* istanbul ignore next */
     await this.$raiden.connect(
       retrievedState,
       useRaidenAccount ? true : undefined
