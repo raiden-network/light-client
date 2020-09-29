@@ -61,6 +61,8 @@ describe('TransferStepsRoute.vue', () => {
         fee: bigNumberify(100),
       },
     ]),
+    getMainAccount: jest.fn(),
+    getAccount: jest.fn(),
   };
 
   function createWrapper(data: any) {

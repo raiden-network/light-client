@@ -48,6 +48,8 @@ describe('UDC.vue', () => {
       monitoringReward: bigNumberify('500'),
       mint: jest.fn(),
       depositToUDC: jest.fn(),
+      getMainAccount: jest.fn(),
+      getAccount: jest.fn(),
     };
     store.commit('userDepositTokenAddress', '0x1234');
     store.commit('updateTokens', { '0x1234': token });
@@ -58,12 +60,7 @@ describe('UDC.vue', () => {
   });
 
   test('display balance too low hint', async () => {
-    $raiden = {
-      userDepositTokenAddress: '0x1234',
-      fetchTokenData: jest.fn(),
-      getUDCCapacity: jest.fn().mockResolvedValue(Zero),
-      monitoringReward: bigNumberify('500'),
-    };
+    $raiden.getUDCCapacity = jest.fn().mockResolvedValue(Zero);
     wrapper = createWrapper();
 
     await wrapper.vm.$nextTick();

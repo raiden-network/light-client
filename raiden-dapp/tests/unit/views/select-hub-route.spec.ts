@@ -54,6 +54,8 @@ describe('SelectHubRoute.vue', () => {
           monitoringReward: bigNumberify('1'),
           monitorToken: jest.fn(),
           getUDCCapacity: jest.fn().mockResolvedValue(bigNumberify('2')),
+          getMainAccount: jest.fn(),
+          getAccount: jest.fn(),
           ...raidenMocks,
         },
         $t: (msg: string) => msg,
