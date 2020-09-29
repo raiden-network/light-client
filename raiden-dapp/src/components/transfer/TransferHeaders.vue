@@ -1,7 +1,7 @@
 <template>
   <v-row no-gutters class="transfer-menus">
     <div class="transfer-menus__token-select">
-      <span @click="showTokens = true">
+      <span @click="showTokenOverlay = true">
         {{ $t('transfer.transfer-menus.change-token-title') }}
         <v-icon>mdi-chevron-down</v-icon>
       </span>
@@ -38,7 +38,7 @@
     <span v-else>
       <amount-display exact-amount :amount="capacity" :token="token" />
     </span>
-    <token-overlay :show="showTokens" @cancel="showTokens = false" />
+    <token-overlay v-if="showTokenOverlay" @cancel="showTokenOverlay = false" />
     <channel-deposit-dialog
       :loading="loading"
       :done="done"
@@ -77,7 +77,7 @@ import { Zero } from 'ethers/constants';
   },
 })
 export default class TransferHeaders extends Mixins(NavigationMixin) {
-  showTokens: boolean = false;
+  showTokenOverlay: boolean = false;
   showDepositDialog: boolean = false;
   loading: boolean = false;
   done: boolean = false;

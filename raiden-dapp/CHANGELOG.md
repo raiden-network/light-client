@@ -8,6 +8,7 @@
 - [#2096] Fixes buggy wallet connection procedure
 - [#2144] Fixes navigation to transfer screen when token was selected
 - [#2159] Fixes routing issues for account and transfer steps
+- [#2238] Fixes broken token overlay for too many connected tokens
 
 ### Added
 - [#1941] Notification for opening channels
@@ -23,6 +24,7 @@
 [#2096]: https://github.com/raiden-network/light-client/issues/1838
 [#2144]: https://github.com/raiden-network/light-client/issues/2144
 [#2159]: https://github.com/raiden-network/light-client/issues/2144
+[#2138]: https://github.com/raiden-network/light-client/issues/2138
 
 ## [0.11.1] - 2020-08-18
 ### Fixed

@@ -1,139 +1,66 @@
 <template>
-  <v-overlay :value="show" absolute opacity="1.0" class="token-network-overlay">
-    <v-container v-if="show" class="token-network__container">
-      <v-row no-gutters justify="end">
-        <v-btn icon class="token-network-overlay__close-button" @click="cancel">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-row>
+  <v-overlay absolute opacity="1.0" class="token-overlay">
+    <div class="d-flex justify-end">
+      <v-btn class="ma-4 token-overlay__close-button" icon @click="cancel">
+        <v-icon>mdi-close</v-icon>
+      </v-btn>
+    </div>
 
-      <v-row id="connect-new">
-        <v-col cols="12">
-          <v-list class="connect-new__item-list">
-            <v-list-item @click="navigateToTokenSelect()">
-              <v-col cols="2">
-                <v-list-item-avatar>
-                  <v-btn class="mx-2" fab dark small color="primary">
-                    <v-icon dark large>mdi-plus</v-icon>
-                  </v-btn>
-                </v-list-item-avatar>
-              </v-col>
-              <v-col
-                cols="10"
-                align-self="center"
-                class="connect-new__connect-new-token"
-              >
-                {{ $t('tokens.connect-new') }}
-              </v-col>
-            </v-list-item>
-          </v-list>
+    <v-list class="transparent">
+      <v-list-item
+        class="token-overlay__connect-new"
+        @click="navigateToTokenSelect()"
+      >
+        <v-col cols="2">
+          <v-list-item-avatar>
+            <v-btn class="mx-2" fab dark small color="primary">
+              <v-icon dark large>mdi-plus</v-icon>
+            </v-btn>
+          </v-list-item-avatar>
         </v-col>
-      </v-row>
+        <v-col cols="10" align-self="center" class="font-weight-bold">
+          {{ $t('tokens.connect-new') }}
+        </v-col>
+      </v-list-item>
+    </v-list>
 
-      <v-row>
-        <v-col cols="2" class="hidden-sm-and-down" align-self="center"></v-col>
-        <v-col
-          cols="10"
-          align-self="center"
-          class="token-network-overlay__header"
-        >
-          {{ $t('tokens.connected.header') }}
-        </v-col>
-      </v-row>
-
-      <v-row class="token-list">
-        <v-col cols="12">
-          <v-list
-            v-for="(token, i) in tokens"
-            :key="i"
-            class="token-list__item-list"
-          >
-            <v-list-item
-              :key="token.address"
-              @click="handleTokenClick(token.address)"
-            >
-              <v-col cols="2">
-                <v-list-item-avatar>
-                  <img
-                    :src="$blockie(token.address)"
-                    :src-lazy="require('@/assets/generic.svg')"
-                    :alt="$t('select-token.tokens.token.blockie-alt')"
-                  />
-                </v-list-item-avatar>
-              </v-col>
-              <v-col>
-                <v-list-item-content>
-                  <v-list-item-title class="token-list__token-title">
-                    {{
-                      $t('select-token.tokens.token.token-information', {
-                        symbol: token.symbol,
-                        name: token.name,
-                      })
-                    }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle class="token-list__token-address">
-                    <address-display :address="token.address" />
-                  </v-list-item-subtitle>
-                </v-list-item-content>
-              </v-col>
-              <v-col>
-                <v-row justify="end">
-                  <v-list-item-action-text>
-                    <amount-display
-                      class="token-list__token-balance"
-                      exact-amount
-                      :amount="getTokenDetails(token).balance"
-                      :token="getTokenDetails(token)"
-                    />
-                  </v-list-item-action-text>
-                </v-row>
-              </v-col>
-            </v-list-item>
-          </v-list>
-        </v-col>
-      </v-row>
-    </v-container>
+    <div class="token-overlay__connected-tokens mt-8">
+      <token-list
+        :header="$t('tokens.connected.header')"
+        :tokens="tokens"
+        @select="handleTokenClick"
+      />
+    </div>
   </v-overlay>
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Prop, Emit } from 'vue-property-decorator';
+import { Component, Mixins, Emit } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 
 import BlockieMixin from '@/mixins/blockie-mixin';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { TokenModel, Token } from '@/model/types';
-import AddressDisplay from '@/components/AddressDisplay.vue';
-import AmountDisplay from '@/components/AmountDisplay.vue';
+import TokenList from '@/components/tokens/TokenList.vue';
 
 @Component({
-  components: { AddressDisplay, AmountDisplay },
-  computed: {
-    ...mapGetters(['tokens', 'allTokens']),
-  },
+  components: { TokenList },
+  computed: { ...mapGetters(['tokens']) },
 })
 export default class TokenOverlay extends Mixins(
   BlockieMixin,
   NavigationMixin
 ) {
-  @Prop({ required: true, type: Boolean })
-  show!: boolean;
-
-  allTokens!: Token[];
   tokens!: TokenModel[];
 
-  handleTokenClick(tokenAddress: string) {
+  handleTokenClick(selectToken: Token): void {
     const { token } = this.$route.params;
 
-    if (token !== tokenAddress) {
-      this.navigateToSelectTransferTarget(tokenAddress);
+    if (token !== selectToken.address) {
+      this.navigateToSelectTransferTarget(selectToken.address);
     }
 
     this.cancel();
-  }
-
-  getTokenDetails(token: TokenModel) {
-    return this.$store.getters.token(token.address);
   }
 
   @Emit()
@@ -142,15 +69,7 @@ export default class TokenOverlay extends Mixins(
 </script>
 
 <style lang="scss" scoped>
-@import '@/scss/colors';
-@import '@/scss/scroll';
-@import '@/scss/fonts';
-@import '@/scss/mixins';
-
-.token-network-overlay {
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-
+.token-overlay {
   ::v-deep {
     .v-overlay {
       &__scrim {
@@ -162,104 +81,16 @@ export default class TokenOverlay extends Mixins(
       }
 
       &__content {
-        position: absolute;
-        top: 0;
-        right: 0;
+        display: flex;
+        flex-direction: column;
         width: 100%;
         height: 100%;
       }
     }
-
-    .v-list-item {
-      padding: 0 0 0 48px;
-
-      @include respond-to(handhelds) {
-        padding: 0;
-      }
-    }
   }
 
-  .token-network {
-    &__container {
-      padding: 0 !important;
-      height: 100%;
-    }
-  }
-
-  &__close-button {
-    margin: 15px;
-  }
-
-  .token-list {
-    height: calc(100% - 230px);
-
-    &__item-list {
-      overflow-y: auto;
-      @extend .themed-scrollbar;
-
-      background-color: transparent !important;
-      padding-bottom: 0;
-      padding-top: 0;
-
-      ::v-deep {
-        .col-10 {
-          padding-left: 11px;
-        }
-      }
-    }
-
-    &__token-title {
-      font-weight: bold;
-      line-height: 20px;
-      font-size: 16px;
-    }
-
-    &__token-balance {
-      color: $color-white;
-      font-family: $main-font;
-      font-size: 16px;
-      font-weight: bold;
-      line-height: 20px;
-      height: 100%;
-      padding-right: 20px;
-    }
-
-    &__token-address {
-      color: #696969 !important;
-      line-height: 20px;
-      font-size: 16px;
-    }
-  }
-
-  .connect-new {
-    &__item-list {
-      height: 100%;
-      background-color: transparent !important;
-      padding-bottom: 0;
-      padding-top: 0;
-
-      ::v-deep {
-        .col-10 {
-          padding-left: 11px;
-        }
-      }
-    }
-
-    &__connect-new-token {
-      font-weight: bold;
-      line-height: 20px;
-      font-size: 16px;
-    }
-  }
-
-  &__header {
-    font-weight: bold;
-    line-height: 20px;
-    font-size: 16px;
-
-    color: $primary-color;
-    text-transform: uppercase;
-    padding-left: 58px;
+  &__connected-tokens {
+    overflow-y: hidden;
   }
 }
 </style>
