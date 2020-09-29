@@ -53,30 +53,47 @@ import { waitMemberAndSend$, parseMessage } from './helpers';
 
 type CallInfo = { callId: string; peerId: string; peerAddress: Address };
 
+enum RtcEventType {
+  offer = 'offer',
+  answer = 'answer',
+  candidates = 'candidates',
+  hangup = 'hangup',
+}
+
 const RtcOffer = t.readonly(
   t.intersection([
-    t.type({ type: t.literal('offer'), sdp: t.string }),
+    t.type({ type: t.literal(RtcEventType.offer), sdp: t.string }),
     t.partial({ call_id: t.string }),
   ]),
 );
 
 const RtcAnswer = t.readonly(
   t.intersection([
-    t.type({ type: t.literal('answer'), sdp: t.string }),
+    t.type({ type: t.literal(RtcEventType.answer), sdp: t.string }),
     t.partial({ call_id: t.string }),
   ]),
 );
 
 const RtcCandidates = t.readonly(
   t.intersection([
-    t.type({ type: t.literal('candidates'), candidates: t.readonlyArray(t.unknown) }),
+    t.type({ type: t.literal(RtcEventType.candidates), candidates: t.readonlyArray(t.unknown) }),
     t.partial({ call_id: t.string }),
   ]),
 );
 
 const RtcHangup = t.readonly(
-  t.intersection([t.type({ type: t.literal('hangup') }), t.partial({ call_id: t.string })]),
+  t.intersection([
+    t.type({ type: t.literal(RtcEventType.hangup) }),
+    t.partial({ call_id: t.string }),
+  ]),
 );
+
+const rtcCodecs = {
+  [RtcEventType.offer]: RtcOffer,
+  [RtcEventType.answer]: RtcAnswer,
+  [RtcEventType.candidates]: RtcCandidates,
+  [RtcEventType.hangup]: RtcHangup,
+} as const;
 
 // fetches and caches matrix set turnServer
 const _matrixIceServersCache = new WeakMap<MatrixClient, [number, RTCIceServer[]]>();
@@ -113,18 +130,11 @@ type ExtMatrixEvent = MatrixEvent & {
 };
 
 // returns a stream of filtered, valid MatrixEvents
-function matrixVoipEvents$<T extends 'offer' | 'answer' | 'candidates' | 'hangup'>(
+function matrixWebrtcEvents$<T extends RtcEventType>(
   matrix: MatrixClient,
   type: T,
   sender: string,
 ) {
-  const codecTypes = {
-    offer: RtcOffer,
-    answer: RtcAnswer,
-    candidates: RtcCandidates,
-    hangup: RtcHangup,
-  } as const;
-
   return fromEvent<[MatrixEvent]>(matrix, 'Room.timeline').pipe(
     pluck(0),
     filter(
@@ -135,7 +145,7 @@ function matrixVoipEvents$<T extends 'offer' | 'answer' | 'candidates' | 'hangup
     ),
     mergeMap((event) => {
       try {
-        return of(decode(codecTypes[type], jsonParse(event.getContent()?.body)));
+        return of(decode(rtcCodecs[type], jsonParse(event.getContent()?.body)));
       } catch (e) {}
       return EMPTY;
     }),
@@ -161,7 +171,7 @@ function handleCandidates$(
       tap((e) => log.debug('RTC: got candidates', callId, e)),
       mergeMap((candidates) => {
         const body: t.TypeOf<typeof RtcCandidates> = {
-          type: 'candidates',
+          type: RtcEventType.candidates,
           candidates,
           call_id: callId,
         };
@@ -175,7 +185,7 @@ function handleCandidates$(
       }),
     ),
     // when receiving candidates from peer, add it locally
-    matrixVoipEvents$(matrix, 'candidates', peerId).pipe(
+    matrixWebrtcEvents$(matrix, RtcEventType.candidates, peerId).pipe(
       tap((e) => log.debug('RTC: received candidates', callId, e.candidates)),
       mergeMap((event) => from((event.candidates ?? []) as RTCIceCandidateInit[])),
       mergeMap((candidate) =>
@@ -215,13 +225,13 @@ function setupCallerDataChannel$(
           mergeMap((offer) => {
             connection.setLocalDescription(offer);
             const body: t.TypeOf<typeof RtcOffer> = {
-              type: offer.type as 'offer',
+              type: offer.type as RtcEventType.offer,
               sdp: offer.sdp!,
               call_id: callId,
             };
             return merge(
               // wait for answer
-              matrixVoipEvents$(matrix, 'answer', peerId),
+              matrixWebrtcEvents$(matrix, RtcEventType.answer, peerId),
               // send invite with offer
               waitMemberAndSend$(
                 peerAddress,
@@ -264,7 +274,7 @@ function setupCalleeDataChannel$(
 ): Observable<RTCDataChannel> {
   const { callId, peerId, peerAddress } = info;
   const { log, latest$, config$ } = deps;
-  return matrixVoipEvents$(matrix, 'offer', peerId).pipe(
+  return matrixWebrtcEvents$(matrix, RtcEventType.offer, peerId).pipe(
     tap(() => log.info('RTC: got invite', callId)),
     mergeMap((event) =>
       from(getMatrixIceServers(matrix)).pipe(map((serv) => [event, serv] as const)),
@@ -285,7 +295,7 @@ function setupCalleeDataChannel$(
           mergeMap((answer) => {
             connection.setLocalDescription(answer);
             const body: t.TypeOf<typeof RtcAnswer> = {
-              type: answer.type as 'answer',
+              type: answer.type as RtcEventType.answer,
               sdp: answer.sdp!,
               call_id: callId,
             };
@@ -426,7 +436,10 @@ function handlePresenceChange$(
         stop$
           .pipe(
             mergeMap(() => {
-              const body: t.TypeOf<typeof RtcHangup> = { type: 'hangup', call_id: callId };
+              const body: t.TypeOf<typeof RtcHangup> = {
+                type: RtcEventType.hangup,
+                call_id: callId,
+              };
               return waitMemberAndSend$(
                 action.meta.address,
                 matrix,
@@ -444,7 +457,7 @@ function handlePresenceChange$(
         return merge(
           dataChannel$,
           // throws nad restart if peer hangs up
-          matrixVoipEvents$(matrix, 'hangup', info.peerId).pipe(
+          matrixWebrtcEvents$(matrix, RtcEventType.hangup, info.peerId).pipe(
             // no need for specific error since this is just logged and ignored in listenDataChannel$
             mergeMapTo(throwError(new Error('RTC: peer hung up'))),
           ),
