@@ -209,7 +209,7 @@ import Checkmark from '@/components/icons/Checkmark.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { Zero } from 'ethers/constants';
-import { getAddress, getAmount } from '@/utils/query-params';
+import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
 import Filter from '@/filters';
 import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
@@ -314,11 +314,12 @@ export default class TransferSteps extends Mixins(
   }
 
   async created() {
-    const { amount } = this.$route.query;
+    const { amount, identifier } = this.$route.query;
     const { target } = this.$route.params;
 
     this.amount = getAmount(amount);
     this.target = getAddress(target);
+    this.paymentId = getPaymentId(identifier) || this.paymentId;
 
     const { token: address } = this.$route.params;
 
