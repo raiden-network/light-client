@@ -1,5 +1,5 @@
 <template>
-  <div justify="center">
+  <div justify="center" class="raiden-account">
     <v-form
       v-if="!loading && !error"
       ref="form"
@@ -80,6 +80,7 @@
       <v-row no-gutters justify="center" class="raiden-account__amount-input">
         <amount-input
           v-model="amount"
+          class="raiden-account__amount-input__field"
           :token="token"
           :max="maximumAmount"
           limit
@@ -99,6 +100,7 @@
         class="raiden-account__transfer-button"
       >
         <action-button
+          class="raiden-account__transfer-button__button"
           full-width
           :enabled="valid"
           :text="$t('general.buttons.transfer')"

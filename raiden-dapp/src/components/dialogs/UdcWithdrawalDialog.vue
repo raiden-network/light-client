@@ -1,5 +1,9 @@
 <template>
-  <raiden-dialog :visible="visible" @close="cancel">
+  <raiden-dialog
+    :visible="visible"
+    class="udc-withdrawal-dialog"
+    @close="cancel"
+  >
     <v-card-title>{{ $t('udc.withdrawal') }}</v-card-title>
     <v-card-text>
       <v-row align="center" justify="center" no-gutters>
@@ -55,6 +59,7 @@
     </v-card-text>
     <v-card-actions v-if="!error && !isDone">
       <action-button
+        class="udc-withdrawal-dialog__button"
         :enabled="isValid"
         :text="$t('general.buttons.confirm')"
         @click="planWithdraw"

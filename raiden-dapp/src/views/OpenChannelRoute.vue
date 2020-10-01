@@ -33,6 +33,7 @@
     </v-row>
 
     <action-button
+      class="open-channel__button"
       :enabled="valid"
       :text="$t('open-channel.open-button')"
     ></action-button>

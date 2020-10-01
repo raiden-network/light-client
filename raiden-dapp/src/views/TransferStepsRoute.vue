@@ -182,6 +182,7 @@
     ></error-dialog>
 
     <action-button
+      class="transfer__button"
       :enabled="continueBtnEnabled"
       :text="callToActionText"
       sticky

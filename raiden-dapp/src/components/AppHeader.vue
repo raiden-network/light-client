@@ -3,6 +3,7 @@
     <div class="app-header__back">
       <v-btn
         v-if="canGoBack"
+        class="app-header__back-button"
         height="40px"
         width="40px"
         icon
@@ -22,6 +23,7 @@
     <div class="app-header__icons">
       <v-btn
         v-if="!showTitleOnly"
+        class="app-header__notifications-button"
         icon
         height="30px"
         width="25px"

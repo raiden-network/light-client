@@ -13,6 +13,7 @@
     <v-card-actions>
       <action-button
         :id="`confirm-${identifier}`"
+        class="confirmation__button"
         :enabled="true"
         :text="positiveAction"
         @click="confirm()"

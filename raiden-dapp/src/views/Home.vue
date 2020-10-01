@@ -44,6 +44,7 @@
       </v-col>
     </v-row>
     <action-button
+      class="home__connect-button"
       :text="$t('home.connect-button')"
       :loading="connecting"
       :enabled="!connecting"

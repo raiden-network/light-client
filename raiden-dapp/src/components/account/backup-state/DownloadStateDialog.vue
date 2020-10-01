@@ -20,6 +20,7 @@
 
     <v-card-actions>
       <action-button
+        class="download-state__button"
         enabled
         full-width
         :text="$t('backup-state.download-button')"

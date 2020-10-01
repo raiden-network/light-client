@@ -57,7 +57,12 @@
                   :amount="token.balance"
                   :token="token"
                 />
-                <v-btn text icon @click="withdraw = token">
+                <v-btn
+                  text
+                  icon
+                  class="withdrawal__tokens__button"
+                  @click="withdraw = token"
+                >
                   <v-img
                     :src="require(`@/assets/withdrawal.svg`)"
                     max-width="24px"

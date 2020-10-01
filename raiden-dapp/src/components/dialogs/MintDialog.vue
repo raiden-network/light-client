@@ -16,6 +16,7 @@
     </v-card-text>
     <v-card-actions v-if="!error">
       <action-button
+        class="mint-dialog__button"
         arrow
         :enabled="!loading"
         :text="$t('general.buttons.continue')"

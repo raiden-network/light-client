@@ -33,6 +33,7 @@
           <v-form v-model="valid" @submit.prevent="depositTokens()">
             <amount-input
               v-model="deposit"
+              class="channel-deposit__input"
               :token="token"
               :max="token.balance"
               limit

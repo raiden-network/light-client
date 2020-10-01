@@ -33,6 +33,7 @@
           <v-form v-model="valid" @submit.prevent="withdrawTokens()">
             <amount-input
               v-model="withdraw"
+              class="channel-withdraw__input"
               :token="token"
               :max="channel.ownWithdrawable"
               limit
