@@ -137,18 +137,6 @@ export default class UploadStateDialog extends Mixins(NavigationMixin) {
     }, 2000);
   }
 
-  async connectAndRedirect(retrievedState: string) {
-    let { useRaidenAccount } = this.settings;
-
-    /* istanbul ignore next */
-    await this.$raiden.connect(
-      retrievedState,
-      useRaidenAccount ? true : undefined
-    );
-
-    this.navigateToHome();
-  }
-
   uploadState(uploadedFile: FileList) {
     if (uploadedFile.length > 1) {
       this.dropzoneError();
@@ -177,6 +165,18 @@ export default class UploadStateDialog extends Mixins(NavigationMixin) {
       }
     };
     reader.readAsText(uploadedFile[0]);
+  }
+
+  async connectAndRedirect(retrievedState: string) {
+    let { useRaidenAccount } = this.settings;
+
+    /* istanbul ignore next */
+    await this.$raiden.connect(
+      retrievedState,
+      useRaidenAccount ? true : undefined
+    );
+
+    this.navigateToHome();
   }
 }
 </script>
