@@ -17,6 +17,7 @@
     "preinstall": "npx only-allow pnpm"
   },
   "dependencies": {
+    "babel-plugin-istanbul": "^6.0.0",
     "core-js": "^3.6.5",
     "ethereum-blockies-base64": "^1.0.2",
     "ethers": "^4.0.48",
