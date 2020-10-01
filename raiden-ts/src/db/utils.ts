@@ -382,7 +382,7 @@ export async function replaceDatabase(
     if (!db) continue;
     const dbMeta = await databaseMeta(db);
     assert(
-      meta.version >= version && meta.blockNumber > dbMeta.blockNumber,
+      meta.version >= version && meta.blockNumber >= dbMeta.blockNumber,
       ErrorCodes.RDN_STATE_MIGRATION,
     );
     // shouldn't happen, since [name] is generated from these parameters
