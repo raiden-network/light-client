@@ -61,12 +61,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
+import { Component, Prop, Emit, Mixins } from 'vue-property-decorator';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import { mapState } from 'vuex';
 import ActionButton from '@/components/ActionButton.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import { Settings } from '@/types';
+import NavigationMixin from '../../../mixins/navigation-mixin';
 
 @Component({
   components: {
@@ -78,7 +79,7 @@ import { Settings } from '@/types';
     ...mapState(['settings']),
   },
 })
-export default class UploadStateDialog extends Vue {
+export default class UploadStateDialog extends Mixins(NavigationMixin) {
   dragCount: number = 0;
   activeDropzone: boolean = false;
   dropzoneErrorMessage: boolean = false;
@@ -116,7 +117,7 @@ export default class UploadStateDialog extends Vue {
     }
 
     const uploadedFile = e.dataTransfer?.files;
-    this.uploadStateAndConnect(uploadedFile!);
+    this.uploadState(uploadedFile!);
   }
 
   onFileSelect(e: Event) {
@@ -125,7 +126,7 @@ export default class UploadStateDialog extends Vue {
     }
 
     const uploadedFile = (e.target as HTMLInputElement).files;
-    this.uploadStateAndConnect(uploadedFile!);
+    this.uploadState(uploadedFile!);
   }
 
   dropzoneError() {
@@ -136,14 +137,13 @@ export default class UploadStateDialog extends Vue {
     }, 2000);
   }
 
-  uploadStateAndConnect(uploadedFile: FileList) {
-    let { useRaidenAccount } = this.settings;
-
+  uploadState(uploadedFile: FileList) {
     if (uploadedFile.length > 1) {
       this.dropzoneError();
     }
 
     let reader = new FileReader();
+
     /* istanbul ignore next */
     reader.onload = (e) => {
       const target = e.target;
@@ -158,17 +158,25 @@ export default class UploadStateDialog extends Vue {
         setTimeout(async () => {
           this.uploadingStateProgress = false;
           this.cancel();
-
-          await this.$raiden.connect(
-            retrievedState,
-            useRaidenAccount ? true : undefined
-          );
+          this.connectAndRedirect(retrievedState);
         }, 1000);
       } catch (err) {
         this.dropzoneError();
       }
     };
     reader.readAsText(uploadedFile[0]);
+  }
+
+  async connectAndRedirect(retrievedState: string) {
+    let { useRaidenAccount } = this.settings;
+
+    /* istanbul ignore next */
+    await this.$raiden.connect(
+      retrievedState,
+      useRaidenAccount ? true : undefined
+    );
+
+    this.navigateToHome();
   }
 }
 </script>

@@ -68,9 +68,9 @@ describe('UploadStateDialog.vue', () => {
 
   test('calls methods for uploading state on file select', async () => {
     // @ts-ignore
-    wrapper.vm.uploadStateAndConnect = jest.fn();
+    wrapper.vm.uploadState = jest.fn();
     // @ts-ignore
-    expect(wrapper.vm.uploadStateAndConnect).not.toBeCalled();
+    expect(wrapper.vm.uploadState).not.toBeCalled();
 
     const stateInput = wrapper.find('input');
     // @ts-ignore
@@ -79,7 +79,7 @@ describe('UploadStateDialog.vue', () => {
     await wrapper.vm.$nextTick();
 
     // @ts-ignore
-    expect(wrapper.vm.uploadStateAndConnect).toBeCalled();
+    expect(wrapper.vm.uploadState).toBeCalled();
   });
 
   test('method for dropzone error displays and hides dropzone error message', async () => {
@@ -100,7 +100,7 @@ describe('UploadStateDialog.vue', () => {
       length: 2,
     };
     // @ts-ignore
-    wrapper.vm.uploadStateAndConnect(fileList);
+    wrapper.vm.uploadState(fileList);
 
     expect(wrapper.vm.$data.dropzoneErrorMessage).toBe(true);
   });
@@ -113,7 +113,7 @@ describe('UploadStateDialog.vue', () => {
       length: 1,
     };
     // @ts-ignore
-    wrapper.vm.uploadStateAndConnect(fileList);
+    wrapper.vm.uploadState(fileList);
 
     expect(wrapper.vm.$data.dropzoneErrorMessage).toBe(false);
   });
