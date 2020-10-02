@@ -120,7 +120,7 @@ export default class ChannelWithdrawDialog extends Vue {
   withdrawTokens() {
     const withdraw = BalanceUtils.parse(this.withdraw, this.token.decimals!);
     if (!withdraw.isZero()) {
-      this.$emit('withdrawTokens', withdraw);
+      this.$emit('withdraw-tokens', withdraw);
     }
   }
 }
