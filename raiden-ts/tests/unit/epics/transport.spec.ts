@@ -3144,16 +3144,23 @@ describe('transport epic', () => {
       const msg = '{"type":"Delivered","delivered_message_identifier":"123456"}';
 
       setTimeout(() => {
-        matrix.emit('event', {
-          getType: () => 'm.call.invite',
-          getSender: () => partnerMatrix.getUserId(),
-          getContent: () => ({
-            call_id: `${partner.address}|${raiden.address}`.toLowerCase(),
-            offer: 'offer',
-            lifetime: 86.4e6,
-          }),
-          getAge: () => 1,
-        });
+        matrix.emit(
+          'Room.timeline',
+          {
+            getType: () => 'm.room.message',
+            getSender: () => partnerMatrix.getUserId(),
+            getContent: () => ({
+              msgtype: 'm.notice',
+              body: jsonStringify({
+                type: 'offer',
+                call_id: `${partner}|${raiden.address}`,
+                sdp: 'offerSdp',
+              }),
+            }),
+            getAge: () => 1,
+          },
+          null,
+        );
       }, 5);
       setTimeout(() => {
         rtcConnection.emit('datachannel', { channel: rtcDataChannel });
@@ -3210,8 +3217,11 @@ describe('transport epic', () => {
 
       expect(matrix.sendEvent).toHaveBeenCalledWith(
         partnerRoomId,
-        'm.call.answer',
-        expect.objectContaining({ call_id: expect.any(String), answer: expect.anything() }),
+        'm.room.message',
+        expect.objectContaining({
+          msgtype: 'm.notice',
+          body: expect.stringMatching(/"type":\s*"answer"/),
+        }),
         expect.anything(),
       );
     });
@@ -3220,38 +3230,55 @@ describe('transport epic', () => {
       expect.assertions(4);
 
       matrix.sendEvent.mockImplementation(async ({}, type: string, content: any) => {
-        if (type !== 'm.call.invite') return;
+        if (type !== 'm.room.message' || content?.msgtype !== 'm.notice') return;
+        const body = jsonParse(content.body);
+        setTimeout(() => {
+          matrix.emit(
+            'Room.timeline',
+            {
+              getType: () => 'm.room.message',
+              getSender: () => partnerMatrix.getUserId()!,
+              getContent: () => ({
+                msgtype: 'm.notice',
+                body: jsonStringify({
+                  type: 'candidates',
+                  call_id: body.call_id,
+                  candidates: ['partnerCandidateFail', 'partnerCandidate'],
+                }),
+              }),
+              getAge: () => 1,
+            },
+            null,
+          );
+          // emit 'icecandidate' to be sent to partner
+          rtcConnection.emit('icecandidate', { candidate: 'myCandidate' });
+          rtcConnection.emit('icecandidate', { candidate: null });
+        }, 10);
 
-        matrix.emit('event', {
-          getType: () => 'm.call.candidates',
-          getSender: () => partnerMatrix.getUserId(),
-          getContent: () => ({
-            call_id: content.call_id,
-            candidates: ['partnerCandidateFail', 'partnerCandidate'],
-          }),
-          getAge: () => 1,
-        });
-        // emit 'icecandidate' to be sent to partner
-        rtcConnection.emit('icecandidate', { candidate: 'myCandidate' });
-        rtcConnection.emit('icecandidate', { candidate: null });
-        // await sleep(raiden.config.pollingInterval);
-
-        matrix.emit('event', {
-          getType: () => 'm.call.answer',
-          getSender: () => partnerMatrix.getUserId(),
-          getContent: () => ({
-            call_id: content.call_id,
-            answer: 'answer',
-            lifetime: 86.4e6,
-          }),
-          getAge: () => 1,
-        });
-        Object.assign(rtcDataChannel, { readyState: 'open' });
-        rtcDataChannel.emit('open', true);
-        // await sleep(4 * raiden.config.pollingInterval);
-
-        rtcDataChannel.emit('close', true);
-        // await sleep(7 * raiden.config.pollingInterval);
+        setTimeout(() => {
+          matrix.emit(
+            'Room.timeline',
+            {
+              getType: () => 'm.room.message',
+              getSender: () => partnerMatrix.getUserId()!,
+              getContent: () => ({
+                msgtype: 'm.notice',
+                body: jsonStringify({
+                  type: 'answer',
+                  call_id: body.call_id,
+                  sdp: 'answerSdp',
+                }),
+              }),
+              getAge: () => 1,
+            },
+            null,
+          );
+          Object.assign(rtcDataChannel, { readyState: 'open' });
+          rtcDataChannel.emit('open', true);
+        }, 40);
+        setTimeout(() => {
+          rtcDataChannel.emit('close', true);
+        }, 70);
       });
       rtcConnection.addIceCandidate.mockRejectedValueOnce(new Error('addIceCandidate failed'));
 
