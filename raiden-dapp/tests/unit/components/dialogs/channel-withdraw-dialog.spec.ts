@@ -32,15 +32,15 @@ describe('ChannelWithdraw.vue', () => {
     });
   });
 
-  test('emit a "withdrawTokens" event when the user presses withdrawTokens', async () => {
+  test('emit a "withdraw-tokens" event when the user presses withdrawTokens', async () => {
     mockInput(wrapper, '0.5');
     await wrapper.vm.$nextTick();
     await flushPromises();
 
     wrapper.find('form').trigger('submit');
-    expect(wrapper.emitted().withdrawTokens).toBeTruthy();
+    expect(wrapper.emitted('withdraw-tokens')).toBeTruthy();
 
-    const withdrawTokensEvent = wrapper.emitted('withdrawTokens');
+    const withdrawTokensEvent = wrapper.emitted('withdraw-tokens');
     const events = withdrawTokensEvent?.shift();
     const withdraw: BigNumber = events?.shift() as BigNumber;
     expect(new BigNumber(0.5 * 10 ** 5).eq(withdraw)).toBeTruthy();

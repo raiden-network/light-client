@@ -41,7 +41,7 @@
     :visible="visible"
     :loading="depositInProgress"
     :done="false"
-    @depositTokens="deposit($event)"
+    @deposit-tokens="deposit($event)"
     @cancel="dismiss()"
   ></channel-deposit-dialog>
 
@@ -53,7 +53,7 @@
     :visible="visible"
     :loading="withdrawInProgress"
     :done="false"
-    @withdrawTokens="withdraw($event)"
+    @withdraw-tokens="withdraw($event)"
     @cancel="dismiss()"
   ></channel-withdraw-dialog>
 </template>

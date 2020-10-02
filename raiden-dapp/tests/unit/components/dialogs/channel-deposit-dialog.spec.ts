@@ -30,15 +30,15 @@ describe('ChannelDeposit.vue', () => {
     });
   });
 
-  test('emit a "depositTokens" event when the user presses depositTokens', async () => {
+  test('emit a "deposit-tokens" event when the user presses depositTokens', async () => {
     mockInput(wrapper, '0.5');
     await wrapper.vm.$nextTick();
     await flushPromises();
 
     wrapper.find('form').trigger('submit');
-    expect(wrapper.emitted().depositTokens).toBeTruthy();
+    expect(wrapper.emitted('deposit-tokens')).toBeTruthy();
 
-    const depositTokensEvent = wrapper.emitted('depositTokens');
+    const depositTokensEvent = wrapper.emitted('deposit-tokens');
     const events = depositTokensEvent?.shift();
     const deposit: BigNumber = events?.shift() as BigNumber;
     expect(new BigNumber(0.5 * 10 ** 5).eq(deposit)).toBeTruthy();

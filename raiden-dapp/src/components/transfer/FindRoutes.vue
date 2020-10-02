@@ -21,8 +21,8 @@
             class="find-routes__table"
             @item-selected="select($event)"
           >
-            <template #items.hops="{ item }">{{ item.hops }}</template>
-            <template #item.fee="{ item }">
+            <template #[`item.hops`]="{ item }">{{ item.hops }}</template>
+            <template #[`item.fee`]="{ item }">
               <amount-display exact-amount :amount="item.fee" :token="token" />
             </template>
           </v-data-table>

@@ -33,7 +33,7 @@
           class="pathfinding-services__table"
           @item-selected="select($event)"
         >
-          <template #item.host="{ item }">
+          <template #[`item.host`]="{ item }">
             <v-tooltip bottom>
               <template #activator="{ on }">
                 <div class="pathfinding-services__table__pfs">
@@ -49,7 +49,7 @@
             </v-tooltip>
           </template>
 
-          <template #item.price="{ item }">
+          <template #[`item.price`]="{ item }">
             <amount-display
               exact-amount
               :amount="item.price"
