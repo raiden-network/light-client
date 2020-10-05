@@ -12,10 +12,12 @@
 
 ### Added
 - [#1941] Notification for opening channels
+- [#1255] Optional identifier query parameter for transfers
 
 ### Changes
 - [#1929] Design adjustments to settlement notifications and notification panel 
 
+[#1255]: https://github.com/raiden-network/light-client/issues/1255
 [#1941]: https://github.com/raiden-network/light-client/issues/1941
 [#2026]: https://github.com/raiden-network/light-client/issues/2026
 [#1929]: https://github.com/raiden-network/light-client/issues/1929

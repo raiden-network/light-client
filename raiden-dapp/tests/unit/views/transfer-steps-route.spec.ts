@@ -80,6 +80,7 @@ describe('TransferStepsRoute.vue', () => {
           },
           query: {
             amount: '100000',
+            identifier: '123456789123456789123',
           },
         },
         $t: (msg: string, args: object) =>
