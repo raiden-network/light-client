@@ -127,6 +127,7 @@ importers:
       canvas: 2.6.1
       copy-webpack-plugin: 6.1.1_webpack@4.44.2
       cypress: 3.8.3
+      cypress-jest-adapter: 0.1.1_jest@26.4.2
       eslint: 7.10.0
       eslint-import-resolver-alias: 1.1.2_eslint-plugin-import@2.22.1
       eslint-plugin-import: 2.22.1_eslint@7.10.0
@@ -194,6 +195,7 @@ importers:
       copy-webpack-plugin: ^6.1.1
       core-js: ^3.6.5
       cypress: 3.8.3
+      cypress-jest-adapter: ^0.1.1
       eslint: ^7.10.0
       eslint-import-resolver-alias: ^1.1.2
       eslint-plugin-import: ^2.22.1
@@ -8246,6 +8248,17 @@ packages:
     dev: true
     resolution:
       integrity: sha1-WW6WmP0MgOEgOMK4LW6xs1tiJNk=
+  /cypress-jest-adapter/0.1.1_jest@26.4.2:
+    dependencies:
+      expect: 24.9.0
+      jest-get-type: 24.9.0
+      jest-jquery-matchers: 2.1.0_jest@26.4.2+jquery@3.5.1
+      jquery: 3.5.1
+    dev: true
+    peerDependencies:
+      jest: '*'
+    resolution:
+      integrity: sha512-5dSB03utqDTBG5pi1LaAvYQD5uSMtSwurSzodpM+3XS/RdrjR/644oPnFUxPRvX4FVBaIY8avRs/f/GmIAiu8w==
   /cypress/3.8.3:
     dependencies:
       '@cypress/listr-verbose-renderer': 0.4.1
@@ -13159,6 +13172,16 @@ packages:
       canvas: '*'
     resolution:
       integrity: sha512-z7H4EpCldHN1J8fNgsja58QftxBSL+JcwZmaXIvV9WKIM+x49F4GLHu/+BQh2kzRKHAgaN/E82od+8rTOBPyPA==
+  /jest-jquery-matchers/2.1.0_jest@26.4.2+jquery@3.5.1:
+    dependencies:
+      jest: 26.4.2_canvas@2.6.1
+      jquery: 3.5.1
+    dev: true
+    peerDependencies:
+      jest: '>=21.0.0'
+      jquery: '>=2.0.0'
+    resolution:
+      integrity: sha512-gbCptZOPFv4m7CJenRJcp7OTmQ432yakCDGup6gExrIwbNq8hBfxU+llXO2IXOpFuLmI0c8A+JdGMUNXe6LV9A==
   /jest-junit/11.1.0:
     dependencies:
       mkdirp: 1.0.4
@@ -13770,6 +13793,10 @@ packages:
       canvas: '*'
     resolution:
       integrity: sha512-LLCjPrUh98Ik8CzW8LLVnSCfLaiY+wbK53U7VxnFSX7Q+kWC4noVeDvGWIFw0Amfq1lq2VfGm7YHWSLBV62MJw==
+  /jquery/3.5.1:
+    dev: true
+    resolution:
+      integrity: sha512-XwIBPqcMn57FxfT+Go5pzySnm4KWkT1Tv7gjrpT1srtf8Weynl6R273VJ5GjkRb51IzMp5nbaPjJXMWeju2MKg==
   /js-beautify/1.13.0:
     dependencies:
       config-chain: 1.1.12

@@ -76,6 +76,7 @@
     "canvas": "^2.6.1",
     "copy-webpack-plugin": "^6.1.1",
     "cypress": "3.8.3",
+    "cypress-jest-adapter": "^0.1.1",
     "eslint": "^7.10.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.22.1",
