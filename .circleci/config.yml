@@ -148,13 +148,13 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run e2e tests
-          command: pnpm run test:e2e --filter raiden-dapp -- --headless --reporter junit --reporter-options "mochaFile=results/cypress.xml"
+          command: pnpm run test:e2e --filter raiden-dapp -- --headless
       - store_test_results:
-          path: results
+          path: raiden-dapp/tests/e2e/results/reports
       - store_artifacts:
-          path: cypress/videos
+          path: raiden-dapp/tests/e2e/results/videos
       - store_artifacts:
-          path: cypress/screenshots
+          path: raiden-dapp/tests/e2e/results/screenshots
 
   build_sdk:
     executor: base-executor
