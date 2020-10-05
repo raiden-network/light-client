@@ -1,3 +1,13 @@
 {
-  "pluginsFile": "tests/e2e/plugins/index.js"
+  "reporter": "junit",
+  "reporterOptions": "mochaFile=tests/e2e/results/report.xml",
+  "reporterOptions": {
+    "mochaFile": "tests/e2e/results/reports/summary.xml"
+  },
+  "screenshotsFolder": "tests/e2e/results/screenshots",
+  "videosFolder": "tests/e2e/results/videos",
+  "fixturesFolder": "tests/e2e/fixtures",
+  "integrationFolder": "tests/e2e/specs",
+  "pluginsFile": "tests/e2e/plugins/index.js",
+  "supportFile": "tests/e2e/support/index.ts"
 }

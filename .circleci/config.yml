@@ -74,6 +74,7 @@ jobs:
           <<: *package_lock_key
           paths:
             - ~/.pnpm-store
+            - ~/.cache # Cypress stores its stuff here.
       - persist_to_workspace:
           root: ~/src
           paths:
@@ -122,7 +123,7 @@ jobs:
           name: "Upload coverage"
           command: bash <(curl -s https://codecov.io/bash) -F sdk_e2e -F sdk -C $CIRCLE_SHA1
 
-  test_dapp:
+  test_dapp_unit:
     executor: base-executor
     working_directory: *working_dir
     steps:
@@ -139,6 +140,21 @@ jobs:
       - run:
           name: "Upload coverage"
           command: bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
+
+  test_dapp_e2e:
+    executor: base-executor
+    working_directory: *working_dir
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Run e2e tests
+          command: pnpm run test:e2e --filter raiden-dapp -- --headless
+      - store_test_results:
+          path: raiden-dapp/tests/e2e/results/reports
+      - store_artifacts:
+          path: raiden-dapp/tests/e2e/results/videos
+      - store_artifacts:
+          path: raiden-dapp/tests/e2e/results/screenshots
 
   build_sdk:
     executor: base-executor
@@ -202,7 +218,7 @@ jobs:
       - persist_to_workspace:
           root: ~/src/
           paths:
-           - ./raiden-dapp/dist/docs
+            - ./raiden-dapp/dist/docs
 
   deploy_gh_pages:
     executor: base-executor
@@ -271,18 +287,22 @@ workflows:
       - build_cli:
           requires:
             - build_sdk
-      - test_sdk_e2e:
-          requires:
-            - build_sdk
       - test_sdk_unit:
           requires:
             - build_sdk
-      - test_dapp:
+      - test_sdk_e2e:
+          requires:
+            - build_sdk
+      - test_dapp_unit:
+          requires:
+            - build_dapp
+      - test_dapp_e2e:
           requires:
             - build_dapp
       - deploy_gh_pages:
           requires:
-            - test_dapp
+            - test_dapp_unit
+            - test_dapp_e2e
           context: "Raiden-LC-Deploy"
           filters:
             branches:
