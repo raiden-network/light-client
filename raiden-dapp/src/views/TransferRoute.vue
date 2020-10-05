@@ -1,5 +1,5 @@
 <template>
-  <v-container class="transfer">
+  <v-container class="transfer" fluid>
     <no-tokens v-if="noTokens" />
     <template v-else>
       <transfer-headers
@@ -80,12 +80,17 @@ export default class TransferRoute extends Vue {
 @import '@/scss/mixins';
 
 .transfer {
+  display: flex;
+  flex-direction: column;
+  @include respond-to(handhelds) {
+    overflow-y: auto;
+  }
+
   &__menus,
   &__inputs,
   &__list {
     margin: 0 auto;
     width: 550px;
-
     @include respond-to(handhelds) {
       width: 100%;
     }
