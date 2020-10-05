@@ -1,7 +1,7 @@
-import { disclaimerRoute } from '../fixtures';
+import { navigateToDisclaimerRoute } from '../utils';
 
 it('accepts disclaimer and redirects to home route', () => {
-  disclaimerRoute();
+  navigateToDisclaimerRoute();
 
   cy.contains('Disclaimer').should('be.visible');
   cy.get('.disclaimer__accept-checkbox').click();
