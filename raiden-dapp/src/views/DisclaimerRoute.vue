@@ -26,6 +26,7 @@
     </div>
     <action-button
       :text="$t('disclaimer.accept-button')"
+      class="disclaimer__accept-button"
       :enabled="checkedAccept"
       sticky
       @click="accept"
