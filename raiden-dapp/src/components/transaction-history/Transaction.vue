@@ -107,10 +107,14 @@ export default class Transaction extends Vue {
 
 <style scoped lang="scss">
 @import '../../main';
+@import '@/scss/mixins';
 @import '@/scss/colors';
 
 .transaction {
   height: 74px;
+  @include respond-to(handhelds) {
+    height: 90px;
+  }
 
   &__item {
     &__icon {
