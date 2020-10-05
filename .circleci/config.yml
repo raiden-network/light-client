@@ -105,14 +105,14 @@ jobs:
           name: "Upload coverage"
           command: bash <(curl -s https://codecov.io/bash) -F sdk_unit -F sdk -C $CIRCLE_SHA1
 
-  test_sdk_e2e:
+  test_sdk_integration:
     executor: base-executor
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: pnpm run test:e2e --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
+          command: pnpm run test:integration --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -242,7 +242,7 @@ jobs:
           name: Publish on npm
           command: pnpm publish --no-git-checks --filter raiden-ts
 
-  integration_tests:
+  test_sdk_e2e:
     executor: integration-executor
     working_directory: *working_dir
     steps:
@@ -251,8 +251,8 @@ jobs:
           name: Restore dependencies
           command: pnpm install --prefer-frozen-lockfile && pnpm run build --filter raiden-ts
       - run:
-          name: Run integration tests
-          command: source /etc/profile.d/smartcontracts.sh && pnpm run test:integration --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
+          name: Run end-to-end tests
+          command: source /etc/profile.d/smartcontracts.sh && pnpm run test:e2e --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -290,7 +290,7 @@ workflows:
       - test_sdk_unit:
           requires:
             - build_sdk
-      - test_sdk_e2e:
+      - test_sdk_integration:
           requires:
             - build_sdk
       - test_dapp_unit:
@@ -356,6 +356,6 @@ workflows:
                 - master
     jobs:
       - checkout
-      - integration_tests:
+      - test_sdk_e2e:
           requires:
             - checkout
