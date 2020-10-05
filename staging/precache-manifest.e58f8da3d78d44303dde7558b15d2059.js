@@ -12,7 +12,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/config.json.example"
   },
   {
-    "revision": "13de8df66e906b4fcee6",
+    "revision": "5ca9858ab3750331781a",
     "url": "/staging/css/app.6d9fcb3a.css"
   },
   {
@@ -38,6 +38,10 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "a5b827509065629f38a8",
     "url": "/staging/css/chunk-3c185328.8b191d91.css"
+  },
+  {
+    "revision": "502a397f7cdfcfbb1b92",
+    "url": "/staging/css/chunk-492a4a50.ea3e8542.css"
   },
   {
     "revision": "b1262a637cab3f5c5611",
@@ -86,10 +90,6 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "4ae739ad08facb7f5889",
     "url": "/staging/css/chunk-ee06029c.96bf5c72.css"
-  },
-  {
-    "revision": "9410180d94babbc94d4d",
-    "url": "/staging/css/chunk-f70cf4e6.20f430b1.css"
   },
   {
     "revision": "7f3c20d30f132092d982",
@@ -336,12 +336,12 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/img/withdrawal.c80c3337.svg"
   },
   {
-    "revision": "485e8fae0860ffb0dbada46b37ec6d8c",
+    "revision": "89433bc118a86bfa93d7dbc532e2550a",
     "url": "/staging/index.html"
   },
   {
-    "revision": "13de8df66e906b4fcee6",
-    "url": "/staging/js/app.e4d3e746.js"
+    "revision": "5ca9858ab3750331781a",
+    "url": "/staging/js/app.eb8e3821.js"
   },
   {
     "revision": "88188310a8ebbbb45708",
@@ -370,6 +370,10 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "edc6b70500ae3c74add8",
     "url": "/staging/js/chunk-3d571b96.94ecc62c.js"
+  },
+  {
+    "revision": "502a397f7cdfcfbb1b92",
+    "url": "/staging/js/chunk-492a4a50.d89bb8bc.js"
   },
   {
     "revision": "b1262a637cab3f5c5611",
@@ -430,10 +434,6 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "4ae739ad08facb7f5889",
     "url": "/staging/js/chunk-ee06029c.afef1c4f.js"
-  },
-  {
-    "revision": "9410180d94babbc94d4d",
-    "url": "/staging/js/chunk-f70cf4e6.a9ee4568.js"
   },
   {
     "revision": "7f3c20d30f132092d982",
