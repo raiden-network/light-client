@@ -55,7 +55,7 @@ async function createRaiden(account: number | string | Signer): Promise<Raiden> 
 }
 
 const wait = async (timeInMs: number): Promise<void> =>
-  new Promise(resolve => setTimeout(() => resolve(), timeInMs));
+  new Promise((resolve) => setTimeout(() => resolve(), timeInMs));
 
 function getToken(): string {
   const token = process.env.TTT_TOKEN_ADDRESS;
@@ -71,8 +71,8 @@ describe('e2e', () => {
     raiden.start();
   });
 
-  afterAll(done => {
-    raiden.events$.pipe(filter(value => value.type === 'raiden/shutdown')).subscribe(done);
+  afterAll((done) => {
+    raiden.events$.pipe(filter((value) => value.type === 'raiden/shutdown')).subscribe(done);
     raiden.stop();
   });
 
