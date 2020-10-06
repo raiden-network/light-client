@@ -3,9 +3,11 @@
 ## [Unreleased]
 ### Fixed
 - [#2094] Fix TransferState's timestamps missing
+- [#2174] Fix a few transport issues triggered on high-load scenarios
 
 ### Added
 - [#2044] Introduce PouchDB (IndexedDB/leveldown) as new persistent state storage backend
+- [#2204] Implement toDevice capability and messaging
 
 ### Changed
 - [#2158] Adapt WebRTC to new protocol compatible with python client
@@ -13,6 +15,8 @@
 [#2044]: https://github.com/raiden-network/light-client/issues/2044
 [#2094]: https://github.com/raiden-network/light-client/issues/2094
 [#2158]: https://github.com/raiden-network/light-client/issues/2158
+[#2174]: https://github.com/raiden-network/light-client/pull/2174
+[#2204]: https://github.com/raiden-network/light-client/issues/2204
 
 ## [0.11.1] - 2020-08-18
 ### Changed
@@ -20,7 +24,7 @@
 - [#2054] Update to Raiden contracts `v0.37.1`
 
 [#2049]: https://github.com/raiden-network/light-client/issues/2049
-[#2054]: https://github.com/raiden-network/light-client/pulls/2054
+[#2054]: https://github.com/raiden-network/light-client/pull/2054
 
 
 ## [0.11.0] - 2020-08-04
