@@ -401,7 +401,13 @@ function listenDataChannel(
               );
             }),
           ),
-        ).pipe(finalize(() => (dataChannel.close(), connection.close()))),
+        ).pipe(
+          finalize(() => {
+            dataChannel.close();
+            // FIXME: https://github.com/node-webrtc/node-webrtc/issues/636
+            // connection.close();
+          }),
+        ),
       ),
     );
 }

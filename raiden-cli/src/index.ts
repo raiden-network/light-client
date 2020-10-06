@@ -205,8 +205,8 @@ function shutdownRaiden(this: Cli): void {
   if (this.raiden.started) {
     this.log.info('Stopping raiden...');
     this.raiden.stop();
-    // force-exit at most 5s after stopping raiden
-    unrefTimeout(setTimeout(() => process.exit(0), 5000));
+    // force-exit at most 10s after stopping raiden
+    unrefTimeout(setTimeout(() => process.exit(0), 10000));
   } else {
     process.exit(1);
   }
