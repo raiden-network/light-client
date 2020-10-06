@@ -19,9 +19,11 @@ import {
 import minBy from 'lodash/minBy';
 import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
+import pick from 'lodash/pick';
 import { getAddress, verifyMessage } from 'ethers/utils';
 import { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 
+import { exponentialBackoff } from '../../transfers/epics/utils';
 import { assert } from '../../utils';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Address, isntNil } from '../../utils/types';
@@ -30,7 +32,7 @@ import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { getUserPresence } from '../../utils/matrix';
-import { pluckDistinct } from '../../utils/rx';
+import { pluckDistinct, retryWaitWhile } from '../../utils/rx';
 import { matrixPresence } from '../actions';
 import { channelMonitored } from '../../channels/actions';
 import { parseCaps, stringifyCaps } from '../utils';
@@ -146,6 +148,8 @@ export const matrixMonitorPresenceEpic = (
     ),
   );
 
+const comparePresencesFields = ['userId', 'available', 'caps'] as const;
+
 /**
  * Monitor peers matrix presence from User.presence events
  * We aggregate all users of interest (i.e. for which a monitor request was emitted at some point)
@@ -157,12 +161,13 @@ export const matrixMonitorPresenceEpic = (
  * @param deps.log - Logger instance
  * @param deps.matrix$ - MatrixClient async subject
  * @param deps.latest$ - Latest values
+ * @param deps.config$ - Config observable
  * @returns Observable of presence updates
  */
 export const matrixPresenceUpdateEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, matrix$, latest$ }: RaidenEpicDeps,
+  { log, matrix$, latest$, config$ }: RaidenEpicDeps,
 ): Observable<matrixPresence.success> =>
   matrix$
     .pipe(
@@ -170,21 +175,23 @@ export const matrixPresenceUpdateEpic = (
       switchMap((matrix) =>
         // matrix's 'User.presence' sometimes fail to fire, but generic 'event' is always fired,
         // and User (retrieved via matrix.getUser) is up-to-date before 'event' emits
-        fromEvent<MatrixEvent>(matrix, 'event').pipe(map((event) => ({ event, matrix }))),
+        fromEvent<MatrixEvent>(matrix, 'event').pipe(
+          filter((event) => event.getType() === 'm.presence'),
+          map((event) => ({ event, matrix })),
+        ),
       ),
-      filter(({ event }) => event.getType() === 'm.presence'),
       // parse peer address from userId
       map(({ event, matrix }) => {
-        // as 'event' is emitted after user is (created and) updated, getUser always returns it
-        const user = matrix.getUser(event.getSender());
         try {
+          // as 'event' is emitted after user is (created and) updated, getUser always returns it
+          const user = matrix.getUser(event.getSender());
           assert(user?.presence);
           const peerAddress = userRe.exec(user.userId)?.[1];
           assert(peerAddress);
           // getAddress will convert any valid address into checksummed-format
           const address = getAddress(peerAddress) as Address | undefined;
           assert(address);
-          return { matrix, user, address };
+          return { matrix, user, address, event };
         } catch (err) {}
       }),
       // filter out events without userId in the right format (startWith hex-address)
@@ -196,11 +203,12 @@ export const matrixPresenceUpdateEpic = (
           scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<Address>()),
           startWith(new Set<Address>()),
         ),
+        config$,
       ),
       // filter out events from users we don't care about
       // i.e.: presence monitoring never requested
       filter(([{ address }, toMonitor]) => toMonitor.has(address)),
-      mergeMap(([{ matrix, user, address }]) => {
+      mergeMap(([{ matrix, user, address }, , { pollingInterval, httpTimeout }]) => {
         // first filter can't tell typescript this property will always be set!
         const userId = user.userId,
           presence = user.presence!,
@@ -227,21 +235,30 @@ export const matrixPresenceUpdateEpic = (
               { address: recovered },
             );
           }),
+          retryWaitWhile(
+            exponentialBackoff(pollingInterval, httpTimeout),
+            (err) => err?.httpStatus !== 429, // retry rate-limit errors only
+          ),
           catchError(
-            (err) => (log.debug('Error validating presence event, ignoring', err), EMPTY),
+            (err) => (log.warn('Error validating presence event, ignoring', userId, err), EMPTY),
           ),
         );
       }),
     )
     .pipe(
       withLatestFrom(latest$),
-      // filter out if presence update is to offline, and address became online in another user
       filter(
         ([action, { presences }]) =>
-          action.payload.available ||
-          !(action.meta.address in presences) ||
-          !presences[action.meta.address].payload.available ||
-          action.payload.userId === presences[action.meta.address].payload.userId,
+          // filter out if presence update is to offline, and address became online in another user
+          (action.payload.available ||
+            !(action.meta.address in presences) ||
+            !presences[action.meta.address].payload.available ||
+            action.payload.userId === presences[action.meta.address].payload.userId) &&
+          // pass only if some relevant field changed
+          !isEqual(
+            pick(action.payload, comparePresencesFields),
+            pick(presences[action.meta.address]?.payload, comparePresencesFields),
+          ),
       ),
       pluck(0),
     );

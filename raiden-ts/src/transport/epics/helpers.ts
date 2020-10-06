@@ -1,24 +1,24 @@
-import { Observable, of, EMPTY, fromEvent, timer, throwError, defer, merge } from 'rxjs';
+import { Observable, of, fromEvent, timer, throwError, combineLatest } from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
   map,
   mergeMap,
   withLatestFrom,
-  switchMap,
   take,
-  mapTo,
-  pluck,
   retryWhen,
+  startWith,
+  pluck,
 } from 'rxjs/operators';
 import curry from 'lodash/curry';
-import { Room, MatrixClient, EventType, RoomMember, MatrixEvent } from 'matrix-js-sdk';
+import { Room, MatrixClient, EventType } from 'matrix-js-sdk';
 
 import { Capabilities } from '../../constants';
 import { RaidenConfig } from '../../config';
 import { RaidenEpicDeps } from '../../types';
 import { isntNil, Address, Signed } from '../../utils/types';
 import { RaidenError, ErrorCodes } from '../../utils/error';
+import { pluckDistinct } from '../../utils/rx';
 import { Message } from '../../messages/types';
 import { decodeJsonMessage, getMessageSigner } from '../../messages/utils';
 
@@ -68,49 +68,26 @@ function waitMember$(
   address: Address,
   { latest$ }: Pick<RaidenEpicDeps, 'latest$'>,
 ) {
-  return latest$.pipe(
-    map(({ state }) => state.transport.rooms?.[address]?.[0]),
-    // wait for a room to exist (created or invited) for address
-    filter(isntNil),
-    distinctUntilChanged(),
-    // this switchMap unsubscribes from previous "wait" if first room for address changes
-    switchMap((roomId) =>
-      // get/wait room object for roomId
-      // may wait for the room state to be populated (happens after createRoom resolves)
-      getRoom$(matrix, roomId).pipe(
-        mergeMap((room) =>
-          // wait for address to be monitored & online (after getting Room for address)
-          // latest$ ensures it happens immediatelly if all conditions are satisfied
-          latest$.pipe(
-            pluck('presences', address),
-            map((presence) =>
-              presence?.payload?.available ? presence.payload.userId : undefined,
-            ),
-            distinctUntilChanged(),
-            map((userId) => ({ room, userId })),
-          ),
-        ),
-        // when user is online, get room member for partner's userId
-        // this switchMap unsubscribes from previous wait if userId changes or go offline
-        switchMap(({ room, userId }) => {
-          if (!userId) return EMPTY; // user not monitored or not available
-          const member = room.getMember(userId);
-          // if it already joined room, return its membership
-          if (member && member.membership === 'join') return of(member);
-          // else, wait for the user to join/accept invite
-          return fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
-            pluck(1),
-            filter(
-              (member) =>
-                member.roomId === room.roomId &&
-                member.userId === userId &&
-                member.membership === 'join',
-            ),
-          );
-        }),
-        pluck('roomId'),
-      ),
+  return combineLatest([
+    latest$.pipe(
+      pluckDistinct('presences', address),
+      filter((presence) => !!presence?.payload?.available),
     ),
+    latest$.pipe(
+      map(({ state }) => state.transport.rooms?.[address]?.[0]),
+      // wait for a room to exist (created or invited) for address
+      filter(isntNil),
+      distinctUntilChanged(),
+    ),
+    fromEvent(matrix, 'Room').pipe(startWith(null)),
+    fromEvent(matrix, 'RoomMember.membership').pipe(startWith(null)),
+  ]).pipe(
+    filter(
+      ([presence, roomId]) =>
+        matrix.getRoom(roomId)?.getMember?.(presence.payload.userId)?.membership === 'join',
+    ),
+    pluck(1),
+    take(1),
   );
 }
 
@@ -137,59 +114,43 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
   allowRtc = false,
 ): Observable<string> {
   const RETRY_COUNT = 3; // is this relevant enough to become a constant/setting?
-  return merge(
-    // if available & open, use channel
-    latest$.pipe(
-      filter(
-        ({ presences, rtc }) =>
-          allowRtc &&
-          address in presences &&
-          presences[address].payload.available &&
-          rtc[address]?.readyState === 'open',
-      ),
-      pluck('rtc', address),
-    ),
-    // if available and Capabilities.TO_DEVICE enabled on both ends, use ToDevice messages
-    latest$.pipe(
-      pluck('presences', address),
-      withLatestFrom(config$),
-      filter(
-        ([presence, { caps }]) =>
-          !!caps?.[Capabilities.TO_DEVICE] &&
-          !!presence?.payload?.available &&
-          !!presence.payload.caps?.[Capabilities.TO_DEVICE],
-      ),
-      pluck('0', 'payload', 'userId'),
-    ),
-    waitMember$(matrix, address, { latest$ }),
-  ).pipe(
-    take(1), // use first room/user which meets all requirements/filters above
-    mergeMap((via) =>
-      defer<Promise<unknown>>(
-        async () =>
-          typeof via !== 'string'
-            ? via.send(content.body) // via RTC channel
-            : via.startsWith('@')
-            ? matrix.sendToDevice(type, { [via]: { '*': content } }) // via toDevice message
-            : matrix.sendEvent(via, type, content, ''), // via room
-      ).pipe(
-        // this returned value is just for notification, and shouldn't be relayed on;
-        // all functionality is provided as side effects of the subscription
-        mapTo(typeof via === 'string' ? via : via.label),
-        retryWhen((err$) =>
-          // if sendEvent throws, omit & retry after pollingInterval
-          // up to RETRY_COUNT times; if it continues to error, throws down
-          err$.pipe(
-            withLatestFrom(config$),
-            mergeMap(([err, { pollingInterval }], i) => {
-              if (i < RETRY_COUNT - 1) {
-                log.warn(`messageSend error, retrying ${i + 1}/${RETRY_COUNT}`, err);
-                return timer(pollingInterval);
-                // give up
-              } else return throwError(err);
-            }),
-          ),
-        ),
+  return latest$.pipe(
+    filter(({ presences }) => !!presences[address]?.payload?.available),
+    take(1),
+    withLatestFrom(config$),
+    mergeMap(([{ presences, rtc }, { caps }]) => {
+      // if available & open, use channel
+      if (allowRtc && rtc[address]?.readyState === 'open') return of(rtc[address]);
+      // if available and Capabilities.TO_DEVICE enabled on both ends, use ToDevice messages
+      if (
+        caps?.[Capabilities.TO_DEVICE] &&
+        presences[address].payload.caps?.[Capabilities.TO_DEVICE]
+      )
+        return of(presences[address].payload.userId);
+      return waitMember$(matrix, address, { latest$ });
+    }),
+    mergeMap(async (via) => {
+      if (typeof via !== 'string') via.send(content.body);
+      // via RTC channel
+      else if (via.startsWith('@')) await matrix.sendToDevice(type, { [via]: { '*': content } });
+      // via toDevice message
+      else await matrix.sendEvent(via, type, content, ''); // via room
+      // this returned value is just for notification, and shouldn't be relayed on;
+      // all functionality is provided as side effects of the subscription
+      return typeof via !== 'string' ? via.label : via;
+    }),
+    retryWhen((err$) =>
+      // if sendEvent throws, omit & retry since first 'latest$' after pollingInterval
+      // up to RETRY_COUNT times; if it continues to error, throws down
+      err$.pipe(
+        withLatestFrom(config$),
+        mergeMap(([err, { pollingInterval }], i) => {
+          if (i < RETRY_COUNT - 1) {
+            log.warn(`messageSend error, retrying ${i + 1}/${RETRY_COUNT}`, err);
+            return timer(pollingInterval);
+            // give up
+          } else return throwError(err);
+        }),
       ),
     ),
   );
