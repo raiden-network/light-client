@@ -63,7 +63,7 @@ function getToken(): string {
   return token;
 }
 
-describe('integration', () => {
+describe('e2e', () => {
   let raiden: Raiden;
 
   beforeAll(async () => {

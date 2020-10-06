@@ -33,15 +33,24 @@ pnpm run test
 pnpm run lint
 ```
 
-### Run your end-to-end tests
-```
-pnpm run test:e2e
-```
-
 ### Run your unit tests
 ```
 pnpm run test:unit
 ```
+
+### Run your end-to-end tests
+
+```
+pnpm run test:e2e
+```
+
+If you have not a full environment setup with Ethereum node, Matrix server etc.,
+then you can make use of the following script target:
+
+```
+pnpm run test:e2e:docker
+```
+
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
