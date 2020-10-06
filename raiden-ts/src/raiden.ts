@@ -417,9 +417,10 @@ export class Raiden {
       prevBlockNumber: this.state.blockNumber,
       address: this.address,
       TokenNetworkRegistry: this.deps.contractsInfo.TokenNetworkRegistry.address,
-      network: this.deps.network,
+      network: { name: this.deps.network.name, chainId: this.deps.network.chainId },
       'raiden-ts': Raiden.version,
       'raiden-contracts': Raiden.contractVersion,
+      config: this.config,
     });
 
     // Set `epicMiddleware` to `null`, this indicates the instance is not running.
