@@ -13,6 +13,7 @@
     "test:unit": "NODE_ENV=development jest --runInBand --ci --coverage=true tests/unit",
     "test:integration": "NODE_ENV=development jest --runInBand --ci --coverage=true tests/integration",
     "test:e2e": "NODE_ENV=development jest --runInBand --ci --coverage=true tests/e2e",
+    "test:e2e:docker": "bash ../e2e-environment/run-e2e-tests.sh",
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "clean": "rimraf dist/ dist:cjs/ .coverage/ src/contracts/ src/abi/ src/deployment/ src/versions.json",
     "contracts:pre": "node ./scripts/copyContracts.js prebuild",
