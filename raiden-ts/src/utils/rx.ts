@@ -6,6 +6,7 @@ import {
   defer,
   throwError,
   timer,
+  race,
 } from 'rxjs';
 import {
   pluck,
@@ -19,6 +20,7 @@ import {
   takeWhile,
   map,
   switchMap,
+  mergeMapTo,
 } from 'rxjs/operators';
 import { isntNil } from './types';
 
@@ -99,6 +101,39 @@ export function repeatUntil<T>(
 }
 
 /**
+ * Operator to retry/re-subscribe input$ until a stopPredicate returns truthy or delayMs iterator
+ * completes, waiting delayMs milliseconds between retries.
+ * Input observable must be re-subscribable/retriable.
+ *
+ * @param delayMs - Interval or iterator of intervals to wait between retries
+ * @param stopPredicate - Receives error and count, stop retry and throw if returns truthy
+ * @returns Operator function to retry if stopPredicate not truthy waiting between retries
+ */
+export function retryWaitWhile<T>(
+  delayMs: number | Iterator<number>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
+): MonoTypeOperatorFunction<T> {
+  return (input$) =>
+    input$.pipe(
+      retryWhen((error$) =>
+        error$.pipe(
+          mergeMap((error, count) => {
+            let interval;
+            if (typeof delayMs === 'number') interval = delayMs;
+            else {
+              const next = delayMs.next();
+              interval = !next.done ? next.value : -1;
+            }
+            if (stopPredicate(error, count) || interval < 0) return throwError(error);
+            return timer(interval);
+          }),
+        ),
+      ),
+    );
+}
+
+/**
  * Receives an async function and returns an observable which will retry it every interval until it
  * resolves, or throw if it can't succeed after 10 retries.
  * It is needed e.g. on provider methods which perform RPC requests directly, as they can fail
@@ -106,26 +141,18 @@ export function repeatUntil<T>(
  * JsonRpcProvider._doPoll also catches, suppresses & retry
  *
  * @param func - An async function (e.g. a Promise factory, like a defer callback)
- * @param interval - Interval to retry in case of rejection
+ * @param delayMs - Interval to retry in case of rejection, or iterator yielding intervals
  * @param stopPredicate - Stops retrying and throws if this function returns a truty value;
  *      Receives error and retry count; Default: stops after 10 retries
  * @returns Observable version of async function, with retries
  */
 export function retryAsync$<T>(
   func: () => Promise<T>,
-  interval = 1e3,
+  delayMs: number | Iterator<number> = 1e3,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
 ): Observable<T> {
-  return defer(func).pipe(
-    retryWhen((error$) =>
-      error$.pipe(
-        mergeMap((error, count) =>
-          stopPredicate(error, count) ? throwError(error) : timer(interval),
-        ),
-      ),
-    ),
-  );
+  return defer(func).pipe(retryWaitWhile(delayMs, stopPredicate));
 }
 
 /**
@@ -153,4 +180,15 @@ export function takeIf<T>(
       // re-subscribe input$ when cond becomes truty
       repeatWhen(() => distinctCond$.pipe(filter((cond): cond is true => cond))),
     );
+}
+
+/**
+ * Like timeout rxjs operator, but applies only on first emition
+ *
+ * @param timeout - Timeout to wait for an item flow through input
+ * @returns Operator function
+ */
+export function timeoutFirst<T>(timeout: number): MonoTypeOperatorFunction<T> {
+  return (input$) =>
+    race(timer(timeout).pipe(mergeMapTo(throwError(new Error('timeout waiting first')))), input$);
 }

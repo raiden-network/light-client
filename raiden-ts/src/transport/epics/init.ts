@@ -8,11 +8,11 @@ import {
   merge,
   defer,
   AsyncSubject,
+  timer,
 } from 'rxjs';
 import {
   catchError,
   concatMap,
-  delay,
   filter,
   ignoreElements,
   map,
@@ -28,12 +28,13 @@ import {
   pluck,
   throwIfEmpty,
   retryWhen,
+  delayWhen,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
 
-import { createClient, MatrixClient, MatrixEvent, Filter } from 'matrix-js-sdk';
+import { createClient, MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 
 import { assert } from '../../utils';
@@ -43,7 +44,8 @@ import { RaidenAction } from '../../actions';
 import { RaidenConfig } from '../../config';
 import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
-import { pluckDistinct, retryAsync$ } from '../../utils/rx';
+import { pluckDistinct, retryAsync$, retryWaitWhile } from '../../utils/rx';
+import { exponentialBackoff } from '../../transfers/epics/utils';
 import { matrixSetup } from '../actions';
 import { RaidenMatrixSetup } from '../state';
 import { Caps } from '../types';
@@ -95,23 +97,21 @@ function joinGlobalRooms(config: RaidenConfig, matrix: MatrixClient): Observable
  * @param roomIds - The ids of the rooms to filter out during sync.
  * @returns Observable of the {@link Filter} that was created.
  */
-function createFilter(matrix: MatrixClient, roomIds: string[]): Observable<Filter> {
-  return defer(() => {
-    const roomFilter = {
-      not_rooms: roomIds,
-      ephemeral: {
-        not_types: ['m.receipt', 'm.typing'],
-      },
-      timeline: {
-        limit: 0,
-        not_senders: [matrix.getUserId()!],
-      },
-    };
-    const filterDefinition = {
-      room: roomFilter,
-    };
-    return matrix.createFilter(filterDefinition);
-  });
+async function createFilter(matrix: MatrixClient, roomIds: string[]) {
+  const roomFilter = {
+    not_rooms: roomIds,
+    ephemeral: {
+      not_types: ['m.receipt', 'm.typing'],
+    },
+    timeline: {
+      limit: 0,
+      not_senders: [matrix.getUserId()!],
+    },
+  };
+  const filterDefinition = {
+    room: roomFilter,
+  };
+  return matrix.createFilter(filterDefinition);
 }
 
 function startMatrixSync(
@@ -127,12 +127,17 @@ function startMatrixSync(
       matrix$.next(matrix);
       matrix$.complete();
     }),
-    delay(1e3), // wait 1s before starting matrix, so event listeners can be registered
     withLatestFrom(config$),
+    // wait 1s before starting matrix, so event listeners can be registered
+    delayWhen(([, { pollingInterval }]) => timer(Math.ceil(pollingInterval / 5))),
     mergeMap(([, config]) =>
       joinGlobalRooms(config, matrix).pipe(
         mergeMap((roomIds) => createFilter(matrix, roomIds)),
         mergeMap((filter) => matrix.startClient({ filter })),
+        retryWaitWhile(
+          exponentialBackoff(config.pollingInterval, config.httpTimeout),
+          (err) => err?.httpStatus !== 429, // retry rate-limit errors only
+        ),
       ),
     ),
     ignoreElements(),
@@ -246,7 +251,7 @@ function setupMatrixClient$(
           accessToken: setup.accessToken,
           deviceId: setup.deviceId,
         });
-        return of({ matrix, server, setup });
+        return of({ matrix, server, setup, pollingInterval });
       } else {
         const matrix = createClient({ baseUrl: server });
         const userName = address.toLowerCase(),
@@ -291,31 +296,32 @@ function setupMatrixClient$(
                   accessToken: access_token,
                   deviceId: device_id,
                   displayName: signedUserId,
-                } as RaidenMatrixSetup,
+                },
+                pollingInterval,
               })),
             );
           }),
-          // the APIs below are authenticated, and therefore also act as validator
-          mergeMap(({ matrix, server, setup }) =>
-            // set these properties before starting sync
-            merge(
-              retryAsync$(
-                () => matrix.setDisplayName(setup.displayName),
-                pollingInterval,
-                (err) => err?.httpStatus !== 429,
-              ),
-              retryAsync$(
-                () => matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
-                pollingInterval,
-                (err) => err?.httpStatus !== 429,
-              ),
-            ).pipe(
-              mapTo({ matrix, server, setup }), // return triplet again
-            ),
-          ),
         );
       }
     }),
+    // the APIs below are authenticated, and therefore also act as validator
+    mergeMap(({ matrix, server, setup, pollingInterval }) =>
+      // set these properties before starting sync
+      combineLatest([
+        retryAsync$(
+          () => matrix.setDisplayName(setup.displayName),
+          pollingInterval,
+          (err) => err?.httpStatus !== 429,
+        ),
+        retryAsync$(
+          () => matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
+          pollingInterval,
+          (err) => err?.httpStatus !== 429,
+        ),
+      ]).pipe(
+        mapTo({ matrix, server, setup }), // return triplet again
+      ),
+    ),
   );
 }
 

@@ -1,4 +1,4 @@
-import { Observable, from, of, EMPTY, fromEvent, timer, defer, concat } from 'rxjs';
+import { Observable, from, of, EMPTY, fromEvent, timer, defer, combineLatest } from 'rxjs';
 import {
   catchError,
   delay,
@@ -20,22 +20,25 @@ import {
   distinct,
   delayWhen,
   pluck,
+  startWith,
 } from 'rxjs/operators';
 
 import { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
 
 import { Capabilities } from '../../constants';
+import { RaidenConfig } from '../../config';
 import { Address, isntNil } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
+import { RaidenState } from '../../state';
 import { channelMonitored } from '../../channels/actions';
 import { messageSend, messageReceived } from '../../messages/actions';
 import { transferSigned } from '../../transfers/actions';
-import { RaidenState } from '../../state';
-import { pluckDistinct } from '../../utils/rx';
+import { pluckDistinct, retryWaitWhile, takeIf } from '../../utils/rx';
 import { getServerName } from '../../utils/matrix';
 import { Direction } from '../../transfers/state';
+import { exponentialBackoff } from '../../transfers/epics/utils';
 import { matrixRoom, matrixRoomLeave, matrixPresence } from '../actions';
 import { globalRoomNames, getRoom$, roomMatch } from './helpers';
 
@@ -47,7 +50,9 @@ import { globalRoomNames, getRoom$, roomMatch } from './helpers';
  * @param matrix - client instance
  * @param roomId - room to invite user to
  * @param userId - user to be invited
- * @param config$ - Observable of config object containing httpTimeout used as iteration delay
+ * @param config - Config object
+ * @param config.pollingInterval - wait this interval before first invite
+ * @param config.httpTimeout - wait this interval between retries
  * @param opts - Options object
  * @param opts.log - Logger instance
  * @returns Cold observable which keep inviting user if needed and then completes.
@@ -56,43 +61,26 @@ function inviteLoop$(
   matrix: MatrixClient,
   roomId: string,
   userId: string,
-  config$: Observable<{ httpTimeout: number }>,
-  { log }: { log: RaidenEpicDeps['log'] },
+  { pollingInterval, httpTimeout }: RaidenConfig,
+  { log }: Pick<RaidenEpicDeps, 'log'>,
 ) {
-  return defer(() => {
-    const room = matrix.getRoom(roomId);
-    return room
-      ? // use room already present in matrix instance
-        of(room)
-      : // wait for room
-        fromEvent<Room>(matrix, 'Room').pipe(
-          filter((room) => room.roomId === roomId),
-          take(1),
-        );
-  }).pipe(
-    // stop if user already a room member
-    filter((room) => {
-      const member = room.getMember(userId);
-      return !member || member.membership !== 'join';
-    }),
-    withLatestFrom(config$),
-    mergeMap(([, { httpTimeout }]) =>
-      // defer here ensures invite is re-done on repeat (re-subscription)
-      defer(() => matrix.invite(roomId, userId).catch(log.warn.bind(log, 'Error inviting'))).pipe(
+  // defer here ensures invite is re-done on repeat (re-subscription)
+  return timer(pollingInterval).pipe(
+    mergeMap(() =>
+      defer(() => matrix.invite(roomId, userId)).pipe(
+        catchError((err) => (log.warn('Error inviting', err), EMPTY)),
         // while shouldn't stop (by unsubscribe or takeUntil)
         repeatWhen((completed$) => completed$.pipe(delay(httpTimeout))),
-        takeUntil(
-          // stop repeat+defer loop above when user joins
-          fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
-            pluck(1),
-            filter(
-              (member) =>
-                member.roomId === roomId &&
-                member.userId === userId &&
-                member.membership === 'join',
-            ),
-          ),
-        ),
+      ),
+    ),
+    // takeIf will unsubscribe from repeat loop if user joins room, re-subscribe while/if not
+    takeIf(
+      fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
+        pluck(1),
+        filter((member) => member.roomId === roomId && member.userId === userId),
+        startWith(matrix.getRoom(roomId)?.getMember?.(userId)),
+        map((member) => member?.membership !== 'join'),
+        distinctUntilChanged(),
       ),
     ),
   );
@@ -109,12 +97,13 @@ function inviteLoop$(
  * @param deps.log - Logger instance
  * @param deps.matrix$ - MatrixClient async subject
  * @param deps.latest$ - Latest values
+ * @param deps.config$ - Config observable
  * @returns Observable of matrixRoom actions
  */
 export const matrixCreateRoomEpic = (
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { address, log, matrix$, latest$ }: RaidenEpicDeps,
+  { address, log, matrix$, latest$, config$ }: RaidenEpicDeps,
 ): Observable<matrixRoom> =>
   // actual output observable, selects addresses of interest from actions
   action$.pipe(
@@ -153,10 +142,11 @@ export const matrixCreateRoomEpic = (
       grouped$.pipe(
         // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
         mergeMap((address) => matrix$.pipe(map((matrix) => ({ address, matrix })))),
+        withLatestFrom(config$),
         // exhaustMap is used to prevent bursts of actions for a given address (eg. on startup)
         // of creating multiple rooms for same address, so we ignore new address items while
         // previous is being processed. If user roams, matrixInviteEpic will re-invite
-        exhaustMap(({ address, matrix }) =>
+        exhaustMap(([{ address, matrix }, { pollingInterval, httpTimeout }]) =>
           // presencesStateReplay$+take(1) acts like withLatestFrom with cached result
           latest$.pipe(
             // wait for user to be monitored
@@ -178,6 +168,10 @@ export const matrixCreateRoomEpic = (
               }),
             ),
             map(({ room_id: roomId }) => matrixRoom({ roomId }, { address })),
+            retryWaitWhile(
+              exponentialBackoff(pollingInterval, httpTimeout),
+              (err) => err?.httpStatus !== 429, // retry rate-limit errors only
+            ),
             catchError((err) => (log.error('Error creating room, ignoring', err), EMPTY)),
           ),
         ),
@@ -210,44 +204,21 @@ export const matrixInviteEpic = (
     groupBy((a) => a.meta.address),
     mergeMap((grouped$) =>
       // grouped$ is one observable of presence actions per partners address
-      grouped$.pipe(
+      combineLatest([
+        grouped$,
+        latest$.pipe(
+          map(({ state }) => state.transport.rooms?.[grouped$.key]?.[0]),
+          distinctUntilChanged(),
+        ),
+      ]).pipe(
         // action comes only after matrix$ is started, so it's safe to use withLatestFrom
-        withLatestFrom(matrix$),
+        withLatestFrom(matrix$, config$),
         // switchMap on new presence action for address
-        switchMap(([action, matrix]) =>
+        switchMap(([[action, roomId], matrix, config]) =>
           // if not available, do nothing (and unsubscribe from previous observable)
-          !action.payload.available
+          !action.payload.available || !roomId
             ? EMPTY
-            : latest$.pipe(
-                map(({ state }) => state.transport.rooms?.[action.meta.address]?.[0]),
-                distinctUntilChanged(),
-                switchMap((roomId) =>
-                  concat(
-                    of(roomId),
-                    !roomId
-                      ? EMPTY
-                      : // re-trigger invite loop if user leaves
-                        fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
-                          pluck(1),
-                          filter(
-                            (member) =>
-                              member.roomId === roomId &&
-                              member.userId === action.payload.userId &&
-                              member.membership === 'leave',
-                          ),
-                          mapTo(roomId),
-                        ),
-                  ),
-                ),
-                // switchMap on main roomId change
-                switchMap((roomId) =>
-                  !roomId
-                    ? // if roomId not set, do nothing and unsubscribe
-                      EMPTY
-                    : // while subscribed and user didn't join, invite every httpTimeout=30s
-                      inviteLoop$(matrix, roomId, action.payload.userId, config$, { log }),
-                ),
-              ),
+            : inviteLoop$(matrix, roomId, action.payload.userId, config, { log }),
         ),
       ),
     ),
@@ -300,10 +271,15 @@ export const matrixHandleInvitesEpic = (
         );
       return senderPresence$.pipe(map((senderPresence) => ({ matrix, member, senderPresence })));
     }),
-    mergeMap(({ matrix, member, senderPresence }) =>
+    withLatestFrom(config$),
+    mergeMap(([{ matrix, member, senderPresence }, { pollingInterval, httpTimeout }]) =>
       // join room and emit MatrixRoomAction to make it default/first option for sender address
-      from(matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
+      defer(() => matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
         mapTo(matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
+        retryWaitWhile(
+          exponentialBackoff(pollingInterval, httpTimeout),
+          (err) => err?.httpStatus !== 429, // retry rate-limit errors only
+        ),
         catchError((err) => (log.error('Error joining invited room, ignoring', err), EMPTY)),
       ),
     ),
