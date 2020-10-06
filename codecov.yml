@@ -31,16 +31,16 @@ flags:
   dapp:
     paths:
       - raiden-dapp/
-  sdk_unit:
-    paths:
-      - raiden-ts/
-  sdk_e2e:
-    paths:
-      - raiden-ts/
   sdk:
     paths:
       - raiden-ts/
+  sdk_unit:
+    paths:
+      - raiden-ts/
   sdk_integration:
+    paths:
+      - raiden-ts/
+  sdk_e2e:
     carryforward: true
     paths:
       - raiden-ts/

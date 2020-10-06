@@ -68,8 +68,8 @@ all relevant configuration files to build a new image.
 If the resource has been updated successfully, check if the hub is online and
 attempt to open a channel to it. Finally try to do a transfer with the hub.
 
-## Integration Tests (Optional)
+## End-to-End Tests (Optional)
 
-The Light client uses a Docker image to run nightly integration tests. To
+The Light client uses a Docker image to run nightly end-to-end tests. To
 upgrade this image, checkout the according
-[documentation](./integration/README.md).
+[documentation](./e2e-environment/README.md).

@@ -24,7 +24,7 @@ executors:
     docker:
       - image: *docker_image
 
-  integration-executor:
+  e2e-environment-executor:
     working_directory: ~/src
     docker:
       - image: raidennetwork/lightclient-integration:latest
@@ -243,7 +243,7 @@ jobs:
           command: pnpm publish --no-git-checks --filter raiden-ts
 
   test_sdk_e2e:
-    executor: integration-executor
+    executor: e2e-environment-executor
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options

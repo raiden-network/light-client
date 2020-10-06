@@ -14,15 +14,17 @@
 </h4>
 
 The Raiden Light Client SDK requires a Web3 provider like [MetaMask](https://metamask.io), [Parity](https://www.parity.io) or [Geth](https://geth.ethereum.org) and is built on the following concepts and libraries:
-* Functional programming
-* [Redux](https://redux.js.org) architecture
-* Strictly typed data models aided by [io-ts](https://github.com/gcanti/io-ts)
-* [RxJS](https://rxjs.dev/) Observables asynchronous tasks through [redux-observable](https://redux-observable.js.org) Epics
-* Off-chain communication through [Matrix](https://matrix.org) servers using the [matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk) library
+
+- Functional programming
+- [Redux](https://redux.js.org) architecture
+- Strictly typed data models aided by [io-ts](https://github.com/gcanti/io-ts)
+- [RxJS](https://rxjs.dev/) Observables asynchronous tasks through [redux-observable](https://redux-observable.js.org) Epics
+- Off-chain communication through [Matrix](https://matrix.org) servers using the [matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk) library
 
 Below is a detailed explanation of the SDK architecture as well as things to keep in mind when reading the code and writing new functionality.
 
 ## Table of Contents
+
 - [Table of Contents](#table-of-contents)
 - [Architecture](#architecture)
   - [Vertical (Stack)](#vertical-stack)
@@ -43,16 +45,18 @@ Below is a detailed explanation of the SDK architecture as well as things to kee
   - [With tests](#with-tests)
 
 ## Architecture
+
 In this section we will dive into the the internal machinery of the SDK and outline how RxJS, Redux and Epics work together.
 
 ### Vertical (Stack)
+
 Instead of using classes as in object-oriented programming the SDK is written in a functional way and uses functions and type schemas like interfaces to separate logic and data.
 
 The only class in the SDK is the [Raiden](https://github.com/raiden-network/light-client/blob/e3ffb1b24e25ffca1c072a9335b00d47bc148d81/raiden/src/raiden.ts#L66) class which is the main entry point. It is instantiated through the [`async Raiden.create`](https://github.com/raiden-network/light-client/blob/e3ffb1b24e25ffca1c072a9335b00d47bc148d81/raiden/src/raiden.ts#L231) static method. This method returns a ready-to-use `Raiden` client object which instantiates and starts a central Redux `store`.
 
 The Redux `store` is responsible for handling the **actions** that changes the **state** of the **reducers**. The **reducers** are in turn calling the functions which changes the state of your application.
 
-All **actions** goes to the **Epics** middleware where synchronous and asynchronous tasks can be performed with the help of **observables**. Any new action that is outputted gets fed back to the Redux store and continues down this *actions pipeline*.
+All **actions** goes to the **Epics** middleware where synchronous and asynchronous tasks can be performed with the help of **observables**. Any new action that is outputted gets fed back to the Redux store and continues down this _actions pipeline_.
 
 The `Raiden` client dispatches **request** actions to the `store` and waits for a respective **success** or **error** to flow through the actions pipeline. These actions are created using [typesafe-actions](https://github.com/piotrwitek/typesafe-actions) with the [Flux Standard Action](https://github.com/redux-utilities/flux-standard-action) schema/pattern.
 
@@ -97,32 +101,32 @@ A visual representation of the inner architecture:
                             +------------+   +--------------+
 ```
 
-
-
-
 ### Horizontal (Folder Structure)
-The project is structured in a domain-driven logic, each folder under `src` represents a semantic domain and should depend on the things inside of it as much as possible. Especially for _actions_*_, _reducers_, _epics_, _state_ and specific *functions*.
 
-* [`abi`](https://github.com/raiden-network/light-client/tree/master/raiden/src/abi) and [`deployment`](https://github.com/raiden-network/light-client/tree/master/raiden/src/deployment) are data directories and don't contain any logic.
-  * `abi` is the output of the [TypeChain](https://github.com/ethereum-ts/TypeChain) contracts interfaces used for type safety.
-  * `deployment` contains information about the deployed Raiden contracts for the Ethereum test networks.
-* [`utils`](https://github.com/raiden-network/light-client/tree/master/raiden/src/utils) are common functions and types for the whole Light Client. The code here should not depend on any other SDK modules but can depend on external libraries.
-* [`store`](https://github.com/raiden-network/light-client/tree/master/raiden/src/store) is the actions, epics and utils used by the Raiden store/state and initialization/shutdown. This is "light code" that do not fit well within other domains.
-* [`channels`](https://github.com/raiden-network/light-client/tree/master/raiden/src/channels) is the contracts logic for the blockchain and channel manager. This is mostly code for listening to events and perform blockchain actions like opening a channel, detecting a deposit or informing that a closed channel is settleable.
-* [`transport`](https://github.com/raiden-network/light-client/tree/master/raiden/src/transport) is for the off-chain transport/communication. It is mainly matrix code, like login and initialization logic, room creation, invite and maintenance tasks as well as the actually sending and receiving of text messages between Raiden nodes.
-* [`messages`](https://github.com/raiden-network/light-client/tree/master/raiden/src/transport) are the messages data models and validation and serialization/deserialization utils.
-* [`transfer`](https://github.com/raiden-network/light-client/tree/master/raiden/src/transfers) is the transfers logic, life cycle and validation.
-* [`./src`](https://github.com/raiden-network/light-client/tree/master/raiden/src) contains the `Raiden` client and public API, root, Epic, Reducer, Action, specific types, constants etc. Anything that should be _global_.
+The project is structured in a domain-driven logic, each folder under `src` represents a semantic domain and should depend on the things inside of it as much as possible. Especially for _actions_\*_, \_reducers_, _epics_, _state_ and specific \*functions\*.
+
+- [`abi`](https://github.com/raiden-network/light-client/tree/master/raiden/src/abi) and [`deployment`](https://github.com/raiden-network/light-client/tree/master/raiden/src/deployment) are data directories and don't contain any logic.
+  - `abi` is the output of the [TypeChain](https://github.com/ethereum-ts/TypeChain) contracts interfaces used for type safety.
+  - `deployment` contains information about the deployed Raiden contracts for the Ethereum test networks.
+- [`utils`](https://github.com/raiden-network/light-client/tree/master/raiden/src/utils) are common functions and types for the whole Light Client. The code here should not depend on any other SDK modules but can depend on external libraries.
+- [`store`](https://github.com/raiden-network/light-client/tree/master/raiden/src/store) is the actions, epics and utils used by the Raiden store/state and initialization/shutdown. This is "light code" that do not fit well within other domains.
+- [`channels`](https://github.com/raiden-network/light-client/tree/master/raiden/src/channels) is the contracts logic for the blockchain and channel manager. This is mostly code for listening to events and perform blockchain actions like opening a channel, detecting a deposit or informing that a closed channel is settleable.
+- [`transport`](https://github.com/raiden-network/light-client/tree/master/raiden/src/transport) is for the off-chain transport/communication. It is mainly matrix code, like login and initialization logic, room creation, invite and maintenance tasks as well as the actually sending and receiving of text messages between Raiden nodes.
+- [`messages`](https://github.com/raiden-network/light-client/tree/master/raiden/src/transport) are the messages data models and validation and serialization/deserialization utils.
+- [`transfer`](https://github.com/raiden-network/light-client/tree/master/raiden/src/transfers) is the transfers logic, life cycle and validation.
+- [`./src`](https://github.com/raiden-network/light-client/tree/master/raiden/src) contains the `Raiden` client and public API, root, Epic, Reducer, Action, specific types, constants etc. Anything that should be _global_.
 
 These are just suggestions on how to keep a well organized codebase. It is the developer's responsibility to decide in which module/domain any function, data or type belongs.
 
 ## Typing System
+
 TypeScript helps us check for correctness and aid implementation, validation and integration of various parts of the codebase. We can tell TypeScript what type of argument, return value or variable is expected in a function which helps us avoid passing wrong types when writing our code, like passing a number to a function that expects a string.
 
 However, when we are dealing with unknown data we cannot always be sure it matches our expectations. To bridge this gap we use the `io-ts` library.
 
 `io-ts` solves this by allowing you to create **codecs**: real runtime objects which are able to verify the expectations (e.g. type) of any data, validating it and type guarding your code. They're also able to decode data from some (usually a more primitive) input type to the expected runtime instance/value, as well as encode a value to a given output format. Better yet, each codec have an associated compile-time **type**, to tell TypeScript what the output data of a codec looks like, allowing TypeScript to do its magic without needing to declare twice your data structure (one for runtime validation, other for compile-time type checks).
 Finally, codecs can be composed in almost any way supported by TypeScript, making it very powerful. Example:
+
 ```typescript
 import * as t from 'io-ts';
 const Data = t.type({ key: t.number }); // this is the codec, a real object
@@ -131,7 +135,7 @@ const mydata = JSON.parse('{ "key": 123 }'); // mydata type is any
 const decoded = Data.decode(mydata); // decoded is Either an error (left) or the expected value (right)
 if (decoded.isLeft()) throw decoded.value;
 // from now on, decoded.value is known to be of type Data, thus mydata.key is number
-const sq: number = Math.pow(decoded.value.key, 2)
+const sq: number = Math.pow(decoded.value.key, 2);
 ```
 
 We can use it to have validate strong guarantees about unsafe data, can define our own codecs to serialize and deserialize custom objects, and as typeguards to narrow broader types to more specific ones.
@@ -156,11 +160,13 @@ The fix was to use empty `interface`s inheriting from the local type wherever po
 
 ```typescript
 export type RaidenState = t.TypeOf<typeof RaidenState>; // slow
-export interface RaidenState extends t.TypeOf<typeof RaidenState> {}; // fast
+export interface RaidenState extends t.TypeOf<typeof RaidenState> {} // fast
 ```
+
 This works on all types which members are known at compile time, and should be preferred wherever possible.
 
 ## Public API
+
 The `Raiden` client class is the entrypoint for the public API. The focus of this class is Developer Experience and we should avoid exposing to much of its internals while still providing what is needed for every reasonable use case.
 
 This balance is important to keep in mind. It is desirable that changes in the interface are as backwards compatible as possible, although not necessarily before a MVP release.
@@ -180,6 +186,7 @@ The `typesafe-actions` help a lot with that by allowing us to define a new actio
 ## Reducers
 
 Reducers are one of the simplest parts to write. Just some heads-up:
+
 - State must be minimal. Put in state only what's really needed to be preserved across sessions, needed to reload the account on a different system, or very expensive to re-fetch on every run. Everything else is better to go on epic dependencies or stateful observable operators and events on a per-session basis.
 - As stated earlier, module/domain specific reducers should always as possible act only on actions declared on their module.
 - reducers should **never** mutate state directly. Use `...` spread operator and if needed `lodash/fp` module to get mutated copies of the state you're acting on. Even when using it, be careful with object references, as you may still be mutating state through a reference to a nested object.
@@ -200,6 +207,7 @@ Epics can choose to act on any action or state change, or even dependencies, but
 - A common epic pattern: `=> action$.pipe(filter(isActionOf(action)), withLatestFrom(state$), map((action, state) => ...))`
 - Never subscribe inside an epic if not strictly necessary; maps and pipes help into getting a proper _action pipeline_ where a single subscription is used for all epics, making the system more deterministic, declarative and performant.
 - Careful if you use `withLatestFrom` with `action$` or `state$` inside a `mergeMap`, `concatMap`, `exhaustMap`, etc, as the inner (returned) observable is created only when the outer value flows through and the callback of these operators is called. `withLatestFrom` only starts "seeing" values of the `input$` after it's created **and** subscribed, and will discard any source value while the `input$` didn't fire at least once, meaning it can be a silent source of bugs when used inside these mapping operators. e.g. of problematic logic:
+
 ```
 action.pipe(
   filter(...),
@@ -211,12 +219,13 @@ action.pipe(
   ),
 );
 ```
+
 - In the case above, one can use `multicast` + `ReplaySubject(1)` to create an outer subject which sees and cache latest state, and use safely as much `*Map` levels down as needed. Another approach (in some cases) is to return the inner observable from the `mergeMap` as soon as possible to the outer pipeline, and then on the **outer** pipeline use `withLatestMap` and any subsequent mappings.
 - In the spirit of tips above, you should ALWAYS know when your (specially inner) observables are **created**, **subscribed** and **unsubscribed**.
-  * On the outer/top level observable (the one returned by the epic), the creation and subscription is performed at the moment the SDK is instantiated, and unsubscription happens if the observable completes, errors or at SDK stop/shutdown.
-  * `mergeMap` creates the inner observable when the a value goes through, and subscribes to it immediatelly. completing the inner observable won't complete the outer, but unhandled errors do error the outer observable.
-  * `concatMap` creates the inner observable also at the exact moment a value goes through, but its subscription is only made when the previous observable completes. Keep an eye if the values you depended on at creation time are still valid/up-to-date at subscription time. Use multicasts if needed.
-  * `exhaustMap` is like `concatMap`, but instead of queueing every output observable serially, it **ignores** the value if the previous subscription is still on, and outputs the next inner observable only on next value going through after previous observable completed.
+  - On the outer/top level observable (the one returned by the epic), the creation and subscription is performed at the moment the SDK is instantiated, and unsubscription happens if the observable completes, errors or at SDK stop/shutdown.
+  - `mergeMap` creates the inner observable when the a value goes through, and subscribes to it immediatelly. completing the inner observable won't complete the outer, but unhandled errors do error the outer observable.
+  - `concatMap` creates the inner observable also at the exact moment a value goes through, but its subscription is only made when the previous observable completes. Keep an eye if the values you depended on at creation time are still valid/up-to-date at subscription time. Use multicasts if needed.
+  - `exhaustMap` is like `concatMap`, but instead of queueing every output observable serially, it **ignores** the value if the previous subscription is still on, and outputs the next inner observable only on next value going through after previous observable completed.
 - Obvious but it's worth to mention: if you handle external/unsafe data, use proper data validation through `io-ts`. Distrust everyone!
 
 ## Testing
@@ -235,14 +244,11 @@ The hardest to unit test are the epics. As they conceive most of the Raiden logi
 
 e2e tests try to test the SDK as well as the dependency stack from the [public API](https://github.com/raiden-network/light-client/blob/master/raiden/src/raiden.ts) perspective, by performing proper actions as a user would do. Adding tests here basically involve adding them to [raiden.spec.ts](https://github.com/raiden-network/light-client/blob/master/raiden/tests/e2e/raiden.spec.ts), with required Matrix endpoints and state.
 
-We don't have proper integration tests (yet) because Raiden Light Client depends heavily on some external systems to work, namely the [Raiden Network](https://raiden.network) through its network of full [Python clients](https://github.com/raiden-network/raiden), [Matrix servers](https://github.com/raiden-network/raiden-transport), Ethereum node and so on. This would be a rather heavy stack to provide whole, requiring different environments, languages, dependencies to run and set everything in the proper state on each test.
-
 To try to provide e2e tests as complete as possible, we move the mocks to the edges, and there answer as we expect these systems to:
+
 - Ethereum node is handled by [ganache-cli](https://github.com/raiden-network/light-client/blob/84afc0939d267e99636147e8241d7bda4f55cbb1/raiden/tests/e2e/provider.ts#L20), which is a complete EVM emulation layer.
 - Matrix is handled by [replacing only the HTTP requests](https://github.com/raiden-network/light-client/blob/84afc0939d267e99636147e8241d7bda4f55cbb1/raiden/tests/e2e/mocks.ts#L23) as per [matrix.org client-server spec](https://matrix.org/docs/spec/client_server/latest). Of course this isn't perfect, but have provided good enough results so far.
 - We don't have the e2e tests which depends on the Raiden full nodes (mainly testing the [Raiden.transfer](https://github.com/raiden-network/light-client/blob/84afc0939d267e99636147e8241d7bda4f55cbb1/raiden/src/raiden.ts#L660) action), but it'll probably involve adding some checks and expected replies to the above Matrix HTTP mocks
-
-We expect to put more effort on integration and compliance tests in the future, potentially language agnostic ones which could be shared between clients, and expanded as the SDK feature set grows to support other roles beyond payment sender.
 
 ## Debugging
 

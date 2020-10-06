@@ -85,6 +85,7 @@ $ npm i -g pnpm
 ```
 
 Finally, you can install the required dependencies:
+
 ```bash
 $ pnpm install
 ```
@@ -160,10 +161,12 @@ For the dApp:
 $ pnpm run test:unit --filter raiden-dapp
 ```
 
-Tests are split in unit tests, and integration tests. The first are faster to execute while
+Tests are split in unit, integration and end-to-end tests. The first are faster to execute while
 the latter test the whole system but are slower to run.
 
-By default whenever you make a Pull Request the linter tests, format checks, unit tests and all the integration tests will run.
+By default whenever you make a Pull Request the linter tests, format checks, as
+well as all functional tests (i.e. unit, integration and end-to-end tests) will
+run.
 
 ### Documentation
 
