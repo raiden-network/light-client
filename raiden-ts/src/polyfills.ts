@@ -9,6 +9,13 @@ import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 Object.assign(logging, { methodFactory }); // revert
 matrixLogger.setLevel(logging.levels.DEBUG); // apply
 
+declare module 'matrix-js-sdk' {
+  // augment MatrixEvent interface/class
+  export interface MatrixEvent {
+    getContent(): any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  }
+}
+
 // request.abort() is called when shutting down matrix; this patch clears some timeouts left behind
 import { getRequest, request } from 'matrix-js-sdk';
 const origRequest = getRequest();

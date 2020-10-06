@@ -281,7 +281,7 @@ export class Raiden {
       raidenReducer,
       // workaround for redux's PreloadedState issues with branded values
       state as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-      applyMiddleware(loggerMiddleware, this.epicMiddleware, persisterMiddleware),
+      applyMiddleware(loggerMiddleware, persisterMiddleware, this.epicMiddleware),
     );
 
     // populate deps.latest$, to ensure config, logger && pollingInterval are setup before start
