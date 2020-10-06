@@ -142,7 +142,7 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
 
   test_dapp_e2e:
-    executor: base-executor
+    executor: e2e-environment-executor
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
@@ -248,9 +248,6 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - run:
-          name: Restore dependencies
-          command: pnpm install --prefer-frozen-lockfile && pnpm run build --filter raiden-ts
-      - run:
           name: Run end-to-end tests
           command: source /etc/profile.d/smartcontracts.sh && pnpm run test:e2e --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
@@ -296,13 +293,9 @@ workflows:
       - test_dapp_unit:
           requires:
             - build_dapp
-      - test_dapp_e2e:
-          requires:
-            - build_dapp
       - deploy_gh_pages:
           requires:
             - test_dapp_unit
-            - test_dapp_e2e
           context: "Raiden-LC-Deploy"
           filters:
             branches:
@@ -356,6 +349,15 @@ workflows:
                 - master
     jobs:
       - checkout
-      - test_sdk_e2e:
+      - install:
           requires:
             - checkout
+      - build_sdk:
+          requires:
+            - install
+      - test_sdk_e2e:
+          requires:
+            - build_sdk
+      - test_dapp_e2e:
+          requires:
+            - build_sdk
