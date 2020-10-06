@@ -597,21 +597,24 @@ describe('transport epic', () => {
       expect(matrix.invite).not.toHaveBeenCalled();
     });
 
-    test('invite if there is room for user', () => {
+    test('invite if there is room for user', async () => {
       expect.assertions(2);
       const roomId = partnerRoomId;
 
       action$.next(matrixRoom({ roomId }, { address: partner }));
 
-      matrix.invite.mockResolvedValueOnce(Promise.resolve());
       // partner joins when they're invited the second time
-      matrix.invite.mockImplementationOnce(async () => {
-        matrix.emit(
-          'RoomMember.membership',
-          {},
-          { roomId, userId: partnerUserId, membership: 'join' },
-        );
-      });
+      const promise = new Promise((resolve) =>
+        matrix.invite.mockImplementation(async () => {
+          matrix.emit(
+            'RoomMember.membership',
+            {},
+            { roomId, userId: partnerUserId, membership: 'join' },
+          );
+          resolve();
+        }),
+      );
+      matrix.invite.mockResolvedValueOnce(Promise.resolve());
 
       // epic needs to wait for the room to become available
       matrix.getRoom.mockReturnValueOnce(null);
@@ -625,13 +628,7 @@ describe('transport epic', () => {
         ),
       );
 
-      matrix.emit('Room', { roomId, getMember: jest.fn(() => ({ membership: 'leave' })) });
-      matrix.emit(
-        'RoomMember.membership',
-        {},
-        { roomId, userId: partnerUserId, membership: 'leave' },
-      );
-
+      await promise;
       expect(matrix.invite).toHaveBeenCalledTimes(2);
       expect(matrix.invite).toHaveBeenCalledWith(roomId, partnerUserId);
 
@@ -894,7 +891,7 @@ describe('transport epic', () => {
 
       action$.next(matrixRoom({ roomId }, { address: partner }));
 
-      matrix.getRoom.mockReturnValueOnce({
+      matrix.getRoom.mockReturnValue({
         roomId,
         name: roomId,
         getMember: jest.fn(
@@ -933,10 +930,13 @@ describe('transport epic', () => {
       setTimeout(() => action$.complete(), 100);
 
       await expect(promise).resolves.toMatchObject(
-        messageSend.success(expect.anything(), {
-          address: partner,
-          msgId: signed.message_identifier.toString(),
-        }),
+        messageSend.success(
+          { via: expect.stringMatching(/^!/) },
+          {
+            address: partner,
+            msgId: signed.message_identifier.toString(),
+          },
+        ),
       );
       expect(matrix.sendEvent).toHaveBeenCalledTimes(2);
       expect(matrix.sendEvent).toHaveBeenCalledWith(
@@ -955,7 +955,7 @@ describe('transport epic', () => {
 
       action$.next(matrixRoom({ roomId }, { address: partner }));
 
-      matrix.getRoom.mockReturnValueOnce(null);
+      matrix.getRoom.mockReturnValue(null);
 
       const sub = matrixMessageSendEpic(action$, state$, depsMock).subscribe();
 
@@ -970,14 +970,28 @@ describe('transport epic', () => {
       expect(matrix.sendEvent).not.toHaveBeenCalled();
 
       // a wild Room appears
-      matrix.emit('Room', {
+      matrix.getRoom.mockReturnValue({
         roomId,
         name: roomId,
-        getMember: jest.fn(),
-        getJoinedMembers: jest.fn(),
+        getMember: jest.fn(
+          (userId) =>
+            ({
+              roomId,
+              userId,
+              name: userId,
+              membership: 'join',
+              user: null,
+            } as any),
+        ),
+        getJoinedMembers: jest.fn(() => []),
         getCanonicalAlias: jest.fn(() => roomId),
         getAliases: jest.fn(() => []),
-      });
+        currentState: {
+          roomId,
+          setStateEvents: jest.fn(),
+          members: {},
+        } as any,
+      } as any);
 
       // user joins later
       matrix.emit(
@@ -1005,7 +1019,7 @@ describe('transport epic', () => {
 
       action$.next(matrixRoom({ roomId }, { address: partner }));
 
-      matrix.getRoom.mockReturnValueOnce({
+      matrix.getRoom.mockReturnValue({
         roomId,
         name: roomId,
         getMember: jest.fn(
@@ -1056,6 +1070,53 @@ describe('transport epic', () => {
         expect.anything(),
       );
     });
+
+    test('send: toDevice', async () => {
+      expect.assertions(4);
+
+      const message = processed;
+      const signed = await signMessage(depsMock.signer, message);
+
+      action$.next(raidenConfigUpdate({ caps: { [Capabilities.TO_DEVICE]: true } }));
+      // fail once, succeed on retry
+      matrix.sendToDevice.mockRejectedValueOnce(new Error('Failed'));
+
+      const promise = matrixMessageSendEpic(action$, state$, depsMock).toPromise();
+
+      [
+        matrixPresence.success(
+          {
+            userId: partnerUserId,
+            available: true,
+            ts: Date.now(),
+            caps: { [Capabilities.TO_DEVICE]: true },
+          },
+          { address: partner },
+        ),
+        messageSend.request(
+          { message: signed },
+          { address: partner, msgId: signed.message_identifier.toString() },
+        ),
+      ].forEach((a) => action$.next(a));
+      setTimeout(() => action$.complete(), 100);
+
+      await expect(promise).resolves.toMatchObject(
+        messageSend.success(
+          { via: expect.stringMatching(/^@0x/) },
+          {
+            address: partner,
+            msgId: signed.message_identifier.toString(),
+          },
+        ),
+      );
+      expect(matrix.sendEvent).not.toHaveBeenCalled();
+      expect(matrix.sendToDevice).toHaveBeenCalledTimes(2);
+      expect(matrix.sendToDevice).toHaveBeenCalledWith('m.room.message', {
+        [partnerUserId]: {
+          '*': { body: expect.stringMatching('"Processed"'), msgtype: 'm.text' },
+        },
+      });
+    });
   });
 
   describe('matrixMessageReceivedEpic', () => {
@@ -1083,6 +1144,7 @@ describe('transport epic', () => {
         {
           getType: () => 'm.room.message',
           getSender: () => partnerUserId,
+          getContent: () => ({ msgtype: 'm.text', body: message }),
           event: {
             content: { msgtype: 'm.text', body: message },
             origin_server_ts: 123,
@@ -1138,6 +1200,7 @@ describe('transport epic', () => {
         {
           getType: () => 'm.room.message',
           getSender: () => partnerUserId,
+          getContent: () => ({ msgtype: 'm.text', body: message }),
           event: {
             content: { msgtype: 'm.text', body: message },
             origin_server_ts: 123,
@@ -1190,6 +1253,7 @@ describe('transport epic', () => {
         {
           getType: () => 'm.room.message',
           getSender: () => partnerUserId,
+          getContent: () => ({ msgtype: 'm.text', body: message }),
           event: {
             content: { msgtype: 'm.text', body: message },
             origin_server_ts: 123,
@@ -1207,6 +1271,51 @@ describe('transport epic', () => {
             ts: expect.any(Number),
             userId: partnerUserId,
             roomId,
+          },
+          { address: partner },
+        ),
+      );
+    });
+
+    test('receive: toDevice', async () => {
+      expect.assertions(1);
+
+      const message = 'test message',
+        content = { msgtype: 'm.text', body: message };
+
+      action$.next(raidenConfigUpdate({ caps: { [Capabilities.TO_DEVICE]: true } }));
+
+      const promise = matrixMessageReceivedEpic(action$, state$, depsMock)
+        .pipe(first())
+        .toPromise();
+
+      matrix.emit('toDeviceEvent', {
+        getType: jest.fn(() => 'm.room.message'),
+        getSender: jest.fn(() => partnerUserId),
+        getContent: jest.fn(() => content),
+        event: { type: 'm.room.message', sender: partnerUserId, content },
+      });
+
+      // actions sees presence update for partner only later
+      action$.next(
+        matrixPresence.success(
+          {
+            userId: partnerUserId,
+            available: true,
+            ts: Date.now(),
+            caps: { [Capabilities.TO_DEVICE]: true },
+          },
+          { address: partner },
+        ),
+      );
+
+      // then it resolves
+      await expect(promise).resolves.toEqual(
+        messageReceived(
+          {
+            text: message,
+            ts: expect.any(Number),
+            userId: partnerUserId,
           },
           { address: partner },
         ),
@@ -1534,7 +1643,7 @@ describe('transport epic', () => {
               msgtype: 'm.notice',
               body: jsonStringify({
                 type: 'offer',
-                call_id: `${partner}|${depsMock.address}`,
+                call_id: `${partner}|${depsMock.address}`.toLowerCase(),
                 sdp: 'offerSdp',
               }),
             }),
@@ -1564,7 +1673,7 @@ describe('transport epic', () => {
             { address: partner },
           ),
         );
-      }, 50);
+      }, 100);
 
       action$.next(matrixRoom({ roomId: partnerRoomId }, { address: partner }));
       action$.next(
@@ -1663,6 +1772,7 @@ describe('transport epic', () => {
           );
           Object.assign(rtcDataChannel, { readyState: 'open' });
           rtcDataChannel.emit('open', true);
+          rtcDataChannel.emit('message', { data: 'ping' });
         }, 40);
         setTimeout(() => {
           rtcDataChannel.emit('close', true);
