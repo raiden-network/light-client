@@ -6,7 +6,8 @@
     "noDelivery": true,
     "noReceive": false,
     "noMediate": false,
-    "webRTC": true
+    "webRTC": true,
+    "toDevice": true
   },
   "autoSettle": true
 }

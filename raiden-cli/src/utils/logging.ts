@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
+import util from 'util';
 import logging, { LoggingMethod } from 'loglevel';
+
+util.inspect.defaultOptions.depth = 3; // +1 from default of 2
 
 export function setupLoglevel(output?: string): void {
   const originalFactory = logging.methodFactory;
