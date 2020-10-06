@@ -251,6 +251,7 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
     invite: jest.fn(async () => true),
     leave: jest.fn(async () => true),
     sendEvent: jest.fn(async () => true),
+    sendToDevice: jest.fn(async () => true),
     _http: {
       opts: {},
       // mock request done by raiden/utils::getUserPresence
@@ -277,6 +278,7 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
 export function mockRTC() {
   const rtcDataChannel = (Object.assign(new EventEmitter(), {
     close: jest.fn(),
+    send: jest.fn(),
   }) as unknown) as jest.Mocked<RTCDataChannel & EventEmitter>;
 
   const rtcConnection = (Object.assign(new EventEmitter(), {
@@ -290,6 +292,7 @@ export function mockRTC() {
       /* remote */
     }),
     addIceCandidate: jest.fn(),
+    close: jest.fn(),
   }) as unknown) as jest.Mocked<RTCPeerConnection & EventEmitter>;
 
   const RTCPeerConnection = jest
@@ -739,9 +742,10 @@ function mockedMatrixCreateClient({ baseUrl }: { baseUrl: string }): jest.Mocked
         matrix.emit(
           'Room.timeline',
           {
-            getType: () => type,
-            getSender: () => userId,
-            event: { content },
+            getType: jest.fn(() => type),
+            getSender: jest.fn(() => userId),
+            getContent: jest.fn(() => content),
+            event: { type, sender: userId, content },
           },
           matrix.getRoom(roomId),
         );
@@ -749,6 +753,25 @@ function mockedMatrixCreateClient({ baseUrl }: { baseUrl: string }): jest.Mocked
       logging.info('__sendEvent', address, roomId, type, content);
       return true;
     }),
+    sendToDevice: jest.fn(
+      async (type: string, contentMap: { [userId: string]: { [deviceID: string]: any } }) => {
+        for (const [partnerId, map] of Object.entries(contentMap)) {
+          for (const client of mockedClients) {
+            const matrix = await client.deps.matrix$.toPromise();
+            if (partnerId !== matrix.getUserId()) continue;
+            for (const content of Object.values(map)) {
+              matrix.emit('toDeviceEvent', {
+                getType: jest.fn(() => type),
+                getSender: jest.fn(() => userId),
+                getContent: jest.fn(() => content),
+                event: { type, sender: userId, content },
+              });
+              logging.info('__sendToDevice', address, type, content);
+            }
+          }
+        }
+      },
+    ),
     _http: {
       opts: {},
       // mock request done by raiden/utils::getUserPresence
