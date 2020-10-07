@@ -3,6 +3,7 @@ import { filter, scan, startWith, share } from 'rxjs/operators';
 import memoize from 'lodash/memoize';
 
 import { RaidenAction } from '../actions';
+import { jsonParse } from '../utils/data';
 import { Presences, Caps } from './types';
 import { matrixPresence } from './actions';
 
@@ -45,33 +46,52 @@ export function getPresenceByUserId(
 }
 
 /**
- * Stringify a caps mapping
+ * Stringify a caps mapping to a caps url
+ * E.g.'mxc://raiden.network/cap?k1=true&k2=v2&k2=v3&k4=null&k5=123'
  *
  * @param caps - Capabilities object/mapping
  * @returns stringified version of caps
  */
 export function stringifyCaps(caps: Caps): string {
-  return Object.entries(caps)
-    .filter(([, v]) => typeof v !== 'boolean' || v)
-    .map(([k, v]) => (typeof v === 'boolean' ? k : `${k}="${v}"`))
-    .join(',');
+  const url = new URL('mxc://raiden.network/cap');
+  // URLSearchParams.append can handle all primitives
+  const appendParam = (key: string, value: string | number | boolean | null) =>
+    url.searchParams.append(key, value as string);
+  for (const [key, value] of Object.entries(caps)) {
+    if (Array.isArray(value)) value.forEach(appendParam.bind(null, key));
+    else appendParam(key, value);
+  }
+  return url.href;
 }
 
 /**
- * Parse a caps string in the format 'k1,k2=v2,k3="v3"' to { k1: true, k2: v2, k3: v3 } object
+ * Parse a caps string in the format 'mxc://raiden.network/cap?k1=true&k2=v2&k2=v3&k4=null&k5=123'
+ * to a { k1: true, k2: ['v2','v3'], k4: null, k5: 123 } object
  *
  * @param caps - caps string
  * @returns Caps mapping object
  */
 export function parseCaps(caps?: string | null): Caps | undefined {
   if (!caps) return;
-  const result: { [k: string]: string | boolean } = {};
+  const result: Mutable<Caps> = {};
   try {
-    // this regex splits by comma, but respecting strings inside double-quotes
-    for (const cap of caps.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/g)) {
-      const match = cap.match(/^\s*([^=]+)(?: ?= ?"?(.*?)"?\s*)?$/);
-      if (match) result[match[1]] = match[2] ?? true;
-    }
+    const url = new URL(caps!);
+    url.searchParams.forEach((value, key) => {
+      let resValue: Caps[string] = value;
+      // interpret *some* types of values
+      if (/^\d+$/.test(value)) resValue = jsonParse(value) as number | string;
+      else {
+        const lowValue = value.toLowerCase();
+        if (lowValue === 'none' || lowValue === 'null') resValue = null;
+        else if (lowValue === 'false') resValue = false;
+        else if (lowValue === 'true') resValue = true;
+      }
+      if (key in result) {
+        let prevValues = result[key];
+        if (!Array.isArray(prevValues)) result[key] = prevValues = [prevValues];
+        prevValues.push(resValue);
+      } else result[key] = resValue;
+    });
     return result;
   } catch (err) {}
 }

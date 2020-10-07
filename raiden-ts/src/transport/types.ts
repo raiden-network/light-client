@@ -5,6 +5,8 @@ export interface Presences {
   [address: string]: matrixPresence.success;
 }
 
-export const Caps = t.readonly(t.record(t.string /* Capabilities */, t.any));
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Caps = { readonly [k: string]: any };
+const CapsPrimitive = t.union([t.string, t.number, t.boolean, t.null]);
+const CapsValue = t.union([CapsPrimitive, t.array(CapsPrimitive)], 'CapsValue');
+
+export const Caps = t.readonly(t.record(t.string /* Capabilities */, CapsValue), 'Caps');
+export type Caps = t.TypeOf<typeof Caps>;
