@@ -4,6 +4,7 @@
 ### Fixed
 - [#2094] Fix TransferState's timestamps missing
 - [#2174] Fix a few transport issues triggered on high-load scenarios
+- [#2078] Check for overflows before sending transfers
 
 ### Added
 - [#2044] Introduce PouchDB (IndexedDB/leveldown) as new persistent state storage backend
@@ -14,6 +15,7 @@
 - [#2205] Adapt capabilities to the new query string format
 
 [#2044]: https://github.com/raiden-network/light-client/issues/2044
+[#2078]: https://github.com/raiden-network/light-client/issues/2078
 [#2094]: https://github.com/raiden-network/light-client/issues/2094
 [#2158]: https://github.com/raiden-network/light-client/issues/2158
 [#2174]: https://github.com/raiden-network/light-client/pull/2174
