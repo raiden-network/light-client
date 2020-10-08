@@ -44,7 +44,7 @@ import { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { LruCache } from '../../utils/lru';
 import { pluckDistinct } from '../../utils/rx';
-import { Hash, Signed, UInt, Int, Address, untime } from '../../utils/types';
+import { Hash, Signed, UInt, Int, Address, untime, decode } from '../../utils/types';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Capabilities } from '../../constants';
 import {
@@ -131,8 +131,14 @@ function makeAndSignTransfer$(
     'expiration too soon',
   );
 
+  // fee is added to the lock amount, check for overflow
+  const amountWithFee = decode(
+    UInt(32),
+    action.payload.value.add(fee),
+    'overflow of locked amount with fee',
+  );
   const lock: Lock = {
-    amount: action.payload.value.add(fee) as UInt<32>, // fee is added to the lock amount
+    amount: amountWithFee,
     expiration: bigNumberify(
       action.payload.expiration || state.blockNumber + revealTimeout * 2,
     ) as UInt<32>,

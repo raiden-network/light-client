@@ -21,7 +21,7 @@ import {
 } from '../fixtures';
 
 import { bigNumberify, BigNumber, keccak256 } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { Two, Zero } from 'ethers/constants';
 import { first, pluck } from 'rxjs/operators';
 
 import {
@@ -53,6 +53,7 @@ const direction = Direction.SENT;
 const paymentId = makePaymentId();
 const value = bigNumberify(10) as UInt<32>;
 const fee = bigNumberify(3) as Int<32>;
+const maxUInt256 = Two.pow(256).sub(1) as UInt<32>;
 const meta = { secrethash, direction };
 
 describe('send transfer', () => {
@@ -113,6 +114,34 @@ describe('send transfer', () => {
     });
 
     expectChannelsAreInSync([raiden, partner]);
+  });
+
+  test('overflow in transfer value is handled', async () => {
+    const [raiden, partner] = await makeRaidens(2);
+    await ensureChannelIsDeposited([raiden, partner]);
+
+    const request = transfer.request(
+      {
+        tokenNetwork,
+        target: partner.address,
+        value: maxUInt256,
+        paths: [{ path: [partner.address], fee }],
+        paymentId,
+        secret,
+      },
+      meta,
+    );
+    raiden.store.dispatch(request);
+    await waitBlock();
+
+    expect(raiden.output).toContainEqual(
+      transfer.failure(
+        expect.objectContaining({
+          message: expect.stringContaining('overflow of locked amount with fee'),
+        }),
+        meta,
+      ),
+    );
   });
 
   test('transferSigned fail no channel with route partner', async () => {
