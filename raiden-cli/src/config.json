@@ -3,11 +3,11 @@
   "pfs": "https://pfs.demo001.env.raiden.network",
   "pfsSafetyMargin": 1.1,
   "caps": {
-    "noDelivery": true,
-    "noReceive": false,
-    "noMediate": false,
-    "webRTC": true,
-    "toDevice": true
+    "Delivery": 0,
+    "Receive": 1,
+    "Mediate": 1,
+    "webRTC": 1,
+    "toDevice": 1
   },
   "autoSettle": true
 }

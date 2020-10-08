@@ -180,7 +180,7 @@ export default class RaidenService {
 
         raiden.config$.subscribe(async (config) => {
           this.store.commit('updateConfig', config);
-          if (config.caps?.[Capabilities.NO_RECEIVE]) {
+          if (!config.caps?.[Capabilities.RECEIVE]) {
             await this.notifyNoReceive();
           }
         });
