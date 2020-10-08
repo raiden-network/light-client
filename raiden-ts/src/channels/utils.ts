@@ -192,6 +192,7 @@ export const txFailErrors: readonly string[] = [
   'always failing transaction',
   'execution failed due to an exception',
   'transaction failed',
+  'execution reverted',
 ];
 
 /**
