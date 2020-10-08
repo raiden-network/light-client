@@ -5,7 +5,7 @@ import memoize from 'lodash/memoize';
 import { RaidenAction } from '../actions';
 import { Capabilities, CapsFallback } from '../constants';
 import { jsonParse } from '../utils/data';
-import { Presences, Caps } from './types';
+import { Presences, Caps, CapsPrimitive } from './types';
 import { matrixPresence } from './actions';
 
 /**
@@ -56,7 +56,7 @@ export function getPresenceByUserId(
 export function stringifyCaps(caps: Caps): string {
   const url = new URL('mxc://raiden.network/cap');
   // URLSearchParams.append can handle all primitives
-  const appendParam = (key: string, value: string | number | boolean | null) =>
+  const appendParam = (key: string, value: CapsPrimitive) =>
     url.searchParams.append(key, value as string);
   for (const [key, value] of Object.entries(caps)) {
     if (Array.isArray(value)) value.forEach(appendParam.bind(null, key));
@@ -76,7 +76,7 @@ export function parseCaps(caps?: string | null): Caps | undefined {
   if (!caps) return;
   const result: Mutable<Caps> = {};
   try {
-    const url = new URL(caps!);
+    const url = new URL(caps);
     url.searchParams.forEach((value, key) => {
       let resValue: Caps[string] = value;
       // interpret *some* types of values
@@ -87,11 +87,13 @@ export function parseCaps(caps?: string | null): Caps | undefined {
         else if (lowValue === 'false') resValue = false;
         else if (lowValue === 'true') resValue = true;
       }
-      if (key in result) {
+      if (!(key in result)) {
+        result[key] = resValue;
+      } else {
         let prevValues = result[key];
         if (!Array.isArray(prevValues)) result[key] = prevValues = [prevValues];
         prevValues.push(resValue);
-      } else result[key] = resValue;
+      }
     });
     return result;
   } catch (err) {}

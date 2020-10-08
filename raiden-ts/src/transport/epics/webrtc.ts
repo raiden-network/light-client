@@ -50,8 +50,8 @@ import { RaidenConfig } from '../../config';
 import { messageReceived } from '../../messages/actions';
 import { RaidenState } from '../../state';
 import { matrixPresence, rtcChannel } from '../actions';
-import { waitMemberAndSend$, parseMessage } from './helpers';
 import { getCap } from '../utils';
+import { waitMemberAndSend$, parseMessage } from './helpers';
 
 type CallInfo = { callId: string; peerId: string; peerAddress: Address };
 
@@ -424,7 +424,8 @@ function handlePresenceChange$(
       (a, b) =>
         a.payload.userId === b.payload.userId &&
         a.payload.available === b.payload.available &&
-        getCap(a.payload.caps, Capabilities.WEBRTC) === getCap(b.payload.caps, Capabilities.WEBRTC),
+        getCap(a.payload.caps, Capabilities.WEBRTC) ===
+          getCap(b.payload.caps, Capabilities.WEBRTC),
     ),
     withLatestFrom(matrix$, config$),
     filter(
