@@ -34,7 +34,7 @@ import { fromFetch } from 'rxjs/fetch';
 import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
 
-import { createClient, MatrixClient, MatrixEvent } from 'matrix-js-sdk';
+import { createClient, MatrixClient, MatrixEvent, Filter } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 
 import { assert } from '../../utils';
@@ -97,7 +97,7 @@ function joinGlobalRooms(config: RaidenConfig, matrix: MatrixClient): Observable
  * @param roomIds - The ids of the rooms to filter out during sync.
  * @returns Observable of the {@link Filter} that was created.
  */
-async function createFilter(matrix: MatrixClient, roomIds: string[]) {
+async function createMatrixFilter(matrix: MatrixClient, roomIds: string[]): Promise<Filter> {
   const roomFilter = {
     not_rooms: roomIds,
     ephemeral: {
@@ -132,7 +132,7 @@ function startMatrixSync(
     delayWhen(([, { pollingInterval }]) => timer(Math.ceil(pollingInterval / 5))),
     mergeMap(([, config]) =>
       joinGlobalRooms(config, matrix).pipe(
-        mergeMap((roomIds) => createFilter(matrix, roomIds)),
+        mergeMap((roomIds) => createMatrixFilter(matrix, roomIds)),
         mergeMap((filter) => matrix.startClient({ filter })),
         retryWaitWhile(
           exponentialBackoff(config.pollingInterval, config.httpTimeout),

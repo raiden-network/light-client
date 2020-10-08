@@ -33,6 +33,18 @@ export const getPresences$: (action$: Observable<RaidenAction>) => Observable<Pr
 );
 
 /**
+ * @param presences - Presences mapping
+ * @param userId - Peer userId
+ * @returns Presence of peer with userId
+ */
+export function getPresenceByUserId(
+  presences: Presences,
+  userId: string,
+): matrixPresence.success | undefined {
+  return Object.values(presences).find((presence) => presence.payload.userId === userId);
+}
+
+/**
  * Stringify a caps mapping
  *
  * @param caps - Capabilities object/mapping
