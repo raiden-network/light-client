@@ -40,6 +40,7 @@ import { getServerName } from '../../utils/matrix';
 import { Direction } from '../../transfers/state';
 import { exponentialBackoff } from '../../transfers/epics/utils';
 import { matrixRoom, matrixRoomLeave, matrixPresence } from '../actions';
+import { getCap } from '../utils';
 import { globalRoomNames, getRoom$, roomMatch } from './helpers';
 
 /**
@@ -155,8 +156,8 @@ export const matrixCreateRoomEpic = (
             // skip room creation/invite if both partner and us have ToDevice capability set
             filter(
               ({ presences, config }) =>
-                !config.caps?.[Capabilities.TO_DEVICE] ||
-                !presences[address].payload.caps?.[Capabilities.TO_DEVICE],
+                !getCap(config.caps, Capabilities.TO_DEVICE) ||
+                !getCap(presences[address].payload.caps, Capabilities.TO_DEVICE),
             ),
             // if there's already a room in state for address, skip
             filter(({ state }) => !state.transport.rooms?.[address]?.[0]),

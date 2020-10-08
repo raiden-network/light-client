@@ -20,6 +20,7 @@ import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { matrixPresence } from '../../transport/actions';
+import { getCap } from '../../transport/utils';
 import { Hash, untime } from '../../utils/types';
 import { distinctRecordValues, pluckDistinct } from '../../utils/rx';
 import {
@@ -148,8 +149,8 @@ export const initQueuePendingReceivedEpic = (
         // secretRequest should always be defined as we sign it when receiving transfer
         !transferState.secret && transferState.secretRequest
           ? config$.pipe(
-              pluck('caps', Capabilities.NO_RECEIVE),
-              filter((noReceive) => !noReceive),
+              pluck('caps'),
+              filter((caps) => !!getCap(caps, Capabilities.RECEIVE)),
               take(1),
               mergeMapTo(
                 of(

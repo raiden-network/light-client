@@ -34,7 +34,7 @@ import { messageSend, messageReceived, messageGlobalSend } from '../../messages/
 import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
 import { LruCache } from '../../utils/lru';
-import { getPresenceByUserId } from '../utils';
+import { getPresenceByUserId, getCap } from '../utils';
 import { globalRoomNames, roomMatch, getRoom$, waitMemberAndSend$, parseMessage } from './helpers';
 
 /**
@@ -164,7 +164,7 @@ function isValidMessage([{ matrix, event, room }, config]: [
       // generate an alias for global room of given name, and check if room matches
       roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
     );
-  const isToDevice = !room && !!config.caps?.[Capabilities.TO_DEVICE]; // toDevice message
+  const isToDevice = !room && !!getCap(config.caps, Capabilities.TO_DEVICE); // toDevice message
   return isTextMessage && (isPrivateRoom || isToDevice);
 }
 
@@ -258,8 +258,8 @@ export const deliveredEpic = (
     filter(
       ([action, { presences }]) =>
         action.meta.address in presences &&
-        // skip if peer supports Capabilities.NO_DELIVERY
-        !presences[action.meta.address].payload.caps?.[Capabilities.NO_DELIVERY],
+        // skip if peer supports !Capabilities.DELIVERY
+        !!getCap(presences[action.meta.address].payload.caps, Capabilities.DELIVERY),
     ),
     concatMap(([action]) => {
       const message = action.payload.message;

@@ -51,6 +51,7 @@ import { messageReceived } from '../../messages/actions';
 import { RaidenState } from '../../state';
 import { matrixPresence, rtcChannel } from '../actions';
 import { waitMemberAndSend$, parseMessage } from './helpers';
+import { getCap } from '../utils';
 
 type CallInfo = { callId: string; peerId: string; peerAddress: Address };
 
@@ -423,12 +424,12 @@ function handlePresenceChange$(
       (a, b) =>
         a.payload.userId === b.payload.userId &&
         a.payload.available === b.payload.available &&
-        a.payload.caps?.[Capabilities.WEBRTC] === b.payload.caps?.[Capabilities.WEBRTC],
+        getCap(a.payload.caps, Capabilities.WEBRTC) === getCap(b.payload.caps, Capabilities.WEBRTC),
     ),
     withLatestFrom(matrix$, config$),
     filter(
       ([action, , { caps }]) =>
-        !!action.payload.caps?.[Capabilities.WEBRTC] && !!caps?.[Capabilities.WEBRTC],
+        !!getCap(action.payload.caps, Capabilities.WEBRTC) && !!getCap(caps, Capabilities.WEBRTC),
     ),
     switchMap(([action, matrix, config]) => {
       // if peer goes offline in Matrix, reset dataChannel & unsubscribe defer to close dataChannel

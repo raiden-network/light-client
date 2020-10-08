@@ -14,9 +14,17 @@ export enum ShutdownReason {
 
 export enum Capabilities {
   // opt-out capabilities, for backwards compatibility
-  NO_RECEIVE = 'noReceive', // won't proceed with protocol for incoming transfers
-  NO_MEDIATE = 'noMediate', // can't mediate transfers; mediating requires receiving
-  NO_DELIVERY = 'noDelivery', // don't need Delivery messages
+  DELIVERY = 'Delivery', // whether Delivered messages are needed
+  RECEIVE = 'Receive', // whether to proceed with protocol for incoming transfers
+  MEDIATE = 'Mediate', // whether to mediate transfers; requires receiving
   WEBRTC = 'webRTC', // use WebRTC channels for p2p messaging
   TO_DEVICE = 'toDevice', // use ToDevice messages instead of rooms
 }
+
+export const CapsFallback = {
+  [Capabilities.DELIVERY]: 1,
+  [Capabilities.RECEIVE]: 1,
+  [Capabilities.MEDIATE]: 1,
+  [Capabilities.WEBRTC]: 0,
+  [Capabilities.TO_DEVICE]: 0,
+} as const;

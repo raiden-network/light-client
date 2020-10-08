@@ -21,6 +21,7 @@ import { RaidenError, ErrorCodes } from '../../utils/error';
 import { pluckDistinct } from '../../utils/rx';
 import { Message } from '../../messages/types';
 import { decodeJsonMessage, getMessageSigner } from '../../messages/utils';
+import { getCap } from '../utils';
 
 /**
  * Return the array of configured global rooms
@@ -123,8 +124,8 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
       if (allowRtc && rtc[address]?.readyState === 'open') return of(rtc[address]);
       // if available and Capabilities.TO_DEVICE enabled on both ends, use ToDevice messages
       if (
-        caps?.[Capabilities.TO_DEVICE] &&
-        presences[address].payload.caps?.[Capabilities.TO_DEVICE]
+        getCap(caps, Capabilities.TO_DEVICE) &&
+        getCap(presences[address].payload.caps, Capabilities.TO_DEVICE)
       )
         return of(presences[address].payload.userId);
       return waitMember$(matrix, address, { latest$ });

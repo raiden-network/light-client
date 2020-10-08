@@ -3,6 +3,7 @@ import { filter, scan, startWith, share } from 'rxjs/operators';
 import memoize from 'lodash/memoize';
 
 import { RaidenAction } from '../actions';
+import { Capabilities, CapsFallback } from '../constants';
 import { jsonParse } from '../utils/data';
 import { Presences, Caps } from './types';
 import { matrixPresence } from './actions';
@@ -94,4 +95,13 @@ export function parseCaps(caps?: string | null): Caps | undefined {
     });
     return result;
   } catch (err) {}
+}
+
+/**
+ * @param caps - Our or partner caps object (possibly empty/undefined)
+ * @param cap - Cap to fetch from
+ * @returns Specified capability, with proper fallback
+ */
+export function getCap<C extends Capabilities>(caps: Caps | undefined | null, cap: C): Caps[C] {
+  return caps?.[cap] ?? CapsFallback[cap];
 }

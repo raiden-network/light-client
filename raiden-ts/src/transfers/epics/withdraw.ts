@@ -27,6 +27,7 @@ import { LruCache } from '../../utils/lru';
 import { Processed, MessageType, signMessage, isMessageReceivedOfType } from '../../messages';
 import { messageSend } from '../../messages/actions';
 import { newBlock } from '../../channels/actions';
+import { getCap } from '../../transport/utils';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { withdrawExpire, withdrawMessage, withdraw, withdrawCompleted } from '../actions';
 import { Direction } from '../state';
@@ -215,7 +216,7 @@ export const withdrawSendTxEpic = (
 /**
  * Upon receiving withdraw request or confirmation, send partner the respective Processed message
  *
- * SDK-based clients (with caps.noDelivery set) don't need it, so skip. They, instead, confirm
+ * SDK-based clients (with caps.Delivery set) don't need it, so skip. They, instead, confirm
  * the request with the confirmation, and re-sends confirmation on request retries
  *
  * @param action$ - Observable of withdrawMessage.request|withdrawMessage.success actions
@@ -243,9 +244,9 @@ export const withdrawMessageProcessedEpic = (
         first(),
         filter(
           ({ presences }) =>
-            // if caps.noDelivery is set for partner, they don't need this Processed either
+            // if caps.Delivery is set for partner, they don't need this Processed either
             action.meta.partner in presences &&
-            !presences[action.meta.partner].payload.caps?.[Capabilities.NO_DELIVERY],
+            !!getCap(presences[action.meta.partner].payload.caps, Capabilities.DELIVERY),
         ),
         mergeMap(() => {
           const message = action.payload.message;
