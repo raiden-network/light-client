@@ -22,7 +22,7 @@
     "core-js": "^3.6.5",
     "ethereum-blockies-base64": "^1.0.2",
     "ethers": "^4.0.48",
-    "idb": "^5.0.6",
+    "idb": "^5.0.7",
     "lodash": "^4.17.20",
     "loglevel": "^1.7.0",
     "raiden-ts": "*",
