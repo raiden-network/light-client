@@ -53,6 +53,7 @@ import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { pluckDistinct } from '../utils/rx';
 import { matrixPresence } from '../transport/actions';
+import { getCap } from '../transport/utils';
 import { UserDeposit } from '../contracts/UserDeposit';
 import { HumanStandardToken } from '../contracts/HumanStandardToken';
 
@@ -309,7 +310,7 @@ export const pfsFeeUpdateEpic = (
     // ignore actions while/if mediating not enabled
     filter(
       ([channel, { pfsRoom, caps }]) =>
-        channel.state === ChannelState.open && !!pfsRoom && !caps?.[Capabilities.NO_MEDIATE],
+        channel.state === ChannelState.open && !!pfsRoom && !!getCap(caps, Capabilities.MEDIATE),
     ),
     mergeMap(([channel, { pfsRoom }]) => {
       const message: PFSFeeUpdate = {
@@ -1034,7 +1035,7 @@ function validateRouteTargetAndEventuallyThrow(
 
   assert(presences[target].payload.available, [ErrorCodes.PFS_TARGET_OFFLINE, { target }]);
 
-  assert(!presences[target].payload.caps?.[Capabilities.NO_RECEIVE], [
+  assert(getCap(presences[target].payload.caps, Capabilities.RECEIVE), [
     ErrorCodes.PFS_TARGET_NO_RECEIVE,
     { target },
   ]);

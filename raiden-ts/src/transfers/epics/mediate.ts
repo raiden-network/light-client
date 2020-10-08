@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { filter, map, withLatestFrom } from 'rxjs/operators';
 
 import { Capabilities } from '../../constants';
+import { getCap } from '../../transport/utils';
 import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { RaidenConfig } from '../../config';
@@ -12,11 +13,11 @@ import { transfer, transferSigned } from '../actions';
 import { Direction } from '../state';
 
 function shouldMediate(action: transferSigned, address: Address, { caps }: RaidenConfig): boolean {
-  const isMediationEnabled = !caps?.[Capabilities.NO_MEDIATE];
+  const isMediationEnabled = getCap(caps, Capabilities.MEDIATE);
   const isntTarget =
     action.meta.direction === Direction.RECEIVED && action.payload.message.target !== address;
 
-  return isMediationEnabled && isntTarget;
+  return !!isMediationEnabled && isntTarget;
 }
 
 /**

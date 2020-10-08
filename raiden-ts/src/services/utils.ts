@@ -11,6 +11,7 @@ import { RaidenEpicDeps } from '../types';
 import { Address, UInt, decode, Signed, Signature } from '../utils/types';
 import { jsonParse, encode } from '../utils/data';
 import { Presences } from '../transport/types';
+import { getCap } from '../transport/utils';
 import { ChannelState } from '../channels/state';
 import { channelAmounts, channelKey } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
@@ -41,7 +42,7 @@ export function channelCanRoute(
 ): true | string {
   if (!(partner in presences) || !presences[partner].payload.available)
     return `path: partner "${partner}" not available in transport`;
-  if (target !== partner && presences[partner].payload.caps?.[Capabilities.NO_MEDIATE])
+  if (target !== partner && !getCap(presences[partner].payload.caps, Capabilities.MEDIATE))
     return `path: partner "${partner}" doesn't mediate transfers`;
   const channel = state.channels[channelKey({ tokenNetwork, partner })];
   if (!channel) return `path: there's no direct channel with partner "${partner}"`;

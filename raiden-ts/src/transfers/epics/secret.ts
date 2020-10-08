@@ -29,6 +29,7 @@ import { RaidenError, ErrorCodes, assert } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
 import { pluckDistinct, takeIf } from '../../utils/rx';
 import { Hash, Secret, Signed, UInt, isntNil, untime } from '../../utils/types';
+import { getCap } from '../../transport/utils';
 import {
   transfer,
   transferSecret,
@@ -418,7 +419,12 @@ export const transferAutoRegisterEpic = (
         takeUntil(grouped$.pipe(ignoreElements(), endWith(1))),
       ),
     ),
-    takeIf(config$.pipe(pluck('caps', Capabilities.NO_RECEIVE)), true),
+    takeIf(
+      config$.pipe(
+        pluck('caps'),
+        map((caps) => getCap(caps, Capabilities.RECEIVE)),
+      ),
+    ),
   );
 
 /**

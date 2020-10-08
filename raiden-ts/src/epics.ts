@@ -50,9 +50,10 @@ function getConfig$(
           userConfig.caps === null
             ? userConfig.caps
             : {
-                [Capabilities.NO_RECEIVE]: !(
+                [Capabilities.RECEIVE]:
                   config.monitoringReward?.gt(0) && config.monitoringReward.lte(udcBalance)
-                ),
+                    ? 1
+                    : 0,
                 ...config.caps, // default and user config overwrite runtime caps above
               };
         return { ...config, caps };

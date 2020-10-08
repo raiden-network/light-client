@@ -38,6 +38,7 @@ import {
   getBalanceProofFromEnvelopeMessage,
 } from '../../messages/utils';
 import { matrixPresence } from '../../transport/actions';
+import { getCap } from '../../transport/utils';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
@@ -485,7 +486,7 @@ function receiveTransferSigned(
 
       let request$: Observable<Signed<SecretRequest> | undefined> = of(undefined);
       if (
-        !caps?.[Capabilities.NO_RECEIVE] &&
+        getCap(caps, Capabilities.RECEIVE) &&
         locked.target === address &&
         // only request secret if transfer don't expire soon
         locked.lock.expiration.sub(revealTimeout).gt(state.blockNumber)
