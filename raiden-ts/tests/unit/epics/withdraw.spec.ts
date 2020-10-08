@@ -161,8 +161,8 @@ describe('withdraw send request', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     // disable NoDelivery so we can test Processed sending
-    raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.NO_DELIVERY]: false } }));
-    partner.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.NO_DELIVERY]: false } }));
+    raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.DELIVERY]: 1 } }));
+    partner.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.DELIVERY]: 1 } }));
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
 
     await ensureChannelIsDeposited([raiden, partner], deposit);
@@ -213,7 +213,7 @@ describe('withdraw send request', () => {
       request.signature,
       confirmation.signature,
     );
-    // this only works because Capabilities.NO_DELIVERY is disabled
+    // this only works because Capabilities.DELIVERY is enabled
     // LC-to-LC confirms with WithdrawConfirmation instead
     expect(raiden.output).toContainEqual(
       messageSend.request(

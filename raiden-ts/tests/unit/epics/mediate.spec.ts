@@ -82,15 +82,15 @@ describe('mediate transfers', () => {
     );
   });
 
-  test('skip if NO_MEDIATE', async () => {
+  test('skip if !MEDIATE', async () => {
     expect.assertions(3);
 
     const [raiden, partner, target] = await makeRaidens(3);
     partner.store.dispatch(
       raidenConfigUpdate({
         caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          [Capabilities.NO_MEDIATE]: true,
+          [Capabilities.DELIVERY]: 0,
+          [Capabilities.MEDIATE]: 0,
         },
       }),
     );

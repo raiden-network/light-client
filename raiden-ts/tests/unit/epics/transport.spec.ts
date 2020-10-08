@@ -390,7 +390,7 @@ describe('transport epic', () => {
           {
             user_id: `@${term}:${matrixServer}`,
             display_name: `${term}_display_name`,
-            avatar_url: 'noDelivery,randomCap="test"',
+            avatar_url: 'mxc://raiden.network/cap?Delivery=0&randomCap=test',
           },
         ],
       }));
@@ -406,7 +406,7 @@ describe('transport epic', () => {
             userId: partnerUserId,
             available: true,
             ts: expect.any(Number),
-            caps: { [Capabilities.NO_DELIVERY]: true, randomCap: 'test' },
+            caps: { [Capabilities.DELIVERY]: 0, randomCap: 'test' },
           },
           { address: partner },
         ),
@@ -457,7 +457,7 @@ describe('transport epic', () => {
 
       matrix.getProfileInfo.mockResolvedValueOnce({
         displayname: `${userId}_display_name`,
-        avatar_url: `noDelivery`,
+        avatar_url: `mxc://raiden.network/cap?Delivery=0`,
       });
 
       matrix.emit('event', {
@@ -471,7 +471,7 @@ describe('transport epic', () => {
             userId: partnerUserId,
             available: false,
             ts: expect.any(Number),
-            caps: { [Capabilities.NO_DELIVERY]: true },
+            caps: { [Capabilities.DELIVERY]: 0 },
           },
           { address: partner },
         ),
@@ -506,7 +506,7 @@ describe('transport epic', () => {
 
   test('matrixUpdateCapsEpic', async () => {
     expect.assertions(8);
-    action$.next(raidenConfigUpdate({ caps: { [Capabilities.NO_DELIVERY]: true } }));
+    action$.next(raidenConfigUpdate({ caps: { [Capabilities.DELIVERY]: 0 } }));
 
     // don't call on first replayed value from config$
     await expect(
@@ -523,23 +523,27 @@ describe('transport epic', () => {
       .toPromise();
     action$.next(
       raidenConfigUpdate({
-        caps: { [Capabilities.NO_DELIVERY]: true, [Capabilities.WEBRTC]: true },
+        caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 1 },
       }),
     );
     await expect(promise).resolves.toBeUndefined();
     expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(1);
-    expect(matrix.setAvatarUrl).toHaveBeenCalledWith('noDelivery,webRTC');
+    expect(matrix.setAvatarUrl).toHaveBeenCalledWith(
+      'mxc://raiden.network/cap?Receive=1&Delivery=0&webRTC=1',
+    );
 
     promise = matrixUpdateCapsEpic(action$, state$, depsMock).toPromise();
     action$.next(
       raidenConfigUpdate({
-        caps: { [Capabilities.NO_RECEIVE]: true, customCap: 'abc' },
+        caps: { [Capabilities.RECEIVE]: 0, customCap: 'abc' },
       }),
     );
     setTimeout(() => action$.complete(), 10);
     await expect(promise).resolves.toBeUndefined();
     expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(2);
-    expect(matrix.setAvatarUrl).toHaveBeenCalledWith('noReceive,customCap="abc"');
+    expect(matrix.setAvatarUrl).toHaveBeenCalledWith(
+      'mxc://raiden.network/cap?Receive=0&customCap=abc',
+    );
   });
 
   describe('matrixCreateRoomEpic', () => {
@@ -1077,7 +1081,7 @@ describe('transport epic', () => {
       const message = processed;
       const signed = await signMessage(depsMock.signer, message);
 
-      action$.next(raidenConfigUpdate({ caps: { [Capabilities.TO_DEVICE]: true } }));
+      action$.next(raidenConfigUpdate({ caps: { [Capabilities.TO_DEVICE]: 1 } }));
       // fail once, succeed on retry
       matrix.sendToDevice.mockRejectedValueOnce(new Error('Failed'));
 
@@ -1089,7 +1093,7 @@ describe('transport epic', () => {
             userId: partnerUserId,
             available: true,
             ts: Date.now(),
-            caps: { [Capabilities.TO_DEVICE]: true },
+            caps: { [Capabilities.TO_DEVICE]: 1 },
           },
           { address: partner },
         ),
@@ -1283,7 +1287,7 @@ describe('transport epic', () => {
       const message = 'test message',
         content = { msgtype: 'm.text', body: message };
 
-      action$.next(raidenConfigUpdate({ caps: { [Capabilities.TO_DEVICE]: true } }));
+      action$.next(raidenConfigUpdate({ caps: { [Capabilities.TO_DEVICE]: 1 } }));
 
       const promise = matrixMessageReceivedEpic(action$, state$, depsMock)
         .pipe(first())
@@ -1303,7 +1307,7 @@ describe('transport epic', () => {
             userId: partnerUserId,
             available: true,
             ts: Date.now(),
-            caps: { [Capabilities.TO_DEVICE]: true },
+            caps: { [Capabilities.TO_DEVICE]: 1 },
           },
           { address: partner },
         ),
@@ -1402,7 +1406,7 @@ describe('transport epic', () => {
       signerSpy.mockRestore();
     });
 
-    test('skip if partner supports Capabilities.NO_DELIVERY', async () => {
+    test('skip if partner supports !Capabilities.DELIVERY', async () => {
       expect.assertions(2);
 
       const message: Signed<Processed> = {
@@ -1429,7 +1433,7 @@ describe('transport epic', () => {
             userId: partnerUserId,
             available: true,
             ts: Date.now(),
-            caps: { [Capabilities.NO_DELIVERY]: true },
+            caps: { [Capabilities.DELIVERY]: 0 },
           },
           { address: partner },
         ),
@@ -1548,7 +1552,7 @@ describe('transport epic', () => {
           userId: partnerUserId,
           available,
           ts: Date.now(),
-          caps: { [Capabilities.WEBRTC]: webRtcCapable },
+          caps: { [Capabilities.WEBRTC]: webRtcCapable ? 1 : 0 },
         },
         { address: partner },
       );
@@ -1561,7 +1565,7 @@ describe('transport epic', () => {
       action$.next(
         raidenConfigUpdate({
           httpTimeout: 300,
-          caps: { [Capabilities.NO_DELIVERY]: true, [Capabilities.WEBRTC]: true },
+          caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 1 },
         }),
       );
       matrix.getRoom.mockImplementation(
@@ -1682,7 +1686,7 @@ describe('transport epic', () => {
             userId: partnerUserId,
             available: true,
             ts: Date.now(),
-            caps: { [Capabilities.WEBRTC]: true },
+            caps: { [Capabilities.WEBRTC]: 1 },
           },
           { address: partner },
         ),
@@ -1787,7 +1791,7 @@ describe('transport epic', () => {
             userId: partnerUserId,
             available: true,
             ts: Date.now(),
-            caps: { [Capabilities.WEBRTC]: true },
+            caps: { [Capabilities.WEBRTC]: 1 },
           },
           { address: partner },
         ),

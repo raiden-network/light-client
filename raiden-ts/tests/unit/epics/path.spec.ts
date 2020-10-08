@@ -1065,8 +1065,8 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     raiden.store.dispatch(
       raidenConfigUpdate({
         caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          // disable NO_RECEIVE & NO_MEDIATE
+          [Capabilities.DELIVERY]: 0,
+          // enable RECEIVE & MEDIATE
         },
       }),
     );
@@ -1100,8 +1100,8 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     raiden.store.dispatch(
       raidenConfigUpdate({
         caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          // disable NO_RECEIVE & NO_MEDIATE
+          [Capabilities.DELIVERY]: 0,
+          // enable RECEIVE & MEDIATE
         },
       }),
     );
@@ -1122,14 +1122,14 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     signerSpy.mockRestore();
   });
 
-  test('skip: NO_MEDIATE', async () => {
+  test('skip: !MEDIATE', async () => {
     // expect.assertions(1);
     const [raiden, partner] = await makeRaidens(2);
     raiden.store.dispatch(
       raidenConfigUpdate({
         caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          [Capabilities.NO_MEDIATE]: true,
+          [Capabilities.DELIVERY]: 0,
+          [Capabilities.MEDIATE]: 0,
         },
       }),
     );

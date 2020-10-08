@@ -404,7 +404,7 @@ describe('Raiden', () => {
   describe('getUDCCapacity', () => {
     test('no balance', async () => {
       expect.assertions(2);
-      // initial high, to avoid it interferring with caps[Capabilities.NO_RECEIVE]
+      // initial high, to avoid it interferring with caps[Capabilities.RECEIVE]
       await expect(raiden.userDepositTokenAddress()).resolves.toMatch(/^0x/);
       // should be updated soonish
       await expect(raiden.getUDCCapacity()).resolves.toEqual(Zero);

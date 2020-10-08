@@ -76,9 +76,9 @@ describe('monitorRequestEpic', () => {
         httpTimeout: 30,
         monitoringReward,
         caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          [Capabilities.NO_MEDIATE]: true,
-          // 'noReceive' should be auto-disabled by 'getCaps$'
+          [Capabilities.DELIVERY]: 0,
+          [Capabilities.MEDIATE]: 0,
+          // 'Receive' should be auto-enabled by 'getCaps$'
         },
         // rate=WeiPerEther == 1:1 to SVT
         rateToSvt: { [token]: WeiPerEther as UInt<32> },
@@ -171,9 +171,9 @@ describe('monitorRequestEpic', () => {
         httpTimeout: 30,
         monitoringReward,
         caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          [Capabilities.NO_MEDIATE]: true,
-          // 'noReceive' should be auto-disabled by 'getCaps$'
+          [Capabilities.DELIVERY]: 0,
+          [Capabilities.MEDIATE]: 0,
+          // 'Receive' should be auto-enabled by 'getCaps$'
         },
         // rate=WeiPerEther == 1:1 to SVT
         rateToSvt: { [token]: WeiPerEther as UInt<32> },
@@ -228,9 +228,9 @@ describe('monitorRequestEpic', () => {
         httpTimeout: 30,
         monitoringReward,
         caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          [Capabilities.NO_MEDIATE]: true,
-          // 'noReceive' should be auto-disabled by 'getCaps$'
+          [Capabilities.DELIVERY]: 0,
+          [Capabilities.MEDIATE]: 0,
+          // 'Receive' should be auto-enabled by 'getCaps$'
         },
         // rate=WeiPerEther == 1:1 to SVT
         rateToSvt: { [token]: WeiPerEther as UInt<32> },
@@ -275,9 +275,9 @@ describe('monitorRequestEpic', () => {
         httpTimeout: 30,
         monitoringReward,
         caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          [Capabilities.NO_MEDIATE]: true,
-          // 'noReceive' should be auto-disabled by 'getCaps$'
+          [Capabilities.DELIVERY]: 0,
+          [Capabilities.MEDIATE]: 0,
+          // 'Receive' should be auto-enabled by 'getCaps$'
         },
         // rate=WeiPerEther == 1:1 to SVT
         rateToSvt: { [token]: WeiPerEther as UInt<32> },
@@ -308,9 +308,9 @@ describe('monitorRequestEpic', () => {
         httpTimeout: 30,
         monitoringReward,
         caps: {
-          [Capabilities.NO_DELIVERY]: true,
-          [Capabilities.NO_MEDIATE]: true,
-          // 'noReceive' should be auto-disabled by 'getCaps$'
+          [Capabilities.DELIVERY]: 0,
+          [Capabilities.MEDIATE]: 0,
+          // 'Receive' should be auto-enabled by 'getCaps$'
         },
         // rate=WeiPerEther == 1:1 to SVT
         rateToSvt: { [token]: WeiPerEther as UInt<32> },

@@ -1112,7 +1112,7 @@ export async function makeRaiden(
       confirmationBlocks: 5,
       logger: 'debug',
       pollingInterval,
-      caps: { [Capabilities.NO_DELIVERY]: true, [Capabilities.WEBRTC]: false },
+      caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 0, [Capabilities.MEDIATE]: 1 },
     },
   );
   const latest$ = new ReplaySubject<Latest>(1);
