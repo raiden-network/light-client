@@ -189,7 +189,7 @@ $header-vertical-margin-mobile: 2rem;
         border: 1.5px solid transparent;
         &::before,
         &::after {
-          border-width: 0 0 0 0;
+          display: none;
         }
       }
       &--is-focused {
