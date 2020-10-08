@@ -14,8 +14,9 @@ import {
   tap,
 } from 'rxjs/operators';
 
-import { MatrixEvent, Room } from 'matrix-js-sdk';
+import { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
 
+import { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { Signed } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
@@ -33,6 +34,7 @@ import { messageSend, messageReceived, messageGlobalSend } from '../../messages/
 import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
 import { LruCache } from '../../utils/lru';
+import { getPresenceByUserId } from '../utils';
 import { globalRoomNames, roomMatch, getRoom$, waitMemberAndSend$, parseMessage } from './helpers';
 
 /**
@@ -147,6 +149,25 @@ export const matrixMessageGlobalSendEpic = (
     ignoreElements(),
   );
 
+// filter for text messages not from us and not from global rooms
+function isValidMessage([{ matrix, event, room }, config]: [
+  { matrix: MatrixClient; event: MatrixEvent; room: Room | undefined },
+  RaidenConfig,
+]): boolean {
+  const isTextMessage =
+    event.getType() === 'm.room.message' &&
+    event.getContent().msgtype === 'm.text' &&
+    event.getSender() !== matrix.getUserId();
+  const isPrivateRoom =
+    !!room &&
+    !globalRoomNames(config).some((g) =>
+      // generate an alias for global room of given name, and check if room matches
+      roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
+    );
+  const isToDevice = !room && !!config.caps?.[Capabilities.TO_DEVICE]; // toDevice message
+  return isTextMessage && (isPrivateRoom || isToDevice);
+}
+
 /**
  * Subscribe to matrix messages and emits MessageReceivedAction upon receiving a valid message from
  * an user of interest (one valid signature from an address we monitor) in a room we have for them
@@ -179,25 +200,11 @@ export const matrixMessageReceivedEpic = (
       ),
     ),
     withLatestFrom(config$),
-    // filter for text messages not from us and not from global rooms
-    filter(
-      ([{ matrix, event, room }, config]) =>
-        event.getType() === 'm.room.message' &&
-        event.event?.content?.msgtype === 'm.text' &&
-        event.getSender() !== matrix.getUserId() &&
-        ((room &&
-          !globalRoomNames(config).some((g) =>
-            // generate an alias for global room of given name, and check if room matches
-            roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
-          )) ||
-          (!room && !!config.caps?.[Capabilities.TO_DEVICE])), // toDevice message
-    ),
+    filter(isValidMessage),
     mergeMap(([{ event, room }, { httpTimeout }]) =>
       latest$.pipe(
         filter(({ presences, state }) => {
-          const presence = Object.values(presences).find(
-            (presence) => presence.payload.userId === event.getSender(),
-          );
+          const presence = getPresenceByUserId(presences, event.getSender());
           if (!presence) return false;
           const rooms = state.transport.rooms?.[presence.meta.address] ?? [];
           return !room || rooms.includes(room.roomId);
@@ -207,9 +214,7 @@ export const matrixMessageReceivedEpic = (
         // AND the room in which this message was sent to be in sender's address room queue
         takeUntil(timer(httpTimeout)),
         mergeMap(function* ({ presences }) {
-          const presence = Object.values(presences).find(
-            (presence) => presence.payload.userId === event.getSender(),
-          )!;
+          const presence = getPresenceByUserId(presences, event.getSender())!;
           for (const line of (event.getContent().body ?? '').split('\n')) {
             const message = parseMessage(line, presence.meta.address, { log });
             yield messageReceived(
