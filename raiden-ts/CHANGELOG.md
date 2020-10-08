@@ -11,12 +11,14 @@
 
 ### Changed
 - [#2158] Adapt WebRTC to new protocol compatible with python client
+- [#2205] Adapt capabilities to the new query string format
 
 [#2044]: https://github.com/raiden-network/light-client/issues/2044
 [#2094]: https://github.com/raiden-network/light-client/issues/2094
 [#2158]: https://github.com/raiden-network/light-client/issues/2158
 [#2174]: https://github.com/raiden-network/light-client/pull/2174
 [#2204]: https://github.com/raiden-network/light-client/issues/2204
+[#2205]: https://github.com/raiden-network/light-client/issues/2205
 
 ## [0.11.1] - 2020-08-18
 ### Changed
