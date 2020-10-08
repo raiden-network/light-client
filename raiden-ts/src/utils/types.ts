@@ -2,8 +2,8 @@
 import * as t from 'io-ts';
 import { BigNumber, bigNumberify, getAddress, isHexString, hexDataLength } from 'ethers/utils';
 import { Two, Zero } from 'ethers/constants';
-import { Either, Right } from 'fp-ts/lib/Either';
-import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
+import { Either, isLeft, Right } from 'fp-ts/lib/Either';
+import { PathReporter } from 'io-ts/lib/PathReporter';
 import memoize from 'lodash/memoize';
 import { RaidenError } from './error';
 
@@ -15,7 +15,9 @@ export interface Storage {
 }
 
 function reporterAssert<T>(value: Either<t.Errors, T>): asserts value is Right<T> {
-  ThrowReporter.report(value);
+  if (isLeft(value)) {
+    throw new Error(PathReporter.report(value).join('\n'));
+  }
 }
 
 /**
