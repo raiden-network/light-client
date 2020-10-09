@@ -523,26 +523,25 @@ describe('transport epic', () => {
       .toPromise();
     action$.next(
       raidenConfigUpdate({
-        caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 1 },
+        caps: { [Capabilities.DELIVERY]: 1 },
       }),
     );
     await expect(promise).resolves.toBeUndefined();
     expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(1);
     expect(matrix.setAvatarUrl).toHaveBeenCalledWith(
-      'mxc://raiden.network/cap?Receive=1&Delivery=0&webRTC=1',
+      expect.stringMatching(`mxc://raiden.network/cap?.*${Capabilities.DELIVERY}=1`),
     );
 
     promise = matrixUpdateCapsEpic(action$, state$, depsMock).toPromise();
-    action$.next(
-      raidenConfigUpdate({
-        caps: { [Capabilities.RECEIVE]: 0, customCap: 'abc' },
-      }),
-    );
+    action$.next(raidenConfigUpdate({ caps: { customCap: 'abc' } }));
     setTimeout(() => action$.complete(), 10);
+
     await expect(promise).resolves.toBeUndefined();
     expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(2);
     expect(matrix.setAvatarUrl).toHaveBeenCalledWith(
-      'mxc://raiden.network/cap?Receive=0&customCap=abc',
+      expect.stringMatching(
+        `mxc://raiden.network/cap?.*${Capabilities.DELIVERY}=0&.*customCap=abc`,
+      ),
     );
   });
 
