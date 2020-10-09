@@ -168,6 +168,10 @@ export function isActionOf<AC extends ActionCreator<any, any, any, any>>(
   ...args: any[]
 ) {
   const arr = Array.isArray(ac) ? ac : [ac];
+  /**
+   * @param action - action to check
+   * @returns boolean indicating whether object is of type of action
+   */
   function _isActionOf(action: unknown): action is ReturnType<AC> {
     return action != null && arr.some((a) => a.is(action));
   }
@@ -488,6 +492,10 @@ export function isConfirmationResponseOf<
 export function isConfirmationResponseOf<
   AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
 >(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], ...args: [unknown] | []) {
+  /**
+   * @param action - action to check
+   * @returns boolean indicating whether object is confirmation
+   */
   function _isConfirmation(action: unknown): action is { payload: { confirmed: boolean } } {
     return typeof (action as any)?.['payload']?.['confirmed'] === 'boolean';
   }
@@ -618,14 +626,26 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
         ) => ExtReducer<ACs | AC, Iterate<X>>;
       };
 
-  // make a reducer function for given handlers
+  /**
+   * Make a reducer function for given handlers
+   *
+   * @param handlers - handlers to put into the reducer
+   * @returns reducer function for given handlers
+   */
   function makeReducer<ACs, X extends I = 0>(handlers: Handlers): ExtReducer<ACs, X> {
     const reducer: Reducer<S, A> = (state: S = initialState, action: A) => {
       if (action.type in handlers && handlers[action.type][0].is(action))
         return handlers[action.type][1](state, action); // calls registered handler
       return state; // fallback returns unchanged state
     };
-    // circular dependency on generic params forbids an already handled action from being accepted
+
+    /**
+     * Circular dependency on generic params forbids an already handled action from being accepted
+     *
+     * @param ac - Single or array of ActionCreators
+     * @param handler - handler to use
+     * @returns reducer with the action created incorporated
+     */
     function handle<
       AC extends AnyAC & NotHandled<ACs, AD>,
       H extends Handler<AC>,
