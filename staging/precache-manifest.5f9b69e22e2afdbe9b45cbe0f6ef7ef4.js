@@ -12,7 +12,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/config.json.example"
   },
   {
-    "revision": "80cb7a36cbd2f4f3b644",
+    "revision": "a2fd654dcd8e8201ba15",
     "url": "/staging/css/app.6d9fcb3a.css"
   },
   {
@@ -34,10 +34,6 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "de73226f3bfec6fb66c3",
     "url": "/staging/css/chunk-1670e690.ea3e8542.css"
-  },
-  {
-    "revision": "354183261c445d62a896",
-    "url": "/staging/css/chunk-1cccd57e.a575c256.css"
   },
   {
     "revision": "cb74ece6ebc7d76864d1",
@@ -66,6 +62,10 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "0e3db7c9bbc7aaef54ff",
     "url": "/staging/css/chunk-63df1926.e6751f10.css"
+  },
+  {
+    "revision": "aa43a6f56e12063624da",
+    "url": "/staging/css/chunk-68a689d2.36b3d7bb.css"
   },
   {
     "revision": "fe5aa318758a3af53d1a",
@@ -336,12 +336,12 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/staging/img/withdrawal.c80c3337.svg"
   },
   {
-    "revision": "ebf172bfde950454fd1a7edc00e7cd2d",
+    "revision": "ecc3c1a226805858f684a0b653ea31e9",
     "url": "/staging/index.html"
   },
   {
-    "revision": "80cb7a36cbd2f4f3b644",
-    "url": "/staging/js/app.795f3c9d.js"
+    "revision": "a2fd654dcd8e8201ba15",
+    "url": "/staging/js/app.804278c8.js"
   },
   {
     "revision": "b8ba99ac848c0a762b85",
@@ -362,10 +362,6 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "de73226f3bfec6fb66c3",
     "url": "/staging/js/chunk-1670e690.04a62f9c.js"
-  },
-  {
-    "revision": "354183261c445d62a896",
-    "url": "/staging/js/chunk-1cccd57e.18f4e20e.js"
   },
   {
     "revision": "cb74ece6ebc7d76864d1",
@@ -398,6 +394,10 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "0e3db7c9bbc7aaef54ff",
     "url": "/staging/js/chunk-63df1926.ec8a0849.js"
+  },
+  {
+    "revision": "aa43a6f56e12063624da",
+    "url": "/staging/js/chunk-68a689d2.bfbfa7a9.js"
   },
   {
     "revision": "fe5aa318758a3af53d1a",
