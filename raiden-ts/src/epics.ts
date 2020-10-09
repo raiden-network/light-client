@@ -44,19 +44,16 @@ function getConfig$(
   return combineLatest([partialConfig$, udcBalance$]).pipe(
     map(
       ([userConfig, udcBalance]): RaidenConfig => {
-        const config: RaidenConfig = { ...defaultConfig, ...userConfig };
-        // if user config caps is null, disable it; else, calculate dynamic default values
-        const caps =
-          userConfig.caps === null
-            ? userConfig.caps
-            : {
-                [Capabilities.RECEIVE]:
-                  config.monitoringReward?.gt(0) && config.monitoringReward.lte(udcBalance)
-                    ? 1
-                    : 0,
-                ...config.caps, // default and user config overwrite runtime caps above
-              };
-        return { ...config, caps };
+        const config: Mutable<RaidenConfig> = { ...defaultConfig, ...userConfig };
+        // if user config caps is not disabled, calculate dynamic default values
+        if (config.caps !== null)
+          config.caps = {
+            [Capabilities.RECEIVE]:
+              config.monitoringReward?.gt(0) && config.monitoringReward.lte(udcBalance) ? 1 : 0,
+            ...defaultConfig.caps,
+            ...userConfig.caps,
+          };
+        return config;
       },
     ),
     distinctUntilChanged(isEqual),

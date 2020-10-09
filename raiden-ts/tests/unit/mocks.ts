@@ -578,6 +578,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
         httpTimeout: 300,
         confirmationBlocks: 2,
         pollingInterval: 10,
+        caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 0, [Capabilities.MEDIATE]: 1 },
       },
     ),
     config = { ...defaultConfig, ...state.config };
