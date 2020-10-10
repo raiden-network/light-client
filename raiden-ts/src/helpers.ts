@@ -502,7 +502,7 @@ export async function getState(
   let { state: dump } = storage;
   const { storage: localStorage, state: _, ...pouchOpts } = storage;
   if (!dump) {
-    dump = await localStorage?.getItem?.(dbName);
+    dump = await localStorage?.getItem(dbName);
     if (dump) fromLocalStorage = true;
   }
 

@@ -724,7 +724,7 @@ function sendWithdrawRequest(
       )
         return EMPTY; // already requested, skip without failing
       assert(
-        presences[action.meta.partner]?.payload?.available,
+        presences[action.meta.partner]?.payload.available,
         ErrorCodes.CNL_WITHDRAW_PARTNER_OFFLINE,
       );
       assert(

@@ -50,7 +50,7 @@ import { isActionOf } from '../utils/actions';
 import { pluckDistinct, distinctRecordValues, retryAsync$, takeIf } from '../utils/rx';
 import { fromEthersEvent, getNetwork, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
-import { RaidenError, ErrorCodes } from '../utils/error';
+import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { createBalanceHash, MessageTypeId } from '../messages/utils';
 import { TokenNetwork } from '../contracts/TokenNetwork';
 import { HumanStandardToken } from '../contracts/HumanStandardToken';
@@ -636,7 +636,7 @@ export const channelOpenEpic = (
       );
 
       let deposit$: Observable<channelDeposit.request> = EMPTY;
-      if (action.payload.deposit?.gt?.(0))
+      if (action.payload.deposit?.gt(0))
         // if it didn't fail so far, emit a channelDeposit.request in parallel with waitOpen=true
         // to send 'approve' tx meanwhile we open the channel
         deposit$ = of(
@@ -681,12 +681,10 @@ export const channelOpenEpic = (
 function makeDeposit$(
   [tokenContract, tokenNetworkContract]: [HumanStandardToken, TokenNetwork],
   [sender, address, partner]: [Address, Address, Address],
-  deposit: UInt<32> | undefined,
+  deposit: UInt<32>,
   channelId$: Observable<number>,
   { log, config$ }: Pick<RaidenEpicDeps, 'log' | 'config$'>,
 ): Observable<channelDeposit.failure> {
-  if (!deposit?.gt(Zero)) return EMPTY;
-
   // retryTx from here
   return defer(() =>
     Promise.all([
@@ -781,6 +779,7 @@ export const channelDepositEpic = (
           combineLatest([latest$, config$]).pipe(
             first(),
             mergeMap(([{ state }, { subkey: configSubkey }]) => {
+              assert(action.payload.deposit.gt(0), ErrorCodes.DTA_INVALID_DEPOSIT);
               const { tokenNetwork, partner } = action.meta;
 
               const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
@@ -830,7 +829,7 @@ export const channelDepositEpic = (
                   makeDeposit$(
                     [tokenContract, tokenNetworkContract],
                     [onchainAddress, address, partner],
-                    action.payload.deposit!,
+                    action.payload.deposit,
                     channelId$,
                     { log, config$ },
                   ),

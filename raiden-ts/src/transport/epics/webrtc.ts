@@ -518,7 +518,7 @@ function handlePresenceChange$(
             withLatestFrom(latest$, config$),
             mergeMap(
               ([, { presences }, { httpTimeout }]) =>
-                !presences[action.meta.address]?.payload?.available
+                !presences[action.meta.address]?.payload.available
                   ? EMPTY
                   : isCaller
                   ? timer(httpTimeout / 10) // caller waits some time to retry

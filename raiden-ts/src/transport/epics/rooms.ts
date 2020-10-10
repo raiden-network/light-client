@@ -79,7 +79,7 @@ function inviteLoop$(
       fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
         pluck(1),
         filter((member) => member.roomId === roomId && member.userId === userId),
-        startWith(matrix.getRoom(roomId)?.getMember?.(userId)),
+        startWith(matrix.getRoom(roomId)?.getMember(userId)),
         map((member) => member?.membership !== 'join'),
         distinctUntilChanged(),
       ),
