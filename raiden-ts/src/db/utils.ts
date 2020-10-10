@@ -173,7 +173,7 @@ export async function getRaidenState(db: RaidenDatabase): Promise<any | undefine
       direction: { $exists: true },
     },
   });
-  if (transfersResults.warning) log?.warn?.(transfersResults.warning, 'getRaidenState');
+  if (transfersResults.warning) log?.warn(transfersResults.warning, 'getRaidenState');
   for (const doc of transfersResults.docs) {
     state.transfers[doc._id] = doc;
   }
@@ -313,11 +313,11 @@ export async function migrateDatabase(
         )
         .toPromise();
     } catch (err) {
-      log?.error?.('Error migrating db', { from: version, to: newVersion }, err);
+      log?.error('Error migrating db', { from: version, to: newVersion }, err);
       newStorage.destroy();
       throw err;
     }
-    log?.info?.('Migrated db', { name, from: version, to: newVersion });
+    log?.info('Migrated db', { name, from: version, to: newVersion });
     if (cleanOld) await db.destroy();
     else await db.close();
     version = newVersion;
@@ -420,7 +420,7 @@ export async function replaceDatabase(
     if ('_rev' in doc) delete doc['_rev'];
     [next] = await Promise.all([iter.next(), db.put(doc)]);
   }
-  log?.warn?.('Replaced/loaded database', { name, meta });
+  log?.warn('Replaced/loaded database', { name, meta });
   await db.close();
 
   // at this point, `{name}_{meta.version}` database should contain all (and only) data from
@@ -494,11 +494,11 @@ export async function dumpDatabaseToArray(db: RaidenDatabase, opts?: { batch?: n
       if (shouldCloseAfter) await db.close(); // on success
       return result;
     } catch (e) {
-      if (e.message?.includes?.('database is closed')) {
+      if (e?.message?.includes('database is closed')) {
         shouldCloseAfter = true;
         db = await reopenDatabase(db);
       }
-      log?.warn?.('Restarting dump because', e);
+      log?.warn('Restarting dump because', e);
     }
   }
   throw new Error('Could not dump database');

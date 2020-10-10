@@ -220,7 +220,7 @@ export function retryTx<T>(
         err$.pipe(
           mergeMap((err, i) => {
             log.debug(`__retryTx ${i + 1}/${count} every ${interval}, error: `, err);
-            if (i < count && errors.some((error) => err.message?.includes?.(error)))
+            if (i < count && errors.some((error) => err.message?.includes(error)))
               return timer(interval);
             return throwError(err);
           }),

@@ -44,7 +44,7 @@ export function createPersisterMiddleware(
       const prevRevs = await db.allDocs({ keys });
       const getRev = (_id: string) => {
         const prev = prevRevs.rows.find((r) => r.id === _id);
-        if (prev?.value?.deleted) return { _rev: prev.value.rev, deleted: false };
+        if (prev?.value.deleted) return { _rev: prev.value.rev, deleted: false };
         else if (prev && !('error' in prev)) return { _rev: prev.value.rev };
       };
       const res = await db.bulkDocs(
@@ -101,7 +101,7 @@ export function createPersisterMiddleware(
     if (!db.busy$.value) {
       db.busy$.next(true);
       saveDatabase()
-        .catch((err) => log?.warn?.('Persister saveDatabase error', err))
+        .catch((err) => log?.warn('Persister saveDatabase error', err))
         .finally(() => db.busy$.next(false));
     }
     return result;

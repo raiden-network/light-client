@@ -72,7 +72,7 @@ function waitMember$(
   return combineLatest([
     latest$.pipe(
       pluckDistinct('presences', address),
-      filter((presence) => !!presence?.payload?.available),
+      filter((presence) => !!presence?.payload.available),
     ),
     latest$.pipe(
       map(({ state }) => state.transport.rooms?.[address]?.[0]),
@@ -85,7 +85,7 @@ function waitMember$(
   ]).pipe(
     filter(
       ([presence, roomId]) =>
-        matrix.getRoom(roomId)?.getMember?.(presence.payload.userId)?.membership === 'join',
+        matrix.getRoom(roomId)?.getMember(presence.payload.userId)?.membership === 'join',
     ),
     pluck(1),
     take(1),
@@ -116,7 +116,7 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
 ): Observable<string> {
   const RETRY_COUNT = 3; // is this relevant enough to become a constant/setting?
   return latest$.pipe(
-    filter(({ presences }) => !!presences[address]?.payload?.available),
+    filter(({ presences }) => !!presences[address]?.payload.available),
     take(1),
     withLatestFrom(config$),
     mergeMap(([{ presences, rtc }, { caps }]) => {

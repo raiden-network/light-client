@@ -581,7 +581,7 @@ function makeMonitoringRequest$({
         ([{ udcBalance }, { monitoringRoom, monitoringReward, rateToSvt }]) =>
           // ignore actions while/if config.monitoringRoom isn't set
           !!monitoringRoom &&
-          !!monitoringReward?.gt?.(Zero) &&
+          !!monitoringReward?.gt(Zero) &&
           // wait for udcBalance >= monitoringReward, fires immediately if already
           udcBalance.gte(monitoringReward) &&
           // use partner's total off & on-chain unlocked, total we'd lose if don't update BP

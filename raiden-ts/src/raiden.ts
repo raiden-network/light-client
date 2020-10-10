@@ -670,7 +670,7 @@ export class Raiden {
       ({ txHash }) => txHash, // pluck txHash
     );
     let depositPromise;
-    if (deposit) {
+    if (deposit?.gt(0)) {
       depositPromise = asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
         ({ txHash }) => txHash, // pluck txHash
       );
@@ -999,7 +999,7 @@ export class Raiden {
       target: finalState.transfer.target,
       fee: finalState.fee.toString(),
       lockAmount: finalState.transfer.lock.amount.toString(),
-      targetReceived: finalState.secretRequest?.amount?.toString?.(),
+      targetReceived: finalState.secretRequest?.amount.toString(),
       transferTime: finalState.unlockProcessed!.ts - finalState.transfer.ts,
     });
     return raidenTransfer(finalState);
