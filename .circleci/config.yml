@@ -18,6 +18,12 @@ anchor_1: &package_lock_key
 anchor_2: &attach_options
   at: ~/src/
 
+anchor_3: &executor_parameter
+  parameters:
+    executor:
+      type: executor
+      default: base-executor
+
 executors:
   base-executor:
     working_directory: *working_dir
@@ -31,7 +37,8 @@ executors:
 
 jobs:
   checkout:
-    executor: base-executor
+    <<: *executor_parameter
+    executor: << parameters.executor >>
     working_directory: *working_dir
     steps:
       - checkout
@@ -64,7 +71,8 @@ jobs:
           command: cd ~/src/raiden-cli && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
 
   install:
-    executor: base-executor
+    <<: *executor_parameter
+    executor: << parameters.executor >>
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
@@ -157,7 +165,8 @@ jobs:
           path: raiden-dapp/tests/e2e/results/screenshots
 
   build_sdk:
-    executor: base-executor
+    <<: *executor_parameter
+    executor: << parameters.executor >>
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
@@ -348,11 +357,14 @@ workflows:
               only:
                 - master
     jobs:
-      - checkout
+      - checkout:
+          executor: e2e-environment-executor
       - install:
+          executor: e2e-environment-executor
           requires:
             - checkout
       - build_sdk:
+          executor: e2e-environment-executor
           requires:
             - install
       - test_sdk_e2e:
