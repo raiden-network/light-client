@@ -309,7 +309,7 @@ export const fetch = jest.fn<
   Promise<{
     ok: boolean;
     status: number;
-    json: jest.MockedFunction<() => Promise<any>>;
+    json?: jest.MockedFunction<() => Promise<any>>;
     text: jest.MockedFunction<() => Promise<string>>;
   }>,
   [string?]
