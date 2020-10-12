@@ -16,7 +16,7 @@ anchor_1: &package_lock_key
   key: *cache_key
 
 anchor_2: &attach_options
-  at: ~/src/
+  at: *working_dir
 
 anchor_3: &executor_parameter
   parameters:
@@ -31,7 +31,7 @@ executors:
       - image: *docker_image
 
   e2e-environment-executor:
-    working_directory: ~/src
+    working_directory: *working_dir
     docker:
       - image: raidennetwork/lightclient-e2e-environment:latest
 
@@ -84,7 +84,7 @@ jobs:
             - ~/.pnpm-store
             - ~/.cache # Cypress stores its stuff here.
       - persist_to_workspace:
-          root: ~/src
+          root: *working_dir
           paths:
             - ./*
 
@@ -172,7 +172,7 @@ jobs:
       - attach_workspace: *attach_options
       - run: pnpm run build --filter raiden-ts
       - persist_to_workspace:
-          root: ~/src
+          root: *working_dir
           paths:
             - ./*
 
@@ -196,7 +196,7 @@ jobs:
           path: raiden-dapp/dapp.tar.gz
           destination: dapp.tar.gz
       - persist_to_workspace:
-          root: ~/src
+          root: *working_dir
           paths:
             - ./*
 
@@ -225,7 +225,7 @@ jobs:
       - attach_workspace: *attach_options
       - run: cd docs && ./generate_documentation.sh
       - persist_to_workspace:
-          root: ~/src/
+          root: *working_dir
           paths:
             - ./raiden-dapp/dist/docs
 
