@@ -15,7 +15,7 @@ docker run --detach --rm \
   --publish 127.0.0.1:5001:5001 \
   --publish 127.0.0.1:5002:5002 \
   --publish 127.0.0.1:8545:8545 \
-  lightclient-e2e-environment \
+  raidennetwork/lightclient-e2e-environment \
   >/dev/null
 
 echo "Getting DEPLOYMENT_INFO from docker image '$DOCKER_CONTAINER_NAME' ..."

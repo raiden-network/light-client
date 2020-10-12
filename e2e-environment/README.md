@@ -3,7 +3,8 @@
 ## About
 
 To test the Light Client in a fully controlled and contained environment, the
-`lightclient-e2e-environment` Docker image is used. This environment contains:
+`raidennetwork/lightclient-e2e-environment` Docker image is used. This
+environment contains:
 
 - Geth as Ethereum node running a private chain using the Clique PoA engine
 - [Raiden Contracts](https://github.com/raiden-network/raiden-contracts) pre-deployed to the chain
@@ -12,17 +13,23 @@ To test the Light Client in a fully controlled and contained environment, the
 - A `CustomToken`, `Token Network` contract deployed to the chain
 - Two [Raiden](https://github.com/raiden-network/raiden) nodes with a pre-funded open channel
 
-## Build Docker Image
+## Get Docker Image
+
+The image is available on DockerHub and can be pulled locally. Note that the
+test scripts will pull the image automatically if not available yet.
 
 ```sh
-docker build --tag lightclient-e2e-environment .
+docker pull raidennetwork/lightclient-e2e-environment
 ```
 
-Note that the tag name of the image is principally flexible and could be
-changed. This is just a name that has been decided on to be used as standard and
-that helps to follow this documentation. Also the published image to DockerHub
-follows the same naming scheme for its repository, making this image available
-for the continuous integration pipeline.
+Alternatively it can be built locally as well.
+
+```sh
+docker build --tag raidennetwork/lightclient-e2e-environment .
+```
+
+Please mind that it is necessary to tag the build like the image from the
+DockerHub repository. Else the test scripts won't make use of it.
 
 ## Run Docker Container
 
@@ -34,7 +41,7 @@ docker run --detach --rm \
   --publish 127.0.0.1:5001:5001 \
   --publish 127.0.0.1:5002:5002 \
   --publish 127.0.0.1:8545:8545 \
-  lightclient-e2e-environment \
+  raidennetwork/lightclient-e2e-environment \
 ```
 
 ## Access Services
@@ -63,9 +70,6 @@ the script with the additional argument.
 cd raiden-dapp
 bash ../e2e-environment/run-e2e-tests.sh --headless
 ```
-
-Please be aware that the script expects that the built image got tagged with the
-name `lightclient-e2e-environment`.
 
 The logs of the services will be provided automatically within the `./logs`
 directory.
