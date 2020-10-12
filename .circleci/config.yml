@@ -33,7 +33,7 @@ executors:
   e2e-environment-executor:
     working_directory: ~/src
     docker:
-      - image: raidennetwork/lightclient-integration:latest
+      - image: raidennetwork/lightclient-e2e-environment:latest
 
 jobs:
   checkout:
