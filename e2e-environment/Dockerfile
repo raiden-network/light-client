@@ -39,10 +39,10 @@ ARG CONTRACTS_VERSION
 ARG CONTRACTS_PACKAGE_VERSION
 ARG GETH_VERSION
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends supervisor python3-virtualenv \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends supervisor python3-virtualenv libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libgconf-2-4 libnss3 libxss1 libasound2 libxtst6 xauth xvfb
+RUN apt-get clean
+RUN rm -rf /var/lib/apt/lists/*
 
 
 ENV NODE_VERSION 12.16.1

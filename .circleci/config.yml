@@ -16,7 +16,13 @@ anchor_1: &package_lock_key
   key: *cache_key
 
 anchor_2: &attach_options
-  at: ~/src/
+  at: *working_dir
+
+anchor_3: &executor_parameter
+  parameters:
+    executor:
+      type: executor
+      default: base-executor
 
 executors:
   base-executor:
@@ -25,13 +31,14 @@ executors:
       - image: *docker_image
 
   e2e-environment-executor:
-    working_directory: ~/src
+    working_directory: *working_dir
     docker:
-      - image: raidennetwork/lightclient-integration:latest
+      - image: raidennetwork/lightclient-e2e-environment:latest
 
 jobs:
   checkout:
-    executor: base-executor
+    <<: *executor_parameter
+    executor: << parameters.executor >>
     working_directory: *working_dir
     steps:
       - checkout
@@ -64,7 +71,8 @@ jobs:
           command: cd ~/src/raiden-cli && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
 
   install:
-    executor: base-executor
+    <<: *executor_parameter
+    executor: << parameters.executor >>
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
@@ -76,7 +84,7 @@ jobs:
             - ~/.pnpm-store
             - ~/.cache # Cypress stores its stuff here.
       - persist_to_workspace:
-          root: ~/src
+          root: *working_dir
           paths:
             - ./*
 
@@ -142,7 +150,7 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
 
   test_dapp_e2e:
-    executor: base-executor
+    executor: e2e-environment-executor
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
@@ -157,13 +165,14 @@ jobs:
           path: raiden-dapp/tests/e2e/results/screenshots
 
   build_sdk:
-    executor: base-executor
+    <<: *executor_parameter
+    executor: << parameters.executor >>
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
       - run: pnpm run build --filter raiden-ts
       - persist_to_workspace:
-          root: ~/src
+          root: *working_dir
           paths:
             - ./*
 
@@ -187,7 +196,7 @@ jobs:
           path: raiden-dapp/dapp.tar.gz
           destination: dapp.tar.gz
       - persist_to_workspace:
-          root: ~/src
+          root: *working_dir
           paths:
             - ./*
 
@@ -216,7 +225,7 @@ jobs:
       - attach_workspace: *attach_options
       - run: cd docs && ./generate_documentation.sh
       - persist_to_workspace:
-          root: ~/src/
+          root: *working_dir
           paths:
             - ./raiden-dapp/dist/docs
 
@@ -247,9 +256,6 @@ jobs:
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
-      - run:
-          name: Restore dependencies
-          command: pnpm install --prefer-frozen-lockfile && pnpm run build --filter raiden-ts
       - run:
           name: Run end-to-end tests
           command: source /etc/profile.d/smartcontracts.sh && pnpm run test:e2e --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
@@ -296,13 +302,9 @@ workflows:
       - test_dapp_unit:
           requires:
             - build_dapp
-      - test_dapp_e2e:
-          requires:
-            - build_dapp
       - deploy_gh_pages:
           requires:
             - test_dapp_unit
-            - test_dapp_e2e
           context: "Raiden-LC-Deploy"
           filters:
             branches:
@@ -355,7 +357,19 @@ workflows:
               only:
                 - master
     jobs:
-      - checkout
-      - test_sdk_e2e:
+      - checkout:
+          executor: e2e-environment-executor
+      - install:
+          executor: e2e-environment-executor
           requires:
             - checkout
+      - build_sdk:
+          executor: e2e-environment-executor
+          requires:
+            - install
+      - test_sdk_e2e:
+          requires:
+            - build_sdk
+      - test_dapp_e2e:
+          requires:
+            - build_sdk
