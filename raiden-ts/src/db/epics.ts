@@ -14,12 +14,12 @@ import { RaidenEpicDeps } from '../types';
  * @param deps.db - Database instance
  * @returns observable to shutdown db instance on raidenShutdown
  */
-export const dbShutdownEpic = (
+export function dbShutdownEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { db }: RaidenEpicDeps,
-): Observable<never> =>
-  action$.pipe(
+): Observable<never> {
+  return action$.pipe(
     ignoreElements(),
     finalize(async () => {
       await db.busy$.pipe(first((busy) => !busy)).toPromise();
@@ -32,3 +32,4 @@ export const dbShutdownEpic = (
       }
     }),
   );
+}

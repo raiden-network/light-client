@@ -1040,11 +1040,11 @@ function receiveWithdrawExpired(
  * @param deps - RaidenEpicDeps
  * @returns Observable of output actions for this epic
  */
-export const transferGenerateAndSignEnvelopeMessageEpic = (
+export function transferGenerateAndSignEnvelopeMessageEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-) => {
+) {
   const processedCache = new LruCache<string, Signed<Processed>>(32);
   const state$ = deps.latest$.pipe(pluckDistinct('state')); // replayed(1)' state$
   return merge(
@@ -1142,4 +1142,4 @@ export const transferGenerateAndSignEnvelopeMessageEpic = (
       return output$;
     }),
   );
-};
+}

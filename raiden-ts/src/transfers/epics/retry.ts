@@ -29,11 +29,11 @@ import { retrySendUntil$, exponentialBackoff } from './utils';
  * @param deps.config$ - Config observable
  * @returns Observable of messageSend.request actions
  */
-export const transferRetryMessageEpic = (
+export function transferRetryMessageEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<messageSend.request> => {
+): Observable<messageSend.request> {
   return action$.pipe(
     filter(
       isActionOf([
@@ -122,4 +122,4 @@ export const transferRetryMessageEpic = (
       );
     }),
   );
-};
+}
