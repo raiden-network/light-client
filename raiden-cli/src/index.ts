@@ -189,24 +189,24 @@ function createLocalStorage(name: string): LocalStorage {
   return localStorage;
 }
 
+function unrefTimeout(timeout: number | NodeJS.Timeout) {
+  if (typeof timeout === 'number') return;
+  timeout.unref();
+}
+
 function shutdownServer(this: Cli): void {
   if (this.server?.listening) {
     this.log.info('Closing server...');
     this.server.close();
   }
-}
-
-function unrefTimeout(timeout: number | NodeJS.Timeout) {
-  if (typeof timeout === 'number') return;
-  timeout.unref();
+  // force-exit at most 10s after stopping raiden
+  unrefTimeout(setTimeout(() => process.exit(0), 10000));
 }
 
 function shutdownRaiden(this: Cli): void {
   if (this.raiden.started) {
     this.log.info('Stopping raiden...');
     this.raiden.stop();
-    // force-exit at most 10s after stopping raiden
-    unrefTimeout(setTimeout(() => process.exit(0), 10000));
   } else {
     process.exit(1);
   }
