@@ -22,11 +22,13 @@ import {
   mapTo,
   debounce,
   pairwise,
+  startWith,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, toUtf8Bytes, verifyMessage, concat } from 'ethers/utils';
 import { Two, Zero, MaxUint256, WeiPerEther } from 'ethers/constants';
+import constant from 'lodash/constant';
 
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
@@ -39,6 +41,7 @@ import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
+import { newBlock } from '../channels/actions';
 import {
   channelAmounts,
   groupChannel$,
@@ -51,7 +54,7 @@ import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
-import { pluckDistinct } from '../utils/rx';
+import { pluckDistinct, retryAsync$ } from '../utils/rx';
 import { matrixPresence } from '../transport/actions';
 import { getCap } from '../transport/utils';
 import { UserDeposit } from '../contracts/UserDeposit';
@@ -433,7 +436,7 @@ export function pfsServiceRegistryMonitorEpic(
 /**
  * Monitors the balance of UDC and emits udcDeposited, made available in Latest['udcBalance']
  *
- * @param action$ - Observable of aidenActions
+ * @param action$ - Observable of newBlock actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
  * @param deps.address - Our address
@@ -442,15 +445,24 @@ export function pfsServiceRegistryMonitorEpic(
  * @returns Observable of udcDeposited actions
  */
 export function monitorUdcBalanceEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, latest$, userDepositContract }: RaidenEpicDeps,
 ): Observable<udcDeposit.success> {
-  return latest$.pipe(
-    pluckDistinct('state', 'blockNumber'),
+  return action$.pipe(
+    filter(newBlock.is),
+    startWith(null),
     // it's seems ugly to call on each block, but UserDepositContract doesn't expose deposits as
     // events, and ethers actually do that to monitor token balances, so it's equivalent
-    exhaustMap(() => userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>),
+    exhaustMap(() =>
+      /* This contract's function is pure (doesn't depend on user's confirmation, gas availability,
+       * etc), but merged on the top-level observable, therefore connectivity issues can cause
+       * exceptions which would shutdown the SDK. Let's swallow the error here, since this will be
+       * retried on next block, which should only be emitted after connectivity is reestablished */
+      defer(
+        async () => userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
+      ).pipe(catchError(constant(EMPTY))),
+    ),
     withLatestFrom(latest$),
     filter(([balance, { udcBalance }]) => !udcBalance.eq(balance)),
     map(([balance]) => udcDeposit.success(undefined, { totalDeposit: balance })),
@@ -772,14 +784,19 @@ export function udcWithdrawRequestEpic(
  * @param deps - Epics dependencies
  * @param deps.userDepositContract - UDC contract instance
  * @param deps.address - Our address
+ * @param deps.config$ - Config observable
  * @returns Observable of udcWithdraw.success actions
  */
 export function udcCheckWithdrawPlannedEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { userDepositContract, address }: RaidenEpicDeps,
+  { userDepositContract, address, config$ }: RaidenEpicDeps,
 ): Observable<udcWithdraw.success> {
-  return defer(() => userDepositContract.functions.withdraw_plans(address)).pipe(
+  return config$.pipe(
+    first(),
+    mergeMap(({ pollingInterval }) =>
+      retryAsync$(() => userDepositContract.functions.withdraw_plans(address), pollingInterval),
+    ),
     filter((value) => value.withdraw_block.gt(Zero)),
     map(({ amount, withdraw_block }) =>
       udcWithdraw.success(
