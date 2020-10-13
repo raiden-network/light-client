@@ -531,13 +531,21 @@ function handlePresenceChange$(
   );
 }
 
-export const rtcConnectEpic = (
+/**
+ * Epic to handle presence updates and try to connect a webRTC channel with compatible peers
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param deps - Epics dependencies
+ * @returns Observable of rtcChannel | messageReceived actions
+ */
+export function rtcConnectEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<rtcChannel | messageReceived> =>
-  action$.pipe(
+): Observable<rtcChannel | messageReceived> {
+  return action$.pipe(
     filter(matrixPresence.success.is),
     groupBy((action) => action.meta.address),
     mergeMap((grouped$) => handlePresenceChange$(action$, grouped$, deps)),
   );
+}

@@ -50,12 +50,12 @@ import { globalRoomNames, roomMatch, getRoom$, waitMemberAndSend$, parseMessage 
  * @param deps.latest$ - Latest values
  * @returns Observable of messageSend.success actions
  */
-export const matrixMessageSendEpic = (
+export function matrixMessageSendEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, matrix$, config$, latest$ }: RaidenEpicDeps,
-): Observable<RaidenAction> =>
-  action$.pipe(
+): Observable<RaidenAction> {
+  return action$.pipe(
     filter(isActionOf(messageSend.request)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap((action) => matrix$.pipe(map((matrix) => ({ action, matrix })))),
@@ -91,6 +91,7 @@ export const matrixMessageSendEpic = (
       ),
     ),
   );
+}
 
 /**
  * Handles a [[messageGlobalSend]] action and send one-shot message to a global room
@@ -103,13 +104,13 @@ export const matrixMessageSendEpic = (
  * @param deps.config$ - Config observable
  * @returns Empty observable (whole side-effect on matrix instance)
  */
-export const matrixMessageGlobalSendEpic = (
+export function matrixMessageGlobalSendEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, matrix$, config$ }: RaidenEpicDeps,
-): Observable<RaidenAction> =>
+): Observable<RaidenAction> {
   // actual output observable, gets/wait for the user to be in a room, and then sendMessage
-  action$.pipe(
+  return action$.pipe(
     filter(isActionOf(messageGlobalSend)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap((action) => matrix$.pipe(map((matrix) => ({ action, matrix })))),
@@ -148,6 +149,7 @@ export const matrixMessageGlobalSendEpic = (
     }),
     ignoreElements(),
   );
+}
 
 // filter for text messages not from us and not from global rooms
 function isValidMessage([{ matrix, event, room }, config]: [
@@ -181,13 +183,13 @@ function isValidMessage([{ matrix, event, room }, config]: [
  * @param deps.latest$ - Latest values
  * @returns Observable of messageReceived actions
  */
-export const matrixMessageReceivedEpic = (
+export function matrixMessageReceivedEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, matrix$, config$, latest$ }: RaidenEpicDeps,
-): Observable<messageReceived> =>
+): Observable<messageReceived> {
   // gets/wait for the user to be in a room, and then sendMessage
-  matrix$.pipe(
+  return matrix$.pipe(
     // when matrix finishes initialization, register to matrix timeline events
     switchMap((matrix) =>
       merge(
@@ -232,6 +234,7 @@ export const matrixMessageReceivedEpic = (
       ),
     ),
   );
+}
 
 /**
  * Sends Delivered for specific messages
@@ -244,11 +247,11 @@ export const matrixMessageReceivedEpic = (
  * @param deps.latest$ - Latest observable
  * @returns Observable of messageSend.request actions
  */
-export const deliveredEpic = (
+export function deliveredEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, signer, latest$ }: RaidenEpicDeps,
-): Observable<messageSend.request> => {
+): Observable<messageSend.request> {
   const cache = new LruCache<string, Signed<Delivered>>(32);
   return action$.pipe(
     filter(
@@ -287,4 +290,4 @@ export const deliveredEpic = (
       });
     }),
   );
-};
+}

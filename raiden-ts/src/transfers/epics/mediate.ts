@@ -36,12 +36,12 @@ function shouldMediate(action: transferSigned, address: Address, { caps }: Raide
  * @param deps.config$ - Latest observable
  * @returns Observable of outbound transfer.request actions
  */
-export const transferMediateEpic = (
+export function transferMediateEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, config$ }: RaidenEpicDeps,
-) =>
-  action$.pipe(
+) {
+  return action$.pipe(
     filter(transferSigned.is),
     withLatestFrom(config$),
     filter(([action, config]) => shouldMediate(action, address, config)),
@@ -64,3 +64,4 @@ export const transferMediateEpic = (
       ),
     ),
   );
+}
