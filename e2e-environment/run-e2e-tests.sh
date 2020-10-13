@@ -5,7 +5,15 @@
 #   - all arguments passed to this script get forwarded to the test command.
 
 DOCKER_CONTAINER_NAME=lc-e2e
-DEPLOYMENT_INFO_DIR=$(mktemp --directory)
+DEPLOYMENT_INFO_DIR=$(mktemp -d) # Use short argument syntax to support MacOS
+
+function finish() {
+  echo "Tearing down Docker container..."
+  docker stop $DOCKER_CONTAINER_NAME >/dev/null 2>&1
+}
+
+set -e
+trap finish EXIT
 
 echo "Starting the Docker container..."
 docker run --detach --rm \
@@ -32,6 +40,3 @@ pnpm run test:e2e -- "$@"
 
 echo "Getting the service logs..."
 docker cp "$DOCKER_CONTAINER_NAME":/var/log/supervisor/. ./logs/
-
-echo "Tearing down Docker container..."
-docker stop $DOCKER_CONTAINER_NAME >/dev/null
