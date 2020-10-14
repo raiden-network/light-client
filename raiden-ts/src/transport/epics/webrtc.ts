@@ -438,10 +438,9 @@ function handlePresenceChange$(
 
       const deps = { log, latest$, config$ };
       const callId = [address, action.meta.address]
-        .map((a) => a.toLowerCase())
-        .sort((a, b) => a.localeCompare(b))
+        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
         .join('|');
-      const isCaller = callId.startsWith(address.toLowerCase());
+      const isCaller = callId.startsWith(address);
       const timeoutGen = exponentialBackoff(config.pollingInterval, 2 * config.httpTimeout);
 
       return defer(() => {
