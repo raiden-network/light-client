@@ -177,18 +177,19 @@ jobs:
             - ./*
 
   build_dapp:
+    parameters:
+      mode:
+        description: Mode to configure the environment of the dApp build
+        type: enum
+        enum: ["development", "e2e", "ghpages", "raiden-package"]
+        default: "development"
     executor: base-executor
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Build dapp
-          command: >
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              pnpm run build --filter raiden-dapp -- --mode ghpages;
-            else
-              pnpm run build --filter raiden-dapp -- --mode development;
-            fi
+          command: pnpm run build --filter raiden-dapp -- --mode << parameters.mode >>
       - run:
           name: Compress dapp
           command: cd raiden-dapp && tar -czvf dapp.tar.gz dist
@@ -327,6 +328,7 @@ workflows:
           filters:
             <<: *filter-version-regex
       - build_dapp:
+          mode: "ghpages"
           requires:
             - build_sdk
           filters:
