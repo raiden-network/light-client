@@ -106,7 +106,7 @@
     "vue-jest": "^3.0.7",
     "vue-template-compiler": "^2.6.12",
     "vuetify-loader": "^1.6.0",
-    "webpack": "^4.44.2"
+    "webpack": "^5.1.0"
   },
   "bugs": {
     "url": "https://github.com/raiden-network/light-client/issues"
