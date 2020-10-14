@@ -125,7 +125,7 @@ import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import { Zero } from 'ethers/constants';
-import uniq from 'lodash/uniq';
+import uniqBy from 'lodash/uniqBy';
 
 @Component({
   components: {
@@ -153,7 +153,10 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
     this.balances = await this.$raiden.getRaidenAccountBalances();
 
     if (this.udcToken.balance.gt(Zero)) {
-      this.balances = uniq([...this.balances].concat(this.udcToken));
+      this.balances = uniqBy(
+        [...this.balances].concat(this.udcToken),
+        (token) => token.address
+      );
     }
 
     this.loading = false;
