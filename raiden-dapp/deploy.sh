@@ -7,13 +7,8 @@
 # abort the script if there is a non-zero error
 set -e
 
-if [[ ${DEPLOYMENT} == "staging" ]]; then
-    echo 'Deploying to staging'
-    DEPLOY_BASE=staging
-else
-    echo 'Deploying main'
-    DEPLOY_BASE=''
-fi
+DEPLOY_BASE="$1"
+echo "Deploy base: $DEPLOY_BASE"
 
 echo "Preparing to deploy to GitHub Pages for commit ${CIRCLE_SHA1}"
 
