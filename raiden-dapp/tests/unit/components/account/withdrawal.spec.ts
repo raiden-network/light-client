@@ -5,25 +5,43 @@ jest.mock('@/i18n', () => jest.fn());
 
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
+import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import store from '@/store';
 import { $identicon } from '../../utils/mocks';
 import Withdrawal from '@/components/account/Withdrawal.vue';
 import RaidenService from '@/services/raiden-service';
 import Mocked = jest.Mocked;
-import { parseEther, parseUnits } from 'ethers/utils';
+import { parseUnits } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 Vue.use(Vuetify);
+Vue.use(Vuex);
 
 describe('Withdrawal.vue', () => {
   let wrapper: Wrapper<Withdrawal>;
   let vuetify: typeof Vuetify;
   let $raiden: Mocked<RaidenService>;
 
-  function createWrapper() {
+  function createWrapper(raidenAccountBalance: string = '') {
+    const state = {
+      tokens: {},
+      raidenAccountBalance,
+    };
+
+    const getters = {
+      balance: () => '',
+      udcToken: () => {
+        return {
+          balance: Zero,
+        };
+      },
+    };
+
+    const mockStore = new Vuex.Store({ state, getters });
     return mount(Withdrawal, {
       vuetify,
-      store,
+      store: mockStore,
       stubs: ['v-dialog', 'i18n'],
       mocks: {
         $identicon: $identicon(),
@@ -49,7 +67,7 @@ describe('Withdrawal.vue', () => {
     });
   });
 
-  describe('with tokens', () => {
+  describe('with tokens and no balance', () => {
     beforeEach(() => {
       $raiden.getRaidenAccountBalances.mockResolvedValue([
         {
@@ -83,8 +101,27 @@ describe('Withdrawal.vue', () => {
       ).toBe('disabled');
     });
 
+    test('withdraw is no-op without a selection', async () => {
+      await (wrapper.vm as any).withdrawTokens();
+      expect($raiden.transferOnChainTokens).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  describe('with tokens and balance', () => {
+    beforeEach(() => {
+      $raiden.getRaidenAccountBalances.mockResolvedValue([
+        {
+          address: '0xtoken',
+          decimals: 5,
+          balance: parseUnits('1.2', 5),
+          name: 'TestToken',
+          symbol: 'TTT',
+        },
+      ]);
+      wrapper = createWrapper('2');
+    });
+
     test('withdraws tokens when the user clicks on the action button', async () => {
-      store.commit('raidenAccountBalance', parseEther('1.2'));
       wrapper.find('.withdrawal__tokens').find('button').trigger('click');
 
       await wrapper.vm.$nextTick();
@@ -104,11 +141,6 @@ describe('Withdrawal.vue', () => {
       expect($raiden.transferOnChainTokens).toHaveBeenCalledTimes(1);
       await wrapper.vm.$nextTick();
       expect(wrapper.find('.withdrawal__empty').exists()).toBe(true);
-    });
-
-    test('withdraw is no-op without a selection', async () => {
-      await (wrapper.vm as any).withdrawTokens();
-      expect($raiden.transferOnChainTokens).toHaveBeenCalledTimes(0);
     });
   });
 });

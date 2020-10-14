@@ -115,7 +115,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { mapState } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import { Tokens } from '@/types';
 import { Token } from '@/model/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
@@ -124,6 +124,9 @@ import AmountDisplay from '@/components/AmountDisplay.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import { Zero } from 'ethers/constants';
+import uniqBy from 'lodash/uniqBy';
+import { BigNumber } from 'ethers/utils';
 
 @Component({
   components: {
@@ -135,11 +138,13 @@ import Spinner from '@/components/icons/Spinner.vue';
   },
   computed: {
     ...mapState(['tokens', 'raidenAccountBalance']),
+    ...mapGetters(['udcToken']),
   },
 })
 export default class Withdrawal extends Mixins(BlockieMixin) {
   tokens!: Tokens;
   raidenAccountBalance!: string;
+  udcToken!: Token;
   balances: Token[] = [];
   loading: boolean = true;
   withdrawing: boolean = false;
@@ -147,6 +152,14 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
 
   async mounted() {
     this.balances = await this.$raiden.getRaidenAccountBalances();
+
+    if ((this.udcToken.balance as BigNumber).gt(Zero)) {
+      this.balances = uniqBy(
+        [...this.balances].concat(this.udcToken),
+        (token) => token.address
+      );
+    }
+
     this.loading = false;
   }
 
