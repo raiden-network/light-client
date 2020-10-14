@@ -231,6 +231,11 @@ jobs:
             - ./raiden-dapp/dist/docs
 
   deploy_gh_pages:
+    parameters:
+      deploy_base:
+        description: The (sub-)directory where to put the build (empty for root)
+        type: string
+        default: ""
     executor: base-executor
     working_directory: *dapp_working_dir
     steps:
@@ -238,7 +243,7 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3"
-      - run: ./deploy.sh
+      - run: ./deploy.sh << parameters.deploy_base >>
 
   publish_artifact:
     executor: base-executor
@@ -278,7 +283,11 @@ workflows:
   version: 2
   default_workflow:
     jobs:
-      - checkout
+      - checkout:
+          filters:
+            branches:
+              ignore:
+                - master
       - install:
           requires:
             - checkout
@@ -294,7 +303,6 @@ workflows:
       - build_dapp:
           requires:
             - build_sdk
-          context: "Raiden-LC-Deploy"
       - build_cli:
           requires:
             - build_sdk
@@ -307,52 +315,57 @@ workflows:
       - test_dapp_unit:
           requires:
             - build_dapp
-      - deploy_gh_pages:
-          requires:
-            - test_dapp_unit
-          context: "Raiden-LC-Deploy"
+
+  publish_staging:
+    jobs:
+      - checkout:
           filters:
             branches:
               only:
                 - master
-
-  publish:
-    jobs:
-      - checkout:
-          filters:
-            <<: *filter-version-regex
       - install:
           requires:
             - checkout
-          filters:
-            <<: *filter-version-regex
       - build_sdk:
           requires:
             - install
+      - build_dapp:
+          mode: "ghpages"
+          requires:
+            - install
+      - deploy_gh_pages:
+          deploy_base: "staging"
+          requires:
+            - build_dapp
+
+  publish_release:
+    jobs:
+      - checkout:
           filters:
-            <<: *filter-version-regex
+            tags:
+              only: /^v\d+\.\d+\.\d+$/
+            branches:
+              ignore: /.*/
+      - install:
+          requires:
+            - checkout
+      - build_sdk:
+          requires:
+            - install
       - build_dapp:
           mode: "ghpages"
           requires:
             - build_sdk
-          filters:
-            <<: *filter-version-regex
       - generate_documentation:
           requires:
             - build_dapp
-          filters:
-            <<: *filter-version-regex
       - deploy_gh_pages:
           requires:
             - generate_documentation
-          filters:
-            <<: *filter-version-regex
       - publish_artifact:
           context: "Raiden Context"
           requires:
             - deploy_gh_pages
-          filters:
-            <<: *filter-version-regex
 
   nightly:
     triggers:
