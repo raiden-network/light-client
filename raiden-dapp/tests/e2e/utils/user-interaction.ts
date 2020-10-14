@@ -17,3 +17,18 @@ export function connectToDapp(firstTimeConnect = true) {
 
   cy.getWithCustomTimeout('.home').should('not.exist');
 }
+
+export function enterAndSelectHub(uiTimeout, partnerAddress) {
+  cy.get('.select-hub').should('exist');
+  cy.get('.address-input').type(partnerAddress);
+  cy.wait(uiTimeout);
+  cy.get('.select-hub__button').click();
+  cy.getWithCustomTimeout('.select-hub').should('not.exist');
+}
+
+export function enterChannelDepositAmount(uiTimeout) {
+  cy.get('.open-channel').should('exist');
+  cy.contains('Open Channel');
+  cy.get('.amount-input').type('0.5');
+  cy.wait(uiTimeout);
+}
