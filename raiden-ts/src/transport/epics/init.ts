@@ -1,3 +1,4 @@
+import * as t from 'io-ts';
 import {
   Observable,
   combineLatest,
@@ -44,6 +45,7 @@ import { RaidenAction } from '../../actions';
 import { RaidenConfig } from '../../config';
 import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
+import { decode } from '../../utils/types';
 import { pluckDistinct, retryAsync$, retryWaitWhile } from '../../utils/rx';
 import { exponentialBackoff } from '../../transfers/epics/utils';
 import { matrixSetup } from '../actions';
@@ -145,30 +147,6 @@ function startMatrixSync(
 }
 
 /**
- * From a yaml list string, return as Array
- * E.g. yamlListToArray(`
- * # comment
- *   - test1
- *   - test2
- *   - test3
- * `) === ['test1', 'test2', 'test3']
- *
- * @param yml - String containing only YAML list
- * @returns List of strings inside yml-encoded text
- */
-function yamlListToArray(yml: string): string[] {
-  // match all strings starting with optional spaces followed by a dash + space
-  // capturing only the content of the list item, trimming spaces
-  const reg = /^\s*-\s*(.+?)\s*$/gm;
-  const results: string[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = reg.exec(yml))) {
-    results.push(match[1]);
-  }
-  return results;
-}
-
-/**
  * Given a server name (schema defaults to https:// and is prepended if missing), returns HTTP GET
  * round trip time (time to response)
  *
@@ -192,6 +170,11 @@ function matrixRTT$(
   });
 }
 
+const MatrixServerInfo = t.type({
+  active_servers: t.array(t.string),
+  all_servers: t.array(t.string),
+});
+
 /**
  * Returns an observable of servers, sorted by response time
  *
@@ -206,10 +189,10 @@ function fetchSortedMatrixServers$(matrixServerLookup: string, httpTimeout: numb
         response.ok,
         `Could not fetch server list from "${matrixServerLookup}" => ${response.status}`,
       );
-      return response.text();
+      return response.json();
     }),
     timeout(httpTimeout),
-    mergeMap((text) => yamlListToArray(text)),
+    mergeMap((data) => decode(MatrixServerInfo, data).active_servers),
     mergeMap((server) => matrixRTT$(server, httpTimeout)),
     toArray(),
     mergeMap((rtts) => sortBy(rtts, ['rtt'])),
