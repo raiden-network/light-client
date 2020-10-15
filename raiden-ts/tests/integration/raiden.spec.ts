@@ -153,9 +153,11 @@ describe('Raiden', () => {
     fetch.mockResolvedValue({
       ok: true,
       status: 200,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      json: jest.fn(async () => ({} as any)),
-      text: jest.fn(async () => `- ${matrixServer}`),
+      json: jest.fn<Promise<unknown>, []>(async () => ({
+        active_servers: [matrixServer],
+        all_servers: [],
+      })),
+      text: jest.fn(async () => ``),
     });
 
     // setup matrix mock http backend
