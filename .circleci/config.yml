@@ -1,12 +1,5 @@
 version: 2.1
 
-templates:
-  filter-tag-templates: &filter-version-regex
-    tags:
-      only: /^v\d+\.\d+\.\d+$/
-    branches:
-      ignore: /.*/
-
 var_1: &docker_image raidennetwork/lightclient-node-pnpm:latest
 var_2: &cache_key raiden-{{ .Branch }}-{{ checksum "pnpm-lock.yaml" }}
 var_3: &working_dir ~/src
