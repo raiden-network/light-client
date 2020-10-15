@@ -258,7 +258,11 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run end-to-end tests
-          command: source /etc/profile.d/smartcontracts.sh && pnpm run test:e2e --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
+          command: >
+            source /etc/profile.d/smartcontracts.sh &&
+            pnpm run test:e2e --filter raiden-ts --
+            --ci --runInBand --forceExit
+            --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
