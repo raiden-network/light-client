@@ -129,9 +129,6 @@ import AmountDisplay from '@/components/AmountDisplay.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
-import { Zero } from 'ethers/constants';
-import uniqBy from 'lodash/uniqBy';
-import { BigNumber } from 'ethers/utils';
 
 @Component({
   components: {
@@ -157,14 +154,6 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
 
   async mounted() {
     this.balances = await this.$raiden.getRaidenAccountBalances();
-
-    if ((this.udcToken.balance as BigNumber).gt(Zero)) {
-      this.balances = uniqBy(
-        [...this.balances].concat(this.udcToken),
-        (token) => token.address
-      );
-    }
-
     this.loading = false;
   }
 
