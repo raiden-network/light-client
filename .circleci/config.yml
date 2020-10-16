@@ -174,8 +174,7 @@ jobs:
       mode:
         description: Mode to configure the environment of the dApp build
         type: enum
-        enum: ["development", "e2e", "ghpages", "raiden-package"]
-        default: "development"
+        enum: ["production", "staging", "development", "e2e", "raiden-package"]
     executor: base-executor
     working_directory: *working_dir
     steps:
@@ -225,10 +224,9 @@ jobs:
 
   deploy_gh_pages:
     parameters:
-      deploy_base:
-        description: The (sub-)directory where to put the build (empty for root)
+      public_path:
+        description: The public path where to reach deployment (must be correct according to the build mode)
         type: string
-        default: ""
     executor: base-executor
     working_directory: *dapp_working_dir
     steps:
@@ -236,7 +234,7 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3"
-      - run: ./deploy.sh << parameters.deploy_base >>
+      - run: ./deploy.sh << parameters.public_path >>
 
   publish_artifact:
     executor: base-executor
@@ -294,6 +292,7 @@ workflows:
           requires:
             - build_sdk
       - build_dapp:
+          mode: development
           requires:
             - build_sdk
       - build_cli:
@@ -323,15 +322,15 @@ workflows:
           requires:
             - install
       - build_dapp:
-          mode: "ghpages"
+          mode: staging
           requires:
             - build_sdk
       - deploy_gh_pages:
-          deploy_base: "staging"
+          public_path: /staging
           requires:
             - build_dapp
 
-  publish_release:
+  publish_production:
     jobs:
       - checkout:
           filters:
@@ -346,13 +345,14 @@ workflows:
           requires:
             - install
       - build_dapp:
-          mode: "ghpages"
+          mode: production
           requires:
             - build_sdk
       - generate_documentation:
           requires:
             - build_dapp
       - deploy_gh_pages:
+          public_path: /
           requires:
             - generate_documentation
       - publish_artifact:
