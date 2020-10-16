@@ -112,15 +112,20 @@ export function makeDefaultConfig(
   { network }: { network: Network },
   overwrites?: PartialRaidenConfig,
 ): RaidenConfig {
+  const networkName = getNetworkName(network);
+  const matrixServerInfos =
+    network.chainId === 1
+      ? 'https://raw.githubusercontent.com/raiden-network/raiden-service-bundle/master/known_servers/known_servers-production-v1.2.0.json'
+      : 'https://raw.githubusercontent.com/raiden-network/raiden-service-bundle/master/known_servers/known_servers-development-v1.2.0.json';
+
   return {
-    matrixServerLookup:
-      'https://raw.githubusercontent.com/raiden-network/raiden-service-bundle/master/known_servers/known_servers-development-v1.2.0.json',
+    matrixServerLookup: matrixServerInfos,
     settleTimeout: 500,
     revealTimeout: 50,
     httpTimeout: 30e3,
-    discoveryRoom: `raiden_${getNetworkName(network)}_discovery`,
-    pfsRoom: `raiden_${getNetworkName(network)}_path_finding`,
-    monitoringRoom: `raiden_${getNetworkName(network)}_monitoring`,
+    discoveryRoom: `raiden_${networkName}_discovery`,
+    pfsRoom: `raiden_${networkName}_path_finding`,
+    monitoringRoom: `raiden_${networkName}_monitoring`,
     pfs: '', // empty string = auto mode
     matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0, // multiplier
