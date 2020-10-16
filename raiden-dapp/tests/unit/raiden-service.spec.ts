@@ -549,6 +549,10 @@ describe('RaidenService', () => {
               ...createToken('0x2'),
               balance: One,
             },
+            {
+              address: '0xuserdeposittoken',
+              balance: new BigNumber('1'),
+            },
           ];
 
           beforeEach(() => {
@@ -568,7 +572,7 @@ describe('RaidenService', () => {
             await expect(
               raidenService.getRaidenAccountBalances()
             ).resolves.toMatchObject(tokens);
-            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(2);
+            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(3);
           });
 
           test('load from cache if found', async () => {
@@ -583,7 +587,7 @@ describe('RaidenService', () => {
             await expect(
               raidenService.getRaidenAccountBalances()
             ).resolves.toMatchObject(tokens);
-            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(1);
+            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(2);
           });
         });
       });
