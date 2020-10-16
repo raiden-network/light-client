@@ -125,7 +125,7 @@ export default class RaidenService {
           typeof provider !== 'string' &&
           'networkVersion' in provider &&
           provider.networkVersion === '1' &&
-          process.env.VUE_APP_ALLOW_MAINNET === 'false'
+          process.env.VUE_APP_ALLOW_MAINNET !== 'true'
         ) {
           throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK);
         }

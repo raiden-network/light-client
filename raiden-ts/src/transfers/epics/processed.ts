@@ -26,13 +26,13 @@ import { getTransfer } from '../utils';
  * @param state$ - Observable of RaidenStates
  * @returns Observable of transfer*Processed|transfer.success actions
  */
-export const transferProcessedReceivedEpic = (
+export function transferProcessedReceivedEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
 ): Observable<
   transfer.success | transferProcessed | transferUnlockProcessed | transferExpireProcessed
-> =>
-  action$.pipe(
+> {
+  return action$.pipe(
     filter(isMessageReceivedOfType(Signed(Processed))),
     withLatestFrom(state$),
     mergeMap(function* ([action, { transfers }]) {
@@ -71,6 +71,7 @@ export const transferProcessedReceivedEpic = (
       }
     }),
   );
+}
 
 /**
  * Handles sending Processed for a received EnvelopeMessages
@@ -81,12 +82,12 @@ export const transferProcessedReceivedEpic = (
  * @param deps.db - Database instance
  * @returns Observable of messageSend.request actions
  */
-export const transferProcessedSendEpic = (
+export function transferProcessedSendEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { db }: RaidenEpicDeps,
-): Observable<messageSend.request> =>
-  action$.pipe(
+): Observable<messageSend.request> {
+  return action$.pipe(
     filter(isActionOf([transferProcessed, transferUnlockProcessed, transferExpireProcessed])),
     // transfer direction is RECEIVED, not message direction (which is outbound)
     filter((action) => action.meta.direction === Direction.RECEIVED),
@@ -106,3 +107,4 @@ export const transferProcessedSendEpic = (
       ),
     ),
   );
+}

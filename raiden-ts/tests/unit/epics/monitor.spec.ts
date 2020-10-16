@@ -47,6 +47,7 @@ test('monitorUdcBalanceEpic', async () => {
   userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
 
   await raiden.start();
+  await sleep();
   expect(raiden.output).toContainEqual(
     udcDeposit.success(undefined, { totalDeposit: Zero as UInt<32> }),
   );

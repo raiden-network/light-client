@@ -23,12 +23,12 @@ import { dispatchAndWait$ } from './utils';
  * @param deps.config$ - Config observable
  * @returns Observable of transferExpire.request|transfer.failure actions
  */
-export const transferAutoExpireEpic = (
+export function transferAutoExpireEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<transferExpire.request | transfer.failure> =>
-  action$.pipe(
+): Observable<transferExpire.request | transfer.failure> {
+  return action$.pipe(
     filter(newBlock.is),
     pluck('payload', 'blockNumber'),
     withLatestFrom(state$, config$),
@@ -73,3 +73,4 @@ export const transferAutoExpireEpic = (
       ),
     ),
   );
+}

@@ -88,15 +88,16 @@ import {
  * @param deps.provider - Eth provider
  * @returns Observable of newBlock actions
  */
-export const initNewBlockEpic = (
+export function initNewBlockEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
-): Observable<newBlock> =>
-  retryAsync$(() => provider.getBlockNumber(), provider.pollingInterval).pipe(
+): Observable<newBlock> {
+  return retryAsync$(() => provider.getBlockNumber(), provider.pollingInterval).pipe(
     mergeMap((blockNumber) => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
     map((blockNumber) => newBlock({ blockNumber })),
   );
+}
 
 /**
  * If state.tokens is empty (usually only on first run), scan registry and token networks for
@@ -111,12 +112,12 @@ export const initNewBlockEpic = (
  * @param deps.contractsInfo - Contracts info mapping
  * @returns Observable of tokenMonitored actions
  */
-export const initTokensRegistryEpic = (
+export function initTokensRegistryEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { address, provider, registryContract, contractsInfo }: RaidenEpicDeps,
-): Observable<tokenMonitored> =>
-  state$.pipe(
+): Observable<tokenMonitored> {
+  return state$.pipe(
     take(1),
     filter((state) => isEmpty(state.tokens)), // proceed to scan only if state.tokens isEmpty
     mergeMap(() =>
@@ -177,6 +178,7 @@ export const initTokensRegistryEpic = (
       5, // limit concurrency, don't hammer the node with hundreds of parallel getLogs
     ),
   );
+}
 
 /**
  * Monitor provider to ensure account continues to be available and network stays the same
@@ -189,12 +191,12 @@ export const initTokensRegistryEpic = (
  * @param deps.provider - Eth provider
  * @returns Observable of raidenShutdown actions
  */
-export const initMonitorProviderEpic = (
+export function initMonitorProviderEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, network, provider }: RaidenEpicDeps,
-): Observable<raidenShutdown> =>
-  retryAsync$(() => provider.listAccounts(), provider.pollingInterval).pipe(
+): Observable<raidenShutdown> {
+  return retryAsync$(() => provider.listAccounts(), provider.pollingInterval).pipe(
     // at init time, check if our address is in provider's accounts list
     // if not, it means Signer is a local Wallet or another non-provider-side account
     // if yes, poll accounts every 1s and monitors if address is still there
@@ -230,6 +232,7 @@ export const initMonitorProviderEpic = (
       ),
     ),
   );
+}
 
 // type of elements mapped from contract-emitted events/logs
 // [channelId, participant1, participant2, settleTimeout, Event]
@@ -497,7 +500,7 @@ function fetchNewChannelEvents$(
  * @returns Observable of channelOpen.success,channelDeposit.success,channelClose.success,
  *      channelSettle.success actions
  */
-export const channelEventsEpic = (
+export function channelEventsEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
@@ -508,8 +511,8 @@ export const channelEventsEpic = (
   | channelWithdrawn
   | channelClose.success
   | channelSettle.success
-> =>
-  action$.pipe(
+> {
+  return action$.pipe(
     filter(newBlock.is),
     pluck('payload', 'blockNumber'),
     publishReplay(1, undefined, (blockNumber$) =>
@@ -562,6 +565,7 @@ export const channelEventsEpic = (
       ),
     ),
   );
+}
 
 /**
  * Emit channelMonitored action for channels on state
@@ -569,11 +573,11 @@ export const channelEventsEpic = (
  * @param state$ - Observable of RaidenStates
  * @returns Observable of channelMonitored actions
  */
-export const channelMonitoredEpic = (
+export function channelMonitoredEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<channelMonitored> =>
-  state$.pipe(
+): Observable<channelMonitored> {
+  return state$.pipe(
     groupChannel$,
     mergeMap((grouped$) =>
       grouped$.pipe(
@@ -587,6 +591,7 @@ export const channelMonitoredEpic = (
       ),
     ),
   );
+}
 
 /**
  * A channelOpen action requested by user
@@ -607,12 +612,12 @@ export const channelMonitoredEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of channelOpen.failure actions
  */
-export const channelOpenEpic = (
+export function channelOpenEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, signer, address, main, provider, getTokenNetworkContract, config$ }: RaidenEpicDeps,
-): Observable<channelOpen.failure | channelDeposit.request> =>
-  action$.pipe(
+): Observable<channelOpen.failure | channelDeposit.request> {
+  return action$.pipe(
     filter(isActionOf(channelOpen.request)),
     withLatestFrom(state$, config$),
     mergeMap(([action, state, { settleTimeout, subkey: configSubkey }]) => {
@@ -677,6 +682,7 @@ export const channelOpenEpic = (
       );
     }),
   );
+}
 
 function makeDeposit$(
   [tokenContract, tokenNetworkContract]: [HumanStandardToken, TokenNetwork],
@@ -755,7 +761,7 @@ function makeDeposit$(
  * @param deps.latest$ - Latest observable
  * @returns Observable of channelDeposit.failure actions
  */
-export const channelDepositEpic = (
+export function channelDepositEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   {
@@ -768,8 +774,8 @@ export const channelDepositEpic = (
     config$,
     latest$,
   }: RaidenEpicDeps,
-): Observable<channelDeposit.failure> =>
-  action$.pipe(
+): Observable<channelDeposit.failure> {
+  return action$.pipe(
     filter(isActionOf(channelDeposit.request)),
     groupBy((action) => action.meta.tokenNetwork),
     mergeMap((grouped$) =>
@@ -842,6 +848,7 @@ export const channelDepositEpic = (
       ),
     ),
   );
+}
 
 /**
  * A ChannelClose action requested by user
@@ -863,7 +870,7 @@ export const channelDepositEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of channelClose.failure actions
  */
-export const channelCloseEpic = (
+export function channelCloseEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   {
@@ -876,8 +883,8 @@ export const channelCloseEpic = (
     getTokenNetworkContract,
     config$,
   }: RaidenEpicDeps,
-): Observable<channelClose.failure> =>
-  action$.pipe(
+): Observable<channelClose.failure> {
+  return action$.pipe(
     filter(isActionOf(channelClose.request)),
     withLatestFrom(state$, config$),
     mergeMap(([action, state, { subkey: configSubkey }]) => {
@@ -944,6 +951,7 @@ export const channelCloseEpic = (
       );
     }),
   );
+}
 
 /**
  * When detecting a ChannelClosed event, calls updateNonClosingBalanceProof with partner's balance
@@ -963,7 +971,7 @@ export const channelCloseEpic = (
  * @param deps.config$ - Config observable
  * @returns Empty observable
  */
-export const channelUpdateEpic = (
+export function channelUpdateEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   {
@@ -976,8 +984,8 @@ export const channelUpdateEpic = (
     getTokenNetworkContract,
     config$,
   }: RaidenEpicDeps,
-): Observable<never> =>
-  action$.pipe(
+): Observable<never> {
+  return action$.pipe(
     filter(isActionOf(channelClose.success)),
     filter((action) => !!action.payload.confirmed),
     // wait a newBlock go through after channelClose confirmation, to ensure any pending
@@ -1050,6 +1058,7 @@ export const channelUpdateEpic = (
       );
     }),
   );
+}
 
 /**
  * If config.autoSettle is true, calls channelSettle.request on settleable channels
@@ -1062,12 +1071,12 @@ export const channelUpdateEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of channelSettle.request actions
  */
-export const channelAutoSettleEpic = (
+export function channelAutoSettleEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<channelSettle.request> =>
-  state$.pipe(
+): Observable<channelSettle.request> {
+  return state$.pipe(
     groupChannel$,
     mergeMap((grouped$) =>
       grouped$.pipe(
@@ -1105,6 +1114,7 @@ export const channelAutoSettleEpic = (
     ),
     takeIf(config$.pipe(pluck('autoSettle'))),
   );
+}
 
 /**
  * A ChannelSettle action requested by user
@@ -1126,12 +1136,12 @@ export const channelAutoSettleEpic = (
  * @param deps.db - Database instance
  * @returns Observable of channelSettle.failure actions
  */
-export const channelSettleEpic = (
+export function channelSettleEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, signer, address, main, provider, getTokenNetworkContract, config$, db }: RaidenEpicDeps,
-): Observable<channelSettle.failure> =>
-  action$.pipe(
+): Observable<channelSettle.failure> {
+  return action$.pipe(
     filter(isActionOf(channelSettle.request)),
     withLatestFrom(state$, config$),
     mergeMap(([action, state, { subkey: configSubkey }]) => {
@@ -1254,6 +1264,7 @@ export const channelSettleEpic = (
       );
     }),
   );
+}
 
 /**
  * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable
@@ -1262,11 +1273,11 @@ export const channelSettleEpic = (
  * @param state$ - Observable of RaidenStates
  * @returns Observable of channelSettleable actions
  */
-export const channelSettleableEpic = (
+export function channelSettleableEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<channelSettleable> =>
-  action$.pipe(
+): Observable<channelSettleable> {
+  return action$.pipe(
     filter(isActionOf(newBlock)),
     withLatestFrom(state$),
     mergeMap(function* ([
@@ -1288,6 +1299,7 @@ export const channelSettleableEpic = (
       }
     }),
   );
+}
 
 /**
  * When channel is settled, unlock any pending lock on-chain
@@ -1306,12 +1318,12 @@ export const channelSettleableEpic = (
  * @param deps.config$ - Config observable
  * @returns Empty observable
  */
-export const channelUnlockEpic = (
+export function channelUnlockEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, signer, address, main, provider, getTokenNetworkContract, config$ }: RaidenEpicDeps,
-): Observable<channelSettle.failure> =>
-  action$.pipe(
+): Observable<channelSettle.failure> {
+  return action$.pipe(
     filter(isActionOf(channelSettle.success)),
     filter((action) => !!(action.payload.confirmed && action.payload.locks?.length)),
     withLatestFrom(state$, config$),
@@ -1349,6 +1361,7 @@ export const channelUnlockEpic = (
       );
     }),
   );
+}
 
 function checkPendingAction(
   action: ConfirmableAction,
@@ -1407,12 +1420,12 @@ function checkPendingAction(
  * @param deps.latest$ - Latest observable
  * @returns Observable of confirmed or removed actions
  */
-export const confirmationEpic = (
+export function confirmationEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$, provider, latest$ }: RaidenEpicDeps,
-): Observable<RaidenAction> =>
-  combineLatest([
+): Observable<RaidenAction> {
+  return combineLatest([
     state$.pipe(pluckDistinct('blockNumber')),
     state$.pipe(pluck('pendingTxs')),
     config$.pipe(pluckDistinct('confirmationBlocks')),
@@ -1441,3 +1454,4 @@ export const confirmationEpic = (
       ),
     ),
   );
+}

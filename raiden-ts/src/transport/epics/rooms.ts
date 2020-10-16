@@ -101,13 +101,13 @@ function inviteLoop$(
  * @param deps.config$ - Config observable
  * @returns Observable of matrixRoom actions
  */
-export const matrixCreateRoomEpic = (
+export function matrixCreateRoomEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, log, matrix$, latest$, config$ }: RaidenEpicDeps,
-): Observable<matrixRoom> =>
+): Observable<matrixRoom> {
   // actual output observable, selects addresses of interest from actions
-  action$.pipe(
+  return action$.pipe(
     // ensure there's a room for address of interest for each of these actions
     // matrixRoomLeave ensures a new room is created if all we had are forgotten/left
     filter(isActionOf([transferSigned, channelMonitored, messageSend.request, matrixRoomLeave])),
@@ -179,6 +179,7 @@ export const matrixCreateRoomEpic = (
       ),
     ),
   );
+}
 
 /**
  * Invites users coming online to main room we may have with them
@@ -195,12 +196,12 @@ export const matrixCreateRoomEpic = (
  * @param deps.log - Logger instance
  * @returns Empty observable (whole side-effect on matrix instance)
  */
-export const matrixInviteEpic = (
+export function matrixInviteEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { matrix$, config$, latest$, log }: RaidenEpicDeps,
-): Observable<RaidenAction> =>
-  action$.pipe(
+): Observable<RaidenAction> {
+  return action$.pipe(
     filter(isActionOf(matrixPresence.success)),
     groupBy((a) => a.meta.address),
     mergeMap((grouped$) =>
@@ -225,6 +226,7 @@ export const matrixInviteEpic = (
     ),
     ignoreElements(),
   );
+}
 
 /**
  * Handle invites sent to us and accepts them iff sent by a monitored user
@@ -238,12 +240,12 @@ export const matrixInviteEpic = (
  * @param deps.latest$ - Latest values
  * @returns Observable of matrixRoom actions
  */
-export const matrixHandleInvitesEpic = (
+export function matrixHandleInvitesEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, matrix$, config$, latest$ }: RaidenEpicDeps,
-): Observable<matrixRoom> =>
-  matrix$.pipe(
+): Observable<matrixRoom> {
+  return matrix$.pipe(
     // when matrix finishes initialization, register to matrix invite events
     switchMap((matrix) =>
       fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
@@ -285,6 +287,7 @@ export const matrixHandleInvitesEpic = (
       ),
     ),
   );
+}
 
 /**
  * Leave any excess room for a partner when creating or joining a new one.
@@ -299,12 +302,12 @@ export const matrixHandleInvitesEpic = (
  * @param deps.config$ - Config object
  * @returns Observable of matrixRoomLeave actions
  */
-export const matrixLeaveExcessRoomsEpic = (
+export function matrixLeaveExcessRoomsEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, matrix$, config$ }: RaidenEpicDeps,
-): Observable<matrixRoomLeave> =>
-  action$.pipe(
+): Observable<matrixRoomLeave> {
+  return action$.pipe(
     // act whenever a new room is added to the address queue in state
     filter(isActionOf(matrixRoom)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
@@ -323,6 +326,7 @@ export const matrixLeaveExcessRoomsEpic = (
       );
     }),
   );
+}
 
 /**
  * Leave any room which is neither global nor known as a room for some user of interest
@@ -335,12 +339,12 @@ export const matrixLeaveExcessRoomsEpic = (
  * @param deps.config$ - Config object
  * @returns Empty observable (whole side-effect on matrix instance)
  */
-export const matrixLeaveUnknownRoomsEpic = (
+export function matrixLeaveUnknownRoomsEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, matrix$, config$ }: RaidenEpicDeps,
-): Observable<RaidenAction> =>
-  matrix$.pipe(
+): Observable<RaidenAction> {
+  return matrix$.pipe(
     // when matrix finishes initialization, register to matrix Room events
     switchMap((matrix) => fromEvent<Room>(matrix, 'Room').pipe(map((room) => ({ matrix, room })))),
     // this room may become known later for some reason, so wait a little
@@ -372,6 +376,7 @@ export const matrixLeaveUnknownRoomsEpic = (
     }),
     ignoreElements(),
   );
+}
 
 /**
  * If we leave a room for any reason (eg. a kick event), purge it from state
@@ -385,12 +390,12 @@ export const matrixLeaveUnknownRoomsEpic = (
  * @param deps.log - Logger instance
  * @returns Observable of matrixRoomLeave actions
  */
-export const matrixCleanLeftRoomsEpic = (
+export function matrixCleanLeftRoomsEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, matrix$ }: RaidenEpicDeps,
-): Observable<matrixRoomLeave> =>
-  matrix$.pipe(
+): Observable<matrixRoomLeave> {
+  return matrix$.pipe(
     // when matrix finishes initialization, register to matrix invite events
     switchMap((matrix) =>
       fromEvent<[Room, string]>(matrix, 'Room.myMembership').pipe(
@@ -411,6 +416,7 @@ export const matrixCleanLeftRoomsEpic = (
       }
     }),
   );
+}
 
 /**
  * If some room we had with a peer doesn't show up in transport, forget it
@@ -423,12 +429,12 @@ export const matrixCleanLeftRoomsEpic = (
  * @param deps.config$ - Config object
  * @returns Observable of matrixRoomLeave actions
  */
-export const matrixCleanMissingRoomsEpic = (
+export function matrixCleanMissingRoomsEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, matrix$, config$ }: RaidenEpicDeps,
-): Observable<matrixRoomLeave> =>
-  state$.pipe(
+): Observable<matrixRoomLeave> {
+  return state$.pipe(
     pluckDistinct('transport', 'rooms'),
     filter(isntNil),
     mergeMap(function* (rooms) {
@@ -455,6 +461,7 @@ export const matrixCleanMissingRoomsEpic = (
       ),
     ),
   );
+}
 
 /**
  * If matrix received a message from user in a room we have with them, but not the first on queue,
@@ -464,11 +471,11 @@ export const matrixCleanMissingRoomsEpic = (
  * @param state$ - Observable of RaidenStates
  * @returns Observable of matrixRoom actions
  */
-export const matrixMessageReceivedUpdateRoomEpic = (
+export function matrixMessageReceivedUpdateRoomEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<matrixRoom> =>
-  action$.pipe(
+): Observable<matrixRoom> {
+  return action$.pipe(
     filter(messageReceived.is),
     withLatestFrom(state$),
     filter(([action, state]) => {
@@ -481,3 +488,4 @@ export const matrixMessageReceivedUpdateRoomEpic = (
     }),
     map(([action]) => matrixRoom({ roomId: action.payload.roomId! }, action.meta)),
   );
+}

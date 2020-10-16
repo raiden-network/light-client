@@ -42,11 +42,11 @@ import { transferKey } from '../utils';
  * @param state$ - Observable of RaidenStates
  * @returns Observable of transferSigned|transferUnlock.success actions
  */
-export const initQueuePendingEnvelopeMessagesEpic = (
+export function initQueuePendingEnvelopeMessagesEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-) =>
-  state$.pipe(
+) {
+  return state$.pipe(
     first(),
     mergeMap(({ transfers }) =>
       from(
@@ -92,6 +92,7 @@ export const initQueuePendingEnvelopeMessagesEpic = (
         );
     }),
   );
+}
 
 /**
  * Re-queue pending Received transfer's
@@ -102,12 +103,12 @@ export const initQueuePendingEnvelopeMessagesEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of transferSigned|transferUnlock.success actions
  */
-export const initQueuePendingReceivedEpic = (
+export function initQueuePendingReceivedEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-) =>
-  state$.pipe(
+) {
+  return state$.pipe(
     first(),
     mergeMap(({ transfers }) =>
       from(
@@ -163,6 +164,7 @@ export const initQueuePendingReceivedEpic = (
       );
     }),
   );
+}
 
 function hasTransferMeta(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -181,12 +183,12 @@ function hasTransferMeta(
  * @param deps.config$ - Config observable
  * @returns Observable of transferClear actions
  */
-export const transferClearCompletedEpic = (
+export function transferClearCompletedEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<transferClear> =>
-  state$.pipe(
+): Observable<transferClear> {
+  return state$.pipe(
     pluckDistinct('transfers'),
     distinctRecordValues(),
     groupBy(
@@ -218,3 +220,4 @@ export const transferClearCompletedEpic = (
       ),
     ),
   );
+}

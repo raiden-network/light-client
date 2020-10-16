@@ -39,11 +39,11 @@ import { retrySendUntil$, matchWithdraw, exponentialBackoff } from './utils';
  * @param state$ - Observable of RaidenStates
  * @returns Observable of withdrawMessage.request|withdrawExpire.success actions
  */
-export const initWithdrawMessagesEpic = (
+export function initWithdrawMessagesEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<withdrawMessage.request | withdrawExpire.success> =>
-  state$.pipe(
+): Observable<withdrawMessage.request | withdrawExpire.success> {
+  return state$.pipe(
     first(),
     mergeMap(function* (state) {
       for (const channel of Object.values(state.channels)) {
@@ -81,6 +81,7 @@ export const initWithdrawMessagesEpic = (
       }
     }),
   );
+}
 
 /**
  * Retry sending 'WithdrawRequest' messages to partner until WithdrawConfirmation is received
@@ -91,12 +92,12 @@ export const initWithdrawMessagesEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of messageSend.request actions
  */
-export const withdrawSendRequestMessageEpic = (
+export function withdrawSendRequestMessageEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<messageSend.request> =>
-  action$.pipe(
+): Observable<messageSend.request> {
+  return action$.pipe(
     filter(withdrawMessage.request.is),
     filter((action) => action.meta.direction === Direction.SENT),
     withLatestFrom(config$),
@@ -131,6 +132,7 @@ export const withdrawSendRequestMessageEpic = (
       );
     }),
   );
+}
 
 /**
  * Upon valid [[WithdrawConfirmation]], send the on-chain withdraw transaction
@@ -147,12 +149,12 @@ export const withdrawSendRequestMessageEpic = (
  * @param deps.latest$ - Latest observable
  * @returns Observable of withdrawExpired actions
  */
-export const withdrawSendTxEpic = (
+export function withdrawSendTxEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, signer, main, provider, log, getTokenNetworkContract, latest$ }: RaidenEpicDeps,
-): Observable<withdraw.success | withdraw.failure> =>
-  action$.pipe(
+): Observable<withdraw.success | withdraw.failure> {
+  return action$.pipe(
     filter(withdrawMessage.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
     concatMap((action) =>
@@ -212,6 +214,7 @@ export const withdrawSendTxEpic = (
       ),
     ),
   );
+}
 
 /**
  * Upon receiving withdraw request or confirmation, send partner the respective Processed message
@@ -227,11 +230,11 @@ export const withdrawSendTxEpic = (
  * @param deps.latest$ - Latest observable
  * @returns Observable of messageSend.request actions
  */
-export const withdrawMessageProcessedEpic = (
+export function withdrawMessageProcessedEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { signer, log, latest$ }: RaidenEpicDeps,
-): Observable<messageSend.request> => {
+): Observable<messageSend.request> {
   const cache = new LruCache<string, Signed<Processed>>(32);
   return action$.pipe(
     filter(isActionOf([withdrawMessage.request, withdrawMessage.success])),
@@ -281,7 +284,7 @@ export const withdrawMessageProcessedEpic = (
       ),
     ),
   );
-};
+}
 
 /**
  * Dispatch withdrawExpire.request when one of our sent WithdrawRequests expired
@@ -292,12 +295,12 @@ export const withdrawMessageProcessedEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of withdrawExpired actions
  */
-export const autoWithdrawExpireEpic = (
+export function autoWithdrawExpireEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<withdrawExpire.request> =>
-  action$.pipe(
+): Observable<withdrawExpire.request> {
+  return action$.pipe(
     filter(newBlock.is),
     pluck('payload', 'blockNumber'),
     withLatestFrom(state$, config$),
@@ -322,6 +325,7 @@ export const autoWithdrawExpireEpic = (
       }
     }),
   );
+}
 
 /**
  * Retry sending own WithdrawExpired messages until Processed, completes withdraw then
@@ -332,12 +336,12 @@ export const autoWithdrawExpireEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of messageSend.request actions
  */
-export const withdrawSendExpireMessageEpic = (
+export function withdrawSendExpireMessageEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<messageSend.request | withdrawCompleted> =>
-  action$.pipe(
+): Observable<messageSend.request | withdrawCompleted> {
+  return action$.pipe(
     filter(withdrawExpire.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
     withLatestFrom(config$),
@@ -371,3 +375,4 @@ export const withdrawSendExpireMessageEpic = (
       );
     }),
   );
+}

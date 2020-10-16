@@ -1,12 +1,5 @@
 version: 2.1
 
-templates:
-  filter-tag-templates: &filter-version-regex
-    tags:
-      only: /^v\d+\.\d+\.\d+$/
-    branches:
-      ignore: /.*/
-
 var_1: &docker_image raidennetwork/lightclient-node-pnpm:latest
 var_2: &cache_key raiden-{{ .Branch }}-{{ checksum "pnpm-lock.yaml" }}
 var_3: &working_dir ~/src
@@ -129,7 +122,7 @@ jobs:
           path: reports/junit
       - run:
           name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F sdk_e2e -F sdk -C $CIRCLE_SHA1
+          command: bash <(curl -s https://codecov.io/bash) -F sdk_integration -F sdk -C $CIRCLE_SHA1
 
   test_dapp_unit:
     executor: base-executor
@@ -177,18 +170,19 @@ jobs:
             - ./*
 
   build_dapp:
+    parameters:
+      mode:
+        description: Mode to configure the environment of the dApp build
+        type: enum
+        enum: ["development", "e2e", "ghpages", "raiden-package"]
+        default: "development"
     executor: base-executor
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Build dapp
-          command: >
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              pnpm run build --filter raiden-dapp -- --mode ghpages;
-            else
-              pnpm run build --filter raiden-dapp -- --mode development;
-            fi
+          command: pnpm run build --filter raiden-dapp -- --mode << parameters.mode >>
       - run:
           name: Compress dapp
           command: cd raiden-dapp && tar -czvf dapp.tar.gz dist
@@ -230,6 +224,11 @@ jobs:
             - ./raiden-dapp/dist/docs
 
   deploy_gh_pages:
+    parameters:
+      deploy_base:
+        description: The (sub-)directory where to put the build (empty for root)
+        type: string
+        default: ""
     executor: base-executor
     working_directory: *dapp_working_dir
     steps:
@@ -237,7 +236,7 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3"
-      - run: ./deploy.sh
+      - run: ./deploy.sh << parameters.deploy_base >>
 
   publish_artifact:
     executor: base-executor
@@ -258,7 +257,11 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run end-to-end tests
-          command: source /etc/profile.d/smartcontracts.sh && pnpm run test:e2e --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
+          command: >
+            source /etc/profile.d/smartcontracts.sh &&
+            pnpm run test:e2e --filter raiden-ts --
+            --ci --runInBand --forceExit
+            --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -267,13 +270,17 @@ jobs:
           path: reports/junit
       - run:
           name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F sdk_integration -C $CIRCLE_SHA1
+          command: bash <(curl -s https://codecov.io/bash) -F sdk_e2e -C $CIRCLE_SHA1
 
 workflows:
   version: 2
   default_workflow:
     jobs:
-      - checkout
+      - checkout:
+          filters:
+            branches:
+              ignore:
+                - master
       - install:
           requires:
             - checkout
@@ -289,7 +296,6 @@ workflows:
       - build_dapp:
           requires:
             - build_sdk
-          context: "Raiden-LC-Deploy"
       - build_cli:
           requires:
             - build_sdk
@@ -302,51 +308,57 @@ workflows:
       - test_dapp_unit:
           requires:
             - build_dapp
-      - deploy_gh_pages:
-          requires:
-            - test_dapp_unit
-          context: "Raiden-LC-Deploy"
+
+  publish_staging:
+    jobs:
+      - checkout:
           filters:
             branches:
               only:
                 - master
-
-  publish:
-    jobs:
-      - checkout:
-          filters:
-            <<: *filter-version-regex
       - install:
           requires:
             - checkout
-          filters:
-            <<: *filter-version-regex
       - build_sdk:
           requires:
             - install
-          filters:
-            <<: *filter-version-regex
       - build_dapp:
+          mode: "ghpages"
           requires:
             - build_sdk
+      - deploy_gh_pages:
+          deploy_base: "staging"
+          requires:
+            - build_dapp
+
+  publish_release:
+    jobs:
+      - checkout:
           filters:
-            <<: *filter-version-regex
+            tags:
+              only: /^v\d+\.\d+\.\d+$/
+            branches:
+              ignore: /.*/
+      - install:
+          requires:
+            - checkout
+      - build_sdk:
+          requires:
+            - install
+      - build_dapp:
+          mode: "ghpages"
+          requires:
+            - build_sdk
       - generate_documentation:
           requires:
             - build_dapp
-          filters:
-            <<: *filter-version-regex
       - deploy_gh_pages:
           requires:
             - generate_documentation
-          filters:
-            <<: *filter-version-regex
       - publish_artifact:
           context: "Raiden Context"
           requires:
             - deploy_gh_pages
-          filters:
-            <<: *filter-version-regex
 
   nightly:
     # triggers:
