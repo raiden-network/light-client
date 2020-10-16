@@ -5,6 +5,7 @@
 #   - all arguments passed to this script get forwarded to the test command.
 
 DOCKER_CONTAINER_NAME=lc-e2e
+
 DEPLOYMENT_INFO_DIR=$(mktemp -d) # Use short argument syntax to support MacOS
 
 function finish() {

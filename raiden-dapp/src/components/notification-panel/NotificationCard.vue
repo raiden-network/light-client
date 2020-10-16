@@ -28,7 +28,12 @@
           {{ notification.received | formatDate }}
         </span>
       </div>
-      <v-btn x-small icon @click="notificationDelete(notification.id)">
+      <v-btn
+        x-small
+        icon
+        class="notification-card__delete-button"
+        @click="notificationDelete(notification.id)"
+      >
         <img :src="require('@/assets/notification_trash.svg')" />
       </v-btn>
     </v-row>

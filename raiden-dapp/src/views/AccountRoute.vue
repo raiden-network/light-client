@@ -5,6 +5,7 @@
         <div class="account-route__header__content">
           <div class="account-route__header__content__back">
             <v-btn
+              class="account-route__header__content__back__button"
               height="40px"
               text
               icon

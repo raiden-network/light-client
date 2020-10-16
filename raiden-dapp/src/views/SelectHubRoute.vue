@@ -95,6 +95,7 @@
     <token-information :token="token"></token-information>
 
     <action-button
+      class="select-hub__button"
       :enabled="valid"
       :text="$t('select-hub.select-button')"
     ></action-button>

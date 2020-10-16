@@ -53,7 +53,11 @@
           <v-list-item-subtitle>{{ menuItem.subtitle }}</v-list-item-subtitle>
         </v-list-item-content>
         <v-list-item-action>
-          <v-btn icon @click="menuItem.route">
+          <v-btn
+            icon
+            class="account-content__menu__list-items__icon__button"
+            @click="menuItem.route"
+          >
             <v-icon>mdi-chevron-right mdi-36px</v-icon>
           </v-btn>
         </v-list-item-action>

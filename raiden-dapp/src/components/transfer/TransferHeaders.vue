@@ -45,7 +45,7 @@
       :token="token"
       :visible="showDepositDialog"
       identifier="0"
-      @depositTokens="deposit($event)"
+      @deposit-tokens="deposit($event)"
       @cancel="depositDialogClosed()"
     />
     <error-dialog :error="error" @dismiss="error = null" />

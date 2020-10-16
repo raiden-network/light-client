@@ -6,7 +6,13 @@
           {{ $t('notifications.clear') }}
         </v-btn>
         <v-spacer />
-        <v-icon icon @click="onModalBackClicked()">mdi-close</v-icon>
+        <v-icon
+          class="notification-panel-content__close__button"
+          icon
+          @click="onModalBackClicked()"
+        >
+          mdi-close
+        </v-icon>
       </div>
       <v-row
         v-if="notifications.length === 0"

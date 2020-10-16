@@ -71,6 +71,7 @@ importers:
     dependencies:
       babel-plugin-istanbul: 6.0.0
       core-js: 3.6.5
+      cypress-plugin-retries: 1.5.2
       ethereum-blockies-base64: 1.0.2
       ethers: 4.0.48
       fontsource-roboto: 3.0.3
@@ -5022,7 +5023,6 @@ packages:
     resolution:
       integrity: sha512-aT6camzM4xEA54YVJYSqxz1kv4IHnQZRtThJJHhUMRExaU5spC7jX5ugSwTaTgJliIgs4VhZOk7htClvQ/LmRA==
   /aes-js/3.0.0:
-    dev: false
     resolution:
       integrity: sha1-4h3xCtbCBTKVvLuNq0Cwnb6ofk0=
   /agentkeepalive/2.2.0:
@@ -7218,7 +7218,6 @@ packages:
     dependencies:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
-    dev: true
     engines:
       node: '>=8'
     resolution:
@@ -9818,7 +9817,6 @@ packages:
       setimmediate: 1.0.4
       uuid: 2.0.1
       xmlhttprequest: 1.8.0
-    dev: false
     resolution:
       integrity: sha512-sZD5K8H28dOrcidzx9f8KYh8083n5BexIO3+SbE4jK83L85FxtpXZBCQdXb8gkg+7sBqomcLhhkU7UHL+F7I2g==
   /event-pubsub/4.3.0:
@@ -14033,7 +14031,6 @@ packages:
     resolution:
       integrity: sha1-NiITz4YPRo8BJfxslqvBdCUx+Ug=
   /js-sha3/0.5.7:
-    dev: false
     resolution:
       integrity: sha1-DU/9gALVMzqrr0oj7tL2N0yfKOc=
   /js-sha3/0.8.0:
@@ -17560,6 +17557,7 @@ packages:
       pouchdb-utils: 7.2.2
       sublevel-pouchdb: 7.2.2
       through2: 3.0.2
+    dev: true
     resolution:
       integrity: sha512-K9UGf1Ivwe87mjrMqN+1D07tO/DfU7ariVDrGffuOjvl+3BcvUF25IWrxsBObd4iPOYCH7NVQWRpojhBgxULtQ==
   /pouchdb-adapter-leveldb/7.2.2:
@@ -17591,6 +17589,7 @@ packages:
       pouchdb-md5: 7.2.2
       pouchdb-merge: 7.2.2
       pouchdb-utils: 7.2.2
+    dev: true
     resolution:
       integrity: sha512-2CzZkTyTyHZkr3ePiWFMTiD5+56lnembMjaTl8ohwegM0+hYhRyJux0biAZafVxgIL4gnCUC4w2xf6WVztzKdg==
   /pouchdb-binary-utils/7.2.2:
@@ -17639,6 +17638,7 @@ packages:
   /pouchdb-json/7.2.2:
     dependencies:
       vuvuzela: 1.0.3
+    dev: true
     resolution:
       integrity: sha512-3b2S2ynN+aoB7aCNyDZc/4c0IAdx/ir3nsHB+/RrKE9cM3QkQYbnnE3r/RvOD1Xvr6ji/KOCBie+Pz/6sxoaug==
   /pouchdb-mapreduce-utils/7.2.2:
@@ -17657,6 +17657,7 @@ packages:
     resolution:
       integrity: sha512-c/RvLp2oSh8PLAWU5vFBnp6ejJABIdKqboZwRRUrWcfGDf+oyX8RgmJFlYlzMMOh4XQLUT1IoaDV8cwlsuryZw==
   /pouchdb-merge/7.2.2:
+    dev: true
     resolution:
       integrity: sha512-6yzKJfjIchBaS7Tusuk8280WJdESzFfQ0sb4jeMUNnrqs4Cx3b0DIEOYTRRD9EJDM+je7D3AZZ4AT0tFw8gb4A==
   /pouchdb-selector-core/7.2.2:
@@ -18924,7 +18925,6 @@ packages:
     resolution:
       integrity: sha1-cV1bnMV3YPsivczDvvtb/gaxoxc=
   /scrypt-js/2.0.4:
-    dev: false
     resolution:
       integrity: sha512-4KsaGcPnuhtCZQCxFxN3GVYIhKFPTdLd8PLC552XwbMndtD0cjRFAhDuuydXQ0h08ZfPgzqe6EKHozpuH74iDw==
   /sdp/2.12.0:
@@ -19088,7 +19088,6 @@ packages:
     resolution:
       integrity: sha512-JxHc1weCN68wRY0fhCoXpyK55m/XPHafOmK4UWD7m2CI14GMcFypt4w/0+NV5f/ZMby2F6S2wwA7fgynh9gWSw==
   /setimmediate/1.0.4:
-    dev: false
     resolution:
       integrity: sha1-IOgd5iLUoCWIzgyNqJc8vPHTE48=
   /setimmediate/1.0.5:
@@ -20025,6 +20024,7 @@ packages:
       level-codec: 9.0.2
       ltgt: 2.2.1
       readable-stream: 1.1.14
+    dev: true
     resolution:
       integrity: sha512-y5uYgwKDgXVyPZceTDGWsSFAhpSddY29l9PJbXqMJLfREdPmQTY8InpatohlEfCXX7s1LGcrfYAhxPFZaJOLnQ==
   /subscriptions-transport-ws/0.9.18_graphql@14.7.0:
@@ -21403,7 +21403,6 @@ packages:
     resolution:
       integrity: sha1-n5VxD1CiZ5R7LMwSR0HBAoQn5xM=
   /uuid/2.0.1:
-    dev: false
     resolution:
       integrity: sha1-wqMN7bPlNdcsz4LjQ5QaULqFM6w=
   /uuid/3.4.0:
@@ -21894,7 +21893,6 @@ packages:
   /vuetify/2.3.14_vue@2.6.12:
     dependencies:
       vue: 2.6.12
-    dev: false
     peerDependencies:
       vue: ^2.6.4
     resolution:
@@ -22640,7 +22638,6 @@ packages:
     resolution:
       integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==
   /xmlhttprequest/1.8.0:
-    dev: false
     engines:
       node: '>=0.4.0'
     resolution:
