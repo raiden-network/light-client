@@ -209,28 +209,32 @@ export function matrixPresenceUpdateEpic(
       // filter out events from users we don't care about
       // i.e.: presence monitoring never requested
       filter(([{ address }, toMonitor]) => toMonitor.has(address)),
-      mergeMap(([{ matrix, user, address }, , { pollingInterval, httpTimeout }]) => {
-        // first filter can't tell typescript this property will always be set!
-        const userId = user.userId,
-          presence = user.presence!,
-          available = AVAILABLE.includes(presence);
-
-        // always fetch profile info, to get up-to-date displayname & avatar_url
-        return defer(() => matrix.getProfileInfo(userId)).pipe(
-          map((profile) => {
+      mergeMap(([{ matrix, user, address }, , { pollingInterval, httpTimeout }]) =>
+        defer(async () =>
+          // always fetch profile info, to get up-to-date displayname, avatar_url & presence
+          Promise.all([matrix.getProfileInfo(user.userId), getUserPresence(matrix, user.userId)]),
+        ).pipe(
+          map(([profile, { presence, last_active_ago }]) => {
             // errors raised here will be logged and ignored on catchError below
             assert(profile?.displayname, 'no displayname');
             // ecrecover address, validating displayName is the signature of the userId
-            const recovered = verifyMessage(userId, profile.displayname) as Address | undefined;
+            const recovered = verifyMessage(user.userId, profile.displayname) as
+              | Address
+              | undefined;
             assert(
               recovered === address,
               `invalid displayname signature: ${recovered} !== ${address}`,
             );
+            const available = AVAILABLE.includes(presence);
+            if (presence !== user.presence)
+              log.warn('Presence mismatch', { user, presence, last_active_ago });
             return matrixPresence.success(
               {
-                userId,
+                userId: user.userId,
                 available,
-                ts: user.lastPresenceTs ?? Date.now(),
+                ts: last_active_ago
+                  ? Date.now() - last_active_ago
+                  : user.lastPresenceTs ?? Date.now(),
                 caps: parseCaps(profile.avatar_url),
               },
               { address: recovered },
@@ -241,10 +245,12 @@ export function matrixPresenceUpdateEpic(
             (err) => err?.httpStatus !== 429, // retry rate-limit errors only
           ),
           catchError(
-            (err) => (log.warn('Error validating presence event, ignoring', userId, err), EMPTY),
+            (err) => (
+              log.warn('Error validating presence event, ignoring', user.userId, err), EMPTY
+            ),
           ),
-        );
-      }),
+        ),
+      ),
     )
     .pipe(
       withLatestFrom(latest$),
