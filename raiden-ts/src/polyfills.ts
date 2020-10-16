@@ -2,7 +2,7 @@ import 'symbol-observable';
 import 'isomorphic-fetch';
 import 'abort-controller/polyfill';
 
-// matrix-js-sdk monkey-patch root methodFactory
+// revert matrix-js-sdk monkey-patch root methodFactory
 import logging from 'loglevel';
 const methodFactory = logging.methodFactory;
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
@@ -36,8 +36,3 @@ request((opts: Record<string, unknown>, cb: ReqCb) => {
 if (!('RTCPeerConnection' in globalThis)) {
   Object.assign(globalThis, require('wrtc')); // eslint-disable-line @typescript-eslint/no-var-requires
 }
-
-// patch createNewMatrixCall to prevent matrix-js-sdk from hooking WebRTC events in browser;
-// ugly, but there's no option to prevent MatrixClient to handle m.call.* events
-import * as call from 'matrix-js-sdk/lib/webrtc/call';
-Object.assign(call, { createNewMatrixCall: () => null });

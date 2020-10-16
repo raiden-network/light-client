@@ -114,7 +114,7 @@ export function makeDefaultConfig(
 ): RaidenConfig {
   return {
     matrixServerLookup:
-      'https://raw.githubusercontent.com/raiden-network/raiden-transport/master/known_servers.test.yaml',
+      'https://raw.githubusercontent.com/raiden-network/raiden-service-bundle/master/known_servers/known_servers-development-v1.2.0.json',
     settleTimeout: 500,
     revealTimeout: 50,
     httpTimeout: 30e3,

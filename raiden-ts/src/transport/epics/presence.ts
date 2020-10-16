@@ -111,12 +111,12 @@ function searchAddressPresence$(
  * @param deps.log - Logger instance
  * @returns Observable of presence updates or fail action
  */
-export const matrixMonitorPresenceEpic = (
+export function matrixMonitorPresenceEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { matrix$, latest$, log }: RaidenEpicDeps,
-): Observable<matrixPresence.success | matrixPresence.failure> =>
-  action$.pipe(
+): Observable<matrixPresence.success | matrixPresence.failure> {
+  return action$.pipe(
     filter(isActionOf(matrixPresence.request)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap((action) => matrix$.pipe(map((matrix) => ({ action, matrix })))),
@@ -147,6 +147,7 @@ export const matrixMonitorPresenceEpic = (
       ),
     ),
   );
+}
 
 const comparePresencesFields = ['userId', 'available', 'caps'] as const;
 
@@ -164,12 +165,12 @@ const comparePresencesFields = ['userId', 'available', 'caps'] as const;
  * @param deps.config$ - Config observable
  * @returns Observable of presence updates
  */
-export const matrixPresenceUpdateEpic = (
+export function matrixPresenceUpdateEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, matrix$, latest$, config$ }: RaidenEpicDeps,
-): Observable<matrixPresence.success> =>
-  matrix$
+): Observable<matrixPresence.success> {
+  return matrix$
     .pipe(
       // when matrix finishes initialization, register to matrix presence events
       switchMap((matrix) =>
@@ -262,6 +263,7 @@ export const matrixPresenceUpdateEpic = (
       ),
       pluck(0),
     );
+}
 
 /**
  * Channel monitoring triggers matrix presence monitoring for partner
@@ -269,13 +271,14 @@ export const matrixPresenceUpdateEpic = (
  * @param action$ - Observable of RaidenActions
  * @returns Observable of matrixPresence.request actions
  */
-export const matrixMonitorChannelPresenceEpic = (
+export function matrixMonitorChannelPresenceEpic(
   action$: Observable<RaidenAction>,
-): Observable<matrixPresence.request> =>
-  action$.pipe(
+): Observable<matrixPresence.request> {
+  return action$.pipe(
     filter(channelMonitored.is),
     map((action) => matrixPresence.request(undefined, { address: action.meta.partner })),
   );
+}
 
 /**
  * Update our matrix's avatarUrl on config.caps changes
@@ -287,12 +290,12 @@ export const matrixMonitorChannelPresenceEpic = (
  * @param deps.config$ - Config object
  * @returns Observable which never emits
  */
-export const matrixUpdateCapsEpic = (
+export function matrixUpdateCapsEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { matrix$, config$ }: RaidenEpicDeps,
-): Observable<never> =>
-  config$.pipe(
+): Observable<never> {
+  return config$.pipe(
     pluck('caps'),
     distinctUntilChanged(isEqual),
     skip(1), // skip replay(1) and act only on changes
@@ -304,3 +307,4 @@ export const matrixUpdateCapsEpic = (
     ),
     ignoreElements(),
   );
+}

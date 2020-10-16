@@ -55,12 +55,12 @@ import { dispatchAndWait$ } from './utils';
  * @param deps.log - Logger instance
  * @returns Observable of transferSecretRequest actions
  */
-export const transferSecretRequestedEpic = (
+export function transferSecretRequestedEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { address, log }: RaidenEpicDeps,
-): Observable<transferSecretRequest> =>
-  action$.pipe(
+): Observable<transferSecretRequest> {
+  return action$.pipe(
     filter(isMessageReceivedOfType(Signed(SecretRequest))),
     withLatestFrom(state$),
     mergeMap(function* ([action, state]) {
@@ -86,6 +86,7 @@ export const transferSecretRequestedEpic = (
       );
     }),
   );
+}
 
 /**
  * Contains the core logic of {@link transferSecretRevealEpic}.
@@ -173,16 +174,17 @@ const secretReveal$ = (
  * @param deps.log - Logger instance
  * @returns Observable of transfer.failure|transferSecretReveal|messageSend.request actions
  */
-export const transferSecretRevealEpic = (
+export function transferSecretRevealEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<transfer.failure | transferSecretReveal | messageSend.request> =>
-  action$.pipe(
+): Observable<transfer.failure | transferSecretReveal | messageSend.request> {
+  return action$.pipe(
     filter(isActionOf(transferSecretRequest)),
     filter((action) => action.meta.direction === Direction.SENT),
     concatMap((action) => secretReveal$(action, deps)),
   );
+}
 
 /**
  * Handles receiving a valid SecretReveal from recipient (neighbor/partner)
@@ -193,11 +195,11 @@ export const transferSecretRevealEpic = (
  * @param state$ - Observable of RaidenStates
  * @returns Observable of output actions for this epic
  */
-export const transferSecretRevealedEpic = (
+export function transferSecretRevealedEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-): Observable<transferUnlock.request | transferSecret> =>
-  action$.pipe(
+): Observable<transferUnlock.request | transferSecret> {
+  return action$.pipe(
     // we don't require Signed SecretReveal, nor even check sender for persisting the secret
     filter(isMessageReceivedOfType(SecretReveal)),
     withLatestFrom(state$),
@@ -234,6 +236,7 @@ export const transferSecretRevealedEpic = (
       }
     }),
   );
+}
 
 /**
  * For a received transfer, when we know the secret, sign & send a SecretReveal to previous hop
@@ -246,12 +249,12 @@ export const transferSecretRevealedEpic = (
  * @param deps.latest$ - Latest observable
  * @returns Observable of transferSecretReveal actions
  */
-export const transferRequestUnlockEpic = (
+export function transferRequestUnlockEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, signer, latest$ }: RaidenEpicDeps,
-): Observable<transferSecretReveal> =>
-  action$.pipe(
+): Observable<transferSecretReveal> {
+  return action$.pipe(
     filter(isActionOf([transferSecret, transferSecretRegister.success])),
     filter((action) => action.meta.direction === Direction.RECEIVED),
     filter((action) => transferSecret.is(action) || !!action.payload.confirmed),
@@ -281,6 +284,7 @@ export const transferRequestUnlockEpic = (
       ),
     ),
   );
+}
 
 /**
  * Monitors SecretRegistry and emits when a relevant secret gets registered
@@ -293,12 +297,12 @@ export const transferRequestUnlockEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of transferSecretRegister.success actions
  */
-export const monitorSecretRegistryEpic = (
+export function monitorSecretRegistryEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { provider, secretRegistryContract, config$ }: RaidenEpicDeps,
-): Observable<transferSecretRegister.success> =>
-  config$.pipe(
+): Observable<transferSecretRegister.success> {
+  return config$.pipe(
     pluckDistinct('confirmationBlocks'),
     switchMap((confirmationBlocks) =>
       fromEthersEvent(
@@ -335,6 +339,7 @@ export const monitorSecretRegistryEpic = (
       }
     }),
   );
+}
 
 /**
  * A simple epic to emit transfer.success when secret register is confirmed
@@ -342,14 +347,15 @@ export const monitorSecretRegistryEpic = (
  * @param action$ - Observable of transferSecretRegister.success actions
  * @returns Observable of transfer.success actions
  */
-export const transferSuccessOnSecretRegisteredEpic = (
+export function transferSuccessOnSecretRegisteredEpic(
   action$: Observable<RaidenAction>,
-): Observable<transfer.success> =>
-  action$.pipe(
+): Observable<transfer.success> {
+  return action$.pipe(
     filter(transferSecretRegister.success.is),
     filter((action) => !!action.payload.confirmed),
     map((action) => transfer.success({}, action.meta)),
   );
+}
 
 /**
  * Process newBlocks and pending received transfers. If we know the secret, and transfer doesn't
@@ -363,12 +369,12 @@ export const transferSuccessOnSecretRegisteredEpic = (
  * @param deps.latest$ - Latest observable
  * @returns Observable of transferSecretRegister.request actions
  */
-export const transferAutoRegisterEpic = (
+export function transferAutoRegisterEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$, latest$ }: RaidenEpicDeps,
-): Observable<transferSecretRegister.request> =>
-  state$.pipe(
+): Observable<transferSecretRegister.request> {
+  return state$.pipe(
     withLatestFrom(config$),
     mergeMap(([{ blockNumber, transfers }, { revealTimeout }]) =>
       from(
@@ -426,6 +432,7 @@ export const transferAutoRegisterEpic = (
       ),
     ),
   );
+}
 
 /**
  * Registers secret on-chain. Success is detected by monitorSecretRegistryEpic
@@ -442,12 +449,12 @@ export const transferAutoRegisterEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of transferSecretRegister.failure actions
  */
-export const transferSecretRegisterEpic = (
+export function transferSecretRegisterEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, signer, address, main, provider, secretRegistryContract, config$ }: RaidenEpicDeps,
-): Observable<transferSecretRegister.failure> =>
-  action$.pipe(
+): Observable<transferSecretRegister.failure> {
+  return action$.pipe(
     filter(transferSecretRegister.request.is),
     withLatestFrom(config$),
     mergeMap(([action, { subkey: configSubkey }]) => {
@@ -466,3 +473,4 @@ export const transferSecretRegisterEpic = (
       );
     }),
   );
+}

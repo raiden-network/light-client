@@ -438,10 +438,9 @@ function handlePresenceChange$(
 
       const deps = { log, latest$, config$ };
       const callId = [address, action.meta.address]
-        .map((a) => a.toLowerCase())
-        .sort((a, b) => a.localeCompare(b))
+        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
         .join('|');
-      const isCaller = callId.startsWith(address.toLowerCase());
+      const isCaller = callId.startsWith(address);
       const timeoutGen = exponentialBackoff(config.pollingInterval, 2 * config.httpTimeout);
 
       return defer(() => {
@@ -531,13 +530,21 @@ function handlePresenceChange$(
   );
 }
 
-export const rtcConnectEpic = (
+/**
+ * Epic to handle presence updates and try to connect a webRTC channel with compatible peers
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param deps - Epics dependencies
+ * @returns Observable of rtcChannel | messageReceived actions
+ */
+export function rtcConnectEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<rtcChannel | messageReceived> =>
-  action$.pipe(
+): Observable<rtcChannel | messageReceived> {
+  return action$.pipe(
     filter(matrixPresence.success.is),
     groupBy((action) => action.meta.address),
     mergeMap((grouped$) => handlePresenceChange$(action$, grouped$, deps)),
   );
+}

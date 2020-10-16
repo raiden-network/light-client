@@ -143,11 +143,17 @@ const RaidenEpics = {
   ...ServicesEpics,
 };
 
-export const raidenRootEpic = (
+/**
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @returns Raiden root epic observable
+ */
+export function raidenRootEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<RaidenAction> => {
+): Observable<RaidenAction> {
   // observable which emits once when a raidenShutdown action goes through actions pipeline
   const shutdownNotification = action$.pipe(filter(isActionOf(raidenShutdown))),
     // actions pipeline, but ends with (including) a raidenShutdown action
@@ -166,7 +172,7 @@ export const raidenRootEpic = (
         mergeMap((epic) =>
           epic(limitedAction$, limitedState$, deps).pipe(
             catchError((err) => {
-              deps.log.error('Epic error', epic, err);
+              deps.log.error('Epic error', epic.name, epic, err);
               return throwError(err);
             }),
           ),
@@ -175,4 +181,4 @@ export const raidenRootEpic = (
         takeUntil(shutdownNotification),
       ),
   );
-};
+}

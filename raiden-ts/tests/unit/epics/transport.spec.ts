@@ -72,7 +72,10 @@ describe('transport epic', () => {
   const fetch = jest.fn(async () => ({
     ok: true,
     status: 200,
-    text: jest.fn(async () => `- ${matrixServer}`),
+    json: jest.fn<Promise<unknown>, []>(async () => ({
+      active_servers: [matrixServer],
+      all_servers: [],
+    })),
   }));
   Object.assign(global, { fetch });
 
@@ -235,7 +238,7 @@ describe('transport epic', () => {
       fetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
-        text: jest.fn(async () => ''),
+        json: jest.fn(async () => ({})),
       });
       await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).rejects.toThrow(
         'Could not fetch server list',
@@ -251,13 +254,16 @@ describe('transport epic', () => {
       fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        text: jest.fn(async () => `- ${matrixServer}`),
+        json: jest.fn(async () => ({
+          active_servers: [matrixServer],
+          all_servers: [],
+        })),
       });
       // and this one for matrixRTT. 404 will reject it
       fetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
-        text: jest.fn(async () => ''),
+        json: jest.fn(async () => ({})),
       });
       await expect(initMatrixEpic(action$, state$, depsMock).toPromise()).rejects.toThrow(
         ErrorCodes.TRNS_NO_MATRIX_SERVERS,

@@ -22,11 +22,13 @@ import {
   mapTo,
   debounce,
   pairwise,
+  startWith,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
 import { Event } from 'ethers/contract';
 import { BigNumber, bigNumberify, toUtf8Bytes, verifyMessage, concat } from 'ethers/utils';
 import { Two, Zero, MaxUint256, WeiPerEther } from 'ethers/constants';
+import constant from 'lodash/constant';
 
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
@@ -39,6 +41,7 @@ import { messageGlobalSend } from '../messages/actions';
 import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
+import { newBlock } from '../channels/actions';
 import {
   channelAmounts,
   groupChannel$,
@@ -51,7 +54,7 @@ import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
-import { pluckDistinct } from '../utils/rx';
+import { pluckDistinct, retryAsync$ } from '../utils/rx';
 import { matrixPresence } from '../transport/actions';
 import { getCap } from '../transport/utils';
 import { UserDeposit } from '../contracts/UserDeposit';
@@ -175,13 +178,13 @@ function prepareNextIOU$(
  * @param deps - RaidenEpicDeps object
  * @returns Observable of pathFind.{success|failure} actions
  */
-export const pathFindServiceEpic = (
+export function pathFindServiceEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<
   matrixPresence.request | pathFind.success | pathFind.failure | iouPersist | iouClear
-> => {
+> {
   return action$.pipe(
     filter(isActionOf(pathFind.request)),
     concatMap((action) =>
@@ -213,7 +216,7 @@ export const pathFindServiceEpic = (
       ),
     ),
   );
-};
+}
 
 /**
  * Sends a [[PFSCapacityUpdate]] to PFS global room on new deposit on our side of channels
@@ -228,12 +231,12 @@ export const pathFindServiceEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of messageGlobalSend actions
  */
-export const pfsCapacityUpdateEpic = (
+export function pfsCapacityUpdateEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, address, network, signer, config$ }: RaidenEpicDeps,
-): Observable<messageGlobalSend> =>
-  state$.pipe(
+): Observable<messageGlobalSend> {
+  return state$.pipe(
     groupChannel$,
     mergeMap((grouped$) =>
       grouped$.pipe(
@@ -281,6 +284,7 @@ export const pfsCapacityUpdateEpic = (
       ),
     ),
   );
+}
 
 /**
  * When monitoring a channel (either a new channel or a previously monitored one), send a matching
@@ -297,12 +301,12 @@ export const pfsCapacityUpdateEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of messageGlobalSend actions
  */
-export const pfsFeeUpdateEpic = (
+export function pfsFeeUpdateEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, address, network, signer, config$ }: RaidenEpicDeps,
-): Observable<messageGlobalSend> =>
-  state$.pipe(
+): Observable<messageGlobalSend> {
+  return state$.pipe(
     groupChannel$,
     // get only first state per channel
     mergeMap((grouped$) => grouped$.pipe(first())),
@@ -339,6 +343,7 @@ export const pfsFeeUpdateEpic = (
       );
     }),
   );
+}
 
 /**
  * Fetch & monitors ServiceRegistry's RegisteredService events, keep track of valid_till expiration
@@ -357,12 +362,12 @@ export const pfsFeeUpdateEpic = (
  * @param deps.latest$ - Latest observable
  * @returns Observable of pfsListUpdated actions
  */
-export const pfsServiceRegistryMonitorEpic = (
+export function pfsServiceRegistryMonitorEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { provider, serviceRegistryContract, contractsInfo, config$, latest$ }: RaidenEpicDeps,
-): Observable<pfsListUpdated> =>
-  combineLatest([
+): Observable<pfsListUpdated> {
+  return combineLatest([
     // monitors config.pfs, and only monitors contract if it's empty
     config$.pipe(pluckDistinct('pfs')),
     config$.pipe(pluckDistinct('confirmationBlocks')),
@@ -426,11 +431,12 @@ export const pfsServiceRegistryMonitorEpic = (
             ),
     ),
   );
+}
 
 /**
  * Monitors the balance of UDC and emits udcDeposited, made available in Latest['udcBalance']
  *
- * @param action$ - Observable of aidenActions
+ * @param action$ - Observable of newBlock actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
  * @param deps.address - Our address
@@ -438,20 +444,30 @@ export const pfsServiceRegistryMonitorEpic = (
  * @param deps.userDepositContract - UserDeposit contract instance
  * @returns Observable of udcDeposited actions
  */
-export const monitorUdcBalanceEpic = (
-  {}: Observable<RaidenAction>,
+export function monitorUdcBalanceEpic(
+  action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, latest$, userDepositContract }: RaidenEpicDeps,
-): Observable<udcDeposit.success> =>
-  latest$.pipe(
-    pluckDistinct('state', 'blockNumber'),
+): Observable<udcDeposit.success> {
+  return action$.pipe(
+    filter(newBlock.is),
+    startWith(null),
     // it's seems ugly to call on each block, but UserDepositContract doesn't expose deposits as
     // events, and ethers actually do that to monitor token balances, so it's equivalent
-    exhaustMap(() => userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>),
+    exhaustMap(() =>
+      /* This contract's function is pure (doesn't depend on user's confirmation, gas availability,
+       * etc), but merged on the top-level observable, therefore connectivity issues can cause
+       * exceptions which would shutdown the SDK. Let's swallow the error here, since this will be
+       * retried on next block, which should only be emitted after connectivity is reestablished */
+      defer(
+        async () => userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
+      ).pipe(catchError(constant(EMPTY))),
+    ),
     withLatestFrom(latest$),
     filter(([balance, { udcBalance }]) => !udcBalance.eq(balance)),
     map(([balance]) => udcDeposit.success(undefined, { totalDeposit: balance })),
   );
+}
 
 function makeUdcDeposit$(
   [tokenContract, userDepositContract]: [HumanStandardToken, UserDeposit],
@@ -504,11 +520,11 @@ function makeUdcDeposit$(
  * @param deps.config$ - Config observable
  * @returns - Observable of udcDeposit.failure|udcDeposit.success actions
  */
-export const udcDepositEpic = (
+export function udcDepositEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { userDepositContract, getTokenContract, address, log, signer, main, config$ }: RaidenEpicDeps,
-): Observable<udcDeposit.failure | udcDeposit.success> => {
+): Observable<udcDeposit.failure | udcDeposit.success> {
   const serviceToken = userDepositContract.functions.token() as Promise<Address>;
   return action$.pipe(
     filter(udcDeposit.request.is),
@@ -545,7 +561,7 @@ export const udcDepositEpic = (
       ),
     ),
   );
-};
+}
 
 /**
  * Makes a *Map callback which returns an observable of actions to send RequestMonitoring messages
@@ -651,12 +667,12 @@ function makeMonitoringRequest$({
  * @param deps - Epics dependencies
  * @returns Observable of messageGlobalSend actions
  */
-export const monitorRequestEpic = (
+export function monitorRequestEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<messageGlobalSend> =>
-  deps.latest$.pipe(
+): Observable<messageGlobalSend> {
+  return deps.latest$.pipe(
     pluck('state'),
     groupChannel$,
     withLatestFrom(deps.config$),
@@ -683,6 +699,7 @@ export const monitorRequestEpic = (
       ),
     ),
   );
+}
 
 /**
  * Handle a UDC withdraw request and send plan transaction
@@ -697,12 +714,12 @@ export const monitorRequestEpic = (
  * @param deps.provider - Provider instance
  * @returns Observable of udcWithdraw.success|udcWithdraw.failure actions
  */
-export const udcWithdrawRequestEpic = (
+export function udcWithdrawRequestEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { userDepositContract, address, log, signer, provider }: RaidenEpicDeps,
-): Observable<udcWithdraw.success | udcWithdraw.failure> =>
-  action$.pipe(
+): Observable<udcWithdraw.success | udcWithdraw.failure> {
+  return action$.pipe(
     filter(udcWithdraw.request.is),
     mergeMap((action) =>
       userDepositContract.functions
@@ -757,6 +774,7 @@ export const udcWithdrawRequestEpic = (
       );
     }),
   );
+}
 
 /**
  * At startup, check if there was a previous plan and re-emit udcWithdraw.success action
@@ -766,14 +784,19 @@ export const udcWithdrawRequestEpic = (
  * @param deps - Epics dependencies
  * @param deps.userDepositContract - UDC contract instance
  * @param deps.address - Our address
+ * @param deps.config$ - Config observable
  * @returns Observable of udcWithdraw.success actions
  */
-export const udcCheckWithdrawPlannedEpic = (
+export function udcCheckWithdrawPlannedEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { userDepositContract, address }: RaidenEpicDeps,
-): Observable<udcWithdraw.success> => {
-  return defer(() => userDepositContract.functions.withdraw_plans(address)).pipe(
+  { userDepositContract, address, config$ }: RaidenEpicDeps,
+): Observable<udcWithdraw.success> {
+  return config$.pipe(
+    first(),
+    mergeMap(({ pollingInterval }) =>
+      retryAsync$(() => userDepositContract.functions.withdraw_plans(address), pollingInterval),
+    ),
     filter((value) => value.withdraw_block.gt(Zero)),
     map(({ amount, withdraw_block }) =>
       udcWithdraw.success(
@@ -782,7 +805,7 @@ export const udcCheckWithdrawPlannedEpic = (
       ),
     ),
   );
-};
+}
 
 /**
  * When a plan is detected (done on this session or previous), wait until timeout and withdraw
@@ -797,11 +820,11 @@ export const udcCheckWithdrawPlannedEpic = (
  * @param deps.provider - Provider instance
  * @returns Observable of udcWithdrawn|udcWithdraw.failure actions
  */
-export const udcWithdrawPlannedEpic = (
+export function udcWithdrawPlannedEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, userDepositContract, address, signer, provider }: RaidenEpicDeps,
-): Observable<udcWithdrawn | udcWithdraw.failure> => {
+): Observable<udcWithdrawn | udcWithdraw.failure> {
   return action$.pipe(
     filter(udcWithdraw.success.is),
     filter((action) => action.payload.confirmed === true),
@@ -855,7 +878,7 @@ export const udcWithdrawPlannedEpic = (
       );
     }),
   );
-};
+}
 
 /**
  * Monitors MonitoringService contract and fires events when an MS sent a BP in our behalf.
@@ -874,12 +897,13 @@ export const udcWithdrawPlannedEpic = (
  * @param deps.config$ - Config observable
  * @returns Observable of msBalanceProofSent actions
  */
-export const msMonitorNewBPEpic = (
+export function msMonitorNewBPEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { provider, monitoringServiceContract, address, config$ }: RaidenEpicDeps,
-): Observable<msBalanceProofSent> => // NewBalanceProofReceived event: [tokenNetwork, channelId, reward, nonce, monitoringService, ourAddress]
-  config$.pipe(
+): Observable<msBalanceProofSent> {
+  // NewBalanceProofReceived event: [tokenNetwork, channelId, reward, nonce, monitoringService, ourAddress]
+  return config$.pipe(
     pluckDistinct('confirmationBlocks'),
     switchMap((confirmationBlocks) =>
       fromEthersEvent(
@@ -931,6 +955,7 @@ export const msMonitorNewBPEpic = (
     ),
     filter(isntNil),
   );
+}
 
 function waitForMatrixPresenceResponse$(
   action$: Observable<RaidenAction>,

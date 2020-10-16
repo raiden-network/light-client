@@ -106,7 +106,7 @@ async function openChannel(this: Cli, request: Request, response: Response, next
     // a better solution.
     await this.raiden.openChannel(token, partner, {
       settleTimeout: request.body.settle_timeout,
-      deposit: request.body.total_deposit?.toString?.(),
+      deposit: request.body.total_deposit?.toString(),
     });
     const channel = await this.raiden.channels$
       .pipe(pluck(token, partner), first(isntNil))
