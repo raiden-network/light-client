@@ -84,7 +84,10 @@
   "account-content": {
     "account-details": "Account Details",
     "address": "Address:",
-    "currency": "ETH:",
+    "account": {
+      "main": "Main ETH:",
+      "raiden": "Raiden ETH:"
+    },
     "menu-items": {
       "settings": {
         "title": "Settings",

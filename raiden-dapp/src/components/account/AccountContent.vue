@@ -23,13 +23,29 @@
       </v-row>
       <v-row class="account-content__account-details__eth" no-gutters>
         <v-col cols="2">
-          <span class="account-content__account-details__eth__currency">
-            {{ $t('account-content.currency') }}
+          <span class="account-content__account-details__eth__account">
+            {{ $t('account-content.account.main') }}
           </span>
         </v-col>
         <v-col cols="10">
           <span class="account-content__account-details__eth__balance">
-            {{ balance | decimals }}
+            {{ accountBalance | decimals }}
+          </span>
+        </v-col>
+      </v-row>
+      <v-row
+        v-if="usingRaidenAccount"
+        class="account-content__account-details__eth"
+        no-gutters
+      >
+        <v-col cols="2">
+          <span class="account-content__account-details__eth__account">
+            {{ $t('account-content.account.raiden') }}
+          </span>
+        </v-col>
+        <v-col cols="10">
+          <span class="account-content__account-details__eth__balance">
+            {{ raidenAccountBalance | decimals }}
           </span>
         </v-col>
       </v-row>
@@ -78,15 +94,21 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
     AddressDisplay,
   },
   computed: {
-    ...mapState(['loading', 'defaultAccount']),
-    ...mapGetters(['balance', 'isConnected']),
+    ...mapState([
+      'loading',
+      'defaultAccount',
+      'accountBalance',
+      'raidenAccountBalance',
+    ]),
+    ...mapGetters(['isConnected', 'usingRaidenAccount']),
   },
 })
 export default class AccountContent extends Mixins(NavigationMixin) {
   menuItems: {}[] = [];
   loading!: boolean;
   defaultAccount!: string;
-  balance!: string;
+  accountBalance!: string;
+  raidenAccountBalance!: string;
   isConnected!: boolean;
 
   async mounted() {
@@ -241,15 +263,13 @@ export default class AccountContent extends Mixins(NavigationMixin) {
     }
 
     &__eth {
-      margin-bottom: 66px;
-
       &__balance {
         @include respond-to(handhelds) {
           margin-left: 30px;
         }
       }
 
-      &__currency,
+      &__account,
       &__balance {
         color: rgba($color-white, 0.7);
         font-size: 14px;
@@ -259,7 +279,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 
   &__menu {
     background-color: transparent;
-    margin-top: 30px;
+    margin-top: 50px;
 
     &__list-items {
       border: solid 2px $secondary-text-color;

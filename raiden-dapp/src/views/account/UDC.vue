@@ -49,7 +49,7 @@
     />
     <udc-withdrawal-dialog
       :visible="withdrawFromUdc"
-      :account-balance="accountBalance"
+      :account-balance="relevantEthBalanceForWithdrawal"
       :token="udcToken"
       :capacity="udcCapacity"
       @cancel="withdrawFromUdc = false"
@@ -80,21 +80,30 @@ import Spinner from '@/components/icons/Spinner.vue';
     Spinner,
   },
   computed: {
-    ...mapState(['accountBalance']),
-    ...mapGetters(['mainnet', 'udcToken']),
+    ...mapState(['accountBalance', 'raidenAccountBalance']),
+    ...mapGetters(['mainnet', 'udcToken', 'usingRaidenAccount']),
   },
 })
 export default class UDC extends Vue {
   amount: string = '10';
   udcCapacity = Zero;
   hasEnoughServiceTokens = false;
+  accountBalance!: string;
+  raidenAccountBalance!: string;
   mainnet!: boolean;
   udcToken!: Token;
+  usingRaidenAccount!: boolean;
   showUdcDeposit = false;
   withdrawFromUdc: boolean = false;
 
   get serviceToken(): string {
     return this.udcToken.symbol ?? (this.mainnet ? 'RDN' : 'SVT');
+  }
+
+  get relevantEthBalanceForWithdrawal(): string {
+    return this.usingRaidenAccount
+      ? this.raidenAccountBalance
+      : this.accountBalance;
   }
 
   async mounted() {
