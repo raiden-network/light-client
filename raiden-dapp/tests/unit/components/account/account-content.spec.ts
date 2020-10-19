@@ -58,16 +58,48 @@ describe('AccountContent.vue', () => {
     expect(addressMobile.text()).toBe('0x31...6043');
   });
 
-  test('displays eth', async () => {
+  test('displays balance for main account only if not using raiden account', async () => {
     store.commit('balance', '12.0');
+    store.commit('updateSettings', { useRaidenAccount: false });
     await wrapper.vm.$nextTick();
-    const ethTitle = wrapper.find(
-      '.account-content__account-details__eth__currency'
-    );
-    const eth = wrapper.find('.account-content__account-details__eth__balance');
 
-    expect(ethTitle.text()).toBe('account-content.currency');
-    expect(eth.text()).toBe('12.000');
+    const accountDetails = wrapper.findAll(
+      '.account-content__account-details__eth'
+    );
+    expect(accountDetails.length).toBe(1);
+
+    const mainAccountDetails = accountDetails.at(0);
+    const title = mainAccountDetails.find(
+      '.account-content__account-details__eth__account'
+    );
+    const balance = mainAccountDetails.find(
+      '.account-content__account-details__eth__balance'
+    );
+
+    expect(title.text()).toBe('account-content.account.main');
+    expect(balance.text()).toBe('12.000');
+  });
+
+  test('displays balance for main and raiden account if using raiden account', async () => {
+    store.commit('raidenAccountBalance', '13.0');
+    store.commit('updateSettings', { useRaidenAccount: true });
+    await wrapper.vm.$nextTick();
+
+    const accountDetails = wrapper.findAll(
+      '.account-content__account-details__eth'
+    );
+    expect(accountDetails.length).toBe(2);
+
+    const raidenAccountDetails = accountDetails.at(1);
+    const title = raidenAccountDetails.find(
+      '.account-content__account-details__eth__account'
+    );
+    const balance = raidenAccountDetails.find(
+      '.account-content__account-details__eth__balance'
+    );
+
+    expect(title.text()).toBe('account-content.account.raiden');
+    expect(balance.text()).toBe('13.000');
   });
 
   test('displays one menu item', () => {
