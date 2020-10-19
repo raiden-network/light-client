@@ -121,7 +121,6 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
-import { Tokens } from '@/types';
 import { Token } from '@/model/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
@@ -129,6 +128,9 @@ import AmountDisplay from '@/components/AmountDisplay.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import uniqBy from 'lodash/uniqBy';
+import { BigNumber } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 
 @Component({
   components: {
@@ -139,12 +141,11 @@ import Spinner from '@/components/icons/Spinner.vue';
     Spinner,
   },
   computed: {
-    ...mapState(['tokens', 'raidenAccountBalance']),
+    ...mapState(['raidenAccountBalance']),
     ...mapGetters(['udcToken']),
   },
 })
 export default class Withdrawal extends Mixins(BlockieMixin) {
-  tokens!: Tokens;
   raidenAccountBalance!: string;
   udcToken!: Token;
   balances: Token[] = [];
@@ -153,7 +154,24 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
   withdraw: Token | null = null;
 
   async mounted() {
-    this.balances = await this.$raiden.getRaidenAccountBalances();
+    const balancesWithoutMainnetUtilityToken = await this.$raiden.getRaidenAccountBalances();
+    const balancesWithMainnetUtilityToken = uniqBy(
+      [...balancesWithoutMainnetUtilityToken].concat(this.udcToken),
+      (token) => token.address
+    );
+    const updatedBalances = await Promise.all(
+      balancesWithMainnetUtilityToken.map(async (token) => ({
+        ...token,
+        balance: await this.$raiden.raiden.getTokenBalance(
+          token.address,
+          this.$raiden.raiden.address
+        ),
+      }))
+    );
+
+    this.balances = updatedBalances.filter((token) =>
+      (token.balance as BigNumber).gt(Zero)
+    );
     this.loading = false;
   }
 

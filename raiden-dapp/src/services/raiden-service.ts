@@ -1,5 +1,4 @@
 import {
-  Address,
   Capabilities,
   ChangeEvent,
   ErrorCodes,
@@ -670,11 +669,7 @@ export default class RaidenService {
     if (!raiden.mainAddress) {
       return [];
     }
-    const allTokenAddresses = uniq(
-      (await raiden.getTokenList()).concat(
-        this._userDepositTokenAddress as Address
-      )
-    );
+    const allTokenAddresses = await raiden.getTokenList();
     const balances: Tokens = {};
     const fetchTokenBalance = async (address: string): Promise<void> =>
       raiden.getTokenBalance(address, raiden.address).then((balance) => {
