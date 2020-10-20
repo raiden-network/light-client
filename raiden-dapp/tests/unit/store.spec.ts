@@ -60,20 +60,6 @@ describe('store', () => {
     expect(store.state.raidenAccountBalance).toBe('0.1');
   });
 
-  test('balance getter retuns balance if no raidenAccountBalance exists', () => {
-    expect(store.state.raidenAccountBalance).toBe('');
-    expect(store.state.accountBalance).toBe('0.0');
-    store.commit('balance', '12.0');
-    expect(store.getters.balance).toBe('12.0');
-  });
-
-  test('balance getter returns raidenAccountBalance if it exists', () => {
-    expect(store.state.raidenAccountBalance).toBe('');
-    expect(store.state.accountBalance).toBe('0.0');
-    store.commit('raidenAccountBalance', '13.0');
-    expect(store.getters.balance).toBe('13.0');
-  });
-
   test('account mutation changes the defaultAccount state', () => {
     expect(store.state.defaultAccount).toBe('');
     store.commit('account', 'test');
@@ -344,6 +330,13 @@ describe('store', () => {
       store.commit('acceptDisclaimer', persistDecistion);
       expect(store.state.disclaimerAccepted).toBe(true);
       expect(store.state.persistDisclaimerAcceptance).toBe(persistDecistion);
+    });
+  });
+
+  test('usingRaidenAccount getter reflect settings state property', () => {
+    [true, false].forEach((useRaidenAccount) => {
+      store.commit('updateSettings', { useRaidenAccount });
+      expect(store.getters.usingRaidenAccount).toEqual(useRaidenAccount);
     });
   });
 });

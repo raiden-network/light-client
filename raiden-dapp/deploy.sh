@@ -7,8 +7,8 @@
 # abort the script if there is a non-zero error
 set -e
 
-DEPLOY_BASE="$1"
-echo "Deploy base: $DEPLOY_BASE"
+PUBLIC_PATH="${1#/*}" # Remove eventually leading slash of first argument
+echo "Public path: $PUBLIC_PATH"
 
 echo "Preparing to deploy to GitHub Pages for commit ${CIRCLE_SHA1}"
 
@@ -40,16 +40,16 @@ git remote add --fetch origin "$remote"
 if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
   git checkout gh-pages
   # delete any old site as we are going to replace it
-  git rm -rf ./${DEPLOY_BASE} --ignore-unmatch
+  git rm -rf ./${PUBLIC_PATH} --ignore-unmatch
 else
   git checkout --orphan gh-pages
 fi
 
-if [[ ! -d ./${DEPLOY_BASE} ]];then
-    mkdir -p ./${DEPLOY_BASE}
+if [[ ! -d ./${PUBLIC_PATH} ]];then
+    mkdir -p ./${PUBLIC_PATH}
 fi
 
-mv ../dist/* ./${DEPLOY_BASE}
+mv ../dist/* ./${PUBLIC_PATH}
 
 if [[ ! -f CNAME ]];then
     echo 'Setting CNAME'

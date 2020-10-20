@@ -252,13 +252,11 @@ const store: StoreOptions<RootState> = {
         !!(state.defaultAccount && state.defaultAccount !== '')
       );
     },
-    balance: (state: RootState): string => {
-      return state.raidenAccountBalance
-        ? state.raidenAccountBalance
-        : state.accountBalance;
-    },
     udcToken: (state: RootState): Token => {
       return state.tokens[state.userDepositTokenAddress];
+    },
+    usingRaidenAccount: (state: RootState): boolean => {
+      return !!state.settings.useRaidenAccount;
     },
   },
   plugins: [settingsLocalStorage.plugin, disclaimerAcceptedLocalStorage.plugin],

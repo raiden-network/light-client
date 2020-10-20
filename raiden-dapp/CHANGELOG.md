@@ -1,7 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+
 ### Fixed
+
 - [#2237] Displays RDN token on Withdrawal screen
 - [#2026] Removed delay time on tooltips
 - [#2098] Input fields disabled on transfer screen when no channels are open
@@ -11,13 +13,16 @@
 - [#2144] Fixes navigation to transfer screen when token was selected
 - [#2159] Fixes routing issues for account and transfer steps
 - [#2238] Fixes broken token overlay for too many connected tokens
+- [#2224] Show ETH balance of correct account when withdrawing from UDC
 
 ### Added
+
 - [#1941] Notification for opening channels
 - [#1255] Optional identifier query parameter for transfers
 
 ### Changes
-- [#1929] Design adjustments to settlement notifications and notification panel 
+
+- [#1929] Design adjustments to settlement notifications and notification panel
 
 [#2237]: https://github.com/raiden-network/light-client/issues/2237
 [#1255]: https://github.com/raiden-network/light-client/issues/1255
@@ -31,15 +36,20 @@
 [#2144]: https://github.com/raiden-network/light-client/issues/2144
 [#2159]: https://github.com/raiden-network/light-client/issues/2144
 [#2138]: https://github.com/raiden-network/light-client/issues/2138
+[#2224]: https://github.com/raiden-network/light-client/issues/2223
 
 ## [0.11.1] - 2020-08-18
+
 ### Fixed
+
 - [#2047] Conversion and token amount display in UDC deposit dialog
 
 ### Added
+
 - [#2039] Dialog with redirect button if all channels are settled
 
 ### Changed
+
 - [#1951] Update to be compatible with Raiden Python client `v1.1.1`
 
 [#2039]: https://github.com/raiden-network/light-client/issues/2039
@@ -49,6 +59,7 @@
 ## [0.11.0] - 2020-08-04
 
 ### Fixed
+
 - [#2031] "No open channels" displayed instead of 0 balance on transfer screen
 
 ### Added
