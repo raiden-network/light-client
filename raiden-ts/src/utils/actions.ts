@@ -3,11 +3,11 @@
 import * as t from 'io-ts';
 import isMatchWith from 'lodash/isMatchWith';
 import { Observable } from 'rxjs';
-import { first, map } from 'rxjs/operators';
+import { filter, first, map } from 'rxjs/operators';
 
 import { assert } from '../utils';
 import { RaidenError, ErrorCodes } from '../utils/error';
-import { BigNumberC } from './types';
+import { BigNumberC, Hash } from './types';
 
 /**
  * The type of a generic action
@@ -511,13 +511,46 @@ export function isConfirmationResponseOf<
   return _isResponseOf;
 }
 
+export function asyncActionToPromise<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>
+>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+  action$: Observable<Action>,
+): Promise<ActionType<AAC['success']>['payload']>;
+export function asyncActionToPromise<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>
+>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+  action$: Observable<Action>,
+  confirmed: false,
+): Promise<
+  ActionType<AAC['success']>['payload'] & {
+    txBlock: number;
+    txHash: Hash;
+    confirmed: undefined | boolean;
+  }
+>;
+export function asyncActionToPromise<
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>
+>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+  action$: Observable<Action>,
+  confirmed: true,
+): Promise<
+  ActionType<AAC['success']>['payload'] & { txBlock: number; txHash: Hash; confirmed: true }
+>;
+
 /**
  * Watch a stream of actions and resolves on meta-matching success or rejects on failure
  *
  * @param asyncAction - async actions object to wait for
  * @param meta - meta object of a request to wait for the respective response
  * @param action$ - actions stream to watch for responses
- * @param confirmed - set if should ignore non-confirmed success response
+ * @param confirmed - undefined for any response action, false to filter confirmable actions,
+ *  true for confirmed ones
  * @returns Promise which rejects with payload in case of failure, or resolves payload otherwise
  */
 export async function asyncActionToPromise<
@@ -526,14 +559,20 @@ export async function asyncActionToPromise<
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
   action$: Observable<Action>,
-  confirmed = false,
+  confirmed?: boolean,
 ) {
   return action$
     .pipe(
-      first(
+      filter(
         confirmed
           ? isConfirmationResponseOf<AAC>(asyncAction, meta)
           : isResponseOf<AAC>(asyncAction, meta),
+      ),
+      first(
+        (action) =>
+          confirmed === undefined ||
+          !asyncAction.success.is(action) ||
+          'confirmed' in action.payload,
       ),
       map((action) => {
         if (asyncAction.failure.is(action))
