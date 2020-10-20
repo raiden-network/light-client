@@ -34,16 +34,6 @@ import { jsonParse, jsonStringify } from 'raiden-ts/utils/data';
 import { makeDefaultConfig } from 'raiden-ts/config';
 
 describe('transport epic', () => {
-    json: jest.fn<Promise<unknown>, []>(async () => ({
-      active_servers: [matrixServer],
-      all_servers: [],
-    })),
-        json: jest.fn(async () => ({})),
-        json: jest.fn(async () => ({
-          active_servers: [matrixServer],
-          all_servers: [],
-        })),
-        json: jest.fn(async () => ({})),
       matrix._http.authedRequest.mockResolvedValueOnce({
         presence: 'offline',
         last_active_ago: 123,
@@ -69,7 +59,10 @@ describe('transport epic', () => {
       fetch.mockImplementation(async () => ({
         ok: true,
         status: 200,
-        text: jest.fn(async () => `- ${matrixServer}`),
+        json: jest.fn<Promise<unknown>, []>(async () => ({
+          active_servers: [matrixServer],
+          all_servers: [],
+        })),
       }));
       Object.assign(globalThis, { fetch });
     });
@@ -202,7 +195,7 @@ describe('transport epic', () => {
       fetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
-        text: jest.fn(async () => ''),
+        json: jest.fn(async () => ({})),
       });
 
       raiden.deps.defaultConfig = makeDefaultConfig(
@@ -223,13 +216,16 @@ describe('transport epic', () => {
       fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        text: jest.fn(async () => `- ${matrixServer}`),
+        json: jest.fn(async () => ({
+          active_servers: [matrixServer],
+          all_servers: [],
+        })),
       });
       // and this one for matrixRTT. 404 will reject it
       fetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
-        text: jest.fn(async () => ''),
+        json: jest.fn(async () => ({})),
       });
       raiden.deps.defaultConfig = makeDefaultConfig(
         { network: raiden.deps.network },
@@ -1568,7 +1564,7 @@ describe('transport epic', () => {
       raiden.store.dispatch(
         raidenConfigUpdate({
           httpTimeout: 300,
-          caps: { [Capabilities.DELIVERY]: true, [Capabilities.WEBRTC]: true },
+          caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 1 },
         }),
       );
       matrix.getRoom.mockImplementation(
