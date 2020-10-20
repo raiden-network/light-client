@@ -147,7 +147,7 @@ import { BigNumber } from 'ethers/utils';
 })
 export default class Withdrawal extends Mixins(BlockieMixin) {
   allTokens!: Token[];
-  raidenAccountBlanace!: string;
+  raidenAccountBalance!: string;
   udcToken!: Token;
   balances: Token[] = [];
   loading: boolean = true;
