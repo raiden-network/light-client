@@ -45,11 +45,12 @@ test('monitorUdcBalanceEpic', async () => {
   const raiden = await makeRaiden(undefined, false);
   const { userDepositContract } = raiden.deps;
   userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
+  userDepositContract.functions.total_deposit.mockResolvedValue(Zero);
 
   await raiden.start();
   await sleep();
   expect(raiden.output).toContainEqual(
-    udcDeposit.success(undefined, { totalDeposit: Zero as UInt<32> }),
+    udcDeposit.success({ balance: Zero as UInt<32> }, { totalDeposit: Zero as UInt<32> }),
   );
   await expect(
     raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise(),
@@ -57,9 +58,10 @@ test('monitorUdcBalanceEpic', async () => {
 
   const balance = bigNumberify(23) as UInt<32>;
   userDepositContract.functions.effectiveBalance.mockResolvedValue(balance);
+  userDepositContract.functions.total_deposit.mockResolvedValue(balance);
   await waitBlock();
 
-  expect(raiden.output).toContainEqual(udcDeposit.success(undefined, { totalDeposit: balance }));
+  expect(raiden.output).toContainEqual(udcDeposit.success({ balance }, { totalDeposit: balance }));
   await expect(
     raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise(),
   ).resolves.toEqual(balance);
@@ -182,10 +184,12 @@ describe('monitorRequestEpic', () => {
     );
 
     userDepositContract.functions.effectiveBalance.mockResolvedValue(monitoringReward.sub(1));
+    userDepositContract.functions.total_deposit.mockResolvedValue(monitoringReward.sub(1));
     await waitBlock();
 
+    const balance = monitoringReward.sub(1) as UInt<32>;
     expect(raiden.output).toContainEqual(
-      udcDeposit.success(undefined, { totalDeposit: monitoringReward.sub(1) as UInt<32> }),
+      udcDeposit.success({ balance }, { totalDeposit: balance }),
     );
 
     await ensureChannelIsDeposited([raiden, partner], deposit);
@@ -389,6 +393,7 @@ describe('udcDepositEpic', () => {
     const raiden = await makeRaiden(undefined, false);
     const { userDepositContract } = raiden.deps;
     userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
+    userDepositContract.functions.total_deposit.mockResolvedValue(Zero);
 
     const tokenContract = raiden.deps.getTokenContract(
       await raiden.deps.userDepositContract.functions.token(),
@@ -413,6 +418,7 @@ describe('udcDepositEpic', () => {
     const raiden = await makeRaiden(undefined, false);
     const { userDepositContract } = raiden.deps;
     userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
+    userDepositContract.functions.total_deposit.mockResolvedValue(Zero);
 
     const tokenContract = raiden.deps.getTokenContract(
       await raiden.deps.userDepositContract.functions.token(),
@@ -452,6 +458,7 @@ describe('udcDepositEpic', () => {
     const raiden = await makeRaiden(undefined, false);
     const { userDepositContract } = raiden.deps;
     userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
+    userDepositContract.functions.total_deposit.mockResolvedValue(Zero);
 
     const tokenContract = raiden.deps.getTokenContract(
       await raiden.deps.userDepositContract.functions.token(),
@@ -483,6 +490,7 @@ describe('udcDepositEpic', () => {
     const raiden = await makeRaiden(undefined, false);
     const { userDepositContract } = raiden.deps;
     userDepositContract.functions.effectiveBalance.mockResolvedValue(prevDeposit);
+    userDepositContract.functions.total_deposit.mockResolvedValue(prevDeposit);
 
     const tokenContract = raiden.deps.getTokenContract(
       await raiden.deps.userDepositContract.functions.token(),
@@ -501,6 +509,7 @@ describe('udcDepositEpic', () => {
 
     const depositTx = makeTransaction(undefined, { to: userDepositContract.address });
     userDepositContract.functions.deposit.mockResolvedValue(depositTx);
+    userDepositContract.functions.effectiveBalance.mockResolvedValue(balance);
 
     await raiden.start();
     raiden.store.dispatch(udcDeposit.request({ deposit }, { totalDeposit: balance }));
@@ -515,7 +524,7 @@ describe('udcDepositEpic', () => {
     );
     expect(raiden.output).toContainEqual(
       udcDeposit.success(
-        { txHash: depositTx.hash! as Hash, txBlock: expect.any(Number), confirmed: true },
+        { balance, txHash: depositTx.hash! as Hash, txBlock: expect.any(Number), confirmed: true },
         { totalDeposit: balance },
       ),
     );

@@ -1299,14 +1299,17 @@ describe('Raiden', () => {
     });
 
     test('deposit success', async () => {
-      expect.assertions(1);
-      await raiden.mint(await raiden.userDepositTokenAddress(), 10);
+      expect.assertions(3);
+      await raiden.mint(await raiden.userDepositTokenAddress(), 20);
       await expect(raiden.depositToUDC(10)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+      await expect(raiden.depositToUDC(5)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(bigNumberify(15));
     });
 
-    test('withdraw success', async () => {
-      expect.assertions(5);
+    test('withdraw success!', async () => {
+      expect.assertions(7);
       const deposit = bigNumberify(100) as UInt<32>;
+      const newDeposit = bigNumberify(30) as UInt<32>;
       const withdraw = bigNumberify(80) as UInt<32>;
       await raiden.mint(await raiden.userDepositTokenAddress(), deposit);
       await expect(raiden.depositToUDC(deposit)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
@@ -1325,6 +1328,12 @@ describe('Raiden', () => {
           amount: withdraw,
         }),
       ]);
+
+      await expect(raiden.depositToUDC(newDeposit)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
+      await provider.mine(confirmationBlocks * 2);
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(
+        deposit.sub(withdraw).add(newDeposit),
+      );
     });
 
     test('withdraw success with restart', async () => {
