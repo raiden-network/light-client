@@ -3,7 +3,6 @@ import {
   catchError,
   concatMap,
   filter,
-  groupBy,
   ignoreElements,
   map,
   mergeMap,
@@ -59,37 +58,29 @@ export function matrixMessageSendEpic(
     filter(isActionOf(messageSend.request)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     mergeMap((action) => matrix$.pipe(map((matrix) => ({ action, matrix })))),
-    groupBy(({ action }) => action.meta.address),
     // merge all inner/grouped observables, so different user's "queues" can be parallel
-    mergeMap((grouped$) =>
-      // per-user "queue"
-      grouped$.pipe(
-        // each per-user "queue" (observable) are processed serially (because concatMap)
-        // TODO: batch all pending messages in a single send message request, with retry
-        concatMap(({ action, matrix }) => {
-          const body: string =
-            typeof action.payload.message === 'string'
-              ? action.payload.message
-              : encodeJsonMessage(action.payload.message);
-          const content = { body, msgtype: 'm.text' };
-          // wait for address to be monitored, online & have joined a non-global room with us
-          return waitMemberAndSend$(
-            action.meta.address,
-            matrix,
-            'm.room.message',
-            content,
-            { log, latest$, config$ },
-            true, // alowRtc
-          ).pipe(
-            map((via) => messageSend.success({ via }, action.meta)),
-            catchError((err) => {
-              log.error('messageSend error', err, action.meta);
-              return of(messageSend.failure(err, action.meta));
-            }),
-          );
+    mergeMap(({ action, matrix }) => {
+      const body: string =
+        typeof action.payload.message === 'string'
+          ? action.payload.message
+          : encodeJsonMessage(action.payload.message);
+      const content = { body, msgtype: 'm.text' };
+      // wait for address to be monitored, online & have joined a non-global room with us
+      return waitMemberAndSend$(
+        action.meta.address,
+        matrix,
+        'm.room.message',
+        content,
+        { log, latest$, config$ },
+        true, // alowRtc
+      ).pipe(
+        map((via) => messageSend.success({ via }, action.meta)),
+        catchError((err) => {
+          log.error('messageSend error', err, action.meta);
+          return of(messageSend.failure(err, action.meta));
         }),
-      ),
-    ),
+      );
+    }),
   );
 }
 
@@ -215,21 +206,24 @@ export function matrixMessageReceivedEpic(
         // take up to an arbitrary timeout to presence status for the sender
         // AND the room in which this message was sent to be in sender's address room queue
         takeUntil(timer(httpTimeout)),
-        mergeMap(function* ({ presences }) {
+        mergeMap(({ presences }) => {
           const presence = getPresenceByUserId(presences, event.getSender())!;
-          for (const line of (event.getContent().body ?? '').split('\n')) {
-            const message = parseMessage(line, presence.meta.address, { log });
-            yield messageReceived(
-              {
-                text: line,
-                message,
-                ts: event.event.origin_server_ts ?? Date.now(),
-                userId: presence.payload.userId,
-                ...(room ? { roomId: room.roomId } : {}),
-              },
-              presence.meta,
-            );
-          }
+          const lines: string[] = (event.getContent().body ?? '').split('\n');
+          return from(lines).pipe(
+            map((line) => {
+              const message = parseMessage(line, presence.meta.address, { log });
+              return messageReceived(
+                {
+                  text: line,
+                  message,
+                  ts: event.event.origin_server_ts ?? Date.now(),
+                  userId: presence.payload.userId,
+                  ...(room ? { roomId: room.roomId } : {}),
+                },
+                presence.meta,
+              );
+            }),
+          );
         }),
       ),
     ),
