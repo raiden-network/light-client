@@ -220,10 +220,8 @@ describe('RaidenService', () => {
       const tokenBalance = await raidenService.getTokenBalance('0xtoken');
 
       expect(raiden.getTokenBalance).toHaveBeenCalledTimes(1);
-      expect(raiden.getTokenBalance).toHaveBeenCalledWith('0xtoken');
-      expect(tokenBalance).toEqual(
-        expect.stringContaining('1000000000000000000')
-      );
+      expect(raiden.getTokenBalance).toHaveBeenCalledWith('0xtoken', undefined);
+      expect(tokenBalance).toEqual(balance);
     });
 
     test('resolves when channel open and deposit are successful', async () => {
@@ -549,10 +547,6 @@ describe('RaidenService', () => {
               ...createToken('0x2'),
               balance: One,
             },
-            {
-              address: '0xuserdeposittoken',
-              balance: new BigNumber('1'),
-            },
           ];
 
           beforeEach(() => {
@@ -572,7 +566,7 @@ describe('RaidenService', () => {
             await expect(
               raidenService.getRaidenAccountBalances()
             ).resolves.toMatchObject(tokens);
-            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(3);
+            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(2);
           });
 
           test('load from cache if found', async () => {
@@ -587,7 +581,7 @@ describe('RaidenService', () => {
             await expect(
               raidenService.getRaidenAccountBalances()
             ).resolves.toMatchObject(tokens);
-            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(2);
+            expect(raiden.getTokenInfo).toHaveBeenCalledTimes(1);
           });
         });
       });

@@ -120,7 +120,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import { Token } from '@/model/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
@@ -141,11 +141,13 @@ import { BigNumber } from 'ethers/utils';
     Spinner,
   },
   computed: {
+    ...mapState(['raidenAccountBalance']),
     ...mapGetters(['udcToken', 'allTokens']),
   },
 })
 export default class Withdrawal extends Mixins(BlockieMixin) {
-  allTokens: Token[];
+  allTokens!: Token[];
+  raidenAccountBlanace!: string;
   udcToken!: Token;
   balances: Token[] = [];
   loading: boolean = true;
@@ -168,7 +170,7 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
     );
 
     this.balances = updatedTokenBalances.filter((token) =>
-      new BigNumber(token.balance).gt(Zero)
+      (token.balance as BigNumber).gt(Zero)
     );
     this.loading = false;
   }

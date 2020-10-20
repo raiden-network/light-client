@@ -711,12 +711,12 @@ export default class RaidenService {
   async getTokenBalance(
     tokenAddress: string,
     raidenAccount?: string
-  ): Promise<string> {
+  ): Promise<BigNumber> {
     const tokenBalance = await this.raiden.getTokenBalance(
       tokenAddress,
       raidenAccount
     );
-    return tokenBalance.toString();
+    return tokenBalance;
   }
 }
 
