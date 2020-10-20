@@ -1,4 +1,4 @@
-import { Observable, of, fromEvent, timer, throwError, combineLatest } from 'rxjs';
+import { Observable, of, fromEvent, timer, throwError, combineLatest, EMPTY, merge } from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
@@ -7,11 +7,11 @@ import {
   withLatestFrom,
   take,
   retryWhen,
-  startWith,
+  switchMap,
   pluck,
 } from 'rxjs/operators';
+import { Room, MatrixClient, EventType, MatrixEvent, RoomMember } from 'matrix-js-sdk';
 import curry from 'lodash/curry';
-import { Room, MatrixClient, EventType } from 'matrix-js-sdk';
 
 import { Capabilities } from '../../constants';
 import { RaidenConfig } from '../../config';
@@ -70,25 +70,24 @@ function waitMember$(
   { latest$ }: Pick<RaidenEpicDeps, 'latest$'>,
 ) {
   return combineLatest([
-    latest$.pipe(
-      pluckDistinct('presences', address),
-      filter((presence) => !!presence?.payload.available),
-    ),
+    latest$.pipe(pluckDistinct('presences', address)),
     latest$.pipe(
       map(({ state }) => state.transport.rooms?.[address]?.[0]),
       // wait for a room to exist (created or invited) for address
       filter(isntNil),
       distinctUntilChanged(),
+      switchMap((roomId) => getRoom$(matrix, roomId)),
     ),
-    fromEvent(matrix, 'Room').pipe(startWith(null)),
-    fromEvent(matrix, 'RoomMember.membership').pipe(startWith(null)),
   ]).pipe(
-    filter(
-      ([presence, roomId]) =>
-        matrix.getRoom(roomId)?.getMember(presence.payload.userId)?.membership === 'join',
-    ),
-    pluck(1),
-    take(1),
+    switchMap(([presence, room]) => {
+      if (!presence.payload.available) return EMPTY;
+      const member = room.getMember(presence.payload.userId);
+      if (member?.membership === 'join') return of(room.roomId);
+      return fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
+        filter(([, { roomId, membership }]) => roomId === room.roomId && membership === 'join'),
+        pluck(1, 'roomId'),
+      );
+    }),
   );
 }
 
@@ -115,21 +114,27 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
   allowRtc = false,
 ): Observable<string> {
   const RETRY_COUNT = 3; // is this relevant enough to become a constant/setting?
-  return latest$.pipe(
-    filter(({ presences }) => !!presences[address]?.payload.available),
+  return merge(
+    // if webRTC channel is open, use it
+    latest$.pipe(
+      pluck('rtc', address),
+      filter((channel) => allowRtc && channel?.readyState === 'open'),
+    ),
+    // if available and Capabilities.TO_DEVICE enabled on both ends, use ToDevice messages
+    combineLatest([latest$, config$]).pipe(
+      filter(
+        ([{ presences }, { caps }]) =>
+          !!(
+            presences[address]?.payload.available &&
+            getCap(caps, Capabilities.TO_DEVICE) &&
+            getCap(presences[address].payload.caps, Capabilities.TO_DEVICE)
+          ),
+      ),
+      pluck(0, 'presences', address, 'payload', 'userId'),
+    ),
+    waitMember$(matrix, address, { latest$ }),
+  ).pipe(
     take(1),
-    withLatestFrom(config$),
-    mergeMap(([{ presences, rtc }, { caps }]) => {
-      // if available & open, use channel
-      if (allowRtc && rtc[address]?.readyState === 'open') return of(rtc[address]);
-      // if available and Capabilities.TO_DEVICE enabled on both ends, use ToDevice messages
-      if (
-        getCap(caps, Capabilities.TO_DEVICE) &&
-        getCap(presences[address].payload.caps, Capabilities.TO_DEVICE)
-      )
-        return of(presences[address].payload.userId);
-      return waitMember$(matrix, address, { latest$ });
-    }),
     mergeMap(async (via) => {
       if (typeof via !== 'string') via.send(content.body);
       // via RTC channel
@@ -145,12 +150,12 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
       // up to RETRY_COUNT times; if it continues to error, throws down
       err$.pipe(
         withLatestFrom(config$),
-        mergeMap(([err, { pollingInterval }], i) => {
-          if (i < RETRY_COUNT - 1) {
-            log.warn(`messageSend error, retrying ${i + 1}/${RETRY_COUNT}`, err);
+        mergeMap(([err, { pollingInterval }], count) => {
+          // always retry rate-limit errors
+          if (count < RETRY_COUNT - 1 || err?.httpStatus === 429) {
+            log.warn(`messageSend error, retrying ${count + 1}/${RETRY_COUNT}`, err);
             return timer(pollingInterval);
-            // give up
-          } else return throwError(err);
+          } else return throwError(err); // give up
         }),
       ),
     ),
