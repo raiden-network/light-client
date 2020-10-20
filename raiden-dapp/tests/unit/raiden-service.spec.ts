@@ -220,10 +220,8 @@ describe('RaidenService', () => {
       const tokenBalance = await raidenService.getTokenBalance('0xtoken');
 
       expect(raiden.getTokenBalance).toHaveBeenCalledTimes(1);
-      expect(raiden.getTokenBalance).toHaveBeenCalledWith('0xtoken');
-      expect(tokenBalance).toEqual(
-        expect.stringContaining('1000000000000000000')
-      );
+      expect(raiden.getTokenBalance).toHaveBeenCalledWith('0xtoken', undefined);
+      expect(tokenBalance).toEqual(balance);
     });
 
     test('resolves when channel open and deposit are successful', async () => {

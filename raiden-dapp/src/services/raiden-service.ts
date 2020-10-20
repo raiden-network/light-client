@@ -669,7 +669,7 @@ export default class RaidenService {
     if (!raiden.mainAddress) {
       return [];
     }
-    const allTokens = await raiden.getTokenList();
+    const allTokenAddresses = await raiden.getTokenList();
     const balances: Tokens = {};
     const fetchTokenBalance = async (address: string): Promise<void> =>
       raiden.getTokenBalance(address, raiden.address).then((balance) => {
@@ -681,7 +681,7 @@ export default class RaidenService {
         }
       });
 
-    await asyncPool(6, allTokens, fetchTokenBalance);
+    await asyncPool(6, allTokenAddresses, fetchTokenBalance);
     const tokens: Tokens = {};
     Object.keys(balances).forEach((address) => {
       const cached = this.store.state.tokens[address];
@@ -708,9 +708,15 @@ export default class RaidenService {
     await this.raiden.monitorToken(address);
   }
 
-  async getTokenBalance(tokenAddress: string): Promise<string> {
-    const tokenBalance = await this.raiden.getTokenBalance(tokenAddress);
-    return tokenBalance.toString();
+  async getTokenBalance(
+    tokenAddress: string,
+    raidenAccount?: string
+  ): Promise<BigNumber> {
+    const tokenBalance = await this.raiden.getTokenBalance(
+      tokenAddress,
+      raidenAccount
+    );
+    return tokenBalance;
   }
 }
 
