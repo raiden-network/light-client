@@ -49,8 +49,13 @@ export const udcDeposit = createAsyncAction(
   'udc/deposit/failure',
   t.intersection([t.type({ deposit: UInt(32) }), t.partial({ subkey: t.boolean })]),
   t.union([
-    t.undefined,
-    t.type({ txHash: Hash, txBlock: t.number, confirmed: t.union([t.undefined, t.boolean]) }),
+    t.type({ balance: UInt(32) }),
+    t.type({
+      balance: UInt(32),
+      txHash: Hash,
+      txBlock: t.number,
+      confirmed: t.union([t.undefined, t.boolean]),
+    }),
   ]),
 );
 export namespace udcDeposit {

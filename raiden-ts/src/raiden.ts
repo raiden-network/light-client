@@ -1199,17 +1199,19 @@ export class Raiden {
 
     const deposit = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
     assert(deposit.gt(Zero), ErrorCodes.DTA_NON_POSITIVE_NUMBER, this.log.info);
-    const balance = await getUdcBalance(this.deps.latest$);
-    const meta = { totalDeposit: balance.add(deposit) as UInt<32> };
+    const deposited = await this.deps.userDepositContract.functions.total_deposit(this.address);
+    const meta = { totalDeposit: deposited.add(deposit) as UInt<32> };
 
-    const mined = asyncActionToPromise(udcDeposit, meta, this.action$).then((res) => res?.txHash);
+    const mined = asyncActionToPromise(udcDeposit, meta, this.action$, false).then(
+      (res) => res.txHash,
+    );
     this.store.dispatch(udcDeposit.request({ deposit, subkey }, meta));
 
     let txHash = await mined;
     onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: txHash! } });
 
     const confirmed = asyncActionToPromise(udcDeposit, meta, this.action$, true).then(
-      (res) => res!.txHash,
+      (res) => res.txHash,
     );
     txHash = await confirmed;
     onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash } });

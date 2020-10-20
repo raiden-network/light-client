@@ -459,13 +459,16 @@ export function monitorUdcBalanceEpic(
        * etc), but merged on the top-level observable, therefore connectivity issues can cause
        * exceptions which would shutdown the SDK. Let's swallow the error here, since this will be
        * retried on next block, which should only be emitted after connectivity is reestablished */
-      defer(
-        async () => userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
+      defer(async () =>
+        Promise.all([
+          userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
+          userDepositContract.functions.total_deposit(address) as Promise<UInt<32>>,
+        ]),
       ).pipe(catchError(constant(EMPTY))),
     ),
     withLatestFrom(latest$),
-    filter(([balance, { udcBalance }]) => !udcBalance.eq(balance)),
-    map(([balance]) => udcDeposit.success(undefined, { totalDeposit: balance })),
+    filter(([[balance], { udcBalance }]) => !udcBalance.eq(balance)),
+    map(([[balance, totalDeposit]]) => udcDeposit.success({ balance }, { totalDeposit })),
   );
 }
 
@@ -480,7 +483,7 @@ function makeUdcDeposit$(
     Promise.all([
       tokenContract.functions.balanceOf(sender) as Promise<UInt<32>>,
       tokenContract.functions.allowance(sender, userDepositContract.address) as Promise<UInt<32>>,
-      userDepositContract.functions.effectiveBalance(address),
+      userDepositContract.functions.total_deposit(address),
     ]),
   ).pipe(
     mergeMap(([balance, allowance, deposited]) => {
@@ -547,14 +550,22 @@ export function udcDepositEpic(
             { log },
           );
         }),
-        map(([, receipt]) =>
-          udcDeposit.success(
-            {
-              txHash: receipt.transactionHash,
-              txBlock: receipt.blockNumber,
-              confirmed: undefined, // let confirmationEpic confirm this action
-            },
-            action.meta,
+        mergeMap(([, receipt]) =>
+          defer(
+            async () =>
+              userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
+          ).pipe(
+            map((balance) =>
+              udcDeposit.success(
+                {
+                  balance,
+                  txHash: receipt.transactionHash,
+                  txBlock: receipt.blockNumber,
+                  confirmed: undefined, // let confirmationEpic confirm this action
+                },
+                action.meta,
+              ),
+            ),
           ),
         ),
         catchError((error) => of(udcDeposit.failure(error, action.meta))),

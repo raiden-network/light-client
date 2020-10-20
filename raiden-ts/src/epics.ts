@@ -79,7 +79,7 @@ export function getLatest$(
 ): Observable<Latest> {
   const udcBalance$ = action$.pipe(
     filter(udcDeposit.success.is),
-    pluck('meta', 'totalDeposit'),
+    pluck('payload', 'balance'),
     // starts with max, to prevent receiving starting as disabled before actual balance is fetched
     startWith(MaxUint256 as UInt<32>),
   );
