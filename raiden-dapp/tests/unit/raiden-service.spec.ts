@@ -772,7 +772,7 @@ describe('RaidenService', () => {
     const config = { caps: { [Capabilities.NO_RECEIVE]: true } };
     subject.next(config);
 
-    expect(store.commit).toHaveBeenLastCalledWith('updateConfig', config);
+    expect(store.commit).toHaveBeenCalledWith('updateConfig', config);
   });
 
   test('notify that monitor balance proof was send', async () => {

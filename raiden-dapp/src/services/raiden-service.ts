@@ -284,12 +284,12 @@ export default class RaidenService {
   }
 
   private async notifyNoReceive() {
-    await this.store.dispatch('notifications/notify', {
-      title: i18n.t('receiving-disabled-dialog.title'),
-      description: i18n.t('receiving-disabled-dialog.body'),
+    await this.store.commit('notifications/notificationAddOrReplace', {
+      icon: i18n.t('notifications.no-receive.icon'),
+      title: i18n.t('notifications.no-receive.title'),
+      description: i18n.t('notifications.no-receive.description'),
       importance: NotificationImportance.HIGH,
       context: NotificationContext.WARNING,
-      duration: -1,
     } as NotificationPayload);
   }
 

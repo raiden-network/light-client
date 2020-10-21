@@ -31,6 +31,11 @@
       "title": "Balance proof submitted",
       "description": "A monitoring service successfully submitted a balance proof for a channel claiming a reward of {reward} {symbol}. Service: {monitoringService}, Partner: {partner}, Transaction: {txHash}"
     },
+    "no-receive": {
+      "icon": "notification_receive",
+      "title": "Receiving transfers disabled",
+      "description": "Check configuration and/or UDC balance"
+    },
     "withdrawal": {
       "success": {
         "title": "User Deposit Withdrawal",
@@ -522,10 +527,6 @@
   "error-message": {
     "problem": "Problem:",
     "solution": "Solution:"
-  },
-  "receiving-disabled-dialog": {
-    "title": "Receiving transfers is disabled",
-    "body": "This may be due to configuration or UDC deposit being too low. If your client can receive, ensure you have enough UDC balance to pay for Monitoring Service (on Account menu) to enable receiving again."
   },
   "errors": {
     "RDN_GENERAL_ERROR": {
