@@ -64,8 +64,6 @@ export function createPersisterMiddleware(
     const prevState = store.getState();
     const result = next(action);
     const state = store.getState();
-    // TODO: clear completed transfers
-
     if (state === prevState) return result;
 
     for (const k in state) {

@@ -11,6 +11,7 @@ import {
   AsyncSubject,
   Subject,
   OperatorFunction,
+  asapScheduler,
 } from 'rxjs';
 import {
   catchError,
@@ -36,6 +37,7 @@ import {
   startWith,
   first,
   mapTo,
+  observeOn,
 } from 'rxjs/operators';
 import * as t from 'io-ts';
 
@@ -225,13 +227,10 @@ function handleCandidates$(
 function setupCallerDataChannel$(
   matrix: MatrixClient,
   start$: Subject<null>,
-  info: CallInfo,
+  { callId, peerId, peerAddress }: CallInfo,
   config: RaidenConfig,
   deps: Pick<RaidenEpicDeps, 'log' | 'latest$' | 'config$'>,
 ): Observable<RtcConnPair> {
-  const { callId, peerId, peerAddress } = info;
-  const { log } = deps;
-
   return defer(() => getMatrixIceServers(matrix)).pipe(
     mergeMap((matrixTurnServers) => {
       const connection = new RTCPeerConnection({
@@ -239,10 +238,9 @@ function setupCallerDataChannel$(
       });
       // we relay on retries, no need to enforce ordered
       const dataChannel = connection.createDataChannel(callId, { ordered: false });
-      Object.assign(dataChannel, { connection });
       return merge(
         // despite 'never' emitting, candidates$ have side-effects while/when subscribed
-        handleCandidates$(connection, matrix, start$, info, deps),
+        handleCandidates$(connection, matrix, start$, { callId, peerId, peerAddress }, deps),
         defer(async () => connection.createOffer()).pipe(
           mergeMap(async (offer) => {
             await connection.setLocalDescription(offer);
@@ -265,18 +263,16 @@ function setupCallerDataChannel$(
                 { msgtype: 'm.notice', body: jsonStringify(body) },
                 deps,
               ).pipe(
-                tap((e) => log.debug('RTC: sent invite', callId, e)),
+                tap((e) => deps.log.debug('RTC: sent invite', callId, e)),
                 ignoreElements(),
               ),
             );
           }),
           take(1),
-          tap((event) => {
-            log.info('RTC: got answer', callId);
-            if (event.call_id !== callId)
-              log.warn(
-                `RTC: callId mismatch, continuing: we="${callId}", them="${event.call_id}"`,
-              );
+          tap(({ call_id: peerCallId }) => {
+            deps.log.info('RTC: got answer', callId);
+            if (peerCallId !== callId)
+              deps.log.warn('RTC: callId mismatch, continuing', { callId, peerCallId });
           }),
           mergeMap(async (event) => connection.setRemoteDescription(event)),
           tap(() => {
@@ -295,28 +291,25 @@ function setupCallerDataChannel$(
 function setupCalleeDataChannel$(
   matrix: MatrixClient,
   start$: Subject<null>,
-  info: CallInfo,
+  { callId, peerId, peerAddress }: CallInfo,
   config: RaidenConfig,
   deps: Pick<RaidenEpicDeps, 'log' | 'latest$' | 'config$'>,
 ): Observable<RtcConnPair> {
-  const { callId, peerId, peerAddress } = info;
-  const { log } = deps;
-
   return matrixWebrtcEvents$(matrix, RtcEventType.offer, peerId, config).pipe(
-    tap(() => log.info('RTC: got invite', callId)),
+    tap(() => deps.log.info('RTC: got invite', callId)),
     mergeMap((event) =>
       from(getMatrixIceServers(matrix)).pipe(map((serv) => [event, serv] as const)),
     ),
     mergeMap(([event, matrixTurnServers]) => {
       if (event.call_id !== callId)
-        log.warn(`RTC: callId mismatch, continuing: we="${callId}", them="${event.call_id}"`);
+        deps.log.warn('RTC: callId mismatch, continuing', { callId, peerCallId: event.call_id });
       // create connection only upon invite/offer
       const connection = new RTCPeerConnection({
         iceServers: [...matrixTurnServers, ...config.fallbackIceServers],
       });
       return merge(
         // despite 'never' emitting, candidates$ have side-effects while/when subscribed
-        handleCandidates$(connection, matrix, start$, info, deps),
+        handleCandidates$(connection, matrix, start$, { callId, peerId, peerAddress }, deps),
         defer(async () => connection.setRemoteDescription(event)).pipe(
           mergeMap(async () => connection.createAnswer()),
           mergeMap(async (answer) => {
@@ -339,16 +332,14 @@ function setupCalleeDataChannel$(
             );
           }),
           tap((e) => {
-            log.debug('RTC: sent answer', callId, e);
+            deps.log.debug('RTC: sent answer', callId, e);
             start$.next(null);
             start$.complete();
           }),
           ignoreElements(),
         ),
         fromEvent<RTCDataChannelEvent>(connection, 'datachannel').pipe(
-          pluck('channel'),
-          tap((channel) => Object.assign(channel, { connection })),
-          map((channel) => [connection, channel] as const),
+          map(({ channel }) => [connection, channel] as const),
         ),
       );
     }),
@@ -401,6 +392,7 @@ function listenDataChannel(
           // i.e. times out to retry whole connection if no first message is received on time;
           // emits rtcChannel action on first message, instead of on 'open' event
           fromEvent<MessageEvent>(dataChannel, 'message').pipe(
+            observeOn(asapScheduler),
             tap((e) => log.debug('RTC: dataChannel message', callId, e)),
             pluck('data'),
             filter((d: unknown): d is string => typeof d === 'string'),
@@ -428,120 +420,114 @@ function listenDataChannel(
     );
 }
 
+function makeStopSubject$(
+  { callId, peerAddress }: CallInfo,
+  matrix: MatrixClient,
+  { httpTimeout }: Pick<RaidenConfig, 'httpTimeout'>,
+  deps: Pick<RaidenEpicDeps, 'log' | 'latest$' | 'config$'>,
+) {
+  const stop$ = new AsyncSubject<boolean>();
+  stop$
+    .pipe(
+      filter((errored) => errored),
+      mergeMap(() => {
+        const body: t.TypeOf<typeof RtcHangup> = {
+          type: RtcEventType.hangup,
+          call_id: callId,
+        };
+        return waitMemberAndSend$(
+          peerAddress,
+          matrix,
+          'm.room.message',
+          { msgtype: 'm.notice', body: jsonStringify(body) },
+          deps,
+        ).pipe(takeUntil(timer(httpTimeout / 10)));
+      }),
+      // take until while$ didn't complate
+      takeUntil(deps.latest$.pipe(ignoreElements(), endWith(null))),
+    )
+    .subscribe(); // when stopping, if not shutting down, send hangup
+  return stop$;
+}
+
+function makeCallId(addresses: [Address, Address]) {
+  return addresses.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())).join('|');
+}
+
 // handles presence changes for a single peer address (grouped)
 function handlePresenceChange$(
-  action$: Observable<RaidenAction>,
-  presence$: Observable<matrixPresence.success>,
+  action: matrixPresence.success,
+  matrix: MatrixClient,
+  config: RaidenConfig,
   deps: RaidenEpicDeps,
-) {
-  const { log, address, latest$, matrix$, config$ } = deps;
-  return presence$.pipe(
-    distinctUntilChanged(
-      (a, b) =>
-        a.payload.userId === b.payload.userId &&
-        a.payload.available === b.payload.available &&
-        !!getCap(a.payload.caps, Capabilities.WEBRTC) ===
-          !!getCap(b.payload.caps, Capabilities.WEBRTC),
-    ),
-    withLatestFrom(matrix$, config$),
-    filter(
-      ([action, , { caps }]) =>
-        !!getCap(action.payload.caps, Capabilities.WEBRTC) && !!getCap(caps, Capabilities.WEBRTC),
-    ),
-    switchMap(([action, matrix, config]) => {
-      // if peer goes offline in Matrix, reset dataChannel & unsubscribe defer to close dataChannel
-      if (!action.payload.available) return of(rtcChannel(undefined, action.meta));
+): Observable<rtcChannel | messageReceived> {
+  // if peer goes offline in Matrix, reset dataChannel & unsubscribe defer to close dataChannel
+  if (!action.payload.available) return of(rtcChannel(undefined, action.meta));
 
-      const callId = [address, action.meta.address]
-        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-        .join('|');
-      const isCaller = callId.startsWith(address);
-      const timeoutGen = exponentialBackoff(config.httpTimeout, 2 * config.httpTimeout, 1.2);
+  const { log, address, latest$, config$ } = deps;
+  const callId = makeCallId([address, action.meta.address]);
+  const isCaller = callId.startsWith(address);
+  // since the lower and upper limits for timeouts are relatively closer, we reduce the
+  // multiplier to give more iterations before topping
+  const timeoutGen = exponentialBackoff(config.httpTimeout, 2 * config.httpTimeout, 1.2);
 
-      return defer(() => {
-        const info: CallInfo = {
-          callId,
-          peerId: action.payload.userId,
-          peerAddress: action.meta.address,
-        };
+  return defer(() => {
+    const info: CallInfo = {
+      callId,
+      peerId: action.payload.userId,
+      peerAddress: action.meta.address,
+    };
 
-        // start$ indicates invite/offer/answer cycle completed, and candidates can be exchanged
-        const start$ = new AsyncSubject<null>();
-        // stop$ indicates dataChannel closed (maybe by peer), and teardown should take place
-        const stop$ = new AsyncSubject<boolean>();
+    // start$ indicates invite/offer/answer cycle completed, and candidates can be exchanged
+    const start$ = new AsyncSubject<null>();
+    // stop$ indicates dataChannel closed (maybe by peer), and teardown should take place
+    const stop$ = makeStopSubject$(info, matrix, config, deps);
 
-        let dataChannel$;
-        if (isCaller) {
-          // caller
-          dataChannel$ = setupCallerDataChannel$(matrix, start$, info, config, deps);
-        } else {
-          // callee
-          dataChannel$ = setupCalleeDataChannel$(matrix, start$, info, config, deps);
-        }
+    let dataChannel$;
+    if (isCaller) dataChannel$ = setupCallerDataChannel$(matrix, start$, info, config, deps);
+    else dataChannel$ = setupCalleeDataChannel$(matrix, start$, info, config, deps);
 
-        stop$
-          .pipe(
-            filter((errored) => errored),
-            mergeMap(() => {
-              const body: t.TypeOf<typeof RtcHangup> = {
-                type: RtcEventType.hangup,
-                call_id: callId,
-              };
-              return waitMemberAndSend$(
-                action.meta.address,
-                matrix,
-                'm.room.message',
-                { msgtype: 'm.notice', body: jsonStringify(body) },
-                deps,
-              ).pipe(takeUntil(timer(config.httpTimeout / 10)));
-            }),
-            takeUntil(action$.pipe(ignoreElements(), endWith(null))),
-          )
-          .subscribe(); // when stopping, if not shutting down, send hangup
+    const { value: timeoutValue } = timeoutGen.next();
+    if (!timeoutValue) return EMPTY; // shouldn't happen with exponentialBackoff
 
-        const { value: timeoutValue } = timeoutGen.next();
-        if (!timeoutValue) return EMPTY; // shouldn't happen with exponentialBackoff
-
-        // listenDataChannel$ needs channel$:Observable<[RTCDataChannel]>, but we must include/
-        // merge setup and monitoring Observable<never>'s to get things moving on subscription
-        return merge(
-          dataChannel$,
-          // throws and restart if peer hangs up
-          matrixWebrtcEvents$(matrix, RtcEventType.hangup, info.peerId, config).pipe(
-            // no need for specific error since this is just logged and ignored
-            mergeMapTo(throwError(new Error(hangUpError))),
-          ),
-        ).pipe(
-          listenDataChannel(timeoutValue, info, deps),
-          takeUntil(stop$),
-          catchError((err) => {
-            // emit false for these errors, to prevent delayed hangup event to be sent
-            stop$.next(![hangUpError, closedError].includes(err?.message));
-            stop$.complete();
-            log.info("Couldn't set up WebRTC dataChannel, retrying", callId, err?.message ?? err);
-            return EMPTY;
-          }),
-          // if it ends by takeUntil or catchError, output rtcChannel to reset latest$ mapping
-          endWith(rtcChannel(undefined, { address: action.meta.address })),
-        );
-      }).pipe(
-        // if it disconnects for any reason, but partner is still online,
-        // try to reconnect by repeating from 'defer'
-        repeatWhen((completed$) =>
-          completed$.pipe(
-            withLatestFrom(latest$, config$),
-            mergeMap(
-              ([, { presences }, { pollingInterval }]) =>
-                !presences[action.meta.address]?.payload.available
-                  ? EMPTY
-                  : isCaller
-                  ? timer(pollingInterval) // caller waits some time to retry
-                  : of(null), // callee restart listening immediately,
-            ),
-          ),
+    // listenDataChannel$ needs channel$:Observable<[RTCDataChannel]>, but we must include/
+    // merge setup and monitoring Observable<never>'s to get things moving on subscription
+    return merge(
+      dataChannel$,
+      // throws and restart if peer hangs up
+      matrixWebrtcEvents$(matrix, RtcEventType.hangup, info.peerId, config).pipe(
+        // no need for specific error since this is just logged and ignored
+        mergeMapTo(throwError(new Error(hangUpError))),
+      ),
+    ).pipe(
+      listenDataChannel(timeoutValue, info, deps),
+      takeUntil(stop$),
+      catchError((err) => {
+        // emit false for these errors, to prevent delayed hangup event to be sent
+        stop$.next(![hangUpError, closedError].includes(err?.message));
+        stop$.complete();
+        log.info("Couldn't set up WebRTC dataChannel, retrying", callId, err?.message ?? err);
+        return EMPTY;
+      }),
+      // if it ends by takeUntil or catchError, output rtcChannel to reset latest$ mapping
+      endWith(rtcChannel(undefined, { address: action.meta.address })),
+    );
+  }).pipe(
+    // if it disconnects for any reason, but partner is still online,
+    // try to reconnect by repeating from 'defer'
+    repeatWhen((completed$) =>
+      completed$.pipe(
+        withLatestFrom(latest$, config$),
+        mergeMap(
+          ([, { presences }, { pollingInterval }]) =>
+            !presences[action.meta.address]?.payload.available
+              ? EMPTY
+              : isCaller
+              ? timer(pollingInterval) // caller waits some time to retry
+              : of(null), // callee restart listening immediately,
         ),
-      );
-    }),
+      ),
+    ),
   );
 }
 
@@ -560,6 +546,26 @@ export function rtcConnectEpic(
   return action$.pipe(
     filter(matrixPresence.success.is),
     groupBy((action) => action.meta.address),
-    mergeMap((grouped$) => handlePresenceChange$(action$, grouped$, deps)),
+    mergeMap((grouped$) => {
+      const { matrix$, config$ } = deps;
+      return grouped$.pipe(
+        distinctUntilChanged(
+          (a, b) =>
+            a.payload.userId === b.payload.userId &&
+            a.payload.available === b.payload.available &&
+            !!getCap(a.payload.caps, Capabilities.WEBRTC) ===
+              !!getCap(b.payload.caps, Capabilities.WEBRTC),
+        ),
+        withLatestFrom(matrix$, config$),
+        filter(
+          ([action, , { caps }]) =>
+            !!getCap(action.payload.caps, Capabilities.WEBRTC) &&
+            !!getCap(caps, Capabilities.WEBRTC),
+        ),
+        switchMap(([action, matrix, config]) =>
+          handlePresenceChange$(action, matrix, config, deps),
+        ),
+      );
+    }),
   );
 }

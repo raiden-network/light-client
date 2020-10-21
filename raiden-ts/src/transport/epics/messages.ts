@@ -1,4 +1,15 @@
-import { Observable, of, EMPTY, fromEvent, timer, defer, from, merge } from 'rxjs';
+import {
+  Observable,
+  of,
+  EMPTY,
+  fromEvent,
+  timer,
+  defer,
+  from,
+  merge,
+  asapScheduler,
+  scheduled,
+} from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -72,7 +83,7 @@ export function matrixMessageSendEpic(
         'm.room.message',
         content,
         { log, latest$, config$ },
-        true, // alowRtc
+        true, // allowRtc
       ).pipe(
         map((via) => messageSend.success({ via }, action.meta)),
         catchError((err) => {
@@ -209,7 +220,7 @@ export function matrixMessageReceivedEpic(
         mergeMap(({ presences }) => {
           const presence = getPresenceByUserId(presences, event.getSender())!;
           const lines: string[] = (event.getContent().body ?? '').split('\n');
-          return from(lines).pipe(
+          return scheduled(lines, asapScheduler).pipe(
             map((line) => {
               const message = parseMessage(line, presence.meta.address, { log });
               return messageReceived(
