@@ -5,6 +5,7 @@
 - [#2078] Check for overflows before sending transfers
 - [#2094] Fix TransferState's timestamps missing
 - [#2174] Fix a few transport issues triggered on high-load scenarios
+- [#2229] Fix nonce mismatch caused by room waiting overhead
 - [#2275] Fix mismatch between UDC totalDeposit and effectiveBalance
 
 ### Added
@@ -22,6 +23,7 @@
 [#2174]: https://github.com/raiden-network/light-client/pull/2174
 [#2204]: https://github.com/raiden-network/light-client/issues/2204
 [#2205]: https://github.com/raiden-network/light-client/issues/2205
+[#2229]: https://github.com/raiden-network/light-client/issues/2229
 [#2275]: https://github.com/raiden-network/light-client/issues/2225
 
 ## [0.11.1] - 2020-08-18

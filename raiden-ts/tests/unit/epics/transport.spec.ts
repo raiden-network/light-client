@@ -466,6 +466,10 @@ describe('transport epic', () => {
         avatar_url: `mxc://raiden.network/cap?Delivery=0`,
       });
 
+      matrix._http.authedRequest.mockResolvedValueOnce({
+        presence: 'offline',
+        last_active_ago: 123,
+      });
       matrix.emit('event', {
         getType: () => 'm.presence',
         getSender: () => partnerUserId,
@@ -979,28 +983,14 @@ describe('transport epic', () => {
       expect(matrix.sendEvent).not.toHaveBeenCalled();
 
       // a wild Room appears
-      matrix.getRoom.mockReturnValue({
+      matrix.emit('Room', {
         roomId,
         name: roomId,
-        getMember: jest.fn(
-          (userId) =>
-            ({
-              roomId,
-              userId,
-              name: userId,
-              membership: 'join',
-              user: null,
-            } as any),
-        ),
-        getJoinedMembers: jest.fn(() => []),
+        getMember: jest.fn(),
+        getJoinedMembers: jest.fn(),
         getCanonicalAlias: jest.fn(() => roomId),
         getAliases: jest.fn(() => []),
-        currentState: {
-          roomId,
-          setStateEvents: jest.fn(),
-          members: {},
-        } as any,
-      } as any);
+      });
 
       // user joins later
       matrix.emit(
