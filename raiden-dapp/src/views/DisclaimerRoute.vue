@@ -1,7 +1,7 @@
 <template>
-  <v-container fluid>
-    <div class="disclaimer">
-      <div class="disclaimer__paragraphs font-weight-light">
+  <div class="disclaimer">
+    <div class="disclaimer__content">
+      <div class="disclaimer__content__paragraphs font-weight-light">
         <p
           v-for="(paragraph, index) in $t('disclaimer.paragraphs')"
           :key="index"
@@ -11,14 +11,14 @@
       </div>
       <v-checkbox
         v-model="checkedAccept"
-        class="disclaimer__accept-checkbox"
+        class="disclaimer__content__accept-checkbox"
         :label="$t('disclaimer.accept-checkbox')"
         dense
         hide-details
       />
       <v-checkbox
         v-model="checkedPersist"
-        class="disclaimer__persist-checkbox"
+        class="disclaimer__content__persist-checkbox"
         :label="$t('disclaimer.persist-checkbox')"
         dense
         hide-details
@@ -31,7 +31,7 @@
       sticky
       @click="accept"
     />
-  </v-container>
+  </div>
 </template>
 
 <script lang="ts">
@@ -70,29 +70,36 @@ export default class Disclaimer extends Vue {
 @import '@/scss/mixins';
 
 .disclaimer {
-  border-top: solid 1px $primary-color;
-  display: flex;
-  flex-direction: column;
-  height: calc(100% - 45px);
-  padding: 30px 30px 0 30px;
+  height: 100%;
   width: 100%;
-  @include respond-to(handhelds) {
-    padding-top: 10px;
-  }
 
-  &__paragraphs {
-    font-size: 15px;
-    overflow-y: auto;
-    text-align: justify;
-    @extend .themed-scrollbar;
-  }
+  &__content {
+    border-top: solid 1px $primary-color;
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 45px);
+    padding: 30px 45px 0 45px;
+    @include respond-to(handhelds) {
+      padding: 10px 15px 0 15px;
+    }
 
-  &__accept-checkbox,
-  &__persist-checkbox {
-    ::v-deep {
-      .v-label {
-        font-size: 14px;
-        padding-bottom: 2px;
+    &__paragraphs {
+      flex: 1;
+      font-size: 15px;
+      overflow-y: auto;
+      text-align: justify;
+      @extend .themed-scrollbar;
+    }
+
+    &__accept-checkbox,
+    &__persist-checkbox {
+      flex: none;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      ::v-deep {
+        .v-label {
+          font-size: 13px;
+        }
       }
     }
   }
