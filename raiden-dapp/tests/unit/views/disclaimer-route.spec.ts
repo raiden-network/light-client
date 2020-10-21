@@ -37,13 +37,16 @@ describe('DisclaimerRoute.vue', () => {
   });
 
   async function clickAcceptCheckbox() {
-    wrapper.find('.disclaimer__accept-checkbox').find('input').trigger('click');
+    wrapper
+      .find('.disclaimer__content__accept-checkbox')
+      .find('input')
+      .trigger('click');
     await wrapper.vm.$nextTick();
   }
 
   async function clickPersistCheckbox() {
     wrapper
-      .find('.disclaimer__persist-checkbox')
+      .find('.disclaimer__content__persist-checkbox')
       .find('input')
       .trigger('click');
     await wrapper.vm.$nextTick();
