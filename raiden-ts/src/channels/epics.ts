@@ -5,7 +5,6 @@ import {
   EMPTY,
   merge,
   interval,
-  defer,
   concat as concat$,
   combineLatest,
   throwError,
@@ -77,6 +76,7 @@ import {
   txNonceErrors,
   txFailErrors,
   approveIfNeeded$,
+  networkErrorRetryPredicate,
 } from './utils';
 
 /**
@@ -653,12 +653,15 @@ export function channelOpenEpic(
 
       return concat$(
         deposit$,
-        defer(() =>
-          tokenNetworkContract.functions.openChannel(
-            address,
-            partner,
-            action.payload.settleTimeout ?? settleTimeout,
-          ),
+        retryAsync$(
+          () =>
+            tokenNetworkContract.functions.openChannel(
+              address,
+              partner,
+              action.payload.settleTimeout ?? settleTimeout,
+            ),
+          provider.pollingInterval,
+          networkErrorRetryPredicate,
         ).pipe(
           assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log }),
           // also retry txFailErrors: if it's caused by partner having opened, takeUntil will see
@@ -689,14 +692,19 @@ function makeDeposit$(
   [sender, address, partner]: [Address, Address, Address],
   deposit: UInt<32>,
   channelId$: Observable<number>,
-  { log, config$ }: Pick<RaidenEpicDeps, 'log' | 'config$'>,
+  { log, provider, config$ }: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$'>,
 ): Observable<channelDeposit.failure> {
   // retryTx from here
-  return defer(() =>
-    Promise.all([
-      tokenContract.functions.balanceOf(sender) as Promise<UInt<32>>,
-      tokenContract.functions.allowance(sender, tokenNetworkContract.address) as Promise<UInt<32>>,
-    ]),
+  return retryAsync$(
+    () =>
+      Promise.all([
+        tokenContract.functions.balanceOf(sender) as Promise<UInt<32>>,
+        tokenContract.functions.allowance(sender, tokenNetworkContract.address) as Promise<
+          UInt<32>
+        >,
+      ]),
+    provider.pollingInterval,
+    networkErrorRetryPredicate,
   ).pipe(
     withLatestFrom(config$),
     mergeMap(([[balance, allowance], { minimumAllowance }]) =>
@@ -712,17 +720,27 @@ function makeDeposit$(
     take(1),
     mergeMap((id) =>
       // get current 'view' of own/'address' deposit, despite any other pending deposits
-      tokenNetworkContract.functions
-        .getChannelParticipantInfo(id, address, partner)
-        .then(({ 0: totalDeposit }) => [id, totalDeposit] as const),
+      retryAsync$(
+        () =>
+          tokenNetworkContract.functions
+            .getChannelParticipantInfo(id, address, partner)
+            .then(({ 0: totalDeposit }) => [id, totalDeposit] as const),
+        provider.pollingInterval,
+        networkErrorRetryPredicate,
+      ),
     ),
     mergeMap(([id, totalDeposit]) =>
       // send setTotalDeposit transaction
-      tokenNetworkContract.functions.setTotalDeposit(
-        id,
-        address,
-        totalDeposit.add(deposit),
-        partner,
+      retryAsync$(
+        () =>
+          tokenNetworkContract.functions.setTotalDeposit(
+            id,
+            address,
+            totalDeposit.add(deposit),
+            partner,
+          ),
+        provider.pollingInterval,
+        networkErrorRetryPredicate,
       ),
     ),
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log }),
@@ -757,6 +775,7 @@ function makeDeposit$(
  * @param deps.main - Main signer/address
  * @param deps.getTokenContract - Token contract instance getter
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
+ * @param deps.provider - Eth provider
  * @param deps.config$ - Config observable
  * @param deps.latest$ - Latest observable
  * @returns Observable of channelDeposit.failure actions
@@ -771,6 +790,7 @@ export function channelDepositEpic(
     main,
     getTokenContract,
     getTokenNetworkContract,
+    provider,
     config$,
     latest$,
   }: RaidenEpicDeps,
@@ -837,7 +857,7 @@ export function channelDepositEpic(
                     [onchainAddress, address, partner],
                     action.payload.deposit,
                     channelId$,
-                    { log, config$ },
+                    { log, provider, config$ },
                   ),
                 ),
               );
@@ -926,17 +946,20 @@ export function channelCloseEpic(
       // sign counter balance proof, then send closeChannel transaction with our signature
       return from(signer.signMessage(closingMessage) as Promise<Signature>).pipe(
         mergeMap((closingSignature) =>
-          defer(() =>
-            tokenNetworkContract.functions.closeChannel(
-              channel.id,
-              partner,
-              address,
-              balanceHash,
-              nonce,
-              additionalHash,
-              nonClosingSignature,
-              closingSignature,
-            ),
+          retryAsync$(
+            () =>
+              tokenNetworkContract.functions.closeChannel(
+                channel.id,
+                partner,
+                address,
+                balanceHash,
+                nonce,
+                additionalHash,
+                nonClosingSignature,
+                closingSignature,
+              ),
+            provider.pollingInterval,
+            networkErrorRetryPredicate,
           ).pipe(
             assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log }),
             retryTx(provider.pollingInterval, undefined, undefined, { log }),
@@ -1031,17 +1054,20 @@ export function channelUpdateEpic(
       // send updateNonClosingBalanceProof transaction
       return from(signer.signMessage(nonClosingMessage) as Promise<Signature>).pipe(
         mergeMap((nonClosingSignature) =>
-          defer(() =>
-            tokenNetworkContract.functions.updateNonClosingBalanceProof(
-              channel.id,
-              partner,
-              address,
-              balanceHash,
-              nonce,
-              additionalHash,
-              closingSignature,
-              nonClosingSignature,
-            ),
+          retryAsync$(
+            () =>
+              tokenNetworkContract.functions.updateNonClosingBalanceProof(
+                channel.id,
+                partner,
+                address,
+                balanceHash,
+                nonce,
+                additionalHash,
+                closingSignature,
+                nonClosingSignature,
+              ),
+            provider.pollingInterval,
+            networkErrorRetryPredicate,
           ).pipe(
             assertTx('updateNonClosingBalanceProof', ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED, {
               log,
@@ -1163,12 +1189,15 @@ export function channelSettleEpic(
         return of(channelSettle.failure(error, action.meta));
       }
 
-      return from(
-        // fetch closing/updated balanceHash for each end
-        Promise.all([
-          tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, address, partner),
-          tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, partner, address),
-        ]),
+      return retryAsync$(
+        () =>
+          // fetch closing/updated balanceHash for each end
+          Promise.all([
+            tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, address, partner),
+            tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, partner, address),
+          ]),
+        provider.pollingInterval,
+        networkErrorRetryPredicate,
       ).pipe(
         mergeMap(([{ 3: ownBH }, { 3: partnerBH }]) => {
           let ownBP$;
@@ -1236,18 +1265,21 @@ export function channelSettleEpic(
                 ] as const;
             }),
             mergeMap(([part1, part2]) =>
-              defer(() =>
-                tokenNetworkContract.functions.settleChannel(
-                  channel.id,
-                  part1[0],
-                  part1[1].transferredAmount,
-                  part1[1].lockedAmount,
-                  part1[1].locksroot,
-                  part2[0],
-                  part2[1].transferredAmount,
-                  part2[1].lockedAmount,
-                  part2[1].locksroot,
-                ),
+              retryAsync$(
+                () =>
+                  tokenNetworkContract.functions.settleChannel(
+                    channel.id,
+                    part1[0],
+                    part1[1].transferredAmount,
+                    part1[1].lockedAmount,
+                    part1[1].locksroot,
+                    part2[0],
+                    part2[1].transferredAmount,
+                    part2[1].lockedAmount,
+                    part2[1].locksroot,
+                  ),
+                provider.pollingInterval,
+                networkErrorRetryPredicate,
               ).pipe(
                 assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log }),
                 retryTx(provider.pollingInterval, undefined, undefined, { log }),
@@ -1348,8 +1380,10 @@ export function channelUnlockEpic(
       );
 
       // send unlock transaction
-      return defer(() =>
-        tokenNetworkContract.functions.unlock(action.payload.id, address, partner, locks),
+      return retryAsync$(
+        () => tokenNetworkContract.functions.unlock(action.payload.id, address, partner, locks),
+        provider.pollingInterval,
+        networkErrorRetryPredicate,
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log }),
         retryTx(provider.pollingInterval, undefined, undefined, { log }),
