@@ -325,6 +325,15 @@ workflows:
           mode: staging
           requires:
             - build_sdk
+      - test_sdk_unit:
+          requires:
+            - build_sdk
+      - test_sdk_integration:
+          requires:
+            - build_sdk
+      - test_dapp_unit:
+          requires:
+            - build_dapp
       - deploy_gh_pages:
           public_path: /staging
           requires:
