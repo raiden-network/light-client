@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Install and Run the dApp</title>
+    <meta name="generator" content="VuePress 1.7.1">
+    
+    <meta name="description" content="">
+    
+    <link rel="preload" href="/assets/css/0.styles.21626407.css" as="style"><link rel="preload" href="/assets/js/app.a9bb8004.js" as="script"><link rel="preload" href="/assets/js/2.06a275aa.js" as="script"><link rel="preload" href="/assets/js/12.07e74a7c.js" as="script"><link rel="prefetch" href="/assets/js/10.7c099714.js"><link rel="prefetch" href="/assets/js/11.2f73f9a5.js"><link rel="prefetch" href="/assets/js/13.820fa16a.js"><link rel="prefetch" href="/assets/js/14.c213ee42.js"><link rel="prefetch" href="/assets/js/15.78e60d3c.js"><link rel="prefetch" href="/assets/js/16.bc096a50.js"><link rel="prefetch" href="/assets/js/17.defc8963.js"><link rel="prefetch" href="/assets/js/3.8a417a4c.js"><link rel="prefetch" href="/assets/js/4.517b54bc.js"><link rel="prefetch" href="/assets/js/5.9c783d97.js"><link rel="prefetch" href="/assets/js/6.8fd4b31f.js"><link rel="prefetch" href="/assets/js/7.7a71fb28.js"><link rel="prefetch" href="/assets/js/8.5e59ce5f.js"><link rel="prefetch" href="/assets/js/9.ffc17d4d.js">
+    <link rel="stylesheet" href="/assets/css/0.styles.21626407.css">
+  </head>
+  <body>
+    <div id="app" data-server-rendered="true"><div class="theme-container no-sidebar"><header class="navbar"><div class="sidebar-button"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" viewBox="0 0 448 512" class="icon"><path fill="currentColor" d="M436 124H12c-6.627 0-12-5.373-12-12V80c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12z"></path></svg></div> <a href="/" class="home-link router-link-active"></a> <div class="links"><div class="search-box"><input aria-label="Search" autocomplete="off" spellcheck="false" value=""> <!----></div> <!----></div></header> <div class="sidebar-mask"></div> <aside class="sidebar"><!---->  <!----> </aside> <main class="page"> <div class="theme-default-content content__default"><h1 id="install-and-run-the-dapp"><a href="#install-and-run-the-dapp" class="header-anchor">#</a> Install and Run the dApp</h1> <p>Clone the Raiden Light Client repository.</p> <div class="language-bash extra-class"><pre class="language-bash"><code><span class="token function">git</span> clone --recurse-submodules https://github.com/raiden-network/light-client.git
+</code></pre></div><h2 id="build-the-sdk"><a href="#build-the-sdk" class="header-anchor">#</a> Build the SDK</h2> <p>Change to the <code>raiden-ts</code> directory inside your newly cloned project, install the dependencies and build the SDK.</p> <div class="language-bash extra-class"><pre class="language-bash"><code><span class="token builtin class-name">cd</span> light-client
+<span class="token function">pnpm</span> run build --filter raiden-ts
+</code></pre></div><h2 id="run-the-dapp-locally"><a href="#run-the-dapp-locally" class="header-anchor">#</a> Run the dApp locally</h2> <p>Start the development server by running the following command:</p> <div class="language-bash extra-class"><pre class="language-bash"><code><span class="token function">pnpm</span> run serve --filter raiden-dapp
+</code></pre></div><p>Once the development server has been started, navigate to <code>http://localhost:8080</code> to start using the Raiden dApp.</p> <blockquote><p>Note that for the Raiden dApp to work it requires MetaMask or some other Web3 provider (wallet apps with dApp support) to be installed on your browser.</p></blockquote></div> <footer class="page-edit"><!----> <!----></footer> <!----> </main></div><div class="global-ui"></div></div>
+    <script src="/assets/js/app.a9bb8004.js" defer></script><script src="/assets/js/2.06a275aa.js" defer></script><script src="/assets/js/12.07e74a7c.js" defer></script>
+  </body>
+</html>

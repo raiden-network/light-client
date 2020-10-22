@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Closing a Channel</title>
+    <meta name="generator" content="VuePress 1.7.1">
+    
+    <meta name="description" content="">
+    
+    <link rel="preload" href="/assets/css/0.styles.21626407.css" as="style"><link rel="preload" href="/assets/js/app.a9bb8004.js" as="script"><link rel="preload" href="/assets/js/2.06a275aa.js" as="script"><link rel="preload" href="/assets/js/8.5e59ce5f.js" as="script"><link rel="prefetch" href="/assets/js/10.7c099714.js"><link rel="prefetch" href="/assets/js/11.2f73f9a5.js"><link rel="prefetch" href="/assets/js/12.07e74a7c.js"><link rel="prefetch" href="/assets/js/13.820fa16a.js"><link rel="prefetch" href="/assets/js/14.c213ee42.js"><link rel="prefetch" href="/assets/js/15.78e60d3c.js"><link rel="prefetch" href="/assets/js/16.bc096a50.js"><link rel="prefetch" href="/assets/js/17.defc8963.js"><link rel="prefetch" href="/assets/js/3.8a417a4c.js"><link rel="prefetch" href="/assets/js/4.517b54bc.js"><link rel="prefetch" href="/assets/js/5.9c783d97.js"><link rel="prefetch" href="/assets/js/6.8fd4b31f.js"><link rel="prefetch" href="/assets/js/7.7a71fb28.js"><link rel="prefetch" href="/assets/js/9.ffc17d4d.js">
+    <link rel="stylesheet" href="/assets/css/0.styles.21626407.css">
+  </head>
+  <body>
+    <div id="app" data-server-rendered="true"><div class="theme-container no-sidebar"><header class="navbar"><div class="sidebar-button"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" viewBox="0 0 448 512" class="icon"><path fill="currentColor" d="M436 124H12c-6.627 0-12-5.373-12-12V80c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12z"></path></svg></div> <a href="/" class="home-link router-link-active"></a> <div class="links"><div class="search-box"><input aria-label="Search" autocomplete="off" spellcheck="false" value=""> <!----></div> <!----></div></header> <div class="sidebar-mask"></div> <aside class="sidebar"><!---->  <!----> </aside> <main class="page"> <div class="theme-default-content content__default"><h1 id="closing-a-channel"><a href="#closing-a-channel" class="header-anchor">#</a> Closing a Channel</h1> <p>Only close a channel if you really don't plan on using the respective channel anymore.</p> <div class="language-typescript extra-class"><pre class="language-typescript"><code><span class="token keyword">await</span> raiden<span class="token punctuation">.</span><span class="token function">closeChannel</span><span class="token punctuation">(</span><span class="token string">'0xtoken'</span><span class="token punctuation">,</span> <span class="token string">'0xpartner'</span><span class="token punctuation">)</span>
+# resolves to close transaction hash<span class="token punctuation">,</span> after it <span class="token keyword">is</span> mined
+
+## channels$ output<span class="token operator">:</span>
+# Raiden channels<span class="token operator">:</span> <span class="token punctuation">{</span>
+#   <span class="token string">'0xtoken'</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+#     <span class="token string">'0xpartner'</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+#       token<span class="token operator">:</span> <span class="token string">'0xtoken'</span><span class="token punctuation">,</span>
+#       tokenNetwork<span class="token operator">:</span> <span class="token string">'0xtokenNetwork'</span><span class="token punctuation">,</span>
+#       partner<span class="token operator">:</span> <span class="token string">'0xpartner'</span><span class="token punctuation">,</span>
+#       state<span class="token operator">:</span> <span class="token string">'closed'</span><span class="token punctuation">,</span>
+#       ownDeposit<span class="token operator">:</span> <span class="token function">BigNumber</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+#       partnerDeposit<span class="token operator">:</span> <span class="token function">BigNumber</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+#       id<span class="token operator">:</span> <span class="token number">123</span><span class="token punctuation">,</span>
+#       settleTimeout<span class="token operator">:</span> <span class="token number">500</span><span class="token punctuation">,</span>
+#       openBlock<span class="token operator">:</span> <span class="token number">5123</span>
+#       closeBlock<span class="token operator">:</span> <span class="token number">5999</span><span class="token punctuation">,</span>
+#       balance<span class="token operator">:</span> <span class="token function">BigNumber</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+#       capacity<span class="token operator">:</span> <span class="token function">BigNumber</span><span class="token punctuation">(</span><span class="token number">90</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+#     <span class="token punctuation">}</span>
+#   <span class="token punctuation">}</span>
+# <span class="token punctuation">}</span>
+</code></pre></div></div> <footer class="page-edit"><!----> <!----></footer> <!----> </main></div><div class="global-ui"></div></div>
+    <script src="/assets/js/app.a9bb8004.js" defer></script><script src="/assets/js/2.06a275aa.js" defer></script><script src="/assets/js/8.5e59ce5f.js" defer></script>
+  </body>
+</html>
