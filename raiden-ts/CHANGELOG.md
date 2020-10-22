@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.12.0] - 2020-10-22
 ### Fixed
 - [#2078] Check for overflows before sending transfers
 - [#2094] Fix TransferState's timestamps missing
@@ -33,7 +35,6 @@
 
 [#2049]: https://github.com/raiden-network/light-client/issues/2049
 [#2054]: https://github.com/raiden-network/light-client/pull/2054
-
 
 ## [0.11.0] - 2020-08-04
 ### Fixed
@@ -333,7 +334,9 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/raiden-network/light-client/compare/v0.11.1...v0.12.0
+[0.11.1]: https://github.com/raiden-network/light-client/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/raiden-network/light-client/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/raiden-network/light-client/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/raiden-network/light-client/compare/v0.8.0...v0.9.0
