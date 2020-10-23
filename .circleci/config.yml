@@ -103,10 +103,10 @@ jobs:
   build_sdk:
     <<: *executor_parameter
     executor: << parameters.executor >>
-    working_directory: << pipeline.parameters.working_directory >>
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
     steps:
       - attach_workspace: *attach_options
-      - run: yarn workspace raiden-ts build
+      - run: yarn build
       - persist_to_workspace:
           root: << pipeline.parameters.working_directory >>
           paths:
@@ -119,19 +119,17 @@ jobs:
         type: enum
         enum: ["production", "staging", "development", "e2e", "raiden-package"]
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>
+    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Build dapp
-          command: yarn workspace raiden-dapp build --mode << parameters.mode >>
+          command: yarn build --mode << parameters.mode >>
       - run:
           name: Compress dapp
-          working_directory: raiden-dapp
           command: tar -czvf dapp.tar.gz dist
       - store_artifacts:
-          path: raiden-dapp/dapp.tar.gz
-          destination: dapp.tar.gz
+          path: dapp.tar.gz
       - persist_to_workspace:
           root: << pipeline.parameters.working_directory >>
           paths:
@@ -139,21 +137,22 @@ jobs:
 
   build_cli:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>
+    working_directory: << pipeline.parameters.working_directory >>/raiden-cli
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Build CLI
-          command: yarn workspace raiden-cli run build && yarn workspace raiden-cli run build:bundle
+          command: yarn run build
+      - run:
+          name: Bundle CLI
+          command: yarn run build:bundle
       - run:
           name: Compress CLI bundle
-          working_directory: raiden-cli
           command: >
             cp -av ./raiden bundle/ ;
             tar -czvf raiden-cli.tar.gz bundle --transform='s/^bundle/raiden-cli/'
       - store_artifacts:
-          path: raiden-cli/raiden-cli.tar.gz
-          destination: raiden-cli.tar.gz
+          path: raiden-cli.tar.gz
 
   lint:
     executor: base-executor
@@ -164,12 +163,12 @@ jobs:
 
   test_sdk_unit:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: yarn workspace raiden-ts run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
+          command: yarn run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -182,12 +181,12 @@ jobs:
 
   test_sdk_integration:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run integration tests
-          command: yarn workspace raiden-ts run test:integration --ci --runInBand --reporters=default --reporters=jest-junit
+          command: yarn run test:integration --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -200,15 +199,14 @@ jobs:
 
   test_sdk_e2e:
     executor: e2e-environment-executor
-    working_directory: << pipeline.parameters.working_directory >>
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run end-to-end tests
           command: >
             source /etc/profile.d/smartcontracts.sh &&
-            yarn workspace raiden-ts run test:e2e
-            --ci --runInBand
+            yarn run test:e2e --ci --runInBand
             --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
@@ -222,12 +220,12 @@ jobs:
 
   test_dapp_unit:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>
+    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: yarn workspace raiden-dapp run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
+          command: yarn run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -240,18 +238,18 @@ jobs:
 
   test_dapp_e2e:
     executor: e2e-environment-executor
-    working_directory: << pipeline.parameters.working_directory >>
+    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run e2e tests
-          command: yarn workspace raiden-dapp run test:e2e --headless
+          command: yarn run test:e2e --headless
       - store_test_results:
-          path: raiden-dapp/tests/e2e/results/reports
+          path: tests/e2e/results/reports
       - store_artifacts:
-          path: raiden-dapp/tests/e2e/results/videos
+          path: tests/e2e/results/videos
       - store_artifacts:
-          path: raiden-dapp/tests/e2e/results/screenshots
+          path: tests/e2e/results/screenshots
 
   generate_documentation:
     executor: base-executor
@@ -282,7 +280,7 @@ jobs:
 
   publish_artifact:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -290,7 +288,7 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
       - run:
           name: Publish on npm
-          command: yarn workspace raiden-ts publish
+          command: yarn publish
 
 workflows:
   version: 2
