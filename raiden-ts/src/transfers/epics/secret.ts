@@ -465,7 +465,7 @@ export function transferSecretRegisterEpic(
       const contract = getContractWithSigner(secretRegistryContract, onchainSigner);
 
       return defer(() => contract.functions.registerSecret(action.payload.secret)).pipe(
-        assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log }),
+        assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log, provider }),
         retryTx(provider.pollingInterval, undefined, undefined, { log }),
         // transferSecretRegister.success handled by monitorSecretRegistryEpic
         ignoreElements(),

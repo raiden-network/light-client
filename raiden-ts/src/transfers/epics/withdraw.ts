@@ -195,7 +195,10 @@ export function withdrawSendTxEpic(
               action.payload.message.signature,
             ),
           ).pipe(
-            assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, { log }),
+            assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, {
+              log,
+              provider,
+            }),
             retryTx(provider.pollingInterval, undefined, undefined, { log }),
           );
         }),
