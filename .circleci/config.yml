@@ -1,17 +1,26 @@
 version: 2.1
 
-var_2: &cache_key raiden-{{ .Branch }}-{{ checksum "pnpm-lock.yaml" }}
-var_1: &docker_image raidennetwork/lightclient-node-pnpm:latest
-var_3: &working_dir ~/src
-var_4: &dapp_working_dir ~/src/raiden-dapp
+parameters:
+  base_executor_image_tag:
+    type: string
+    default: lts-browsers
 
-anchor_1: &package_lock_key
-  key: *cache_key
+  e2e_environment_executor_image_tag:
+    type: string
+    default: latest
 
-anchor_2: &attach_options
-  at: *working_dir
+  working_directory:
+    type: string
+    default: ~/src
 
-anchor_3: &executor_parameter
+  yarn_cache_key:
+    type: string
+    default: raiden-{{ .Branch }}-{{ checksum "yarn-lock.yaml" }}
+
+anchor_1: &attach_options
+  at: << pipeline.parameters.working_directory >>
+
+anchor_2: &executor_parameter
   parameters:
     executor:
       type: executor
@@ -26,37 +35,34 @@ anchor_3: &run_on_release_tag_only
 
 executors:
   base-executor:
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     docker:
-      - image: circleci/node:lts-browsers
+      - image: circleci/node:<< pipeline.parameters.base_executor_image_tag >>
 
   e2e-environment-executor:
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     docker:
-      - image: raidennetwork/lightclient-e2e-environment:latest
+      - image: raidennetwork/lightclient-e2e-environment:<< pipeline.parameters.e2e_environment_executor_image_tag >>
 
 jobs:
   install:
     <<: *executor_parameter
     executor: << parameters.executor >>
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - checkout
       - run: git submodule sync
       - run: git submodule update --init
       - restore_cache:
-          name: Restore Yarn Package Cache
-          keys:
-            - raiden-v1-yarn-{{ checksum "yarn.lock" }}
-            - raiden-v1-yarn-
-      - run: pnpm install --prefer-frozen-lockfile
-          name: Save Yarn Package Cache
-          key: raiden-v1-yarn-{{ checksum "yarn.lock" }}
+          key: << pipeline.parameters.yarn_cache_key >>
+      - run: yarn install
+      - save_cache:
+          key: << pipeline.parameters.yarn_cache_key >>
           paths:
             - ./node_modules
             - ~/.cache # Cypress stores its stuff here.
       - persist_to_workspace:
-          root: *working_dir
+          root: << pipeline.parameters.working_directory >>
           paths:
             - ./*
 
@@ -83,14 +89,14 @@ jobs:
 
   lint:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run: yarn lint
 
   test_sdk_unit:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -108,7 +114,7 @@ jobs:
 
   test_sdk_integration:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -126,7 +132,7 @@ jobs:
 
   test_dapp_unit:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -144,7 +150,7 @@ jobs:
 
   test_dapp_e2e:
     executor: e2e-environment-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -160,12 +166,12 @@ jobs:
   build_sdk:
     <<: *executor_parameter
     executor: << parameters.executor >>
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run: yarn workspace raiden-ts build
       - persist_to_workspace:
-          root: *working_dir
+          root: << pipeline.parameters.working_directory >>
           paths:
             - ./*
 
@@ -176,7 +182,7 @@ jobs:
         type: enum
         enum: ["production", "staging", "development", "e2e", "raiden-package"]
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -189,13 +195,13 @@ jobs:
           path: raiden-dapp/dapp.tar.gz
           destination: dapp.tar.gz
       - persist_to_workspace:
-          root: *working_dir
+          root: << pipeline.parameters.working_directory >>
           paths:
             - ./*
 
   build_cli:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -213,12 +219,12 @@ jobs:
 
   generate_documentation:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run: cd docs && ./generate_documentation.sh
       - persist_to_workspace:
-          root: *working_dir
+          root: << pipeline.parameters.working_directory >>
           paths:
             - ./raiden-dapp/dist/docs
 
@@ -228,7 +234,7 @@ jobs:
         description: The public path where to reach deployment (must be correct according to the build mode)
         type: string
     executor: base-executor
-    working_directory: *dapp_working_dir
+    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
     steps:
       - attach_workspace: *attach_options
       - add_ssh_keys:
@@ -238,7 +244,7 @@ jobs:
 
   publish_artifact:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -250,7 +256,7 @@ jobs:
 
   test_sdk_e2e:
     executor: e2e-environment-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run:
