@@ -95,3 +95,14 @@ export const ErrorCodec = new t.Type<
     ...('details' in error ? { details: error.details } : {}),
   }),
 );
+
+/**
+ * Predicate to that fiters errors for retrieable network problems. To be used with `retryAsync$`.
+ *
+ * @param error - Error in question
+ * @returns `False`, if there was a retrieable network error.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function networkErrorRetryPredicate(error: any, {}): boolean {
+  return !(typeof error?.message === 'string' && error.message.includes(`invalid response`));
+}

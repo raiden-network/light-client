@@ -9,14 +9,15 @@ import { Signer } from 'ethers/abstract-signer';
 import { retryAsync$ } from '../utils/rx';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
+import { networkErrorRetryPredicate, RaidenError, ErrorCodes, assert } from '../utils/error';
 import { Address, UInt, decode, Signed, Signature } from '../utils/types';
 import { jsonParse, encode } from '../utils/data';
 import { Presences } from '../transport/types';
 import { getCap } from '../transport/utils';
 import { ChannelState } from '../channels/state';
-import { channelAmounts, channelKey, networkErrorRetryPredicate } from '../channels/utils';
+import { channelAmounts, channelKey } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
-import { RaidenError, ErrorCodes, assert } from '../utils/error';
+
 import { MessageTypeId } from '../messages/utils';
 import { Capabilities } from '../constants';
 import { isValidUrl } from '../helpers';

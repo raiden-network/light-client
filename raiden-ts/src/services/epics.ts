@@ -48,13 +48,12 @@ import {
   assertTx,
   retryTx,
   approveIfNeeded$,
-  networkErrorRetryPredicate,
 } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
-import { RaidenError, ErrorCodes, assert } from '../utils/error';
+import { RaidenError, ErrorCodes, assert, networkErrorRetryPredicate } from '../utils/error';
 import { pluckDistinct, retryAsync$ } from '../utils/rx';
 import { matrixPresence } from '../transport/actions';
 import { getCap } from '../transport/utils';
