@@ -21,7 +21,7 @@ PACKAGE_VERSION=$(cat package.json |
 # We disable the whole functionality because there no option exists to disable only automatic tagging.
 VERSION=$(pnpm version $1 --no-git-tag-version)
 echo "sdk version update updated to $VERSION"
-MESSAGE="$PACKAGE_VERSION -> $VERSION"
+MESSAGE="v$PACKAGE_VERSION -> $VERSION"
 
 cd ../raiden-dapp/
 

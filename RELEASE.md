@@ -14,11 +14,9 @@
     * [Publishing](#publishing)
 
 ## Preface
-In this guide we cover the steps required to create and publish a new release of the `raiden-ts` package. To create a new release you need to update the version of the package and proceed to publish to `GitHub` and `npm`.
+In this guide we cover the steps required to create and publish a new release. To create a new release you need to update the version of the package and proceed to publish to `GitHub` and `npm`.
 
 A new release might happen when a valid reason for it exists. Reasons for a new release include protocol upgrades, new features, bug fixes etc.
-
-> Note! This only considers the SDK versioning and releasing and not the dApp.
 
 Through this guide we assume that you work on a fork of the repository. We reference to the fork remote repository using `origin`, and to the Light Client repository using `upstream`.
 
@@ -30,20 +28,28 @@ In preparation for the release changes create a new branch:
 git checkout -b prepare_release
 ```
 
-Please ensure that you also update the [CHANGELOG.md](./raiden-ts/CHANGELOG.md) accordingly. You should have the changes for the new version tracked as `[Unreleased]`. You only need to replace `[Unreleased]` with the new version. 
+Please ensure that you also update the changelogs accordingly. You should have the changes for the new version tracked as `[Unreleased]`. You only need to replace `[Unreleased]` with the new version. Also make sure to add the link to the diff between the current and the new version and to update the link of the unreleased changes.
+
+For the release 0.12.0 this means the following diff:
+
+```diff
+- [unreleased]: https://github.com/raiden-network/light-client/compare/v0.11.0...HEAD
++ [Unreleased]: https://github.com/raiden-network/light-client/compare/v0.12.0...HEAD
++ [0.12.0]: https://github.com/raiden-network/light-client/compare/v0.11.1...v0.12.0
+```
 
 ### Increasing the version
 Initially you need to decide if the new release would require `patch`, `minor`, `major` upgrade. For more information you can check the [npm version](https://docs.npmjs.com/cli/version) documentation.
 
 #### Using the script
 
-Then you can proceed with the version upgrade and commit creation. If you use an environment that can execute bash scripts then you can just run [prepare-release.sh](https://github.com/raiden-network/light-client/blob/master/prepare-release.sh). 
+Then you can proceed with the version upgrade and commit creation. If you use an environment that can execute bash scripts then you can just run [prepare-release.sh](https://github.com/raiden-network/light-client/blob/master/prepare-release.sh).
 
 ```bash
 ./prepare-release.sh
 ```
 
-This script will bump the version according to the provided parameter and then it will create a commit with the message that looks like `0.22.0->0.22.1`.
+This script will bump the version according to the provided parameter and then it will create a commit with the message that looks like `v0.22.0->v0.22.1`.
 
 #### Manually preparing the release
 If for any reason you cannot run the script, you can proceed to prepare the release Pull Request manually.
@@ -54,20 +60,20 @@ Go to the `raiden-ts` directory to start bump the package version.
 cd raiden-ts
 ```
 
-Then run `pnpm version` to bump the version for`package.json`. Let's assume that we prepare for a new release containing a couple of minor bug fixes. You have to run the following command: 
+Then run `pnpm version` to bump the version for`package.json`. Let's assume that we prepare for a new release containing a couple of minor bug fixes. You have to run the following command:
 
 ```bash
 pnpm version patch
 ```
 
-Assuming `raiden-ts` was at version `0.22.0`, the command will update the package files' version tag to `0.22.1`. 
+Assuming `raiden-ts` was at version `0.22.0`, the command will update the package files' version tag to `0.22.1`.
 
 
-Then you need to create a new commit with the message `0.22.0->0.22.1`. After the new commit
+Then you need to create a new commit with the message `v0.22.0->v0.22.1`. After the new commit
 
 ```bash
 git add package.json
-git commit -m '0.22.0->0.22.1'
+git commit -m 'v0.22.0->v0.22.1'
 ```
 
 ## Creating a Pull Request
@@ -84,7 +90,7 @@ You need one approval for your Pull Request to get merged to master. After mergi
 ## Publishing on Github
 Since you need to deal with the GitHub release interface we strongly suggested you use it for the creation of the tag too.
 
-To draft a new GitHub release, visit the [release interface](https://github.com/kelsos/light-client/releases) and press the `Draft a new release` button. Then set `v0.22.1` as the `Tag version` and keep master as the `Target`. Then use `v0.22.1` as the release title.
+To draft a new GitHub release, visit the [release interface](https://github.com/raiden-network/light-client/releases) and press the `Draft a new release` button. Then set `v0.22.1` as the `Tag version` and keep master as the `Target`. Then use `v0.22.1` as the release title.
 
 Now you need prepare the release description. Don't forget to include the changelog entries for the specific version.
 
@@ -106,9 +112,9 @@ If you never published an update before you, need to login to `npm` with the cli
 
 ```bash
 pnpm login
-```  
+```
 
-You should follow the prompts displayed by the command. The command should create an `.npmrc` file in your home directory. This file contains your `authToken`. 
+You should follow the prompts displayed by the command. The command should create an `.npmrc` file in your home directory. This file contains your `authToken`.
 
 ### Publishing
 To publish you just need to run:
