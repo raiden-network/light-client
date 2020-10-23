@@ -497,6 +497,7 @@ function makeUdcDeposit$(
         userDepositContract.address as Address,
         ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
         { log, minimumAllowance },
+        pollingInterval,
       );
     }),
     // send setTotalDeposit transaction
