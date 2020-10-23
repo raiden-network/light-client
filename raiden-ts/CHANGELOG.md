@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- [#2240] Handle network problems when connecting to the Eth node gracefully
+
+[#2240]: https://github.com/raiden-network/light-client/issues/2240
 
 ## [0.12.0] - 2020-10-22
 ### Fixed
