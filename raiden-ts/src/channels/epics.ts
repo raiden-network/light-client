@@ -43,13 +43,14 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
 import { RaidenState } from '../state';
 import { ShutdownReason } from '../constants';
+import { networkErrorRetryPredicate, RaidenError, ErrorCodes, assert } from '../utils/error';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { pluckDistinct, distinctRecordValues, retryAsync$, takeIf } from '../utils/rx';
 import { fromEthersEvent, getNetwork, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
-import { RaidenError, ErrorCodes, assert } from '../utils/error';
+
 import { createBalanceHash, MessageTypeId } from '../messages/utils';
 import { TokenNetwork } from '../contracts/TokenNetwork';
 import { HumanStandardToken } from '../contracts/HumanStandardToken';
@@ -76,7 +77,6 @@ import {
   txNonceErrors,
   txFailErrors,
   approveIfNeeded$,
-  networkErrorRetryPredicate,
 } from './utils';
 
 /**

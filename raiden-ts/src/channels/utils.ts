@@ -26,7 +26,7 @@ import { HumanStandardToken } from '../contracts/HumanStandardToken';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { UInt, Address, Hash, Int, bnMax } from '../utils/types';
-import { RaidenError, assert, ErrorCodes } from '../utils/error';
+import { RaidenError, assert, ErrorCodes, networkErrorRetryPredicate } from '../utils/error';
 import { distinctRecordValues, retryAsync$ } from '../utils/rx';
 import { MessageType } from '../messages/types';
 import { Channel, ChannelBalances } from './state';
@@ -327,14 +327,3 @@ export function approveIfNeeded$(
   );
 }
 /* eslint-enable jsdoc/valid-types */
-
-/**
- * Predicate to that fiters erros for retrieable network problems. To be used with `retryAsync$`.
- *
- * @param error - Error in question
- * @returns `False`, if there was a retrieable network error.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function networkErrorRetryPredicate(error: any, {}): boolean {
-  return !(typeof error?.message === 'string' && error.message.includes(`invalid response`));
-}
