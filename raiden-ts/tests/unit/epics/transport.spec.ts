@@ -34,14 +34,6 @@ import { jsonParse, jsonStringify } from 'raiden-ts/utils/data';
 import { makeDefaultConfig } from 'raiden-ts/config';
 
 describe('transport epic', () => {
-      matrix._http.authedRequest.mockResolvedValueOnce({
-        presence: 'offline',
-        last_active_ago: 123,
-      });
-      matrix.emit('Room', {
-        getMember: jest.fn(),
-        getJoinedMembers: jest.fn(),
-      });
   const matrixServer = 'matrix.raiden.test'; // define later in fixture constant
   const partnerRoomId = `!partnerRoomId:${matrixServer}`;
   const accessToken = 'access_token';
@@ -435,6 +427,11 @@ describe('transport epic', () => {
       matrix.getProfileInfo = jest.fn().mockResolvedValueOnce({
         displayname: `${matrix.getUserId()}_display_name`,
         avatar_url: `mxc://raiden.network/cap?Delivery=0`,
+      });
+
+      matrix._http.authedRequest.mockResolvedValueOnce({
+        presence: 'offline',
+        last_active_ago: 123,
       });
 
       matrix.emit('event', {
@@ -959,7 +956,6 @@ describe('transport epic', () => {
 
       matrix.getRoom.mockReturnValue(null);
 
-      expect(matrix.sendEvent).not.toHaveBeenCalled();
       raiden.store.dispatch(
         matrixPresence.success(
           { userId: partnerMatrix.getUserId()!, available: true, ts: Date.now() },
@@ -970,29 +966,16 @@ describe('transport epic', () => {
         messageSend.request({ message }, { address: partner.address, msgId: message }),
       );
 
+      expect(matrix.sendEvent).not.toHaveBeenCalled();
       // a wild Room appears
-      matrix.getRoom.mockReturnValue({
+      matrix.emit('Room', {
         roomId,
         name: roomId,
-        getMember: jest.fn(
-          (userId) =>
-            ({
-              roomId,
-              userId,
-              name: userId,
-              membership: 'join',
-              user: null,
-            } as any),
-        ),
-        getJoinedMembers: jest.fn(() => []),
+        getMember: jest.fn(),
+        getJoinedMembers: jest.fn(),
         getCanonicalAlias: jest.fn(() => roomId),
         getAliases: jest.fn(() => []),
-        currentState: {
-          roomId,
-          setStateEvents: jest.fn(),
-          members: {},
-        } as any,
-      } as any);
+      });
 
       // user joins later
       matrix.emit(
