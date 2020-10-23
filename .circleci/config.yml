@@ -17,6 +17,10 @@ parameters:
     type: string
     default: raiden-{{ .Branch }}-{{ checksum "yarn-lock.yaml" }}
 
+  test_report_directory:
+    type: string
+    default: reports/junit
+
 anchor_1: &attach_options
   at: << pipeline.parameters.working_directory >>
 
@@ -26,7 +30,12 @@ anchor_2: &executor_parameter
       type: executor
       default: base-executor
 
-anchor_3: &run_on_release_tag_only
+anchor_3: &executor_shared_options
+  working_directory: << pipeline.parameters.working_directory >>
+  environment:
+    JEST_JUNIT_OUTPUT_DIR: << pipeline.parameters.test_report_directory >>
+
+anchor_4: &run_on_release_tag_only
   filters:
     tags:
       only: /^v\d+\.\d+\.\d+$/
@@ -35,12 +44,12 @@ anchor_3: &run_on_release_tag_only
 
 executors:
   base-executor:
-    working_directory: << pipeline.parameters.working_directory >>
+    <<: *executor_shared_options
     docker:
       - image: circleci/node:<< pipeline.parameters.base_executor_image_tag >>
 
   e2e-environment-executor:
-    working_directory: << pipeline.parameters.working_directory >>
+    <<: *executor_shared_options
     docker:
       - image: raidennetwork/lightclient-e2e-environment:<< pipeline.parameters.e2e_environment_executor_image_tag >>
 
@@ -64,17 +73,17 @@ commands:
     parameters:
       base_flag:
         type: enum
-        enum: ["sdk", "dapp", "cli"]
+        enum: [sdk, dapp, cli]
       test_kind_flag:
         type: enum
-        enum: ["unit", "integration", "e2e"]
+        enum: [unit, integration, e2e]
     steps:
       - store_test_results:
-          path: reports/junit
+          path: << pipeline.parameters.test_report_directory >>
       - store_artifacts:
-          path: reports/junit
+          path: << pipeline.parameters.test_report_directory >>
       - run:
-          name: "Upload test coverage results to CodeCov"
+          name: Upload test coverage results to CodeCov
           command: >
             bash <(curl -s https://codecov.io/bash) -C $CIRCLE_SHA1
             -F << parameters.base_flag >>
@@ -138,7 +147,7 @@ jobs:
       mode:
         description: Mode to configure the environment of the dApp build
         type: enum
-        enum: ["production", "staging", "development", "e2e", "raiden-package"]
+        enum: [production, staging, development, e2e, raiden-package]
     executor: base-executor
     working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
     steps:
@@ -176,8 +185,8 @@ jobs:
           path: raiden-cli.tar.gz
 
   lint:
-    executor: base-executor
     working_directory: << pipeline.parameters.working_directory >>
+    executor: base-executor
     steps:
       - attach_workspace: *attach_options
       - run: yarn lint
@@ -190,8 +199,6 @@ jobs:
       - run:
           name: Run unit tests
           command: yarn run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: unit
@@ -204,8 +211,6 @@ jobs:
       - run:
           name: Run integration tests
           command: yarn run test:integration --ci --runInBand --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: integration
@@ -221,8 +226,6 @@ jobs:
             source /etc/profile.d/smartcontracts.sh &&
             yarn run test:e2e --ci --runInBand
             --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: e2e
@@ -235,8 +238,6 @@ jobs:
       - run:
           name: Run unit tests
           command: yarn run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - upload_test_results_and_coverage:
           base_flag: dapp
           test_kind_flag: unit
