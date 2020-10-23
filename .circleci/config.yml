@@ -1,12 +1,17 @@
 version: 2.1
 
-var_1: &working_dir ~/src
-var_2: &dapp_working_dir ~/src/raiden-dapp
+var_2: &cache_key raiden-{{ .Branch }}-{{ checksum "pnpm-lock.yaml" }}
+var_1: &docker_image raidennetwork/lightclient-node-pnpm:latest
+var_3: &working_dir ~/src
+var_4: &dapp_working_dir ~/src/raiden-dapp
 
-anchor_1: &attach_options
+anchor_1: &package_lock_key
+  key: *cache_key
+
+anchor_2: &attach_options
   at: *working_dir
 
-anchor_2: &executor_parameter
+anchor_3: &executor_parameter
   parameters:
     executor:
       type: executor
@@ -31,7 +36,7 @@ executors:
       - image: raidennetwork/lightclient-e2e-environment:latest
 
 jobs:
-  checkout:
+  install:
     <<: *executor_parameter
     executor: << parameters.executor >>
     working_directory: *working_dir
@@ -39,8 +44,19 @@ jobs:
       - checkout
       - run: git submodule sync
       - run: git submodule update --init
+      - restore_cache:
+          name: Restore Yarn Package Cache
+          keys:
+            - raiden-v1-yarn-{{ checksum "yarn.lock" }}
+            - raiden-v1-yarn-
+      - run: pnpm install --prefer-frozen-lockfile
+          name: Save Yarn Package Cache
+          key: raiden-v1-yarn-{{ checksum "yarn.lock" }}
+          paths:
+            - ./node_modules
+            - ~/.cache # Cypress stores its stuff here.
       - persist_to_workspace:
-          root: .
+          root: *working_dir
           paths:
             - ./*
 
@@ -64,29 +80,6 @@ jobs:
       - run:
           name: Check CLI Licenses
           command: cd ~/src/raiden-cli && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
-
-  install:
-    <<: *executor_parameter
-    executor: << parameters.executor >>
-    working_directory: *working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - restore_cache:
-          name: Restore Yarn Package Cache
-          keys:
-            - raiden-v1-yarn-{{ checksum "yarn.lock" }}
-            - raiden-v1-yarn-
-      - run: yarn install
-      - save_cache:
-          name: Save Yarn Package Cache
-          key: raiden-v1-yarn-{{ checksum "yarn.lock" }}
-          paths:
-            - ./node_modules
-            - ~/.cache # Cypress stores its stuff here.
-      - persist_to_workspace:
-          root: *working_dir
-          paths:
-            - ./*
 
   lint:
     executor: base-executor
@@ -281,14 +274,11 @@ workflows:
   version: 2
   default_workflow:
     jobs:
-      - checkout:
+      - install:
           filters:
             branches:
               ignore:
                 - master
-      - install:
-          requires:
-            - checkout
       - check_licenses:
           requires:
             - install
@@ -317,14 +307,11 @@ workflows:
 
   publish_staging:
     jobs:
-      - checkout:
+      - install:
           filters:
             branches:
               only:
                 - master
-      - install:
-          requires:
-            - checkout
       - build_sdk:
           requires:
             - install
@@ -348,12 +335,8 @@ workflows:
 
   publish_production:
     jobs:
-      - checkout:
-          <<: *run_on_release_tag_only
       - install:
           <<: *run_on_release_tag_only
-          requires:
-            - checkout
       - build_sdk:
           <<: *run_on_release_tag_only
           requires:
@@ -387,12 +370,8 @@ workflows:
               only:
                 - master
     jobs:
-      - checkout:
-          executor: e2e-environment-executor
       - install:
           executor: e2e-environment-executor
-          requires:
-            - checkout
       - build_sdk:
           executor: e2e-environment-executor
           requires:
