@@ -17,6 +17,13 @@ anchor_3: &executor_parameter
       type: executor
       default: base-executor
 
+anchor_4: &run_on_release_tag_only
+  filters:
+    tags:
+      only: /^v\d+\.\d+\.\d+$/
+    branches:
+      ignore: /.*/
+
 executors:
   base-executor:
     working_directory: *working_dir
@@ -342,29 +349,31 @@ workflows:
   publish_production:
     jobs:
       - checkout:
-          filters:
-            tags:
-              only: /^v\d+\.\d+\.\d+$/
-            branches:
-              ignore: /.*/
+          <<: *run_on_release_tag_only
       - install:
+          <<: *run_on_release_tag_only
           requires:
             - checkout
       - build_sdk:
+          <<: *run_on_release_tag_only
           requires:
             - install
       - build_dapp:
+          <<: *run_on_release_tag_only
           mode: production
           requires:
             - build_sdk
       - generate_documentation:
+          <<: *run_on_release_tag_only
           requires:
             - build_dapp
       - deploy_gh_pages:
+          <<: *run_on_release_tag_only
           public_path: /
           requires:
             - generate_documentation
       - publish_artifact:
+          <<: *run_on_release_tag_only
           context: "Raiden Context"
           requires:
             - deploy_gh_pages
