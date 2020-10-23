@@ -288,6 +288,9 @@ workflows:
       - build_sdk:
           requires:
             - install
+      - test_sdk_e2e:
+          requires:
+            - build_sdk
       - lint:
           requires:
             - build_sdk
