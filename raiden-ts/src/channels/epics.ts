@@ -714,6 +714,7 @@ function makeDeposit$(
         tokenNetworkContract.address as Address,
         ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED,
         { log, minimumAllowance },
+        provider.pollingInterval,
       ),
     ),
     mergeMapTo(channelId$),
