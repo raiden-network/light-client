@@ -6,6 +6,7 @@ import { concat } from 'ethers/utils';
 import memoize from 'lodash/memoize';
 
 import { Signer } from 'ethers/abstract-signer';
+import { retryAsync$ } from '../utils/rx';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { Address, UInt, decode, Signed, Signature } from '../utils/types';
@@ -13,7 +14,7 @@ import { jsonParse, encode } from '../utils/data';
 import { Presences } from '../transport/types';
 import { getCap } from '../transport/utils';
 import { ChannelState } from '../channels/state';
-import { channelAmounts, channelKey } from '../channels/utils';
+import { channelAmounts, channelKey, networkErrorRetryPredicate } from '../channels/utils';
 import { ServiceRegistry } from '../contracts/ServiceRegistry';
 import { RaidenError, ErrorCodes, assert } from '../utils/error';
 import { MessageTypeId } from '../messages/utils';
@@ -55,8 +56,12 @@ export function channelCanRoute(
 }
 
 const serviceRegistryToken = memoize(
-  async (serviceRegistryContract: ServiceRegistry) =>
-    serviceRegistryContract.functions.token() as Promise<Address>,
+  async (serviceRegistryContract: ServiceRegistry, pollingInterval: number) =>
+    retryAsync$(
+      () => serviceRegistryContract.functions.token(),
+      pollingInterval,
+      networkErrorRetryPredicate,
+    ).toPromise() as Promise<Address>,
 );
 
 /**
@@ -68,11 +73,12 @@ const serviceRegistryToken = memoize(
  * @param deps.network - Current Network
  * @param deps.contractsInfo - ContractsInfo mapping
  * @param deps.config$ - Config observable
+ * @param deps.provider - Eth provider
  * @returns Observable containing PFS server info
  */
 export function pfsInfo(
   pfsAddrOrUrl: Address | string,
-  { serviceRegistryContract, network, contractsInfo, config$ }: RaidenEpicDeps,
+  { serviceRegistryContract, network, contractsInfo, provider, config$ }: RaidenEpicDeps,
 ): Observable<PFS> {
   /**
    * Codec for PFS /api/v1/info result schema
@@ -91,7 +97,11 @@ export function pfsInfo(
   });
   // if it's an address, fetch url from ServiceRegistry, else it's already the URL
   const url$ = Address.is(pfsAddrOrUrl)
-    ? from(serviceRegistryContract.functions.urls(pfsAddrOrUrl))
+    ? retryAsync$(
+        () => serviceRegistryContract.functions.urls(pfsAddrOrUrl),
+        provider.pollingInterval,
+        networkErrorRetryPredicate,
+      )
     : of(pfsAddrOrUrl);
   return url$.pipe(
     withLatestFrom(config$),
@@ -108,7 +118,7 @@ export function pfsInfo(
           async (res) =>
             [
               decode(PathInfo, jsonParse(await res.text())),
-              await serviceRegistryToken(serviceRegistryContract),
+              await serviceRegistryToken(serviceRegistryContract, provider.pollingInterval),
             ] as const,
         ),
         map(([info, token]) => {

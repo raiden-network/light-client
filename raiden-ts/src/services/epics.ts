@@ -48,6 +48,7 @@ import {
   assertTx,
   retryTx,
   approveIfNeeded$,
+  networkErrorRetryPredicate,
 } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
@@ -442,12 +443,13 @@ export function pfsServiceRegistryMonitorEpic(
  * @param deps.address - Our address
  * @param deps.latest$ - Latest observable
  * @param deps.userDepositContract - UserDeposit contract instance
+ * @param deps.provider - Eth provider
  * @returns Observable of udcDeposited actions
  */
 export function monitorUdcBalanceEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { address, latest$, userDepositContract }: RaidenEpicDeps,
+  { address, latest$, provider, userDepositContract }: RaidenEpicDeps,
 ): Observable<udcDeposit.success> {
   return action$.pipe(
     filter(newBlock.is),
@@ -459,11 +461,14 @@ export function monitorUdcBalanceEpic(
        * etc), but merged on the top-level observable, therefore connectivity issues can cause
        * exceptions which would shutdown the SDK. Let's swallow the error here, since this will be
        * retried on next block, which should only be emitted after connectivity is reestablished */
-      defer(async () =>
-        Promise.all([
-          userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
-          userDepositContract.functions.total_deposit(address) as Promise<UInt<32>>,
-        ]),
+      retryAsync$(
+        () =>
+          Promise.all([
+            userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
+            userDepositContract.functions.total_deposit(address) as Promise<UInt<32>>,
+          ]),
+        provider.pollingInterval,
+        networkErrorRetryPredicate,
       ).pipe(catchError(constant(EMPTY))),
     ),
     withLatestFrom(latest$),
@@ -479,12 +484,17 @@ function makeUdcDeposit$(
   { pollingInterval, minimumAllowance }: RaidenConfig,
   { log }: Pick<RaidenEpicDeps, 'log'>,
 ) {
-  return defer(() =>
-    Promise.all([
-      tokenContract.functions.balanceOf(sender) as Promise<UInt<32>>,
-      tokenContract.functions.allowance(sender, userDepositContract.address) as Promise<UInt<32>>,
-      userDepositContract.functions.total_deposit(address),
-    ]),
+  return retryAsync$(
+    () =>
+      Promise.all([
+        tokenContract.functions.balanceOf(sender) as Promise<UInt<32>>,
+        tokenContract.functions.allowance(sender, userDepositContract.address) as Promise<
+          UInt<32>
+        >,
+        userDepositContract.functions.total_deposit(address),
+      ]),
+    pollingInterval,
+    networkErrorRetryPredicate,
   ).pipe(
     mergeMap(([balance, allowance, deposited]) => {
       assert(deposited.add(deposit).eq(totalDeposit), [
@@ -522,18 +532,31 @@ function makeUdcDeposit$(
  * @param deps.signer - Signer
  * @param deps.main - Main Signer/Address
  * @param deps.config$ - Config observable
+ * @param deps.provider - Eth provider
  * @returns - Observable of udcDeposit.failure|udcDeposit.success actions
  */
 export function udcDepositEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { userDepositContract, getTokenContract, address, log, signer, main, config$ }: RaidenEpicDeps,
+  {
+    userDepositContract,
+    getTokenContract,
+    address,
+    log,
+    signer,
+    main,
+    config$,
+    provider,
+  }: RaidenEpicDeps,
 ): Observable<udcDeposit.failure | udcDeposit.success> {
-  const serviceToken = userDepositContract.functions.token() as Promise<Address>;
   return action$.pipe(
     filter(udcDeposit.request.is),
     concatMap((action) =>
-      defer(() => serviceToken).pipe(
+      retryAsync$(
+        () => userDepositContract.functions.token() as Promise<Address>,
+        provider.pollingInterval,
+        networkErrorRetryPredicate,
+      ).pipe(
         withLatestFrom(config$),
         mergeMap(([token, config]) => {
           const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
@@ -552,9 +575,10 @@ export function udcDepositEpic(
           );
         }),
         mergeMap(([, receipt]) =>
-          defer(
-            async () =>
-              userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
+          retryAsync$(
+            () => userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
+            provider.pollingInterval,
+            networkErrorRetryPredicate,
           ).pipe(
             map((balance) =>
               udcDeposit.success(
@@ -734,9 +758,14 @@ export function udcWithdrawRequestEpic(
   return action$.pipe(
     filter(udcWithdraw.request.is),
     mergeMap((action) =>
-      userDepositContract.functions
-        .balances(address)
-        .then((balance) => [action, balance] as const),
+      retryAsync$(
+        () =>
+          userDepositContract.functions
+            .balances(address)
+            .then((balance) => [action, balance] as const),
+        provider.pollingInterval,
+        networkErrorRetryPredicate,
+      ),
     ),
     concatMap(([action, balance]) => {
       const contract = getContractWithSigner(userDepositContract, signer);
@@ -764,7 +793,13 @@ export function udcWithdrawRequestEpic(
         mergeMap(([, { transactionHash: txHash, blockNumber: txBlock }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),
-            exhaustMap(() => userDepositContract.functions.withdraw_plans(address)),
+            exhaustMap(() =>
+              retryAsync$(
+                () => userDepositContract.functions.withdraw_plans(address),
+                provider.pollingInterval,
+                networkErrorRetryPredicate,
+              ),
+            ),
             first(({ amount }) => amount.gte(action.meta.amount)),
             map(({ amount, withdraw_block }) =>
               udcWithdraw.success(
@@ -807,7 +842,11 @@ export function udcCheckWithdrawPlannedEpic(
   return config$.pipe(
     first(),
     mergeMap(({ pollingInterval }) =>
-      retryAsync$(() => userDepositContract.functions.withdraw_plans(address), pollingInterval),
+      retryAsync$(
+        () => userDepositContract.functions.withdraw_plans(address),
+        pollingInterval,
+        networkErrorRetryPredicate,
+      ),
     ),
     filter((value) => value.withdraw_block.gt(Zero)),
     map(({ amount, withdraw_block }) =>
@@ -848,9 +887,14 @@ export function udcWithdrawPlannedEpic(
       ),
     ),
     mergeMap((action) =>
-      userDepositContract.functions
-        .balances(address)
-        .then((balance) => [action, balance] as const),
+      retryAsync$(
+        () =>
+          userDepositContract.functions
+            .balances(address)
+            .then((balance) => [action, balance] as const),
+        provider.pollingInterval,
+        networkErrorRetryPredicate,
+      ),
     ),
     concatMap(([action, balance]) => {
       const contract = getContractWithSigner(userDepositContract, signer);
@@ -868,7 +912,13 @@ export function udcWithdrawPlannedEpic(
         concatMap(([, { transactionHash, blockNumber }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),
-            exhaustMap(() => contract.functions.balances(address)),
+            exhaustMap(() =>
+              retryAsync$(
+                () => contract.functions.balances(address),
+                provider.pollingInterval,
+                networkErrorRetryPredicate,
+              ),
+            ),
             first((newBalance) => newBalance.lt(balance)),
             map((newBalance) =>
               udcWithdrawn(
