@@ -44,6 +44,21 @@ executors:
     docker:
       - image: raidennetwork/lightclient-e2e-environment:<< pipeline.parameters.e2e_environment_executor_image_tag >>
 
+commands:
+  check-license:
+    parameters:
+      directory:
+        type: string
+    steps:
+      - run:
+          name: Check License for << parameters.directory >>
+          working_directory: << pipeline.parameters.working_directory>>/<< parameters.directory >>
+          command: >
+            license-checker --production
+            --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense'
+            --excludePackages 'uuid@2.0.1'
+            --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
+
 jobs:
   install:
     <<: *executor_parameter
@@ -71,24 +86,19 @@ jobs:
     working_directory: ~/
     steps:
       - attach_workspace: *attach_options
+      # TODO: Export installation into Dockerfile?
       - run:
           name: Update $PATH
           command: echo 'export PATH=$PATH:$HOME/node_modules/.bin' >> $BASH_ENV
       - run:
           name: Install license checker
           command: npm install license-checker@25.0.1
-      - run:
-          name: Check SDK Licenses
-          working_directory: raiden-ts
-          command: license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
-      - run:
-          name: Check dApp Licenses
-          working_directory: raiden-dapp
-          command: license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
-      - run:
-          name: Check CLI Licenses
-          working_directory: raiden-cli
-          command: license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
+      - check-license:
+          directory: raiden-ts
+      - check-license:
+          directory: raiden-dapp
+      - check-license:
+          directory: raiden-cli
 
   lint:
     executor: base-executor
