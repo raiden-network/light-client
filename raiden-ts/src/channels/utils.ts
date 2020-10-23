@@ -149,12 +149,13 @@ export function channelAmounts(channel: Channel): ChannelBalances {
  * @param error - ErrorCode to throw if transaction fails
  * @param deps - object containing logger
  * @param deps.log - Logger instance
+ * @param deps.provider - Eth provider
  * @returns operator function to wait for transaction and output hash
  */
 export function assertTx(
   method: string,
   error: string,
-  { log }: Pick<RaidenEpicDeps, 'log'>,
+  { log, provider }: Pick<RaidenEpicDeps, 'log' | 'provider'>,
 ): OperatorFunction<
   ContractTransaction,
   [ContractTransaction, ContractReceipt & { transactionHash: Hash; blockNumber: number }]
@@ -162,7 +163,11 @@ export function assertTx(
   return (tx$) =>
     tx$.pipe(
       tap((tx) => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
-      mergeMap(async (tx) => [tx, await tx.wait()] as const),
+      mergeMap((tx) =>
+        retryAsync$(() => tx.wait(), provider.pollingInterval, networkErrorRetryPredicate).pipe(
+          map((txReceipt) => [tx, txReceipt] as const),
+        ),
+      ),
       map(([tx, receipt]) => {
         if (!receipt.status || !receipt.transactionHash || !receipt.blockNumber)
           throw new RaidenError(error, {
@@ -271,10 +276,11 @@ export function groupChannel$(state$: Observable<RaidenState>) {
  * @param tokenContract - Token contract instance
  * @param spender - Spender address
  * @param approveError - ErrorCode of approve transaction errors
+ * @param deps - Partial epics dependencies-like object
+ * @param deps.provider - Eth provider
  * @param opts - Options object
  * @param opts.log - Logger instance for asserTx
  * @param opts.minimumAllowance - Minimum allowance to approve
- * @param pollingInterval - Polling interval used for retries
  * @returns Cold observable to perform approve transactions
  */
 export function approveIfNeeded$(
@@ -282,11 +288,11 @@ export function approveIfNeeded$(
   tokenContract: HumanStandardToken,
   spender: Address,
   approveError: string = ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
+  { provider }: Pick<RaidenEpicDeps, 'provider'>,
   { log, minimumAllowance }: { log: Logger; minimumAllowance: UInt<32> } = {
     log: logging,
     minimumAllowance: Zero as UInt<32>,
   },
-  pollingInterval: number,
 ): Observable<true | ContractReceipt> {
   assert(balance.gte(deposit), [
     ErrorCodes.RDN_INSUFFICIENT_BALANCE,
@@ -301,9 +307,9 @@ export function approveIfNeeded$(
   if (!allowance.isZero())
     resetAllowance$ = retryAsync$(
       () => tokenContract.functions.approve(spender, 0),
-      pollingInterval,
+      provider.pollingInterval,
       networkErrorRetryPredicate,
-    ).pipe(assertTx('approve', approveError, { log }), mapTo(true));
+    ).pipe(assertTx('approve', approveError, { log, provider }), mapTo(true));
 
   // if needed, send approveTx and wait/assert it before proceeding; 'deposit' could be enough,
   // but we send 'prevAllowance + deposit' in case there's a pending deposit
@@ -312,11 +318,11 @@ export function approveIfNeeded$(
     mergeMap(() =>
       retryAsync$(
         () => tokenContract.functions.approve(spender, bnMax(minimumAllowance, deposit)),
-        pollingInterval,
+        provider.pollingInterval,
         networkErrorRetryPredicate,
       ),
     ),
-    assertTx('approve', approveError, { log }),
+    assertTx('approve', approveError, { log, provider }),
     pluck(1),
   );
 }

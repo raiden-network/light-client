@@ -663,7 +663,7 @@ export function channelOpenEpic(
           provider.pollingInterval,
           networkErrorRetryPredicate,
         ).pipe(
-          assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log }),
+          assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log, provider }),
           // also retry txFailErrors: if it's caused by partner having opened, takeUntil will see
           retryTx(provider.pollingInterval, undefined, txNonceErrors.concat(txFailErrors), {
             log,
@@ -713,8 +713,8 @@ function makeDeposit$(
         tokenContract,
         tokenNetworkContract.address as Address,
         ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED,
+        { provider },
         { log, minimumAllowance },
-        provider.pollingInterval,
       ),
     ),
     mergeMapTo(channelId$),
@@ -744,7 +744,7 @@ function makeDeposit$(
         networkErrorRetryPredicate,
       ),
     ),
-    assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log }),
+    assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
     retryTx(
@@ -962,7 +962,7 @@ export function channelCloseEpic(
             provider.pollingInterval,
             networkErrorRetryPredicate,
           ).pipe(
-            assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log }),
+            assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log, provider }),
             retryTx(provider.pollingInterval, undefined, undefined, { log }),
           ),
         ),
@@ -1072,6 +1072,7 @@ export function channelUpdateEpic(
           ).pipe(
             assertTx('updateNonClosingBalanceProof', ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED, {
               log,
+              provider,
             }),
             retryTx(provider.pollingInterval, undefined, undefined, { log }),
           ),
@@ -1282,7 +1283,7 @@ export function channelSettleEpic(
                 provider.pollingInterval,
                 networkErrorRetryPredicate,
               ).pipe(
-                assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log }),
+                assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log, provider }),
                 retryTx(provider.pollingInterval, undefined, undefined, { log }),
               ),
             ),
@@ -1386,7 +1387,7 @@ export function channelUnlockEpic(
         provider.pollingInterval,
         networkErrorRetryPredicate,
       ).pipe(
-        assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log }),
+        assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log, provider }),
         retryTx(provider.pollingInterval, undefined, undefined, { log }),
         ignoreElements(),
         catchError((error) => {

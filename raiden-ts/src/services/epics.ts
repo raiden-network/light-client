@@ -482,7 +482,7 @@ function makeUdcDeposit$(
   [sender, address]: [Address, Address],
   [deposit, totalDeposit]: [UInt<32>, UInt<32>],
   { pollingInterval, minimumAllowance }: RaidenConfig,
-  { log }: Pick<RaidenEpicDeps, 'log'>,
+  { log, provider }: Pick<RaidenEpicDeps, 'log' | 'provider'>,
 ) {
   return retryAsync$(
     () =>
@@ -506,13 +506,13 @@ function makeUdcDeposit$(
         tokenContract,
         userDepositContract.address as Address,
         ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
+        { provider },
         { log, minimumAllowance },
-        pollingInterval,
       );
     }),
     // send setTotalDeposit transaction
     mergeMap(() => userDepositContract.functions.deposit(address, totalDeposit)),
-    assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log }),
+    assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
     retryTx(pollingInterval, undefined, undefined, { log }),
@@ -571,7 +571,7 @@ export function udcDepositEpic(
             [onchainAddress, address],
             [action.payload.deposit, action.meta.totalDeposit],
             config,
-            { log },
+            { log, provider },
           );
         }),
         mergeMap(([, receipt]) =>
@@ -788,7 +788,7 @@ export function udcWithdrawRequestEpic(
 
         return contract.functions.planWithdraw(amount);
       }).pipe(
-        assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log }),
+        assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
         retryTx(provider.pollingInterval, undefined, undefined, { log }),
         mergeMap(([, { transactionHash: txHash, blockNumber: txBlock }]) =>
           state$.pipe(
@@ -907,7 +907,7 @@ export function udcWithdrawPlannedEpic(
         ]);
         return contract.functions.withdraw(action.meta.amount);
       }).pipe(
-        assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log }),
+        assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log, provider }),
         retryTx(provider.pollingInterval, undefined, undefined, { log }),
         concatMap(([, { transactionHash, blockNumber }]) =>
           state$.pipe(
