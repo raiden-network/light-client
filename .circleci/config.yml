@@ -48,6 +48,7 @@ commands:
   check-license:
     parameters:
       directory:
+        description: The sub-directory at the working directory where to check for licenses
         type: string
     steps:
       - run:
@@ -58,6 +59,26 @@ commands:
             --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense'
             --excludePackages 'uuid@2.0.1'
             --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
+
+  upload_test_results_and_coverage:
+    parameters:
+      base_flag:
+        type: enum
+        enum: ["sdk", "dapp", "cli"]
+      test_kind_flag:
+        type: enum
+        enum: ["unit", "integration", "e2e"]
+    steps:
+      - store_test_results:
+          path: reports/junit
+      - store_artifacts:
+          path: reports/junit
+      - run:
+          name: "Upload test coverage results to CodeCov"
+          command: >
+            bash <(curl -s https://codecov.io/bash) -C $CIRCLE_SHA1
+            -F << parameters.base_flag >>
+            -F << parameters.base_flag >>.<< parameters.test_kind_flag >>
 
 jobs:
   install:
@@ -171,13 +192,9 @@ jobs:
           command: yarn run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
-      - store_test_results:
-          path: reports/junit
-      - store_artifacts:
-          path: reports/junit
-      - run:
-          name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F sdk_unit -F sdk -C $CIRCLE_SHA1
+      - upload_test_results_and_coverage:
+          base_flag: sdk
+          test_kind_flag: unit
 
   test_sdk_integration:
     executor: base-executor
@@ -189,13 +206,9 @@ jobs:
           command: yarn run test:integration --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
-      - store_test_results:
-          path: reports/junit
-      - store_artifacts:
-          path: reports/junit
-      - run:
-          name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F sdk_integration -F sdk -C $CIRCLE_SHA1
+      - upload_test_results_and_coverage:
+          base_flag: sdk
+          test_kind_flag: integration
 
   test_sdk_e2e:
     executor: e2e-environment-executor
@@ -210,13 +223,9 @@ jobs:
             --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
-      - store_test_results:
-          path: reports/junit
-      - store_artifacts:
-          path: reports/junit
-      - run:
-          name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F sdk_e2e -F sdk -C $CIRCLE_SHA1
+      - upload_test_results_and_coverage:
+          base_flag: sdk
+          test_kind_flag: e2e
 
   test_dapp_unit:
     executor: base-executor
@@ -228,13 +237,9 @@ jobs:
           command: yarn run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
-      - store_test_results:
-          path: reports/junit
-      - store_artifacts:
-          path: reports/junit
-      - run:
-          name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
+      - upload_test_results_and_coverage:
+          base_flag: dapp
+          test_kind_flag: unit
 
   test_dapp_e2e:
     executor: e2e-environment-executor
@@ -244,6 +249,8 @@ jobs:
       - run:
           name: Run e2e tests
           command: yarn run test:e2e --headless
+      # TODO: Check how we can make this unified with how other jobs upload
+      # the test results (overwrite Cypress directory config via cli parameters)
       - store_test_results:
           path: tests/e2e/results/reports
       - store_artifacts:
