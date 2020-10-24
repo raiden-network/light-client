@@ -575,9 +575,9 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
         matrixServerLookup: 'https://matrixLookup.raiden.test',
         pfsSafetyMargin: 1.1,
         pfs: 'pfs.raiden.test',
+        pollingInterval,
         httpTimeout: 300,
         confirmationBlocks: 2,
-        pollingInterval: 10,
         caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 0, [Capabilities.MEDIATE]: 1 },
       },
     ),
@@ -634,10 +634,25 @@ const mockedMatrixUsers: {
   };
 } = {};
 
-function mockedMatrixCreateClient({ baseUrl }: { baseUrl: string }): jest.Mocked<MatrixClient> {
+function mockedMatrixCreateClient({
+  baseUrl,
+  userId: providedUserId,
+}: {
+  baseUrl: string;
+  userId?: string;
+}): jest.Mocked<MatrixClient> {
   const server = getServerName(baseUrl)!;
   let userId: string;
   let address: string;
+  if (providedUserId) {
+    userId = providedUserId;
+    mockedMatrixUsers[providedUserId] = {
+      userId: providedUserId,
+      presence: 'offline',
+    };
+    address = getAddress(providedUserId.substr(1, 42));
+  }
+
   let stopped: typeof mockedMatrixUsers[string] | undefined;
   return (Object.assign(new EventEmitter(), {
     startClient: jest.fn(async () => {
@@ -1107,12 +1122,12 @@ export async function makeRaiden(
       matrixServer: 'https://matrix.raiden.test',
       pfsSafetyMargin: 1.1,
       pfs: 'pfs.raiden.test',
+      pollingInterval,
       httpTimeout: 300,
       settleTimeout: 60,
       revealTimeout: 50,
       confirmationBlocks: 5,
       logger: 'debug',
-      pollingInterval,
       caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 0, [Capabilities.MEDIATE]: 1 },
     },
   );
