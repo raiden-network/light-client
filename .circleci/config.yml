@@ -35,12 +35,10 @@ anchor_3: &executor_shared_options
   environment:
     JEST_JUNIT_OUTPUT_DIR: << pipeline.parameters.test_report_directory >>
 
-anchor_4: &run_on_release_tag_only
+anchor_4: &filter_release_tag
   filters:
     tags:
       only: /^v\d+\.\d+\.\d+$/
-    branches:
-      ignore: /.*/
 
 executors:
   base-executor:
@@ -301,12 +299,12 @@ jobs:
 workflows:
   version: 2
   default_workflow:
+    when:
+      not:
+        equal: [master, << pipeline.git.branch >>]
+
     jobs:
-      - install:
-          filters:
-            branches:
-              ignore:
-                - master
+      - install
       - check_licenses:
           requires:
             - install
@@ -334,12 +332,11 @@ workflows:
             - build_dapp
 
   publish_staging:
+    when:
+      equal: [master, << pipeline.git.branch >>]
+
     jobs:
-      - install:
-          filters:
-            branches:
-              only:
-                - master
+      - install
       - build_sdk:
           requires:
             - install
@@ -362,29 +359,38 @@ workflows:
             - build_dapp
 
   publish_production:
+    when:
+      and:
+        - not: << pipeline.git.branch >>
+        - << pipeline.git.tag >>
+
+    # Note:
+    # In constrast to branches, each job that should run on a pipeline triggered
+    # by a new tag must use a tag filter. Else the job does not get executed, no
+    # matter its dependencies or anything else.
     jobs:
       - install:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
       - build_sdk:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           requires:
             - install
       - build_dapp:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           mode: production
           requires:
             - build_sdk
       - generate_documentation:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           requires:
             - build_dapp
       - deploy_gh_pages:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           public_path: /
           requires:
             - generate_documentation
       - publish_artifact:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           context: "Raiden Context"
           requires:
             - deploy_gh_pages
@@ -397,6 +403,7 @@ workflows:
             branches:
               only:
                 - master
+
     jobs:
       - install:
           executor: e2e-environment-executor
