@@ -26,7 +26,13 @@ import { HumanStandardToken } from '../contracts/HumanStandardToken';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { UInt, Address, Hash, Int, bnMax } from '../utils/types';
-import { RaidenError, assert, ErrorCodes, networkErrorRetryPredicate } from '../utils/error';
+import {
+  RaidenError,
+  assert,
+  ErrorCodes,
+  networkErrorRetryPredicate,
+  networkErrors,
+} from '../utils/error';
 import { distinctRecordValues, retryAsync$ } from '../utils/rx';
 import { MessageType } from '../messages/types';
 import { Channel, ChannelBalances } from './state';
@@ -218,13 +224,15 @@ export function retryTx<T>(
   errors: readonly string[] = txNonceErrors,
   { log }: { log: logging.Logger } = { log: logging },
 ): MonoTypeOperatorFunction<T> {
+  // retry on network erros as well
+  const allErrors = errors.concat(networkErrors);
   return (input$) =>
     input$.pipe(
       retryWhen((err$) =>
         err$.pipe(
           mergeMap((err, i) => {
             log.debug(`__retryTx ${i + 1}/${count} every ${interval}, error: `, err);
-            if (i < count && errors.some((error) => err.message?.includes(error)))
+            if (i < count && allErrors.some((error) => err.message?.includes(error)))
               return timer(interval);
             return throwError(err);
           }),
