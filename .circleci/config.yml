@@ -196,7 +196,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: yarn run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
+          command: yarn run test:unit --ci --runInBand
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: unit
@@ -208,7 +208,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run integration tests
-          command: yarn run test:integration --ci --runInBand --reporters=default --reporters=jest-junit
+          command: yarn run test:integration --ci --runInBand
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: integration
@@ -223,7 +223,6 @@ jobs:
           command: >
             source /etc/profile.d/smartcontracts.sh &&
             yarn run test:e2e --ci --runInBand
-            --reporters=default --reporters=jest-junit
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: e2e
@@ -235,7 +234,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: yarn run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
+          command: yarn run test:unit --ci --runInBand
       - upload_test_results_and_coverage:
           base_flag: dapp
           test_kind_flag: unit
