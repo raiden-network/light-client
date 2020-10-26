@@ -12,6 +12,8 @@ export type ErrorCodes = keyof typeof ErrorCodes;
 export const ErrorDetails = t.record(t.string, t.union([t.string, t.number, t.boolean, t.null]));
 export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
 
+export const networkErrors: readonly string[] = ['invalid response'];
+
 export class RaidenError extends Error {
   public name = 'RaidenError';
 
@@ -104,5 +106,7 @@ export const ErrorCodec = new t.Type<
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function networkErrorRetryPredicate(error: any, {}): boolean {
-  return !(typeof error?.message === 'string' && error.message.includes(`invalid response`));
+  return !(
+    typeof error?.message === 'string' && networkErrors.some((msg) => error.message.includes(msg))
+  );
 }
