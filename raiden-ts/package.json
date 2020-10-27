@@ -17,7 +17,7 @@
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "clean": "rimraf dist/ dist:cjs/ .coverage/ src/contracts/ src/abi/ src/deployment/ src/versions.json",
     "contracts:pre": "node ./scripts/copyContracts.js prebuild",
-    "contracts:build": "typechain --target=ethers-v4 'src/abi/*.json' --outDir src/contracts",
+    "contracts:build": "typechain --target=ethers-v5 'src/abi/*.json' --outDir src/contracts",
     "contracts:post": "node ./scripts/copyContracts.js postbuild",
     "contracts": "pnpm run contracts:pre && pnpm run contracts:build",
     "versions": "node ./scripts/versions.js",
@@ -47,8 +47,7 @@
   },
   "homepage": "https://github.com/raiden-network/light-client#readme",
   "devDependencies": {
-    "@typechain/ethers-v4": "^1.0.1",
-    "@types/events": "^3.0.0",
+    "@typechain/ethers-v5": "^2.0.0",
     "@types/isomorphic-fetch": "^0.0.35",
     "@types/jest": "^26.0.15",
     "@types/json-bigint": "^1.0.0",
@@ -88,6 +87,26 @@
     "vuepress": "^1.7.1"
   },
   "dependencies": {
+    "@ethersproject/abi": "^5.0.7",
+    "@ethersproject/abstract-provider": "^5.0.5",
+    "@ethersproject/abstract-signer": "^5.0.7",
+    "@ethersproject/address": "^5.0.5",
+    "@ethersproject/bignumber": "^5.0.8",
+    "@ethersproject/bytes": "^5.0.5",
+    "@ethersproject/constants": "^5.0.5",
+    "@ethersproject/contracts": "^5.0.5",
+    "@ethersproject/keccak256": "^5.0.4",
+    "@ethersproject/networks": "^5.0.4",
+    "@ethersproject/properties": "^5.0.4",
+    "@ethersproject/providers": "^5.0.14",
+    "@ethersproject/random": "^5.0.4",
+    "@ethersproject/rlp": "^5.0.4",
+    "@ethersproject/sha2": "^5.0.4",
+    "@ethersproject/signing-key": "^5.0.5",
+    "@ethersproject/strings": "^5.0.5",
+    "@ethersproject/transactions": "^5.0.6",
+    "@ethersproject/units": "^5.0.6",
+    "@ethersproject/wallet": "^5.0.7",
     "abort-controller": "^3.0.0",
     "ethers": "^5.0.19",
     "fp-ts": "^2.8.5",
@@ -104,9 +123,6 @@
     "redux-observable": "^1.2.0",
     "rxjs": "^6.6.3",
     "wrtc": "^0.4.6"
-  },
-  "peerDependencies": {
-    "ethers": "^5.0.19"
   },
   "optionalDependencies": {
     "pouchdb-adapter-indexeddb": "^7.2.2",
