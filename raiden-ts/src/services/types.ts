@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import { BigNumberish } from 'ethers/utils';
+import type { BigNumberish } from '@ethersproject/bignumber';
 import { Address, Int, Signed, UInt } from '../utils/types';
 
 /**

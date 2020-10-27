@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import { BigNumber } from 'ethers/utils';
+import type { BigNumber } from '@ethersproject/bignumber';
 import invert from 'lodash/invert';
 
 import {

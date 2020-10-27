@@ -186,7 +186,7 @@ export function withdrawSendTxEpic(
           );
 
           return defer(() =>
-            tokenNetworkContract.functions.setTotalWithdraw(
+            tokenNetworkContract.setTotalWithdraw(
               channel.id,
               address,
               action.meta.totalWithdraw,

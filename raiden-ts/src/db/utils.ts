@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { defer, merge, fromEvent, throwError, from, BehaviorSubject } from 'rxjs';
 import { mergeMap, pluck, takeUntil, finalize, concatMap } from 'rxjs/operators';
-import { bigNumberify } from 'ethers/utils';
-import { HashZero } from 'ethers/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { HashZero } from '@ethersproject/constants';
 import logging from 'loglevel';
 import omit from 'lodash/fp/omit';
 
@@ -531,12 +531,10 @@ export function* legacyStateMigration(state: any) {
           _id: `${key}:${transfer.transfer.lock.secrethash}`,
           direction: key,
           secrethash: transfer.transfer.lock.secrethash,
-          expiration: bigNumberify(transfer.transfer.lock.expiration).toNumber(),
-          channel: `${transfer.transfer.token_network_address}@${transfer.partner}#${bigNumberify(
-            transfer.transfer.channel_identifier,
-          )
-            .toString()
-            .padStart(9, '0')}`,
+          expiration: BigNumber.from(transfer.transfer.lock.expiration).toNumber(),
+          channel: `${transfer.transfer.token_network_address}@${
+            transfer.partner
+          }#${BigNumber.from(transfer.transfer.channel_identifier).toString().padStart(9, '0')}`,
           cleared: 0,
           ...(transfer.secret?.registerBlock
             ? {

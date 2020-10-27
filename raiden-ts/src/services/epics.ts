@@ -25,9 +25,12 @@ import {
   startWith,
 } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
-import { Event } from 'ethers/contract';
-import { BigNumber, bigNumberify, toUtf8Bytes, verifyMessage, concat } from 'ethers/utils';
-import { Two, Zero, MaxUint256, WeiPerEther } from 'ethers/constants';
+import { Event } from '@ethersproject/contracts';
+import { BigNumber } from '@ethersproject/bignumber';
+import { concat as concatBytes } from '@ethersproject/bytes';
+import { toUtf8Bytes } from '@ethersproject/strings';
+import { verifyMessage } from '@ethersproject/wallet';
+import { Two, Zero, MaxUint256, WeiPerEther } from '@ethersproject/constants';
 import constant from 'lodash/constant';
 
 import { RaidenAction } from '../actions';
@@ -105,7 +108,7 @@ function fetchLastIou$(
 ): Observable<IOU> {
   return defer(() => {
     const timestamp = makeTimestamp(),
-      message = concat([address, pfs.address, toUtf8Bytes(timestamp)]);
+      message = concatBytes([address, pfs.address, toUtf8Bytes(timestamp)]);
     return from(signer.signMessage(message) as Promise<Signature>).pipe(
       map((signature) => ({ sender: address, receiver: pfs.address, timestamp, signature })),
     );
@@ -126,10 +129,10 @@ function fetchLastIou$(
         return {
           sender: address,
           receiver: pfs.address,
-          chain_id: bigNumberify(network.chainId) as UInt<32>,
+          chain_id: BigNumber.from(network.chainId) as UInt<32>,
           amount: Zero as UInt<32>,
           one_to_n_address: contractsInfo.OneToN.address,
-          expiration_block: bigNumberify(blockNumber).add(pfsIouTimeout) as UInt<32>,
+          expiration_block: BigNumber.from(blockNumber).add(pfsIouTimeout) as UInt<32>,
         }; // return empty/zeroed IOU, but with valid new expiration_block
       }
       const text = await response.text();
@@ -260,9 +263,9 @@ export function pfsCapacityUpdateEpic(
           const message: PFSCapacityUpdate = {
             type: MessageType.PFS_CAPACITY_UPDATE,
             canonical_identifier: {
-              chain_identifier: bigNumberify(network.chainId) as UInt<32>,
+              chain_identifier: BigNumber.from(network.chainId) as UInt<32>,
               token_network_address: tokenNetwork,
-              channel_identifier: bigNumberify(channel.id) as UInt<32>,
+              channel_identifier: BigNumber.from(channel.id) as UInt<32>,
             },
             updating_participant: address,
             other_participant: partner,
@@ -270,7 +273,7 @@ export function pfsCapacityUpdateEpic(
             other_nonce: channel.partner.balanceProof.nonce,
             updating_capacity: ownCapacity,
             other_capacity: partnerCapacity,
-            reveal_timeout: bigNumberify(revealTimeout) as UInt<32>,
+            reveal_timeout: BigNumber.from(revealTimeout) as UInt<32>,
           };
 
           return defer(() => signMessage(signer, message, { log })).pipe(
@@ -320,9 +323,9 @@ export function pfsFeeUpdateEpic(
       const message: PFSFeeUpdate = {
         type: MessageType.PFS_FEE_UPDATE,
         canonical_identifier: {
-          chain_identifier: bigNumberify(network.chainId) as UInt<32>,
+          chain_identifier: BigNumber.from(network.chainId) as UInt<32>,
           token_network_address: channel.tokenNetwork,
-          channel_identifier: bigNumberify(channel.id) as UInt<32>,
+          channel_identifier: BigNumber.from(channel.id) as UInt<32>,
         },
         updating_participant: address,
         timestamp: makeTimestamp(),
@@ -463,8 +466,8 @@ export function monitorUdcBalanceEpic(
       retryAsync$(
         () =>
           Promise.all([
-            userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
-            userDepositContract.functions.total_deposit(address) as Promise<UInt<32>>,
+            userDepositContract.callStatic.effectiveBalance(address) as Promise<UInt<32>>,
+            userDepositContract.callStatic.total_deposit(address) as Promise<UInt<32>>,
           ]),
         provider.pollingInterval,
         networkErrorRetryPredicate,
@@ -486,11 +489,11 @@ function makeUdcDeposit$(
   return retryAsync$(
     () =>
       Promise.all([
-        tokenContract.functions.balanceOf(sender) as Promise<UInt<32>>,
-        tokenContract.functions.allowance(sender, userDepositContract.address) as Promise<
+        tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
+        tokenContract.callStatic.allowance(sender, userDepositContract.address) as Promise<
           UInt<32>
         >,
-        userDepositContract.functions.total_deposit(address),
+        userDepositContract.callStatic.total_deposit(address),
       ]),
     pollingInterval,
     networkErrorRetryPredicate,
@@ -510,7 +513,7 @@ function makeUdcDeposit$(
       );
     }),
     // send setTotalDeposit transaction
-    mergeMap(() => userDepositContract.functions.deposit(address, totalDeposit)),
+    mergeMap(() => userDepositContract.deposit(address, totalDeposit)),
     assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
@@ -552,7 +555,7 @@ export function udcDepositEpic(
     filter(udcDeposit.request.is),
     concatMap((action) =>
       retryAsync$(
-        () => userDepositContract.functions.token() as Promise<Address>,
+        () => userDepositContract.callStatic.token() as Promise<Address>,
         provider.pollingInterval,
         networkErrorRetryPredicate,
       ).pipe(
@@ -575,7 +578,7 @@ export function udcDepositEpic(
         }),
         mergeMap(([, receipt]) =>
           retryAsync$(
-            () => userDepositContract.functions.effectiveBalance(address) as Promise<UInt<32>>,
+            () => userDepositContract.callStatic.effectiveBalance(address) as Promise<UInt<32>>,
             provider.pollingInterval,
             networkErrorRetryPredicate,
           ).pipe(
@@ -648,7 +651,7 @@ function makeMonitoringRequest$({
         const balanceProof = channel.partner.balanceProof;
         const balanceHash = createBalanceHash(balanceProof);
 
-        const nonClosingMessage = concat([
+        const nonClosingMessage = concatBytes([
           encode(channel.tokenNetwork, 20),
           encode(network.chainId, 32),
           encode(MessageTypeId.BALANCE_PROOF_UPDATE, 32),
@@ -669,7 +672,7 @@ function makeMonitoringRequest$({
                 balance_proof: {
                   chain_id: balanceProof.chainId,
                   token_network_address: balanceProof.tokenNetworkAddress,
-                  channel_identifier: bigNumberify(channel.id) as UInt<32>,
+                  channel_identifier: BigNumber.from(channel.id) as UInt<32>,
                   nonce: balanceProof.nonce,
                   balance_hash: balanceHash,
                   additional_hash: balanceProof.additionalHash,
@@ -759,7 +762,7 @@ export function udcWithdrawRequestEpic(
     mergeMap((action) =>
       retryAsync$(
         () =>
-          userDepositContract.functions
+          userDepositContract.callStatic
             .balances(address)
             .then((balance) => [action, balance] as const),
         provider.pollingInterval,
@@ -785,7 +788,7 @@ export function udcWithdrawRequestEpic(
           },
         ]);
 
-        return contract.functions.planWithdraw(amount);
+        return contract.planWithdraw(amount);
       }).pipe(
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
         retryTx(provider.pollingInterval, undefined, undefined, { log }),
@@ -794,7 +797,7 @@ export function udcWithdrawRequestEpic(
             pluckDistinct('blockNumber'),
             exhaustMap(() =>
               retryAsync$(
-                () => userDepositContract.functions.withdraw_plans(address),
+                () => userDepositContract.callStatic.withdraw_plans(address),
                 provider.pollingInterval,
                 networkErrorRetryPredicate,
               ),
@@ -842,7 +845,7 @@ export function udcCheckWithdrawPlannedEpic(
     first(),
     mergeMap(({ pollingInterval }) =>
       retryAsync$(
-        () => userDepositContract.functions.withdraw_plans(address),
+        () => userDepositContract.withdraw_plans(address),
         pollingInterval,
         networkErrorRetryPredicate,
       ),
@@ -888,7 +891,7 @@ export function udcWithdrawPlannedEpic(
     mergeMap((action) =>
       retryAsync$(
         () =>
-          userDepositContract.functions
+          userDepositContract.callStatic
             .balances(address)
             .then((balance) => [action, balance] as const),
         provider.pollingInterval,
@@ -904,7 +907,7 @@ export function udcWithdrawPlannedEpic(
             balance: balance.toString(),
           },
         ]);
-        return contract.functions.withdraw(action.meta.amount);
+        return contract.withdraw(action.meta.amount);
       }).pipe(
         assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log, provider }),
         retryTx(provider.pollingInterval, undefined, undefined, { log }),
@@ -913,7 +916,7 @@ export function udcWithdrawPlannedEpic(
             pluckDistinct('blockNumber'),
             exhaustMap(() =>
               retryAsync$(
-                () => contract.functions.balances(address),
+                () => contract.callStatic.balances(address),
                 provider.pollingInterval,
                 networkErrorRetryPredicate,
               ),

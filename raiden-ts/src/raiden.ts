@@ -1,8 +1,9 @@
 import './polyfills';
-import { Signer } from 'ethers/abstract-signer';
-import { AsyncSendable, Web3Provider, JsonRpcProvider } from 'ethers/providers';
-import { Network, BigNumber, BigNumberish, bigNumberify } from 'ethers/utils';
-import { Zero, AddressZero, MaxUint256 } from 'ethers/constants';
+import type { Signer } from '@ethersproject/abstract-signer';
+import { Web3Provider, JsonRpcProvider, ExternalProvider } from '@ethersproject/providers';
+import { Network } from '@ethersproject/networks';
+import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
+import { Zero, AddressZero, MaxUint256 } from '@ethersproject/constants';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { applyMiddleware, createStore, Store } from 'redux';
@@ -199,10 +200,10 @@ export class Raiden {
       assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
       const tokenContract = this.deps.getTokenContract(token);
       const [totalSupply, decimals, name, symbol] = await Promise.all([
-        tokenContract.functions.totalSupply(),
-        tokenContract.functions.decimals(),
-        tokenContract.functions.name().catch(constant(undefined)),
-        tokenContract.functions.symbol().catch(constant(undefined)),
+        tokenContract.callStatic.totalSupply(),
+        tokenContract.callStatic.decimals(),
+        tokenContract.callStatic.name().catch(constant(undefined)),
+        tokenContract.callStatic.symbol().catch(constant(undefined)),
       ]);
       // workaround for https://github.com/microsoft/TypeScript/issues/33752
       assert(totalSupply && decimals != null, ErrorCodes.RDN_NOT_A_TOKEN, this.log.info);
@@ -251,7 +252,7 @@ export class Raiden {
     };
 
     this.userDepositTokenAddress = memoize(
-      async () => (await this.deps.userDepositContract.functions.token()) as Address,
+      async () => (await this.deps.userDepositContract.callStatic.token()) as Address,
     );
 
     const loggerMiddleware = createLogger({
@@ -329,7 +330,7 @@ export class Raiden {
    */
   public static async create<R extends typeof Raiden>(
     this: R,
-    connection: JsonRpcProvider | AsyncSendable | string,
+    connection: JsonRpcProvider | ExternalProvider | string,
     account: Signer | string | number,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     storage?: { state?: any; storage?: Storage; adapter?: any; prefix?: string },
@@ -573,7 +574,7 @@ export class Raiden {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
 
     const tokenContract = this.deps.getTokenContract(token);
-    return tokenContract.functions.balanceOf(address);
+    return tokenContract.callStatic.balanceOf(address);
   }
 
   /**
@@ -591,8 +592,8 @@ export class Raiden {
       .then((logs) =>
         logs
           .map((log) => this.deps.registryContract.interface.parseLog(log))
-          .filter((parsed) => !!parsed.values?.token_address)
-          .map((parsed) => parsed.values.token_address as Address),
+          .filter((parsed) => !!parsed.args.token_address)
+          .map((parsed) => parsed.args.token_address as Address),
       );
   }
 
@@ -1199,7 +1200,7 @@ export class Raiden {
 
     const deposit = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
     assert(deposit.gt(Zero), ErrorCodes.DTA_NON_POSITIVE_NUMBER, this.log.info);
-    const deposited = await this.deps.userDepositContract.functions.total_deposit(this.address);
+    const deposited = await this.deps.userDepositContract.callStatic.total_deposit(this.address);
     const meta = { totalDeposit: deposited.add(deposit) as UInt<32> };
 
     const mined = asyncActionToPromise(udcDeposit, meta, this.action$, false).then(
@@ -1247,8 +1248,8 @@ export class Raiden {
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
-    const price = gasPrice ? bigNumberify(gasPrice) : await this.deps.provider.getGasPrice();
-    const gasLimit = bigNumberify(21000);
+    const price = gasPrice ? BigNumber.from(gasPrice) : await this.deps.provider.getGasPrice();
+    const gasLimit = BigNumber.from(21000);
 
     const curBalance = await this.getBalance(address);
     // transferableBalance is current balance minus the cost of a single transfer as per gasPrice
@@ -1260,7 +1261,7 @@ export class Raiden {
     );
 
     // caps value to transferableBalance, so if it's too big, transfer all
-    const amount = transferableBalance.lte(value) ? transferableBalance : bigNumberify(value);
+    const amount = transferableBalance.lte(value) ? transferableBalance : BigNumber.from(value);
 
     const tx = await signer.sendTransaction({ to, value: amount, gasPrice: price, gasLimit });
     const receipt = await tx.wait();
@@ -1297,7 +1298,7 @@ export class Raiden {
 
     const curBalance = await this.getTokenBalance(token, address);
     // caps value to balance, so if it's too big, transfer all
-    const amount = curBalance.lte(value) ? curBalance : bigNumberify(value);
+    const amount = curBalance.lte(value) ? curBalance : BigNumber.from(value);
 
     const receipt = await callAndWaitMined(
       tokenContract,

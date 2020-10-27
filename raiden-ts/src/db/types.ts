@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import type { BigNumber, BigNumberish } from 'ethers/utils';
+import type { BigNumber, BigNumberish } from '@ethersproject/bignumber';
 import type logging from 'loglevel';
 
 import type { TransferState } from '../transfers/state';

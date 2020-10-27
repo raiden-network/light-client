@@ -1,9 +1,13 @@
-import { Signer } from 'ethers/abstract-signer';
-import { Wallet } from 'ethers/wallet';
-import { Contract, ContractReceipt, ContractTransaction } from 'ethers/contract';
-import { Network, toUtf8Bytes, sha256 } from 'ethers/utils';
-import { JsonRpcProvider } from 'ethers/providers';
-import { MaxUint256 } from 'ethers/constants';
+import { Signer } from '@ethersproject/abstract-signer';
+import { Wallet } from '@ethersproject/wallet';
+import type { Contract, ContractReceipt, ContractTransaction } from '@ethersproject/contracts';
+import type { Network } from '@ethersproject/networks';
+import type { JsonRpcProvider } from '@ethersproject/providers';
+import { toUtf8Bytes } from '@ethersproject/strings';
+import { sha256 } from '@ethersproject/sha2';
+
+import { MaxUint256 } from '@ethersproject/constants';
+
 import { Observable, defer, merge } from 'rxjs';
 import { filter, map, pluck, withLatestFrom, first, exhaustMap } from 'rxjs/operators';
 import logging from 'loglevel';

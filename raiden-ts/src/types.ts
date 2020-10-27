@@ -1,7 +1,7 @@
-import { AsyncSubject, Subject, Observable } from 'rxjs';
-import { Signer } from 'ethers/abstract-signer';
-import { JsonRpcProvider } from 'ethers/providers';
-import { Network } from 'ethers/utils';
+import type { AsyncSubject, Subject, Observable } from 'rxjs';
+import type { Signer } from '@ethersproject/abstract-signer';
+import type { Network } from '@ethersproject/networks';
+import type { JsonRpcProvider } from '@ethersproject/providers';
 import { MatrixClient } from 'matrix-js-sdk';
 import { Logger } from 'loglevel';
 

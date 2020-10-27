@@ -1,10 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as t from 'io-ts';
-import { BigNumber, bigNumberify, getAddress, isHexString, hexDataLength } from 'ethers/utils';
-import { Two, Zero } from 'ethers/constants';
 import { Either, isLeft, Right } from 'fp-ts/lib/Either';
 import { PathReporter } from 'io-ts/lib/PathReporter';
+
+import { BigNumber } from '@ethersproject/bignumber';
+import { getAddress } from '@ethersproject/address';
+import { isHexString, hexDataLength } from '@ethersproject/bytes';
+import { Two, Zero } from '@ethersproject/constants';
+
 import memoize from 'lodash/memoize';
+
 import { RaidenError } from './error';
 
 /* A Subset of DOM's Storage/localStorage interface which supports async/await */
@@ -64,7 +69,7 @@ export function isntNil<T>(value: T): value is NonNullable<T> {
 /**
  * Codec of ethers.utils.BigNumber objects
  *
- * Input can be anything bigNumberify-able: number, string or jsonStringified BigNumber object
+ * Input can be anything BigNumber.from-able: number, string or jsonStringified BigNumber object
  * Output is string, so we can JSON-serialize with 'number's types bigger than JS VM limits
  * of ±2^53, as Raiden python client stdlib json encode longs as string.
  */
@@ -74,8 +79,8 @@ export const BigNumberC: BigNumberC = new t.Type<BigNumber, string>(
   BigNumber.isBigNumber,
   (u, c) => {
     try {
-      // bigNumberify is able to decode number, strings and JSON.parse'd {_hex:<str>} objects
-      return t.success(bigNumberify(u as any));
+      // BigNumber.from is able to decode number, strings and JSON.parse'd {_hex:<str>} objects
+      return t.success(BigNumber.from(u as any));
     } catch (err) {
       return t.failure(u, c);
     }

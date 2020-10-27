@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
-import { Network, parseEther } from 'ethers/utils';
-import { MaxUint256 } from 'ethers/constants';
+import type { Network } from '@ethersproject/networks';
+import { parseEther } from '@ethersproject/units';
+import { MaxUint256 } from '@ethersproject/constants';
 
 import { Capabilities } from './constants';
 import { Address, UInt } from './utils/types';
